@@ -21,6 +21,14 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **In a run that selects the father, watch pushing and carrying through several facings and
+  the A/C/B/C walk cycle, including southeast and southwest.** Do the approved legs read as a
+  continuous stride at gameplay size, with stable upper body, baby, ground contact and stroller
+  placement? The complete PNG/GIF family is accepted in [PLAYTEST-104](playtests/PLAYTEST-104.md).
+  The retained pushing burst shows the father; the attempted carrying burst shows the mother
+  and cannot answer father-carrying appearance. Record is `DECISIONS.md`, M167, resumed delivery
+  and main integration.
+
 - **Close the game in the middle of a day and open it again**, on the desktop build, and on
   the released page in a laptop browser (refresh, close the tab). The phone is answered:
   reloading there brings up the proper day brief ([PLAYTEST-94](playtests/PLAYTEST-94.md)). Does the title come up, and does pressing start bring up the day brief — the
@@ -84,14 +92,12 @@ item below for as long as looking takes.
   title screen shows rather than the map's top-left corner or black. **Is the corner gone,
   with no blank frame in its place, and does the title screen still show what it showed?**
   Record is `DECISIONS.md`, M151, the first frame draws the doorstep.
-- **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
-  back.** Every picture is loaded before the day starts now and the halo's shader is compiled
-  before play, and the laptop still draws a 24 to 26 ms frame every second at 85 to 91 fps
-  (playtest 75, the stutter branch). **Does the stutter on a new sprite still happen, and what
-  do the spike lines say changed in those frames?** A line saying `pictures loaded` means a
-  picture still loads late; a run of lines saying nothing changed says the frame is not the
-  game's scripts and sends the search to the present path. Record is `DECISIONS.md`, M147,
-  every picture loaded before it is needed.
+- **Walk a minute of day 1 on the laptop with `--debug --frame-trace`, without screenshots or
+  invincibility, then quit normally to export the trace.** Does walking feel smoother, and do
+  intermittent stalls remain? The raw post-draw intervals name their callback-time counters;
+  unchanged counters do not rule out other script or rendering work. The crowd contribution
+  sweep is cheaper, while this trace and the player's perception still answer different
+  questions. Record is `DECISIONS.md`, M159, cheaper crowd contribution sweeps.
 - **Walk a minute of day 1 on the laptop with `--debug` and watch the graph under the
   readout, then the same on the phone with `?debug=1`.** Each bar is one frame's length, newest
   at the right, 240 frames wide; the lines are 60 and 30 fps and the window's mean; amber is a
@@ -113,9 +119,10 @@ item below for as long as looking takes.
   (`Tuning.ROUTE_KERB_TINT_ALPHA`): **is it invisible, too obvious and on the nose, or somewhere
   between that guides without being read as a hint?** And where a costly thing stands on the
   route with its amber caret up, does the yellow curbstone read as part of the warning? Record
-  is `DECISIONS.md`, M145, the route's curbs. Since M150 the tint follows the tree's own pavement rather than the whole street: **is
-  the tint on one pavement only where the route walks one, and is it the one the purple
-  route line (`5`) runs along?** Record is `DECISIONS.md`, M150.
+  is `DECISIONS.md`, M145, the route's curbs. The tint marks the whole street, both curb
+  lines from intersection to intersection: **is any street tinted on one side only or for part of
+  its length, and does a street the route merely crosses stay plain?** The purple route line (`5`)
+  still runs along the one sidewalk the route walks. Record is `DECISIONS.md`, M170.
 - **Turn on `5` on seed 2128084176, day 1, and follow every purple line with your eyes.** The
   tree grows on a graph with no carriageway cell but the junctions' and none of the main
   road's, and the doorstep connector is drawn along the street now rather than as a straight
@@ -215,9 +222,10 @@ item below for as long as looking takes.
   meets a full door from inside the door's own street, read as wrong? Record is `DECISIONS.md`,
   M110, walkers are held at a door.
 - **Find a roadblock on day 7 or later** (a 120px barrier across a road, drawn as one continuous
-  barrier with end posts). Does it read as one barrier rather than blocks? Its guards leaving the post was seen in the escape and read as a
-  barrier turning into a man ([PLAYTEST-94](playtests/PLAYTEST-94.md)); that is M168, the escape
-  after playtest 94, in `TODO.md`. Record is `DECISIONS.md`, M56, the roadblock hunts.
+  barrier with end posts). Does it read as one barrier rather than blocks? A guard stands at the
+  middle of every one from the start, and at a roadblock that does not hunt he is a drawing only:
+  **does he read as a manned checkpoint, or as a threat she should be routing around?** Record is
+  `DECISIONS.md`, M168, the roadblock's guard, and M56, the roadblock hunts.
 - **Find the burning building on day 3** (`--day 3`; it is on a pavement against a building). The
   engine arrives along the fire's street only once the fire is on screen. Does the engine read as
   *summoned by the sight*, and does a day where she never finds the fire feel different? Record
@@ -327,28 +335,36 @@ item below for as long as looking takes.
   She starts at her own door with the baby asleep, goes down past the barricaded lobby to the
   service exit, and the same run continues into the city and ends at the tunnel or the bridge.
 
-  **What is in there now.** A masked man runs the whole height of one shaft over its own ground —
-  the level `F` columns and the `t/m` and `T/M` diagonals — and a fire stands on the inner cell of
-  a level approach in the other, closing one flight and leaving every door reachable. The basement
-  is entered down a one-tile front-facing stair (`stair_down.svg`) and holds a mouse and three
-  steam vents at fixed places on the corridor. A vent blows for `Tuning.FINALE_STEAM_BLOWS_FOR`
-  after its own notice and is gone until its period comes round, one period each out of
-  `FINALE_STEAM_PERIODS`, and while it blows it shuts the corridor outright. The hallway windows
-  flash every 22 seconds (`FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s).
+  **What is in there now.** Rubble shuts the top floor east of her door, so the first descent is
+  down the left shaft, where a fire closes one flight; the right shaft is the masked man's, and a
+  new one starts up it `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` (6s) after the last leaves its top,
+  standing through his whole warning every time. The basement is entered down a one-tile
+  front-facing stair and holds a mouse and three steam vents, each where the corridor is one tile
+  wide, blowing for `FINALE_STEAM_BLOWS_FOR` (2s) out of periods of 4, 4.5 and 5.5 seconds. The
+  hallway windows all flash together, with each loud explosion every 22 seconds and silently in
+  between at gaps of 0.1 to 5 seconds, 1.3 on average. A lost section comes up on the brief screen
+  before it starts again.
 
-  **Three questions only a walk answers.** Does the fire actually force the other shaft, or is
-  walking back up the obvious answer anyway? Is stepping through a door a *usable* answer to the
-  masked man — the shaft is one or two cells wide everywhere, so a door tile is 32px off his line
-  against the 28px that takes the baby, and whether that is enough time to reach one is a question
-  about hands rather than about geometry. And does the one-tile stair read as a stair at the scale it
-  is played at, given the player's *"at the very least"*?
+  **What only a walk answers.** Does rubble, fire, crossing over and the masked man read as a
+  sequence of decisions, or as a corridor with no choice in it, and is six seconds between men a
+  gap to plan in or a wait? Is stepping through a door a *usable* answer to him — a door tile is
+  32px off his line against the 28px that takes the baby, and the farthest door is a 1.8 second
+  walk against his 3.6 second warning. Does the steam now read as a gate worth timing, and is the
+  worst pocket fair — shut at both ends for two seconds, it costs about half the meter. Are some
+  forty-five flashes a minute atmosphere or strobing? Does the brief on a restart land as a beat or
+  as a screen in the way? Does the basement stair, a gray tile with a dark line every four
+  pixels, read as a stair at the scale it is played at?
 
-  Records are `DECISIONS.md`, M165, the escape after the corrected stairs, and M102, the finale
-  built behind the flag. The steam was walked and reads as something to squeeze past
-  ([PLAYTEST-94](playtests/PLAYTEST-94.md)); it is M168, the escape after playtest 94, in `TODO.md`.
-  [PLAYTEST-84](playtests/PLAYTEST-84.md) is the last walk of it, and
-  [PLAYTEST-85](playtests/PLAYTEST-85.md) is where the steam, the basement stair and the spawn
-  were settled in the player's own words.
+  **And in the city:** she comes out with no danger mark over her head, though a screen-edge
+  badge for something not lethal may still show: does that read as the same complaint? Walk south
+  from the service exit to a roadblock: **does the guard read as having been there all along, his
+  setting off as a man leaving a post, the catch at 28px as contact, and the barrier still shut
+  behind him as right?** Nobody has watched one set off; no capture of it exists.
+
+  Records are `DECISIONS.md`, M168, the escape after playtest 94, M165, the escape after the
+  corrected stairs, and M102, the finale built behind the flag.
+  [PLAYTEST-94](playtests/PLAYTEST-94.md) is the last walk of it and
+  [PLAYTEST-96](playtests/PLAYTEST-96.md) is where the window flashes were settled.
 
 - **Stand at the service exit and choose** (`tools/run.sh --start-escape city --seed 4242` boots
   section two on its own). Two chains leave the door, one north to the tunnel and one south to

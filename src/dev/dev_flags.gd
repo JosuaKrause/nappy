@@ -54,6 +54,7 @@ extends RefCounted
 ##   --no-focus-pause 0
 ##   --no-save       0
 ##   --spikes        0
+##   --frame-trace   0
 ##   --no-telemetry  0
 ##   --screenshot    1
 ##   --after         1
@@ -555,3 +556,7 @@ static func _no_save_from_query(query: String) -> bool:
 ## so the flag is honoured only while a run is already being traced.
 static func spikes_requested() -> bool:
 	return "--spikes" in _args()
+
+## Buffered post-draw measurements remain available with the ordered telemetry log disabled.
+static func frame_trace_requested() -> bool:
+	return "--frame-trace" in _args()

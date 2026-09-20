@@ -7,7 +7,7 @@ boxes, no "Done:" paragraphs, no branch names or status words in headings here.
 
 Read [HANDOFF.md](HANDOFF.md) first for the state of the tree.
 
-Each milestone is one git branch, merged to `main` with `--no-ff`. `[~]` marks an item somebody is
+Each milestone is one git branch, squash-merged to `main` through its pull request. `[~]` marks an item somebody is
 mid-way through.
 
 ---
@@ -293,123 +293,166 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M170 — The route's tint is on both sides of the street · asked for 2026-09-19
+## M171 — Build-time atlases replace individual textures · asked for 2026-09-19
 
-> "let's do the mark for the correct path on the full segment (both sides) again -- that way those
-> obvious problems now (with obstacles on the path side but no obstacle on the other side) are not
-> obvious anymore -- I can still confirm whether you actually fixed those issues via the path
-> debug view."
+> "make a todo that atlases must be created at build time. so they can be cheaply loaded at
+> runtime. this enforces that related items must be put in the same atlas so the atlas does not
+> get wasted. all textures that are loaded in an atlas must not be loaded individually"
+> · "they should cease existing in the build once they get baked into an atlas"
+> · "the implementation we currently have is not great"
 
-[PLAYTEST-97](playtests/PLAYTEST-97.md). *Asked for one side on 2026-09-15
-([PLAYTEST-76](playtests/PLAYTEST-76.md)) · overturned by the player on 2026-09-19.*
+[PLAYTEST-105](playtests/PLAYTEST-105.md) is the contract and
+[PLAYTEST-108](playtests/PLAYTEST-108.md) the design decisions; `DECISIONS.md`, M171, the atlas
+design, has the inventory the design was read from, the rejected bakers and the player's answers.
 
-- [ ] **`City._tint_the_route_kerbs()` tints both kerb lines of every street the day's route tree
-      uses**, where today it tints a kerb tile only when the tree carries that sidewalk's own
-      cell (`_tree.branches_on(tile)`). **A segment is tinted whole, from intersection to
-      intersection, or not at all** *("no signle street tiles")*: a tree that uses part of a
-      segment tints all of it. The route lines of debug layer `5` and every placement
-      rule keep reading the tree's own sidewalk. The routes suite's tint check, `docs/CITY.md`
-      and the two tint entries in `REVIEW.md` say one-sided and move with it.
+**The design.** A headless run of the engine itself bakes every picture family into one PNG page
+plus a region table, using the engine's own SVG rasterizer so a baked pixel is the pixel the
+import pass produces today. One runtime loader hands out regions by name and owns group
+lifetime by reference count. **The presentation mode is the bake's**: a build is PNG mode — the
+illustrated PNG where one exists, the SVG's raster where none does — and SVG mode is a custom
+local bake command, absent from the release; `--svg` and `?svg=1` stop existing at runtime.
+**Atlases are baked on demand and never committed**: `tools/check.sh`, `tools/test.sh`,
+`tools/run.sh` and `tools/export-web.sh` compare a manifest of source hashes and the bake tool's
+version against the tree and bake when they differ. **The events are one page** *("for now")*.
+**The ground's individual pictures are baked and its compositing stays at runtime** — bases,
+overlays, damage strips, grass variants and the route-curb tint are composed from regions of
+the ground page as they are composed from single textures today, because the player refused
+baked composites: *"this is not a bottleneck and it allows for variety"*. The web export is the
+only export; the identity images (logo, icon, social card) leave the game package, and the
+deploy keeps copying the social card beside the page. Both are assumptions the player was told
+and did not speak to.
 
----
+Each item is one pull request. The first is alone; the next three touch disjoint files and run
+together; the ground and the events follow their own gates; the last closes the contract.
 
-## M168 — The escape after playtest 94 · asked for 2026-09-19
-
-> "the escape is okay but there should be a fire on the left like it is right now but the top
-> floor right side should be completely blocked off with rubble. then the pursuing guy should
-> respawn forcing to switch the side again. the steam frequencies are too slow and there are only
-> two steams and they are not blocking in any way they should go in the narrow hallways. I still
-> spawn with flashing !!! in the city. restarting should still have the day brief for both the
-> apartment escape and the city escape even if the nerves don't go down. also I just saw a barrier
-> turn into a mask men (the barrier disappeared and the masked man appeared) and the pursuit ended
-> way too early (I got caught when I was still very visibly away from him)"
-
-[PLAYTEST-94](playtests/PLAYTEST-94.md) has each finding with what stands there today. Reached
-through `tools/run.sh --start-escape --seed 4242`.
-
-- [ ] **The top floor's right side is blocked off with rubble, and the fire stays on the left.**
-      From her own door the right stairwell cannot be entered on the top floor at all. Rubble is
-      a body and a drawing (an SVG first), placed by construction rather than checked.
-- [ ] **The masked man comes again.** After his first run he respawns so that the side she
-      switched to stops being safe and she has to switch back: *"forcing to switch the side
-      again"*. When and where he comes again is the design to settle against the fire and the
-      rubble, since the three together must leave a way down.
-- [ ] **The steam blows more often, and stands where one cloud is the whole width.** The periods
-      are 6.5, 8 and 9.5 seconds with a 2 second blow (`Tuning.FINALE_STEAM_PERIODS`,
-      `FINALE_STEAM_BLOWS_FOR`), which the player reads as too slow; a blow is a 32px cloud and
-      the vents stand where the corridor is 64px wide, so she walks past one. The vents go *"in
-      the narrow hallways"*, and all three are met on the way, where the player met two.
-      [PLAYTEST-85](playtests/PLAYTEST-85.md)'s design stands: fixed places, *"fully block the
-      path"*, differing intervals.
-- [ ] **She comes out of the service exit with no danger mark up.** The ground she arrives on is
-      free of every lethal reach by construction, the same rule PLAYTEST-85 set for bodies:
-      *"the spawning shouldn't be a check"*. Trace which row raises the flashing mark on seed
-      4242 first.
-- [ ] **A section restart shows the brief screen**, for the building and for the city alike, with
-      the nerves unchanged. The restart still costs nothing.
-- [ ] **A guard stands at the roadblock from the beginning, and catches her at a man's reach.**
-      *(2026-09-19: "the guard needs to be at the barrier from the beginning, standing. only then
-      does it make sense for it to start pursuing. 86px is huge".)* The finale's masked men on
-      foot are `roadblock` at full resistance progress; today the barrier picture is swapped for
-      a guard the moment one notices her, and the row's lethal `inner_radius` is 86px because
-      `EventDef.validate()` refuses a lethal radius inside the row's own body (60px barrier plus
-      her 14px). So: a standing guard is drawn at every roadblock from placement, hunting or not;
-      when a hunting one notices her, that guard telegraphs and sets off while the barrier stays
-      drawn and solid where it is; the catch is measured from the guard at a man's reach (the
-      building's masked man takes the baby at 28px), and the barrier itself catches nobody. The
-      same row hunts from day 7 on ordinary days, so this changes there too. Whether the street
-      behind a roadblock whose guard has left stays shut is the consequence to state in the
-      record: the barrier staying means it does.
-- [ ] **The hallway windows flash more often.** *(2026-09-19: "the flashing lights in the window
-      are too rare", [PLAYTEST-96](playtests/PLAYTEST-96.md).)* A window lights only with an
-      explosion, every 22 seconds (`Tuning.FINALE_EXPLOSION_INTERVAL`), and an explosion costs
-      excitement. Built as light without noise, open to overturn: distant flashes light the
-      windows between the loud ones, the time between two flashes random between 0.1 and 5 seconds with a mean of 1.3
-      seconds on a smooth curve *("a biased random distribution … the rest of the curve is smooth")*,
-      and cost nothing; the loud explosions stay at 22 seconds and still flash. **Every window
-      flashes together, always** *("a single window cannot flash by itself")*. The alternative
-      the player may prefer is simply more explosions, which is one constant and makes the
-      building louder.
-- [ ] **The escape's run log stamps every line `0.0`.** The log of the played run cannot say when
-      anything happened (`docs/evidence/playtest-94-2026-09-19/`).
+- [ ] **The bake, the loader and the staleness check.** `tools/bake_atlases.gd`, run with
+      `--headless --script`, reads a checked-in membership file (group, members, lifetime,
+      padding kind), rasterizes SVGs with `Image.load_svg_from_buffer()` at scale 1, loads the
+      illustrated PNGs, applies `fix_alpha_edges()` to match the importer's
+      `fix_alpha_border`, shelf-packs within 2048px, and writes one PNG and one region table
+      (name, page, rect, native size) per group, with the source hashes, into a gitignored
+      output folder the engine imports. Opaque tile families get extruded edge padding, sprites
+      a transparent pixel. A wrapper, `tools/bake-atlases.sh`, follows the **cli-tools** rule
+      and carries the SVG-mode switch. The loader answers `acquire(group)`, `release(group)`
+      and `region(name)` as a cached `AtlasTexture`, and the native size of a region without
+      loading anything else. A parity test compares every baked region against today's imported
+      texture while both still exist. The package audit lists the exported `.pck` and reports
+      every constituent it finds; it reports only, until the last item makes it fatal. No
+      consumer moves in this item.
+- [ ] **The unatlased leaf consumers**: buildings, the city edge, closure markers, traffic
+      lights, checkpoints, the UI buttons and indicators, the interior scene and the interior
+      TileSet. `preload` constants become region names; a tinted draw keeps its `modulate`.
+- [ ] **The stroller, the head indicators and the crowd.** The crowd's synchronous first pack
+      inside a draw call goes; `crowd_atlas.gd` and its suite go with it. Body and trim layers
+      stay separate regions so tinting is unchanged; the halo's shader reads alpha only and is
+      region-safe.
+- [ ] **The decoration**: props, litter and city decals. A prop's shadow reads its size from
+      the region table where it reads `get_size()` off a preloaded source today.
+- [ ] **The ground.** The authored TileSet stops referencing SVGs; the compositor reads each
+      base and layer as a region of the ground page's image, composes at runtime as now, and
+      the second runtime packer, `pack_into_one_texture()`, is replaced by one upload of the
+      composed sheet. The per-day repaint keeps its variety and loses the GPU readbacks.
+- [ ] **The events**, one page, after the square poster crew's pull request has merged, since
+      both rewrite `event_instance.gd`'s picture tables. `EventManager` acquires and releases
+      the one group; the screen-edge badge reads the same regions.
+- [ ] **Close the contract.** The runtime packer, the resolver, their phase-trace telemetry and
+      the `--svg` and `?svg=1` flags are deleted; the run log says when a group loaded and was
+      released, in how long and at what size. **The authoring sources move out of the imported
+      tree** into a folder the engine ignores, and every reference to an old path moves with
+      them — skills, docs, tool help, comments — *"so we don't have stale instructions or
+      comments (code will fail but documentation will not)"*; grep for each family's old path
+      before and after, the count after is zero. The package audit becomes fatal in the export.
+      M159's atlas-measurement item is rewritten against the new spans before the old ones go.
+      `ARCHITECTURE.md`, `GRAPHICS.md`, `VISUALS.md`, `TELEMETRY.md`, the **illustrated-png**
+      and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
 
 ---
 
-## M167 — The father's legs read as legs · asked for 2026-09-19
+## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
-> "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
+> "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
+> numbers and the codebase and think about how we could improve performance and reduce stutter"
 
-> "I approved the graphics for now but also noted that we need to fix the leg's appearance in the next pr"
+**The deliverable is an optimization, with measurement retained as evidence.**
+[PLAYTEST-86](playtests/PLAYTEST-86.md) clarifies: "well the point was to actually do some
+optimizations. measurement is nice and make sure it's fully recorded but the core is to make
+things faster". Instrumentation alone does not complete this item. Reduce a demonstrated cost
+without changing gameplay, retain controlled repeated before/after distributions over equal
+active-play windows, and verify identical behavior. A measured reduction in a named work metric
+must be distinguished from whole-frame improvement and perceived smoothness. The existing noisy
+toggle trials establish neither a causal toggle cost nor a shipping pacing choice.
 
-[PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md).
-The provisionally accepted contact baseline and its narrow father-only splice exception are
-recorded in `DECISIONS.md` under M160, provisional contact acceptance. This separate drawing
-follow-up does not replace that baseline without visual approval.
+`CrowdAgent.contribution_at()` skips velocity and ellipse work outside a conservative bound
+that includes the current jolt and the maximum forward stretch. The exact-parity checks and
+repeated before/after measurement are in [DECISIONS.md](DECISIONS.md), M159, cheaper crowd
+contribution sweeps; the raw evidence is
+[the contribution measurement record](evidence/m159-crowd-rejection-2026-09-19/README.md).
+This establishes a reduction in query cost, while the remaining long-frame cause and phone
+behavior still require the work below. `--frame-trace` supplies bounded raw callback intervals
+and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md#raw-frame-traces).
 
-[PLAYTEST-92](playtests/PLAYTEST-92.md) rejects the first refinement: "still bad legs -- maybe
-use the legs of the woman in those cases?" — "they have the same pants". The next preview may
-reuse the woman's accepted pushing-leg artwork in E/W and SE/SW B, with the father's upper
-body and the accepted contact ownership preserved. This is a specific donor exception, not
-permission to replace the father's identity or change protected frames.
+- [ ] **Attribute the remaining slow intervals before another optimization.** Use the raw traces
+      to select a reproducible expensive call or span, reduce that work, and retain controlled
+      before/after evidence with identical-behavior checks. Establish repeatable full active-play
+      windows before ranking modest readout, graph, telemetry or pacing costs. Keep rejected short
+      trials visible. CPU callbacks do not measure physical display presentation, and unchanged
+      counters do not rule out unobserved script work. M143, readout labels and windows, separately
+      owns the engine's previous-second `process` and `physics` maxima. A pacing switch remains
+      diagnostic, not a shipping decision.
+- [ ] **Profile the current phone build only after that baseline.** Divide CPU time between the
+      baby's every-physics-tick crowd contribution sweep, the halo's rendered-frame contribution
+      sweep, event streaming/director work, crowd movement/traffic and debug presentation. Do not
+      use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
+      measured. Measure the conservative contribution rejection on that device, including its
+      effect on the baby and halo callers, before considering caching or lower tick rates.
+- [ ] **Complete atlas measurements alongside M171, build-time atlases.** The CPU spans distinguish
+      source readback/copy, blit, texture submission, regions and release joins, with actual thread
+      labels. Measure the threadless web export, observe real release events, and distinguish CPU
+      submission from GPU completion. Retain a baseline and compare the prepared atlas path's
+      loading and memory costs under M171's explicit build-time contract; that design does not
+      depend on proving atlases cause stutter. M171 owns atlas implementation and excludes baked
+      constituent textures from the build and individual CPU/GPU allocations. Do not add worker
+      jobs or larger runtime atlases on the native host evidence. The older laptop hitch predates
+      the atlas path, so no atlas result can be assumed to explain both platforms.
 
-- [ ] **Match the legs to the rest of the family.** E/W B needs A/C's clear dark far-leg cue,
-      folded and shaded trousers, and chunky brown highlighted shoes instead of thin dark slivers.
-      Keep the accepted near leg trailing and the far leg advancing, with a continuous
-      hip–knee–shoe chain and natural knees. SE/SW must read as a three-quarter stride under
-      its torso, not a full-width profile stride: narrow it toward A and the accepted NE/NW
-      contacts so A/C/B/C does not alternate short and long steps like a limp.
-- [ ] **Publish an early attempt and ask for feedback.** Use the established clean eight-direction
-      A/C/B/C sheet and native/6× four-phase GIFs at 190ms per phase. Push and embed them in
-      the next PR description with commit-pinned links before asking; the CLI cannot show local
-      images. Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
-      Preserve N/S, NE/NW, all A/C frames, upper-body landmarks, native canvases, scale and anchors.
-      Do not change carrying poses, stroller art or gameplay. Keep exact prompts, raw inputs,
-      crops, transforms, commands and hashes with the evidence. The first attempt may expose
-      remaining defects; do not spend another internal revision loop hiding them from review.
-- [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
-      creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,
-      and verify actual runtime bindings. The provisional splice is not a general successful
-      procedure; update shared graphics guidance only with a method accepted for final appearance.
+---
+
+## M164 — Engine errors make the test gate red · asked for 2026-09-19
+
+> "create a todo for the bug report with enough detail to pick it up without additional
+> investigative work"
+
+`tests/run_tests.gd` counts only `check()` and `close_to()` failures and passes that array's state
+to `SceneTree.quit()`. Godot diagnostics are a separate channel: an engine `ERROR:`, a
+`push_error()` or a completed script error can be printed while the assertion array stays empty
+and the process exits 0. `tools/test.sh` currently trusts that status in filtered, serial and
+single-shard runs. Its local multi-shard reporter also prints only suite timings and `FAIL` lines,
+so a completed shard's engine error can disappear from the combined output.
+
+- [ ] **Make the shell boundary reject engine diagnostics.** In `tools/test.sh`, have
+      `run_one_process()` preserve and print the test process's combined stdout/stderr and return
+      non-zero when either Godot returned non-zero or its output contains `SCRIPT ERROR`,
+      `Parse Error` or `ERROR:` — the same error vocabulary `tools/check.sh` already treats as a
+      failed boot. All callers use that one classification: filtered runs, `--serial`,
+      `--shard I/N`, and each process in a local sharded run. When a shard contains an engine
+      error, retain the assertion summary but surface the offending log and make the aggregate
+      status non-zero. A failed `--record-costs` run does not replace the previous cost table.
+      Warning policy and import-pass failure handling are outside this reproduced defect.
+- [ ] **Keep a real negative fixture outside suite discovery.** Add
+      `tests/runner_fixtures/engine_error.gd`, with a `run(t)` that emits a unique intentional
+      `push_error()` sentinel while otherwise completing normally. `tests/run_tests.gd::_discover`
+      continues to discover only top-level `test_*.gd` suites; document that the negative fixture
+      runs only when named explicitly. Add a CI guard after Godot is available that invokes
+      `./tools/test.sh runner_fixtures/engine_error.gd`, requires the sentinel and normal runner
+      summary to appear, and requires a non-zero exit. This proves a real Godot diagnostic, not
+      merely a failed assertion or crashed process, closes the gate.
+- [ ] **Verify every runner path.** The explicit negative fixture exits non-zero and leaves its
+      diagnostic visible; an ordinary clean focused suite still exits 0; an ordinary failed
+      `t.check()` still exits non-zero. Exercise filtered/serial, `--shard`, and local sharded
+      propagation with the same classifier. Run `./tools/test_cli_help.sh`, `./tools/check.sh`,
+      and the unfiltered `./tools/test.sh`: this milestone changes the rig every suite passes
+      through, so it is the repository rule's exceptional case where a local full run is warranted.
+      No screenshot is needed.
 
 ---
 

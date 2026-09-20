@@ -1,7 +1,8 @@
 class_name InteriorEvents
 extends Node
-## The escape's first section, inside the building: a mouse, a masked man on one stairwell, a fire
-## on the other, steam in the basement, and the explosions going off outside.
+## The escape's first section, inside the building: a mouse, a masked man coming up one stairwell
+## again and again, a fire on the other, steam in the basement, and the explosions going off
+## outside.
 ##
 ## **The smallest thing that can host an `EventInstance`**, and deliberately not an `EventManager`.
 ## That class is a day: a plan streamed around a walking player, a director owing rows ahead of
@@ -21,6 +22,11 @@ extends Node
 ## explosion *is* in here is a beat: every `Tuning.FINALE_EXPLOSION_INTERVAL` the windows flash and
 ## the meter takes a hit, wherever in the building she is standing. That is the same row's field
 ## reduced to the only part of it that reaches through a wall.
+##
+## **And between them, light with no noise behind it.** A distant flash — on average about one a
+## second and a third, never closer than a tenth of a second or further than five — lights every
+## window exactly as a bang does and costs nothing at all, see `_light_the_far_windows()`. It is
+## the night outside; the bangs are what she is charged for.
 
 ## How much an explosion outside costs her, as points on the meter, one bang at a time. Taken from
 ## the row's own field rather than invented: `finale_explosion` emits its `intensity` for its
@@ -54,10 +60,28 @@ var _seed := 0
 var _until_the_next_explosion := 0.0
 ## The basement's vents, in the order she meets them walking the corridor. Rebuilt by `restart()`.
 var _vents: Array[Vent] = []
-## Which stairwell the fire closes — "left" or "right". Drawn from the run seed, so a run is the
-## same run twice; the masked man takes the other one, which is the whole of why the fire is worth
-## having: the way past a fire is the other egress, and the other egress has somebody on it.
-var _burning_side := "left"
+## Seconds until the next distant flash in the hallway windows, and the stream the waits are drawn
+## from. **Its own stream, seeded from the same run seed**, so a seed replays the same night and no
+## draw here can ever move a placement: the placement rolls happen on a local generator inside
+## `restart()`, and a shared one would make how often the windows flash a thing that decides where
+## the fire is.
+var _until_the_next_distant_flash := 0.0
+var _flashes := RandomNumberGenerator.new()
+## The masked man currently on the stairs, or null between his runs. Held so this can tell *his*
+## instance retiring from any other row's — see `_send_the_masked_man_again()`.
+var _pursuer: EventInstance = null
+## Seconds until the next masked man comes up the shaft, counted only while there is none.
+var _until_the_next_pursuer := 0.0
+## Which stairwell the fire closes, and it is **always the left one**. *(2026-09-19: "there should
+## be a fire on the left like it is right now but the top floor right side should be completely
+## blocked off with rubble.")* The two have to agree: the rubble shuts the right stairwell off the
+## top floor, so a fire that rolled onto the right as well would leave her nothing at all to walk
+## down from her own door. The masked man takes the other shaft — which is the whole of why the
+## fire is worth having: the way past a fire is the other egress, and the other egress has
+## somebody on it.
+const _BURNING_SIDE := "left"
+## The shaft the masked man runs, which is the one the fire did not take.
+const _PURSUED_SIDE := "right"
 
 func setup(interior: InteriorScene, rng: RandomNumberGenerator) -> void:
 	_interior = interior
@@ -73,19 +97,37 @@ func restart() -> void:
 		instance.queue_free()
 	_instances.clear()
 	_hard_failed = false
+	set_physics_process(true)
 	_until_the_next_explosion = Tuning.FINALE_EXPLOSION_INTERVAL
+	_pursuer = null
+	_until_the_next_pursuer = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
+	_flashes.seed = _seed
+	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed
-	_burning_side = "left" if rng.randf() < 0.5 else "right"
 	_place_the_fire(rng)
 	_place_the_masked_man()
 	_place_the_basement(rng)
+
+## Everything in the building stops, because she is not in it any more: she has walked out of the
+## service exit and section two is running. Called by `main` when the city section starts.
+##
+## **Without this the building goes on playing to an empty map** — the vents keep blowing, the
+## windows keep flashing and a masked man comes up the shaft every few seconds for the rest of the
+## sequence, none of it seen and all of it in the run log. `restart()` is what brings it back, and
+## it is called on every entry into section one, fresh or retried.
+func stand_down() -> void:
+	set_physics_process(false)
+	for instance in _instances:
+		instance.queue_free()
+	_instances.clear()
+	_pursuer = null
 
 ## Which stairwell is shut. Read by `tests/test_interior.gd`, which asserts the other one is still
 ## walkable — *"there might be a fire on one staircase forcing us to use the other staircase (all
 ## buildings have two egresses)"* is a statement about both of them, not only the burning one.
 func burning_side() -> String:
-	return _burning_side
+	return _BURNING_SIDE
 
 func instances() -> Array[EventInstance]:
 	return _instances
@@ -104,13 +146,20 @@ func instances() -> Array[EventInstance]:
 ## Its blocking reach is its own 30px body plus her 14px, and the door tile is 64px from the cell
 ## it stands on, so a door arrival lands clear of it.
 func _place_the_fire(rng: RandomNumberGenerator) -> void:
-	var approaches := _inner_floor_approaches(_burning_side)
+	var approaches := _inner_floor_approaches(_BURNING_SIDE)
 	if approaches.is_empty():
 		return
 	var at: Vector2i = approaches[rng.randi_range(0, approaches.size() - 1)]
 	_spawn(_without_its_aftermath(EventCatalogue.by_id(_FIRE_ID)), _interior.tile_to_world(at))
 
 ## The masked man, at the foot of the stairwell the fire did not take, running its whole height.
+##
+## **One of him at a time, and there is always another.** *(2026-09-19: "then the pursuing guy
+## should respawn forcing to switch the side again.")* The fire shuts the left shaft part way down
+## and the rubble shuts the right one off the top floor, so the walk is left, across a hallway,
+## right — and a man who was spent after one run left the second half of that with nothing in it.
+## `_send_the_masked_man_again()` owns the clock; this is only the placement, called again with a
+## fresh instance each time so the telegraph, the wait and the line are the ones the first man had.
 ##
 ## **His path is the staircase itself**, asked of the map rather than drawn between the two
 ## landings: the landings alternate between the grammar's two `F` columns, so a straight line from
@@ -124,14 +173,13 @@ func _place_the_fire(rng: RandomNumberGenerator) -> void:
 ## neighbour is the level approach below it, so a door is always further from his line than the
 ## radius that takes the baby. `tests/test_interior.gd` measures that gap rather than assuming it.
 func _place_the_masked_man() -> void:
-	var side := "right" if _burning_side == "left" else "left"
-	var walk := _interior.stairwell_walk("stairwell_%s" % side)
+	var walk := _interior.stairwell_walk("stairwell_%s" % _PURSUED_SIDE)
 	if walk.size() < 2:
 		return
 	var path := PackedVector2Array()
 	for tile in walk:
 		path.append(_interior.tile_to_world(tile))
-	_spawn(EventCatalogue.by_id(_PURSUER_ID), path[0], path)
+	_pursuer = _spawn(EventCatalogue.by_id(_PURSUER_ID), path[0], path)
 
 ## The mouse a third of the way along the basement's own corridor, and the vents spread down the
 ## rest of it.
@@ -164,52 +212,39 @@ func _place_the_basement(rng: RandomNumberGenerator) -> void:
 		vent.until_the_next_blow = vent.period * float(i + 1) / float(sites.size())
 		_vents.append(vent)
 
-## Where each vent stands: one per entry in `Tuning.FINALE_STEAM_PERIODS`, spread evenly along the
-## corridor, each on the **middle of the passage** rather than on the tile centre she walks.
+## Where each vent stands: one on each of the corridor's one-tile-wide cells, at that cell's own
+## centre, in the order she meets them.
 ##
-## A vent closes the corridor because of where it stands, not because of how wide it is (see
-## `EventCatalogue.STEAM_VENT_BODY`), so it has to sit on the seam between a band's two rows — a
-## body centred on one row leaves her the other. That also decides which ground can carry one:
-## only a cell on a two-row east-west band, never one of the corridor's one-tile jogs, where there
-## is no seam to stand on and a body would be off centre in the only direction that matters.
+## *(2026-09-19: "there are only two steams and they are not blocking in any way they should go in
+## the narrow hallways.")* **A vent closes the corridor because of where it stands, not because of
+## how wide it is** (see `EventCatalogue.STEAM_VENT_BODY`), and the one place a 32px cloud is the
+## whole width is a passage one tile across: her centre has 16px of play either side of the middle
+## and a blow holds it 30px out, so no line past one exists. In a two-tile band there is no such
+## place — a body on the seam still leaves her the outside of it at the walls — which is what the
+## player walked past.
+##
+## The cells are the layout's (`InteriorScene.basement_narrows()`) rather than found by scanning,
+## so the gates are in the same three places every attempt: *"multiple fixed locations"*, and a
+## lost section is the same puzzle again rather than a different one. Each is checked against the
+## corridor's own walk here, because a gate she can go round is not a gate and nothing else would
+## notice if the layout and the walk ever stopped agreeing.
 func _vent_sites(walk: Array[Vector2i]) -> Array[Vector2]:
-	var eligible: Array[int] = []
-	for i in walk.size():
-		if _band_seam(walk[i]) != 0:
-			eligible.append(i)
 	var found: Array[Vector2] = []
+	var on_the_walk := {}
+	for tile in walk:
+		on_the_walk[tile] = true
 	var count: int = Tuning.FINALE_STEAM_PERIODS.size()
-	if eligible.size() < count:
-		push_error("the basement corridor offers %d places for %d steam vents"
-				% [eligible.size(), count])
+	var narrows := _interior.basement_narrows()
+	if narrows.size() != count:
+		push_error("the basement corridor offers %d one-tile gates for %d steam vents"
+				% [narrows.size(), count])
 		return found
-	var taken := {}
-	for n in count:
-		var wanted := int(round(float(walk.size()) * float(n + 1) / float(count + 1)))
-		var best := -1
-		for i in eligible:
-			if taken.has(i):
-				continue
-			if best < 0 or absi(i - wanted) < absi(best - wanted):
-				best = i
-		taken[best] = true
-		var tile: Vector2i = walk[best]
-		found.append(_interior.tile_to_world(tile)
-				+ Vector2(0.0, float(_band_seam(tile)) * InteriorScene.TILE * 0.5))
+	for tile in narrows:
+		if not on_the_walk.has(tile):
+			push_error("the steam vent at %s is not on the basement's own walk" % tile)
+			return []
+		found.append(_interior.tile_to_world(tile))
 	return found
-
-## `+1` when the other row of this cell's east-west band is below it, `-1` when it is above, `0`
-## when the cell is not on a two-row east-west band at all. Half a tile in that direction is the
-## seam down the middle of the passage.
-func _band_seam(tile: Vector2i) -> int:
-	if not (_interior.is_walkable(tile + Vector2i.LEFT)
-			and _interior.is_walkable(tile + Vector2i.RIGHT)):
-		return 0
-	var north := _interior.is_walkable(tile + Vector2i.UP)
-	var south := _interior.is_walkable(tile + Vector2i.DOWN)
-	if north == south:
-		return 0
-	return 1 if south else -1
 
 ## Every vent's own clock, one blow at a time. A blow is an ordinary `EventInstance` of the steam
 ## row: it gives its notice with no body, closes the corridor for `Tuning.FINALE_STEAM_BLOWS_FOR`,
@@ -266,6 +301,8 @@ func _physics_process(delta: float) -> void:
 	_retire_finished()
 	_explode_every_so_often(delta)
 	_blow_the_vents(delta)
+	_send_the_masked_man_again(delta)
+	_light_the_far_windows(delta)
 	if not _find_player():
 		return
 	_tell_them_where_she_is()
@@ -290,6 +327,42 @@ func _explode_every_so_often(delta: float) -> void:
 	if burst:
 		burst.resume(burst.def.telegraph_time, 0.0, INF)
 
+## The rest of the night: something going off far enough away that only the light reaches her.
+## *(2026-09-19: "the flashing lights in the window are too rare.")*
+##
+## **A picture and nothing else.** No `EventInstance`, no field, nothing on the meter — which is
+## the whole reason this is not simply a shorter `FINALE_EXPLOSION_INTERVAL`: the player asked for
+## the light and said nothing about the noise, and an explosion is loud by definition. A bang close
+## enough to shake the building still costs her exactly what it did.
+##
+## **The same call a near bang makes**, so every window in the building lights together and goes
+## dark together — *(2026-09-19: "all windows always need to flash together. a single window cannot
+## flash by itself.")* What separates the far flashes from the near ones is how often they happen
+## and what they cost, never which windows they reach.
+##
+## Nothing is logged for one either. The run log records what the code cannot recompute and what
+## answers an open question; a line every few seconds saying the windows lit would be neither, and
+## the loud bangs are already visible in the log through what they charge.
+func _light_the_far_windows(delta: float) -> void:
+	_until_the_next_distant_flash -= delta
+	if _until_the_next_distant_flash > 0.0:
+		return
+	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
+	_interior.flash_windows()
+
+## How long until the next one: a scaled Kumaraswamy draw, short-biased and smooth, bounded by
+## `Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
+## constant — see that constant's own doc for the formula and for why `B` is not a number to edit
+## by feel. **Its inverse CDF is closed form**, which is why this is one expression and not a
+## rejection loop: a loop would draw a variable number of values from the stream and make how many
+## times the windows flash depend on how many times the dice were rolled, so a seed would stop
+## replaying the same night.
+func _wait_for_the_next_distant_flash() -> float:
+	var u := _flashes.randf()
+	var span := Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS - Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS
+	return Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS \
+			+ span * sqrt(1.0 - pow(1.0 - u, 1.0 / Tuning.FINALE_DISTANT_FLASH_SHAPE_B))
+
 func _retire_finished() -> void:
 	var survivors: Array[EventInstance] = []
 	for instance in _instances:
@@ -299,6 +372,35 @@ func _retire_finished() -> void:
 			survivors.append(instance)
 	if survivors.size() != _instances.size():
 		_instances.assign(survivors)
+
+## Another masked man at the foot of the same shaft, `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` after
+## the last one finished — for as long as she is in the building, which is for as long as this node
+## is processing at all (see `stand_down()`).
+##
+## **A fresh instance rather than a rewound one**, which is what keeps him fair: a new
+## `EventInstance` waits at the foot until she is within `masked_pursuer.pursues_within` and then
+## spends its whole `telegraph_time` standing there before it moves, so every run he makes gives
+## the same notice the first one did. Resuming an old instance would hand her a man already at
+## speed, which is the one thing `still_while_telegraphing` exists to prevent.
+func _send_the_masked_man_again(delta: float) -> void:
+	if _pursuer != null:
+		# **His run is over when he is off the end of it**, not when his instance is finally
+		# deleted. A mobile row that has run out of path spends a leaving phase walking out of
+		# sight (`EventInstance._leave()`), which ends on whichever of `Tuning.OUT_OF_SIGHT` and
+		# `LEAVING_GIVES_UP` comes first — so a gap counted from the deletion would be the stated
+		# interval plus a leaving phase, and would not be the same length twice.
+		if is_instance_valid(_pursuer) and not _pursuer.is_leaving and not _pursuer.is_finished:
+			return
+		_pursuer = null
+		_until_the_next_pursuer = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
+		return
+	_until_the_next_pursuer -= delta
+	if _until_the_next_pursuer > 0.0:
+		return
+	# Reset before the placement, not after it: a building with no shaft to run places nobody, and
+	# a clock left at zero would try again on every frame for the rest of the section.
+	_until_the_next_pursuer = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
+	_place_the_masked_man()
 
 func _find_player() -> bool:
 	if not _player or not is_instance_valid(_player):

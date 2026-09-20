@@ -285,20 +285,41 @@ static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment, def: Ev
 				found.append(tile)
 	return found
 
-## How far from the tile she is put down on a row of this kind may not be offered ground.
+## How far from the tile she is put down on a row of this kind may not be offered ground — the
+## wider of the two things she can arrive *inside* of: a body, and a lethal field.
 ##
-## **Her body plus its body, and half a tile on top.** The half tile is not a margin of taste: a
+## **A body is her body plus its body.** The half tile on top of it is not a margin of taste: a
 ## stationary, unpinned body is moved from the lane tile the scheduler chose to the middle of the
 ## pavement band by `EventInstance._centred_on_the_pavement_band()` when the instance is built, and
 ## the two lane centres sit `TILE_SIZE * 0.5` either side of that middle — so the ground a
 ## placement finally stands on is up to half a tile from the tile this loop is looking at, and the
 ## exclusion has to cover where it *ends up* rather than where it is rolled.
 ##
-## A row with no body needs none of this: nothing about it can be stood inside.
+## **A lethal field is its whole `outer_radius`**, which is a different and much wider question.
+## *(2026-09-19: "I still spawn with flashing !!! in the city.")* The doubled exclamation mark over
+## her head means *this will end your day*, and `EventManager._warn_about_the_ground_she_is_on()`
+## raises it for any `hard_fail` row still telegraphing — or still waiting to notice her — whose
+## **outer** radius covers her, because that radius is exactly what the fairness contract promises
+## her time to walk out of. A row placed inside it has therefore already spent her notice before
+## she has taken a step, which is the same defect as a body on her spawn read one field wider: on
+## the seed the player walked, an `abduction` van stood 143px away with a 250px field.
+##
+## So the ground she is put down on is not ground a lethal row is ever offered either. Refused here
+## rather than cleared up afterwards, for the reason `_finale_ground()` gives: a pass that placed a
+## van on her and a later one that moved it would leave the guarantee resting on the repair. The
+## half tile is carried for a lethal row too, since the same recentring moves it.
+##
+## A row with neither a body nor a lethal field needs none of this: nothing about it can be stood
+## inside, and nothing about it raises the mark.
 static func _clearance_around_her(def: EventDef) -> float:
-	if def.obstructs_radius <= 0.0:
+	var reach := 0.0
+	if def.obstructs_radius > 0.0:
+		reach = def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+	if def.hard_fail:
+		reach = maxf(reach, def.outer_radius)
+	if reach <= 0.0:
 		return 0.0
-	return def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
+	return reach + Tuning.TILE_SIZE * 0.5
 
 ## A row with whatever it ordinarily leaves behind taken off it — the scar it records against the
 ## run and the successor it spawns when it finishes. The convoy is the only caller: what it leaves

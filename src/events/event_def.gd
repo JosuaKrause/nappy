@@ -677,8 +677,43 @@ func detain_distance() -> float:
 ## only two rows that set it. `EventManager._check_detentions()` is what reads it.
 @export var redetains := false
 
-## Entering the inner radius ends the day immediately.
+## Entering the lethal radius ends the day immediately.
 @export var hard_fail := false
+
+## How close the thing that ends the day has to get, in px, when that is **not** the field's own
+## core. `0.0`, the default and true of almost every row, means `inner_radius` — the two are one
+## number for anything whose noise and whose reach are the same object.
+##
+## **It exists for a row whose killer is not the thing the field is drawn around.** A roadblock's
+## field is a street being held: a wide band of shouting, cored on the barrier. What takes the
+## baby is a man, at a man's reach, and he walks out of that band to do it — so sizing the catch
+## off the field would price a person's arms at the width of a barricade. `lethal_reach()` is what
+## every caller asks; `inner_radius` stays the field's own, so moving one never silently moves the
+## other.
+##
+## Must sit inside the core when it is set: a kill that fired out in the falloff band would be one
+## she could take while the thing is still quiet, and the core is the shell that is at full
+## strength and therefore unmistakable.
+@export var lethal_radius := 0.0
+
+## The distance that ends the day — `lethal_radius` where a row sets one, the field's own core
+## otherwise. The form every caller wants, so no call site has to know which kind of row it holds.
+func lethal_reach() -> float:
+	return lethal_radius if lethal_radius > 0.0 else inner_radius
+
+## Whether this row's body is a **fixture of the street** that a pursuer leaves standing, rather
+## than the pursuer's own bulk.
+##
+## Ordinarily a pursuer's obstruction comes down the frame it stops waiting — *"a moving pursuer
+## with a body is a wall"*, and a van that kept one would pin her against a building. A roadblock
+## is the other case: the barrier is built across the road and the man who leaves it does not take
+## it with him, so the street he abandoned stays shut behind him. `EventInstance` pins the body at
+## the place it was left instead of freeing it, and draws the barrier there too, so the picture and
+## the physical street agree for the whole of the event's life.
+##
+## Only meaningful on a row that can pursue, which `validate()` requires: a fixture that never
+## chases has nothing to leave its body behind *from*.
+@export var body_stays_behind := false
 
 ## Exempt from the cost rule's wall and friction placement — `EventScheduler._role_for` answers
 ## `NONE` for it before the cost check ever runs, so `_copies_of` neither pulls it off the
@@ -934,11 +969,31 @@ func validate() -> bool:
 	# where her centre actually comes to rest: a row solid only in parts leaves ground inside its
 	# own disc that she can walk onto, so the disc bound would refuse an arrangement that in fact
 	# lets the kill fire. The two numbers are the same for every row that is one piece.
-	if hard_fail and solid_reach() > 0.0 \
-			and solid_reach() + Tuning.PLAYER_BODY_RADIUS >= inner_radius:
+	#
+	# **And it is a rule about a thing that stands still, which is why a pursuer is outside it
+	# rather than excepted from it.** The inference only holds while the body and the thing that
+	# kills are the same point: a pursuer's is not, because it comes to her — every one of them
+	# either drops its body the frame it starts hunting or, with `body_stays_behind`, walks out of
+	# a body it leaves standing. Either way the kill fires from ground the body does not cover, so
+	# there is nothing here to check. `tests/test_heat.gd` holds that pair, so the exemption cannot
+	# quietly become a loophole for a pursuer that kept its body and carried it along.
+	if hard_fail and not pursues and solid_reach() > 0.0 \
+			and solid_reach() + Tuning.PLAYER_BODY_RADIUS >= lethal_reach():
 		push_error("event '%s' is lethal inside %.0fpx and solid to %.0fpx: with her own %.0fpx "
-				% [id, inner_radius, solid_reach(), Tuning.PLAYER_BODY_RADIUS]
+				% [id, lethal_reach(), solid_reach(), Tuning.PLAYER_BODY_RADIUS]
 				+ "she is stopped before she can ever reach it")
+		return false
+	# A catch out in the falloff band is a catch she can take while the thing is still quiet. The
+	# core is the shell at full strength, so a reach inside it is a reach she can hear coming.
+	if lethal_radius > 0.0 and lethal_radius > inner_radius:
+		push_error("event '%s' catches at %.0fpx, outside the %.0fpx core of its own field"
+				% [id, lethal_radius, inner_radius])
+		return false
+	# A body left behind has to be left behind *by* somebody: a fixture that never chases has
+	# nothing to walk out of its own barrier.
+	if body_stays_behind and not pursues and heat_response != HeatResponse.HUNTS:
+		push_error("event '%s' leaves its body behind but never pursues, so nothing ever leaves it"
+				% id)
 		return false
 	# A conversation is a cost, never a threat: it takes her controls rather than her body or her
 	# distance, and a row that could also kill or chase her would be able to do both at once.
@@ -953,7 +1008,7 @@ func validate() -> bool:
 					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
 					% [inner_radius, outer_radius]))
 			return false
-	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius,
+	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(),
 			telegraph_time, pursues_within, outer_radius):
 		return false
 	# The day-switched trigger is a second shape of the same contract and nothing else exercises
@@ -961,7 +1016,7 @@ func validate() -> bool:
 	# orthogonal to heat, so `pursues_within_after_first_day` would otherwise go unchecked until a
 	# run actually reached the day that reads it.
 	if pursues and pursues_within_after_first_day > 0.0 \
-			and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius, telegraph_time,
+			and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(), telegraph_time,
 					pursues_within_after_first_day, outer_radius):
 		return false
 	if pursues:

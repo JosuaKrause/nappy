@@ -55,6 +55,7 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	var stroller := Stroller.new()
 	stroller.add_child(camera)
 	t.add_child(stroller)
@@ -115,6 +116,7 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
 
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	var stroller := Stroller.new()
 	stroller.add_child(camera)
 	t.add_child(stroller)
@@ -336,6 +338,7 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	var stroller := Stroller.new()
 	stroller.add_child(camera)
 	t.add_child(stroller)
@@ -374,6 +377,7 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	var stroller := Stroller.new()
 	stroller.add_child(camera)
 	t.add_child(stroller)
@@ -496,6 +500,7 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	var stroller := Stroller.new()
 	stroller.add_child(camera)
 	t.add_child(stroller)

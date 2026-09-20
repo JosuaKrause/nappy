@@ -497,11 +497,12 @@ a shut street is the street with nobody on it, and that is legible from a block 
 - **There is no cue of any kind toward calm, except one faint trial.** No marker, no map, no HUD
   line, nothing on the ground — bar M145, which tints the route's own curbstones, the stone strip
   along the pavement's edge, a faint yellow (`Palette.ROUTE_KERB_TINT`, blended in by
-  `Tuning.ROUTE_KERB_TINT_ALPHA`). The tint follows the tree's own pavement: a kerb tile carries it
-  when the day's route tree actually runs along it (`RouteTree.branches_on`), never the street's far
-  side as well, since a route never crosses the carriageway mid-block. The trial's question is
-  whether a hint this quiet can stay below being noticed as one; alpha zero is the off switch the
-  moment it cannot. "Planning-time legibility" is named a paragraph above as not existing.
+  `Tuning.ROUTE_KERB_TINT_ALPHA`). The tint marks the whole street the day's route tree runs
+  along, both kerb lines, from intersection to intersection (`Corridor.depth() == 0`) — never a
+  street the tree only crosses at a junction, since a junction cell belongs to no street segment
+  (`StreetNetwork.segment_containing`). The trial's question is whether a hint this quiet can stay
+  below being noticed as one; alpha zero is the off switch the moment it cannot. "Planning-time
+  legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
   a near half and a far half — is designed and not built; see `docs/TODO.md`.
 - **Blockers are not placed to guide anybody**, which is the whole of it. The design is below.
@@ -834,10 +835,11 @@ it unimpeded."*
 **And the side that has to stay open is the one the route is drawn down**, which is the same
 sentence one grain finer: *"on the side of the street where the path was chosen only obstacles that
 can be bypassed should be possible."* A branch runs along one sidewalk of a street — the growth
-graph has no mid-block carriageway in it — and the kerb tint marks that sidewalk, so a row closing
-it has taken the line the day is pointing at even where the street as a whole is still walkable.
-The far side staying open is not an answer to that; it is the ground she would have to have been
-sent down instead.
+graph has no mid-block carriageway in it — and that sidewalk is what a row closing it has taken
+the line the day is pointing at, even where the street as a whole is still walkable and the kerb
+tint (which marks the whole street, not the one sidewalk) still reads as open. The far side
+staying open is not an answer to that; it is the ground she would have to have been sent down
+instead.
 
 **The numbers make this shape rather than an unlucky roll.** An ordinary street is 192px kerb to
 kerb and a sidewalk 64px of it, and the loudest rows deny more than either from wherever they

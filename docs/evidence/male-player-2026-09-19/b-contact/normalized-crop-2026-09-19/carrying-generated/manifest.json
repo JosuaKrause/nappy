@@ -1,0 +1,72 @@
+{
+  "status": "review of preserved pre-final father carrying PNGs; no art changes",
+  "directions": [
+    [
+      "N",
+      "back",
+      false,
+      -90
+    ],
+    [
+      "NE",
+      "back_diagonal",
+      false,
+      -45
+    ],
+    [
+      "E",
+      "side",
+      false,
+      0
+    ],
+    [
+      "SE",
+      "front_diagonal",
+      false,
+      45
+    ],
+    [
+      "S",
+      "front",
+      false,
+      90
+    ],
+    [
+      "SW",
+      "front_diagonal",
+      true,
+      135
+    ],
+    [
+      "W",
+      "side",
+      true,
+      180
+    ],
+    [
+      "NW",
+      "back_diagonal",
+      true,
+      225
+    ]
+  ],
+  "loop": [
+    "a",
+    "c",
+    "b",
+    "c"
+  ],
+  "frame_ms": [
+    190,
+    190,
+    190,
+    190
+  ],
+  "input_manifest_sha256": "89bdfa2a30461d9671f4197362013a737219468a8723a4e76a27e2230bb6962f",
+  "outputs": {
+    "carrying-6x.gif": "8db8d5df2e78010b8ef726eeb0aa147472163a79b66faf9cd477e71abbdd93ab",
+    "carrying-native.gif": "a4d65998afc1e5fe82fc2908a2eb2b3a092260a159b1320c83ce7b67b340b1fb",
+    "carrying-spritesheet-6x.png": "ac42c2c13760235f460aa2a74ab89c6ce2c838eb9e94a94d8c799a77790453b7",
+    "carrying-spritesheet-native.png": "a2b3bd0425569295f1d4e4fb02cdf913bc2eb996a32cac5066a8e66875adcbfa"
+  }
+}

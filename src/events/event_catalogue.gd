@@ -17,11 +17,16 @@ const PERSON_BODY := 11.0
 const VEHICLE_BODY := 22.0
 ## `steam.svg` is 32px across. Half the silhouette like every other body here, and what makes a
 ## vent a **gate** rather than a lane to thread is where it stands rather than how wide it is: on
-## the middle of a basement corridor two tiles (64px) deep, her centre is held 30px out, and the
-## walls leave her centre only 18px either side of that middle. So there is no line past a vent
-## that is blowing, which is the whole of the timing puzzle — and nothing about the picture had to
-## be exaggerated to get it.
+## a cell where the basement corridor is one tile (32px) wide, her centre is held 30px out and the
+## walls leave it 16px either side of the middle. So there is no line past a vent that is blowing,
+## which is the whole of the timing puzzle — and nothing about the picture had to be exaggerated
+## to get it.
 const STEAM_VENT_BODY := 16.0
+## How close a masked man gets before he has the baby. One number for both of them: the man on the
+## escape's stairs (`masked_pursuer`) and the guard who leaves a `roadblock` are the same figure,
+## and a reach is a property of a person rather than of where he happens to be standing. Stated
+## here rather than at either row, because a second copy of it is how the two quietly drift apart.
+const MASKED_MAN_REACH := 28.0
 ## The widest a `_draw_spread`-style body (`EventInstance._draw_spread`, `_draw_cafe`) may be on a
 ## `SIDEWALK` tile before it draws past the pavement it stands on.
 ##
@@ -1469,34 +1474,34 @@ static func _curfew_announce() -> EventDef:
 ## rounding (`GroundShape.BAND_RADIUS`) and clamped there — a field cannot start inside the capsule
 ## that is already solid. That clamp is no longer where `inner_radius` ends up; see below.
 ##
-## **`heat_response = HUNTS`, the lethal rung `abduction` and `night_raid` already climb.** A band
-## cannot chase — the guards leave their post instead: the moment a heated copy stops
-## `is_waiting()`, `_draw_roadblock()` swaps the barrier for `guard_standing.svg` (still
-## telegraphing) and then `guard_lunging.svg` (actually giving chase), the same `is_waiting()`/
-## `is_telegraphing()` switch `_draw_robber()` and `_draw_cat()` already read. **The band stays
-## exactly as it is until then, and nothing is left behind once the guards go**: its own
-## `heat_response` says nothing about that interval, and the smaller of the two rules available is
-## to add none — the generic pursuer rule in `EventInstance._process()` already frees the band's own
-## obstruction the same frame it stops waiting ("a moving pursuer with a body is a wall"), so no
-## phantom barrier is left blocking a street its own guards have abandoned.
+## **`heat_response = HUNTS`, the lethal rung `abduction` and `night_raid` already climb**, and a
+## **guard stands at the barrier from the moment it is placed**. *(2026-09-19: "the guard needs to
+## be at the barrier from the beginning, standing. only then does it make sense for it to start
+## pursuing.")* Cold he is a drawing and nothing else — no field, no body and no cost of his own,
+## all of which belong to the band. Once a heated copy notices her, **he** is what sets off, from
+## exactly where he was standing: the instance becomes the man, and `body_stays_behind` pins the
+## barrier's body and picture at the post for the rest of the event's life. Nothing appears,
+## nothing disappears, and the street he abandoned stays shut behind him — which is the point of
+## leaving a barrier rather than dissolving one.
 ##
-## **`inner_radius` raised from 24 to 86, for the reachability check rather than the M61 derivation
-## above.** `EventDef.validate()` refuses a `hard_fail` body that reaches inside its own lethal
-## radius: the band's `obstructs_radius` (60, `band(60)`'s own `reach()`) plus her 14px
-## `Tuning.PLAYER_BODY_RADIUS` is 74, over the old 24 by 50px, so a hunting copy's kill could never
-## fire. 86 leaves the same 12px margin `night_raid` carries (70 − 58). `outer_radius` and
-## `telegraph_time` (1.8s) are unmoved **cold**: the narrower cold field this leaves (93px against
-## the old 155) still clears `Tuning.required_telegraph_time()` with room to spare, and
-## `Tuning.validate_pursuit()`'s own clauses hold at this radius against the shared
-## `HEAT_HUNTS_SPEED`/`HEAT_HUNTS_WITHIN`/`PURSUIT_TIME` — see `tests/test_heat.gd`,
-## `_test_the_roadblock_hunts_past_its_own_threshold`.
+## **The catch is a man's reach, not a barrier's.** `lethal_radius` is 28px, read off
+## `masked_pursuer` — the same row, the same fiction, the same distance at which a masked man in
+## this game takes the baby. It is a separate number from `inner_radius` because the field and the
+## killer are no longer the same object: the field is a street being held and is cored on the
+## band, while what ends the day is a pair of arms. `EventDef.validate()` has nothing to say about
+## the band's own 60px body here for the same reason it has nothing to say about any pursuer's —
+## the man walks out of it before he can kill.
+##
+## **`inner_radius` 86 is the field's core and is bounded by nothing.** It is where full strength
+## ends and the falloff begins, and it is what the cost table is stated against; there is no longer
+## any reachability arithmetic pulling on it.
 ##
 ## **The 179px cold field sits under the shared 180px trigger, which the 24px `abduction` and
 ## `night_raid` never had to notice because their own fields (250/330) already cleared it.**
 ## `EventDef.at_heat()` widens only the hunting copy's `outer_radius` to `maxf(outer_radius,
 ## pursues_within)` — the smallest fix that holds for every `HUNTS` row rather than one that asks
 ## a row's cold field to carry a number that belongs to the ladder — so the roadblock's own 179px
-## field is exactly what it was cold, and only the moment its guards start hunting reaches 180px.
+## field is exactly what it was cold, and only the moment its guard starts hunting reaches 180px.
 ## `tests/test_heat.gd`'s generic loop (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) is what
 ## catches a row whose field sits under the trigger; this one is the row that found it.
 static func _roadblock() -> EventDef:
@@ -1512,6 +1517,10 @@ static func _roadblock() -> EventDef:
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
 	def.solid(GroundShape.band(60.0))
+	# A man's reach, taken from `masked_pursuer` rather than written twice: the guard who leaves
+	# this post and the masked man on the escape's stairs are the same figure doing the same thing.
+	def.lethal_radius = MASKED_MAN_REACH
+	def.body_stays_behind = true
 	def.weight = 2.0
 	def.max_per_day = 6
 	def.cost = 2
@@ -2226,7 +2235,7 @@ static func _masked_pursuer() -> EventDef:
 	def.shape = GroundShape.point(9.0)
 	def.act_tag = 4
 	def.intensity = 18.0
-	def.inner_radius = 28.0
+	def.inner_radius = MASKED_MAN_REACH
 	def.outer_radius = 120.0
 	def.telegraph_time = 3.6
 	def.mobile = true

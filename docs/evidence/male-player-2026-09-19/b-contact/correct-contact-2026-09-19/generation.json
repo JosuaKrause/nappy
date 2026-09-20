@@ -1,0 +1,26 @@
+{
+  "tool": "OpenAI built-in imagegen",
+  "date": "2026-09-19",
+  "attempt": 1,
+  "prompt": "prompt.txt",
+  "prompt_sha256": "9dc6253846ed5bca4089fbc3b31c0322cd09c6519ca15952a0714230ae6112c1",
+  "referenced_images_in_order": [
+    {
+      "path": "inputs/normalization-targets.png",
+      "sha256": "7e56e1dddfb0a8402fbbb07d83806c981883b45f4329489056935ec86a821c8d"
+    },
+    {
+      "path": "inputs/father-above-pelvis-reference.png",
+      "sha256": "50d531bb2a5415a20e8fdbc331e9ec210a1d052ca38c7f2c0887b409699e9738"
+    },
+    {
+      "path": "inputs/correct-donor-leg-reference.png",
+      "sha256": "515213adc05327757cec2fdaa0223f21464fc256747a6abd04a9cf90eb205431"
+    }
+  ],
+  "original_output": "/Users/krause/.codex/generated_images/01a0bb8e-4ffb-7022-980d-105a4c491a25/exec-990996f2-6146-4e23-8885-498901386415.png",
+  "preserved_output": "raw/normalized.png",
+  "output_dimensions": [1376, 1143],
+  "output_mode": "RGBA",
+  "output_sha256": "0ec2cc8eef27aa3c7ee9275e96c5cd770f72f795bb7b943cd88fa06533790be0"
+}

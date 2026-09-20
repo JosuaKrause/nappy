@@ -2186,9 +2186,65 @@ const FINALE_EXIT_REACH := TILE_SIZE * 1.5
 ## hallway windows to flash more than once without the basement becoming a drum.
 const FINALE_EXPLOSION_INTERVAL := 22.0
 
-## How long a hallway window holds its lit picture when an explosion goes off — *"one or two
-## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
+## How long **every** hallway window holds its lit picture when something goes off outside — *"one
+## or two frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
+## The same length for the near bang and the far ones, and they light and go dark together:
+## *(2026-09-19: "all windows always need to flash together. a single window cannot flash by
+## itself.")*
 const FINALE_WINDOW_FLASH_SECONDS := 0.12
+
+## The wait between two **distant** flashes in the hallway windows, as a bounded distribution
+## rather than a period. *(2026-09-19: "the flashing lights in the window are too rare"; and, on
+## how often: "do a biased random distribution between 100ms and 5s between flashes where the mean
+## is 1.3s and the rest of the curve is smooth.")*
+##
+## **Light without noise, and that is the whole of why these exist.** A flash was only ever the
+## near bang's own cue, one every `FINALE_EXPLOSION_INTERVAL` (22s), which is about four over the
+## whole clock — and an explosion is loud: shortening that interval would have made the windows
+## flash more often and made the building cost more in the same stroke, which the player did not
+## ask for. A distant flash is a picture and nothing else: no instance, no field, nothing on the
+## meter. So the night outside reads as a city being shelled, while what she is *charged* for is
+## still only the bangs close enough to shake the building.
+##
+## **A scaled Kumaraswamy draw**, because it is the short-biased smooth curve on a closed interval
+## whose inverse CDF is one line — no rejection loop, no table, and a draw that cannot fall outside
+## the bounds. With `u` uniform in `[0, 1)` from the section's own seeded stream:
+##
+##     t = MIN + (MAX − MIN) · sqrt(1 − (1 − u)^(1 / B))
+##
+## The `sqrt` is the first shape parameter fixed at 2, which is what makes the density zero at both
+## ends rather than piling up against them; **`FINALE_DISTANT_FLASH_SHAPE_B` is the only thing that
+## sets the mean**, solved numerically so that the mean lands on
+## `FINALE_DISTANT_FLASH_MEAN_SECONDS` — so moving the mean means solving `B` again, not editing it
+## by feel. At `B = 12.343` the curve measures out at a mean of 1.298s, a median of 1.24s, a mode
+## near 1.1s and a 95th percentile of 2.37s: mostly quick double-taps with the occasional long
+## dark gap, and no step anywhere in it.
+##
+## **The interval runs start to start**, so a 0.1s draw against a
+## `FINALE_WINDOW_FLASH_SECONDS` (0.12s) flash means two of them overlap. That is wanted — it reads
+## as a double flash — and the lit state is a single countdown that the second flash simply
+## restarts, so an overlap never blinks dark for a frame and never leaves a window lit.
+##
+## **How often is the only thing that separates a far flash from a near one.** Both light every
+## window in the building together (`InteriorScene.flash_windows()`); what a bang adds is the
+## charge on the meter.
+const FINALE_DISTANT_FLASH_MIN_SECONDS := 0.1
+const FINALE_DISTANT_FLASH_MAX_SECONDS := 5.0
+const FINALE_DISTANT_FLASH_MEAN_SECONDS := 1.3
+const FINALE_DISTANT_FLASH_SHAPE_B := 12.343
+
+## How long after the masked man has finished his run before another one comes up the same shaft,
+## in seconds. *(2026-09-19: "then the pursuing guy should respawn forcing to switch the side
+## again.")*
+##
+## **Stated against what one run costs her rather than against a feeling.** A shaft is three floors
+## of eight tiles (768px) and he runs it at `HEAT_HUNTS_SPEED` (130px/s), so a run is about six
+## seconds, and he spends `masked_pursuer.telegraph_time` (3.6s) standing at the foot before it.
+## Six seconds of nothing against that is a shaft that is his about two thirds of the time: long
+## enough that stepping out of a door and straight back in is a real answer, short enough that
+## waiting one out and strolling down is not. It is a first number and the one to move if the
+## shaft reads as either a corridor with a man in it or a corridor with a man near it.
+const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
 
 ## The basement's steam vents, one entry per vent: how often each one blows, in seconds.
 ##
@@ -2198,21 +2254,31 @@ const FINALE_WINDOW_FLASH_SECONDS := 0.12
 ## can be written down.
 ##
 ## **Three, and no two periods share a factor with each other**, which is the whole of what makes
-## the corridor a puzzle instead of a rhythm: 13, 16 and 19 half-seconds are pairwise coprime, so
-## the pattern the three of them make together only repeats after their product — 1976s, ten times
-## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than more
-## because the basement's corridor is about forty tiles end to end and a vent closes it outright:
-## a fourth would make the walk a queue of gates rather than a route with waits in it.
-const FINALE_STEAM_PERIODS: Array[float] = [6.5, 8.0, 9.5]
+## the corridor a puzzle instead of a rhythm: 8, 9 and 11 half-seconds are pairwise coprime, so the
+## pattern the three of them make together only repeats after their product — 396s, more than twice
+## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than
+## more because the basement's corridor is about forty tiles end to end and a vent closes it
+## outright: a fourth would make the walk a queue of gates rather than a route with waits in it.
+##
+## **The floor under all three is what one crossing costs, not taste.** *(2026-09-19: "the steam
+## frequencies are too slow.")* A vent stands on a one-tile cell and holds her centre
+## `EventCatalogue.STEAM_VENT_BODY` + `PLAYER_BODY_RADIUS` (16 + 14 = 30px) out, so clearing it
+## means covering 60px — 0.65s at `WALK_SPEED` (92px/s). A vent's corridor is shut for
+## `FINALE_STEAM_BLOWS_FOR` and open for the rest of its period, so the shortest period leaves
+## `4.0 − 2.0 = 2.0s` of open corridor against that 0.65s: a second and a third of margin, which is
+## the "at least a second" a gate owes somebody who started walking a moment too late. Anything
+## under 3.7s would stop owing it.
+const FINALE_STEAM_PERIODS: Array[float] = [4.0, 4.5, 5.5]
 
 ## How long one vent blows, in seconds, once its notice is over — the *on* half of the on/off
 ## split, against the periods above.
 ##
-## **Short against every period**, so every vent is off far more than it is on: with the row's own
-## notice ahead of it a cycle is 3.2s of something and 3.3–6.3s of nothing, and a gap she can walk
-## through is the thing she is waiting for. And short in its own right, because a vent closes a
-## corridor with no way round it: the pocket between two of them is only ever shut for as long as
-## the shorter of the two is blowing, which is this.
+## **Short against every period**, so a vent's corridor is open for longer than it is shut: this is
+## the whole of the shut half, and the shortest period leaves twice as long open again. A gap she
+## can walk through is the thing she is waiting for, and `FINALE_STEAM_PERIODS` states the floor
+## under that gap. Short in its own right too, because a vent closes a corridor with no way round
+## it: the pocket between two of them is only ever shut at both ends for as long as the shorter of
+## the two overlaps, which is bounded by this.
 const FINALE_STEAM_BLOWS_FOR := 2.0
 
 ## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of

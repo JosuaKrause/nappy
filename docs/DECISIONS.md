@@ -52,6 +52,216 @@ sidewalk.
 
 **Left alone:** `_closes_the_run`, the pacing rule's street-wide check, makes the same raw-corner
 assumption the artifact exposed; nothing measured exercises it.
+## Pull requests are squash-merged — 2026-09-19
+
+The player, looking at a commit view that listed every branch commit: "I'm pondering whether we
+should move to squash merges?" … "commit messages shouldn't really contain information that
+isn't written elsewhere as well" … on the squash message: "I prefer \"Pull request title and
+description\"" … "I deactivated the other modes". Until then every milestone was merged
+`--no-ff` and the merge commits were called the project's spine.
+
+**Weighed.** For merge commits: per-item revert and bisect inside a milestone, and reasoning
+kept in branch commit messages. Against: branches carry WIP commits and merges of `main`, so a
+bisect inside one is rarely clean; the reasoning is in `DECISIONS.md` anyway; and GitHub's
+commit view has no first-parent mode, so `main` read as noise there. The squash message
+"title and commit details" was rejected because it copies that noise onto `main`; "title and
+description" keeps the one text that is curated before a merge.
+
+**What changed with it.** `git branch -d` refuses a squash-merged branch, so branch cleanup
+asks GitHub for the PR's state and compares the merged head with the local tip before `-D`.
+Evidence links pinned to a branch commit rest on GitHub keeping `refs/pull/<n>/head`; the
+player confirmed it: "I think images will survive if you use the commit hash" … "only branch
+names disappear". A check that fetched one link after each merge was drafted and dropped on
+that answer.
+
+## M171, the atlas design — 2026-09-19
+
+[PLAYTEST-108](playtests/PLAYTEST-108.md): *"I think we should focus on fixing the structure of
+texture/sprite atlases. the implementation we currently have is not great"*. The contract is
+[PLAYTEST-105](playtests/PLAYTEST-105.md)'s. A read-only inventory preceded the design.
+
+**What the inventory found.** 453 `preload` constants for SVGs (258 in `event_instance.gd`, 70
+in `stroller.gd`, 40 in `building.gd`, 30 in `crowd_agent.gd`), four runtime `load()` sites, and
+58 SVG references in `assets/ground_tileset.tres`; no PNG is ever preloaded, the illustrated
+PNGs arriving only through `TextureResolver`'s path mapping. A picture was resident up to four
+times: the preload constant, the resolver's cache — whose `warm()` loaded the SVG *and* its PNG —
+the pack's own `sources` array, and the atlas; `release()` freed the last only. Packing read
+each picture back from the GPU on the main thread; the crowd's first pack blocked inside a draw
+call; the ground recomposed and repacked synchronously on every day repaint. Three packers
+(`TextureAtlas`, `GroundLayers.pack_into_one_texture()`, `CrowdAtlas`) and four hand-kept source
+tables mirrored the draw code, and every draw site could draw either the region or the source.
+Buildings, the interior, closures, checkpoints, traffic lights, the city edge and the UI were
+not atlased at all. All 610 SVG imports use scale 1.0, no compression and `fix_alpha_border`;
+the in-game catalogue is about 1.15 megapixels and the events about 0.43, so every family fits
+one page well inside 2048px. Illustrated PNGs exist for the rig, tiles, tile layers and 19 props.
+
+**Chosen: the engine bakes, headless.** Same rasterizer as the importer, and it can run the
+ground's own code. **Rejected: a Python baker** — it needs a second SVG rasterizer whose
+antialiasing differs, which breaks pixel parity and the curb colour-match tolerance, and it
+cannot reproduce Godot's `hash()` and random generator. **Rejected: the engine's built-in 2D
+atlas import mode**, understood (not verified here) to keep per-source resources and not to
+serve a TileSet. **Rejected: leaving sources in `assets/` behind an export filter** as the end
+state, since a development run could still load a constituent silently.
+
+**The player's answers**, recommendation first where it was refused:
+
+- Mode: *two separately built resources selected before load (PLAYTEST-105) · overturned by the
+  player* — "png vs svg mode now should happen at build time -- so we always get png mode -- if
+  we really want svg mode we need to run a custom build command locally (no need to have this in
+  the release version)".
+- "baked on demand. for running locally check the source hashes."
+- "move them out but make sure every reference gets updated so we don't have stale instructions
+  or comments (code will fail but documentation will not)".
+- "we can do one events page for now".
+- *Recommended: grass variants and the route-curb tint as bake outputs · refused* — "no, we bake
+  each individual item and the composite at runtime. this is not a bottleneck and it allows for
+  variety. if we baked everything either we would need to make the atlas huge or we would lose
+  variety."
+
+**Open to overturn, stated to the player and not spoken to:** no desktop export is in scope;
+the identity images leave the game package; a family with no illustrated PNG is the same pixels
+in either bake. The staging into seven pull requests is the orchestrator's, drawn so that the
+three consumer moves touch disjoint files and the ground and the events wait for the work that
+shares their files. The player also set the order: M163 before, M159 after.
+
+## M163 — The ground atlas test builds the same reference it compares · built 2026-09-19
+
+> "create a todo for the bug report with enough detail to pick it up without additional
+> investigative work"
+
+`./tools/test.sh ground_layers` printed one engine error, `No TileSet atlas source with id N`,
+for each of the eight route-curb twin sources (IDs 58 to 65), reported no failure and exited 0.
+The defect was in the test, not in production: `GroundLayers.build_tile_set()` registers the
+twins in both presentation modes, and the test's reference builder `_unpacked_tile_set(true)`,
+the forced-SVG path, resolved the authored sources and never called the registrar. The packed
+TileSet had 66 sources and its reference 58; `TileSet.get_source()` printed the error, returned
+null, and the comparison skipped the eight generated sources.
+
+**Built.** The reference builder mirrors production's own branch: `_register_route_kerb_twins(
+result, {})` for SVG, `_compose_layers()` for PNG, with `GroundTiles.ROUTE_KERB_TWIN` and the
+production registrar still the only place the IDs are written. The test asserts that the packed
+and reference source counts agree and asks `reference.has_source(id)` before `get_source(id)`,
+so a missing reference fails by name and never reaches the engine.
+
+**Measured.** Before: 8 engine errors, 21191 checks, 0 failures, exit 0. After: 0 lines matching
+`ERROR:`, `SCRIPT ERROR`, `Parse Error` or the missing-source message, 21373 checks, 0 failures.
+With the registrar call replaced by `pass`: exit 1, no engine error, 9 failures, the count
+("66 against 58") and one named failure per ID 58 to 65. `tests/test_ground_layers.gd` is the
+only file changed. It landed before M164, engine errors make the test gate red, so that the
+gate does not go red on a known fixture error, and before M171, build-time atlases, which
+rewrites what this suite guards.
+
+## M170 — The route's tint is on both sides of the street · built 2026-09-19
+
+> "let's do the mark for the correct path on the full segment (both sides) again -- that way those
+> obvious problems now (with obstacles on the path side but no obstacle on the other side) are not
+> obvious anymore -- I can still confirm whether you actually fixed those issues via the path
+> debug view." · "also the full street segment from intersection to intersection -- no signle
+> street tiles" ([PLAYTEST-97](playtests/PLAYTEST-97.md))
+
+*Asked for one side on 2026-09-15 ([PLAYTEST-76](playtests/PLAYTEST-76.md), built as M150) ·
+overturned by the player to both sides on 2026-09-19, because a one-sided mark makes a wall on the
+marked side obvious against the empty sidewalk opposite.* One agent commit on
+`feature/m170-route-tint-both-sides`; the stills are
+`evidence/m170-route-tint-both-sides-2026-09-19/`.
+
+**What it is.** `City._tint_the_route_kerbs()` asks `Corridor.of(_tree).depth(tile) == 0` again,
+the reading M145 had and M150 replaced with `_tree.branches_on(tile)`. `depth()` answers at the
+grain of a whole street segment, which gives both of the player's sentences at once: both curb
+lines, and the whole segment whenever the tree walks any cell of it, so a route that leaves a
+street through an alley or ends at a park partway along still tints it end to end. Nothing else
+moved: the route lines of debug layer `5` and every placement rule keep reading the tree's own
+sidewalk, which is how the player checks M129's walked-sidewalk rule against the ground.
+
+**Checked rather than assumed:** a street the tree only crosses at a junction cannot light up,
+because a junction cell resolves to no segment (`RouteTree._ensure_street_keys()` adds a segment
+only when a colored cell lies on the segment's own tiles), and a main-road stretch the tree never
+walks is off the growth graph. On the routes suite's seed: 27 crossed-only streets and 11 off-tree
+main-road segments untinted, 72 partly walked segments tinted whole. Junctions have no curb tiles
+at all. The routes suite's tint check asserts that every segment is tinted whole on both curb
+lines or not at all.
+## M168 — The escape after playtest 94 · built 2026-09-19
+
+[PLAYTEST-94](playtests/PLAYTEST-94.md) findings 4 to 14 and [PLAYTEST-96](playtests/PLAYTEST-96.md),
+the player's own words there. Agent commits on `feature/m168-escape-after-playtest-94`, one per
+item; stills, bursts and their run folders are `evidence/m168-escape-2026-09-19/`.
+
+**Rubble, and the fire fixed to the left.** `InteriorMapPlan.rubble` is a tile rect the layout
+declares as it lays the top floor: columns 8 and 9 of the hallway, both rows, east of her door
+(column 7) and short of the right stair door (column 13). `is_walkable()` reads it first; nothing
+scans for a place and nothing repairs one. A rect rather than a tile kind, because the ground is
+not what changed. The fire's side was rolled by seed and is the constant left: on half of all
+seeds the roll burned the one shaft the rubble leaves her. *"I like that rubble."*
+
+**The masked man comes again.** A fresh instance starts at the foot of the right shaft
+`Tuning.FINALE_PURSUER_RESPAWN_SECONDS` (6s) after the last one leaves its top, for as long as
+she is in the building, each standing through its whole 3.6s telegraph. Measured: 11 men over one
+clock, every gap 6.00s; the farthest door from any cell of his line is 168px, 1.82s at 92px/s. A
+flood from her door with the rubble and the fire's blocking reach removed reaches the service
+exit. **Open to overturn, chosen where the player said nothing:** the 6 seconds (a shaft is about
+6s of running plus the telegraph, so the shaft is his two thirds of the time), the same shaft
+every time, the gap counted from his leaving the top. **Rejected:** a second man on the other
+shaft, which removes the choice the switching is for; one man pacing forever, which takes his
+telegraph away. Found on the way: the building's events kept running unseen after she reached the
+city, and `InteriorEvents.stand_down()` ends them.
+
+**The steam.** She walked past a vent because it stood on the seam of a two-tile band and the lane
+along the wall was free. All three stand on cells where the corridor is one tile wide
+(`InteriorMapPlan.corridor_narrows`; two are the sketch's jogs, the third a pinch the band is laid
+with), and each is a cell whose removal cuts the exit off. Periods 4, 4.5 and 5.5s against a 2s
+blow (they were 6.5, 8 and 9.5): crossing a vent's reach takes 0.65s, so the shortest period
+leaves 1.35s of margin, and as half-seconds the three are pairwise coprime. The worst pocket
+between two vents is shut at both ends for 2.00s and costs 47 of the meter's 100.
+
+**No danger mark at the city spawn.** Traced on seed 4242: an `abduction` van 143px from the
+service exit whose 250px outer radius covered her, which is `EventManager`'s condition for the
+flashing mark; on ten seeds a van did it on all ten and a hunting `roadblock` on two. M165 had
+kept bodies off her tile; the mark is about the field. `EventScheduler._clearance_around_her()`
+answers the whole `outer_radius` for anything `hard_fail`, in the candidate loop. Zero rows raise
+the mark on the ten seeds.
+
+**A lost section shows the brief.** `FinaleController` emits `section_lost` and restarts from the
+brief's continue; `DaySummary.show_finale_brief()` shows the section's own hint line and the
+unchanged nerve count. No sentence about the loss, since nothing was spent.
+
+**The run log carries times.** Nothing opened a telemetry section in the escape and nothing
+pushed a clock; `Telemetry.begin_finale()` and a mirror of the HUD's clock do. The building still
+writes no gameplay entries of its own: it has no observer, and one is a milestone rather than a
+fix.
+
+**The window flashes.** Silent distant flashes between the loud explosions: no `EventInstance`,
+no field, nothing on the meter. *"all windows always need to flash together"* — a half-hallway
+subset was the orchestrator's idea, was seen by the player and was deleted. *"a biased random
+distribution between 100ms and 5s between flashes where the mean is 1.3s and the rest of the curve
+is smooth"* is a scaled Kumaraswamy draw, `t = MIN + (MAX − MIN) · sqrt(1 − (1 − u)^(1/B))` with
+`B` 12.343 solved for the mean; a closed-form inverse keeps one draw per flash, so a seed replays
+the same night. 4000 draws: mean 1.289s, none outside the bounds; 51 flashes a minute against 2.
+**Open to overturn:** light without noise at all, where more explosions is one constant and a
+louder building.
+
+**The basement stair.** *"can we just replace it with a full gray texture with dark gray lines
+every x pixels"* ([PLAYTEST-106](playtests/PLAYTEST-106.md)), with a 32 by 32 example of one dark
+row in four. `stair_down.svg` is a flat `#8b8e93` with a one-pixel `#4a4d52` line every four
+pixels from the top row down, so stacked tiles keep the rhythm; the narrowing treads, the stepped
+sides and the arrow are gone. The two grays are the orchestrator's pick. Still:
+`evidence/m168-escape-2026-09-19/basement-stair-gray-lines.png`.
+
+**The roadblock's guard.** *"the guard needs to be at the barrier from the beginning, standing.
+only then does it make sense for it to start pursuing. 86px is huge why is that the fix for the
+problem that the radius is too big?"* The 86px was never a fix for a radius being too big: the
+lethal radius was 24px and was raised because `EventDef.validate()` refuses a lethal radius
+inside the row's own solid reach (60px band plus her 14px), which made the barrier's size the
+man's reach. Now `guard_standing.svg` is drawn on every roadblock, hunting or not; a hunting
+copy's guard telegraphs where he stands and sets off from there; `body_stays_behind` leaves the
+band drawn and solid where it was, so the street stays shut; and `lethal_radius` (28px,
+`EventCatalogue.MASKED_MAN_REACH`, shared with the building's masked man) is what catches her,
+measured from him. `inner_radius` stays 86 as the field's core, since the cost table is stated
+against it, and no balance number moved. `validate()`'s body rule is stated over rows that stand
+still. **Open to overturn:** he stands at the band's center where an end post was asked for,
+because the instance becomes the man and an end post moves the field 60px on that frame.
+**Rejected:** a separate guard row, which needs a third picture of the same man and has no
+trigger. **Not captured:** a hunting one setting off; the nearest on seed 4242 is 834px south of
+the spawn behind a van, and a test drives the sequence instead.
 
 
 ## M169 — The save symbol reads as a floppy disk · built 2026-09-19
@@ -541,6 +751,60 @@ Whether pacing a quiet sidewalk now reads as recovery, and whether walkers stepp
 as polite rather than as fleeing, are in `REVIEW.md`.
 
 ---
+## M159 — Cheaper crowd contribution sweeps · measured and optimized 2026-09-19
+
+The player clarified in [PLAYTEST-86](playtests/PLAYTEST-86.md): "well the point was to actually
+do some optimizations. measurement is nice and make sure it's fully recorded but the core is to
+make things faster". Instrumentation alone was not the deliverable. The raw callback recorder,
+bounded atlas spans and original inconclusive toggle experiments remain preserved in
+[the frame-trace record](evidence/m159-frame-traces-2026-09-19/README.md); their limitations do not
+prevent optimizing a separately isolated, demonstrably expensive calculation.
+
+**The optimization.** Every baby/halo crowd sweep called `CrowdAgent.contribution_at()` for every
+body and calculated velocity, pocket state and elliptical distance even for distant sources.
+The function now returns zero first when squared distance exceeds the square of
+`max(ordinary_outer, active_jolt_outer) / (1 - FIELD_ECCENTRICITY_MAX)`. The ellipse kernel is
+`r * (1 - e * cos(theta))`, with `e` capped, so nothing outside this conservative circle can reach
+either falloff. The bound covers hurried walkers and turning cars without computing velocity.
+It reads live jolt state and position on every call: no cache, new RNG draw, gameplay number,
+tick cadence, pacing switch or atlas policy changes. Contributions within the bound still use
+the identical original calculation.
+
+**Measured work.** The retained probe steps a generated crowd with its real traffic/door machinery,
+warms five simulated seconds and measures six more at 30 steps/second, over three repetitions
+each for days 1 and 9. Each timed sample averages 32 source sweeps; timing excludes simulation
+and reference parity checks. On this Apple M2 host, the pooled day-1 sweep median changes from
+387.813 to 59.375 microseconds (84.7% lower), p95 from 394.719 to 63.531; day 9 changes from
+82.875 to 10.719 microseconds (87.1% lower). Every source is compared exactly against the full
+calculation outside the timer. Before/after non-timing rows, source totals and positions match
+exactly. Day 1 has positive contributions; day 9's query path has none, so the latter measures
+the quiet-path case. These are query costs, not whole-game frame times or phone results.
+
+**Ordinary play.** Three complete before and three after traces use identical twelve-second
+walking inputs, five seconds of raw-clock warmup, and the same first six active seconds. The
+observed median ranges are 9.324–9.592 ms before and 8.760–9.090 ms after. The p95 ranges are
+16.668–23.939 ms before and 10.313–12.242 ms after, but after-run maxima remain 25.809–26.158 ms.
+One additional before trace is rejected because its active sample lasts only 0.324 seconds;
+its raw output is preserved. The loss cause is not recorded with telemetry disabled. All complete
+trials move, but frame-dependent crowd interactions and final positions differ slightly. Runs
+are serial with other agents' heavy work paused, while ordinary desktop activity remains. This
+supports the isolated query optimization, not a claim that stutter is solved or that all observed
+frame-distribution change is causal. Phone measurement and remaining-stall attribution stay open.
+
+**Evidence and choices.** [The full measurement record](evidence/m159-crowd-rejection-2026-09-19/README.md)
+retains raw workload rows, frame traces, logs, hashes, launch commands and rejecting analysis
+filters. The maximum eccentricity bound is deliberately looser than a current-speed bound so
+the early rejection does not pay for the velocity calculation it removes. New parity tests cover
+stationary/moving/hurried bodies, saturation speed, both kinds, horns, large jolts, a curved heading
+and position/jolt changes without advancing the body's clock. The original float result is kept
+for every contributing body. The branch remains based on its existing checkpoint because the
+player explicitly prohibited merging main during this work; its later crowd changes need
+integration review before this can land. M163, ground atlas reference parity, and M164, engine
+errors fail the gate, remain separate documented follow-on briefs, with no fix in this change.
+The boot gate and focused crowd, contribution, halo, meter and frame-trace suites passed. The
+meter test's camera fixture explicitly selects physics processing, removing the engine's
+interpolation override warning; this changes no gameplay camera. Doc lint, whitespace and
+raw-workload parity checks passed; the full suite remains CI's gate.
 
 ## M157 — Peregrine may be the father · built 2026-09-19
 
@@ -19491,3 +19755,441 @@ match the prepared tip. Main's early-preview guidance also survives. Numbered re
 distinct, with the mother's-leg proposal added as PLAYTEST-92 rather than modifying an earlier
 primary source. M165 leaves TODO; M167 remains open. Boot, focused visuals/player-presentation/
 interior/finale suites, forced-SVG visuals, document lint and diff checks passed on this tree.
+
+## M167, use the woman's corresponding final leg images — 2026-09-19
+
+[PLAYTEST-93](playtests/PLAYTEST-93.md) rejects the first woman-leg trial in PR #234:
+"those are not are the woman legs. take the ones from the corresponding final image".
+The trial used the reduced runtime PNGs, retained only rows 34–45, and generated the join
+above them. That did not deliver the complete final leg artwork the player requested.
+The corresponding full-resolution final P2 images are the donor for the next preview;
+no newly generated replacement legs or pelvis are authorized by this correction.
+The rejected trial and its exact recipe remain in
+`docs/evidence/male-player-2026-09-19/b-contact/woman-leg-trial-2026-09-19/` as provenance.
+
+The next one-pass preview reads the transparent full-resolution final P2 selection: side B
+from pass4, front-diagonal B from pass2. It crops the complete visible pants and shoes, fits
+them uniformly beneath the father's retained upper rows, and mirrors the eastern results for
+west and southwest. No generator, recoloring or invented leg anatomy is used. The exact
+sources, bounds, seam mask, scaling, placement, preserved rows and reproduction recipe live in
+`docs/evidence/male-player-2026-09-19/b-contact/final-woman-legs-2026-09-19/`.
+The clean sheet, native/6× loops and source-figure sheet are review evidence only; the jacket
+join, proportions and overall appearance remain unaccepted. The runtime assets stay unchanged.
+
+## M167, final-woman-leg crop rejected — 2026-09-19
+
+[PLAYTEST-101](playtests/PLAYTEST-101.md): "the crop in 234 is pretty bad". The final-image
+preview in PR #234 was rejected on its crop. Its source images, assembler and sheet remain
+under `docs/evidence/male-player-2026-09-19/b-contact/final-woman-legs-2026-09-19/` as evidence.
+The implementation fitted the lower donor to an eighteen-pixel region and pasted father
+rows 0–30 over it; that rectangular join is visible beneath the jacket. Inspection also
+shows that the woman's longer coat hides upper-leg anatomy visible beneath the father's
+shorter jacket. These are inspection findings, not a more specific statement from the player.
+The player clarified: "it's the wrong part but maybe do the crop in the larger version and
+then let the image generation normalize it?". The crop itself is the complaint. Asked for
+literal copying without generation in PLAYTEST-93 · overturned to high-resolution cropping
+followed by generated normalization in PLAYTEST-101 on 2026-09-19, because the literal-copy
+crop was rejected. The corresponding final donors, father identity and protected frames
+remain the contract. No replacement art was installed at this point.
+
+The normalization attempt assembled the original high-resolution father upper bodies with
+the two final mother B leg crops, using masks along the painted coat contours rather than
+discarding every pixel above one horizontal row. The built-in generator normalized this
+two-figure assembly before whole-figure native registration. Its jacket-to-trouser transition
+was continuous on inspection, but it redrew trouser/shoe detail and the side foreground leg
+appeared to advance, leaving the required near-leg-trailing ownership unproven. The attempt
+was kept for the early feedback the player requested, not installed or treated as a finished
+correction. Exact inputs, prompt, raw result and deterministic derivatives are retained in
+`docs/evidence/male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/`.
+
+The player's accompanying request to post baby-carrying animation was answered with native
+and 6× eight-direction A/C/B/C GIFs at 190ms per phase, assembled from the installed father
+carrying PNGs without changing them. The normalized pushing candidate preserves every other
+baseline frame byte-for-byte. Fresh preparation, pushing assembly and carrying assembly
+reproduced their saved outputs exactly; source hashes, native canvases and GIF timing were
+verified. The boot check, documentation lint and whitespace checks passed. No runtime art,
+gameplay code, full local suite or windowed gameplay capture was involved.
+
+## M167, choose the actual opposite leg contact — 2026-09-19
+
+[PLAYTEST-102](playtests/PLAYTEST-102.md) rejects the normalization's source: "you took the wrong
+leg picture for the cropping -_- it's the one where the wrong leg is in front". This repeats
+the anatomical contact requirement in PLAYTEST-87 and PLAYTEST-88. The selected P2 pushing
+side A and B both show the advancing down-right thigh in front. The B label and the generation
+record's claimed correction were not evidence of a different leg overlap; selecting that
+source made normalization preserve the wrong pose.
+
+Inspection found the required foreground thigh continuing down-left into the trailing shoe
+in the final carrying F side B. The final carrying F front-diagonal A has its near screen-left
+leg trailing and far screen-right leg advancing; its thighs sit beside each other, making the
+profile overlap the stronger proof. Both registered source sprites match the runtime artwork.
+The next donor selection uses those final carrying legs beneath the father's pushing upper
+body. This is a leg donor choice, not a change to carrying art. The rejected normalization
+also supplied an entire old father figure as an identity reference, including its wrong
+legs; the new identity input ends above the pelvis to remove that competing pose.
+
+The crop-feedback record was first moved from PLAYTEST-94 to PLAYTEST-95 to avoid the
+independent escape/save feedback. Its current identity is PLAYTEST-101; its original words
+and separate identity are preserved.
+
+One normalization attempt with the corrected carrying-F donor crops retained the profile
+foreground thigh's continuous down-left chain into the trailing shoe; the far advancing thigh
+emerged behind it. The diagonal retained the screen-left higher trailing shoe and screen-right
+lower advancing shoe. The large input included no old father pants: the father's original
+high-resolution identity crops ended above the pelvis. The generator completed the lower jacket
+and pelvis between that upper artwork and the selected legs. The result and its source-contact
+proof are preserved under `correct-contact-2026-09-19/` beside the rejected attempt. Runtime
+art stayed unchanged; final appearance and frame-to-frame proportions remained for visual review.
+Native inspection also found brighter B trousers and a more front-facing diagonal stride.
+Fresh preparation and assembly reproduced the saved inputs, sheets and GIFs byte-for-byte;
+protected frames, native canvases and 190ms phase timing passed the recipe checks. Documentation
+lint and whitespace checks passed. The prior boot check covered the unchanged runtime tree.
+
+## M167, color match, southeast projection and actual carrying corrections — 2026-09-19
+
+[PLAYTEST-103](playtests/PLAYTEST-103.md) requests color transformation rather than another
+generation for the side result, direct PNG embedding beside GIFs, and actual carrying leg
+corrections: "you didn't update the legs at all". The posted carrying animation had shown the
+unchanged installed family. That did not apply the pushing contact corrections to carrying.
+The player also identifies the southeast pushing legs as south-facing. The selected final
+carrying donor's front-diagonal name did not make its frontal lower-body projection suitable.
+The color transform preserved the corrected side geometry, sampled the existing A/C trouser
+palette, and changed only the material mask. Two focused southeast generation attempts failed:
+the first gave the foreground thigh the advancing shoe, and the retry bent that advancing thigh
+sharply back at the knee. Neither was accepted as a replacement. The early preview restores the
+previously accepted straight-contact southeast geometry instead of the rejected frontal legs.
+Its natural drawing refinement remains open.
+
+The carrying preview actually changes B legs: N/S use opposite contacts, E/W use the corrected
+profile, and SE/SW use the accepted diagonal contact. It preserves the baby, head, arms and
+carrying upper artwork exactly, along with A/C and NE/NW. This native contact assembly is an
+early review artifact, not a validated full-figure normalization method. The side has a wider
+stride and heavier shoes than A; the diagonal retains the thin provisional drawing. Both states
+have clean PNG sheets and 190ms A/C/B/C GIFs at native and enlarged sizes. Runtime art remains
+unchanged.
+
+## M167, side accepted and diagonal fallback rejected — 2026-09-19
+
+[PLAYTEST-98](playtests/PLAYTEST-98.md) confirms the current left/right artwork is correct and
+rejects the restored southeast drawing: "you just reverted back to the bad legs from before
+this PR?" and "but SE is just the bad leg from before this PR". Reverting to provisionally
+accepted contact positions did not satisfy the separate request to make those legs look natural.
+The side pixels and color transformation are protected; remaining drawing work concerns the
+diagonal B contact in both pushing and carrying.
+
+The next generation approach put colored hip–knee–shoe chains directly under the father
+identity crops. A detached ownership diagram had again failed to control the foreground
+thigh. Keeping red on the foreground trailing chain and cyan on the far advancing chain
+through generation produced continuous opposite contacts in both complete figures. A
+deterministic palette transform then restored gray-blue trousers and dark shoes, before
+whole-figure registration and family assembly. The result is new diagonal artwork rather
+than another fallback to the old thin legs. Accepted E/W and all other frames remain
+byte-identical. Upper-body proportion stability remains a visual-review question; the
+new candidate is uninstalled.
+Registered inspection found the jacket hem approximately two native pixels higher and the
+pushing hand region extending one pixel farther right and down than A/C. These differences
+are recorded with the new source and remain visible-review limitations, not claims of exact
+upper-body preservation. Fresh preparation and assembly reproduced every saved artifact;
+protected-frame hashes, native canvases, alpha-preserving recoloring, PNG scaling and GIF
+timing passed. Documentation lint and whitespace checks passed; runtime content is unchanged.
+
+## M167, projected overlap is not crossed legs — 2026-09-19
+
+[PLAYTEST-99](playtests/PLAYTEST-99.md) rejects the generated diagonal: "the legs are now
+crossed". The source diagram forced the screen-right hip into the screen-left trailing shoe,
+creating an X-shaped stance. Proving that a generator obeyed that diagram did not establish a
+natural stride. The correction keeps each leg on its own side of the projected pelvis, with
+separate lateral walking tracks and forward/backward depth along the southeast travel axis.
+The illustrated-leg guidance now explicitly distinguishes foreground overlap from crossing
+the legs. Accepted E/W and every unaffected frame remain protected; the crossed candidate
+is retained as rejected evidence and never installed.
+
+Inspection of the original father diagonal A showed the foreground thigh originates at the
+screen-left hip, not the screen-right assignment imposed by the X guide. Editing the crossed
+figure directly merely reversed its crossing and was rejected internally. A replacement
+colored guide kept screen-left hip, knee and trailing shoe on the left track and screen-right
+hip, knee and advancing shoe on the right track. The generated pushing and carrying figures
+retained that uncrossed stride. Deterministic recoloring restored gray-blue trousers and dark
+shoes; whole-figure registration kept the native canvases and protected every other frame.
+The new candidate is preserved under `uncrossed-southeast-2026-09-19/`, with PNG sheets and
+GIFs for both states. Its diagonal angle and upper-body proportion consistency remain visual
+judgments; it does not replace runtime art before acceptance.
+The registered candidate retains a somewhat frontal pelvis and a jacket hem roughly two to
+three native pixels higher than A/C. The pushing hand sample starts one row higher. The
+recipe records those limits. Fresh preparation and assembly reproduce the saved artifacts;
+only the two authored diagonal B PNGs change. Independent byte comparisons preserve all
+other frames, including the accepted side hashes. Lint and whitespace checks pass.
+
+## M167, pose accepted and material colors corrected separately — 2026-09-19
+
+[PLAYTEST-100](playtests/PLAYTEST-100.md) accepts the uncrossed legs and pose: "but the legs
+and pose is good now". The player first describes the entire picture as too bright, then
+specifies the opposing material errors: "the pants are too dark and the jacket is too bright".
+The remaining correction is deterministic and color-only: lighten trousers, darken the jacket,
+and compare other materials with the corresponding A/C drawings. Uniform darkening would
+worsen the trousers. The approved pose, every alpha value and every other frame are protected.
+
+The player then authorizes a specific pixel construction: "also pull the jacket edge down
+to match the rest of the frames", "you can just move the pixels down and fill in the new
+empty space with copies of the jacket texture down there", then "ie take the rest of the
+body texture from the other frame and just move the edge down" and "take the edge from the
+new frame". The body texture comes from the matching existing frame, while the hem contour
+and approved legs come from the new B. The player explains the carrying requirement:
+"because the carrying one also includes the baby which is now too short". Copying the
+existing carrying upper at its native scale restores the baby's proportions along with
+the father's texture. This local body/hem construction is an explicit exception to the
+earlier color-only boundary; it does not authorize moving the approved legs or regenerating
+the figure.
+
+The implementation copies the corresponding existing C upper body at native scale and moves
+only the new B jacket's two-row edge down two pixels. A first five-row selection included
+trouser pixels and was narrowed before publication. The copied body supplies the existing
+jacket texture and full-size baby; the moved edge receives a lower-jacket palette fit that
+excludes the blanket. The retained new trousers are lightened separately against A/C samples.
+All pixels below the extended hem retain the approved lower-body alpha, and the shoes keep
+their original pixels. The comparison sheets show A, C, original B and the composite result
+alongside the complete pushing/carrying PNG sheets and GIFs.
+Fresh assembly reproduces every output byte. Checks confirm the restored upper matches C
+outside the moved edge, alpha changes remain within the authorized upper/hem region, approved
+leg geometry is unchanged, and all other authored frames remain byte-identical. Native sizes,
+nearest-neighbor enlargement and 190ms phase timing pass, as do lint and whitespace checks.
+
+## M167, final acceptance and merge reconciliation — 2026-09-19
+
+[PLAYTEST-104](playtests/PLAYTEST-104.md) accepts the final family: "234 is perfect now --
+let's ship it. do the $merging-main skill". The accepted native family is retained under
+`b-contact/whole-figure-color-2026-09-19/generated/`, with pushing and carrying PNGs and GIFs.
+The player also requests an attempt-history audit and a reusable toolbox of successful techniques.
+The illustrated-PNG toolbox now documents donor inspection, large-source normalization,
+uncrossed colored guides, material-specific color matching, constrained native body/hem reuse,
+and protected-frame/reproduction checks. These are conditional strategies, not the previously
+withheld mandatory procedure or a claim that every generated candidate is acceptable.
+
+The merge used original PR tip `4503d1c0745b22f65701930cdf9e814b300fcb3d`, incoming main
+`70486699eefd842455ca43212ea5d957af9df5fc`, base
+`f42aa0e91ec63d5adaaa3a3d0ec81bdf30f76c89`, and prepared first parent
+`6cffdc84d67b8d67974f65fe209abe6680d11f7a`. Main's independent save-symbol, window-flash and
+route-tint playtests keep 95, 96 and 97. The branch's crop correction, wrong-contact donor and
+color/carrying records move respectively from 95/96/97 to 101/102/103. Their words, date and
+order were compared against the original tip; only labels and attributed references changed.
+M167 is a shared continuation, while M168, escape feedback, and M170, whole-street route tint,
+retain independent queue ownership. Nested finding numbers have no independent collision.
+
+All five conflicted paths were presented as Theirs/Ours/Base before resolution. DECISIONS keeps
+both histories; TODO keeps the complete escape brief and latest father requirements; HANDOFF
+separates current threads; generation guidance distinguishes provisional and final evidence.
+The skill conflict does not restore the unaccepted generic procedure: the newly accepted
+techniques are documented under the player's explicit toolbox request.
+
+The whole-result review preserves main's saves, staircase/escape changes, save indicator,
+event contracts, tests and documentation. Every runtime/source/test file equals incoming main
+at this synchronization point; installation follows separately. Saves retain father selection,
+so the same family is used on resume. The atlas/resolver and player callers are unchanged;
+the incoming manifest's explicit derivative overrides preserve frozen original registrations.
+The identical CI concurrency blocks merge once. The boot check and focused visuals,
+presentation, orientation, interior, finale and save suites pass; the save suite's deliberate
+invalid-JSON case prints its expected parse error. Sandbox-denied scratch writes were rerun
+with the required access. Document lint and whitespace checks pass.
+
+### M167, attempt-history audit and reusable techniques — 2026-09-19
+
+The audit found retained recipes and verdicts for the published attempts. It added missing
+discovery links for the first refinement, woman-leg trial and diagonal/carrying assembly to
+the evidence index. All paths below are under
+`docs/evidence/male-player-2026-09-19/b-contact/`; each retained folder includes its own
+inputs, recipe and outputs. Internally discarded drafts are described in the narrative above
+without promoting their artwork into the retained catalogue.
+
+| Retained attempt | Result and lesson |
+| --- | --- |
+| `review-2026-09-19/`, `loops-2026-09-19/` | Contact review and rejected splice; correct endpoints alone did not make natural legs. |
+| `straight-contact-2026-09-19/` | Provisionally accepted contact baseline; thin legs and the diagonal stride still needed refinement. |
+| `leg-refinement-2026-09-19/` | Added trouser anatomy, rejected in PLAYTEST-92; the player proposed the woman's legs. |
+| `woman-leg-trial-2026-09-19/` | Reduced-image donor and generated join, rejected in PLAYTEST-93 in favor of the actual final source artwork. |
+| `final-woman-legs-2026-09-19/` | Literal final-source crop, rejected in PLAYTEST-101; the crop selected the wrong part and exposed a hard join. |
+| `normalized-crop-2026-09-19/` | Large-source normalization made a continuous join but used the wrong contact; rejected in PLAYTEST-102. |
+| `correct-contact-2026-09-19/` | Actual opposite carrying-leg donor fixed the side overlap; the diagonal read as frontal and colors differed. |
+| `color-match-2026-09-19/` | Material-only recoloring preserved geometry; the side result was accepted in PLAYTEST-98. |
+| `diagonal-carrying-2026-09-19/` | Applied real carrying corrections, but restored the old thin diagonal; that fallback was rejected in PLAYTEST-98. |
+| `natural-southeast-2026-09-19/` | Colored guides controlled ownership but imposed crossed tracks; rejected in PLAYTEST-99. |
+| `uncrossed-southeast-2026-09-19/` | Correct hip assignment and separate tracks produced the pose accepted in PLAYTEST-100; body colors, hem and baby proportions still differed. |
+| `whole-figure-color-2026-09-19/` | Exact existing C upper, full-size baby, new B hem moved down, and independent trouser/hem color fits; accepted in PLAYTEST-104. |
+
+The reusable toolbox keeps the successful operations and their conditions. Large-source cropping
+plus normalization repairs a join only after donor anatomy is checked. A colored guide controls
+pose only if its hips and walking tracks are correct. Material masks solve brightness without
+changing accepted geometry. Native body reuse and a bounded hem move solve stable proportions
+without regenerating accepted legs. All retain source hashes, protected pixels and whole-family
+PNG/GIF review; none turns a rejected intermediate into an approved source.
+
+## M171, build-time atlases replace individual textures — 2026-09-19
+
+[PLAYTEST-105](playtests/PLAYTEST-105.md) requests an implementation TODO: atlases must be
+created at build time for cheap runtime loading, related items must share an atlas to avoid
+wasted residency, and an atlas's constituent textures must never also load individually.
+This extends the grouping and advance-loading intent of PLAYTEST-75 and PLAYTEST-76.
+
+Inspection found runtime packing in `TextureAtlas.request()`/`collect()`: source images are
+read on the main thread, blitted on a worker, then uploaded on the main thread. Crowd's first
+pack waits synchronously; ground packs during TileSet construction and day repaint. The
+preloaded originals stay resident, and `TextureResolver.warm()` also loads individual transfers.
+Dropping temporary CPU image buffers therefore does not remove the original GPU textures.
+The atlas plus retained originals duplicates image storage; no measured exact memory ratio
+was claimed. Merely moving the existing blit earlier would leave that ownership problem.
+
+The queued contract generates deterministic images and region metadata in the build, groups
+related consumers and lifetimes, and makes runtime references resolve to atlas regions only.
+PNG and SVG comparison modes remain available through separately built, exclusively selected
+resources. Source files remain editable authoring inputs without becoming runtime constituent
+textures. Validation must cover exports, indirect preloads, group release, GPU residency and
+the existing visual/animation contracts. No atlas implementation changes accompany this design.
+
+The player then clarifies that the exclusion is stronger than avoiding duplicate GPU uploads:
+"or any memory. they should cease existing in the build once they get baked into an atlas".
+The TODO therefore excludes individual baked images and their imported resource copies from
+the exported package, forbids runtime CPU/GPU constituent copies, and requires package-content
+and dependency checks in addition to memory measurements. Source artwork stays in the repository
+for authoring; it is not a fallback dependency in the shipped atlas-only representation.
+
+## M167, interrupted delivery checkpoint — 2026-09-19
+
+The player first requested a complete reviewable PR with future conflicts deferred, then
+stopped all work: "write everything down now!!!", "no more tests no more anything", and
+"handoff now!!!!". Both implementation agents were interrupted. No additional tests or
+implementation were performed after that stop; existing changes were checkpointed for handoff.
+
+The PR branch is `feature/father-leg-refinement` in `.claude/worktrees/father-leg-refinement`.
+Its preceding local tip is `c8af7e63`, following the reviewed main merge `4b9b21cb`, attempt
+indexing, reusable toolbox and the M171 build-time atlas requirements. The latest confirmed
+published head is `49bc5b0e`; its full CI was green. The handoff commit publishes the subsequent
+documentation. PR #234 remains draft and is not merged or newly represented as ready.
+
+Installation checkpoint `2a310abde1f7e55ed1ebf008e1a44d0428029fbe` is on
+`feature/father-final-install`, worktree `.claude/worktrees/father-final-install`, based on
+`4b9b21cb`. It installs six exact approved PNGs, preserves the other 24 father frames and
+import sidecars, updates manifest overrides, and reconciles the existing pushing and carrying
+diagonal SVG fallbacks with the approved uncrossed contact. It preserves the original registered
+rasters and retargets the old normalized-crop carrying recipe to those immutable inputs.
+Its README changes overlap the parent branch's normalized-crop cleanup and need manual review.
+
+Before the stop, the installation agent reported: final-family fresh rebuild/diff passed;
+pair/hash/import verification passed; normalized-crop carrying outputs reproduced byte-for-byte;
+boot passed; focused PNG visuals, player-presentation, stroller, presentation-mode and orientation
+suites passed with 2,246 assertions. Forced-SVG completion and final capture metadata require
+inspection of the checkpoint rather than assuming the interrupted agent finished them.
+
+Two runtime bursts are retained under `docs/evidence/archive/session-captures/2026-09-19/`:
+`rig-200220-seed3-v0.13.0-62-g4b9b21cb-dirty` shows father pushing, while
+`rig-200241-seed288043464-v0.13.0-62-g4b9b21cb-dirty` shows the mother carrying despite the
+requested seed-3 city-escape scenario. The second burst is not father-carrying visual evidence.
+Both have 36 frames; actual timing is in their burst sidecars. The parent inspected frames
+and caught the incorrect carrying subject. No third windowed run was taken. Headless binding
+checks and the approved complete PNG/GIF family are separate evidence, not a replacement claim
+that this failed scenario photographed the father carrying.
+
+Historical-recipe checkpoint `1c056b8c` is on `feature/father-recipe-preservation`, worktree
+`.claude/worktrees/father-recipe-preservation`, also based on `4b9b21cb`. It touches only
+straight-contact, woman-leg-trial, review and diagonal-carrying recipes and provenance. The agent
+reported fresh output matches and lint/diff checks, but parent review found its SVG fix invalid:
+`docs/graphics-creation/player/father_front_diagonal_b.svg` is an active creation copy changed
+by the installation, not a frozen original. The source references in straight-contact and
+woman-leg-trial must instead use preserved historical SVG bytes. Its PNG mappings to immutable
+registered originals are the intended approach. Do not claim the combined tree reproduces until
+that specific remaining issue is corrected and inspected under renewed authorization.
+
+Neither checkpoint is cherry-picked into the PR. `/tmp/nappy-pr234-shipping-body.md` is only
+an unpublished draft and contains an `INSTALLATION_CHECKS_PENDING` placeholder; do not publish
+it unchanged. The accepted PNG/GIF embeds remain on the PR at their original immutable image
+commit. PR #216 is owned elsewhere. No new main merge, release, branch deletion or further
+testing is part of this handoff. The next session needs fresh agents if work resumes.
+
+## M167, resumed delivery and main integration — 2026-09-19
+
+The player authorized finishing both interrupted checkpoints, tests, implementation and conflict
+resolution, including merging main into PR #234. Approved artwork remains fixed. M171, build-time
+atlases, remains a separate implementation brief: constituent textures belong neither in the
+exported package nor in individual CPU/GPU allocations.
+
+The main merge starts from PR tip `24d915ef6acc63b56dfd7d66e8299ebc85e3d8c1`, incoming main
+`e444ece9132aaa8419be33ff25e547fca545b4a6` and common ancestor
+`70486699eefd842455ca43212ea5d957af9df5fc`. Main carries the separately completed PR #216,
+M159, cheaper crowd contribution sweeps and frame/atlas instrumentation. The branch carries
+approved artwork evidence, historical attempts, delivery instructions and M171's brief.
+
+The only textual conflict is HANDOFF: base calls the performance PR a draft and the father
+artwork provisional; main records the landed performance optimization; the branch records the
+approved artwork and interrupted delivery. The resolution retains main's remaining performance
+work and the approved delivery contract, while removing the stop superseded by this request.
+TODO, DECISIONS and the evidence index merge both subjects independently. Main's added
+PLAYTEST-86 and M159/M163/M164 records do not collide with the branch's PLAYTEST-93/98–105
+and M171 records; no identifiers are renumbered and no player's words are combined.
+
+The merged source and tests match main exactly: the art branch introduces no caller, atlas,
+telemetry or gameplay changes. The incoming runtime still resolves the installed native PNGs
+through the same SVG paths and atlas regions. The headless boot and focused texture-atlas,
+frame-trace and crowd-contribution suites pass, as do doc lint and whitespace checks. Initial
+sandboxed checks emitted denied user-directory and certificate-access errors; the unrestricted
+rerun is the clean verification, not the assertions printed beside those environment errors.
+
+Installation checkpoint `2a310abde1f7e55ed1ebf008e1a44d0428029fbe` is integrated after that
+main merge. Its one conflict is the normalized-crop README: base describes active carrying
+PNGs, the checkpoint identifies immutable original registered inputs, and the PR identifies
+the frozen baseline and links the accepted final family. The resolution keeps the immutable
+input description and accepted-family link. Review also corrects an orphaned player-manifest
+README sentence and a stale claim that the historical carrying GIFs show the installed family.
+
+The six installed PNGs exactly match the approved final outputs; the other 24 father frames
+and import identities remain unchanged. The two diagonal SVG fallbacks retain their native
+canvas and match their editable creation copies. No gameplay, animation, offset, camera or
+atlas code changes accompany installation. Fresh final-family and historical carrying-review
+assembly reproduce their complete saved output directories byte-for-byte. Pair/hash/XML/import
+verification, boot, focused PNG visuals/player-presentation/stroller/presentation-mode/orientation
+tests and forced-SVG visuals pass. These are focused local checks; the full suite belongs to CI.
+
+The retained pushing burst is visibly the father walking with the stroller. The carrying attempt
+is visibly the mother and remains labeled as a failed father-carrying capture in its provenance;
+it cannot establish father-carrying runtime appearance. No new windowed capture is taken.
+REVIEW records the remaining live appearance question separately from PLAYTEST-104's artwork
+approval and the automated binding checks.
+
+Semantic review also finds a clean textual merge that needs reconciliation: main's M159 atlas
+measurement item makes prebuilt atlases conditional on attribution, but PLAYTEST-105 and M171
+explicitly choose build-time atlases. M159 retains baseline, threadless-web and memory measurement,
+without conditioning M171's accepted design or claiming that atlases explain the older hitch.
+
+Historical-recipe checkpoint `1c056b8c` and its repair `ebc5d4e1` are integrated. Four B-contact
+SVGs are preserved as exact historical files under the evidence inputs, independent of active
+runtime and creation copies. Straight-contact and woman-leg recipes use those files; the old
+comparison and diagonal-carrying recipes use the immutable registered PNGs where installation
+replaces an input. Their hash guards remain active. Fresh assemblies on the combined installed
+tree reproduce all four retained output directories byte-for-byte.
+
+The audit also finds the B-contact source proof hashes active assets it never reads. Its actual
+inputs are frozen explicitly: the 45 pushing source renders across five views, three poses and
+three scales, plus the five stroller PNGs and raw atlas. Preparing source targets and reproducing
+the proof now use those preserved inputs; proof images remain unchanged. Fresh proof generation
+on the integrated tree matches its saved directory. The narrower 45-render set is deliberate:
+this proof does not consume the carrying renders. Active-SVG rendering is not presented as
+reproduction of this historical anatomical review.
+
+The original registration recipe has the same class of historical dependency. Repair `9c93ab6b`
+preserves five exact original SVGs: pushing back/front/side/front-diagonal B and carrying
+front-diagonal B. An explicit source map checks their original hashes before rendering; a separate
+registration overlay pins the unchanged original config, records the updated support-script hashes
+and redirects only those five historical source paths. It does not repin artwork to the active
+fallbacks. Original source renders, registered outputs and static contact sheets reproduce
+byte-for-byte. Prepared grids also match; their `inputs.json` records the fresh source-directory
+paths, so only its path keys differ, with identical PNG hashes. The primary generation guide links
+the preserved inputs and names the required flags.
+
+The failed carrying capture's metadata now states only what is established: its seed is
+288043464, its recorded command has no seed flag, and the inspected frame shows the mother.
+The earlier explanation that startup reinitialized a requested seed is not supported by that
+recorded command. The capture remains evidence of the failed attempt, not a father-carrying check.
+
+Delivery is complete on PR #234: both interrupted checkpoints and their recipe repairs are
+integrated, approved artwork is unchanged, the main conflict and README overlap are reconciled,
+and the delivery item leaves TODO. The remaining human runtime-appearance question is in REVIEW.
+The approved PNG/GIF family and the historical image artifacts remain byte-identical; only input
+locations, support code and provenance change for reproducibility. M171 remains open and requires
+its separate build-time atlas implementation.

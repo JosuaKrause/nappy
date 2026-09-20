@@ -98,6 +98,7 @@ func _build(t) -> void:
 	# The name matters: Stroller's @onready looks the camera up by path.
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	_stroller.add_child(camera)
 	t.add_child(_stroller)
 	_stroller.set_physics_process(false)

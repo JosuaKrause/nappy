@@ -1,0 +1,54 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: No TileSet atlas source with id 58.
+   at: get_source (scene/resources/2d/tile_set.cpp:543)
+   GDScript backtrace (most recent call first):
+       [0] _test_every_source_shares_one_texture_and_keeps_its_tiles (res://tests/test_ground_layers.gd:271)
+       [1] run (res://tests/test_ground_layers.gd:20)
+       [2] _ready (res://tests/run_tests.gd:35)
+ERROR: No TileSet atlas source with id 59.
+   at: get_source (scene/resources/2d/tile_set.cpp:543)
+   GDScript backtrace (most recent call first):
+       [0] _test_every_source_shares_one_texture_and_keeps_its_tiles (res://tests/test_ground_layers.gd:271)
+       [1] run (res://tests/test_ground_layers.gd:20)
+       [2] _ready (res://tests/run_tests.gd:35)
+ERROR: No TileSet atlas source with id 60.
+   at: get_source (scene/resources/2d/tile_set.cpp:543)
+   GDScript backtrace (most recent call first):
+       [0] _test_every_source_shares_one_texture_and_keeps_its_tiles (res://tests/test_ground_layers.gd:271)
+       [1] run (res://tests/test_ground_layers.gd:20)
+       [2] _ready (res://tests/run_tests.gd:35)
+ERROR: No TileSet atlas source with id 61.
+   at: get_source (scene/resources/2d/tile_set.cpp:543)
+   GDScript backtrace (most recent call first):
+       [0] _test_every_source_shares_one_texture_and_keeps_its_tiles (res://tests/test_ground_layers.gd:271)
+       [1] run (res://tests/test_ground_layers.gd:20)
+       [2] _ready (res://tests/run_tests.gd:35)
+ERROR: No TileSet atlas source with id 62.
+   at: get_source (scene/resources/2d/tile_set.cpp:543)
+   GDScript backtrace (most recent call first):
+       [0] _test_every_source_shares_one_texture_and_keeps_its_tiles (res://tests/test_ground_layers.gd:271)
+       [1] run (res://tests/test_ground_layers.gd:20)
+       [2] _ready (res://tests/run_tests.gd:35)
+ERROR: No TileSet atlas source with id 63.
+   at: get_source (scene/resources/2d/tile_set.cpp:543)
+   GDScript backtrace (most recent call first):
+       [0] _test_every_source_shares_one_texture_and_keeps_its_tiles (res://tests/test_ground_layers.gd:271)
+       [1] run (res://tests/test_ground_layers.gd:20)
+       [2] _ready (res://tests/run_tests.gd:35)
+ERROR: No TileSet atlas source with id 64.
+   at: get_source (scene/resources/2d/tile_set.cpp:543)
+   GDScript backtrace (most recent call first):
+       [0] _test_every_source_shares_one_texture_and_keeps_its_tiles (res://tests/test_ground_layers.gd:271)
+       [1] run (res://tests/test_ground_layers.gd:20)
+       [2] _ready (res://tests/run_tests.gd:35)
+ERROR: No TileSet atlas source with id 65.
+   at: get_source (scene/resources/2d/tile_set.cpp:543)
+   GDScript backtrace (most recent call first):
+       [0] _test_every_source_shares_one_texture_and_keeps_its_tiles (res://tests/test_ground_layers.gd:271)
+       [1] run (res://tests/test_ground_layers.gd:20)
+       [2] _ready (res://tests/run_tests.gd:35)
+-- test_ground_layers.gd          309 ms
+
+21191 checks, 0 failures
+PARTIAL RUN — only suites matching ground_layers. Not a green build.

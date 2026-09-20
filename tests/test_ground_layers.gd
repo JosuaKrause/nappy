@@ -263,10 +263,20 @@ func _test_every_source_shares_one_texture_and_keeps_its_tiles(t) -> void:
 		var label := "forced SVG rasters" if svg else "default PNG transfers"
 		var packed := GroundLayers.build_tile_set(AUTHORED_GROUND)
 		var reference := _unpacked_tile_set(svg)
+		t.check(packed.get_source_count() == reference.get_source_count(),
+				"%s: the packed and reference TileSets register the same number of sources (%d against %d)"
+				% [label, packed.get_source_count(), reference.get_source_count()])
 		var shared: Texture2D = null
 		var seen := 0
 		for index in packed.get_source_count():
 			var id := packed.get_source_id(index)
+			# Asked before `get_source()`, which emits a Godot engine error and returns null for a
+			# missing ID rather than failing the assertion — a missing reference source must fail by
+			# name here, not skip silently behind an ERROR: line the runner never counts.
+			t.check(reference.has_source(id),
+					"%s: the reference TileSet has a source %d to compare the packed one against" % [label, id])
+			if not reference.has_source(id):
+				continue
 			var source := packed.get_source(id) as TileSetAtlasSource
 			var before := reference.get_source(id) as TileSetAtlasSource
 			if source == null or source.texture == null or before == null:
@@ -309,7 +319,12 @@ func _unpacked_tile_set(svg: bool) -> TileSet:
 		var source := result.get_source(result.get_source_id(index)) as TileSetAtlasSource
 		if source != null:
 			source.texture = TextureResolver.resolve(source.texture)
-	if not svg:
+	if svg:
+		# Matches `GroundLayers.build_tile_set()`'s own SVG branch: the route-kerb twins are
+		# registered either way (M145), so the unpacked reference needs them too or the packed
+		# TileSet's twin sources have nothing to be compared against.
+		GroundLayers._register_route_kerb_twins(result, {})
+	else:
 		GroundLayers._compose_layers(result)
 	return result
 

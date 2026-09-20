@@ -979,6 +979,41 @@ func _ready() -> void:
 		_build_the_flock()
 	_build_halo()
 
+## Where this instance's body was left standing when its pursuer walked out of it, in world space,
+## or `Vector2.INF` while the two are still the same place. See `EventDef.body_stays_behind`.
+var _body_left_at := Vector2.INF
+
+## Whether the barrier has been left behind — read by `_draw_roadblock()` to know whether to draw
+## the band under its own feet or back at the post, and by `tests/test_heat.gd`.
+func has_left_its_body_behind() -> bool:
+	return _body_left_at != Vector2.INF
+
+## Where that body stands, which is where the street is still shut. `global_position` while nothing
+## has been left behind, so a caller never has to ask which case it is holding.
+func body_position() -> Vector2:
+	return global_position if _body_left_at == Vector2.INF else _body_left_at
+
+## Pins the body at the place the pursuer is walking away from. Called once, the frame he stops
+## waiting.
+##
+## **The body is a child node, so it moves with him unless something holds it.** `_keep_the_body_
+## where_it_was_left()` is that something, run every frame he moves rather than reparenting: a
+## reparent mid-`_process` would change the tree under the loop that is walking it, and the body
+## has to be freed with this instance in any case, which staying a child is exactly what
+## guarantees.
+## **Records the place only once.** The branch that calls this runs on every frame he is hunting,
+## because the body is never freed — so without the guard the barrier would be re-left wherever he
+## has walked to, which is a body that follows him at exactly the speed he moves.
+func _leave_the_body_behind() -> void:
+	if _body_left_at == Vector2.INF:
+		_body_left_at = global_position
+	_keep_the_body_where_it_was_left()
+
+func _keep_the_body_where_it_was_left() -> void:
+	if not _obstruction or _body_left_at == Vector2.INF:
+		return
+	_obstruction.global_position = _body_left_at
+
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
 ##
@@ -1135,8 +1170,17 @@ func _process(delta: float) -> void:
 		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
 		# A hunting `abduction` is solid exactly while it is parked — the instant it stops waiting
 		# it is coming for her, and the body comes down the same frame.
-		_obstruction.queue_free()
-		_obstruction = null
+		#
+		# **`body_stays_behind` is the other case, and it is not an exception to that rule.** The
+		# body still stops moving with the pursuer; it stops moving at all. A barrier built across
+		# a road is not the bulk of the man who was standing at it, so he walks out of it and it
+		# stays where it was built — the street he abandoned stays shut. Nothing is pinned, because
+		# nothing follows her.
+		if def.body_stays_behind:
+			_leave_the_body_behind()
+		else:
+			_obstruction.queue_free()
+			_obstruction = null
 
 	_become_solid_once_it_starts()
 
@@ -1146,6 +1190,13 @@ func _process(delta: float) -> void:
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
 		_be_done()
+	if has_left_its_body_behind():
+		# The body is a child of a node that is walking away, and the barrier is drawn at an offset
+		# back to it — so both have to be re-pinned and re-drawn on every frame he moves. A
+		# `_redraw_if_the_picture_changed()` alone cannot see this: the picture is the same picture
+		# at a different offset, and its hash is over states rather than over positions.
+		_keep_the_body_where_it_was_left()
+		queue_redraw()
 	_redraw_if_the_picture_changed()
 
 # ------------------------------------------------------------------- the chat ---
@@ -2063,10 +2114,15 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
 ## no longer merely telegraphing.
+##
+## **Measured from this node, at `def.lethal_reach()`** — which is the field's own core for almost
+## every row and a separate, smaller number for one whose killer is not what the field is drawn
+## around. A roadblock is that row: the node is the man once he leaves the post, and what he
+## reaches with is a pair of arms rather than the width of the barrier he left standing.
 func is_lethal_at(world_position: Vector2) -> bool:
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
 		return false
-	return global_position.distance_to(world_position) <= def.inner_radius
+	return global_position.distance_to(world_position) <= def.lethal_reach()
 
 ## Points this event is projected to land on her over `Tuning.EXPECTED_IMPACT_HORIZON`, **her
 ## position held fixed and only this event moving** — the halo's own quantity (`landed()`, what
@@ -2432,11 +2488,12 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## `def.draws_body_shadow` opts a row out entirely — `burst_water_main` alone today — leaving its
 ## body and its picture untouched: this is the one function that puts a shadow patch down, so
 ## refusing here is the whole of "no shadow" rather than a special case at each call site.
-func _draw_body_shadow(canvas: CanvasItem) -> void:
+func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if not def.draws_body_shadow:
 		return
 	for piece in def.parts():
-		_draw_shape_shadow(canvas, piece.shape, _spread_at(piece.offset_for(_spread_vertical)))
+		_draw_shape_shadow(canvas, piece.shape,
+				origin + _spread_at(piece.offset_for(_spread_vertical)))
 
 ## The ground-plane direction a spread-shaped shadow sweeps along — local Y when the street this
 ## instance stands on is east-west (`_spread_vertical`), local X otherwise. The same axis
@@ -3031,25 +3088,31 @@ func _robber_waiting_heading() -> Vector2:
 			return toward
 	return _heading
 
-## The band while its guards are still posted, a guard once they leave — `is_waiting()` is the same
-## switch `_draw_robber()` reads above, then `is_telegraphing()` again within that for which of the
-## two guard postures: `guard_standing.svg` while it is closing to its stand-off, `guard_lunging.svg`
-## once it actually gives chase. Below `Tuning.HEAT_HUNTS_LEVEL`, `def.pursues` is always false, so
-## a cold or under-threshold roadblock only ever reaches the band.
+## **A barrier with a guard standing at it, from the moment it is placed.** *(2026-09-19: "the
+## guard needs to be at the barrier from the beginning, standing. only then does it make sense for
+## it to start pursuing.")* Nothing here appears and nothing disappears: the band and the man are
+## both drawn for the whole of the event's life, cold or hunting, and the only thing that changes
+## is which of them is moving.
 ##
-## **The band stays exactly as it is until the guards leave, and nothing is left standing once they
-## have.** `def.shape` — the band's own 60px capsule — is what both the drawn barrier and its
-## collision body (`_build_obstruction()`) are built from; the generic pursuer rule in `_process()`
-## frees that same body the frame `is_waiting()` turns false, so the picture and the physical street
-## agree throughout: manned and solid, then neither.
+## - **Cold, or hunting but not yet noticed** (`is_waiting()`), the man stands at the band's own
+##   centre in `guard_standing.svg`. On a cold roadblock that is the whole of what he is: a
+##   drawing, with no field, no body and no cost of his own.
+## - **Once he sets off**, this node *is* him — `_chase()` walks it at her — and the barrier he
+##   left is drawn back at `body_position()`, where its collision body is pinned
+##   (`EventDef.body_stays_behind`). `guard_standing.svg` while his notice runs and
+##   `guard_lunging.svg` once he is actually giving chase, the same `is_telegraphing()` switch
+##   `_draw_robber()` reads.
+##
+## So the street he abandoned stays visibly and physically shut behind him, and what she has to get
+## away from is a man rather than a band of concrete.
 func _draw_roadblock(canvas: CanvasItem = self) -> void:
-	if def.pursues and not is_waiting():
-		_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
-		var texture := GUARD_STANDING if is_telegraphing() else GUARD_LUNGING
-		Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, Vector2.ZERO,
-				_heading_is_west())
-		return
-	_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END, canvas)
+	var band_at := body_position() - global_position
+	_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END, canvas, band_at)
+	var chasing := def.pursues and not is_waiting()
+	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
+	var texture := GUARD_LUNGING if chasing and not is_telegraphing() else GUARD_STANDING
+	Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, Vector2.ZERO,
+			_heading_is_west())
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
 func _draw_fire(canvas: CanvasItem = self) -> void:
@@ -3083,9 +3146,14 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## barrier obstructs 64px and used to draw 70 — which is the picture claiming ground the collision
 ## does not hold. Insetting so the cap's *outer* edge lands on `±half` instead makes the drawn extent
 ## equal the obstructed one, matching the segments above rather than overhanging them.
-func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: CanvasItem = self) -> void:
+## `origin` moves the whole spread, its shadow included, to a local point other than this node's
+## own — which is what a body left standing while its owner walks away needs (`_draw_roadblock()`,
+## `EventDef.body_stays_behind`). Zero, the default, is every other caller: the spread is drawn
+## where the instance is.
+func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: CanvasItem = self,
+		origin := Vector2.ZERO) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas)
+	_draw_body_shadow(canvas, origin)
 	var segment := segment_texture.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -3093,14 +3161,15 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: Can
 	var width := half * 2.0 / segments
 	for i in segments:
 		Sprites.draw_standing(canvas, _packed(segment_texture),
-				_spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
+				origin + _spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
 	if not cap:
 		return
 	var cap_size := cap.get_size()
 	var cap_along := cap_size.y if _spread_vertical else cap_size.x
 	var cap_thickness := cap_size.x if _spread_vertical else cap_size.y
 	for side in [-1.0, 1.0]:
-		Sprites.draw_standing(canvas, _packed(cap), _spread_at(_cap_offset(half, cap_along, side)),
+		Sprites.draw_standing(canvas, _packed(cap),
+				origin + _spread_at(_cap_offset(half, cap_along, side)),
 				_spread_extent(cap_along, cap_thickness))
 
 ## A whole-scene picture is one body, including on an east-west street. Its vertical asset is

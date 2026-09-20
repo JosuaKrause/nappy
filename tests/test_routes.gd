@@ -721,11 +721,12 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 
 # ------------------------------------------------------------------ route kerb tint ---
 
-## M145's own trial, on the pavement M150 narrowed it to: `City._tint_the_route_kerbs()` re-sets
-## cells on `_ground` itself from the same tiles `GroundTiles.source_for` and
-## `city.route_tree().branches_on` already answer independently, so this test recomputes the
-## expected set from those two rather than trusting the paint to have used its own inputs
-## correctly, and checks `_ground`'s cells directly since there is no second layer to read back.
+## The route's own curbstones, tinted whole: `City._tint_the_route_kerbs()` re-sets cells on
+## `_ground` itself when `Corridor.depth(tile) == 0`, the same street-grained membership
+## `RouteTree.streets()`/`is_on_the_tree()` and `GroundTiles.source_for` already answer
+## independently, so this test recomputes the expected set from those rather than trusting the
+## paint to have used its own inputs correctly, and checks `_ground`'s cells directly since there
+## is no second layer to read back.
 func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
 
@@ -741,24 +742,28 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 	city.start_day(state, day, rng)
 
 	var tree := city.route_tree()
+	var corridor := Corridor.of(tree)
 	var expected := {}
-	# One representative tile per distinct tinted kerb source, grouped by street segment: a
-	# segment with two entries has both its pavements tinted, which is legitimate whenever two
-	# branches of the same tree run down opposite sides of the same street length -- the case
-	# the `sides` check below confirms is not read off one side's answer for both.
-	var sides_by_segment := {}
+	# Every kerb tile in the map, grouped by street segment, with which of them sit at depth 0 --
+	# the mark says *this street*, not *this sidewalk*, so the checks below ask whether a segment
+	# is tinted whole on both sides or not at all, never a lone tile or a stretch of one.
+	var tiles_by_segment := {}
 	for y in city.map.size.y:
 		for x in city.map.size.x:
 			var tile := Vector2i(x, y)
 			var source := GroundTiles.source_for(city.map, tile, day)
-			if source in kerb_sources and not tree.branches_on(tile).is_empty():
+			if not (source in kerb_sources):
+				continue
+			var segment := StreetNetwork.segment_containing(tile)
+			if not segment:
+				continue
+			var entry: Dictionary = tiles_by_segment.get(segment.key(), {"tiles": {}, "sources": {}})
+			(entry["tiles"] as Dictionary)[tile] = true
+			(entry["sources"] as Dictionary)[source] = true
+			tiles_by_segment[segment.key()] = entry
+			if corridor.depth(tile) == 0:
 				expected[tile] = true
-				var segment := StreetNetwork.segment_containing(tile)
-				if segment:
-					var sides: Dictionary = sides_by_segment.get(segment.key(), {})
-					sides[source] = tile
-					sides_by_segment[segment.key()] = sides
-	t.check(expected.size() > 0, "the sweep found kerb tiles the tree carries to check (%d)"
+	t.check(expected.size() > 0, "the sweep found kerb tiles at depth 0 to check (%d)"
 			% expected.size())
 
 	var twin_source_ids := {}
@@ -770,10 +775,10 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 		if twin_source_ids.has(city._ground.get_cell_source_id(cell)):
 			twinned[cell] = true
 	t.check(twinned.size() == expected.size(),
-			"Ground carries a route-kerb twin on exactly the kerb tiles the tree carries "
+			"Ground carries a route-kerb twin on exactly the kerb tiles at depth 0 "
 			+ "(%d expected, %d twinned)" % [expected.size(), twinned.size()])
 	for cell in twinned:
-		t.check(expected.has(cell), "twinned cell %s is a kerb tile the tree carries" % cell)
+		t.check(expected.has(cell), "twinned cell %s is a kerb tile at depth 0" % cell)
 	for tile in expected:
 		var plain_source := GroundTiles.source_for(city.map, tile, day)
 		var expected_atlas := GroundLayers.atlas_coords_for(plain_source, city.map.seed_used, tile,
@@ -784,21 +789,90 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 				"Ground's twinned cell at %s keeps the atlas coordinates the plain source would have had"
 				% tile)
 
-	# A street with both kerb lines tinted has tree cells on both its pavements -- not a corner
-	# case: this seed's day 1 finds one on most of its tinted streets, which is what the guard
-	# below is for. Without it, a passing suite would not say whether this shape was ever
-	# actually exercised, and "both kerb lines tinted" reads exactly like the corridor-grain bug
-	# this milestone fixed unless the record shows each side is a real tree cell on its own.
-	var dual_pavement_streets := sides_by_segment.values().filter(
-			func(sides: Dictionary) -> bool: return sides.size() >= 2)
-	t.check(dual_pavement_streets.size() > 0,
-			"the sweep found a street with both kerb lines tinted, to check (%d)"
-			% dual_pavement_streets.size())
-	for sides: Dictionary in dual_pavement_streets:
-		for source: int in sides:
-			var tile: Vector2i = sides[source]
-			t.check(not tree.branches_on(tile).is_empty(),
-					"tile %s, one pavement of a street tinted on both, is a cell the tree carries" % tile)
+	# 1. Whole or nothing: every real street segment is tinted on both kerb lines, every tile, or
+	# not at all -- `RouteTree.is_on_the_tree(key)` is the independent, whole-segment membership
+	# question, and this checks tile by tile that `Corridor.depth()` agrees with it exactly rather
+	# than trusting the two were built the same way.
+	var on_tree_segments := 0
+	var off_tree_segments := 0
+	for key: Vector3i in tiles_by_segment:
+		var entry: Dictionary = tiles_by_segment[key]
+		var segment_tiles: Dictionary = entry["tiles"]
+		var segment_sources: Dictionary = entry["sources"]
+		var tinted_count := 0
+		for tile: Vector2i in segment_tiles:
+			if expected.has(tile):
+				tinted_count += 1
+		if tree.is_on_the_tree(key):
+			on_tree_segments += 1
+			t.check(tinted_count == segment_tiles.size(),
+					"street %s is on the tree, so every one of its %d kerb tiles is tinted (%d tinted)"
+					% [key, segment_tiles.size(), tinted_count])
+			t.check(segment_sources.size() == 2,
+					"street %s carries kerb tiles on both its sides (%d distinct sources)"
+					% [key, segment_sources.size()])
+		else:
+			off_tree_segments += 1
+			t.check(tinted_count == 0,
+					"street %s is not on the tree, so none of its kerb tiles are tinted (%d tinted)"
+					% [key, tinted_count])
+	t.check(on_tree_segments > 0, "the sweep found on-tree streets to check (%d)" % on_tree_segments)
+	t.check(off_tree_segments > 0, "the sweep found off-tree streets to check (%d)" % off_tree_segments)
+
+	# 2. A route that only walks part of a segment -- leaving it through an alley or a park, or
+	# ending at a calm area partway along -- still tints the whole thing. Found independently of
+	# `Corridor.depth()`: `RouteTree.branches_on(tile)` is non-empty on the exact cells a route
+	# walks, so a segment where it is non-empty on some of the segment's kerb tiles and empty on
+	# others (neither zero nor a whole pavement's worth) is a genuine partial run, and it still has
+	# to come back tinted whole in the check above.
+	var partial_run_found := false
+	for key: Vector3i in tiles_by_segment:
+		if not tree.is_on_the_tree(key):
+			continue
+		var segment_tiles: Dictionary = tiles_by_segment[key]["tiles"]
+		var carried := 0
+		for tile: Vector2i in segment_tiles:
+			if not tree.branches_on(tile).is_empty():
+				carried += 1
+		var one_pavement: int = segment_tiles.size() / 2
+		if carried > 0 and carried != one_pavement and carried != segment_tiles.size():
+			partial_run_found = true
+			var tinted_count := 0
+			for tile: Vector2i in segment_tiles:
+				if expected.has(tile):
+					tinted_count += 1
+			t.check(tinted_count == segment_tiles.size(),
+					"street %s, walked by the tree on only %d of its %d kerb tiles, is tinted whole regardless"
+					% [key, carried, segment_tiles.size()])
+	t.check(partial_run_found,
+			"the sweep found a street the tree only partly walked, to check (found one: %s)"
+			% partial_run_found)
+
+	# 3. A street the tree only crosses at a junction is never tinted. `RouteTree.gaps()` is
+	# exactly that shape -- "one street of the tree crossing each end, and nothing of the tree on
+	# the street itself" -- and a stretch of the main road the tree never walked is refused the
+	# same way: its own pavements and carriageway are off the growth graph everywhere but at a
+	# junction (`RouteTree._is_off_the_growths_graph`), so a main-road segment off the tree can
+	# never carry a coloured cell to begin with.
+	var gaps := tree.gaps()
+	t.check(gaps.size() > 0, "the sweep found gap streets (crossed, not walked) to check (%d)"
+			% gaps.size())
+	for key: Vector3i in gaps:
+		var entry: Dictionary = tiles_by_segment.get(key, {"tiles": {}})
+		for tile: Vector2i in (entry["tiles"] as Dictionary):
+			t.check(not expected.has(tile),
+					"tile %s, on a street the tree only crosses at a junction, is not tinted" % tile)
+
+	var main_road_off_tree := 0
+	for key: Vector3i in tiles_by_segment:
+		if key.z != 1 or key.x != city.map.main_road or tree.is_on_the_tree(key):
+			continue
+		main_road_off_tree += 1
+		for tile: Vector2i in (tiles_by_segment[key]["tiles"] as Dictionary):
+			t.check(not expected.has(tile),
+					"tile %s, on a main-road stretch the tree never walked, is not tinted" % tile)
+	t.check(main_road_off_tree > 0,
+			"the sweep found main-road streets off the tree to check (%d)" % main_road_off_tree)
 
 	city.start_finale(state, day + 1)
 	var twinned_after_finale := 0

@@ -155,6 +155,20 @@ out. Asked of `git` at runtime; an exported build has no repository to ask and r
 `CityGenerator.generate()` retries with `seed + 1` when a layout fails its guarantees, so the
 run seed alone does **not** reproduce a city and both have to be written down.
 
+### The escape's header
+
+The escape (`--start-escape`) is not a day and has no day number, act or city seed to head a
+section with, so `Telemetry.begin_finale()` writes `escape  run seed N  length Ns` instead —
+appending `invincible` on the same terms the day header does. **It has to open a section like a
+day does or the log cannot say when anything happened**: the timestamp column only moves while one
+is open, and a day is the only other thing that opens one.
+
+The clock itself is pushed by `main._process_the_finale()`, not by `TelemetryObserver` — the
+observer is built around a `City`, a `RouteTree` and a day's corridor, none of which the escape's
+first section has at all — and it is the same clock the HUD draws, so a log entry and the screen
+never disagree. A lost section writes a `lost` line before its clock goes back to full, so the
+timestamps starting again have a reason above them.
+
 ### `--invincible`
 
 `--invincible` (or the page's own `?invincible=1`, a debug web build only) is `DevFlags`' own
@@ -265,11 +279,11 @@ name the question it answers, or it is a metric and does not belong.
 | `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. A cue is a claim about a moment, and a complaint about a cue's *timing* is invisible to a trace that writes only what was marked |
 | `frame` | observer | **What the frames cost on the device this was played on** — once a second, the frame rate, the worst single frame in that second, the draw calls, renderable objects and primitives the renderer was handed, and the milliseconds spent in `_process` and `_physics_process`. The one entry that is about the machine rather than about the day, and the only way a session played on a phone or on the web page can be read back at all. See "What a frame cost" below |
 | `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile, the count of live event instances, how many transfer PNGs `TextureResolver` loaded, or how many atlases `TextureAtlas` collected — or "nothing else changed that frame" when none did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
-| `texture` | `TextureResolver`, `TextureAtlas`, `GroundLayers` | **When a picture was loaded or dropped, and what it cost** — a transfer PNG read from disk with the path and the milliseconds the read took, an atlas becoming ready with its group, how many pictures it holds, its pixel size, the milliseconds from the request and how much of that the worker thread took, an atlas being released with how long it was drawn from, and the ground's own shared texture being packed with how many sources it covers and what that cost. It is what says whether a picture arrived before it was drawn rather than during the frame that wanted it |
+| `texture` | `TextureResolver`, `TextureAtlas`, `GroundLayers` | **When a picture was loaded or dropped, and what it cost** — a transfer PNG read from disk with the path and the milliseconds the read took, an atlas becoming ready with its group, how many pictures it holds, its pixel size, the milliseconds from the request and the blit duration with its actual main/worker thread, an atlas being released with how long it was drawn from, and the ground's own shared texture being packed with how many sources it covers and what that cost. It is what says whether a picture arrived before it was drawn rather than during the frame that wanted it |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
-| `home` / `lost` | observer | The outcome, the margin, and what was around when it happened |
+| `home` / `lost` | observer, `main.gd` | The outcome, the margin, and what was around when it happened. `main.gd` writes the escape's own `lost` line — which section went, and how far into the sequence — since a lost section restarts the clock and the timestamps would otherwise start again with nothing to say why |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log |
@@ -369,10 +383,86 @@ new per-frame hook added to a gameplay class. A late load reads:
   12.0  spike    38.4ms, mean 16.2ms — 1 pictures loaded
 ```
 
-`"nothing else changed that frame"` is a finding of its own: the hitch was not the game doing
-something extra that frame, which points outside this project's own systems, toward the
-platform. `TextureResolver.warm()` loads every transfer before the day starts, so a `pictures
+`"nothing else changed that frame"` means only that the watched tile, live count, picture loads
+and collected atlases did not change. It cannot exclude other game work, or a retirement and
+spawn that leave the live count unchanged. The legacy delta is simulation time; the counters on
+the once-a-second `frame` line belong to the reporting frame. Use the raw trace below for temporal
+attribution. `TextureResolver.warm()` loads every transfer before the day starts, so a `pictures
 loaded` line in play means the warm pass missed one rather than that late loading is expected.
+
+## Raw frame traces
+
+`--frame-trace` adds an independent debug observer, including under `--no-telemetry`. It observes
+the ordinary city day and nothing else — an escape run (`--start-escape`) attaches no recorder and
+writes no trace — after five seconds of initial active-play wall-clock warmup, with no RNG,
+gameplay changes, per-frame printing or file writes. On scene exit (quit or restart), it exports
+one JSON file under `user://frame-traces/` and prints its absolute path. A forced kill or crash
+loses the in-memory capture. The ordered log's flush-on-entry policy does not apply to this
+explicitly requested diagnostic file.
+
+The clock is `Time.get_ticks_usec()` at `RenderingServer.frame_post_draw`: **a raw monotonic CPU
+callback timestamp after render submission, not physical display presentation/scanout or GPU
+time**. A threaded renderer can defer this callback; `main_thread_is_render_thread` records
+whether the main thread owns rendering. If false, counters are callback-time observations and
+same-render-frame attribution is not established. The project thread-model setting is also
+recorded, but a startup override can supersede it. Draw, process and physics frame IDs identify
+the engine state at the callback. Render counters are sampled at that callback, alongside the
+world counters; `Performance.TIME_PROCESS` and `TIME_PHYSICS_PROCESS` are deliberately absent
+because they are previous-second maxima, not costs of the sampled frame. The existing graph
+continues to show simulation delta and the readout retains its separate labels.
+
+Schema version 1 has `columns` naming the positional fields of every `samples` row, plus
+`environment_start`, `environment_end` and `summary`. An interval ends at its row's timestamp;
+its start is the preceding row's timestamp. A zero interval anchors each new segment. Pauses,
+title screens and ended days break the segment, so idle time is not a hitch. Rows include render
+draws/objects/primitives, live event count and instance-ID sum (a replacement can change the sum
+without changing the count; it is not a collision-free identity record), crowd count, cumulative
+picture loads and atlas collections, object/node/orphan counts, player position in thousandths of
+a pixel, day, and the readout/graph/telemetry states. These describe coincident work; an unchanged
+counter does not establish a cause or rule out unobserved work.
+
+The buffer retains the **first 36,000 samples** in preallocated integer storage (6,336,000 bytes
+for the sample payload). Once full it preserves those samples and increments
+`dropped_after_capacity`; it does not overwrite the hitch or grow. Summaries cover retained
+positive intervals only: nearest-rank p50, p95, p99 and max in milliseconds, plus counts strictly
+above the 60 Hz, 30 Hz and reported display-refresh budgets. These are budget-exceeding callback
+intervals, not a count of physically dropped display frames. Unknown refresh is `-1` in metadata
+and gives a zero refresh budget/count. Metadata records driver-reported VSync mode (Godot's enum;
+`-1` headless), display server, rendering method/driver, viewport/window sizes, engine version,
+FPS cap, seed and the arguments Godot exposes. `user_flags` preserves the complete dev argument
+list; `engine_flags` can omit consumed startup switches, marked by `engine_flags_complete: false`.
+Retain the launch command beside a trace: the effective VSync mode and FPS cap are recorded even
+when their switches are absent from that array. The compositor can still pace independently of
+the driver-reported VSync mode.
+
+For a bounded capture-free walk, use `./tools/run.sh --frame-trace --after 20 --no-title
+--seed 4242 --walk 3s17e`. With `--frame-trace` and `--after`, the input harness accepts walking
+and timed key presses and quits without a screenshot; `--frame-trace` alone waits for your normal
+quit. Engine flags for the pacing trials go before `--` in a direct Godot invocation.
+
+For a controlled trial, keep the seed, walking script, duration and warmup fixed; record without
+screenshots, bursts or `--invincible`. Compare layer `4` off/on, layer `6` off/on and telemetry
+off/on separately. Then compare normal VSync, engine `--disable-vsync`, and engine `--max-fps 60`
+as separate diagnostic trials, keeping the other controls fixed. Inspect the recorded positions
+to verify the route moved, and reject a run with automatic telemetry captures during its measured
+interval. Use a normal exit so the export runs. A pacing trial does not choose shipping settings.
+
+The optional `atlas_phases` member records up to 4,096 CPU spans, including startup before the
+frame warmup, with its own omitted-tail count. Its columns name the group, phase, monotonic start
+and end, actual main-thread status and process frame (`-1` for worker work). Source resolution,
+renderer readback, copy and format conversion form one span; layout/allocation, task submission,
+blit, collection wait, texture creation/submission, region creation/CPU-image release, and release
+wait are separate spans. A threadless export can execute the blit inside task submission, so those
+spans can overlap and must not be summed as exclusive costs. Blit fields are read only after the
+task is joined; an unjoined task has no exported blit span. Report order is collection order, not
+timestamp order. Sort by the endpoints when matching spans to callback intervals.
+
+Texture creation measures the CPU call returning, not GPU upload completion. Release wait covers
+joining an outstanding task, not eventual GPU destruction. The recorder does not cover
+`GroundLayers`' separate ground compositor. A route with no atlas releases measures no release
+cost, and an unchanged collected count cannot exclude a readback or pending task. Normal runs
+retain no phase spans. The ordered log's atlas-ready entry reports the blit's observed thread,
+so a threadless web export does not claim that work ran off the main thread.
 
 ---
 
