@@ -152,3 +152,28 @@ rules out larger.
 22. **The mark's taken state was never a problem and is not changed.**
 23. **The mark is not drawn larger.** What "a little bit more obviously visible" does mean is
     asked back.
+
+## The questions, as they were answered
+
+Put to the player with options and a recommendation each, after "ask away":
+
+- **The first chalk mark**, with days 5, 6, 7 and 8 offered: **"Day 6"**, the day the curfew
+  is announced, leaving eight task days.
+- **How many tasks earn the sabotage**, with all but three, all but one and half offered:
+  **"All but 3"**, five of eight. And, unprompted: *"the sabotage is a must though"*.
+- **When the doors arrive**, with three task days after the first task, day 8 and day 10 or
+  later offered: **"Three task days after the first task"**, day 9.
+- **The city-wide floor**, with removing it, keeping it near masts only and keeping it
+  offered: **"Remove it"**.
+- **New one-place tasks**, any number of four: all four — silence a loudspeaker mast, leave
+  something at the burnt shell, warn a neighbor before a raid, cross a named door.
+- **What happens once on days 9 to 11**, any number of four: all four — a park is taken in
+  front of her, a raid on her own street, the market is gone, a column on the main road.
+- **What makes a mark easier to notice**, after "no larger mark!", with its placement at the
+  alley's mouth, more contrast at the same size, both, and leaving it offered: **"Leave it as
+  it is"**.
+
+And on the misread sentence from PLAYTEST-116, asked whether the indication was about the man
+shouting only:
+
+> "yes, that I did the yeller correctly."
