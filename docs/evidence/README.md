@@ -15,6 +15,10 @@ guarded [`archive/rejected-graphics/`](archive/rejected-graphics/) archive.
 Keep the original filename. It carries the run's timestamp, seed and commit, which is most of what
 makes the file worth having.
 
+Performance measurements, raw frame traces and reproduction commands live in
+[the frame-trace record](m159-frame-traces-2026-09-19/README.md) and
+[the crowd contribution optimization](m159-crowd-rejection-2026-09-19/README.md).
+
 ## Graphics recipes
 
 The scripts, retained inputs and regeneration commands for illustrated graphics and reviews are
@@ -49,7 +53,10 @@ can produce different pixels on another call; extraction and assembly use the re
 | Composed streets and varied grass in generated layouts | [In-engine composition and repeatable layout review](layered-ground-layout-2026-09-12/GENERATION.md) |
 | Forest and park ground in the actual Main scene | [Runtime texture and cell probe](grass-runtime-2026-09-12/GENERATION.md) |
 | Player generation-reference SVG family | [Authoring sources, runtime pairings and frame roles](../graphics-creation/player/README.md) |
-| Blue-overshirt male player, pushing and carrying | [SVG-first sources, generated atlases, native registration and full-family comparison](male-player-2026-09-19/GENERATION.md); [straight-contact review sheet and animation loops](male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md); [retained rejected splice trial](male-player-2026-09-19/b-contact/loops-2026-09-19/README.md) |
+| Blue-overshirt male player, pushing and carrying | [SVG-first sources, generated atlases, native registration and full-family comparison](male-player-2026-09-19/GENERATION.md); [deterministic trouser color match](male-player-2026-09-19/b-contact/color-match-2026-09-19/README.md); [correct profile contact and too-frontal diagonal](male-player-2026-09-19/b-contact/correct-contact-2026-09-19/README.md); [rejected donor normalization and unchanged carrying baseline](male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/README.md); [rejected literal-copy crop](male-player-2026-09-19/b-contact/final-woman-legs-2026-09-19/README.md); [straight-contact review](male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md); [retained rejected splice trial](male-player-2026-09-19/b-contact/loops-2026-09-19/README.md) |
+| Father's initial leg-refinement and donor trials | [First leg-drawing refinement](male-player-2026-09-19/b-contact/leg-refinement-2026-09-19/README.md); [woman-leg donor trial](male-player-2026-09-19/b-contact/woman-leg-trial-2026-09-19/README.md); [diagonal fallback and carrying contact assembly](male-player-2026-09-19/b-contact/diagonal-carrying-2026-09-19/README.md). Attempt history and verdicts: `DECISIONS.md`, M167, the father's natural legs. |
+| Father's uncrossed southeast leg candidate | [Separate walking tracks, whole-figure generation and both animation states](male-player-2026-09-19/b-contact/uncrossed-southeast-2026-09-19/README.md); [rejected crossed-leg candidate](male-player-2026-09-19/b-contact/natural-southeast-2026-09-19/README.md) |
+| Father's body texture, jacket hem and material colors | [Existing upper body and baby, new hem edge and preserved approved legs](male-player-2026-09-19/b-contact/whole-figure-color-2026-09-19/README.md) |
 | Logo, social card and exported icons | [Identity generation and registration](comic-identity-2026-09-12/GENERATION.md) |
 
 ## What is here

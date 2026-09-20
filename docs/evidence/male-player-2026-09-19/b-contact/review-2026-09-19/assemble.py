@@ -11,6 +11,7 @@ from PIL import __version__ as pillow_version
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
+REGISTERED = ROOT / "docs/evidence/male-player-2026-09-19/registered/rig"
 VIEWS = ("front", "back", "side", "front_diagonal")
 LABELS = ("S / front", "N / back", "E / side (W mirrors)", "SE / front diagonal (SW mirrors)")
 NOTES = (
@@ -53,13 +54,19 @@ def rgba(path):
     return Image.open(path).convert("RGBA")
 
 
+def installed_path(view, pose):
+    if pose == "b":
+        return REGISTERED / f"father_{view}_{pose}.png"
+    return ROOT / f"assets/illustrated/svg-transfer/rig/father_{view}_{pose}.png"
+
+
 def inputs():
     result = [HERE / "candidate-raw.png", HERE / "prompt.txt"]
     result += [ROOT / "tools/remove-checkerboard.py", HERE.parent / "review-raster.py"]
     result += [HERE.parent / "inputs/svg-targets-8x.png", HERE.parent / "proof/identity-upper-only.png"]
     result += [ROOT / f"docs/evidence/graphics-reference-{name}.jpeg" for name in ("urban-01", "cardinal")]
     for view in VIEWS:
-        result += [ROOT / f"assets/illustrated/svg-transfer/rig/father_{view}_{pose}.png" for pose in "acb"]
+        result += [installed_path(view, pose) for pose in "acb"]
         result += [HERE.parent / f"inputs/father_{view}_b-{scale}x.png" for scale in (1, 3)]
     return result
 
@@ -131,7 +138,7 @@ def main():
             raise ValueError(f"empty candidate: {view}")
         figure = cell.crop(visible)
         width = 24 if view in ("front", "back") else 26
-        installed = [rgba(ROOT / f"assets/illustrated/svg-transfer/rig/father_{view}_{pose}.png") for pose in "acb"]
+        installed = [rgba(installed_path(view, pose)) for pose in "acb"]
         fitted = figure.resize((round(figure.width * 540 / figure.height), 540), Image.Resampling.LANCZOS)
         x = round(recipe.centroid(installed[1]) * 12 - recipe.centroid(fitted))
         # Diagnostic padding exposes overflow. It never shrinks or clips the figure to pass registration.

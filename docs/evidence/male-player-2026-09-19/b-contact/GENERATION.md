@@ -1,15 +1,23 @@
 # Father B-contact source review
 
-This record contains the four editable pushing B-pose corrections and their source review.
-The illustrated runtime PNGs use the player-approved straight-contact derivatives. Their manifest
-entries preserve the original registered PNGs and identify the accepted override source and hash.
+**Pose-guidance correction:** [PLAYTEST-99](../../../playtests/PLAYTEST-99.md) rejects the
+crossed diagonal derived from this record's image-right near-hip assignment. The original
+father A raster places the near thigh at the screen-left hip. The diagonal table and source
+overlays below describe the retained construction, not a valid anatomical target for the
+uncrossed refinement. Follow the accepted
+[final family](whole-figure-color-2026-09-19/README.md) instead.
 
-The [straight-contact recipe](straight-contact-2026-09-19/README.md) supplies the accepted
-provisional raster: a new father-only donor keeps the near hip, knee and shoe on a continuous
-backward chain. Side and front diagonal use the authorized splice construction, with the
-diagonal's trailing foot raised by the recorded projection. Accepted N/S, NE/NW and every A/C
-frame remain byte-identical to the previous sheet. A separate refinement remains subject to
-visual review and cannot replace these accepted positions on its own.
+This record contains the original four editable pushing B-pose corrections and their source review.
+The illustrated runtime PNGs use the player-approved final family: pushing side and front-diagonal
+B plus carrying back, front, side and front-diagonal B. Their manifest entries preserve the
+original registered PNGs and identify the accepted override source and hash.
+
+The [straight-contact recipe](straight-contact-2026-09-19/README.md) preserves the accepted
+provisional contact raster and its frozen inputs. The final accepted pushing and carrying
+family is the [body-texture and hem assembly](whole-figure-color-2026-09-19/README.md).
+Its recipe preserves the approved leg geometry, restores the matching existing upper body,
+and moves the new jacket edge to the surrounding frames' height. Earlier candidates remain
+available as evidence, with their verdicts in `docs/DECISIONS.md`.
 
 The [retained father-only splice trial](loops-2026-09-19/README.md) preserves the rejected
 eight-direction A/C/B/C sprite sheet and native/6× animation loops. It preserves A's upper pixels
@@ -75,24 +83,24 @@ The northeast/northwest source and PNG are unchanged:
 - `father_back_diagonal_b.png`: SHA-256
   `6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5`.
 
-All A/C poses, carrying poses, stroller pictures and import sidecars remain unchanged. The
-player manifest records current creation hashes and shipped PNG hashes. Its pair verifier proves
-creation/runtime equality, requires each approved runtime B PNG to match its accepted
-straight-contact source, and separately pins the original registered PNG for all four overrides.
+All A/C poses, the remaining 24 father runtime PNGs, stroller pictures and import sidecars remain
+unchanged. The player manifest records current creation hashes and shipped PNG hashes. Its pair
+verifier proves creation/runtime equality, requires each final runtime B PNG to match its
+accepted whole-figure source, and separately pins the original registered PNG for every override.
 
 ## Regeneration
 
-Run from the repository root with fresh output directories. The renderer uses Godot 4.7.2;
-assembly uses the locked Python 3.14/Pillow 12.3.0 environment and Pillow's default label font.
+Run from the repository root with fresh output directories. `inputs/` freezes the four historical
+pushing B SVGs, their family's Godot 4.7.2 source renders and the five stroller PNGs used by the
+proof. The active runtime SVGs are editable fallbacks, not reproduction inputs for this historical
+review. Assembly uses the locked Python 3.14/Pillow 12.3.0 environment and Pillow's default label font.
 
 ```sh
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
-  --script docs/evidence/male-player-2026-09-19/render-sources.gd -- \
-  --output-dir /tmp/father-b-source
-uv run python docs/evidence/male-player-2026-09-19/b-contact/prepare.py \
-  --source-dir /tmp/father-b-source --output-dir /tmp/father-b-review
-uv run python docs/evidence/male-player-2026-09-19/b-contact/prove-source.py \
-  --source-dir /tmp/father-b-source --output-dir /tmp/father-b-proof \
+uv run --frozen python docs/evidence/male-player-2026-09-19/b-contact/prepare.py \
+  --source-dir docs/evidence/male-player-2026-09-19/b-contact/inputs/source-render \
+  --output-dir /tmp/father-b-review
+uv run --frozen python docs/evidence/male-player-2026-09-19/b-contact/prove-source.py \
+  --output-dir /tmp/father-b-proof \
   --verify docs/evidence/male-player-2026-09-19/b-contact/proof/proof.json
 uv run python docs/evidence/male-player-2026-09-19/verify-pairs.py
 ```
@@ -100,8 +108,8 @@ uv run python docs/evidence/male-player-2026-09-19/verify-pairs.py
 The proof script supplies the above-pelvis identity references for raster work.
 The source preview, target crop and JSON files in `inputs/` reproduce with these commands.
 The original `../registration.json` remains immutable: its SVG hashes describe the generation
-inputs for the original PNGs. The manifest's explicit four-pose override records the accepted
-runtime derivatives while preserving the original raw atlas and registered PNGs.
+inputs for the original PNGs. The manifest's explicit overrides record the accepted runtime
+derivatives while preserving the original raw atlas and registered PNGs.
 
 ## Raster acceptance gate
 

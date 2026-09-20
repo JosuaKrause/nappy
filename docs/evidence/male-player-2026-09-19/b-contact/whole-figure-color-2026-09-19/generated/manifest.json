@@ -1,0 +1,394 @@
+{
+  "status": "installed approved final father B-contact family",
+  "method": "Native RGB-only luminance mappings selected by material masks; source alpha and coordinates are unchanged.",
+  "comparison_order": [
+    "diagonal A",
+    "diagonal C",
+    "original diagonal B",
+    "recolored diagonal B"
+  ],
+  "frame_order": [
+    "a",
+    "c",
+    "b",
+    "c"
+  ],
+  "frame_ms": [
+    190,
+    190,
+    190,
+    190
+  ],
+  "fits": {
+    "pushing": {
+      "upper_source": "inputs/pushing/rig/father_front_diagonal_c.png",
+      "upper_rows": [
+        0,
+        26
+      ],
+      "hem_source_region": [
+        7,
+        24,
+        18,
+        26,
+        2
+      ],
+      "hem_destination_pixels": 20,
+      "color_fits": {
+        "jacket": {
+          "candidate_quantiles": {
+            "10": 64.1238,
+            "25": 66.74839999999999,
+            "50": 71.5398,
+            "75": 79.8808,
+            "90": 102.4716
+          },
+          "reference_ac_quantiles": {
+            "10": 60.4596,
+            "25": 70.4258,
+            "50": 75.4888,
+            "75": 80.41659999999999,
+            "90": 83.63839999999999
+          },
+          "transform": {
+            "kind": "affine_luma",
+            "slope": 0.4874437685691753,
+            "offset": 36.57563817054847
+          },
+          "changed_pixels": 18
+        },
+        "pants": {
+          "candidate_quantiles": {
+            "10": 71.60399999999998,
+            "25": 79.965,
+            "50": 89.32719999999999,
+            "75": 101.3312,
+            "90": 103.40339999999999
+          },
+          "reference_ac_quantiles": {
+            "10": 60.5226,
+            "25": 70.671,
+            "50": 90.6802,
+            "75": 112.0464,
+            "90": 119.4034
+          },
+          "transform": {
+            "kind": "luma_gain",
+            "gain": 1.154733790184849
+          },
+          "changed_pixels": 113
+        }
+      },
+      "other_materials": {
+        "skin": {
+          "original_b": {
+            "pixels": 81,
+            "mean_rgb": [
+              176.7,
+              127.3,
+              93.6
+            ],
+            "median_luma": 143.0
+          },
+          "reference_c": {
+            "pixels": 74,
+            "mean_rgb": [
+              171.9,
+              124.7,
+              93.8
+            ],
+            "median_luma": 131.7
+          }
+        },
+        "hair": {
+          "original_b": {
+            "pixels": 27,
+            "mean_rgb": [
+              109.9,
+              70.7,
+              51.3
+            ],
+            "median_luma": 76.7
+          },
+          "reference_c": {
+            "pixels": 28,
+            "mean_rgb": [
+              100.0,
+              66.5,
+              51.9
+            ],
+            "median_luma": 67.4
+          }
+        },
+        "shirt": {
+          "original_b": {
+            "pixels": 9,
+            "mean_rgb": [
+              158.6,
+              157.7,
+              153.3
+            ],
+            "median_luma": 145.2
+          },
+          "reference_c": {
+            "pixels": 13,
+            "mean_rgb": [
+              179.8,
+              171.4,
+              161.1
+            ],
+            "median_luma": 175.3
+          }
+        },
+        "shoes": {
+          "original_b": {
+            "pixels": 27,
+            "mean_rgb": [
+              61.7,
+              62.9,
+              66.5
+            ],
+            "median_luma": 60.6
+          },
+          "reference_c": {
+            "pixels": 39,
+            "mean_rgb": [
+              72.7,
+              73.8,
+              82.2
+            ],
+            "median_luma": 72.1
+          }
+        }
+      }
+    },
+    "carrying": {
+      "upper_source": "inputs/carrying/rig/father_carrying_front_diagonal_c.png",
+      "upper_rows": [
+        0,
+        26
+      ],
+      "hem_source_region": [
+        8,
+        24,
+        19,
+        26,
+        2
+      ],
+      "hem_destination_pixels": 20,
+      "color_fits": {
+        "jacket": {
+          "candidate_quantiles": {
+            "10": 58.97019999999999,
+            "25": 64.46759999999999,
+            "50": 65.847,
+            "75": 72.02919999999999,
+            "90": 104.4034
+          },
+          "reference_ac_quantiles": {
+            "10": 58.157599999999995,
+            "25": 69.851,
+            "50": 78.5702,
+            "75": 87.21719999999999,
+            "90": 91.72380000000001
+          },
+          "transform": {
+            "kind": "affine_luma",
+            "slope": 0.5860960319525331,
+            "offset": 34.234856608800534
+          },
+          "changed_pixels": 17
+        },
+        "pants": {
+          "candidate_quantiles": {
+            "10": 66.306,
+            "25": 76.7484,
+            "50": 89.1146,
+            "75": 101.4034,
+            "90": 103.40339999999999
+          },
+          "reference_ac_quantiles": {
+            "10": 65.961,
+            "25": 80.46759999999999,
+            "50": 106.5478,
+            "75": 126.55699999999999,
+            "90": 134.6212
+          },
+          "transform": {
+            "kind": "luma_gain",
+            "gain": 1.301903032202036
+          },
+          "changed_pixels": 114
+        }
+      },
+      "other_materials": {
+        "skin": {
+          "original_b": {
+            "pixels": 101,
+            "mean_rgb": [
+              183.9,
+              132.9,
+              97.1
+            ],
+            "median_luma": 156.8
+          },
+          "reference_c": {
+            "pixels": 102,
+            "mean_rgb": [
+              180.0,
+              131.5,
+              98.2
+            ],
+            "median_luma": 154.4
+          }
+        },
+        "hair": {
+          "original_b": {
+            "pixels": 32,
+            "mean_rgb": [
+              110.3,
+              72.3,
+              53.5
+            ],
+            "median_luma": 85.4
+          },
+          "reference_c": {
+            "pixels": 34,
+            "mean_rgb": [
+              102.9,
+              67.4,
+              51.4
+            ],
+            "median_luma": 72.9
+          }
+        },
+        "shirt": {
+          "original_b": {
+            "pixels": 13,
+            "mean_rgb": [
+              163.5,
+              161.8,
+              157.8
+            ],
+            "median_luma": 156.1
+          },
+          "reference_c": {
+            "pixels": 10,
+            "mean_rgb": [
+              163.5,
+              161.5,
+              158.6
+            ],
+            "median_luma": 162.3
+          }
+        },
+        "shoes": {
+          "original_b": {
+            "pixels": 26,
+            "mean_rgb": [
+              62.0,
+              64.0,
+              68.0
+            ],
+            "median_luma": 61.5
+          },
+          "reference_c": {
+            "pixels": 27,
+            "mean_rgb": [
+              73.0,
+              72.3,
+              77.7
+            ],
+            "median_luma": 73.7
+          }
+        },
+        "baby": {
+          "original_b": {
+            "pixels": 32,
+            "mean_rgb": [
+              204.9,
+              150.7,
+              111.2
+            ],
+            "median_luma": 166.4
+          },
+          "reference_c": {
+            "pixels": 32,
+            "mean_rgb": [
+              199.8,
+              147.1,
+              109.2
+            ],
+            "median_luma": 162.5
+          }
+        },
+        "blanket": {
+          "original_b": {
+            "pixels": 72,
+            "mean_rgb": [
+              74.6,
+              100.4,
+              128.0
+            ],
+            "median_luma": 88.5
+          },
+          "reference_c": {
+            "pixels": 74,
+            "mean_rgb": [
+              69.8,
+              92.4,
+              120.2
+            ],
+            "median_luma": 83.5
+          }
+        }
+      }
+    }
+  },
+  "files": {
+    "carrying/carrying-animation-6x.gif": "ec5bca8d868470aa2e2771f160e610daf6570768b4db05e033bf5f1f6ed3ea53",
+    "carrying/carrying-animation-native.gif": "a29dcb29814191f4512e9f5c0f9e95e2a19e6953b275b8baeeb4118894f46011",
+    "carrying/carrying-spritesheet-6x.png": "8fb21a484bf356af2e02820d189e6275559543d5ae20ab02f3115cfaaf0b6e45",
+    "carrying/carrying-spritesheet-native.png": "fd0cc61881f39f8d45b44fde5a9f410114c3ee3a5b4ee4bf4802ab72a9447519",
+    "carrying/comparison-a-c-original-recolor-12x.png": "02ca555b430a0cf6fd275472aa41c781014e1fdd51e67fbdd180a45bc45a78ef",
+    "carrying/masks/jacket-mask.png": "3f4c53eea5827ffd33d783c9144897a77e5f4aa0dfcad9158fe4ca9cf4102e4d",
+    "carrying/masks/pants-mask.png": "d4b42ec9771ab47acb8d18a8b7a13ebfd8c172114457e974271b975c57f7c641",
+    "carrying/rig/father_carrying_back_a.png": "86c5dcc6cf0e0e63de85986caf209a09954aa559f30a8eac86aa048f40e3e13e",
+    "carrying/rig/father_carrying_back_b.png": "192ea71c2af3dc1ad443e39f6c57e58159a2caf9aac751ff969910a17fbfb888",
+    "carrying/rig/father_carrying_back_c.png": "282768f8a545db7bf6fe841a83127635c78bdce920d81ccdf85ac2442fbdb8cc",
+    "carrying/rig/father_carrying_back_diagonal_a.png": "584185510f738423a654734c5b537380fbc44bc9cf1e013bef41a10fe4848acb",
+    "carrying/rig/father_carrying_back_diagonal_b.png": "4a62f16c79af673794a8b7d0652d28b9f761202655627ad6d1348f3ccefefae8",
+    "carrying/rig/father_carrying_back_diagonal_c.png": "5fcc8b0629fb8a42187348b57ea7673f6e5155bed5ff21275a8c1761c412d99e",
+    "carrying/rig/father_carrying_front_a.png": "5b3b2094df0627158a2982a787858556e121aecea5844b2cbf3e9eb13f447a37",
+    "carrying/rig/father_carrying_front_b.png": "d477d78d37441ebdba96db32628702381519d006c57a600f05dcba8ec2b9deae",
+    "carrying/rig/father_carrying_front_c.png": "2e45e1d7ab07e5fd5bd46a2402da5dff7c72e5662440bc5e956c8d0fff3c204c",
+    "carrying/rig/father_carrying_front_diagonal_a.png": "be9f1a049c2b29f89e803a88f1fff08fb4c6ec9f80084404316c003e9988bbb7",
+    "carrying/rig/father_carrying_front_diagonal_b.png": "187c0860b0bf52135b0668d9884dc9e0ac06e84c22e8fd105734a1c079007fb0",
+    "carrying/rig/father_carrying_front_diagonal_c.png": "93166bc4c89e77c65414deaa7995bfb7f5f2fe3eeb465b8c6a0f68fd1e9abf80",
+    "carrying/rig/father_carrying_side_a.png": "acb36e5aee89698a266ad000d3be70563cbfaf21714b0105041bce95e6966bec",
+    "carrying/rig/father_carrying_side_b.png": "8a8df0912f46641a6c5706ce3b4a45db04d679c2f7b5bc49416c687dad7981cd",
+    "carrying/rig/father_carrying_side_c.png": "488b4ab07f85678378aa497b7b0e1e1bb1dc172953fe091de0dc27146a863d44",
+    "pushing/comparison-a-c-original-recolor-12x.png": "79308cf0ee30366318c6d276412ea1e58a0332cb18057d9c45b0004f2ca91b1d",
+    "pushing/masks/jacket-mask.png": "d9702e08b62df73c63a26e2d7311ae754cee9462a420753eb00a40dcbd8f95ba",
+    "pushing/masks/pants-mask.png": "1759f3e9b367cd6bc42294390f65795e1b9ba06687f89068551bcd48729f6b14",
+    "pushing/pushing-animation-6x.gif": "e2f621d11b9dea0752164babeb9274f811a42333fced2440d111c38e6b7ac73a",
+    "pushing/pushing-animation-native.gif": "2729024ab74237d1795bc0cb79676b275bf795bbc937a3de1cf72887662bd7f4",
+    "pushing/pushing-spritesheet-6x.png": "50461bceadd1955222f7ba0081405029df50bbfb6400964b01d504bc54da6355",
+    "pushing/pushing-spritesheet-native.png": "74f5f2fbfaf79c8f5ab5474018635405b3810a621df1dea12405bbd7167dc994",
+    "pushing/rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "pushing/rig/father_back_b.png": "3bc4297fef285d64578f7051f91eba3ce1962519a63d3cf4e40c5105bb1d9b7b",
+    "pushing/rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "pushing/rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "pushing/rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "pushing/rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4",
+    "pushing/rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "pushing/rig/father_front_b.png": "6bd88f5fe27cabfc1f8684922315f1f33a16e3462031a14e1eee0dea4456cccc",
+    "pushing/rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "pushing/rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "pushing/rig/father_front_diagonal_b.png": "68246974f8c247e540b4ca01c9062b41de2f4f55ad4c8af2ffd12c74bf1aa4a1",
+    "pushing/rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "pushing/rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "pushing/rig/father_side_b.png": "9bcd63d4af8bc79744e3722d73832e4e19a7f2211aa95f9c881a13983c865eeb",
+    "pushing/rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "status": "uninstalled one-pass player-review trial; no runtime art changed",
+  "directions": [
+    [
+      "N",
+      "back",
+      false
+    ],
+    [
+      "NE",
+      "back_diagonal",
+      false
+    ],
+    [
+      "E",
+      "side",
+      false
+    ],
+    [
+      "SE",
+      "front_diagonal",
+      false
+    ],
+    [
+      "S",
+      "front",
+      false
+    ],
+    [
+      "SW",
+      "front_diagonal",
+      true
+    ],
+    [
+      "W",
+      "side",
+      true
+    ],
+    [
+      "NW",
+      "back_diagonal",
+      true
+    ]
+  ],
+  "loop": [
+    "a",
+    "c",
+    "b",
+    "c"
+  ],
+  "frame_ms": [
+    190,
+    190,
+    190,
+    190
+  ],
+  "protected": "all A/C and N/S/NE/NW B byte-identical; changed B rows 0..27 exact",
+  "donor_lock": "mother B rows 34..45 byte-identical to the accepted native PNG",
+  "generated_join_rows": [
+    28,
+    33
+  ],
+  "registration": {
+    "side": {
+      "raw_half": [
+        0,
+        0,
+        627,
+        1254
+      ],
+      "alpha_crop_within_half": [
+        116,
+        303,
+        465,
+        966
+      ],
+      "fit": [
+        24,
+        45
+      ],
+      "placement": [
+        1,
+        1
+      ]
+    },
+    "front_diagonal": {
+      "raw_half": [
+        627,
+        0,
+        1254,
+        1254
+      ],
+      "alpha_crop_within_half": [
+        186,
+        303,
+        477,
+        964
+      ],
+      "fit": [
+        20,
+        45
+      ],
+      "placement": [
+        3,
+        1
+      ]
+    }
+  },
+  "input_manifest_sha256": "15b9966b25200228108b62234b288a4476a681542283f85b526ddcc949c8424e",
+  "outputs": {
+    "father-animation-6x.gif": "e75ef0a93f1abfbb3117ea7eda41fb130f4186e05f2ab199ecb855f74a0f659a",
+    "father-animation-native.gif": "09ed4c4e3e57ce943d5ad24e38a66ec651f1526e3b0de568ca1468a2716f2f8c",
+    "father-spritesheet-6x.png": "d1a62ff0caf7b6a131f7b284fb69ed60578d34303ad2ee6cdce569e0f0eae2fb",
+    "father-spritesheet-native.png": "ae72e506c3b0c073e624450d3deb30daac33987db61c4545eadf0089bd752785",
+    "rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "rig/father_back_b.png": "3bc4297fef285d64578f7051f91eba3ce1962519a63d3cf4e40c5105bb1d9b7b",
+    "rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4",
+    "rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "rig/father_front_b.png": "6bd88f5fe27cabfc1f8684922315f1f33a16e3462031a14e1eee0dea4456cccc",
+    "rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "rig/father_front_diagonal_b.png": "30545caa3f82298cb476641b4b64ab02a2cbb7132923f89c7a754431de521456",
+    "rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "rig/father_side_b.png": "11bd4224bd1d1b272626823a00f27751eb33da97632be9094b25de235208a71e",
+    "rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b"
+  }
+}

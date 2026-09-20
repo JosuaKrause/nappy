@@ -68,7 +68,7 @@ Its father-frame inputs are the retained original `generated/rig/` files, rather
 runtime directory, so later approved runtime contacts cannot alter this rejected trial's
 reproduction.
 `generated/manifest.json` records crops, transformations, compositing order, canvas/alpha bounds,
-direction order, timing and output hashes. The original runtime images remain unchanged. The
+direction order, timing and output hashes. The frozen original input images remain unchanged. The
 rejected four-pose comparison remains preserved in `../review-2026-09-19/` as superseded evidence.
 
 Run from the repository root with the locked Python 3.14/Pillow 12.3 environment and a fresh
