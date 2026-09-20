@@ -1,11 +1,8 @@
-<!-- Poster worker at a free-standing advertising column, side. A square has no wall to paste on,
-     so the crew works at the column the square already carries; the column is the same object in
-     every view of this family, being a cylinder, and the worker is `poster_crew_side.svg`'s own
-     figure unaltered, translated 7px east so his body stays on the canvas centre and the row's
-     11px point body keeps covering him. The column carries its own baked contact shadow because
-     the runtime only draws one under that point body, and its base stands a couple of pixels
-     above his feet so it reads as standing behind him. The fresh sheet runs off round the
-     cylinder, with his hand over its edge. Ground anchor (22,44). -->
+<!-- Poster worker at a free-standing advertising column, back. Same cylinder and same registration
+     as the rest of this family; the worker is `poster_crew_back.svg`'s own figure, translated 7px
+     east so his body stays on the canvas centre. Seen from behind, the sheet on the column is the
+     reverse of a pasted bill and carries no writing, the same convention the sidewalk crew's own
+     back view uses. Ground anchor (22,44). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <ellipse cx="37" cy="42.5" rx="8.5" ry="2.6" fill="#55504a"/>
   <rect x="31" y="9" width="12" height="33" fill="#8f897c"/>
@@ -17,9 +14,8 @@
   <ellipse cx="37" cy="6.4" rx="6" ry="2.2" fill="#847d71"/>
   <rect x="36.2" y="2.4" width="1.6" height="4" fill="#5c574e"/>
   <circle cx="37" cy="2.2" r="1.5" fill="#5c574e"/>
-  <path d="M31 11 L37.5 12 L37.5 25 L31 24Z" fill="#e0d8c4"/>
-  <path d="M31.8 14 L36.7 14.8 L36.7 17.4 L31.8 16.6Z" fill="#c4503c"/>
-  <path d="M31.8 19.8 L36.4 20.4 M31.8 22 L34.8 22.4" fill="none" stroke="#5c5248" stroke-width="0.8"/>
+  <rect x="32" y="12" width="9" height="13" fill="#e0d8c4"/>
+  <path d="M34 14 L35 24" fill="none" stroke="#b8ae98" stroke-width="1"/>
   <g transform="translate(7 0)">
   <path d="M1 36 Q5 34 9 36 L9 43 L1 43Z" fill="#58524d"/>
   <ellipse cx="5" cy="36" rx="4" ry="1.5" fill="#7a736c"/>
@@ -28,18 +24,17 @@
   <path d="M-4 30 L0 30 L-1 42 L-5 42Z M2 30 L6 30 L7 42 L3 42Z" fill="#5c6b5c"/>
   <path d="M-6 42 L0 42 L0 44 L-7 44Z M2 42 L8 42 L9 44 L2 44Z" fill="#221f28"/>
   </g>
+  <path d="M20 16 L24 10 L27 11 L26 18 L20 20Z" fill="#4c5a4c"/>
   <g transform="translate(15 13)">
-  <path d="M-3 0 L3 -1 L7 2 L6 18 L-4 19Z" fill="#5c6b5c"/>
+  <path d="M-7 0 L7 0 L7 18 L-7 18Z" fill="#5c6b5c"/>
   <path d="M-6 12 L6 12 L6 18 L-6 18Z" fill="#4c5a4c"/>
   </g>
   <path d="M9 16 L7 24 L8 29 L11 29 L12 19Z" fill="#4c5a4c"/>
   <rect x="5" y="28" width="6" height="2" fill="#8a6f52"/>
   <rect x="4" y="27" width="2" height="4" fill="#b8a67c"/>
   <g transform="translate(15 8)">
-  <path d="M-3 -6 Q3 -7 5 -3 L5 0 L7 2 L5 3 Q5 7 0 6 L-4 4 Z" fill="#d9a878"/>
-  <path d="M-5 1 Q-6 -6 0 -7 Q4 -7 5 -3 L1 -3 L0 2 L-3 3Z" fill="#3a2b26"/>
-  <circle cx="4" cy="0" r="0.5" fill="#221f28"/>
+  <ellipse cx="0" cy="0" rx="6" ry="6.5" fill="#3a2b26"/>
+  <path d="M-4 2 Q0 6 4 2" fill="none" stroke="#3a2b26" stroke-width="0.8"/>
   </g>
-  <path d="M20 16 L24 10 L27 11 L26 18 L20 20Z" fill="#4c5a4c"/>
   </g>
 </svg>
