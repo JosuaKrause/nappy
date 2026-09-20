@@ -1341,7 +1341,11 @@ func _test_no_spike_line_with_the_flag_off(t) -> void:
 
 ## A baked page says which of the two sanctioned moments it was read from disk in, how long the
 ## read took and how big the page is — the line a reader scans to answer "did anything load in a
-## frame somebody was walking in". `OUTSIDE` is the fourth value it can carry and is deliberately
+## frame somebody was walking in" — and says again, on the release that actually drops it, how
+## long it was resident. **Both halves are one line each, per page rather than per call**: a
+## second `acquire()` of a resident page reads nothing and a release above the last frees nothing,
+## so a line for either would report a load or a drop that did not happen.
+## `OUTSIDE` is the fourth value the load line can carry and is deliberately
 ## not produced here: `AtlasLibrary.acquire()` raises a real engine error on it, and an engine
 ## error in a suite makes the gate red whether or not a test expected it. What that value means
 ## is `tests/test_atlas_loading.gd`'s, asked through `moment_for_a_load()` with nothing loaded.
@@ -1358,25 +1362,38 @@ func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
 	AtlasLibrary.hold_for_the_process(&"events")
 	AtlasLibrary.close_loading_window()
 	# The second acquire is a consumer's, on a page already resident: it reads nothing, so it
-	# must not write a second line about a load that did not happen.
+	# must not write a second line about a load that did not happen — and its release drops no
+	# memory, so that must not write one either.
 	AtlasLibrary.acquire(&"events")
 	AtlasLibrary.release(&"events")
-	var lines: Array[String] = []
-	for line: String in Telemetry.current_log().lines:
-		if line.contains("atlas page 'events'"):
-			lines.append(line)
-	Telemetry.end_run()
 	AtlasLibrary.stop_holding(&"events")
+	var loaded: Array[String] = []
+	var released: Array[String] = []
+	for line: String in Telemetry.current_log().lines:
+		if not line.contains("atlas page 'events'"):
+			continue
+		if line.contains("released"):
+			released.append(line)
+		else:
+			loaded.append(line)
+	Telemetry.end_run()
 	AtlasLibrary.release_the_loading_moments()
 
-	t.check(lines.size() == 1, "one line per page actually read from disk (got %d)" % lines.size())
-	for line in lines:
+	t.check(loaded.size() == 1, "one line per page actually read from disk (got %d)" % loaded.size())
+	for line in loaded:
 		t.check(line.substr(6, 2) == "  " and line.contains("texture"),
 				"the page line is an ordinary texture entry (got '%s')" % line)
 		t.check(line.contains("in the startup"),
 				"and names the moment it loaded in (got '%s')" % line)
 		t.check(line.contains(" ms") and line.contains(" x "),
 				"with what the read cost and how big the page is (got '%s')" % line)
+	t.check(released.size() == 1,
+			"and one line per page actually dropped, not per release (got %d)" % released.size())
+	for line in released:
+		t.check(line.substr(6, 2) == "  " and line.contains("texture"),
+				"the release line is an ordinary texture entry too (got '%s')" % line)
+		t.check(line.contains(" s: ") and line.contains(" x "),
+				"saying how long the page was resident and how big it was (got '%s')" % line)
 
 # ------------------------------------------------------------------ helpers ---
 

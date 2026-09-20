@@ -92,6 +92,9 @@ class Page extends RefCounted:
 	var count := 0
 	var size := Vector2i.ZERO
 	var padding := "transparent"
+	## When the page was last read from disk, so the line the release writes can say how long the
+	## page was actually resident. `-1` while nothing holds it.
+	var loaded_at_usec := -1
 	## Region name -> the `AtlasTexture` handed out for it, dropped with the page.
 	var textures: Dictionary = {}
 
@@ -562,6 +565,7 @@ static func acquire(group: StringName) -> void:
 		page.count = 0
 		return
 	page.texture = texture
+	page.loaded_at_usec = started
 	_load_moments[group] = moment
 	# Written before the error below, so an offending load is in the log whichever way the run
 	# ends. `texture` is the kind docs/TELEMETRY.md already gives to "when a picture was loaded
@@ -593,6 +597,14 @@ static func _note(kind: String, text: String) -> void:
 
 ## Drops a reference on `group`, freeing its page and every region handed out over it on the
 ## last one. A `release()` with nothing acquired is a programming error and says so.
+##
+## **The last release writes the other half of the page's own pair of lines** — the group, how
+## long it was resident and how big it was — so a reader who finds a page loading twice in one run
+## can see the drop between the two reads rather than inferring it from a second load line. Only
+## the last one: every release above it costs nothing and drops no memory, so a line for it would
+## say a page went when it did not. A page held for the life of the process
+## (`hold_for_the_process()`) never reaches this in an ordinary run; the held restart's swap of one
+## parent's page for the other's is what does.
 static func release(group: StringName) -> void:
 	_load_table()
 	var page: Page = _pages.get(group)
@@ -607,6 +619,10 @@ static func release(group: StringName) -> void:
 		return
 	page.textures.clear()
 	page.texture = null
+	var held := Time.get_ticks_usec() - page.loaded_at_usec
+	page.loaded_at_usec = -1
+	_note("texture", "atlas page '%s' released after %.1f s: %d x %d"
+			% [group, held / 1000000.0, page.size.x, page.size.y])
 
 ## Whether `group` currently holds its page.
 static func is_acquired(group: StringName) -> bool:
