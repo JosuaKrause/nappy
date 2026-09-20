@@ -17,9 +17,10 @@ description" keeps the one text that is curated before a merge.
 
 **What changed with it.** `git branch -d` refuses a squash-merged branch, so branch cleanup
 asks GitHub for the PR's state and compares the merged head with the local tip before `-D`.
-Evidence links pinned to a branch commit rest on GitHub keeping `refs/pull/<n>/head`; that was
-reasoned rather than observed at the switch, every earlier PR's commits being reachable from
-`main`, so the committing skill has a link fetched after each merge.
+Evidence links pinned to a branch commit rest on GitHub keeping `refs/pull/<n>/head`; the
+player confirmed it: "I think images will survive if you use the commit hash" … "only branch
+names disappear". A check that fetched one link after each merge was drafted and dropped on
+that answer.
 
 ## M171, the atlas design — 2026-09-19
 

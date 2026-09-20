@@ -143,9 +143,7 @@ A branch commit's URL survives both the squash and the branch's deletion because
 every pull request's commits reachable under `refs/pull/<n>/head`. **The hash has to be the one
 the file was committed in or a later commit on the branch**, so write the description after the
 evidence commit exists — `git rev-parse HEAD` — and if the evidence is amended, update the link.
-After the merge has deleted the branch, fetch one of the description's links (`curl -sI`) and
-see it answer; a link that does not is replaced with the same path at the squashed commit on
-`main`.
+*(2026-09-19: "images will survive if you use the commit hash"; "only branch names disappear".)*
 
 The alternative that does not depend on the repository at all is uploading the image to GitHub as an
 attachment, which is what dragging a file into the PR text box does; it cannot be done from `gh`, so
