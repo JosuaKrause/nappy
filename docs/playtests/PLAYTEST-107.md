@@ -1,4 +1,4 @@
-# Playtest 99 — The poster crew on a square is its own entity
+# Playtest 107 — The poster crew on a square is its own entity
 
 **Date:** 2026-09-19
 

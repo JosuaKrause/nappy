@@ -489,12 +489,12 @@ covered is one that either reached the day past the rules or is read as covered 
 the probe and the rule:
 
 - [ ] **A poster crew for squares, as its own row.** *(2026-09-19: "we need a separate square
-      poster crew entity for this", [PLAYTEST-99](playtests/PLAYTEST-99.md).)* `poster_crew`
+      poster crew entity for this", [PLAYTEST-107](playtests/PLAYTEST-107.md).)* `poster_crew`
       stands `AGAINST_THE_BUILDING` and so cannot be placed on a `SQUARE` tile, which its
       `placement` still lists. A second row places on squares only, with a look and a picture of
       its own, and `poster_crew` stops listing `SQUARE`.
 - [ ] **A wall by fit gets no pull toward junction rims.** *(2026-09-19: "A. No … do that",
-      [PLAYTEST-99](playtests/PLAYTEST-99.md).)* `delivery_van` is a wall because it leaves 26px
+      [PLAYTEST-107](playtests/PLAYTEST-107.md).)* `delivery_van` is a wall because it leaves 26px
       of lane, and as a wall it is weighed toward junction rims (`Tuning.EVENT_WALL_RIM_WEIGHT`),
       which took the zero-cost-line share from 262 to 258 of 296. The rim weight is for rows that
       are walls by cost; a row that is a wall only by fit keeps the zero copies on route cells and

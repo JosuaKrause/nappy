@@ -3244,7 +3244,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 			% solid_on_a_sidewalk)
 
 ## **A row pinned to one side of a pavement may not be offered ground that has no sides.**
-## *(2026-09-19: "we need a separate square poster crew entity for this", PLAYTEST-99.)* A square
+## *(2026-09-19: "we need a separate square poster crew entity for this", PLAYTEST-107.)* A square
 ## answers no `CityMap.pavement_inward`, so `EventScheduler._wants_this_side` refuses every square
 ## tile to a row carrying `AT_THE_KERB` or `AGAINST_THE_BUILDING` — and a `placement` entry whose
 ## every tile is refused is not a placement, it is a kind of ground the row silently stopped
@@ -3278,7 +3278,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 			ground).is_empty(), "and the sidewalk crew still has ground of its own to stand on")
 
 ## **The square's poster crew stands on squares and on nothing else.** *(2026-09-19: "we need a
-## separate square poster crew entity for this", PLAYTEST-99.)* The sidewalk crew pastes against
+## separate square poster crew entity for this", PLAYTEST-107.)* The sidewalk crew pastes against
 ## a building and the square crew at the column a square has instead of one; what makes them two
 ## rows rather than one is the ground, so the ground is what this asserts.
 ##

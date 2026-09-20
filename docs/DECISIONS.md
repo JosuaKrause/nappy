@@ -37,7 +37,7 @@ holds no sidewalk tile; the two `_ensure_*` passes only remove. None needed a ch
 sited `AGAINST_THE_BUILDING`, where it leaves 37px on the curb side and is friction again, which
 is also where a crew pasting posters works. It can no longer appear on a square, since a
 row that stands against a building needs one beside it; the player asked for a separate square
-crew ([PLAYTEST-99](playtests/PLAYTEST-99.md)), an open item under M129 in `TODO.md`.
+crew ([PLAYTEST-107](playtests/PLAYTEST-107.md)), an open item under M129 in `TODO.md`.
 
 **What it cost, measured.** `delivery_van` still plans 43.2 a day; 46 of about 1036 in the sample
 stand on a route street's far sidewalk where none did. The zero-cost-line share went 262 to 258

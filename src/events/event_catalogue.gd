@@ -1372,7 +1372,7 @@ static func _poster_crew() -> EventDef:
 	return def
 
 ## The same crew, on a square, at a free-standing advertising column. *(2026-09-19: "we need a
-## separate square poster crew entity for this", PLAYTEST-99.)*
+## separate square poster crew entity for this", PLAYTEST-107.)*
 ##
 ## **Every number here is `poster_crew`'s on purpose, bar the two that are the split.** The field
 ## (5.0 over 30-110px), the telegraph, the 11px point body, the first day and the act tag are the
