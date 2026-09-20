@@ -150,13 +150,58 @@ run_one_process() {
 	return "$status"
 }
 
+## Stages tests/runner_fixtures/<name>.gd.src to its real tests/runner_fixtures/<name>.gd path for
+## one named argument, if that source exists and nothing is already sitting at the destination.
+## Prints the staged path so the caller can remove it again.
+##
+## **Why a fixture is ever kept off its real .gd name.** A `.gd` anywhere in the project tree is
+## something both Godot's global class-name scan and the atlas bake above walk, and when
+## `.godot/`'s class-name cache is cold -- a fresh clone's first run, or any checkout with
+## `.godot/` removed, which is the state every clone starts in since `.godot/` is gitignored -- an
+## unparseable one among them makes every autoload that resolves through a `class_name` lookup
+## fail to instantiate for that one process, not just the suite that named it. See
+## tests/runner_fixtures/unparseable_suite.gd.src's own header for the measurement. Staging here
+## happens after the bake and the import pass above have already run against a tree with no
+## broken `.gd` in it, and only for the one process about to load it.
+stage_runner_fixture() {
+	local arg="$1" src dst
+	case "$arg" in
+		runner_fixtures/*.gd) ;;
+		*) return 0 ;;
+	esac
+	src="$PROJECT_DIR/tests/${arg}.src"
+	dst="$PROJECT_DIR/tests/${arg}"
+	[[ -f "$src" ]] || return 0
+	if [[ -f "$dst" ]]; then
+		echo "tools/test.sh: $dst already exists on disk -- not staging over it" >&2
+		return 1
+	fi
+	cp "$src" "$dst"
+	printf '%s\n' "$dst"
+}
+
 # A filtered run is one process and says so loudly, which is the runner's own rule: a partial pass
 # has to be impossible to mistake for a green build. `--serial` is the same path, unfiltered.
 if [[ $# -gt 0 || $serial -eq 1 ]]; then
+    staged=()
+    # Removed on every exit from this branch -- a normal return, an error return, or a signal --
+    # so a staged fixture never survives the one process it was staged for.
+    cleanup_staged() {
+		local f
+		for f in "${staged[@]+"${staged[@]}"}"; do
+			rm -f "$f" "$f.uid"
+		done
+    }
+    trap cleanup_staged EXIT
+    for arg in "$@"; do
+        staged_path="$(stage_runner_fixture "$arg")" || exit 1
+        if [[ -n "$staged_path" ]]; then
+            staged+=("$staged_path")
+        fi
+    done
     run_one_process "$@"
     exit $?
 fi
-
 # ------------------------------------------------------------------- sharding ---
 
 ## Cost of a suite in milliseconds, read from tests/suite_costs.txt and only ever used to decide
@@ -322,9 +367,10 @@ for ((i = 0; i < SHARDS; i++)); do
 
 	counted="$(grep -E '^[0-9]+ checks, [0-9]+ failures$' "$log" | tail -1)"
 	if [[ -z "$counted" ]]; then
-		# A shard that printed no count did not finish. A parse error in any suite aborts the
-		# runner's `_ready()` before it can quit, so the process sits there printing nothing —
-		# which is why this is a hard failure rather than a shard contributing zero.
+		# A shard that printed no count did not finish. A suite that fails to load is a named
+		# `FAIL` line and a normal exit now (`run_tests.gd`'s loader guard), so a missing count
+		# here means the process crashed outright or is hung on something the guard does not
+		# cover -- which is why this is a hard failure rather than a shard contributing zero.
 		echo "shard $i produced no count — it crashed or hung. Its output:" >&2
 		sed 's/^/    /' "$log" >&2
 		status=1

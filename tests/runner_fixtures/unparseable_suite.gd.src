@@ -1,0 +1,25 @@
+extends RefCounted
+## A suite that does not parse, held outside suite discovery on purpose, that proves
+## `run_tests.gd`'s loader guard turns a broken suite into a reported failure rather than a hang.
+##
+##     tools/test.sh runner_fixtures/unparseable_suite.gd
+##
+## **Committed as `.gd.src`, not `.gd`.** Godot's own global class-name scan and
+## `tools/bake-atlases.sh`'s engine boot both walk every `.gd` file under the project root, and
+## when `.godot/`'s class-name cache is cold — a fresh clone's first run, or any checkout with
+## `.godot/` removed — a single unparseable `.gd` anywhere in the tree, this file's own directory
+## included, makes every autoload that resolves through a `class_name` lookup (`Tuning`,
+## `EventBus`, `Telemetry`, `GameState`) fail to instantiate for that one process: measured
+## directly against this file's own contents, moved to `res://tests/runner_fixtures/`, with
+## `.godot/` and the baked atlas manifest both removed to match a fresh clone. `tools/test.sh`
+## stages this source to its real `.gd` path only for the one process that names it — after its
+## own atlas bake and import pass have already run against a tree with no broken `.gd` in it —
+## and removes the staged copy, and the `.uid` sidecar Godot writes beside it, the moment that
+## process ends.
+##
+## The parse error mirrors the one the milestone was found from: a call to a static function that
+## does not exist, and a `StringName` constant assigned where the type is `Texture2D`.
+
+func run(t) -> void:
+	t.check(RunnerFixtureMissing.nonexistent_static_call(), "never reached")
+	var not_a_texture: Texture2D = &"wrong_type"
