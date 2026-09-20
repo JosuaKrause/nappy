@@ -38,8 +38,41 @@ ceases to exist in the build, the atlas bake has to do that rasterizing itself, 
 atlas page, and the per-picture imported copies go away. The risk named was pixel parity if a
 rasterizer other than the engine's own were used.
 
+## The atlas design, asked and answered
+
+Four decisions were put to the player with a recommendation each, after a read-only inventory
+of how pictures reach the game. The answer, in full:
+
+> "png vs svg mode now should happen at build time -- so we always get png mode -- if we really
+> want svg mode we need to run a custom build command locally (no need to have this in the release
+> version). 1. baked on demand. for running locally check the source hashes. 2. move them out but
+> make sure every reference gets updated so we don't have stale instructions or comments (code
+> will fail but documentation will not) 3. we can do one events page for now 4. no, we bake each
+> individual item and the composite at runtime. this is not a bottleneck and it allows for
+> variety. if we baked everything either we would need to make the atlas huge or we would lose
+> variety."
+
+6. **The presentation mode is chosen by the bake, not by the running game.** A build is PNG mode:
+   the illustrated PNG where one exists, the SVG's raster where none does. SVG mode is a custom
+   local bake command and is not in the release. *PLAYTEST-105's two separately built resources
+   selected before load · overturned by the player on 2026-09-19.*
+7. **Atlases are baked on demand and are not committed.** A local run checks the source hashes
+   and bakes when they differ.
+8. **The authoring sources move out of the folder the engine imports**, and every reference to
+   their old paths is updated with them: instructions, skills, docs and comments, since *"code
+   will fail but documentation will not"*.
+9. **The events are one atlas page "for now".**
+10. **The ground is not baked as composites.** *Recommended: grass variants and the route-curb
+    tint become bake outputs · refused by the player.* Each individual ground picture is baked
+    into the atlas and the compositing stays at runtime, because it *"is not a bottleneck and it
+    allows for variety"*, and baking every composite means a huge atlas or lost variety.
+
+Three assumptions were stated alongside the questions and the player did not speak to them: no
+desktop export is in scope, since no preset exists; the identity images (logo, icon, social
+card) leave the game package; families with no illustrated PNG are served by the same pixels in
+either bake.
+
 ## What was not spoken to
 
-Whether baked atlases are committed or built on demand; whether authoring sources may move out of
-`assets/`; how events are grouped; whether the ground's grass variants and route-curb tint become
-build outputs.
+How atlas groups other than the events are drawn, beyond PLAYTEST-105's *related items together*;
+what the custom SVG bake command is called.
