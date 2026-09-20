@@ -31,7 +31,9 @@ func run(t) -> void:
 	_test_composed_sources_keep_ids_and_visible_detail(t)
 	_test_the_grass_atlas_scatters_whole_features_over_one_base(t)
 	_test_route_kerb_twin_tints_the_stone_alone(t)
+	_test_the_recipe_is_read_from_disk_once(t)
 	AtlasLibrary.reset_for_tests()
+	GroundLayers.reset_for_tests()
 
 func _test_transparent_pixels_leave_the_base_unchanged(t) -> void:
 	var base := Image.create(4, 4, false, Image.FORMAT_RGBA8)
@@ -190,6 +192,23 @@ func _layer_manifest(t) -> Dictionary:
 	t.check(parser.parse(FileAccess.get_file_as_string(MANIFEST_PATH)) == OK,
 		"the runtime layer manifest parses before source selection uses it")
 	return parser.data if parser.data is Dictionary else {}
+
+## A day's repaint is a `build_tile_set()`, and it may not go back to the disk for the recipe: a
+## file that moved under a running game would compose nothing and draw whole authored tiles. Two
+## builds, one read — and an SVG bake, which composes nothing, reads it no more than once either.
+func _test_the_recipe_is_read_from_disk_once(t) -> void:
+	if _page(t) == null:
+		return
+	GroundLayers.reset_for_tests()
+	var first := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var second := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	t.check(first != null and second != null, "both ground builds produced a TileSet")
+	t.check(GroundLayers.manifest_reads() <= 1,
+			"two ground builds read the recipe from disk at most once (read %d times)"
+			% GroundLayers.manifest_reads())
+	if not _svg_bake():
+		t.check(GroundLayers.manifest_reads() == 1,
+				"a default bake's first ground build is the one that reads the recipe")
 
 func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	if _svg_bake():
