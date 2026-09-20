@@ -1,0 +1,1390 @@
+nappy run log  2026-09-20T18:25:17  version v0.14.0-8-g13493987
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.6 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.2 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 0.9 ms, 240 x 338
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 0.4 ms, 454 x 358
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.1 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.4 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.4 ms, 190 x 218
+   0.0  texture  atlas page 'events' loaded in the startup: 6.8 ms, 582 x 936
+   0.0  texture  atlas page 'father' loaded in the startup: 0.9 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 21.7 ms
+
+day 1  act 1  run seed 2609743060  city seed 2609743060  length 180.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 22.2 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  plan     closed: accident v(1,4)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burst_water_main x18, cafe_tables x69, car_accident x30, cat_dash x8, chatting_mother x2, delivery_van x50, dog_walker x23, fallen_tree, homeless_yeller x7, leaf_blower x15, loose_dog x12, market_stall x45, moving_van x59, pigeon_flock x5, playground, scaffolding x22, skip x19
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 80, worst frame 141.3ms, draws 280, objects 2097, primitives 4781, process 108.92ms, physics 8.81ms
+   2.0  frame    fps 115, worst frame 17.9ms, draws 455, objects 2282, primitives 5097, process 12.05ms, physics 1.34ms
+   2.6  path     onto the corridor at (75,85), after 2.6s off it
+   2.8  path     off the corridor at (75,86), after 0.2s on it
+   2.8  cross    stepped into the road at (75,86), at a zebra
+   3.0  frame    fps 118, worst frame 16.5ms, draws 351, objects 2107, primitives 4730, process 16.31ms, physics 1.42ms
+   3.8  path     onto the corridor at (74,88), after 1.0s off it
+   4.0  frame    fps 119, worst frame 11.2ms, draws 276, objects 1791, primitives 4145, process 15.44ms, physics 1.27ms
+   4.2  path     off the corridor at (73,89), after 0.4s on it
+   4.2  cross    stepped into the road at (73,89), at a zebra
+   5.0  frame    fps 120, worst frame 15.8ms, draws 356, objects 1990, primitives 4568, process 11.07ms, physics 1.30ms
+   6.0  frame    fps 119, worst frame 15.0ms, draws 282, objects 1735, primitives 4191, process 15.75ms, physics 1.27ms
+   7.0  frame    fps 119, worst frame 11.4ms, draws 298, objects 1674, primitives 4261, process 15.01ms, physics 1.34ms
+   7.9  turn     doubled back 90°
+   8.0  frame    fps 119, worst frame 14.2ms, draws 286, objects 1657, primitives 4077, process 14.22ms, physics 1.37ms
+   9.1  frame    fps 120, worst frame 14.5ms, draws 286, objects 1794, primitives 4348, process 11.43ms, physics 1.27ms
+   9.8  crowd    walked into somebody at (68,89) | exc 1, in 4.2/s (crowd 22.2, events 0.0), sleep 1
+  10.1  frame    fps 119, worst frame 15.6ms, draws 362, objects 2010, primitives 4701, process 14.49ms, physics 1.31ms
+  11.1  frame    fps 119, worst frame 11.5ms, draws 365, objects 1988, primitives 4705, process 15.57ms, physics 1.18ms
+  11.8  idle     stood still 2.4s on sidewalk, exc 0 -> 8, sleep 1 -> 0
+  12.1  frame    fps 120, worst frame 16.7ms, draws 359, objects 1929, primitives 4515, process 11.45ms, physics 1.24ms
+  12.9  path     onto the corridor at (71,90), after 8.7s off it
+  13.1  frame    fps 119, worst frame 16.7ms, draws 585, objects 2313, primitives 5162, process 14.82ms, physics 1.24ms
+  14.1  frame    fps 118, worst frame 16.7ms, draws 588, objects 2340, primitives 5237, process 15.45ms, physics 1.21ms
+  15.1  frame    fps 119, worst frame 16.7ms, draws 584, objects 2335, primitives 5183, process 15.90ms, physics 1.19ms
+  16.1  frame    fps 120, worst frame 25.0ms, draws 594, objects 2612, primitives 5854, process 10.28ms, physics 1.31ms
+  16.4  near     dog_walker at (72,102), 102px, exc 0, in 1.3/s (crowd 0.0, events 1.3), sleep 2
+  16.4  path     off the corridor at (71,100), after 3.5s on it
+  16.4  cross    stepped into the road at (71,100), at a zebra
+  16.9  near     dog_walker at (72,102), 55px, exc 1, in 12.1/s (crowd 0.0, events 12.3), sleep 2
+  17.1  frame    fps 116, worst frame 16.7ms, draws 368, objects 2064, primitives 4640, process 24.42ms, physics 1.41ms
+  17.5  path     onto the corridor at (69,102), after 1.1s off it
+  18.1  frame    fps 118, worst frame 8.3ms, draws 292, objects 1893, primitives 4375, process 15.34ms, physics 1.34ms
+  19.1  frame    fps 120, worst frame 16.7ms, draws 252, objects 1823, primitives 4067, process 10.87ms, physics 1.34ms
+  20.1  frame    fps 119, worst frame 16.7ms, draws 252, objects 1820, primitives 4061, process 15.28ms, physics 1.34ms
+  21.1  frame    fps 119, worst frame 8.3ms, draws 260, objects 1579, primitives 3678, process 14.79ms, physics 1.32ms
+  22.1  frame    fps 120, worst frame 25.0ms, draws 431, objects 1963, primitives 4315, process 15.09ms, physics 1.45ms
+  23.2  frame    fps 116, worst frame 16.7ms, draws 443, objects 1981, primitives 4495, process 24.43ms, physics 1.52ms
+  24.2  frame    fps 116, worst frame 25.0ms, draws 448, objects 2253, primitives 5114, process 24.12ms, physics 1.57ms
+  24.3  cross    stepped into the road at (60,114), at a zebra
+  24.5  crowd    a car sounded its horn at her in the road at (60,114) | exc 0, in 0.3/s (crowd 0.3, events 0.0), sleep 5
+  25.0  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  25.2  frame    fps 118, worst frame 8.3ms, draws 455, objects 2289, primitives 5264, process 15.70ms, physics 1.35ms
+  25.5  crowd    walked into somebody at (61,117) | exc 9, in 10.1/s (crowd 28.1, events 0.0), sleep 6
+  25.9  ahead    cat_dash crosses 332px in front of her at (62,117)
+  26.2  frame    fps 120, worst frame 16.7ms, draws 449, objects 2279, primitives 5175, process 10.45ms, physics 1.38ms
+  27.2  frame    fps 119, worst frame 16.7ms, draws 450, objects 2410, primitives 5461, process 14.85ms, physics 1.49ms
+  27.9  turn     doubled back 270°
+  28.2  frame    fps 119, worst frame 8.3ms, draws 451, objects 2281, primitives 5203, process 15.47ms, physics 1.43ms
+  29.2  frame    fps 120, worst frame 16.7ms, draws 452, objects 2258, primitives 5179, process 10.84ms, physics 1.32ms
+  30.0  path     off the corridor at (59,117), after 12.4s on it
+  30.0  cross    stepped into the road at (59,117), at a zebra
+  30.0  near     delivery_van at (57,121), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+  30.1  crowd    a car sounded its horn at her in the road at (59,117) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+  30.2  frame    fps 119, worst frame 16.7ms, draws 456, objects 2282, primitives 5251, process 15.77ms, physics 1.40ms
+  30.4  near     market_stall at (57,118), 64px, exc 1, in 13.8/s (crowd 13.3, events 1.0), sleep 8
+  30.7  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  31.2  frame    fps 119, worst frame 25.0ms, draws 646, objects 2769, primitives 6393, process 16.22ms, physics 1.42ms
+  31.4  path     onto the corridor at (55,117), after 1.4s off it
+  32.2  frame    fps 112, worst frame 10.1ms, draws 486, objects 2352, primitives 5631, process 24.66ms, physics 1.65ms
+  33.2  frame    fps 120, worst frame 16.7ms, draws 486, objects 2369, primitives 5644, process 10.08ms, physics 1.40ms
+  34.2  frame    fps 119, worst frame 16.7ms, draws 492, objects 2379, primitives 5739, process 15.84ms, physics 1.55ms
+  34.7  turn     doubled back 90°
+  35.2  frame    fps 119, worst frame 8.3ms, draws 483, objects 2371, primitives 5633, process 15.69ms, physics 1.37ms
+  36.3  frame    fps 116, worst frame 16.7ms, draws 646, objects 2719, primitives 6320, process 16.35ms, physics 1.78ms
+  36.6  turn     doubled back 270°
+  37.3  frame    fps 119, worst frame 16.7ms, draws 486, objects 2373, primitives 5661, process 15.77ms, physics 1.30ms
+  38.2  path     off the corridor at (47,117), after 6.9s on it
+  38.3  frame    fps 119, worst frame 16.7ms, draws 470, objects 2349, primitives 5411, process 15.56ms, physics 1.37ms
+  38.9  cross    stepped into the road at (45,117), at a signalled crossing
+  39.3  frame    fps 120, worst frame 8.3ms, draws 468, objects 2345, primitives 5376, process 10.38ms, physics 1.56ms
+  39.6  path     onto the corridor at (43,117), after 1.4s off it
+  40.3  frame    fps 118, worst frame 16.7ms, draws 636, objects 2693, primitives 6000, process 15.51ms, physics 1.47ms
+  41.3  frame    fps 117, worst frame 25.0ms, draws 645, objects 2707, primitives 6148, process 16.33ms, physics 1.55ms
+  42.3  frame    fps 117, worst frame 8.3ms, draws 470, objects 2337, primitives 5367, process 24.12ms, physics 1.41ms
+  43.3  frame    fps 119, worst frame 16.7ms, draws 457, objects 2341, primitives 5201, process 16.13ms, physics 1.58ms
+  43.9  path     off the corridor at (31,116), after 4.2s on it
+  43.9  cross    stepped into the road at (31,116), at a zebra
+  44.3  frame    fps 119, worst frame 16.7ms, draws 451, objects 2307, primitives 5088, process 16.48ms, physics 1.56ms
+  44.8  path     onto the corridor at (31,113), after 1.0s off it
+  45.3  frame    fps 116, worst frame 25.0ms, draws 466, objects 2064, primitives 4776, process 24.05ms, physics 1.40ms
+  46.3  frame    fps 117, worst frame 25.0ms, draws 458, objects 2076, primitives 4698, process 24.21ms, physics 1.51ms
+  47.3  frame    fps 115, worst frame 25.0ms, draws 460, objects 2052, primitives 4677, process 23.89ms, physics 1.41ms
+  48.4  frame    fps 119, worst frame 16.7ms, draws 285, objects 1748, primitives 4139, process 15.51ms, physics 1.41ms
+  48.5  path     off the corridor at (32,103), after 3.6s on it
+  49.4  frame    fps 120, worst frame 8.3ms, draws 398, objects 2226, primitives 5067, process 10.85ms, physics 1.42ms
+  49.5  path     onto the corridor at (31,102), after 1.0s off it
+  49.5  cross    stepped into the road at (31,102), at a zebra
+  50.4  path     off the corridor at (29,101), after 0.8s on it
+  50.4  frame    fps 119, worst frame 25.0ms, draws 401, objects 2212, primitives 5084, process 15.64ms, physics 1.43ms
+  50.6  ahead    cat_dash crosses 332px in front of her at (29,100)
+  50.8  near     delivery_van at (24,99), 148px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 16
+  50.9  crowd    a car sounded its horn at her in the road at (28,100) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 16
+  51.0  path     onto the corridor at (28,99), after 0.6s off it
+  51.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | a car, and she is in the road
+  51.3  path     off the corridor at (27,99), after 0.3s on it
+  51.4  frame    fps 116, worst frame 16.7ms, draws 412, objects 2239, primitives 5255, process 25.68ms, physics 1.59ms
+  52.0  path     away from the corridor at (26,97), after 0.7s off it
+  52.0  calm     entered residential (1,7), sleep 17
+  52.4  frame    fps 119, worst frame 16.7ms, draws 549, objects 2318, primitives 5317, process 15.48ms, physics 1.64ms
+  53.4  frame    fps 120, worst frame 16.7ms, draws 546, objects 2247, primitives 5126, process 10.40ms, physics 1.43ms
+  53.8  near     cat_dash at (24,90), 118px, exc 0, in 14.1/s (crowd 0.0, events 14.3), sleep 40
+  54.0  near     cat_dash at (23,92), 63px, exc 1, in 16.8/s (crowd 0.0, events 16.9), sleep 42
+  54.1  near     cat_dash at (22,92), 35px, exc 2, in 17.0/s (crowd 0.0, events 17.0), sleep 44
+  54.2  near     cat_dash at (22,92), 17px, exc 2, in 17.0/s (crowd 0.0, events 17.0), sleep 45
+  54.4  frame    fps 118, worst frame 16.7ms, draws 403, objects 1919, primitives 4566, process 16.50ms, physics 1.82ms
+  55.4  frame    fps 119, worst frame 16.7ms, draws 556, objects 2309, primitives 5320, process 15.50ms, physics 1.40ms
+  56.4  frame    fps 120, worst frame 8.3ms, draws 239, objects 1640, primitives 4088, process 11.03ms, physics 1.63ms
+  57.3  near     playground at (22,81), 150px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 84
+  57.4  frame    fps 116, worst frame 25.0ms, draws 573, objects 2485, primitives 5723, process 23.85ms, physics 1.42ms
+  58.4  frame    fps 119, worst frame 16.7ms, draws 406, objects 2103, primitives 4914, process 15.66ms, physics 1.45ms
+  58.6  calm     settled in the calm block (1,5); tomorrow will know
+  58.6  asleep   asleep after 58.6s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  59.3  turn     doubled back 225°
+  59.4  frame    fps 120, worst frame 16.7ms, draws 324, objects 1906, primitives 4671, process 15.39ms, physics 1.54ms
+  60.4  frame    fps 118, worst frame 8.3ms, draws 249, objects 1558, primitives 3996, process 16.77ms, physics 1.32ms
+  61.5  frame    fps 119, worst frame 16.7ms, draws 248, objects 1677, primitives 4213, process 15.03ms, physics 1.43ms
+  62.4  near     playground at (22,81), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  62.5  frame    fps 119, worst frame 16.7ms, draws 575, objects 2509, primitives 5753, process 15.58ms, physics 1.29ms
+  63.5  frame    fps 120, worst frame 8.3ms, draws 564, objects 2383, primitives 5432, process 10.71ms, physics 1.38ms
+  64.5  frame    fps 119, worst frame 16.7ms, draws 408, objects 2125, primitives 4946, process 15.38ms, physics 1.40ms
+  65.1  ahead    loose_dog comes at her from 0px in front of her at (27,86)
+  65.5  frame    fps 119, worst frame 16.7ms, draws 268, objects 1746, primitives 4226, process 15.12ms, physics 1.42ms
+  65.5  near     loose_dog (telegraph) at (27,92), 139px, exc 0, in 0.8/s (crowd 0.0, events 1.5), sleep 100
+  65.8  near     loose_dog (telegraph) at (27,91), 74px, exc 0, in 2.3/s (crowd 0.0, events 4.2), sleep 100
+  65.9  near     loose_dog (telegraph) at (27,90), 40px, exc 0, in 2.9/s (crowd 0.0, events 5.3), sleep 100
+  66.1  near     loose_dog (telegraph) at (27,90), 22px, exc 0, in 3.1/s (crowd 0.0, events 5.7), sleep 100
+  66.5  frame    fps 120, worst frame 16.7ms, draws 590, objects 2394, primitives 5593, process 11.09ms, physics 1.45ms
+  67.5  frame    fps 119, worst frame 8.3ms, draws 583, objects 2389, primitives 5822, process 15.84ms, physics 1.33ms
+  68.2  near     delivery_van at (24,99), 147px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  68.5  frame    fps 119, worst frame 16.7ms, draws 567, objects 2368, primitives 5597, process 15.86ms, physics 1.36ms
+  69.1  near     delivery_van at (24,99), 80px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  69.5  frame    fps 119, worst frame 16.7ms, draws 431, objects 2262, primitives 5508, process 15.73ms, physics 1.51ms
+  69.5  path     off the corridor at (26,98), after 17.6s away it
+  69.5  left     left residential (1,7), sleep 100
+  69.6  near     delivery_van at (24,102), 149px, exc 0, in 2.3/s (crowd 4.2, events 0.0), sleep 100
+  69.6  crowd    walked into somebody at (26,98) | exc 0, in 2.3/s (crowd 22.2, events 0.0), sleep 100
+  70.4  cross    stepped into the road at (27,100), mid-block
+  70.5  frame    fps 120, worst frame 16.7ms, draws 417, objects 2256, primitives 5322, process 10.64ms, physics 1.31ms
+  70.7  crowd    a car sounded its horn at her in the road at (28,100) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  71.4  path     onto the corridor at (29,102), after 1.9s off it
+  71.4  cue      the mark over her head: soon for 0.7s (0.7s of it on the road) | a car, and she is in the road
+  71.5  cross    stepped into the road at (30,102), at a zebra
+  71.5  frame    fps 118, worst frame 16.7ms, draws 285, objects 1791, primitives 4174, process 16.51ms, physics 1.53ms
+  72.3  path     off the corridor at (32,102), after 0.9s on it
+  72.3  cue      the mark over her head: soon for 0.8s (0.8s of it on the road) | a car, and she is in the road
+  72.5  frame    fps 119, worst frame 16.7ms, draws 301, objects 1790, primitives 4367, process 15.42ms, physics 1.48ms
+  72.8  crowd    walked into somebody at (33,103) | exc 0, in 2.3/s (crowd 22.2, events 0.0), sleep 100
+  73.2  path     onto the corridor at (34,102), after 0.9s off it
+  73.6  frame    fps 120, worst frame 16.7ms, draws 301, objects 1795, primitives 4383, process 10.79ms, physics 1.39ms
+  74.6  frame    fps 119, worst frame 8.3ms, draws 398, objects 2153, primitives 5293, process 15.64ms, physics 1.35ms
+  75.6  frame    fps 119, worst frame 16.7ms, draws 394, objects 2147, primitives 5239, process 15.53ms, physics 1.36ms
+  76.0  path     off the corridor at (42,103), after 2.8s on it
+  76.6  frame    fps 118, worst frame 16.7ms, draws 288, objects 1955, primitives 4669, process 16.49ms, physics 1.43ms
+  76.7  cross    stepped into the road at (44,103), at a signalled crossing
+  77.6  frame    fps 120, worst frame 16.7ms, draws 286, objects 1905, primitives 4572, process 10.99ms, physics 1.38ms
+  78.1  path     onto the corridor at (48,103), after 2.1s off it
+  78.6  frame    fps 119, worst frame 8.3ms, draws 281, objects 1920, primitives 4530, process 14.86ms, physics 1.33ms
+  79.6  frame    fps 119, worst frame 16.7ms, draws 283, objects 1962, primitives 4641, process 14.57ms, physics 1.31ms
+  80.6  frame    fps 120, worst frame 16.7ms, draws 344, objects 1858, primitives 4228, process 11.05ms, physics 1.38ms
+  81.6  frame    fps 119, worst frame 8.3ms, draws 334, objects 1817, primitives 4050, process 15.39ms, physics 1.34ms
+  82.6  ahead    cat_dash crosses 332px in front of her at (56,106)
+  82.6  frame    fps 118, worst frame 16.7ms, draws 616, objects 2429, primitives 5325, process 16.50ms, physics 1.38ms
+  83.4  cross    stepped into the road at (58,106), mid-block
+  83.6  frame    fps 119, worst frame 16.7ms, draws 253, objects 1624, primitives 3641, process 15.54ms, physics 1.40ms
+  84.6  frame    fps 120, worst frame 16.7ms, draws 259, objects 1873, primitives 4208, process 11.13ms, physics 1.44ms
+  85.2  cross    stepped into the road at (60,101), at a zebra
+  85.7  frame    fps 119, worst frame 8.3ms, draws 418, objects 2211, primitives 4886, process 15.03ms, physics 1.55ms
+  86.5  near     moving_van at (60,94), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  86.6  path     off the corridor at (60,97), after 8.5s on it
+  86.7  frame    fps 119, worst frame 16.7ms, draws 410, objects 1935, primitives 4229, process 15.19ms, physics 1.44ms
+  86.9  path     onto the corridor at (60,98), after 0.2s off it
+  87.2  turn     doubled back 180°
+  87.7  frame    fps 120, worst frame 16.7ms, draws 414, objects 2203, primitives 4816, process 11.42ms, physics 1.31ms
+  88.7  frame    fps 119, worst frame 8.3ms, draws 410, objects 2197, primitives 4750, process 15.38ms, physics 1.15ms
+  89.7  frame    fps 119, worst frame 16.7ms, draws 408, objects 2195, primitives 4716, process 15.26ms, physics 1.18ms
+  90.7  frame    fps 119, worst frame 16.7ms, draws 569, objects 2583, primitives 5459, process 15.18ms, physics 1.39ms
+  91.7  frame    fps 120, worst frame 16.7ms, draws 578, objects 2344, primitives 5080, process 10.95ms, physics 1.65ms
+  91.7  crowd    walked into somebody at (70,96) | exc 0, in 2.3/s (crowd 22.2, events 0.0), sleep 100
+  92.7  frame    fps 119, worst frame 8.3ms, draws 583, objects 2330, primitives 5124, process 15.38ms, physics 1.46ms
+  93.7  frame    fps 119, worst frame 16.7ms, draws 577, objects 2321, primitives 5034, process 15.53ms, physics 1.44ms
+  94.0  crowd    a car sounded its horn at her in the road at (72,90) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  94.0  cross    stepped into the road at (72,90), mid-block
+  94.3  path     off the corridor at (72,89), after 7.5s on it
+  94.7  frame    fps 120, worst frame 16.7ms, draws 252, objects 1735, primitives 3724, process 11.21ms, physics 1.34ms
+  94.8  path     onto the corridor at (74,89), after 0.5s off it
+  94.8  cue      the mark over her head: soon for 0.9s (0.9s of it on the road) | a car, and she is in the road
+  95.5  path     off the corridor at (75,87), after 0.7s on it
+  95.5  cross    stepped into the road at (75,87), at a zebra
+  95.7  frame    fps 119, worst frame 8.3ms, draws 249, objects 1831, primitives 3868, process 15.34ms, physics 1.29ms
+  96.7  frame    fps 119, worst frame 16.7ms, draws 431, objects 2200, primitives 4654, process 15.74ms, physics 1.47ms
+  97.7  frame    fps 120, worst frame 25.0ms, draws 432, objects 1969, primitives 4189, process 10.85ms, physics 1.12ms
+  97.8  path     66% of her street time on the corridor (52.9s on, 27.2s off, 17.6s off the streets)
+  97.8  home     WON, 82.2s to spare
+  97.8  save     wrote the save (between days)
+
+day 2  act 1  run seed 2609743060  city seed 2609743060  length 180.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 27.1 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     busker, pigeon_flock, busker in the park she used yesterday, (1,5)
+   0.0  plan     closed: roadworks v(5,5)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burst_water_main x24, busker x12, cafe_tables x59, car_accident x19, cat_dash x8, chatting_mother x2, construction x58, cyclist x7, delivery_van x37, dog_walker x20, fallen_tree, homeless_yeller x5, ice_cream_van x5, leaf_blower x9, loose_dog x15, market_stall x38, moving_van x44, pigeon_flock x6, playground, scaffolding x23, skip x25
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 40, worst frame 274.6ms, draws 465, objects 2433, primitives 5547, process 13.07ms, physics 1.04ms
+   2.0  frame    fps 119, worst frame 8.3ms, draws 455, objects 2209, primitives 4978, process 15.36ms, physics 1.16ms
+   2.2  crowd    walked into somebody at (82,85) | exc 0, in 4.2/s (crowd 22.2, events 0.0), sleep 1
+   2.7  path     onto the corridor at (84,85), after 2.7s off it
+   3.0  frame    fps 118, worst frame 16.7ms, draws 448, objects 2002, primitives 4492, process 16.27ms, physics 1.46ms
+   4.0  frame    fps 120, worst frame 16.7ms, draws 450, objects 2008, primitives 4504, process 10.79ms, physics 1.46ms
+   5.0  frame    fps 119, worst frame 8.3ms, draws 451, objects 2030, primitives 4551, process 15.44ms, physics 1.64ms
+   6.0  frame    fps 119, worst frame 16.7ms, draws 447, objects 2147, primitives 4764, process 15.53ms, physics 1.46ms
+   6.4  crowd    walked into somebody at (84,75) | exc 0, in 8.9/s (crowd 26.9, events 0.0), sleep 2
+   7.1  frame    fps 119, worst frame 16.7ms, draws 458, objects 2156, primitives 4929, process 15.94ms, physics 1.39ms
+   8.1  frame    fps 120, worst frame 16.7ms, draws 454, objects 2145, primitives 4859, process 10.41ms, physics 1.31ms
+   8.3  closure  saw the roadworks on v(5,5) from (79,74)
+   9.1  frame    fps 118, worst frame 8.3ms, draws 449, objects 2115, primitives 4751, process 16.05ms, physics 1.42ms
+   9.4  cross    stepped into the road at (76,73), mid-block
+   9.5  path     off the corridor at (75,73), after 6.8s on it
+  10.1  frame    fps 119, worst frame 16.7ms, draws 284, objects 1731, primitives 3983, process 15.78ms, physics 1.75ms
+  10.2  path     onto the corridor at (75,71), after 0.7s off it
+  11.1  frame    fps 120, worst frame 16.7ms, draws 448, objects 1976, primitives 4519, process 10.80ms, physics 1.47ms
+  12.1  frame    fps 119, worst frame 8.3ms, draws 444, objects 1994, primitives 4478, process 15.62ms, physics 1.46ms
+  13.1  near     construction at (80,61), 199px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 5
+  13.1  frame    fps 119, worst frame 16.7ms, draws 433, objects 1960, primitives 4295, process 15.78ms, physics 1.53ms
+  13.8  path     off the corridor at (74,61), after 3.6s on it
+  14.1  frame    fps 118, worst frame 16.7ms, draws 439, objects 2153, primitives 4753, process 16.07ms, physics 1.43ms
+  14.5  cross    stepped into the road at (74,59), at a zebra
+  14.5  near     construction at (80,57), 199px, exc 0, in 3.2/s (crowd 3.3, events 0.0), sleep 6
+  15.1  frame    fps 120, worst frame 16.7ms, draws 261, objects 1783, primitives 4016, process 10.41ms, physics 1.48ms
+  15.4  near     homeless_yeller at (70,52), 210px, exc 0, in 4.8/s (crowd 3.2, events 1.7), sleep 6
+  15.8  near     scaffolding at (75,52), 117px, exc 0, in 7.2/s (crowd 0.6, events 6.7), sleep 6
+  16.1  frame    fps 119, worst frame 8.3ms, draws 259, objects 1642, primitives 3710, process 15.26ms, physics 1.37ms
+  16.9  turn     doubled back 180°
+  17.1  frame    fps 119, worst frame 16.7ms, draws 264, objects 1798, primitives 4070, process 15.03ms, physics 1.27ms
+  17.3  cross    stepped into the road at (74,58), at a zebra
+  17.4  near     construction at (80,61), 200px, exc 9, in 8.6/s (crowd 4.3, events 4.4), sleep 6
+  18.1  frame    fps 120, worst frame 16.7ms, draws 438, objects 2254, primitives 4928, process 10.83ms, physics 1.36ms
+  18.7  path     onto the corridor at (74,62), after 5.0s off it
+  19.2  frame    fps 119, worst frame 8.3ms, draws 431, objects 1954, primitives 4253, process 15.36ms, physics 1.29ms
+  20.2  frame    fps 118, worst frame 16.7ms, draws 435, objects 1959, primitives 4311, process 16.14ms, physics 1.46ms
+  20.4  near     construction at (80,61), 200px, exc 0, in 3.0/s (crowd 0.0, events 0.0), sleep 7
+  21.2  frame    fps 119, worst frame 16.7ms, draws 446, objects 1971, primitives 4485, process 16.25ms, physics 1.36ms
+  22.2  frame    fps 120, worst frame 16.7ms, draws 442, objects 1959, primitives 4413, process 10.29ms, physics 1.49ms
+  22.9  ahead    cat_dash crosses 332px in front of her at (83,65)
+  23.2  frame    fps 119, worst frame 8.3ms, draws 445, objects 1990, primitives 4499, process 16.20ms, physics 1.53ms
+  23.4  near     ice_cream_van at (90,60), 240px, exc 0, in 2.8/s (crowd 2.8, events 0.0), sleep 9
+  23.4  near     construction at (80,61), 200px, exc 0, in 3.1/s (crowd 2.9, events 0.1), sleep 9
+  24.2  frame    fps 119, worst frame 16.7ms, draws 446, objects 2005, primitives 4538, process 16.35ms, physics 1.53ms
+  24.8  near     construction at (80,57), 199px, exc 0, in 5.3/s (crowd 1.3, events 4.3), sleep 9
+  25.2  frame    fps 106, worst frame 25.2ms, draws 455, objects 2048, primitives 4747, process 23.94ms, physics 1.78ms
+  25.3  cross    stepped into the road at (84,59), at a zebra
+  26.2  frame    fps 115, worst frame 9.8ms, draws 277, objects 1724, primitives 4102, process 23.78ms, physics 1.44ms
+  27.2  frame    fps 119, worst frame 16.7ms, draws 266, objects 1603, primitives 3734, process 15.88ms, physics 1.41ms
+  28.2  frame    fps 113, worst frame 25.0ms, draws 470, objects 2041, primitives 4724, process 23.70ms, physics 1.36ms
+  28.4  near     leaf_blower at (80,47), 189px, exc 0, in 0.1/s (crowd 0.0, events 0.1), sleep 11
+  29.2  frame    fps 118, worst frame 16.7ms, draws 501, objects 2104, primitives 5191, process 18.11ms, physics 1.38ms
+  29.9  cross    stepped into the road at (86,47), at a zebra
+  30.2  frame    fps 112, worst frame 25.5ms, draws 687, objects 2745, primitives 6540, process 23.98ms, physics 1.44ms
+  30.6  path     off the corridor at (88,47), after 11.9s on it
+  31.2  path     onto the corridor at (88,45), after 0.6s off it
+  31.2  cross    stepped into the road at (88,45), at a zebra
+  31.2  frame    fps 93, worst frame 25.5ms, draws 683, objects 2613, primitives 6255, process 24.62ms, physics 1.45ms
+  32.2  frame    fps 116, worst frame 16.7ms, draws 676, objects 2563, primitives 6162, process 24.07ms, physics 1.42ms
+  32.8  path     away from the corridor at (90,41), after 1.6s on it
+  32.8  calm     entered commercial (6,3), sleep 13
+  33.3  frame    fps 119, worst frame 8.3ms, draws 321, objects 1658, primitives 4181, process 16.36ms, physics 1.43ms
+  34.3  frame    fps 119, worst frame 16.7ms, draws 306, objects 1613, primitives 3911, process 15.86ms, physics 1.38ms
+  35.3  frame    fps 120, worst frame 16.7ms, draws 445, objects 2072, primitives 4662, process 10.98ms, physics 1.44ms
+  36.3  frame    fps 119, worst frame 16.7ms, draws 452, objects 2135, primitives 4831, process 15.18ms, physics 1.40ms
+  37.3  frame    fps 119, worst frame 8.3ms, draws 454, objects 1947, primitives 4529, process 15.46ms, physics 1.34ms
+  38.3  frame    fps 119, worst frame 16.7ms, draws 462, objects 1952, primitives 4638, process 14.75ms, physics 1.54ms
+  39.3  frame    fps 120, worst frame 16.7ms, draws 448, objects 1933, primitives 4426, process 10.82ms, physics 1.51ms
+  40.3  frame    fps 119, worst frame 16.7ms, draws 450, objects 1937, primitives 4458, process 14.85ms, physics 1.52ms
+  41.3  frame    fps 119, worst frame 8.3ms, draws 448, objects 1936, primitives 4432, process 15.39ms, physics 1.37ms
+  41.5  calm     settled in the calm block (6,1); tomorrow will know
+  41.5  asleep   asleep after 41.5s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  42.3  frame    fps 120, worst frame 16.7ms, draws 446, objects 1958, primitives 4410, process 10.90ms, physics 1.52ms
+  43.3  frame    fps 119, worst frame 16.7ms, draws 463, objects 2122, primitives 4905, process 15.36ms, physics 1.51ms
+  43.6  ahead    loose_dog comes at her from 0px in front of her at (94,36)
+  44.4  near     loose_dog (telegraph) at (89,41), 139px, exc 0, in 1.3/s (crowd 0.0, events 2.7), sleep 100
+  44.4  frame    fps 119, worst frame 8.3ms, draws 343, objects 1688, primitives 4143, process 15.59ms, physics 1.44ms
+  44.6  near     loose_dog (telegraph) at (90,40), 74px, exc 0, in 3.0/s (crowd 0.0, events 5.5), sleep 100
+  44.8  near     loose_dog (telegraph) at (90,40), 37px, exc 0, in 3.2/s (crowd 0.0, events 5.8), sleep 100
+  44.9  near     loose_dog (telegraph) at (91,39), 20px, exc 0, in 3.1/s (crowd 0.0, events 5.6), sleep 100
+  45.4  frame    fps 119, worst frame 16.7ms, draws 451, objects 1928, primitives 4677, process 15.69ms, physics 1.49ms
+  45.6  path     off the corridor at (89,40), after 12.8s away it
+  45.6  left     left industrial (5,2), sleep 100
+  46.0  path     onto the corridor at (89,42), after 0.4s off it
+  46.4  frame    fps 120, worst frame 25.0ms, draws 681, objects 2640, primitives 6243, process 10.50ms, physics 1.49ms
+  47.0  cross    stepped into the road at (88,44), at a zebra
+  47.4  frame    fps 111, worst frame 25.7ms, draws 680, objects 2610, primitives 6183, process 24.44ms, physics 1.51ms
+  47.7  path     off the corridor at (88,46), after 1.6s on it
+  47.7  crowd    walked into somebody at (88,46) | exc 0, in 2.3/s (crowd 22.2, events 0.0), sleep 100
+  47.8  path     onto the corridor at (87,46), after 0.1s off it
+  47.8  cross    stepped into the road at (87,46), at a zebra
+  47.9  path     off the corridor at (88,46), after 0.1s on it
+  48.4  frame    fps 107, worst frame 25.9ms, draws 679, objects 2580, primitives 6105, process 24.32ms, physics 1.41ms
+  48.4  path     onto the corridor at (88,48), after 0.5s off it
+  49.4  frame    fps 94, worst frame 25.7ms, draws 656, objects 2547, primitives 5767, process 24.50ms, physics 1.41ms
+  50.3  near     ice_cream_van at (90,60), 237px, exc 0, in 0.2/s (crowd 0.0, events 0.3), sleep 100
+  50.4  frame    fps 101, worst frame 16.7ms, draws 351, objects 1809, primitives 4123, process 24.39ms, physics 1.42ms
+  51.2  path     off the corridor at (88,56), after 2.8s on it
+  51.4  frame    fps 119, worst frame 8.3ms, draws 349, objects 1900, primitives 4275, process 15.58ms, physics 1.38ms
+  51.6  near     ice_cream_van at (90,60), 128px, exc 0, in 4.5/s (crowd 0.0, events 8.2), sleep 100
+  51.9  cross    stepped into the road at (87,57), at a zebra
+  52.4  frame    fps 119, worst frame 16.7ms, draws 626, objects 2457, primitives 5361, process 15.57ms, physics 1.37ms
+  52.5  crowd    a car sounded its horn at her in the road at (86,59) | exc 0, in 3.3/s (crowd 0.0, events 6.0), sleep 100
+  52.6  near     construction at (80,61), 198px, exc 0, in 3.7/s (crowd 1.0, events 5.6), sleep 100
+  52.8  near     construction at (80,57), 199px, exc 0, in 3.8/s (crowd 2.1, events 4.9), sleep 100
+  52.9  path     onto the corridor at (85,59), after 1.7s off it
+  53.0  cue      the mark over her head: soon for 0.4s (0.4s of it on the road) | a car, and she is in the road
+  53.4  frame    fps 120, worst frame 16.7ms, draws 442, objects 2021, primitives 4471, process 10.50ms, physics 1.38ms
+  54.4  frame    fps 119, worst frame 16.7ms, draws 437, objects 2010, primitives 4374, process 16.29ms, physics 1.36ms
+  55.4  frame    fps 119, worst frame 8.3ms, draws 433, objects 1968, primitives 4260, process 15.96ms, physics 1.52ms
+  56.5  frame    fps 120, worst frame 16.7ms, draws 278, objects 1819, primitives 4015, process 10.38ms, physics 1.39ms
+  57.2  path     off the corridor at (85,72), after 4.3s on it
+  57.2  cross    stepped into the road at (85,72), at a zebra
+  57.4  crowd    a car sounded its horn at her in the road at (85,72) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  57.5  frame    fps 119, worst frame 16.7ms, draws 276, objects 1774, primitives 3898, process 15.51ms, physics 1.39ms
+  57.9  path     onto the corridor at (85,74), after 0.7s off it
+  57.9  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  58.5  frame    fps 119, worst frame 16.7ms, draws 442, objects 2050, primitives 4450, process 15.30ms, physics 1.39ms
+  59.5  frame    fps 118, worst frame 16.7ms, draws 446, objects 2022, primitives 4442, process 15.87ms, physics 1.39ms
+  60.5  frame    fps 119, worst frame 16.7ms, draws 437, objects 2013, primitives 4331, process 11.13ms, physics 1.49ms
+  61.5  frame    fps 119, worst frame 16.7ms, draws 430, objects 2195, primitives 4620, process 16.03ms, physics 1.56ms
+  61.9  path     off the corridor at (83,84), after 4.0s on it
+  62.5  frame    fps 119, worst frame 8.3ms, draws 440, objects 2214, primitives 4781, process 15.90ms, physics 1.46ms
+  63.2  path     73% of her street time on the corridor (36.8s on, 13.6s off, 12.8s off the streets)
+  63.2  home     WON, 116.8s to spare
+  63.2  save     wrote the save (between days)
+
+day 3  act 1  run seed 2609743060  city seed 2609743060  length 180.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 27.0 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     one-shot burning_building: 0.84 <= 1.00 — waiting at (14,34)
+   0.0  roll     ice_cream_van, ice_cream_van, pigeon_flock, pigeon_flock, leaf_blower, busker, leaf_blower, leaf_blower, leaf_blower in the park she used yesterday, (6,1)
+   0.0  roll     pigeon_flock, leaf_blower, busker in the park she used yesterday, (1,5)
+   0.0  plan     closed: roadworks h(0,4)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burning_building, burst_water_main x20, busker x12, cafe_tables x59, car_accident x17, cat_dash x8, charging_dog x3, chatting_mother x2, construction x68, cyclist x5, delivery_van x37, dog_walker x18, fallen_tree x2, homeless_yeller x7, ice_cream_van x7, leaf_blower x17, loose_dog x10, market_stall x53, moving_van x34, pigeon_flock x6, playground, reversing_lorry x5, scaffolding x11, skip x12
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   0.0  crowd    walked into somebody at (80,84) | exc 0, in 4.2/s (crowd 22.2, events 0.0), sleep 0
+   0.9  crowd    a car sounded its horn at her in the road at (79,86) | exc 4, in 1.1/s (crowd 1.1, events 0.0), sleep 0
+   0.9  cross    stepped into the road at (79,86), mid-block
+   1.0  frame    fps 101, worst frame 266.3ms, draws 308, objects 1912, primitives 4703, process 1432.89ms, physics 1.45ms
+   1.5  cue      the mark over her head: soon for 0.6s (0.6s of it on the road) | a car, and she is in the road
+   2.0  frame    fps 84, worst frame 16.7ms, draws 473, objects 2258, primitives 5290, process 15.81ms, physics 1.36ms
+   2.4  path     onto the corridor at (75,85), after 2.4s off it
+   3.0  frame    fps 119, worst frame 16.7ms, draws 629, objects 2394, primitives 5585, process 16.68ms, physics 1.42ms
+   4.0  frame    fps 119, worst frame 16.7ms, draws 445, objects 1946, primitives 4357, process 16.17ms, physics 1.26ms
+   5.0  frame    fps 120, worst frame 8.3ms, draws 435, objects 1929, primitives 4208, process 10.45ms, physics 1.43ms
+   6.0  frame    fps 119, worst frame 16.7ms, draws 452, objects 2115, primitives 4802, process 15.99ms, physics 1.44ms
+   6.3  ahead    charging_dog comes at her from 291px in front of her at (74,74)
+   6.3  chase    charging_dog came for her at (74,65) | exc 0, in 1.5/s (crowd 1.5, events 0.0), sleep 3
+   6.4  cue      edge badge: charging_dog at 279px, closing 45px/s
+   6.6  crowd    walked into somebody at (74,74) | exc 0, in 7.7/s (crowd 25.7, events 0.0), sleep 3
+   6.7  path     off the corridor at (74,73), after 4.3s on it
+   6.7  cross    stepped into the road at (74,73), at a zebra
+   6.8  cue      edge badge gone: charging_dog after 0.3s, now 201px away
+   7.0  frame    fps 101, worst frame 58.3ms, draws 297, objects 1866, primitives 4289, process 54.99ms, physics 2.02ms
+   7.1  near     charging_dog (telegraph) at (74,69), 149px, exc 5, in 3.8/s (crowd 3.8, events 0.0), sleep 3
+   7.2  near     charging_dog (telegraph) at (74,69), 149px, exc 5, in 3.7/s (crowd 3.7, events 0.0), sleep 3
+   7.2  near     charging_dog (telegraph) at (74,69), 149px, exc 5, in 3.6/s (crowd 3.6, events 0.0), sleep 3
+   7.2  path     onto the corridor at (74,74), after 0.5s off it
+   7.3  near     charging_dog (telegraph) at (74,69), 150px, exc 6, in 15.8/s (crowd 3.0, events 0.0), sleep 3
+   7.3  near     charging_dog (telegraph) at (74,69), 150px, exc 6, in 16.6/s (crowd 2.6, events 0.0), sleep 3
+   7.5  turn     doubled back 180°
+   7.8  chase    charging_dog gave up after 1.5s — closest 146px, she ran 0.6s of it | exc 14, in 15.7/s (crowd 1.2, events 0.0), sleep 3
+   8.1  frame    fps 98, worst frame 25.0ms, draws 454, objects 2060, primitives 4663, process 24.73ms, physics 1.33ms
+   8.2  run      ran 1.0s, exc 5 -> 19, nearest when it started: charging_dog 150px
+   9.1  frame    fps 111, worst frame 25.4ms, draws 447, objects 2014, primitives 4475, process 24.06ms, physics 1.34ms
+  10.1  frame    fps 119, worst frame 16.7ms, draws 287, objects 1756, primitives 4057, process 16.35ms, physics 1.34ms
+  10.1  path     off the corridor at (74,73), after 2.9s on it
+  10.1  cross    stepped into the road at (74,73), at a zebra
+  11.1  frame    fps 119, worst frame 16.7ms, draws 288, objects 1777, primitives 4099, process 15.81ms, physics 1.42ms
+  11.2  cross    stepped into the road at (73,71), at a zebra
+  11.3  crowd    a car sounded its horn at her in the road at (73,71) | exc 7, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+  12.0  path     onto the corridor at (71,70), after 1.9s off it
+  12.0  cue      the mark over her head: soon for 0.7s (0.7s of it on the road) | a car, and she is in the road
+  12.1  frame    fps 114, worst frame 25.0ms, draws 363, objects 1782, primitives 4081, process 24.05ms, physics 1.50ms
+  13.1  frame    fps 119, worst frame 15.7ms, draws 603, objects 2356, primitives 5247, process 15.73ms, physics 1.36ms
+  14.1  frame    fps 113, worst frame 25.0ms, draws 616, objects 2401, primitives 5490, process 24.31ms, physics 1.41ms
+  15.1  near     homeless_yeller at (75,57), 209px, exc 0, in 7.5/s (crowd 7.6, events 0.0), sleep 5
+  15.1  frame    fps 93, worst frame 25.9ms, draws 615, objects 2680, primitives 6027, process 24.38ms, physics 1.36ms
+  15.8  cross    stepped into the road at (71,59), at a zebra
+  16.1  frame    fps 98, worst frame 25.9ms, draws 606, objects 2529, primitives 5653, process 24.06ms, physics 1.45ms
+  17.1  frame    fps 116, worst frame 26.1ms, draws 350, objects 1797, primitives 4193, process 24.12ms, physics 1.52ms
+  18.1  frame    fps 113, worst frame 25.0ms, draws 645, objects 2432, primitives 5364, process 24.48ms, physics 1.43ms
+  19.2  frame    fps 107, worst frame 26.0ms, draws 648, objects 2442, primitives 5429, process 24.31ms, physics 1.73ms
+  19.6  ahead    cat_dash crosses 332px in front of her at (71,49)
+  20.2  frame    fps 105, worst frame 25.9ms, draws 652, objects 2587, primitives 5740, process 23.76ms, physics 1.75ms
+  20.7  cross    stepped into the road at (71,45), at a zebra
+  21.2  frame    fps 111, worst frame 25.0ms, draws 655, objects 2563, primitives 5737, process 24.26ms, physics 1.43ms
+  22.2  near     dog_walker at (70,38), 104px, exc 0, in 4.7/s (crowd 3.2, events 1.5), sleep 8
+  22.2  frame    fps 108, worst frame 24.0ms, draws 336, objects 1565, primitives 3860, process 23.99ms, physics 1.80ms
+  22.3  path     away from the corridor at (69,41), after 10.3s on it
+  22.3  calm     entered forest (4,2), sleep 9
+  23.1  near     cat_dash at (71,38), 120px, exc 4, in 27.2/s (crowd 0.0, events 27.4), sleep 23
+  23.2  frame    fps 119, worst frame 10.5ms, draws 366, objects 1610, primitives 4001, process 15.80ms, physics 1.53ms
+  23.4  near     cat_dash at (69,38), 65px, exc 8, in 26.2/s (crowd 0.0, events 26.5), sleep 28
+  23.6  near     cat_dash at (68,38), 36px, exc 10, in 17.0/s (crowd 0.0, events 17.0), sleep 31
+  24.2  frame    fps 119, worst frame 16.7ms, draws 345, objects 1591, primitives 4006, process 15.54ms, physics 1.43ms
+  25.2  frame    fps 119, worst frame 16.7ms, draws 530, objects 1980, primitives 4689, process 16.26ms, physics 1.54ms
+  26.2  frame    fps 120, worst frame 8.3ms, draws 520, objects 1925, primitives 4487, process 10.56ms, physics 1.55ms
+  27.2  frame    fps 115, worst frame 16.7ms, draws 341, objects 1554, primitives 3907, process 24.01ms, physics 1.50ms
+  27.5  calm     settled in the calm block (4,2); tomorrow will know
+  27.5  asleep   asleep after 27.5s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  28.2  frame    fps 119, worst frame 16.7ms, draws 335, objects 1564, primitives 3810, process 15.84ms, physics 1.51ms
+  29.2  frame    fps 120, worst frame 16.7ms, draws 351, objects 1593, primitives 4060, process 10.64ms, physics 1.35ms
+  29.5  path     onto the corridor at (67,42), after 7.2s away it
+  29.5  left     left forest (4,2), sleep 100
+  30.2  frame    fps 119, worst frame 8.3ms, draws 504, objects 2208, primitives 5297, process 15.68ms, physics 1.36ms
+  30.5  cross    stepped into the road at (69,44), mid-block
+  30.6  near     dog_walker at (70,47), 104px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  31.2  frame    fps 113, worst frame 25.0ms, draws 699, objects 2663, primitives 6112, process 24.45ms, physics 1.39ms
+  31.6  near     dog_walker at (70,48), 57px, exc 2, in 12.4/s (crowd 0.0, events 22.2), sleep 100
+  32.1  near     dog_walker at (70,48), 30px, exc 5, in 10.7/s (crowd 2.0, events 17.3), sleep 100
+  32.2  frame    fps 96, worst frame 24.6ms, draws 690, objects 2531, primitives 5750, process 24.47ms, physics 1.99ms
+  33.3  frame    fps 90, worst frame 24.4ms, draws 689, objects 2563, primitives 5768, process 24.55ms, physics 1.43ms
+  33.3  near     homeless_yeller at (75,56), 208px, exc 8, in 10.6/s (crowd 5.7, events 13.7), sleep 100
+  34.3  frame    fps 85, worst frame 24.5ms, draws 366, objects 1843, primitives 4121, process 24.49ms, physics 1.49ms
+  35.3  frame    fps 117, worst frame 16.7ms, draws 343, objects 2006, primitives 4468, process 16.59ms, physics 1.70ms
+  35.7  cross    stepped into the road at (71,58), at a zebra
+  36.3  frame    fps 106, worst frame 25.0ms, draws 597, objects 2648, primitives 5723, process 24.15ms, physics 1.47ms
+  37.1  crowd    walked into somebody at (71,62) | exc 10, in 7.1/s (crowd 22.3, events 8.7), sleep 100
+  37.3  frame    fps 99, worst frame 24.5ms, draws 590, objects 2398, primitives 5127, process 24.51ms, physics 1.63ms
+  38.3  frame    fps 115, worst frame 25.0ms, draws 596, objects 2368, primitives 5157, process 24.27ms, physics 1.41ms
+  39.3  frame    fps 119, worst frame 16.7ms, draws 592, objects 2335, primitives 5067, process 16.43ms, physics 1.40ms
+  40.3  frame    fps 120, worst frame 8.3ms, draws 354, objects 1959, primitives 4315, process 10.66ms, physics 1.50ms
+  40.6  cross    stepped into the road at (71,72), at a zebra
+  41.3  frame    fps 118, worst frame 16.7ms, draws 597, objects 2517, primitives 5429, process 16.27ms, physics 1.33ms
+  42.3  frame    fps 113, worst frame 25.0ms, draws 596, objects 2400, primitives 5150, process 24.01ms, physics 1.63ms
+  43.2  crowd    walked into somebody at (71,79) | exc 0, in 4.4/s (crowd 26.0, events 0.0), sleep 100
+  43.3  frame    fps 111, worst frame 25.0ms, draws 588, objects 2388, primitives 5027, process 23.91ms, physics 1.41ms
+  44.3  frame    fps 119, worst frame 9.9ms, draws 616, objects 2420, primitives 5424, process 16.37ms, physics 1.40ms
+  45.3  ahead    cyclist comes at her from 0px in front of her at (71,85)
+  45.3  frame    fps 116, worst frame 25.0ms, draws 361, objects 2090, primitives 4795, process 24.06ms, physics 1.49ms
+  45.4  path     off the corridor at (72,85), after 15.8s on it
+  45.4  cross    stepped into the road at (72,85), at a zebra
+  45.5  cue      edge badge: cyclist at 747px, closing 133px/s
+  45.6  crowd    a car sounded its horn at her in the road at (72,85) | exc 1, in 3.2/s (crowd 5.9, events 0.0), sleep 100
+  46.1  path     onto the corridor at (74,85), after 0.7s off it
+  46.1  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  46.3  frame    fps 119, worst frame 16.7ms, draws 289, objects 1884, primitives 4508, process 15.67ms, physics 1.54ms
+  46.8  path     off the corridor at (76,85), after 0.7s on it
+  47.4  frame    fps 119, worst frame 8.3ms, draws 292, objects 1873, primitives 4543, process 10.58ms, physics 1.49ms
+  48.4  frame    fps 118, worst frame 16.7ms, draws 453, objects 2046, primitives 4673, process 16.63ms, physics 1.52ms
+  48.5  path     82% of her street time on the corridor (34.0s on, 7.3s off, 7.2s off the streets)
+  48.5  home     WON, 131.5s to spare
+  48.5  save     wrote the save (between days)
+
+day 4  act 2  run seed 2609743060  city seed 2609743060  length 180.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 25.9 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  contact  step 1 on offer at (53,39)
+   0.0  roll     chalk mark guarded: robber 93px away (band 66-176)
+   0.0  plan     closed: accident h(1,2), roadworks h(5,4)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burnt_out_car x72, burst_water_main x11, busker x10, cafe_tables x50, car_accident x19, cat_dash x2, charging_dog x3, chatting_mother x2, collapsed_frontage x15, construction x49, cyclist x7, delivery_van x40, dog_walker x22, fallen_tree, homeless_yeller x9, ice_cream_van x4, leaf_blower x13, loose_dog x8, market_stall x61, moving_van x31, pigeon_flock x5, playground, police_patrol x5, poster_crew x10, reversing_lorry x4, scaffolding x12, skip x12
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 69, worst frame 266.6ms, draws 265, objects 2046, primitives 4514, process 1432.97ms, physics 1.19ms
+   1.9  contact  step 1 moved to (65,83): never seen at (53,39)
+   1.9  roll     chalk mark guarded: robber 97px away (band 66-176)
+   2.0  frame    fps 113, worst frame 8.3ms, draws 272, objects 1871, primitives 4236, process 23.73ms, physics 1.33ms
+   2.3  contact  step 1 seen at (65,83)
+   2.6  path     onto the corridor at (75,85), after 2.6s off it
+   3.0  frame    fps 119, worst frame 8.3ms, draws 457, objects 1993, primitives 4581, process 16.22ms, physics 1.48ms
+   4.0  frame    fps 118, worst frame 16.7ms, draws 446, objects 1999, primitives 4449, process 16.43ms, physics 1.31ms
+   5.0  frame    fps 120, worst frame 16.7ms, draws 444, objects 1995, primitives 4420, process 10.78ms, physics 1.42ms
+   6.0  cross    stepped into the road at (73,76), mid-block
+   6.0  frame    fps 119, worst frame 16.7ms, draws 595, objects 2532, primitives 5441, process 15.83ms, physics 1.54ms
+   6.1  path     off the corridor at (73,75), after 3.5s on it
+   6.8  path     onto the corridor at (71,75), after 0.7s off it
+   7.1  frame    fps 118, worst frame 8.3ms, draws 597, objects 2342, primitives 5079, process 17.22ms, physics 1.57ms
+   7.5  near     alley_robbery at (65,80), 199px, exc 0, in 2.3/s (crowd 2.1, events 0.2), sleep 3
+   8.1  frame    fps 120, worst frame 16.7ms, draws 432, objects 1970, primitives 4380, process 10.67ms, physics 1.49ms
+   8.8  near     homeless_yeller at (61,71), 208px, exc 2, in 7.6/s (crowd 0.0, events 7.6), sleep 3
+   9.1  frame    fps 119, worst frame 16.7ms, draws 439, objects 2235, primitives 5009, process 15.25ms, physics 1.45ms
+  10.1  frame    fps 119, worst frame 8.3ms, draws 441, objects 2326, primitives 5191, process 15.93ms, physics 1.54ms
+  11.1  frame    fps 119, worst frame 25.0ms, draws 444, objects 2265, primitives 5117, process 16.05ms, physics 1.62ms
+  11.3  near     alley_robbery at (65,80), 199px, exc 5, in 2.7/s (crowd 2.4, events 0.2), sleep 4
+  11.7  near     delivery_van at (57,79), 150px, exc 3, in 4.8/s (crowd 0.0, events 4.8), sleep 4
+  12.1  frame    fps 116, worst frame 25.0ms, draws 441, objects 1990, primitives 4551, process 24.21ms, physics 1.54ms
+  12.5  chase    alley_robbery came for her at (65,80) | exc 5, in 9.3/s (crowd 0.0, events 9.3), sleep 5
+  12.7  near     alley_robbery (telegraph) at (64,80), 109px, exc 6, in 12.3/s (crowd 0.0, events 12.5), sleep 5
+  12.8  cue      the mark over her head: soon for 5.2s (0.0s of it on the road) | alley_robbery 199px
+  13.1  frame    fps 114, worst frame 50.0ms, draws 449, objects 2004, primitives 4631, process 24.03ms, physics 1.70ms
+  13.1  cue      the mark over her head: now for 0.4s (0.0s of it on the road) | alley_robbery 103px
+  14.1  frame    fps 113, worst frame 10.6ms, draws 449, objects 2006, primitives 4632, process 56.11ms, physics 1.47ms
+  14.3  turn     doubled back 0°
+  14.7  ahead    loose_dog comes at her from 0px in front of her at (60,80)
+  14.9  cue      the mark over her head: now for 1.0s (0.0s of it on the road) | alley_robbery 118px
+  15.0  near     loose_dog (telegraph) at (60,75), 139px, exc 26, in 15.5/s (crowd 0.0, events 15.7), sleep 6
+  15.1  frame    fps 120, worst frame 33.3ms, draws 469, objects 2033, primitives 4612, process 10.56ms, physics 1.59ms
+  15.3  near     loose_dog (telegraph) at (60,76), 74px, exc 29, in 18.0/s (crowd 0.0, events 18.1), sleep 6
+  15.5  near     loose_dog (telegraph) at (60,76), 40px, exc 32, in 27.4/s (crowd 0.0, events 19.0), sleep 6
+  15.5  near     loose_dog (telegraph) at (60,77), 20px, exc 34, in 32.9/s (crowd 0.0, events 19.1), sleep 6
+  15.6  freeze   sleep stopped filling | exc 35, in 33.0/s (crowd 0.0, events 19.0), sleep 6 | near: loose_dog 12px
+  15.8  chase    alley_robbery gave up after 3.3s — closest 90px, she ran 0.4s of it | exc 41, in 32.3/s (crowd 0.0, events 5.3), sleep 6
+  16.1  frame    fps 112, worst frame 33.3ms, draws 308, objects 1967, primitives 4517, process 27.59ms, physics 1.72ms
+  16.3  path     off the corridor at (60,73), after 9.5s on it
+  16.3  cross    stepped into the road at (60,73), at a zebra
+  16.7  path     onto the corridor at (61,71), after 0.5s off it
+  16.8  run      ran 1.4s, exc 31 -> 54, nearest when it started: loose_dog 51px
+  17.1  frame    fps 78, worst frame 28.1ms, draws 278, objects 1674, primitives 3909, process 28.83ms, physics 1.90ms
+  17.3  near     homeless_yeller at (61,63), 210px, exc 51, in 2.8/s (crowd 0.0, events 2.9), sleep 6
+  18.1  frame    fps 83, worst frame 29.1ms, draws 443, objects 2038, primitives 4734, process 28.07ms, physics 1.79ms
+  18.2  near     homeless_yeller at (61,64), 114px, exc 57, in 14.9/s (crowd 0.0, events 14.9), sleep 6
+  19.1  turn     doubled back 180°
+  19.1  frame    fps 80, worst frame 25.3ms, draws 263, objects 1657, primitives 3683, process 29.06ms, physics 1.86ms
+  19.7  crowd    a car sounded its horn at her in the road at (59,70) | exc 61, in 3.1/s (crowd 0.0, events 3.1), sleep 6
+  19.7  path     off the corridor at (59,70), after 3.0s on it
+  19.7  cross    stepped into the road at (59,70), at a zebra
+  20.1  frame    fps 95, worst frame 27.8ms, draws 356, objects 2148, primitives 4811, process 23.48ms, physics 1.44ms
+  20.5  cue      the mark over her head: soon for 0.8s (0.8s of it on the road) | a car, and she is in the road
+  20.7  cross    stepped into the road at (57,72), at a zebra
+  21.1  frame    fps 100, worst frame 18.8ms, draws 351, objects 2110, primitives 4687, process 27.76ms, physics 1.45ms
+  21.8  near     delivery_van at (57,79), 148px, exc 66, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  22.2  path     onto the corridor at (57,76), after 2.5s off it
+  22.2  frame    fps 98, worst frame 28.4ms, draws 587, objects 2415, primitives 5244, process 16.23ms, physics 1.72ms
+  22.5  near     delivery_van at (57,79), 81px, exc 62, in 3.3/s (crowd 3.3, events 0.0), sleep 6
+  23.0  cross    stepped into the road at (58,78), mid-block
+  23.2  frame    fps 86, worst frame 30.9ms, draws 431, objects 2027, primitives 4503, process 30.83ms, physics 1.67ms
+  23.3  crowd    a car sounded its horn at her in the road at (58,78) | exc 59, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  23.9  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  24.2  frame    fps 87, worst frame 24.4ms, draws 443, objects 2059, primitives 4711, process 29.40ms, physics 1.50ms
+  24.3  run      ran 0.3s, exc 65 -> 73, nearest when it started: delivery_van 91px
+  25.0  near     dog_walker at (61,85), 104px, exc 70, in 0.3/s (crowd 0.0, events 0.3), sleep 6
+  25.2  frame    fps 97, worst frame 23.9ms, draws 466, objects 2072, primitives 4707, process 24.41ms, physics 1.48ms
+  25.5  near     dog_walker at (62,85), 55px, exc 72, in 20.2/s (crowd 0.0, events 20.3), sleep 6
+  25.6  near     fallen_tree at (63,87), 117px, exc 73, in 21.1/s (crowd 0.0, events 21.5), sleep 6
+  26.2  frame    fps 101, worst frame 30.7ms, draws 462, objects 2325, primitives 5165, process 24.14ms, physics 1.63ms
+  26.6  near     delivery_van at (57,79), 148px, exc 81, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  26.6  turn     doubled back 0°
+  27.2  frame    fps 87, worst frame 17.4ms, draws 438, objects 2025, primitives 4592, process 29.05ms, physics 1.61ms
+  28.2  frame    fps 105, worst frame 28.1ms, draws 438, objects 2028, primitives 4600, process 17.36ms, physics 1.46ms
+  29.2  frame    fps 101, worst frame 16.9ms, draws 424, objects 2252, primitives 4872, process 28.12ms, physics 1.38ms
+  29.4  crowd    walked into somebody at (61,75) | exc 64, in 4.2/s (crowd 22.2, events 0.0), sleep 6
+  30.2  frame    fps 107, worst frame 17.0ms, draws 433, objects 2289, primitives 5042, process 16.89ms, physics 1.44ms
+  30.3  ahead    loose_dog comes at her from 0px in front of her at (63,75)
+  30.9  path     off the corridor at (64,76), after 8.7s on it
+  31.2  frame    fps 104, worst frame 25.9ms, draws 441, objects 2026, primitives 4618, process 17.03ms, physics 1.42ms
+  32.1  contact  walked within 130px of the chalk mark at (65,83)
+  32.2  frame    fps 102, worst frame 28.9ms, draws 447, objects 2034, primitives 4704, process 25.93ms, physics 1.54ms
+  33.2  contact  step 1 completed
+  33.2  frame    fps 89, worst frame 24.8ms, draws 442, objects 2080, primitives 4747, process 28.85ms, physics 1.91ms
+  34.2  frame    fps 100, worst frame 24.1ms, draws 444, objects 2085, primitives 4784, process 17.12ms, physics 1.52ms
+  34.2  turn     doubled back 0°
+  35.2  frame    fps 107, worst frame 29.4ms, draws 446, objects 2088, primitives 4817, process 24.10ms, physics 1.60ms
+  35.7  near     fallen_tree at (63,87), 119px, exc 61, in 3.0/s (crowd 0.0, events 0.0), sleep 6
+  36.2  frame    fps 95, worst frame 26.7ms, draws 442, objects 2080, primitives 4758, process 29.42ms, physics 1.54ms
+  37.2  frame    fps 95, worst frame 17.6ms, draws 444, objects 2084, primitives 4793, process 26.69ms, physics 1.94ms
+  38.2  frame    fps 108, worst frame 29.8ms, draws 432, objects 2069, primitives 4605, process 17.38ms, physics 1.50ms
+  38.9  path     onto the corridor at (64,75), after 8.1s off it
+  39.3  frame    fps 86, worst frame 23.6ms, draws 442, objects 2339, primitives 5265, process 29.74ms, physics 1.56ms
+  39.5  near     homeless_yeller at (61,68), 208px, exc 55, in 1.0/s (crowd 0.0, events 1.0), sleep 6
+  39.9  cross    stepped into the road at (62,73), mid-block
+  40.1  path     off the corridor at (61,73), after 1.2s on it
+  40.3  frame    fps 100, worst frame 24.4ms, draws 275, objects 1979, primitives 4474, process 23.21ms, physics 1.61ms
+  40.4  near     homeless_yeller at (61,69), 115px, exc 52, in 5.0/s (crowd 0.0, events 5.1), sleep 6
+  40.9  path     onto the corridor at (60,71), after 0.8s off it
+  41.1  path     off the corridor at (59,71), after 0.2s on it
+  41.1  cross    stepped into the road at (59,71), at a zebra
+  41.3  frame    fps 102, worst frame 17.6ms, draws 269, objects 1969, primitives 4379, process 16.34ms, physics 1.62ms
+  41.9  path     onto the corridor at (58,69), after 0.8s off it
+  42.3  frame    fps 98, worst frame 26.7ms, draws 532, objects 2425, primitives 5288, process 26.73ms, physics 1.53ms
+  43.3  frame    fps 91, worst frame 25.0ms, draws 560, objects 2462, primitives 5698, process 24.47ms, physics 1.55ms
+  43.6  near     homeless_yeller at (61,70), 210px, exc 65, in 1.6/s (crowd 0.0, events 1.7), sleep 6
+  44.3  frame    fps 102, worst frame 29.4ms, draws 555, objects 2438, primitives 5605, process 28.00ms, physics 1.95ms
+  44.4  ahead    cat_dash crosses 332px in front of her at (57,63)
+  44.5  near     pigeon_flock at (62,61), 168px, exc 59, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  44.8  path     off the corridor at (57,61), after 2.9s on it
+  45.3  frame    fps 99, worst frame 28.8ms, draws 545, objects 2681, primitives 5971, process 28.75ms, physics 2.16ms
+  45.5  cross    stepped into the road at (57,59), at a zebra
+  46.3  frame    fps 100, worst frame 28.4ms, draws 301, objects 2104, primitives 4799, process 28.35ms, physics 1.54ms
+  47.1  cross    stepped into the road at (58,56), at a zebra
+  47.3  frame    fps 106, worst frame 23.2ms, draws 268, objects 1961, primitives 4486, process 23.18ms, physics 1.41ms
+  47.7  near     pigeon_flock at (62,61), 166px, exc 41, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  48.0  near     delivery_van at (64,57), 148px, exc 39, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  48.3  frame    fps 108, worst frame 23.0ms, draws 434, objects 2326, primitives 5238, process 22.65ms, physics 1.44ms
+  48.5  near     pigeon_flock (telegraph) at (62,61), 91px, exc 36, in 2.0/s (crowd 0.0, events 2.0), sleep 6
+  48.7  near     homeless_yeller at (61,65), 209px, exc 36, in 4.9/s (crowd 0.0, events 4.9), sleep 6
+  49.0  path     onto the corridor at (61,60), after 4.2s off it
+  49.0  near     pigeon_flock (telegraph) at (62,61), 47px, exc 36, in 9.9/s (crowd 0.0, events 9.9), sleep 6
+  49.3  frame    fps 97, worst frame 23.5ms, draws 438, objects 2468, primitives 5543, process 23.49ms, physics 1.51ms
+  49.3  near     pigeon_flock (telegraph) at (62,61), 26px, exc 38, in 10.9/s (crowd 0.0, events 10.9), sleep 6
+  50.3  frame    fps 93, worst frame 24.9ms, draws 439, objects 2486, primitives 5534, process 24.90ms, physics 1.31ms
+  51.3  frame    fps 90, worst frame 24.4ms, draws 436, objects 2338, primitives 5214, process 24.37ms, physics 1.52ms
+  52.2  closure  saw the roadworks on h(5,4) from (70,60)
+  52.2  crowd    a car sounded its horn at her in the road at (70,59) | exc 49, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  52.2  path     off the corridor at (70,59), after 3.2s on it
+  52.2  cross    stepped into the road at (70,59), at a zebra
+  52.3  frame    fps 102, worst frame 24.0ms, draws 621, objects 2686, primitives 6018, process 22.72ms, physics 1.53ms
+  52.9  cue      the mark over her head: soon for 0.7s (0.7s of it on the road) | a car, and she is in the road
+  53.3  frame    fps 96, worst frame 26.5ms, draws 360, objects 1959, primitives 4514, process 26.52ms, physics 1.37ms
+  53.6  path     onto the corridor at (70,55), after 1.4s off it
+  54.3  frame    fps 108, worst frame 18.1ms, draws 641, objects 2548, primitives 5494, process 18.10ms, physics 1.55ms
+  55.3  frame    fps 105, worst frame 17.0ms, draws 642, objects 2547, primitives 5519, process 17.00ms, physics 1.31ms
+  56.3  frame    fps 105, worst frame 23.8ms, draws 652, objects 2723, primitives 5966, process 23.80ms, physics 1.87ms
+  56.7  crowd    walked into somebody at (69,47) | exc 37, in 8.6/s (crowd 26.6, events 0.0), sleep 6
+  57.3  frame    fps 111, worst frame 15.4ms, draws 478, objects 2385, primitives 5292, process 15.44ms, physics 1.56ms
+  58.3  frame    fps 110, worst frame 16.7ms, draws 486, objects 2241, primitives 5098, process 20.58ms, physics 1.71ms
+  58.7  cross    stepped into the road at (65,45), mid-block
+  59.3  frame    fps 111, worst frame 18.2ms, draws 506, objects 2310, primitives 5458, process 18.20ms, physics 1.41ms
+  60.2  path     away from the corridor at (63,41), after 6.6s on it
+  60.2  calm     entered forest (4,2), sleep 6
+  60.3  frame    fps 106, worst frame 24.4ms, draws 350, objects 1707, primitives 4269, process 24.36ms, physics 1.80ms
+  61.0  thaw     settling again | exc 35, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  61.3  frame    fps 104, worst frame 25.1ms, draws 351, objects 1697, primitives 4270, process 25.04ms, physics 1.67ms
+  62.3  frame    fps 103, worst frame 26.9ms, draws 534, objects 2073, primitives 4904, process 26.92ms, physics 1.38ms
+  63.4  frame    fps 107, worst frame 18.2ms, draws 540, objects 2037, primitives 4927, process 17.66ms, physics 1.34ms
+  64.4  frame    fps 109, worst frame 22.3ms, draws 351, objects 1651, primitives 4204, process 22.24ms, physics 1.32ms
+  65.4  frame    fps 110, worst frame 17.4ms, draws 365, objects 1680, primitives 4439, process 16.23ms, physics 1.37ms
+  66.3  calm     settled in the calm block (4,2); tomorrow will know
+  66.3  asleep   asleep after 66.3s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  66.4  frame    fps 108, worst frame 17.8ms, draws 359, objects 1695, primitives 4326, process 16.44ms, physics 1.45ms
+  67.4  frame    fps 97, worst frame 26.6ms, draws 551, objects 2130, primitives 5165, process 26.63ms, physics 1.54ms
+  67.8  turn     doubled back 120°
+  68.4  frame    fps 105, worst frame 27.0ms, draws 351, objects 1674, primitives 4208, process 27.02ms, physics 1.33ms
+  69.4  frame    fps 109, worst frame 16.7ms, draws 365, objects 1700, primitives 4434, process 17.94ms, physics 1.41ms
+  69.7  path     onto the corridor at (68,42), after 9.5s away it
+  69.7  left     left forest (4,2), sleep 100
+  70.2  crowd    walked into somebody at (69,42) (+3 in the last 13.4s) | exc 0, in 2.7/s (crowd 23.0, events 0.0), sleep 100
+  70.2  ahead    cyclist comes at her from 0px in front of her at (69,43)
+  70.3  path     off the corridor at (70,43), after 0.6s on it
+  70.4  frame    fps 103, worst frame 23.5ms, draws 692, objects 2793, primitives 6544, process 23.48ms, physics 1.53ms
+  70.5  cue      edge badge: cyclist at 749px, closing 132px/s
+  70.7  cross    stepped into the road at (70,44), at a zebra
+  71.4  path     onto the corridor at (70,46), after 1.1s off it
+  71.4  frame    fps 82, worst frame 30.1ms, draws 674, objects 2750, primitives 6290, process 28.71ms, physics 1.53ms
+  72.4  frame    fps 98, worst frame 26.4ms, draws 655, objects 2560, primitives 5719, process 26.37ms, physics 1.50ms
+  73.4  frame    fps 104, worst frame 29.1ms, draws 658, objects 2570, primitives 5736, process 23.91ms, physics 1.45ms
+  74.4  frame    fps 107, worst frame 16.3ms, draws 350, objects 1889, primitives 4305, process 27.91ms, physics 1.67ms
+  74.9  path     off the corridor at (70,56), after 3.5s on it
+  75.1  cue      edge badge gone: cyclist after 4.7s, now 442px away
+  75.4  frame    fps 115, worst frame 16.7ms, draws 344, objects 2076, primitives 4559, process 17.99ms, physics 1.35ms
+  75.6  cross    stepped into the road at (70,58), at a zebra
+  76.3  path     onto the corridor at (70,60), after 1.4s off it
+  76.4  frame    fps 98, worst frame 22.9ms, draws 606, objects 2725, primitives 5907, process 22.93ms, physics 1.43ms
+  77.4  frame    fps 98, worst frame 24.3ms, draws 599, objects 2448, primitives 5302, process 24.29ms, physics 1.45ms
+  78.4  frame    fps 108, worst frame 20.7ms, draws 588, objects 2441, primitives 5186, process 20.68ms, physics 1.45ms
+  79.4  frame    fps 98, worst frame 25.0ms, draws 355, objects 1852, primitives 4086, process 25.01ms, physics 1.48ms
+  80.4  frame    fps 109, worst frame 17.3ms, draws 354, objects 2084, primitives 4526, process 15.66ms, physics 1.58ms
+  80.5  cross    stepped into the road at (71,72), at a zebra
+  81.4  frame    fps 107, worst frame 24.2ms, draws 592, objects 2594, primitives 5493, process 24.18ms, physics 1.61ms
+  82.4  frame    fps 109, worst frame 23.0ms, draws 592, objects 2434, primitives 5178, process 22.94ms, physics 1.41ms
+  83.4  frame    fps 108, worst frame 16.8ms, draws 589, objects 2451, primitives 5164, process 16.94ms, physics 1.31ms
+  84.5  frame    fps 100, worst frame 28.7ms, draws 587, objects 2447, primitives 5129, process 28.66ms, physics 1.53ms
+  84.7  path     off the corridor at (71,84), after 8.4s on it
+  85.3  cross    stepped into the road at (72,85), at a zebra
+  85.5  frame    fps 105, worst frame 22.5ms, draws 331, objects 2124, primitives 4487, process 17.22ms, physics 1.74ms
+  86.0  path     onto the corridor at (74,85), after 1.4s off it
+  86.5  frame    fps 96, worst frame 27.7ms, draws 254, objects 1893, primitives 4049, process 27.18ms, physics 1.74ms
+  86.7  path     off the corridor at (76,85), after 0.7s on it
+  87.5  frame    fps 111, worst frame 15.6ms, draws 259, objects 1925, primitives 4161, process 16.72ms, physics 1.53ms
+  88.5  frame    fps 108, worst frame 22.6ms, draws 442, objects 2126, primitives 4608, process 17.28ms, physics 1.40ms
+  88.5  path     66% of her street time on the corridor (51.9s on, 27.0s off, 9.5s off the streets)
+  88.5  home     WON, 91.5s to spare
+  88.5  save     wrote the save (between days)
+
+day 5  act 2  run seed 2609743060  city seed 2609743060  length 180.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 28.0 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     leaf_blower, pigeon_flock, pigeon_flock, pigeon_flock in the park she used yesterday, (4,2)
+   0.0  contact  step 2 on offer at (7,84)
+   0.0  roll     chalk mark guarded: robber 93px away (band 66-176)
+   0.0  plan     closed: cordoned off v(10,8), roadworks h(8,4)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burnt_out_car x80, burst_water_main x13, busker x4, cafe_tables x52, car_accident x12, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x12, construction x49, cyclist x6, delivery_van x51, dog_walker x23, fallen_tree, homeless_yeller x8, ice_cream_van x5, leaf_blower x10, loose_dog x14, market_stall x34, moving_van x26, pigeon_flock x8, playground, police_patrol x8, poster_crew x11, reversing_lorry x5, scaffolding x16, skip x16
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   0.3  crowd    walked into somebody at (80,84) | exc 3, in 8.7/s (crowd 26.7, events 0.0), sleep 0
+   1.0  frame    fps 64, worst frame 258.8ms, draws 301, objects 2098, primitives 4789, process 16.71ms, physics 1.23ms
+   1.8  near     police_patrol (telegraph) at (72,88), 184px, exc 11, in 0.3/s (crowd 0.0, events 0.3), sleep 0
+   2.0  frame    fps 101, worst frame 17.4ms, draws 484, objects 2407, primitives 5335, process 16.32ms, physics 1.86ms
+   2.4  path     onto the corridor at (75,85), after 2.4s off it
+   2.6  near     police_patrol at (72,86), 100px, exc 11, in 8.7/s (crowd 0.0, events 8.7), sleep 1
+   3.0  frame    fps 90, worst frame 26.5ms, draws 481, objects 2144, primitives 4785, process 26.48ms, physics 1.92ms
+   4.0  frame    fps 86, worst frame 28.9ms, draws 487, objects 2155, primitives 4874, process 28.86ms, physics 1.65ms
+   5.0  frame    fps 101, worst frame 27.7ms, draws 491, objects 2162, primitives 4939, process 27.69ms, physics 1.43ms
+   6.0  frame    fps 93, worst frame 30.7ms, draws 496, objects 2325, primitives 5331, process 30.65ms, physics 1.53ms
+   6.7  path     off the corridor at (75,73), after 4.3s on it
+   6.7  cross    stepped into the road at (75,73), at a zebra
+   7.0  frame    fps 79, worst frame 24.7ms, draws 320, objects 1999, primitives 4766, process 24.82ms, physics 1.79ms
+   7.7  near     construction at (76,65), 197px, exc 27, in 7.2/s (crowd 0.8, events 6.4), sleep 3
+   8.0  frame    fps 87, worst frame 25.1ms, draws 322, objects 1837, primitives 4501, process 25.04ms, physics 1.58ms
+   8.5  turn     doubled back 180°
+   8.6  cross    stepped into the road at (75,72), at a zebra
+   9.0  freeze   sleep stopped filling | exc 35, in 15.1/s (crowd 7.1, events 8.0), sleep 3 | near: police_patrol 100px
+   9.0  frame    fps 85, worst frame 28.9ms, draws 320, objects 1996, primitives 4757, process 28.94ms, physics 1.52ms
+   9.3  path     onto the corridor at (75,74), after 2.6s off it
+   9.8  thaw     settling again | exc 35, in 0.4/s (crowd 0.4, events 0.0), sleep 3
+  10.0  frame    fps 79, worst frame 31.1ms, draws 484, objects 2098, primitives 4736, process 29.47ms, physics 1.67ms
+  11.0  frame    fps 86, worst frame 30.5ms, draws 494, objects 2170, primitives 5003, process 30.50ms, physics 1.62ms
+  12.1  frame    fps 98, worst frame 24.4ms, draws 472, objects 2136, primitives 4667, process 24.42ms, physics 1.87ms
+  13.1  frame    fps 92, worst frame 29.3ms, draws 674, objects 2551, primitives 5557, process 28.85ms, physics 1.69ms
+  13.4  path     off the corridor at (86,75), after 4.1s on it
+  13.4  cross    stepped into the road at (86,75), at a zebra
+  13.5  near     homeless_yeller at (88,82), 210px, exc 13, in 0.0/s (crowd 0.0, events 0.0), sleep 5
+  13.5  path     onto the corridor at (86,76), after 0.1s off it
+  13.5  near     homeless_yeller at (88,82), 208px, exc 13, in 0.0/s (crowd 0.0, events 0.0), sleep 5
+  14.1  frame    fps 82, worst frame 30.3ms, draws 675, objects 2595, primitives 5645, process 28.53ms, physics 1.79ms
+  15.1  frame    fps 82, worst frame 26.5ms, draws 673, objects 2600, primitives 5628, process 24.30ms, physics 1.68ms
+  15.3  near     homeless_yeller at (88,83), 114px, exc 6, in 4.2/s (crowd 0.0, events 4.2), sleep 6
+  16.1  frame    fps 82, worst frame 30.9ms, draws 687, objects 2617, primitives 5836, process 29.25ms, physics 1.69ms
+  16.1  near     homeless_yeller at (88,84), 63px, exc 7, in 10.7/s (crowd 0.0, events 10.8), sleep 6
+  16.3  contact  step 2 retargeted onto the nearest look-alike reached first
+  16.3  contact  walked within 48px of the chalk mark at (88,84)
+  16.5  contact  step 2 completed
+  16.6  near     homeless_yeller at (88,85), 34px, exc 11, in 15.2/s (crowd 0.0, events 15.3), sleep 6
+  16.6  path     off the corridor at (88,84), after 3.1s on it
+  16.8  near     homeless_yeller at (88,85), 17px, exc 13, in 17.3/s (crowd 0.0, events 17.4), sleep 6
+  17.1  frame    fps 78, worst frame 31.4ms, draws 392, objects 2269, primitives 5174, process 30.02ms, physics 2.21ms
+  17.1  crowd    walked into somebody at (88,85) | exc 18, in 23.3/s (crowd 22.2, events 19.1), sleep 6
+  17.3  cross    stepped into the road at (88,86), at a zebra
+  17.5  crowd    a car sounded its horn at her in the road at (88,86) | exc 28, in 21.8/s (crowd 1.9, events 20.0), sleep 6
+  17.7  freeze   sleep stopped filling | exc 36, in 37.7/s (crowd 18.8, events 19.5), sleep 6 | near: homeless_yeller 59px
+  17.8  ahead    loose_dog comes at her from 0px in front of her at (88,86)
+  17.9  cue      edge badge: loose_dog at 215px, closing 26px/s
+  18.0  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  18.1  cue      edge badge gone: loose_dog after 0.2s, now 171px away
+  18.1  frame    fps 92, worst frame 26.2ms, draws 400, objects 2330, primitives 5369, process 26.22ms, physics 1.88ms
+  18.1  turn     doubled back 314°
+  18.3  near     loose_dog (telegraph) at (88,81), 139px, exc 50, in 30.0/s (crowd 11.2, events 18.6), sleep 6
+  18.3  cross    stepped into the road at (87,85), at a zebra
+  19.0  path     onto the corridor at (85,85), after 2.4s off it
+  19.1  frame    fps 79, worst frame 30.8ms, draws 327, objects 2125, primitives 4844, process 29.51ms, physics 1.53ms
+  19.7  path     off the corridor at (83,85), after 0.7s on it
+  20.1  frame    fps 96, worst frame 26.3ms, draws 301, objects 2094, primitives 4785, process 26.33ms, physics 1.51ms
+  21.1  crowd    walked into somebody at (79,85) | exc 64, in 8.7/s (crowd 26.7, events 0.0), sleep 6
+  21.1  frame    fps 96, worst frame 24.3ms, draws 296, objects 2107, primitives 4760, process 24.33ms, physics 1.49ms
+  22.1  frame    fps 95, worst frame 23.4ms, draws 479, objects 2432, primitives 5337, process 23.08ms, physics 1.61ms
+  22.5  path     onto the corridor at (75,85), after 2.8s off it
+  23.1  frame    fps 93, worst frame 30.7ms, draws 475, objects 2173, primitives 4768, process 30.62ms, physics 2.03ms
+  24.1  frame    fps 90, worst frame 28.7ms, draws 472, objects 2193, primitives 4760, process 28.33ms, physics 1.73ms
+  25.1  frame    fps 94, worst frame 24.4ms, draws 471, objects 2166, primitives 4700, process 23.91ms, physics 1.73ms
+  26.1  frame    fps 92, worst frame 26.4ms, draws 478, objects 2336, primitives 5133, process 24.34ms, physics 1.58ms
+  26.7  path     off the corridor at (74,73), after 4.2s on it
+  26.7  cross    stepped into the road at (74,73), at a zebra
+  27.1  frame    fps 89, worst frame 27.0ms, draws 295, objects 1977, primitives 4430, process 26.98ms, physics 1.98ms
+  27.6  path     onto the corridor at (76,71), after 0.9s off it
+  27.7  thaw     settling again | exc 35, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+  28.1  frame    fps 92, worst frame 24.0ms, draws 303, objects 1923, primitives 4451, process 23.98ms, physics 1.74ms
+  29.1  frame    fps 96, worst frame 26.4ms, draws 300, objects 1985, primitives 4524, process 26.43ms, physics 2.18ms
+  30.2  frame    fps 103, worst frame 22.8ms, draws 305, objects 1974, primitives 4574, process 23.08ms, physics 1.53ms
+  30.4  path     off the corridor at (84,71), after 2.9s on it
+  30.5  near     construction at (83,65), 199px, exc 21, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+  30.7  crowd    walked into somebody at (84,70) | exc 21, in 4.2/s (crowd 22.2, events 0.0), sleep 8
+  30.9  near     moving_van at (85,66), 117px, exc 23, in 14.4/s (crowd 13.0, events 0.0), sleep 8
+  31.2  frame    fps 91, worst frame 28.7ms, draws 477, objects 2180, primitives 4960, process 27.07ms, physics 1.80ms
+  31.6  near     moving_van at (85,66), 63px, exc 20, in 3.2/s (crowd 3.2, events 0.0), sleep 8
+  31.6  near     construction at (83,65), 107px, exc 20, in 3.2/s (crowd 3.2, events 0.0), sleep 8
+  32.2  frame    fps 80, worst frame 28.4ms, draws 475, objects 2174, primitives 4927, process 28.70ms, physics 1.86ms
+  33.0  turn     doubled back 180°
+  33.2  frame    fps 78, worst frame 29.9ms, draws 475, objects 2175, primitives 4926, process 28.43ms, physics 1.57ms
+  34.0  near     ice_cream_van at (92,71), 238px, exc 17, in 3.2/s (crowd 3.1, events 0.1), sleep 9
+  34.2  frame    fps 97, worst frame 19.9ms, draws 298, objects 1938, primitives 4403, process 25.04ms, physics 1.53ms
+  34.5  cross    stepped into the road at (86,71), at a zebra
+  35.2  frame    fps 98, worst frame 26.7ms, draws 667, objects 2678, primitives 5732, process 23.18ms, physics 1.60ms
+  35.4  crowd    a car sounded its horn at her in the road at (86,74) | exc 11, in 1.7/s (crowd 0.0, events 1.7), sleep 10
+  35.8  path     onto the corridor at (85,75), after 5.3s off it
+  35.8  cue      the mark over her head: soon for 0.3s (0.3s of it on the road) | a car, and she is in the road
+  36.2  frame    fps 76, worst frame 29.6ms, draws 482, objects 2242, primitives 4978, process 29.32ms, physics 1.51ms
+  36.7  near     homeless_yeller at (88,83), 207px, exc 12, in 5.1/s (crowd 2.6, events 2.5), sleep 10
+  37.2  frame    fps 82, worst frame 31.0ms, draws 484, objects 2235, primitives 4982, process 29.56ms, physics 1.60ms
+  38.0  near     homeless_yeller at (88,81), 113px, exc 23, in 20.0/s (crowd 4.5, events 15.5), sleep 11
+  38.2  frame    fps 73, worst frame 28.5ms, draws 492, objects 2247, primitives 5105, process 29.50ms, physics 1.66ms
+  39.2  frame    fps 96, worst frame 23.4ms, draws 499, objects 2515, primitives 5689, process 23.42ms, physics 1.49ms
+  39.7  path     off the corridor at (85,86), after 3.9s on it
+  39.7  cross    stepped into the road at (85,86), at a zebra
+  40.2  frame    fps 96, worst frame 23.3ms, draws 302, objects 1909, primitives 4477, process 23.33ms, physics 1.92ms
+  40.4  path     onto the corridor at (85,88), after 0.7s off it
+  40.7  cross    stepped into the road at (86,88), at a zebra
+  41.1  near     delivery_van at (88,93), 150px, exc 25, in 0.0/s (crowd 0.0, events 0.0), sleep 12
+  41.2  crowd    a car sounded its horn at her in the road at (87,89) | exc 24, in 0.0/s (crowd 0.0, events 0.0), sleep 12
+  41.2  frame    fps 104, worst frame 22.3ms, draws 390, objects 2131, primitives 4898, process 23.25ms, physics 1.59ms
+  41.5  cue      the mark over her head: soon for 0.3s (0.3s of it on the road) | a car, and she is in the road
+  42.2  frame    fps 98, worst frame 23.0ms, draws 300, objects 1917, primitives 4475, process 15.99ms, physics 1.73ms
+  42.6  crowd    walked into somebody at (91,89) | exc 18, in 4.2/s (crowd 22.2, events 0.0), sleep 13
+  43.3  frame    fps 100, worst frame 30.3ms, draws 305, objects 2017, primitives 4726, process 23.04ms, physics 1.44ms
+  43.6  ahead    loose_dog comes at her from 0px in front of her at (93,89)
+  44.0  near     construction at (99,94), 200px, exc 14, in 0.0/s (crowd 0.0, events 0.0), sleep 13
+  44.3  frame    fps 85, worst frame 25.3ms, draws 295, objects 1773, primitives 4119, process 29.74ms, physics 1.65ms
+  44.6  near     loose_dog (telegraph) at (101,89), 139px, exc 11, in 4.1/s (crowd 1.1, events 3.3), sleep 13
+  45.1  near     loose_dog (telegraph) at (99,89), 76px, exc 13, in 4.3/s (crowd 0.0, events 4.2), sleep 13
+  45.3  frame    fps 119, worst frame 23.5ms, draws 313, objects 1848, primitives 4170, process 13.49ms, physics 1.32ms
+  45.4  near     loose_dog (telegraph) at (97,89), 42px, exc 14, in 3.0/s (crowd 0.0, events 2.9), sleep 13
+  45.5  near     loose_dog (telegraph) at (97,89), 21px, exc 15, in 2.1/s (crowd 0.0, events 2.1), sleep 13
+  46.3  frame    fps 119, worst frame 8.3ms, draws 315, objects 1800, primitives 4107, process 15.60ms, physics 1.62ms
+  46.4  near     construction at (103,94), 200px, exc 12, in 3.7/s (crowd 3.9, events 0.0), sleep 13
+  46.5  crowd    walked into somebody at (99,89) | exc 12, in 4.7/s (crowd 22.7, events 0.0), sleep 13
+  46.7  cross    stepped into the road at (100,89), at a zebra
+  47.3  frame    fps 118, worst frame 16.7ms, draws 343, objects 2181, primitives 4802, process 16.29ms, physics 1.52ms
+  48.3  frame    fps 119, worst frame 16.7ms, draws 343, objects 2112, primitives 4706, process 16.49ms, physics 1.45ms
+  49.3  frame    fps 120, worst frame 8.3ms, draws 255, objects 2009, primitives 4545, process 10.43ms, physics 1.59ms
+  50.3  frame    fps 119, worst frame 16.7ms, draws 258, objects 1955, primitives 4482, process 15.96ms, physics 1.45ms
+  51.3  frame    fps 119, worst frame 16.7ms, draws 261, objects 1998, primitives 4613, process 15.75ms, physics 1.45ms
+  52.3  near     delivery_van at (118,85), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 15
+  52.3  frame    fps 120, worst frame 8.3ms, draws 253, objects 1984, primitives 4480, process 10.59ms, physics 1.49ms
+  53.3  frame    fps 118, worst frame 16.7ms, draws 354, objects 2221, primitives 4978, process 15.65ms, physics 1.71ms
+  54.3  frame    fps 119, worst frame 16.7ms, draws 272, objects 1900, primitives 4384, process 15.56ms, physics 1.43ms
+  55.1  near     poster_crew at (126,90), 108px, exc 0, in 0.2/s (crowd 0.0, events 0.2), sleep 17
+  55.3  frame    fps 119, worst frame 16.7ms, draws 281, objects 1913, primitives 4509, process 16.08ms, physics 1.50ms
+  55.7  near     poster_crew at (126,90), 59px, exc 0, in 4.3/s (crowd 0.0, events 4.3), sleep 17
+  56.4  frame    fps 120, worst frame 8.3ms, draws 277, objects 1975, primitives 4585, process 10.79ms, physics 1.52ms
+  56.7  cross    stepped into the road at (128,89), at a zebra
+  57.4  frame    fps 119, worst frame 16.7ms, draws 283, objects 1743, primitives 4166, process 16.15ms, physics 1.65ms
+  58.4  frame    fps 119, worst frame 16.7ms, draws 426, objects 2049, primitives 4706, process 16.22ms, physics 1.41ms
+  58.4  path     away from the corridor at (132,91), after 18.0s on it
+  58.4  calm     entered forest (9,6), sleep 19
+  59.4  frame    fps 120, worst frame 16.7ms, draws 591, objects 2446, primitives 5575, process 10.43ms, physics 1.35ms
+  60.1  ahead    loose_dog comes at her from 0px in front of her at (134,92)
+  60.4  frame    fps 115, worst frame 25.0ms, draws 598, objects 2468, primitives 5689, process 24.26ms, physics 1.78ms
+  61.3  near     loose_dog (telegraph) at (141,94), 139px, exc 0, in 3.1/s (crowd 0.0, events 3.2), sleep 58
+  61.4  frame    fps 117, worst frame 25.0ms, draws 505, objects 2126, primitives 4906, process 23.93ms, physics 1.55ms
+  61.7  near     loose_dog (telegraph) at (139,93), 77px, exc 0, in 4.0/s (crowd 0.0, events 3.9), sleep 65
+  62.4  frame    fps 100, worst frame 26.1ms, draws 612, objects 2485, primitives 5576, process 24.66ms, physics 1.61ms
+  63.4  frame    fps 97, worst frame 25.8ms, draws 455, objects 2088, primitives 4803, process 24.46ms, physics 1.45ms
+  63.7  calm     settled in the calm block (9,6); tomorrow will know
+  63.7  asleep   asleep after 63.7s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  64.4  frame    fps 119, worst frame 16.1ms, draws 600, objects 2430, primitives 5598, process 16.10ms, physics 1.53ms
+  65.4  frame    fps 115, worst frame 25.0ms, draws 587, objects 2474, primitives 5541, process 24.44ms, physics 1.36ms
+  66.4  frame    fps 120, worst frame 16.7ms, draws 472, objects 2100, primitives 4739, process 10.62ms, physics 1.47ms
+  67.4  frame    fps 119, worst frame 8.3ms, draws 589, objects 2478, primitives 5573, process 15.36ms, physics 1.41ms
+  68.4  frame    fps 112, worst frame 25.0ms, draws 428, objects 2077, primitives 4747, process 24.45ms, physics 1.52ms
+  69.4  frame    fps 119, worst frame 16.7ms, draws 446, objects 2104, primitives 5011, process 16.20ms, physics 1.34ms
+  69.6  path     onto the corridor at (131,94), after 11.2s away it
+  69.6  left     left forest (9,6), sleep 100
+  69.8  crowd    walked into somebody at (131,93) | exc 0, in 2.3/s (crowd 22.2, events 0.0), sleep 100
+  70.5  frame    fps 120, worst frame 8.3ms, draws 457, objects 2134, primitives 5197, process 9.94ms, physics 1.35ms
+  71.2  cross    stepped into the road at (129,90), mid-block
+  71.2  near     poster_crew at (126,90), 110px, exc 0, in 2.3/s (crowd 22.1, events 0.0), sleep 100
+  71.5  frame    fps 119, worst frame 16.7ms, draws 316, objects 2073, primitives 5198, process 16.71ms, physics 1.44ms
+  71.5  crowd    a car sounded its horn at her in the road at (129,89) | exc 1, in 6.0/s (crowd 9.1, events 1.8), sleep 100
+  72.0  near     poster_crew at (126,90), 59px, exc 2, in 9.9/s (crowd 13.6, events 4.4), sleep 100
+  72.0  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  72.2  crowd    walked into somebody at (127,89) (+2 in the last 2.4s) | exc 4, in 15.0/s (crowd 40.3, events 4.9), sleep 100
+  72.5  frame    fps 118, worst frame 25.0ms, draws 315, objects 2079, primitives 5159, process 16.13ms, physics 1.52ms
+  73.5  frame    fps 117, worst frame 16.7ms, draws 307, objects 2070, primitives 5045, process 23.93ms, physics 1.49ms
+  74.4  near     delivery_van at (118,85), 150px, exc 6, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  74.5  frame    fps 119, worst frame 8.3ms, draws 378, objects 2278, primitives 5341, process 16.54ms, physics 1.42ms
+  75.5  frame    fps 119, worst frame 16.7ms, draws 267, objects 2028, primitives 4694, process 16.41ms, physics 1.49ms
+  76.5  frame    fps 119, worst frame 16.7ms, draws 260, objects 2039, primitives 4620, process 12.80ms, physics 1.52ms
+  77.5  frame    fps 118, worst frame 16.7ms, draws 269, objects 1960, primitives 4588, process 15.60ms, physics 1.60ms
+  78.5  frame    fps 119, worst frame 16.7ms, draws 271, objects 1978, primitives 4654, process 15.38ms, physics 1.33ms
+  79.5  frame    fps 119, worst frame 16.7ms, draws 355, objects 2151, primitives 4880, process 15.26ms, physics 1.34ms
+  79.6  near     construction at (103,94), 200px, exc 0, in 1.0/s (crowd 1.9, events 0.0), sleep 100
+  80.5  frame    fps 120, worst frame 16.7ms, draws 355, objects 2219, primitives 5016, process 10.62ms, physics 1.37ms
+  81.3  cross    stepped into the road at (101,88), at a zebra
+  81.5  near     construction at (99,94), 199px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  81.5  frame    fps 119, worst frame 8.3ms, draws 294, objects 1999, primitives 4528, process 16.38ms, physics 1.42ms
+  82.6  frame    fps 119, worst frame 16.7ms, draws 295, objects 2020, primitives 4570, process 15.71ms, physics 1.40ms
+  83.5  ahead    loose_dog comes at her from 0px in front of her at (95,89)
+  83.6  frame    fps 120, worst frame 16.7ms, draws 296, objects 2021, primitives 4570, process 10.52ms, physics 1.47ms
+  84.5  near     loose_dog (telegraph) at (88,89), 140px, exc 0, in 4.4/s (crowd 4.9, events 3.2), sleep 100
+  84.6  frame    fps 119, worst frame 8.3ms, draws 318, objects 1984, primitives 4448, process 15.79ms, physics 1.41ms
+  84.8  crowd    walked into somebody at (92,89) (+1 in the last 12.5s) | exc 0, in 6.8/s (crowd 25.3, events 5.1), sleep 100
+  84.8  near     loose_dog (telegraph) at (89,89), 74px, exc 1, in 15.7/s (crowd 23.1, events 5.2), sleep 100
+  85.0  near     loose_dog (telegraph) at (90,89), 40px, exc 2, in 10.4/s (crowd 12.7, events 4.8), sleep 100
+  85.1  near     loose_dog (telegraph) at (90,89), 21px, exc 2, in 4.7/s (crowd 3.8, events 4.3), sleep 100
+  85.3  near     delivery_van at (88,93), 149px, exc 1, in 2.4/s (crowd 1.8, events 2.6), sleep 100
+  85.6  frame    fps 119, worst frame 16.7ms, draws 403, objects 2187, primitives 4801, process 15.83ms, physics 1.49ms
+  86.1  near     homeless_yeller at (88,82), 210px, exc 0, in 0.4/s (crowd 0.0, events 0.9), sleep 100
+  86.2  cross    stepped into the road at (87,89), at a zebra
+  86.6  frame    fps 119, worst frame 16.7ms, draws 286, objects 1905, primitives 4238, process 15.94ms, physics 1.52ms
+  87.4  path     off the corridor at (85,87), after 17.8s on it
+  87.4  cross    stepped into the road at (85,87), at a zebra
+  87.6  frame    fps 120, worst frame 16.7ms, draws 286, objects 2024, primitives 4449, process 10.79ms, physics 1.40ms
+  87.6  crowd    a car sounded its horn at her in the road at (85,87) | exc 0, in 6.8/s (crowd 0.0, events 12.4), sleep 100
+  88.3  crowd    walked into somebody at (83,85) | exc 5, in 12.7/s (crowd 29.1, events 12.1), sleep 100
+  88.3  cue      the mark over her head: soon for 0.7s (0.7s of it on the road) | a car, and she is in the road
+  88.6  frame    fps 119, worst frame 8.3ms, draws 479, objects 2461, primitives 5320, process 15.37ms, physics 1.40ms
+  89.6  frame    fps 119, worst frame 16.7ms, draws 473, objects 2429, primitives 5211, process 15.77ms, physics 1.46ms
+  90.0  path     75% of her street time on the corridor (58.9s on, 19.9s off, 11.2s off the streets)
+  90.0  home     WON, 90.0s to spare
+  90.0  save     wrote the save (between days)
+
+day 6  act 2  run seed 2609743060  city seed 2609743060  length 144.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 24.9 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     busker, pigeon_flock, leaf_blower, pigeon_flock in the park she used yesterday, (9,6)
+   0.0  roll     leaf_blower, busker, busker, leaf_blower in the park she used yesterday, (4,2)
+   0.0  contact  step 3 on offer at (24,149)
+   0.0  roll     chalk mark guarded: robber 95px away (band 66-176)
+   0.0  plan     closed: roadworks v(6,0), accident h(3,4)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x3, burnt_out_car x52, burst_water_main x23, busker x8, cafe_tables x57, car_accident x20, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x17, construction x33, cyclist x7, delivery_van x34, dog_walker x26, fallen_tree, homeless_yeller x5, ice_cream_van x5, leaf_blower x11, loose_dog x13, market_stall x30, moving_van x35, pigeon_flock x7, playground, police_patrol x12, poster_crew x12, reversing_lorry x7, scaffolding x13, skip x14
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 17, worst frame 282.1ms, draws 516, objects 2626, primitives 5770, process 15.14ms, physics 0.99ms
+   2.0  contact  step 3 moved to (65,83): never seen at (24,149)
+   2.0  roll     chalk mark guarded: robber 172px away (band 66-176)
+   2.0  frame    fps 120, worst frame 25.0ms, draws 508, objects 2413, primitives 5239, process 9.97ms, physics 1.20ms
+   2.4  contact  step 3 seen at (65,83)
+   2.6  path     onto the corridor at (75,85), after 2.6s off it
+   2.7  near     police_patrol at (72,80), 184px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   2.7  near     police_patrol at (72,80), 183px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   3.0  frame    fps 106, worst frame 10.4ms, draws 511, objects 2163, primitives 4795, process 24.40ms, physics 1.35ms
+   4.0  frame    fps 119, worst frame 16.7ms, draws 505, objects 2155, primitives 4707, process 15.95ms, physics 1.38ms
+   4.1  turn     doubled back 180°
+   4.8  crowd    walked into somebody at (75,85) | exc 0, in 4.2/s (crowd 22.2, events 0.0), sleep 1
+   4.8  path     off the corridor at (76,85), after 2.2s on it
+   5.0  frame    fps 120, worst frame 16.7ms, draws 295, objects 2071, primitives 4486, process 10.90ms, physics 1.45ms
+   6.0  frame    fps 119, worst frame 16.7ms, draws 513, objects 2407, primitives 5311, process 15.77ms, physics 1.27ms
+   7.1  frame    fps 119, worst frame 8.3ms, draws 512, objects 2426, primitives 5322, process 15.57ms, physics 1.23ms
+   7.6  path     onto the corridor at (84,85), after 2.8s off it
+   8.1  frame    fps 118, worst frame 16.7ms, draws 732, objects 2843, primitives 6202, process 17.01ms, physics 1.43ms
+   8.3  cross    stepped into the road at (86,85), at a zebra
+   9.0  path     off the corridor at (88,85), after 1.4s on it
+   9.1  frame    fps 109, worst frame 25.0ms, draws 742, objects 2836, primitives 6308, process 24.39ms, physics 1.39ms
+   9.7  path     onto the corridor at (90,85), after 0.7s off it
+  10.1  frame    fps 92, worst frame 24.4ms, draws 538, objects 2448, primitives 5535, process 24.40ms, physics 1.67ms
+  10.1  crowd    walked into somebody at (91,85) | exc 0, in 4.2/s (crowd 22.2, events 0.0), sleep 4
+  11.1  frame    fps 116, worst frame 16.7ms, draws 544, objects 2422, primitives 5558, process 23.72ms, physics 1.45ms
+  11.8  near     police_patrol at (101,87), 184px, exc 0, in 1.6/s (crowd 0.0, events 1.6), sleep 4
+  12.1  frame    fps 120, worst frame 16.7ms, draws 540, objects 2412, primitives 5481, process 10.35ms, physics 1.39ms
+  12.5  path     off the corridor at (98,85), after 2.8s on it
+  12.6  near     police_patrol at (101,85), 99px, exc 2, in 13.5/s (crowd 4.3, events 9.2), sleep 5
+  13.1  path     onto the corridor at (98,83), after 0.6s off it
+  13.1  frame    fps 116, worst frame 25.0ms, draws 546, objects 2274, primitives 5204, process 24.49ms, physics 1.52ms
+  13.6  crowd    walked into somebody at (98,82) (+1 in the last 3.4s) | exc 8, in 13.8/s (crowd 22.2, events 9.6), sleep 5
+  14.1  frame    fps 113, worst frame 25.0ms, draws 531, objects 2231, primitives 4947, process 23.94ms, physics 1.61ms
+  15.1  frame    fps 106, worst frame 16.4ms, draws 527, objects 2229, primitives 4895, process 24.29ms, physics 1.67ms
+  16.0  path     off the corridor at (99,75), after 2.9s on it
+  16.1  frame    fps 120, worst frame 25.0ms, draws 528, objects 2341, primitives 5172, process 9.76ms, physics 1.54ms
+  16.7  cross    stepped into the road at (99,73), at a zebra
+  17.1  frame    fps 112, worst frame 10.1ms, draws 344, objects 1925, primitives 4488, process 24.30ms, physics 1.44ms
+  17.9  cross    stepped into the road at (99,72), at a zebra
+  18.1  frame    fps 118, worst frame 16.7ms, draws 341, objects 1911, primitives 4394, process 16.48ms, physics 1.44ms
+  18.2  turn     doubled back 180°
+  18.3  crowd    a car sounded its horn at her in the road at (99,73) | exc 22, in 0.0/s (crowd 0.0, events 0.0), sleep 7
+  18.6  cue      the mark over her head: soon for 0.3s (0.3s of it on the road) | a car, and she is in the road
+  19.1  frame    fps 118, worst frame 25.0ms, draws 535, objects 2251, primitives 5038, process 24.15ms, physics 1.39ms
+  19.3  path     onto the corridor at (99,76), after 3.3s off it
+  19.7  cross    stepped into the road at (100,76), mid-block
+  20.1  frame    fps 105, worst frame 25.0ms, draws 528, objects 2213, primitives 4887, process 24.27ms, physics 1.58ms
+  21.1  frame    fps 107, worst frame 24.5ms, draws 678, objects 2584, primitives 5629, process 24.43ms, physics 1.45ms
+  21.4  near     construction at (108,75), 199px, exc 6, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+  22.1  frame    fps 87, worst frame 24.5ms, draws 488, objects 2242, primitives 5066, process 24.53ms, physics 1.48ms
+  23.2  frame    fps 116, worst frame 25.0ms, draws 492, objects 2255, primitives 5140, process 24.30ms, physics 1.44ms
+  24.2  frame    fps 118, worst frame 25.0ms, draws 496, objects 2260, primitives 5198, process 16.71ms, physics 1.39ms
+  24.4  near     market_stall at (114,78), 64px, exc 2, in 1.1/s (crowd 0.0, events 1.1), sleep 9
+  25.2  frame    fps 112, worst frame 25.0ms, draws 487, objects 2291, primitives 5143, process 24.03ms, physics 1.70ms
+  26.2  frame    fps 120, worst frame 16.7ms, draws 486, objects 2254, primitives 5072, process 10.32ms, physics 1.98ms
+  27.2  cross    stepped into the road at (116,73), at a zebra
+  27.2  frame    fps 117, worst frame 16.7ms, draws 330, objects 1982, primitives 4603, process 16.01ms, physics 1.70ms
+  27.2  ahead    charging_dog comes at her from 291px in front of her at (116,73)
+  27.2  chase    charging_dog came for her at (116,64) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 10
+  27.2  cue      edge badge: charging_dog at 280px, closing 39px/s
+  27.4  crowd    a car sounded its horn at her in the road at (116,73) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 10
+  27.6  cue      edge badge gone: charging_dog after 0.3s, now 205px away
+  27.8  near     charging_dog (telegraph) at (116,67), 149px, exc 0, in 8.8/s (crowd 9.2, events 0.0), sleep 11
+  28.1  cue      the mark over her head: soon for 0.7s (0.5s of it on the road) | a car, and she is in the road
+  28.2  frame    fps 110, worst frame 50.0ms, draws 350, objects 2118, primitives 5044, process 54.23ms, physics 1.80ms
+  28.3  near     charging_dog at (116,69), 81px, exc 3, in 15.7/s (crowd 4.6, events 11.1), sleep 11
+  28.4  cross    stepped into the road at (115,71), at a zebra
+  28.7  near     charging_dog at (115,70), 44px, exc 6, in 12.0/s (crowd 0.0, events 12.0), sleep 11
+  28.8  near     construction at (108,71), 199px, exc 7, in 12.0/s (crowd 0.0, events 12.0), sleep 11
+  29.1  near     construction at (108,75), 196px, exc 11, in 23.4/s (crowd 0.0, events 12.0), sleep 11
+  29.1  path     off the corridor at (113,72), after 9.8s on it
+  29.1  cross    stepped into the road at (113,72), at a zebra
+  29.2  near     leaf_blower at (107,71), 187px, exc 15, in 26.7/s (crowd 0.0, events 12.8), sleep 11
+  29.2  frame    fps 118, worst frame 25.0ms, draws 358, objects 2067, primitives 5001, process 16.25ms, physics 1.46ms
+  29.2  chase    charging_dog gave up after 2.0s — closest 32px, she ran 0.4s of it | exc 16, in 27.5/s (crowd 0.0, events 1.5), sleep 11
+  29.3  cue      the mark over her head: now for 1.1s (0.8s of it on the road) | charging_dog 99px
+  29.6  run      ran 0.7s, exc 8 -> 19, nearest when it started: charging_dog 36px
+  30.1  cross    stepped into the road at (112,73), at a zebra
+  30.2  frame    fps 101, worst frame 24.3ms, draws 506, objects 2451, primitives 5732, process 24.44ms, physics 1.57ms
+  30.4  turn     doubled back 0°
+  30.5  crowd    walked into somebody at (112,72) | exc 16, in 10.0/s (crowd 24.1, events 3.9), sleep 11
+  30.8  path     onto the corridor at (112,71), after 1.7s off it
+  31.2  frame    fps 112, worst frame 25.0ms, draws 360, objects 2133, primitives 5244, process 24.30ms, physics 1.41ms
+  32.2  frame    fps 111, worst frame 25.5ms, draws 549, objects 2346, primitives 5545, process 24.11ms, physics 1.41ms
+  33.2  frame    fps 109, worst frame 25.0ms, draws 549, objects 2364, primitives 5599, process 24.51ms, physics 1.46ms
+  33.5  path     off the corridor at (111,67), after 2.7s on it
+  33.5  near     leaf_blower at (107,71), 190px, exc 26, in 5.4/s (crowd 2.4, events 0.0), sleep 12
+  34.2  frame    fps 109, worst frame 16.7ms, draws 540, objects 2276, primitives 5332, process 24.09ms, physics 1.44ms
+  34.5  near     construction at (108,71), 109px, exc 33, in 11.9/s (crowd 0.0, events 8.7), sleep 12
+  34.9  freeze   sleep stopped filling | exc 35, in 8.9/s (crowd 0.0, events 5.8), sleep 12 | near: construction 117px
+  35.2  frame    fps 113, worst frame 25.0ms, draws 532, objects 2309, primitives 5272, process 23.87ms, physics 1.63ms
+  35.8  turn     doubled back 90°
+  36.2  frame    fps 117, worst frame 25.4ms, draws 532, objects 2321, primitives 5299, process 24.24ms, physics 1.39ms
+  36.4  path     onto the corridor at (112,66), after 2.9s off it
+  36.8  thaw     settling again | exc 35, in 0.0/s (crowd 0.0, events 0.0), sleep 12
+  37.2  frame    fps 113, worst frame 25.0ms, draws 529, objects 2338, primitives 5312, process 24.20ms, physics 1.56ms
+  37.6  freeze   sleep stopped filling | exc 35, in 6.1/s (crowd 6.1, events 0.0), sleep 12 | near: car_accident 237px (out of range)
+  38.3  frame    fps 116, worst frame 16.7ms, draws 526, objects 2325, primitives 5235, process 24.45ms, physics 1.52ms
+  39.3  thaw     settling again | exc 35, in 0.0/s (crowd 0.0, events 0.0), sleep 12
+  39.3  frame    fps 119, worst frame 16.7ms, draws 525, objects 2208, primitives 5025, process 15.35ms, physics 1.19ms
+  40.1  path     off the corridor at (112,59), after 3.7s on it
+  40.1  cross    stepped into the road at (112,59), at a zebra
+  40.3  frame    fps 119, worst frame 16.7ms, draws 522, objects 2484, primitives 5527, process 12.18ms, physics 1.40ms
+  40.8  path     onto the corridor at (112,57), after 0.7s off it
+  41.3  frame    fps 119, worst frame 16.7ms, draws 307, objects 1828, primitives 4220, process 15.86ms, physics 1.36ms
+  41.5  near     dog_walker at (112,52), 104px, exc 22, in 0.0/s (crowd 0.0, events 0.0), sleep 13
+  42.3  cross    stepped into the road at (114,54), mid-block
+  42.3  frame    fps 119, worst frame 8.3ms, draws 496, objects 2236, primitives 4937, process 15.28ms, physics 1.46ms
+  43.3  frame    fps 120, worst frame 16.7ms, draws 507, objects 2276, primitives 5137, process 10.94ms, physics 1.33ms
+  43.7  crowd    walked into somebody at (116,50) (+1 in the last 13.2s) | exc 13, in 9.5/s (crowd 27.5, events 0.0), sleep 14
+  44.3  frame    fps 119, worst frame 16.7ms, draws 493, objects 2283, primitives 4985, process 15.86ms, physics 1.33ms
+  44.9  path     off the corridor at (117,47), after 4.0s on it
+  45.3  frame    fps 118, worst frame 8.3ms, draws 492, objects 2622, primitives 5666, process 16.40ms, physics 1.44ms
+  46.2  ahead    cyclist comes at her from 0px in front of her at (116,45)
+  46.2  path     onto the corridor at (116,45), after 1.3s off it
+  46.2  cross    stepped into the road at (116,45), at a zebra
+  46.3  frame    fps 119, worst frame 16.7ms, draws 491, objects 2597, primitives 5613, process 15.37ms, physics 1.50ms
+  46.5  cue      edge badge: cyclist at 745px, closing 133px/s
+  46.5  crowd    a car sounded its horn at her in the road at (115,45) | exc 9, in 0.0/s (crowd 0.0, events 0.0), sleep 15
+  47.2  path     off the corridor at (114,43), after 1.0s on it
+  47.3  frame    fps 120, worst frame 16.7ms, draws 501, objects 2582, primitives 5781, process 10.81ms, physics 1.53ms
+  47.4  cue      the mark over her head: soon for 0.9s (0.9s of it on the road) | a car, and she is in the road
+  48.1  near     delivery_van at (113,38), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 16
+  48.3  frame    fps 119, worst frame 16.7ms, draws 322, objects 2003, primitives 4794, process 16.09ms, physics 1.37ms
+  48.5  cue      edge badge gone: cyclist after 2.0s, now 245px away
+  48.6  path     away from the corridor at (111,41), after 1.5s off it
+  48.6  calm     entered residential (7,3), sleep 17
+  49.2  near     cyclist at (109,38), 89px, exc 7, in 40.8/s (crowd 0.0, events 51.3), sleep 26
+  49.3  frame    fps 119, worst frame 58.3ms, draws 320, objects 2017, primitives 4720, process 15.79ms, physics 1.34ms
+  49.8  cue      the mark over her head: now for 0.6s (0.0s of it on the road) | cyclist 84px
+  50.1  freeze   sleep stopped filling | exc 35, in 23.6/s (crowd 0.0, events 23.6), sleep 41 | near: car_accident 145px (out of range)
+  50.3  frame    fps 111, worst frame 16.9ms, draws 314, objects 1691, primitives 4023, process 58.59ms, physics 1.35ms
+  50.4  thaw     settling again | exc 35, in 0.0/s (crowd 0.0, events 0.0), sleep 41
+  51.4  frame    fps 118, worst frame 16.7ms, draws 414, objects 1845, primitives 4229, process 16.46ms, physics 1.33ms
+  52.4  frame    fps 119, worst frame 8.3ms, draws 475, objects 2141, primitives 4698, process 15.18ms, physics 1.48ms
+  53.4  frame    fps 119, worst frame 16.7ms, draws 490, objects 2157, primitives 4922, process 14.86ms, physics 1.42ms
+  54.4  frame    fps 120, worst frame 16.7ms, draws 496, objects 2161, primitives 5002, process 11.06ms, physics 1.42ms
+  55.4  frame    fps 119, worst frame 16.7ms, draws 484, objects 2137, primitives 4810, process 15.02ms, physics 1.40ms
+  56.4  frame    fps 119, worst frame 8.3ms, draws 480, objects 2135, primitives 4758, process 15.11ms, physics 1.76ms
+  57.0  calm     settled in the calm block (6,1); tomorrow will know
+  57.0  asleep   asleep after 57.0s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  57.4  frame    fps 120, worst frame 16.7ms, draws 687, objects 2528, primitives 5505, process 11.27ms, physics 1.37ms
+  58.4  frame    fps 119, worst frame 16.7ms, draws 689, objects 2532, primitives 5540, process 15.03ms, physics 1.44ms
+  59.4  frame    fps 119, worst frame 16.7ms, draws 479, objects 2078, primitives 4629, process 15.52ms, physics 1.85ms
+  60.4  frame    fps 119, worst frame 8.3ms, draws 494, objects 2129, primitives 4874, process 14.99ms, physics 1.26ms
+  61.4  frame    fps 120, worst frame 16.7ms, draws 512, objects 2493, primitives 5819, process 11.19ms, physics 1.24ms
+  62.1  near     delivery_van at (113,38), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  62.4  frame    fps 119, worst frame 16.7ms, draws 346, objects 2066, primitives 5109, process 15.22ms, physics 1.49ms
+  63.5  frame    fps 119, worst frame 8.3ms, draws 366, objects 2100, primitives 5423, process 14.91ms, physics 1.36ms
+  64.1  path     off the corridor at (112,42), after 15.4s away it
+  64.1  left     left residential (7,3), sleep 100
+  64.5  frame    fps 120, worst frame 16.7ms, draws 567, objects 2779, primitives 6823, process 11.29ms, physics 1.46ms
+  64.5  crowd    walked into somebody at (112,43) | exc 0, in 2.8/s (crowd 23.1, events 0.0), sleep 100
+  64.9  path     onto the corridor at (113,44), after 0.9s off it
+  64.9  cross    stepped into the road at (113,44), at a zebra
+  65.0  ahead    loose_dog comes at her from 0px in front of her at (113,44)
+  65.4  near     loose_dog (telegraph) at (113,49), 139px, exc 0, in 0.8/s (crowd 0.0, events 1.5), sleep 100
+  65.5  frame    fps 119, worst frame 16.7ms, draws 586, objects 2760, primitives 6705, process 14.72ms, physics 1.38ms
+  65.7  near     loose_dog (telegraph) at (113,48), 74px, exc 0, in 2.6/s (crowd 0.6, events 4.2), sleep 100
+  65.8  near     loose_dog (telegraph) at (113,47), 37px, exc 0, in 2.9/s (crowd 0.0, events 5.3), sleep 100
+  65.9  near     loose_dog (telegraph) at (113,47), 20px, exc 0, in 3.0/s (crowd 0.0, events 5.6), sleep 100
+  66.5  frame    fps 119, worst frame 16.7ms, draws 567, objects 2390, primitives 5725, process 15.54ms, physics 1.39ms
+  67.5  frame    fps 119, worst frame 8.3ms, draws 532, objects 2323, primitives 5500, process 15.80ms, physics 1.44ms
+  68.5  frame    fps 119, worst frame 16.7ms, draws 300, objects 1841, primitives 4107, process 15.61ms, physics 1.34ms
+  69.5  frame    fps 119, worst frame 16.7ms, draws 306, objects 2055, primitives 4607, process 15.21ms, physics 1.34ms
+  69.9  path     off the corridor at (113,58), after 5.0s on it
+  69.9  cross    stepped into the road at (113,58), at a zebra
+  70.5  frame    fps 119, worst frame 16.7ms, draws 520, objects 2473, primitives 5438, process 12.66ms, physics 1.80ms
+  70.6  path     onto the corridor at (113,60), after 0.7s off it
+  71.5  frame    fps 118, worst frame 16.7ms, draws 511, objects 2257, primitives 4910, process 15.86ms, physics 1.41ms
+  72.5  frame    fps 119, worst frame 16.7ms, draws 518, objects 2264, primitives 4996, process 15.98ms, physics 1.31ms
+  72.9  near     construction at (108,71), 199px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  73.5  frame    fps 120, worst frame 16.7ms, draws 537, objects 2288, primitives 5284, process 15.84ms, physics 1.33ms
+  73.7  near     leaf_blower at (107,71), 189px, exc 0, in 0.1/s (crowd 0.0, events 0.1), sleep 100
+  74.3  near     construction at (108,75), 199px, exc 0, in 0.4/s (crowd 0.0, events 0.8), sleep 100
+  74.5  frame    fps 119, worst frame 8.3ms, draws 336, objects 2003, primitives 4672, process 10.91ms, physics 1.32ms
+  74.8  path     off the corridor at (113,72), after 4.2s on it
+  74.8  cross    stepped into the road at (113,72), at a zebra
+  75.6  frame    fps 119, worst frame 16.7ms, draws 497, objects 2452, primitives 5593, process 15.67ms, physics 1.28ms
+  76.2  path     onto the corridor at (113,76), after 1.4s off it
+  76.6  near     market_stall at (114,78), 63px, exc 0, in 0.8/s (crowd 0.0, events 1.4), sleep 100
+  76.6  frame    fps 119, worst frame 16.7ms, draws 492, objects 2279, primitives 5146, process 15.63ms, physics 1.38ms
+  77.6  frame    fps 120, worst frame 8.3ms, draws 485, objects 2308, primitives 5108, process 10.39ms, physics 1.41ms
+  78.6  frame    fps 112, worst frame 25.0ms, draws 474, objects 2200, primitives 4781, process 23.86ms, physics 1.61ms
+  79.0  path     off the corridor at (113,84), after 2.8s on it
+  79.6  frame    fps 119, worst frame 16.7ms, draws 263, objects 1990, primitives 4390, process 16.12ms, physics 1.55ms
+  79.7  path     onto the corridor at (111,85), after 0.7s off it
+  80.6  frame    fps 120, worst frame 25.0ms, draws 471, objects 2397, primitives 5179, process 10.24ms, physics 1.36ms
+  81.6  frame    fps 115, worst frame 16.7ms, draws 471, objects 2433, primitives 5251, process 23.91ms, physics 1.40ms
+  82.6  frame    fps 112, worst frame 25.0ms, draws 466, objects 2325, primitives 5037, process 24.51ms, physics 1.31ms
+  83.6  frame    fps 113, worst frame 25.8ms, draws 670, objects 2715, primitives 5811, process 24.46ms, physics 1.27ms
+  84.6  frame    fps 85, worst frame 26.0ms, draws 673, objects 2810, primitives 6025, process 24.51ms, physics 1.53ms
+  85.2  path     off the corridor at (101,85), after 5.5s on it
+  85.2  cross    stepped into the road at (101,85), at a zebra
+  85.6  frame    fps 110, worst frame 25.9ms, draws 521, objects 2395, primitives 5195, process 24.28ms, physics 1.43ms
+  86.6  frame    fps 119, worst frame 16.7ms, draws 518, objects 2406, primitives 5169, process 15.24ms, physics 1.34ms
+  87.0  crowd    a car sounded its horn at her in the road at (99,86) | exc 0, in 2.1/s (crowd 3.9, events 0.0), sleep 100
+  87.1  cross    stepped into the road at (99,86), at a zebra
+  87.6  frame    fps 120, worst frame 16.7ms, draws 306, objects 2039, primitives 4515, process 10.50ms, physics 1.44ms
+  87.7  path     onto the corridor at (97,86), after 2.5s off it
+  88.4  cue      the mark over her head: soon for 1.3s (1.3s of it on the road) | a car, and she is in the road
+  88.6  frame    fps 119, worst frame 8.3ms, draws 309, objects 2020, primitives 4567, process 15.77ms, physics 1.35ms
+  89.2  path     off the corridor at (95,90), after 1.6s on it
+  89.6  frame    fps 119, worst frame 16.7ms, draws 511, objects 2188, primitives 4877, process 14.78ms, physics 1.32ms
+  89.9  ahead    cat_dash crosses 332px in front of her at (95,91)
+  90.3  near     burnt_out_car at (98,94), 119px, exc 0, in 1.7/s (crowd 0.0, events 0.0), sleep 100
+  90.6  frame    fps 119, worst frame 16.7ms, draws 499, objects 2171, primitives 4690, process 15.78ms, physics 1.38ms
+  91.7  frame    fps 120, worst frame 8.3ms, draws 493, objects 2162, primitives 4603, process 10.78ms, physics 1.39ms
+  92.0  path     onto the corridor at (95,98), after 2.8s off it
+  92.7  frame    fps 119, worst frame 16.7ms, draws 495, objects 2366, primitives 5038, process 15.85ms, physics 1.35ms
+  93.0  near     cat_dash at (91,102), 120px, exc 0, in 5.9/s (crowd 0.0, events 10.9), sleep 100
+  93.7  frame    fps 119, worst frame 16.7ms, draws 495, objects 2406, primitives 5118, process 15.61ms, physics 1.31ms
+  93.9  near     homeless_yeller at (84,98), 209px, exc 0, in 1.0/s (crowd 0.0, events 1.8), sleep 100
+  94.7  frame    fps 120, worst frame 16.7ms, draws 685, objects 2544, primitives 5391, process 10.33ms, physics 1.41ms
+  95.3  near     homeless_yeller at (85,98), 114px, exc 0, in 3.1/s (crowd 1.0, events 4.6), sleep 100
+  95.7  frame    fps 118, worst frame 8.3ms, draws 680, objects 2559, primitives 5349, process 16.64ms, physics 1.44ms
+  96.7  frame    fps 119, worst frame 16.7ms, draws 690, objects 2575, primitives 5495, process 16.18ms, physics 1.37ms
+  97.7  frame    fps 119, worst frame 16.7ms, draws 406, objects 2025, primitives 4533, process 15.94ms, physics 1.40ms
+  98.2  path     off the corridor at (87,89), after 6.2s on it
+  98.2  cross    stepped into the road at (87,89), at a zebra
+  98.7  frame    fps 120, worst frame 8.3ms, draws 311, objects 1975, primitives 4480, process 10.83ms, physics 1.47ms
+  99.0  path     onto the corridor at (85,88), after 0.8s off it
+  99.7  path     off the corridor at (83,88), after 0.7s on it
+  99.7  frame    fps 119, worst frame 16.7ms, draws 306, objects 1945, primitives 4366, process 15.77ms, physics 1.42ms
+ 100.7  frame    fps 119, worst frame 16.7ms, draws 300, objects 1959, primitives 4322, process 15.27ms, physics 1.36ms
+ 101.1  cross    stepped into the road at (80,87), mid-block
+ 101.7  frame    fps 120, worst frame 16.7ms, draws 515, objects 2431, primitives 5335, process 11.29ms, physics 1.47ms
+ 102.5  path     65% of her street time on the corridor (56.3s on, 30.7s off, 15.4s off the streets)
+ 102.5  home     WON, 41.5s to spare
+ 102.5  save     wrote the save (between days)
+
+day 7  act 2  run seed 2609743060  city seed 2609743060  length 144.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 22.8 ms
+   0.0  plan     regions: 35 boundary, 24 wall, 11 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     ice_cream_van, ice_cream_van, busker, busker, leaf_blower, poster_crew, ice_cream_van, leaf_blower, busker in the park she used yesterday, (6,1)
+   0.0  roll     busker, busker, busker, leaf_blower in the park she used yesterday, (9,6)
+   0.0  roll     leaf_blower, pigeon_flock, pigeon_flock, leaf_blower in the park she used yesterday, (4,2)
+   0.0  contact  step 3 on offer at (26,36)
+   0.0  roll     chalk mark guarded: robber 164px away (band 66-176)
+   0.0  plan     closed: fallen tree v(9,5), cordoned off h(3,6)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burnt_out_car x68, burst_water_main x12, busker x12, cafe_tables x47, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, collapsed_frontage x19, construction x40, cyclist x9, delivery_van x32, dog_walker x17, homeless_yeller x9, ice_cream_van x8, leaf_blower x26, loose_dog x9, market_stall x28, moving_van x34, pigeon_flock x3, playground, police_patrol x14, poster_crew x12, reversing_lorry x4, roadblock x84, scaffolding x14, skip x13
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 10, worst frame 268.1ms, draws 569, objects 2703, primitives 6257, process 16.26ms, physics 2.15ms
+   1.1  near     homeless_yeller (telegraph) at (74,88), 209px, exc 0, in 0.1/s (crowd 0.0, events 0.2), sleep 0
+   1.6  near     police_patrol (telegraph) at (86,85), 184px, exc 0, in 3.7/s (crowd 2.7, events 0.1), sleep 0
+   2.0  frame    fps 89, worst frame 18.3ms, draws 348, objects 2107, primitives 5017, process 17.71ms, physics 2.82ms
+   2.4  contact  step 3 moved to (94,90): never seen at (26,36)
+   2.4  roll     chalk mark guarded: robber 83px away (band 66-176)
+   2.5  contact  step 3 seen at (94,90)
+   2.8  path     onto the corridor at (84,85), after 2.8s off it
+   3.0  frame    fps 89, worst frame 14.5ms, draws 561, objects 2489, primitives 5738, process 18.34ms, physics 2.66ms
+   3.4  near     police_patrol at (86,81), 101px, exc 1, in 8.4/s (crowd 0.0, events 8.3), sleep 1
+   4.0  frame    fps 90, worst frame 18.4ms, draws 562, objects 2292, primitives 5345, process 18.07ms, physics 2.66ms
+   4.7  near     roadblock at (83,75), 176px, exc 7, in 10.6/s (crowd 0.0, events 10.6), sleep 2
+   5.0  near     checkpoint_hut at (85,76), 97px, exc 10, in 22.2/s (crowd 4.1, events 18.1), sleep 2
+   5.0  frame    fps 89, worst frame 18.2ms, draws 570, objects 2404, primitives 5638, process 13.22ms, physics 2.72ms
+   5.0  near     checkpoint_gate at (87,76), 118px, exc 10, in 25.1/s (crowd 4.4, events 20.8), sleep 2
+   5.2  chat     checkpoint_hut at (85,76), 2.0s, baby awake, meter +25
+   5.8  freeze   sleep stopped filling | exc 35, in 32.7/s (crowd 1.9, events 30.3), sleep 1 | near: checkpoint_hut 76px
+   6.0  frame    fps 89, worst frame 23.8ms, draws 559, objects 2456, primitives 5598, process 18.22ms, physics 2.72ms
+   7.0  frame    fps 82, worst frame 24.5ms, draws 561, objects 2459, primitives 5623, process 24.44ms, physics 2.46ms
+   7.3  checkpoint checkpoint_hut at (85,76), 2.0s, released on the north side
+   7.3  near     police_patrol at (86,72), 66px, exc 72, in 15.6/s (crowd 5.0, events 54.4), sleep 1
+   7.3  near     roadblock at (83,71), 112px, exc 72, in 15.6/s (crowd 5.0, events 54.4), sleep 1
+   7.3  near     roadblock at (83,73), 61px, exc 72, in 15.6/s (crowd 5.0, events 54.4), sleep 1
+   7.3  near     roadblock at (83,75), 57px, exc 72, in 15.6/s (crowd 5.0, events 54.4), sleep 1
+   7.7  path     64% of her street time on the corridor (4.9s on, 2.8s off, 0.0s off the streets)
+   7.7  lost     lost_crying after 7.7s — She started crying. There is no settling her now. | exc 100, in 60.4/s (crowd 7.6, events 52.9), sleep 1 | near: roadblock 57px
+   7.7  nerve    spent a nerve on day 7 (act 2); 4 left — day 7 again
+   7.7  save     wrote the save (between days)
+
+day 7  act 2  run seed 2609743060  city seed 2609743060  length 144.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 25.8 ms
+   0.0  plan     regions: 35 boundary, 24 wall, 11 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     ice_cream_van, ice_cream_van, busker, busker, leaf_blower, poster_crew, ice_cream_van, leaf_blower, busker in the park she used yesterday, (6,1)
+   0.0  roll     busker, busker, busker, leaf_blower in the park she used yesterday, (9,6)
+   0.0  roll     leaf_blower, pigeon_flock, pigeon_flock, leaf_blower in the park she used yesterday, (4,2)
+   0.0  contact  step 3 on offer at (26,36)
+   0.0  roll     chalk mark guarded: robber 164px away (band 66-176)
+   0.0  plan     closed: fallen tree v(9,5), cordoned off h(3,6)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burnt_out_car x68, burst_water_main x12, busker x12, cafe_tables x47, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, collapsed_frontage x19, construction x40, cyclist x9, delivery_van x32, dog_walker x17, homeless_yeller x9, ice_cream_van x8, leaf_blower x26, loose_dog x9, market_stall x28, moving_van x34, pigeon_flock x3, playground, police_patrol x14, poster_crew x12, reversing_lorry x4, roadblock x84, scaffolding x14, skip x13
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 1, worst frame 263.3ms, draws 569, objects 2531, primitives 5913, process 18.03ms, physics 0.00ms
+   1.5  near     homeless_yeller (telegraph) at (74,88), 210px, exc 1, in 0.2/s (crowd 0.0, events 0.2), sleep 0
+   2.0  frame    fps 87, worst frame 17.7ms, draws 573, objects 2551, primitives 6001, process 12.82ms, physics 2.26ms
+   2.9  near     police_patrol at (86,82), 184px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   3.0  frame    fps 89, worst frame 18.9ms, draws 566, objects 2484, primitives 5795, process 17.67ms, physics 2.20ms
+   3.7  contact  step 3 moved to (94,90): never seen at (26,36)
+   3.7  roll     chalk mark guarded: robber 83px away (band 66-176)
+   3.7  contact  step 3 seen at (94,90)
+   4.0  path     onto the corridor at (84,85), after 4.0s off it
+   4.0  frame    fps 89, worst frame 12.9ms, draws 556, objects 2473, primitives 5658, process 18.93ms, physics 2.59ms
+   4.6  path     off the corridor at (86,85), after 0.7s on it
+   4.6  cross    stepped into the road at (86,85), at a zebra
+   5.0  frame    fps 88, worst frame 25.2ms, draws 787, objects 2907, primitives 6503, process 25.14ms, physics 2.78ms
+   5.1  near     checkpoint_gate at (90,87), 118px, exc 0, in 5.4/s (crowd 5.4, events 0.0), sleep 1
+   5.2  near     checkpoint_hut at (90,85), 95px, exc 0, in 7.5/s (crowd 5.3, events 2.2), sleep 1
+   5.3  chat     checkpoint_hut at (90,85), 2.0s, baby awake, meter +25
+   6.0  frame    fps 90, worst frame 25.9ms, draws 579, objects 2546, primitives 5811, process 12.73ms, physics 2.70ms
+   7.0  frame    fps 92, worst frame 26.0ms, draws 584, objects 2577, primitives 5918, process 23.79ms, physics 2.48ms
+   7.3  checkpoint checkpoint_hut at (90,85), 2.0s, released on the east side
+   7.3  path     onto the corridor at (92,85), after 2.7s off it
+   7.9  freeze   sleep stopped filling | exc 35, in 19.8/s (crowd 14.1, events 6.0), sleep 0 | near: checkpoint_hut 77px
+   8.0  idle     stood still 2.6s on sidewalk, exc 1 -> 39, sleep 1 -> 0
+   8.0  frame    fps 85, worst frame 26.1ms, draws 606, objects 2677, primitives 6334, process 23.85ms, physics 2.38ms
+   9.0  frame    fps 88, worst frame 18.0ms, draws 612, objects 2609, primitives 6297, process 23.85ms, physics 3.33ms
+   9.8  path     off the corridor at (98,85), after 2.5s on it
+  10.1  frame    fps 89, worst frame 17.8ms, draws 608, objects 2556, primitives 6167, process 18.04ms, physics 3.01ms
+  10.3  crowd    walked into somebody at (98,84) | exc 37, in 4.2/s (crowd 22.2, events 0.0), sleep 0
+  11.1  frame    fps 89, worst frame 13.1ms, draws 617, objects 2405, primitives 5904, process 17.83ms, physics 2.87ms
+  11.2  near     roadblock at (99,76), 179px, exc 42, in 8.4/s (crowd 5.0, events 3.2), sleep 0
+  11.2  near     police_patrol at (100,76), 184px, exc 42, in 9.4/s (crowd 4.1, events 4.8), sleep 0
+  11.3  near     construction at (104,79), 199px, exc 43, in 11.4/s (crowd 3.0, events 8.3), sleep 0
+  11.3  near     roadblock at (101,76), 177px, exc 43, in 12.4/s (crowd 2.4, events 9.8), sleep 0
+  11.7  near     roadblock at (103,76), 177px, exc 48, in 24.8/s (crowd 0.0, events 24.9), sleep 0
+  11.8  cross    stepped into the road at (100,80), mid-block
+  11.8  near     police_patrol at (100,77), 101px, exc 50, in 26.7/s (crowd 0.0, events 26.8), sleep 0
+  12.1  frame    fps 87, worst frame 29.0ms, draws 611, objects 2602, primitives 6178, process 26.27ms, physics 3.26ms
+  12.2  near     charging_dog at (103,85), 148px, exc 57, in 17.1/s (crowd 0.0, events 17.1), sleep 0
+  12.5  chase    charging_dog came for her at (103,85) | exc 59, in 14.3/s (crowd 0.0, events 14.3), sleep 0
+  12.6  cue      the mark over her head: soon for 0.4s (0.4s of it on the road) | charging_dog 148px
+  12.7  near     charging_dog at (103,84), 78px, exc 62, in 21.1/s (crowd 0.0, events 21.2), sleep 0
+  12.9  near     charging_dog at (102,84), 43px, exc 65, in 21.8/s (crowd 0.0, events 21.8), sleep 0
+  13.0  path     24% of her street time on the corridor (3.2s on, 9.8s off, 0.0s off the streets)
+  13.0  lost     lost_hard_fail after 13.0s — It went wrong. | exc 66, in 21.8/s (crowd 0.0, events 21.8), sleep 0 | near: charging_dog 24px
+  13.0  nerve    spent a nerve on day 7 (act 2); 3 left — day 7 again
+  13.0  save     wrote the save (between days)
+
+day 7  act 2  run seed 2609743060  city seed 2609743060  length 144.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 24.9 ms
+   0.0  plan     regions: 35 boundary, 24 wall, 11 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     ice_cream_van, ice_cream_van, busker, busker, leaf_blower, poster_crew, ice_cream_van, leaf_blower, busker in the park she used yesterday, (6,1)
+   0.0  roll     busker, busker, busker, leaf_blower in the park she used yesterday, (9,6)
+   0.0  roll     leaf_blower, pigeon_flock, pigeon_flock, leaf_blower in the park she used yesterday, (4,2)
+   0.0  contact  step 3 on offer at (26,36)
+   0.0  roll     chalk mark guarded: robber 164px away (band 66-176)
+   0.0  plan     closed: fallen tree v(9,5), cordoned off h(3,6)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burnt_out_car x68, burst_water_main x12, busker x12, cafe_tables x47, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, collapsed_frontage x19, construction x40, cyclist x9, delivery_van x32, dog_walker x17, homeless_yeller x9, ice_cream_van x8, leaf_blower x26, loose_dog x9, market_stall x28, moving_van x34, pigeon_flock x3, playground, police_patrol x14, poster_crew x12, reversing_lorry x4, roadblock x84, scaffolding x14, skip x13
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 26, worst frame 258.1ms, draws 565, objects 2490, primitives 5783, process 22.92ms, physics 2.34ms
+   1.1  near     police_patrol (telegraph) at (86,86), 184px, exc 0, in 0.3/s (crowd 0.0, events 0.3), sleep 0
+   1.9  near     police_patrol (telegraph) at (86,85), 98px, exc 0, in 1.4/s (crowd 0.0, events 1.4), sleep 1
+   1.9  contact  step 3 moved to (94,90): never seen at (26,36)
+   1.9  roll     chalk mark guarded: robber 83px away (band 66-176)
+   2.0  frame    fps 89, worst frame 27.5ms, draws 562, objects 2487, primitives 5734, process 18.93ms, physics 2.72ms
+   2.1  path     onto the corridor at (84,84), after 2.1s off it
+   3.0  frame    fps 88, worst frame 17.8ms, draws 570, objects 2300, primitives 5454, process 27.53ms, physics 2.69ms
+   3.6  near     roadblock at (83,75), 178px, exc 8, in 10.9/s (crowd 0.0, events 10.9), sleep 1
+   4.0  near     checkpoint_hut at (85,76), 98px, exc 12, in 17.5/s (crowd 0.0, events 17.5), sleep 1
+   4.0  near     checkpoint_gate at (87,76), 118px, exc 12, in 17.5/s (crowd 0.0, events 17.5), sleep 1
+   4.0  frame    fps 87, worst frame 29.5ms, draws 563, objects 2414, primitives 5562, process 26.81ms, physics 2.97ms
+   4.2  chat     checkpoint_hut at (85,76), 2.0s, baby awake, meter +25
+   4.4  near     police_patrol at (86,79), 54px, exc 20, in 34.0/s (crowd 0.9, events 33.2), sleep 1
+   4.8  freeze   sleep stopped filling | exc 36, in 36.4/s (crowd 3.3, events 33.1), sleep 1 | near: police_patrol 53px
+   5.0  frame    fps 78, worst frame 29.5ms, draws 561, objects 2453, primitives 5619, process 27.02ms, physics 2.69ms
+   6.1  frame    fps 89, worst frame 18.2ms, draws 557, objects 2449, primitives 5557, process 18.18ms, physics 2.17ms
+   6.2  checkpoint checkpoint_hut at (85,76), 2.0s, released on the north side
+   6.2  contact  step 3 moved to (83,65): never seen at (94,90)
+   6.2  roll     chalk mark guarded: robber 78px away (band 66-176)
+   6.2  near     roadblock at (83,71), 110px, exc 84, in 21.3/s (crowd 0.0, events 54.9), sleep 1
+   6.2  near     roadblock at (83,73), 58px, exc 84, in 21.3/s (crowd 0.0, events 54.9), sleep 1
+   6.2  near     roadblock at (83,75), 53px, exc 84, in 21.3/s (crowd 0.0, events 54.9), sleep 1
+   6.5  path     68% of her street time on the corridor (4.4s on, 2.1s off, 0.0s off the streets)
+   6.5  lost     lost_crying after 6.5s — She started crying. There is no settling her now. | exc 100, in 55.0/s (crowd 0.0, events 55.0), sleep 1 | near: police_patrol 53px
+   6.5  nerve    spent a nerve on day 7 (act 2); 2 left — day 7 again
+   6.5  save     wrote the save (between days)
+
+day 7  act 2  run seed 2609743060  city seed 2609743060  length 144.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 25.9 ms
+   0.0  plan     regions: 35 boundary, 24 wall, 11 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     ice_cream_van, ice_cream_van, busker, busker, leaf_blower, poster_crew, ice_cream_van, leaf_blower, busker in the park she used yesterday, (6,1)
+   0.0  roll     busker, busker, busker, leaf_blower in the park she used yesterday, (9,6)
+   0.0  roll     leaf_blower, pigeon_flock, pigeon_flock, leaf_blower in the park she used yesterday, (4,2)
+   0.0  contact  step 3 on offer at (26,36)
+   0.0  roll     chalk mark guarded: robber 164px away (band 66-176)
+   0.0  plan     closed: fallen tree v(9,5), cordoned off h(3,6)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burnt_out_car x68, burst_water_main x12, busker x12, cafe_tables x47, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, collapsed_frontage x19, construction x40, cyclist x9, delivery_van x32, dog_walker x17, homeless_yeller x9, ice_cream_van x8, leaf_blower x26, loose_dog x9, market_stall x28, moving_van x34, pigeon_flock x3, playground, police_patrol x14, poster_crew x12, reversing_lorry x4, roadblock x84, scaffolding x14, skip x13
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 35, worst frame 263.8ms, draws 563, objects 2487, primitives 5753, process 16.28ms, physics 2.49ms
+   1.2  near     police_patrol (telegraph) at (86,86), 183px, exc 0, in 0.3/s (crowd 0.0, events 0.3), sleep 0
+   2.0  near     police_patrol at (86,84), 100px, exc 0, in 9.3/s (crowd 0.0, events 9.3), sleep 1
+   2.0  frame    fps 90, worst frame 19.0ms, draws 566, objects 2488, primitives 5776, process 18.67ms, physics 2.74ms
+   2.1  contact  step 3 moved to (94,90): never seen at (26,36)
+   2.1  roll     chalk mark guarded: robber 83px away (band 66-176)
+   2.2  path     onto the corridor at (84,84), after 2.2s off it
+   2.6  near     police_patrol at (86,83), 55px, exc 3, in 10.8/s (crowd 0.0, events 10.7), sleep 1
+   2.9  path     off the corridor at (86,84), after 0.7s on it
+   2.9  cross    stepped into the road at (86,84), at a zebra
+   3.0  frame    fps 89, worst frame 13.0ms, draws 790, objects 2917, primitives 6492, process 12.76ms, physics 2.73ms
+   3.5  path     onto the corridor at (87,83), after 0.6s off it
+   3.6  near     checkpoint_hut at (90,85), 98px, exc 7, in 9.2/s (crowd 0.0, events 9.1), sleep 1
+   4.0  frame    fps 89, worst frame 18.6ms, draws 801, objects 2694, primitives 6164, process 18.59ms, physics 2.77ms
+   5.0  frame    fps 89, worst frame 18.5ms, draws 808, objects 2708, primitives 6258, process 18.48ms, physics 3.00ms
+   5.2  near     checkpoint_gate at (87,76), 118px, exc 13, in 11.7/s (crowd 3.7, events 8.0), sleep 2
+   5.3  near     checkpoint_hut at (89,76), 97px, exc 13, in 12.4/s (crowd 3.7, events 8.7), sleep 2
+   5.5  chat     checkpoint_hut at (89,76), 2.0s, baby awake, meter +25
+   6.0  frame    fps 86, worst frame 27.1ms, draws 796, objects 2766, primitives 6230, process 26.75ms, physics 2.79ms
+   6.7  freeze   sleep stopped filling | exc 35, in 12.5/s (crowd 0.0, events 12.5), sleep 1 | near: checkpoint_hut 76px
+   7.0  frame    fps 89, worst frame 12.7ms, draws 800, objects 2766, primitives 6276, process 18.70ms, physics 2.20ms
+   7.5  checkpoint checkpoint_hut at (89,76), 2.0s, released on the north side
+   7.5  contact  step 3 moved to (83,65): never seen at (94,90)
+   7.5  roll     chalk mark guarded: robber 78px away (band 66-176)
+   7.5  path     off the corridor at (88,74), after 4.0s on it
+   7.5  near     police_patrol at (86,72), 101px, exc 45, in 6.0/s (crowd 7.8, events 25.1), sleep 1
+   7.5  near     dog_walker at (88,71), 70px, exc 45, in 6.0/s (crowd 7.8, events 25.1), sleep 1
+   7.5  near     roadblock at (83,73), 178px, exc 45, in 6.0/s (crowd 7.8, events 25.1), sleep 1
+   7.5  near     roadblock at (83,75), 176px, exc 45, in 6.0/s (crowd 7.8, events 25.1), sleep 1
+   8.1  frame    fps 88, worst frame 24.8ms, draws 509, objects 2393, primitives 5532, process 24.75ms, physics 3.24ms
+   8.3  idle     stood still 2.7s on sidewalk, exc 17 -> 72, sleep 2 -> 1
+   8.5  cross    stepped into the road at (89,73), at a zebra
+   8.5  near     dog_walker at (88,72), 38px, exc 79, in 40.7/s (crowd 2.4, events 38.4), sleep 1
+   9.1  frame    fps 88, worst frame 25.9ms, draws 514, objects 2443, primitives 5683, process 23.74ms, physics 2.79ms
+   9.2  path     51% of her street time on the corridor (4.7s on, 4.5s off, 0.0s off the streets)
+   9.2  lost     lost_crying after 9.2s — She started crying. There is no settling her now. | exc 100, in 24.4/s (crowd 0.0, events 24.4), sleep 1 | near: dog_walker 64px
+   9.2  nerve    spent a nerve on day 7 (act 2); 1 left — day 7 again
+   9.2  save     wrote the save (between days)
+
+day 7  act 2  run seed 2609743060  city seed 2609743060  length 144.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 26.4 ms
+   0.0  plan     regions: 35 boundary, 24 wall, 11 door, calm by region: [1, 1, 1, 0]
+   0.0  roll     ice_cream_van, ice_cream_van, busker, busker, leaf_blower, poster_crew, ice_cream_van, leaf_blower, busker in the park she used yesterday, (6,1)
+   0.0  roll     busker, busker, busker, leaf_blower in the park she used yesterday, (9,6)
+   0.0  roll     leaf_blower, pigeon_flock, pigeon_flock, leaf_blower in the park she used yesterday, (4,2)
+   0.0  contact  step 3 on offer at (26,36)
+   0.0  roll     chalk mark guarded: robber 164px away (band 66-176)
+   0.0  plan     closed: fallen tree v(9,5), cordoned off h(3,6)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burnt_out_car x68, burst_water_main x12, busker x12, cafe_tables x47, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, collapsed_frontage x19, construction x40, cyclist x9, delivery_van x32, dog_walker x17, homeless_yeller x9, ice_cream_van x8, leaf_blower x26, loose_dog x9, market_stall x28, moving_van x34, pigeon_flock x3, playground, police_patrol x14, poster_crew x12, reversing_lorry x4, roadblock x84, scaffolding x14, skip x13
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 44, worst frame 294.3ms, draws 569, objects 2493, primitives 5837, process 24.66ms, physics 2.74ms
+   1.3  near     police_patrol (telegraph) at (86,86), 182px, exc 0, in 0.3/s (crowd 0.0, events 0.3), sleep 0
+   2.0  frame    fps 87, worst frame 26.5ms, draws 566, objects 2488, primitives 5776, process 26.34ms, physics 2.80ms
+   2.1  near     police_patrol at (86,84), 100px, exc 0, in 9.2/s (crowd 0.0, events 9.2), sleep 1
+   2.1  contact  step 3 moved to (94,90): never seen at (26,36)
+   2.1  roll     chalk mark guarded: robber 83px away (band 66-176)
+   2.3  path     onto the corridor at (84,84), after 2.3s off it
+   3.0  frame    fps 84, worst frame 25.2ms, draws 567, objects 2291, primitives 5412, process 26.47ms, physics 2.84ms
+   3.5  near     police_patrol at (86,81), 54px, exc 7, in 10.8/s (crowd 0.0, events 10.8), sleep 1
+   3.9  near     roadblock at (83,75), 176px, exc 9, in 11.6/s (crowd 0.0, events 11.6), sleep 1
+   4.0  frame    fps 87, worst frame 26.7ms, draws 557, objects 2352, primitives 5384, process 26.70ms, physics 2.81ms
+   4.9  cross    stepped into the road at (86,80), mid-block
+   4.9  crowd    a car sounded its horn at her in the road at (86,80) | exc 16, in 10.9/s (crowd 1.1, events 9.7), sleep 1
+   5.0  frame    fps 90, worst frame 29.5ms, draws 792, objects 2694, primitives 5996, process 12.60ms, physics 2.68ms
+   5.4  near     checkpoint_gate at (87,76), 119px, exc 27, in 28.7/s (crowd 21.2, events 7.3), sleep 1
+   5.7  cue      the mark over her head: soon for 0.7s (0.7s of it on the road) | a car, and she is in the road
+   6.0  near     checkpoint_hut at (89,76), 98px, exc 35, in 5.0/s (crowd 2.1, events 2.6), sleep 2
+   6.0  frame    fps 76, worst frame 29.8ms, draws 599, objects 2323, primitives 5491, process 27.89ms, physics 2.94ms
+   6.3  chat     checkpoint_hut at (89,76), 2.0s, baby awake, meter +25
+   6.3  freeze   sleep stopped filling | exc 35, in 14.2/s (crowd 0.0, events 14.1), sleep 2 | near: checkpoint_hut 78px
+   7.1  frame    fps 83, worst frame 29.9ms, draws 800, objects 2764, primitives 6272, process 27.27ms, physics 2.71ms
+   8.1  frame    fps 90, worst frame 28.4ms, draws 798, objects 2752, primitives 6245, process 13.19ms, physics 2.44ms
+   8.3  checkpoint checkpoint_hut at (89,76), 2.0s, released on the north side
+   8.3  contact  step 3 moved to (83,65): never seen at (94,90)
+   8.3  roll     chalk mark guarded: robber 78px away (band 66-176)
+   8.3  path     off the corridor at (89,74), after 6.0s on it
+   8.3  near     police_patrol at (86,70), 147px, exc 59, in 6.0/s (crowd 1.0, events 35.8), sleep 2
+   8.3  near     dog_walker at (88,72), 48px, exc 59, in 6.0/s (crowd 1.0, events 35.8), sleep 2
+   8.5  crowd    walked into somebody at (89,74) | exc 68, in 38.8/s (crowd 22.2, events 34.6), sleep 2
+   8.6  cross    stepped into the road at (90,73), mid-block
+   9.1  frame    fps 79, worst frame 29.2ms, draws 413, objects 2190, primitives 5232, process 26.82ms, physics 3.83ms
+   9.5  near     car_accident at (94,73), 96px, exc 83, in 24.2/s (crowd 0.0, events 24.2), sleep 2
+   9.6  contact  step 3 moved to (104,78): never seen at (83,65)
+   9.6  roll     chalk mark guarded: robber 105px away (band 66-176)
+   9.9  contact  step 3 seen at (104,78)
+  10.0  path     60% of her street time on the corridor (6.0s on, 4.0s off, 0.0s off the streets)
+  10.0  lost     lost_crying after 10.0s — She started crying. There is no settling her now. | exc 100, in 49.7/s (crowd 0.0, events 49.7), sleep 2 | near: car_accident 66px
+  10.0  nerve    spent a nerve on day 7 (act 2); 0 left
+  10.0  ending   bad on day 7 — resistance 1/4, sabotage not done, played 8:56.884

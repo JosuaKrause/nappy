@@ -347,6 +347,104 @@ it); what is open is the half that stops the move from happening.
 
 ---
 
+## M176 — The loose dog is past her before it is loud, and two more rows by feel · asked for 2026-09-20
+
+> "unleashed dog still has too little influence -- needs to be more intense" · "but keep things
+> in relation to each other" · "also protesters have very little excitement?" · "should be a
+> bit more" · "guard posts should emit less excitement by themselves, too" · "since there can
+> be other obstacles around"
+
+[PLAYTEST-116](playtests/PLAYTEST-116.md) has the run. Every number that moves regenerates
+`docs/COSTS.md` in the same commit, and the rows keep their order against each other there
+unless an item says otherwise.
+
+- [ ] **The loose dog is loud while it passes her.** It runs at 132px a second through a 2.25
+      second telegraph at `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) of its intensity, so
+      every `near` entry in the run reads `(telegraph)` and it is behind her before it reaches
+      39. The fix is in when it is loud, not only how loud: what the telegraph owes her is
+      the warning, and a row that arrives inside its own telegraph has spent its whole
+      encounter on the warning. The fairness contract for a telegraph (the **events** skill)
+      still holds. 39 is also the ceiling above which running past it is cheaper than walking,
+      which only `car_accident` may be, so more intensity needs that answered too.
+- [ ] **The pass in `docs/COSTS.md` is the pass as it is met.** `M174Pass` starts its clock
+      after the telegraph; for a `TOWARD_PLAYER` row the telegraph is most of the meeting, so
+      the table says +15.0 for a pass that lands about a point. The simulation spawns the row
+      as the game does, telegraph included, and the table is regenerated.
+- [ ] **The protest costs a bit more.** 15 a second over 269px nets +3.4 beside it awake and
+      nothing asleep; at least what the walking decay took from it (2.5 a second) comes back.
+      It stays friction, under `Tuning.WALL_WORTH_OF_COST`.
+- [ ] **The guard posts emit less by themselves.** `checkpoint_hut` and `checkpoint_post`
+      emit 6 a second and a `roadblock` 13 out to 86px, and a door is several of them a tile
+      apart with a patrol beside it: three roadblocks and a patrol put 54 a second on her at
+      the moment a gate let her out. Each emits less, so that a door with its usual company
+      is a price and not a loss. Which rows "guard posts" covers — the hut, the post and the
+      roadblock — is the orchestrator's reading and open to overturn.
+
+---
+
+## M177 — The second mark is any alley she comes across, and a step says it was done · asked for 2026-09-20
+
+> "I did the first mark then the yeller (there should be an indication that I did it
+> correctly) but then there was no second mark I checked multiple alleys. it should follow the
+> same rules as the first mark in that it can basically be any alley you come across"
+
+[PLAYTEST-116](playtests/PLAYTEST-116.md): on day 6 the mark moved to the alley nearest her
+doorstep two seconds into the day, was on screen from where she stood, and was marked *seen*
+0.4 seconds later — and a seen mark never moves again, so every other alley she checked was
+empty. It was also the alley step 1 had been taken from.
+
+- [ ] **A mark is seen when she could have noticed it, not when its tile was on screen.**
+      `ResistanceDirector._track_sight_and_reposition()` pins the mark the first frame its
+      position is inside the view. *Playtest 19's "a mark that was never on screen was never
+      placed" stands*: a mark she has noticed does not jump away. What changes is what counts
+      as noticing — near enough, for long enough, that walking away from it is a choice — so
+      that until then it keeps moving to the alley she comes across. The distance and the
+      time are the orchestrator's and open to overturn. A mark does not return to an alley a
+      step was already taken from while another is within reach.
+- [ ] **A completed step is acknowledged where she is looking.** Touching a mark and reaching
+      the man shouting each say so at the moment it counts: the touched state of the chalk
+      mark (`chalk_mark_touched.svg` is prepared, M100, small, real and nobody's) and a line
+      from the resistance, in the HUD's own voice. *No quest log or marker for the resistance*
+      still holds: this confirms what she has just done and points at nothing.
+
+---
+
+## M178 — A gate lets her out alive, and where she comes out · asked for 2026-09-20
+
+> "the gate checks were placed in a way that I would basically immediately die after crossing
+> them" · "when I reappear I briefly spawn at my old location before teleporting to the new
+> location. I should directly spawn at the new location"
+
+[PLAYTEST-116](playtests/PLAYTEST-116.md): taken in with the meter at 10, let out two seconds
+later at 72 beside three roadblocks and a patrol, crying 0.4 seconds after that; four of day
+7's five losses came within two seconds of a release.
+
+- [ ] **The hold charges its toll and nothing else.** While she is inside a door the fields
+      around it keep landing on the meter and she earns no decay, so a two-second hold cost
+      62 points where `Tuning.CHAT_EXCITEMENT` says 25. *"It works in both directions with
+      the same cost each time"* is the recorded rule: the hold is the toll.
+- [ ] **Events keep a gap around a gate.** *"there should be a gap for events immediately
+      surrounding the gates"*: no event is placed within a clear distance of a door's
+      structures, on either side, and a mover's beat does not run through it — the patrol and
+      the dog walker that finished two of day 7's attempts were both inside it. The distance is
+      at least what she needs to walk out of the door's own fields and see what is next; the
+      number is the orchestrator's and open to overturn.
+- [ ] **Two gates next to each other do not add up.** *"since two gates can be adjacent to
+      each other their influence shouldn't add up"*: the structures of a door, and of doors
+      standing together, charge the meter as one source — the strongest of them where their
+      fields overlap, not their sum. Three roadblocks at 13 a second each read 39 to her today.
+- [ ] **The ground she is let out onto is checked before the door is accepted.** A door whose
+      far side puts her inside fields that fill the meter from the toll's level before she can
+      walk out of them is not placed, or the things that make it so are not placed beside it
+      — checked at placement, never repaired afterwards, as every closure and event is. Both
+      sides, since a door works in both directions. M176's quieter guard posts are the other
+      half of this and neither replaces the other.
+- [ ] **She reappears where she is let out.** She is hidden when she goes in, moved while
+      hidden, and shown at the release point; no frame draws her at the place she went in
+      after the camera has left it. The evidence is a burst, not a still.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded

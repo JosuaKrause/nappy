@@ -306,6 +306,9 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
+- **[PLAYTEST-116](playtests/PLAYTEST-116.md) is the first run on the newest release** and is
+  three milestones in `TODO.md`: M176, the loose dog is past her before it is loud; M177, the
+  second mark is any alley she comes across; M178, a gate lets her out alive.
 - **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
   "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
   the first entry of `REVIEW.md`. M174, the man shouting costs nothing to walk beside, has one
