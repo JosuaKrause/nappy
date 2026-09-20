@@ -46,6 +46,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `lethal_radius` | How close the thing that ends the day has to get, when that is **not** the field's own core. `0` — almost every row — means `inner_radius`, and `lethal_reach()` is what every caller asks. It exists for a row whose killer is not what the field is drawn around: a `roadblock`'s field is cored on the barrier and its guard catches at a man's reach — see "The heat" |
 | `body_stays_behind` | Whether this row's body is a **fixture of the street** a pursuer leaves standing rather than the pursuer's own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built, so the street stays shut behind the man who left it |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the three region-door rows — see "Checkpoints" |
+| `barrier_structure` | Whether this row is a piece of the region boundary — a street being held. The four that are (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`, `roadblock`) charge the meter as **one** source, the strongest at her position, rather than as their sum; everything else in the catalogue still sums — see "Checkpoints" |
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `shape` | The row's own `GroundShape` (`src/ground_shape.gd`) — a point or a segment, independent of the picture — that its shadow and, when it obstructs, its collision body are both derived from. Set by `EventDef.solid(shape)` for anything with `obstructs_radius`, or directly for anything with a `look` that does not obstruct; `null` only for `look == NONE` — see "Solid things are solid" |
@@ -425,6 +426,20 @@ The gate over the road between a door's two huts carries no field of its own —
 it costs her nothing — but it detains exactly as a hut does, because a raised bar is a fact about
 the car queue and never a way past her. See `docs/CITY.md`, "Regions and the wall", and
 `Crowd._stop_for_gates()`.
+
+**The boundary's structures charge as one source, never their sum.** *(2026-09-20, the player:
+"since two gates can be adjacent to each other their influence shouldn't add up" · "otherwise
+going into a hut at a corner with two huts double counts the influence".)* `EventDef.
+barrier_structure` is the flag, and four rows carry it: `checkpoint_hut`, `checkpoint_gate`,
+`checkpoint_post` and `roadblock` — a door, and the body the region wall stands as. One street
+being held is one source however many bodies hold it, so a wall's three barriers across a street
+read 13/s rather than 39, and a corner where a wall meets a door reads one barrier rather than
+five. `EventManager.excitement_sources_at()` keeps the strongest of them at her position and drops
+the rest from the pairs entirely, so what lands on the bar is attributed to the body that was the
+maximum, and the halo's colour — traced from that same sum — follows without a second rule.
+`EventInstance.outranked_by_a_stronger_barrier` is how the caret and the halo's own rim selection
+learn the same answer, so a corner draws one mark on the barrier that is charging her rather than
+five promising the cost over again. Everything else in the catalogue still sums.
 
 **The hold charges its toll and nothing else.** She is inside the hut, not on the pavement, so
 while a hold is running the meter sums that hold's own flat `Tuning.CHAT_EXCITEMENT` and no other

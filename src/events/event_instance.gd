@@ -745,6 +745,22 @@ func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: fl
 ## fact about her and not about the gap. See `_chase`.
 var player_running := false
 
+## Whether another structure of the same region boundary is charging her harder than this one is,
+## at `player_at`. Written once a frame by `EventManager._tell_them_where_she_is()`, `false` for
+## every row that is not a `EventDef.barrier_structure` and for the one of them that is the
+## maximum.
+##
+## **It exists so the two cues that say "this will cost you" agree with the meter, which keeps only
+## that maximum.** `expected_impact_at()` returns nothing for an outranked structure and
+## `ExcitementHalo.select_sources()` leaves it out, so a corner where a wall meets a door draws one
+## rim on the barrier that is actually charging her rather than five rims sharing one barrier's
+## worth of cost — and `MAX_SOURCES` is not spent on four bodies that land nothing.
+##
+## **Told from outside rather than asked here**, for the same reason `player_at` is: an instance
+## has no view of the others, and the answer is a property of where she is standing this frame.
+## `false` until somebody says otherwise, which is the ordinary behaviour a data-level test gets.
+var outranked_by_a_stronger_barrier := false
+
 ## Whether the baby is awake right now. Written once a frame by `EventManager` alongside
 ## `player_at`, and read by exactly one row: `chatting_mother`'s conversation is the only thing in
 ## the catalogue whose contribution differs by the baby's own state, and this is how it can without
@@ -2188,6 +2204,11 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## longer over-reaches its true closing distance the way comparing only its own speed would.
 func expected_impact_at(player_position: Vector2) -> float:
 	if is_finished or is_leaving or def.city_wide:
+		return 0.0
+	# A barrier the meter is not charging her for has no impact to project: the strongest structure
+	# of a boundary is the whole of what lands, and the others would each promise the same cost
+	# over again. See `outranked_by_a_stronger_barrier`.
+	if outranked_by_a_stronger_barrier:
 		return 0.0
 	var velocity := _caret_velocity()
 	var closing := player_velocity - velocity

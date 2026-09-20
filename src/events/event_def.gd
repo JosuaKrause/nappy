@@ -677,6 +677,31 @@ func detain_distance() -> float:
 ## only two rows that set it. `EventManager._check_detentions()` is what reads it.
 @export var redetains := false
 
+## Whether this row is one of the region boundary's own structures — a street being held, however
+## many bodies it takes to hold it. **Several of them charge the meter as one source, the strongest
+## at her position, never their sum.** *(2026-09-20, the player: "since two gates can be adjacent
+## to each other their influence shouldn't add up" · "otherwise going into a hut at a corner with
+## two huts double counts the influence".)*
+##
+## Four rows carry it and they are the whole boundary kit: `checkpoint_hut`, `checkpoint_gate` and
+## `checkpoint_post` — a door — and `roadblock`, which is both the body the region *wall* stands as
+## and the catalogue's own street closure. A wall is three bodies a tile apart across one street
+## and a door is three more; at a corner where the two meet, ground inside five of them at once
+## exists, and summed that is one barrier read five times.
+##
+## **It is a flag rather than a list of ids** so the rule is a property of the row and not a table
+## somewhere else that a renamed or added row silently falls out of — `RegionPlanner` already
+## carries one id as a string and says in the same breath that whoever renames it updates that
+## string too, which is the shape this avoids.
+##
+## **The maximum is taken over every flagged instance at once, not per cluster.** There is no
+## grouping to get wrong and nothing to tune: two barriers far enough apart not to overlap already
+## contribute nothing to each other's ground, so the answer only differs from the sum exactly where
+## the player said it should. `EventManager.excitement_sources_at()` is the one place that does it,
+## and the halo, the caret and the meter all read that same answer — see
+## `EventInstance.outranked_by_a_stronger_barrier`.
+@export var barrier_structure := false
+
 ## Entering the lethal radius ends the day immediately.
 @export var hard_fail := false
 

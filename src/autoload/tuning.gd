@@ -848,7 +848,8 @@ const CHECKPOINT_RELEASE_MARGIN := 8.0
 ## outside every door simply is not placed that day, which is the failure direction the rest of the
 ## scheduler already has. The wall's own `roadblock` bodies are **not** given a gap — a wall is
 ## structure, it stands where the boundary is, and dropping one would open a street the partition
-## means to hold.
+## means to hold. What keeps a wall from summing with the door it stands beside is
+## `EventDef.barrier_structure` instead.
 const CHECKPOINT_EVENT_GAP := 176.0
 
 ## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto

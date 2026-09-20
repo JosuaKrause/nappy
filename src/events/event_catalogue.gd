@@ -1578,6 +1578,13 @@ static func _curfew_announce() -> EventDef:
 ## ends and the falloff begins, and it is what the cost table is stated against; there is no longer
 ## any reachability arithmetic pulling on it.
 ##
+## **`barrier_structure`, because one street being held is one source however many bodies hold
+## it.** A region wall stands three of these a tile apart across a single street and the region
+## door on the cross street stands three more, so ground inside five at once exists at a corner —
+## summed, that is 39/s of one barrier read three times over before the door beside it is counted.
+## The flag makes the strongest of them at her position the whole answer; see
+## `EventDef.barrier_structure`.
+##
 ## **The 179px cold field sits under the shared 180px trigger, which the 24px `abduction` and
 ## `night_raid` never had to notice because their own fields (250/330) already cleared it.**
 ## `EventDef.at_heat()` widens only the hunting copy's `outer_radius` to `maxf(outer_radius,
@@ -1603,6 +1610,7 @@ static func _roadblock() -> EventDef:
 	# this post and the masked man on the escape's stairs are the same figure doing the same thing.
 	def.lethal_radius = MASKED_MAN_REACH
 	def.body_stays_behind = true
+	def.barrier_structure = true
 	def.weight = 2.0
 	def.max_per_day = 6
 	def.cost = 2
@@ -2112,6 +2120,10 @@ static func _collapsed_frontage() -> EventDef:
 # `RegionPlanner.plan_day` places each fresh every morning at the door geometry decides, not at a
 # tile the scheduler chose. See docs/CITY.md, "Regions and the wall", and docs/EVENTS.md,
 # "Checkpoints".
+#
+# All three carry `barrier_structure`, as does the `roadblock` the wall stands as: a door is one
+# thing to walk through however many bodies it is built from, and where a door and a wall meet at a
+# corner their fields are one barrier rather than five. See `EventDef.barrier_structure`.
 
 ## The hut at a region door. Detains rather than blocking outright — M62's own words: *"the player
 ## walks to the hut gets detained inside and then spawns on the other side."*
@@ -2151,6 +2163,7 @@ static func _checkpoint_hut() -> EventDef:
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
 	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
+	def.barrier_structure = true
 	return def
 
 ## The boom over the roadway between a door's two huts. No field of its own — a car passing under
@@ -2183,6 +2196,7 @@ static func _checkpoint_gate() -> EventDef:
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
 	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
+	def.barrier_structure = true
 	return def
 
 ## The alley half of a door: a single guard where a through-alley crosses a region boundary,
@@ -2205,6 +2219,7 @@ static func _checkpoint_post() -> EventDef:
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
 	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
+	def.barrier_structure = true
 	return def
 
 # ------------------------------------------------------------------ the finale ---

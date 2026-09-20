@@ -1378,7 +1378,10 @@ the scheduler already has everywhere else; measured over six seeds on days 7 and
 one percent of what a day places.
 
 **The wall's own `roadblock` bodies get no gap**, and that is deliberate: a wall is structure, it
-stands where the boundary is, and dropping one would open a street the partition means to hold.
+stands where the boundary is, and dropping one would open a street the partition means to hold. A
+corner where a wall meets a door therefore still has barriers a step from the release point — what
+stops them adding up is `EventDef.barrier_structure` (docs/EVENTS.md, "Checkpoints"), which makes
+the whole boundary kit charge as one source.
 
 ## Block purposes
 

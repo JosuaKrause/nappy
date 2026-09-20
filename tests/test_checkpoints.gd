@@ -26,6 +26,8 @@ func run(t) -> void:
 	_test_nothing_the_day_places_reaches_into_a_doors_gap(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
 	_test_the_hold_charges_only_its_toll(t)
+	_test_a_boundarys_structures_charge_as_one(t)
+	_test_a_corner_of_two_doors_is_one_toll(t)
 	_test_a_stroller_stopped_against_the_hut_is_detained(t)
 	_test_she_and_the_guard_are_gone_during_the_hold(t)
 	_test_the_whole_hold_reads_as_one_move(t)
@@ -600,6 +602,131 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	loud.free()
 	stroller.free()
 	world.free()
+	manager.free()
+
+## **A wall and the door beside it are one barrier, not five.** *(2026-09-20, the player: "since
+## two gates can be adjacent to each other their influence shouldn't add up".)* The rig is the
+## corner day 7 of the run died at: a region wall's three `roadblock` bodies a tile apart across
+## one street, and a door's hut and gate across the cross street, with her standing where the
+## release sets her down.
+##
+## Three things have to agree, and the point of holding them together is that they are three
+## different code paths reading one answer: the meter's own sum, what each body's `landed()` says
+## it did, and which of them the halo would draw a rim on.
+func _test_a_boundarys_structures_charge_as_one(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+	var axis := Vector2.RIGHT
+
+	var here := Vector2(6400.0, 6400.0)
+	var kit: Array[EventInstance] = []
+	for i in 3:
+		var block := _door_instance(t, "roadblock", here + Vector2(-56.0, -32.0 + i * 32.0), axis)
+		block.age = block.def.telegraph_time + 1.0
+		kit.append(block)
+	kit.append(_door_instance(t, "checkpoint_hut", here + Vector2(0.0, 54.0), axis))
+	kit.append(_door_instance(t, "checkpoint_gate", here + Vector2(64.0, 54.0), axis))
+	var summed := 0.0
+	var strongest := 0.0
+	for body in kit:
+		manager._instances.append(body)
+		var rate := body.contribution_at(here)
+		summed += rate
+		strongest = maxf(strongest, rate)
+	t.check(summed > strongest * 1.5,
+			("the rig actually overlaps: summed %.1f/s against the strongest single %.1f/s — a " +
+			"corner where nothing overlapped would pass this test with the rule deleted")
+			% [summed, strongest])
+
+	stroller.global_position = here
+	manager._tell_them_where_she_is()
+	t.close_to(manager.total_excitement_at(here), strongest,
+			"the whole boundary kit charges the strongest of it and not the sum (%.1f/s against a "
+			% manager.total_excitement_at(here) + "sum of %.1f/s)" % summed, 0.01)
+
+	var landed_on: Array = []
+	for pair in manager.excitement_sources_at(here):
+		landed_on.append(pair[0])
+	t.check(landed_on.size() == 1, "one source reaches the bar, not five (%d)" % landed_on.size())
+	if landed_on.size() == 1:
+		t.close_to(landed_on[0].contribution_at(here), strongest,
+				"and it is the one that was the maximum, which is what its own landed() will "
+				+ "carry and what the halo's colour is traced from", 0.01)
+
+	var picked := ExcitementHalo.select_sources(kit, here)
+	t.check(picked.size() == 1,
+			("and the halo draws one rim, on that same body: a rim on a structure landing nothing " +
+			"while its neighbour reads red is a cue disagreeing with the bar (%d picked)")
+			% picked.size())
+
+	# Walk her to the other end of the wall and the answer follows her: this is a maximum at a
+	# position, not a body elected once.
+	stroller.global_position = kit[0].global_position + Vector2(0.0, -24.0)
+	manager._tell_them_where_she_is()
+	var now_strongest := 0.0
+	for body in kit:
+		now_strongest = maxf(now_strongest, body.contribution_at(stroller.global_position))
+	t.close_to(manager.total_excitement_at(stroller.global_position), now_strongest,
+			"and a step along the wall re-asks it rather than keeping the first answer", 0.01)
+
+	for body in kit:
+		body.free()
+	stroller.free()
+	manager.free()
+
+## **A corner where two doors meet is still one toll.** *"going into a hut at a corner with two
+## huts double counts the influence"* — a street door on one street and another on the street
+## crossing it stand their bodies a tile or two apart, so the ground the first one lets her out
+## onto is inside the second one's trigger. `_latch_everything_she_was_let_out_into()` arms a
+## latch for **every** redetaining body whose reach covers the release point, not only the door
+## that let her out, and the other door is exactly the case that reads as being taken straight
+## back in.
+func _test_a_corner_of_two_doors_is_one_toll(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	# One door across an east-west street, and the corner door across the north-south street it
+	# meets — its own huts facing along the other axis, the geometry `RegionPlanner._along_axis()`
+	# gives a crossing on each.
+	var corner := Vector2(6800.0, 6800.0)
+	var near_hut := _door_instance(t, "checkpoint_hut", corner, Vector2.RIGHT)
+	var cross_hut := _door_instance(t, "checkpoint_hut", corner + Vector2(0.0, -48.0), Vector2.DOWN)
+	var cross_gate := _door_instance(t, "checkpoint_gate", corner + Vector2(0.0, -80.0), Vector2.DOWN)
+	manager._instances.append(near_hut)
+	manager._instances.append(cross_hut)
+	manager._instances.append(cross_gate)
+
+	stroller.global_position = corner + Vector2.RIGHT * 60.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(near_hut.is_chatting(), "walking into the near hut starts one hold")
+	t.check(not cross_hut.is_chatting() and not cross_gate.is_chatting(),
+			"and the corner door's own bodies do not start a second one on top of it")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	var released := stroller.global_position
+	var reached_by_the_other := cross_hut.global_position.distance_to(released) \
+			<= cross_hut.def.detain_distance() \
+			or cross_gate.global_position.distance_to(released) <= cross_gate.def.detain_distance()
+	t.check(reached_by_the_other,
+			("the release lands inside the corner door's own reach (%.1fpx from its hut, trigger " +
+			"%.1fpx) — otherwise this test is not about a corner at all")
+			% [cross_hut.global_position.distance_to(released), cross_hut.def.detain_distance()])
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS * 3.0)
+	t.check(not cross_hut.is_chatting() and not cross_gate.is_chatting(),
+			"and standing where she was let out is not a second toll paid to the door round the "
+			+ "corner, however long she stands there")
+	t.check(not near_hut.is_chatting(), "nor to the one that let her out")
+	t.check(stroller.global_position.is_equal_approx(released),
+			"and she is not moved again (%s)" % stroller.global_position)
+
+	near_hut.free()
+	cross_hut.free()
+	cross_gate.free()
+	stroller.free()
 	manager.free()
 
 ## How far her own outline reaches ahead of her centre while she faces `facing` — her own body's

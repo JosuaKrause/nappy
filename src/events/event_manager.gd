@@ -556,16 +556,53 @@ func instances() -> Array[EventInstance]:
 ## says whether this point is inside a running region-door hold; while it is, the hold's own flat
 ## `Tuning.CHAT_EXCITEMENT` rate is the whole of the answer and every other field in the city is
 ## off. See that function for why that is a fact about where she is rather than a special case.
+##
+## **And the region boundary's own structures charge as one source rather than as their sum** —
+## *"since two gates can be adjacent to each other their influence shouldn't add up"*. Every
+## instance whose def carries `EventDef.barrier_structure` is a piece of a street being held, and
+## the strongest of them here is the one that lands; the rest contribute nothing and are not in the
+## returned pairs at all, so `Baby._update_excitement()` attributes what actually reaches the bar to
+## the structure that was the maximum and `ExcitementHalo`'s colour follows it by construction.
+## Everything else in the catalogue still sums, which is the contract the density is built on.
 func excitement_sources_at(world_position: Vector2) -> Array:
 	var inside := door_holding_her_at(world_position)
 	if inside:
 		return [[inside, inside.contribution_at(world_position)]]
 	var sources: Array = []
+	# Ties keep the first of `_instances`, which is the order the day streamed them in — a stable,
+	# seed-determined answer rather than one that depends on floating-point luck.
+	var strongest: EventInstance = null
+	var strongest_rate := 0.0
 	for instance in _instances:
 		var contribution := instance.contribution_at(world_position)
-		if contribution > 0.0:
-			sources.append([instance, contribution])
+		if contribution <= 0.0:
+			continue
+		if instance.def.barrier_structure:
+			if contribution > strongest_rate:
+				strongest_rate = contribution
+				strongest = instance
+			continue
+		sources.append([instance, contribution])
+	if strongest:
+		sources.append([strongest, strongest_rate])
 	return sources
+
+## The one barrier structure that lands at `world_position` — the strongest of them, the same
+## answer `excitement_sources_at()` keeps — or `null` when none reaches. Used once a frame by
+## `_tell_them_where_she_is()` to tell the others they are outranked, so the caret and the halo
+## agree with the meter about which body is charging her. See
+## `EventInstance.outranked_by_a_stronger_barrier`.
+func _strongest_barrier_at(world_position: Vector2) -> EventInstance:
+	var strongest: EventInstance = null
+	var strongest_rate := 0.0
+	for instance in _instances:
+		if not instance.def.barrier_structure:
+			continue
+		var contribution := instance.contribution_at(world_position)
+		if contribution > strongest_rate:
+			strongest_rate = contribution
+			strongest = instance
+	return strongest
 
 ## The region door whose hold is running right now and whose own trigger circle `world_position`
 ## lies inside, or `null` when this point is not inside a door. `City.excitement_sources_at()` asks
@@ -893,14 +930,22 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 ## `run_excess_ratio`, so reading it off the untyped field is a per-frame runtime error that aborts
 ## this whole callback and stops the day dead — and `check.sh` cannot see it, because nothing is
 ## wrong until it runs.
+## **The third fact is which barrier structure is the one charging her**, and it is handed over
+## here because this is already the once-a-frame visit to every instance that knows where she is.
+## `excitement_sources_at()` keeps only the strongest of the boundary kit, so a caret or a halo
+## rim on one of the others would be promising a cost the meter is not taking — see
+## `EventInstance.outranked_by_a_stronger_barrier`.
 func _tell_them_where_she_is() -> void:
 	var stroller := _player as Stroller
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
 	var awake: bool = stroller == null or stroller.baby_is_awake()
+	var strongest := _strongest_barrier_at(_player.global_position)
 	for instance in _instances:
 		instance.player_at = _player.global_position
 		instance.player_running = running
 		instance.baby_awake = awake
+		instance.outranked_by_a_stronger_barrier = \
+				instance.def.barrier_structure and instance != strongest
 
 ## Coming within `EventDef.detain_distance()` of an instance that has not yet chatted locks her
 ## controls for `detain_seconds` — the one mechanic in the catalogue that takes them away rather
