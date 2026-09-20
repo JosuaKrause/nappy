@@ -321,8 +321,30 @@ what the halo reflects."*
       2026-09-20.* A source's glow is its landed points over `ExcitementHalo.WINDOW` less its
       share of the decay taken in the same window, shared in proportion to what each source
       landed, never below nothing; so the halos together add up to the bar's own rise, and a
-      source is red only while the bar is climbing because of it. The caret's forward
-      projection keeps the same horizon and says the same thing.
+      source is red only while the bar is climbing because of it.
+- [ ] **All three rows give back what the decay took, and a bit more, measured by the pass**
+      ([PLAYTEST-115](playtests/PLAYTEST-115.md): "what matters for the dogs is walking past
+      them. and it shouldn't be free. at the very least restore the net gain if not a bit
+      more"). `homeless_yeller` is measured the same way: "walking past (where both have
+      different directions) is what matters", and that walking next to him did nothing is
+      the worse symptom of the same drop. All three rows were tuned against a walking decay
+      of 3.5 a second and lost 2.5 a second net when M117 made it 6.0. The measure is **the
+      pass**: the points a
+      walk past it lands, net of the decay over the same seconds, at a few fixed lateral
+      offsets, with the mover moving as it does. The pass is measured before and after, and
+      each row's pass nets more than it did under the 3.5 decay; the amount over is the
+      orchestrator's and open to overturn. *The walk-beside target above is the orchestrator's
+      and is overturned; beside is still measured and reported, since it is what the player
+      felt.*
+- [ ] **The caret is the anticipated net gain** (PLAYTEST-115: "if I keep doing what I'm doing
+      I very likely get that amount in net gain (so the halo will match roughly the caret if
+      that happens)"). *The cues rule that her own walking never moves the caret · overturned
+      by the player on 2026-09-20.* Over the same horizon the halo looks back on, the caret
+      projects what the source will land if it and she both carry on as they are — her
+      current velocity, not a fixed position — less the decay her current movement and the
+      baby's current state earn over those seconds, shared between sources as the halo shares
+      it, never below nothing. The **cues** skill says so. That "what I'm doing" means her
+      movement and the baby's state is the orchestrator's reading and open to overturn.
 
 ---
 
@@ -340,7 +362,11 @@ player feels beside a source is its `intensity`, averaged over its pulse, scaled
 `Tuning.SLEEPING_SENSITIVITY` (0.55) when the baby sleeps, shaped by `inner_radius`,
 `outer_radius` and `falloff_power`, less `Tuning.EXCITEMENT_DECAY_WALKING` — several numbers
 nothing ties together, so moving one silently re-prices every row. **Built after M174, the man
-shouting costs nothing to walk beside, since both rewrite the same rows.**
+shouting costs nothing to walk beside, since both rewrite the same rows.** **The checked-in
+table is built first** ([PLAYTEST-115](playtests/PLAYTEST-115.md): "the \"survey\" should happen
+automatically every time and should show up in the commit diff if it changes"), and it carries
+the pass as well as the distances: for a row that moves, what a walk past it nets at the same
+fixed lateral offsets for every row.
 
 - [ ] **A row declares the net cost and its `intensity` is computed.** Option 1 as put to the
       player: a row states what the bar does while she walks beside it inside `inner_radius`
