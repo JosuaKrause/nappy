@@ -19907,3 +19907,25 @@ the proof now use those preserved inputs; proof images remain unchanged. Fresh p
 on the integrated tree matches its saved directory. The narrower 45-render set is deliberate:
 this proof does not consume the carrying renders. Active-SVG rendering is not presented as
 reproduction of this historical anatomical review.
+
+The original registration recipe has the same class of historical dependency. Repair `9c93ab6b`
+preserves five exact original SVGs: pushing back/front/side/front-diagonal B and carrying
+front-diagonal B. An explicit source map checks their original hashes before rendering; a separate
+registration overlay pins the unchanged original config, records the updated support-script hashes
+and redirects only those five historical source paths. It does not repin artwork to the active
+fallbacks. Original source renders, registered outputs and static contact sheets reproduce
+byte-for-byte. Prepared grids also match; their `inputs.json` records the fresh source-directory
+paths, so only its path keys differ, with identical PNG hashes. The primary generation guide links
+the preserved inputs and names the required flags.
+
+The failed carrying capture's metadata now states only what is established: its seed is
+288043464, its recorded command has no seed flag, and the inspected frame shows the mother.
+The earlier explanation that startup reinitialized a requested seed is not supported by that
+recorded command. The capture remains evidence of the failed attempt, not a father-carrying check.
+
+Delivery is complete on PR #234: both interrupted checkpoints and their recipe repairs are
+integrated, approved artwork is unchanged, the main conflict and README overlap are reconciled,
+and the delivery item leaves TODO. The remaining human runtime-appearance question is in REVIEW.
+The approved PNG/GIF family and the historical image artifacts remain byte-identical; only input
+locations, support code and provenance change for reproducibility. M171 remains open and requires
+its separate build-time atlas implementation.

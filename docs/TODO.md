@@ -422,24 +422,6 @@ through `tools/run.sh --start-escape --seed 4242`.
 ---
 
 
-## M167 — Deliver the approved father family · asked for 2026-09-19
-
-[PLAYTEST-104](playtests/PLAYTEST-104.md) approves the final pushing and carrying pixels.
-The artwork and reusable techniques are settled; the remaining work is delivery of the
-checkpointed installation. See `DECISIONS.md`, "M167, interrupted delivery checkpoint", and
-`HANDOFF.md` for the checkpoint worktrees. Delivery, verification and main-conflict resolution
-are authorized in the resumed session.
-
-- [ ] Preserve historical recipe inputs using genuinely frozen SVGs, not the active creation
-      copies that change with runtime fallbacks. Keep historical image and GIF bytes intact.
-- [ ] Reconcile and integrate the installation and recipe checkpoints into PR #234. Update
-      its description to distinguish actual checks from the carrying capture that selected
-      the mother. Preserve the approved PNGs and import identities; do not redraw the family.
-- [ ] Complete the reviewable PR, resolve its main conflicts, verify the integrated tree and
-      archive this delivery item.
-
----
-
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded

@@ -94,19 +94,25 @@ shadows, camera and shared stroller artwork are unchanged.
 
 The reproducibility environment is Godot 4.7.2, Python 3.14 and Pillow 12.3.0 from the locked
 project environment. Review text uses Pillow's bundled default font. All commands run from
-the repository root; choose fresh output directories:
+the repository root; choose fresh output directories. The
+[historical input mapping](historical-inputs/README.md) preserves the original SVG bytes
+separately from the editable runtime fallbacks. Its registration overlay pins the unchanged
+original config and the current support-script hashes; all artwork hashes remain the original ones.
 
 ```sh
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
   --script docs/evidence/male-player-2026-09-19/render-sources.gd -- \
+  --source-map res://docs/evidence/male-player-2026-09-19/historical-inputs/sources.json \
   --output-dir /tmp/male-player-source-review
 uv run python docs/evidence/male-player-2026-09-19/prepare.py \
   --render-dir /tmp/male-player-source-review --output-dir /tmp/male-player-source-grids
 uv run python docs/evidence/male-player-2026-09-19/register.py register \
   --config docs/evidence/male-player-2026-09-19/registration.json \
+  --historical-inputs docs/evidence/male-player-2026-09-19/historical-registration.json \
   --output-dir /tmp/male-player-registration
 uv run python docs/evidence/male-player-2026-09-19/register.py verify \
   --config docs/evidence/male-player-2026-09-19/registration.json \
+  --historical-inputs docs/evidence/male-player-2026-09-19/historical-registration.json \
   --output-dir docs/evidence/male-player-2026-09-19/registered
 uv run python docs/evidence/male-player-2026-09-19/contact.py \
   --registered-dir docs/evidence/male-player-2026-09-19/registered \
@@ -115,10 +121,10 @@ uv run python docs/evidence/male-player-2026-09-19/verify-pairs.py
 ```
 
 `freeze --config FRESH_FILE` is the registration script's authoring command for a deliberately
-new input set, not a way to bypass the retained record's hash checks. The original source
-render and grid commands use the same arguments with `source/` and `inputs/` here as their
-fresh outputs. Runtime PNGs are exact copies of `registered/rig/*.png`; Godot creates each
-new resource's own import sidecar.
+new input set, not a way to bypass the retained record's hash checks. The mapped source-render
+and grid commands reproduce `source/` and `inputs/`. `registered/rig/*.png` preserves the original
+registration. The player manifest identifies exact runtime copies and explicit approved B-frame
+overrides separately; Godot owns each resource's import sidecar.
 
 ## Static review
 

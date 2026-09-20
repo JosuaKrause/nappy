@@ -1,0 +1,14 @@
+{
+  "config_sha256": "2e3d64fd9fb92d6e9bdaac9f2ba1b245f2c33edd9d2d3ed16b3cbaaad44c757a",
+  "updated_input_hashes": {
+    "docs/evidence/male-player-2026-09-19/register.py": "d9c630f85d0325593e2fce590bfc6a1100eddb546968bd495bcf61e4f94dc857",
+    "docs/evidence/male-player-2026-09-19/render-sources.gd": "d171621453b81e65f7ae27a230aa45f187046f4cc9705e0934dcc311ab548252"
+  },
+  "input_paths": {
+    "assets/rig/father_back_b.svg": "docs/evidence/male-player-2026-09-19/historical-inputs/father_back_b.svg",
+    "assets/rig/father_front_diagonal_b.svg": "docs/evidence/male-player-2026-09-19/historical-inputs/father_front_diagonal_b.svg",
+    "assets/rig/father_carrying_front_diagonal_b.svg": "docs/evidence/male-player-2026-09-19/historical-inputs/father_carrying_front_diagonal_b.svg",
+    "assets/rig/father_front_b.svg": "docs/evidence/male-player-2026-09-19/historical-inputs/father_front_b.svg",
+    "assets/rig/father_side_b.svg": "docs/evidence/male-player-2026-09-19/historical-inputs/father_side_b.svg"
+  }
+}

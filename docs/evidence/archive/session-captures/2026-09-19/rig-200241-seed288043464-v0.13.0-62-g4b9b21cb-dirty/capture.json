@@ -12,5 +12,5 @@
     "reason": "frame_cap"
   },
   "coverage": "The ordered frames retain the bounded escape-city attempt and its actual timing.",
-  "limitations": "Escape startup reinitialized the requested seed and displayed the mother in frame 0007, so this is not evidence of father carrying presentation. It uses invincibility and no save."
+  "limitations": "The run records seed 288043464 and frame 0007 visibly shows the mother, so this is not evidence of father carrying presentation. The recorded command does not include a seed flag. It uses invincibility and no save."
 }
