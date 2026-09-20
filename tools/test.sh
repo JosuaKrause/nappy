@@ -46,7 +46,7 @@ Runs the headless test suite (tests/tests.tscn). With no arguments, runs everyth
 across TEST_SHARDS (default 4) Godot processes, planned from tests/suite_costs.txt. A
 suite-name-substring argument filters to the suites whose file name contains it and runs
 unfiltered/unsharded, in one process; that filtered run also accepts any flag the test scene
-itself reads off OS.get_cmdline_user_args() (e.g. --svg), which is why this script does not
+itself reads off OS.get_cmdline_user_args(), which is why this script does not
 reject an argument it does not itself recognise -- only --serial, --plan, --record-costs,
 --shard, --help and -h are its own.
   --serial          everything, in one process (what a shard failure is debugged in)

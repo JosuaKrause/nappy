@@ -42,7 +42,8 @@ const REGIONS_PATH := BAKED_ROOT + "regions.json"
 ## Which group every picture belongs to, its lifetime and its padding kind. Checked in, and the
 ## one file a new consumer edits.
 const MEMBERSHIP_PATH := "res://assets/atlases/membership.json"
-## Where a PNG transfer stands in for an authored SVG, the same mapping `TextureResolver` uses.
+## Where a PNG transfer stands in for an authored SVG. Read by the bake alone; the running game
+## never sees a constituent picture.
 const ILLUSTRATED_ROOT := "res://assets/illustrated/svg-transfer/"
 
 ## The safe upper bound for one canvas texture's side on a phone.
@@ -111,9 +112,9 @@ static func region_name_for(source_path: String) -> StringName:
 		path = path.left(path.length() - extension.length() - 1)
 	return StringName(path)
 
-## The illustrated PNG that stands in for an authored SVG, or "" for anything else — the same
-## mapping `TextureResolver.resolve()` applies at runtime, so a baked picture is the picture the
-## game draws today. Existence and size are the caller's to check.
+## The illustrated PNG that stands in for an authored SVG, or "" for anything else. **The default
+## bake is what chooses between the two**, once, before the game runs: the transfer where one
+## exists and the SVG's own raster where none does. Existence and size are the caller's to check.
 static func illustrated_path_for(source_path: String) -> String:
 	var path := source_path
 	if not path.begins_with("res://"):

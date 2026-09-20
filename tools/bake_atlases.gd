@@ -6,10 +6,11 @@ extends SceneTree
 ## `tools/bake-atlases.sh` is the entry point anybody should use; it decides whether this needs
 ## to run at all. Run it directly and it always bakes.
 ##
-## **The presentation mode is the bake's.** By default a member with an illustrated PNG beside
-## it is baked from that PNG and everything else from its SVG's raster, which is exactly what
-## `TextureResolver.resolve()` chooses at runtime today; `--svg` bakes the SVG rasters alone and
-## is the custom local build, never the release.
+## **The presentation mode is the bake's, and there is no other.** By default a member with an
+## illustrated PNG beside it is baked from that PNG and everything else from its SVG's raster;
+## `--svg` bakes the SVG rasters alone and is the custom local build, never the release. Nothing
+## in the running game chooses between them — the pixels on the page are the ones the build
+## chose.
 ##
 ## **Every picture goes through `Image.load_svg_from_buffer()` at scale 1.0 and
 ## `fix_alpha_edges()`**, which is what the import pass does to the same file — `svg/scale=1.0`
@@ -197,9 +198,9 @@ func _member_image(member: String) -> Image:
 	if transfer == null:
 		return null
 	if transfer.get_size() != authored.get_size():
-		# `TextureResolver.resolve()` falls back to the SVG here with a warning, so an
-		# unfinished art drop cannot change the presentation geometry mid-run. A bake is not
-		# mid-run: the mismatch is committed, and failing is what gets it looked at.
+		# A mis-sized transfer is a committed mistake rather than a picture to skip: the game
+		# has no second copy to fall back to, so a page baked around the wrong canvas would
+		# move an anchor in every frame that draws it. Failing is what gets it looked at.
 		_failures.append("illustrated transfer is %s and its source %s is %s: %s"
 				% [transfer.get_size(), member, authored.get_size(), illustrated])
 		return null

@@ -13,7 +13,7 @@
 # tools/test.sh is deliberately not asserted against an unknown flag here in general: it forwards
 # anything that is not --serial/--plan/--record-costs/--shard/--help/-h straight to the test scene
 # as either a suite-name substring or a flag the scene itself reads off
-# OS.get_cmdline_user_args() (`--svg` is a real, documented example) -- there is no fixed list to
+# OS.get_cmdline_user_args() -- there is no fixed list to
 # validate that free-text surface against, so only its --help path is checked there. --shard and
 # --record-costs are its own recognised flags with their own shape to get wrong, though, and both
 # validate before the import pass that would otherwise touch the Godot stub -- so their malformed

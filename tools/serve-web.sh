@@ -43,7 +43,7 @@ usage: tools/serve-web.sh [--help|-h] [port]
 
 Exports a debug Web build and serves build/web/ over plain HTTP. port defaults to 8060.
 OS.is_debug_build() is true in the served build, so a browser-side dev flag reachable through
-the page's own query string -- ?svg=1, ?layers=1,3, ?controls=, ?escape=1 -- answers; see
+the page's own query string -- ?debug=1, ?layers=1,3, ?controls=, ?escape=1 -- answers; see
 README.md's "Dev flags" section for what each one does.
 
   tools/serve-web.sh

@@ -1,6 +1,5 @@
 extends RefCounted
-## The "decoration" `AtlasLibrary` group — props, litter and city decals — moved off individually
-## preloaded textures and off the runtime packer `TextureAtlas`. `tests/test_atlas_library.gd`
+## The "decoration" `AtlasLibrary` group — props, litter and city decals. `tests/test_atlas_library.gd`
 ## already covers the atlas contract every group shares (every member baked, no two regions
 ## overlap, geometry answered with nothing acquired, a page arriving and leaving with its
 ## references); this suite covers what is specific to this family: a prop's shadow reads its size

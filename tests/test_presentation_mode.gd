@@ -1,8 +1,12 @@
 extends RefCounted
-## Focused contracts for the default PNG presentation, the explicit SVG override, and
-## `readout_requested()` — the release-safe query flag M133, "the readout on the live page", adds
-## beside it. All three are parsed the same shape: a bare command-line flag or a `?name=1` query
-## parameter, read without `DevFlags.enabled()`'s own gate.
+## Focused contracts for `readout_requested()` — the release-safe query flag M133, "the readout on
+## the live page", adds — and for the two flags parsed beside it. Each is read the same shape: a
+## bare command-line flag or a `?name=1` query parameter, without `DevFlags.enabled()`'s own gate.
+##
+## **The presentation mode is not one of them any more.** A build is whichever mode the atlases
+## were baked in (`AtlasLibrary.bake_mode()`), so there is nothing at runtime left to select: the
+## release is always the default PNG bake and `tools/bake-atlases.sh --svg` is the custom local
+## one.
 ##
 ## `--skip`/`?skip=` (M124, "the desktop half", turned into a phone-readable flag) is parsed the
 ## same release-safe way but carries a validated word set rather than a bare `1`, and is honoured
@@ -15,10 +19,7 @@ extends RefCounted
 ## without that parameter, not a runtime `readout_requested()` a test has no web query to drive.
 
 func run(t) -> void:
-	_test_command_line_defaults_to_png(t)
-	_test_command_line_svg_override(t)
-	_test_query_defaults_to_png(t)
-	_test_query_svg_override_is_independent_of_debug_build(t)
+	_test_the_bake_alone_decides_the_presentation(t)
 	_test_readout_requested_true_for_the_documented_query_shapes(t)
 	_test_readout_requested_false_for_everything_else(t)
 	_test_readout_requested_does_not_move_enabled(t)
@@ -32,29 +33,18 @@ func run(t) -> void:
 	_test_seed_from_query_refuses_non_positive_and_malformed_values(t)
 	_test_the_physics_tick_is_pinned_to_thirty_with_interpolation_on(t)
 
-func _test_command_line_defaults_to_png(t) -> void:
-	t.check(not DevFlags._svg_from_args(PackedStringArray()),
-		"no command-line modifier leaves PNG graphics selected")
-	t.check(not DevFlags._svg_from_args(PackedStringArray(["--svg=1"])),
-		"the explicit command-line spelling is a bare --svg flag")
-
-func _test_command_line_svg_override(t) -> void:
-	t.check(DevFlags._svg_from_args(PackedStringArray(["--svg"])),
-		"--svg selects the authored SVG presentation")
-
-func _test_query_defaults_to_png(t) -> void:
-	t.check(not DevFlags._svg_from_query(""),
-		"an absent URL parameter leaves PNG graphics selected")
-	t.check(not DevFlags._svg_from_query("?svg=0"),
-		"svg=0 leaves PNG graphics selected")
-	t.check(not DevFlags._svg_from_query("?seed=1&svg=yes"),
-		"only the documented URL value selects SVG")
-
-func _test_query_svg_override_is_independent_of_debug_build(t) -> void:
-	t.check(DevFlags._svg_from_query("?svg=1"),
-		"?svg=1 selects SVG without a debug-build gate")
-	t.check(DevFlags._svg_from_query("?seed=1&svg=1&day=2"),
-		"the SVG parameter is found among other URL parameters")
+## The presentation is decided before the game runs and cannot be moved from inside it. Stated as
+## two facts a reader can check rather than as the absence of a flag: the bake names the mode it
+## wrote, and the dev-flag table — the one manifest `tools/lib_dev_flags.sh` validates against —
+## carries no way to ask for the other one.
+func _test_the_bake_alone_decides_the_presentation(t) -> void:
+	var mode := AtlasLibrary.bake_mode()
+	t.check(mode == "png" or mode == "svg",
+		"the region table names the bake the tree carries (got '%s')" % mode)
+	var table := FileAccess.get_file_as_string("res://src/dev/dev_flags.gd")
+	t.check(table.contains("DEV_FLAG_TABLE"), "the dev-flag table is where this reads it from")
+	t.check(not table.contains("--svg"),
+		"no dev flag asks for a presentation the bake did not write")
 
 func _test_readout_requested_true_for_the_documented_query_shapes(t) -> void:
 	t.check(DevFlags._readout_from_query("?debug=1"),

@@ -68,11 +68,10 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 	GameState.player_is_male = saved
 
 ## Every path the rig can draw is a name the bake actually knows — the completeness check
-## `assets/atlases/membership.json` wants, now that the rig reaches its pictures through
-## `AtlasLibrary` rather than through `TextureAtlas`/`TextureResolver`. **Which page each one is
-## on is `tests/test_atlas_loading.gd`'s**, since that is a claim about what a run loads rather
-## than about the presentation choice this suite is for; the pixel-for-pixel claim that a baked
-## region is today's picture is `tests/test_atlas_library.gd`'s.
+## `assets/atlases/membership.json` wants. **Which page each one is on is
+## `tests/test_atlas_loading.gd`'s**, since that is a claim about what a run loads rather than
+## about the presentation choice this suite is for; what the pixels of a region owe their caller
+## is `tests/test_visuals.gd`'s.
 func _test_every_family_source_is_a_baked_region(t) -> void:
 	var sources := Stroller.family_sources()
 	t.check(not sources.is_empty(), "the family exports at least one source")

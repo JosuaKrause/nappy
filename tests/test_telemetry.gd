@@ -54,8 +54,6 @@ func run(t) -> void:
 	_test_steady_frames_write_no_spike_line(t)
 	_test_two_spikes_in_one_second_write_only_the_worse_one(t)
 	_test_no_spike_line_with_the_flag_off(t)
-	_test_a_late_picture_load_names_itself_in_the_spike_line(t)
-	_test_an_atlas_says_when_it_arrived_and_when_it_went(t)
 	_test_a_baked_page_says_which_moment_loaded_it(t)
 
 # ------------------------------------------------------------------ dormancy ---
@@ -1340,87 +1338,6 @@ func _test_no_spike_line_with_the_flag_off(t) -> void:
 	observer._player.free()
 	observer._city.free()
 	observer.free()
-
-## `TextureResolver.load_count()` is what M147's spike context reads, so this bumps the real
-## counter — `resolve()` on a texture whose PNG transfer exists, the same one `test_visuals.gd`
-## checks against — rather than adding a test-only setter to production code for a single call.
-func _test_a_late_picture_load_names_itself_in_the_spike_line(t) -> void:
-	Telemetry.begin_memory_log()
-	# After `_spike_rig()`, not before, and the reset below rather than trust: building the real
-	# `City` scene is the loudest thing in this suite, and the exact-one-load assertion needs
-	# `load_count()` to start at nought whatever it did.
-	var observer := _spike_rig(t)
-	TextureResolver.reset_for_tests(false)
-	_feed_frames(observer, _steady_frames(10, 0.02))
-	var transfer_texture := TextureResolver.resolve(preload("res://assets/rig/mother_side_a.svg"))
-	t.check(transfer_texture != null and TextureResolver.load_count() == 1,
-			"the resolve call actually loaded one transfer before the spike frame")
-	_feed_frames(observer, [0.1])
-	_feed_frames(observer, _steady_frames(36, 0.02))
-
-	var spikes := _spike_lines(t)
-	t.check(spikes.size() == 1,
-			"the picture load lands inside the one spike line this second wrote (got %d)"
-			% spikes.size())
-	if not spikes.is_empty():
-		t.check(spikes[0].contains("1 pictures loaded"),
-				"the spike line names the transfer loaded since the previous frame (got '%s')"
-				% spikes[0])
-
-	observer._player.free()
-	observer._city.free()
-	observer.free()
-	TextureResolver.reset_for_tests(DevFlags.svg_requested())
-
-## An atlas is a load and a release the run log has to be able to answer for. *(2026-09-15:
-## "make sure telemetry records when a texture is loaded/unloaded" — "atlas or not" — "ideally
-## with timing information".)* Without a line each way, a run where a group arrived a second late
-## reads exactly like one where it was ready before the first draw.
-##
-## Filtered to the lines naming this group rather than counting every `texture` line: any other
-## picture the process resolves is a `texture` line of its own and is the other half of what the
-## kind is for.
-##
-## **Two `ImageTexture`s built here rather than two event pictures.** The pair used to be
-## `EventInstance.MOUSE` and `MOUSE_B`, which are repository paths now that the events draw from
-## the baked `events` page. What this test asks is whether a group's arrival and departure each
-## write one line, and a group of two solid squares answers it exactly as a group of two mice did
-## — with nothing to go stale the next time a family moves off this packer.
-func _test_an_atlas_says_when_it_arrived_and_when_it_went(t) -> void:
-	Telemetry.begin_memory_log()
-	TextureAtlas.reset_for_tests()
-	var first_image := Image.create(12, 10, false, Image.FORMAT_RGBA8)
-	first_image.fill(Color.RED)
-	var first := ImageTexture.create_from_image(first_image)
-	var second_image := Image.create(7, 14, false, Image.FORMAT_RGBA8)
-	second_image.fill(Color.BLUE)
-	var second := ImageTexture.create_from_image(second_image)
-	TextureAtlas.request("test_group", {first: first, second: second})
-	TextureAtlas.collect("test_group", true)
-	TextureAtlas.release("test_group")
-	var ready_lines: Array[String] = []
-	var released_lines: Array[String] = []
-	for line: String in Telemetry.current_log().lines:
-		if not line.contains("atlas test_group"):
-			continue
-		if line.contains("released"):
-			released_lines.append(line)
-		else:
-			ready_lines.append(line)
-	Telemetry.end_run()
-	TextureAtlas.reset_for_tests()
-
-	t.check(ready_lines.size() == 1, "collecting a group writes exactly one texture line (got %d)"
-			% ready_lines.size())
-	t.check(released_lines.size() == 1, "and releasing it writes exactly one (got %d)"
-			% released_lines.size())
-	for line in ready_lines + released_lines:
-		t.check(line.substr(6, 2) == "  " and line.contains("texture"),
-				"the atlas line is an ordinary texture entry (got '%s')" % line)
-		t.check(line.contains(" ms"), "and carries a millisecond figure (got '%s')" % line)
-	for line in ready_lines:
-		t.check(line.contains("2 pictures"),
-				"the ready line says how many pictures the group holds (got '%s')" % line)
 
 ## A baked page says which of the two sanctioned moments it was read from disk in, how long the
 ## read took and how big the page is — the line a reader scans to answer "did anything load in a
