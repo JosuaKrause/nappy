@@ -7,7 +7,7 @@ boxes, no "Done:" paragraphs, no branch names or status words in headings here.
 
 Read [HANDOFF.md](HANDOFF.md) first for the state of the tree.
 
-Each milestone is one git branch, merged to `main` with `--no-ff`. `[~]` marks an item somebody is
+Each milestone is one git branch, squash-merged to `main` through its pull request. `[~]` marks an item somebody is
 mid-way through.
 
 ---
