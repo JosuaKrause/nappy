@@ -1111,18 +1111,30 @@ under their own body text reading the run's length as `%d:%02d.%03d`, to the mil
 `GameState.format_clock()` is the one place that format is written, so a second clock reading to
 the millisecond calls it rather than carrying a second copy of the string.
 
-## The escape, which is not a day
+## The escape, which is the run's ending
 
-The walk out of the building and out of the city — behind `--start-escape` — is a fifteenth walk
-that is not a day: no route to a calm area and home, but one way out, played in two sections that
-each open with one hint line and **share one clock**.
+The walk out of the building and out of the city is the fifteenth and sixteenth walks of a run:
+no route to a calm area and home, but one way out, played in two sections — the building and the
+city — that are **each a day of their own**, with a day's brief, a day's clock and a checkpoint at
+the brief.
 
-**One clock, `Tuning.FINALE_LENGTH_SECONDS`, which is a day's own length.** It counts down through
-both sections and walking out of the service exit does not restart it, because the sequence is one
-walk with a door in the middle of it. `FinaleController` owns a `DayController` rather than being a
-second one: the countdown, the three losing paths, the `EventBus.day_time_changed` the HUD draws
-from, and `--invincible` standing the clock still are all a day's already and none of them change.
-What the escape does differently is only what happens at the end of one.
+**It is where a won run ends.** A day 14 that is won with every task complete — `GameState
+.earned_good_ending()`, `Tuning.RESISTANCE_GOAL` errands run *and* the last night's sabotage
+performed, the same pair that has always decided the good ending — goes on from its own summary to
+the building instead of to the ending screen. A won day 14 without them keeps the neutral ending it
+has. Nothing about the run is recorded as finished on the way in: `GameState.finish_day()` is not
+called until she is out of the city, so the run has no `ending` and its save stays on disk for the
+whole escape, which is what the checkpoints come back to. `--start-escape` reaches the same
+sequence directly, with a fresh run behind it, so it can be walked without playing fourteen days
+first.
+
+**A full clock per section, `Tuning.FINALE_LENGTH_SECONDS`, which is a day's own length.** Each
+brief starts one, so the time spent walking down three floors is not time the city has lost: at the
+service door the building's clock stops and the city's brief starts its own.
+`FinaleController` owns a `DayController` rather than being a second one: the countdown, the three
+losing paths, the `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the
+clock still are all a day's already and none of them change. What the escape does differently is
+only what happens at the end of one.
 
 **The clock reads to the millisecond** — `%d:%02d.%03d` through `GameState.format_clock()`, in
 place of a day's `%d:%02d` — and nothing else about it changes. Milliseconds ticking make the same
@@ -1131,16 +1143,24 @@ countdown read as faster, which is the whole of the reason.
 **A lost section starts again where it began, and costs no Nerve.** Being taken, the meter reaching
 100 and the clock running out are the same three losses a day has, and every one of them puts her
 back at the start of the section she was in — the hallway outside her own door, or the service exit
-— with the clock at full length, the baby asleep with sleepiness full again, and `GameState`
-untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes; at zero the
-way out is gone, and what she does about it is walk it again.
+— with a fresh clock, the baby asleep with sleepiness full again, and `GameState` untouched. A
+fourteen-day run is never thrown by one wrong turn in the last minutes; at zero the way out is
+gone, and what she does about it is walk it again.
 
-**And it comes up on the brief screen first**, for the building and for the city alike — the same
-screen between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled with
-the section's own line, *"Escape the apartment"* or *"Exit the city"*, and carrying the Nerve count
-unchanged, because a lost section spends none. Continuing from it is the moment the section
-actually begins: the clock stays stopped where the loss left it until then. A retry that dropped
-her straight back on the hallway floor gave her no moment to see what had happened.
+**Every section opens on its brief**, a first walk through it and a retry alike — the same screen
+between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled *"Escape the
+building"* or *"Escape the city"* where a day's number stands, and carrying the Nerve count
+unchanged, because nothing here spends one. Continuing from it is the moment the section actually
+begins: the clock starts there and nowhere else, and the section's one hint line is said by the
+HUD as she starts walking. A retry is not told that line a second time, the way day 1 teaches
+tapping and then never again.
+
+**And the brief is the checkpoint a closed game comes back to.** A save is written as each brief
+comes up, carrying which section it is (`GameState.escape_section`, written beside the day-under-
+way flag rather than inside the run snapshot, so a save from before the escape existed still
+loads), and opening the game again puts that section's brief back up with a whole clock behind it
+— the same way closing a game mid-day comes back to that day's brief. Nothing about the escape is
+ever a day under way, so no nerve is charged for leaving one.
 
 **Section one is a route with the first turn already taken.** A fallen ceiling fills the top
 floor's hallway between her own door and the right stair door, both rows of it
@@ -1184,9 +1204,9 @@ three of them never fall into a rhythm. A blow shuts its cell outright for
 `Tuning.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
 open as walking through the vent's reach costs. Waiting is the answer; there is no line past one.
 
-**Two hint lines, said once each**, the way day 1 teaches tapping and then never again:
-*"Escape the apartment"* at the start of the first section and *"Exit the city"* at the service
-exit. A retry is not told either of them a second time.
+**Two hint lines, said once each** as she starts walking a section she has not walked before:
+*"Escape the building"* and *"Escape the city"* — the same words that head each section's brief,
+so the line on the screen and the line in the HUD are one instruction rather than two.
 
 **Section two is the city she knows with the men in it.** Army trucks, unmarked vans and
 roadblocks at full resistance progress stand on every street either chain walks. A roadblock is a
@@ -1267,8 +1287,9 @@ run and the day, never the moment inside one (PLAYTEST-82).
 
 **A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
-history has moved, where she settled each day and the run's clock — plus one fact the run does not
-know about itself: whether a day was under way when the file was written. Her position and heading,
+history has moved, where she settled each day and the run's clock — plus two facts the run does not
+know about itself: whether a day was under way when the file was written, and which section of the
+escape it is in, if any (see "The escape, which is the run's ending"). Her position and heading,
 the meter and the sleepiness, the day's own clock, every event instance and the crowd are not
 saved; the city and each day's plan need none of this either, since both are functions of the seed
 and the day. Recording the moment itself would have to carry the crowd, every event instance and
@@ -1278,9 +1299,11 @@ satisfies at dawn instead.
 
 **Opening a game whose save says a day was under way loses that day**, through the same code path
 an ordinary lost day takes: one nerve, the resistance given back, the same day again, the last
-nerve ending the run exactly as it does there. **The title comes up on every boot**, with the
-street outside her own front door running behind it exactly as it does for a fresh run; pressing
-start with a save on disk brings up the day brief instead of starting the day outright — the
+nerve ending the run exactly as it does there. **The title comes up on every boot of a day**, with
+the street outside her own front door running behind it exactly as it does for a fresh run; a save
+written inside the escape opens on that section's own brief instead, since the escape has no city
+day behind a title to run. Pressing start with a save on disk brings up the day brief instead of
+starting the day outright — the
 screen `DaySummary` draws between days, carrying the day, the nerves and the resistance's own
 pending brief, plus the line that a day was lost to leaving it when the load itself charged the
 nerve above. Continuing from the day brief is the moment the day actually starts, and the moment

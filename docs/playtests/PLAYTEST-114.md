@@ -34,6 +34,17 @@ and fixes nothing. The player's answer:
 
 That is M175, a row states what it costs, and the cost table is checked in, in `TODO.md`.
 
+The entry's first draft put the table's columns at each row's own radii — "at `inner_radius`,
+and at even steps out to `outer_radius`". The player, quoting that:
+
+> "this one will get stale if the radii change. either also write down the radii or do
+> computations at fixed distances across all objects (each column represents the same distance
+> for every object) -- that way we can get the real impact and not the relative impact
+> dependent on the object"
+
+Both halves are taken: the columns are fixed distances shared by every row, and each row's
+radii and falloff are written on its line as well.
+
 ## What the repository says
 
 **The player is right, and the record names the change.** `homeless_yeller`'s intensity has

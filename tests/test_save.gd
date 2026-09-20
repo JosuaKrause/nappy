@@ -31,6 +31,8 @@ func run(t) -> void:
 	_test_incomplete_state_is_dropped(t)
 	_test_clear_deletes_the_file(t)
 	_test_write_refuses_once_the_run_has_ended(t)
+	_test_the_escape_section_survives_a_round_trip(t)
+	_test_a_save_from_before_the_escape_still_loads(t)
 
 	_test_day_under_way_load_costs_one_nerve(t)
 	_test_day_under_way_load_on_the_last_nerve_ends_the_run(t)
@@ -51,6 +53,10 @@ func run(t) -> void:
 	GameSave.clear()
 	GameSave.set_path_override("")
 	GameState.restore_snapshot(baseline)
+	# `restore_snapshot()` writes every field the *snapshot* carries, and the escape's own section
+	# is deliberately not one of them — see `_SAVED_OUTSIDE_THE_SNAPSHOT` — so this suite has to
+	# put it back by hand or the next one starts in the middle of an escape.
+	GameState.escape_section = FinaleController.Section.NONE
 
 # ---------------------------------------------------------------------- policy ---
 
@@ -95,6 +101,18 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 
 # ------------------------------------------------------------------- round trip ---
 
+## Every field a run holds that the save file does not carry inside its `"state"` object, and why
+## each is somewhere else instead. **One entry, and adding a second is a decision rather than a
+## convenience**: this list is the only way a field can be added to `GameState` and not be saved
+## without the check below going red, which is the whole thing that check exists for.
+##
+## `escape_section` — which half of the escape a run is in — rides at the *top* level of the save
+## beside `"day_under_way"`, because `GameState.snapshot_is_complete()` refuses a `"state"` missing
+## any field this build writes: inside the snapshot it would have made every save written before
+## the escape existed unreadable, for the sake of one int. `_test_a_save_from_before_the_escape_
+## still_loads()` is what holds that.
+const _SAVED_OUTSIDE_THE_SNAPSHOT := ["escape_section"]
+
 ## The guard the brief asks for: a field added to `GameState` later and forgotten in
 ## `GameState._SAVE_FIELDS` fails here rather than quietly not being saved. `PROPERTY_USAGE_
 ## SCRIPT_VARIABLE` is what separates a field this script actually declares from the base `Node`
@@ -111,6 +129,8 @@ func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 	for name in GameState._SAVE_FIELDS:
 		listed_set[name] = true
 	for name in declared:
+		if name in _SAVED_OUTSIDE_THE_SNAPSHOT:
+			continue
 		t.check(listed_set.has(name),
 				"'%s' is a GameState field the save format does not mention" % name)
 	for name in GameState._SAVE_FIELDS:
@@ -247,6 +267,58 @@ func _test_write_refuses_once_the_run_has_ended(t) -> void:
 	t.check(not GameSave._write_now(true), "a write refuses once the run has an ending")
 	t.check(not GameSave.has_save(), "and touches no file at all")
 	GameState.ending = ending
+
+## Closing the game inside a section of the escape and opening it again comes back to that
+## section's own brief, which is `GameState.escape_section` surviving the file — the same
+## mechanism a day under way already rides on, and deliberately the same one rather than a second
+## save path beside it.
+func _test_the_escape_section_survives_a_round_trip(t) -> void:
+	GameState.start_run(313131)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.escape_section = FinaleController.Section.CITY
+	t.check(GameSave._write_now(false), "a section of the escape writes a save")
+	# Wiped the way a fresh process would find it, so what is read back has to come off the file.
+	GameState.start_run(1)
+	t.check(GameState.escape_section == FinaleController.Section.NONE,
+			"a fresh run is in no section (the check below would pass vacuously otherwise)")
+	t.check(not GameSave._read_now().is_empty(), "and the file resumes")
+	t.check(GameState.escape_section == FinaleController.Section.CITY,
+			"onto the section it was closed in, not the start of the escape")
+	t.check(GameState.run_seed == 313131, "with the run it belonged to")
+	GameSave.clear()
+
+## **A save written before the escape was a run's ending still loads.** `"escape_section"` is a
+## top-level key rather than a field of the run snapshot exactly so this holds: a file with no
+## mention of it at all is a complete save (`GameState.snapshot_is_complete()` asks only about
+## `"state"`) and resumes to a run in no section, which is every one of the fourteen days.
+##
+## The payload is assembled here rather than pasted from a real old file, so it stays a save of
+## *this* build's snapshot shape with only the new key missing — which is the thing that has to
+## keep working, and the only part of an older file that differs.
+func _test_a_save_from_before_the_escape_still_loads(t) -> void:
+	GameState.start_run(424242)
+	GameState.day = 9
+	GameState.nerves = 3
+	var old_shape := JSON.stringify({
+		"format_version": GameSave.FORMAT_VERSION,
+		"build": "a build from before the escape",
+		"day_under_way": true,
+		"state": GameState.save_snapshot(),
+	})
+	t.check(not old_shape.contains("escape_section"),
+			"the payload really is one with no escape section in it")
+	GameState.start_run(1)
+	GameState.escape_section = FinaleController.Section.BUILDING
+	_write_raw(old_shape)
+	var resumed := GameSave._read_now()
+	t.check(not resumed.is_empty(), "a save with no escape section still resumes")
+	t.check(GameState.run_seed == 424242 and GameState.day == 9 and GameState.nerves == 3,
+			"with every field it does carry")
+	t.check(bool(resumed.get("day_under_way", false)),
+			"and the day-under-way flag beside it, unchanged")
+	t.check(GameState.escape_section == FinaleController.Section.NONE,
+			"and the run is in no section, rather than keeping whatever was in memory")
+	GameSave.clear()
 
 # ------------------------------------------------------------- the lost-day path ---
 

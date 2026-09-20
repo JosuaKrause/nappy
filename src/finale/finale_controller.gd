@@ -1,6 +1,6 @@
 class_name FinaleController
 extends Node
-## The escape, as a sequence: the building, then the city, on one clock.
+## The escape, as a sequence: the building, then the city, each of them a day of its own.
 ##
 ## **It is not a day and it is not a second `DayController`.** Everything a day's clock already
 ## does is exactly what the finale wants — count down, emit `EventBus.day_time_changed` so the HUD
@@ -14,9 +14,16 @@ extends Node
 ## would have to disable the home win, the calendar and the Nerve, which is more of that file than
 ## this whole class is.
 ##
-## **The clock is one clock for both sections.** Walking out of the service exit does not restart
-## it; only a loss does. At zero the way out is gone — the bridge or the tunnel collapses, or
-## something of that shape — and the section restarts like any other loss.
+## **Each section gets a full clock of its own, because each section is a day.** *"180s per
+## section"*: the building and the city each start `length()` on the screen the section opens on,
+## so the time spent walking down three floors is not time the city has lost. At zero the way out
+## is gone — the bridge or the tunnel collapses, or something of that shape — and the section
+## starts again from its own brief.
+##
+## **The clock is started by the brief, never by entering a section.** `begin()`, `enter_city()`
+## and `restart_section()` all say only *this section is about to be walked*; `start_section()` is
+## what the continue on the brief screen reaches, so the countdown cannot spend itself behind a
+## screen the player has not dismissed yet.
 ##
 ## **Where she is put is `main`'s**, not this class's: this says *which section is starting* and
 ## `main` answers with the hallway or the service exit, because only `main` holds the building and
@@ -27,14 +34,15 @@ extends Node
 ## cross-script enum is not the same type as itself as a parameter — see the **godot** skill.
 enum Section { NONE, BUILDING, CITY }
 
-## A section has begun, fresh or restarted: `main` puts her at its own start and says its hint
-## line. `restarted` is false the first time each section is entered and true for every retry.
+## A section is about to be walked, fresh or restarted: `main` puts her at its own start and raises
+## the section's brief over it. `restarted` is false the first time each section is entered and
+## true for every retry. **The clock is not running yet** — `start_section()` is what the brief's
+## own continue reaches.
 signal section_started(section: int, restarted: bool)
-## A section has been lost — taken, the meter at 100, or the clock at zero — and **nothing has
-## started again yet**. *(2026-09-19: "restarting should still have the day brief for both the
-## apartment escape and the city escape even if the nerves don't go down.")* `main` puts the brief
-## screen up; `restart_section()` is what the continue on that screen reaches, and until it does
-## the clock stays stopped where the loss left it.
+## A section has been lost — taken, the meter at 100, or the clock at zero. *(2026-09-19:
+## "restarting should still have the day brief for both the apartment escape and the city escape
+## even if the nerves don't go down.")* `main` records what happened and then calls
+## `restart_section()`, which raises that section's brief again with a fresh clock behind it.
 signal section_lost(section: int)
 ## She has reached the tunnel mouth or the bridge deck. `exit_kind` is a `CityEdge.Kind`.
 signal escaped(exit_kind: int)
@@ -59,27 +67,35 @@ func _ready() -> void:
 	_clock.setup(null, null)
 	_clock.day_finished.connect(_on_section_lost)
 
-## How long the whole sequence runs. `--day-length` compresses it exactly as it compresses a day,
-## so a rig can reach the timeout without sitting through three minutes; there is no finale-only
-## flag, because the question the flag answers is the same one.
+## How long **one section** runs — a day's own length, since each section is a day.
+## `--day-length` compresses it exactly as it compresses a day, so a rig can reach the timeout
+## without sitting through three minutes; there is no finale-only flag, because the question the
+## flag answers is the same one.
 static func length() -> float:
 	var override := DevFlags.day_length_override()
 	return override if override > 0.0 else Tuning.FINALE_LENGTH_SECONDS
 
-## Starts the sequence at `at_section` — `BUILDING` for the ordinary run through the escape, `CITY`
-## for a rig booted straight onto the street. Starts the clock; `enter_city()` below does not.
+## Starts the sequence at `at_section` — `BUILDING` for a run that has handed over to the escape,
+## `CITY` for a rig booted straight onto the street, or for a game closed on the street and opened
+## again. The clock is not started here: the brief this raises is what starts it.
 func begin(at_section: int) -> void:
 	is_over = false
 	section = at_section
-	_clock.start(length())
 	section_started.emit(section, false)
 
-## The service exit, reached: the second section begins on the clock the first one has been
-## spending. Deliberately not `begin()` — a sequence with one clock cannot restart it half way
-## through, which is the whole of what "one clock counting through both sections" means.
+## The service exit, reached: the second section begins, and it begins the way the first one did —
+## on its own brief, with its own full clock once that brief is dismissed. The building's clock
+## stops at the door because `start_section()` is the only thing that ever sets one running, and
+## the city's brief is what reaches it next.
 func enter_city() -> void:
 	section = Section.CITY
 	section_started.emit(section, false)
+
+## The section actually begins: a full clock, from the continue on its own brief. Called for a
+## first walk through a section and for a retry alike — *"180s per section"*, so nothing a previous
+## section or a previous attempt spent is carried in.
+func start_section() -> void:
+	_clock.start(length())
 
 ## Capture, the meter at 100 and the clock at zero all arrive here, because all three are a day's
 ## own losing paths and `DayController` already tells them apart. Every one of them ends the
@@ -88,21 +104,22 @@ func enter_city() -> void:
 ##
 ## **It does not start the section again.** A lost day shows the screen between days before the
 ## next one begins, and a lost section owes the same pause — so this only says what happened, and
-## the brief screen's own continue reaches `restart_section()` below. The clock is left stopped
-## where the loss left it in the meantime: `DayController` has already put its phase at `OVER`, and
-## the screen pauses the tree anyway.
+## `main` answers by writing the loss down and calling `restart_section()` below, which raises that
+## section's brief. The clock stays stopped where the loss left it until that brief is dismissed:
+## `DayController` has already put its phase at `OVER`.
 func _on_section_lost(_result: GameEnums.DayResult) -> void:
 	if is_over:
 		return
 	section_lost.emit(section)
 
-## The same section again, from its own start, with the clock back at full length — what the brief
-## screen's continue reaches. `section_started` fires with `restarted` true, so `main` puts her
-## back at the start and says no hint line, exactly as it did when this was the whole of a loss.
+## The same section again, from its own start — what a loss leads to. `section_started` fires with
+## `restarted` true, so `main` puts her back at the start and raises the brief without repeating
+## the hint line she was already given on the way in. The clock is put back to full by
+## `start_section()`, from that brief's own continue, so a retry cannot begin behind the screen
+## announcing it.
 func restart_section() -> void:
 	if is_over:
 		return
-	_clock.start(length())
 	section_started.emit(section, true)
 
 ## Where the two ways out of the city stand — the last walkable tile of the spine at each end of
