@@ -1126,9 +1126,65 @@ back at the start of the section she was in — the hallway outside her own door
 untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes; at zero the
 way out is gone, and what she does about it is walk it again.
 
+**And it comes up on the brief screen first**, for the building and for the city alike — the same
+screen between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled with
+the section's own line, *"Escape the apartment"* or *"Exit the city"*, and carrying the Nerve count
+unchanged, because a lost section spends none. Continuing from it is the moment the section
+actually begins: the clock stays stopped where the loss left it until then. A retry that dropped
+her straight back on the hallway floor gave her no moment to see what had happened.
+
+**Section one is a route with the first turn already taken.** A fallen ceiling fills the top
+floor's hallway between her own door and the right stair door, both rows of it
+(`InteriorMap.TOP_FLOOR_RUBBLE`), so the right stairwell cannot be entered on that floor at all and
+the only flight down is the left one — which is the shaft the fire is in
+(`InteriorEvents._BURNING_SIDE`, fixed rather than rolled, since a fire on the shut side would
+leave her nothing). Getting past the fire means stepping through the nearest corridor door and
+walking to the other end of that hallway, which is why the two stair doors are at opposite ends;
+the right shaft it leads to is where the masked man is.
+
+**And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
+of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
+as she is in the building. The answer is the one the row is built around — step through the
+nearest corridor door and let him pass — and it stays available because from every cell of his
+line a door is well under the three and a half seconds he spends standing still before he moves.
+So the side she switched to is not a side she can settle on, which is the whole point of him: the
+way down is a sequence of crossings rather than one.
+
+**The night outside is light and noise, and they are separate things.** Every
+`Tuning.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
+hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS`, and the meter takes the
+hit, wherever she is standing. Between those, far more often, a distant flash lights the same
+windows the same way and does nothing else at all — no event, no field, nothing on the meter. A
+shelled city is what she can see out of the window; what she is charged for is only what is close
+enough to hear.
+
+**Every window flashes together, always** — near bang or far flash, one call and no way to light a
+subset, because a window lighting while the one beside it stays dark reads as a broken sprite
+rather than as a city under fire. The waits between distant flashes are a short-biased smooth
+draw on `[Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS, _MAX_SECONDS]` (0.1s to 5s) with its mean at
+`_MEAN_SECONDS` (1.3s), taken from the section's own seeded stream so a seed replays the same
+night: mostly quick double-taps, with the occasional long dark gap. Two flashes close enough to
+overlap run together as one longer one rather than blinking.
+
+**And the basement is three gates on three clocks.** The corridor jogs between three brick-walled
+bands and is one tile wide at three places on the way to the service exit
+(`InteriorMap.BASEMENT_NARROWS`), each of them a cell the walk cannot go round. A steam vent
+stands on each, in the same place every attempt, blowing on its own period out of
+`Tuning.FINALE_STEAM_PERIODS` — 4, 4.5 and 5.5 seconds, pairwise coprime in half-seconds, so the
+three of them never fall into a rhythm. A blow shuts its cell outright for
+`Tuning.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
+open as walking through the vent's reach costs. Waiting is the answer; there is no line past one.
+
 **Two hint lines, said once each**, the way day 1 teaches tapping and then never again:
 *"Escape the apartment"* at the start of the first section and *"Exit the city"* at the service
 exit. A retry is not told either of them a second time.
+
+**Section two is the city she knows with the men in it.** Army trucks, unmarked vans and
+roadblocks at full resistance progress stand on every street either chain walks. A roadblock is a
+barrier with a guard standing at it from the moment it is placed; when he notices her **he** comes
+for her, on foot, and the barrier he leaves stays drawn and stays shut across the road behind him.
+What takes the baby is his own reach (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man
+on the stairs) — nothing about the barricade catches her. See `docs/EVENTS.md`, "The heat".
 
 **It ends on the tunnel or the bridge**, within `Tuning.FINALE_EXIT_REACH` of the exit `CityEdge`
 draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock

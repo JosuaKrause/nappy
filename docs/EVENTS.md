@@ -43,6 +43,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `solid_once_it_starts` | Whether the body arrives at the end of the row's own notice rather than with the instance, and is withheld while she stands in the footprint. For a row that turns on where she may already be — `basement_steam` is the only one — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
+| `lethal_radius` | How close the thing that ends the day has to get, when that is **not** the field's own core. `0` — almost every row — means `inner_radius`, and `lethal_reach()` is what every caller asks. It exists for a row whose killer is not what the field is drawn around: a `roadblock`'s field is cored on the barrier and its guard catches at a man's reach — see "The heat" |
+| `body_stays_behind` | Whether this row's body is a **fixture of the street** a pursuer leaves standing rather than the pursuer's own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built, so the street stays shut behind the man who left it |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the three region-door rows — see "Checkpoints" |
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
@@ -374,6 +376,14 @@ arriving silently, in the one place the game cannot afford one. `EventDef.valida
 arrangement on load. It is why `alley_robbery`'s inner radius is 30 rather than the 22 a man's own
 width would suggest: a man is 11px wide and she is 14, so at 22 the pram is held three pixels
 *outside* the radius that takes the baby.
+
+**It is a rule about a thing that stands still, so a pursuer is outside it rather than excepted
+from it.** The inference only holds while the body and the thing that kills are the same point, and
+a pursuer's never are: it comes to her, and every one of them either drops its body the frame it
+starts hunting or — with `EventDef.body_stays_behind`, which only `roadblock` sets — walks out of a
+body it leaves standing where it was built. Either way the kill fires from ground the body does not
+cover. That pairing is what `tests/test_heat.gd` holds, so the exemption cannot quietly become a
+loophole for a pursuer that kept its body and carried it along.
 
 ### Checkpoints
 
@@ -784,18 +794,31 @@ done every task on time, and a player one task behind meets the cold raid, still
 nothing more. Sharing the van's threshold rather than minting a third constant is what makes that
 sentence true.
 
-**`roadblock` cannot simply gain `pursues` on the body it already has — a band does not chase.** Its
+**`roadblock` does not chase with the body it already has — a band does not chase, a man does.** Its
 solid picture is a 120px barrier, `_draw_spread` across `GroundShape.band(60.0)`
-(`obstructs_radius` 60), and the row's own `inner_radius` had to move from the M61-derived 24 to 86
-so that same body still leaves a hunting copy's kill reachable: `obstructs_radius` plus her 14px
-`Tuning.PLAYER_BODY_RADIUS` sat over the old 24 by 50px, where `EventDef.validate()` would have
-refused it outright. The hunting posture is therefore *guards leaving their post*: the same
-`guard_standing.svg`/`guard_lunging.svg` pair the checkpoint kit already carries, drawn by
-`EventInstance._draw_roadblock()` the instant the row stops `is_waiting()`, while the band's own
-obstruction is freed the same frame by the generic pursuer rule every other hunting row already
-uses. The band stays exactly as it is until then, and nothing is left behind once the guards go —
-the design says nothing about that interval, and the smaller of the two rules available is to add
-none.
+(`obstructs_radius` 60), and **a guard stands at it from the moment it is placed**, cold or
+hunting: *"the guard needs to be at the barrier from the beginning, standing. only then does it
+make sense for it to start pursuing."* Cold he is a drawing and nothing else — the field, the body
+and the cost are all the band's.
+
+When a heated copy notices her, **he** is what sets off, from exactly where he was standing. Two
+fields make that work and both are general rather than written for this row:
+
+- **`EventDef.body_stays_behind`.** Every other pursuer's obstruction comes down the frame it
+  stops waiting, because a moving pursuer with a body is a wall. A barrier is not the man's own
+  bulk: `EventInstance` pins it at the place it was left and draws it there for the rest of the
+  event's life, so **the street he abandoned stays shut behind him**. Nothing appears and nothing
+  disappears.
+- **`EventDef.lethal_radius`**, and `lethal_reach()` is what every caller asks. The field and the
+  killer are no longer the same object — the field is a street being held and is cored on the band
+  at `inner_radius` 86, while what ends the day is a pair of arms at 28px, the same
+  `EventCatalogue.MASKED_MAN_REACH` the escape's own `masked_pursuer` catches at. One figure, one
+  reach, stated once.
+
+`EventDef.validate()`'s rule that a lethal radius must not sit inside its own solid body is a rule
+about **a thing that stands still**, and it is stated that way rather than excepted for this row:
+the inference only holds while the body and the killer are the same point, and no pursuer's are —
+each of them either drops its body or walks out of one it leaves standing.
 
 **A hunting `abduction`, `night_raid` or `roadblock` is briefly less dangerous than the encounter it
 is about to become, and that is the escalation working rather than a bug.**
@@ -874,7 +897,7 @@ neighbourhood's own rather than a patrol's.
 | `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
-| `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60), drawn as one continuous barrier (`roadblock_segment.svg`/`roadblock_end.svg`) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it its guards leave the post — the band cannot chase, so the hunting posture is a guard on foot, `guard_standing.svg` then `guard_lunging.svg`, coming at 130px/s once she comes within 180px, `hard_fail` inside `inner_radius` 86. |
+| `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60), drawn as one continuous barrier (`roadblock_segment.svg`/`roadblock_end.svg`) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. **A guard stands at it from the moment it is placed** (`guard_standing.svg`, drawn at the band's own centre), cold or hot; cold he is a drawing with no field, body or cost of his own. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it **that guard** is what sets off, from where he stood, coming at 130px/s once she is within 180px and switching to `guard_lunging.svg` when his 1.8s notice ends. The barrier he leaves stays drawn and stays solid where it was built (`body_stays_behind`), so the street stays shut behind him; the catch is `lethal_radius` 28px measured from **him**, a man's reach rather than a barricade's, and the band itself takes nobody. |
 | `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains for `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s) as she comes within `Tuning.CHECKPOINT_DETAIN_REACH` (48px) of its own solid edge — 80px from its centre, inside `inner_radius` 84px — and `redetains`, so the same hut tolls her again on a later approach from either side. A small `intensity` (6.0) over a tight 84/98px band is the milestone's own "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges — the smallest value that still clears "nothing is cheaper to walk through than around" against most of that band held at peak — see "Checkpoints". |
 | `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two huts. No field of its own — a car passing under it costs her nothing — but it detains exactly as a hut does, on the hut's own numbers, so a raised bar is not a way past her at the bar itself. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current. |
 | `checkpoint_post` | SCRIPTED | 7 | The alley half of a door: one guard at each mouth of a through-alley that crosses a region boundary. Detains exactly like `checkpoint_hut`, same numbers and the same `redetains`. |
@@ -928,7 +951,7 @@ same gate the seal pictures use, so the ordinary catalogue roll can never reach 
 two inside the building. Three rows the escape uses are not new and are not changed —
 `military_convoy` is the army truck (with the barricade it ordinarily leaves stripped, since a
 convoy in the escape is traffic rather than the aftermath of something), `abduction` is the masked
-men in a van, and `roadblock` at full heat is the masked men on foot who leave the post.
+men in a van, and `roadblock` at full heat is the masked man on foot who leaves the post — the barrier he was standing at stays where it is and stays shut.
 
 **The escape rolls its ground per street rather than per city** — `EventScheduler._finale_ground`
 over one segment's own rect, since the chains already say which streets exist for it, there is no
@@ -936,12 +959,22 @@ corridor to weight against and no closure to avoid. Of the five refusals above i
 that are still true of a walk with no day behind it: a tile must be open, and **a standing street
 tree's ground is refused here exactly as it is on a day** (`docs/CITY.md`, "Street trees").
 
+**And the ground she is put down on is refused to everything that could already be reaching her**
+(`EventScheduler._clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
+should start from the position. then obstacles can never happen."* Two reaches, and the wider one
+wins: a row with a body keeps her body plus its body clear, and a `hard_fail` row keeps its whole
+**`outer_radius`** clear — the radius `EventManager` raises the doubled exclamation mark over,
+because it is what the telegraph contract promises her time to walk out of, and a lethal row
+placed inside it has spent her notice before she has taken a step. Both carry half a tile on top,
+since a stationary body is recentred on the pavement band when the instance is built. Refused at
+the candidate loop, never moved afterwards.
+
 | id | kind | where | Behaviour |
 | --- | --- | --- | --- |
 | `finale_explosion` | SCRIPTED | the chains' carriageways, and once a beat indoors | The bang she hears and does not see. **Draws nothing** — the fourth row in the catalogue with no picture — because there is no burst on the street, only the noise and the hole afterwards. Off screen is bought with the streaming radius rather than with a rule: a `MAP` placement enters the world at `Tuning.EVENT_STREAM_RADIUS` (900px) against a 640×360 view, and its telegraph plus duration (3.7s, about 340px of walking) are over before she can reach it. `intensity` 24 over a 300–520px band, so a burst just past the screen edge still lands close to full strength. Not lethal: *the danger is always noise*. `spawns_on_finish` names the crater. |
 | `impact_crater` | SCRIPTED | wherever a burst went off | What is left in the road, for the rest of the sequence (`duration` 0). Silent and solid, with `barricade`'s own radii; `obstructs_radius` 32 against a 64px picture, so the ground she cannot walk on is exactly the hole she can see. Also one of the escape's four seal pictures, where `SealPlanner._hard_positions` spaces three of them across a street. No `scar_id`: the escape is the last thing in a run, so there is nothing for a scar to persist into. |
-| `masked_pursuer` | SCRIPTED | the stairwell the fire did not close | A masked man running up the shaft. **Mobile, not `pursues`**, and that is the counterplay: he runs a line — bottom landing to top — and the answer is not being on it, which in a building whose stairwell doors are a fade and a teleport means stepping through the nearest one and letting him go past. Faster than a walk (`Tuning.HEAT_HUNTS_SPEED`, 130px/s) so he cannot be out-walked, `hard_fail` on contact, and no body, like everything mobile. He waits at the foot of the shaft until she is in it (`pursues_within` 900, the shaft's own height with room over it) and spends his 3.6s telegraph standing. Drawn `guard_standing.svg` then `guard_lunging.svg`, the same two postures a heated roadblock's guards take. |
-| `basement_steam` | SCRIPTED | a fixed vent on the basement corridor | One blow of a vent that stands on a timer. **It is a gate, not a lane to thread**: the body is half of `steam.svg` like any other, but it stands on the seam down the middle of a corridor two tiles deep, so her centre is held 30px out where the walls leave it only 18px of play — there is no way past a vent that is blowing, and the answer is waiting rather than aiming. **The notice is what makes that fair, and `solid_once_it_starts` is what makes the notice worth anything**: the body goes down at the end of the telegraph rather than with the instance, and is withheld for as long as she is standing in the footprint, so a vent never closes around her. 14 over a 24–90px band, pulsing every 4s, for `Tuning.FINALE_STEAM_BLOWS_FOR`. `InteriorEvents` owns the vents themselves — where they stand, and a period each out of `Tuning.FINALE_STEAM_PERIODS` — and spawns one of these per blow; between blows there is no instance at all, so a vent that is off costs nothing. |
+| `masked_pursuer` | SCRIPTED | the stairwell the fire did not close | A masked man running up the shaft. **Mobile, not `pursues`**, and that is the counterplay: he runs a line — bottom landing to top — and the answer is not being on it, which in a building whose stairwell doors are a fade and a teleport means stepping through the nearest one and letting him go past. Faster than a walk (`Tuning.HEAT_HUNTS_SPEED`, 130px/s) so he cannot be out-walked, `hard_fail` on contact, and no body, like everything mobile. He waits at the foot of the shaft until she is in it (`pursues_within` 900, the shaft's own height with room over it) and spends his 3.6s telegraph standing. **One of him at a time, and there is always another**: `InteriorEvents` places a fresh instance `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` after the last one has run out of the top of the shaft, for as long as she is in the building — a fresh instance rather than a rewound one, so every run waits and telegraphs exactly as the first did. From every cell of his line a door is under two seconds' walk away against the three and a half he stands still for, which is what keeps *stepping aside* an answer he cannot outpace. Drawn `guard_standing.svg` then `guard_lunging.svg`, the same two postures a heated roadblock's guards take. |
+| `basement_steam` | SCRIPTED | a fixed vent on the basement corridor | One blow of a vent that stands on a timer. **It is a gate, not a lane to thread**: the body is half of `steam.svg` like any other, but it stands on a cell where the basement corridor is **one tile wide** (`InteriorMap.BASEMENT_NARROWS` — the two jogs between its bands and one narrowing laid across the middle band), so her centre is held 30px out where the walls leave it 16px of play — there is no way past a vent that is blowing, and the answer is waiting rather than aiming. A vent in a two-row band leaves her the far row whichever row it stands on, which is why all three stand in the narrow stretches; each is a cell the walk to the exit cannot go round, checked by taking it out of the map. **The notice is what makes that fair, and `solid_once_it_starts` is what makes the notice worth anything**: the body goes down at the end of the telegraph rather than with the instance, and is withheld for as long as she is standing in the footprint, so a vent never closes around her. 14 over a 24–90px band, pulsing every 4s, for `Tuning.FINALE_STEAM_BLOWS_FOR`. `InteriorEvents` owns the vents themselves — where they stand, and a period each out of `Tuning.FINALE_STEAM_PERIODS` — and spawns one of these per blow; between blows there is no instance at all, so a vent that is off costs nothing. |
 
 ## Permanent marks
 

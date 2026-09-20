@@ -300,9 +300,9 @@ checks and worktrees can move independently of this file.
   compares, and M164, engine errors make the test gate red, are separate fix-ready briefs there.
 
 - **Inspect the live PRs before taking gameplay work:** PR #239, M129, no body closes the
-  walked sidewalk; PR #240, M168, the escape after playtest 94; and PR #241, M170, whole-street
-  route tint. Their owners maintain the implementation and review state. The queue on main
-  alone does not show work pending in those branches.
+  walked sidewalk, and PR #241, M170, whole-street route tint. Their owners maintain the
+  implementation and review state. The queue on main alone does not show work pending in those
+  branches.
 
 PR merges and auto-merge require explicit permission in the current session. Use fresh agents
 with self-contained briefs for new implementation or investigation.

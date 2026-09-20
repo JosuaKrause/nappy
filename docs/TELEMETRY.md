@@ -155,6 +155,20 @@ out. Asked of `git` at runtime; an exported build has no repository to ask and r
 `CityGenerator.generate()` retries with `seed + 1` when a layout fails its guarantees, so the
 run seed alone does **not** reproduce a city and both have to be written down.
 
+### The escape's header
+
+The escape (`--start-escape`) is not a day and has no day number, act or city seed to head a
+section with, so `Telemetry.begin_finale()` writes `escape  run seed N  length Ns` instead —
+appending `invincible` on the same terms the day header does. **It has to open a section like a
+day does or the log cannot say when anything happened**: the timestamp column only moves while one
+is open, and a day is the only other thing that opens one.
+
+The clock itself is pushed by `main._process_the_finale()`, not by `TelemetryObserver` — the
+observer is built around a `City`, a `RouteTree` and a day's corridor, none of which the escape's
+first section has at all — and it is the same clock the HUD draws, so a log entry and the screen
+never disagree. A lost section writes a `lost` line before its clock goes back to full, so the
+timestamps starting again have a reason above them.
+
 ### `--invincible`
 
 `--invincible` (or the page's own `?invincible=1`, a debug web build only) is `DevFlags`' own
@@ -269,7 +283,7 @@ name the question it answers, or it is a metric and does not belong.
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
-| `home` / `lost` | observer | The outcome, the margin, and what was around when it happened |
+| `home` / `lost` | observer, `main.gd` | The outcome, the margin, and what was around when it happened. `main.gd` writes the escape's own `lost` line — which section went, and how far into the sequence — since a lost section restarts the clock and the timestamps would otherwise start again with nothing to say why |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log |

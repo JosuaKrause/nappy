@@ -368,6 +368,11 @@ func _ready_escape() -> void:
 	# "no drawable viewport" refusal, which is really "no active log", not a rendering question.
 	if not "--no-telemetry" in OS.get_cmdline_user_args():
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
+		# And the escape's own timestamped section, which is what makes every line below carry an
+		# elapsed time — the day's `Telemetry.begin_day()` is the only other thing that opens one
+		# and nothing on this boot reaches it. Immediately after the run is opened, so the plan
+		# line `_plan_the_finale_city()` writes already falls inside it.
+		Telemetry.begin_finale(GameState.run_seed, FinaleController.length())
 	# The second boot entry point `TextureResolver.warm()` has to reach — see `_warm_the_pictures()`
 	# — since the epilogue draws its own pictures (the building's props, the city's events) and is
 	# reached without ever passing through `_ready()`'s own call above. This path awaits the same
@@ -401,6 +406,7 @@ func _ready_escape() -> void:
 	add_child(_finale)
 	_pauses_with_the_game(_finale)
 	_finale.section_started.connect(_on_finale_section_started)
+	_finale.section_lost.connect(_on_finale_section_lost)
 	_finale.escaped.connect(_on_finale_escaped)
 
 	var start_at_the_city := _escape_start_part() == "city"
@@ -585,15 +591,22 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 		if _interior_events:
 			_interior_events.restart()
 		if not restarted:
-			_hud.say_once("Escape the apartment")
+			_hud.say_once(finale_hint_for(section))
 	else:
+		# The building is behind her and nobody is in it, so its own events stop rather than
+		# playing on to an empty map — the vents, the window flashes and the masked man who comes
+		# up the shaft every few seconds would otherwise run for the rest of the sequence, unseen
+		# and in the log. `InteriorEvents.restart()` is what starts them again, and section one is
+		# never entered without it.
+		if _interior_events:
+			_interior_events.stand_down()
 		# A restart of section two replans it: see `_plan_the_finale_city()`.
 		if restarted:
 			_plan_the_finale_city()
 		_player.reset_at(_finale_start_position(), Vector2.DOWN)
 		_city.events.stream_around(_player.global_position)
 		if not restarted:
-			_hud.say_once("Exit the city")
+			_hud.say_once(finale_hint_for(section))
 	# The baby starts every attempt asleep with sleepiness full — *"the player holding the sleeping
 	# baby (sleep bar is full)"* — which is also what makes a restart playable at all: the meter
 	# that just reached a hundred is what lost the section.
@@ -601,6 +614,45 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 	_baby.force_sleep()
 	if _interior:
 		_interior.clear_fade()
+
+## The one line each section of the escape is named by: *"Escape the apartment"* and *"Exit the
+## city"*. Said once by the HUD when a section is first entered, and shown as the title of the
+## brief screen before a lost one starts again — **the same words in both places**, which is why
+## this is a function rather than two literals: a retry's screen naming the section differently
+## from the line she was given on the way in would read as a different instruction.
+##
+## `section` is a `FinaleController.Section` passed as an `int` — a cross-script enum is not the
+## same type as itself as a parameter, see the **godot** skill.
+## Static so a test can ask it without building the whole boot, the same split `escape_part_for()`
+## already makes.
+static func finale_hint_for(section: int) -> String:
+	return "Escape the apartment" if section == FinaleController.Section.BUILDING \
+			else "Exit the city"
+
+## A section has been lost — taken, the meter at 100, or the clock at zero. **The brief screen
+## comes up and nothing has restarted yet.** *(2026-09-19: "restarting should still have the day
+## brief for both the apartment escape and the city escape even if the nerves don't go down.")*
+##
+## `DaySummary.show_finale_brief()` pauses the tree with it, so the clock the loss stopped stays
+## stopped; `_on_finale_summary_continued()`'s own `_finale_restart_pending` branch is what reaches
+## `FinaleController.restart_section()`, the same shape `_resume_gate_open` already gives the day
+## brief a resumed run opens on. The Nerve count shown is whatever it was, because a lost section
+## spends none.
+func _on_finale_section_lost(section: int) -> void:
+	# Written before the clock goes back to full, so the entry carries the second the section was
+	# lost at rather than the second the retry began. Without it the log shows the timestamps
+	# marching up and then starting again with nothing in between to say why.
+	Telemetry.note("lost", "escape: %s, %.1fs in" % [
+		"the building" if section == FinaleController.Section.BUILDING else "the city",
+		FinaleController.length() - _finale.time_remaining()])
+	_hud.visible = false
+	_finale_restart_pending = true
+	_summary.show_finale_brief(finale_hint_for(section), GameState.nerves)
+
+## Whether `_summary` is currently showing the brief a lost section comes up on, rather than the
+## epilogue — the same question `_resume_gate_open` answers for the day brief, and for the same
+## reason: one `continued` signal reaches two screens that mean different things.
+var _finale_restart_pending := false
 
 ## Where section two starts and restarts: the service exit, on the street beside the home block.
 func _finale_start_position() -> Vector2:
@@ -612,12 +664,25 @@ func _on_finale_escaped(exit_kind: int) -> void:
 	_hud.visible = false
 	_summary.show_finale(exit_kind, FinaleController.length() - _finale.time_remaining())
 
-## The epilogue's own continue button. Behind the flag there is no run for the escape to be the
-## ending *of*, so continuing goes back to where a run begins — the title screen, which then
-## reloads the scene and walks the whole sequence again. Opening the screen rather than reloading
-## straight away is what `_on_escape_exit_requested()`'s own note used to say about this boot: a
-## reload reads `--start-escape` off the same command line, so the screen would never be seen.
+## `DaySummary.continued` reaches this from the two screens the escape puts up, told apart by
+## `_finale_restart_pending` the same way `_resume_gate_open` tells a resumed run's day brief from
+## an end-of-day message.
+##
+## **The brief before a lost section starts again** is the first: continuing from it is the moment
+## the section actually begins, so it reaches `FinaleController.restart_section()` and nothing
+## else — no Nerve, no calendar, no reload.
+##
+## **The epilogue** is the other. Behind the flag there is no run for the escape to be the ending
+## *of*, so continuing goes back to where a run begins — the title screen, which then reloads the
+## scene and walks the whole sequence again. Opening the screen rather than reloading straight away
+## is what this boot needs: a reload reads `--start-escape` off the same command line, so the
+## screen would never be seen.
 func _on_finale_summary_continued() -> void:
+	if _finale_restart_pending:
+		_finale_restart_pending = false
+		_summary.dismiss()
+		_finale.restart_section()
+		return
 	_summary.dismiss()
 	get_tree().paused = true
 	_hud.visible = false
@@ -1465,7 +1530,15 @@ func _process(delta: float) -> void:
 ## she is in the building, and the two ways out of the city once she is on the street. The
 ## `EventManager` streams itself around her (`EventManager._physics_process`), so section two needs
 ## nothing here to keep its own events stocked.
+##
+## **And the run log's clock, which nothing else pushes here.** A day's is mirrored by
+## `TelemetryObserver._process()`, and the escape has no observer — that class is built around a
+## `City`, a `RouteTree` and a day's own corridor, none of which section one has at all. So this is
+## the finale's own one line of it, and it is the same line: the clock the HUD is drawing, handed
+## to `Telemetry` so a log entry and the screen never disagree. Nothing here decides anything, and
+## nothing here rolls anything, which is the whole of what the **telemetry** rule asks.
 func _process_the_finale(delta: float) -> void:
+	Telemetry.set_clock(FinaleController.length() - _finale.time_remaining())
 	if _finale.section == FinaleController.Section.BUILDING:
 		if _interior:
 			_interior.process_player(_player, delta)

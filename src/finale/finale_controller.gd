@@ -7,9 +7,10 @@ extends Node
 ## draws the clock, end on the meter reaching 100, on a hard fail and at zero, and stand still
 ## under `--invincible` (`DayController._ignores_loss`). What the finale does *differently* is only
 ## what happens at the end: a day spends a Nerve and moves the calendar, and a lost section instead
-## starts again where it began, with the clock back at full length and the Nerves untouched
-## (*"sounds good at that point you earned it"*). So this owns a `DayController` and turns its
-## `day_finished` into a restart, rather than teaching that class a second mode: a finale mode on it
+## comes up on the brief screen and starts again where it began, with the clock back at full length
+## and the Nerves untouched (*"sounds good at that point you earned it"*). So this owns a
+## `DayController` and turns its `day_finished` into a loss and a restart, rather than teaching
+## that class a second mode: a finale mode on it
 ## would have to disable the home win, the calendar and the Nerve, which is more of that file than
 ## this whole class is.
 ##
@@ -29,6 +30,12 @@ enum Section { NONE, BUILDING, CITY }
 ## A section has begun, fresh or restarted: `main` puts her at its own start and says its hint
 ## line. `restarted` is false the first time each section is entered and true for every retry.
 signal section_started(section: int, restarted: bool)
+## A section has been lost — taken, the meter at 100, or the clock at zero — and **nothing has
+## started again yet**. *(2026-09-19: "restarting should still have the day brief for both the
+## apartment escape and the city escape even if the nerves don't go down.")* `main` puts the brief
+## screen up; `restart_section()` is what the continue on that screen reaches, and until it does
+## the clock stays stopped where the loss left it.
+signal section_lost(section: int)
 ## She has reached the tunnel mouth or the bridge deck. `exit_kind` is a `CityEdge.Kind`.
 signal escaped(exit_kind: int)
 
@@ -75,10 +82,24 @@ func enter_city() -> void:
 	section_started.emit(section, false)
 
 ## Capture, the meter at 100 and the clock at zero all arrive here, because all three are a day's
-## own losing paths and `DayController` already tells them apart. Every one of them restarts the
-## section she was in with a full clock; nothing spends a Nerve, and `GameState` is not touched at
-## all, which is what "at no Nerve cost" is in code rather than in prose.
+## own losing paths and `DayController` already tells them apart. Every one of them ends the
+## section she was in; nothing spends a Nerve, and `GameState` is not touched at all, which is what
+## "at no Nerve cost" is in code rather than in prose.
+##
+## **It does not start the section again.** A lost day shows the screen between days before the
+## next one begins, and a lost section owes the same pause — so this only says what happened, and
+## the brief screen's own continue reaches `restart_section()` below. The clock is left stopped
+## where the loss left it in the meantime: `DayController` has already put its phase at `OVER`, and
+## the screen pauses the tree anyway.
 func _on_section_lost(_result: GameEnums.DayResult) -> void:
+	if is_over:
+		return
+	section_lost.emit(section)
+
+## The same section again, from its own start, with the clock back at full length — what the brief
+## screen's continue reaches. `section_started` fires with `restarted` true, so `main` puts her
+## back at the start and says no hint line, exactly as it did when this was the whole of a loss.
+func restart_section() -> void:
 	if is_over:
 		return
 	_clock.start(length())
