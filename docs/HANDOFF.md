@@ -308,10 +308,10 @@ checks and worktrees can move independently of this file.
 - **M171 — Build-time atlases replace individual textures is built and released** as the minor
   version that followed it (`DECISIONS.md`, the sections starting "M171,"). What only a person
   can judge about it is in `REVIEW.md`.
-- **Next, decided by the player** ([PLAYTEST-113](playtests/PLAYTEST-113.md)): **M174, the man
-  shouting costs nothing to walk beside** — `homeless_yeller`, `loose_dog` and `dog_walker` cost
-  more to be near, and the halo shows what the bar does. The player sees its proposed numbers
-  before it merges.
+- **v0.15.0's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
+  "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
+  the first entry of `REVIEW.md`. M174, the man shouting costs nothing to walk beside, has one
+  open item in `TODO.md`: the caret against a pulsed row and against several sources.
 - **M102, the finale, has one open item in `TODO.md`**: the building has no screen-edge
   badge, halo or debug layers, and the escape has no telemetry observer.
 - **M175, a row states what it costs, and the cost table is checked in, follows M174**

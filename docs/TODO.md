@@ -295,56 +295,21 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ## M174 — The man shouting costs nothing to walk beside · asked for 2026-09-20
 
-> "I can easily walk next to him for an extended amount of time without any real penalty. or
-> maybe the halo calculation changed? he gets deep red but my bar doesn't move up much. it was
-> supposed to indicate the actual amount I receive over a time window"
+The three rows, the halo and the caret are built (`DECISIONS.md`, M174, the rows are corrected
+for the decay, and the halo and the caret say what the bar does); what a run settles is in
+`REVIEW.md`. **One item is open**, the two places the caret's promise is only roughly kept
+([PLAYTEST-115](playtests/PLAYTEST-115.md): "if I keep doing what I'm doing I very likely get
+that amount in net gain (so the halo will match roughly the caret if that happens)").
 
-[PLAYTEST-112](playtests/PLAYTEST-112.md) has the arithmetic and the run. Nothing changed in
-v0.14.0: the halo is the gross excitement landed from a source over five seconds, full red at
-40 points, and the bar is that less the 6.0 a second walking gives back. `homeless_yeller`
-lands about 44 points in five seconds at arm's length and walking returns 30, so the halo is
-deep red while the bar gains under 3 a second, and nothing at all with the baby asleep.
-
-**Decided by the player** ([PLAYTEST-113](playtests/PLAYTEST-113.md)): *"let's increase the
-influence of those obstacles. notably, yeller, unleashed dog, walker with dog. also, let's fix
-what the halo reflects."*
-
-- [ ] **`homeless_yeller`, `loose_dog` and `dog_walker` cost more to be near**, under the
-      **balance** skill's rules. The target, the orchestrator's and open to overturn: walking
-      beside each inside its `inner_radius`, averaged over its own rhythm, the bar rises by at
-      least 8 a second with the baby awake and by at least 2 a second with the baby asleep,
-      where the man shouting gives under 3 and nothing today. Every number that moves is
-      measured before and after, with the route costs the skill asks for, and the rows'
-      fairness contracts still hold. The pulse's shared trough is left alone unless a row
-      cannot meet the target without it.
-- [ ] **The halo shows what the bar does.** *Asked for the gross points landed · overturned on
-      2026-09-20.* A source's glow is its landed points over `ExcitementHalo.WINDOW` less its
-      share of the decay taken in the same window, shared in proportion to what each source
-      landed, never below nothing; so the halos together add up to the bar's own rise, and a
-      source is red only while the bar is climbing because of it.
-- [ ] **All three rows give back what the decay took, and a bit more, measured by the pass**
-      ([PLAYTEST-115](playtests/PLAYTEST-115.md): "what matters for the dogs is walking past
-      them. and it shouldn't be free. at the very least restore the net gain if not a bit
-      more"). `homeless_yeller` is measured the same way: "walking past (where both have
-      different directions) is what matters", and that walking next to him did nothing is
-      the worse symptom of the same drop. All three rows were tuned against a walking decay
-      of 3.5 a second and lost 2.5 a second net when M117 made it 6.0. The measure is **the
-      pass**: the points a
-      walk past it lands, net of the decay over the same seconds, at a few fixed lateral
-      offsets, with the mover moving as it does. The pass is measured before and after, and
-      each row's pass nets more than it did under the 3.5 decay; the amount over is the
-      orchestrator's and open to overturn. *The walk-beside target above is the orchestrator's
-      and is overturned; beside is still measured and reported, since it is what the player
-      felt.*
-- [ ] **The caret is the anticipated net gain** (PLAYTEST-115: "if I keep doing what I'm doing
-      I very likely get that amount in net gain (so the halo will match roughly the caret if
-      that happens)"). *The cues rule that her own walking never moves the caret · overturned
-      by the player on 2026-09-20.* Over the same horizon the halo looks back on, the caret
-      projects what the source will land if it and she both carry on as they are — her
-      current velocity, not a fixed position — less the decay her current movement and the
-      baby's current state earn over those seconds, shared between sources as the halo shares
-      it, never below nothing. The **cues** skill says so. That "what I'm doing" means her
-      movement and the baby's state is the orchestrator's reading and open to overturn.
+- [ ] **The caret follows a pulse across its horizon, and shares the decay as the halo does.**
+      The caret projects a source's rate as it stands now for the whole of
+      `Tuning.EXPECTED_IMPACT_HORIZON` (five seconds), so against a row whose pulse turns over
+      inside that horizon — `homeless_yeller`'s is five seconds, `busker`'s seven — the halo
+      afterwards can differ from what the caret said by a multiple; the test of the promise
+      runs against an unpulsed row. And each caret nets the whole of her decay against its own
+      source, where the halo shares the decay between sources in proportion, so with two
+      sources near her every caret reads low. Project the pulse's mean over the horizon, and
+      share the projected decay between the sources that earn a caret.
 
 ---
 
@@ -366,7 +331,8 @@ shouting costs nothing to walk beside, since both rewrite the same rows.** **The
 table is built first** ([PLAYTEST-115](playtests/PLAYTEST-115.md): "the \"survey\" should happen
 automatically every time and should show up in the commit diff if it changes"), and it carries
 the pass as well as the distances: for a row that moves, what a walk past it nets at the same
-fixed lateral offsets for every row.
+fixed lateral offsets for every row. `tests/probes/m174_pass.gd` is the instrument the pass was
+first measured with, and `tests/probes/m174_walk_beside.gd` the one for standing beside a row.
 
 - [ ] **A row declares the net cost and its `intensity` is computed.** Option 1 as put to the
       player: a row states what the bar does while she walks beside it inside `inner_radius`
