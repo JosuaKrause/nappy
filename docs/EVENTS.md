@@ -1178,32 +1178,34 @@ rather than leaving it to follow from the `WALL` case by coincidence.
 
 ## What an event actually costs
 
-Each figure integrates the real falloff along a straight line through the centre of the field and
-subtracts the walking decay, against a meter of 100 where sleep freezes at 35 and the baby cries at
-100. `tests/test_events.gd` computes the same integral, so the numbers here and the assertion there
-cannot drift apart. Regenerate the table from `EventDef.walk_through_cost()` whenever a rate in
-`Tuning` moves; it is the fastest way to see what a balance change did to the catalogue as a whole.
+**[`docs/COSTS.md`](COSTS.md) is the generated, checked-in table**: one line per catalogue row, its
+geometry and role, the net rate a fixed distance from it standing still, and the net points from a
+real pass at `Tuning.WALK_SPEED` — awake and asleep, at fixed distances and offsets identical for
+every row. `tools/cost-table.sh` regenerates it from the real `EventDef`/`EventInstance`/`Tuning`
+code the game charges with, never a hand-computed copy; `tools/cost-table.sh --check` (wired into
+CI) fails and names every row and column that moved when a balance change touched the catalogue or
+a decay constant without regenerating it. What follows here is the reasoning the table's own numbers
+rest on — regenerate the table itself, do not hand-edit numbers back into it.
 
 **The shape of `Tuning.falloff` is `1−t^power`, and every row is at the 2.0 default**, so a field
 holds three quarters of its intensity at the midpoint of its band. The middle distances are what cost: the meter has to go substantially up from
 some way off rather than waiting for contact, and a `(1−t)²` field — a quarter of its intensity at
 the midpoint — is one you can stand almost inside for free.
 
-**The integral prices a field, not a route.** Being stopped by a body is a route cost this table has
-never counted, and a solid row is one most of these walks cannot actually be made through at all;
-see "Solid things are solid". It is still the right way to price a **row**: it is what being close
-costs.
+**The integral prices a field, not a route.** Being stopped by a body is a route cost neither
+`walk_through_cost()` nor `docs/COSTS.md` counts, and a solid row is one most straight-line walks
+cannot actually be made through at all; see "Solid things are solid". It is still the right way to
+price a **row**: it is what being close costs.
 
-**Three kinds of row are priced differently, and each is flagged in the table.** `*` is a
-`hard_fail`, where
-the figure is notional because nobody finishes the walk. `‡` is the one row whose body does not span
-its own field — `car_accident` is solid at its two cars and open between them, so the line priced
-here is one she can actually walk, which is what "the integral prices a field, not a route" costs
-everywhere else. `†` is a **flock**, which is `flock_size`
-birds sharing `intensity` between them and wheeling inside `flock_spread`, so *all of the intensity
-is at the centre* — the assumption the rest of the table rests on — is false for it:
+**Three kinds of row are priced differently from what a straight read of the field would suggest.**
+A `hard_fail` row's `walk_through_cost()` is notional, because nobody finishes the walk. `car_accident`
+is the one row whose body does not span its own field — solid at its two cars and open between them,
+so the line it prices is one she can actually walk, which is what "the integral prices a field, not a
+route" costs everywhere else. A **flock** (`flock_size` birds sharing `intensity` between them and
+wheeling inside `flock_spread`) breaks the assumption every other row's figure rests on, that *all of
+the intensity is at the centre*:
 
-- **Its row is computed from the birds**, not from one disc. Priced as a disc it reads roughly
+- **Its cost is computed from the birds**, not from one disc. Priced as a disc it reads roughly
   twice its true figure and breaks the running rule on a row that in fact keeps it, which is
   exactly the kind of silent breakage that rule exists to catch. `tests/test_events.gd` models the
   flock the same way, so the two cannot drift.
@@ -1213,86 +1215,35 @@ is at the centre* — the assumption the rest of the table rests on — is false
   a wide quiet margin, and that gradient is the reason to build it out of eleven sources rather
   than one.
 
-**The ground every one of these rows stands on is the half the table does not show**, and it is
+**The ground every one of these rows stands on is a fact the table does not carry**, and it is
 large:
 
 - **An ordinary footway is net recovery to walk, and visibly so.** The quietest pavement in the
   city charges 70–120 points of crowd over a forty-second walk against a decay that pays back 240
   — measured over three seeds by `tests/probes/m117_decay.gd`, which is what to run again when a
   rate moves. So an authored row on an ordinary street is very nearly the *whole* of what that
-  stretch costs, which is what the figures below assume.
+  stretch costs, which is what the table's own figures assume.
 - **The middle of a pavement is the cheapest line along it**, by `CrowdLanes.SIDEWALK_LANE_SPREAD`,
   which spreads the walkers off it: an ordinary midline is 56 points per forty seconds.
 - **Crossing the main road costs about 30**, and the wait at its lights about 33 more — between them
-  a `dog_walker` and a `loose_dog`, and neither is in this table because neither is an event.
+  a `dog_walker` and a `loose_dog`, and neither is in `docs/COSTS.md` because neither is an event.
 
 That last point is the one to carry: the cost of a route is not only the events on it, and the
-*street kind* is a bigger term than most rows here. A balance argument that reaches for this table
-alone is answering a narrower question than it thinks.
+*street kind* is a bigger term than most rows in the table. A balance argument that reaches for the
+table alone is answering a narrower question than it thinks.
 
-| Event | walk through | run through |
-| --- | ---: | ---: |
-| `curfew_announce` | — | — |
-| `loudspeaker` | — | — |
-| `construction` | -26.1 | +32.1 |
-| `delivery_van` | -19.6 | +24.1 |
-| `playground` | -19.6 | +24.1 |
-| `checkpoint_gate` | -15.7 | +19.3 |
-| `barricade` | -15.7 | +19.3 |
-| `fallen_tree` | -15.7 | +19.3 |
-| `skip` | -15.7 | +19.3 |
-| `scaffolding` | -15.7 | +19.3 |
-| `burst_water_main` | -15.7 | +19.3 |
-| `moving_van` | -15.7 | +19.3 |
-| `burnt_out_car` | -15.7 | +19.3 |
-| `collapsed_frontage` | -15.7 | +19.3 |
-| `impact_crater` | -15.7 | +19.3 |
-| `burnt_shell` | -6.9 | +14.3 |
-| `poster_crew` | -5.3 | +22.6 |
-| `poster_crew_square` | -5.3 | +22.6 |
-| `chatting_mother` | -2.7 | +14.8 |
-| `checkpoint_post` | -0.6 | +22.4 |
-| `checkpoint_hut` | -0.6 | +22.4 |
-| `police_patrol` | +5.9 | +46.2 |
-| `cafe_tables` | +6.1 | +18.2 |
-| `market_stall` | +8.5 | +19.5 |
-| `charging_dog` * | +8.8 | — |
-| `basement_steam` | +9.0 | +25.8 |
-| `alley_mouse` | +12.7 | +20.9 |
-| `cyclist` * | +16.0 | +29.7 |
-| `cat_dash` | +17.6 | +37.5 |
-| `ice_cream_van` | +18.4 | +65.8 |
-| `roadblock` | +18.5 | +51.7 |
-| `masked_pursuer` * | +19.3 | +38.4 |
-| `reversing_lorry` * | +23.1 | +53.3 |
-| `alley_robbery` * | +23.8 | — |
-| `protest` | +27.6 | +77.6 |
-| `busker` | +34.7 | +63.1 |
-| `homeless_yeller` | +40.0 | +70.7 |
-| `burning_building` | +41.7 | +83.2 |
-| `dog_walker` | +42.7 | +47.8 |
-| `pigeon_flock` † | +44.9 | +63.6 |
-| `abduction` * | +47.7 | +84.1 |
-| `leaf_blower` | +52.9 | +73.1 |
-| `car_accident` ‡ | +65.7 | +58.3 |
-| `military_convoy` | +68.6 | +107.2 |
-| `loose_dog` | +69.3 | +70.5 |
-| `night_raid` | +83.9 | +122.6 |
-| `fire_truck` | +97.0 | +132.0 |
-| `firefight` * | +132.1 | +159.2 |
-| `finale_explosion` | +165.2 | +211.2 |
-
-**No column says which rows carry a caret, because no row does.** The caret is decided in play
+**No cue says which rows carry a caret, because no row does.** The caret is decided in play
 from a source's own projected course at wherever she is standing — `expected_impact_at()`
 against `Tuning.EXPECTED_IMPACT_POINTS`, `will_be_lethal()` for the doubled red — so the same
 row reads red on one approach and carries nothing on another, and a stationary row never
 carries one at all; see "Showing the danger".
 
-**The pursuers' run-through column is empty, and that is the point:** they **follow**, so there is
-no crossing to price and no line to run along. Walking away from either loses the day; running away
-costs 35 points from the lunge and less the sooner it is given. See `docs/MECHANICS.md`, "Running
-that matters", for the measured tables. The city-wide rows have no line through them at all, which
-is why `EventDef.walk_through_cost()` answers zero for them and this table says nothing.
+**A pursuer follows, so there is no crossing to price for it and no pass to measure either** — the
+same reason `docs/COSTS.md`'s own pass columns are dashed for one. Walking away from a pursuer loses
+the day; running away costs 35 points from the lunge and less the sooner it is given. See
+`docs/MECHANICS.md`, "Running that matters", for the measured tables. The city-wide rows have no
+line through them at all, which is why `EventDef.walk_through_cost()` answers zero for both and
+neither appears in `docs/COSTS.md`.
 
 **Three rows are cheap to walk through by taste, three are priced somewhere else, and every
 zero-intensity row is cheap by construction.** `burnt_shell` and the two poster crews —
@@ -1313,7 +1264,7 @@ to walk through than to walk around, or the correct play is to plough into it. A
 is a decision about what a thing is (a pure obstruction) rather than a number nobody checked; a new
 *positive* exemption is the one that still needs naming by hand.
 
-**Running is correct on exactly one row here, and the rest of the column is why that is a
+**Running is correct on exactly one row in the catalogue, and every other row is why that is a
 threshold rather than a taste.** Running costs `EXCITEMENT_FROM_RUNNING` (14.0/s) *and* collapses
 the decay from 6.0/s to 0.5/s, so it is a fixed price per second against a saving that is only ever
 the shorter exposure — which means walking wins on every field whose mean emission along the line
@@ -1324,7 +1275,7 @@ a crash saves about seven points of a hundred, and the answer to it is still the
 the run. Making running *necessary* remains a mechanic to build rather than a number to tune: it
 needs something running escapes, which is a pursuer.
 
-**And what a *street* costs, which is the question this table does not answer.** An errand — home
+**And what a *street* costs, which is the question `docs/COSTS.md` does not answer.** An errand — home
 to the furthest calm block and back, 7,500px through a real day with the crowd and the events both
 running — is walked well inside the meter on an ordinary route, and the same day walked carelessly
 straight down a busy pavement loses in seconds. What separates them is the crowd rather than the
@@ -1332,7 +1283,7 @@ catalogue: the breakdown at the moment of a contact reads `crowd 30–44/s` agai
 
 **So the crowd is most of what a street costs, and the events are what make it a decision.** That
 ratio is the design working: careless is fatal in seconds, careful is nearly free, and the gap
-between them is where the game lives. None of it is in the table above — a contact with a pedestrian
+between them is where the game lives. None of it is in `docs/COSTS.md` — a contact with a pedestrian
 lands about 10.8 points of jolt and a car's horn about 8, and neither is in the catalogue at all.
 See MECHANICS.md.
 
