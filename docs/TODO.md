@@ -388,55 +388,10 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
 
 ---
 
-## M163 — The ground atlas test builds the same reference it compares · asked for 2026-09-19
-
-> "create a todo for the bug report with enough detail to pick it up without additional
-> investigative work"
-
-M159, a slow frame names the frame that was slow, retains
-`docs/evidence/m159-frame-traces-2026-09-19/verification-ground-layers-baseline.log`.
-`./tools/test.sh ground_layers` emits one Godot error for each source ID 58 through 65 at
-`tests/test_ground_layers.gd:271`, then reports no assertion failure and exits 0. The retained log
-reproduces on an isolated clean checkpoint before M159's instrumentation; the ground suite,
-ground compositor, authored TileSet and runner are unchanged on current `origin/main`.
-
-The error is in `_test_every_source_shares_one_texture_and_keeps_its_tiles`, not in production.
-`GroundLayers.build_tile_set()` registers the eight route-curb twins in both presentation modes:
-PNG reaches `_register_route_kerb_twins()` through `_compose_layers()`, while SVG calls the
-registrar directly with an empty manifest. The test helper `_unpacked_tile_set(false)` follows the
-PNG path, but `_unpacked_tile_set(true)` only resolves the authored sources and omits the registrar.
-The packed SVG TileSet therefore has the fixed runtime sources declared by
-`GroundTiles.ROUTE_KERB_TWIN`, while its reference stops at the authored resource's last source.
-`TileSet.get_source()` emits the engine error before returning null, and the test then skips the
-missing reference, leaving those generated sources untested.
-
-- [ ] **Build the same pre-pack source set in both paths.** In
-      `tests/test_ground_layers.gd::_unpacked_tile_set`, keep `_compose_layers()` for PNG and call
-      `GroundLayers._register_route_kerb_twins(result, {})` for SVG, matching
-      `GroundLayers.build_tile_set()` before `pack_into_one_texture()` runs. Do not add a second
-      literal list of IDs 58 through 65; those values are intentional fixed IDs, but
-      `GroundTiles.ROUTE_KERB_TWIN` and the production registrar remain their source of truth.
-- [ ] **Make a missing reference source an assertion failure without asking Godot for it.**
-      `_test_every_source_shares_one_texture_and_keeps_its_tiles` first checks that packed and
-      reference source counts agree and that `reference.has_source(id)` is true for every packed
-      ID; only then may it call `get_source(id)`. Preserve the existing tile-count, geometry,
-      shared-texture and pixel comparisons. A missing generated source must fail by name instead
-      of emitting an engine error and continuing.
-- [ ] **Verify the focused contract.** `./tools/test.sh ground_layers` exits 0 and its combined
-      output contains no `ERROR:`, `SCRIPT ERROR`, `Parse Error` or missing-atlas-source message.
-      Both PNG and forced-SVG iterations compare every packed source against a real unpacked
-      source, and `./tools/check.sh` passes. This changes one focused suite, not the global test
-      rig, so CI supplies the full-suite gate; no visual evidence is needed.
-
----
-
 ## M164 — Engine errors make the test gate red · asked for 2026-09-19
 
 > "create a todo for the bug report with enough detail to pick it up without additional
 > investigative work"
-
-This follows M163, the ground atlas test builds the same reference it compares: landing the runner
-repair first correctly makes that known fixture error fail its shard.
 
 `tests/run_tests.gd` counts only `check()` and `close_to()` failures and passes that array's state
 to `SceneTree.quit()`. Godot diagnostics are a separate channel: an engine `ERROR:`, a
