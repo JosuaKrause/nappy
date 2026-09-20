@@ -14,6 +14,7 @@ func run(t) -> void:
 	_test_never_narrower_than_the_widest_member(t)
 	_test_an_oversize_member_is_named_rather_than_the_page(t)
 	_test_empty_input(t)
+	_test_two_big_members_that_only_fit_side_by_side_above_the_square_root(t)
 
 ## Two calls on the same sizes place every member at the same spot — the free-rectangle list a
 ## placement leaves is a pure function of the placements before it, and the sort that decides
@@ -111,6 +112,39 @@ func _test_empty_input(t) -> void:
 	var layout := AtlasLibrary.plan([])
 	t.check(layout["fits"], "an empty group trivially fits")
 	t.check((layout["regions"] as Array).is_empty(), "an empty group places nothing")
+
+## Two big members that only sit side by side above the square-root width a single-width packer
+## would have tried: at that width each is too wide for the room the other leaves, so a search
+## that never tries a wider candidate stacks them and forces the page to their combined height —
+## the hole this suite's synthetic case exists to catch before a real page's does, the way
+## `street_kit`'s own tall road picture and wide road picture forced a stack at the square root
+## and a fifth less page once a wider candidate let them sit side by side. `bigger` is placed
+## first (it is both the larger by area and the taller of the two, which is what lets `smaller`
+## share its row instead of opening one below): stacked needs `max(150,100) x (200+180)` = 150x380
+## = 57000px²; side by side needs `(150+100) x max(200,180)` = 250x200 = 50000px², a ninth less
+## and shorter than the two members' combined height. `_candidate_widths()`'s running sum of the
+## widest members' own widths is what finds the side-by-side width here, not the even sweep — the
+## two are exactly as wide together as the case needs and nothing in between.
+func _test_two_big_members_that_only_fit_side_by_side_above_the_square_root(t) -> void:
+	var bigger := Vector2i(150, 200)
+	var smaller := Vector2i(100, 180)
+	var sizes: Array[Vector2i] = [bigger, smaller]
+	for i in 6:
+		sizes.append(Vector2i(20, 20))
+	var layout := AtlasLibrary.plan(sizes)
+	t.check(layout["fits"], "the two-big-members case fits on one page")
+	var page_size: Vector2i = layout["size"]
+	var stacked_height := bigger.y + smaller.y
+	t.check(page_size.y < stacked_height,
+			"the page (%dx%d) is shorter than the two members' stacked height (%d) — they sit on one row"
+			% [page_size.x, page_size.y, stacked_height])
+	var regions: Array = layout["regions"]
+	var bigger_rect: Rect2i = regions[0]
+	var smaller_rect: Rect2i = regions[1]
+	var side_by_side := (bigger_rect.position.x + bigger_rect.size.x <= smaller_rect.position.x
+			or smaller_rect.position.x + smaller_rect.size.x <= bigger_rect.position.x)
+	t.check(side_by_side, "the two members land beside each other, not one above the other (%s, %s)"
+			% [bigger_rect, smaller_rect])
 
 ## A spread of sizes wide enough to exercise growth, best-fit choice and the split more than
 ## once, with no two the same — a size repeated would let a placement pass this suite by landing

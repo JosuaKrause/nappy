@@ -264,8 +264,10 @@ class _GroupShape:
 	## side — what a member actually costs the page, since its border is never shared with a
 	## neighbour (`AtlasLibrary.SEPARATION`, twice `PADDING`, is what keeps it that way).
 	var bordered_area := 0
-	var widest := 0
-	var tallest := 0
+	## The group's own native sizes, kept so the aspect check can hand them straight to
+	## `AtlasLibrary.aspect_ceiling()` — the same function `plan()`'s own width search scores
+	## itself against, rather than a second copy of that formula kept in step by hand.
+	var sizes: Array[Vector2i] = []
 
 static func _group_shapes() -> Dictionary:
 	var shapes: Dictionary = {}
@@ -278,41 +280,29 @@ static func _group_shapes() -> Dictionary:
 		shape.count += 1
 		var bordered := size + Vector2i.ONE * (2 * AtlasLibrary.PADDING)
 		shape.bordered_area += bordered.x * bordered.y
-		shape.widest = maxi(shape.widest, size.x)
-		shape.tallest = maxi(shape.tallest, size.y)
+		shape.sizes.append(size)
 	return shapes
 
 ## The fill floor a page's member area (each member's own picture plus its one-pixel border, see
 ## `_GroupShape`) must clear over the page's own area. **Loosens for a small group** —
-## `35 + 8·ln(member count)`, clamped to `[35, 85]` — because a greedy packer only ever plugs a
+## `52 + 5·ln(member count)`, clamped to `[35, 90]` — because a greedy packer only ever plugs a
 ## gap with a member it has not placed yet: a page of a few hundred pictures has hundreds of
 ## chances to fill the room beside and under a tall one, and a page of five or six has only that
 ## many. The curve rises fastest where the difference between "a handful" and "a dozen" is
 ## largest and flattens once a group is big enough that the packer's own choices, not its member
-## count, decide how tight the page is. Calibrated so every page the bake currently writes clears
-## it and so the same rule, run against a page this test's own suite temporarily rebuilt with the
-## shelf packer this milestone replaced, did not.
+## count, decide how tight the page is. Calibrated against `plan()`'s own width search — every
+## page the bake currently writes clears it with room to spare — and so the same rule, run
+## against a page this test's own suite temporarily rebuilt with the shelf packer this milestone
+## replaced, did not.
 static func _fill_floor_percent(member_count: int) -> float:
-	return clampf(35.0 + 8.0 * log(float(member_count)), 35.0, 85.0)
-
-## The aspect ceiling a page's longer side over its shorter side must stay under. **Loosens with
-## how much of an ideally square page a single member already demands** — `max(widest, tallest)`
-## over the square root of the group's own bordered member area, the same measure `plan()` uses
-## for its square-root target width — since a page cannot be more square than its own most
-## dominant member's shape forces: a member that alone needs most of one side leaves nothing for
-## the packer's choices to make up. `1.8` is the flat floor under that term for a group with no
-## single dominant member, loose enough that a well-packed roughly-square page never trips it and
-## tight enough that a single shelf-packed row, at four times that or worse, always does.
-static func _aspect_ceiling(shape: _GroupShape) -> float:
-	var ideal_side := sqrt(float(shape.bordered_area))
-	var dominance := float(maxi(shape.widest, shape.tallest)) / ideal_side if ideal_side > 0.0 else 0.0
-	return maxf(1.8, 1.0 + dominance)
+	return clampf(52.0 + 5.0 * log(float(member_count)), 35.0, 90.0)
 
 ## Every page's fill clears `_fill_floor_percent()`. Run once against the shelf packer this
 ## milestone replaced (`tools/bake_atlases.gd` reverted, one forced bake, this suite alone): it
-## failed on `street_kit`, `interior`, `events` and `buildings`, the four PLAYTEST-109 measured as
-## worst, and passed on every other group, which is why the floor is not simply raised until
-## everything passes — a floor a shelf-packed page can still clear is not a floor.
+## failed on `street_kit`, `interior`, `events`, `buildings` and `ground` — the four PLAYTEST-109
+## measured as worst, and a fifth the raised floor below now also catches — and failed the aspect
+## ceiling on all ten, which is why the floor is not simply raised until everything passes: a
+## floor a shelf-packed page can still clear is not a floor.
 func _test_pages_meet_a_fill_floor(t) -> void:
 	var shapes := _group_shapes()
 	for group: StringName in shapes.keys():
@@ -324,16 +314,19 @@ func _test_pages_meet_a_fill_floor(t) -> void:
 				"%s: fill %.1f%% clears its floor %.1f%% for %d members (page %dx%d)"
 				% [group, fill, floor_percent, shape.count, page.x, page.y])
 
-## Every page's aspect ratio stays under `_aspect_ceiling()`. The same reverted-packer run that
-## proves the fill floor also proves this one: every shelf-packed page is a single strip, tens of
-## times wider than it is tall, which is exactly the shape this check exists to catch.
+## Every page's aspect ratio stays under `AtlasLibrary.aspect_ceiling()` — the same function
+## `plan()`'s own width search scores its candidates against, so this asks whether the search
+## delivered what it was aiming for rather than checking a second, independent opinion of it. The
+## same reverted-packer run that proves the fill floor also proves this one: every shelf-packed
+## page is a single strip, tens of times wider than it is tall, which is exactly the shape this
+## check exists to catch.
 func _test_pages_meet_an_aspect_ceiling(t) -> void:
 	var shapes := _group_shapes()
 	for group: StringName in shapes.keys():
 		var shape: _GroupShape = shapes[group]
 		var page := AtlasLibrary.page_size(group)
 		var aspect := float(maxi(page.x, page.y)) / float(mini(page.x, page.y))
-		var ceiling := _aspect_ceiling(shape)
+		var ceiling := AtlasLibrary.aspect_ceiling(shape.sizes)
 		t.check(aspect <= ceiling,
 				"%s: aspect %.3f stays under its ceiling %.3f (page %dx%d)"
 				% [group, aspect, ceiling, page.x, page.y])

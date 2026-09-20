@@ -112,6 +112,17 @@ static func illustrated_path_for(source_path: String) -> String:
 ## way, and the free-rectangle list a placement leaves is itself a pure function of the placements
 ## before it.
 ##
+## **The square root is where the search starts, not the answer.** A single width can leave an
+## obvious hole a wider page would not: `street_kit` packed at its own square-root width (366)
+## stacks two same-area road pictures because neither fits beside the other at that width, and
+## widening to where they sit side by side needs a *fifth less* page, not more. `plan()` packs
+## the same members at every width `_candidate_widths()` offers and keeps the smallest result
+## whose aspect ratio clears `aspect_ceiling()`, ties broken by the narrower width (candidates are
+## visited narrowest first and only a strict improvement replaces the kept result, so the same
+## widths in the same order always keep the same one). Every candidate is packed by the same
+## deterministic placement, so this is still one pure function of `sizes`, just evaluated more
+## than once.
+##
 ## Shared with the bake rather than owned by it, because the test that checks a page for
 ## overlaps and the tool that writes the page have to mean the same thing by "fits".
 static func plan(sizes: Array[Vector2i]) -> Dictionary:
@@ -141,10 +152,6 @@ static func plan(sizes: Array[Vector2i]) -> Dictionary:
 				"fits": false,
 				"overflow": index,
 			}
-	# The square-root target: never less than the widest member (or nothing could ever be
-	# placed), never more than the page limit less the one gap `plan()` reserves at the page's own
-	# left edge.
-	var target_width := clampi(ceili(sqrt(float(total_area))), widest, MAX_ATLAS_SIDE - SEPARATION)
 	var order: Array[int] = []
 	for index in sizes.size():
 		order.append(index)
@@ -154,6 +161,87 @@ static func plan(sizes: Array[Vector2i]) -> Dictionary:
 		if area_a != area_b:
 			return area_a > area_b
 		return a < b)
+	var ceiling := aspect_ceiling(sizes)
+	var best_regions: Array[Rect2i] = []
+	var best_size := Vector2i.ZERO
+	var best_meets_ceiling := false
+	var best_area := -1
+	for width in _candidate_widths(padded, widest, total_area):
+		var attempt := _pack_at_width(order, padded, sizes, width)
+		if not attempt["fits"]:
+			continue
+		var size: Vector2i = attempt["size"]
+		var aspect := float(maxi(size.x, size.y)) / float(mini(size.x, size.y))
+		var meets := aspect <= ceiling
+		var area := size.x * size.y
+		# Ascending width order plus "only a strict improvement replaces the kept result" is the
+		# whole of the tie-break: the first width tried at the best (meets-ceiling, area) pair is
+		# the one that survives every later candidate that only matches it.
+		var better := best_area == -1 \
+				or (meets and not best_meets_ceiling) \
+				or (meets == best_meets_ceiling and area < best_area)
+		if better:
+			best_regions = attempt["regions"]
+			best_size = size
+			best_meets_ceiling = meets
+			best_area = area
+	if best_area == -1:
+		# Every candidate width still overflows `MAX_ATLAS_SIDE` in height — a group too big for
+		# one page regardless of shape. Report the narrowest attempt, which is what a human
+		# widening the page limit or splitting the group would want to see first.
+		var narrowest := _pack_at_width(order, padded, sizes, widest)
+		return {"regions": narrowest["regions"], "size": narrowest["size"], "fits": false}
+	return {
+		"regions": best_regions,
+		"size": best_size,
+		"fits": best_size.x <= MAX_ATLAS_SIDE and best_size.y <= MAX_ATLAS_SIDE,
+	}
+
+## The widths `plan()` tries, narrowest first, deduplicated: the widest padded member (below this
+## nothing could ever be placed) up to twice the square-root target (capped at the page limit),
+## sweeping `_WIDTH_STEPS` evenly spaced points across that range plus the square-root width
+## itself, **and the running sum of the `_WIDEST_MEMBERS_TRIED` widest-by-width members' own
+## widths** — the specific widths an even sweep can straddle without ever landing on: two
+## same-area members whose combined width is a few pixels past the nearest even step still stack
+## instead of sitting side by side unless one of the tried widths is at least their sum.
+const _WIDTH_STEPS := 16
+const _WIDEST_MEMBERS_TRIED := 8
+
+static func _candidate_widths(padded: Array[Vector2i], widest: int, total_area: int) -> Array[int]:
+	var low := widest
+	var high := clampi(ceili(2.0 * sqrt(float(total_area))), low, MAX_ATLAS_SIDE - SEPARATION)
+	var seen: Dictionary = {}
+	var widths: Array[int] = []
+	var add := func(width: int) -> void:
+		var clamped := clampi(width, low, high)
+		if not seen.has(clamped):
+			seen[clamped] = true
+			widths.append(clamped)
+	add.call(low)
+	add.call(high)
+	add.call(clampi(ceili(sqrt(float(total_area))), low, high))
+	var by_width: Array[int] = []
+	for index in padded.size():
+		by_width.append(index)
+	by_width.sort_custom(func(a: int, b: int) -> bool:
+		if padded[a].x != padded[b].x:
+			return padded[a].x > padded[b].x
+		return a < b)
+	var running := 0
+	for i in mini(by_width.size(), _WIDEST_MEMBERS_TRIED):
+		running += padded[by_width[i]].x
+		add.call(running)
+	for step in range(_WIDTH_STEPS + 1):
+		add.call(low + int(round(float(high - low) * step / float(_WIDTH_STEPS))))
+	widths.sort()
+	return widths
+
+## One MaxRects pack at a fixed page width, best-area fit: the same placement `plan()` used to run
+## at a single square-root width, now called once per candidate. `fits` answers for height alone —
+## `width` is always within `MAX_ATLAS_SIDE` by construction, since every candidate is clamped to
+## it before this is called.
+static func _pack_at_width(order: Array[int], padded: Array[Vector2i], sizes: Array[Vector2i],
+		width: int) -> Dictionary:
 	var regions: Array[Rect2i] = []
 	regions.resize(sizes.size())
 	var free_rects: Array[Rect2i] = []
@@ -177,9 +265,9 @@ static func plan(sizes: Array[Vector2i]) -> Dictionary:
 				best_short_side = short_side
 		if not found:
 			# Nothing free is big enough — grow the page downward by exactly this member's own
-			# footprint height, which always fits it since `target_width` is never less than the
-			# widest member's own footprint width.
-			var grown := Rect2i(Vector2i(SEPARATION, floor_y), Vector2i(target_width, footprint.y))
+			# footprint height, which always fits it since `width` is never less than the widest
+			# member's own footprint width.
+			var grown := Rect2i(Vector2i(SEPARATION, floor_y), Vector2i(width, footprint.y))
 			floor_y += footprint.y
 			free_rects.append(grown)
 			placed_at = grown.position
@@ -190,11 +278,30 @@ static func plan(sizes: Array[Vector2i]) -> Dictionary:
 		used.x = maxi(used.x, rect.position.x + rect.size.x)
 		used.y = maxi(used.y, rect.position.y + rect.size.y)
 	var page_size := used + Vector2i(SEPARATION, SEPARATION)
-	return {
-		"regions": regions,
-		"size": page_size,
-		"fits": page_size.x <= MAX_ATLAS_SIDE and page_size.y <= MAX_ATLAS_SIDE,
-	}
+	return {"regions": regions, "size": page_size, "fits": page_size.y <= MAX_ATLAS_SIDE}
+
+## The aspect ratio (longer side over shorter) a well-packed page should not exceed, as a function
+## of the sizes being packed rather than of any one arrangement of them: `1.8` when no single
+## member dominates, loosened to `1.0 + dominance` — the largest of a member's own width or height
+## over the square root of the group's own total bordered area — when one member already needs
+## most of one side of an ideally square page, since no packer can make the page more square than
+## that member's own shape forces. `plan()`'s own width search is scored against this, and
+## `tests/test_atlas_library.gd` asserts every baked page against the same function, so the search
+## and the suite agree on what "square enough" means.
+static func aspect_ceiling(sizes: Array[Vector2i]) -> float:
+	if sizes.is_empty():
+		return 1.8
+	var bordered_area := 0
+	var widest := 0
+	var tallest := 0
+	for size in sizes:
+		var bordered: Vector2i = size + Vector2i.ONE * (2 * PADDING)
+		bordered_area += bordered.x * bordered.y
+		widest = maxi(widest, size.x)
+		tallest = maxi(tallest, size.y)
+	var ideal_side := sqrt(float(bordered_area))
+	var dominance := float(maxi(widest, tallest)) / ideal_side if ideal_side > 0.0 else 0.0
+	return maxf(1.8, 1.0 + dominance)
 
 ## Removes `placed` from the free space `plan()` can still offer: every free rectangle `placed`
 ## overlaps is replaced by the up-to-four slabs of itself `placed` does not cover (left, right,
