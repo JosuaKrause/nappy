@@ -6,8 +6,8 @@ extends RefCounted
 ## The café event family (`EventDef.Look.CAFE`) is the set packed here, because it is a real group
 ## with a real spread of canvas sizes rather than a fixture invented for the suite, and events are
 ## the one family still packed by this class through every pull request of M171, build-time
-## atlases: `test_crowd_atlas.gd` holds the same contract for the crowd's nested shape, and
-## `test_ground_layers.gd` holds the ground's, which is packed a different way.
+## atlases; `test_ground_layers.gd` holds the ground's own contract, which is packed a different
+## way.
 ##
 ## Run under both presentation modes, since the atlas packs whichever raster
 ## `TextureResolver.resolve()` currently chooses, and `TextureAtlas.reset_for_tests()` is paired

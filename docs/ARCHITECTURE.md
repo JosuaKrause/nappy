@@ -56,9 +56,9 @@ src/
 	                      escape's two chains
 	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors, and stands the checkpoint structure and gate state at every door
   crowd/
-	crowd.gd              owns the day's agents; sums their excitement
-	crowd_agent.gd        one walker or one car
-	crowd_atlas.gd        the crowd's own six view tables as one TextureAtlas group
+	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
+	                      rather than released between days; sums their excitement
+	crowd_agent.gd        one walker or one car, drawn from the baked `crowd` page
 	crowd_lanes.gd        the lane geometry of the street grid
 	crowd_field.gd        the box around the player the crowd is simulated in
 	crowd_pockets.gd      the carriageway today's seals shut in, so no car is placed with nowhere to go

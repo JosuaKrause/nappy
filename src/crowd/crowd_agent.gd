@@ -43,19 +43,24 @@ enum DoorState { WALKING, WAITING, INSPECTION, EMERGING }
 ## own to get here. All five share one 18x38 canvas and one (9, 38) feet anchor (see
 ## `docs/evidence/svg-people-2026-09-10/PEOPLE-MATRIX.md`); body is tinted per walker, trim is
 ## drawn untinted above it — see `_draw_body()`.
+##
+## Paths rather than `preload()`d textures: the milestone's whole point is that a picture baked
+## into `assets/atlases/baked/crowd.png` is not also resident as its own loaded resource.
+## `_region_of()` is what turns one of these into the name `AtlasLibrary.region()` and
+## `native_size()` actually take.
 const WALKER_BODY_BY_VIEW := {
-	"front": preload("res://assets/crowd/walker_front_body.svg"),
-	"back": preload("res://assets/crowd/walker_back_body.svg"),
-	"side": preload("res://assets/crowd/walker_side_body.svg"),
-	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_body.svg"),
-	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_body.svg"),
+	"front": "res://assets/crowd/walker_front_body.svg",
+	"back": "res://assets/crowd/walker_back_body.svg",
+	"side": "res://assets/crowd/walker_side_body.svg",
+	"front_diagonal": "res://assets/crowd/walker_front_diagonal_body.svg",
+	"back_diagonal": "res://assets/crowd/walker_back_diagonal_body.svg",
 }
 const WALKER_TRIM_BY_VIEW := {
-	"front": preload("res://assets/crowd/walker_front_trim.svg"),
-	"back": preload("res://assets/crowd/walker_back_trim.svg"),
-	"side": preload("res://assets/crowd/walker_side_trim.svg"),
-	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_trim.svg"),
-	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_trim.svg"),
+	"front": "res://assets/crowd/walker_front_trim.svg",
+	"back": "res://assets/crowd/walker_back_trim.svg",
+	"side": "res://assets/crowd/walker_side_trim.svg",
+	"front_diagonal": "res://assets/crowd/walker_front_diagonal_trim.svg",
+	"back_diagonal": "res://assets/crowd/walker_back_diagonal_trim.svg",
 }
 ## The walker's second gait frame, feet passing — the mother's own `_b` pose for each view. Only
 ## the legs and shoes differ from the tables above; the coat stays put in the three-quarter views
@@ -64,18 +69,18 @@ const WALKER_TRIM_BY_VIEW := {
 ## beside the unsuffixed frame-a sources rather than renaming those into `_a`, so nothing that
 ## already points at `walker_front_body.svg` and so on has to change.
 const WALKER_BODY_BY_VIEW_B := {
-	"front": preload("res://assets/crowd/walker_front_body_b.svg"),
-	"back": preload("res://assets/crowd/walker_back_body_b.svg"),
-	"side": preload("res://assets/crowd/walker_side_body_b.svg"),
-	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_body_b.svg"),
-	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_body_b.svg"),
+	"front": "res://assets/crowd/walker_front_body_b.svg",
+	"back": "res://assets/crowd/walker_back_body_b.svg",
+	"side": "res://assets/crowd/walker_side_body_b.svg",
+	"front_diagonal": "res://assets/crowd/walker_front_diagonal_body_b.svg",
+	"back_diagonal": "res://assets/crowd/walker_back_diagonal_body_b.svg",
 }
 const WALKER_TRIM_BY_VIEW_B := {
-	"front": preload("res://assets/crowd/walker_front_trim_b.svg"),
-	"back": preload("res://assets/crowd/walker_back_trim_b.svg"),
-	"side": preload("res://assets/crowd/walker_side_trim_b.svg"),
-	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_trim_b.svg"),
-	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_trim_b.svg"),
+	"front": "res://assets/crowd/walker_front_trim_b.svg",
+	"back": "res://assets/crowd/walker_back_trim_b.svg",
+	"side": "res://assets/crowd/walker_side_trim_b.svg",
+	"front_diagonal": "res://assets/crowd/walker_front_diagonal_trim_b.svg",
+	"back_diagonal": "res://assets/crowd/walker_back_diagonal_trim_b.svg",
 }
 ## Which authored view each of `EightDirection`'s eight sectors draws — N back, NE/NW
 ## back_diagonal, E/W side, SE/SW front_diagonal, S front, the same N/NE/E/SE/S coverage the
@@ -98,35 +103,34 @@ const CAR_VIEW_BY_SECTOR: Array[String] = [
 ## 52x42. `car_end_{body,trim}.svg`, the old two-view family's foreshortened top-down picture, is
 ## no longer read by either table — see `docs/GRAPHICS.md` for where it stands now.
 const CAR_BODY_BY_VIEW := {
-	"front": preload("res://assets/crowd/car_front_body.svg"),
-	"back": preload("res://assets/crowd/car_back_body.svg"),
-	"side": preload("res://assets/crowd/car_side_body.svg"),
-	"front_diagonal": preload("res://assets/crowd/car_front_diagonal_body.svg"),
-	"back_diagonal": preload("res://assets/crowd/car_back_diagonal_body.svg"),
+	"front": "res://assets/crowd/car_front_body.svg",
+	"back": "res://assets/crowd/car_back_body.svg",
+	"side": "res://assets/crowd/car_side_body.svg",
+	"front_diagonal": "res://assets/crowd/car_front_diagonal_body.svg",
+	"back_diagonal": "res://assets/crowd/car_back_diagonal_body.svg",
 }
 const CAR_TRIM_BY_VIEW := {
-	"front": preload("res://assets/crowd/car_front_trim.svg"),
-	"back": preload("res://assets/crowd/car_back_trim.svg"),
-	"side": preload("res://assets/crowd/car_side_trim.svg"),
-	"front_diagonal": preload("res://assets/crowd/car_front_diagonal_trim.svg"),
-	"back_diagonal": preload("res://assets/crowd/car_back_diagonal_trim.svg"),
+	"front": "res://assets/crowd/car_front_trim.svg",
+	"back": "res://assets/crowd/car_back_trim.svg",
+	"side": "res://assets/crowd/car_side_trim.svg",
+	"front_diagonal": "res://assets/crowd/car_front_diagonal_trim.svg",
+	"back_diagonal": "res://assets/crowd/car_back_diagonal_trim.svg",
 }
 
-## Every table above, packed into `CrowdAtlas`'s one shared texture — what `_draw_body()` and
-## `_entry_picture_clearance()` actually read, so every crowd sprite the compatibility renderer
-## draws in a row shares one texture and the batch does not break between them. The six tables
-## above stay as the source list `CrowdAtlas.pack()` builds from, and as what
-## `tests/test_walker_views.gd` and `tests/test_car_views.gd` pin the authored views against —
-## nothing about drawing them moves except which texture object gets bound.
-static func _atlas() -> Dictionary:
-	return CrowdAtlas.pack({
-		"walker_body": WALKER_BODY_BY_VIEW,
-		"walker_trim": WALKER_TRIM_BY_VIEW,
-		"walker_body_b": WALKER_BODY_BY_VIEW_B,
-		"walker_trim_b": WALKER_TRIM_BY_VIEW_B,
-		"car_body": CAR_BODY_BY_VIEW,
-		"car_trim": CAR_TRIM_BY_VIEW,
-	})
+## `WALKER_BODY_BY_VIEW`'s (and its five sibling tables') own path, turned into the baked region
+## name `AtlasLibrary.region()`/`native_size()` take — `AtlasLibrary.region_name_for()` is a pure
+## string transform with no I/O, so caching it buys nothing but not re-deriving the same six small
+## dictionaries every frame for a crowd of a couple of hundred. Built lazily rather than as a
+## `const`, since GDScript cannot fold a static call into one.
+static var _region_cache: Dictionary = {}
+
+static func _region_of(path: String) -> StringName:
+	var cached: Variant = _region_cache.get(path)
+	if cached != null:
+		return cached
+	var name := AtlasLibrary.region_name_for(path)
+	_region_cache[path] = name
+	return name
 
 ## How fast an agent closes on its lane centre. Slow enough that a corner reads as a turn.
 const STEER_SPEED := 90.0
@@ -2825,9 +2829,11 @@ func _entry_room() -> float:
 	return Tuning.OUT_OF_SIGHT
 
 ## How far this kind's own drawn picture reaches past `_along()`, along this axis, in the
-## direction a plain edge lies — read off the real texture sizes and the same anchor arithmetic
-## `_draw_body()`/`_car_body_anchor()` use, not a guessed number, because "the whole picture inside
-## the map" means exactly what `_draw_body()` puts on screen.
+## direction a plain edge lies — read off the baked region's own native size and the same anchor
+## arithmetic `_draw_body()`/`_car_body_anchor()` use, not a guessed number, because "the whole
+## picture inside the map" means exactly what `_draw_body()` puts on screen. `native_size()`
+## answers from the region table with nothing acquired, which matters here: a placement roll in
+## `setup()` asks this before `Crowd.start_day()`'s own acquire needs to have happened.
 ##
 ## **`_entry_room()` grants room past the true edge; this grants none, and states what "none" has
 ## to mean instead.** A walker or an off-spine car's `_entry_room()` is 0.0 — no room *past* the
@@ -2841,19 +2847,16 @@ func _entry_room() -> float:
 ## conservative on the edge that needed less, never short on the one that needed more. Only the
 ## cardinal (`front`, `side`) views are asked, since a fresh entry never lands mid-turn.
 func _entry_picture_clearance() -> float:
-	var atlas := _atlas()
 	if kind == Kind.CAR:
-		var car_body: Dictionary = atlas["car_body"]
 		if _vertical:
-			var body: Texture2D = car_body["front"]
+			var body := AtlasLibrary.native_size(_region_of(CAR_BODY_BY_VIEW["front"]))
 			var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH \
 					+ float(CAR_CANVAS_BOTTOM_MARGIN["front"])
-			return maxf(south_reach, body.get_size().y - south_reach)
-		var side: Texture2D = car_body["side"]
-		return side.get_size().x * 0.5
-	var walker: Texture2D = atlas["walker_body"]["front"]
-	var size := walker.get_size()
-	return size.y if _vertical else size.x * 0.5
+			return maxf(south_reach, float(body.y) - south_reach)
+		var side := AtlasLibrary.native_size(_region_of(CAR_BODY_BY_VIEW["side"]))
+		return float(side.x) * 0.5
+	var walker := AtlasLibrary.native_size(_region_of(WALKER_BODY_BY_VIEW["front"]))
+	return float(walker.y) if _vertical else float(walker.x) * 0.5
 
 ## Whether this agent's own coordinate leaves its picture entirely inside the map — the question
 ## `_entry_band_fits()` and `_keep_within_the_room_beyond_the_map()` both ask once `_entry_room()`
@@ -3221,10 +3224,15 @@ func _draw() -> void:
 
 ## Draws this agent's own body onto `canvas`. `EntityHalo` calls this once per ring offset to
 ## trace whichever silhouette the sprite actually is; the ordinary frame draws it once at self.
+##
+## **Reads `AtlasLibrary.region()`, which is null with an engine error the moment `crowd` is not
+## acquired.** `Crowd.start_day()` acquires it before an agent exists to draw and `Crowd.clear()`
+## releases it once every agent is freed, so nothing here has a lifetime of its own to manage —
+## see the class doc on `Crowd` for why the owner holds one reference for the whole day rather
+## than every agent acquiring for itself.
 func _draw_body(canvas: CanvasItem) -> void:
 	var frame := _frame()
 	var flip := _flipped()
-	var atlas := _atlas()
 	if kind == Kind.CAR:
 		var forward := _travel_axis()
 		_draw_shape_shadow(canvas, shape, Vector2.ZERO, forward)
@@ -3232,20 +3240,26 @@ func _draw_body(canvas: CanvasItem) -> void:
 		# The same heading the shadow above and the debug view's bounding box are drawn on, so the
 		# picture cannot register against a car that is not there — see `_car_body_anchor()`.
 		var anchor := _car_body_anchor(view, forward)
-		var car_body: Dictionary = atlas["car_body"]
-		var car_trim: Dictionary = atlas["car_trim"]
-		Sprites.draw_standing(canvas, car_body[view], anchor, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(canvas, car_trim[view], anchor, Vector2.ZERO, flip)
+		var body := AtlasLibrary.region(_region_of(CAR_BODY_BY_VIEW[view]))
+		var trim := AtlasLibrary.region(_region_of(CAR_TRIM_BY_VIEW[view]))
+		Sprites.draw_standing(canvas, body, anchor, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(canvas, trim, anchor, Vector2.ZERO, flip)
 		return
 	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
 	var view: String = WALKER_VIEW_BY_SECTOR[frame]
 	# One lookup decides both layers, so the coat and the legs can never show two different
 	# instants of the same stride.
 	var stepping := _walker_gait_frame() == 1
-	var body_by_view: Dictionary = atlas["walker_body_b"] if stepping else atlas["walker_body"]
-	var trim_by_view: Dictionary = atlas["walker_trim_b"] if stepping else atlas["walker_trim"]
-	Sprites.draw_standing(canvas, body_by_view[view], Vector2.ZERO, Vector2.ZERO, flip, colour)
-	Sprites.draw_standing(canvas, trim_by_view[view], Vector2.ZERO, Vector2.ZERO, flip)
+	var body_paths: Dictionary = WALKER_BODY_BY_VIEW_B if stepping else WALKER_BODY_BY_VIEW
+	var trim_paths: Dictionary = WALKER_TRIM_BY_VIEW_B if stepping else WALKER_TRIM_BY_VIEW
+	var body := AtlasLibrary.region(_region_of(body_paths[view]))
+	var trim := AtlasLibrary.region(_region_of(trim_paths[view]))
+	# The body is tinted per agent (`colour`, `_colour()`'s "authored near-white and multiplied");
+	# the trim above it draws at `Sprites.draw_standing()`'s own default `Color.WHITE` — the split
+	# that keeps a crowd from reading as one silhouette in one colour. Two separate baked regions
+	# rather than one, so tinting one never touches the other's own pixels.
+	Sprites.draw_standing(canvas, body, Vector2.ZERO, Vector2.ZERO, flip, colour)
+	Sprites.draw_standing(canvas, trim, Vector2.ZERO, Vector2.ZERO, flip)
 
 ## How much empty canvas each authored view leaves below its own drawn content, in px — read off
 ## `facings.csv`'s alpha bounds (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`, the `car`

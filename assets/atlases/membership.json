@@ -51,7 +51,7 @@
       ]
     },
     "crowd": {
-      "lifetime": "the day: the crowd is built at the start of a day and freed at its end",
+      "lifetime": "the crowd node's own life: taken by the first day's crowd and held until the node itself is freed, since a page two days both draw is never released between them",
       "padding": "transparent",
       "consumers": [
         "src/crowd/crowd_agent.gd"

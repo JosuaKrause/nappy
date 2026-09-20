@@ -24,6 +24,22 @@ extends Node
 ## nobody else's. See `Stroller.stand_down()`.
 const WARNING_SOURCE := &"traffic"
 
+## The baked group every `CrowdAgent` draws from — see `assets/atlases/membership.json`'s own
+## `crowd` entry for its lifetime: "the crowd node's own life: taken by the first day's crowd and
+## held until the node itself is freed, since a page two days both draw is never released between
+## them". Acquired once here, by the owner, rather than once per agent: a couple of hundred agents
+## acquiring their own reference would still be correct under `AtlasLibrary`'s counting, but it is
+## a couple of hundred redundant calls for a page this class already knows the lifetime of.
+const ATLAS_GROUP := &"crowd"
+## Whether this crowd currently holds `ATLAS_GROUP` — guards two different calls rather than one:
+## `start_day()`'s own acquire, taken once on the first day a crowd is built rather than every day
+## (PLAYTEST-109, "don't unload anything that might be needed in one day and in the next" — a page
+## every day's crowd draws is needed in every one of them, so a release between two days is a
+## reload, and `AtlasLibrary.acquire()`'s `load()` is a blocking call in a played moment); and
+## `_exit_tree()`'s own release, since the finale's crowd (`main.gd`'s "nobody on the street
+## today", which never calls `start_day()`) took nothing and must give nothing back either.
+var _atlas_held := false
+
 var _agents: Array[CrowdAgent] = []
 var _city: City
 var _map: CityMap
@@ -113,6 +129,11 @@ func setup(city: City, map: CityMap) -> void:
 ## population on one pixel.
 func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> void:
 	clear()
+	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
+	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
+	if not _atlas_held:
+		AtlasLibrary.acquire(ATLAS_GROUP)
+		_atlas_held = true
 	_struck = false
 	# The lights go back to the top of their cycle with the traffic. They are a property of the
 	# city rather than of the day, so leaving them running reads as the right thing — and it
@@ -214,6 +235,22 @@ func clear() -> void:
 	# lane, and "the same day and seed rebuild the same crowd in the same places" stops being true.
 	# The index is state about a frame, not about a run.
 	_traffic.rebuild({})
+	# Does not touch `ATLAS_GROUP` — a page every day's crowd draws is never released between two
+	# days, since a release only buys back a reload, and `AtlasLibrary.acquire()`'s `load()` is a
+	# blocking call in a played moment (PLAYTEST-109, "don't unload anything that might be needed
+	# in one day and in the next"). `_exit_tree()` is the only place this crowd gives it up, once
+	# there is no more crowd coming to draw from it.
+
+## The one place `ATLAS_GROUP` is released — reached however this crowd's life actually ends: the
+## city torn down on quitting to the title screen mid-day, a test that frees its `City` directly,
+## or, harmlessly, the finale's own crowd (`main.gd`'s "nobody on the street today"), which never
+## called `start_day()` and so never took a reference to give back — `_atlas_held` is what tells
+## those two apart. `AtlasLibrary`'s counts are static and outlive this node, so a reference not
+## given back here is held for the rest of the process rather than for the rest of a day.
+func _exit_tree() -> void:
+	if _atlas_held:
+		AtlasLibrary.release(ATLAS_GROUP)
+		_atlas_held = false
 
 ## Agents alternate axes rather than rolling for one, so a crowd is never accidentally all
 ## north-south on a day when the coin came up that way.
