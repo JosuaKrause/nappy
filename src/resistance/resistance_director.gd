@@ -17,10 +17,11 @@ extends Node
 ## offered before it.
 const TRAP_FIRST_DAY := 4
 
-## A mark is "seen" once its own world position has been inside the camera's view, and only
-## then does it stop following the player. Below that, moving it only when she is this far
-## from it is what turns *"placed but never on screen"* into *"placed just off screen"*
-## rather than *"placed wherever is convenient right now"*.
+## A mark is "seen" once she has actually noticed it — see `SEEN_DISTANCE` and
+## `SEEN_DWELL_SECONDS` for what that takes — and only then does it stop following the player.
+## Below that, moving it only when she is this far from it is what turns *"placed but never
+## on screen"* into *"placed just off screen"* rather than *"placed wherever is convenient
+## right now"*.
 ##
 ## The camera sits on her at zoom 2 over a 1280x720 viewport, so the visible world is
 ## 640x360: 320px to the edge sideways, 180px vertically (docs/EVENTS.md, "Everything
@@ -30,6 +31,31 @@ const TRAP_FIRST_DAY := 4
 ## to site every arrival off screen (docs/DECISIONS.md, M77). Smallest reading of the
 ## player's own sentence, open to overturn: a single constant here is one edit to move it.
 const NOTICE_RADIUS := 400.0
+
+## How close she has to stand to a mark — on top of it being on screen — before it counts as
+## noticed (M177, playtest 116: a mark whose tile merely swept across the camera fifteen tiles
+## from where she stood used to freeze on that one frame, which is not the same claim as having
+## seen it). The distance half of "near enough, for long enough, that walking away from it is a
+## choice", and also of the player's own second pass on this milestone: *"they should only get
+## pinned whenever you see them (and not at the edge of the screen really)"*.
+##
+## **Chosen below 180, the visible world's own vertical half-extent** (`NOTICE_RADIUS`'s own doc:
+## the camera at zoom 2 over a 1280x720 viewport shows 320px sideways and 180px vertically from
+## her). A circle of this radius is the shape the euclidean check actually draws, so the binding
+## constraint is the *shorter* axis: at 150, any point inside the circle is on screen on **every**
+## bearing, not merely a favourable one — the corner case a distance under the wider, 320px
+## sideways half-extent would still have let through, sitting right at the top or bottom edge with
+## little sideways offset. That makes "well inside the view" a geometric guarantee rather than a
+## typical case, which is what makes `_sight.call(at)` below redundant whenever this already holds
+## and left in anyway, for a rig whose `_sight` answers something other than the real screen.
+## Felt, open to overturn against a played day.
+const SEEN_DISTANCE := 150.0
+
+## How long she has to hold `SEEN_DISTANCE` and on screen, continuously, before the mark is
+## noticed — the time half of the same rule. A single frame is a tile sweeping past at the edge of
+## a running stride; a second is long enough that walking past would not trigger it by accident
+## while stopping to read a wall would. Felt, open to overturn.
+const SEEN_DWELL_SECONDS := 1.0
 
 ## How many bearings `_draw_guard_position` tries before giving up on the day's guard. A
 ## `barricade`-scale alley is 64px wide against a band that can reach past 150px out — most
@@ -58,6 +84,9 @@ var _sight: Callable
 ## Whether the current pickup's mark has been seen this world-day. Sticky once true — see
 ## `_track_sight_and_reposition()`.
 var _seen := false
+## Seconds she has held `SEEN_DISTANCE` and on screen, continuously, toward `SEEN_DWELL_SECONDS`.
+## Reset to zero the instant either condition breaks — see `_track_sight_and_reposition()`.
+var _seen_dwell := 0.0
 ## The `alley_robbery` standing by the current mark, from `TRAP_FIRST_DAY`. Tracked so a
 ## move can retire it and `_maybe_set_a_trap` a fresh one near wherever the mark goes.
 var _guard: EventInstance
@@ -88,6 +117,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_day = day
 	_rng = rng
 	_seen = false
+	_seen_dwell = 0.0
 	_guard = null
 	# A fresh attempt at the day starts without the package, whether this is the first try
 	# or a retry after a nerve — see GameState.resistance_carrying_package.
@@ -248,17 +278,29 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 ## cannot see one however its mouths stand, and a region wall is not a `RoadClosure`, so
 ## `is_closed` cannot either — `CityMap.is_in_walled_alley` is the refusal built for exactly this
 ## ground. See `docs/DECISIONS.md`, M100, "A blocked-off alley has no chalk mark".
+##
+## **Avoids a tile a completed step already used, unless nothing else reachable is left (M177).**
+## Landing a fresh mark back on the very alley an earlier step's mark stood at reads as the game
+## reusing its own prop rather than "any alley she comes across" — but the avoidance never costs
+## the placement guarantee itself: a candidate list whose only reachable tile happens to be a used
+## one still returns it rather than `Vector2.INF`. `GameState.completed_resistance_alley_tiles`
+## only ever holds `ALLEY` tiles (see `_on_contact_completed()`), so this filter is a silent no-op
+## against a perform step's or the finale's own placement, neither of which is ever an alley.
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator) -> Vector2:
 	var walled_alleys := _walled_alleys()
 	var reachable: Array[Vector2i] = []
+	var unused: Array[Vector2i] = []
 	for tile in candidates:
 		if _map.is_closed(tile) or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
 				or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		reachable.append(tile)
-	if reachable.is_empty():
+		if tile not in GameState.completed_resistance_alley_tiles:
+			unused.append(tile)
+	var pool := unused if not unused.is_empty() else reachable
+	if pool.is_empty():
 		return Vector2.INF
-	return _map.tile_to_world(reachable[rng.randi_range(0, reachable.size() - 1)])
+	return _map.tile_to_world(pool[rng.randi_range(0, pool.size() - 1)])
 
 ## Today's crossing alleys that are wall rather than door — see `CityMap.is_in_walled_alley`.
 ## Read from the city's own region plan rather than tracked here, so a director never disagrees
@@ -282,7 +324,7 @@ func _process(delta: float) -> void:
 	# neither is a chalk mark, so only a pickup is ever subject to the re-placement rule. A
 	# perform step is subject to the first-reached rule instead — see `_track_first_reached()`.
 	if _step.is_pickup:
-		_track_sight_and_reposition()
+		_track_sight_and_reposition(delta)
 	elif _rider:
 		_track_first_reached()
 	if _step.deadline_fraction <= 0.0 or _day_length <= 0.0:
@@ -355,27 +397,44 @@ func _near_side_offset(instance: EventInstance, from: Vector2) -> Vector2:
 		to_her = Vector2.RIGHT
 	return to_her.normalized() * (clearance + Tuning.PLAYER_BODY_RADIUS)
 
-## "A mark that was never on screen was never placed" — playtest 19, verbatim. Seen is
-## sticky for the day: once `_sight` has answered true for the mark's own position it never
-## moves again, however far she walks from it afterwards.
+## "A mark that was never on screen was never placed" — playtest 19, verbatim, still the rule for
+## what keeps a mark moving. **What changed (M177, playtest 116) is what counts as having actually
+## seen it.** The old rule pinned a mark the first frame its position was inside the view — which
+## also pinned it fifteen tiles from where she stood the moment its tile swept past the camera on
+## the way to somewhere else, since "inside the view" says nothing about whether she was close
+## enough to read it. Now it also has to be within `SEEN_DISTANCE` of her, continuously, for
+## `SEEN_DWELL_SECONDS` — near enough, for long enough, that walking past it rather than to it is
+## a choice. Seen is still sticky once reached: it never moves again that day, however far she
+## walks from it afterwards.
 ##
 ## While unseen, walking away from it is corrected rather than left standing where she can
 ## no longer find it: if she is further than `NOTICE_RADIUS` from the mark and a reachable
-## alley tile is within `NOTICE_RADIUS` of her, the mark jumps to the nearest one — the
+## alley tile is within `NOTICE_RADIUS` of her, the mark jumps to the nearest eligible one — the
 ## alley's own mouth, which is "on the path where the player can see it". Staying within the
 ## mark's own radius does nothing, which is the hysteresis that stops it chasing her step by
 ## step.
-func _track_sight_and_reposition() -> void:
+func _track_sight_and_reposition(delta: float) -> void:
 	if _seen:
 		return
 	if not _player or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 	var at := _contact.global_position
-	if _sight.is_valid() and _sight.call(at):
-		_seen = true
-		Telemetry.note("contact", "step %d seen at %s" % [
-			_step.index, TelemetryLog.tile(_map.world_to_tile(at))])
+	var noticing: bool = _player != null \
+			and _player.global_position.distance_to(at) <= SEEN_DISTANCE \
+			and _sight.is_valid() and _sight.call(at)
+	if noticing:
+		_seen_dwell += delta
+		if _seen_dwell >= SEEN_DWELL_SECONDS:
+			_seen = true
+			Telemetry.note("contact", "step %d seen at %s after %.1fs within %.0fpx" % [
+				_step.index, TelemetryLog.tile(_map.world_to_tile(at)),
+				SEEN_DWELL_SECONDS, SEEN_DISTANCE])
 		return
+	# Broke either condition this frame — on screen but too far, close but not on screen, or
+	# simply not there yet — so the dwell starts over rather than merely pausing. A player who
+	# walks up, glances off and away, then wanders back later has not been looking at it the
+	# whole time in between.
+	_seen_dwell = 0.0
 	if not _player:
 		return
 	# A robber already awake and coming for her cannot lose his mark out from under him.
@@ -401,10 +460,19 @@ func _track_sight_and_reposition() -> void:
 ## there to start with), within `NOTICE_RADIUS` — or `Vector2.INF` if there is none. Linear over
 ## `tiles_of_type()`, which is already cached; there is one active mark at a time, so this runs
 ## once a frame at most.
+##
+## **Avoids a tile a completed step already used, the same rule and the same fallback
+## `_pick_reachable()` applies to the dawn placement (M177):** the nearest eligible tile that is
+## not in `GameState.completed_resistance_alley_tiles`, or the plain nearest eligible tile if
+## avoiding them would leave nothing in reach at all — a relocation exists to keep the mark
+## findable, and that guarantee outranks the avoidance.
 func _nearest_alley_within(here: Vector2) -> Vector2:
 	var walled_alleys := _walled_alleys()
+	var used := GameState.completed_resistance_alley_tiles
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
+	var nearest_any := Vector2.INF
+	var nearest_any_distance := NOTICE_RADIUS
 	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
 		if _map.is_closed(tile) or not _map.is_walkable(tile) \
 				or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
@@ -412,10 +480,14 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 			continue
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
-		if distance < nearest_distance:
-			nearest_distance = distance
-			nearest = world
-	return nearest
+		if distance < nearest_any_distance:
+			nearest_any_distance = distance
+			nearest_any = world
+		if tile in used or distance >= nearest_distance:
+			continue
+		nearest_distance = distance
+		nearest = world
+	return nearest if nearest != Vector2.INF else nearest_any
 
 ## Moves an unseen mark to the alley she has just come near, and moves its guard with it —
 ## retiring the one standing over the old spot rather than leaving a robber with nothing
@@ -442,6 +514,11 @@ func _on_contact_completed(step_index: int) -> void:
 	Telemetry.note("contact", "step %d completed" % step_index)
 	var step := ResistanceSteps.by_index(step_index)
 	GameState.complete_resistance_step(step_index, step == null or step.grants_progress)
+	# Only a pickup's mark ever stands on an `ALLEY` tile — a perform's contact rides on its own
+	# event and the finale sits in a district — so this is the one completion worth recording for
+	# `_pick_reachable()`/`_nearest_alley_within()` to avoid reusing later (M177).
+	if step and step.is_pickup and _contact:
+		GameState.record_completed_alley_tile(_map.world_to_tile(_contact.global_position))
 	if step and step.applies_package_weight:
 		GameState.resistance_carrying_package = true
 		Telemetry.note("contact", "the package is heavier now; the rest of today costs more")
