@@ -1,0 +1,9 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.1 Metal - 90.5 - Compatibility - Using Device: Apple - Apple M2
+
+[GameState] run started, seed=4242
+[Main] city generated in 341 ms (seed 4242)
+[Main] 105 pictures warmed in 217 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] day 1 started in 957 ms (act 1): 393 events (42 live, 20 ahead), 234 crowd, 180s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: fallen tree h(1,6)
+Frame trace: /Users/krause/Library/Application Support/Godot/app_userdata/Nappy/frame-traces/trace-2026-09-19T14-19-36-seed4242-14725811.json

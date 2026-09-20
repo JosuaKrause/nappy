@@ -286,11 +286,6 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-**The user stopped work: "no more tests no more anything" and "handoff now!!!!".**
-Do not resume implementation, tests, captures, conflict resolution or merging without new
-instructions. The latest requested delivery is everything in PR #234 for review, with new
-main conflicts deferred. The earlier ship instruction is not a reason to work past this stop.
-
 - **PR #234 — M167, the father's legs read as legs** remains a draft. The artwork itself is
   approved; do not regenerate or revise its accepted pixels. The PR checkout is
   `.claude/worktrees/father-leg-refinement`. Its attempt history, reusable illustrated-PNG
@@ -304,17 +299,22 @@ main conflicts deferred. The earlier ship instruction is not a reason to work pa
   immutable, but installation changes those too. Preserve actual frozen originals before
   relying on that recipe fix. Runtime evidence covers father pushing; the attempted carrying
   capture selected the mother and does not establish father-carrying runtime appearance.
-  When authorized to resume, inspect the checkpoint diffs, fix only that remaining recipe
+  Inspect the checkpoint diffs, fix only that remaining recipe
   issue, integrate both checkpoints, update the PR description/check status, and make it
   reviewable. Do not start a new art attempt or touch the separately owned optimization PR.
 
-- **PR #216 — M159, reduce crowd contribution cost and retain stutter measurements** is
-  handled by another session. Fetch its live state before doing related work; do not duplicate
-  that session's implementation or merge work.
 - **M171 — Build-time atlases replace individual textures** is specified in `TODO.md` and
   [PLAYTEST-105](playtests/PLAYTEST-105.md). The atlas generator and runtime loading changes
   remain unimplemented. Baked constituent images must be absent from shipped packages and
   from individual CPU/GPU allocations; source artwork stays in the authoring repository.
+- **M159, a slow frame names the frame that was slow, has its first optimization in and three
+  items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
+  velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
+  contribution sweeps; [PLAYTEST-86](playtests/PLAYTEST-86.md) is the player's demand for an
+  optimization rather than a measurement). Whole-frame tails remain: attributing the remaining
+  slow intervals, profiling the phone, and completing the atlas measurements are the open items,
+  and no toggle causality is claimed. M163, the ground atlas test builds the same reference it
+  compares, and M164, engine errors make the test gate red, are separate fix-ready briefs there.
 
 - **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
   after playtest 94, and added the walked-side
