@@ -333,13 +333,8 @@ nothing acquired.
 Each item is one pull request. The ground and the events follow their own gates; the last
 closes the contract.
 
-- [ ] **The unatlased leaf consumers**: buildings, the city edge, closure markers, traffic
-      lights, the UI buttons and indicators, the interior scene and the interior TileSet. The
-      checkpoint pictures are `event_instance.gd`'s and move with the events; the city edge's
-      mountain is on the ground page, which the city always holds. `preload` constants become region names; a tinted draw keeps its `modulate`.
 - [ ] **The pages are packed square, and what is always on screen is always loaded**
-      ([PLAYTEST-109](playtests/PLAYTEST-109.md)), after the leaf consumers have landed, since it
-      edits the groups the consumer moves draw from. *"it would be better to arrange
+      ([PLAYTEST-109](playtests/PLAYTEST-109.md)). *"it would be better to arrange
       things in a more squarish image (take the total number of cells and use the square root
       of it to define the width)"*: the page's target width comes from the square root of the
       group's padded area, never less than the widest member. *"if you don't use a proper full

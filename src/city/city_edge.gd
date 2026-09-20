@@ -41,12 +41,17 @@ enum Kind {
 	ROAD_WEST,
 }
 
-const TUNNEL := preload("res://assets/props/tunnel_mouth.svg")
-const BRIDGE := preload("res://assets/props/bridge_deck.svg")
-const ROAD_ON := preload("res://assets/props/road_on.svg")
+## Region names on the `street_kit` atlas group — `_enter_tree()`/`_exit_tree()` acquire and
+## release it alongside `ground`, below.
+const TUNNEL := &"props/tunnel_mouth"
+const BRIDGE := &"props/bridge_deck"
+const ROAD_ON := &"props/road_on"
 ## The same tile the border paints north of the city, so the roof this piece puts over the tunnel
-## is pixel for pixel the mountainside around it.
-const MOUNTAIN := preload("res://assets/tiles/mountain.svg")
+## is pixel for pixel the mountainside around it. On the `ground` atlas group rather than
+## `street_kit`, because the ground compositor already holds every tile picture there — nothing
+## else acquires `ground` yet (the compositor's own move is a later pull request), so this class
+## acquires it itself, the same way it acquires `street_kit`.
+const MOUNTAIN := &"tiles/mountain"
 
 ## How many tiles of road run under the portal before the dark has swallowed them: the height of
 ## the opening in `tunnel_mouth.svg`, in tiles. **The art and this number describe the same
@@ -61,6 +66,16 @@ const TUNNEL_DEPTH_TILES := 2
 const RAMP_STEP_PX := 8.0
 
 @export var kind := Kind.TUNNEL
+
+## `AtlasLibrary` reference-counts, so acquiring both groups on every piece of every exit is one
+## page load each, regardless of how many `CityEdge` instances the city spawns.
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(&"street_kit")
+	AtlasLibrary.acquire(&"ground")
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(&"street_kit")
+	AtlasLibrary.release(&"ground")
 
 ## Whether this piece belongs in a layer over the entities.
 func overhangs() -> bool:
@@ -125,17 +140,19 @@ func _swallow_the_road() -> void:
 func _roof_the_tunnel() -> void:
 	var tile := float(Tuning.TILE_SIZE)
 	var columns := Tuning.STREET_WIDTH
-	var portal_rows := int(TUNNEL.get_size().y) / Tuning.TILE_SIZE
+	var portal_rows := AtlasLibrary.native_size(TUNNEL).y / Tuning.TILE_SIZE
 	var left := -columns * tile * 0.5
+	var mountain := AtlasLibrary.region(MOUNTAIN)
 	for row in range(portal_rows, City.OUTSIDE_DEPTH_TILES):
 		for column in columns:
-			draw_texture_rect(TextureResolver.resolve(MOUNTAIN),
+			draw_texture_rect(mountain,
 					Rect2(left + column * tile, -tile * float(row + 1), tile, tile), false)
 
 ## Draws a texture at the node's own origin, with `anchor` saying which of its corners that origin
 ## is — `(-0.5, -1)` is bottom-centre, `(0, -0.5)` is the middle of its west edge, and so on.
 ## Written out rather than reusing `Sprites.draw_standing`, which only knows the feet-anchored
 ## case: an exit that leaves eastward is anchored on its side, not on its base.
-func _blit(texture: Texture2D, anchor: Vector2) -> void:
+func _blit(name: StringName, anchor: Vector2) -> void:
+	var texture := AtlasLibrary.region(name)
 	var extent := texture.get_size()
-	draw_texture_rect(TextureResolver.resolve(texture), Rect2(extent * anchor, extent), false)
+	draw_texture_rect(texture, Rect2(extent * anchor, extent), false)

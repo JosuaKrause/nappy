@@ -224,8 +224,10 @@ the logo flattened onto opaque white; the rounded slate icon plate remains part 
 
 `assets/illustrated/svg-transfer/tiles/` contains native 32×32 replacements for the outdoor
 ground SVG family. `GroundLayers` builds the city's presentation TileSet from its authored
-sources, retaining source IDs and native cell geometry. `CityEdge` resolves the mountain texture
-for its separate repeated drawing. The prepared `alley_draft` has a PNG but remains unbound.
+sources, retaining source IDs and native cell geometry. `CityEdge` draws the mountain from the
+`ground` atlas group's own baked region (`AtlasLibrary.region(&"tiles/mountain")`, acquired and
+released alongside `street_kit`) for its separate repeated drawing. The prepared `alley_draft` has
+a PNG but remains unbound.
 The [generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) links source
 pairings, exact prompts, raw outputs and repeated-tile comparisons.
 

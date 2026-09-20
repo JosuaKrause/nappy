@@ -95,7 +95,8 @@ src/
 	interior_map.gd       lays all seven parts (three hallways, two stairwells, the lobby, the
 	                      basement) into one plan, 64 tiles apart, and parses STAIRWELL_ROWS,
 	                      the ten-column symbol grammar each shaft is drawn and walked from
-	interior_tileset.gd   the interior's own TileSet, built in code from the SVGs it binds
+	interior_tileset.gd   the interior's own TileSet, built in code from the interior atlas
+	                      page's own baked regions
 	interior_scene.gd     the WorldContext node: paints the building once, every door's
 	                      fade-teleport-fade transition, the service exit, and the hallway
 	                      windows that flash for a bang outside and for the far ones between them

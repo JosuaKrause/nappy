@@ -179,7 +179,7 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 	building.day = Tuning.RUN_LENGTH_DAYS
 	t.check(building._storefront_variant.size() == building.columns() / 2,
 			"a three-column facade has one storefront variant per complete pair")
-	t.check(building._ground_floor_texture(1) == null,
+	t.check(building._ground_floor_texture(1) == &"",
 			"the second column of a storefront pair draws no duplicate texture")
 	t.check(building._ground_floor_texture(2) == Building.WALL_BASE,
 			"an odd final commercial column keeps the ordinary wall base")

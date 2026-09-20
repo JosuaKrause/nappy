@@ -42,7 +42,8 @@ const _LAYER := 100
 const _MARGIN := 24.0
 const _SIZE := 48.0
 
-const _ICON: Texture2D = preload("res://assets/ui/save.svg")
+## A region name on the `ui` atlas group; `_enter_tree()`/`_exit_tree()` acquire and release it.
+const _ICON := &"ui/save"
 
 var _icon_rect: TextureRect
 
@@ -54,6 +55,12 @@ func _init() -> void:
 	layer = _LAYER
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(&"ui")
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(&"ui")
+
 func _ready() -> void:
 	var root := Control.new()
 	root.name = "Root"
@@ -64,7 +71,7 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(root)
 	_icon_rect = TextureRect.new()
 	_icon_rect.name = "Icon"
-	_icon_rect.texture = _ICON
+	_icon_rect.texture = AtlasLibrary.region(_ICON)
 	_icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
