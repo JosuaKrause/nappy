@@ -549,6 +549,10 @@ with the mark on the way, and the robber's band around a mark is a larger share 
   arrow**, the home arrow's form in red, from the moment the mark is touched. *No quest log or
   marker for the resistance · overturned by the player for one-place tasks*; the first mark
   itself still comes with no hint.
+- **The task is announced at the mark and nowhere else.** *Decided by the player*: "since the
+  task will be immediately announced when touching the mark there is no need to mention tasks in
+  the day brief ata ll". Touching the mark says the task, in the HUD's voice, where she is
+  looking; the day brief carries no task, no mark's words from yesterday and no reminder.
 - **A task done is unmistakable**: M177's acknowledgement, the arrow going out, and the day
   summary saying so.
 - **Days 9 to 11 each get one thing that happens once**, the way day 3 has the fire: candidates

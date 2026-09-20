@@ -75,3 +75,16 @@ their resistance beat.
     *No quest log or marker for the resistance · overturned by the player on 2026-09-20 for
     tasks with a specific location*; a task that any instance answers gets none.
 11. **Doors start later than tasks**, since tasks come first.
+
+## After the orchestrator's opinion and proposed shape
+
+The opinion was yes to one day per task, with a proposed shape (tasks from day 6, five of
+eight, doors from day 9, a red arrow for one-place tasks) and six questions. The player's first
+answer:
+
+> "since the task will be immediately announced when touching the mark there is no need to
+> mention tasks in the day brief ata ll"
+
+12. **A task is announced when she touches the mark, and the day brief does not mention tasks
+    at all.** It also reads as the one-day structure being taken; the six questions are still
+    open.
