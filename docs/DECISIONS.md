@@ -1,5 +1,85 @@
 # Decisions
 
+## M171, the bake and the loader — built 2026-09-20
+
+The first of the milestone's pull requests: the machinery, with no consumer moved.
+
+**Built.** `tools/bake_atlases.gd`, a headless engine script, reads
+`assets/atlases/membership.json` (ten groups, 563 pictures derived from what `src/`, the ground
+TileSet and the layer manifest reference), rasterizes with `Image.load_svg_from_buffer()` at
+scale 1 or loads the illustrated PNG, applies `fix_alpha_edges()`, shelf-packs inside 2048px
+and writes one page per group plus `regions.json` and a manifest of input hashes into the
+gitignored `assets/atlases/baked/`. `tools/bake-atlases.sh` compares hashes without starting
+the engine (about a quarter of a second) and bakes only when stale; a bake in the other mode
+is stale; `--svg` is the custom local bake and `export-web.sh` refuses to export one. Every
+tool that starts the engine calls it: `check.sh`, `test.sh`, `run.sh`, `shot.sh`,
+`export-web.sh`, and `serve-web.sh` through the export. `AtlasLibrary` is static,
+reference-counted per group, answers sizes and rects from the table with nothing loaded, and
+refuses with an error to hand out a region of a group nobody acquired, since loading it
+quietly is the second resident copy the milestone exists to remove. `tools/audit-pck.sh`
+parses the exported pack's file table (format 4, read from the bytes) and reports every
+constituent; it found 563 of 563, as it must until the sources move.
+
+**Measured.** Every baked region equals today's runtime picture byte for byte, in both modes;
+before the bake was written, 764 pictures across all families differed from the import pass
+in 0 pixels. The bake takes 0.25 to 0.76s for all ten pages; the largest are the events at
+2042 by 382 and the ground at 2042 by 70. Two forced bakes are byte-identical. A fresh-clone
+shape (no baked folder, no import cache) bakes, imports and boots under `check.sh`.
+
+**Found on the way.** The engine's default import would run a second alpha bleed over an
+assembled page and pull one region's colour into its neighbour, so the bake writes each page's
+import sidecar itself, once. `run.sh`'s first wiring never ran: `--check` exits non-zero by
+design and the script runs under `set -e`, so the line that reprinted the reason was the last
+one executed; found by running the stale path rather than reading it. The windowed tools
+repair through `check.sh` rather than a bare bake, because a baked page the engine has not
+imported would be photographed as its previous import.
+
+**Open to overturn.** The checkpoint pictures are on the events page and the mountain tile on
+the ground page, both because of which file holds them; regions sit two pixels apart so each
+owns its extruded border; a size mismatch between an illustrated PNG and its SVG fails the
+bake where the runtime resolver only warned; `tools/test_cli_help.sh`'s two separator cases
+skip where no atlases exist, which is CI's help job. 45 pictures nothing in `src/` references
+are not baked — the chalk mark pair, the unbound gunman and mouse views, the vehicles' end
+views, four stair parts, two impact craters, `alley_draft` — the prepared art `TODO.md` lists
+as unbound.
+
+## M164 — Engine errors make the test gate red · built 2026-09-20
+
+> "create a todo for the bug report with enough detail to pick it up without additional
+> investigative work" · on its place in the order: "M164 is a bug? also important."
+> ([PLAYTEST-108](playtests/PLAYTEST-108.md))
+
+`tests/run_tests.gd` counts failed assertions only, so an engine `ERROR:`, a `push_error()` or
+a script error printed while the process exited 0, and `tools/test.sh` trusted that status; its
+local sharded reporter printed only timings and `FAIL` lines, so the error text was dropped as
+well. M163's eight errors hid behind exactly that.
+
+**Built.** `run_one_process()` tees the combined output and returns non-zero when Godot did or
+when the output matches `SCRIPT ERROR|Parse Error|ERROR:`, `check.sh`'s own vocabulary, for
+every caller; the sharded reporter greps each shard's log for the same words, prints the
+offending lines and fails the aggregate. `--record-costs` leaves the cost table alone after
+any failed run, a failed assertion included — wider than the engine-error case the entry
+named, and open to overturn. `tests/runner_fixtures/engine_error.gd` raises a sentinel
+`push_error()` and passes its one check; discovery still finds only top-level `test_*.gd`, so
+it runs only by name, and a step in CI's `gates` job requires the non-zero exit, the sentinel
+and the runner's summary line together.
+
+**What the gate found on its first full run.** `tests/test_save.gd` hands `GameSave` a garbled
+save on purpose. The save was dropped correctly and every check passed, and the static
+`JSON.parse_string()` printed `ERROR: Parse JSON failed` each time, so the suite exited 1 on
+1113966 passing checks. A garbled save is expected input, so the fix is in the game:
+`GameSave._read_now()` parses with `JSON.new().parse()`, which reports by return value and
+prints nothing — verified in this engine version with a throwaway script — the same shape
+`GroundLayers._load_manifest()` already had. The one other `parse_string` site round-trips
+the test's own data. Whitelisting the line was the rejected option.
+
+**Verified.** The fixture exits 1 with sentinel and summary; a clean suite exits 0; a planted
+failed check exits 1; `--serial` and `--shard 1/8` classify the same way; a local sharded run
+with a planted error flags the right shards; a failed `--record-costs` leaves
+`tests/suite_costs.txt` byte-identical; the unfiltered suite exits 0 with no engine error in
+the combined log. `WARNING:` lines are outside the vocabulary and do not trip it; warning
+policy and import-pass failures were out of scope.
+
 ## M129 — No body closes the walked sidewalk · built 2026-09-19
 
 > "I still get hard walls on the side of the sidewalk that is on the path -- how can this be so

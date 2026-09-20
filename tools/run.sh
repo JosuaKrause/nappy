@@ -119,9 +119,23 @@ missing_imports() {
         done
 }
 
+# The same shape again for the baked atlas pages, and for the same reason: a `git pull` that
+# changes a picture leaves the pages on disk standing for the tree before it, and playing the
+# game (unlike tools/check.sh) never rebakes them. `--check` answers out of the recorded source
+# hashes in a fraction of a second and starts nothing, so the common path pays a hash sweep and
+# the rare one repairs in place -- check.sh below bakes and then imports what the bake wrote.
+atlases_stale=""
+if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
+    atlases_stale="yes"
+fi
+
 missing=$(missing_classes)
 unimported=$(missing_imports)
-if [[ -n "$missing" || -n "$unimported" ]]; then
+if [[ -n "$missing" || -n "$unimported" || -n "$atlases_stale" ]]; then
+    if [[ -n "$atlases_stale" ]]; then
+        # `--check` exits non-zero by design; this reprint is the reason, not a failure.
+        "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
+    fi
     if [[ -n "$missing" && -f "$CACHE" ]]; then
         echo "stale class cache: ${missing//$'\n'/, }" >&2
         echo "  declared in the tree but absent from ${CACHE#"$PROJECT_DIR"/}," >&2
@@ -149,6 +163,12 @@ if [[ -n "$missing" || -n "$unimported" ]]; then
     if [[ -n "$unimported" ]]; then
         echo "still unimported after the rebuild: ${unimported//$'\n'/, }" >&2
         echo "the import pass ran and did not produce them, so this is not a stale checkout" >&2
+        exit 1
+    fi
+    if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
+        # `--check` exits non-zero by design; this reprint is the reason, not a failure.
+        "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
+        echo "the bake ran and the pages are still stale, so this is not a stale checkout" >&2
         exit 1
     fi
     echo "import cache rebuilt" >&2

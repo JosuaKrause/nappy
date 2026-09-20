@@ -76,6 +76,14 @@ load-bearing: a debug build is the only one where the URL modifiers answer at al
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 
+**An engine error is a failed run, whatever the checks say.** `tools/test.sh` exits non-zero when
+Godot's output carries `ERROR:`, `SCRIPT ERROR` or `Parse Error` — the words `check.sh` already
+fails a boot on — in a filtered, serial, single-shard or locally sharded run alike, and shows the
+offending lines. So a test that feeds the game bad input on purpose has to reach a code path that
+reports it by return value: `JSON.new().parse()` rather than the static `JSON.parse_string()`,
+which prints. `tests/runner_fixtures/engine_error.gd` raises one on purpose, runs only when named,
+and CI requires it to go red.
+
 **`check.sh`'s import pass rewrites two files that have nothing to do with the check, and `check.sh`
 now puts them back.** It turns runs of spaces into tabs in `docs/ARCHITECTURE.md`'s file tree, and it
 makes the editor rewrite `project.godot`, which loses more than whitespace — every `;` comment is
@@ -288,7 +296,7 @@ checks and worktrees can move independently of this file.
 
 - **M171 — Build-time atlases replace individual textures is next, and M159 follows it**
   ([PLAYTEST-108](playtests/PLAYTEST-108.md)). Its `TODO.md` section is the design and its
-  staging, one pull request per item: the bake, the loader and the staleness check first; the
+  staging, one pull request per item, on top of the bake and the loader that are in: the
   leaf consumers, the stroller with the crowd, and the decoration together; the ground; the
   events after the square poster crew has merged; then the sources move out of the imported
   tree and the package audit turns fatal.
@@ -298,8 +306,7 @@ checks and worktrees can move independently of this file.
   contribution sweeps; [PLAYTEST-86](playtests/PLAYTEST-86.md) is the player's demand for an
   optimization rather than a measurement). Whole-frame tails remain: attributing the remaining
   slow intervals, profiling the phone, and completing the atlas measurements are the open items,
-  and no toggle causality is claimed. M164, engine errors make the test gate red, is a separate
-  fix-ready brief there.
+  and no toggle causality is claimed.
 
 PR merges and auto-merge require explicit permission in the current session. Use fresh agents
 with self-contained briefs for new implementation or investigation.

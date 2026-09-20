@@ -58,6 +58,44 @@ waits on an atlas and nothing draws a missing picture. `GroundLayers` packs the 
 way but in one texture the `TileSet` holds directly, each source reaching its own pictures
 through `margins` with `texture_region_size` and `separation` unchanged.
 
+## Baked atlases
+
+`tools/bake-atlases.sh` writes one PNG page per group of `assets/atlases/membership.json` into
+the gitignored `assets/atlases/baked/`, beside `regions.json` — where each picture sits on its
+page and how big it is — and `bake_manifest.json`, which records the SHA-256 of every input the
+bake read. The bake is the engine itself, headless: each authored SVG goes through
+`Image.load_svg_from_buffer()` at scale 1.0 and `fix_alpha_edges()`, which is the same
+rasterizer and the same alpha treatment the import pass gives the same file under
+`svg/scale=1.0` and `process/fix_alpha_border=true`. That is what makes a baked pixel the pixel
+the import pass produces. Sprite groups get a transparent one-pixel border around each region
+and opaque tile families an extruded one, so a filtered sample at a region's edge reads the
+picture rather than its neighbour.
+
+**The presentation mode is the bake's.** The default bake takes the illustrated PNG wherever
+`TextureResolver` would and the authored SVG's raster everywhere else; `--svg` bakes the
+authored rasters alone. That is a custom local build, and `tools/export-web.sh` refuses to
+export one.
+
+**The pages are baked on demand and never committed.** Every tool that starts the engine calls
+the wrapper first — `tools/check.sh`, `tools/test.sh`, `tools/run.sh`, `tools/shot.sh` and
+`tools/export-web.sh`, and `tools/serve-web.sh` through the export — so nothing has to be
+remembered. It compares the recorded hashes against the tree without starting the engine, and
+bakes only when a source has moved or the mode on disk is not the mode asked for. The two that
+open a window repair the way they already repair a stale import cache: through `tools/check.sh`,
+which bakes *and* imports, since a freshly baked page is a file a windowed run would otherwise
+draw the previous import of.
+
+`AtlasLibrary` reads the result: `acquire(group)` loads that group's page, `release(group)`
+drops it on the last reference, `region(name)` hands out an `AtlasTexture` over the page, and
+`native_size(name)` answers a picture's own size from the region table with nothing loaded at
+all. **Nothing in the game draws from it**: every family reaches its pictures through
+`TextureResolver` and `TextureAtlas` as described above, and `tests/test_atlas_library.gd`
+compares every baked region against the picture its consumer draws today, pixel for pixel.
+
+`tools/audit-pck.sh` reads an exported `.pck`'s own file table and reports how many baked
+constituents it still carries — a member's source, its `.import` sidecar or its imported
+`.ctex`. `tools/export-web.sh` runs it after every export and reports the count.
+
 `GroundLayers` builds a presentation TileSet from the authored source resource. Its component
 manifest in `assets/illustrated/svg-transfer/tiles/layers/` assigns a shared base and transparent
 overlays to each supported source ID. Curbstones, street paint, crosswalks and damage blend in

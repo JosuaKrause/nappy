@@ -9,8 +9,9 @@ extends Node
 ## GameState) actually exist — `--script` replaces the main loop and skips them.
 ##
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
-## runner. Suites report with `check()` / `close_to()`. A probe under `tests/probes/` runs only
-## when named by path — see `_discover`.
+## runner. Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
+## negative fixture `tests/runner_fixtures/engine_error.gd`, run only when named by path — see
+## `_discover`.
 ##
 ## The filter exists because the whole suite is minutes and a single suite is seconds, and a
 ## check you only run at the end tells you *that* something broke rather than *what*. It says
@@ -62,6 +63,9 @@ func _ready() -> void:
 ## with the same `run(t)` shape that print numbers rather than assert relationships — and nothing
 ## finds them by walking the directory, so the full run and CI never pay for them. A probe runs
 ## only by being named as a path under `tests/`: `tools/test.sh probes/m64_density.gd`.
+## `tests/runner_fixtures/` holds the same kind of exception the other way round: a script whose
+## job is to fail a real check on the runner itself (a Godot engine diagnostic, not a bad
+## assertion), named the same way: `tools/test.sh runner_fixtures/engine_error.gd`.
 func _discover(filters: PackedStringArray) -> Array[String]:
 	var paths: Array[String] = []
 	var dir := DirAccess.open("res://tests")
