@@ -36,6 +36,16 @@ unchanged on a tree with no `.godot/`: a forced bake still prints a parse cascad
 no `class_name` resolves — the second cause above. The diagnostic stays, and the wrapper names
 that cause (#257).
 
+## M171, released as v0.14.0 — 2026-09-20
+
+The minor version the player set as the milestone's end ([PLAYTEST-109](playtests/PLAYTEST-109.md):
+"after atlas we cut a new minor version"; "only release once all those new items are completed,
+too"), cut by `tools/release.sh minor push` from the merge of #256 once `main`'s `test` check
+was green. It carries every M171 pull request, #248 to #258, and the two defects the player
+asked to have in it: M172, a suite that fails to parse fails the test run, and M173, the
+standalone bake names a stale import cache. It is the first export whose package audit is
+fatal.
+
 ## M171, the ground page per bake mode — built 2026-09-20
 
 Pull request #256, [PLAYTEST-110](playtests/PLAYTEST-110.md): the player opened the baked

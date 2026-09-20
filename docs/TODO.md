@@ -293,48 +293,36 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M171 — Build-time atlases replace individual textures · asked for 2026-09-19
+## M174 — The man shouting costs nothing to walk beside · asked for 2026-09-20
 
-> "make a todo that atlases must be created at build time. so they can be cheaply loaded at
-> runtime. this enforces that related items must be put in the same atlas so the atlas does not
-> get wasted. all textures that are loaded in an atlas must not be loaded individually"
-> · "they should cease existing in the build once they get baked into an atlas"
-> · "the implementation we currently have is not great"
+> "I can easily walk next to him for an extended amount of time without any real penalty. or
+> maybe the halo calculation changed? he gets deep red but my bar doesn't move up much. it was
+> supposed to indicate the actual amount I receive over a time window"
 
-[PLAYTEST-105](playtests/PLAYTEST-105.md) is the contract and
-[PLAYTEST-108](playtests/PLAYTEST-108.md) the design decisions and
-[PLAYTEST-109](playtests/PLAYTEST-109.md) the player's notes on the baked pages; `DECISIONS.md`, M171, the atlas
-design, has the inventory the design was read from, the rejected bakers and the player's answers.
+[PLAYTEST-112](playtests/PLAYTEST-112.md) has the arithmetic and the run. Nothing changed in
+v0.14.0: the halo is the gross excitement landed from a source over five seconds, full red at
+40 points, and the bar is that less the 6.0 a second walking gives back. `homeless_yeller`
+lands about 44 points in five seconds at arm's length and walking returns 30, so the halo is
+deep red while the bar gains under 3 a second, and nothing at all with the baby asleep.
 
-**The design.** A headless run of the engine itself bakes every picture family into one PNG page
-plus a region table, using the engine's own SVG rasterizer so a baked pixel is the pixel the
-import pass produced for the same file. One runtime loader hands out regions by name and counts
-references; the pages themselves are held from startup. **The presentation mode is the bake's**: a build is PNG mode — the
-illustrated PNG where one exists, the SVG's raster where none does — and SVG mode is a custom
-local bake command, `tools/bake-atlases.sh --svg`, absent from the release; nothing at runtime
-selects a mode.
-**Atlases are baked on demand and never committed**: `tools/check.sh`, `tools/test.sh`,
-`tools/run.sh` and `tools/export-web.sh` compare a manifest of source hashes and the bake tool's
-version against the tree and bake when they differ. **The events are one page** *("for now")*.
-**The ground's individual pictures are baked and its compositing stays at runtime** — bases,
-overlays, damage strips, grass variants and the route-curb tint are composed from regions of
-the ground page on every repaint (`DECISIONS.md`, M171, the ground), because the player refused
-baked composites: *"this is not a bottleneck and it allows for variety"*. The web export is the
-only export; the identity images (logo, icon, social card) leave the game package, and the
-deploy keeps copying the social card beside the page. Both are assumptions the player was told
-and did not speak to.
+**Decided by the player** ([PLAYTEST-113](playtests/PLAYTEST-113.md)): *"let's increase the
+influence of those obstacles. notably, yeller, unleashed dog, walker with dog. also, let's fix
+what the halo reflects."*
 
-The milestone is built: `AtlasLibrary` is the one loader and every family draws from its baked
-page, the authoring sources live in `art/`, which the engine ignores, and the export fails on a
-pack that carries a baked constituent (`DECISIONS.md`, the sections starting "M171,").
-**A page loads at startup or in the day brief and at no other moment**
-([PLAYTEST-109](playtests/PLAYTEST-109.md)): `main.gd`'s `RESIDENT_GROUPS` lists the pages
-every boot holds for the life of the process, and a read from disk outside the two moments is
-an engine error the test gate is red for.
-
-- [ ] **Cut the minor release once every item in this section is in** — *"only release once
-      all those new items are completed, too"*; *"after atlas we cut a new minor version"*:
-      `tools/release.sh minor` ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
+- [ ] **`homeless_yeller`, `loose_dog` and `dog_walker` cost more to be near**, under the
+      **balance** skill's rules. The target, the orchestrator's and open to overturn: walking
+      beside each inside its `inner_radius`, averaged over its own rhythm, the bar rises by at
+      least 8 a second with the baby awake and by at least 2 a second with the baby asleep,
+      where the man shouting gives under 3 and nothing today. Every number that moves is
+      measured before and after, with the route costs the skill asks for, and the rows'
+      fairness contracts still hold. The pulse's shared trough is left alone unless a row
+      cannot meet the target without it.
+- [ ] **The halo shows what the bar does.** *Asked for the gross points landed · overturned on
+      2026-09-20.* A source's glow is its landed points over `ExcitementHalo.WINDOW` less its
+      share of the decay taken in the same window, shared in proportion to what each source
+      landed, never below nothing; so the halos together add up to the bar's own rise, and a
+      source is red only while the bar is climbing because of it. The caret's forward
+      projection keeps the same horizon and says the same thing.
 
 ---
 
@@ -342,6 +330,11 @@ an engine error the test gate is red for.
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
 > numbers and the codebase and think about how we could improve performance and reduce stutter"
+
+**On the desktop the player feels the stutter gone with v0.14.0's baked atlases**
+([PLAYTEST-112](playtests/PLAYTEST-112.md): "I feel like the stuttering is gone (so it was
+always what I predicted -- a proper atlas implementation solved it)"). The open items below are
+reassessed against that: what remains is confirming it in the recorded numbers, and the phone.
 
 **The deliverable is an optimization, with measurement retained as evidence.**
 [PLAYTEST-86](playtests/PLAYTEST-86.md) clarifies: "well the point was to actually do some
@@ -904,11 +897,19 @@ is open**, and it is the switch that makes the sequence a run's ending rather th
 
 **What is still open:**
 
-- [ ] **The entry from day 14's summary rather than from the flag** — the one item held back on
-      2026-09-12 *("make it playable only via flag today")*: the good ending's last won day hands
-      over to the hallway instead of the ending screen. Everything the sequence itself needs is
-      built behind `--start-escape`, so this is the one switch left: it waits on the player saying
-      the finale is a run's ending rather than a flag's
+- [ ] **The finale is the run's ending, and its two sections are days**
+      ([PLAYTEST-113](playtests/PLAYTEST-113.md)): *"the escape the building starts when the
+      player has completed all tasks by the end of day 14"*; *"each the apartment and escape
+      city are treated as their own \"days\" with brief and restart checkpoint. we keep the no
+      nerve costs for now."* A won day 14 with every task complete hands over to the building
+      instead of the ending screen; `--start-escape` stays as the way to reach it directly. The
+      building opens on a day brief titled "Escape the building" and the city on one titled
+      "Escape the city", in the day brief's own form. Each brief is a checkpoint: a loss in a
+      section returns to that section's brief at no nerve, and closing the game in a section
+      comes back to its brief, as closing mid-day does for a day. **Each section has its own
+      clock**: a brief starts a full `DAY_LENGTH_SECONDS` (180s) with milliseconds on it, and a
+      loss or a reopened game returns to that brief with a fresh one — the player's "180s per
+      section", which overturns answer 3 below on that one point.
 
 **Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
 asked and each answered by the player on 2026-09-09:**
@@ -930,8 +931,11 @@ asked and each answered by the player on 2026-09-09:**
    sequence is the same length and running out loses (the bridge/tunnel collapses or something
    like that). the only change is that in addition to minutes and seconds the timer also shows
    milliseconds. this makes the timer appear faster than just the seconds alone which adds
-   additional tension.")* So: one clock for the whole sequence, `DAY_LENGTH_SECONDS` (180s) long
-   like any day, counting down through both sections; at zero the way out is gone — the bridge or
+   additional tension.")* *Asked for one clock counting down through both sections · overturned
+   by the player on 2026-09-20 to "180s per section"
+   ([PLAYTEST-113](playtests/PLAYTEST-113.md)), because each section is its own day and a shared
+   clock could leave the city's checkpoint unwinnable.* So: each section's clock is
+   `DAY_LENGTH_SECONDS` (180s) long like any day; at zero the way out is gone — the bridge or
    the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
    change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
    milliseconds ticking make the same countdown read as faster.
