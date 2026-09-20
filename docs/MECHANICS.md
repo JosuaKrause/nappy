@@ -229,7 +229,16 @@ three took her in. The escape scene's own doors reuse the same class.
 frozen in the street — `Stroller.hide_for_inspection()` and `EventInstance.is_its_guard_inside()`
 stop drawing the two of them the moment the hold starts, and both are back the moment it ends, her
 on the far side of the door so being let out reads as being let through
-(`EventManager._release_finished_door_detentions()`). The pram's cue and the alert mark hidden
+(`EventManager._release_finished_door_detentions()`).
+
+**Going in and coming out are owned by different halves, and that asymmetry is the whole of why
+she reappears where she is let out.** Hiding her happens on the frame `start_chat()` fires, which
+is a physics frame, so no drawn frame can catch her between the two. Showing her again has to
+happen on the frame she is *moved*, and the move is the release — also a physics frame — while the
+hold's own seconds run down in `EventInstance._process()`, a drawn one. So the release does both,
+in order: teleport, then show, then hand the camera back. Ending the hold by un-hiding her where
+its clock ran out drew her standing at the place she went in for every frame until the next physics
+tick. The pram's cue and the alert mark hidden
 along with her are the same drawing call that draws her, so nothing about them needs its own
 switch. The meters keep running throughout — sleepiness still drains at the idle rate, because the
 baby is still there whether or not the player can see her.

@@ -449,6 +449,13 @@ crossing therefore costs exactly the toll wherever the door happens to stand, wh
 same cost each time" has to mean. `chatting_mother` keeps the ordinary sum: her conversation is in
 the street with both of them drawn.
 
+**The release owns both halves of coming back: she is moved, then shown, on one physics frame.**
+A hold's own seconds run down in `EventInstance._process()`, a drawn frame, and the teleport is in
+`EventManager._physics_process()` — so un-hiding her where the clock ran out put her back on the
+screen at the place she went in until the next physics tick. `_enter_inspection()` is the only
+half the row still owns, because hiding her already happens on the same physics frame the hold
+starts.
+
 **The guard goes inside with her; the door does not.** `EventInstance.is_its_guard_inside()` takes
 the guard out of a hut's drawing for the hold, and the hut, the boom and their shadows stay exactly
 where they are — a structure that blinks out for two seconds reads as the door having been removed

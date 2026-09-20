@@ -1160,11 +1160,12 @@ func _process(delta: float) -> void:
 		# instant she is released and clear of `detain_distance()` — see `EventDef.redetains`.
 		# `chatting_mother` has none of this: her conversation ending is what starts her own
 		# departure, `_be_done()`'s ordinary meaning for anything that is not a fixture.
-		if _chat_seconds_left <= 0.0 and def.redetains:
-			# The frame the hold's own clock runs out — before `EventManager` has teleported her,
-			# which is why the camera eases toward her *live* position rather than a captured one,
-			# see `Stroller.release_camera_focus()`.
-			_leave_inspection()
+		#
+		# **And nothing here shows her again, deliberately.** This clock runs in `_process`, a
+		# *drawn* frame; the release that moves her runs in `EventManager`'s `_physics_process`, so
+		# a door that ended the hold by un-hiding her right here put her back on the screen at the
+		# place she went in for every frame drawn before the next physics tick — which is exactly
+		# what the player saw. See `_enter_inspection()`.
 		if _chat_seconds_left <= 0.0 and not def.redetains:
 			_be_done()
 		# Frozen, so no distance is covered — `_advance_gait(0.0)` marks the frame stopped rather
@@ -1290,20 +1291,24 @@ func start_chat() -> void:
 ## `redetains` row, so `chatting_mother`'s one conversation is untouched. `EventInstance` holds no
 ## `Stroller` reference of its own; the `player` group is the same lookup `Crowd`, `HUD` and the
 ## resistance director already use to reach her from outside the player scene.
+##
+## **Going in is this row's to do and coming out is not**, and the asymmetry is the whole of it.
+## Hiding her happens on the same frame as `start_chat()`, which `EventManager` calls from its own
+## `_physics_process`, so there is nothing for a drawn frame to catch. Showing her again has to
+## happen on the frame she is *moved* — `EventManager._release_finished_door_detentions()`, also a
+## physics frame — and this instance's own clock runs in `_process`, a drawn one. Un-hiding her
+## when the clock ran out drew her at the place she went in until the next physics tick:
+## *(2026-09-20, the player: "when I reappear I briefly spawn at my old location before
+## teleporting to the new location. I should directly spawn at the new location".)* So the release
+## owns both halves of coming back, and nothing is left hidden by it — a day boundary landing
+## mid-hold is already caught by `Stroller.reset_at()`, and a hold's own instance cannot be
+## streamed out from under her, since she is standing against it.
 func _enter_inspection() -> void:
 	var stroller := get_tree().get_first_node_in_group("player") as Stroller
 	if not stroller:
 		return
 	stroller.hide_for_inspection()
 	stroller.focus_camera_on(global_position)
-
-## The other half, called from `_process()` the frame the hold's own clock runs out.
-func _leave_inspection() -> void:
-	var stroller := get_tree().get_first_node_in_group("player") as Stroller
-	if not stroller:
-		return
-	stroller.show_after_inspection()
-	stroller.release_camera_focus()
 
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.

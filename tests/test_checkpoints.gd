@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_the_hold_charges_only_its_toll(t)
 	_test_a_boundarys_structures_charge_as_one(t)
 	_test_a_corner_of_two_doors_is_one_toll(t)
+	_test_she_is_never_drawn_at_the_place_she_went_in(t)
 	_test_a_stroller_stopped_against_the_hut_is_detained(t)
 	_test_she_and_the_guard_are_gone_during_the_hold(t)
 	_test_the_whole_hold_reads_as_one_move(t)
@@ -726,6 +727,62 @@ func _test_a_corner_of_two_doors_is_one_toll(t) -> void:
 	near_hut.free()
 	cross_hut.free()
 	cross_gate.free()
+	stroller.free()
+	manager.free()
+
+## **She reappears where she is let out, never for a frame where she went in** — *(2026-09-20, the
+## player: "when I reappear I briefly spawn at my old location before teleporting to the new
+## location. I should directly spawn at the new location".)*
+##
+## The two halves ran on two clocks: a hold's own seconds run down in `EventInstance._process()`, a
+## **drawn** frame, and the teleport is in `EventManager._physics_process()`. Un-hiding her where
+## the clock ran out therefore put her back on the screen at the place she went in for every frame
+## drawn before the next physics tick — at least one, and more the faster the machine draws.
+##
+## **So the rig drives the two clocks apart, which is the only way a test can see it.** Every other
+## rig in this suite steps `_process()` and `_check_detentions()` together in one loop, where the
+## fault is a frame wide and invisible; here the drawn frames run alone until the hold is over, and
+## what is asserted is that no drawn frame in that gap has her visible anywhere.
+func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(7200.0, 7200.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	var entry := centre + axis * 60.0 + Vector2(0.0, 16.0)
+	stroller.global_position = entry
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting() and not stroller.visible, "she goes in for the hold")
+
+	# Drawn frames only. The hold ends inside one of these and nothing here moves her.
+	var drawn := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+	var seen_visible_at_the_entry := false
+	for i in drawn:
+		hut._process(STEP)
+		if stroller.visible and stroller.global_position.is_equal_approx(entry):
+			seen_visible_at_the_entry = true
+	t.check(not hut.is_chatting(), "the hold's own clock runs out on a drawn frame")
+	t.check(not seen_visible_at_the_entry,
+			"and no drawn frame between that and the release has her back at the place she went in")
+	t.check(not stroller.visible, "she is still inside as far as the screen is concerned")
+	t.check(stroller.global_position.is_equal_approx(entry),
+			"and nothing has moved her yet, which is what makes the frame above worth checking")
+
+	# The physics frame that owns the release: moved, then shown, in that order.
+	manager._check_detentions()
+	t.check(stroller.visible, "the release is what shows her again")
+	t.check(not stroller.global_position.is_equal_approx(entry),
+			"and she is already on the far side of the door the frame it does (%s against %s)"
+			% [stroller.global_position, entry])
+	t.check((stroller.global_position - centre).dot(axis) < 0.0,
+			"on the side the release put her, not the one she walked in from")
+
+	hut.free()
 	stroller.free()
 	manager.free()
 

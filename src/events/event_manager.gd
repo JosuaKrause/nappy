@@ -1061,6 +1061,15 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		var across := offset - axis * along
 		var released_at := instance.global_position + axis * released_along + across
 		body.teleport_to(released_at)
+		# **Moved, then shown, in that order and in this one frame.** `teleport_to()` has just put
+		# her down and reset her interpolation, so the first frame drawn after this call draws her
+		# at the door she is coming out of and nowhere else. The un-hide cannot live on the
+		# instance's own clock — that runs in `_process`, a drawn frame, and every frame between it
+		# and the next physics tick drew her standing at the place she went in. The camera comes
+		# back here for the same reason: its ease home then starts from the hut toward where she
+		# actually is rather than toward where she was caught.
+		body.show_after_inspection()
+		body.release_camera_focus()
 		_latch_everything_she_was_let_out_into(released_at)
 		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
 			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
