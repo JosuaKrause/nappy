@@ -70,3 +70,24 @@ of her actual state, or gross.
    cues rule that nothing about her own walking moves the caret is overturned by the player
    on 2026-09-20*, on the orchestrator's reading that "what I'm doing" is her current movement
    and the baby's current state; open to overturn.
+
+## Later the same session
+
+On what merges and ships, once the above was written down:
+
+> "anyway. merge everything once it's complete (all the changes above that we discussed, too)"
+
+> "and then cut a new minor release"
+
+M174's pass figures came back with two rows short of "at the very least restore": walking
+straight past, baby awake, `homeless_yeller` at about 94% of what it cost under the 3.5 decay
+and `dog_walker` at about 80%, `loose_dog` at 106%. What stops the first two is
+`Tuning.WALL_WORTH_OF_COST` (35 points), the walk-through cost past which a row is scheduled as
+a wall and leaves the day's corridor; the line is set on purpose between `dog_walker`, which
+"has to stay friction", and `leaf_blower` at 37.7, which "has to stay a wall", and a fully
+restored dog walker costs more than the leaf blower does. Three options were put: merge as it
+is and finish in M175, a row states what it costs; restore fully now, raising `leaf_blower` by
+what the decay took from it and moving the line to sit between the two again; or let the dog
+walker become a wall. The player chose **"Restore fully now"**, and added:
+
+> "Once it's released we will do some runs and tweak the numbers by feel"
