@@ -323,14 +323,14 @@ deploy keeps copying the social card beside the page. Both are assumptions the p
 and did not speak to.
 
 The bake, the loader `AtlasLibrary`, the staleness check and the report-only package audit are
-built and nothing draws from them yet (`DECISIONS.md`, M171, the bake and the loader).
-`assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
+built (`DECISIONS.md`, M171, the bake and the loader), and the items below are the families
+that still draw individual pictures. `assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
 only to add a picture. A consumer acquires its group before drawing and releases it when its
 last user goes; `region()` never loads a page on its own, and `native_size()` answers with
 nothing acquired.
 
-Each item is one pull request. The first three touch disjoint files and run together; the
-ground and the events follow their own gates; the last closes the contract.
+Each item is one pull request. The ground and the events follow their own gates; the last
+closes the contract.
 
 - [ ] **The unatlased leaf consumers**: buildings, the city edge, closure markers, traffic
       lights, the UI buttons and indicators, the interior scene and the interior TileSet. The
@@ -340,8 +340,6 @@ ground and the events follow their own gates; the last closes the contract.
       inside a draw call goes; `crowd_atlas.gd` and its suite go with it. Body and trim layers
       stay separate regions so tinting is unchanged; the halo's shader reads alpha only and is
       region-safe.
-- [ ] **The decoration**: props, litter and city decals. A prop's shadow reads its size from
-      the region table where it reads `get_size()` off a preloaded source today.
 - [ ] **The ground.** The authored TileSet stops referencing SVGs; the compositor reads each
       base and layer as a region of the ground page's image, composes at runtime as now, and
       the second runtime packer, `pack_into_one_texture()`, is replaced by one upload of the

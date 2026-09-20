@@ -15,12 +15,14 @@ const _ELIGIBLE: Array[GameEnums.TileType] = [
 	GameEnums.TileType.SIDEWALK, GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE,
 ]
 
-const APPLE := preload("res://assets/props/litter_apple.svg")
-const NEWSPAPER := preload("res://assets/props/litter_newspaper.svg")
-const CUP := preload("res://assets/props/litter_cup.svg")
-const BAG := preload("res://assets/props/litter_bag.svg")
-const CAN := preload("res://assets/props/litter_can.svg")
-const TEXTURES: Array[Texture2D] = [APPLE, NEWSPAPER, CUP, BAG, CAN]
+## `AtlasLibrary` region names in the "decoration" group, in the order `Placed.texture_index`
+## indexes into — `CityDecals._draw()` is the one place that turns an index back into a picture.
+const APPLE := &"props/litter_apple"
+const NEWSPAPER := &"props/litter_newspaper"
+const CUP := &"props/litter_cup"
+const BAG := &"props/litter_bag"
+const CAN := &"props/litter_can"
+const TEXTURES: Array[StringName] = [APPLE, NEWSPAPER, CUP, BAG, CAN]
 
 ## Share of an eligible tile that carries a decal at the curve's maximum (day 14). Kept low: this
 ## is rubbish scattered across a city, not a tip on every flagstone.
