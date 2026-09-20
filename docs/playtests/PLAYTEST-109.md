@@ -25,6 +25,14 @@ On the pages the bake printed:
 > should always be loaded. we cannot start loading something in the frame we need it. UI
 > elements should always be there. events also has a lot of dead space"
 
+On the answer offered for the dead space — a row width from the square root, members placed
+by descending height, and a full rectangle packer only if a fill floor could not be met:
+
+> "no, if you don't use a proper full rectangle packer you will always get dead space even if
+> you start with big textures. you will get dead space where you can easily put smaller things.
+> we don't need a perfect rectangle packing. a greedy approach is fine but don't let obvious
+> empty space go wasted."
+
 ## What the bake printed, which is what the notes are about
 
 | group | members | page |
@@ -52,9 +60,12 @@ members of 16 to 32px, and `events` holds one of 200px.
 1. **A page is roughly square.** The page width comes from the square root of the group's total
    size — the player's words: "take the total number of cells and use the square root of it to
    define the width" — and not from filling a 2048px row first.
-2. **Dead space goes.** `street_kit` and `events` are named; the measurement adds `interior` and
-   `buildings`. Packing by descending height into a square-root width is the smallest change
-   that answers it.
+2. **Dead space goes, by a rectangle packer.** `street_kit` and `events` are named; the
+   measurement adds `interior` and `buildings`. Rows sorted by height were offered and refused:
+   a row beside a tall picture still leaves room "where you can easily put smaller things". The
+   packer tracks the free rectangles a placement leaves and puts later, smaller members into
+   them. It is greedy and need not be optimal — "we don't need a perfect rectangle packing" —
+   and it does not "let obvious empty space go wasted".
 3. **The player page does not hold the parent the run never draws.** Asked as a question — "any
    better approach for this?" The parent is fixed for a run (`GRAPHICS.md`: carrying changes and
    texture resolution never reroll it), so the answer offered is three groups — the mother's

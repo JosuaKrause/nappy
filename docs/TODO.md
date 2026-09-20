@@ -343,11 +343,16 @@ closes the contract.
       ([PLAYTEST-109](playtests/PLAYTEST-109.md)), after the leaf consumers, the stroller and
       the decoration have landed, since it edits their groups. *"it would be better to arrange
       things in a more squarish image (take the total number of cells and use the square root
-      of it to define the width)"*: the packer takes its row width from the square root of the
-      group's padded area, never less than the widest member, and places members by descending
-      height, so one tall picture no longer sets the height of a 2048px row; the suite asserts
-      a floor on each page's fill and a ceiling on its aspect ratio, and the PR records the fill
-      of every page before and after. *"putting both genders in the player atlas is a bit
+      of it to define the width)"*: the page's target width comes from the square root of the
+      group's padded area, never less than the widest member. *"if you don't use a proper full
+      rectangle packer you will always get dead space even if you start with big textures … a
+      greedy approach is fine but don't let obvious empty space go wasted"*: the shelf packer is
+      replaced by a greedy rectangle packer that keeps the list of free rectangles each
+      placement leaves and places members, largest first, into the free rectangle that fits
+      best, so the room beside and under a tall picture is filled by smaller ones; it stays
+      deterministic, since a bake run twice is byte-identical. Rows sorted by height were
+      offered and refused. The suite asserts a floor on each page's fill and a ceiling on its
+      aspect ratio, and the PR records the fill of every page before and after. *"putting both genders in the player atlas is a bit
       wasteful since it's guaranteed to not use half of it"*: the `stroller` group becomes
       three — the mother's views, the father's views, and the pram with the baby — and
       `Stroller` acquires the shared one and the run's parent. *"the UI and head indicators
