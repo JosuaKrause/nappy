@@ -75,7 +75,6 @@ func _ready() -> void:
 	# mark — this is what notices *that* completion and lifts the no-hint rule the moment it
 	# happens, rather than on the next day's first refresh.
 	EventBus.resistance_step_completed.connect(func(_s: int) -> void: _refresh_resistance())
-	EventBus.resistance_step_completed.connect(_on_resistance_step_completed)
 	EventBus.resistance_contact_available.connect(_on_contact_available)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.city_wide_changed.connect(_on_city_wide_changed)
@@ -246,19 +245,6 @@ func _on_event_telegraphed(instance: EventInstance) -> void:
 	_taught_run = true
 	_say("Double tap to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
-## A completed step says so, in the resistance's own voice (M177, playtest 116: *"I did the first
-## mark then the yeller (there should be an indication that I did it correctly)"*). Fires for a
-## pickup and a perform step alike, on the same `Teach` line the day-1 lesson uses — the same
-## shape `say_once()` already gives the escape's own hint lines — so it says only this and points
-## at nothing: no counter, no objective marker, no log. **Does not duplicate the day brief**, which
-## already reads a pickup's own words back, once, on the *following* day's screen
-## (`docs/NARRATIVE.md`, "Feedback") — a different screen, read a day later, for a different
-## purpose (what tomorrow wants, not whether today's touch counted).
-func _on_resistance_step_completed(step_index: int) -> void:
-	var step := ResistanceSteps.by_index(step_index)
-	if not step:
-		return
-	_say("Taken." if step.is_pickup else "Done.", TEACH_SECONDS)
 
 func _say(line: String, seconds: float) -> void:
 	_teach.text = line

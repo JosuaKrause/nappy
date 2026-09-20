@@ -13,21 +13,6 @@ signal completed(step: int)
 ## How close the player must be for a touch to complete the step.
 const REACH := 36.0
 
-## The chalk decal's two baked pictures, in the "decoration" `AtlasLibrary` group — acquired for
-## the whole run by `City.build()` (see `city_decals.gd`'s own doc), so nothing here has to hold a
-## reference of its own. `_MARK` is what a pickup shows while it waits; `_MARK_TOUCHED` is what it
-## switches to the instant the step completes (M177), the ground half of "a completed step is
-## acknowledged where she is looking."
-const _MARK := &"props/chalk_mark"
-const _MARK_TOUCHED := &"props/chalk_mark_touched"
-
-## Drawn larger than the baked 32×32 picture (M177, playtest 116: "they need to be a little bit
-## more obviously visible") — still a chalk mark, not a marker or a glow: the **cues** skill's
-## vocabulary stays a silhouette drawn once, not a ring or a pulse. A scale change rather than a
-## bigger canvas, so the stroke geometry `art/props/chalk_mark.svg` authors stays the one source
-## for both the native preview and the drawn size.
-const _MARK_SCALE := 1.35
-
 var step: ResistanceSteps.Step
 var is_done := false
 
@@ -88,17 +73,12 @@ func _draw() -> void:
 	# rides on, or approaching it would already answer "is this the one".
 	if _rider:
 		return
-	var texture := AtlasLibrary.region(_MARK_TOUCHED if is_done else _MARK)
-	if not texture:
-		return
-	# The untouched mark still flickers — the same "sort of mark you would walk past a hundred
-	# times" this used to draw by hand — but with a higher floor than before (0.85, was 0.75), the
-	# contrast half of the same M177 visibility bump the scale above answers: still a breathing
-	# mark, just never faint enough to read as chalk that has mostly worn off. The touched picture
-	# holds still: `_physics_process()` already stops calling `queue_redraw()` once `is_done`, so
-	# this alpha is only ever asked for on the one frame `_complete()` redraws it.
-	var tint := Color.WHITE
-	if not is_done:
-		tint.a = 0.85 + 0.15 * sin(_pulse * 2.0)
-	var size := texture.get_size() * _MARK_SCALE
-	draw_texture_rect(texture, Rect2(-size * 0.5, size), false, tint)
+	_draw_chalk(Palette.CHALK_DONE if is_done else Palette.CHALK)
+
+## Three strokes and a circle — the sort of mark you would walk past a hundred times.
+func _draw_chalk(colour: Color) -> void:
+	var flicker := colour
+	flicker.a *= 0.75 + 0.25 * sin(_pulse * 2.0)
+	draw_arc(Vector2.ZERO, 11.0, 0.0, TAU, 20, flicker, 2.0)
+	draw_line(Vector2(-7.0, 4.0), Vector2(7.0, -5.0), flicker, 2.0)
+	draw_line(Vector2(-6.0, -5.0), Vector2(2.0, 6.0), flicker, 2.0)

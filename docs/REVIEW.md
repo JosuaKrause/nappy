@@ -22,13 +22,11 @@ the clock stands still and the excitement meter never rises, so one run can stan
 item below for as long as looking takes.
 
 - **Find a chalk mark on a day that has one, and touch it** (day 4 onward; the mark is in an
-  alley near wherever she walks). It is drawn a third larger and brighter than it was. **Does
-  it read against an alley wall at walking distance without reading as a marker?** It stays
+  alley near wherever she walks). It stays
   put once she has been within 150px of it, on screen, for a second, and until then it moves
   to the alley she comes across: **does it ever vanish from a place she had noticed it, or
-  sit at the screen's edge and never come nearer?** Touching it says "Taken." and reaching
-  the man shouting says "Done.", in the HUD's teaching line: **are those the resistance's
-  words?** The first mark's note is one sentence. Record is `DECISIONS.md`, M177, the second
+  sit at the screen's edge and never come nearer?** The first mark's note
+  is one sentence. Record is `DECISIONS.md`, M177, the second
   mark is any alley she comes across.
 
 - **Walk past the man shouting, a dog walker and a loose dog, going the other way, then walk
