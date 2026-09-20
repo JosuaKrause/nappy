@@ -1,0 +1,32 @@
+Does the square poster crew cost the zero-cost line, or does adding any weight to the roll?
+
+Adding a row to the recurring pool changes the sum of weights `EventScheduler._pick_weighted`
+rolls against, so every attempt of every day lands on a different row than it did: the whole
+city's worth of events is re-diced. That makes a before/after of one fixed sample unreadable on
+its own. These four runs separate the two.
+
+The control is the row present at `weight = 0.0`: the pool's weight sum is unchanged, so the day
+is bit-identical to the branch without the row, and anything the row itself does to a route would
+still show.
+
+Reproducing: the first pair is `tools/test.sh probes/m129_zero_cost_line.gd` exactly as parked
+(6 seeds from 129129, days 1/5/9/13), with `EventCatalogue._poster_crew_square()`'s `weight` set
+to 0.0 for the control. The two wide pairs additionally set the probe's own `SEEDS` to 18, and
+the second of them its `BASE_SEED` to 229229; both edits were reverted afterwards, so the parked
+probe still measures what its own docstring says.
+
+  sample                             control (weight 0)   shipped (weight 0.03)   difference
+  6 cities from 129129 (the parked   264 of 296  89.2%    261 of 296  88.2%       -1.0 points
+    probe's own sample)
+  18 cities from 129129              735 of 906  81.1%    729 of 906  80.5%       -0.6 points
+  18 cities from 229229              740 of 867  85.4%    748 of 867  86.3%       +0.9 points
+
+The sign flips with the cities, which is what a re-dice looks like and not what a row standing in
+a route looks like.
+
+And the row is in none of it: `poster_crew_square` appears in no cut and in no blame row of any
+run above. It denies 11px, which is its own body and nothing more — it emits 5.0/s against a
+walking decay of 6.0/s, so it charges for no ground at all — and it stands on plaza paving, where
+11px cuts nothing.
+
+The walked-sidewalk probe is unmoved: 0 of 1869 bands closed, the same as before the row.
