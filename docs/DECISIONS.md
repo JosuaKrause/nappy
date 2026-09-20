@@ -19892,3 +19892,18 @@ Semantic review also finds a clean textual merge that needs reconciliation: main
 measurement item makes prebuilt atlases conditional on attribution, but PLAYTEST-105 and M171
 explicitly choose build-time atlases. M159 retains baseline, threadless-web and memory measurement,
 without conditioning M171's accepted design or claiming that atlases explain the older hitch.
+
+Historical-recipe checkpoint `1c056b8c` and its repair `ebc5d4e1` are integrated. Four B-contact
+SVGs are preserved as exact historical files under the evidence inputs, independent of active
+runtime and creation copies. Straight-contact and woman-leg recipes use those files; the old
+comparison and diagonal-carrying recipes use the immutable registered PNGs where installation
+replaces an input. Their hash guards remain active. Fresh assemblies on the combined installed
+tree reproduce all four retained output directories byte-for-byte.
+
+The audit also finds the B-contact source proof hashes active assets it never reads. Its actual
+inputs are frozen explicitly: the 45 pushing source renders across five views, three poses and
+three scales, plus the five stroller PNGs and raw atlas. Preparing source targets and reproducing
+the proof now use those preserved inputs; proof images remain unchanged. Fresh proof generation
+on the integrated tree matches its saved directory. The narrower 45-render set is deliberate:
+this proof does not consume the carrying renders. Active-SVG rendering is not presented as
+reproduction of this historical anatomical review.

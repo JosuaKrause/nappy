@@ -200,7 +200,7 @@ def input_record() -> dict[str, object]:
         for pose in ("a", "b", "c"):
             paths.append(RIG / f"mother_{view}_{pose}.png")
         paths.append(ROOT / f"docs/graphics-creation/player/mother_{view}_b.svg")
-        paths.append(ROOT / f"assets/rig/father_{view}_b.svg")
+        paths.append(HERE.parent / f"inputs/father_{view}_b.svg")
     paths.extend(
         [
             ROOT / "docs/evidence/graphics-reference-urban-01.jpeg",

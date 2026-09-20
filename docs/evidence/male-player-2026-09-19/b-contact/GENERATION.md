@@ -90,17 +90,17 @@ accepted whole-figure source, and separately pins the original registered PNG fo
 
 ## Regeneration
 
-Run from the repository root with fresh output directories. The renderer uses Godot 4.7.2;
-assembly uses the locked Python 3.14/Pillow 12.3.0 environment and Pillow's default label font.
+Run from the repository root with fresh output directories. `inputs/` freezes the four historical
+pushing B SVGs, their family's Godot 4.7.2 source renders and the five stroller PNGs used by the
+proof. The active runtime SVGs are editable fallbacks, not reproduction inputs for this historical
+review. Assembly uses the locked Python 3.14/Pillow 12.3.0 environment and Pillow's default label font.
 
 ```sh
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
-  --script docs/evidence/male-player-2026-09-19/render-sources.gd -- \
-  --output-dir /tmp/father-b-source
-uv run python docs/evidence/male-player-2026-09-19/b-contact/prepare.py \
-  --source-dir /tmp/father-b-source --output-dir /tmp/father-b-review
-uv run python docs/evidence/male-player-2026-09-19/b-contact/prove-source.py \
-  --source-dir /tmp/father-b-source --output-dir /tmp/father-b-proof \
+uv run --frozen python docs/evidence/male-player-2026-09-19/b-contact/prepare.py \
+  --source-dir docs/evidence/male-player-2026-09-19/b-contact/inputs/source-render \
+  --output-dir /tmp/father-b-review
+uv run --frozen python docs/evidence/male-player-2026-09-19/b-contact/prove-source.py \
+  --output-dir /tmp/father-b-proof \
   --verify docs/evidence/male-player-2026-09-19/b-contact/proof/proof.json
 uv run python docs/evidence/male-player-2026-09-19/verify-pairs.py
 ```

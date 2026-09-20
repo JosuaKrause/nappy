@@ -286,23 +286,6 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **PR #234 — M167, the father's legs read as legs** remains a draft. The artwork itself is
-  approved; do not regenerate or revise its accepted pixels. The PR checkout is
-  `.claude/worktrees/father-leg-refinement`. Its attempt history, reusable illustrated-PNG
-  toolbox and M171 atlas brief are written. Final installation is checkpointed separately in
-  `.claude/worktrees/father-final-install`; historical recipe work is checkpointed in
-  `.claude/worktrees/father-recipe-preservation`. Exact commits and verification are in
-  `DECISIONS.md`, "M167, interrupted delivery checkpoint". Both agents are stopped.
-  Neither checkpoint is integrated into the PR branch. The normalized-crop README overlaps
-  between the PR and installation checkpoint and needs a deliberate reconciliation.
-  The recipe checkpoint has a known flaw: it treats the active graphics-creation SVGs as
-  immutable, but installation changes those too. Preserve actual frozen originals before
-  relying on that recipe fix. Runtime evidence covers father pushing; the attempted carrying
-  capture selected the mother and does not establish father-carrying runtime appearance.
-  Inspect the checkpoint diffs, fix only that remaining recipe
-  issue, integrate both checkpoints, update the PR description/check status, and make it
-  reviewable. Do not start a new art attempt or touch the separately owned optimization PR.
-
 - **M171 — Build-time atlases replace individual textures** is specified in `TODO.md` and
   [PLAYTEST-105](playtests/PLAYTEST-105.md). The atlas generator and runtime loading changes
   remain unimplemented. Baked constituent images must be absent from shipped packages and
@@ -316,14 +299,13 @@ checks and worktrees can move independently of this file.
   and no toggle causality is claimed. M163, the ground atlas test builds the same reference it
   compares, and M164, engine errors make the test gate red, are separate fix-ready briefs there.
 
-- **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
-  after playtest 94, and added the walked-side
-  wall measurement under M129, a path through the city never has to cost. Both are in
-  `TODO.md` and each is one agent's brief.
+- **Inspect the live PRs before taking gameplay work:** PR #239, M129, no body closes the
+  walked sidewalk; PR #240, M168, the escape after playtest 94; and PR #241, M170, whole-street
+  route tint. Their owners maintain the implementation and review state. The queue on main
+  alone does not show work pending in those branches.
 
-No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
-session. New implementation or investigation uses fresh agents with self-contained briefs; do not
-resume the agents from this handoff.
+PR merges and auto-merge require explicit permission in the current session. Use fresh agents
+with self-contained briefs for new implementation or investigation.
 
 ## The queue, as prioritised on 2026-09-09
 

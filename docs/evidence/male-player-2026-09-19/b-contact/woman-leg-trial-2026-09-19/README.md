@@ -78,7 +78,8 @@ diff -r docs/evidence/male-player-2026-09-19/b-contact/woman-leg-trial-2026-09-1
 ```
 
 [inputs.json](inputs.json) pins the assembler itself, prompt, edit target, raw output, all protected
-father files, mother A/B/C donors, creation/runtime SVG targets and both style references. The
+father files, mother A/B/C donors, creation SVG targets, the original father B SVG bytes in
+[`../inputs/`](../inputs/), and both style references. The
 [output manifest](generated/manifest.json) records the raw crops, fits, placements, protection
 contract, loop timing and every derivative hash. The recipe carries its own sheet and GIF helpers;
 it does not import a prior preview assembler, and every donor asset is hash-pinned. `./tools/check.sh`,
