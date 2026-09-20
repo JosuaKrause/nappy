@@ -46,6 +46,15 @@ var state := GameEnums.BabyState.AWAKE
 var last_incoming := 0.0
 var last_decay := 0.0
 
+## This baby's own simulated clock, advanced by `delta` in `_physics_process` — the same shape
+## `EventInstance._clock` and `landed()` use, so `decay_in_window()` below prunes against a clock
+## that keeps pace with every source's own, without depending on either one directly.
+var _clock := 0.0
+## `[when, points]` entries of decay actually taken from the meter, pruned to
+## `ExcitementHalo.WINDOW` the same way a source's own `_landed_history` is — see
+## `decay_in_window()`, what `ExcitementHalo` shares this against.
+var _decay_history: Array = []
+
 var _stroller: Stroller
 var _world: WorldContext
 
@@ -62,6 +71,7 @@ func reset() -> void:
 	excitement = 0.0
 	last_incoming = 0.0
 	last_decay = 0.0
+	_decay_history.clear()
 	_set_state(GameEnums.BabyState.AWAKE)
 	EventBus.sleepiness_changed.emit(sleepiness)
 	EventBus.excitement_changed.emit(excitement)
@@ -104,6 +114,7 @@ func _physics_process(delta: float) -> void:
 ## merely left unsummed, so `accumulate_landed()` below is never called either: a source that
 ## charges the halo but never reaches the meter is the exact drift this guards against.
 func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
+	_clock += delta
 	var invincible := DevFlags.invincible()
 	var sources := [] if invincible else (_world.excitement_sources_at(here) if _world else [])
 	var incoming := 0.0
@@ -116,18 +127,17 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	# A sleeping baby is harder to disturb, but not immune -- and whatever fraction of a source's
 	# own contribution actually reaches the meter is exactly the fraction that should reach that
 	# source's own accumulate_landed(), or the halo would read a cost the meter never took.
-	var sensitivity := 1.0
-	if state == GameEnums.BabyState.ASLEEP:
-		sensitivity = Tuning.SLEEPING_SENSITIVITY
-		incoming *= sensitivity
+	var sensitivity := current_sensitivity()
+	incoming *= sensitivity
 	for pair in sources:
 		var source = pair[0]
 		var contribution: float = pair[1]
 		source.accumulate_landed(contribution * sensitivity * delta)
 
-	var decay := _decay_rate()
+	var decay := decay_rate()
 	last_incoming = incoming
 	last_decay = decay
+	_record_decay(decay * delta)
 
 	# Net rate, so that decay always counts: standing still fights a loud event, and
 	# sprinting past one (decay ~0) makes it far worse than walking past it.
@@ -136,19 +146,63 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	if not is_equal_approx(before, excitement):
 		EventBus.excitement_changed.emit(excitement)
 
+## Folds this frame's decay into the sliding window `ExcitementHalo` shares out to every source's
+## own net — see `decay_in_window()`. The nominal rate times `delta`, the same figure `last_decay`
+## reports, not the excitement actually removed after clamping at the meter's own floor or
+## ceiling: the clamp is an edge of the bar, not a fact about what walking gave back, and reading
+## the rate rather than the clamp is what `last_decay` already does for the debug overlay.
+func _record_decay(points: float) -> void:
+	_prune_decay_history()
+	if points > 0.0:
+		_decay_history.append([_clock, points])
+
+func _prune_decay_history() -> void:
+	var cutoff := _clock - ExcitementHalo.WINDOW
+	while not _decay_history.is_empty() and _decay_history[0][0] < cutoff:
+		_decay_history.pop_front()
+
+## The decay taken from the meter over the last `ExcitementHalo.WINDOW` seconds — what
+## `ExcitementHalo` divides among the sources that landed a point in the same window, in
+## proportion to what each landed, so a source's own net can never disagree with what walking (or
+## standing, or running) actually gave back while it was costing her.
+func decay_in_window() -> float:
+	_prune_decay_history()
+	var total := 0.0
+	for entry in _decay_history:
+		total += entry[1]
+	return total
+
 ## How fast the meter falls: what she is doing, times what she is standing on.
 ##
 ## The ground half is a **rate** the world answers with rather than a bool — calm, precinct,
 ## ordinary street, main road, best to worst. The two halves multiply rather than adding, so
 ## *walking somewhere better* is always worth something and running is always worth little,
 ## whichever ground she does it on.
-func _decay_rate() -> float:
+##
+## Public — `M174`'s caret reads this as "the decay her current movement earns," projected
+## forward over `Tuning.EXPECTED_IMPACT_HORIZON` on the assumption that she keeps doing what she
+## is doing, the same rate this function already answers every physics frame for the bar itself.
+##
+## `0.0` with no `_stroller` or no `_world` — a data-level `Baby.new()` never added to a tree,
+## which `tests/test_halo.gd` builds on purpose to hold `decay_in_window()` in isolation. That call
+## never reached here before this function had an external caller of its own
+## (`ExcitementHalo._process()`); `_update_excitement()`'s own call is always on a live Baby, where
+## both are set by `_ready()`, so the guard changes nothing for the bar itself.
+func decay_rate() -> float:
+	if not _stroller or not _world:
+		return 0.0
 	var rate := Tuning.EXCITEMENT_DECAY_WALKING
 	if _stroller.is_idle():
 		rate = Tuning.EXCITEMENT_DECAY_IDLE
 	elif _stroller.run_excess_ratio() > 0.0:
 		rate = Tuning.EXCITEMENT_DECAY_RUNNING
 	return rate * _world.decay_multiplier(_stroller.global_position)
+
+## `Tuning.SLEEPING_SENSITIVITY` while asleep, `1.0` otherwise — the same fraction
+## `_update_excitement()` scales `incoming` by, pulled out so the caret's own projection can read
+## "the baby's current state" without duplicating the branch.
+func current_sensitivity() -> float:
+	return Tuning.SLEEPING_SENSITIVITY if state == GameEnums.BabyState.ASLEEP else 1.0
 
 # --------------------------------------------------------------- sleepiness ---
 

@@ -378,12 +378,53 @@ static func _alley_mouse() -> EventDef:
 ##
 ## **The cost of pacing is the body.** Anything mobile is exempt from *solid things are solid*,
 ## because a moving wall on a two-tile pavement pins her against a building. So what stops you
-## walking through him is the meter alone, which is why he is 14 over 210px: he is one of the two
-## rows on day 1 that a player is most likely to walk *into* rather than around, and a quiet one
-## reads as a man who does nothing.
+## walking through him is the meter alone — one of the two rows on day 1 that a player is most
+## likely to walk *into* rather than around, and a quiet one reads as a man who does nothing.
+##
+## **The pass, not standing beside him, is the measure — and the pass is what a real walk gives
+## him.** *(2026-09-20: "I can easily walk next to him for an extended amount of time without any
+## real penalty"; "let's increase the influence of those obstacles"; "walking past (where both
+## have different directions) is what matters. in my playthrough I walked next to him without
+## effect which highlights an even worse drop in effect".)* `tests/probes/m174_pass.gd` walks a
+## real `EventInstance` of this row past a straight line at `Tuning.WALK_SPEED`, offset by a few
+## fixed lateral distances, the two of them moving in opposite directions exactly as a pass on a
+## sidewalk does, averaged over his own pulse. At a field of 14/s over 210px, against
+## `Tuning.EXCITEMENT_DECAY_WALKING` (6.0), a pass at arm's length nets only **+1.5/s** awake —
+## against the 3.5/s decay this field was originally set beside, the same pass would have netted
+## **+10.2/s**, which is the "without any real penalty" the player felt.
+##
+## **A louder core close in answers the wrong question.** A body standing still at `inner_radius`
+## spends the whole window inside any `core_radius` drawn around it; a body walking a real pass at
+## `Tuning.WALK_SPEED` crosses even a wide core in a fraction of a second, so a core buys almost
+## nothing against the measure that actually matters here. Raising `intensity` over the *whole*
+## field instead buys more pass per point of `walk_through_cost()`, because the ground a passer-by
+## spends real time inside is wider than any core worth drawing.
+##
+## **Two ceilings bound him, not one.** `Tuning.WALL_WORTH_OF_COST` (35, already re-derived against
+## today's 6.0/s decay when `dog_walker` and `leaf_blower` set its line) is the first: an intensity
+## high enough to restore the pass fully over the old 210px reach costs well past it and turns him
+## into a `WALL`, which would pull him **off** the corridor his own placement rule keeps him on —
+## the one thing this row is for. The second is `EventScheduler._a_pacing_beat_walls_a_sidewalk`
+## itself, the geometry half of the same word: shrinking his reach far enough to buy back the whole
+## pass inside the cost ceiling also shrinks the ground his placement is weighed against, and past a
+## point every beat the scheduler draws for him lands somewhere its own junction or side route
+## already reaches — the geometry that makes a truncated beat a wall stops happening at all, which
+## is a real placement outcome disappearing from the game, not merely a number on a sheet.
+## `tests/test_events.gd`'s `_test_a_pacing_row_on_the_routes_sidewalk_can_be_left` is the check
+## that would go quiet.
+##
+## So both ceilings get room: `intensity` **20**, `outer_radius` **170**, `inner_radius` unchanged.
+## `walk_through_cost()` lands at **33.6**, a 1.4-point margin under `WALL_WORTH_OF_COST`, and the
+## reach stays wide enough that a beat still turns up with nowhere to leave from. **The pass at
+## 0/20/40px (the offsets a sidewalk actually allows), against the 3.5/s field this row once
+## carried and the field it carries now: +10.2 → +9.6, +10.1 → +9.4, +9.6 → +8.6 awake.** This
+## restores about 92-94% of the pre-M117 pass rather than all or more of it — a field wide enough
+## to keep producing a walled beat costs the last few points of restoration the way a narrower one
+## spent on `WALL_WORTH_OF_COST` instead. `tests/probes/m174_pass.gd` prints the whole table,
+## including asleep and the wider offsets, and is the one to re-run whenever this changes.
 ##
 ## **Whether he is a wall is a fact about where his beat runs, not about his field.** He charges
-## over 170px against a 64px sidewalk, so the way past him is never a lane — it is somewhere his
+## over a sidewalk from either lane, so the way past him is never a lane — it is somewhere his
 ## beat passes that she can **leave** by. A junction box is one (she takes the zebra while he is at
 ## the far end of his loop) and a side route off the sidewalk's own side is the other, so he is
 ## friction and stays on the route, which is what pacing is for. A beat that passes neither leaves
@@ -398,7 +439,7 @@ static func _homeless_yeller() -> EventDef:
 	def.look = EventDef.Look.YELLER
 	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
-	def.intensity = 14.0
+	def.intensity = 20.0
 	def.inner_radius = 45.0
 	def.outer_radius = 210.0
 	def.telegraph_time = 2.6
@@ -429,6 +470,27 @@ static func _homeless_yeller() -> EventDef:
 ## that walks toward you is a different game from being priced out of a street. The lead is
 ## drawn (see `EventInstance._draw_dog_walker`) so the span it owns is visible; what stops you
 ## walking through it is the meter, and it is slower than walking, so it can always be left.
+##
+## **The pass, not standing beside it, is the measure.** *(2026-09-20: "what matters for
+## the dogs is walking past them. and it shouldn't be free. at the very least restore the net gain
+## if not a bit more".)* `tests/probes/m174_pass.gd` walks a real instance of this row past her at
+## `Tuning.WALK_SPEED`, moving as it actually does. At a field of 26/s, against
+## `Tuning.EXCITEMENT_DECAY_WALKING` (6.0), a pass at 0px of lateral offset nets **+10.5/s** awake —
+## against the 3.5/s decay this field was originally set beside, the same pass would have netted
+## **+14.7/s**: never the "under 3" the man shouting fell to, but a real loss all the same.
+##
+## **Restoring it fully is not available.** The intensity that matches +14.7/s against today's
+## decay costs past `Tuning.WALL_WORTH_OF_COST` (35) on `walk_through_cost()`, and that constant's
+## own docstring names `dog_walker` as one of the two rows that fixes the line **because** it has
+## to stay `friction` — a dog-walker decision she cannot reach because the row sits off the
+## corridor is the decision this row exists to be, deleted. So `intensity` moves only as far as the
+## `WALL` line allows: **27.5**, up from the field's own 26; `walk_through_cost()` rises with it,
+## from 30.8 to **33.3**, still a 1.7-point margin under the 35 line. The pass at today's decay,
+## 0/20/40px: **+11.7 / +11.1 / +9.0** awake, about 80% of what the same pass netted against the
+## 3.5/s decay rather than all of it — `tests/probes/m174_pass.gd` prints the shortfall at every
+## offset. Open to overturn: whether 80% restored at the `WALL` line is the right trade, or
+## whether the far reach should come down the way `homeless_yeller`'s did to buy back more of the
+## rest.
 static func _dog_walker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "dog_walker"
@@ -439,7 +501,7 @@ static func _dog_walker() -> EventDef:
 	# guard, since a two-body composite has no single shape to be either of its bodies.
 	def.shape = GroundShape.point(8.0)
 	def.placement = [GameEnums.TileType.SIDEWALK]
-	def.intensity = 26.0
+	def.intensity = 33.0
 	def.inner_radius = 26.0
 	def.outer_radius = 105.0
 	def.telegraph_time = 1.4
@@ -745,13 +807,24 @@ static func _burnt_shell() -> EventDef:
 ## of them: a loose dog is loud and it is chaos, and the day it ruins is ruined through the
 ## meter, which is where most of the game lives. That decision is untouched by the intensity below.
 ##
-## **Intensity 32, not 24 — the same startle-spike ask as `cat_dash`, judged the same way.**
-## *(Playtest 25, finding 6.)* A real meeting already costs more than the walk-through table
-## suggests, since the whole point of `TOWARD_PLAYER` is that she dodges rather than walks the
-## line — but the player met it and called it inconsequential, so the number moves. No new field:
-## it is the other half of day 1's wall pool alongside `leaf_blower`, and it stays comfortably over
-## `Tuning.WALL_WORTH_OF_COST` before and after, so raising it changes nothing about which pool it
-## is drawn from or how often it is placed.
+## **Intensity 39, up from 32 (Playtest 25, finding 6), for the same reason `dog_walker` and
+## `homeless_yeller` move.** *(2026-09-20: "what matters for the dogs is walking past them. and it
+## shouldn't be free. at the very least restore the net gain if not a bit more".)*
+## `tests/probes/m174_pass.gd` walks a real instance past her at `Tuning.WALK_SPEED`, moving as it
+## actually charges. At a field of 32/s and 0px of offset, against `Tuning.EXCITEMENT_DECAY_WALKING`
+## (6.0), the pass nets +11.0/s awake — against the 3.5/s decay this field was originally set
+## beside, the same pass would have netted +14.1/s. **`TOWARD_PLAYER` never earns a `WALL` role** —
+## `EventScheduler._role_for` answers `NONE` for anything the director sites rather than the
+## scheduler, so nothing here trades against `Tuning.WALL_WORTH_OF_COST` the way `dog_walker`'s
+## retuning does. **But running still has to lose to it**, `tests/test_events.gd`'s own catalogue-
+## wide rule, and intensity alone pushes a field loud enough to break that: at 42/s the shorter,
+## faster crossing running buys costs less than walking it, which nothing in the catalogue but
+## `car_accident` is allowed to do. 39/s is the loudest this field gets before that flips, and the
+## pass at today's decay, 0/20/40px, still comes in over the 3.5/s-decay figure at every offset
+## `tests/probes/m174_pass.gd` checks: +15.0 / +14.7 / +13.5 awake. No change to placement:
+## `TOWARD_PLAYER` costs more than the walk-through table alone suggests already, since the whole
+## point of the row is
+## that she dodges rather than walks the line.
 static func _loose_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loose_dog"
@@ -760,7 +833,7 @@ static func _loose_dog() -> EventDef:
 	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
-	def.intensity = 32.0
+	def.intensity = 39.0
 	def.inner_radius = 30.0
 	def.outer_radius = 140.0
 	# Faster than a walk, so the escape distance is the forward reach: `outer_radius ·
@@ -828,12 +901,21 @@ static func _market_stall() -> EventDef:
 ## `Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE` (64px) because that is a pavement's own width: it is
 ## the smallest radius that holds the whole footway from anywhere on it, and from the kerb-side
 ## tile — the worst one the row can be placed on — it stops short of the far kerb, so the thing
-## closes one side of a street and never the street. `core_intensity` is the lowest tenth whose
-## line through the middle costs at least what this row has always cost, which is comfortably past
-## `Tuning.WALL_WORTH_OF_COST` (35.0 of a hundred-point meter): the two parts change *where* the
-## row is a wall, never whether it is one, so `_role_for` and the danger caret both read it exactly
-## as they did. A line past the core at `core_radius` costs what the same line past a busker costs,
-## because past `core_radius` it is one.
+## closes one side of a street and never the street. A line past the core at `core_radius` costs
+## what the same line past a busker costs, because past `core_radius` it is one.
+##
+## **`core_intensity` is what anchors `Tuning.WALL_WORTH_OF_COST`'s own line, so it moved when the
+## line did.** *(2026-09-20: "leaf_blower goes up by what the decay took from it" — the same
+## walking-decay rise from 3.5 to 6.0/s that cost every row in M174, measured here by
+## `tests/probes/m174_pass.gd`'s own walk-past simulation, the source held still since this row
+## never paces.)* A pass at 0/20px of lateral offset — the ground a pavement actually offers once
+## the body itself (11px) and her own width are cleared — now nets back to within a few percent of
+## what the same pass netted against the 3.5/s decay; the widest offset tested (40px) recovers most
+## of it rather than all, which is the smaller of two costs weighed against raising a wall row's
+## own number further than the line strictly needs. `walk_through_cost()` is what actually matters
+## for the line itself, and it is the number re-derived against: comfortably past
+## `Tuning.WALL_WORTH_OF_COST`, which that constant's own docstring explains alongside
+## `dog_walker`'s.
 static func _leaf_blower() -> EventDef:
 	var def := EventDef.new()
 	def.id = "leaf_blower"
@@ -846,7 +928,7 @@ static func _leaf_blower() -> EventDef:
 	def.intensity = 19.3
 	def.inner_radius = 45.0
 	def.outer_radius = 190.0
-	def.core_intensity = 22.2
+	def.core_intensity = 35.0
 	def.core_radius = float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 	def.telegraph_time = 1.8
 	# Swept in bursts rather than held, so there is a rhythm to time a pass through — the same

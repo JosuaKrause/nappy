@@ -1,23 +1,32 @@
 class_name ExcitementHalo
 extends Node2D
-## Which live sources are actively charging the meter right now, and how much each has actually
-## cost her over its own recent window, read back onto one rim per source in two channels that
+## Which live sources are actively charging the meter right now, and how much each is actually
+## *responsible for the bar climbing*, read back onto one rim per source in two channels that
 ## now agree rather than disagree. It answers *which of the six things around her* and *how bad
 ## has this one actually been*, neither of which the meter's own number can: a number says how
 ## much in total and never which, and never whether a row that costs the same on the page cost
 ## her nothing today or cost her the whole meter.
 ##
-## **Both channels read `landed()`, on different curves, and neither reads distance any more.**
-## *(2026-09-08, the player, overturning playtest 36's "the intensity of the halo states how far
-## away I am": "the transparency shouldn't show distance since distance actually doesn't matter.
-## only the actual received amount counts which might depend on the distance but we don't need to
-## encode the distance. this frees up transparency for also encoding magnitude." And, on the same
-## day, why the two curves differ: "color and transparency shouldn't be the same number.
-## transparency can be used to emphasize low values.")* `colour_for()` is linear in `landed()`, so
-## hue separates the high end; `magnitude_for()` rises fast and saturates early, so a point or two
-## is already faintly visible and the low end is where transparency does its work. A busker at
-## arm's length no longer reads as bright as a burning building at arm's length by construction —
-## that read the *distance*, and distance is exactly what stopped mattering.
+## **Both channels read `net_landed()`, on different curves, and neither reads distance any
+## more.** *(2026-09-08, the player, overturning playtest 36's "the intensity of the halo states
+## how far away I am": "the transparency shouldn't show distance since distance actually doesn't
+## matter. only the actual received amount counts which might depend on the distance but we don't
+## need to encode the distance. this frees up transparency for also encoding magnitude." And, on
+## the same day, why the two curves differ: "color and transparency shouldn't be the same number.
+## transparency can be used to emphasize low values.")* `colour_for()` is linear in the net, so hue
+## separates the high end; `magnitude_for()` rises fast and saturates early, so a point or two is
+## already faintly visible and the low end is where transparency does its work. A busker at arm's
+## length no longer reads as bright as a burning building at arm's length by construction — that
+## read the *distance*, and distance is exactly what stopped mattering.
+##
+## **The net, not the gross, since 2026-09-20** — *(playtest 112: "he gets deep red but my bar
+## doesn't move up much. it was supposed to indicate the actual amount I receive over a time
+## window"; playtest 113: "let's ... fix what the halo reflects".)* `landed()` is still each
+## source's own gross sum, traced from the meter exactly as before; `net_landed()` is that sum less
+## the source's own share of the decay the bar took in the same window, shared in proportion to
+## what every live source landed — see that function's own doc for the arithmetic and why the sum
+## across sources is exact rather than approximate. A source now reads red only while the bar is
+## actually climbing because of it, which the gross number never said.
 ##
 ## **It draws nothing itself.** *(2026-09-07, the player: "it should use the outline of the
 ## sprite. that's why it needs to be a shader. or draw the sprite in a uniform color multiple
@@ -32,8 +41,9 @@ extends Node2D
 ## source numbers but trace an increase in excitement back to its constituents".)* What has
 ## actually landed on her is traced from the meter's own sum: `Baby._update_excitement()` calls
 ## each source's own `accumulate_landed(points)` with its exact share of what reached the bar,
-## sensitivity included, so `landed()` can never disagree with what the bar actually did. This
-## node only selects sources and reads `landed()` back for both of a rim's channels.
+## sensitivity included, so `landed()` can never disagree with what the bar actually did, and
+## `Baby.decay_in_window()` is the same meter's own decay, over the same window. This node only
+## selects sources and combines the two into each rim's net.
 ##
 ## **The duck type.** GDScript has no interface to lean on, so it is stated here: a candidate is
 ## any `Node2D` that answers —
@@ -46,11 +56,15 @@ extends Node2D
 ## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
 ##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
 ##   not picked.
-## - `set_player_at(world_position: Vector2) -> void` — this frame's player position, told once a
-##   frame to every candidate whether or not it was picked. `EventInstance` already gets this from
-##   `EventManager`; `CrowdAgent` has no other channel to the player at all, since `Crowd` visits an
-##   agent only when it is near a road, and this node is the one place already visiting every agent
-##   in the crowd every frame regardless. Both classes read it back for their own `expected_impact_at()`.
+## - `set_player_at(world_position: Vector2, velocity: Vector2, decay_rate: float, sensitivity:
+##   float) -> void` — this frame's player position, velocity, `Baby.decay_rate()` and
+##   `Baby.current_sensitivity()`, told once a frame to every candidate whether or not it was
+##   picked. `EventInstance` already gets the position from `EventManager`; `CrowdAgent` has no
+##   other channel to the player at all, since `Crowd` visits an agent only when it is near a road,
+##   and this node is the one place already visiting every agent in the crowd every frame
+##   regardless. Both classes read all four back for their own `expected_impact_at()` — the
+##   caret's own net gain, projected forward the way `landed()` and `decay_in_window()` are read
+##   back.
 ##
 ## `EventInstance` and `CrowdAgent` both satisfy this without sharing a base class.
 
@@ -151,7 +165,7 @@ const MIN_MAGNITUDE := 0.2
 ## its work well before colour has finished its own climb from pale to red.
 const LOW_EMPHASIS_POINTS := 15.0
 
-## How brightly a source's own rim reads: `landed()` on a curve that rises fast and saturates
+## How brightly a source's own rim reads: `net_landed()` on a curve that rises fast and saturates
 ## early, so a point or two is already faintly visible and fifteen points is already solid — the
 ## opposite curve from `colour_for()`'s straight line to forty, which is the whole reason the two
 ## channels no longer say the same thing at once. *(2026-09-08, the player, dropping the "how far
@@ -161,15 +175,16 @@ const LOW_EMPHASIS_POINTS := 15.0
 ## emphasize low values.")* `sqrt` is the cheap curve with that shape: `sqrt(x)` for `x` in `0..1`
 ## rises steeply near zero and flattens as it approaches one, unlike the straight line `colour_for`
 ## wants for its own axis.
-static func magnitude_for(landed: float) -> float:
-	return MAX_ALPHA * clampf(sqrt(landed / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)
+static func magnitude_for(net: float) -> float:
+	return MAX_ALPHA * clampf(sqrt(net / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)
 
 # -------------------------------------------------------------------- colour ---
 
 ## How red a source's own rim reads: pale for a source that has cost her almost nothing over the
-## last `WINDOW` seconds, red for one that has actually hurt. `landed` is the points that actually
-## reached the meter — see the class doc — not a rate, and it saturates at
-## `Tuning.EXPECTED_IMPACT_POINTS`, the same line the caret goes amber at read the other way round.
+## last `WINDOW` seconds, red for one that has actually raised the bar. `net` is `net_landed()` —
+## what actually reached the meter less this source's own share of what walking gave back, see
+## that function's own doc — not a rate, and it saturates at `Tuning.EXPECTED_IMPACT_POINTS`, the
+## same line the caret goes amber at read the other way round.
 ##
 ## **This is the axis the row's own declared `intensity` was proposed for and rejected.** Put as a
 ## fork — a lethal `cyclist` (18/s) glowing paler than a harmless `protest` (42/s) — the answer was
@@ -185,15 +200,43 @@ static func magnitude_for(landed: float) -> float:
 ## salmon there, because averaging two saturated colours pulls the saturation down with the hue.
 ## Two lerps either side of the midpoint keeps every point on the ramp as saturated as its own
 ## ends.
-static func colour_for(landed: float) -> Color:
-	var t := clampf(landed / Tuning.EXPECTED_IMPACT_POINTS, 0.0, 1.0)
+static func colour_for(net: float) -> Color:
+	var t := clampf(net / Tuning.EXPECTED_IMPACT_POINTS, 0.0, 1.0)
 	if t < 0.5:
 		return Palette.HALO_WEAK.lerp(Palette.HALO_MID, t * 2.0)
 	return Palette.HALO_MID.lerp(Palette.HALO_STRONG, (t - 0.5) * 2.0)
 
+# -------------------------------------------------------------------- net, not gross ---
+
+## A source's own share of the decay the bar took over the same window, in proportion to what it
+## landed, subtracted from what it landed — floored at zero, never a source reading as a cost the
+## bar did not carry. *(2026-09-20, playtest 112's arithmetic and playtest 113's answer to it: "he
+## gets deep red but my bar doesn't move up much. it was supposed to indicate the actual amount I
+## receive over a time window" · "let's ... fix what the halo reflects.")* Overturns *(2026-09-08:
+## "don't derive it from the source numbers but trace an increase in excitement back to its
+## constituents")* only in what the traced number counts, not in how it is traced: `landed` is
+## still read back from `Baby._update_excitement()`, never recomputed from `contribution_at()`.
+##
+## **The floor is why the sum this buys is exact, not approximate.** Every source's own share
+## scales by the identical factor `decay / total_landed`, so either that factor is under one and
+## every source keeps a positive net summing to `total_landed − decay` — the bar's own rise — or it
+## is at least one and every source floors to zero *together*, which is the other half of the
+## sentence this overturns: a source reads red only while the bar is climbing because of it, and
+## when the bar is not climbing at all, nothing reads red. `total_landed` is every live
+## candidate's own `landed()`, not only the picked, capped set — an unpicked source still owes and
+## is owed its share of the same decay.
+##
+## Zero when nothing has landed from anybody: nothing to share the decay against, and a source
+## with `landed <= 0.0` has nothing a floor needs to catch either.
+static func net_landed(landed: float, total_landed: float, decay: float) -> float:
+	if total_landed <= 0.0:
+		return 0.0
+	return maxf(0.0, landed - decay * (landed / total_landed))
+
 var _events: EventManager
 var _crowd: Crowd
 var _player: Node2D
+var _baby: Baby
 
 ## Reused across frames rather than a fresh `Array` every tick — `.clear()` keeps whatever backing
 ## storage the previous frame's `append_array` calls grew, so a day at a steady candidate count
@@ -201,10 +244,11 @@ var _player: Node2D
 ## whose size barely moves frame to frame.
 var _candidates: Array = []
 
-func setup(events: EventManager, crowd: Crowd, player: Node2D) -> void:
+func setup(events: EventManager, crowd: Crowd, player: Node2D, baby: Baby) -> void:
 	_events = events
 	_crowd = crowd
 	_player = player
+	_baby = baby
 
 ## Every frame: tell every candidate where she is standing, pick the sources, tell each one how
 ## bright its own ring reads and what colour it is, and tell everything else zero. **Nothing here
@@ -218,10 +262,25 @@ func setup(events: EventManager, crowd: Crowd, player: Node2D) -> void:
 ## *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
 ## because of people".)* `CONTRIBUTION_FLOOR` and `MAX_SOURCES` are what keep a busy pavement
 ## legible rather than a special case admitting only the caret-worthy.
+##
+## **`total_landed` and `decay` are read once, over every candidate, before anybody's net is
+## computed** — `net_landed()`'s own doc explains why the sum this buys is exact: every source
+## scales by the identical factor, so the floor only ever catches all of them together, not one at
+## a time depending on loop order.
+##
+## **`set_player_at()` also carries what every source's own `expected_impact_at()` needs to answer
+## the caret's "if I keep doing what I'm doing" — her velocity, `Baby.decay_rate()` and
+## `Baby.current_sensitivity()`.** `_player` is a `Node2D` by its own duck type, so the velocity
+## read is a soft cast: a player with no `CharacterBody2D` (a data-level test's stand-in) answers
+## zero, which is the same "held still" default `expected_impact_at()` already falls back to.
 func _process(_delta: float) -> void:
-	if not _events or not _crowd or not _player:
+	if not _events or not _crowd or not _player or not _baby:
 		return
 	var here := _player.global_position
+	var player_velocity := (_player as CharacterBody2D).velocity \
+			if _player is CharacterBody2D else Vector2.ZERO
+	var player_decay_rate := _baby.decay_rate()
+	var player_sensitivity := _baby.current_sensitivity()
 	_candidates.clear()
 	_candidates.append_array(_events.instances())
 	_candidates.append_array(_crowd.agents())
@@ -233,12 +292,16 @@ func _process(_delta: float) -> void:
 	var picked_set := {}
 	for source in picked:
 		picked_set[source] = true
+	var total_landed := 0.0
+	for source in _candidates:
+		total_landed += source.landed()
+	var decay := _baby.decay_in_window()
 	for source in _candidates:
 		# Every candidate, picked or not — a source below the halo's own floor can still be worth
 		# a caret, since the two cues answer different questions over different sets.
-		source.set_player_at(here)
+		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
 		if picked_set.has(source):
-			var landed: float = source.landed()
-			source.set_halo_strength(magnitude_for(landed), colour_for(landed))
+			var net := net_landed(source.landed(), total_landed, decay)
+			source.set_halo_strength(magnitude_for(net), colour_for(net))
 		else:
 			source.set_halo_strength(0.0, Palette.HALO_WEAK)

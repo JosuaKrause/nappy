@@ -155,23 +155,21 @@ from.
 
 **And a cue that marks the wrong things says something false.** *(2026-09-08, the player: "carets
 shouldn't be chosen by source value but by expected impact value".)* What decides the mark is not
-a row's own declared cost but what the thing is actually **projected** to do to her, her position
-held fixed: `EventInstance.expected_impact_at()` and `CrowdAgent.expected_impact_at()` extrapolate
-the source's own current velocity in quarter-second steps over `Tuning.EXPECTED_IMPACT_HORIZON`
-(5s), sample its field at her *current* position at each step, sum the points, and subtract its
-present rate times the horizon — so a stationary thing she is standing in front of expects nothing,
-an approaching thing expects its approach, and a departing thing expects less than nothing and is
-unmarked. Amber at `Tuning.EXPECTED_IMPACT_POINTS`; doubled deep red — `will_be_lethal()` on both
-classes — when a step of the same projection puts her inside the thing's lethal reach, a
-`hard_fail` row's `inner_radius` or a car's strike box, on its current course. `tests/test_danger.gd`
-holds the scenarios this decides: a café she stands in is unmarked, a cat dashing at her is
-unmarked, a cyclist or a car whose line reaches her is red and one passing wide is not, a walker
-brushing past is unmarked, and a crowd at ordinary arterial density around a standing player marks
-nobody at all.
-
-**Her stillness is the whole of the rule's direction.** *(2026-09-08, the player: "I don't want a
-caret when walking into a car from the side".)* A car she is standing in the lane of is projected
-straight into her; the same car passing wide of her, held still, is never in its own path.
+a row's own declared cost but what the thing is actually **projected** to net her:
+`EventInstance.expected_impact_at()` and `CrowdAgent.expected_impact_at()` extrapolate the
+source's own current velocity **and her own** in quarter-second steps over
+`Tuning.EXPECTED_IMPACT_HORIZON` (5s), sample the source's field at her own projected position at
+each step, sum the points, subtract the source's present rate times the horizon, then net that
+gross figure against what her own current decay would give back over the same horizon and floor it
+at zero (see "Measure the thing, not the gap" below) — so a thing she is walking away from expects
+nothing, a thing she is walking toward nets its approach less what walking is already earning her
+back, and a thing whose course does not reach her at all is unmarked regardless of what either of
+them is doing. Amber at `Tuning.EXPECTED_IMPACT_POINTS`; doubled deep red — `will_be_lethal()` on
+both classes, her position still held fixed — when a step of the source's own projection puts her
+inside its lethal reach, a `hard_fail` row's `inner_radius` or a car's strike box, on its current
+course. `tests/test_danger.gd` holds the scenarios this decides: a cat dashing at her is unmarked,
+a cyclist or a car whose line reaches her is red and one passing wide is not, and a crowd at
+ordinary arterial density around a standing player marks nobody at all.
 
 Two things to carry beyond that:
 
@@ -201,11 +199,27 @@ hurts at random.
 `stand_down()` lowers only that source's own mark, so a hold that bridges a gap in the danger — the
 space between two cars in one lane — does not also bridge the danger being over.
 
-**And measure the thing, not the gap.** The badge's closing speed is the event's own approach with
-the player held still, because a rate that includes her 92px/s is a cue for walking. The caret's own
-`expected_impact_at()` and `will_be_lethal()` are the same rule arriving at a second cue: both
-project the source's own velocity with her position fixed, so nothing about her own walking can
-raise or lower either mark.
+**And measure the thing, not the gap — except where the player asked for the gap on purpose.** The
+badge's closing speed is the event's own approach with the player held still, because a rate that
+includes her 92px/s is a cue for walking; `will_be_lethal()` keeps the same shape, her position
+fixed, because *this ends your day* is a claim about the thing's own course and has to stay true
+whatever she is doing right now.
+
+**The amber caret is the one exception, and it is the player's own overturn.** *(Asked on
+2026-09-08 for the source's own velocity with her position fixed, "so nothing about her own
+walking can raise or lower it" · overturned on 2026-09-20: "caret communicates anticipated net
+gain. basically if I keep doing what I'm doing I very likely get that amount in net gain (so the
+halo will match roughly the caret if that happens)".)* `expected_impact_at()` now moves her too,
+at her own current velocity, so a café she is walking straight toward *is* expected to cost her —
+the read the 2026-09-08 rule existed to prevent, now exactly the read asked for. It nets what she
+would gain against what her own current decay would give back over the same horizon
+(`Baby.decay_rate()`, `Baby.current_sensitivity()`), floored at zero, so a source is amber only
+when walking toward it genuinely costs more than walking is already giving back — the forward
+half of `ExcitementHalo.net_landed()`'s own sentence, read the other way round. Charged against
+one source at a time rather than shared across every source near her the way the halo's own
+figure is: sharing it would need every other candidate's own projection first, which
+`EventInstance`/`CrowdAgent` have never needed a second channel to the world to ask for. Open to a
+real multi-source pass if independent carets read too pessimistic in play.
 
 Nothing in `tests/test_danger.gd` can see a moment, which is why the `cue` telemetry entry exists.
 

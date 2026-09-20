@@ -243,8 +243,20 @@ var touching := false
 ## `expected_impact_at()` and `will_be_lethal()` need to answer for a walker as well as a car.
 var player_at := Vector2.INF
 
-func set_player_at(at: Vector2) -> void:
+## Her current velocity, `Baby.decay_rate()` and `Baby.current_sensitivity()` — see
+## `EventInstance`'s own copy of these three fields for what `expected_impact_at()` does with
+## them. Defaults answer exactly as this function always did for any caller that has not told this
+## agent her actual state.
+var player_velocity := Vector2.ZERO
+var player_decay_rate := 0.0
+var player_sensitivity := 1.0
+
+func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
+		sensitivity: float = 1.0) -> void:
 	player_at = at
+	player_velocity = velocity
+	player_decay_rate = decay_rate
+	player_sensitivity = sensitivity
 
 ## This walker's own answer at a door, from `DoorAnswer` — see that enum for why it is drawn once
 ## per placement. Always `HELD` for a car, which never reads it.
@@ -1051,26 +1063,30 @@ func _current_reach() -> float:
 	var top_speed := Tuning.CAR_SPEED.y if kind == Kind.CAR else Tuning.PEDESTRIAN_SPEED.y
 	return reach * Tuning.field_scale(Tuning.field_eccentricity(top_speed))
 
-## Points this agent is projected to land on her over `Tuning.EXPECTED_IMPACT_HORIZON`, her
-## position held fixed and only this agent moving — `EventInstance.expected_impact_at()`'s own
+## The net points this agent is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
+## if she and it both carry on exactly as they are — `EventInstance.expected_impact_at()`'s own
 ## quantity, read here off `velocity()` instead of `travel_velocity()`. See that method for the
-## reasoning: a stationary body's own field does not change under the projection and the
-## subtraction cancels it to zero, and the reach test below skips anything the walk cannot close
-## inside the horizon without sampling it.
+## full reasoning, `player_velocity`/`player_decay_rate`/`player_sensitivity` included; the reach
+## test below skips anything the pair's own closing speed cannot cross inside the horizon without
+## sampling it.
 func expected_impact_at(player_position: Vector2) -> float:
 	var vel := velocity()
-	var reach := vel.length() * Tuning.EXPECTED_IMPACT_HORIZON + _current_reach()
+	var closing := player_velocity - vel
+	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + _current_reach()
 	if global_position.distance_to(player_position) > reach:
 		return 0.0
-	if vel.is_zero_approx():
+	if vel.is_zero_approx() and player_velocity.is_zero_approx():
 		return 0.0
 	var current_rate := contribution_at(player_position)
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var landed := 0.0
 	for i in steps:
-		landed += contribution_at(player_position - vel * (float(i + 1) * dt)) * dt
-	return landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+		var t := float(i + 1) * dt
+		landed += contribution_at(player_position + player_velocity * t - vel * t) * dt
+	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	var net := gross * player_sensitivity - player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	return maxf(net, 0.0)
 
 ## Whether this car's own strike box reaches her at some point before
 ## `Tuning.EXPECTED_IMPACT_HORIZON`, on its current course, her position held fixed — a car's

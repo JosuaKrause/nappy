@@ -719,11 +719,26 @@ var _skip_draw := DevFlags.skip_events()
 ## caret — the two writers agree because both read `_player.global_position` the same frame.
 var player_at := Vector2.INF
 
+## Her current velocity, her current decay rate (`Baby.decay_rate()`, her locomotion times the
+## ground she is on) and the baby's current sensitivity (`Baby.current_sensitivity()`) —
+## everything `expected_impact_at()` needs to answer "if she keeps doing what she is doing." All
+## three default to the values that make it answer exactly as it always did (held still, nothing
+## given back, nothing damped) for any caller — a data-level test among them — that has not told
+## this instance otherwise.
+var player_velocity := Vector2.ZERO
+var player_decay_rate := 0.0
+var player_sensitivity := 1.0
+
 ## Part of `ExcitementHalo`'s duck type — see that class's doc. `EventManager` already keeps
 ## `player_at` current for the chase and the leaving check; this is the same field, told from the
-## other direction so `expected_impact_at()` does not need a second channel to the player.
-func set_player_at(at: Vector2) -> void:
+## other direction, plus the three above `expected_impact_at()` needs and nothing else in this
+## file reads.
+func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
+		sensitivity: float = 1.0) -> void:
 	player_at = at
+	player_velocity = velocity
+	player_decay_rate = decay_rate
+	player_sensitivity = sensitivity
 
 ## Whether she is running right now. Written beside `player_at` and by the same pass, because the
 ## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
@@ -2123,18 +2138,37 @@ func is_lethal_at(world_position: Vector2) -> bool:
 		return false
 	return global_position.distance_to(world_position) <= def.lethal_reach()
 
-## Points this event is projected to land on her over `Tuning.EXPECTED_IMPACT_HORIZON`, **her
-## position held fixed and only this event moving** — the halo's own quantity (`landed()`, what
-## actually reached the meter) read forward instead of back. Duck-typed with `CrowdAgent`'s own
-## copy; see `ExcitementHalo`'s class doc for the shared shape and `wants_a_mark()` for what a
-## result at or above `Tuning.EXPECTED_IMPACT_POINTS` does with the answer.
+## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
+## **if she and it both carry on exactly as they are** — the caret's own answer to *"if I keep
+## doing what I'm doing, how much will I get"*, which is `ExcitementHalo.net_landed()`'s question
+## asked forward instead of back. Duck-typed with `CrowdAgent`'s own copy; see `ExcitementHalo`'s
+## class doc for the shared shape and `wants_a_mark()` for what a result at or above
+## `Tuning.EXPECTED_IMPACT_POINTS` does with the answer.
 ##
-## **Her stillness is the whole of the direction the caret answers to.** *(2026-09-08, the player:
-## "I don't want a caret when walking into a car from the side".)* A stationary source's own field
-## does not change under this projection, so the sum below always equals `current_rate ×
-## EXPECTED_IMPACT_HORIZON` and the subtraction cancels it to zero exactly — a café she is standing
-## in expects nothing, which is the halo's job to say, not the caret's, from the moment she is in
-## reach at all.
+## *(2026-09-20, overturning 2026-09-08's "I don't want a caret when walking into a car from the
+## side": "caret communicates anticipated net gain. basically if I keep doing what I'm doing I
+## very likely get that amount in net gain".)* Her own current `player_velocity` now moves her
+## through the projection exactly as `velocity` moves the source — a café she is walking toward
+## now does expect something, because she is not going to stay held still against it. What she
+## already answered stays true of the *source's* own half: a car passing wide of a **stationary**
+## her still expects nothing from that car, because nothing about the car's course crosses her
+## line — the overturn is that her line is no longer flattened to a point.
+##
+## **Net, not gross — `player_decay_rate` (`Baby.decay_rate()`) and `player_sensitivity`
+## (`Baby.current_sensitivity()`) are read the same way the backward-looking halo reads
+## `Baby.decay_in_window()` and the sensitivity baked into `landed()`.** Both default to `0.0` and
+## `1.0`, which answers exactly as this function always did — held still, nothing given back —
+## for any caller that has not told this instance her actual state, a data-level test among them.
+##
+## **The decay is charged against this source alone, not shared across every live one the way
+## `ExcitementHalo.net_landed()` shares its backward-looking figure.** Sharing it would need every
+## other candidate's own projected gross before this one's net can be known — the same
+## once-a-frame pass `ExcitementHalo` already runs for the halo, not something one instance can
+## ask for of itself without a second channel to the world it has never needed. Charging the whole
+## projected decay to each source independently is exact when only one is actually near her, which
+## is the ordinary case a caret is read in; with two or more simultaneously worth a mark, each
+## reads slightly more pessimistic than a true shared split would, never less — open to a real
+## multi-source pass later if that turns out to matter in play.
 ##
 ## **Projected at `_caret_velocity()` and `_caret_intensity()`, not `travel_velocity()` and
 ## `current_intensity()`.** The row's *live* course and rate, because the caret is asking what
@@ -2147,18 +2181,20 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## `contribution_at()` — what she is actually being charged right now — so the subtraction is the
 ## live approach minus the honest present, not the live approach minus itself.
 ##
-## **Skipped without sampling once the reach cannot close inside the horizon.** `_caret_velocity()`
-## is zero for anything genuinely waiting — nobody has been noticed yet, so there is no course to
-## project — which is what keeps most of a live day's events, and every waiting pursuer, out of
-## the loop below; only what could actually arrive pays for the twenty samples.
+## **Skipped without sampling once neither body is moving, or the reach cannot close inside the
+## horizon.** Two bodies both held still is the one case where nothing about the answer can
+## change, and the reach the early-out compares against is now the pair's own closing speed
+## (`player_velocity - velocity`), not the source's alone — a fast source she is outrunning no
+## longer over-reaches its true closing distance the way comparing only its own speed would.
 func expected_impact_at(player_position: Vector2) -> float:
 	if is_finished or is_leaving or def.city_wide:
 		return 0.0
 	var velocity := _caret_velocity()
-	var reach := velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.field_reach()
+	var closing := player_velocity - velocity
+	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.field_reach()
 	if global_position.distance_to(player_position) > reach:
 		return 0.0
-	if velocity.is_zero_approx():
+	if velocity.is_zero_approx() and player_velocity.is_zero_approx():
 		return 0.0
 	var current_rate := contribution_at(player_position)
 	var live_intensity := _caret_intensity()
@@ -2166,16 +2202,20 @@ func expected_impact_at(player_position: Vector2) -> float:
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var landed := 0.0
 	for i in steps:
-		# Projecting the *source* forward by `velocity * t` and querying its field at her fixed
-		# position is the same number as holding the source still and asking for its field at
-		# `player_position - velocity * t` instead — `contribution_at` is already the query every
-		# other caller uses, translated, so nothing here recomputes a falloff or a flock sum of
-		# its own. `velocity` is passed a second time, as the override, so the ellipse the
-		# translated point is measured against is oriented the same way the translation itself is —
-		# see `contribution_at()`'s own doc for why the two must agree.
-		landed += contribution_at(player_position - velocity * (float(i + 1) * dt), live_intensity,
-				velocity) * dt
-	return landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+		# Projecting the *source* forward by `velocity * t` and querying its field at her own
+		# projected position, `player_position + player_velocity * t`, is the same number as
+		# holding the source still and asking for its field at the pair's relative offset instead
+		# — `contribution_at` is already the query every other caller uses, translated, so nothing
+		# here recomputes a falloff or a flock sum of its own. `velocity` (the source's own) is
+		# passed a second time, as the override, so the ellipse the translated point is measured
+		# against is oriented the way the source is actually travelling, not the pair's relative
+		# heading — see `contribution_at()`'s own doc for why the two must agree.
+		var t := float(i + 1) * dt
+		var sample := player_position + player_velocity * t - velocity * t
+		landed += contribution_at(sample, live_intensity, velocity) * dt
+	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	var net := gross * player_sensitivity - player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	return maxf(net, 0.0)
 
 ## Whether this event's own current course puts her inside the radius that ends the day at some
 ## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — the same geometry

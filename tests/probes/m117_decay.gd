@@ -100,7 +100,7 @@ func _legs(city: City) -> Array:
 ## Walks the leg for `SECONDS`, turning round at each end, with the crowd's field following her.
 ##
 ## The net rate is summed **per sample from the ground she is actually on**, the same way
-## `Baby._decay_rate()` asks it, rather than from one multiplier assumed for the whole leg: a walk
+## `Baby.decay_rate()` asks it, rather than from one multiplier assumed for the whole leg: a walk
 ## down an ordinary corridor crosses junctions, and a mean taken against the wrong multiplier is
 ## the trap the balance skill names.
 func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> Dictionary:
