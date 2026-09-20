@@ -127,18 +127,12 @@ src/
 	touch_input.gd        whether this device has a touchscreen, answered once
 	screen_orientation.gd the one rotation applied when the window is portrait
 	quit_option.gd        whether the game can quit itself, answered once
-  visuals/                PNG selection with SVG override; see the illustrated-png skill
+  visuals/                the one loader; see the illustrated-png skill
 	atlas_library.gd      the baked atlas pages, by region name: a group's page is loaded on
 	                       the first acquire() and dropped on the last release(), a region's
 	                       native size is answered from the table with nothing loaded, and a
 	                       page may only be read from disk in a named loading window — main's
 	                       boot holds every group a day draws for the life of the process
-	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
-	texture_atlas.gd      one shared texture per group of pictures: requested, packed on a
-	                       worker thread, collected on the main thread, released when its last
-	                       user is gone; users draw their source pictures until it is ready.
-	                       No production caller asks it for a group any more — main still pumps
-	                       its collection queue and the run log still counts it
 	ground_layers.gd      shared ground bases, transparent overlays and sparse grass atlases,
 	                       then every TileSetAtlasSource packed into one texture through margins
 	eight_direction.gd    the eight-sector heading selector the stroller and the crowd both draw by
@@ -151,34 +145,45 @@ src/
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
   ground_shape.gd         one ground shape per object (point, segment or rectangle); the shadow, the body and the excitement field are all derived from it
-assets/
+art/                      the authoring pictures, behind a .gdignore: the engine imports none
+                          of them, keeps no .import sidecar beside them and exports nothing
+                          from here. Only tools/bake_atlases.gd reads them, with FileAccess
   tiles/                  ground tiles, 32x32 SVG
   buildings/              facade and roof tiles, 32x32 SVG
   rig/                    the mother and the pram, per direction
   props/                  trees, the swing frame, the bollard, the door
   events/                 one body per EventDef.Look
+  checkpoints/            the region door: hut, boom gate, guards
+  interior/               the escape building's floor plan and stair parts
   closures/               barriers, the sign, and what is lying in the road
   crowd/                  walkers and cars, body plus colour trim
   ui/                     the title's two mode discs, continue, restart, pause
-  shaders/                the excitement halo's silhouette rim
   illustrated/svg-transfer/  native-size PNG replacements, mirroring SVG family paths
+  logo.*, icon_stroller*, social-card.png  the wordmark and the stroller on its own: the README
+                          header, the social card the deploy publishes, store and social-media
+                          headers. The game itself loads none of them
+assets/                   what the engine still reads at runtime, and only that
+  shaders/                the excitement halo's silhouette rim
   atlases/membership.json which picture belongs on which atlas page, with each group's
                           lifetime, its padding kind and the consumers that read it
   atlases/baked/          the pages themselves, gitignored: one PNG per group, regions.json
                           and bake_manifest.json, written by tools/bake-atlases.sh
   ground_tileset.tres     one TileSetAtlasSource per ground tile, each naming its picture's
                           baked region rather than holding a texture of its own
-  logo.*, icon_stroller*, social-card.png  the wordmark and the stroller on its own: the README
-                          header, the social card the deploy publishes, store and social-media
-                          headers. The game itself loads none of them
+  ground_layers.json      which shared base and which transparent overlays each ground source
+                          composes from; read with FileAccess, so the Web preset's
+                          include_filter names it
 tools/
-  bake-atlases.sh         bake the atlas pages when a source hash moved; --check asks, --svg is
-                          the custom local SVG build, and every tool that starts the engine
-                          (check, test, run, shot, export-web) calls it first
+  bake-atlases.sh         bake the atlas pages when a source hash moved or a page outlived its
+                          group; --check asks, --svg is the custom local SVG build, and every
+                          tool that starts the engine (check, test, run, shot, export-web)
+                          calls it first
   bake_atlases.gd         the bake itself, run headless with --script; rasterizes every member
                           with the engine's own rasterizer and packs it into its page with a
                           greedy free-rectangle packer, roughly square
-  audit-pck.sh            list an exported .pck and report the baked constituents left in it
+  audit-pck.sh            list an exported .pck and report the baked constituents left in it,
+                          and any page its own regions.json names no group for; --fatal makes
+                          either an error, which is how export-web.sh runs it
   check.sh                import + headless boot, fails on any script error
   test.sh                 the headless suite, sharded; a filter runs one process and says PARTIAL RUN
   lint.sh                 the governed docs, for sentences that go stale on their own

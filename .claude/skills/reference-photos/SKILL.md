@@ -26,7 +26,9 @@ Three folders in this repo hold pictures and they are not interchangeable:
   anything. It exists so a sprite can be drawn from something rather than from memory.
 - **`docs/evidence/`** — the game, captured. It is proof: a doc sentence points at it, and the
   **playtest-feedback** rule requires the picture to land in the same commit as the sentence.
-- **`assets/`** — what ships. Everything under it is loaded by the game.
+- **`art/`** — the authoring pictures. Behind a `.gdignore`, so the engine never imports one
+  and nothing under it ships; the atlas bake reads them and the pages it writes are what ships.
+- **`assets/`** — what the engine reads at runtime, and only that.
 
 **The folder carries a `.gdignore`, and that is load-bearing.** Godot walks every directory under
 the project and would import each photo as a texture, writing a `.import` sidecar per file and

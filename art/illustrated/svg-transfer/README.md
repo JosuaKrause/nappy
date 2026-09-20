@@ -1,10 +1,13 @@
 # Registered SVG style transfers
 
-These PNGs replace their matching SVG textures by default; `--svg` forces SVGs.
-The `rig/`, `props/` and `tiles/` subdirectories mirror the source family paths under `assets/`.
-The mother animation frames and authored pram views preserve each source SVG's native canvas
-and functional anchors. Comic redraws keep their own expressive silhouettes and true transparency.
-Missing or differently sized PNGs fall back to SVGs.
+The default atlas bake takes these PNGs wherever one sits beside its SVG; a
+`tools/bake-atlases.sh --svg` bake takes the SVGs alone and is a custom local build, never the
+release. Nothing at runtime chooses between them — the pixels on a baked page are the ones the
+build chose. The `rig/`, `props/` and `tiles/` subdirectories mirror the source family paths
+under `art/`. The mother animation frames and authored pram views preserve each source SVG's
+native canvas and functional anchors. Comic redraws keep their own expressive silhouettes and
+true transparency. A PNG whose size disagrees with its SVG fails the bake by name: the game
+carries no second copy of the picture to fall back to.
 
 Native PNG dimensions are intentional: these are drop-in replacements for the existing textures
 and draw transforms. Generation inputs, raw atlases, exact prompts, reproducible registration
@@ -18,7 +21,8 @@ The comic mother/stroller family is in `docs/evidence/comic-rig-2026-09-12/`; pr
 their generated transparency are in `docs/evidence/comic-props-2026-09-12/`. The comic tile
 redraws and functional paint registration are in
 `docs/evidence/style-transfer-tiles-2026-09-12/comic/`. Identity/export PNGs live outside this
-runtime tree; their SVG mappings and recipe are in `docs/evidence/comic-identity-2026-09-12/`.
+tree, beside it under `art/`; their SVG mappings and recipe are in
+`docs/evidence/comic-identity-2026-09-12/`.
 
 Side and diagonal views mirror explicitly for west, supplying all eight directions without
 rotating upright artwork.

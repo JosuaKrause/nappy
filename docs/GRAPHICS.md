@@ -5,8 +5,12 @@ uses it. A file is **live** only when a runtime source or scene binds it. **Prep
 has the size and registration needed by an open design, but no runtime caller yet. A filename or a
 mention in a design document is not evidence that a picture appears in the game.
 
-The SVG set below supplies the editable source graphics. Registered PNG replacements are used
-by default where available; `--svg` or `?svg=1` forces SVGs. Every PNG asset needs an SVG first.
+The SVG set below supplies the editable source graphics, under `art/`, which the engine ignores:
+nothing here is loaded by the game, and every path in this document is an authoring path. What
+the game draws is the baked atlas page a picture is on, under the region name its path gives it —
+`art/tiles/road.svg` is the region `tiles/road`. Registered PNG replacements under
+`art/illustrated/svg-transfer/` are what the default bake takes where one exists; every PNG asset
+needs an SVG first.
 
 ## Shared drawing contract
 
@@ -232,9 +236,11 @@ a PNG but remains unbound.
 The [generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) links source
 pairings, exact prompts, raw outputs and repeated-tile comparisons.
 
-`TextureResolver` selects a same-size PNG by default at
-`art/illustrated/svg-transfer/<family>/<name>.png` for a corresponding SVG. Missing or
-differently sized PNGs fall back to the SVG. Existing draw transforms and animation still apply.
+The default bake takes the same-size PNG at
+`art/illustrated/svg-transfer/<family>/<name>.png` wherever one exists beside its SVG; a PNG
+whose size disagrees with its source fails the bake by name rather than being quietly swapped
+for the SVG, since the game has no second copy to fall back to. Existing draw transforms and
+animation still apply.
 
 The live replacement families are in `art/illustrated/svg-transfer/rig/`.
 The names below use `mother`; the complete male counterpart uses `father` with the same
@@ -252,8 +258,8 @@ is independent.
 `pram_{front,back}_diagonal.png` (36×30) supply the diagonal views; west views mirror their
 east-authored partners. The carrying set adds
 `mother_carrying_{front,back}_{a,b,c}.png` (24×46) and
-`mother_carrying_{side,front_diagonal,back_diagonal}_{a,b,c}.png` (26×46), selected by the same
-resolver during the escape scene. All use bottom-center anchors and retain their redrawn
+`mother_carrying_{side,front_diagonal,back_diagonal}_{a,b,c}.png` (26×46), drawn the same way
+during the escape scene. All use bottom-center anchors and retain their redrawn
 silhouettes and true transparency. **P2 — Three-pose push** and its grounded contact sheets are
 documented in the [pushing stride record](evidence/comic-pushing-strides-2026-09-12/GENERATION.md).
 The female carrying family is **F — Hip motion**; its SVG sources, three whole-figure poses,
@@ -292,7 +298,8 @@ and selects them deterministically from the city seed and cell coordinates.
 The [component recipe](evidence/layered-ground-2026-09-12/GENERATION.md) preserves the source
 artwork, stencils and base preparation. The
 [engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) reviews composed
-tiles in generated streets, junctions and parks. `--svg` selects the authored vector TileSet.
+tiles in generated streets, junctions and parks. A `tools/bake-atlases.sh --svg` bake gives the
+authored vector tiles whole and composes nothing but the route-kerb tint.
 Baked damage-and-floor PNGs are excluded from runtime assets; the accepted source artwork lives
 in the component recipe's frozen inputs. Runtime damage uses transparent stencils over the base.
 Hairline, cracked and broken damage each share a variation pool across all three surfaces,

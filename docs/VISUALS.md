@@ -4,8 +4,9 @@
 SVG-first authoring followed by style transfer is the approved graphics workflow. Keep source SVGs
 editable and record each SVG/PNG pair; generated source sheets are generation evidence.
 
-The game uses a registered PNG when one exists. `--svg`, or `?svg=1` on the web,
-forces original SVG graphics. The same drawing code handles both formats.
+The game draws whichever raster the bake chose: a registered PNG where one exists, the authored
+SVG's own raster everywhere else. **The choice is made before the game runs and nothing at
+runtime can move it** — see "Baked atlases" below.
 The transferred artwork covers both parents' pushing and carrying animation frames and the pram's
 five authored views, supplying eight directions through explicit east/west mirroring. The garbage
 sack, sack pile and five litter decals also use registered PNGs. The outdoor ground catalogue
@@ -40,25 +41,25 @@ targets used for the accepted PNG sprites. Their manifest distinguishes those cr
 from the runtime SVG fallback artwork. Both presentations provide contact and together poses. Use the
 creation-reference family for high-fidelity generation and its linked recipes for reproduction.
 
-## Replacement contract
+## Where the pictures live
 
-`TextureResolver` maps `assets/<family>/<name>.svg` to
-`art/illustrated/svg-transfer/<family>/<name>.png`. Missing or differently sized PNGs fall
-back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors, sorting,
-collision and camera framing remain the existing game's responsibility.
+**The authoring sources are not in the game.** `art/` holds every picture the bake reads —
+`art/<family>/<name>.svg` and the illustrated transfer beside it at
+`art/illustrated/svg-transfer/<family>/<name>.png` — and carries a `.gdignore`, so the engine
+imports nothing there, keeps no `.import` sidecar there and exports nothing from it. *"they
+should cease existing in the build once they get baked into an atlas."* Nothing in `src/` names
+one: a consumer holds the region name its picture is baked under, `<family>/<name>`.
 
-`TextureAtlas` relocates whichever raster the resolver chose into one shared texture per group of
-pictures and hands out `AtlasTexture` regions over it. It changes no picture: a region reports its
-source's own size, so scale, offsets, mirroring, anchors, shadows and sorting read the same numbers
-in either presentation mode. A group is requested when its first user is placed and released when
-its last user is gone; until it is collected, and again after it is released, every user draws the
-source texture it would otherwise draw, so nothing waits on an atlas and nothing draws a missing
-picture. Every family draws from the baked atlas below instead, and no production caller asks this
-class for a group any more — `main._process()` still pumps its collection queue and the run log
-still counts what it collects, which the milestone's last item removes with the class itself. The
-ground does not use this path at all: `GroundLayers` composes its tiles out of the baked page
-below and uploads one texture the `TileSet` holds directly, each source reaching its own pictures
-through `margins` with `texture_region_size` and `separation` unchanged.
+What stays under `assets/` is what the engine itself reads at runtime: the gitignored baked pages
+with `regions.json` beside them, `assets/atlases/membership.json`, `assets/ground_tileset.tres`,
+`assets/ground_layers.json` and `assets/shaders/`. The identity images — the wordmark, the
+stroller icon sizes and the social card — are `art/`'s too; the application icon is the
+repository root's own `icon.svg`, which the engine does load.
+
+A region changes no picture: it reports its source's own size, so scale, offsets, mirroring,
+anchors, shadows and sorting read exactly the numbers they read from a texture of its own.
+Drawing transforms, animation timing, ground anchors, sorting, collision and camera framing
+remain the existing game's responsibility.
 
 ## Baked atlases
 
@@ -73,10 +74,12 @@ the import pass produces. Sprite groups get a transparent one-pixel border aroun
 and opaque tile families an extruded one, so a filtered sample at a region's edge reads the
 picture rather than its neighbour.
 
-**The presentation mode is the bake's.** The default bake takes the illustrated PNG wherever
-`TextureResolver` would and the authored SVG's raster everywhere else; `--svg` bakes the
-authored rasters alone. That is a custom local build, and `tools/export-web.sh` refuses to
-export one.
+**The presentation mode is the bake's, and there is no other.** The default bake takes the
+illustrated PNG wherever one exists beside the SVG and agrees with it on size, and the authored
+SVG's raster everywhere else; `tools/bake-atlases.sh --svg` bakes the authored rasters alone.
+That is a custom local build, and `tools/export-web.sh` refuses to export one. A run cannot ask
+for the other mode, because the pixels on the page are the ones the build chose;
+`AtlasLibrary.bake_mode()` is how the ground compositor finds out which it got.
 
 **The pages are baked on demand and never committed.** Every tool that starts the engine calls
 the wrapper first — `tools/check.sh`, `tools/test.sh`, `tools/run.sh`, `tools/shot.sh` and
@@ -102,9 +105,7 @@ acquire their own group as they enter the tree and release it as they leave. The
 page — the whole catalogue, the checkpoint kit and the finale's crater — and `EventManager` holds
 one reference on it for its own life, which the screen-edge badge's silhouettes draw from too, so
 the thing at the edge of the screen and the thing in the street are the same pixels. The ground
-composes its tiles from regions of the `ground` page's image on every repaint;
-`tests/test_atlas_library.gd` compares every baked region against the individually imported
-picture, pixel for pixel, for as long as that comparison is possible.
+composes its tiles from regions of the `ground` page's image on every repaint.
 
 ## When a page loads
 
@@ -131,11 +132,14 @@ sequence draws; it is held from the `--start-escape` boot, and moves to that seq
 brief when M102, the finale, has one.
 
 The run log carries one `texture` line per page actually read, with the moment, the milliseconds
-the read took and the page's size.
+the read took and the page's size, and one per page actually dropped, with how long it was
+resident.
 
-`tools/audit-pck.sh` reads an exported `.pck`'s own file table and reports how many baked
-constituents it still carries — a member's source, its `.import` sidecar or its imported
-`.ctex`. `tools/export-web.sh` runs it after every export and reports the count.
+`tools/audit-pck.sh` reads an exported `.pck`'s own file table and answers two questions about
+it: whether any baked constituent is still in it — a member's source, its `.import` sidecar or
+its imported `.ctex` — and whether any baked page in it is one the pack's own `regions.json`
+names no group for, which is what a group folded into another leaves behind.
+`tools/export-web.sh` runs it with `--fatal` after every export, so either fails the export.
 
 `GroundLayers` builds a presentation TileSet from the authored source resource, which names each
 source's baked region and holds no texture of its own. Every base, overlay, damage stencil, grass

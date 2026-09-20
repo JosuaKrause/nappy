@@ -263,7 +263,7 @@ reason.
 ## A picture is an asset, never code
 
 ***"Never draw in code -- at the very least use svgs."* Anything that is a *picture* — a glyph, an
-icon, a silhouette, a symbol — is authored as an image file under `assets/` and drawn as a texture,
+icon, a silhouette, a symbol — is authored as an image file under `art/` and drawn as a texture,
 never assembled at runtime out of `draw_circle`, `draw_rect`, `draw_line`, `draw_arc` or
 `draw_colored_polygon`.**
 
@@ -284,8 +284,8 @@ debugging session, and **the same headless run that proves the code correct prov
 whether it looks like anything at all.**
 
 The second reason follows from the first: an asset is **replaceable without touching code**. A
-`preload()` of `art/ui/joystick.svg` takes whatever is at that path, so a better drawing — from
-anybody, at any time — is a drop-in.
+consumer holds the region name `ui/joystick`, which is whatever `art/ui/joystick.svg` was baked
+from, so a better drawing — from anybody, at any time — is a drop-in.
 
 **What this does not cover.** A rectangle that is a *bar* rather than a picture is layout —
 `MeterBar`'s fill is not a drawing of anything. The line is whether a person would call the result

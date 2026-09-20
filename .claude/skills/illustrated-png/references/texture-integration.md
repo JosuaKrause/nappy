@@ -30,9 +30,11 @@ gaps; registration alone does not establish faithful interior geometry or suffic
 ## Integrate
 
 Place reviewed derivatives at `art/illustrated/svg-transfer/<family>/<name>.png` for the
-corresponding `assets/<family>/<name>.svg`. Keep the native canvas dimensions and placement.
+corresponding `art/<family>/<name>.svg`. Keep the native canvas dimensions and placement.
 Do not change draw offsets, camera scale or animation to compensate for a misregistered transfer.
-Preserve runtime import sidecars; do not copy a worktree's `.godot/` cache.
+Nothing under `art/` has an `.import` sidecar — the folder carries a `.gdignore` — and the pages
+are rebaked from the sources by every tool that starts the engine; do not copy a worktree's
+`.godot/` cache.
 
 ## Verify the player's checkout
 
@@ -41,14 +43,15 @@ Read the verify skill, then run from the folder the player will use:
 ```sh
 ./tools/check.sh
 ./tools/test.sh visuals stroller crowd presentation_mode orientation
-./tools/test.sh visuals --svg
 ./tools/lint.sh
 git diff --check
 git status --short
 ```
 
-Inspect every error, including resource import failures. The full suite runs in CI. Compare
-default and `--svg` gameplay using the same seed, walk, capture time and window size.
+Inspect every error, including resource import failures. The full suite runs in CI. To compare
+the two bakes, bake one mode, run `tools/check.sh` so the import pass sees the new pages, capture,
+then bake the other and do the same — `tools/test.sh` cannot run the SVG side, since it re-bakes
+to PNG on its way in. Use the same seed, walk, capture time and window size for both.
 Keep captures bounded to one or two windowed runs. Preserve whole telemetry folders and record
 build, flags and coverage in `docs/DECISIONS.md` under the session-captures skill.
 

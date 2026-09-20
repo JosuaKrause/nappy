@@ -612,8 +612,8 @@ build has nothing in `project.godot` to reach:
   `main.gd` and toggleable like the other three in a debug build: off, the string is not
   assembled, not merely hidden behind an invisible label. **A release build carries it too when
   the page's own `?debug=1` (or the command line's `--debug`) holds** — `DevFlags.readout_requested()`,
-  parsed the same shape as `?svg=1` and not gated behind `enabled()`, the third bounded
-  release-safe query flag beside it and `?telemetry=1` — and nothing else: the three geometry
+  parsed straight off the page's query string and not gated behind `enabled()`, one of the two
+  bounded release-safe query flags beside `?telemetry=1` — and nothing else: the three geometry
   layers above, the snapshot key and every other dev flag stay behind `_debug` alone, so this flag
   reaches only the readout. Whenever it holds, a fixed "DEBUG MODE ON" note (`DebugModeNote`,
   `src/dev/debug_mode_note.gd`) is drawn for the whole session and answers to nothing that would

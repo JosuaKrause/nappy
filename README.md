@@ -166,7 +166,7 @@ A filtered run prints `PARTIAL RUN` under its count and is deliberately not a gr
 ## License
 
 The **code** — `src/`, `tests/`, `tools/`, the project configuration — is [MIT](LICENSE). The
-**game** — the art under `assets/`, the documents under `docs/`, the title, the narrative and its
+**game** — the art under `art/`, the documents under `docs/`, the title, the narrative and its
 characters — is [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC
 BY-NC-ND 4.0)](LICENSE-ASSETS): read it, share it unmodified with credit, do not sell it, do not
 publish a changed version. Build with the code freely; do not re-publish the game. See
