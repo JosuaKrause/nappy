@@ -23,13 +23,18 @@ func run(t) -> void:
 	_test_the_basement_entry_is_a_straight_level_stair(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
+	_test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t)
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
+	_test_a_door_is_always_within_his_own_notice_from_his_line(t)
+	_test_another_masked_man_comes_up_the_same_shaft(t)
+	_test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
 	_test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t)
 	_test_a_vent_never_closes_around_her(t)
 	_test_no_pocket_between_two_vents_outlasts_the_noise(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
+	_test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
 
 func _test_the_map_builds(t: Node) -> void:
 	var f := InteriorMap.build()
@@ -735,6 +740,46 @@ func _shortest_path_length(f: InteriorMapPlan, start: Vector2i, goal: Vector2i) 
 					queue.append(next)
 	return -1
 
+## *"The top floor right side should be completely blocked off with rubble."*
+##
+## Three separate claims, and the third is the one the milestone is about. The heap stands on
+## painted hallway floor, so what closes those cells is the collapse rather than a hole in the
+## map; it fills the corridor's whole depth, so there is no lane past it; and **from her own door,
+## walking alone, the right stair door cannot be reached while the left one can** — which is what
+## makes the first flight she takes the one the fire is on.
+##
+## The second and third floors are asked the opposite question in the same breath, because the
+## answer to the fire is crossing a hallway to the other shaft: a collapse that closed those too
+## would close the section.
+func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: Node) -> void:
+	var f := InteriorMap.build()
+	t.check(f.rubble.size.x > 0 and f.rubble.size.y > 0,
+			"the top floor carries a collapse (%s)" % f.rubble)
+	t.check(f.rubble.size.y == 2,
+			"it fills both rows of a two-row corridor, so nothing walks round it (%d)"
+			% f.rubble.size.y)
+	var cells := 0
+	for y in range(f.rubble.position.y, f.rubble.end.y):
+		for x in range(f.rubble.position.x, f.rubble.end.x):
+			var tile := Vector2i(x, y)
+			cells += 1
+			t.check(f.tiles.has(tile), "the heap at %s stands on painted hallway floor" % tile)
+			t.check(not f.is_walkable(tile), "and %s cannot be stood on" % tile)
+	t.check(cells == f.rubble.size.x * f.rubble.size.y,
+			"every cell of the heap was asked about (%d)" % cells)
+
+	var reached := _flood_fill(f, f.start_tile)
+	var right_door: Vector2i = f.door("hallway_third:right").tile
+	var left_door: Vector2i = f.door("hallway_third:left").tile
+	t.check(not reached.has(right_door),
+			"from her own door the right stairwell cannot be entered on the top floor at all")
+	t.check(reached.has(left_door),
+			"and the left one still can, so the way down starts on the fire's own side")
+	for id in ["hallway_second", "hallway_first"]:
+		var seen := _flood_fill(f, f.waypoints[id])
+		t.check(seen.has(f.door("%s:right" % id).tile) and seen.has(f.door("%s:left" % id).tile),
+				"%s still walks between both of its stair doors, so crossing over is possible" % id)
+
 # ------------------------------------------------------------ the escape's own events ---
 # `InteriorEvents` is the escape's first section: a mouse, a masked man on one stairwell, a fire on
 # the other, steam in the basement and the explosions outside. What these check is the placement's
@@ -764,6 +809,16 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	if fire:
 		var burning := events.burning_side()
 		var other := "right" if burning == "left" else "left"
+		# **The fire and the rubble may never take the same shaft.** The collapse shuts one
+		# stairwell off the top floor outright, so a fire on that same side would leave her
+		# nothing to walk down from her own door. Asked as the two together rather than as the
+		# word "left": the side she can still walk to is the side that burns.
+		var f := InteriorMap.build()
+		var reached := _flood_fill(f, f.start_tile)
+		t.check(reached.has(f.door("hallway_third:%s" % burning).tile),
+				"the shaft the fire is in (%s) is the one her own door can still walk to" % burning)
+		t.check(not reached.has(f.door("hallway_third:%s" % other).tile),
+				"and the shaft the rubble shut (%s) is the one it is not in" % other)
 		t.check(scene.inner_floor_approaches("stairwell_%s" % burning).has(
 				scene.world_to_tile(fire.global_position)),
 				"the fire stands on the inner cell of a level approach in the %s shaft" % burning)
@@ -879,15 +934,262 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	events.free()
 	scene.free()
 
+## The counterplay he is built around, asked from **every** cell of his line rather than from the
+## one that happens to be nearest a door.
+##
+## *"Going into a corridor and letting them pass"* is only an answer if she can reach a corridor in
+## the notice he gives her, and he now comes again and again — so a stretch of shaft where the
+## nearest door is four seconds' walk away would be a stretch where the answer is not available at
+## all, however long the gap between his runs is. The margin is stated as his own
+## `telegraph_time` against `Tuning.WALK_SPEED`: he stands still for the whole of it
+## (`still_while_telegraphing`), so that is exactly the time she has before he moves at all, and he
+## then takes longer still to arrive.
+##
+## Distances are eight-connected walking distances with a diagonal step costing what a diagonal
+## step costs, because the flights are runs of diagonal cells and counting them as unit steps would
+## flatter the answer by 40%.
+func _test_a_door_is_always_within_his_own_notice_from_his_line(t: Node) -> void:
+	var f := InteriorMap.build()
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "masked_pursuer":
+			man = instance
+	t.check(man != null, "a masked man is on the stairs")
+	if man:
+		var part := "stairwell_%s" % ("right" if events.burning_side() == "left" else "left")
+		var doors: Array[Vector2i] = []
+		for id: String in f.doors:
+			if id.begins_with("%s:" % part):
+				doors.append((f.doors[id] as InteriorMapPlan.Door).tile)
+		t.check(doors.size() == 4, "the shaft has its four doors to step through (%d)" % doors.size())
+		var to_a_door := _walk_distance_to_nearest(f, doors)
+		var worst := 0.0
+		var worst_at := Vector2i.ZERO
+		var asked := 0
+		for point in man.path:
+			var here := scene.world_to_tile(point)
+			if not to_a_door.has(here):
+				t.check(false, "no door is walkable from %s on his line" % here)
+				continue
+			asked += 1
+			var reach: float = to_a_door[here]
+			if reach > worst:
+				worst = reach
+				worst_at = here
+		t.check(asked == man.path.size(), "every cell of his line was asked (%d)" % asked)
+		var seconds := worst / Tuning.WALK_SPEED
+		t.check(seconds <= man.def.telegraph_time,
+				("the furthest cell of his line, %s, is %.0fpx from a door — %.2fs at %.0fpx/s "
+				% [worst_at, worst, seconds, Tuning.WALK_SPEED])
+				+ "against the %.2fs he stands still for" % man.def.telegraph_time)
+		print("The masked man's notice: worst cell on his line is %.0fpx from a door (%.2fs of %.2fs)"
+				% [worst, seconds, man.def.telegraph_time])
+	events.free()
+	scene.free()
+
+## *"Then the pursuing guy should respawn forcing to switch the side again."*
+##
+## Driven through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two
+## calls the running game makes every frame, with her standing on the shaft's top landing for the
+## whole run — inside `masked_pursuer.pursues_within` of its foot, so every man that appears
+## notices her and runs rather than waiting at the bottom for ever.
+##
+## Three contracts, and the second is what keeps the first fair:
+##
+## - **More than one of him over a section**, or "switch the side again" has nothing behind it.
+## - **Every one of them spends his whole notice standing still.** A respawned pursuer that
+##   inherited an old instance's clock would arrive at speed, which is the exact thing
+##   `still_while_telegraphing` exists to prevent, and no screenshot could ever catch it.
+## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one
+##   appearing at the foot, rather than read off the constant.
+func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var part := "stairwell_%s" % ("right" if events.burning_side() == "left" else "left")
+	var her := scene.tile_to_world(scene.waypoint(part))
+
+	var appeared: Array[float] = []
+	var left: Array[float] = []
+	var known := {}
+	var moved_while_telegraphing := 0
+	var first_step_age: Array[float] = []
+	var at := 0.0
+	while at < Tuning.FINALE_LENGTH_SECONDS:
+		events._physics_process(STEP)
+		for instance in events.instances():
+			instance.player_at = her
+			instance.baby_awake = true
+			if instance.def.id != "masked_pursuer":
+				continue
+			var id := instance.get_instance_id()
+			if not known.has(id):
+				known[id] = appeared.size()
+				appeared.append(at)
+				first_step_age.append(-1.0)
+			var before := instance.global_position
+			var was_leaving := instance.is_leaving
+			instance._process(STEP)
+			var which: int = known[id]
+			if not before.is_equal_approx(instance.global_position):
+				if instance.is_telegraphing():
+					moved_while_telegraphing += 1
+				if first_step_age[which] < 0.0:
+					first_step_age[which] = instance.chase_age()
+			if instance.is_leaving and not was_leaving:
+				left.append(at)
+		at += STEP
+
+	t.check(appeared.size() >= 3,
+			"more than one masked man comes up the shaft over a section (%d)" % appeared.size())
+	t.check(moved_while_telegraphing == 0,
+			"and none of them moves while he is giving notice (%d frames)" % moved_while_telegraphing)
+	var notices := 0
+	for i in first_step_age.size():
+		if first_step_age[i] < 0.0:
+			continue
+		notices += 1
+		t.check(first_step_age[i] >= EventCatalogue.by_id("masked_pursuer").telegraph_time - STEP,
+				"man %d took his first step %.2fs in, after his whole notice" % [i, first_step_age[i]])
+	t.check(notices >= 2, "at least two of them actually ran (%d)" % notices)
+	var gaps := 0
+	for i in range(1, appeared.size()):
+		if i - 1 >= left.size():
+			break
+		gaps += 1
+		var gap: float = appeared[i] - left[i - 1]
+		t.check(absf(gap - Tuning.FINALE_PURSUER_RESPAWN_SECONDS) <= STEP * 3.0,
+				"the next man comes %.2fs after the last one ran out of the top, against %.2fs"
+				% [gap, Tuning.FINALE_PURSUER_RESPAWN_SECONDS])
+	t.check(gaps > 0, "there were gaps between his runs to measure (%d)" % gaps)
+	print("The masked man came %d times in %.0fs; gaps measured: %d"
+			% [appeared.size(), Tuning.FINALE_LENGTH_SECONDS, gaps])
+	events.free()
+	scene.free()
+
+## **The three of them together still leave a way out.** The rubble shuts the top floor's right
+## half, the fire shuts a flight of the left shaft, and the masked man runs the right one — and a
+## section where any pair of those closed the last route would be unplayable rather than hard.
+##
+## Asked as a flood from her own door across the whole building, doors included, with **both of the
+## things that actually close ground taken out of the walkable set**: the collapse, and every cell
+## within the fire's own blocking reach. The masked man closes nothing — he is mobile and carries
+## no body — so what he owes is the door margin
+## `_test_a_door_is_always_within_his_own_notice_from_his_line` measures, and it is named here
+## rather than repeated.
+##
+## Non-vacuous on purpose: both closures are counted, so a build where the fire stood somewhere
+## harmless or the rubble was never laid would fail the guard rather than pass the flood.
+func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t: Node) -> void:
+	var f := InteriorMap.build()
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var fire: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "burning_building":
+			fire = instance
+	t.check(fire != null, "the fire is in the building")
+	var shut := {}
+	var reach := 0.0
+	if fire:
+		reach = fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+		for tile: Vector2i in f.tiles:
+			if f.is_walkable(tile) and scene.tile_to_world(tile).distance_to(fire.global_position) < reach:
+				shut[tile] = true
+	t.check(shut.size() > 0, "the fire actually closes ground (%d cells)" % shut.size())
+	var buried := 0
+	for y in range(f.rubble.position.y, f.rubble.end.y):
+		for x in range(f.rubble.position.x, f.rubble.end.x):
+			if f.tiles.has(Vector2i(x, y)):
+				buried += 1
+	t.check(buried > 0, "and the rubble actually closes ground (%d cells)" % buried)
+
+	var seen := {f.start_tile: true}
+	var queue: Array[Vector2i] = [f.start_tile]
+	while not queue.is_empty():
+		var here: Vector2i = queue.pop_back()
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				if dx == 0 and dy == 0:
+					continue
+				var next: Vector2i = here + Vector2i(dx, dy)
+				if seen.has(next) or shut.has(next) or not f.is_walkable(next):
+					continue
+				seen[next] = true
+				queue.append(next)
+		for id: String in f.doors:
+			var door: InteriorMapPlan.Door = f.doors[id]
+			if door.tile != here:
+				continue
+			var target: Vector2i = f.door(door.target_door).tile
+			if not seen.has(target) and not shut.has(target):
+				seen[target] = true
+				queue.append(target)
+	t.check(seen.has(f.exit_tile),
+			"the service exit is reachable from her own door past a %.0fpx fire and the collapse"
+			% reach)
+	events.free()
+	scene.free()
+
+## Walking distance in px from every walkable cell to the nearest of `targets`, eight-connected,
+## with a diagonal step costing `TILE * sqrt(2)` rather than one step — the flights are runs of
+## diagonal cells, so counting them as unit steps understates the walk by forty percent.
+func _walk_distance_to_nearest(f: InteriorMapPlan, targets: Array[Vector2i]) -> Dictionary:
+	var best := {}
+	var queue: Array[Vector2i] = []
+	for tile in targets:
+		best[tile] = 0.0
+		queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var here: Vector2i = queue[head]
+		head += 1
+		var cost: float = best[here]
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				if dx == 0 and dy == 0:
+					continue
+				var next := here + Vector2i(dx, dy)
+				if not f.is_walkable(next):
+					continue
+				var step := InteriorScene.TILE * (sqrt(2.0) if dx != 0 and dy != 0 else 1.0)
+				if best.has(next) and float(best[next]) <= cost + step:
+					continue
+				best[next] = cost + step
+				queue.append(next)
+	return best
+
 ## *"Maybe some mice. ... Maybe some steam in the basement etc."* The mouse and every vent stand on
 ## the basement's own corridor, which has no branches — so they are things she walks past rather
 ## than things she may happen not to find.
 ##
-## A vent stands on the **seam** between the corridor's two rows rather than on either of them, and
-## that is what makes it a gate: her centre is held `obstructs_radius + PLAYER_BODY_RADIUS` from
-## the middle of the passage, and the walls leave it only `TILE - PLAYER_BODY_RADIUS` either side
-## of that middle, so there is no line past a vent that is blowing. Stated as those two reaches
-## rather than as the numbers they come out at today.
+## A vent stands on a cell where the corridor is **one tile wide**, and that is what makes it a
+## gate: her centre is held `obstructs_radius + PLAYER_BODY_RADIUS` from the middle of the
+## passage, and a one-tile passage leaves it only half a tile of play either side of that middle,
+## so there is no line past a vent that is blowing. Stated as those two reaches rather than as the
+## numbers they come out at today — and asked of each vent's own four neighbours, so a layout that
+## widened one of the three would fail here rather than in a playtest.
+##
+## **And each gate is one she cannot go round**, checked by taking that one cell out of the
+## walkable set and asking whether the exit is still reachable from the entry. A gate on a cell
+## with a way past it is scenery.
 func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -912,34 +1214,66 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	var vents := events.vents()
 	t.check(vents.size() == Tuning.FINALE_STEAM_PERIODS.size(),
 			"the corridor has one vent per period in `Tuning` (%d)" % vents.size())
-	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
-			> InteriorScene.TILE - Tuning.PLAYER_BODY_RADIUS,
-			"a blowing vent is held %.0fpx wide against the %.0fpx the walls leave her centre, "
-			% [steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS,
-			InteriorScene.TILE - Tuning.PLAYER_BODY_RADIUS] + "so there is no line past one")
+	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS > InteriorScene.TILE * 0.5,
+			"a blowing vent holds her centre %.0fpx out against the %.0fpx half-width of a one-tile "
+			% [steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, InteriorScene.TILE * 0.5]
+			+ "passage, so there is no line past one")
 	var periods := {}
 	var spacing := INF
 	for i in vents.size():
 		var vent: InteriorEvents.Vent = vents[i]
 		periods[vent.period] = true
-		var north := scene.world_to_tile(vent.at + Vector2(0.0, -InteriorScene.TILE * 0.5))
-		var south := scene.world_to_tile(vent.at + Vector2(0.0, InteriorScene.TILE * 0.5))
-		t.check(scene.is_walkable(north) and scene.is_walkable(south),
-				"vent %d straddles two walkable rows of the corridor" % i)
-		t.check(walk.has(north) or walk.has(south),
-				"vent %d stands on the walk she has to take" % i)
-		t.check(is_zero_approx(fmod(vent.at.y, InteriorScene.TILE)),
-				"vent %d sits on the seam between them rather than on a row" % i)
+		var tile := scene.world_to_tile(vent.at)
+		t.check(walk.has(tile), "vent %d stands on the walk she has to take (%s)" % [i, tile])
+		t.check(vent.at.is_equal_approx(scene.tile_to_world(tile)),
+				"vent %d stands on its cell's own centre, where a one-tile passage is symmetric" % i)
+		var sideways := scene.is_walkable(tile + Vector2i.LEFT) \
+				or scene.is_walkable(tile + Vector2i.RIGHT)
+		var lengthways := scene.is_walkable(tile + Vector2i.UP) \
+				or scene.is_walkable(tile + Vector2i.DOWN)
+		t.check(not (sideways and lengthways),
+				"vent %d stands where the corridor is one tile wide, not on a two-row band" % i)
+		t.check(not _basement_reaches_the_exit_without(tile),
+				"vent %d stands on a cell the walk to the exit cannot go round" % i)
 		if i > 0:
 			spacing = minf(spacing, vent.at.distance_to((vents[i - 1] as InteriorEvents.Vent).at))
 	t.check(periods.size() == vents.size(),
 			"and no two vents share a period, so their gaps do not line up by themselves")
 	t.check(spacing > (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0,
 			"consecutive vents leave a pocket she fits in (%.0fpx apart)" % spacing)
-	print("Basement vents: %d, %.0fpx apart at the closest, periods %s"
-			% [vents.size(), spacing, Tuning.FINALE_STEAM_PERIODS])
+	# The gap a vent leaves has to be long enough to cross its own reach with time over — the floor
+	# `Tuning.FINALE_STEAM_PERIODS`' own doc derives, asked of the numbers rather than restated.
+	var crossing := (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0 / Tuning.WALK_SPEED
+	for period: float in Tuning.FINALE_STEAM_PERIODS:
+		t.check(period - Tuning.FINALE_STEAM_BLOWS_FOR >= crossing + 1.0,
+				("a %.1fs vent leaves %.2fs of open corridor against the %.2fs it takes to walk "
+				% [period, period - Tuning.FINALE_STEAM_BLOWS_FOR, crossing])
+				+ "through its reach, a margin of %.2fs"
+				% (period - Tuning.FINALE_STEAM_BLOWS_FOR - crossing))
+	print("Basement vents: %d, %.0fpx apart at the closest, periods %s; a crossing costs %.2fs"
+			% [vents.size(), spacing, Tuning.FINALE_STEAM_PERIODS, crossing])
 	events.free()
 	scene.free()
+
+## Whether the basement's exit is still reachable from its entry with `without` taken out of the
+## walkable set — the question that separates a gate from scenery.
+func _basement_reaches_the_exit_without(without: Vector2i) -> bool:
+	var f := InteriorMap.build()
+	var entry: InteriorMapPlan.Door = f.door("basement:entry")
+	var seen := {entry.tile: true}
+	var queue: Array[Vector2i] = [entry.tile]
+	while not queue.is_empty():
+		var here: Vector2i = queue.pop_back()
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				if dx == 0 and dy == 0:
+					continue
+				var next := here + Vector2i(dx, dy)
+				if next == without or seen.has(next) or not f.is_walkable(next):
+					continue
+				seen[next] = true
+				queue.append(next)
+	return seen.has(f.exit_tile)
 
 ## The corridor as a timing puzzle: *"have them turn off an on in different intervals"*. Driven
 ## through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two calls
@@ -1154,8 +1488,144 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	events.setup(scene, rng)
 	t.check(not scene.windows_are_flashing(), "the windows are dark to begin with")
 	events._physics_process(Tuning.FINALE_EXPLOSION_INTERVAL)
-	t.check(scene.windows_are_flashing(), "an explosion lights every hallway window")
+	t.check(scene.windows_are_flashing(), "an explosion lights the hallway windows")
+	# *"All windows always need to flash together. A single window cannot flash by itself."*
+	t.check(scene.windows_lit() == scene.window_count(),
+			"every one of the %d, together (%d lit)" % [scene.window_count(), scene.windows_lit()])
 	scene._process(Tuning.FINALE_WINDOW_FLASH_SECONDS + 0.01)
 	t.check(not scene.windows_are_flashing(), "and they go dark again a frame or two later")
+	t.check(scene.windows_lit() == 0, "all of them, with none left lit (%d)" % scene.windows_lit())
+	events.free()
+	scene.free()
+
+## *"The flashing lights in the window are too rare"*, and *"do a biased random distribution
+## between 100ms and 5s between flashes where the mean is 1.3s and the rest of the curve is
+## smooth."*
+##
+## Four things, and each is a separate way the answer could be wrong.
+##
+## - **The draw itself.** A few thousand values off the real function: all inside the stated
+##   bounds, a mean on the stated mean, and a median under it — which is what "biased" means and
+##   is the one property a symmetric mistake would still pass the mean check with.
+## - **The rate on screen.** Over a minute of the section, far more flashes than the explosions
+##   alone ever gave, which is what the player actually asked for. Stated against
+##   `Tuning.FINALE_EXPLOSION_INTERVAL` rather than as a count written here.
+## - **All of them or none of them.** *(2026-09-19: "all windows always need to flash together. a
+##   single window cannot flash by itself.")* Checked on every frame of the minute, so an overlap
+##   between two flashes 0.1s apart cannot leave one lit or blink the corridor dark for a frame.
+## - **The cost, which is none.** Excitement in this building is a pure query over
+##   `InteriorEvents.instances()` — nothing writes at the baby — so "adds nothing to the meter" is
+##   exactly "creates no instance", and that is asked directly rather than through an integral
+##   that a stray source elsewhere in the building could muddy.
+##
+## And the same seed twice, since the waits come off the section's own seeded stream.
+func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	const SPAN := 60.0
+	const DRAWS := 4000
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	t.check(scene.window_count() > 0, "the building has hallway windows (%d)" % scene.window_count())
+
+	# The distribution, asked of the function the running game draws from.
+	var waits: Array[float] = []
+	var outside := 0
+	var total := 0.0
+	for _draw in DRAWS:
+		var wait := events._wait_for_the_next_distant_flash()
+		if wait < Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS \
+				or wait > Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS:
+			outside += 1
+		waits.append(wait)
+		total += wait
+	waits.sort()
+	var mean := total / float(DRAWS)
+	var median: float = waits[DRAWS / 2]
+	t.check(outside == 0,
+			"every wait is inside [%.1fs, %.1fs] (%d of %d were not)"
+			% [Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS, Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS,
+			outside, DRAWS])
+	t.check(absf(mean - Tuning.FINALE_DISTANT_FLASH_MEAN_SECONDS) <= 0.05,
+			"the mean wait is %.3fs against the %.2fs the shape constant is solved for"
+			% [mean, Tuning.FINALE_DISTANT_FLASH_MEAN_SECONDS])
+	t.check(median < mean,
+			"and the median (%.3fs) is under it, which is the bias toward short gaps" % median)
+	print("Distant flash waits over %d draws: mean %.3fs, median %.3fs, longest %.2fs"
+			% [DRAWS, mean, median, waits[DRAWS - 1]])
+	events.restart()
+
+	var flashes := 0
+	var when: Array[float] = []
+	var was := false
+	var half_lit := 0
+	var lit_while_dark := 0
+	var at := 0.0
+	while at < SPAN:
+		events._physics_process(STEP)
+		var now := scene.windows_are_flashing()
+		if now and not was:
+			when.append(at)
+			flashes += 1
+		was = now
+		if now and scene.windows_lit() != scene.window_count():
+			half_lit += 1
+		if not now and scene.windows_lit() != 0:
+			lit_while_dark += 1
+		scene._process(STEP)
+		at += STEP
+	var bangs := int(SPAN / Tuning.FINALE_EXPLOSION_INTERVAL)
+	t.check(flashes > bangs * 5,
+			"far more flashes than the bangs alone gave (%d in %.0fs against %d explosions)"
+			% [flashes, SPAN, bangs])
+	t.check(half_lit == 0,
+			"every window lights on every flash, none on its own (%d frames with some dark)"
+			% half_lit)
+	t.check(lit_while_dark == 0,
+			"and none is left lit once a flash is over (%d frames)" % lit_while_dark)
+	print("Window flashes over %.0fs: %d, against %d explosions" % [SPAN, flashes, bangs])
+
+	var instances := events.instances().size()
+	events._light_the_far_windows(Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS + 0.01)
+	t.check(events.instances().size() == instances,
+			"a distant flash creates nothing, so it can charge nothing (%d instances either side)"
+			% instances)
+	t.check(scene.windows_lit() == scene.window_count(),
+			"and lights the whole corridor, exactly as a bang does (%d of %d)"
+			% [scene.windows_lit(), scene.window_count()])
+
+	# The same seed, the same night: a second building flashes at the same instants.
+	var twin_scene := InteriorScene.new()
+	t.add_child(twin_scene)
+	var twin := InteriorEvents.new()
+	t.add_child(twin)
+	var twin_rng := RandomNumberGenerator.new()
+	twin_rng.seed = 4242
+	twin.setup(twin_scene, twin_rng)
+	# `restart()` reseeds the flash stream from the run seed, which is what makes this a comparison
+	# of two nights rather than of two points in one stream — the loop above is run after its own
+	# `restart()` for the same reason, since the draws taken for the distribution came first.
+	twin.restart()
+	var twin_when: Array[float] = []
+	var twin_was := false
+	at = 0.0
+	while at < SPAN:
+		twin._physics_process(STEP)
+		var now := twin_scene.windows_are_flashing()
+		if now and not twin_was:
+			twin_when.append(at)
+		twin_was = now
+		twin_scene._process(STEP)
+		at += STEP
+	t.check(twin_when == when,
+			"the same seed flashes at the same instants (%d against %d)"
+			% [twin_when.size(), when.size()])
+
+	twin.free()
+	twin_scene.free()
 	events.free()
 	scene.free()

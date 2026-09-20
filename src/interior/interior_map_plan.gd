@@ -56,8 +56,23 @@ var collision_clearance: Dictionary = {}
 ## the lobby's own floor — used both as `--start-escape <part>`'s teleport target and, in
 ## `tests/test_interior.gd`, as the seed a per-part flood fill starts from. `id -> Vector2i`.
 var waypoints: Dictionary = {}
+## Where the basement corridor is one tile wide on the way to the exit, in the order she meets them
+## walking up from the entry — see `InteriorMap.BASEMENT_NARROWS` for which they are and why the
+## entry stair is not among them. A gate stands on each; the layout says where a gate *can* stand
+## and `InteriorEvents` decides what stands there.
+var corridor_narrows: Array[Vector2i] = []
+## The cells the fallen ceiling fills, as one tile rect — floor that is painted and drawn over but
+## cannot be stood on. Its own field rather than a tile kind, because what is underneath a heap is
+## still this hallway's floor and is still drawn as one; a `RUBBLE` kind would have to repaint the
+## ground as well as close it, and the ground is not what changed. `Rect2i()` — zero size, so
+## `has_point()` is false everywhere — for a building with no collapse in it.
+var rubble := Rect2i()
 
+## Whether a walker may stand here. **The rubble is asked first**, since its cells carry ordinary
+## walkable floor and are closed by the collapse rather than by the kind painted under it.
 func is_walkable(tile: Vector2i) -> bool:
+	if rubble.has_point(tile):
+		return false
 	return InteriorTile.is_walkable(tiles.get(tile, InteriorTile.Kind.NONE))
 
 func door(id: String) -> Door:

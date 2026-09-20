@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_it_patrols_while_it_waits(t)
 	_test_a_patrol_that_never_notices_drives_off_its_route(t)
 	_test_the_patrol_chases_once_it_notices(t)
+	_test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
 	_test_a_hot_day_places_more_patrols(t)
@@ -155,13 +156,22 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
 			continue
 		t.check(hot.pursues and hot.hard_fail,
 				"heat %d: at or past its threshold its guards leave the post and it kills" % level)
-		# What actually forced `inner_radius` from the M61-derived 24 up to 86: restated as the
-		# body/lethal-radius arithmetic `EventDef.validate()` checks, rather than trusting the
-		# boot-time push_error alone to have caught a regression.
-		t.check(hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS < hot.inner_radius,
-				("heat %d: the band's own body still leaves the kill reachable "
-						+ "(%.0f + %.0f < %.0f)")
-				% [level, hot.obstructs_radius, Tuning.PLAYER_BODY_RADIUS, hot.inner_radius])
+		# **What kills is a man, at a man's reach**, and the band it stands at no longer has
+		# anything to do with it. Asked as the two facts that make that true rather than as the
+		# number: the catch is the same one the escape's masked man uses, and it is well inside
+		# the reach the band's own body would have forced if the barrier were the killer — which
+		# is exactly the arrangement this row used to be in.
+		t.check(hot.lethal_reach() == EventCatalogue.by_id("masked_pursuer").inner_radius,
+				"heat %d: it catches at a masked man's own reach (%.0fpx)"
+				% [level, hot.lethal_reach()])
+		t.check(hot.lethal_reach() < hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS,
+				("heat %d: and well inside the %.0fpx the band's own body would have forced, "
+						+ "which is only possible because the man leaves it behind")
+				% [level, hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS])
+		t.check(hot.body_stays_behind,
+				"heat %d: and the barrier he leaves stays where it was built" % level)
+		t.check(hot.lethal_reach() <= hot.inner_radius,
+				"heat %d: the catch is inside the field's own core, so it is never silent" % level)
 
 # ------------------------------------------------------------- the derivation ---
 
@@ -359,6 +369,95 @@ func _test_the_patrol_chases_once_it_notices(t) -> void:
 	t.check(opened_to > opened_from,
 			"and the gap actually opened once she ran (%.0fpx -> %.0fpx)" % [opened_from, opened_to])
 	instance.free()
+
+## *"I just saw a barrier turn into a mask men (the barrier disappeared and the masked man
+## appeared) and the pursuit ended way too early (I got caught when I was still very visibly away
+## from him)."* — and, on how it should work: *"the guard needs to be at the barrier from the
+## beginning, standing. only then does it make sense for it to start pursuing. 86px is huge why is
+## that the fix for the problem that the radius is too big?"*
+##
+## Four things, and each is one half of what the player reported.
+##
+## - **A cold roadblock is a barrier and nothing else**: solid, never lethal, catching nobody at
+##   any distance. The guard standing at it is a drawing, which is why he costs nothing here.
+## - **Nothing disappears when he sets off.** The body is still there and it is still at the place
+##   the barrier was built, not wherever the man has walked to.
+## - **The catch is measured from the man**, at `masked_pursuer`'s own reach — so she is taken
+##   when he is on her, not when he is two and a half tiles away.
+## - **The barrier catches nobody.** Standing right against it, at the distance the old lethal
+##   radius would have fired from, ends nothing while the man is elsewhere.
+func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) -> void:
+	var reach: float = EventCatalogue.by_id("masked_pursuer").inner_radius
+	var cold := _cold_roadblock()
+	var post := Vector2(400.0, 0.0)
+
+	var band := EventInstance.new()
+	band.setup(cold, post)
+	t.add_child(band)
+	band.set_process(false)
+	band.player_at = post + Vector2(cold.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, 0.0)
+	band._process(STEP)
+	t.check(band.is_solid(), "a cold roadblock is a solid band")
+	t.check(not band.is_lethal_at(band.player_at) and not band.is_lethal_at(post),
+			"and it takes nobody, at its own edge or standing in it")
+	band.free()
+
+	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
+	var guard := EventInstance.new()
+	guard.setup(hot, post)
+	t.add_child(guard)
+	guard.set_process(false)
+	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
+	t.check(not guard.has_left_its_body_behind(), "with its body still under its own feet")
+
+	var her := post + Vector2(hot.pursues_within - 10.0, 0.0)
+	guard.player_at = her
+	guard._process(STEP)
+	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
+	t.check(guard.is_solid() and guard.has_left_its_body_behind(),
+			"he sets off and the barrier stays solid behind him")
+	t.check(guard.body_position().is_equal_approx(post),
+			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
+
+	# His whole notice runs while he is standing where she can see him, and nothing is lethal
+	# during it — that is the contract every pursuer keeps and the reason he is worth seeing.
+	var frames := 0
+	while guard.is_telegraphing() and frames < int(10.0 / STEP):
+		t.check(not guard.is_lethal_at(guard.global_position),
+				"nothing is lethal while his notice runs")
+		guard.player_at = her
+		guard._process(STEP)
+		frames += 1
+	t.check(not guard.is_telegraphing() and frames > 0,
+			"his %.1fs notice runs in full and ends (%d frames)" % [hot.telegraph_time, frames])
+
+	# The reach is a man's, measured from him.
+	var on_him := guard.global_position + Vector2(reach - 1.0, 0.0)
+	var just_clear := guard.global_position + Vector2(reach + 2.0, 0.0)
+	t.check(guard.is_lethal_at(on_him), "he takes her at %.0fpx, a man's own reach" % reach)
+	t.check(not guard.is_lethal_at(just_clear),
+			"and not a pixel past it (%.0fpx is clear)" % (reach + 2.0))
+	t.check(not guard.is_lethal_at(guard.global_position
+			+ Vector2(hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, 0.0)),
+			"never at the %.0fpx the band's own body would have forced"
+			% (hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS))
+
+	# And the barrier he left behind is not a second killer: she can stand against it. She holds
+	# still while he closes, so what this measures is him leaving rather than her drawing him off.
+	var chased := 0.0
+	while chased < 2.0:
+		guard.player_at = her
+		guard._process(STEP)
+		chased += STEP
+	t.check(guard.body_position().is_equal_approx(post),
+			"the barrier has not followed him (%s)" % guard.body_position())
+	t.check(guard.global_position.distance_to(post) > reach,
+			"he has actually walked away from the post (%.0fpx)"
+			% guard.global_position.distance_to(post))
+	t.check(not guard.is_lethal_at(post)
+			and not guard.is_lethal_at(post + Vector2(0.0, hot.obstructs_radius)),
+			"and the barrier standing there takes nobody")
+	guard.free()
 
 ## `EventInstance.resume()` restores age and distance travelled so a streamed-out event picks up
 ## where it left off rather than rewinding — checked here because a heated patrol is the first

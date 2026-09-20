@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_tracing_a_day_does_not_change_it(t)
 	_test_tracing_the_arcs_does_not_change_them(t)
 	_test_a_day_header_opens_a_day(t)
+	_test_the_escape_opens_a_section_so_its_lines_carry_a_time(t)
 	_test_a_stuck_player_is_logged_once(t)
 	_test_a_free_walk_is_never_logged_as_blocked(t)
 	_test_idling_with_no_input_is_never_logged_as_blocked(t)
@@ -337,6 +338,40 @@ func _test_a_day_header_opens_a_day(t) -> void:
 	t.check(lines[3].begins_with("  11.3  turn"), "an entry is timestamped from dawn")
 	t.check(lines[4].begins_with("  11.3  nerve"),
 			"and what happens after dusk keeps the time the day ended at (got '%s')" % lines[4])
+
+## *"Every line in it is stamped `0.0`, so it cannot say when anything happened."*
+##
+## The escape is not a day and never reaches `begin_day()`, which was the only thing that opened a
+## timestamped section — so `set_clock()` had nothing to move and an entire escape run wrote a
+## column of zeroes. `begin_finale()` is the escape's own header, and this asks both halves: that
+## a clock pushed after it actually reaches the line, and that a clock pushed **before** any
+## section is open still does not, which is the guarantee that was being relied on and is what
+## made the defect invisible.
+func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
+	Telemetry.begin_memory_log()
+	# No section open yet: a run that never opens one writes zeroes, which is the behaviour the
+	# escape was getting for the whole of its walk.
+	Telemetry.set_clock(12.0)
+	Telemetry.note("plan", "before any section")
+	Telemetry.begin_finale(4242, 180.0)
+	Telemetry.set_clock(42.5)
+	Telemetry.note("plan", "finale: two chains")
+	Telemetry.set_clock(96.25)
+	Telemetry.note("lost", "escape: the building, 96.2s in")
+
+	var lines := Telemetry.current_log().lines
+	Telemetry.end_run()
+	t.check(lines.size() == 6, "a preamble, an entry, a blank line, a header and two entries (%d)"
+			% lines.size())
+	t.check(lines[1].begins_with("   0.0  plan"),
+			"a line written before any section is open carries no time (got '%s')" % lines[1])
+	t.check(lines[2] == "", "the escape's section is separated from what is above it")
+	t.check(lines[3] == "escape  run seed 4242  length 180.0s",
+			"its header names the run seed and the length of the sequence (got '%s')" % lines[3])
+	t.check(lines[4].begins_with("  42.5  plan"),
+			"and an entry after it carries the elapsed time (got '%s')" % lines[4])
+	t.check(lines[5].begins_with("  96.2  lost"),
+			"as does the line a lost section writes (got '%s')" % lines[5])
 
 # --------------------------------------------------------------- being stuck ---
 # *(`docs/TODO.md`, "The log says when she is stuck": a `--walk` rig that never left the

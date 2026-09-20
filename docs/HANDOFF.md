@@ -299,9 +299,9 @@ checks and worktrees can move independently of this file.
   and no toggle causality is claimed. M163, the ground atlas test builds the same reference it
   compares, and M164, engine errors make the test gate red, are separate fix-ready briefs there.
 
-- **Inspect the live PRs before taking gameplay work:** PR #239, M129, no body closes the
-  walked sidewalk, and PR #240, M168, the escape after playtest 94. Their owners maintain the implementation and review state. The queue on main
-  alone does not show work pending in those branches.
+- **Inspect the live PR before taking gameplay work:** PR #239, M129, no body closes the
+  walked sidewalk. Its owner maintains the implementation and review state. The queue on main
+  alone does not show work pending in that branch.
 
 PR merges and auto-merge require explicit permission in the current session. Use fresh agents
 with self-contained briefs for new implementation or investigation.

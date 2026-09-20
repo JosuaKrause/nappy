@@ -39,6 +39,7 @@ const WALL_LAMP_TEXTURE := preload("res://assets/interior/wall_lamp.svg")
 const LIFT_DOOR_TEXTURE := preload("res://assets/interior/lift_door_dead.svg")
 const ENTRANCE_DOOR_TEXTURE := preload("res://assets/interior/entrance_door.svg")
 const ENTRANCE_BARRICADE_TEXTURE := preload("res://assets/interior/entrance_barricade.svg")
+const HALLWAY_RUBBLE_TEXTURE := preload("res://assets/interior/hallway_rubble.svg")
 const BRICK_WALL := preload("res://assets/interior/basement_wall_brick.svg")
 const DOOR_TEXTURE := preload("res://assets/interior/stairwell_door.svg")
 const APARTMENT_THRESHOLD_TEXTURE := preload("res://assets/interior/apartment_threshold.svg")
@@ -192,6 +193,7 @@ func _rebuild_walls() -> void:
 		if kind != InteriorTile.Kind.LIFT_DOOR and kind != InteriorTile.Kind.ENTRANCE_DOOR:
 			continue
 		_add_wall_sprite(at, _wall_texture(kind))
+	_add_rubble()
 	for at: Vector2i in _plan.entrance_tiles:
 		var barricade := Sprite2D.new()
 		barricade.texture = ENTRANCE_BARRICADE_TEXTURE
@@ -200,6 +202,22 @@ func _rebuild_walls() -> void:
 				-ENTRANCE_BARRICADE_TEXTURE.get_height())
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		_walls.add_child(barricade)
+
+## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble`
+## closes. One picture registered at the patch's own top-left corner rather than one sprite per
+## cell: a heap is a single mass, and four copies of the same tile would read as four crates.
+##
+## **In the wall layer, with the barricade and the plaster**, for the reason this class's own doc
+## gives for putting elevation there — nothing can legitimately stand behind a thing that closes a
+## corridor, so there is nothing for it to sort against.
+func _add_rubble() -> void:
+	if _plan.rubble.size == Vector2i.ZERO:
+		return
+	var heap := Sprite2D.new()
+	heap.texture = HALLWAY_RUBBLE_TEXTURE
+	heap.centered = false
+	heap.position = Vector2(_plan.rubble.position) * TILE
+	_walls.add_child(heap)
 
 func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> Sprite2D:
 	if not texture:
@@ -214,21 +232,25 @@ func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> Sprite2D:
 
 # ------------------------------------------------------------------ the flash ---
 
-## Every hallway window in the building, kept so an explosion can light all of them at once.
+## Every hallway window in the building, kept so a flash can light all of them at once.
 var _window_sprites: Array[Sprite2D] = []
 ## Seconds of lit window left, or 0 for none. Counted down in `_process()` rather than handed to a
 ## `SceneTreeTimer`, so the flash freezes with the rest of the game behind a pause screen instead
 ## of burning down while nothing is being played.
 var _window_flash_left := 0.0
 
-## **The explosion's own cue indoors.** *"The hallway windows that flash when an explosion goes
-## off"* — there is no burst on the street to see and no arc drawn for the noise yet, so what says
-## a bomb has gone off somewhere out there is every window in the building going white at once for
-## a frame or two.
+## **The cue for something going off outside, near or far.** *"The hallway windows that flash when
+## an explosion goes off"* — there is no burst on the street to see and no arc drawn for the noise
+## yet, so what says a bomb has gone off somewhere out there is every window in the building going
+## white at once for a frame or two.
 ##
-## All of them, not the ones she can see: the building is one map with three hallways 64 tiles
-## apart, and which hallway she is standing in is not something this has to know. The two she is
-## not in are off screen and cost two texture assignments.
+## **Every one of them, together, always.** *(2026-09-19: "all windows always need to flash
+## together. a single window cannot flash by itself.")* There is one call for a near bang and a far
+## flash alike and no way to light a subset, which is the point: a window lighting while the one
+## beside it stays dark does not read as a city being shelled, it reads as a broken sprite. That
+## also makes "which hallway she is standing in" a question this never has to ask — the building is
+## one map with three hallways 64 tiles apart, and the two she is not in are off screen and cost
+## two texture assignments.
 func flash_windows() -> void:
 	_window_flash_left = Tuning.FINALE_WINDOW_FLASH_SECONDS
 	for sprite in _window_sprites:
@@ -238,6 +260,21 @@ func flash_windows() -> void:
 ## swap is not something a headless run can see.
 func windows_are_flashing() -> bool:
 	return _window_flash_left > 0.0
+
+## How many windows are showing their lit picture — the question `windows_are_flashing()` cannot
+## answer, and the one that holds *all of them or none*: a count that is neither is a window
+## flashing on its own.
+func windows_lit() -> int:
+	var lit := 0
+	for sprite in _window_sprites:
+		if sprite.texture == HALLWAY_WINDOW_FLASH:
+			lit += 1
+	return lit
+
+## How many hallway windows there are at all, so a test counting lit ones has something to compare
+## against rather than a number of its own.
+func window_count() -> int:
+	return _window_sprites.size()
 
 func _process(delta: float) -> void:
 	if _window_flash_left <= 0.0:
@@ -442,6 +479,13 @@ func stairwell_walk(part_id: String) -> Array[Vector2i]:
 	if bottom == NOWHERE or top == NOWHERE:
 		return []
 	return _shortest_walk(bottom, top)
+
+## Where the basement corridor is one tile wide on the way out, in the order she meets them — see
+## `InteriorMapPlan.corridor_narrows`. Passed through rather than recomputed by scanning for cells
+## with two blocked sides, so what a gate stands on is what the layout laid rather than whatever
+## the geometry happens to offer today.
+func basement_narrows() -> Array[Vector2i]:
+	return _plan.corridor_narrows
 
 ## The basement's corridor, entry to exit, tile by tile. The corridor has no branches, so its
 ## shortest walk *is* the corridor, and anything sited a fraction of the way along it stands
