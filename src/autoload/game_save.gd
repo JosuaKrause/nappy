@@ -176,7 +176,16 @@ static func _read_now() -> Dictionary:
 		return {}
 	var text := file.get_as_text()
 	file.close()
-	var parsed: Variant = JSON.parse_string(text)
+	# A garbled save is expected input here, not a defect — the whole point of this function is to
+	# drop one for a fresh title screen. `JSON.parse_string()` reports the same failure by printing
+	# an engine `ERROR: Parse JSON failed…` on its way to returning null, which is right for code
+	# that never expects bad JSON and wrong here; the instance form reports through its own return
+	# value instead and prints nothing, the same shape `GroundLayers._load_manifest()` already uses
+	# for a manifest file that also may not parse.
+	var parser := JSON.new()
+	if parser.parse(text) != OK:
+		return {}
+	var parsed: Variant = parser.data
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return {}
 	var data: Dictionary = parsed
