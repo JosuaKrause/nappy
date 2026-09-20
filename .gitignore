@@ -30,5 +30,12 @@ Thumbs.db
 .venv/
 __pycache__/
 
+# tools/test.sh stages tests/runner_fixtures/unparseable_suite.gd.src to this real .gd path for
+# the one process that names it, and removes it (and the .uid Godot writes beside it) as soon as
+# that process ends. Ignored as well, so an interrupted run never leaves a parse-broken .gd
+# sitting where a later commit could pick it up.
+/tests/runner_fixtures/unparseable_suite.gd
+/tests/runner_fixtures/unparseable_suite.gd.uid
+
 # Agent worktrees (full checkouts; never content of the repo itself)
 .claude/worktrees/

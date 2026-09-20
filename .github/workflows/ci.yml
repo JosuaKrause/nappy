@@ -1,7 +1,7 @@
 # The same gates a local commit rests on, plus the full suite split across parallel runners:
-#   gates    lint.sh, test_cli_help.sh, pycheck.sh, check.sh's boot check, then the one negative
-#            fixture the classifier in tools/test.sh must fail on -- everything that needs no more
-#            than one process, run before the sharded suite rather than inside it.
+#   gates    lint.sh, test_cli_help.sh, pycheck.sh, check.sh's boot check, then the two negative
+#            fixtures tools/test.sh must fail the gate on rather than hang or pass -- everything
+#            that needs no more than one process, run before the sharded suite rather than inside it.
 #   shards   the headless suite, one matrix job per shard, each running tools/test.sh --shard
 #            I/8 -- planned from tests/suite_costs.txt exactly as a local sharded run is.
 #   test     what main's ruleset actually requires (a check named exactly `test`): it needs both
@@ -112,6 +112,44 @@ jobs:
             exit 1
           fi
           echo "OK: the fixture failed the gate as required"
+
+      # tests/runner_fixtures/unparseable_suite.gd.src holds a fixture whose GDScript text does
+      # not parse -- kept off its real .gd name because an unparseable .gd anywhere in the tree
+      # can break the atlas bake's own engine boot when the class-name cache is cold (see the
+      # fixture's own header, and M172 in docs/DECISIONS.md). tools/test.sh stages it to its real
+      # path only for this one process and removes the staged copy when the process ends. Before
+      # M172, a suite `run_tests.gd` could not load aborted `_ready()` before `quit()`, so the
+      # process idled forever instead of failing -- `timeout 30` is a safety net for that
+      # regression, not the expected path: a fixed runner reports the load failure and exits in
+      # a few seconds, and 30s stays well clear of that without waiting anywhere near the job's
+      # own 15-minute timeout. Exit code 124 is `timeout`'s own for "killed after the limit", so
+      # it is checked for and excluded from "non-zero" below, or a hang would read as the fixture
+      # doing its job instead of as the regression it is.
+      - name: Unparseable suite must fail the gate, not hang it
+        run: |
+          set +e
+          GODOT="$HOME/godot/godot-bin" timeout 30 ./tools/test.sh runner_fixtures/unparseable_suite.gd \
+            > unparseable_fixture.log 2>&1
+          status=$?
+          set -e
+          cat unparseable_fixture.log
+          if [[ $status -eq 124 ]]; then
+            echo "FAILED: runner_fixtures/unparseable_suite.gd timed out -- the runner hung instead of failing" >&2
+            exit 1
+          fi
+          if [[ $status -eq 0 ]]; then
+            echo "FAILED: runner_fixtures/unparseable_suite.gd exited 0 -- a load failure did not fail the gate" >&2
+            exit 1
+          fi
+          if ! grep -qF "unparseable_suite.gd" unparseable_fixture.log; then
+            echo "FAILED: the fixture's name never printed -- the load failure was not reported by name" >&2
+            exit 1
+          fi
+          if ! grep -qE '^[0-9]+ checks, [0-9]+ failures$' unparseable_fixture.log; then
+            echo "FAILED: the normal runner summary line never printed" >&2
+            exit 1
+          fi
+          echo "OK: the fixture failed the gate fast, by name, with a summary line"
 
   shards:
     runs-on: ubuntu-latest

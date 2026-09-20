@@ -10,8 +10,16 @@ extends Node
 ##
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
 ## runner. Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
-## negative fixture `tests/runner_fixtures/engine_error.gd`, run only when named by path — see
-## `_discover`.
+## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, and `unparseable_suite.gd`
+## once `tools/test.sh` has staged it from its committed `.gd.src` — see that file's own header),
+## run only when named by path — see `_discover`.
+##
+## **A suite that fails to load is a recorded failure, never a hang.** `load()` on a
+## script with a parse error returns a non-null `GDScript` that `can_instantiate()` refuses, and
+## calling `.new()` on it anyway is itself a runtime error that aborts `_ready()` before `quit()`
+## — the whole engine then idles forever with nothing left to drive it, since nothing else is
+## running. The `can_instantiate()` guard below is what turns that into a named `FAIL` line and a
+## normal, non-zero exit.
 ##
 ## The filter exists because the whole suite is minutes and a single suite is seconds, and a
 ## check you only run at the end tells you *that* something broke rather than *what*. It says
@@ -32,7 +40,17 @@ func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
 	for path in _discover(filters):
 		var started := Time.get_ticks_msec()
-		var suite: Object = (load(path) as GDScript).new()
+		# `load()` on a suite with a parse error returns a non-null GDScript that this guard
+		# catches before `.new()` ever runs — `.new()` on it is a runtime error with nothing to
+		# catch it, which is what used to abort `_ready()` before `quit()` and leave the headless
+		# process idling forever. A missing file takes the same branch: `load()` returns null,
+		# and `null as GDScript` is null too, so `can_instantiate()` never runs on it.
+		var script := load(path) as GDScript
+		if script == null or not script.can_instantiate():
+			failures.append("%s failed to load (parse error or missing script)" % path)
+			print("-- %-26s %7s" % [path.get_file(), "LOAD FAIL"])
+			continue
+		var suite: Object = script.new()
 		suite.run(self)
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the

@@ -84,6 +84,15 @@ reports it by return value: `JSON.new().parse()` rather than the static `JSON.pa
 which prints. `tests/runner_fixtures/engine_error.gd` raises one on purpose, runs only when named,
 and CI requires it to go red.
 
+**A suite that cannot load is a named failure, not a hang.** `run_tests.gd` checks a suite's
+script with `can_instantiate()` before it instantiates it, prints `LOAD FAIL` beside the suite's
+name, runs the rest and exits non-zero. The fixture for it is
+`tests/runner_fixtures/unparseable_suite.gd.src`: it is never a `.gd` file in the tree, because
+one script that does not parse breaks every `class_name` lookup in any engine start that has no
+import cache yet, the atlas bake's included. `tools/test.sh runner_fixtures/unparseable_suite.gd`
+stages the copy for that one process and removes it on exit, and CI requires the run to fail
+within seconds. A suite whose own `run()` raises at runtime can still stop the runner short.
+
 **`check.sh`'s import pass rewrites two files that have nothing to do with the check, and `check.sh`
 now puts them back.** It turns runs of spaces into tabs in `docs/ARCHITECTURE.md`'s file tree, and it
 makes the editor rewrite `project.godot`, which loses more than whitespace — every `;` comment is

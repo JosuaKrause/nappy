@@ -390,28 +390,9 @@ closes the contract.
       and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
       **The release that follows is a minor version, and it waits for every item in this
       section** — *"only release once all those new items are completed, too"* — **and for
-      M172, a suite that fails to parse hangs the test run, and M173, the standalone bake
-      speaks for a stale import cache, where they can be had** — *"include the bug fixes, too,
-      if possible"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
+      M173, the standalone bake speaks for a stale import cache, where it can be had** —
+      *"include the bug fixes, too, if possible"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
       ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
-
----
-
-## M172 — A suite that fails to parse hangs the test run · found 2026-09-20
-
-`tests/run_tests.gd`'s `_ready()` loads every suite before it runs any, and a suite with a parse
-error aborts `_ready()` before it reaches `quit()`. The engine prints the `SCRIPT ERROR` and
-then idles forever: `tools/test.sh <that suite>` never exits, and in CI the shard that owns the
-suite runs until the job's timeout or until another shard's failure cancels it, so the pull
-request shows a cancelled shard where it should show a red one with the parse error beside it.
-`tools/test.sh`'s engine-error check reads the output after the process ends, so it never gets
-to speak.
-
-- [ ] **A suite that cannot load is a failure the runner reports and exits on.** The runner
-      records the load failure by suite name, runs the suites that did load, and quits non-zero.
-      A negative fixture beside `tests/runner_fixtures/engine_error.gd` — a script that does not
-      parse, outside suite discovery, run only when named — holds it, and CI's `gates` job
-      requires the non-zero exit, the fixture's name in the output and an exit within seconds.
 
 ---
 
