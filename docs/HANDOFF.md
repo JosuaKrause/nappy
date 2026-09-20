@@ -300,13 +300,14 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
-## Where the last session stopped, 2026-09-19
+## Where the last session stopped, 2026-09-20
 
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **M171 — Build-time atlases replace individual textures has its contract closed, and the
-  minor release it ends with is the open item in its `TODO.md` section**; M159 follows it.
+- **M171 — Build-time atlases replace individual textures is built and released** as the minor
+  version that followed it (`DECISIONS.md`, the sections starting "M171,"). What only a person
+  can judge about it is in `REVIEW.md`. **M159 is next.**
 - **M159, a slow frame names the frame that was slow, has its first optimization in and three
   items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
   velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd

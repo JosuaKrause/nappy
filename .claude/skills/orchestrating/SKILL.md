@@ -228,6 +228,20 @@ merging is what collides — so parallelism is planned at the file level, before
   Code, 15 in Codex — since the clock is the provider's and not observable from here *(2026-09-08:
   "I would give like a 5min safety buffer")*. Past that, spawn a fresh agent with a
   self-contained brief that names the branch and the report to read first.
+- **An agent that died mid-task is replaced in its own worktree.** A usage limit or an API
+  error kills the agent and leaves every edit it made, usually uncommitted. Past the cache
+  window *(2026-09-20: "don't let them continue because their cache is expired")*, start the
+  fresh agent without worktree isolation, pointed at the dead agent's worktree path. The brief
+  it needs is the original one — recoverable verbatim from the previous session's transcript
+  under `~/.claude/projects/` — plus what the orchestrator verified on disk: which files are
+  modified, what was never run, and where the dead agent stopped, read from its own transcript's
+  last tool calls. Its first two steps are to commit the inherited work as it stands and to
+  merge `origin/main`. Say plainly that nothing inherited has been reviewed: one inherited file
+  here did not compile.
+- **Nothing is committed into a worktree an agent is working in.** Queue docs, a merge of
+  `main`, a fix the player wants urgently: wait for the agent's report, or do the work on a
+  branch of its own from `main` and tell the agent what it will touch, so the later merge is
+  small.
 - **The main checkout is the player's test bed.** Whatever the player is asked to try out is
   checked out in the repository's own folder before they are told it is ready — never left in an
   agent's worktree under `.claude/worktrees/`. *(2026-09-08: "always check out what you want me to

@@ -293,51 +293,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M171 — Build-time atlases replace individual textures · asked for 2026-09-19
-
-> "make a todo that atlases must be created at build time. so they can be cheaply loaded at
-> runtime. this enforces that related items must be put in the same atlas so the atlas does not
-> get wasted. all textures that are loaded in an atlas must not be loaded individually"
-> · "they should cease existing in the build once they get baked into an atlas"
-> · "the implementation we currently have is not great"
-
-[PLAYTEST-105](playtests/PLAYTEST-105.md) is the contract and
-[PLAYTEST-108](playtests/PLAYTEST-108.md) the design decisions and
-[PLAYTEST-109](playtests/PLAYTEST-109.md) the player's notes on the baked pages; `DECISIONS.md`, M171, the atlas
-design, has the inventory the design was read from, the rejected bakers and the player's answers.
-
-**The design.** A headless run of the engine itself bakes every picture family into one PNG page
-plus a region table, using the engine's own SVG rasterizer so a baked pixel is the pixel the
-import pass produced for the same file. One runtime loader hands out regions by name and counts
-references; the pages themselves are held from startup. **The presentation mode is the bake's**: a build is PNG mode — the
-illustrated PNG where one exists, the SVG's raster where none does — and SVG mode is a custom
-local bake command, `tools/bake-atlases.sh --svg`, absent from the release; nothing at runtime
-selects a mode.
-**Atlases are baked on demand and never committed**: `tools/check.sh`, `tools/test.sh`,
-`tools/run.sh` and `tools/export-web.sh` compare a manifest of source hashes and the bake tool's
-version against the tree and bake when they differ. **The events are one page** *("for now")*.
-**The ground's individual pictures are baked and its compositing stays at runtime** — bases,
-overlays, damage strips, grass variants and the route-curb tint are composed from regions of
-the ground page on every repaint (`DECISIONS.md`, M171, the ground), because the player refused
-baked composites: *"this is not a bottleneck and it allows for variety"*. The web export is the
-only export; the identity images (logo, icon, social card) leave the game package, and the
-deploy keeps copying the social card beside the page. Both are assumptions the player was told
-and did not speak to.
-
-The milestone is built: `AtlasLibrary` is the one loader and every family draws from its baked
-page, the authoring sources live in `art/`, which the engine ignores, and the export fails on a
-pack that carries a baked constituent (`DECISIONS.md`, the sections starting "M171,").
-**A page loads at startup or in the day brief and at no other moment**
-([PLAYTEST-109](playtests/PLAYTEST-109.md)): `main.gd`'s `RESIDENT_GROUPS` lists the pages
-every boot holds for the life of the process, and a read from disk outside the two moments is
-an engine error the test gate is red for.
-
-- [ ] **Cut the minor release once every item in this section is in** — *"only release once
-      all those new items are completed, too"*; *"after atlas we cut a new minor version"*:
-      `tools/release.sh minor` ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
-
----
-
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
