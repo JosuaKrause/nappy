@@ -198,8 +198,17 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street").
 	var seals := SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary,
 			_map.held_segments)
+	# Where today's doors stand, before a single candidate is rolled. `build_day` keeps
+	# `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around each of them — the ground she is let out
+	# onto, on either side — by refusing a candidate whose field or beat reaches inside it, which is
+	# the same "checked before it is accepted, never repaired afterwards" every closure is placed
+	# under. The wall's own bodies are deliberately not in this list: a wall is structure and stands
+	# where the boundary is.
+	var doors := PackedVector2Array()
+	for body in region_plan.door_bodies:
+		doors.append(body.position)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
-			GameState.settled_this_act(), tree, GameState.resistance_progress)
+			GameState.settled_this_act(), tree, GameState.resistance_progress, doors)
 	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -542,13 +551,52 @@ func instances() -> Array[EventInstance]:
 ## every instance whose contribution here is actually positive. `city_wide` sources are included —
 ## they are part of what reaches the meter even though `ExcitementHalo.select_sources()` excludes
 ## them from the halo itself, which has no position to draw one around.
+##
+## **Inside a door, the door's toll is the only thing that charges.** `door_holding_her_at()` below
+## says whether this point is inside a running region-door hold; while it is, the hold's own flat
+## `Tuning.CHAT_EXCITEMENT` rate is the whole of the answer and every other field in the city is
+## off. See that function for why that is a fact about where she is rather than a special case.
 func excitement_sources_at(world_position: Vector2) -> Array:
+	var inside := door_holding_her_at(world_position)
+	if inside:
+		return [[inside, inside.contribution_at(world_position)]]
 	var sources: Array = []
 	for instance in _instances:
 		var contribution := instance.contribution_at(world_position)
 		if contribution > 0.0:
 			sources.append([instance, contribution])
 	return sources
+
+## The region door whose hold is running right now and whose own trigger circle `world_position`
+## lies inside, or `null` when this point is not inside a door. `City.excitement_sources_at()` asks
+## it too, for the crowd half of the same sum.
+##
+## **She is *inside the hut*, so the street does not reach her.** A hold is the one state in the
+## game where she is not standing on the ground the meter is being asked about: she is hidden, the
+## camera has left her, and the two seconds are a toll rather than a place —
+## *"it works in both directions with the same cost each time"* is the recorded rule, and fields
+## that keep charging through the hold make the same crossing cost whatever happens to stand beside
+## that particular door. `Tuning.EXCITEMENT_DECAY_IDLE` is already zero, so nothing gives back
+## either: with everything else silenced the hold is exactly `Tuning.CHAT_EXCITEMENT` and nothing
+## more.
+##
+## **Stated over the point rather than over "a hold is running", so the query stays pure.** The
+## ground a street away is not inside the hut and is answered for normally, which is what the
+## telemetry, the debug fields layer and a probe sampling the map all want; she is inside the
+## circle by construction for the whole hold, since the release only ever sets her down inside the
+## same trigger.
+##
+## **`redetains` rather than every detainer**, which is what keeps `chatting_mother` out of it: her
+## conversation happens on the pavement in plain sight, with her own picture, the player's and the
+## street all still drawn, so a lorry reversing beside the two of them is part of what that
+## conversation costs. A door is the opposite — she goes in.
+func door_holding_her_at(world_position: Vector2) -> EventInstance:
+	for instance in _instances:
+		if not instance.def.redetains or not instance.is_chatting():
+			continue
+		if instance.global_position.distance_to(world_position) <= instance.def.detain_distance():
+			return instance
+	return null
 
 func total_excitement_at(world_position: Vector2) -> float:
 	var total := 0.0

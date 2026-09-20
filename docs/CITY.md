@@ -1364,6 +1364,22 @@ each of its two mouths. `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies
 alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a hut or a post —
 see docs/EVENTS.md, "Checkpoints" — the gate only ever stops a car, never her.
 
+**A door keeps clear ground around itself, and nothing the day places may reach into it.**
+`Tuning.CHECKPOINT_EVENT_GAP` (176px) is measured from each door body, so it covers both sides of
+the crossing at once — a door works in both directions and there are two release points. Inside it
+no event may stand, no event's field may reach, and no mover's beat or run may pass: the distance
+is taken to the nearest point of a candidate's whole route, and the candidate's own
+`EventDef.field_reach()` is added to the gap, so a patrol that merely walks through it and a row
+sitting outside it with a radius that crosses it are both refused. **Refused at placement, never
+cleared away afterwards** — `EventScheduler._place_one()` rolls again and `EventDirector.due()`
+waits, the same way every closure in this city is checked before it is accepted. A row that can
+find no ground outside every door simply is not placed that day, which is the failure direction
+the scheduler already has everywhere else; measured over six seeds on days 7 and 11 it costs under
+one percent of what a day places.
+
+**The wall's own `roadblock` bodies get no gap**, and that is deliberate: a wall is structure, it
+stands where the boundary is, and dropping one would open a street the partition means to hold.
+
 ## Block purposes
 
 The street lattice is fixed for the run. What a block *is* is not.

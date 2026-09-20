@@ -825,6 +825,32 @@ const CHECKPOINT_DETAIN_REACH := 48.0
 ## `EventManager._release_finished_door_detentions()`.
 const CHECKPOINT_RELEASE_MARGIN := 8.0
 
+## How much clear ground a region door keeps around each of its own bodies — a hut, a boom or an
+## alley post. No event may be sited so that its own field (`EventDef.field_reach()`) reaches inside
+## this radius of one, and no mover's beat or path may run through it: `EventScheduler._place_one()`
+## refuses the candidate and rolls again, and `EventDirector.due()` waits rather than siting one in
+## front of her there. *(2026-09-20, the player: "there should be a gap for events immediately
+## surrounding the gates".)*
+##
+## **Stated over the body, not over the release point, because a door works in both directions.**
+## There are two release points, one each side of the crossing, and a gap measured from the body
+## covers both without either having to be computed at placement.
+##
+## **The number is the door's own field plus the clearance the release sets her down at.** She comes
+## out `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) from the body that
+## let her out, and the widest field a door's own structure carries is the gate's 120px
+## `outer_radius` — so from either release point she walks the full width of the door's own field,
+## and then some, before anything else can start charging her. At `WALK_SPEED` that is about a
+## second and a half of reading a street she has just been put down on, unpriced.
+##
+## **It is a refusal at placement and never a pass that clears the ground afterwards**, the same
+## rule every closure and every event in this game is placed under: a row that cannot find ground
+## outside every door simply is not placed that day, which is the failure direction the rest of the
+## scheduler already has. The wall's own `roadblock` bodies are **not** given a gap — a wall is
+## structure, it stands where the boundary is, and dropping one would open a street the partition
+## means to hold.
+const CHECKPOINT_EVENT_GAP := 176.0
+
 ## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
 ## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads
 ## as an ease rather than a slide or a cut; short enough that most of `CHECKPOINT_DETAIN_SECONDS`

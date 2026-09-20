@@ -42,6 +42,11 @@ var _return_owed := false
 ## for the rest of the day. Set by `owe_the_return()` and never cleared until `start_day()`: once
 ## the return owes its pressure, the pacing stays tight even if the phase drops back to walking.
 var _return_pacing := false
+## Where today's region-door bodies stand — a hut, a boom or an alley post. Read off the day's own
+## plan in `start_day()` below, so the director needs no second channel to the region plan, and
+## used by `due()` to refuse a siting whose path would run through a door's own clear ground. Empty
+## on every day before `Tuning.REGION_WALL_FIRST_DAY`.
+var _doors := PackedVector2Array()
 
 func _init(map: CityMap) -> void:
 	_map = map
@@ -62,7 +67,12 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	_rng = rng
 	_return_owed = false
 	_return_pacing = false
+	_doors.clear()
 	for plan in plans:
+		# A door body is read off the same list, so "where do today's doors stand" is answered once,
+		# by the plan, rather than by a second wire from the region planner to here.
+		if plan.def.redetains and plan.is_placed():
+			_doors.append(plan.position)
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
 			_owed.append(plan.def)
@@ -271,6 +281,15 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
+		_next_in = 1.0
+		return []
+	# **A region door keeps clear ground around itself, and a run sited in front of her is a
+	# placement like any other.** The whole path is asked, not its start: a cyclist coming down her
+	# own line *through* a door's gap is exactly what this refuses, and a row whose lead happens to
+	# clear the gap while its run does not would slip past a check on the spawn point alone.
+	# Refused rather than nudged — the same "try again shortly" the branch above takes, so the
+	# allowance is not burnt and the row arrives once she is past the door.
+	if not EventScheduler.clear_of_the_doors(path[0], path, _doors, next.field_reach()):
 		_next_in = 1.0
 		return []
 	_next_in = _roll_interval()

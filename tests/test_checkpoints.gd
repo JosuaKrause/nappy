@@ -23,7 +23,9 @@ func run(t) -> void:
 	_test_the_boom_bars_the_carriageway(t)
 	_test_the_three_rows_validate_and_are_never_rolled(t)
 	_test_the_manager_actually_places_the_door_structure(t)
+	_test_nothing_the_day_places_reaches_into_a_doors_gap(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
+	_test_the_hold_charges_only_its_toll(t)
 	_test_a_stroller_stopped_against_the_hut_is_detained(t)
 	_test_she_and_the_guard_are_gone_during_the_hold(t)
 	_test_the_whole_hold_reads_as_one_move(t)
@@ -334,6 +336,83 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 
 	city.free()
 
+## **Nothing the day places reaches into a door's own clear ground** — *(2026-09-20, the player:
+## "there should be a gap for events immediately surrounding the gates".)* Asked of the rule
+## itself, `EventScheduler.clear_of_the_doors()`, over a whole planned day rather than over one
+## contrived placement: the ways a row gets onto the map are several (the fill, a scripted row, a
+## set piece and its fallback) and a check on one of them would say nothing about the rest.
+##
+## **And the same day planned with no doors is what says the sweep is not vacuous**, and what
+## measures the price of the rule at the same time. The second call is the identical call with the
+## argument empty, off the same seed and the same tree, so the only thing that differs between the
+## two plans is which candidates were refused. The assertion on the cost is a relationship rather
+## than a count: refusing this ground has to stay something a day absorbs by putting the row
+## somewhere else, never something that empties it.
+func _test_nothing_the_day_places_reaches_into_a_doors_gap(t) -> void:
+	var days: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, Tuning.REGION_WALL_FIRST_DAY + 4]
+	var kept := 0
+	var loose := 0
+	var found_a_door := false
+	for map: CityMap in _maps.slice(0, 2):
+		for day in days:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var doors := PackedVector2Array()
+			for body in RegionPlanner.plan_day(map, day, tree).door_bodies:
+				doors.append(body.position)
+			if doors.is_empty():
+				continue
+			found_a_door = true
+			var guarded := _planned_day(map, day, tree, doors)
+			var ungraded := _planned_day(map, day, tree, PackedVector2Array())
+			kept += _placed_count(guarded)
+			loose += _placed_count(ungraded)
+			var inside := 0
+			for plan in guarded:
+				if not plan.is_placed():
+					continue
+				if not EventScheduler.clear_of_the_doors(plan.position, plan.path, doors,
+						plan.def.field_reach()):
+					inside += 1
+			var inside_before := 0
+			for plan in ungraded:
+				if not plan.is_placed():
+					continue
+				if not EventScheduler.clear_of_the_doors(plan.position, plan.path, doors,
+						plan.def.field_reach()):
+					inside_before += 1
+			t.check(inside == 0,
+					"seed %d day %d: nothing the day placed reaches inside a door's %.0fpx gap "
+					% [map.seed_used, day, Tuning.CHECKPOINT_EVENT_GAP] + "(%d of %d)"
+					% [inside, _placed_count(guarded)])
+			t.check(inside_before > 0,
+					("seed %d day %d: and the same day planned without the gap puts %d there — " +
+					"otherwise this sweep is checking nothing")
+					% [map.seed_used, day, inside_before])
+	t.check(found_a_door, "the sampled days actually carry doors to keep clear of")
+	t.check(kept >= int(round(0.9 * float(loose))),
+			("the gap costs the day almost nothing: %d placed with it against %d without, and a " +
+			"refusal that emptied a day would be a density change rather than a spacing rule")
+			% [kept, loose])
+
+## One day's catalogue placements against `doors`, with a rig's empty run history — the same call
+## `EventManager.start_day()` makes, minus the scars and settled calm a real run carries.
+func _planned_day(map: CityMap, day: int, tree: RouteTree,
+		doors: PackedVector2Array) -> Array[EventScheduler.Planned]:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("checkpoint-gap:%d:%d" % [map.seed_used, day])
+	var consumed: Array[String] = []
+	var scars: Array[Dictionary] = []
+	var used_calm: Array[Vector2i] = []
+	return EventScheduler.build_day(day, rng, map, consumed, scars, used_calm, tree, 0, doors)
+
+func _placed_count(plans: Array[EventScheduler.Planned]) -> int:
+	var total := 0
+	for plan in plans:
+		if plan.is_placed():
+			total += 1
+	return total
+
 # ------------------------------------------------------------------- the detention ---
 # A manager with nothing in it but the map arithmetic `_check_detentions()`'s own telemetry line
 # needs, the same shape `tests/test_events.gd`'s own `_chat_manager()` is built. The stroller is
@@ -439,6 +518,88 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 
 	hut.free()
 	stroller.free()
+	manager.free()
+
+## A `WorldContext` answering out of one `EventManager`, so a real `Baby` can be driven against the
+## same sum the game's own `City` builds — `Baby._ready()` finds it by the `world` group, which
+## `WorldContext._ready()` puts it in.
+##
+## **It forwards `excitement_sources_at()` rather than reimplementing it**, which is the whole
+## point: the rule under test (a hold silences everything else) lives in that function, and a rig
+## that summed the instances itself would pass whatever the game did.
+class _DoorWorld extends WorldContext:
+	var manager: EventManager
+	func excitement_sources_at(world_position: Vector2) -> Array:
+		return manager.excitement_sources_at(world_position)
+	func total_excitement_at(world_position: Vector2) -> float:
+		return manager.total_excitement_at(world_position)
+
+## **The hold charges its toll and nothing else.** She is inside the hut for those two seconds, not
+## on the pavement, so a door standing beside a loud field has to cost exactly what a door standing
+## on a quiet street costs — *"it works in both directions with the same cost each time"*. A
+## `roadblock` is parked across the corner at its full 13/s to make the rig mean something: with the
+## fields left running through the hold, that alone is another 26 points on a 25-point toll.
+func _test_the_hold_charges_only_its_toll(t) -> void:
+	var world := _DoorWorld.new()
+	t.add_child(world)
+	var manager := _manager(t)
+	world.manager = manager
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+	var baby := stroller.get_node_or_null("Baby") as Baby
+	t.check(baby != null, "the real stroller carries the Baby whose meter this reads")
+	stroller.set_physics_process(false)
+	baby.set_physics_process(false)
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(5200.0, 5200.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+	var loud := _door_instance(t, "roadblock", centre + Vector2(0.0, 72.0), axis)
+	# Past its own telegraph, so the field it is standing there with is the field it declares.
+	loud.age = loud.def.telegraph_time + 1.0
+	manager._instances.append(loud)
+
+	var entry := centre + axis * 60.0
+	stroller.global_position = entry
+	manager._tell_them_where_she_is()
+	var beside_it := loud.contribution_at(entry)
+	t.check(beside_it > Tuning.CHAT_EXCITEMENT / Tuning.CHECKPOINT_DETAIN_SECONDS,
+			("the roadblock reaches the door's own ground harder than the toll itself does " +
+			"(%.1f/s against %.1f/s) — otherwise this rig checks nothing")
+			% [beside_it, Tuning.CHAT_EXCITEMENT / Tuning.CHECKPOINT_DETAIN_SECONDS])
+
+	var before := baby.excitement
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "walking up to the hut starts the hold")
+	# The baby's own frame before the instances', so every frame the meter takes is a frame the
+	# hold was actually running: the clock runs out inside `EventInstance._process()`, and a baby
+	# stepped after it would spend its last frame outside a hold that had just ended.
+	var guard := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+	while hut.is_chatting() and guard > 0:
+		guard -= 1
+		baby._physics_process(STEP)
+		for instance in manager._instances:
+			instance._process(STEP)
+	t.check(not hut.is_chatting() and guard > 0, "and it runs its own clock out")
+	t.close_to(baby.excitement - before, Tuning.CHAT_EXCITEMENT,
+			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
+			% [baby.excitement - before, Tuning.CHAT_EXCITEMENT], 1.5)
+	t.close_to(loud.landed(), 0.0,
+			"and nothing of it is attributed to the roadblock beside the door (%.1f)"
+			% loud.landed(), 0.01)
+
+	# And the moment she is out, the street is back: the silence is a fact about being inside a
+	# door, not a shield the door leaves behind it.
+	manager._check_detentions()
+	manager._tell_them_where_she_is()
+	t.check(manager.total_excitement_at(stroller.global_position) > 0.0,
+			"released, the fields around the door charge her again")
+
+	hut.free()
+	loud.free()
+	stroller.free()
+	world.free()
 	manager.free()
 
 ## How far her own outline reaches ahead of her centre while she faces `facing` — her own body's

@@ -426,6 +426,14 @@ it costs her nothing — but it detains exactly as a hut does, because a raised 
 the car queue and never a way past her. See `docs/CITY.md`, "Regions and the wall", and
 `Crowd._stop_for_gates()`.
 
+**The hold charges its toll and nothing else.** She is inside the hut, not on the pavement, so
+while a hold is running the meter sums that hold's own flat `Tuning.CHAT_EXCITEMENT` and no other
+event field and no crowd body — `EventManager.door_holding_her_at()`, asked by both halves of
+`City.excitement_sources_at()`. With `EXCITEMENT_DECAY_IDLE` at zero for a player held still, the
+crossing therefore costs exactly the toll wherever the door happens to stand, which is what "the
+same cost each time" has to mean. `chatting_mother` keeps the ordinary sum: her conversation is in
+the street with both of them drawn.
+
 **The guard goes inside with her; the door does not.** `EventInstance.is_its_guard_inside()` takes
 the guard out of a hut's drawing for the hold, and the hut, the boom and their shadows stay exactly
 where they are — a structure that blinks out for two seconds reads as the door having been removed
