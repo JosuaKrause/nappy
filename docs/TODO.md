@@ -335,7 +335,8 @@ escape's boot adds `interior`; a consumer move adds its group to that list. A co
 gate is red for. `region()` never loads a page on its own, and `native_size()` answers with
 nothing acquired.
 
-One item is open, and it closes the contract.
+Two items are open. The first closes the contract; the second follows it, because it edits
+the bake and the ground's membership, which the first is moving.
 
 - [ ] **Close the contract.** The runtime packer, the resolver — `TextureResolver.warm()`
       still loads the `props`, `rig` and `tiles` transfers one picture at a time at boot, for
@@ -357,6 +358,25 @@ One item is open, and it closes the contract.
       **The release that follows is a minor version, and it waits for every item in this
       section** — *"only release once all those new items are completed, too"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
       ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
+- [ ] **The ground page holds what its bake mode draws, and a bake touches only what changed**
+      ([PLAYTEST-110](playtests/PLAYTEST-110.md)): *"they should not exist anymore since we
+      composite on the fly now. I certainly don't want to see those svgs in the game. we can
+      keep the prebake for svg mode only. then we don't need those fallbacks."* A default bake
+      of the `ground` group carries the layers and the twelve whole tiles whose source the
+      recipe composes nothing for; the 46 whole tiles of composed sources — 18 of them SVG
+      rasters of cracked tiles, and `tiles/grass` and `tiles/forest` beside the flat
+      `tiles/layers/grass_base` the grass variants are composed on — are members of an `--svg`
+      bake only. `assets/atlases/membership.json` says which mode a member belongs to, the
+      bake and its manifest of source hashes follow it, and `tests/test_atlas_ground.gd` names
+      what each mode's page holds, so a whole tile cannot drift back. `GroundLayers` loses the
+      fallback from an incomplete recipe to the whole authored tile: a recipe that cannot be
+      composed is a `push_error`, as a missing region is. **Assumed, not spoken to:** an
+      `--svg` bake drops the layers in return, since it composes nothing.
+      **The bake is incremental** — *"we don't want to regenerate things that haven't
+      changed -- just deleting doesn't cut it though"*: the manifest records its hashes per
+      group, a bake writes the pages of the groups whose inputs, membership or mode changed
+      and leaves every other page and its import sidecar untouched, and it removes a page no
+      group names. `--check` names the stale groups.
 
 ---
 
