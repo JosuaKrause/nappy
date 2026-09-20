@@ -29,6 +29,8 @@ func run(t) -> void:
 	_test_a_boundarys_structures_charge_as_one(t)
 	_test_a_corner_of_two_doors_is_one_toll(t)
 	_test_she_is_never_drawn_at_the_place_she_went_in(t)
+	_test_the_ground_she_is_let_out_onto_is_survivable(t)
+	_test_the_run_that_killed_her_five_times(t)
 	_test_a_stroller_stopped_against_the_hut_is_detained(t)
 	_test_she_and_the_guard_are_gone_during_the_hold(t)
 	_test_the_whole_hold_reads_as_one_move(t)
@@ -785,6 +787,204 @@ func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 	hut.free()
 	stroller.free()
 	manager.free()
+
+# ------------------------------------------------- the ground she is let out onto ---
+# **A door cannot be refused or moved, so what is checked is what stands beside it.** A door is
+# exactly a boundary crossing the day's `RouteTree` uses — `RegionPlanner.plan_day()`, "the tree
+# wins, unconditionally" — so refusing one turns it into a wall across a street a route needs, and
+# a region edge may never affect a path. `docs/TODO.md`'s own item offers the other half as the
+# alternative and that is what is built: *"or the things that make it so are not placed beside
+# it"*, which is `Tuning.CHECKPOINT_EVENT_GAP`, plus the boundary kit charging as one source.
+#
+# With those two in, the release point is survivable **by construction**, and the sweep below is
+# what proves it over real cities rather than by argument:
+#
+# - She arrives at the toll, `Tuning.CHAT_EXCITEMENT`, and nothing else was charged during the hold.
+# - Out to the gap's edge, no catalogue row's field can reach her — that is what the gap *is*.
+# - The only things that can reach her there are the boundary's own structures, and they charge as
+#   one: the strongest is `roadblock` at `intensity` 13, so the ceiling is one row's peak.
+# - Walking pays back `EXCITEMENT_DECAY_WALKING` times the ground, worst case the main road's
+#   0.35 multiplier.
+#
+# **Deliberately conservative wherever it can be.** Full peak with no telegraph damping and no
+# pulse envelope; the worst ground in the city under her the whole way; a mover treated as standing
+# at the nearest point of its whole route; and a segment field read as a disc grown by its own
+# `half_length`, which over-reads off the spine rather than under-reading along it. A bound that
+# holds here holds for the real thing.
+
+## The summed field of a day's plan at a point, with the boundary kit collapsed to its strongest —
+## the same rule `EventManager.excitement_sources_at()` applies, read off plans rather than live
+## instances so a whole day can be swept without streaming it in.
+func _planned_field_at(plans: Array[EventScheduler.Planned], at: Vector2) -> float:
+	var total := 0.0
+	var strongest := 0.0
+	for plan in plans:
+		if not plan.is_placed() or plan.def.intensity <= 0.0:
+			continue
+		var gap := plan.distance_from(at)
+		if plan.def.shape != null and plan.def.shape.kind == GroundShape.Kind.SEGMENT:
+			# The field is a capsule about the body's own spine. Read as a disc grown by the spine's
+			# half length, which is the conservative direction: too loud off the axis, never too
+			# quiet along it.
+			gap = maxf(0.0, gap - plan.def.shape.half_length)
+		if gap > plan.def.outer_radius:
+			continue
+		var rate := plan.def.emission_at_distance(gap)
+		if plan.def.barrier_structure:
+			strongest = maxf(strongest, rate)
+		else:
+			total += rate
+	return total + strongest
+
+## Walks her out of a door from `from` along `heading`, starting at the toll, and answers the
+## highest the meter ever reaches before she is clear of the door's own gap. Decay at the worst
+## ground in the city, so the answer is a ceiling rather than a measurement of one street.
+func _peak_walking_out(plans: Array[EventScheduler.Planned], from: Vector2,
+		heading: Vector2) -> float:
+	var decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
+	var step := 4.0
+	var seconds_per_step := step / Tuning.WALK_SPEED
+	# Only what could possibly reach any point of this walk. A whole day is several hundred plans
+	# and the walk asks at forty-odd points; filtering once against the far end of the walk plus the
+	# row's own reach costs one distance check each and leaves a handful.
+	var near: Array[EventScheduler.Planned] = []
+	for plan in plans:
+		if not plan.is_placed() or plan.def.intensity <= 0.0:
+			continue
+		if plan.distance_from(from) <= Tuning.CHECKPOINT_EVENT_GAP + plan.def.field_reach():
+			near.append(plan)
+	var meter := Tuning.CHAT_EXCITEMENT
+	var peak := meter
+	var walked := 0.0
+	while walked <= Tuning.CHECKPOINT_EVENT_GAP:
+		var here := from + heading * walked
+		meter = maxf(0.0, meter + (_planned_field_at(near, here) - decay) * seconds_per_step)
+		peak = maxf(peak, meter)
+		walked += step
+	return peak
+
+## The release points a door body has: `Tuning.CHECKPOINT_RELEASE_MARGIN` past its own solid edge
+## on each side of the crossing, sampled across the pavement band because the release preserves
+## whatever cross-street offset she walked in on.
+func _release_points(body: EventScheduler.Planned) -> Array[Vector2]:
+	var axis: Vector2 = body.facing
+	var across := Vector2(-axis.y, axis.x)
+	var clearance := body.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			+ Tuning.CHECKPOINT_RELEASE_MARGIN
+	var points: Array[Vector2] = []
+	for side in [-1.0, 1.0]:
+		for lane in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+			points.append(body.position + axis * side * clearance
+					+ across * lane * float(Tuning.TILE_SIZE))
+	return points
+
+## **A gate never lets her out into something that kills her at once.** Swept over real days: every
+## door body, both sides, five lanes across, walked out of the door's own gap from the toll.
+##
+## **And the same days planned without the gap are what says the sweep is not vacuous.** The run
+## this milestone comes from was let out at 72 and crying 0.4s later, so the unguarded number has to
+## be able to break the same bound — a sweep whose "before" also passed would be measuring nothing.
+func _test_the_ground_she_is_let_out_onto_is_survivable(t) -> void:
+	var days: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, Tuning.REGION_WALL_FIRST_DAY + 4]
+	var worst_guarded := 0.0
+	var worst_unguarded := 0.0
+	var releases := 0
+	var unguarded_over := 0
+	for map: CityMap in _maps.slice(0, 2):
+		for day in days:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var region := RegionPlanner.plan_day(map, day, tree)
+			if region.door_bodies.is_empty():
+				continue
+			var doors := PackedVector2Array()
+			for body in region.door_bodies:
+				doors.append(body.position)
+			var guarded := _planned_day(map, day, tree, doors)
+			var unguarded := _planned_day(map, day, tree, PackedVector2Array())
+			# The wall and the door structure stand whatever the catalogue was allowed to place, so
+			# both plans carry them — otherwise the "before" would be missing the very barriers the
+			# non-additive rule is about.
+			guarded.append_array(region.wall_bodies)
+			guarded.append_array(region.door_bodies)
+			unguarded.append_array(region.wall_bodies)
+			unguarded.append_array(region.door_bodies)
+			for body in region.door_bodies:
+				for point in _release_points(body):
+					var heading := (point - body.position).normalized()
+					releases += 1
+					worst_guarded = maxf(worst_guarded, _peak_walking_out(guarded, point, heading))
+					var loose := _peak_walking_out(unguarded, point, heading)
+					worst_unguarded = maxf(worst_unguarded, loose)
+					if loose >= Tuning.METER_MAX:
+						unguarded_over += 1
+	print("[test_checkpoints] walking out of %d release points from the toll: peak %.1f with the "
+			% [releases, worst_guarded] + "gap, %.1f without (%d of them over %.0f)"
+			% [worst_unguarded, unguarded_over, Tuning.METER_MAX])
+	t.check(releases > 0, "the sampled days put release points on the map to walk out of (%d)"
+			% releases)
+	t.check(worst_guarded < Tuning.METER_MAX,
+			("walking out of every door on every sampled day, from the toll and on the worst " +
+			"ground in the city, the meter peaks at %.1f against %.0f")
+			% [worst_guarded, Tuning.METER_MAX])
+	t.check(unguarded_over > 0,
+			("and the same days without the gap put %d of %d release points over it, peaking at " +
+			"%.1f — otherwise this sweep is checking nothing")
+			% [unguarded_over, releases, worst_unguarded])
+
+## **The shape of the run that ended day 7 five times, as a regression.** She was let out on the
+## north side of a `checkpoint_hut` 57, 61 and 112px from three `roadblock`s of the region wall
+## on the cross street, with a `police_patrol` 66px off, taking 54/s and crying within half a
+## second.
+##
+## Two different rules answer the two halves of it, and the test holds both:
+##
+## - **The patrol is refused.** It is a catalogue placement, so the gap keeps it out — and the
+##   check is asked of the rule itself, at the distance the run actually put it at.
+## - **The barriers are not**, and cannot be: they are the region wall, they stand where the
+##   boundary is, and dropping one opens a street the partition means to hold. What makes them
+##   survivable is that all four bodies are one source.
+func _test_the_run_that_killed_her_five_times(t) -> void:
+	var axis := Vector2.RIGHT
+	var hut_at := Vector2(8000.0, 8000.0)
+	var hut := EventScheduler.Planned.new(EventCatalogue.by_id("checkpoint_hut"), hut_at)
+	hut.facing = axis
+	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			+ Tuning.CHECKPOINT_RELEASE_MARGIN
+	# Let out on the north side, the way the run was.
+	var released := hut_at + Vector2(0.0, -clearance)
+
+	var plans: Array[EventScheduler.Planned] = [hut]
+	var wall := EventCatalogue.by_id("roadblock")
+	for distance in [57.0, 61.0, 112.0]:
+		plans.append(EventScheduler.Planned.new(wall,
+				released + Vector2(-distance, 0.0)))
+
+	var patrol := EventCatalogue.by_id("police_patrol")
+	var patrol_at := released + Vector2(0.0, -66.0)
+	var doors := PackedVector2Array([hut_at])
+	t.check(not EventScheduler.clear_of_the_doors(patrol_at, PackedVector2Array(), doors,
+			patrol.field_reach()),
+			("a police_patrol 66px off the release point is refused at placement: %.0fpx from the " +
+			"hut against a gap of %.0f plus its own %.0fpx of field")
+			% [patrol_at.distance_to(hut_at), Tuning.CHECKPOINT_EVENT_GAP, patrol.field_reach()])
+
+	var summed := 0.0
+	for plan in plans:
+		if plan.def.barrier_structure:
+			summed += plan.def.emission_at_distance(maxf(0.0,
+					plan.position.distance_to(released)
+					- (plan.def.shape.half_length if plan.def.shape.kind
+					== GroundShape.Kind.SEGMENT else 0.0)))
+	var one_source := _planned_field_at(plans, released)
+	t.check(summed > one_source * 1.8,
+			("the four barriers summed are %.1f/s where the strongest alone is %.1f/s — the run " +
+			"took the first number") % [summed, one_source])
+
+	var peak := _peak_walking_out(plans, released, Vector2.UP)
+	t.check(peak < Tuning.METER_MAX,
+			("and walking straight out of it from the toll, on the worst ground in the city, the " +
+			"meter peaks at %.1f against %.0f") % [peak, Tuning.METER_MAX])
 
 ## How far her own outline reaches ahead of her centre while she faces `facing` — her own body's
 ## radius, or the pram's own body when that is what is between her and whatever she is walking at.

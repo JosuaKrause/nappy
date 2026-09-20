@@ -1383,6 +1383,18 @@ corner where a wall meets a door therefore still has barriers a step from the re
 stops them adding up is `EventDef.barrier_structure` (docs/EVENTS.md, "Checkpoints"), which makes
 the whole boundary kit charge as one source.
 
+**The ground a door lets her out onto is survivable by construction, and a door is never refused
+for it.** A door *is* a boundary crossing the tree uses, so refusing one turns it into a wall
+across a street a route needs — the decree that a region edge may never affect a path is the
+stronger rule, and what is refused instead is whatever would have made the far side lethal. Four
+facts compose into the guarantee: she arrives at `Tuning.CHAT_EXCITEMENT` and nothing else was
+charged while she was inside; no catalogue field reaches inside the gap; the boundary's own
+structures charge as one source, so the ceiling out there is a single `roadblock`'s peak; and
+walking pays back `EXCITEMENT_DECAY_WALKING` times the ground. `tests/test_checkpoints.gd` walks
+every door on sampled days, both sides and across the pavement band, from the toll and on the
+worst ground in the city, and holds the meter under `METER_MAX` — with the same days planned
+without the gap as the control, since those do break it.
+
 ## Block purposes
 
 The street lattice is fixed for the run. What a block *is* is not.
