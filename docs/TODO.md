@@ -362,27 +362,8 @@ closes the contract.
       `ARCHITECTURE.md`, `GRAPHICS.md`, `VISUALS.md`, `TELEMETRY.md`, the **illustrated-png**
       and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
       **The release that follows is a minor version, and it waits for every item in this
-      section** — *"only release once all those new items are completed, too"* — **and for
-      M173, the standalone bake speaks for a stale import cache, where it can be had** —
-      *"include the bug fixes, too, if possible"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
+      section** — *"only release once all those new items are completed, too"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
       ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
-
----
-
-## M173 — The standalone bake speaks for a stale import cache · found 2026-09-20
-
-`tools/bake-atlases.sh` starts the engine with `--script`, which still loads the autoloads, and
-their dependency chain reaches `event_instance.gd`'s `preload`s. On a checkout whose import
-cache has not seen a picture — a fresh clone, or a pull that added one — the engine prints an
-`ERROR:` and a `SCRIPT ERROR` for every such picture and for every script that depends on them,
-after a bake that succeeded, and the wrapper exits zero. `tools/check.sh` bakes and then
-imports, so it repairs the state; nothing tells the person who ran the bake alone. The cause
-ends with M171's last item, when no source is preloaded.
-
-- [ ] **The wrapper names the stale cache.** When the bake succeeds and the engine's output
-      carries the error vocabulary, `tools/bake-atlases.sh` says the import cache is stale and
-      that `tools/check.sh` repairs it, and keeps the engine's lines visible rather than hiding
-      them. If M171 closes first, this item is deleted unbuilt.
 
 ---
 
