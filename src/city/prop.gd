@@ -5,14 +5,23 @@ extends Node2D
 
 enum Kind { TREE, PLAYGROUND_FRAME, BOLLARD, STREET_TREE, SACK, SACK_PILE }
 
+## `AtlasLibrary` region names in the "decoration" group (`CityDecals.DECORATION_ATLAS`), whose
+## lifetime is the city's: `City.build()` acquires the group before any prop is spawned and
+## `City._exit_tree()` releases it, so every region asked for below is always available.
+##
+## `TREES` stays an array of the preloaded pictures themselves rather than of their region names
+## — `StreetTrees.footprint_radius()` reads `Texture2D.get_size()` off it directly to plan tree
+## clearance ahead of any city being built, which a region name cannot answer. Drawing and shadow
+## sizing below still go through `AtlasLibrary.region_name_for()` and never read `get_size()` off
+## these textures themselves.
 const TREES: Array[Texture2D] = [
 	preload("res://assets/props/tree_a.svg"),
 	preload("res://assets/props/tree_b.svg"),
 ]
-const SWING_FRAME := preload("res://assets/props/swing_frame.svg")
-const BOLLARD := preload("res://assets/props/bollard.svg")
-const SACK := preload("res://assets/props/garbage_sack.svg")
-const SACK_PILE := preload("res://assets/props/garbage_sacks_pile.svg")
+const SWING_FRAME := &"props/swing_frame"
+const BOLLARD := &"props/bollard"
+const SACK := &"props/garbage_sack"
+const SACK_PILE := &"props/garbage_sacks_pile"
 
 @export var kind := Kind.TREE
 ## Deterministic per-prop variation, so a park does not shimmer between frames.
@@ -37,26 +46,25 @@ func _ready() -> void:
 func _compute_shape() -> GroundShape:
 	match kind:
 		Kind.TREE, Kind.STREET_TREE:
-			var size := TREES[absi(variant) % TREES.size()].get_size() * scale_factor
+			var size := Vector2(AtlasLibrary.native_size(_tree_region())) * scale_factor
 			return GroundShape.point(size.x * 0.28)
 		Kind.PLAYGROUND_FRAME:
 			return _playground_frame_shape()
 		Kind.BOLLARD:
-			return GroundShape.point(BOLLARD.get_size().x * 0.4)
+			return GroundShape.point(AtlasLibrary.native_size(BOLLARD).x * 0.4)
 		Kind.SACK:
-			return GroundShape.point(SACK.get_size().x * 0.35)
+			return GroundShape.point(AtlasLibrary.native_size(SACK).x * 0.35)
 		Kind.SACK_PILE:
-			return GroundShape.point(SACK_PILE.get_size().x * 0.3)
+			return GroundShape.point(AtlasLibrary.native_size(SACK_PILE).x * 0.3)
 		_:
 			return GroundShape.point(0.0)
 
-## The region of the street's decoration atlas standing in for `texture`, or `texture` itself
-## while that group has not been collected, has been released, or was never asked for — a prop
-## built by a rig with no `City` behind it. The shadow shapes in `_compute_shape()` deliberately
-## stay on the source constants: a ground shape is not a picture, and it is computed in `_ready()`
-## before any atlas could be ready anyway.
-func _packed(texture: Texture2D) -> Texture2D:
-	return TextureAtlas.texture_for(CityDecals.DECORATION_ATLAS, texture, texture)
+## This variant's tree, as the region name `AtlasLibrary` baked its picture under — derived from
+## `TREES`' own preloaded path rather than a second table, so the name and the picture it draws
+## can never disagree.
+func _tree_region() -> StringName:
+	var texture: Texture2D = TREES[absi(variant) % TREES.size()]
+	return AtlasLibrary.region_name_for(texture.resource_path)
 
 func _draw() -> void:
 	match kind:
@@ -64,35 +72,37 @@ func _draw() -> void:
 			_draw_tree()
 		Kind.PLAYGROUND_FRAME:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, _packed(SWING_FRAME), Vector2.ZERO)
+			Sprites.draw_standing(self, AtlasLibrary.region(SWING_FRAME), Vector2.ZERO)
 		Kind.BOLLARD:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, _packed(BOLLARD), Vector2.ZERO)
+			Sprites.draw_standing(self, AtlasLibrary.region(BOLLARD), Vector2.ZERO)
 		Kind.SACK:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, _packed(SACK), Vector2.ZERO)
+			Sprites.draw_standing(self, AtlasLibrary.region(SACK), Vector2.ZERO)
 		Kind.SACK_PILE:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, _packed(SACK_PILE), Vector2.ZERO)
+			Sprites.draw_standing(self, AtlasLibrary.region(SACK_PILE), Vector2.ZERO)
 		Kind.STREET_TREE:
 			_draw_street_tree()
 
-## The swing frame's own shadow shape — a capsule along its width, read off its own texture the
-## same way `CrowdAgent`'s car reads its two: `radius` from the frame's depth (its texture height),
-## `half_length` from what is left of half its width once the rounded ends are accounted for.
+## The swing frame's own shadow shape — a capsule along its width, read off the region table the
+## same way `CrowdAgent`'s car reads its two: `radius` from the frame's depth (its picture's own
+## height), `half_length` from what is left of half its width once the rounded ends are accounted
+## for.
 static func _playground_frame_shape() -> GroundShape:
-	var size := SWING_FRAME.get_size()
+	var size := Vector2(AtlasLibrary.native_size(SWING_FRAME))
 	var radius := size.y * 0.5
 	return GroundShape.segment(size.x * 0.5 - radius, radius)
 
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:
-	var texture: Texture2D = TREES[absi(variant) % TREES.size()]
-	# The size is read off the source rather than off the region so a variant's own scaling stays
-	# exactly what it was; the two are the same number, since a region reports its source's size.
-	var size := texture.get_size() * scale_factor
+	var name := _tree_region()
+	# The size is read off the region table rather than off the drawn texture, since `scale_factor`
+	# is applied here and the two answer the same number either way — a region reports its
+	# source's own size.
+	var size := Vector2(AtlasLibrary.native_size(name)) * scale_factor
 	shape.draw_shadow(self, Vector2.ZERO)
-	Sprites.draw_standing(self, _packed(texture), Vector2.ZERO, size, absi(variant) % 4 < 2)
+	Sprites.draw_standing(self, AtlasLibrary.region(name), Vector2.ZERO, size, absi(variant) % 4 < 2)
 
 ## The same standing tree every park tree draws, unscaled by `scale_factor`. The street tree's pit
 ## is a ground decal owned by `CityDecals`, so it stays under the player and other entities.

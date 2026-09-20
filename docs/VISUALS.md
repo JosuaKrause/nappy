@@ -48,7 +48,7 @@ back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors
 collision and camera framing remain the existing game's responsibility.
 
 `TextureAtlas` then relocates whichever raster the resolver chose into one shared texture per
-group of pictures — both player families, the head indicators, the street's decoration, the crowd, and one
+group of pictures — both player families, the head indicators, the crowd, and one
 group per event family — and hands out `AtlasTexture` regions over it. The atlas changes no
 picture: a region reports its source's own size, so scale, offsets, mirroring, anchors, shadows
 and sorting read the same numbers in either presentation mode. A group is requested when its
@@ -88,7 +88,10 @@ draw the previous import of.
 `AtlasLibrary` reads the result: `acquire(group)` loads that group's page, `release(group)`
 drops it on the last reference, `region(name)` hands out an `AtlasTexture` over the page, and
 `native_size(name)` answers a picture's own size from the region table with nothing loaded at
-all. **Nothing in the game draws from it**: every family reaches its pictures through
+all. **The street's decoration draws from it**: `src/city/prop.gd`, `src/city/litter.gd` and
+`src/city/city_decals.gd` ask `region()` and `native_size()` directly, on region names rather
+than on loaded textures, and the "decoration" group's lifetime is `City`'s own — acquired in
+`build()`, released in `_exit_tree()`. Every other family still reaches its pictures through
 `TextureResolver` and `TextureAtlas` as described above, and `tests/test_atlas_library.gd`
 compares every baked region against the picture its consumer draws today, pixel for pixel.
 
