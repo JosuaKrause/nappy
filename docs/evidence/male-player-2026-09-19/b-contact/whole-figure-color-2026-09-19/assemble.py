@@ -367,7 +367,7 @@ def assemble(output_root: Path) -> None:
             "other_materials": upper_material_stats(source_b, source_c, state),
         }
     output_manifest = {
-        "status": "uninstalled material-aware diagonal B color review",
+        "status": "installed approved final father B-contact family",
         "method": "Native RGB-only luminance mappings selected by material masks; source alpha and coordinates are unchanged.",
         "comparison_order": ["diagonal A", "diagonal C", "original diagonal B", "recolored diagonal B"],
         "frame_order": list(LOOP),

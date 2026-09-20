@@ -4,11 +4,13 @@
 crossed diagonal derived from this record's image-right near-hip assignment. The original
 father A raster places the near thigh at the screen-left hip. The diagonal table and source
 overlays below describe the retained construction, not a valid anatomical target for the
-uncrossed refinement. Follow the current M167, the father's legs read as legs, brief instead.
+uncrossed refinement. Follow the accepted
+[final family](whole-figure-color-2026-09-19/README.md) instead.
 
-This record contains the four editable pushing B-pose corrections and their source review.
-The illustrated runtime PNGs use the player-approved straight-contact derivatives. Their manifest
-entries preserve the original registered PNGs and identify the accepted override source and hash.
+This record contains the original four editable pushing B-pose corrections and their source review.
+The illustrated runtime PNGs use the player-approved final family: pushing side and front-diagonal
+B plus carrying back, front, side and front-diagonal B. Their manifest entries preserve the
+original registered PNGs and identify the accepted override source and hash.
 
 The [straight-contact recipe](straight-contact-2026-09-19/README.md) preserves the accepted
 provisional contact raster and its frozen inputs. The final accepted pushing and carrying
@@ -81,10 +83,10 @@ The northeast/northwest source and PNG are unchanged:
 - `father_back_diagonal_b.png`: SHA-256
   `6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5`.
 
-All A/C poses, carrying poses, stroller pictures and import sidecars remain unchanged. The
-player manifest records current creation hashes and shipped PNG hashes. Its pair verifier proves
-creation/runtime equality, requires each approved runtime B PNG to match its accepted
-straight-contact source, and separately pins the original registered PNG for all four overrides.
+All A/C poses, the remaining 24 father runtime PNGs, stroller pictures and import sidecars remain
+unchanged. The player manifest records current creation hashes and shipped PNG hashes. Its pair
+verifier proves creation/runtime equality, requires each final runtime B PNG to match its
+accepted whole-figure source, and separately pins the original registered PNG for every override.
 
 ## Regeneration
 
@@ -106,8 +108,8 @@ uv run python docs/evidence/male-player-2026-09-19/verify-pairs.py
 The proof script supplies the above-pelvis identity references for raster work.
 The source preview, target crop and JSON files in `inputs/` reproduce with these commands.
 The original `../registration.json` remains immutable: its SVG hashes describe the generation
-inputs for the original PNGs. The manifest's explicit four-pose override records the accepted
-runtime derivatives while preserving the original raw atlas and registered PNGs.
+inputs for the original PNGs. The manifest's explicit overrides record the accepted runtime
+derivatives while preserving the original raw atlas and registered PNGs.
 
 ## Raster acceptance gate
 

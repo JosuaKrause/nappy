@@ -19866,3 +19866,29 @@ through the same SVG paths and atlas regions. The headless boot and focused text
 frame-trace and crowd-contribution suites pass, as do doc lint and whitespace checks. Initial
 sandboxed checks emitted denied user-directory and certificate-access errors; the unrestricted
 rerun is the clean verification, not the assertions printed beside those environment errors.
+
+Installation checkpoint `2a310abde1f7e55ed1ebf008e1a44d0428029fbe` is integrated after that
+main merge. Its one conflict is the normalized-crop README: base describes active carrying
+PNGs, the checkpoint identifies immutable original registered inputs, and the PR identifies
+the frozen baseline and links the accepted final family. The resolution keeps the immutable
+input description and accepted-family link. Review also corrects an orphaned player-manifest
+README sentence and a stale claim that the historical carrying GIFs show the installed family.
+
+The six installed PNGs exactly match the approved final outputs; the other 24 father frames
+and import identities remain unchanged. The two diagonal SVG fallbacks retain their native
+canvas and match their editable creation copies. No gameplay, animation, offset, camera or
+atlas code changes accompany installation. Fresh final-family and historical carrying-review
+assembly reproduce their complete saved output directories byte-for-byte. Pair/hash/XML/import
+verification, boot, focused PNG visuals/player-presentation/stroller/presentation-mode/orientation
+tests and forced-SVG visuals pass. These are focused local checks; the full suite belongs to CI.
+
+The retained pushing burst is visibly the father walking with the stroller. The carrying attempt
+is visibly the mother and remains labeled as a failed father-carrying capture in its provenance;
+it cannot establish father-carrying runtime appearance. No new windowed capture is taken.
+REVIEW records the remaining live appearance question separately from PLAYTEST-104's artwork
+approval and the automated binding checks.
+
+Semantic review also finds a clean textual merge that needs reconciliation: main's M159 atlas
+measurement item makes prebuilt atlases conditional on attribution, but PLAYTEST-105 and M171
+explicitly choose build-time atlases. M159 retains baseline, threadless-web and memory measurement,
+without conditioning M171's accepted design or claiming that atlases explain the older hitch.

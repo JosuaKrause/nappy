@@ -12,14 +12,14 @@ pairs every runtime source, creation reference and native illustrated PNG. The S
 the short brown hair, blue overshirt, cream undershirt, canvas, pose and functional placement.
 Their three-pose pushing/carrying geometry follows the current female creation family.
 The SVGs are authored and inspected before the corresponding raster generation.
-The [B-contact source review](b-contact/GENERATION.md) documents the four revised pushing
-sources, native/3× sheets and provisionally accepted runtime derivatives. The raw atlases,
-registered PNGs and original generation-input hashes below remain unchanged.
+The [B-contact source review](b-contact/GENERATION.md) documents the original pushing source
+review and the approved six-frame pushing/carrying runtime family. The raw atlases, registered
+PNGs and original generation-input hashes below remain unchanged.
 The [final-woman-leg crop evidence](b-contact/final-woman-legs-2026-09-19/README.md)
 preserves the rejected literal-copy preview. The
 [high-resolution normalization recipe](b-contact/normalized-crop-2026-09-19/README.md)
 preserves the rejected P2 donor selection and its generated normalization. Its separately
-labeled carrying GIFs show the current installed carrying family. These review artifacts
+labeled carrying GIFs show the frozen original registered carrying family. These review artifacts
 do not alter this registered family.
 The [correct-contact donor recipe](b-contact/correct-contact-2026-09-19/README.md) uses the
 final carrying family's actual opposite leg overlap and above-pelvis father identity inputs
@@ -42,7 +42,8 @@ Its review sheets and GIFs cover pushing and carrying while preserving the accep
 PLAYTEST-100 accepts those legs and the pose. The
 [body texture, hem and color recipe](b-contact/whole-figure-color-2026-09-19/README.md) restores
 the existing upper body and full-size baby, lowers the new frame's hem edge, and lightens its
-trousers. The accepted leg geometry below the extended hem and all other frames stay unchanged.
+trousers. Its approved generated outputs provide the installed two pushing and four carrying B
+frames; all other father runtime PNGs stay unchanged.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,

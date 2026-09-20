@@ -1,0 +1,16 @@
+{
+  "purpose": "Retained attempted carrying motion capture for the installed final father B family.",
+  "command": "./tools/shot.sh /private/tmp/father-final-carrying.png 7 --start-escape city --walk 2e2s2w --press snapshot_burst 2 --invincible --no-save",
+  "capture_after_seconds": 7,
+  "seed": 288043464,
+  "build": "v0.13.0-62-g4b9b21cb-dirty",
+  "burst": {
+    "directory": "asked/burst-4281327-001",
+    "frames": 36,
+    "duration_seconds": 2.997431,
+    "target_fps": 12,
+    "reason": "frame_cap"
+  },
+  "coverage": "The ordered frames retain the bounded escape-city attempt and its actual timing.",
+  "limitations": "Escape startup reinitialized the requested seed and displayed the mother in frame 0007, so this is not evidence of father carrying presentation. It uses invincibility and no save."
+}

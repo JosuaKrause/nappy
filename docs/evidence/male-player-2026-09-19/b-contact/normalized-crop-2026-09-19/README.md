@@ -15,7 +15,7 @@ For the separate baby-carrying baseline review, see the frozen family's
 [native](carrying-generated/carrying-native.gif) or
 [6×](carrying-generated/carrying-6x.gif) A/C/B/C loop and the
 [clean 6× sheet](carrying-generated/carrying-spritesheet-6x.png). Those artifacts read the
-baseline `father_carrying_*` PNGs. They do not use the normalized pushing candidate;
+immutable original registered `father_carrying_*` PNGs. They do not use the normalized pushing candidate;
 the accepted carrying correction is in the
 [final family](../whole-figure-color-2026-09-19/README.md).
 
@@ -123,6 +123,6 @@ diff -r \
   /tmp/father-carrying-review
 ```
 
-`carrying-inputs.json` pins all fifteen installed carrying PNGs and the shared sheet/GIF helper.
-The carrying assembler verifies their native canvases and hashes, the nearest-neighbor 6× sheet,
-all eight direction assignments and the four 190ms GIF phases.
+`carrying-inputs.json` pins all fifteen immutable original registered carrying PNGs and the shared
+sheet/GIF helper. The carrying assembler verifies their native canvases and hashes, the
+nearest-neighbor 6× sheet, all eight direction assignments and the four 190ms GIF phases.

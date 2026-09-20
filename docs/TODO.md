@@ -477,12 +477,14 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
       measured. Measure the conservative contribution rejection on that device, including its
       effect on the baby and halo callers, before considering caching or lower tick rates.
-- [ ] **Complete atlas measurements before changing atlas policy.** The CPU spans distinguish
+- [ ] **Complete atlas measurements alongside M171, build-time atlases.** The CPU spans distinguish
       source readback/copy, blit, texture submission, regions and release joins, with actual thread
       labels. Measure the threadless web export, observe real release events, and distinguish CPU
-      submission from GPU completion. Only if relevant spans coincide with stalls should day-long
-      residency or imported/prebuilt atlases be compared, with memory measured. Do not add more
-      worker jobs or larger atlases on the native host evidence. The older laptop hitch predates
+      submission from GPU completion. Retain a baseline and compare the prepared atlas path's
+      loading and memory costs under M171's explicit build-time contract; that design does not
+      depend on proving atlases cause stutter. M171 owns atlas implementation and excludes baked
+      constituent textures from the build and individual CPU/GPU allocations. Do not add worker
+      jobs or larger runtime atlases on the native host evidence. The older laptop hitch predates
       the atlas path, so no atlas result can be assumed to explain both platforms.
 
 ---
