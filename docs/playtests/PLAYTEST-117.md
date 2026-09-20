@@ -94,3 +94,27 @@ answer:
 
 13. **The day brief tells the story**: the line the task used to take says what has happened
     in the city by that morning — the curfew announced, and so on.
+
+On the first draft of the fourteen brief lines (in `TODO.md`, M181):
+
+> "day 1: maybe mention park or calm area in the first note
+> day 3: just "the streets smell of smoke today"
+> day 4: too wordy. something along "it feels like there is more police around now" or
+> something like this. focus on one thing only otherwise it becomes too dense
+> day 6: A curfew was announced today. We don't have as much time. There are rumors of chalk
+> messages in alleys. -- sormthing like that
+> -- I have not seen a single poster in any playthrough -- I don't know what you're referring
+> to here -- it needs to be way more obvious
+> -- also please us american english throughout -- for example, I don't know what you mean by
+> landing."
+
+14. **A brief line is about one thing**, or it becomes too dense.
+15. **Day 1's line mentions the park or a calm area.**
+16. **Day 6's line says there are rumors of chalk messages in alleys.** *The first encounter
+    comes with no hint at all · overturned by the player on 2026-09-20*: the brief names the
+    rumor; nothing on the street points at a mark.
+17. **The player has not seen a single poster in any playthrough.** PLAYTEST-116's run placed
+    ten `poster_crew` rows on day 4 alone. "More obvious" in statement 2 means: today they are
+    not noticed at all.
+18. **American English throughout, in what is said to the player as well as in new names.**
+    "Landing" was not understood.
