@@ -96,6 +96,10 @@ assert_exit "telemetry.sh --help"  zero ./tools/telemetry.sh --help
 assert_exit "test.sh --help"       zero ./tools/test.sh --help
 assert_exit "clip.sh --help"       zero ./tools/clip.sh --help
 assert_exit "reference.sh --help"  zero ./tools/reference.sh --help
+assert_exit "bake-atlases.sh --help" zero ./tools/bake-atlases.sh --help
+assert_exit "bake-atlases.sh -h"     zero ./tools/bake-atlases.sh -h
+assert_exit "audit-pck.sh --help"    zero ./tools/audit-pck.sh --help
+assert_exit "audit-pck.sh -h"        zero ./tools/audit-pck.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
@@ -110,6 +114,12 @@ assert_exit "stats.sh --bogus"        nonzero ./tools/stats.sh --bogus
 assert_exit "telemetry.sh --bogus"    nonzero ./tools/telemetry.sh --bogus
 assert_exit "clip.sh --bogus"         nonzero ./tools/clip.sh --bogus
 assert_exit "reference.sh --bogus"    nonzero ./tools/reference.sh --bogus
+assert_exit "bake-atlases.sh --bogus" nonzero ./tools/bake-atlases.sh --bogus
+# --check and --force mean opposite things about whether anything may be written, so asking for
+# both is a typo rather than a preference, and it is rejected before either happens.
+assert_exit "bake-atlases.sh --check --force" nonzero ./tools/bake-atlases.sh --check --force
+assert_exit "audit-pck.sh --bogus"    nonzero ./tools/audit-pck.sh --bogus
+assert_exit "audit-pck.sh (two packs)" nonzero ./tools/audit-pck.sh one.pck two.pck
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and

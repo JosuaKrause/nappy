@@ -121,6 +121,9 @@ if [[ -n "$shard_arg" ]]; then
     shard_index=$(( shard_index - 1 ))
 fi
 
+# The atlas pages, before the import pass that has to see them; no work when they are current.
+"$PROJECT_DIR/tools/bake-atlases.sh" || exit 1
+
 # The import pass, once and before anything runs in parallel. Several Godot processes importing
 # the same project at the same time race on `.godot/`, and the failure looks like a missing
 # `class_name` rather than like a race.

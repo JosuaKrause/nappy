@@ -109,6 +109,23 @@ if ! grep -q "^config/version=\"$SOURCE_VERSION\"\$" "$PROJECT_FILE" \
 fi
 echo "== build stamp: $SOURCE_VERSION ($SOURCE_COMMIT) =="
 
+# The atlas pages, always in the default PNG mode: the release presentation is the bake's, so a
+# local `tools/bake-atlases.sh --svg` must not be able to reach a build. A mode mismatch counts
+# as staleness, so this re-bakes an SVG tree back to PNG rather than refusing it -- and the
+# assertion below is what makes that a guarantee rather than a hope.
+echo "== atlases =="
+if ! "$PROJECT_DIR/tools/bake-atlases.sh"; then
+    echo >&2
+    echo "FAILED: the atlas bake did not succeed" >&2
+    exit 1
+fi
+BAKE_MANIFEST="$PROJECT_DIR/assets/atlases/baked/bake_manifest.json"
+if ! grep -q '"mode": *"png"' "$BAKE_MANIFEST"; then
+    echo "FAILED: refusing to export a non-PNG atlas bake -- $BAKE_MANIFEST says:" >&2
+    grep '"mode"' "$BAKE_MANIFEST" >&2
+    exit 1
+fi
+
 mkdir -p "$OUT_DIR"
 # The export's own output is not a resource. Without this, the next import pass finds the
 # exported icons under build/web/ and writes .import sidecars beside them — Godot importing its own
@@ -206,6 +223,13 @@ if [[ $status -ne 0 ]]; then
     echo "FAILED: index.html post-processing did not succeed" >&2
     exit 1
 fi
+
+# What the pack still carries of the atlases' own constituents. Report only: every consumer
+# still draws from its own preloaded textures, so the count is the work this milestone has left
+# rather than a failure -- the last item of M171 passes --fatal here, once it is nought.
+echo
+echo "== package audit =="
+"$PROJECT_DIR/tools/audit-pck.sh" "$VERSIONED_DIR/index.pck"
 
 echo
 echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck)"
