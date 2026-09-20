@@ -67,6 +67,30 @@ var _escape_scene_requested := DevFlags.start_escape()
 ## and goes back to the title instead of looping the sequence for whoever is testing it.
 var _escape_from_a_run := false
 
+## Whether this boot's own `escape_section` came from a file on disk rather than surviving on the
+## autoload through an in-process reload — the one thing that tells a genuinely resumed escape
+## (the game was closed inside a section and opened again) apart from the handover reload a won
+## day 14 takes into `_ready_escape()`, which reaches this boot with the same
+## `GameState.escape_section != NONE`, the same non-empty `_resume` and no way to ask either one
+## which of the two just happened. Set in `_ready()` by comparing `GameState.escape_section`
+## **before** `GameSave.try_resume()` runs against what it is after: still `NONE` beforehand and
+## something else after means the value just arrived from the file `try_resume()` read, since a
+## handover already wrote it to the autoload — which a scene reload does not clear — before this
+## boot's own `_ready()` ever ran. A day tells the same two apart the same way, just for free: its
+## own "resumed" gate (`_resume` non-empty) can never be confused with "just finished the day
+## before this one", because finishing a day does not reload the scene at all.
+##
+## Read once by `_on_finale_section_started()`, on the section's very first `section_started` —
+## a retry after a loss never reaches it again, since `restart_section()` runs in the same
+## process without ever setting this back to `true`.
+var _escape_resumed_from_disk := false
+
+## Whether `_title` is up as the resume gate in front of a genuinely resumed escape's first
+## brief, set by `_on_finale_section_started()` and read back by `_on_escape_title_start()` to
+## tell that use of the title's own start button apart from the epilogue's "play again" — the
+## only other thing that button means anywhere in `_ready_escape()`.
+var _escape_title_is_resume_gate := false
+
 ## `DevFlags.no_focus_pause()`, read once for the same reason `_debug` is: so a test can set it
 ## directly and check the release shape. `_notification()` reads this member rather than calling
 ## the getter again on every focus change.
@@ -233,6 +257,10 @@ func _ready() -> void:
 	# `_layer_readout_on` defaults `true`, so this is `_debug or _readout_requested` alone on an
 	# unflagged run — the fourth debug layer starts on, the same as it always has.
 	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
+	# Read before `try_resume()` touches it, so `_escape_resumed_from_disk` below can tell a save
+	# that already carried a section on the autoload (a handover reload) from one that only got
+	# there because the line just after this read it off the file — see that member's own doc.
+	var escape_section_before_resume := GameState.escape_section
 	# Tried before a fresh run is started, so a resumed run keeps the seed, the day and everything
 	# else it held rather than being handed a new one. `GameSave.uses_save()` is the one gate every
 	# read and write of the save goes through, so a dev flag, a headless boot or a release build
@@ -254,6 +282,8 @@ func _ready() -> void:
 		# the ordinary boot below — a city, a day, a resistance director — is not what follows day
 		# 14 at all. See `_ready_escape()`, which is the one place the sequence is ever built.
 		_escape_from_a_run = true
+		_escape_resumed_from_disk = _escape_section_came_from_the_file(
+				escape_section_before_resume, GameState.escape_section)
 		_ready_escape()
 		return
 	# After the run seed is settled and before anything is generated, so the log opens on the
@@ -397,6 +427,16 @@ func _ready() -> void:
 		return
 	_open_the_title()
 
+## Whether `escape_section` arrived from a file `GameSave.try_resume()` just read, rather than
+## surviving on the autoload from a handover reload earlier in this same process — see
+## `_escape_resumed_from_disk`'s own doc for why the two need telling apart at all. Pulled out, the
+## two live reads of `GameState.escape_section` taken out of it, the same split `_graph_starts_on()`
+## makes for its own two flags: a test can drive every combination directly rather than only
+## through a real save on disk.
+static func _escape_section_came_from_the_file(before_resume: int, after_resume: int) -> bool:
+	return before_resume == FinaleController.Section.NONE \
+			and after_resume != FinaleController.Section.NONE
+
 ## The escape's own boot, reached two ways and built the same way by both: as **a run's ending**,
 ## when a won day 14 with every task complete has set `GameState.escape_section` and the scene has
 ## reloaded onto it, and as `--start-escape`, which is the same sequence with no run behind it so a
@@ -407,10 +447,15 @@ func _ready() -> void:
 ## of the building's other six parts, or to `city` for section two on its own, so a rig or a person
 ## can look at one without walking there.
 ##
-## No title and no `ResistanceDirector`: the escape has no subquest to advance, and what it opens
-## on is its own section brief rather than a front door. What *is* built is the clock
-## (`FinaleController`), the HUD it draws on, and the summary that draws both the briefs and the
-## epilogue.
+## No `ResistanceDirector`: the escape has no subquest to advance. Everything else a day builds
+## around itself, this builds too, the same way — the pause screen, the touch controls, the save
+## indicator for a run's own escape — see `docs/MECHANICS.md`, "The escape, which is the run's
+## ending", for what a day has that this boot does not, and why. What it opens on is its own
+## section brief rather than a front door, **unless this is a genuinely resumed escape**
+## (`_escape_resumed_from_disk`), which opens on the title first, exactly as a resumed day does —
+## see `_on_finale_section_started()`. What is built beyond a day's own furniture is the clock
+## (`FinaleController`) and the summary's own two extra screens, the section briefs and the
+## epilogue, drawn by the same `DaySummary` a day uses for its own two.
 func _ready_escape() -> void:
 	# Guarded here too, not only at the call sites in `_ready()` — the same shape
 	# `_add_debug_layers()` reads `_debug` in, so a test can call this directly and check the
@@ -464,6 +509,17 @@ func _ready_escape() -> void:
 	# The one thing the escape changes about the HUD: the clock reads to the millisecond.
 	_hud.set_finale(true)
 	_add_touch_controls()
+	# Built the same way `_ready()` builds it, wired through `_connect_pause_signals()` rather than
+	# copied — `Esc`, the pause button and a window losing focus reach the same screen the day
+	# reaches, and its held restart and quit reach the same `_restart_run()`/`_quit()` a day's own
+	# pause does. Deliberately not `_pauses_with_the_game()`, for the reason that function's own
+	# call sites already carry: a pause screen that pauses with the game cannot unpause it.
+	_pause = PAUSE_SCREEN.instantiate()
+	add_child(_pause)
+	# So `_pause.open()`/`close()` can stash and restore the heading she carried in — see
+	# `PauseScreen._touch_controls`'s own doc. `_add_touch_controls()` already ran above.
+	_pause.set_touch_controls(_touch_controls)
+	_connect_pause_signals()
 	# Built only for a run's own escape, and for the same reason the ordinary boot builds it: a
 	# section's brief writes the save, and a write nobody can see is a write nobody trusts. The
 	# flag's boot writes nothing at all (`GameSave.uses_save()` refuses every dev-flagged run), so
@@ -480,7 +536,8 @@ func _ready_escape() -> void:
 
 	# Built but not opened — same reasoning `_ready()` builds `_title` up front for the ordinary
 	# run: the epilogue's own continue button needs somewhere to send her rather than building a
-	# screen the moment it is first asked for.
+	# screen the moment it is first asked for, and a genuinely resumed escape's own resume gate —
+	# see `_on_finale_section_started()` — needs the same screen already standing by.
 	_title = TITLE_SCREEN.instantiate()
 	add_child(_title)
 	_title.start_requested.connect(_on_escape_title_start)
@@ -494,7 +551,17 @@ func _ready_escape() -> void:
 	_finale.section_lost.connect(_on_finale_section_lost)
 	_finale.escaped.connect(_on_finale_escaped)
 
-	var start_at_the_city := _escape_start_part() == "city"
+	# **Which section to build is the run's own record where there is one.** `_escape_start_part()`
+	# alone used to decide this, which is right for the flag's own boot (there is no
+	# `GameState.escape_section` to ask, since no run stands behind it) and right for a fresh
+	# handover (the flag is never given on a real run, and `GameState.escape_section` already
+	# agrees — a handover always starts in `BUILDING`). It went wrong for a save closed inside the
+	# **city** section: `_escape_start_part()` answers "" on a flagless real run, so the boot
+	# rebuilt the building underneath a run whose own record said she was already outside it. Found
+	# while building the resume gate below, since that is the first thing in this file that ever
+	# reads `GameState.escape_section` back on this boot rather than only writing it forward.
+	var start_at_the_city := _escape_start_part() == "city" \
+			or (_escape_from_a_run and GameState.escape_section == FinaleController.Section.CITY)
 	if start_at_the_city:
 		_build_the_finale_city()
 	else:
@@ -705,9 +772,28 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 	_baby.force_sleep()
 	if _interior:
 		_interior.clear_fade()
+	# **A genuinely resumed escape opens on the title first, the way a resumed day does** — see
+	# `_escape_resumed_from_disk`'s own doc for what tells this apart from the handover reload,
+	# which reaches this same line with the member still `false` and falls straight through to the
+	# brief below exactly as it always has. Consumed the instant it is read: a retry after a loss
+	# calls this function again with the member already cleared, so only the very first
+	# `section_started` of the boot can ever raise the title here. `TitleScreen` does not touch
+	# `get_tree().paused` itself (see its own doc), so this does, the same call `_open_the_title()`
+	# makes for the ordinary run — nothing about the escape's own world needs to keep moving behind
+	# this screen the way a day's city does, so there is no `PROCESS_MODE_ALWAYS` split to make here.
+	if _escape_resumed_from_disk:
+		_escape_resumed_from_disk = false
+		_escape_title_is_resume_gate = true
+		# Guarded the same way `_open_the_title()` guards its own equivalent line: false only for a
+		# script-only `main` a test drives straight through this function with no tree behind it,
+		# never in the running game.
+		if is_inside_tree():
+			get_tree().paused = true
+		_title.open(false)
+		return
 	# And the screen the section opens on, over the world she is already standing in. Raised last,
 	# because `DaySummary._present()` pauses the tree and everything above this line is placement.
-	_show_the_finale_brief(section, restarted)
+	_show_the_finale_brief(section)
 
 ## The one line each section of the escape is named by: *"Escape the building"* and *"Escape the
 ## city"*. The title of the brief the section opens on, and the line the HUD says once she is
@@ -733,9 +819,8 @@ static func finale_hint_for(section: int) -> String:
 ## that is (`GameState.escape_section`) was set a few lines above this in
 ## `_on_finale_section_started()`. `false` because no day is under way — the escape is not a day
 ## and a resumed one must not be charged a nerve for it.
-func _show_the_finale_brief(section: int, restarted: bool) -> void:
+func _show_the_finale_brief(section: int) -> void:
 	_finale_brief_open = true
-	_finale_brief_is_a_retry = restarted
 	_save_now(false)
 	_summary.show_finale_brief(finale_hint_for(section), GameState.nerves)
 
@@ -743,10 +828,6 @@ func _show_the_finale_brief(section: int, restarted: bool) -> void:
 ## question `_resume_gate_open` answers for the day brief, and for the same reason: one `continued`
 ## signal reaches two screens that mean different things.
 var _finale_brief_open := false
-## Whether the brief now up is a retry's rather than a first entry's, so the continue knows whether
-## the hint line is owed. A property of the screen rather than of the section, which is why it is
-## not read back off `FinaleController`.
-var _finale_brief_is_a_retry := false
 
 ## A section has been lost — taken, the meter at 100, or the clock at zero. *(2026-09-19:
 ## "restarting should still have the day brief for both the apartment escape and the city escape
@@ -786,8 +867,11 @@ func _on_finale_escaped(exit_kind: int) -> void:
 ## end-of-day message.
 ##
 ## **A section's brief** is the first, and continuing from it is the moment the section actually
-## begins: the clock starts here and nowhere else, the HUD comes back, and a first entry is given
-## its one hint line. No Nerve, no calendar, no reload.
+## begins: the clock starts here and nowhere else, the HUD comes back, and the section's own hint
+## line is said **every time** — a first entry, a retry and a resumed entry alike, since a player
+## clicking straight through the brief needs telling what she is doing again as much as she needed
+## it the first time. *(2026-09-20, the player, on the escape generally: "the escape shouldn't
+## behave any different than the rest of the game".)* No Nerve, no calendar, no reload.
 ##
 ## **The epilogue** is the other, and where it leads depends on what the escape was. For a run it
 ## is where a finished run always goes, the title screen, reached through `_restart_run()`'s own
@@ -801,8 +885,7 @@ func _on_finale_summary_continued() -> void:
 		_summary.dismiss()
 		_hud.visible = true
 		_finale.start_section()
-		if not _finale_brief_is_a_retry:
-			_hud.say_once(finale_hint_for(_finale.section))
+		_hud.say_once(finale_hint_for(_finale.section))
 		return
 	_summary.dismiss()
 	if _escape_from_a_run:
@@ -812,12 +895,25 @@ func _on_finale_summary_continued() -> void:
 	_hud.visible = false
 	_title.open(true)
 
-## The title screen's own start button, reached after the epilogue — there is no larger run
-## behind this debug entry to resume, so the only thing left worth doing with it is walking the
-## escape sequence again from the top. `--start-escape` is read fresh on the reload, so this is
-## also "run it again" for anybody testing the walk down.
+## The title screen's own start button, reached two ways this file tells apart by
+## `_escape_title_is_resume_gate`.
+##
+## **After the epilogue** — the flag: there is no larger run behind this debug entry to resume, so
+## the only thing left worth doing with it is walking the escape sequence again from the top.
+## `--start-escape` is read fresh on the reload, so this is also "run it again" for anybody
+## testing the walk down.
+##
+## **Before the first brief of a genuinely resumed escape** — the run: the world this boot already
+## built (the interior or the finale city, whichever section she was in) stays exactly as it is,
+## so this shows that section's brief instead of throwing the world away and reloading — see
+## `_on_finale_section_started()`'s own doc for why the title stood in front of it at all.
 func _on_escape_title_start(mode: ControlsMode.Mode) -> void:
 	_touch_controls.set_mode(mode)
+	if _escape_title_is_resume_gate:
+		_escape_title_is_resume_gate = false
+		_title.close()
+		_show_the_finale_brief(_finale.section)
+		return
 	get_tree().paused = false
 	get_tree().call_deferred("reload_current_scene")
 
@@ -835,6 +931,13 @@ func _on_escape_title_start(mode: ControlsMode.Mode) -> void:
 func _connect_summary_and_pause_signals() -> void:
 	_summary.continued.connect(_on_summary_continued)
 	_summary.restart_requested.connect(_restart_run)
+	_connect_pause_signals()
+
+## The pause screen's own two signals, pulled further out so `_ready_escape()` can reach them
+## without also connecting `_summary` to the ordinary day's own continue handler
+## (`_on_summary_continued`) — the escape's `_summary` already carries its own continue and
+## restart wiring at its own instantiation, so only the pause half is shared between the two boots.
+func _connect_pause_signals() -> void:
 	_pause.quit_requested.connect(_quit)
 	_pause.restart_requested.connect(_restart_run)
 
@@ -1804,6 +1907,13 @@ func _somebody_is_playing() -> bool:
 ## It does **not** open over the title screen, which is the one screen with nothing behind it to
 ## pause: the game has not started, `Esc` would stop a stopped tree, and the way out of the title is
 ## the two keys it already offers. See `TitleScreen`.
+##
+## **The escape's own two `_summary` screens are the one exception to "opens over the summary
+## too".** A section's brief and the epilogue both stand between her and something that has not
+## started yet — a clock, or the title behind the epilogue's own continue — rather than between her
+## and a day already decided, so a second screen stacked over either reads as answering a question
+## nobody asked, the same reason focus loss never opens over any `_summary` at all. `_finale` is
+## null on an ordinary day, so this guard never reaches a day's own summary.
 func _unhandled_input(event: InputEvent) -> void:
 	var snapshot_action := _debug_snapshot_action(event) if _debug else &""
 	if snapshot_action == &"snapshot_burst":
@@ -1824,11 +1934,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not event.is_action_pressed("pause"):
 		return
-	# `_pause` is never built under `--start-escape` — see `_ready_escape()` — so Esc does nothing
-	# there rather than opening a screen with no ordinary run behind it to pause.
+	# Defensive rather than load-bearing: every real boot (`_ready()` and `_ready_escape()` alike)
+	# builds one now, but a bare script-only `main` a test drives straight through this function
+	# without also calling either may not have.
 	if not _pause:
 		return
 	if _pause.is_open() or _title.is_open():
+		return
+	# The escape's own guard — see this function's own doc, "The escape's own two `_summary`
+	# screens are the one exception".
+	if _finale and _summary and _summary.is_showing():
 		return
 	get_viewport().set_input_as_handled()
 	_pause.open()
@@ -1856,11 +1971,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _pause_on_focus_lost() -> void:
 	if _no_focus_pause:
 		return
-	# `_pause` is never built under `--start-escape` — see `_ready_escape()` — so losing focus does
-	# nothing there rather than opening a screen with no ordinary run behind it to pause, the same
-	# guard `_unhandled_input()`'s own Esc handler makes.
+	# Defensive rather than load-bearing — see the same guard in `_unhandled_input()`'s own Esc
+	# handler for why a real boot never leaves this null.
 	if not _pause:
 		return
+	# `_summary.is_showing()` already excludes the escape's own two screens (a section's brief and
+	# the epilogue) on exactly the same terms it excludes a day's own summary and ending — nothing
+	# escape-specific to add here, unlike Esc.
 	if _pause.is_open() or _title.is_open() or (_summary and _summary.is_showing()):
 		return
 	_pause.open()

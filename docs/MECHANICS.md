@@ -345,12 +345,17 @@ can be read off the glass without watching her — and is stopped by a press on 
 in a band down the screen's own middle, never by a press near her own position: the camera keeps her
 at the middle of the screen, so that ground is the band's own.
 
-The pause button, top right, is shown on every device once a day is actually running: a real
-`InputEventAction` for `pause` through `Input.parse_input_event()` rather than held state, since
-`main` reads the pause off the propagated event and would hear nothing from `Input.action_press()`
-alone. It fires on release rather than on press, and only when the release is still over the button,
-so a thumb that lands wrong can slide off without stopping the day. **Esc** pauses too, on every
-device, silently.
+The pause button, top right, is shown on every device once a day — or a section of the escape, the
+run's own ending — is actually running: a real `InputEventAction` for `pause` through
+`Input.parse_input_event()` rather than held state, since `main` reads the pause off the propagated
+event and would hear nothing from `Input.action_press()` alone. It fires on release rather than on
+press, and only when the release is still over the button, so a thumb that lands wrong can slide off
+without stopping the day. **Esc** pauses too, on every device, silently. Losing the window's focus
+opens the same screen, unless `--no-focus-pause` says otherwise. Neither ever opens over a section's
+brief or the epilogue, the escape's own two screens between one section and the next — the same
+reason Esc opens over an ordinary day's own end-of-day message and focus loss does not: a section's
+brief stands between her and a clock that has not started yet, not between her and a day already
+decided.
 
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
@@ -1162,6 +1167,20 @@ loads), and opening the game again puts that section's brief back up with a whol
 — the same way closing a game mid-day comes back to that day's brief. Nothing about the escape is
 ever a day under way, so no nerve is charged for leaving one.
 
+**Everything around a day exists around a section too, built the same way.** `Esc`, the pause
+button and losing the window's focus open the same pause screen a day opens, with the same continue,
+the same held restart and the same quit; the held restart ends the escape in a fresh run,
+`GameState.escape_section` cleared, the same way it ends any other run. The touch controls, the
+orientation handling, the developer readout and the debug-mode note are all the one instance each
+boot already builds before it knows which of the two it is. What a day has that a section does not:
+the screen-edge badge, the excitement halo and the two geometry debug layers, which only the city
+section carries (a `City`'s own `EventManager` and crowd are what draws them, and the building has
+neither); a telemetry observer, since that class is built around a day's own `City`, `RouteTree` and
+corridor, none of which either section has, so the escape writes its own clock into the run log
+directly instead (`main._process_the_finale()`); and the home-guidance arrow, since escaping owes no
+return leg to point one at. The save indicator is built only for a run's own escape, never the
+flag's, since a dev-flagged boot writes nothing a symbol could ever announce.
+
 **Section one is a route with the first turn already taken.** A fallen ceiling fills the top
 floor's hallway between her own door and the right stair door, both rows of it
 (`InteriorMap.TOP_FLOOR_RUBBLE`), so the right stairwell cannot be entered on that floor at all and
@@ -1299,19 +1318,34 @@ satisfies at dawn instead.
 
 **Opening a game whose save says a day was under way loses that day**, through the same code path
 an ordinary lost day takes: one nerve, the resistance given back, the same day again, the last
-nerve ending the run exactly as it does there. **The title comes up on every boot of a day**, with
-the street outside her own front door running behind it exactly as it does for a fresh run; a save
-written inside the escape opens on that section's own brief instead, since the escape has no city
-day behind a title to run. Pressing start with a save on disk brings up the day brief instead of
-starting the day outright — the
-screen `DaySummary` draws between days, carrying the day, the nerves and the resistance's own
-pending brief, plus the line that a day was lost to leaving it when the load itself charged the
-nerve above. Continuing from the day brief is the moment the day actually starts, and the moment
-the first of the two writes above says so. If the load spends the run's last nerve, the day brief
-never shows at all — the ending does, the same screen and the same continue any other
-run-ending reaches. A save written once a day has already ended at its own summary, or at a day
-brief before it is ever continued past, costs nothing: opening it again finds the same nerve count
-and shows the same screen, and pressing on from there is what actually spends anything.
+nerve ending the run exactly as it does there. **The title comes up on every boot of a day that has
+a save to come back to**, with the street outside her own front door running behind it exactly as
+it does for a fresh run. Pressing start with a save on disk brings up the day brief instead of
+starting the day outright — the screen `DaySummary` draws between days, carrying the day, the
+nerves and the resistance's own pending brief, plus the line that a day was lost to leaving it
+when the load itself charged the nerve above. Continuing from the day brief is the
+moment the day actually starts, and the moment the first of the two writes above says so. If the
+load spends the run's last nerve, the day brief never shows at all — the ending does, the same
+screen and the same continue any other run-ending reaches. A save written once a day has already
+ended at its own summary, or at a day brief before it is ever continued past, costs nothing:
+opening it again finds the same nerve count and shows the same screen, and pressing on from there
+is what actually spends anything.
+
+**A save written inside the escape comes up the same way.** The escape's own boot always knows
+which section a save named — `GameState.escape_section`, restored before the section is built, is
+what decides whether the building or the city is built at all, not only where she stands inside
+it — and a save closed mid-city-section reopens in the city rather than being rebuilt underneath
+her from the hallway. What is asked first is whether this boot is **reading that section off a
+file** rather than carrying it forward from a won day 14 handed over earlier in the same process:
+the two reach the same boot with the same non-empty `escape_section`, and the only thing that
+tells them apart is whether the value was already on the autoload before the save was read or
+only arrived from the file — see `main._escape_resumed_from_disk`. A genuine resume answers the
+title first, the same screen a resumed day answers first — paused rather than run behind, since
+the section it stands in front of has no city day's worth of scenery to keep moving for its own
+sake — and pressing start raises that section's own brief over the world already built behind it
+rather than reloading anything; the handover reload from a won day 14 answers `false` and opens
+straight on the brief, since nothing about walking into the escape she just earned should feel
+like reopening a save.
 
 **A save a newer build cannot read is dropped for a fresh title screen, never half-loaded.**
 `GameSave.FORMAT_VERSION` is what a build compares — an ordinary release never bumps it, so a

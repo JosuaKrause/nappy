@@ -399,14 +399,16 @@ item below for as long as looking takes.
   comes first, then a scene reload, then the brief "Escape the building" over the hallway. **Does
   the summary read as a lead-in rather than an ending**, is the black frame of the reload
   acceptable, and does the brief sit well over the building, which fills only a narrow band of
-  the frame behind it? The section's name is on the brief and again as the HUD's hint line a
-  second later: **is the second one redundant?** Record is `DECISIONS.md`, M102, the finale is
+  the frame behind it? Record is `DECISIONS.md`, M102, the finale is
   the run's ending.
 
 - **Close the game inside each section and open it again** (a flagless windowed build; every
-  dev flag and headless run refuses the save). It comes back to that section's brief, with no
-  title screen first, a full clock and no Nerve spent. **Is skipping the title right here?** Same
-  record.
+  dev flag and headless run refuses the save). It comes back through the title screen to that
+  section's brief, which offers the section or a held restart for a new game, with a full clock
+  and no Nerve spent; a game closed in the city comes back in the city. **Does the title before
+  the brief read as the same game starting up?** Then **press `Esc` in each section**: the pause
+  screen a day has, never over a brief or the epilogue, and the clock stops behind it. Record is
+  `DECISIONS.md`, M102, the escape has what a day has around it.
 
 - **Reach the tunnel or the bridge and read the epilogue.** After it a run's escape goes back to
   the title, with no good-ending screen between: **should "Silence." still follow it?** It is its own screen on `DaySummary`
