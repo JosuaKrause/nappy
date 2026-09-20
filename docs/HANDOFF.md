@@ -306,10 +306,7 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **M171 — Build-time atlases replace individual textures is built and released** as the minor
-  version that followed it (`DECISIONS.md`, the sections starting "M171,"). What only a person
-  can judge about it is in `REVIEW.md`.
-- **v0.15.0's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
+- **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
   "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
   the first entry of `REVIEW.md`. M174, the man shouting costs nothing to walk beside, has one
   open item in `TODO.md`: the caret against a pulsed row and against several sources.

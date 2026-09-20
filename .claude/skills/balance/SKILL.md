@@ -104,8 +104,9 @@ free row has to be a decision somebody takes rather than a number nobody checked
 
 **Raising the walking decay does not lower every row's cost by the same amount.** The decay is
 netted off over the *time* the crossing takes, so a wide, moderate row loses far more of its price
-than a narrow, intense one — `protest` (269px of 15/s) and `dog_walker` (105px of 26/s) swapped
-order when the decay went from 3.5 to 6.0, which moved `protest` from a wall to friction.
+than a narrow, intense one — `protest` (a wide field at a moderate rate) and `dog_walker` (a
+narrow one at a high rate) sit in the opposite order under a 6.0 decay from the one they sit in
+under 3.5, which is what makes `protest` friction rather than a wall.
 `Tuning.WALL_WORTH_OF_COST` is stated in points of the meter, so it is re-derived from the cost
 table whenever a rate moves rather than left alone.
 
