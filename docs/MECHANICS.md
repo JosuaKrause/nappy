@@ -176,6 +176,15 @@ to walk down, which is what a route is made of.
 
 At `excitement = 100` → **crying** → day lost.
 
+**The entity halo reads this same subtraction, per source.** `ExcitementHalo` traces every live
+source's own gross points landed over the last `ExcitementHalo.WINDOW` (five seconds, the same
+figure `Baby.decay_in_window()` sums the decay above over) and subtracts that source's own share of
+the decay taken in the same window — shared between every source in proportion to what each landed,
+never below zero (`ExcitementHalo.net_landed()`). So the rims live at once sum to exactly what this
+section's net rate bought the bar over the window, and a source reads red only while the bar is
+actually climbing because of it — not merely because it is loud. See `docs/EVENTS.md`, "The visual
+vocabulary," for the whole cue and its colour and transparency curves.
+
 ## A conversation
 
 `chatting_mother` is the one row in the catalogue that takes the player's own controls away rather

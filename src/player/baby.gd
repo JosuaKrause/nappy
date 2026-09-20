@@ -46,6 +46,15 @@ var state := GameEnums.BabyState.AWAKE
 var last_incoming := 0.0
 var last_decay := 0.0
 
+## This baby's own simulated clock, advanced by `delta` in `_physics_process` — the same shape
+## `EventInstance._clock` and `landed()` use, so `decay_in_window()` below prunes against a clock
+## that keeps pace with every source's own, without depending on either one directly.
+var _clock := 0.0
+## `[when, points]` entries of decay actually taken from the meter, pruned to
+## `ExcitementHalo.WINDOW` the same way a source's own `_landed_history` is — see
+## `decay_in_window()`, what `ExcitementHalo` shares this against.
+var _decay_history: Array = []
+
 var _stroller: Stroller
 var _world: WorldContext
 
@@ -62,6 +71,7 @@ func reset() -> void:
 	excitement = 0.0
 	last_incoming = 0.0
 	last_decay = 0.0
+	_decay_history.clear()
 	_set_state(GameEnums.BabyState.AWAKE)
 	EventBus.sleepiness_changed.emit(sleepiness)
 	EventBus.excitement_changed.emit(excitement)
@@ -104,6 +114,7 @@ func _physics_process(delta: float) -> void:
 ## merely left unsummed, so `accumulate_landed()` below is never called either: a source that
 ## charges the halo but never reaches the meter is the exact drift this guards against.
 func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
+	_clock += delta
 	var invincible := DevFlags.invincible()
 	var sources := [] if invincible else (_world.excitement_sources_at(here) if _world else [])
 	var incoming := 0.0
@@ -128,6 +139,7 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	var decay := _decay_rate()
 	last_incoming = incoming
 	last_decay = decay
+	_record_decay(decay * delta)
 
 	# Net rate, so that decay always counts: standing still fights a loud event, and
 	# sprinting past one (decay ~0) makes it far worse than walking past it.
@@ -135,6 +147,32 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	excitement = clampf(excitement + (incoming - decay) * delta, 0.0, Tuning.METER_MAX)
 	if not is_equal_approx(before, excitement):
 		EventBus.excitement_changed.emit(excitement)
+
+## Folds this frame's decay into the sliding window `ExcitementHalo` shares out to every source's
+## own net — see `decay_in_window()`. The nominal rate times `delta`, the same figure `last_decay`
+## reports, not the excitement actually removed after clamping at the meter's own floor or
+## ceiling: the clamp is an edge of the bar, not a fact about what walking gave back, and reading
+## the rate rather than the clamp is what `last_decay` already does for the debug overlay.
+func _record_decay(points: float) -> void:
+	_prune_decay_history()
+	if points > 0.0:
+		_decay_history.append([_clock, points])
+
+func _prune_decay_history() -> void:
+	var cutoff := _clock - ExcitementHalo.WINDOW
+	while not _decay_history.is_empty() and _decay_history[0][0] < cutoff:
+		_decay_history.pop_front()
+
+## The decay taken from the meter over the last `ExcitementHalo.WINDOW` seconds — what
+## `ExcitementHalo` divides among the sources that landed a point in the same window, in
+## proportion to what each landed, so a source's own net can never disagree with what walking (or
+## standing, or running) actually gave back while it was costing her.
+func decay_in_window() -> float:
+	_prune_decay_history()
+	var total := 0.0
+	for entry in _decay_history:
+		total += entry[1]
+	return total
 
 ## How fast the meter falls: what she is doing, times what she is standing on.
 ##

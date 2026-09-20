@@ -27,6 +27,10 @@ func run(t) -> void:
 	_test_a_city_wide_source_is_never_drawn_at_a_point(t)
 	_test_the_cap_keeps_the_strongest(t)
 	_test_landed_accumulates_and_decays(t)
+	_test_net_landed_shares_decay_by_proportion(t)
+	_test_net_landed_never_below_zero_and_floors_together(t)
+	_test_net_landed_sums_to_the_bars_rise_while_climbing(t)
+	_test_process_reads_net_shared_by_baby_decay(t)
 	_test_colour_for_the_ramp_ends(t)
 	_test_magnitude_for_emphasises_low_values(t)
 	_test_entity_halo_eases_toward_its_target(t)
@@ -188,6 +192,97 @@ func _test_landed_accumulates_and_decays(t) -> void:
 	_check_accumulates_and_decays(t, agent, "CrowdAgent")
 	agent.free()
 
+# ------------------------------------------------------------- net, not gross ---
+# M174: overturns *(2026-09-08: "trace an increase in excitement back to its constituents")* only
+# in what the traced number counts. `landed()` above is still the gross trace; `net_landed()` is
+# what the halo actually reads now — see that function's own doc.
+
+func _test_net_landed_shares_decay_by_proportion(t) -> void:
+	t.check(is_equal_approx(ExcitementHalo.net_landed(30.0, 40.0, 20.0), 15.0),
+			"a source that landed 30 of a 40-point window keeps 30 less its 3/4 share of a " +
+			"20-point decay (15)")
+	t.check(is_equal_approx(ExcitementHalo.net_landed(10.0, 40.0, 20.0), 5.0),
+			"and a second source, 10 of the same 40, keeps 10 less its 1/4 share (5) -- the " +
+			"decay is shared by proportion, not split evenly")
+	t.check(is_equal_approx(ExcitementHalo.net_landed(30.0, 40.0, 0.0), 30.0),
+			"no decay taken in the window leaves gross and net the same")
+	t.check(is_equal_approx(ExcitementHalo.net_landed(5.0, 0.0, 10.0), 0.0),
+			"nothing landed from anybody: nothing to share the decay against, so net is zero " +
+			"rather than dividing by zero")
+
+func _test_net_landed_never_below_zero_and_floors_together(t) -> void:
+	# decay (50) exceeds total_landed (40): the bar is not climbing at all over the window, and
+	# every source's share scales by the identical factor past one, so every source floors to
+	# zero together -- never one source reading negative while another stays positive.
+	t.check(is_equal_approx(ExcitementHalo.net_landed(30.0, 40.0, 50.0), 0.0),
+			"the larger source floors at zero rather than reading negative")
+	t.check(is_equal_approx(ExcitementHalo.net_landed(10.0, 40.0, 50.0), 0.0),
+			"and the smaller one floors at zero too -- a source is red only while the bar is " +
+			"climbing because of it, and here it is not climbing at all")
+
+func _test_net_landed_sums_to_the_bars_rise_while_climbing(t) -> void:
+	var landed_by_source := [12.0, 8.0, 5.0]
+	var total := 25.0
+	var decay := 9.0
+	var summed_net := 0.0
+	for landed in landed_by_source:
+		summed_net += ExcitementHalo.net_landed(landed, total, decay)
+	t.close_to(summed_net, total - decay,
+			"the halos together add up to the bar's own rise over the window (total landed less " +
+			"decay) -- the sentence item (b) states as the target, held here as a sum rather than " +
+			"a single source's own arithmetic", 0.001)
+
+## Wires the same sharing through `_process()`, with a real `Baby` standing in for the meter's own
+## decay -- not added to the tree (`_ready()` asserts a `Stroller` parent), since `decay_in_window()`
+## touches only `_clock` and `_decay_history`. Proof the regression this overturns would be caught:
+## the strong source's own target colour is asserted to differ from what its *gross* landed value
+## would have coloured it, not only to equal its net.
+func _test_process_reads_net_shared_by_baby_decay(t) -> void:
+	var manager := EventManager.new()
+	t.add_child(manager)
+	var crowd := Crowd.new()
+	t.add_child(crowd)
+	var player := Node2D.new()
+	t.add_child(player)
+	var baby := Baby.new()
+	baby._record_decay(20.0)
+	var halo := ExcitementHalo.new()
+	t.add_child(halo)
+	halo.setup(manager, crowd, player, baby)
+
+	var strong := EventInstance.new()
+	strong.setup(_def("strong_net", 40.0), Vector2.ZERO)
+	manager.add_child(strong)
+	strong.set_process(false)
+	manager._instances.append(strong)
+	strong.accumulate_landed(30.0)
+
+	var weak := EventInstance.new()
+	weak.setup(_def("weak_net", 40.0), Vector2.ZERO)
+	manager.add_child(weak)
+	weak.set_process(false)
+	manager._instances.append(weak)
+	weak.accumulate_landed(10.0)
+
+	halo._process(STEP)
+
+	var expected_strong := ExcitementHalo.net_landed(30.0, 40.0, 20.0) # 15.0
+	var expected_weak := ExcitementHalo.net_landed(10.0, 40.0, 20.0) # 5.0
+	t.check(strong._halo._target_colour.is_equal_approx(ExcitementHalo.colour_for(expected_strong)),
+			"the source that landed 30 of a 40-point window is coloured by its net 15, not its " +
+			"gross 30")
+	t.check(weak._halo._target_colour.is_equal_approx(ExcitementHalo.colour_for(expected_weak)),
+			"and the other, net 5 of a gross 10, reads paler than its own gross would have")
+	t.check(not strong._halo._target_colour.is_equal_approx(ExcitementHalo.colour_for(30.0)),
+			"proof the regression is caught: colouring by the gross 30 would be a visibly " +
+			"different colour from the net's")
+
+	manager.free()
+	crowd.free()
+	player.free()
+	halo.free()
+	baby.free()
+
 # ---------------------------------------------------------------- colour ---
 
 func _test_colour_for_the_ramp_ends(t) -> void:
@@ -333,7 +428,10 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 	t.add_child(player)
 	var halo := ExcitementHalo.new()
 	t.add_child(halo)
-	halo.setup(manager, crowd, player)
+	# Not added to the tree, so `_ready()` (which asserts a `Stroller` parent) never runs --
+	# `decay_in_window()` touches only `_clock` and `_decay_history`, neither of which needs it.
+	var baby := Baby.new()
+	halo.setup(manager, crowd, player, baby)
 
 	var strong := EventInstance.new()
 	strong.setup(_def("strong_halo", 30.0), Vector2.ZERO)
@@ -363,6 +461,7 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 	crowd.free()
 	player.free()
 	halo.free()
+	baby.free()
 
 # ------------------------------------------------------ contribution_at is cached ---
 # `docs/TODO.md`, M124: `Baby._update_excitement()` (physics rate) and
