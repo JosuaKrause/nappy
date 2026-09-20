@@ -1382,7 +1382,8 @@ func _test_a_late_picture_load_names_itself_in_the_spike_line(t) -> void:
 func _test_an_atlas_says_when_it_arrived_and_when_it_went(t) -> void:
 	Telemetry.begin_memory_log()
 	TextureAtlas.reset_for_tests()
-	TextureAtlas.request("test_group", {Prop.BOLLARD: Prop.BOLLARD, Prop.SACK: Prop.SACK})
+	TextureAtlas.request("test_group",
+			{EventInstance.MOUSE: EventInstance.MOUSE, EventInstance.MOUSE_B: EventInstance.MOUSE_B})
 	TextureAtlas.collect("test_group", true)
 	TextureAtlas.release("test_group")
 	var ready_lines: Array[String] = []

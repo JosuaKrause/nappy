@@ -337,11 +337,9 @@ closes the contract.
       lights, the UI buttons and indicators, the interior scene and the interior TileSet. The
       checkpoint pictures are `event_instance.gd`'s and move with the events; the city edge's
       mountain is on the ground page, which the city always holds. `preload` constants become region names; a tinted draw keeps its `modulate`.
-- [ ] **The decoration**: props, litter and city decals. A prop's shadow reads its size from
-      the region table where it reads `get_size()` off a preloaded source today.
 - [ ] **The pages are packed square, and what is always on screen is always loaded**
-      ([PLAYTEST-109](playtests/PLAYTEST-109.md)), after the leaf consumers, the stroller and
-      the decoration have landed, since it edits their groups. *"it would be better to arrange
+      ([PLAYTEST-109](playtests/PLAYTEST-109.md)), after the leaf consumers have landed, since it
+      edits the groups the consumer moves draw from. *"it would be better to arrange
       things in a more squarish image (take the total number of cells and use the square root
       of it to define the width)"*: the page's target width comes from the square root of the
       group's padded area, never less than the widest member. *"if you don't use a proper full
@@ -365,8 +363,8 @@ closes the contract.
       and the run's parent once the parent is known; the day brief loads what the day needs and
       does not already hold — the city's groups, the crowd, the events — before the brief can
       be dismissed. *"don't unload anything that might be needed in one day and in the next"*:
-      no group is released between two days that both draw it, so `Crowd` stops releasing its
-      page in `clear()` and re-acquiring it in `start_day()`. The interior is the escape's
+      no group is released between two days that both draw it, which `Crowd` already holds to.
+      The interior is the escape's
       alone: it loads in the escape's own brief when M102, the finale, has one, and until then
       where the `--start-escape` sequence starts. Holding every group from startup is the simpler build and is allowed; take it
       unless the measured startup cost says otherwise, and say which in the PR. A consumer's
@@ -395,8 +393,12 @@ closes the contract.
       M159's atlas-measurement item is rewritten against the new spans before the old ones go.
       `ARCHITECTURE.md`, `GRAPHICS.md`, `VISUALS.md`, `TELEMETRY.md`, the **illustrated-png**
       and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
-      **The release that follows this item is a minor version** ([PLAYTEST-109](playtests/PLAYTEST-109.md): *"after
-      atlas we cut a new minor version"*): `tools/release.sh minor`.
+      **The release that follows is a minor version, and it waits for every item in this
+      section** — *"only release once all those new items are completed, too"* — **and for
+      M172, a suite that fails to parse hangs the test run, and M173, the standalone bake
+      speaks for a stale import cache, where they can be had** — *"include the bug fixes, too,
+      if possible"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
+      ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
 
 ---
 

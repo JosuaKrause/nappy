@@ -52,6 +52,15 @@ The interior is drawn only by the escape sequence, which is built and reached on
 `--start-escape` (`TODO.md`, M102, the finale); no day enters a building, and the escape has no
 day brief of its own yet.
 
+On the release, after the notes above had become queue items and two bugs had been filed
+(M172, a suite that fails to parse hangs the test run; M173, the standalone bake speaks for a
+stale import cache):
+
+> "only releast once all those new items are completed, too" · "include the bug fixes, too, if
+> possible"
+
+And on the pull requests in flight: "merge the PRs as they come".
+
 ## What the bake printed, which is what the notes are about
 
 | group | members | page |
@@ -107,5 +116,7 @@ members of 16 to 32px, and `events` holds one of 200px.
    first appears.
 10. **The `.import` sidecars** of sources that leave the imported tree are deleted with the move,
    in M171's last item; the answer given is recorded there.
-11. **The release after M171 closes is a minor version.** v0.13.1 was cut on 2026-09-20 ahead of
+11. **The release after M171 closes is a minor version, and nothing is released before it.**
+    It waits for every M171 item, the ones these notes added included, and carries the fixes
+    for M172 and M173 "if possible". v0.13.1 was cut on 2026-09-20 ahead of
    the consumer moves, at the player's word.

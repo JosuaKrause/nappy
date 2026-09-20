@@ -3,9 +3,11 @@ extends RefCounted
 ## packs, and the three answers `texture_for()` gives across a group's life: the source before the
 ## atlas is collected, the region after it, and the source again once it is released.
 ##
-## The street's own decoration is the set packed here, because it is a real group with a real
-## spread of canvas sizes rather than a fixture invented for the suite; `test_ground_layers.gd`
-## holds the ground's own contract, which is packed a different way.
+## The café event family (`EventDef.Look.CAFE`) is the set packed here, because it is a real group
+## with a real spread of canvas sizes rather than a fixture invented for the suite, and events are
+## the one family still packed by this class through every pull request of M171, build-time
+## atlases; `test_ground_layers.gd` holds the ground's own contract, which is packed a different
+## way.
 ##
 ## Run under both presentation modes, since the atlas packs whichever raster
 ## `TextureResolver.resolve()` currently chooses, and `TextureAtlas.reset_for_tests()` is paired
@@ -27,8 +29,6 @@ func run(t) -> void:
 	_check_pack(t, "forced SVG rasters")
 
 	TextureResolver.reset_for_tests(DevFlags.svg_requested())
-	TextureAtlas.reset_for_tests()
-	_test_the_streets_decoration_is_one_group(t)
 	TextureAtlas.reset_for_tests()
 
 ## Both join paths publish the task's own timing once; disabled recording leaves no payload.
@@ -85,45 +85,13 @@ func _check_phase_trace(t) -> void:
 	AtlasPhaseTrace.reset(false)
 	TextureAtlas.reset_for_tests()
 
-## Every picture `CityDecals` and `Prop` draw comes off one texture once the street's decoration
-## is collected — the litter, the tree bed, both trees, the swing frame, the bollard, the sack and
-## the pile. Asked of `Prop`'s own `_packed()` and of the same `texture_for()` call `CityDecals._
-## draw()` makes, since `_draw()` itself never runs headless.
-##
-## The group is requested here rather than by building a whole `City`: `City.build()` makes the
-## same call with the same table, and this suite's subject is the packing rather than the wiring.
-func _test_the_streets_decoration_is_one_group(t) -> void:
-	var sources := CityDecals.decoration_sources()
-	t.check(sources.size() >= 11, "the decoration group has the street's pictures in it (%d)"
-			% sources.size())
-	TextureAtlas.request(CityDecals.DECORATION_ATLAS, sources)
-	t.check(TextureAtlas.collect(CityDecals.DECORATION_ATLAS, true),
-			"the street's decoration packs")
-	var prop := Prop.new()
-	var atlas: Texture2D = null
-	for source: Texture2D in sources.keys():
-		var drawn: Texture2D = TextureAtlas.texture_for(CityDecals.DECORATION_ATLAS, source, source)
-		var name := source.resource_path.get_file()
-		t.check(drawn is AtlasTexture, "%s is drawn from the decoration atlas" % name)
-		if not drawn is AtlasTexture:
-			continue
-		if atlas == null:
-			atlas = (drawn as AtlasTexture).atlas
-		t.check((drawn as AtlasTexture).atlas == atlas,
-				"%s shares the one texture every other decoration is on" % name)
-		t.check(drawn.get_size() == TextureResolver.resolve(source).get_size(),
-				"%s is the size of the picture it stands in for (%s against %s)"
-				% [name, drawn.get_size(), TextureResolver.resolve(source).get_size()])
-		t.check(prop._packed(source) == drawn,
-				"and a Prop asks for %s by the same key and gets the same region" % name)
-	prop.free()
-	TextureAtlas.release(CityDecals.DECORATION_ATLAS)
-
 ## Key -> source texture, the shape `TextureAtlas.request()` takes. Keyed by the source texture
 ## itself, which is how every drawing user in the game indexes its own pictures: a `_draw()` has
-## the constant in hand and wants the region standing in for it.
+## the constant in hand and wants the region standing in for it. The café family
+## (`EventInstance.family_sources(EventDef.Look.CAFE)`) is a real group with a real spread of
+## canvas sizes — both sitter views and the table — rather than a fixture invented for the suite.
 func _sources() -> Dictionary:
-	return CityDecals.decoration_sources()
+	return EventInstance.family_sources(EventDef.Look.CAFE)
 
 ## The layout on its own, which is the only part of the packing a suite can ask about a set that
 ## cannot fit: `request()` asserts on `fits`, and an assertion aborts the run rather than
@@ -154,13 +122,14 @@ func _check_plan(t) -> void:
 			"a set that cannot fit reports so rather than being packed (%s against %dpx)"
 			% [overflowing["size"], TextureAtlas.MAX_ATLAS_SIDE])
 
-## Requests the decoration group once under the mode `TextureResolver` is already set to, and
+## Requests the café group once under the mode `TextureResolver` is already set to, and
 ## checks what `texture_for()` answers before the collect, after it and after the release, and
 ## that every region lies inside the atlas, no two overlap, and each region's own pixels equal its
 ## source image's.
 func _check_pack(t, label: String) -> void:
 	var sources := _sources()
-	t.check(TextureAtlas.texture_for(NAME, Prop.BOLLARD, Prop.BOLLARD) == Prop.BOLLARD,
+	t.check(TextureAtlas.texture_for(NAME, EventInstance.CAFE_TABLE, EventInstance.CAFE_TABLE)
+			== EventInstance.CAFE_TABLE,
 			"%s: a group nobody has requested answers the source it was handed" % label)
 
 	t.check(TextureAtlas.request(NAME, sources), "%s: the request is the one that starts the pack"

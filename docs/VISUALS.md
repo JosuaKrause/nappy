@@ -48,9 +48,9 @@ back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors
 collision and camera framing remain the existing game's responsibility.
 
 `TextureAtlas` then relocates whichever raster the resolver chose into one shared texture per
-group of pictures — the street's decoration and one group per event family — and hands out
-`AtlasTexture` regions over it. The player, the head indicators and the crowd draw from the baked
-atlas below instead. The atlas changes no
+group of pictures — one group per event family — and hands out `AtlasTexture` regions over it.
+The player, the head indicators, the crowd and the street's decoration draw from the baked atlas
+below instead. The atlas changes no
 picture: a region reports its source's own size, so scale, offsets, mirroring, anchors, shadows
 and sorting read the same numbers in either presentation mode. A group is requested when its
 first user is placed and released when its last user is gone; until it is collected, and again
@@ -89,14 +89,17 @@ draw the previous import of.
 `AtlasLibrary` reads the result: `acquire(group)` loads that group's page, `release(group)`
 drops it on the last reference, `region(name)` hands out an `AtlasTexture` over the page, and
 `native_size(name)` answers a picture's own size from the region table with nothing loaded at
-all. **The player, the head indicators and the crowd draw from it directly**: `Stroller` acquires
-`stroller` and `head_indicators` for the whole run, `Crowd` acquires `crowd` on its first day and
-holds it for the rest of its own life — a page every day's crowd draws is never released between
-two days — and every `CrowdAgent` reads its region off the page the owner is already holding.
-Every other family still
-reaches its pictures through `TextureResolver` and `TextureAtlas` as described above, until its own
-consumer moves; `tests/test_atlas_library.gd` compares every baked region against the picture its
-consumer draws today, pixel for pixel, for as long as that comparison is possible.
+all. **The player, the head indicators, the crowd and the street's decoration draw from it
+directly.** `Stroller` acquires `stroller` and `head_indicators` for the whole run. `Crowd`
+acquires `crowd` on its first day and holds it for the rest of its own life — a page every day's
+crowd draws is never released between two days — and every `CrowdAgent` reads its region off the
+page the owner is already holding. `src/city/prop.gd`, `src/city/litter.gd` and
+`src/city/city_decals.gd` ask `region()` and `native_size()` on region names rather than on
+loaded textures, and the `decoration` group's lifetime is `City`'s own — acquired in `build()`,
+released in `_exit_tree()`. Every other family still reaches its pictures through
+`TextureResolver` and `TextureAtlas` as described above, until its own consumer moves;
+`tests/test_atlas_library.gd` compares every baked region against the picture its consumer
+draws today, pixel for pixel, for as long as that comparison is possible.
 
 `tools/audit-pck.sh` reads an exported `.pck`'s own file table and reports how many baked
 constituents it still carries — a member's source, its `.import` sidecar or its imported

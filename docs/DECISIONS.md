@@ -9,9 +9,9 @@ releases them in `_exit_tree()`; every mother, father, pram, alert and baby cons
 path and the draw reads `AtlasLibrary.region()`. `CrowdAgent`'s six view tables are paths with
 a small `StringName` cache, the body layer alone takes the tint, and the entry clearance reads
 `AtlasLibrary.native_size()`, which answers before anything is acquired — it has to, since the
-placement roll in `setup()` runs ahead of the day's acquire. `Crowd` owns the `crowd` group for
-the day: `start_day()` acquires after `clear()`'s release, and one guarded release serves
-`clear()`, the finale's direct `clear()` with no day started, and `_exit_tree()`.
+placement roll in `setup()` runs ahead of the first acquire. `Crowd` owns the `crowd` group for
+its own life: the first `start_day()` takes the one reference, `clear()` keeps it, and
+`_exit_tree()` gives it back, so the finale's crowd that never starts a day takes nothing.
 `crowd_atlas.gd` and its suite are deleted, and with them the synchronous first pack inside a
 draw call. `tests/test_atlas_stroller_crowd.gd` holds the lifetimes, the separate body and trim
 regions and the page split between the rig and the indicators.
@@ -19,6 +19,12 @@ regions and the page split between the rig and the indicators.
 **Found in review.** The first version released only in `clear()`, so a `Crowd` freed mid-day —
 the city torn down on quitting to the title — kept its reference for the life of the process,
 `AtlasLibrary`'s counts being static. The suite's case for it was seen failing before the fix.
+
+**Overturned by the player before it merged.** The second version released the page in
+`clear()` and loaded it again at each day's start, as the membership's "the day" lifetime read.
+[PLAYTEST-109](playtests/PLAYTEST-109.md): *"don't unload anything that might be needed in one
+day and in the next."* A release is a reload, and `AtlasLibrary.acquire()`'s `load()` blocks the
+moment that calls it; the membership's lifetime for `crowd` now says the node's own life.
 
 **The halo.** `assets/shaders/excitement_halo.gdshader` declares only `fragment()` and reads
 alpha at `UV`; the engine's default canvas vertex stage remaps `UV` to an `AtlasTexture`'s
@@ -32,11 +38,42 @@ pinned `TextureResolver` behaviour against constants that are no longer textures
 they protected is `test_atlas_library.gd`'s bake-parity check.
 
 **Open to overturn.** The owner holds the crowd's one reference rather than each of a couple of
-hundred agents holding their own; `CrowdAgent` caches region names; the crowd's page is
-released and re-acquired at each day's start, which reloads an 854 by 50 page once a day.
+hundred agents holding their own; `CrowdAgent` caches region names.
 
 **Not captured.** No still shows a head indicator over her head: three `shot.sh` windows never
 produced one.
+
+## M171, the decoration — built 2026-09-20
+
+A consumer move of the milestone, pull request #247.
+
+**Built.** `Prop`'s swing frame, bollard, sacks and both trees, `Litter`'s five decals,
+`CityDecals`' tree pit and `City`'s door are region names on the `decoration` page. `City`
+acquires the group in `build()`, where it asked the runtime packer for it, and releases it in
+`_exit_tree()`. Every shadow shape and the door's offset read `AtlasLibrary.native_size()` where
+they read `get_size()` off a preloaded source, and `StreetTrees.footprint_radius()` — the tree
+clearance the closure and event planners use ahead of any city existing — reads the same table,
+which answers with nothing acquired. The "draw the source picture until the pack is collected"
+path in `Prop` and `CityDecals`, `CityDecals.decoration_sources()` and the group's trip through
+`TextureAtlas` are gone: a baked page is there as soon as it is acquired.
+`tests/test_atlas_decoration.gd` pins each shadow and the tree footprint to the region table,
+and the group's count to one while a city stands and none after it is freed.
+
+**The brief's fence was wrong three times, and the first version was red for it.** It kept the
+agent out of `street_trees.gd`, which left the two trees as the only decoration pictures still
+loaded individually, and out of `tests/test_texture_atlas.gd` and `tests/test_telemetry.gd`,
+which the change breaks: one read `decoration_sources()`, the other used two prop textures as
+convenient inputs to the runtime packer. A pull request carries what its own change breaks; the
+fence was lifted and the three were fixed on the branch. The runtime packer's suites take their
+real group from the café event family and the mouse pictures, since the events are the last
+family that packer serves.
+
+**Found on the way.** A suite that fails to parse hangs the test run instead of failing it:
+the runner never reaches `quit()`, so the shard that owned the broken suite ran until another
+shard's failure cancelled it.
+
+**Open to overturn.** The door's constant keeps its name, `DOOR_TEXTURE`, while holding a
+region name.
 
 ## M171, the bake and the loader — built 2026-09-20
 
