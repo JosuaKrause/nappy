@@ -408,6 +408,10 @@ empty. It was also the alley step 1 had been taken from.
       that until then it keeps moving to the alley she comes across. The distance and the
       time are the orchestrator's and open to overturn. A mark does not return to an alley a
       step was already taken from while another is within reach.
+- [ ] **The first mark's note is one sentence.** *"remove the \"anyone of them could be it\" this
+      is unnecessary information that sounds odd"*: the note keeps "Give it to the one who
+      won't stop shouting." and loses what follows. Whichever man shouting she reaches first
+      still counts.
 - [ ] **A completed step is acknowledged where she is looking.** Touching a mark and reaching
       the man shouting each say so at the moment it counts: the touched state of the chalk
       mark (`chalk_mark_touched.svg` is prepared, M100, small, real and nobody's) and a line
@@ -452,6 +456,146 @@ later at 72 beside three roadblocks and a patrol, crying 0.4 seconds after that;
 - [ ] **She reappears where she is let out.** She is hidden when she goes in, moved while
       hidden, and shown at the release point; no frame draws her at the place she went in
       after the camera has left it. The evidence is a burst, not a still.
+
+---
+
+## M179 — The fire is on her way, guaranteed · asked for 2026-09-20
+
+> "I have never seen a fire truck. I mentioned a couple of times that the fire should come
+> first and be on your way *guaranteed* (a dynamic event dependent on the route you chose that
+> day) then the fire truck should come and player better get away from the fire."
+
+[PLAYTEST-117](playtests/PLAYTEST-117.md). M101, the fire is found before the engine
+(`DECISIONS.md`), made the engine come when she sees the fire; the fire itself is still sited
+once at dawn, anywhere — at (14,34) with her doorstep at (80,84) in the run that prompted this —
+so a day 3 can pass without either.
+
+- [ ] **Day 3's fire is sited from the walk she is taking.** Not at dawn: once her direction
+      for the day is clear, the fire starts on a building ahead of her, off screen, on the way
+      she is going, the way `EventDirector` already sites a row ahead of her — near enough that
+      she reaches it, far enough that she meets it rather than watches it appear. It happens on
+      every day 3, whichever way she goes, including a day she turns round. When and how far
+      ahead are the orchestrator's and open to overturn. The scar it leaves is wherever it
+      burned, for the rest of the run.
+- [ ] **Then the engine comes, and the fire is somewhere to get away from.** The engine arrives
+      on sight of the fire, as built, along a street she can see it come down. The fairness
+      contract for a siting she did not choose (the **events** skill) holds: she can always
+      walk out of it from where she first sees it.
+
+---
+
+## M180 — Posters she notices, and loudspeakers that are somewhere · asked for 2026-09-20
+
+> "posters need to be more obvious. the loudspeaker part was not apparent to me. since we
+> don't have sound it's not clear that this is happening. loudspeakers should be placed in the
+> city with a defined field. not sure about adding a floor. it just makes losing unfair because
+> things that worked before don't anymore for no obvious (or visible) reason."
+
+[PLAYTEST-117](playtests/PLAYTEST-117.md). The `loudspeaker` row is `city_wide` from day 5: no
+position, no picture, 2.4 a second everywhere on a 22 second pulse.
+
+- [ ] **A loudspeaker is a mast on a street with a field around it.** Placed from day 5 where
+      the fiction puts them — junctions, squares, the main road — drawn, with a field that
+      pulses when it speaks and falls away with distance like any other row's, so a route can
+      go round one. It is in `docs/COSTS.md` like any row.
+- [ ] **The city-wide floor goes.** *Asked about, not decided*: "not sure about adding a floor".
+      The orchestrator's recommendation is to remove it, for the player's own reason — a cost
+      with no place cannot be routed round, and the game's one verb is where she walks. What
+      replaces its pressure is the masts' own fields. `curfew_announce`, the other `city_wide`
+      row, is looked at the same way. The day-14 reward, that the sabotage silences the city,
+      becomes the masts going quiet. **Confirmed with the player before it is built.**
+- [ ] **Posters are seen at all.** *"I have not seen a single poster in any playthrough -- I
+      don't know what you're referring to here -- it needs to be way more obvious"*: the run
+      behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none, so the
+      first job is finding out why — where they are placed against where she walks, how large
+      they draw, what a finished wall looks like — before choosing a fix. Then the crew's
+      walls, and what they leave behind, read at walking distance as the city changing: size,
+      contrast and how many, against the act's palette. A visual attempt comes back to the player early rather than polished.
+
+---
+
+## M181 — The resistance has a reason, and a task is one day · design, asked for 2026-09-20
+
+> "when doing the mark it doesn't really feel that we would need to resist against anything
+> since nothing really has visibly deterioated yet" · "we could do 1) chalk 2) it immediately
+> shows the task 3) you have to do the task on the same day" · "add more different tasks" ·
+> "a red arrow (like the blue home arrow but red) to point to tasks where we need to go to a
+> specific location" · "we should also start with doors later since tasks should come first" ·
+> "9-11 need some extra memorable content in addition to the tasks"
+
+[PLAYTEST-117](playtests/PLAYTEST-117.md) has the whole message. **This entry is a design the
+player asked an opinion on; nothing here is built until they have answered.** M177, the second
+mark is any alley she comes across, carries the mark's noticing rule and the acknowledgement,
+which every version of this needs.
+
+**The orchestrator's opinion: one day per task, yes.** A mark one day and its errand the next
+asks her to remember an instruction across a night and a day brief, makes half the resistance
+days ones where nothing can be achieved, and spends ten days on five tasks. Chalk, task shown at
+once, done the same day, makes every resistance day a whole decision — *is today's errand worth
+what it does to the route* — frees days, and is the only shape in which "start later" does not
+also mean "fewer tasks". What it costs: a day now holds the mark, the errand, the baby and the
+way home inside one clock, 144 seconds after the curfew, so a task's place has to be reachable
+with the mark on the way, and the robber's band around a mark is a larger share of the day.
+
+**Proposed shape, every number open:**
+
+- **Tasks start on day 6**, the day the curfew is announced — the first morning the city has
+  visibly been told what to do — with the masts of M180 up since day 5 and the patrols and
+  posters since day 4. Days 6 to 13 are eight task days and day 14 the sabotage.
+- **The goal is 5 of 8**, which keeps today's allowance of missing tasks and staying eligible.
+- **Doors start on day 9**, not day 7, so three task days come before the city is walled, and
+  the first door she meets is one a task has already made her want to cross.
+- **Two kinds of task.** *Any instance*: the man shouting, a roadblock's band, the densest
+  crowd — no arrow, as today. *One place*: the van's drop, the poster wall before it is
+  finished, and new ones — the burnt shell from day 3 (the city remembers, and so does she), a
+  loudspeaker mast, which goes quiet for the rest of the run when she reaches it (the only task
+  whose reward she can hear the absence of), a named door after day 9. These get **the red
+  arrow**, the home arrow's form in red, from the moment the mark is touched. *No quest log or
+  marker for the resistance · overturned by the player for one-place tasks*; the first mark
+  itself still comes with no hint.
+- **The task is announced at the mark and nowhere else.** *Decided by the player*: "since the
+  task will be immediately announced when touching the mark there is no need to mention tasks in
+  the day brief ata ll". Touching the mark says the task, in the HUD's voice, where she is
+  looking; the day brief carries no task, no mark's words from yesterday and no reminder.
+- **A task done is unmistakable**: M177's acknowledgement, the arrow going out, and the day
+  summary saying so.
+- **Days 9 to 11 each get one thing that happens once**, the way day 3 has the fire: candidates
+  are the park she has used most being requisitioned in front of her, a night raid on her own
+  street with a neighbor's door boarded the next morning, and the market not being there. Which,
+  and whether these are the right kind of thing, is the player's.
+
+**The day brief says what happened, a draft for the player to rewrite.** *"use the freed up day
+brief text to further the narrative. write about what happened that day -- curfew announced
+etc"*. One or two plain sentences a morning, under `docs/NARRATIVE.md`'s tone rules — nobody
+explains the politics, the danger is noise, nothing triumphant — each naming the thing that day
+introduces, so the brief is also where a new obstacle is first heard of. **One thing a morning** (*"focus on one thing only otherwise it becomes too dense"*), in
+American English, which the player asked for in everything said to them. Days 1, 3, 4 and 6 are
+the player's own wording or close to it; day 6 names the rumor of chalk, which overturns *the
+first encounter comes with no hint at all* on the player's word; day 7 waits on M180 making a
+poster something she has ever seen. Written against the proposed shape above, so the days move
+if the shape does:
+
+| Day | Draft |
+| --- | --- |
+| 1 | She won't settle indoors. It is quiet in the park. Walk until she sleeps, then bring her home. |
+| 2 | There are bicycles on the sidewalk again. |
+| 3 | The streets smell of smoke today. |
+| 4 | It feels like there are more police around now. |
+| 5 | They put up masts at the intersections overnight. |
+| 6 | A curfew was announced today. There is not as much time. There are rumors of chalk messages in alleys. |
+| 7 | There are new posters on every wall. |
+| 8 | A van took someone from the next street before it was light. |
+| 9 | They have closed the districts off from each other. There are huts at the crossings. |
+| 10 | The stores on the square are boarded up. |
+| 11 | A door down the hall was sealed in the night. The name is still on the bell. |
+| 12 | There is smoke over the rooftops, and trucks on the main road. |
+| 13 | The crowds are larger. Nobody is going home. |
+| 14 | The last night. |
+
+**Questions for the player:** the start day; how many tasks and how many may be missed; the door
+day; which new one-place tasks; which set pieces for days 9 to 11; and whether the walk home
+after a task should still be an ordinary return or owe something; and the brief lines above,
+which are a draft in the orchestrator's words and the player's to rewrite.
 
 ---
 
