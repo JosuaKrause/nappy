@@ -615,12 +615,27 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		t.close_to(fire.contribution_at(rig.global_position), 0.0,
 				"she is outside its field the moment she first sees it, so the whole telegraph "
 				+ "is hers to walk out in", 0.001)
+	var engines := 0
 	for instance in _city.events.instances():
 		if instance.def.id != "fire_truck":
 			continue
+		engines += 1
 		t.close_to(instance.contribution_at(rig.global_position), 0.0,
 				"and the engine it calls in is outside its own forward reach of her when it is "
 				+ "created, from the worst position the sighting allows", 0.001)
+		# **It is aimed at where the fire actually is**, which is the half a runtime siting could
+		# break: the route is built from the live instance's position when it is first seen, and a
+		# plan stops being movable at its first stream-in, so the two can never be a fire that moved
+		# after the engine was sent to where it used to be. The end of the route is the near kerb
+		# across from the frontage it is burning against — `EventManager._summon_the_sighted_row()`.
+		t.check(instance.path.size() == 2, "and it is given a route down the fire's own street")
+		if instance.path.size() == 2:
+			var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.position))
+			var kerb: Vector2 = plan.position - Vector2(inward) \
+					* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+			t.close_to(instance.path[1].distance_to(kerb), 0.0,
+					"ending at the near kerb across from where the fire is actually burning", 1.0)
+	t.check(engines == 1, "seeing the fire calls in exactly one engine (%d)" % engines)
 
 	var blocked := _city.map.closed_tiles.duplicate()
 	for other in _city.events.plans():

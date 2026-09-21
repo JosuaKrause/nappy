@@ -1877,9 +1877,14 @@ const LEAVING_GIVES_UP := 6.0
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
 ## Two things never leave, and both would break something that reads the finishing position. An
-## event with a `spawns_on_finish` stops **where the thing it leaves belongs** — a fire engine's
-## fire is at the building, not two streets past it. And anything with no departure speed has no
-## way to go anywhere; a café that closes has always simply been over.
+## event with a `spawns_on_finish` stops **where the thing it leaves belongs** — a convoy's
+## barricade is across the street it shut, not two streets past it. And anything with no departure
+## speed has no way to go anywhere; a café that closes has always simply been over.
+##
+## **Everything else that runs out of route drives on and is gone, the fire engine included.** It
+## is sent to the near kerb across from the building (`EventManager._summon_the_sighted_row()`) and
+## does not stay there: nothing in the catalogue can arrive somewhere and park, because parking is
+## a standing field on ground she is walking past and that is a decision nobody has taken.
 func _be_done() -> void:
 	if is_finished or is_leaving:
 		return

@@ -903,17 +903,15 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 ## day.
 ##
 ## **What is asserted is the day's *composition*, not every coordinate**, and the difference is the
-## measurement rather than a hedge. A spent one-shot is genuinely gone, and `fire_truck`'s route is
-## sixty tiles — nineteen hundred pixels of corridor that the recurring fill had to keep
-## `EVENT_SPACING_ANY` clear of. With it gone, the long mobile rows whose own routes brushed that
-## corridor now fit where they did not, so they start a few tiles along the street they were always
-## going to be on. Measured over three seeds: the multiset of event **kinds** is identical every
-## time, and the positions that move are `dog_walker` and `reversing_lorry` — the sited, route rows
-## still left. `cyclist` and `loose_dog` are `TOWARD_PLAYER` now: the scheduler never gives either a
-## coordinate at all, so neither can appear in that count regardless of what a spent one-shot frees.
-##
-## A dog walker starting three tiles further up the same street is not a different day. Eight
+## measurement rather than a hedge: the multiset of event **kinds** has to be identical, and a
+## `dog_walker` starting three tiles further up the same street is not a different day. Eight
 ## shouting men where there were two is, and that is what this stops.
+##
+## **Two directions, because day 3's one-shot is spent when it becomes real rather than when it is
+## planned.** A day lost before she ever reached the fire gives it back, so the ordinary retry is
+## the same day down to the fire itself; a day planned after it actually burned has none of it and
+## nothing else different. The second is the one M39 was written against and it is asked here with
+## an explicitly spent list, since a retry can no longer produce one.
 func _test_a_retried_day_is_the_same_day(t) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for run_seed in [4242, 90210, 1234567]:
@@ -923,7 +921,12 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 
 		var consumed: Array[String] = []
 		var first := EventScheduler.build_day(day, rng, map, consumed)
-		t.check(not consumed.is_empty(), "day %d spends a one-shot on seed %d" % [day, run_seed])
+		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
+		# where it becomes real — `EventScheduler._place_one_shots`. So the ordinary retry, after a
+		# day lost before she ever reached the fire, is the same day down to the fire itself. The
+		# other direction, a day *after* it burned, is the loop below this one.
+		t.check(consumed.is_empty(),
+				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])
 		var again := RandomNumberGenerator.new()
 		again.seed = rng.seed
 		var second := EventScheduler.build_day(day, again, map, consumed.duplicate())
@@ -949,6 +952,19 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 			changed += 1 if int(after.get(id, 0)) != expected else 0
 		t.check(changed == 0,
 				"seed %d: and nothing else moves at all (%d kinds did)" % [run_seed, changed])
+
+		# And the day *after* the fire actually burned: the one-shot is gone and nothing else is.
+		# This is the half of the property a retry can no longer ask, since a lost day gives the
+		# fire back — and it is the half M39 was written for, so it is asked here instead.
+		var spent: Array[String] = ["burning_building"]
+		var third_rng := RandomNumberGenerator.new()
+		third_rng.seed = rng.seed
+		var third := _kinds_in(EventScheduler.build_day(day, third_rng, map, spent))
+		for id: String in before.keys() + third.keys():
+			var expected: int = 0 if id in spent else int(before.get(id, 0))
+			t.check(int(third.get(id, 0)) == expected,
+					"seed %d: a day after the fire burned has %d '%s' where the day had %d"
+					% [run_seed, int(third.get(id, 0)), id, expected])
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
 func _kinds_in(plans: Array[EventScheduler.Planned]) -> Dictionary:
