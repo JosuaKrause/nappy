@@ -1,6 +1,7 @@
 extends RefCounted
-## The resistance subquest: the step table, touch-completion, a perform contact riding on an
-## `EventInstance`, the seeded guard, the expiring step, and the sabotage silencing the city.
+## The resistance subquest: the step table, touch-completion, a task activated the same day its
+## mark is touched, the four placement kinds a perform step may use, the seeded guard, the
+## expiring step, and the sabotage silencing the city.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -15,12 +16,13 @@ const RULE_SEEDS := 3
 func run(t) -> void:
 	_test_step_table(t)
 	_test_step_selection(t)
+	_test_days_ten_and_eleven_offer_no_mark(t)
 	_test_the_finale_needs_the_legwork(t)
-	_test_completing_a_pickup_sets_the_day_briefs_words(t)
 	_test_touching_completes_a_pickup(t)
 	_test_walking_away_leaves_it_untouched(t)
 	_test_a_perform_contact_rides_on_its_instance(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
+	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
 	_test_the_guard_is_seeded(t)
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
@@ -46,90 +48,105 @@ func run(t) -> void:
 	_test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t)
 	_test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t)
 	_test_an_ordinary_departure_still_gives_up_at_six_seconds(t)
-	_test_a_lost_day_still_offers_the_yeller_step_on_retry(t)
+	_test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t)
 	_test_the_sabotage_silences_the_city(t)
+	_test_the_burnt_shell_task_rides_the_recorded_scar(t)
+	_test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
+	_test_the_door_task_sits_at_a_region_door(t)
+	_test_the_swing_task_sits_at_an_open_playground(t)
+	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 
 # ---------------------------------------------------------------- step table ---
 
 func _test_step_table(t) -> void:
 	var steps := ResistanceSteps.all()
-	# Not `size() == 11`: `ResistanceSteps._build()` is a literal array, so a count of it is that
+	# Not `size() == 15`: `ResistanceSteps._build()` is a literal array, so a count of it is that
 	# array restated and adding a task would mean editing both in lockstep. The guard here is only
 	# that there is something to check, which is what stops the sweep below passing vacuously.
 	t.check(not steps.is_empty(), "there is a step table to check")
 
-	var previous_day := 0
 	var previous_index := 0
-	var performs := 0
+	var previous_day := 0
+	var available_performs := 0
 	for step in steps:
 		t.check(step.index == previous_index + 1, "step indices run consecutively from 1")
-		t.check(step.first_day >= previous_day, "steps unlock in calendar order")
-		t.check(step.placement.size() > 0 or step.district >= 0,
-				"step %d knows where it goes" % step.index)
+		t.check(step.day >= previous_day, "steps unlock in calendar order")
+		if step.available:
+			t.check(step.placement.size() > 0 or step.district >= 0
+					or step.target_kind in [ResistanceSteps.TargetKind.DOOR,
+							ResistanceSteps.TargetKind.PARK_SWING],
+					"step %d knows where it goes" % step.index)
 		if step.is_pickup:
 			t.check(not step.grants_progress, "a pickup does not grant progress")
 			t.check(step.task_event_id == "", "a pickup sits on a tile, not a rider")
-		elif not step.needs_goal:
-			t.check(step.task_event_id != "", "a perform step names what it rides on")
-			performs += 1
-		previous_index = step.index
-		previous_day = step.first_day
+			# A task is one day: the entry right after a pickup is the perform it unlocks, on
+			# the same day, which is what lets `ResistanceDirector._on_contact_completed()`
+			# activate it by `step.index + 1` alone.
+			var perform := ResistanceSteps.by_index(step.index + 1)
+			t.check(perform != null and not perform.is_pickup and perform.day == step.day,
+					"step %d's mark unlocks a perform step on the same day" % step.index)
+		elif not step.needs_goal and step.available:
+			t.check(step.task_event_id != "" or step.target_kind in [
+					ResistanceSteps.TargetKind.DOOR, ResistanceSteps.TargetKind.PARK_SWING],
+					"perform step %d names what it rides on or how it finds its own place"
+					% step.index)
+			available_performs += 1
 
-	t.check(performs > Tuning.RESISTANCE_GOAL,
-			"there are more perform steps than the goal needs, so one task can be missed")
+		previous_index = step.index
+		previous_day = step.day
+
+	t.check(available_performs > Tuning.RESISTANCE_GOAL,
+			"there are more built perform steps than the goal needs, so one task can be missed")
 	t.check(steps[steps.size() - 1].needs_goal, "the finale is the last step")
-	t.check(steps[steps.size() - 1].first_day == Tuning.RUN_LENGTH_DAYS,
-			"and it is on the last day")
+	t.check(steps[steps.size() - 1].day == Tuning.RUN_LENGTH_DAYS, "and it is on the last day")
 
 func _test_step_selection(t) -> void:
 	var none: Array[int] = []
 	t.check(ResistanceSteps.for_day(1, none, none, false) == null,
 			"nothing is on offer before the resistance exists")
 
-	var first := ResistanceSteps.for_day(4, none, none, false)
+	var first := ResistanceSteps.for_day(6, none, none, false)
 	t.check(first != null and first.index == 1 and first.is_pickup,
-			"day 4 offers the first chalk mark")
+			"day 6 offers the first chalk mark")
 
+	# The perform half is never offered at dawn — only `_on_contact_completed()` activates it,
+	# the same day the mark that unlocks it is touched — so `for_day()` says nothing about it
+	# even once the mark is done.
 	var done: Array[int] = [1]
-	t.check(ResistanceSteps.for_day(4, done, none, false) == null,
-			"the mark done and the perform not yet open leaves nothing on offer")
-	var second := ResistanceSteps.for_day(5, done, none, false)
-	t.check(second != null and second.index == 2 and not second.is_pickup,
-			"day 5 moves on to the perform half")
+	t.check(ResistanceSteps.for_day(6, done, none, false) == null,
+			"day 6's mark done leaves nothing further for for_day() to offer that day")
 
-	# A step lost to its deadline is gone for the rest of the run.
-	var failed: Array[int] = [2]
-	var after_failure := ResistanceSteps.for_day(5, done, failed, false)
-	t.check(after_failure == null, "a failed step is never offered again")
-	var later := ResistanceSteps.for_day(6, done, failed, false)
-	t.check(later != null and later.index == 3, "but the run carries on to the next task's mark")
+	var second := ResistanceSteps.for_day(7, done, none, false)
+	t.check(second != null and second.index == 3 and second.is_pickup,
+			"day 7 offers its own mark")
+
+	# A day's own mark, once failed, is gone for the rest of the run the same way a completed
+	# one is — `for_day()` treats the two alike, since either way the day has nothing further
+	# to offer.
+	var failed: Array[int] = [3]
+	t.check(ResistanceSteps.for_day(7, done, failed, false) == null,
+			"a failed mark is never offered again")
+	var later := ResistanceSteps.for_day(8, done, failed, false)
+	t.check(later != null and later.index == 5, "but the run carries on to the next task's mark")
+
+func _test_days_ten_and_eleven_offer_no_mark(t) -> void:
+	var none: Array[int] = []
+	t.check(ResistanceSteps.for_day(10, none, none, false) == null,
+			"day 10 (warn the neighbor) waits on a later slice and offers no mark")
+	t.check(ResistanceSteps.for_day(11, none, none, false) == null,
+			"day 11 (silence a mast) waits on a later slice and offers no mark either")
+	# But the day after either one still finds its own task — an unavailable day never blocks
+	# the calendar behind it.
+	var next := ResistanceSteps.for_day(12, none, none, false)
+	t.check(next != null and next.index == 11, "day 12 offers the swing's own mark regardless")
 
 func _test_the_finale_needs_the_legwork(t) -> void:
-	var done: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+	var done: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14]
 	var none: Array[int] = []
 	t.check(ResistanceSteps.for_day(Tuning.RUN_LENGTH_DAYS, done, none, false) == null,
 			"the finale is not offered to a player who has not earned it")
 	var finale := ResistanceSteps.for_day(Tuning.RUN_LENGTH_DAYS, done, none, true)
 	t.check(finale != null and finale.needs_goal, "and is offered to one who has")
-
-## The day brief is the mechanism now, not a courtesy: miss the mark and there is nothing to
-## read, because nothing else in the game ever says what a task wants.
-func _test_completing_a_pickup_sets_the_day_briefs_words(t) -> void:
-	_with_clean_run(func() -> void:
-		var mark := ResistanceSteps.by_index(1)
-		t.check(mark.is_pickup and mark.brief != "", "the first mark has words to give")
-
-		GameState.complete_resistance_step(1, mark.grants_progress)
-		t.check(GameState.pending_resistance_brief == mark.brief,
-				"completing the pickup queues its words for the next day brief")
-
-		GameState.pending_resistance_brief = ""
-		var perform := ResistanceSteps.by_index(2)
-		t.check(not perform.is_pickup and perform.brief == "",
-				"a perform step has nothing further to say")
-		GameState.complete_resistance_step(2, perform.grants_progress)
-		t.check(GameState.pending_resistance_brief == "",
-				"completing a perform does not queue anything"))
 
 # --------------------------------------------------------------------- touch ---
 
@@ -212,7 +229,7 @@ func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 	instance.set_process(false)
 
 	var contact := ContactPoint.new()
-	contact.ride(ResistanceSteps.by_index(6), instance, Vector2(90.0, 0.0))
+	contact.ride(ResistanceSteps.by_index(14), instance, Vector2(90.0, 0.0))
 	t.add_child(contact)
 	contact.set_physics_process(false)
 
@@ -249,23 +266,29 @@ func _with_clean_run(action: Callable) -> void:
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
 	var saved_progress := GameState.resistance_progress
 	var saved_package := GameState.resistance_carrying_package
-	var saved_brief := GameState.pending_resistance_brief
 	GameState.completed_resistance_steps = []
 	GameState.failed_resistance_steps = []
 	GameState.resistance_progress = 0
 	GameState.resistance_carrying_package = false
-	GameState.pending_resistance_brief = ""
 	action.call()
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
 	GameState.resistance_carrying_package = saved_package
-	GameState.pending_resistance_brief = saved_brief
 
 func _completed_through(last_index: int) -> Array[int]:
 	var done: Array[int] = []
 	done.assign(range(1, last_index + 1))
 	return done
+
+## Day 6's mark, started and touched — the shape most of this suite's perform-step tests now
+## need, since `start_day()` alone only ever offers a mark (`ResistanceSteps.for_day()`). Returns
+## the director with step 2 (the yeller perform) already active.
+func _director_on_the_yeller_perform(t) -> ResistanceDirector:
+	var director := _director(t)
+	director.start_day(6, _rng(6, "resistance"), 300.0)
+	director._on_contact_completed(1)
+	return director
 
 ## The whole design rests on the run being learnable: the alley that was safe on day 9 has
 ## to be safe on day 9 every time you replay that run — and the same is true of a perform
@@ -274,28 +297,36 @@ func _test_placement_is_deterministic(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var first := _director(t)
-		first.start_day(4, _rng(4, "resistance"), 300.0)
+		first.start_day(6, _rng(6, "resistance"), 300.0)
 		var where := first.contact_position()
-		t.check(where != Vector2.INF, "day 4 puts a mark somewhere")
+		t.check(where != Vector2.INF, "day 6 puts a mark somewhere")
 		t.check(_city.map.tile_type_at_world(where) == GameEnums.TileType.ALLEY,
 				"and the chalk mark is in an alley")
 
 		var second := _director(t)
-		second.start_day(4, _rng(4, "resistance"), 300.0)
+		second.start_day(6, _rng(6, "resistance"), 300.0)
 		t.close_to(second.contact_position().distance_to(where), 0.0,
 				"and it is in the same alley every time", 0.01)
 
-		GameState.completed_resistance_steps = _completed_through(1)
-		var perform := _director(t)
-		perform.start_day(5, _rng(5, "resistance"), 300.0)
-		t.check(perform.current_step() != null and perform.current_step().index == 2,
-				"day 5 offers the perform half")
-		t.check(perform.contact_position() != Vector2.INF,
-				"and it rides on a live instance rather than a bare tile")
-
 		first.free()
-		second.free()
-		perform.free())
+		second.free())
+
+## A task is one day: touching the mark activates the perform it unlocks in the same
+## `start_day()`'s own RNG and guard state, without waiting for a `start_day()` that would not
+## come until tomorrow.
+func _test_touching_the_mark_activates_the_same_days_task(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
+		t.check(director.current_step() != null and director.current_step().index == 1,
+				"day 6 starts on the mark")
+		director._on_contact_completed(1)
+		t.check(director.current_step() != null and director.current_step().index == 2,
+				"touching it activates the yeller perform the same day")
+		t.check(director.contact_position() != Vector2.INF,
+				"and it rides on a live instance rather than a bare tile")
+		director.free())
 
 ## *Always guarded* has to mean a survivable band, not a guaranteed lost day: a robber sits
 ## somewhere between 66px (30 + `ContactPoint.REACH`) and 176px (140 + `ContactPoint.REACH`)
@@ -305,7 +336,7 @@ func _test_the_guard_is_seeded(t) -> void:
 	_with_clean_run(func() -> void:
 		var before := _director(t)
 		before.start_day(1, _rng(1, "resistance"), 300.0)
-		t.check(before.current_step() == null, "nothing is offered before day 4")
+		t.check(before.current_step() == null, "nothing is offered before day 6")
 		before.free()
 
 		var robbery := EventCatalogue.by_id("alley_robbery")
@@ -313,8 +344,8 @@ func _test_the_guard_is_seeded(t) -> void:
 		var max_distance: float = robbery.pursues_within + ContactPoint.REACH
 		var search := max_distance + 40.0
 
-		for day in [4, 5, 6, 7]:
-			GameState.completed_resistance_steps = _completed_through(day - 4)
+		for day in [6, 7, 8, 9]:
+			GameState.completed_resistance_steps = _completed_through(2 * (day - 6))
 			var director := _director(t)
 			director.start_day(day, _rng(day, "resistance"), 300.0)
 			var at := director.contact_position()
@@ -385,9 +416,9 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
-		director.start_day(4, _rng(4, "resistance"), 300.0)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var mark_at := director.contact_position()
-		t.check(mark_at != Vector2.INF, "day 4 places the mark")
+		t.check(mark_at != Vector2.INF, "day 6 places the mark")
 
 		# She stands exactly on a distant alley — the nearest reachable one to her is itself,
 		# at distance 0, which is what makes the assertion below exact rather than approximate.
@@ -411,27 +442,26 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
 		player.free()
 		director.free())
 
+## Built from `_two_nearby_alleys()` (a real pair, not wherever day 6's own roll happened to put
+## the mark) so "there really is a nearer alley on offer" holds by construction rather than by
+## the luck of which tile the day's RNG chose: the mark is forced onto `other`, and she stands
+## exactly on `nearer_tile`, which is nearer to her than the mark is by definition, and still
+## within `NOTICE_RADIUS` of it (`_two_nearby_alleys()`'s own doc).
 func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		var director := _director(t)
-		director.start_day(4, _rng(4, "resistance"), 300.0)
-		var mark_at := director.contact_position()
-		var mark_tile := _city.map.world_to_tile(mark_at)
-		var player_at := mark_at + Vector2(60.0, 0.0)
-		var player := _rig_player(t, player_at)
+		var pair := _two_nearby_alleys()
+		if pair.is_empty():
+			t.check(true, "skipped: the test city has no two alleys close enough to test this")
+			return
+		var player_at: Vector2 = pair[0]
+		var other_tile: Vector2i = pair[2]
 
-		# Not a vacuous check: there really is a nearer alley on offer, and the rule still
-		# leaves the mark alone because she has not left its own radius yet.
-		var nearer_distance := player_at.distance_to(mark_at)
-		var found_nearer := false
-		for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
-			if tile == mark_tile:
-				continue
-			if player_at.distance_to(_city.map.tile_to_world(tile)) < nearer_distance:
-				found_nearer = true
-				break
-		t.check(found_nearer, "the test city has a nearer alley to tempt the rule")
+		var director := _director(t)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
+		director._contact.global_position = _city.map.tile_to_world(other_tile)
+		var mark_at := director.contact_position()
+		var player := _rig_player(t, player_at)
 
 		director._process(STEP)
 		t.check(director.contact_position().distance_to(mark_at) < 0.5,
@@ -451,7 +481,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
-		director.start_day(4, _rng(4, "resistance"), 300.0)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var mark_at := director.contact_position()
 		director.set_sight(func(_p: Vector2) -> bool: return true)
 
@@ -471,7 +501,7 @@ func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> v
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
-		director.start_day(4, _rng(4, "resistance"), 300.0)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var mark_at := director.contact_position()
 		director.set_sight(func(_p: Vector2) -> bool: return true)
 
@@ -501,7 +531,7 @@ func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> v
 # ----------------------------------------------------------- alley avoidance ---
 # M177: "a mark does not return to an alley a step was already taken from while another is
 # within reach." Day 6 of playtest 116's own run put step 3's mark back on the exact alley step 1
-# had been completed at on day 4.
+# had been completed at on day 4 — the same rule, exercised here over the new day numbering.
 
 ## The dawn placement (`_place()` -> `_pick_reachable()`) skips an alley `GameState.
 ## completed_resistance_alley_tiles` already names, as long as some other alley is reachable —
@@ -513,16 +543,16 @@ func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 		GameState.completed_resistance_alley_tiles.clear()
 
 		var first := _director(t)
-		first.start_day(4, _rng(4, "resistance"), 300.0)
+		first.start_day(6, _rng(6, "resistance"), 300.0)
 		var used_tile := _city.map.world_to_tile(first.contact_position())
 		first.free()
 
 		GameState.completed_resistance_alley_tiles.append(used_tile)
 		GameState.completed_resistance_steps = _completed_through(2)
 		var second := _director(t)
-		second.start_day(6, _rng(6, "resistance"), 300.0)
+		second.start_day(7, _rng(7, "resistance"), 300.0)
 		t.check(second.current_step() != null and second.current_step().index == 3,
-				"day 6 offers the second mark")
+				"day 7 offers the second mark")
 		var second_tile := _city.map.world_to_tile(second.contact_position())
 		t.check(second_tile != used_tile,
 				"a fresh mark avoids the alley a completed step used, another being in reach")
@@ -563,8 +593,8 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 		GameState.completed_resistance_alley_tiles.append(nearer_tile)
 
 		var director := _director(t)
-		director.start_day(4, _rng(4, "resistance"), 300.0)
-		# Force the mark far from the chosen pair, regardless of where day 4's own roll put it —
+		director.start_day(6, _rng(6, "resistance"), 300.0)
+		# Force the mark far from the chosen pair, regardless of where day 6's own roll put it —
 		# this test is about the avoidance, not about replaying a particular placement.
 		director._contact.global_position = \
 				player_at + Vector2(ResistanceDirector.NOTICE_RADIUS + 200.0, 0.0)
@@ -583,7 +613,7 @@ func _test_the_guard_moves_with_the_mark_and_faces_away_from_her(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
-		director.start_day(4, _rng(4, "resistance"), 300.0)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var old_at := director.contact_position()
 
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at)
@@ -690,7 +720,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 ## Item 4: the spawn kill named at the top of M100's queue has no fix of its own — items 1
 ## through 3 are supposed to make it impossible by construction, and this is what proves it.
 ## Nothing named `alley_robbery` — the catalogue's own placement, from `first_day` 8, or the
-## resistance's guard trap, from `TRAP_FIRST_DAY` (4) — ever stands within lethal reach of the
+## resistance's guard trap, from `TRAP_FIRST_DAY` (6) — ever stands within lethal reach of the
 ## doorstep, over `RULE_SEEDS` seeds and every day either kind can appear.
 ##
 ## `reach` is computed from the row's own `inner_radius` (30px, the always-lethal zone around
@@ -752,13 +782,15 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 			director.free()
 	t.check(checked > 0, "some (seed, day) actually placed something to check (%d)" % checked)
 
-## The reported run, replayed exactly: seed 291862120, day 7. The chalk mark was offered far from
-## the doorstep, the M78 "never-seen mark follows her" rule (`_track_sight_and_reposition`)
-## relocated it on the very first frame because she starts the day standing at the doorstep, and
-## the guard redrawn for the new mark left five separate attempts dead in under a second. Built
-## through the real pipeline — `City.start_day`, then `EventManager.start_day`, then
-## `ResistanceDirector.start_day` — rather than the data-level sweep above, so the M78 relocation
-## actually runs the way it does in a played day.
+## The reported run, replayed at the same seed and day — no longer byte-for-byte, since the
+## calendar this test's own day sits in has moved (`Tuning.REGION_WALL_FIRST_DAY` 7 → 9, and the
+## mark on offer at day 7 with nothing touched yet is now the second one, index 3, the van's own
+## mark, rather than the first). What is still checked is the general shape the bug was: seed
+## 291862120, day 7, the M78 "never-seen mark follows her" rule (`_track_sight_and_reposition`)
+## relocating a mark she starts the day standing near, and the guard redrawn for the new mark
+## landing nowhere lethal. Built through the real pipeline — `City.start_day`, then
+## `EventManager.start_day`, then `ResistanceDirector.start_day` — rather than the data-level
+## sweep above, so the M78 relocation actually runs the way it does in a played day.
 func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 	_with_clean_run(func() -> void:
 		var seed_value := 291862120
@@ -786,11 +818,11 @@ func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 		director.setup(city, city.map)
 		var resistance_rng := RandomNumberGenerator.new()
 		resistance_rng.seed = hash("%d:resistance:%d" % [seed_value, day])
-		# No steps completed yet, which is what actually offers step 1's chalk mark on day 7 — a
-		# player who has not yet been near it, exactly the reported run.
+		# No steps completed yet, which is what actually offers day 7's own chalk mark (index 3)
+		# — a player who has not yet been near it, exactly the reported run's own shape.
 		director.start_day(day, resistance_rng, 300.0)
-		t.check(director.current_step() != null and director.current_step().index == 1,
-				"seed %d day %d: step 1's chalk mark is still on offer, as in the reported run"
+		t.check(director.current_step() != null and director.current_step().index == 3,
+				"seed %d day %d: day 7's chalk mark is still on offer, as in the reported run"
 				% [seed_value, day])
 
 		var player := _rig_player(t, doorstep)
@@ -823,17 +855,18 @@ func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 		city.free())
 
 ## PLAYTEST-57, "a chalk mark behind a barrier": `144s-attempt1-asked-1.png` shows the
-## resistance's mark on an alley's paving behind a roadblock band across its mouth. Reproduced on
-## the reported run's own seed, 2199579682, day 7 — `Tuning.REGION_WALL_FIRST_DAY`, the first day a
-## wall can stand at all: `RegionPlanner.plan_day` walls several crossing alleys that day, off
-## today's tree, and **every one of their tiles passed all three checks `_pick_reachable()` had
-## before this fix** — `is_closed()` (about a `RoadClosure`, which this is not), `is_held_at()`
-## (about a `StreetNetwork` segment, which an alley is never on) and `is_on_home_block()`. None of
-## the three ever looks at a region wall, which is the whole of the escape. `CityMap.
-## is_in_walled_alley()` is the fourth check that closes it.
+## resistance's mark on an alley's paving behind a roadblock band across its mouth. Reproduced at
+## `Tuning.REGION_WALL_FIRST_DAY` — the first day a wall can stand at all — rather than the
+## reported run's own day 7, which predates the wall now that the doors arrive three task days
+## later (day 9 rather than day 7). `RegionPlanner.plan_day` walls several crossing alleys on this
+## day, off today's tree, and **every one of their tiles passed all three checks
+## `_pick_reachable()` had before this fix** — `is_closed()` (about a `RoadClosure`, which this is
+## not), `is_held_at()` (about a `StreetNetwork` segment, which an alley is never on) and
+## `is_on_home_block()`. None of the three ever looks at a region wall, which is the whole of the
+## escape. `CityMap.is_in_walled_alley()` is the fourth check that closes it.
 func _test_a_walled_alley_escapes_no_other_check(t) -> void:
 	var seed_value := 2199579682
-	var day := 7
+	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(seed_value)
 	var tree := RouteTree.for_day(map, day)
 	var region_plan := RegionPlanner.plan_day(map, day, tree)
@@ -855,15 +888,16 @@ func _test_a_walled_alley_escapes_no_other_check(t) -> void:
 					% [seed_value, day, tile])
 	t.check(checked > 0, "some walled-alley tile was actually checked (%d)" % checked)
 
-## The same reported seed and day, through the real pipeline `_test_playtest_55_seed_has_no_spawn_
-## kill` uses — `City.start_day`, then `ResistanceDirector.start_day` — swept over many RNG draws
-## per step rather than trusting the one draw the reported run happened to make: neither the mark
-## nor its guard, from `TRAP_FIRST_DAY`, may ever land inside a walled-off crossing alley, on any
-## draw.
+## The same reported seed, through the real pipeline `_test_playtest_55_seed_has_no_spawn_kill`
+## uses — `City.start_day`, then `ResistanceDirector.start_day` — swept over many RNG draws per
+## step rather than trusting the one draw the reported run happened to make, at
+## `Tuning.REGION_WALL_FIRST_DAY` for the same reason `_test_a_walled_alley_escapes_no_other_check`
+## moved off day 7: neither the mark nor its guard, from `TRAP_FIRST_DAY`, may ever land inside a
+## walled-off crossing alley, on any draw.
 func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 	_with_clean_run(func() -> void:
 		var seed_value := 2199579682
-		var day := 7
+		var day := Tuning.REGION_WALL_FIRST_DAY
 		var city: City = CITY_SCENE.instantiate()
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
@@ -889,8 +923,8 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 
 		var attempts := 0
 		for step in ResistanceSteps.all():
-			if step.district >= 0:
-				continue   # the finale sits in a district, never an alley
+			if step.district >= 0 or not step.available or not step.is_pickup:
+				continue   # the finale sits in a district, and only a mark ever sits in an alley
 			for trial in 20:
 				attempts += 1
 				var mark_rng := RandomNumberGenerator.new()
@@ -921,11 +955,9 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 func _test_a_perform_contact_is_never_relocated(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = _completed_through(1)
-		var director := _director(t)
-		director.start_day(5, _rng(5, "resistance"), 300.0)
+		var director := _director_on_the_yeller_perform(t)
 		t.check(director.current_step() != null and not director.current_step().is_pickup,
-				"day 5 is a perform step, riding on the yeller rather than sitting on a mark")
+				"the yeller perform is active, riding on it rather than sitting on a mark")
 		var at := director.contact_position()
 
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, at)
@@ -933,7 +965,7 @@ func _test_a_perform_contact_is_never_relocated(t) -> void:
 
 		director._process(STEP)
 		t.check(director.contact_position().distance_to(at) < 0.5,
-				"a perform contact is never subject to the re-placement rule")
+				"a perform contact is never subject to the mark's own re-placement rule")
 
 		player.free()
 		director.free())
@@ -941,20 +973,18 @@ func _test_a_perform_contact_is_never_relocated(t) -> void:
 ## Overturn, 2026-09-13 (`docs/NARRATIVE.md`, "The contact is whichever look-alike she reaches
 ## first"): a second live `homeless_yeller` — a look-alike the day's own scheduler could equally
 ## have placed, spawned directly here rather than through it — stands well clear of the seeded
-## rider. She is put within reach of the *decoy* rather than the rider `start_day()` rolled, and
+## rider. She is put within reach of the *decoy* rather than the rider `_begin_step()` rolled, and
 ## the contact rides onto it instead of waiting for her to find the one it was seeded on.
 func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = _completed_through(1)
-		var director := _director(t)
-		director.start_day(5, _rng(5, "resistance"), 300.0)
+		var director := _director_on_the_yeller_perform(t)
 		var perform := director.current_step()
-		t.check(perform != null and perform.index == 2, "day 5 offers the yeller perform step")
+		t.check(perform != null and perform.index == 2, "the yeller perform is active")
 		var seeded_at := director.contact_position()
 		var seeded_rider: EventInstance = director._rider
 
-		var decoy_at := director._place(perform, _rng(5, "decoy"))
+		var decoy_at := director._place(perform, _rng(6, "decoy"))
 		t.check(decoy_at.distance_to(seeded_at) > ContactPoint.REACH * 4.0,
 				"the decoy lands well clear of the seeded rider, or this test checks nothing")
 		var decoy := _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"), decoy_at)
@@ -976,11 +1006,9 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 
 func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = _completed_through(1)
-		var director := _director(t)
-		director.start_day(5, _rng(5, "resistance"), 300.0)
+		var director := _director_on_the_yeller_perform(t)
 		t.check(director.current_step() != null and director.current_step().index == 2,
-				"day 5 offers the yeller perform step")
+				"the yeller perform is active")
 		var rider: EventInstance = director._rider
 		t.check(rider != null, "the perform step rides on a live instance")
 
@@ -990,30 +1018,38 @@ func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
 		t.check(2 in GameState.failed_resistance_steps, "recorded as failed for the run")
 		director.free())
 
-## A window that closes when the poster crew's own instance is gone rather than by the day's
-## clock — but the crew here never naturally finishes, so this exercises the fallback that
-## does watch the clock: `deadline_fraction`, kept exactly as step 4 used it.
+## No task built this slice carries a deadline — the two that do, warning the neighbor and
+## silencing a mast, wait on a later slice (`ResistanceSteps._build()`'s own comment says why) —
+## so this drives `_process()`'s own deadline-expiry code directly, on a step built for the test
+## alone, to prove the mechanism a later slice's tasks will use still works.
 func _test_a_timed_step_expires(t) -> void:
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = _completed_through(7)
-		var timed := ResistanceSteps.by_index(8)
-		t.check(timed.deadline_fraction > 0.0, "the wall is the timed perform step")
+		var timed := ResistanceSteps.Step.new()
+		timed.index = 9001
+		timed.day = 6
+		timed.title = "A timed step, for this test alone"
+		timed.deadline_fraction = 0.5
 
 		var director := _director(t)
-		director.start_day(11, _rng(11, "resistance"), 100.0)
-		t.check(director.current_step() != null and director.current_step().index == 8,
-				"the wall is on offer at the start")
+		director._step = timed
+		director._day = 6
+		director._day_length = 100.0
+		director._elapsed = 0.0
+		director._contact = ContactPoint.new()
+		director._contact.setup(timed, Vector2.ZERO)
+		t.add_child(director._contact)
+		director._contact.set_physics_process(false)
 
 		director._process(100.0 * timed.deadline_fraction * 0.5)
-		t.check(director.current_step() != null, "and still on offer before the deadline")
-		t.check(8 not in GameState.failed_resistance_steps, "nothing has failed yet")
+		t.check(director.current_step() != null, "on offer before the deadline")
+		t.check(9001 not in GameState.failed_resistance_steps, "nothing has failed yet")
 
 		director._process(100.0 * timed.deadline_fraction)
 		t.check(director.current_step() == null, "past the deadline it is gone")
-		t.check(8 in GameState.failed_resistance_steps, "and recorded as failed for the run")
+		t.check(9001 in GameState.failed_resistance_steps, "and recorded as failed for the run")
 		director.free())
 
-## E's cost is deferred and total rather than local: picking the package up does not cost the
+## Step 4's cost is deferred and total rather than local: picking the package up does not cost the
 ## street it happened on, it makes every street after it dearer for the rest of the day.
 func _test_completing_the_package_makes_the_pram_heavier(t) -> void:
 	_with_clean_run(func() -> void:
@@ -1048,11 +1084,9 @@ func _test_starting_a_day_resets_the_package_flag(t) -> void:
 ## second one that day.
 func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = _completed_through(1)
-		var director := _director(t)
-		director.start_day(5, _rng(5, "resistance"), 300.0)
+		var director := _director_on_the_yeller_perform(t)
 		t.check(director.current_step() != null and director.current_step().index == 2,
-				"day 5 offers the yeller perform step")
+				"the yeller perform is active")
 		var rider: EventInstance = director._rider
 		t.check(rider != null and not rider.is_leaving, "the seeded rider is shouting, not leaving")
 
@@ -1162,25 +1196,26 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 	instance.free()
 
 ## "A task is only complete if it is done on the day that won" — `GameState.finish_day()` gives
-## a lost day's resistance work back, and the retry offers the same step again. His having
-## already walked off in the failed attempt must not carry into the retry: `EventManager.
-## start_day()` clears yesterday's instances before the day is replanned, so the retry rides on a
-## rider of its own rather than the one that left.
-func _test_a_lost_day_still_offers_the_yeller_step_on_retry(t) -> void:
+## a lost day's resistance work back, and the retry starts at the mark again, not straight at the
+## task: a task is one day, so there is no dawn shortcut into the middle of it the way the old
+## two-beat design had.
+func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> void:
 	var saved_seed := GameState.run_seed
 	var saved_day := GameState.day
 	var saved_nerves := GameState.nerves
 	_with_clean_run(func() -> void:
 		GameState.run_seed = SEED
-		GameState.day = 5
+		GameState.day = 6
 		GameState.nerves = Tuning.STARTING_NERVES
-		GameState.completed_resistance_steps = _completed_through(1)
 		GameState.begin_day()
 
 		var attempt := _director(t)
-		attempt.start_day(5, _rng(5, "resistance"), 300.0)
+		attempt.start_day(6, _rng(6, "resistance"), 300.0)
+		t.check(attempt.current_step() != null and attempt.current_step().index == 1,
+				"the first attempt starts at the mark")
+		attempt._on_contact_completed(1)
 		t.check(attempt.current_step() != null and attempt.current_step().index == 2,
-				"the first attempt offers the yeller perform step")
+				"touching it activates the yeller perform the same day")
 		var rider: EventInstance = attempt._rider
 		attempt._on_contact_completed(2)
 		t.check(rider != null and rider.is_leaving, "completing it sends the rider away")
@@ -1188,14 +1223,18 @@ func _test_a_lost_day_still_offers_the_yeller_step_on_retry(t) -> void:
 
 		t.check(GameState.finish_day(GameEnums.DayResult.LOST_CRYING),
 				"losing the day continues the run")
-		t.check(2 not in GameState.completed_resistance_steps, "and gives the step back")
+		t.check(1 not in GameState.completed_resistance_steps
+				and 2 not in GameState.completed_resistance_steps,
+				"and gives both halves of the day's task back")
+		t.check(GameState.day == 6, "and the retry is the same day")
 
 		var retry := _director(t)
-		retry.start_day(5, _rng(5, "resistance"), 300.0)
-		t.check(retry.current_step() != null and retry.current_step().index == 2,
-				"the retry offers the same step again")
+		retry.start_day(6, _rng(6, "resistance"), 300.0)
+		t.check(retry.current_step() != null and retry.current_step().index == 1,
+				"the retry starts at the mark again, not straight at the task")
+		retry._on_contact_completed(1)
 		t.check(retry._rider != null and retry._rider != rider,
-				"on a rider of its own, not the one that already walked off")
+				"and once touched again it rides a fresh rider, not the one that already walked off")
 		t.check(not retry._rider.is_leaving, "and it is shouting, not leaving")
 		retry.free())
 
@@ -1207,7 +1246,7 @@ func _test_a_lost_day_still_offers_the_yeller_step_on_retry(t) -> void:
 ## floor they have been holding under the meter since day 5 goes with them.
 func _test_the_sabotage_silences_the_city(t) -> void:
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = _completed_through(10)
+		GameState.completed_resistance_steps = _completed_through(8)
 		GameState.resistance_progress = Tuning.RESISTANCE_GOAL
 		GameState.sabotage_done = false
 		t.check(GameState.sabotage_available(), "the finale is on offer")
@@ -1229,7 +1268,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		director.start_day(Tuning.RUN_LENGTH_DAYS,
 				_rng(Tuning.RUN_LENGTH_DAYS, "resistance"), 300.0)
 		t.check(director.current_step() != null, "the last night has a contact")
-		director._on_contact_completed(11)
+		director._on_contact_completed(15)
 
 		t.check(GameState.sabotage_done, "completing it does the sabotage")
 		t.check(quiet.size() == 1, "and the city goes quiet, once")
@@ -1241,3 +1280,138 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		EventBus.city_went_quiet.disconnect(handler)
 		director.free())
 	_city.free()
+
+# ------------------------------------------------------------ placement kinds ---
+# Day 8's burnt shell (`TargetKind.SCAR`), day 9's crossing (`TargetKind.DOOR`) and day 12's
+# swing (`TargetKind.PARK_SWING`) each find their own place rather than riding a freshly spawned
+# `EventInstance` the way an ordinary perform step does.
+
+func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var saved_scars := GameState.scars.duplicate()
+		var sidewalks := _city.map.tiles_of_type(GameEnums.TileType.SIDEWALK)
+		var scar_at := _city.map.tile_to_world(sidewalks[sidewalks.size() / 2])
+		GameState.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
+		# `_find_scar_instance()` reads live instances off `_city.events`, which only exist once
+		# the day's own events have actually been built — `_place_scars()` is what turns the
+		# recorded scar into a live `burnt_shell` instance at `scar_at`.
+		_city.events.start_day(8, _rng(8, "events"), [], _city.map.doorstep_world_position())
+
+		var director := _director(t)
+		director.start_day(8, _rng(8, "resistance"), 300.0)
+		director._on_contact_completed(5)
+		t.check(director.current_step() != null and director.current_step().index == 6,
+				"touching day 8's mark activates the burnt-shell perform")
+		t.check(director._rider != null and director._rider.def.id == "burnt_shell",
+				"riding a burnt_shell instance")
+		# Under a tile's own width, not exactly 0 — `_find_scar_instance()`'s own doc says why:
+		# the scheduler's own placement of the solid shape can nudge it a few pixels off the
+		# coordinate the scar was recorded at.
+		t.check(director._rider.global_position.distance_to(scar_at) < Tuning.TILE_SIZE,
+				"the one standing at the run's own recorded scar")
+
+		director.free()
+		GameState.scars = saved_scars)
+
+## The smallest honest fallback named in `ResistanceSteps._build()`'s own comment: a run with no
+## recorded `burnt_shell` scar still offers day 8's task, on an ordinary placement of the same
+## row rather than a step with nowhere to go.
+func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var saved_scars := GameState.scars.duplicate()
+		GameState.scars.clear()
+
+		var director := _director(t)
+		director.start_day(8, _rng(8, "resistance"), 300.0)
+		director._on_contact_completed(5)
+		t.check(director.current_step() != null and director.current_step().index == 6,
+				"touching day 8's mark still activates the burnt-shell perform")
+		t.check(director._rider != null and director._rider.def.id == "burnt_shell",
+				"riding a burnt_shell instance placed the ordinary way")
+		t.check(director.contact_position() != Vector2.INF, "somewhere reachable")
+
+		director.free()
+		GameState.scars = saved_scars)
+
+func _test_the_door_task_sits_at_a_region_door(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var closure_state := CityState.new()
+		closure_state.begin_day(_city.map.block_plans, 9)
+		_city.start_day(closure_state, 9, _rng(9, "closures"))
+		var doors := _city.region_plan().doors
+		t.check(not doors.is_empty(),
+				"day 9 (Tuning.REGION_WALL_FIRST_DAY) has at least one door, or this test "
+				+ "checks nothing")
+
+		var director := _director(t)
+		director.start_day(9, _rng(9, "resistance"), 300.0)
+		director._on_contact_completed(7)
+		t.check(director.current_step() != null and director.current_step().index == 8,
+				"touching day 9's mark activates the crossing perform")
+		t.check(director._rider == null, "the crossing sits on a bare point, not a rider")
+
+		var at := director.contact_position()
+		t.check(at != Vector2.INF, "somewhere in the city")
+		var on_a_door := false
+		for segment in doors:
+			var rect := segment.tile_rect()
+			if rect.position + rect.size / 2 == _city.map.world_to_tile(at):
+				on_a_door = true
+				break
+		t.check(on_a_door, "exactly at one of today's own region doors")
+
+		director.free())
+
+func _test_the_swing_task_sits_at_an_open_playground(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		t.check(not _city.map.playgrounds.is_empty(),
+				"the test city has at least one open playground, or this test checks nothing")
+
+		var director := _director(t)
+		director.start_day(12, _rng(12, "resistance"), 300.0)
+		director._on_contact_completed(11)
+		t.check(director.current_step() != null and director.current_step().index == 12,
+				"touching day 12's mark activates the swing perform")
+		t.check(director._rider == null, "the swing sits on a bare point, not a rider")
+
+		var at := director.contact_position()
+		var on_a_swing := false
+		for rect in _city.map.playgrounds:
+			if _city.map.world_to_tile(_city.map.swing_position(rect)) \
+					== _city.map.world_to_tile(at):
+				on_a_swing = true
+				break
+		t.check(on_a_swing, "exactly at one open park's own swing")
+
+		director.free())
+
+# ----------------------------------------------------------------- red arrow ---
+
+## Two "any instance" tasks (the man shouting, a roadblock) earn no arrow; every other built
+## perform step is one place and does. A mark never earns one either way, whichever task it
+## unlocks.
+func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var mark_only := _director(t)
+		mark_only.start_day(6, _rng(6, "resistance"), 300.0)
+		t.check(mark_only.red_arrow_target() == Vector2.INF, "a mark never earns the red arrow")
+		mark_only.free()
+
+		var yeller := _director_on_the_yeller_perform(t)
+		t.check(yeller.red_arrow_target() == Vector2.INF,
+				"the yeller is any instance, so it earns no arrow")
+		yeller.free()
+
+		GameState.completed_resistance_steps = _completed_through(2)
+		var van := _director(t)
+		van.start_day(7, _rng(7, "resistance"), 300.0)
+		van._on_contact_completed(3)
+		t.check(van.red_arrow_target() != Vector2.INF
+				and van.red_arrow_target() == van.contact_position(),
+				"the package's van is one place, so it earns the arrow, exactly at the contact")
+		van.free())
