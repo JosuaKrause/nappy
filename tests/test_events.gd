@@ -33,6 +33,7 @@ func run(t) -> void:
 	_test_duration_and_finish(t)
 	_test_an_event_leaves_rather_than_vanishing(t)
 	_test_a_flock_is_birds_rather_than_one_bird_drawn_often(t)
+	_test_a_flock_goes_up_when_she_reaches_the_birds(t)
 	_test_a_flock_is_a_place_she_can_see(t)
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
@@ -1321,6 +1322,57 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 	t.check(rim >= 0.0 and instance.contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
 			"and nothing at all reaches past the radius the contract was checked against")
 	instance.free()
+
+## **A flock goes up when she reaches the birds, and a clock cannot know when that is.**
+## *(2026-09-20: "birds are also very late to start. they shouldn't prematurely start but they
+## should basically start fluttering when I touch them not after".)* The birds are on the ground for
+## the whole telegraph by construction — `EventInstance._fly_the_flock()` has them pecking while
+## `is_telegraphing()` — so under the clock alone a walk straight in put them up well past her.
+##
+## Two claims, and the second is what stops the fix being a way of deleting the telegraph. **Walked
+## into, it flushes at the birds** — `flock_spread` plus her own body, the distance at which she is
+## among them rather than near them — within a frame of her reaching that distance and not before
+## it. **Walked past without being reached, it still goes up on its clock**, so a flock she skirted
+## is startled rather than ignored, and `telegraph_time` still means something.
+##
+## Stated over the walk rather than over the numbers it was written from: the rig sets `player_at`
+## every tick, which is the one thing the pass rig behind `docs/COSTS.md` never does and the reason
+## that table dashes this row.
+func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var touch := def.flock_spread + Tuning.PLAYER_BODY_RADIUS
+	t.check(touch < def.pursues_within,
+			"she is inside the trigger (%.0fpx) well before she is among the birds (%.0fpx)"
+			% [def.pursues_within, touch])
+
+	var straight_in := _flock_flushes_at(t, def, 0.0)
+	t.check(not is_inf(straight_in), "a flock walked straight into goes up at all")
+	t.close_to(straight_in, touch,
+			"it goes up as she reaches the birds (%.0fpx out, against a %.0fpx flock)"
+			% [straight_in, touch], Tuning.WALK_SPEED * STEP * 2.0)
+
+	# Past the edge of the wheel and never among them: nothing fires the flush, so the telegraph is
+	# what ends the wait, and it still does.
+	var skirted := _flock_flushes_at(t, def, touch + 30.0)
+	t.check(not is_inf(skirted) and skirted > touch,
+			"a flock she skirted still goes up, on its own clock, at %.0fpx" % skirted)
+
+## Walks her past a flock at `offset` px to one side at `Tuning.WALK_SPEED`, telling the instance
+## where she is every tick the way the world does, and answers how far from the middle she was on
+## the first frame the birds were off the ground — `INF` if they never left it.
+func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
+	var instance := _instance(t, def, Vector2.ZERO)
+	var her := Vector2(-def.outer_radius - 120.0, offset)
+	var answer := INF
+	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
+		instance.player_at = her
+		instance._process(STEP)
+		if not instance.is_waiting() and not instance.is_telegraphing():
+			answer = her.distance_to(instance.position)
+			break
+		her.x += Tuning.WALK_SPEED * STEP
+	instance.free()
+	return answer
 
 ## **A flock exists before it is seen, and the first frame of one is never inside the view around
 ## her.** *(PLAYTEST-69: "pigeons pop in on screen — they should exist before they are visible.")*

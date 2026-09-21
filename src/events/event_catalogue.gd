@@ -987,10 +987,24 @@ static func _leaf_blower() -> EventDef:
 ## about.
 ##
 ## **The telegraph contract is then paid in geometry, the way the robber's is.** `pursues_within`
-## is the wait: the birds stand there unclocked and quiet, and the burst starts when she comes
+## is the wait: the birds stand there unclocked and quiet, and the clock starts when she comes
 ## inside the trigger rather than at dawn, four streets away, where a 1.7s notice is no notice at
 ## all. It is the same shape `alley_mouse` and a `MAP`-placed `charging_dog` use, and it is what
 ## keeps "it must not be over before she arrives" true without siting the row on top of her.
+##
+## **And the birds go up when she reaches them, which a clock cannot know.** *(2026-09-20: "birds
+## are also very late to start. they shouldn't prematurely start but they should basically start
+## fluttering when I touch them not after".)* They are on the ground for the whole telegraph by
+## construction — that is what the telegraph *is* for this row — so under the clock alone a walk
+## straight in put them up about 84px past her, which is a flock reacting to somebody who has
+## already gone. `EventInstance._flush_the_flock_if_she_is_among_them()` fires the burst at
+## `flock_spread` plus her own body instead, the distance at which she is among the birds rather
+## than near them, exactly the way a pursuer's lunge is fired by her reaching its stand-off.
+##
+## **`telegraph_time` is unchanged at 1.7s and is now the backstop rather than the wait.** It only
+## decides a flock she came near and never reached — 80px off the middle, say — and shortening it
+## would put *those* birds up sooner, which is the "prematurely start" half of the same sentence.
+## `Tuning.validate_event()` asks 1.55s of this geometry and the number still clears it.
 ##
 ## **Four things have to be true for a flock to be an event at all**, and each of them is a way this
 ## row has been ineffective:
@@ -1035,10 +1049,11 @@ static func _pigeon_flock() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK]
 	def.spawn_mode = EventDef.SpawnMode.MAP
-	# The wait: inside the 168px field, so the notice starts on ground she is already being charged
-	# for, and more than twice the 62px wheel, so they are going up before she is among them. At
-	# `WALK_SPEED` a player walking straight in covers the 150 in a little over the 1.7s telegraph,
-	# which is the flock going up in a pram's face rather than half a street short of it.
+	# The wait: inside the 168px field, so the clock starts on ground she is already being charged
+	# for, and more than twice the 62px wheel, so the flock is already counting by the time she is
+	# anywhere near the birds. What she actually sees is the flush at the birds themselves, which
+	# this only has to be comfortably outside; nothing is visible at this distance, since
+	# `quiet_until_noticed` damps the wait and the telegraph by exactly the same fraction.
 	def.pursues_within = 150.0
 	# Birds on a pavement are nearly nothing; the event is them going up. Without this the wait
 	# would emit the full 42 — a pursuer's rule, where the thing standing there *is* the threat —
@@ -1055,7 +1070,9 @@ static func _pigeon_flock() -> EventDef:
 	def.duration = 4.0
 	# On the ground the whole time, which is what makes this a thing to walk around rather than a
 	# thing that happens. Over the 1.55s the contract asks of a 168px field, and measured from the
-	# moment it notices her rather than from dawn — see `EventDef.pursues_within`.
+	# moment it notices her rather than from dawn — see `EventDef.pursues_within`. The backstop for
+	# a flock she passed without reaching; the flush at the birds is what ends it for one she
+	# walked into.
 	def.telegraph_time = 1.7
 	# Faster than she can run, and up: they are gone in a second and a half and they are gone
 	# *somewhere*.

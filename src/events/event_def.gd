@@ -1180,10 +1180,16 @@ func mean_emission_along_the_line() -> float:
 ##
 ## **That assumption is false for a flock.** A flock is `flock_size` birds sharing the same
 ## intensity between them and wheeling inside `flock_spread`, so the same number buys a field that is
-## tighter and, crucially, *quieter along a line through it* — the disc model reads `pigeon_flock` at
-## +97 where the instance itself, walked and integrated, costs +35. The birds are placed evenly round
-## the wheel at its mean reach rather than where they happen to be: they move, and what a row costs
-## is the average over where they might be, not over one frame.
+## tighter and, crucially, *quieter along a line through it* — the disc model reads `pigeon_flock`
+## substantially higher than a real instance costs when it is walked through and integrated, and
+## priced as a disc it breaks the running rule on a row that in fact keeps it. The birds are placed
+## evenly round the wheel at its mean reach rather than where they happen to be: they move, and what
+## a row costs is the average over where they might be, not over one frame.
+##
+## **This is still the def's own model and not the instance's**, and the two answer different
+## questions: this one is a line through a flock at full strength, and what an instance charges
+## depends on when the birds left the ground, which is decided by where she is rather than by
+## anything on the def. `tests/test_events.gd` walks the instance for the part this cannot see.
 func emission_at(at: Vector2) -> float:
 	if flock_size <= 0:
 		return emission_at_distance(at.length())
