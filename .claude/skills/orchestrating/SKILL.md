@@ -200,6 +200,13 @@ merging is what collides — so parallelism is planned at the file level, before
   branch pointing at the worktree's base; after the feature branches are merged, `git worktree
   prune` and delete them with `git branch -d`, which still answers for a branch that has no
   pull request; a feature branch goes by the **committing** skill's PR-state check.
+- **An agent branches from `main`, never from an open docs branch.** When a milestone's entry
+  is still in an unmerged docs pull request, wait for it to merge before spawning rather than
+  telling the agent to branch from the docs branch. That pull request reaches `main` as one
+  squashed commit, so the agent's branch keeps the docs commits as ancestors `main` never had,
+  and every docs file they touched conflicts when `main` is merged back — add/add for a new
+  playtest file, content conflicts for `TODO.md` and `HANDOFF.md` — on files the agent never
+  edited. The resolution is always `main`'s text, and it is still a three-way review each time.
 - **Spawn from the main checkout, never from a worktree that has just been removed.** The
   harness resolves `HEAD` in the shell's current directory before it creates an agent's
   worktree, so a shell still standing in a deleted worktree fails every spawn; `cd` back to
