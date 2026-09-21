@@ -522,6 +522,14 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.applies_package_weight:
 		GameState.resistance_carrying_package = true
 		Telemetry.note("contact", "the package is heavier now; the rest of today costs more")
+	# A finished task is shown by the world, never by text: the man shouting she actually
+	# reached — `_rider` after any retargeting in `_track_first_reached()` — stops shouting and
+	# walks off screen, the same departure any finished event takes. Named by `task_event_id`
+	# rather than "any rider with a completed step", so this call site does not start silently
+	# giving the other perform steps a world-answer their own design has not chosen yet.
+	if step and step.task_event_id == "homeless_yeller" and _rider and is_instance_valid(_rider):
+		_rider.leave_for_a_completed_task()
+		Telemetry.note("contact", "he took it and is leaving")
 	if not (step and step.needs_goal):
 		return
 

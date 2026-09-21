@@ -42,6 +42,11 @@ func run(t) -> void:
 	_test_a_timed_step_expires(t)
 	_test_completing_the_package_makes_the_pram_heavier(t)
 	_test_starting_a_day_resets_the_package_flag(t)
+	_test_completing_the_yeller_step_sends_only_its_rider_away(t)
+	_test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t)
+	_test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t)
+	_test_an_ordinary_departure_still_gives_up_at_six_seconds(t)
+	_test_a_lost_day_still_offers_the_yeller_step_on_retry(t)
 	_test_the_sabotage_silences_the_city(t)
 
 # ---------------------------------------------------------------- step table ---
@@ -1032,6 +1037,171 @@ func _test_starting_a_day_resets_the_package_flag(t) -> void:
 		t.check(not GameState.resistance_carrying_package,
 				"a fresh attempt at a day has not picked it up yet")
 		director.free())
+
+# --------------------------------------------------------- a finished task, shown by the world ---
+# A finished task is shown by the world and never by text: the man shouting she actually reached
+# stops shouting and walks off screen, the same departure `EventInstance._be_done()` gives any
+# finished event. `EventInstance.leave_for_a_completed_task()` is the wrapper the director calls.
+
+## The look-alike she never reached is a second live `homeless_yeller`, spawned directly rather
+## than waiting for the scheduler to place one, so the test does not depend on the seed placing a
+## second one that day.
+func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
+	_with_clean_run(func() -> void:
+		GameState.completed_resistance_steps = _completed_through(1)
+		var director := _director(t)
+		director.start_day(5, _rng(5, "resistance"), 300.0)
+		t.check(director.current_step() != null and director.current_step().index == 2,
+				"day 5 offers the yeller perform step")
+		var rider: EventInstance = director._rider
+		t.check(rider != null and not rider.is_leaving, "the seeded rider is shouting, not leaving")
+
+		var decoy := _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+				rider.global_position + Vector2(600.0, 0.0))
+
+		director._on_contact_completed(2)
+
+		t.check(rider.is_leaving, "the one she reached stops shouting and leaves")
+		t.close_to(rider.contribution_at(rider.global_position), 0.0,
+				"and contributes nothing to the meter the same frame", 0.001)
+		t.check(not decoy.is_leaving, "a look-alike she never reached is left exactly alone")
+		t.check(decoy.contribution_at(decoy.global_position) > 0.0,
+				"still shouting, still emitting")
+
+		director.free())
+
+## `EventDef.paces` folds a beat back and forth over its path, so "the way it was going" mid-beat
+## means something different on each half — walking out toward the far end, or already turned
+## round and walking back. `_be_done()`'s own rule ("something on a route carries on the way it
+## was going") would carry him at her on whichever half has him walking toward where she is
+## standing; `leave_for_a_completed_task()` turns him to leave away from her regardless.
+func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t) -> void:
+	for on_the_second_half in [false, true]:
+		var instance := EventInstance.new()
+		instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
+				PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]))
+		t.add_child(instance)
+		instance.set_process(false)
+
+		# 50px is the beat's first half (walking east); 350px is past the 200px turn, the second
+		# half (walking west) — `_advance_along_path(0.0)` reads `_path_travelled` back into a
+		# heading and a position without covering any further ground.
+		instance._path_travelled = 350.0 if on_the_second_half else 50.0
+		instance._advance_along_path(0.0)
+		var walking := instance._heading
+		t.check((walking.x < 0.0) == on_the_second_half,
+				"set up walking %s" % ("west, the second half" if on_the_second_half
+						else "east, the first half"))
+		# Sited ahead of him on his own heading — where "the way it was going" would walk him
+		# straight at her if nothing turned him round.
+		instance.set_player_at(instance.position + walking * 40.0)
+
+		instance.leave_for_a_completed_task()
+
+		t.check(instance.is_leaving, "he leaves (%s half)"
+				% ("second" if on_the_second_half else "first"))
+		t.check(instance._heading.dot(walking) < -0.99,
+				"and turns to walk away from her rather than along the beat (%s half)"
+						% ("second" if on_the_second_half else "first"))
+		instance.free()
+
+## Contribution stops the instant he leaves, and he walks rather than vanishing. He does **not**
+## pop out of existence mid-screen at `EventInstance.LEAVING_GIVES_UP` (6.0s) while she is still
+## standing right there watching — that backstop is for a departure nobody could be watching (a
+## headless rig, a streamed-out day), not for one that starts with her in reach. He only finishes
+## once he has actually walked far enough away.
+func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> void:
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
+			PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]))
+	t.add_child(instance)
+	instance.set_process(false)
+	# She stands still for the whole test — the case that used to pop him out of existence
+	# mid-screen at the backstop.
+	instance.set_player_at(Vector2(20.0, 0.0))
+	t.check(instance.current_intensity() > 0.0, "shouting, before the task is done")
+
+	instance.leave_for_a_completed_task()
+	t.check(instance.is_leaving, "he stops the instant she hands him the note")
+	t.close_to(instance.contribution_at(instance.global_position), 0.0,
+			"and contributes nothing the same frame", 0.001)
+
+	var before := instance.global_position
+	var before_distance := before.distance_to(instance.player_at)
+	instance._leave(EventInstance.LEAVING_GIVES_UP)
+	t.check(not instance.is_finished,
+			"still leaving past the backstop's own six seconds, since she is still watching")
+	t.close_to(instance.contribution_at(instance.global_position), 0.0,
+			"and still contributes nothing")
+	t.check(instance.global_position.distance_to(instance.player_at) > before_distance,
+			"farther away than when he started, not stalled")
+
+	# She still has not moved. At `departs_at` (60px/s) from 20px away, he clears
+	# `Tuning.OUT_OF_SIGHT` (420px) in well under ten more seconds.
+	instance._leave(10.0)
+	t.check(instance.is_finished, "gone once he is actually out of sight, not before")
+	instance.free()
+
+## `_leaving_must_clear_sight` is set only by `leave_for_a_completed_task()`. An ordinary
+## departure — `_be_done()` reached on its own, with nothing routing it through the resistance —
+## still gives up at the plain six-second backstop, watched or not: this changes nothing about it.
+func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
+	t.add_child(instance)
+	instance.set_process(false)
+	instance.set_player_at(Vector2(20.0, 0.0))
+
+	instance._be_done()
+	t.check(instance.is_leaving, "an ordinary departure starts leaving the same way")
+
+	instance._leave(EventInstance.LEAVING_GIVES_UP - 0.1)
+	t.check(not instance.is_finished, "not gone yet, just under six seconds in")
+	instance._leave(0.2)
+	t.check(instance.is_finished, "gone at the six-second backstop, watched or not")
+	instance.free()
+
+## "A task is only complete if it is done on the day that won" — `GameState.finish_day()` gives
+## a lost day's resistance work back, and the retry offers the same step again. His having
+## already walked off in the failed attempt must not carry into the retry: `EventManager.
+## start_day()` clears yesterday's instances before the day is replanned, so the retry rides on a
+## rider of its own rather than the one that left.
+func _test_a_lost_day_still_offers_the_yeller_step_on_retry(t) -> void:
+	var saved_seed := GameState.run_seed
+	var saved_day := GameState.day
+	var saved_nerves := GameState.nerves
+	_with_clean_run(func() -> void:
+		GameState.run_seed = SEED
+		GameState.day = 5
+		GameState.nerves = Tuning.STARTING_NERVES
+		GameState.completed_resistance_steps = _completed_through(1)
+		GameState.begin_day()
+
+		var attempt := _director(t)
+		attempt.start_day(5, _rng(5, "resistance"), 300.0)
+		t.check(attempt.current_step() != null and attempt.current_step().index == 2,
+				"the first attempt offers the yeller perform step")
+		var rider: EventInstance = attempt._rider
+		attempt._on_contact_completed(2)
+		t.check(rider != null and rider.is_leaving, "completing it sends the rider away")
+		attempt.free()
+
+		t.check(GameState.finish_day(GameEnums.DayResult.LOST_CRYING),
+				"losing the day continues the run")
+		t.check(2 not in GameState.completed_resistance_steps, "and gives the step back")
+
+		var retry := _director(t)
+		retry.start_day(5, _rng(5, "resistance"), 300.0)
+		t.check(retry.current_step() != null and retry.current_step().index == 2,
+				"the retry offers the same step again")
+		t.check(retry._rider != null and retry._rider != rider,
+				"on a rider of its own, not the one that already walked off")
+		t.check(not retry._rider.is_leaving, "and it is shouting, not leaving")
+		retry.free())
+
+	GameState.run_seed = saved_seed
+	GameState.day = saved_day
+	GameState.nerves = saved_nerves
 
 ## The whole subquest pays out in quiet. On the last walk home the masts stop, and the
 ## floor they have been holding under the meter since day 5 goes with them.

@@ -157,7 +157,10 @@ the first encounter comes with no hint at all, and only later ones are named.
 
 **A finished step is shown by the world and never by text.** A touched mark changes to its
 done color, which is all a mark needs; nothing is written on the HUD, and there is no counter,
-no objective marker and no log.
+no objective marker and no log. The note for a stranger answers the same way: the moment she
+hands it to him, the man she reached stops shouting and walks away, on foot, until he is out of
+sight — the same departure any finished event takes, not a word on screen. The look-alikes she
+never reached carry on shouting exactly as before.
 
 **A lost day repeats its own instruction rather than moving on.** *"the words shown on the lost
 day are the words that show at the beginning of that day not the nexts."* The summary of a day
