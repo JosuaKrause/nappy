@@ -1852,6 +1852,25 @@ func _be_done() -> void:
 			and not global_position.is_equal_approx(player_at):
 		_heading = (global_position - player_at).normalized()
 
+## Ends this instance early because a resistance step's contact rode on it and she has just
+## completed the step — called by `ResistanceDirector._on_contact_completed()` on the instance
+## the step was actually reached through (`_rider` after retargeting), never on the seeded one if
+## she reached a look-alike first. It is the same departure everything else in the game leaves
+## by: no field while leaving, walking away, gone once out of sight — so a finished task reads as
+## the world answering rather than as text on the HUD.
+##
+## **Unlike a departure `_be_done()` reaches on its own** — a route run out, a duration expired —
+## this one has no route left to finish, so the heading is always turned away from her, overriding
+## `_be_done()`'s "something on a route carries on the way it was going": a paced fixture stopped
+## mid-beat is heading in whichever direction its beat happened to be walking, which is toward her
+## exactly as often as away.
+func leave_for_a_completed_task() -> void:
+	if is_finished or is_leaving:
+		return
+	_be_done()
+	if is_leaving and player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
+		_heading = (global_position - player_at).normalized()
+
 func _leave(delta: float) -> void:
 	_leaving_for += delta
 	var step := def.departure_speed() * delta
