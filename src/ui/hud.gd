@@ -23,6 +23,9 @@ extends CanvasLayer
 @onready var _header: Label = $Root/Header
 @onready var _clock: Label = $Root/Clock
 @onready var _home_arrow: HomeArrow = $Root/HomeArrow
+## Second instance of the same class, in red, for a one-place resistance task — see
+## `HomeArrow`'s own class doc and `Palette.TASK_ARROW`.
+@onready var _task_arrow: HomeArrow = $Root/TaskArrow
 @onready var _teach: Label = $Root/Teach
 
 ## Read once per instance rather than at each use site, so a test can flip it and drive both HUD
@@ -63,6 +66,10 @@ func _ready() -> void:
 	_excitement.full_colour = Color("cf4436")
 	_excitement.markers = [Tuning.EXCITEMENT_CALM_THRESHOLD, Tuning.EXCITEMENT_WAKE_THRESHOLD]
 	_reposition_meters_for_touch()
+	# Coloured here rather than in the scene so `Palette` stays the one place a runtime colour is
+	# decided — the same call `_heading.add_theme_color_override()` makes in `DaySummary._ready()`.
+	_task_arrow.colour = Palette.TASK_ARROW
+	_task_arrow.label_when_near = "task"
 
 	EventBus.sleepiness_changed.connect(_on_sleepiness_changed)
 	EventBus.excitement_changed.connect(_on_excitement_changed)
@@ -72,9 +79,10 @@ func _ready() -> void:
 	EventBus.day_time_changed.connect(_on_day_time_changed)
 	EventBus.resistance_progress_changed.connect(func(_v: int) -> void: _refresh_resistance())
 	# A pickup grants no progress, so `resistance_progress_changed` never fires for the first
-	# mark — this is what notices *that* completion and lifts the no-hint rule the moment it
-	# happens, rather than on the next day's first refresh.
-	EventBus.resistance_step_completed.connect(func(_s: int) -> void: _refresh_resistance())
+	# mark — `_on_resistance_step_completed()` is what notices *that* completion, lifts the
+	# no-hint rule the moment it happens rather than on the next day's first refresh, and
+	# announces a mark's own words the instant she touches it.
+	EventBus.resistance_step_completed.connect(_on_resistance_step_completed)
 	EventBus.resistance_contact_available.connect(_on_contact_available)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.city_wide_changed.connect(_on_city_wide_changed)
@@ -326,6 +334,19 @@ func _on_contact_available(step: int) -> void:
 	_contact_step = step
 	_refresh_resistance()
 
+## The task is announced at the mark and nowhere else (`docs/TODO.md`, M181, the resistance has a
+## reason, and a task is one day). A completed pickup's own `brief` words flash on the same
+## teaching line day 1's walking lesson uses — the one place text already appears over the
+## world — for `TEACH_SECONDS`; a completed perform step or the finale says nothing here, since a
+## finished task is shown by the world and never by text (M182). `_refresh_resistance()` still
+## runs for every completion, pickup or perform, so the persistent status line picks up the
+## perform step's own header the moment `_begin_step()` activates it a frame later.
+func _on_resistance_step_completed(step_index: int) -> void:
+	var step := ResistanceSteps.by_index(step_index)
+	if step and step.is_pickup and step.brief != "":
+		_say(step.brief, TEACH_SECONDS)
+	_refresh_resistance()
+
 ## Deliberately terse. There is no quest log — the subquest is chalk on a wall.
 ##
 ## The release line is the current optional goal and no count: the progress dots are how far in you
@@ -375,9 +396,10 @@ func _refresh_resistance() -> void:
 ## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a
 ## screen position from a world one every frame rather than sitting still under `_root`'s own
 ## pinned anchors, so it needs to know when to correct for the rotation the same way `DangerEdge`
-## does — see `ScreenOrientation`'s class doc.
+## does — see `ScreenOrientation`'s class doc. Both instances need it, home and task alike.
 func set_rotated(rotate: bool) -> void:
 	_home_arrow.rotated = rotate
+	_task_arrow.rotated = rotate
 
 ## The one moment the game says something out loud.
 ## Shown only while she is carrying a sleeping baby home.
@@ -386,6 +408,15 @@ func set_home_guidance(showing: bool, home: Vector2) -> void:
 		_home_arrow.show_toward(home)
 	else:
 		_home_arrow.hide_arrow()
+
+## The red arrow: shown from the moment a one-place task's own mark is touched until the task is
+## done, at exactly the contact's position — see `ResistanceDirector.red_arrow_target()`, the one
+## place that decides whether today's task earns it at all.
+func set_task_guidance(showing: bool, at: Vector2) -> void:
+	if showing:
+		_task_arrow.show_toward(at)
+	else:
+		_task_arrow.hide_arrow()
 
 func _on_city_wide_changed(what: String) -> void:
 	_city_wide = what
