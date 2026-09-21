@@ -192,3 +192,22 @@ standing, and offer the fire again only if it was never lit:
     from the walk she takes then. `GameState.finish_day()` says the opposite about one-shots
     and block arcs today ("what the run has spent stays spent … a fire that burnt a block down
     did happen"); the player's rule overturns it.
+
+Asked whether "rolls new" means a retry draws a different event plan, or is the same day from
+the same seed with nothing carried over:
+
+> "that has been settled already for a long time. it is the same day exactly how the player
+> encountered it the first time this run. exact same state at the beginning of the day. nothing
+> else"
+
+27. **A retry is the same day, exactly as she first met it this run**: the same state at the
+    beginning of the day and nothing else. The question had been settled long before and
+    should not have been asked; `GameState.finish_day()`'s "the retry is the same day" stands,
+    and statement 26 is what it means for the fire — the state at the beginning of day 3 has no
+    fire spent and no shell.
+
+Asked again whether the docs pull request may merge:
+
+> "NO!!!"
+
+28. **The docs pull request does not merge.**
