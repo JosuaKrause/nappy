@@ -180,3 +180,15 @@ fire she was led to:
 25. **The fire with the engine at it is not something she walks past.** It closes the path she
     is on; she turns round or goes another way. What the siting owes in return is that
     another way exists: a calm area and the home stay reachable without entering either field.
+
+Told that the agent had made a lost day 3 keep a fire that burned as spent, with its shell
+standing, and offer the fire again only if it was never lit:
+
+> "a retry always rolls new -- nothing that happened on the day that got retried can influence
+> the next repeat -- that has been a long standing rule"
+
+26. **Nothing that happened on a lost day influences its retry.** A lost day 3 gives back the
+    fire altogether — its one-shot and its burnt shell — and the retry has a fire again, sited
+    from the walk she takes then. `GameState.finish_day()` says the opposite about one-shots
+    and block arcs today ("what the run has spent stays spent … a fire that burnt a block down
+    did happen"); the player's rule overturns it.

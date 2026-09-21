@@ -384,7 +384,9 @@ so a day 3 can pass without either.
       she reaches it, far enough that she meets it rather than watches it appear. It happens on
       every day 3, whichever way she goes, including a day she turns round. When and how far
       ahead are the orchestrator's and open to overturn. The scar it leaves is wherever it
-      burned, for the rest of the run.
+      burned, for the rest of the run. **A lost day 3 gives the fire back whole**, its one-shot
+      and its scar, and the retry has a fire again ([PLAYTEST-119](playtests/PLAYTEST-119.md):
+      "nothing that happened on the day that got retried can influence the next repeat").
 - [ ] **Then the engine comes, and the fire is somewhere to get away from.** The engine arrives
       on sight of the fire, as built, along a street she can see it come down, **and stops
       at the fire**: in a windowed run on the branch the player saw that it "did not stop at
