@@ -240,8 +240,21 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.sited_on_her_way`.
 	# Built from exactly what `build_day` above was handed, so a placement made later is stated
 	# against the same corridor, the same protected calm and the same doors as every other one.
-	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"),
-			EventScheduler.WalkSiting.new(day, _map, tree, GameState.settled_this_act(), doors))
+	# Only on a day that has such a plan: the context grows a corridor and the protected-calm
+	# rects, and a day with nothing left for her walk would pay for both and read neither.
+	var siting: EventScheduler.WalkSiting = null
+	for plan in _plans:
+		if plan.def.sited_on_her_way and not plan.is_placed():
+			if not siting:
+				siting = EventScheduler.WalkSiting.new(day, _map, tree,
+						GameState.settled_this_act(), doors)
+			var others: Array[EventScheduler.Planned] = []
+			for other in _plans:
+				if other != plan:
+					others.append(other)
+			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
+			siting.prepare(plan.def, others)
+	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), siting)
 	stream_around(focus)
 
 ## Clears whatever was here and takes the escape's whole plan as given.

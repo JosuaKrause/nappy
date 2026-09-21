@@ -480,7 +480,8 @@ func _fire_plan() -> EventScheduler.Planned:
 ## her, off screen, and brought into view by continuing to walk.
 ##
 ## The two numbers checked on the siting itself are the ones the design is stated in: it is *ahead*
-## (inside `EventDirector.ON_HER_WAY_CONE` of the heading she was travelling) and it is *off screen*
+## (along the heading she was travelling and no more than `EventDirector.ON_HER_WAY_DRIFT` off that
+## line, which is a distance across rather than an angle) and it is *off screen*
 ## (outside the streaming band, so nothing about it is visible and nothing about it is real yet).
 func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 	var scars_before := GameState.scars.duplicate()

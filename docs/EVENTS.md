@@ -770,8 +770,10 @@ row carrying the flag, is budgeted at dawn with **no position at all**. Once she
 doorstep — far enough in that a heading means something, and past the day's run lesson —
 `EventDirector.site_what_is_on_her_way()` puts it on a building face **on the line she is walking**:
 between the far edge of the streaming band and `ON_HER_WAY_SIGHT` seconds of walking past the edge
-of the view, and no more than `ON_HER_WAY_DRIFT` off her line. That is nine to sixteen seconds of
-walking before she sees it, depending on which way she is going.
+of the view, and no more than `ON_HER_WAY_DRIFT` off her line. So she always has the walk from
+the streaming band's edge to the edge of the view before she sees it, and at most
+`ON_HER_WAY_SIGHT` seconds more; `tools/test.sh probes/m179_fire_on_her_way.gd` prints what that
+comes to per heading.
 
 *"the fire should come first and be on your way **guaranteed** (a dynamic event dependent on the
 route you chose that day)"* (PLAYTEST-117). Three things make that hold:
@@ -996,7 +998,7 @@ All implemented.
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway leaves 26px to the frontage, narrower than the pram — a **wall** by physical fit, silent or not, so the street it is on is one she walks the far side of. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
-| `burning_building` | ONE_SHOT | 3 | Against a frontage, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is — and **sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn, on her own line, off screen, nine to sixteen seconds of walking short of being seen. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, you cannot walk through the fire, and the shell it leaves stands where it actually burned. |
+| `burning_building` | ONE_SHOT | 3 | Against a frontage, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is — and **sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn, on her own line, off screen, beyond the streaming band and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking past the edge of the view. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, you cannot walk through the fire, and the shell it leaves stands where it actually burned. |
 | `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md), entering along the fire's own street from off screen and driving to the near kerb across from it. **It does not park there**: a mobile row that runs out of route carries on out of sight like every other one, so what she sees is an engine arriving and passing through. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a

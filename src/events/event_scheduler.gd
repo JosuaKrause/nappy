@@ -912,6 +912,15 @@ class WalkSiting extends RefCounted:
 	func _still_leaves_a_park_reachable(already: Array[Planned], candidate: Planned) -> bool:
 		if candidate.def.obstructs_radius <= 0.0 and not candidate.def.hard_fail:
 			return true
+		var blockers := _what_already_blocks(already)
+		if _was_walkable == 0:
+			return true
+		blockers.append(candidate)
+		return EventScheduler._park_is_reachable(_map, _grid, blockers)
+
+	## Everything in `already` that stands in the way, and — the first time it is asked — the grid
+	## and the answer for the day with nothing of ours in it.
+	func _what_already_blocks(already: Array[Planned]) -> Array[Planned]:
 		if not _grid:
 			_grid = ReachabilityGrid.build(_map)
 		var blockers: Array[Planned] = []
@@ -922,10 +931,16 @@ class WalkSiting extends RefCounted:
 				blockers.append(plan)
 		if _was_walkable < 0:
 			_was_walkable = 1 if EventScheduler._park_is_reachable(_map, _grid, blockers) else 0
-		if _was_walkable == 0:
-			return true
-		blockers.append(candidate)
-		return EventScheduler._park_is_reachable(_map, _grid, blockers)
+		return blockers
+
+	## Does at dawn the work the first `ahead_of()` would otherwise do in the middle of a walk: the
+	## scan for ground `def` may stand on, the reachability grid, and the flood of the day as it is
+	## without the candidate. Together they are several physics frames, which at dawn is part of a
+	## load and mid-walk is a hitch on the one beat of the day she is meant to be watching. Nothing
+	## here rolls, so the day is the same day whether or not this ran.
+	func prepare(def: EventDef, already: Array[Planned]) -> void:
+		EventScheduler._open_ground_for(def, _map, _ground)
+		_what_already_blocks(already)
 
 ## Fills the day's budget, **one stream per attempt**.
 ##
