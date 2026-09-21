@@ -59,3 +59,23 @@ And a moment later:
 7. **She can tear a poster down**, as a gimmick: with no new button, and by something more than
    walking past. How is open.
 8. **Tearing a poster down has a small chance of a pursuer appearing.**
+
+## After the orchestrator's proposed story
+
+The proposal made the loudspeaker system the sabotage's target, since `docs/NARRATIVE.md`'s good
+ending is the loudspeakers cutting out mid-sentence, and offered three ways to tear a poster
+with no new button: running along the wall (recommended), stopping beside it, and walking into
+it.
+
+> "the loudspeaker system is too low a stake. it doesn't warrant an air raid on the city
+> afterwards. running next to a wall is hard to discover since running is almost never an
+> option. we can start with pushing into the wall (even if diagonal) this can happen by
+> accident so it can be discovered. it's mainly a gimmick anyway. need to get the feel of it so
+> I'd say let's not let that be a blocker for now and go with push against it (even diagonal)"
+
+9. **The loudspeaker system is too small a target**: what she sabotages has to warrant the
+   attack on the city that the escape runs through.
+10. **A poster is torn by pushing against its wall, a diagonal heading included.** *The
+    orchestrator recommended running along the wall · the player chose pushing*, because
+    running is almost never an option and a push can happen by accident, which is how it is
+    discovered. It is a gimmick, to be judged by feel, and does not hold anything else up.
