@@ -92,6 +92,7 @@ func run(t) -> void:
 	_test_a_hunting_van_draws_no_victim(t)
 	_test_the_obstruction_comes_down_once_it_stops_waiting(t)
 	_test_a_protest_stays_something_she_can_be_routed_through(t)
+	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 
 # ------------------------------------------------------------------ fairness ---
 
@@ -115,6 +116,33 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
 		if step.task_event_id == "protest":
 			named = true
 	t.check(named, "and a resistance task is what sends her into one")
+
+## **A door's price is the detention, not the field, and that has to stay true of the one source a
+## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";
+## "since there can be other obstacles around".)* Every `EventDef.barrier_structure` row collapses
+## to the strongest of them at her position (`EventManager.excitement_sources_at()`), so a hut, a
+## gate and a wall's roadblocks at one corner charge one rate between them. What that rate has to
+## stay under is the **toll the hold itself charges**: a detention is spent standing still, where
+## `Tuning.EXCITEMENT_DECAY_IDLE` is zero and nothing is earned back, so the field bills for every
+## second of it on top of `Tuning.CHAT_EXCITEMENT`. Once the field over one hold outweighs the
+## toll, the field is what a door costs and the detention is the decoration — which is the
+## arrangement the player met coming out of a gate into three roadblocks and a patrol.
+##
+## The three detainers are already exempt from "nothing is cheaper to walk through than around" for
+## exactly this reason, `_PRICED_BY_THEIR_CAPTURE`; this is the same sentence said about the
+## strongest thing standing at the same place, which is the one that actually bills her.
+func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t) -> void:
+	var barriers := 0
+	for def in EventCatalogue.all():
+		if not def.barrier_structure:
+			continue
+		barriers += 1
+		var over_a_hold := def.intensity * Tuning.CHECKPOINT_DETAIN_SECONDS
+		t.check(over_a_hold < Tuning.CHAT_EXCITEMENT,
+				("one '%s' bills %.1f over a %.0fs hold at its core rate, under the %.1f the hold "
+				+ "itself charges") % [def.id, over_a_hold, Tuning.CHECKPOINT_DETAIN_SECONDS,
+				Tuning.CHAT_EXCITEMENT])
+	t.check(barriers > 0, "there were barrier structures to ask (%d)" % barriers)
 
 ## The contract from docs/EVENTS.md: a player who starts walking away the instant an event
 ## becomes visible clears its outer radius before it reaches full strength. A violation is

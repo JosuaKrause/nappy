@@ -50,10 +50,10 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | police_patrol        |  friction |      10.0 |              — |           — |         44.0 |        185.0 |           2.0 |            — |            — |      74.0 |               5.9 |
 | poster_crew          |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
 | poster_crew_square   |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
-| roadblock            |  friction |      13.0 |              — |           — |         86.0 |        179.0 |           2.0 |            — |            — |         — |              18.5 |
-| checkpoint_hut       |  friction |       6.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -0.6 |
+| roadblock            |  friction |       9.0 |              — |           — |         86.0 |        179.0 |           2.0 |            — |            — |         — |               5.6 |
+| checkpoint_hut       |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
 | checkpoint_gate      |  friction |       0.0 |              — |           — |         84.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| checkpoint_post      |  friction |       6.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -0.6 |
+| checkpoint_post      |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
 | abduction            |      wall |      20.0 |              — |           — |         54.0 |        250.0 |           2.0 |            — |            — |         — |              47.7 |
 | alley_robbery        |      wall |      16.0 |              — |           — |         30.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.8 |
 | night_raid           |      wall |      24.0 |              — |           — |         70.0 |        330.0 |           2.0 |          6.0 |          6.0 |         — |              83.9 |
@@ -102,10 +102,10 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | police_patrol        |       4.0 |       4.0 |       4.0 |       3.5 |       2.4 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew          |      -1.0 |      -1.0 |      -1.3 |      -2.6 |      -4.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew_square   |      -1.0 |      -1.0 |      -1.3 |      -2.6 |      -4.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| roadblock            |       7.0 |       7.0 |       7.0 |       7.0 |       6.7 |       0.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| checkpoint_hut       |       0.0 |       0.0 |       0.0 |       0.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| roadblock            |       3.0 |       3.0 |       3.0 |       3.0 |       2.8 |      -1.3 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| checkpoint_hut       |      -2.0 |      -2.0 |      -2.0 |      -2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_gate      |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| checkpoint_post      |       0.0 |       0.0 |       0.0 |       0.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| checkpoint_post      |      -2.0 |      -2.0 |      -2.0 |      -2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | abduction            |      14.0 |      14.0 |      14.0 |      13.8 |      12.9 |       9.2 |       2.9 |      -6.0 |      -6.0 |      -6.0 |
 | alley_robbery        |      10.0 |      10.0 |       9.8 |       8.9 |       7.3 |       2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | night_raid           |       9.0 |       9.0 |       9.0 |       9.0 |       8.8 |       7.6 |       5.2 |      -2.7 |      -6.0 |      -6.0 |
@@ -154,10 +154,10 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | police_patrol        |      -0.5 |      -0.5 |      -0.5 |      -0.8 |      -1.4 |      -3.6 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew          |      -3.2 |      -3.2 |      -3.4 |      -4.1 |      -5.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew_square   |      -3.2 |      -3.2 |      -3.4 |      -4.1 |      -5.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| roadblock            |       1.2 |       1.2 |       1.2 |       1.2 |       1.0 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| checkpoint_hut       |      -2.7 |      -2.7 |      -2.7 |      -2.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| roadblock            |      -1.0 |      -1.0 |      -1.0 |      -1.0 |      -1.2 |      -3.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| checkpoint_hut       |      -3.8 |      -3.8 |      -3.8 |      -3.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_gate      |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| checkpoint_post      |      -2.7 |      -2.7 |      -2.7 |      -2.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| checkpoint_post      |      -3.8 |      -3.8 |      -3.8 |      -3.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | abduction            |       5.0 |       5.0 |       5.0 |       4.9 |       4.4 |       2.4 |      -1.1 |      -6.0 |      -6.0 |      -6.0 |
 | alley_robbery        |       2.8 |       2.8 |       2.7 |       2.2 |       1.3 |      -1.6 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | night_raid           |       2.2 |       2.2 |       2.2 |       2.2 |       2.1 |       1.5 |       0.2 |      -4.2 |      -6.0 |      -6.0 |
@@ -206,10 +206,10 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | police_patrol        |       3.3 |       3.1 |       2.9 |       1.0 |      -1.9 |
 | poster_crew          |         — |      -5.3 |      -5.5 |      -6.5 |       0.0 |
 | poster_crew_square   |         — |      -5.3 |      -5.5 |      -6.5 |       0.0 |
-| roadblock            |         — |      25.0 |      24.3 |      21.1 |      11.8 |
-| checkpoint_hut       |         — |      -0.6 |      -0.7 |      -1.1 |       0.0 |
+| roadblock            |         — |      10.2 |       9.8 |       8.2 |       2.9 |
+| checkpoint_hut       |         — |      -4.6 |      -4.4 |      -3.2 |       0.0 |
 | checkpoint_gate      |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| checkpoint_post      |         — |      -0.6 |      -0.7 |      -1.1 |       0.0 |
+| checkpoint_post      |         — |      -4.6 |      -4.4 |      -3.2 |       0.0 |
 | abduction            |         — |      47.3 |      46.0 |      40.2 |      29.5 |
 | alley_robbery        |         — |         — |         — |         — |         — |
 | night_raid           |         — |      36.2 |      35.5 |      32.7 |      27.2 |
@@ -258,10 +258,10 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | police_patrol        |      -4.2 |      -4.3 |      -4.3 |      -4.9 |      -5.6 |
 | poster_crew          |         — |      -9.3 |      -9.0 |      -8.0 |       0.0 |
 | poster_crew_square   |         — |      -9.3 |      -9.0 |      -8.0 |       0.0 |
-| roadblock            |         — |       3.3 |       3.1 |       2.2 |      -1.3 |
-| checkpoint_hut       |         — |      -6.0 |      -5.7 |      -3.9 |       0.0 |
+| roadblock            |         — |      -4.8 |      -4.8 |      -4.9 |      -6.2 |
+| checkpoint_hut       |         — |      -8.1 |      -7.7 |      -5.0 |       0.0 |
 | checkpoint_gate      |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| checkpoint_post      |         — |      -6.0 |      -5.7 |      -3.9 |       0.0 |
+| checkpoint_post      |         — |      -8.1 |      -7.7 |      -5.0 |       0.0 |
 | abduction            |         — |      11.4 |      10.8 |       8.2 |       3.3 |
 | alley_robbery        |         — |         — |         — |         — |         — |
 | night_raid           |         — |       0.6 |       0.3 |      -0.8 |      -3.1 |

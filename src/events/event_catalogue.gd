@@ -1612,6 +1612,18 @@ static func _curfew_announce() -> EventDef:
 ## ends and the falloff begins, and it is what the cost table is stated against; there is no longer
 ## any reachability arithmetic pulling on it.
 ##
+## **Intensity 9, down from 13, because a door is several bodies and she has to stand in one.**
+## *(2026-09-20: "guard posts should emit less excitement by themselves, too"; "since there can be
+## other obstacles around".)* `barrier_structure` below already stopped a corner's worth of them
+## summing — the strongest at her position is the whole answer — so what was left to move is that
+## one source's own rate. It is the strongest of the door's parts and the one that decides what
+## standing in a door costs: a hold earns no decay (`Tuning.EXCITEMENT_DECAY_IDLE` is zero), so
+## every second of it is paid in full on top of the flat `Tuning.CHAT_EXCITEMENT` the detention
+## charges. The row stays `FRICTION` — its `walk_through_cost()` was never near
+## `Tuning.WALL_WORTH_OF_COST` and is further from it now — and what actually shuts the street is
+## its 60px body, which is untouched. The **resistance**'s own checkpoint task, *"Don't go around
+## it this time. Go through"*, is priced by that body and by the guard rather than by this number.
+##
 ## **`barrier_structure`, because one street being held is one source however many bodies hold
 ## it.** A region wall stands three of these a tile apart across a single street and the region
 ## door on the cross street stands three more, so ground inside five at once exists at a corner —
@@ -1635,7 +1647,7 @@ static func _roadblock() -> EventDef:
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
-	def.intensity = 13.0
+	def.intensity = 9.0
 	def.inner_radius = 86.0
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
@@ -2186,7 +2198,7 @@ static func _collapsed_frontage() -> EventDef:
 ## `intensity` over a tight band, small enough that the real price stays the flat
 ## `Tuning.CHAT_EXCITEMENT` the detention charges through the ordinary chat mechanism, and standing
 ## still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`). **The field is not what makes this
-## row expensive and must not be asked to be**: at 6.0 over an 84–98px band it means less along the
+## row expensive and must not be asked to be**: at 4.0 over an 84–98px band it means less along the
 ## line than the 6.0/s an ordinary street gives back, so `walk_through_cost()` reads it as free —
 ## and it is, because the price is the detention. `tests/test_events.gd` exempts the detainers from
 ## its catalogue-wide "nothing is cheaper to walk through than around" rule by name and for that
@@ -2196,6 +2208,14 @@ static func _collapsed_frontage() -> EventDef:
 ## `redetains` is what tells `EventManager` this instance is armed again once she is outside
 ## `detain_distance()`, in either direction, rather than spent after one conversation like
 ## `chatting_mother`.
+##
+## **4.0 rather than 6.0, for the reason the `roadblock` moved.** *(2026-09-20: "guard posts should
+## emit less excitement by themselves, too"; "since there can be other obstacles around".)* A door
+## is a hut on each pavement, a gate over the road and often a wall's roadblocks at the corner, and
+## a hold is spent standing still where no decay is earned. `barrier_structure` already collapses
+## all of them to the strongest at her position; this is that source's own rate when the hut is the
+## strongest thing there. It changes nothing about what a detention costs, which is
+## `Tuning.CHAT_EXCITEMENT` flat and always was.
 static func _checkpoint_hut() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint_hut"
@@ -2204,7 +2224,7 @@ static func _checkpoint_hut() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_HUT
 	def.act_tag = 2
-	def.intensity = 6.0
+	def.intensity = 4.0
 	def.inner_radius = 84.0
 	def.outer_radius = 98.0
 	def.telegraph_time = 1.0
@@ -2260,7 +2280,7 @@ static func _checkpoint_post() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_POST
 	def.act_tag = 2
-	def.intensity = 6.0
+	def.intensity = 4.0
 	def.inner_radius = 84.0
 	def.outer_radius = 98.0
 	def.telegraph_time = 1.0
