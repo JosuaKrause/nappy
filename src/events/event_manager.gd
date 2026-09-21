@@ -759,12 +759,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
 	if inward == Vector2i.ZERO:
 		return false
 	var along := Vector2(inward.y, inward.x)
-	# `pavement_inward` points away from the carriageway, into the block she is walking beside —
-	# see that function's own doc — so the road is the other way, and `AGAINST_THE_BUILDING`
-	# placed `at` on the sidewalk tile touching the building, the far tile of the two-tile band
-	# (`Tuning.SIDEWALK_WIDTH`) from the kerb: the near edge of the carriageway is that many
-	# tiles further in `-inward`.
-	var road_at := at - Vector2(inward) * (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+	var road_at := where_the_summoned_row_stops(_map, at)
 	var closing := summoned.speed + Tuning.WALK_SPEED
 	var lead := maxf(Tuning.offscreen_lead(along, closing, summoned.offscreen_notice),
 			summoned.field_reach() + Tuning.VIEW_HALF_EXTENT.length())
@@ -779,6 +774,26 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
 		_instances.append(instance)
 		return true
 	return false
+
+## Where a row summoned on sight comes to rest: the near kerb across from `at`, which is the
+## sidewalk point the row that summoned it is standing on. `Vector2.INF` where `at` is not beside a
+## carriageway at all, which is a point with no kerb to park at.
+##
+## **One place decides it, because two callers have to agree about it exactly.**
+## `_summon_the_sighted_row()` sends the engine here, and `EventScheduler.WalkSiting` treats the
+## field standing here as closed ground before it will accept a site for the fire — so a second copy
+## of this arithmetic would be a day whose acceptance check was made about a different kerb than the
+## engine parks at, and nothing would ever say so.
+##
+## `CityMap.pavement_inward` points away from the carriageway, into the block she is walking beside,
+## so the road is the other way; `AGAINST_THE_BUILDING` puts `at` on the sidewalk tile touching the
+## building, the far tile of the two-tile band (`Tuning.SIDEWALK_WIDTH`) from the kerb, and the near
+## edge of the carriageway is that many tiles further in `-inward`.
+static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
+	var inward := map.pavement_inward(map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return Vector2.INF
+	return at - Vector2(inward) * (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 
 ## The one kind of source that cannot be drawn over, told to the HUD instead.
 ##

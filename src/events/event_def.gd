@@ -638,6 +638,29 @@ enum Pavement {
 ## Event id to spawn where this one ends. How a military convoy leaves a barricade behind it.
 @export var spawns_on_finish := ""
 
+## Whether this row **stops where its route ends and stays there for the rest of the day**, instead
+## of driving on out of sight the way everything else that runs out of route does.
+##
+## The fire engine is the only row that carries it, and the flag says what it means rather than
+## borrowing a mechanism that means something else: a `spawns_on_finish` would also keep it where it
+## arrived, by finishing it and leaving a successor behind, but what it leaves would be a second row
+## standing in for the first and nothing about that arrangement says *parks*.
+##
+## **It is a decision about cost, not about motion.** *(2026-09-20, the player, asked whether the
+## engine parks at the fire for the rest of the day, for twenty seconds, or passes through: "option
+## A -- a fire engine has a high cost"; "you're not supposed to go past it".)* A standing 26/s field
+## out to 340px beside a fire she was led to is the wall the day puts across the street she is on,
+## and the answer it asks for is to turn round or go another way. The pair is why a site is only
+## accepted where the home and a calm area she has not used stay reachable outside both fields —
+## see `EventScheduler.WalkSiting`.
+##
+## Three things in `EventInstance` read it and all three would be wrong left alone: `_be_done()`
+## neither finishes nor leaves such a row, `_advance_along_path()` stops adding to the distance it
+## has covered (a gait is driven by distance, so a parked engine would bob for ever), and
+## `travel_velocity()` answers zero (the screen-edge badge reads that as a closing speed, and a
+## parked thing is not closing).
+@export var stops_where_it_arrives := false
+
 ## Event id to spawn the moment this one is first seen. The opposite direction from
 ## `spawns_on_finish` above: that names what a row leaves behind when it is done; this names
 ## what arrives once she has found it. How the burning building calls in the fire engine —
@@ -988,6 +1011,17 @@ func validate() -> bool:
 				% [id, flock_size, obstructs_radius]
 				+ "silhouette to be solid at, and being walked into is what it is for")
 		return false
+	# The same shape: a row that stops where it arrives has to have somewhere to arrive, and
+	# `_be_done()` cannot both hold it where it is and hand its place to a successor.
+	if stops_where_it_arrives:
+		if not mobile:
+			push_error("event '%s' stops where it arrives and does not move: there is no route " % id
+					+ "for it to run out of")
+			return false
+		if spawns_on_finish != "":
+			push_error("event '%s' stops where it arrives and spawns '%s' when it finishes: it "
+					% [id, spawns_on_finish] + "does one or the other, never both")
+			return false
 	# A flag nothing can read is a decision that silently did not happen: without a trigger there is
 	# no waiting state for `quiet_until_noticed` to quieten.
 	if quiet_until_noticed and pursues_within <= 0.0:

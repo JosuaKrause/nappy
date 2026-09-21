@@ -42,6 +42,7 @@ func run(t) -> void:
 	_test_the_fire_follows_her_walk_until_it_is_real(t)
 	_test_a_corner_is_not_a_change_of_mind(t)
 	_test_the_fire_is_the_days_only_unsited_place(t)
+	_test_the_engine_parks_at_the_fire(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
 	_test_hard_fail_only_when_active(t)
 	_test_scheduler_is_deterministic(t)
@@ -1843,6 +1844,47 @@ func _test_a_corner_is_not_a_change_of_mind(t) -> void:
 	t.check(sharpest < 0.7,
 			"and the walk really did turn a corner in that time (%.0f degrees off where it started)"
 			% rad_to_deg(acos(clampf(sharpest, -1.0, 1.0))))
+
+## **The engine parks at the fire and stays there for the rest of the day.** *(2026-09-20, the
+## player, asked whether it parks, waits twenty seconds or passes through: "option A -- a fire engine
+## has a high cost"; "you're not supposed to go past it".)* Driven here rather than in a city,
+## because what is under test is what an instance does when its route runs out — which needs a route
+## and a clock and nothing else.
+##
+## Four things are checked and every one of them was wrong before the flag existed. It **stops**
+## where the route ended rather than driving on out of sight. It is **not over**: it still emits,
+## which is the entire cost the player asked for, where `is_leaving` would have silenced it. It
+## **answers zero for its travel**, which is what the screen-edge badge reads as a closing speed.
+## And the distance it has covered **stops growing**, because the gait is driven by distance and a
+## parked engine would otherwise bob at the kerb for ever.
+func _test_the_engine_parks_at_the_fire(t) -> void:
+	var def := EventCatalogue.by_id("fire_truck")
+	t.check(def != null and def.stops_where_it_arrives,
+			"the fire engine is the row that stops where it arrives")
+	if not def:
+		return
+	var kerb := Vector2(def.speed * 2.0, 0.0)
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, kerb]))
+	# Past the end of a two-second route by a good margin, and then a while longer.
+	_advance(instance, 4.0)
+	t.check(instance.is_parked, "it parks when its route runs out")
+	t.check(not instance.is_leaving and not instance.is_finished,
+			"and parking is not an ending: it has neither left nor finished")
+	t.close_to(instance.global_position.distance_to(kerb), 0.0,
+			"it is standing at the end of its route, the near kerb across from the fire", 1.0)
+	t.close_to(instance.travel_velocity().length(), 0.0,
+			"and it answers zero for how fast it is travelling, so nothing reads it as closing",
+			0.001)
+	t.check(instance.contribution_at(kerb + Vector2(def.inner_radius * 0.5, 0.0)) > 0.0,
+			"it is still emitting where it stands, which is the cost the pair is made of")
+	var travelled := instance.path_travelled()
+	_advance(instance, 6.0)
+	t.close_to(instance.path_travelled(), travelled,
+			"and ten seconds later it has covered no more ground, so the gait it is drawn with "
+			+ "has stopped too", 0.001)
+	t.check(instance.is_parked and not instance.is_finished,
+			"and it is still standing there, for the rest of the day")
+	instance.free()
 
 ## **One plan, and the day is otherwise exactly the day it was.** A set piece the day owes her walk
 ## is budgeted like any other one-shot — one plan, tagged as its own group — and nothing else in the

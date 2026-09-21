@@ -1193,7 +1193,7 @@ func _process(delta: float) -> void:
 		_flush_the_flock_if_she_is_among_them()
 		if not is_waiting() and def.mobile and path.size() > 1 and not is_telegraphing_still():
 			_advance_along_path(delta)
-	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
+	elif def.mobile and path.size() > 1 and not is_telegraphing_still() and not is_parked:
 		_advance_along_path(delta)
 
 	if _obstruction and def.pursues and not is_waiting():
@@ -1525,6 +1525,10 @@ func path_travelled() -> float:
 ## warning her about a thing that is deliberately waiting.
 func travel_velocity() -> Vector2:
 	if is_finished or is_leaving:
+		return Vector2.ZERO
+	# **A parked row is not travelling, whatever its speed says.** The screen-edge badge reads this
+	# as a closing speed, and an engine standing at a kerb is not closing on anybody.
+	if is_parked:
 		return Vector2.ZERO
 	if def.pursues:
 		if is_waiting() or is_telegraphing():
@@ -1859,6 +1863,11 @@ func flock_velocities() -> Array[Vector2]:
 ## True once it has stopped being an event and is only getting out of shot. It emits nothing, it
 ## cannot end the day, and it carries no cue: whatever it was, it is over.
 var is_leaving := false
+
+## True once a row that `EventDef.stops_where_it_arrives` has reached the end of its route and
+## stopped there. Unlike `is_leaving` this is not an ending: it is still the same event, standing
+## still, for the rest of the day. See `_be_done()`.
+var is_parked := false
 var _leaving_for := 0.0
 
 ## Set only by `leave_for_a_completed_task()`: true when `LEAVING_GIVES_UP` may not end this
@@ -1876,17 +1885,31 @@ const LEAVING_GIVES_UP := 6.0
 
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
-## Two things never leave, and both would break something that reads the finishing position. An
+## Three things never leave, and each would break something that reads the finishing position. An
 ## event with a `spawns_on_finish` stops **where the thing it leaves belongs** — a convoy's
-## barricade is across the street it shut, not two streets past it. And anything with no departure
-## speed has no way to go anywhere; a café that closes has always simply been over.
+## barricade is across the street it shut, not two streets past it. Anything with no departure
+## speed has no way to go anywhere; a café that closes has always simply been over. And a row with
+## `EventDef.stops_where_it_arrives` **parks**: the fire engine is sent to the near kerb across from
+## the building (`EventManager.where_the_summoned_row_stops()`) and stays there for the rest of the
+## day, because a standing field beside a fire she was led to is the cost that makes the pair a
+## street to turn round on rather than one to hurry past.
 ##
-## **Everything else that runs out of route drives on and is gone, the fire engine included.** It
-## is sent to the near kerb across from the building (`EventManager._summon_the_sighted_row()`) and
-## does not stay there: nothing in the catalogue can arrive somewhere and park, because parking is
-## a standing field on ground she is walking past and that is a decision nobody has taken.
+## **Parking is not being over.** It still emits, it still carries its cue, and it can still end a
+## day that has a way to be ended by it — `is_leaving` would take all three away, which is why this
+## is a third branch rather than a flag on the departure.
+##
+## Everything else that runs out of route drives on and is gone.
 func _be_done() -> void:
-	if is_finished or is_leaving:
+	if is_finished or is_leaving or is_parked:
+		return
+	if def.stops_where_it_arrives:
+		is_parked = true
+		# The gait is driven by distance covered, so the distance has to stop here or a parked
+		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left
+		# where the last step put it, so `path_travelled()` still answers "the whole route" for a
+		# streaming resume.
+		_path_travelled = _path_length()
+		queue_redraw()
 		return
 	if def.departure_speed() <= 0.0 or def.spawns_on_finish != "":
 		_finish()

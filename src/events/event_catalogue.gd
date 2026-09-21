@@ -687,9 +687,10 @@ static func _construction() -> EventDef:
 	def.cost = 2
 	return def
 
-## Audible from streets away, moving fast down an arterial road, and it stops at the fire
-## `burning_building` calls it in for. Long telegraph, because the whole point of the approach
-## is that you hear it coming and have time to get off that street.
+## Audible from streets away, moving fast down an arterial road, and it parks at the fire
+## `burning_building` calls it in for and stays there for the rest of the day. Long telegraph,
+## because the whole point of the approach is that you hear it coming and have time to get off that
+## street.
 ##
 ## Never scheduled directly — a SCRIPTED def with no day, created only once the fire has been
 ## seen (`EventDef.spawns_on_sight`, `EventManager._summon_what_has_been_sighted()`). The engine
@@ -719,6 +720,10 @@ static func _fire_truck() -> EventDef:
 	def.telegraph_time = 6.27
 	def.mobile = true
 	def.speed = 190.0
+	# And it stays at the fire once it gets there. See `EventDef.stops_where_it_arrives`: the
+	# standing field beside a fire she was led to is the cost the player asked for, and the pair of
+	# them is a street she is meant to turn round rather than walk down.
+	def.stops_where_it_arrives = true
 	return def
 
 ## Act I's finale, and the day's own one-shot: a building alight on a sidewalk, with the engine

@@ -531,10 +531,13 @@ Three things worth keeping straight:
 - **Anything `mobile` leaves at its own `speed` and needs no data.** The cat runs on the way it was
   going; the dog walker carries on down the street. `departs_at` is for the rest — a flock, which
   has to fly, and a pursuer that has lost interest and trots off.
-- **Two things never leave**, and both would break something that reads the finishing position: an
-  event with a `spawns_on_finish` stops **where the thing it leaves belongs** (a military convoy's
-  barricade is where it stopped, not two streets past it), and anything with no departure speed is
-  simply over, which is right for a café that closes.
+- **Three things never leave**, and each would break something that reads the finishing position:
+  an event with a `spawns_on_finish` stops **where the thing it leaves belongs** (a military
+  convoy's barricade is where it stopped, not two streets past it); anything with no departure
+  speed is simply over, which is right for a café that closes; and a row with
+  `EventDef.stops_where_it_arrives` **parks and stays**, which is the fire engine at its fire.
+  Parking is not an ending: it still emits, still carries its cue, and is still the same event —
+  the standing field is the whole point of it.
 
 ## Scheduling
 
@@ -1026,7 +1029,7 @@ All implemented.
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
 | `burning_building` | ONE_SHOT | 3 | Against a frontage, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is — and **sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, beyond the streaming band across the block and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking further along that route. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, you cannot walk through the fire, and the shell it leaves stands where it actually burned. |
-| `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md), entering along the fire's own street from off screen and driving to the near kerb across from it. **It does not park there**: a mobile row that runs out of route carries on out of sight like every other one, so what she sees is an engine arriving and passing through. |
+| `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md), entering along the fire's own street from off screen and driving to the near kerb across from it. **It parks there for the rest of the day** (`stops_where_it_arrives`): a standing 26/s field out to 340px beside a fire she was led to is what makes the pair a street to turn round on — *"a fire engine has a high cost"*, *"you're not supposed to go past it"* (PLAYTEST-119). It has no body, so what it closes is the ground its field covers rather than the road itself. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a
 neighbourhood's own rather than a patrol's.
