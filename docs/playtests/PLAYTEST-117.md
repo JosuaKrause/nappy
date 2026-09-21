@@ -177,3 +177,33 @@ And on the misread sentence from PLAYTEST-116, asked whether the indication was 
 shouting only:
 
 > "yes, that I did the yeller correctly."
+
+## What ships, and what comes after
+
+Asked whether the fixes from PLAYTEST-116 may merge and ship:
+
+> "merge all and do the minor" · "once ready" · "sorry patch"
+
+> "or did you already implement the whole new pacing of the story beats?"
+
+Told that none of the pacing was built — M179, M180 and M181 were decided and written down
+only:
+
+> "that would be the next after this and warrants a minor release"
+
+> "once the current patch release is done we will start a new session"
+
+24. **The fixes ship as a patch release; the story's pacing is next and ships as a minor.**
+
+On M176's pigeons, told that going up on touch had made walking through a flock several times
+dearer and that the orchestrator had cut the flock's intensity to bring the cost back:
+
+> "no keep the pigeon cost at 65. they fly away. the strategy is to wait them out at no cost"
+
+> "not following the procedure should be costly"
+
+The 65 was the agent's first measurement, from a faulty rig; with real birds the same intensity
+nets about 45 through the middle. What the player decided is the intensity: it stays 42.
+
+25. **The pigeons' procedure is to wait them out, which is free, and walking into them is
+    costly on purpose.**

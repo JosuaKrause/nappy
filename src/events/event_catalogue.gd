@@ -1012,13 +1012,12 @@ static func _leaf_blower() -> EventDef:
 ## would put *those* birds up sooner, which is the "prematurely start" half of the same sentence.
 ## `Tuning.validate_event()` asks 1.55s of this geometry and the number still clears it.
 ##
-## **Intensity 34.5, because going up on time is not the same request as costing more.** Flushing
-## at the birds charges the burst while she is *among* them rather than behind her, which on its
-## own multiplied the straight line through the middle several times over. Nobody asked for a
-## dearer flock — the request was about *when* — so the rate comes down to put that line back in
-## proportion to what else she meets: above a loose dog's pass, which a flock going up in a pram's
-## face ought to be, and well under half the meter, which a `scenery` row the day puts on her route
-## may not take off her for one pavement.
+## **Intensity 42, and walking into them is meant to be dear.** *(2026-09-20: "keep the pigeon
+## cost … they fly away. the strategy is to wait them out at no cost"; "not following the procedure
+## should be costly".)* Flushing at the birds charges the burst while she is *among* them rather
+## than behind her, so the straight line through the middle costs several times what it did when
+## they went up late — and that is the row working: the answer to a flock is to stop short and let
+## it leave, which costs nothing, or to go round its wide quiet rim.
 ##
 ## **The number is set by walking a real instance and cannot be derived.** The rate here is shared
 ## out between eleven birds that fly up and away from her while she crosses, and the flush is
@@ -1090,7 +1089,7 @@ static func _pigeon_flock() -> EventDef:
 	# would emit its full rate — a pursuer's rule, where the thing standing there *is* the threat —
 	# and a flock nobody has walked up to yet would be a place that cannot be walked past at all.
 	def.quiet_until_noticed = true
-	def.intensity = 34.5
+	def.intensity = 42.0
 	def.inner_radius = 26.0
 	def.outer_radius = 168.0
 	# Eleven of them over a 62px wheel: enough that the middle is unmistakably a crowd of birds and

@@ -1438,11 +1438,10 @@ func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
 ## from her actually charge. `_instance()` adds it, which is the whole reason this is a suite and
 ## not arithmetic.
 ##
-## Two bounds, and each is a thing somebody could break without noticing. **Above a loose dog's
-## pass**, because a flock going up in a pram's face is the louder of the two encounters and the
-## rate is easy to cut too far while chasing something else. **Under half the meter**, because a
-## row that takes half a day off her for walking a pavement is a wall, and this one is `scenery`:
-## nothing in the placement keeps it off a route, so the day will put it where she is walking.
+## **Above a loose dog's pass**, because a flock going up in a pram's face is the louder of the two
+## encounters and the rate is easy to cut too far while chasing something else. There is no upper
+## bound: *"not following the procedure should be costly"* — the procedure being to wait the birds
+## out, which is free — so what walking into them costs is the player's to set by feel.
 func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var through := _flock_walked_through(t, def, 0.0)
@@ -1451,10 +1450,6 @@ func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) ->
 	t.check(through > dog,
 			"walking through a flock costs %.1f, above the %.1f a loose dog's pass costs"
 			% [through, dog])
-	t.check(through < Tuning.METER_MAX * 0.5,
-			("and %.1f is under half the meter (%.0f) — a scenery row the day puts on her route " +
-			"may not take half a day off her for walking a pavement")
-			% [through, Tuning.METER_MAX * 0.5])
 	# The rim is the other half of what a flock is for: a hot spot with a wide quiet margin, which
 	# is the whole reason it is eleven sources rather than one. Outside the birds the flush never
 	# fires at all, so what is left out there is a fraction of the rate against a decay she is
