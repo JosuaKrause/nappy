@@ -1861,6 +1861,21 @@ static func _barricade() -> EventDef:
 ## **Radii derived from the body.** Under M61's field, both lose the segment's own `half_length`
 ## (31, from `band(55)`) so the along-axis reach from centre is unchanged: `inner_radius` 70 → 39,
 ## `outer_radius` 300 → 269 — the 39px still clears the body's own 24px rounding, so neither clamps.
+##
+## **Intensity 19.5, up from 15, because the walking decay took more off this row than off any
+## other.** *(2026-09-20: "also protesters have very little excitement?"; "should be a bit more".)*
+## A wide field at a moderate rate loses far more of its price to a decay netted off over the whole
+## crossing than a narrow fierce one does — the **balance** skill's own example, and this is the row
+## it is stated about. Walking beside it awake netted the 2.5 a second the decay's rise took away
+## and almost nothing else; 19.5 gives that back with a little over, which is what was asked for.
+##
+## **19.9 is where it stops, and the margin is thin on purpose rather than by oversight.** At that
+## rate `walk_through_cost()` crosses `Tuning.WALL_WORTH_OF_COST` and `EventScheduler._role_for`
+## reclassifies the row as a `WALL`, which would pull it off every route the day carries — and a
+## protest is where a resistance task sends her (*"Stand where they're standing"*,
+## `ResistanceSteps`), so a protest off the corridor is a task she cannot reach. `docs/COSTS.md`
+## carries where it actually sits; `tests/test_events.gd` holds the relationship rather than the
+## number.
 static func _protest() -> EventDef:
 	var def := EventDef.new()
 	def.id = "protest"
@@ -1869,7 +1884,7 @@ static func _protest() -> EventDef:
 	def.first_day = 12
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]
-	def.intensity = 15.0
+	def.intensity = 19.5
 	def.inner_radius = 39.0
 	def.outer_radius = 269.0
 	def.duration = 150.0

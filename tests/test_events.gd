@@ -91,8 +91,30 @@ func run(t) -> void:
 	_test_a_completed_take_is_logged_exactly_once(t)
 	_test_a_hunting_van_draws_no_victim(t)
 	_test_the_obstruction_comes_down_once_it_stops_waiting(t)
+	_test_a_protest_stays_something_she_can_be_routed_through(t)
 
 # ------------------------------------------------------------------ fairness ---
+
+## **A protest has to stay `FRICTION`, and its intensity sits close enough to the line that this
+## is the check rather than a formality.** *(2026-09-20: "also protesters have very little
+## excitement?"; "should be a bit more".)* A wide field at a moderate rate loses more of its price
+## to the walking decay than a narrow fierce one does, so buying back what the decay took pushes
+## `walk_through_cost()` toward `Tuning.WALL_WORTH_OF_COST` — and a `WALL` is given zero copies on
+## any cell a route runs along (`EventScheduler._copies_of`), while `ResistanceSteps` sends her to
+## stand in a protest. A protest off every route is a task that cannot be reached.
+##
+## Not "the intensity is 19.5", which would be the catalogue read back to itself: what would tell
+## you something is that the row changed role.
+func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
+	var def := EventCatalogue.by_id("protest")
+	t.check(EventScheduler._role_for(def) == GameEnums.BlockerRole.FRICTION,
+			"a protest is friction, so the day may put one on a route she walks (%.1f against "
+			% def.walk_through_cost() + "the %.1f that makes a wall)" % Tuning.WALL_WORTH_OF_COST)
+	var named := false
+	for step in ResistanceSteps.all():
+		if step.task_event_id == "protest":
+			named = true
+	t.check(named, "and a resistance task is what sends her into one")
 
 ## The contract from docs/EVENTS.md: a player who starts walking away the instant an event
 ## becomes visible clears its outer radius before it reaches full strength. A violation is

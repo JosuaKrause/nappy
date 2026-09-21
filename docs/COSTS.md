@@ -59,7 +59,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | night_raid           |      wall |      24.0 |              — |           — |         70.0 |        330.0 |           2.0 |          6.0 |          6.0 |         — |              83.9 |
 | military_convoy      |      wall |      22.0 |              — |           — |         76.0 |        300.0 |           2.0 |            — |            — |     120.0 |              68.6 |
 | barricade            |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| protest              |  friction |      15.0 |              — |           — |         39.0 |        269.0 |           2.0 |          8.0 |          3.8 |         — |              27.6 |
+| protest              |  friction |      19.5 |              — |           — |         39.0 |        269.0 |           2.0 |          8.0 |          4.9 |         — |              46.4 |
 | firefight            |      wall |      30.0 |              — |           — |         84.0 |        374.0 |           2.0 |          2.5 |          7.5 |         — |             132.1 |
 | fallen_tree          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | car_accident         |      wall |      50.0 |              — |           — |         24.0 |         96.0 |           2.0 |            — |            — |         — |              65.7 |
@@ -111,7 +111,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | night_raid           |       9.0 |       9.0 |       9.0 |       9.0 |       8.8 |       7.6 |       5.2 |      -2.7 |      -6.0 |      -6.0 |
 | military_convoy      |      16.0 |      16.0 |      16.0 |      16.0 |      15.7 |      13.6 |       9.3 |      -6.0 |      -6.0 |      -6.0 |
 | barricade            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| protest              |       3.4 |       3.4 |       3.4 |       3.1 |       2.7 |       1.2 |      -1.2 |      -6.0 |      -6.0 |      -6.0 |
+| protest              |       6.2 |       6.2 |       6.2 |       5.9 |       5.3 |       3.3 |       0.2 |      -6.0 |      -6.0 |      -6.0 |
 | firefight            |      12.8 |      12.8 |      12.8 |      12.8 |      12.7 |      11.8 |       9.8 |       2.3 |      -6.0 |      -6.0 |
 | fallen_tree          |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | car_accident         |      44.0 |      44.0 |      37.5 |      18.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -163,7 +163,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | night_raid           |       2.2 |       2.2 |       2.2 |       2.2 |       2.1 |       1.5 |       0.2 |      -4.2 |      -6.0 |      -6.0 |
 | military_convoy      |       6.1 |       6.1 |       6.1 |       6.1 |       6.0 |       4.8 |       2.4 |      -6.0 |      -6.0 |      -6.0 |
 | barricade            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| protest              |      -0.8 |      -0.8 |      -0.9 |      -1.0 |      -1.2 |      -2.0 |      -3.4 |      -6.0 |      -6.0 |      -6.0 |
+| protest              |       0.7 |       0.7 |       0.7 |       0.5 |       0.2 |      -0.9 |      -2.6 |      -6.0 |      -6.0 |      -6.0 |
 | firefight            |       4.3 |       4.3 |       4.3 |       4.3 |       4.3 |       3.8 |       2.7 |      -1.4 |      -6.0 |      -6.0 |
 | fallen_tree          |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | car_accident         |      21.5 |      21.5 |      17.9 |       7.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -215,7 +215,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | night_raid           |         — |      36.2 |      35.5 |      32.7 |      27.2 |
 | military_convoy      |      29.8 |      29.7 |      29.2 |      27.2 |      23.2 |
 | barricade            |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| protest              |         — |      11.9 |      11.4 |       9.0 |       4.5 |
+| protest              |         — |      26.0 |      25.3 |      21.7 |      15.3 |
 | firefight            |         — |      66.4 |      65.6 |      62.4 |      56.4 |
 | fallen_tree          |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | car_accident         |         — |      90.2 |      78.1 |      15.8 |       0.0 |
@@ -267,7 +267,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | night_raid           |         — |       0.6 |       0.3 |      -0.8 |      -3.1 |
 | military_convoy      |       8.8 |       8.7 |       8.5 |       7.6 |       5.7 |
 | barricade            |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| protest              |         — |      -9.2 |      -9.3 |     -10.1 |     -11.6 |
+| protest              |         — |      -1.5 |      -1.7 |      -3.1 |      -5.7 |
 | firefight            |         — |      14.6 |      14.3 |      12.9 |      10.2 |
 | fallen_tree          |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | car_accident         |         — |      44.1 |      37.9 |       5.6 |       0.0 |
