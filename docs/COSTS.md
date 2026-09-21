@@ -15,9 +15,13 @@ Every figure is on quiet sidewalk (ground multiplier 1.0); other grounds are not
 
 **`Walking at a fixed distance — awake`/`Walking at a fixed distance — asleep`** are the net points a second while she walks and stays a fixed distance from a row's centre: the field (`EventDef.emission_at()`, which is what `contribution_at()` charges) averaged over the row's own pulse, times the sleeping sensitivity where the baby is asleep, less the walking decay. A pure query on the row's own data — no instance, no notice or chase state — so every included row gets a real number here, pursuers and the three detainers (`chatting_mother`, `checkpoint_hut`, `checkpoint_post`) included, the same way `walk_through_cost()` already prices them: a detainer's real cost is `Tuning.CHAT_EXCITEMENT` over the hold rather than this field, so its figures here are notional, exactly as `docs/EVENTS.md` already says of its own column.
 
-**`The pass — awake`/`The pass — asleep`** are the net points from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going different directions, the row moving exactly as the game moves it (pacing, mobile, or held still), averaged over 8 samples of its own pulse phase. `M174Pass.pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather than duplicated — `tests/test_events.gd`'s own relationship test runs the identical code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, pigeon_flock, charging_dog, alley_robbery, masked_pursuer) — its notice and chase state is driven by where the player is, which the rig never tells it, so there is no pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty for a pursuer. The 0px column is dashed for a row with a solid, still body (`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk through.
+**`The pass — awake`/`The pass — asleep`** are the net points from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going different directions, the row moving exactly as the game moves it (pacing, mobile, or held still), averaged over 8 samples of its own pulse phase except where the two paragraphs below say otherwise. `M174Pass.pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather than duplicated — `tests/test_events.gd`'s own relationship test runs the identical code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, pigeon_flock, charging_dog, alley_robbery, masked_pursuer) — its notice and chase state is driven by where the player is, which the rig never tells it, so there is no pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty for a pursuer. The 0px column is dashed for a row with a solid, still body (`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk through.
 
-Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse average, no clock and no seed anywhere in the arithmetic — two runs on the same tree write the same bytes.
+**A row that comes at her is met inside its own telegraph, and the pass says so.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: `EventDirector` creates it the moment it is owed, `EventDef.toward_player_lead()` px down her own line, and it covers that ground while it is still telegraphing — at `Tuning.TELEGRAPH_INTENSITY_FRACTION` of its intensity. So its pass is simulated from the spawn the director actually makes, at the closest siting any heading could give it (`EventDef.min_toward_player_lead()`, so the figure does not depend on which way a walk was going), telegraph running, moving as it moves. Such a row is measured once rather than averaged over 8 pulse phases: its pulse starts when it is created, so how far through the beat it is when it reaches her is fixed by the flight.
+
+**Every other row is walked up to, and its telegraph is long over by then** — a `MAP` placement was made at dawn — so those passes start after the telegraph and nothing above changes what they say.
+
+Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a heading-free siting, no clock and no seed anywhere in the arithmetic — two runs on the same tree write the same bytes.
 ## Geometry and role
 
 | id                   |      role | intensity | core_intensity | core_radius | inner_radius | outer_radius | falloff_power | pulse_period | pulse_trough |     speed | walk_through_cost |
@@ -46,16 +50,16 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | police_patrol        |  friction |      10.0 |              — |           — |         44.0 |        185.0 |           2.0 |            — |            — |      74.0 |               5.9 |
 | poster_crew          |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
 | poster_crew_square   |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
-| roadblock            |  friction |      13.0 |              — |           — |         86.0 |        179.0 |           2.0 |            — |            — |         — |              18.5 |
-| checkpoint_hut       |  friction |       6.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -0.6 |
+| roadblock            |  friction |       9.0 |              — |           — |         86.0 |        179.0 |           2.0 |            — |            — |         — |               5.6 |
+| checkpoint_hut       |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
 | checkpoint_gate      |  friction |       0.0 |              — |           — |         84.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| checkpoint_post      |  friction |       6.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -0.6 |
+| checkpoint_post      |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
 | abduction            |      wall |      20.0 |              — |           — |         54.0 |        250.0 |           2.0 |            — |            — |         — |              47.7 |
 | alley_robbery        |      wall |      16.0 |              — |           — |         30.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.8 |
 | night_raid           |      wall |      24.0 |              — |           — |         70.0 |        330.0 |           2.0 |          6.0 |          6.0 |         — |              83.9 |
 | military_convoy      |      wall |      22.0 |              — |           — |         76.0 |        300.0 |           2.0 |            — |            — |     120.0 |              68.6 |
 | barricade            |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
-| protest              |  friction |      15.0 |              — |           — |         39.0 |        269.0 |           2.0 |          8.0 |          3.8 |         — |              27.6 |
+| protest              |  friction |      19.5 |              — |           — |         39.0 |        269.0 |           2.0 |          8.0 |          4.9 |         — |              46.4 |
 | firefight            |      wall |      30.0 |              — |           — |         84.0 |        374.0 |           2.0 |          2.5 |          7.5 |         — |             132.1 |
 | fallen_tree          |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | car_accident         |      wall |      50.0 |              — |           — |         24.0 |         96.0 |           2.0 |            — |            — |         — |              65.7 |
@@ -98,16 +102,16 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | police_patrol        |       4.0 |       4.0 |       4.0 |       3.5 |       2.4 |      -1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew          |      -1.0 |      -1.0 |      -1.3 |      -2.6 |      -4.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew_square   |      -1.0 |      -1.0 |      -1.3 |      -2.6 |      -4.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| roadblock            |       7.0 |       7.0 |       7.0 |       7.0 |       6.7 |       0.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| checkpoint_hut       |       0.0 |       0.0 |       0.0 |       0.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| roadblock            |       3.0 |       3.0 |       3.0 |       3.0 |       2.8 |      -1.3 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| checkpoint_hut       |      -2.0 |      -2.0 |      -2.0 |      -2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_gate      |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| checkpoint_post      |       0.0 |       0.0 |       0.0 |       0.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| checkpoint_post      |      -2.0 |      -2.0 |      -2.0 |      -2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | abduction            |      14.0 |      14.0 |      14.0 |      13.8 |      12.9 |       9.2 |       2.9 |      -6.0 |      -6.0 |      -6.0 |
 | alley_robbery        |      10.0 |      10.0 |       9.8 |       8.9 |       7.3 |       2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | night_raid           |       9.0 |       9.0 |       9.0 |       9.0 |       8.8 |       7.6 |       5.2 |      -2.7 |      -6.0 |      -6.0 |
 | military_convoy      |      16.0 |      16.0 |      16.0 |      16.0 |      15.7 |      13.6 |       9.3 |      -6.0 |      -6.0 |      -6.0 |
 | barricade            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| protest              |       3.4 |       3.4 |       3.4 |       3.1 |       2.7 |       1.2 |      -1.2 |      -6.0 |      -6.0 |      -6.0 |
+| protest              |       6.2 |       6.2 |       6.2 |       5.9 |       5.3 |       3.3 |       0.2 |      -6.0 |      -6.0 |      -6.0 |
 | firefight            |      12.8 |      12.8 |      12.8 |      12.8 |      12.7 |      11.8 |       9.8 |       2.3 |      -6.0 |      -6.0 |
 | fallen_tree          |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | car_accident         |      44.0 |      44.0 |      37.5 |      18.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -150,16 +154,16 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | police_patrol        |      -0.5 |      -0.5 |      -0.5 |      -0.8 |      -1.4 |      -3.6 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew          |      -3.2 |      -3.2 |      -3.4 |      -4.1 |      -5.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | poster_crew_square   |      -3.2 |      -3.2 |      -3.4 |      -4.1 |      -5.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| roadblock            |       1.2 |       1.2 |       1.2 |       1.2 |       1.0 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| checkpoint_hut       |      -2.7 |      -2.7 |      -2.7 |      -2.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| roadblock            |      -1.0 |      -1.0 |      -1.0 |      -1.0 |      -1.2 |      -3.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| checkpoint_hut       |      -3.8 |      -3.8 |      -3.8 |      -3.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_gate      |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| checkpoint_post      |      -2.7 |      -2.7 |      -2.7 |      -2.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| checkpoint_post      |      -3.8 |      -3.8 |      -3.8 |      -3.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | abduction            |       5.0 |       5.0 |       5.0 |       4.9 |       4.4 |       2.4 |      -1.1 |      -6.0 |      -6.0 |      -6.0 |
 | alley_robbery        |       2.8 |       2.8 |       2.7 |       2.2 |       1.3 |      -1.6 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | night_raid           |       2.2 |       2.2 |       2.2 |       2.2 |       2.1 |       1.5 |       0.2 |      -4.2 |      -6.0 |      -6.0 |
 | military_convoy      |       6.1 |       6.1 |       6.1 |       6.1 |       6.0 |       4.8 |       2.4 |      -6.0 |      -6.0 |      -6.0 |
 | barricade            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| protest              |      -0.8 |      -0.8 |      -0.9 |      -1.0 |      -1.2 |      -2.0 |      -3.4 |      -6.0 |      -6.0 |      -6.0 |
+| protest              |       0.7 |       0.7 |       0.7 |       0.5 |       0.2 |      -0.9 |      -2.6 |      -6.0 |      -6.0 |      -6.0 |
 | firefight            |       4.3 |       4.3 |       4.3 |       4.3 |       4.3 |       3.8 |       2.7 |      -1.4 |      -6.0 |      -6.0 |
 | fallen_tree          |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | car_accident         |      21.5 |      21.5 |      17.9 |       7.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -190,11 +194,11 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | fire_truck           |      31.6 |      31.5 |      31.2 |      29.5 |      26.4 |
 | burning_building     |         — |      13.2 |      12.7 |      10.2 |       5.4 |
 | burnt_shell          |         — |      -6.3 |      -5.9 |       0.0 |       0.0 |
-| loose_dog            |      15.0 |      14.7 |      13.5 |       7.6 |      -0.0 |
+| loose_dog            |      24.2 |      23.7 |      22.1 |      14.1 |       2.0 |
 | market_stall         |         — |       2.5 |       1.3 |       0.0 |       0.0 |
 | leaf_blower          |         — |      22.6 |      18.7 |       7.1 |      -0.1 |
 | pigeon_flock         |         — |         — |         — |         — |         — |
-| cyclist              |       5.7 |       5.3 |       4.3 |      -0.5 |       0.0 |
+| cyclist              |       3.4 |       3.3 |       2.7 |      -0.4 |       0.0 |
 | ice_cream_van        |         — |      -0.3 |      -0.7 |      -2.4 |      -5.5 |
 | reversing_lorry      |         — |       5.6 |       4.9 |       1.6 |      -4.1 |
 | charging_dog         |         — |         — |         — |         — |         — |
@@ -202,16 +206,16 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | police_patrol        |       3.3 |       3.1 |       2.9 |       1.0 |      -1.9 |
 | poster_crew          |         — |      -5.3 |      -5.5 |      -6.5 |       0.0 |
 | poster_crew_square   |         — |      -5.3 |      -5.5 |      -6.5 |       0.0 |
-| roadblock            |         — |      25.0 |      24.3 |      21.1 |      11.8 |
-| checkpoint_hut       |         — |      -0.6 |      -0.7 |      -1.1 |       0.0 |
+| roadblock            |         — |      10.2 |       9.8 |       8.2 |       2.9 |
+| checkpoint_hut       |         — |      -4.6 |      -4.4 |      -3.2 |       0.0 |
 | checkpoint_gate      |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| checkpoint_post      |         — |      -0.6 |      -0.7 |      -1.1 |       0.0 |
+| checkpoint_post      |         — |      -4.6 |      -4.4 |      -3.2 |       0.0 |
 | abduction            |         — |      47.3 |      46.0 |      40.2 |      29.5 |
 | alley_robbery        |         — |         — |         — |         — |         — |
 | night_raid           |         — |      36.2 |      35.5 |      32.7 |      27.2 |
 | military_convoy      |      29.8 |      29.7 |      29.2 |      27.2 |      23.2 |
 | barricade            |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| protest              |         — |      11.9 |      11.4 |       9.0 |       4.5 |
+| protest              |         — |      26.0 |      25.3 |      21.7 |      15.3 |
 | firefight            |         — |      66.4 |      65.6 |      62.4 |      56.4 |
 | fallen_tree          |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | car_accident         |         — |      90.2 |      78.1 |      15.8 |       0.0 |
@@ -242,11 +246,11 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | fire_truck           |      10.9 |      10.8 |      10.7 |       9.9 |       8.4 |
 | burning_building     |         — |      -7.9 |      -8.1 |      -9.0 |     -10.6 |
 | burnt_shell          |         — |      -7.9 |      -7.2 |       0.0 |       0.0 |
-| loose_dog            |       4.9 |       4.7 |       4.2 |       1.5 |      -1.8 |
+| loose_dog            |       9.9 |       9.7 |       9.0 |       5.0 |      -0.6 |
 | market_stall         |         — |      -2.2 |      -2.2 |       0.0 |       0.0 |
 | leaf_blower          |         — |       1.3 |      -0.6 |      -6.2 |      -8.7 |
 | pigeon_flock         |         — |         — |         — |         — |         — |
-| cyclist              |       1.2 |       1.0 |       0.7 |      -1.1 |       0.0 |
+| cyclist              |      -0.0 |      -0.0 |      -0.2 |      -1.1 |       0.0 |
 | ice_cream_van        |         — |     -14.2 |     -14.3 |     -14.6 |     -15.2 |
 | reversing_lorry      |         — |      -7.1 |      -7.3 |      -8.2 |      -9.8 |
 | charging_dog         |         — |         — |         — |         — |         — |
@@ -254,16 +258,16 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | police_patrol        |      -4.2 |      -4.3 |      -4.3 |      -4.9 |      -5.6 |
 | poster_crew          |         — |      -9.3 |      -9.0 |      -8.0 |       0.0 |
 | poster_crew_square   |         — |      -9.3 |      -9.0 |      -8.0 |       0.0 |
-| roadblock            |         — |       3.3 |       3.1 |       2.2 |      -1.3 |
-| checkpoint_hut       |         — |      -6.0 |      -5.7 |      -3.9 |       0.0 |
+| roadblock            |         — |      -4.8 |      -4.8 |      -4.9 |      -6.2 |
+| checkpoint_hut       |         — |      -8.1 |      -7.7 |      -5.0 |       0.0 |
 | checkpoint_gate      |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| checkpoint_post      |         — |      -6.0 |      -5.7 |      -3.9 |       0.0 |
+| checkpoint_post      |         — |      -8.1 |      -7.7 |      -5.0 |       0.0 |
 | abduction            |         — |      11.4 |      10.8 |       8.2 |       3.3 |
 | alley_robbery        |         — |         — |         — |         — |         — |
 | night_raid           |         — |       0.6 |       0.3 |      -0.8 |      -3.1 |
 | military_convoy      |       8.8 |       8.7 |       8.5 |       7.6 |       5.7 |
 | barricade            |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
-| protest              |         — |      -9.2 |      -9.3 |     -10.1 |     -11.6 |
+| protest              |         — |      -1.5 |      -1.7 |      -3.1 |      -5.7 |
 | firefight            |         — |      14.6 |      14.3 |      12.9 |      10.2 |
 | fallen_tree          |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | car_accident         |         — |      44.1 |      37.9 |       5.6 |       0.0 |

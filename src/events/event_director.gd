@@ -395,13 +395,15 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## the horizontal axis; this is not, on either axis — for `cyclist` at 165px/s the closing speed is
 ## 165 + 92 = 257px/s, 51px of margin past the boundary at the default notice.
 ##
-## **A `hard_fail` row is sited further still, so its own telegraph is over before it arrives.**
+## **And further still than that, so its own telegraph is over before it arrives.**
 ## *(2026-09-07: "also a biker hit should be lethal.")* `Tuning.outlasting_telegraph_lead()` takes
 ## whichever is further: the ordinary offscreen margin, or the distance that takes
-## `telegraph_time + def.offscreen_notice` to close. `cyclist`'s telegraph is the binding term on
-## every heading. A row this far out is well past `EVENT_STREAM_RADIUS`'s own concerns; it exists
-## for exactly this one moment and is created only when it is due, so there is no cost to sitting it
-## further than a `MAP` row ever would be.
+## `telegraph_time + def.offscreen_notice` to close, plus whatever "arrives" means for the row —
+## nothing for a `hard_fail` one, where arriving is touching her, and its own `field_reach()` for a
+## loud one, where arriving is its field reaching her. The telegraph term is the binding one on
+## every heading for both rows that use this. A row this far out is well past
+## `EVENT_STREAM_RADIUS`'s own concerns; it exists for exactly this one moment and is created only
+## when it is due, so there is no cost to sitting it further than a `MAP` row ever would be.
 ##
 ## **The line is straightened onto the pavement she is standing on, when she is standing on one.**
 ## *(2026-09-07: "also biker should be on the same side of the road not the other side".)* Sited
@@ -412,6 +414,10 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## below is the preference, not a requirement: where there is no pavement edge to prefer — the
 ## carriageway, a junction, open ground — or the heading has no along-corridor component to send it
 ## down, the literal heading is used exactly as before.
+##
+## **Which lead the row gets is `EventDef.toward_player_lead()`**, not a branch here: the pass
+## measurement behind `docs/COSTS.md` has to spawn the row exactly where this sites it, so the rule
+## lives on the def where both can read it rather than in the director where only the director can.
 ##
 ## The far end of the route runs the same distance **behind** her rather than stopping where she
 ## is standing: it has to still be going somewhere when it reaches her, or `EventInstance` reads
@@ -424,10 +430,7 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## a route either.
 func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
 	var site_heading := _onto_her_side(at, heading)
-	var closing := def.speed + Tuning.WALK_SPEED
-	var lead := Tuning.outlasting_telegraph_lead(site_heading, closing, def.telegraph_time,
-				def.offscreen_notice) \
-			if def.hard_fail else Tuning.offscreen_lead(site_heading, closing, def.offscreen_notice)
+	var lead := def.toward_player_lead(site_heading)
 	var far := at + site_heading * lead
 	if not _map.is_walkable(_map.world_to_tile(far)):
 		return PackedVector2Array()

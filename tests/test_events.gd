@@ -5,7 +5,8 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
-	_test_the_three_named_rows_pass_positively_awake(t)
+	_test_the_rows_she_walks_up_to_pass_positively_awake(t)
+	_test_a_row_that_comes_at_her_is_done_telegraphing_when_it_arrives(t)
 	_test_catalogue_is_fair(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
@@ -32,6 +33,8 @@ func run(t) -> void:
 	_test_duration_and_finish(t)
 	_test_an_event_leaves_rather_than_vanishing(t)
 	_test_a_flock_is_birds_rather_than_one_bird_drawn_often(t)
+	_test_a_flock_goes_up_when_she_reaches_the_birds(t)
+	_test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t)
 	_test_a_flock_is_a_place_she_can_see(t)
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
@@ -89,8 +92,58 @@ func run(t) -> void:
 	_test_a_completed_take_is_logged_exactly_once(t)
 	_test_a_hunting_van_draws_no_victim(t)
 	_test_the_obstruction_comes_down_once_it_stops_waiting(t)
+	_test_a_protest_stays_something_she_can_be_routed_through(t)
+	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 
 # ------------------------------------------------------------------ fairness ---
+
+## **A protest has to stay `FRICTION`, and its intensity sits close enough to the line that this
+## is the check rather than a formality.** *(2026-09-20: "also protesters have very little
+## excitement?"; "should be a bit more".)* A wide field at a moderate rate loses more of its price
+## to the walking decay than a narrow fierce one does, so buying back what the decay took pushes
+## `walk_through_cost()` toward `Tuning.WALL_WORTH_OF_COST` — and a `WALL` is given zero copies on
+## any cell a route runs along (`EventScheduler._copies_of`), while `ResistanceSteps` sends her to
+## stand in a protest. A protest off every route is a task that cannot be reached.
+##
+## Not "the intensity is 19.5", which would be the catalogue read back to itself: what would tell
+## you something is that the row changed role.
+func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
+	var def := EventCatalogue.by_id("protest")
+	t.check(EventScheduler._role_for(def) == GameEnums.BlockerRole.FRICTION,
+			"a protest is friction, so the day may put one on a route she walks (%.1f against "
+			% def.walk_through_cost() + "the %.1f that makes a wall)" % Tuning.WALL_WORTH_OF_COST)
+	var named := false
+	for step in ResistanceSteps.all():
+		if step.task_event_id == "protest":
+			named = true
+	t.check(named, "and a resistance task is what sends her into one")
+
+## **A door's price is the detention, not the field, and that has to stay true of the one source a
+## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";
+## "since there can be other obstacles around".)* Every `EventDef.barrier_structure` row collapses
+## to the strongest of them at her position (`EventManager.excitement_sources_at()`), so a hut, a
+## gate and a wall's roadblocks at one corner charge one rate between them. What that rate has to
+## stay under is the **toll the hold itself charges**: a detention is spent standing still, where
+## `Tuning.EXCITEMENT_DECAY_IDLE` is zero and nothing is earned back, so the field bills for every
+## second of it on top of `Tuning.CHAT_EXCITEMENT`. Once the field over one hold outweighs the
+## toll, the field is what a door costs and the detention is the decoration — which is the
+## arrangement the player met coming out of a gate into three roadblocks and a patrol.
+##
+## The three detainers are already exempt from "nothing is cheaper to walk through than around" for
+## exactly this reason, `_PRICED_BY_THEIR_CAPTURE`; this is the same sentence said about the
+## strongest thing standing at the same place, which is the one that actually bills her.
+func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t) -> void:
+	var barriers := 0
+	for def in EventCatalogue.all():
+		if not def.barrier_structure:
+			continue
+		barriers += 1
+		var over_a_hold := def.intensity * Tuning.CHECKPOINT_DETAIN_SECONDS
+		t.check(over_a_hold < Tuning.CHAT_EXCITEMENT,
+				("one '%s' bills %.1f over a %.0fs hold at its core rate, under the %.1f the hold "
+				+ "itself charges") % [def.id, over_a_hold, Tuning.CHECKPOINT_DETAIN_SECONDS,
+				Tuning.CHAT_EXCITEMENT])
+	t.check(barriers > 0, "there were barrier structures to ask (%d)" % barriers)
 
 ## The contract from docs/EVENTS.md: a player who starts walking away the instant an event
 ## becomes visible clears its outer radius before it reaches full strength. A violation is
@@ -1051,16 +1104,64 @@ func _test_a_paced_event_walks_a_beat(t) -> void:
 ## something awake at an offset a sidewalk allows — not the exact figure, which the probe prints
 ## and `docs/EVENTS.md` records, and which moves as the catalogue is rebalanced. `dog_walker` does
 ## not fully restore its pre-M117 pass without crossing `Tuning.WALL_WORTH_OF_COST` — see that
-## row's own docstring — so this asserts only what every one of the three rows actually clears,
-## not a target the `WALL` line refuses one of them.
-func _test_the_three_named_rows_pass_positively_awake(t) -> void:
-	for id in ["homeless_yeller", "loose_dog", "dog_walker"]:
+## row's own docstring — so this asserts only what these rows actually clear, not a target the
+## `WALL` line refuses one of them.
+##
+## **The two rows she walks up to.** Both are `MAP` placements made at dawn, so the rig starts
+## their pass after the telegraph because that is when she meets them. A row `EventDirector` sites
+## down her own line is met inside its telegraph instead and is a different claim, made where its
+## own siting is decided rather than folded in here.
+func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
+	for id in ["homeless_yeller", "dog_walker"]:
 		var def := EventCatalogue.by_id(id)
 		for offset in [0.0, 20.0, 40.0]:
 			var net := M174Pass.pass_net_averaged(def, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 			t.check(net > 0.0,
 					"%s: a pass at %.0fpx of an ordinary sidewalk nets %.2f/s awake, above zero"
 					% [id, offset, net])
+
+## **A row that comes at her has to finish telegraphing before it arrives, or the telegraph is the
+## whole encounter.** *(2026-09-20: "unleashed dog still has too little influence -- needs to be
+## more intense"; "but keep things in relation to each other".)* `EventInstance.is_lethal_at()`
+## refuses the whole telegraph and `_notice_damping()` holds the field at
+## `Tuning.TELEGRAPH_INTENSITY_FRACTION` for it, so a row sited too close rides past her unable to
+## do the one thing it is for — the kill for a `hard_fail` row, the noise for a loud one.
+##
+## Two claims, and the first is the general one. **The siting outlasts the telegraph by the row's
+## own arrival distance**: nothing for a lethal row, where arriving is touching her, and
+## `field_reach()` for anything else, where arriving is its field reaching her. Stated over
+## `min_toward_player_lead()`, the closest the director could ever put it, so a heading that gives
+## it more room cannot rescue a row that fails here.
+##
+## **And the loose dog stays above the dog walker**, which is the relation the player asked to be
+## kept: a dog running loose at 132px/s costs more to be passed by than a leashed one costs to walk
+## past. Both figures come off `M174Pass`, the same simulation `docs/COSTS.md` prints, so the two
+## can never disagree about what a pass is.
+func _test_a_row_that_comes_at_her_is_done_telegraphing_when_it_arrives(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER:
+			continue
+		checked += 1
+		var closing := def.speed + Tuning.WALK_SPEED
+		var arrival: float = 0.0 if def.hard_fail else def.field_reach()
+		var gap_at_the_end := def.min_toward_player_lead() - def.telegraph_time * closing
+		t.check(gap_at_the_end >= arrival,
+				("'%s' is sited %.0fpx out and has closed to %.0fpx by the end of its %.1fs "
+				+ "telegraph, which has to clear the %.0fpx at which it arrives")
+				% [def.id, def.min_toward_player_lead(), gap_at_the_end, def.telegraph_time,
+				arrival])
+	t.check(checked > 0, "there were rows that come at her to ask (%d)" % checked)
+
+	var dog := EventCatalogue.by_id("loose_dog")
+	var walker := EventCatalogue.by_id("dog_walker")
+	for offset in [0.0, 20.0, 40.0]:
+		var loose := M174Pass.pass_net_averaged(dog, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
+		var leashed := M174Pass.pass_net_averaged(walker, offset, Tuning.EXCITEMENT_DECAY_WALKING,
+				1.0)
+		t.check(loose > leashed,
+				("a loose dog's pass at %.0fpx costs %.2f awake, above the %.2f a dog walker's "
+				+ "does") % [offset, loose, leashed])
 
 ## **A pursuer can be a place before it is a moment.** *(M36, playtest 09: "a robber should increase
 ## excitement on sight and getting close to them should be day ending", and "if you get close they
@@ -1272,6 +1373,108 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 	t.check(rim >= 0.0 and instance.contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
 			"and nothing at all reaches past the radius the contract was checked against")
 	instance.free()
+
+## **A flock goes up when she reaches the birds, and a clock cannot know when that is.**
+## *(2026-09-20: "birds are also very late to start. they shouldn't prematurely start but they
+## should basically start fluttering when I touch them not after".)* The birds are on the ground for
+## the whole telegraph by construction — `EventInstance._fly_the_flock()` has them pecking while
+## `is_telegraphing()` — so under the clock alone a walk straight in put them up well past her.
+##
+## Two claims, and the second is what stops the fix being a way of deleting the telegraph. **Walked
+## into, it flushes at the birds** — `flock_spread` plus her own body, the distance at which she is
+## among them rather than near them — within a frame of her reaching that distance and not before
+## it. **Walked past without being reached, it still goes up on its clock**, so a flock she skirted
+## is startled rather than ignored, and `telegraph_time` still means something.
+##
+## Stated over the walk rather than over the numbers it was written from: the rig sets `player_at`
+## every tick, which is the one thing the pass rig behind `docs/COSTS.md` never does and the reason
+## that table dashes this row.
+func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var touch := def.flock_spread + Tuning.PLAYER_BODY_RADIUS
+	t.check(touch < def.pursues_within,
+			"she is inside the trigger (%.0fpx) well before she is among the birds (%.0fpx)"
+			% [def.pursues_within, touch])
+
+	var straight_in := _flock_flushes_at(t, def, 0.0)
+	t.check(not is_inf(straight_in), "a flock walked straight into goes up at all")
+	t.close_to(straight_in, touch,
+			"it goes up as she reaches the birds (%.0fpx out, against a %.0fpx flock)"
+			% [straight_in, touch], Tuning.WALK_SPEED * STEP * 2.0)
+
+	# Past the edge of the wheel and never among them: nothing fires the flush, so the telegraph is
+	# what ends the wait, and it still does.
+	var skirted := _flock_flushes_at(t, def, touch + 30.0)
+	t.check(not is_inf(skirted) and skirted > touch,
+			"a flock she skirted still goes up, on its own clock, at %.0fpx" % skirted)
+
+## Walks her past a flock at `offset` px to one side at `Tuning.WALK_SPEED`, telling the instance
+## where she is every tick the way the world does, and answers how far from the middle she was on
+## the first frame the birds were off the ground — `INF` if they never left it.
+func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
+	var instance := _instance(t, def, Vector2.ZERO)
+	var her := Vector2(-def.outer_radius - 120.0, offset)
+	var answer := INF
+	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
+		instance.player_at = her
+		instance._process(STEP)
+		if not instance.is_waiting() and not instance.is_telegraphing():
+			answer = her.distance_to(instance.position)
+			break
+		her.x += Tuning.WALK_SPEED * STEP
+	instance.free()
+	return answer
+
+## **What a flock costs is what walking through one costs, and only a walked instance can say.**
+## *(2026-09-20: "but keep things in relation to each other".)* The rate on the def is shared out
+## between eleven birds and the burst starts when she reaches them, so neither
+## `EventDef.walk_through_cost()` nor `docs/COSTS.md` prices this row — the table dashes its pass
+## columns for exactly that reason. The number is set by walking it, which makes this the place the
+## relationship has to be held.
+##
+## **And the instance has to be in the tree.** A bare `EventInstance.new()` never gets `_ready()`,
+## so `_build_the_flock()` never runs, `_flock` stays empty and `contribution_at()` falls back to
+## the modelled ring on the def — which reads far higher than eleven birds that fly up and away
+## from her actually charge. `_instance()` adds it, which is the whole reason this is a suite and
+## not arithmetic.
+##
+## **Above a loose dog's pass**, because a flock going up in a pram's face is the louder of the two
+## encounters and the rate is easy to cut too far while chasing something else. There is no upper
+## bound: *"not following the procedure should be costly"* — the procedure being to wait the birds
+## out, which is free — so what walking into them costs is the player's to set by feel.
+func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var through := _flock_walked_through(t, def, 0.0)
+	var dog := M174Pass.pass_net_averaged(EventCatalogue.by_id("loose_dog"), 0.0,
+			Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
+	t.check(through > dog,
+			"walking through a flock costs %.1f, above the %.1f a loose dog's pass costs"
+			% [through, dog])
+	# The rim is the other half of what a flock is for: a hot spot with a wide quiet margin, which
+	# is the whole reason it is eleven sources rather than one. Outside the birds the flush never
+	# fires at all, so what is left out there is a fraction of the rate against a decay she is
+	# earning the whole way — the line can and does come out negative, and the claim is the gap
+	# rather than its sign.
+	var skirted := _flock_walked_through(t, def, def.flock_spread + Tuning.PLAYER_BODY_RADIUS + 30.0)
+	t.check(skirted < through * 0.5,
+			"skirting one costs %.1f, far less than the %.1f of walking through it"
+			% [skirted, through])
+
+## Net points from walking a straight line past a flock at `offset` px to one side, at
+## `Tuning.WALK_SPEED`, telling the instance where she is every tick the way the world does — the
+## one thing `M174Pass`'s rig never does, and why `docs/COSTS.md` cannot price this row.
+func _flock_walked_through(t, def: EventDef, offset: float) -> float:
+	var instance := _instance(t, def, Vector2.ZERO)
+	var her := Vector2(-def.outer_radius - 120.0, offset)
+	var net := 0.0
+	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
+		instance.player_at = her
+		instance._process(STEP)
+		if her.distance_to(instance.position) <= def.outer_radius:
+			net += (instance.contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
+		her.x += Tuning.WALK_SPEED * STEP
+	instance.free()
+	return net
 
 ## **A flock exists before it is seen, and the first frame of one is never inside the view around
 ## her.** *(PLAYTEST-69: "pigeons pop in on screen — they should exist before they are visible.")*

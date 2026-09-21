@@ -347,51 +347,6 @@ it); what is open is the half that stops the move from happening.
 
 ---
 
-## M176 — The loose dog is past her before it is loud, and three more rows by feel · asked for 2026-09-20
-
-> "unleashed dog still has too little influence -- needs to be more intense" · "but keep things
-> in relation to each other" · "also protesters have very little excitement?" · "should be a
-> bit more" · "guard posts should emit less excitement by themselves, too" · "since there can
-> be other obstacles around"
-
-[PLAYTEST-116](playtests/PLAYTEST-116.md) has the run. Every number that moves regenerates
-`docs/COSTS.md` in the same commit, and the rows keep their order against each other there
-unless an item says otherwise.
-
-- [ ] **The loose dog is loud while it passes her.** It runs at 132px a second through a 2.25
-      second telegraph at `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) of its intensity, so
-      every `near` entry in the run reads `(telegraph)` and it is behind her before it reaches
-      39. The fix is in when it is loud, not only how loud: what the telegraph owes her is
-      the warning, and a row that arrives inside its own telegraph has spent its whole
-      encounter on the warning. The fairness contract for a telegraph (the **events** skill)
-      still holds. 39 is also the ceiling above which running past it is cheaper than walking,
-      which only `car_accident` may be, so more intensity needs that answered too.
-- [ ] **The pigeons go up when she touches them.** *"they shouldn't prematurely start but they
-      should basically start fluttering when I touch them not after"*: the flock notices her
-      at 150px and then sits through a 1.7 second telegraph, which is 156px of walking, so it
-      goes up behind her. It goes up when she reaches the birds themselves — the flock's own
-      spread, not a radius around it — with no wait between the touch and the flutter. It is
-      scenery and cannot end a day, so the warning a telegraph owes is not owed here; what the
-      **events** skill says of that contract is read before the telegraph is shortened.
-- [ ] **The pass in `docs/COSTS.md` is the pass as it is met.** `M174Pass` starts its clock
-      after the telegraph; for a `TOWARD_PLAYER` row the telegraph is most of the meeting, so
-      the table says +15.0 for a pass that lands about a point. The simulation spawns the row
-      as the game does, telegraph included, and the table is regenerated.
-- [ ] **The protest costs a bit more.** 15 a second over 269px nets +3.4 beside it awake and
-      nothing asleep; at least what the walking decay took from it (2.5 a second) comes back.
-      It stays friction, under `Tuning.WALL_WORTH_OF_COST`.
-- [ ] **The guard posts emit less by themselves.** `checkpoint_hut` and `checkpoint_post`
-      emit 6 a second and a `roadblock` 13 out to 86px, and a door is several of them a tile
-      apart with a patrol beside it: three roadblocks and a patrol put 54 a second on her at
-      the moment a gate let her out. Each emits less, so that a door with its usual company
-      is a price and not a loss. The hut, the post, the gate and the roadblock already charge
-      as one source, the strongest of them where they overlap (`DECISIONS.md`, M178, a gate lets
-      her out alive), so what is left to move is that one source's own rate. Which rows "guard
-      posts" covers — the hut, the post and the
-      roadblock — is the orchestrator's reading and open to overturn.
-
----
-
 ## M182 — A finished task is shown by the world, never by text · asked for 2026-09-20
 
 > "yeller should just start walking offscreen -- no onscreen text for acknowledgements like this"

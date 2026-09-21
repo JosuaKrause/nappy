@@ -977,6 +977,14 @@ street — and there the damping is telling the truth: what is standing there is
 the event is the flock going up. With the flag, the top two rows of the table above read *at
 `TELEGRAPH_INTENSITY_FRACTION`* instead of *at full strength*.
 
+**And what ends a telegraph is her, wherever a clock cannot know when the thing started.** A
+pursuer's lunge fires when she reaches its stand-off rather than when its clock runs out, and a
+flock's flush fires when she reaches the birds — `flock_spread` plus her own body — for the same
+reason: the birds are on the ground for the whole telegraph, so its length is the wait between her
+walking into them and them reacting, and a fixed wait puts them up behind whoever walked in.
+`telegraph_time` is then the backstop for a flock she came near and never reached, and the
+geometry `Tuning.validate_event()` checks is untouched either way.
+
 `validate_pursuit()` gained two clauses for the trigger and a third that was found by measuring
 rather than by thinking. It has to notice her from **outside its own stand-off**, or the notice is
 spent standing still; from **inside its own field**, or it decides about her before she could have

@@ -1438,10 +1438,31 @@ func min_offscreen_lead(closing_speed: float, notice: float = OFFSCREEN_NOTICE) 
 ## the approach outlasts it by a real amount rather than by a coin flip of frame timing. At `cyclist`'s
 ## current 2.0s telegraph the telegraph term still dominates: `(2.0 + 0.2) * 257` = 565px, against an
 ## `offscreen_lead()` of at most 371px on the widest axis.
+##
+## **`arrival_margin` is what "before it arrives" means for this row, and it is not the same
+## distance for a lethal row and a loud one.** A `hard_fail` row arrives when it touches her, so
+## zero is right: the telegraph has to be over a notice before contact and no sooner. A row whose
+## whole content is the noise it makes arrives when its *field* touches her — everything inside
+## `EventDef.field_reach()` is already the encounter — so a telegraph that ends at contact has
+## spent the approach damping the thing it was warning about. Pass the reach, and the row goes loud
+## before she is in it.
 func outlasting_telegraph_lead(heading: Vector2, closing_speed: float,
-		telegraph_time: float, notice: float = OFFSCREEN_NOTICE) -> float:
+		telegraph_time: float, notice: float = OFFSCREEN_NOTICE,
+		arrival_margin: float = 0.0) -> float:
 	return maxf(offscreen_lead(heading, closing_speed, notice),
-			(telegraph_time + notice) * closing_speed)
+			(telegraph_time + notice) * closing_speed + arrival_margin)
+
+## The least `outlasting_telegraph_lead()` can be for a row with this telegraph closing at this
+## speed, whichever way she is heading — `min_offscreen_lead()` against the same telegraph term.
+## The same per-row floor `min_offscreen_lead()` is, for the same reason: a measurement or a
+## validation that has no heading to ask about needs the worst case the director could ever site
+## the row in rather than the case one particular walk happens to produce. Where the telegraph term
+## is the larger of the two the answer does not depend on the heading at all, and this is then the
+## exact siting rather than a floor under it.
+func min_outlasting_telegraph_lead(closing_speed: float, telegraph_time: float,
+		notice: float = OFFSCREEN_NOTICE, arrival_margin: float = 0.0) -> float:
+	return maxf(min_offscreen_lead(closing_speed, notice),
+			(telegraph_time + notice) * closing_speed + arrival_margin)
 
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".

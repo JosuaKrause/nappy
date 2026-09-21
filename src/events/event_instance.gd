@@ -1190,6 +1190,7 @@ func _process(delta: float) -> void:
 		# path rather than turning to chase her once noticed — see `_check_for_notice()` and
 		# `EventDef.pursues_within`'s own note that the field is not only for a pursuer any more.
 		_check_for_notice()
+		_flush_the_flock_if_she_is_among_them()
 		if not is_waiting() and def.mobile and path.size() > 1 and not is_telegraphing_still():
 			_advance_along_path(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
@@ -1324,11 +1325,12 @@ var _last_range := INF
 ## `resume()`'s own `from_noticed_at`, so a notice made before an instance left the world is not
 ## made twice.
 var _noticed_at := INF
-## True once she has come inside the stand-off during the telegraph, which ends the telegraph
-## there and then.
+## True once she has come close enough during the telegraph for the thing to start, which ends the
+## telegraph there and then. **The start is fired by her, not by a clock**, and two rows want it
+## for the same reason at two distances.
 ##
-## **The lunge is fired by her, not by a clock**, and the two alternatives each fail in their own
-## way. A pursuer reaches its stand-off in about a third of a second and then has the rest of a
+## **A pursuer's lunge**, at `Tuning.pursuit_standoff()`, and the two alternatives each fail in
+## their own way. It reaches its stand-off in about a third of a second and then has the rest of a
 ## 2.4s telegraph to spend while she keeps walking into it — so *holding a distance* means backing
 ## away from her, and a dog that reverses down the street in front of you is not a dog that is
 ## about to charge. **Standing still instead** is worse: she closes the last hundred pixels
@@ -1338,6 +1340,10 @@ var _noticed_at := INF
 ## Firing on proximity gives both halves at once: it never reverses, and the chase always starts at
 ## the stand-off however she approached it — which is the whole content of the contract, since
 ## `Tuning.pursuit_standoff()` is the distance that leaves her `PURSUIT_REACTION` to answer.
+##
+## **A flock's flush**, at the birds themselves — see `_flush_the_flock_if_she_is_among_them()`.
+## The same sentence about a different distance: a clock cannot know when she reached them, so a
+## clock put the birds up behind her.
 var _lunged := false
 
 ## Comes after her — the one kind of thing running is the answer to. See `EventDef.pursues` and
@@ -1441,6 +1447,34 @@ func _check_for_notice() -> void:
 		return
 	_noticed_at = age
 	_heading = toward.normalized()
+
+## **Birds go up when she reaches them, and a clock cannot know when that is.**
+## *(2026-09-20: "birds are also very late to start. they shouldn't prematurely start but they
+## should basically start fluttering when I touch them not after".)* A flock's telegraph is the
+## birds still pecking — `_fly_the_flock()` keeps them on the ground for the whole of it — so
+## whatever the telegraph's length, it is the wait between her walking into the flock and the flock
+## reacting. Walked into at `Tuning.WALK_SPEED` it put them up well past her.
+##
+## So the flush is fired by her arrival at **the birds' own spread plus her body**, the distance at
+## which she is genuinely among them rather than near them, exactly the way a pursuer's lunge is
+## fired by her reaching its stand-off — the same `_lunged` flag, because `is_telegraphing()` is
+## already the one place that answers "has this started". `flock_spread` is what the birds are
+## scattered across and `PLAYER_BODY_RADIUS` is the pram: the first bird she is level with is the
+## one that goes up.
+##
+## **`telegraph_time` stays what it was and is the backstop, not the wait.** It now only decides a
+## flock she came near and never reached — and shortening it would put *those* birds up sooner,
+## which is the "prematurely start" half of the same sentence. The contract
+## `Tuning.validate_event()` checks is unchanged and still satisfied by the number; what changed is
+## that a walk-in no longer has to wait for it.
+func _flush_the_flock_if_she_is_among_them() -> void:
+	if def.flock_size <= 0 or _lunged or player_at == Vector2.INF:
+		return
+	if is_waiting() or not is_telegraphing():
+		return
+	if global_position.distance_to(player_at) > def.flock_spread + Tuning.PLAYER_BODY_RADIUS:
+		return
+	_lunged = true
 
 ## Clamps a chase's own step so it can never end standing on ground the city says nobody can. A
 ## pursuing instance moves by setting its own position, and nothing above this function has ever

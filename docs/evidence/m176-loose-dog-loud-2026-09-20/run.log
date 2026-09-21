@@ -1,0 +1,63 @@
+nappy rig log  2026-09-20T20:51:31  version v0.15.0-10-gf055b9e5-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.1 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.5 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 1.5 ms, 240 x 338
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 0.9 ms, 454 x 358
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.7 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.9 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.8 ms, 190 x 218
+   0.0  texture  atlas page 'events' loaded in the startup: 8.1 ms, 582 x 936
+   0.0  texture  atlas page 'father' loaded in the startup: 1.7 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 23.0 ms
+
+day 1  act 1  run seed 2609743060  city seed 2609743060  length 90.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 22.4 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  plan     closed: accident v(1,4)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burst_water_main x18, cafe_tables x69, car_accident x30, cat_dash x8, chatting_mother x2, delivery_van x50, dog_walker x23, fallen_tree, homeless_yeller x7, leaf_blower x15, loose_dog x12, market_stall x45, moving_van x59, pigeon_flock x5, playground, scaffolding x22, skip x19
+   0.0  start    doorstep (122,6), facing 180°
+   0.2  near     delivery_van (telegraph) at (122,4), 64px, exc 0, in 0.0/s (crowd 1.3, events 0.0), sleep 0
+   0.9  near     dog_walker (telegraph) at (127,5), 103px, exc 0, in 1.5/s (crowd 1.2, events 0.3), sleep 0
+   1.0  frame    fps 58, worst frame 265.9ms, draws 294, objects 1708, primitives 4061, process 25.62ms, physics 1.45ms
+   1.4  near     dog_walker at (127,5), 54px, exc 0, in 4.0/s (crowd 0.0, events 27.0), sleep 1
+   1.7  near     dog_walker at (127,6), 29px, exc 7, in 32.8/s (crowd 0.0, events 32.9), sleep 1
+   1.8  near     dog_walker at (127,6), 16px, exc 10, in 33.0/s (crowd 0.0, events 32.9), sleep 1
+   2.0  frame    fps 113, worst frame 18.6ms, draws 307, objects 1782, primitives 4062, process 17.32ms, physics 1.51ms
+   2.1  cross    stepped into the road at (128,6), mid-block
+   3.0  frame    fps 114, worst frame 17.2ms, draws 309, objects 1786, primitives 4091, process 17.18ms, physics 1.79ms
+   3.2  ahead    loose_dog comes at her from 0px in front of her at (131,6)
+   3.5  cue      edge badge: loose_dog at 694px, closing 111px/s
+   4.0  frame    fps 118, worst frame 16.9ms, draws 291, objects 1733, primitives 4132, process 16.88ms, physics 1.62ms
+   4.2  crowd    walked into somebody at (131,6) | exc 22, in 4.2/s (crowd 22.2, events 0.0), sleep 2
+   4.2  blocked  pressed 90° for 1.0s at (131,6) without moving
+   5.0  frame    fps 121, worst frame 17.9ms, draws 287, objects 1737, primitives 4092, process 17.89ms, physics 1.57ms
+   6.0  frame    fps 122, worst frame 17.0ms, draws 290, objects 1717, primitives 4077, process 17.01ms, physics 1.65ms
+   6.0  cue      edge badge gone: loose_dog after 2.5s, now 366px away
+   6.3  ahead    loose_dog comes at her from 0px in front of her at (131,6)
+   6.6  cue      edge badge: loose_dog at 697px, closing 113px/s
+   7.0  frame    fps 128, worst frame 16.7ms, draws 290, objects 1672, primitives 4008, process 16.70ms, physics 1.54ms
+   7.2  blocked  pressed 90° for 4.0s at (131,6) without moving
+   7.7  near     loose_dog at (135,6), 139px, exc 9, in 5.6/s (crowd 0.0, events 6.0), sleep 3
+   8.0  shot     burst started: asked for an animation burst at (131,6) | exc 10, sleep 3 | playing | asked/burst-11030609-001
+   8.1  frame    fps 123, worst frame 61.1ms, draws 318, objects 1702, primitives 4092, process 13.89ms, physics 1.57ms
+   8.2  near     loose_dog at (133,6), 74px, exc 13, in 22.1/s (crowd 0.0, events 25.2), sleep 3
+   8.5  near     loose_dog at (132,6), 40px, exc 19, in 33.6/s (crowd 0.0, events 35.8), sleep 3
+   8.7  near     loose_dog at (131,6), 19px, exc 24, in 37.8/s (crowd 0.0, events 38.6), sleep 4
+   9.0  freeze   sleep stopped filling | exc 36, in 34.9/s (crowd 0.0, events 34.6), sleep 4 | near: loose_dog 28px
+   9.1  frame    fps 37, worst frame 62.5ms, draws 318, objects 1747, primitives 4155, process 62.45ms, physics 1.71ms
+   9.1  cue      edge badge gone: loose_dog after 2.5s, now 39px away
+   9.3  ahead    loose_dog comes at her from 0px in front of her at (131,6)
+   9.6  cue      edge badge: loose_dog at 694px, closing 114px/s
+  10.1  frame    fps 37, worst frame 61.6ms, draws 314, objects 1755, primitives 4123, process 60.58ms, physics 1.65ms
+  10.3  blocked  pressed 90° for 7.0s at (131,6) without moving
+  10.8  near     loose_dog at (135,6), 138px, exc 37, in 5.2/s (crowd 0.0, events 6.4), sleep 4
+  11.0  shot     burst complete: 36 frames | duration
+  11.1  frame    fps 37, worst frame 61.0ms, draws 317, objects 1746, primitives 4155, process 60.33ms, physics 1.77ms
+  11.3  near     loose_dog at (133,6), 75px, exc 41, in 24.9/s (crowd 0.0, events 26.1), sleep 4
+  11.6  near     loose_dog at (132,6), 41px, exc 48, in 36.0/s (crowd 0.0, events 36.4), sleep 4
+  11.7  near     loose_dog at (131,6), 21px, exc 53, in 38.4/s (crowd 0.0, events 38.8), sleep 4
+  12.1  cue      edge badge gone: loose_dog after 2.5s, now 29px away
+  12.1  frame    fps 115, worst frame 17.1ms, draws 314, objects 1741, primitives 4047, process 15.68ms, physics 1.51ms
+  12.3  ahead    loose_dog comes at her from 0px in front of her at (131,6)
+  12.6  cue      edge badge: loose_dog at 697px, closing 112px/s

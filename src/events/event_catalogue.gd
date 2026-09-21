@@ -817,20 +817,37 @@ static func _burnt_shell() -> EventDef:
 ## `homeless_yeller` move.** *(2026-09-20: "what matters for the dogs is walking past them. and it
 ## shouldn't be free. at the very least restore the net gain if not a bit more".)*
 ## `tests/probes/m174_pass.gd` walks a real instance past her at `Tuning.WALK_SPEED`, moving as it
-## actually charges. At a field of 32/s and 0px of offset, against `Tuning.EXCITEMENT_DECAY_WALKING`
-## (6.0), the pass nets +11.0/s awake — against the 3.5/s decay this field was originally set
-## beside, the same pass would have netted +14.1/s. **`TOWARD_PLAYER` never earns a `WALL` role** —
+## actually charges; what the pass nets at each offset is this row's line in `docs/COSTS.md`.
+## **`TOWARD_PLAYER` never earns a `WALL` role** —
 ## `EventScheduler._role_for` answers `NONE` for anything the director sites rather than the
 ## scheduler, so nothing here trades against `Tuning.WALL_WORTH_OF_COST` the way `dog_walker`'s
 ## retuning does. **But running still has to lose to it**, `tests/test_events.gd`'s own catalogue-
 ## wide rule, and intensity alone pushes a field loud enough to break that: at 42/s the shorter,
 ## faster crossing running buys costs less than walking it, which nothing in the catalogue but
-## `car_accident` is allowed to do. 39/s is the loudest this field gets before that flips, and the
-## pass at today's decay, 0/20/40px, still comes in over the 3.5/s-decay figure at every offset
-## `tests/probes/m174_pass.gd` checks: +15.0 / +14.7 / +13.5 awake. No change to placement:
-## `TOWARD_PLAYER` costs more than the walk-through table alone suggests already, since the whole
-## point of the row is
-## that she dodges rather than walks the line.
+## `car_accident` is allowed to do. 39/s is the loudest this field gets before that flips, which is
+## why what the player asked for next was bought in timing rather than in another point of
+## intensity.
+##
+## **It is loud while it passes her, and that is a siting decision rather than a field one.**
+## *(2026-09-20: "unleashed dog still has too little influence -- needs to be more intense"; "but
+## keep things in relation to each other".)* A telegraph damps the row to
+## `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) because *this has not started yet* — and at 132px/s
+## against a walk, the ordinary offscreen margin put the dog about a second away when it was
+## created, so the whole meeting happened inside the warning and it was behind her before it was
+## ever at 39. `EventDef.toward_player_lead()` now sites it so its telegraph is over a notice before
+## its **field** touches her rather than a notice before the dog does, which is the same argument
+## `cyclist` already used for the kill. Nothing about the field moved; the dog simply arrives
+## having finished saying it is coming.
+##
+## **Its `telegraph_time` is unchanged at 2.25s and lengthening it would not have helped.** Under
+## the ordinary margin the dog was sited 225px out on the worst axis against a 190px forward reach,
+## so its field was on her 0.16s after it existed: no telegraph short enough to be over by then is
+## long enough to be fair. The warning is not shortened either — it is the same 2.25s, now spent
+## further away, and while it is off screen the screen-edge badge a faster-than-walking row earns
+## is what carries it.
+##
+## No change to placement: `TOWARD_PLAYER` costs more than the walk-through table alone suggests
+## already, since the whole point of the row is that she dodges rather than walks the line.
 static func _loose_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loose_dog"
@@ -976,10 +993,45 @@ static func _leaf_blower() -> EventDef:
 ## about.
 ##
 ## **The telegraph contract is then paid in geometry, the way the robber's is.** `pursues_within`
-## is the wait: the birds stand there unclocked and quiet, and the burst starts when she comes
+## is the wait: the birds stand there unclocked and quiet, and the clock starts when she comes
 ## inside the trigger rather than at dawn, four streets away, where a 1.7s notice is no notice at
 ## all. It is the same shape `alley_mouse` and a `MAP`-placed `charging_dog` use, and it is what
 ## keeps "it must not be over before she arrives" true without siting the row on top of her.
+##
+## **And the birds go up when she reaches them, which a clock cannot know.** *(2026-09-20: "birds
+## are also very late to start. they shouldn't prematurely start but they should basically start
+## fluttering when I touch them not after".)* They are on the ground for the whole telegraph by
+## construction — that is what the telegraph *is* for this row — so under the clock alone a walk
+## straight in put them up about 84px past her, which is a flock reacting to somebody who has
+## already gone. `EventInstance._flush_the_flock_if_she_is_among_them()` fires the burst at
+## `flock_spread` plus her own body instead, the distance at which she is among the birds rather
+## than near them, exactly the way a pursuer's lunge is fired by her reaching its stand-off.
+##
+## **`telegraph_time` is unchanged at 1.7s and is now the backstop rather than the wait.** It only
+## decides a flock she came near and never reached — 80px off the middle, say — and shortening it
+## would put *those* birds up sooner, which is the "prematurely start" half of the same sentence.
+## `Tuning.validate_event()` asks 1.55s of this geometry and the number still clears it.
+##
+## **Intensity 42, and walking into them is meant to be dear.** *(2026-09-20: "keep the pigeon
+## cost … they fly away. the strategy is to wait them out at no cost"; "not following the procedure
+## should be costly".)* Flushing at the birds charges the burst while she is *among* them rather
+## than behind her, so the straight line through the middle costs several times what it did when
+## they went up late — and that is the row working: the answer to a flock is to stop short and let
+## it leave, which costs nothing, or to go round its wide quiet rim.
+##
+## **The number is set by walking a real instance and cannot be derived.** The rate here is shared
+## out between eleven birds that fly up and away from her while she crosses, and the flush is
+## geometric, so neither `walk_through_cost()` nor `docs/COSTS.md` prices this row — the table
+## dashes its pass columns for exactly that reason. **And the instance has to be in the tree**: a
+## bare `EventInstance.new()` never gets `_ready()`, so `_build_the_flock()` never runs, `_flock`
+## stays empty and `contribution_at()` falls back to the modelled ring on this def — which reads
+## far higher than eleven birds actually charge. `tests/test_events.gd` walks it in the tree, and
+## that is the figure the intensity was set against.
+##
+## **The rim is where the cut lands, and that is the price of the only lever left.** A line 80px
+## off the middle never comes inside the birds, so the flush never fires there and it felt the rate
+## cut and nothing else — skirting a flock is net recovery. The alternatives were a narrower field
+## or a shorter burst, and both change what the row *is* rather than what it charges.
 ##
 ## **Four things have to be true for a flock to be an event at all**, and each of them is a way this
 ## row has been ineffective:
@@ -987,9 +1039,12 @@ static func _leaf_blower() -> EventDef:
 ## - It must not be **over before she arrives**. The wait is what buys that: the telegraph is the
 ##   flock *on the pavement about to go*, and the burst outlasts her arrival rather than ending at
 ##   it.
-## - It must not be **quiet and small**: 42 over a 168px reach, in a game where a café is 12 over
-##   170, is nothing. A flock going up in a pram's face is one of the loudest things that can happen
-##   on an ordinary pavement.
+## - It must not be **quiet and small**. A flock going up in a pram's face is one of the loudest
+##   things that can happen on an ordinary pavement, and the measure of that is what walking
+##   through one actually costs rather than the rate on the page — the intensity is shared out
+##   between eleven birds, so what she meets in the middle is several overlapping fields and what
+##   she meets at the rim is one. `docs/COSTS.md` carries the rate; the cost of the line through
+##   it is measured by walking, in `tests/test_events.gd`.
 ## - It must not be **deleted at the top of its climb**, which is what `EventDef.departs_at` is for.
 ##   They fly off.
 ## - And the **birds** have to move, not just the event. Copies of one sprite at fixed offsets
@@ -1024,13 +1079,14 @@ static func _pigeon_flock() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK]
 	def.spawn_mode = EventDef.SpawnMode.MAP
-	# The wait: inside the 168px field, so the notice starts on ground she is already being charged
-	# for, and more than twice the 62px wheel, so they are going up before she is among them. At
-	# `WALK_SPEED` a player walking straight in covers the 150 in a little over the 1.7s telegraph,
-	# which is the flock going up in a pram's face rather than half a street short of it.
+	# The wait: inside the 168px field, so the clock starts on ground she is already being charged
+	# for, and more than twice the 62px wheel, so the flock is already counting by the time she is
+	# anywhere near the birds. What she actually sees is the flush at the birds themselves, which
+	# this only has to be comfortably outside; nothing is visible at this distance, since
+	# `quiet_until_noticed` damps the wait and the telegraph by exactly the same fraction.
 	def.pursues_within = 150.0
 	# Birds on a pavement are nearly nothing; the event is them going up. Without this the wait
-	# would emit the full 42 — a pursuer's rule, where the thing standing there *is* the threat —
+	# would emit its full rate — a pursuer's rule, where the thing standing there *is* the threat —
 	# and a flock nobody has walked up to yet would be a place that cannot be walked past at all.
 	def.quiet_until_noticed = true
 	def.intensity = 42.0
@@ -1044,7 +1100,9 @@ static func _pigeon_flock() -> EventDef:
 	def.duration = 4.0
 	# On the ground the whole time, which is what makes this a thing to walk around rather than a
 	# thing that happens. Over the 1.55s the contract asks of a 168px field, and measured from the
-	# moment it notices her rather than from dawn — see `EventDef.pursues_within`.
+	# moment it notices her rather than from dawn — see `EventDef.pursues_within`. The backstop for
+	# a flock she passed without reaching; the flush at the birds is what ends it for one she
+	# walked into.
 	def.telegraph_time = 1.7
 	# Faster than she can run, and up: they are gone in a second and a half and they are gone
 	# *somewhere*.
@@ -1584,6 +1642,18 @@ static func _curfew_announce() -> EventDef:
 ## ends and the falloff begins, and it is what the cost table is stated against; there is no longer
 ## any reachability arithmetic pulling on it.
 ##
+## **Intensity 9, down from 13, because a door is several bodies and she has to stand in one.**
+## *(2026-09-20: "guard posts should emit less excitement by themselves, too"; "since there can be
+## other obstacles around".)* `barrier_structure` below already stopped a corner's worth of them
+## summing — the strongest at her position is the whole answer — so what was left to move is that
+## one source's own rate. It is the strongest of the door's parts and the one that decides what
+## standing in a door costs: a hold earns no decay (`Tuning.EXCITEMENT_DECAY_IDLE` is zero), so
+## every second of it is paid in full on top of the flat `Tuning.CHAT_EXCITEMENT` the detention
+## charges. The row stays `FRICTION` — its `walk_through_cost()` was never near
+## `Tuning.WALL_WORTH_OF_COST` and is further from it now — and what actually shuts the street is
+## its 60px body, which is untouched. The **resistance**'s own checkpoint task, *"Don't go around
+## it this time. Go through"*, is priced by that body and by the guard rather than by this number.
+##
 ## **`barrier_structure`, because one street being held is one source however many bodies hold
 ## it.** A region wall stands three of these a tile apart across a single street and the region
 ## door on the cross street stands three more, so ground inside five at once exists at a corner —
@@ -1607,7 +1677,7 @@ static func _roadblock() -> EventDef:
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
-	def.intensity = 13.0
+	def.intensity = 9.0
 	def.inner_radius = 86.0
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
@@ -1833,6 +1903,21 @@ static func _barricade() -> EventDef:
 ## **Radii derived from the body.** Under M61's field, both lose the segment's own `half_length`
 ## (31, from `band(55)`) so the along-axis reach from centre is unchanged: `inner_radius` 70 → 39,
 ## `outer_radius` 300 → 269 — the 39px still clears the body's own 24px rounding, so neither clamps.
+##
+## **Intensity 19.5, up from 15, because the walking decay took more off this row than off any
+## other.** *(2026-09-20: "also protesters have very little excitement?"; "should be a bit more".)*
+## A wide field at a moderate rate loses far more of its price to a decay netted off over the whole
+## crossing than a narrow fierce one does — the **balance** skill's own example, and this is the row
+## it is stated about. Walking beside it awake netted the 2.5 a second the decay's rise took away
+## and almost nothing else; 19.5 gives that back with a little over, which is what was asked for.
+##
+## **19.9 is where it stops, and the margin is thin on purpose rather than by oversight.** At that
+## rate `walk_through_cost()` crosses `Tuning.WALL_WORTH_OF_COST` and `EventScheduler._role_for`
+## reclassifies the row as a `WALL`, which would pull it off every route the day carries — and a
+## protest is where a resistance task sends her (*"Stand where they're standing"*,
+## `ResistanceSteps`), so a protest off the corridor is a task she cannot reach. `docs/COSTS.md`
+## carries where it actually sits; `tests/test_events.gd` holds the relationship rather than the
+## number.
 static func _protest() -> EventDef:
 	var def := EventDef.new()
 	def.id = "protest"
@@ -1841,7 +1926,7 @@ static func _protest() -> EventDef:
 	def.first_day = 12
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]
-	def.intensity = 15.0
+	def.intensity = 19.5
 	def.inner_radius = 39.0
 	def.outer_radius = 269.0
 	def.duration = 150.0
@@ -2143,7 +2228,7 @@ static func _collapsed_frontage() -> EventDef:
 ## `intensity` over a tight band, small enough that the real price stays the flat
 ## `Tuning.CHAT_EXCITEMENT` the detention charges through the ordinary chat mechanism, and standing
 ## still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`). **The field is not what makes this
-## row expensive and must not be asked to be**: at 6.0 over an 84–98px band it means less along the
+## row expensive and must not be asked to be**: at 4.0 over an 84–98px band it means less along the
 ## line than the 6.0/s an ordinary street gives back, so `walk_through_cost()` reads it as free —
 ## and it is, because the price is the detention. `tests/test_events.gd` exempts the detainers from
 ## its catalogue-wide "nothing is cheaper to walk through than around" rule by name and for that
@@ -2153,6 +2238,14 @@ static func _collapsed_frontage() -> EventDef:
 ## `redetains` is what tells `EventManager` this instance is armed again once she is outside
 ## `detain_distance()`, in either direction, rather than spent after one conversation like
 ## `chatting_mother`.
+##
+## **4.0 rather than 6.0, for the reason the `roadblock` moved.** *(2026-09-20: "guard posts should
+## emit less excitement by themselves, too"; "since there can be other obstacles around".)* A door
+## is a hut on each pavement, a gate over the road and often a wall's roadblocks at the corner, and
+## a hold is spent standing still where no decay is earned. `barrier_structure` already collapses
+## all of them to the strongest at her position; this is that source's own rate when the hut is the
+## strongest thing there. It changes nothing about what a detention costs, which is
+## `Tuning.CHAT_EXCITEMENT` flat and always was.
 static func _checkpoint_hut() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint_hut"
@@ -2161,7 +2254,7 @@ static func _checkpoint_hut() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_HUT
 	def.act_tag = 2
-	def.intensity = 6.0
+	def.intensity = 4.0
 	def.inner_radius = 84.0
 	def.outer_radius = 98.0
 	def.telegraph_time = 1.0
@@ -2217,7 +2310,7 @@ static func _checkpoint_post() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_POST
 	def.act_tag = 2
-	def.intensity = 6.0
+	def.intensity = 4.0
 	def.inner_radius = 84.0
 	def.outer_radius = 98.0
 	def.telegraph_time = 1.0

@@ -12,6 +12,11 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 const SEEDS := 4
 const BASE_SEED := 771103
+## How close `_test_the_hold_charges_only_its_toll()` reads the toll — a frame or two of the
+## Baby's own stepping either side of exactly `Tuning.CHAT_EXCITEMENT`. Named because the same
+## number is what decides how loud the field beside the door has to be for that rig to be worth
+## running: a leak smaller than this is one the assertion could not tell from a pass.
+const TOLL_TOLERANCE := 1.5
 
 var _maps: Array[CityMap] = []
 
@@ -542,8 +547,16 @@ class _DoorWorld extends WorldContext:
 ## **The hold charges its toll and nothing else.** She is inside the hut for those two seconds, not
 ## on the pavement, so a door standing beside a loud field has to cost exactly what a door standing
 ## on a quiet street costs — *"it works in both directions with the same cost each time"*. A
-## `roadblock` is parked across the corner at its full 13/s to make the rig mean something: with the
-## fields left running through the hold, that alone is another 26 points on a 25-point toll.
+## `roadblock` is parked across the corner at its full rate to make the rig mean something.
+##
+## **What makes it mean something is stated over what this rig could see**, not over the toll. With
+## the fields left running through the hold, the roadblock alone would land its rate times the two
+## seconds of the hold on top of the toll — and the assertion below reads the toll to within
+## `TOLL_TOLERANCE`, so the leak has to be several times that or a rig that measured nothing would
+## look identical to one that measured the rule. Said against the toll instead, the guard was
+## really asking the roadblock to be louder than a door, which is a balance decision it has no
+## business holding: it went red when `roadblock` dropped to 9/s on a leak it would still have
+## caught twelve times over.
 func _test_the_hold_charges_only_its_toll(t) -> void:
 	var world := _DoorWorld.new()
 	t.add_child(world)
@@ -569,10 +582,11 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	stroller.global_position = entry
 	manager._tell_them_where_she_is()
 	var beside_it := loud.contribution_at(entry)
-	t.check(beside_it > Tuning.CHAT_EXCITEMENT / Tuning.CHECKPOINT_DETAIN_SECONDS,
-			("the roadblock reaches the door's own ground harder than the toll itself does " +
-			"(%.1f/s against %.1f/s) — otherwise this rig checks nothing")
-			% [beside_it, Tuning.CHAT_EXCITEMENT / Tuning.CHECKPOINT_DETAIN_SECONDS])
+	var would_leak := beside_it * Tuning.CHECKPOINT_DETAIN_SECONDS
+	t.check(would_leak > TOLL_TOLERANCE * 4.0,
+			("a leak would be worth %.1f points of the roadblock beside the door over the hold, " +
+			"well past the %.1f this rig reads the toll to — otherwise it checks nothing")
+			% [would_leak, TOLL_TOLERANCE])
 
 	var before := baby.excitement
 	manager._check_detentions()
@@ -589,7 +603,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	t.check(not hut.is_chatting() and guard > 0, "and it runs its own clock out")
 	t.close_to(baby.excitement - before, Tuning.CHAT_EXCITEMENT,
 			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
-			% [baby.excitement - before, Tuning.CHAT_EXCITEMENT], 1.5)
+			% [baby.excitement - before, Tuning.CHAT_EXCITEMENT], TOLL_TOLERANCE)
 	t.close_to(loud.landed(), 0.0,
 			"and nothing of it is attributed to the roadblock beside the door (%.1f)"
 			% loud.landed(), 0.01)
