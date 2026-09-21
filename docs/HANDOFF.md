@@ -307,8 +307,7 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 checks and worktrees can move independently of this file.
 
 - **[PLAYTEST-116](playtests/PLAYTEST-116.md) is the first run on the newest release** and is
-  two milestones in `TODO.md`: M176, the loose dog is past her before it is loud, and M178, a gate
-  lets her out alive.
+  M176, the loose dog is past her before it is loud, in `TODO.md`.
 - **[PLAYTEST-117](playtests/PLAYTEST-117.md) is three more**: M179, the fire is on her way,
   guaranteed; M180, posters she notices, and loudspeakers that are somewhere; M181, the resistance has a reason, and a task is one day, which the player has decided and
   which is built after M179 and M180. M182, a finished task is shown by the world, follows M178.
