@@ -1083,6 +1083,33 @@ func ahead_of_player_lead() -> float:
 		time_to_middle += telegraph_time
 	return maxf(Tuning.AHEAD_LEAD_DISTANCE, time_to_middle * Tuning.WALK_SPEED)
 
+## How far down her own line `EventDirector._toward_her()` sites this `TOWARD_PLAYER` row, along
+## `heading`. **The one place that answer lives**, because two things that are not the director ask
+## it: `EventDef.validate()` needs the floor under it, and the pass measurement behind
+## `docs/COSTS.md` has to spawn the row where the game spawns it or it is pricing a meeting that
+## never happens.
+##
+## `closing_speed` is the row's own `speed` plus `WALK_SPEED`, since she is usually walking into it.
+## A `hard_fail` row is sited far enough out that its telegraph is over before it arrives, because
+## `EventInstance.is_lethal_at()` refuses the whole telegraph and a row that arrives inside one is
+## not lethal at all — `Tuning.outlasting_telegraph_lead()` carries that argument.
+func toward_player_lead(heading: Vector2) -> float:
+	var closing := speed + Tuning.WALK_SPEED
+	if hard_fail:
+		return Tuning.outlasting_telegraph_lead(heading, closing, telegraph_time, offscreen_notice)
+	return Tuning.offscreen_lead(heading, closing, offscreen_notice)
+
+## `toward_player_lead()` with no heading to ask about: the least it can be on any heading, which is
+## the closest the director could ever site this row and so the cheapest version of the meeting.
+## What `tests/probes/m174_pass.gd` measures the pass against, for the same reason
+## `Tuning.min_offscreen_lead()` exists — a figure in `docs/COSTS.md` may not depend on which way a
+## particular walk happened to be going.
+func min_toward_player_lead() -> float:
+	var closing := speed + Tuning.WALK_SPEED
+	if hard_fail:
+		return Tuning.min_outlasting_telegraph_lead(closing, telegraph_time, offscreen_notice)
+	return Tuning.min_offscreen_lead(closing, offscreen_notice)
+
 ## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that
 ## a moving point's own forward reach outgrows its resting radius:

@@ -353,7 +353,8 @@ func _header_text() -> String:
 	lines.append("**`" + TITLE_PASS_AWAKE + "`/`" + TITLE_PASS_ASLEEP + "`** are the net points " +
 			"from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going " +
 			"different directions, the row moving exactly as the game moves it (pacing, mobile, " +
-			"or held still), averaged over 8 samples of its own pulse phase. `M174Pass." +
+			"or held still), averaged over 8 samples of its own pulse phase except where the two " +
+			"paragraphs below say otherwise. `M174Pass." +
 			"pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather " +
 			"than duplicated — `tests/test_events.gd`'s own relationship test runs the identical " +
 			"code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, " +
@@ -364,9 +365,24 @@ func _header_text() -> String:
 			"(`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk " +
 			"through.")
 	lines.append("")
-	lines.append("Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse " +
-			"average, no clock and no seed anywhere in the arithmetic — two runs on the same tree " +
-			"write the same bytes.")
+	lines.append("**A row that comes at her is met inside its own telegraph, and the pass says " +
+			"so.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: `EventDirector` " +
+			"creates it the moment it is owed, `EventDef.toward_player_lead()` px down her own " +
+			"line, and it covers that ground while it is still telegraphing — at " +
+			"`Tuning.TELEGRAPH_INTENSITY_FRACTION` of its intensity. So its pass is simulated from " +
+			"the spawn the director actually makes, at the closest siting any heading could give " +
+			"it (`EventDef.min_toward_player_lead()`, so the figure does not depend on which way a " +
+			"walk was going), telegraph running, moving as it moves. Such a row is measured once " +
+			"rather than averaged over 8 pulse phases: its pulse starts when it is created, so how " +
+			"far through the beat it is when it reaches her is fixed by the flight.")
+	lines.append("")
+	lines.append("**Every other row is walked up to, and its telegraph is long over by then** — a " +
+			"`MAP` placement was made at dawn — so those passes start after the telegraph and " +
+			"nothing above changes what they say.")
+	lines.append("")
+	lines.append("Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, " +
+			"a heading-free siting, no clock and no seed anywhere in the arithmetic — two runs on " +
+			"the same tree write the same bytes.")
 	lines.append("")
 	return "\n".join(lines)
 

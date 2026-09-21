@@ -5,7 +5,7 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
-	_test_the_three_named_rows_pass_positively_awake(t)
+	_test_the_rows_she_walks_up_to_pass_positively_awake(t)
 	_test_catalogue_is_fair(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
@@ -1051,10 +1051,15 @@ func _test_a_paced_event_walks_a_beat(t) -> void:
 ## something awake at an offset a sidewalk allows — not the exact figure, which the probe prints
 ## and `docs/EVENTS.md` records, and which moves as the catalogue is rebalanced. `dog_walker` does
 ## not fully restore its pre-M117 pass without crossing `Tuning.WALL_WORTH_OF_COST` — see that
-## row's own docstring — so this asserts only what every one of the three rows actually clears,
-## not a target the `WALL` line refuses one of them.
-func _test_the_three_named_rows_pass_positively_awake(t) -> void:
-	for id in ["homeless_yeller", "loose_dog", "dog_walker"]:
+## row's own docstring — so this asserts only what these rows actually clear, not a target the
+## `WALL` line refuses one of them.
+##
+## **The two rows she walks up to.** Both are `MAP` placements made at dawn, so the rig starts
+## their pass after the telegraph because that is when she meets them. A row `EventDirector` sites
+## down her own line is met inside its telegraph instead and is a different claim, made where its
+## own siting is decided rather than folded in here.
+func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
+	for id in ["homeless_yeller", "dog_walker"]:
 		var def := EventCatalogue.by_id(id)
 		for offset in [0.0, 20.0, 40.0]:
 			var net := M174Pass.pass_net_averaged(def, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)

@@ -36,6 +36,27 @@ extends RefCounted
 ## `m174_walk_beside.gd`'s closed-form 0.625 mean stands in for there; here the pulse interacts
 ## with real movement (how far he has paced, which way he is facing) so it is walked rather than
 ## integrated.
+##
+## ## The telegraph belongs to the pass, for a row that arrives inside it
+##
+## **A row she walks up to and a row that is sited in front of her are met at two different points
+## of their own lives, and pricing both from the end of the telegraph prices one of them wrongly.**
+## A `MAP` row was placed at dawn: by the time she reaches it its telegraph is hours over, which is
+## what the warm-up below reproduces. A `TOWARD_PLAYER` row is created by `EventDirector` the
+## moment it is owed, `def.toward_player_lead()` px down her own line, and it covers that ground
+## *while it telegraphs* — at `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) of its intensity, since
+## the damping means "this has not started yet". Started after the telegraph, the simulation gave
+## `loose_dog` a pass it has never once charged anybody.
+##
+## So a `TOWARD_PLAYER` row is spawned here the way the director spawns it: at age zero with the
+## telegraph running, `min_toward_player_lead()` away — the closest the director could ever site it,
+## since a figure in `docs/COSTS.md` may not depend on which way a particular walk was going — and
+## closing at its own speed plus `Tuning.WALK_SPEED` because she is walking into it.
+##
+## **Such a row has no free pulse phase and is measured once rather than averaged.** Its pulse
+## starts at the instant it is created, so how far through the beat it is when it reaches her is
+## fixed by the flight, not by when she happened to arrive. Averaging eight phases onto it would be
+## averaging over something the game does not vary.
 
 const STEP := 1.0 / 60.0
 ## Same offsets for every row, "0 where possible" plus the width a sidewalk band and a crossed
@@ -106,6 +127,10 @@ static func historical_def(id: String) -> EventDef:
 ## Static and public so the relationship test in `tests/test_events.gd` runs the identical
 ## simulation this probe prints, rather than a second copy of it that could silently disagree.
 static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensitivity: float) -> float:
+	if sited_toward_her(def):
+		# No free pulse phase: the row is created when it is owed, so where it is in its own beat
+		# when it reaches her is the flight, not the moment she walked up. See the class doc.
+		return _pass_net(def, offset, decay, sensitivity, 0.0)
 	var total := 0.0
 	var phase_span: float = def.pulse_period if def.pulse_period > 0.0 else 1.0
 	for i in PHASE_SAMPLES:
@@ -113,14 +138,28 @@ static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensit
 		total += _pass_net(def, offset, decay, sensitivity, phase_delay)
 	return total / PHASE_SAMPLES
 
+## Whether the pass is met with the row's telegraph still running — a row `EventDirector` sites
+## down her own line the moment it is owed, rather than one the day put on a tile at dawn. Stated
+## over `spawn_mode` rather than over a list of ids, so a new row that comes at her is priced
+## honestly without anybody remembering to add it here.
+##
+## **`AHEAD_OF_PLAYER` is deliberately not included**, though the director sites it dynamically
+## too: it is put *across* her line rather than down it, and this rig only knows how to walk two
+## bodies at each other in a straight line. Measuring one here at a crossing row's lead would price
+## a geometry the director does not produce, which is the error this whole branch exists to remove.
+static func sited_toward_her(def: EventDef) -> bool:
+	return def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER
+
 static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: float,
 		phase_delay: float) -> float:
+	var toward_her := sited_toward_her(def)
 	var path := PackedVector2Array([Vector2(-4000.0, 0.0), Vector2(4000.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(def, path[0], path)
 
-	# Past the telegraph, plus the requested phase offset -- moved for real, nobody watching.
-	var warm := def.telegraph_time + 0.05 + phase_delay
+	# Past the telegraph, plus the requested phase offset -- moved for real, nobody watching. A row
+	# sited in front of her skips this entirely: the telegraph is the meeting, not a warm-up to it.
+	var warm := 0.0 if toward_her else def.telegraph_time + 0.05 + phase_delay
 	var warm_steps := int(ceil(warm / STEP))
 	for _i in warm_steps:
 		instance._process(STEP)
@@ -130,12 +169,22 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	var heading_x := signf(instance._heading.x)
 	if is_zero_approx(heading_x):
 		heading_x = 1.0
-	var her_pos := instance.position + Vector2(heading_x * LEAD, offset)
+	# Where the director puts it, for a row the director sites; otherwise the fixed window that
+	# clears every radius in the catalogue.
+	var lead := def.min_toward_player_lead() if toward_her else LEAD
+	var her_pos := instance.position + Vector2(heading_x * lead, offset)
 	var her_velocity := Vector2(-heading_x * Tuning.WALK_SPEED, 0.0)
 
 	var incoming_sum := 0.0
 	var decay_sum := 0.0
+	# Long enough for her to start outside the field, cross it and leave it again. For a row coming
+	# at her the gap closes at both speeds together and the window is its own siting plus its reach;
+	# for everything else it is the fixed window either side, as it always was. Overrunning costs
+	# nothing either way — the sums below only accrue while she is inside `outer_radius`.
 	var steps := int(ceil((LEAD * 2.0 / Tuning.WALK_SPEED) / STEP)) + 120
+	if toward_her:
+		var closing := def.speed + Tuning.WALK_SPEED
+		steps = int(ceil(((lead + def.field_reach()) / closing) / STEP)) + 120
 	for _i in steps:
 		instance._process(STEP)
 		her_pos += her_velocity * STEP

@@ -413,6 +413,11 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## carriageway, a junction, open ground — or the heading has no along-corridor component to send it
 ## down, the literal heading is used exactly as before.
 ##
+## **Which of those two the row gets is `EventDef.toward_player_lead()`**, not a branch here: the
+## pass measurement behind `docs/COSTS.md` has to spawn the row exactly where this sites it, so the
+## rule lives on the def where both can read it rather than in the director where only the director
+## can.
+##
 ## The far end of the route runs the same distance **behind** her rather than stopping where she
 ## is standing: it has to still be going somewhere when it reaches her, or `EventInstance` reads
 ## the end of its path as *arrived* and leaves right where it met her, which is exactly the
@@ -424,10 +429,7 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## a route either.
 func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
 	var site_heading := _onto_her_side(at, heading)
-	var closing := def.speed + Tuning.WALK_SPEED
-	var lead := Tuning.outlasting_telegraph_lead(site_heading, closing, def.telegraph_time,
-				def.offscreen_notice) \
-			if def.hard_fail else Tuning.offscreen_lead(site_heading, closing, def.offscreen_notice)
+	var lead := def.toward_player_lead(site_heading)
 	var far := at + site_heading * lead
 	if not _map.is_walkable(_map.world_to_tile(far)):
 		return PackedVector2Array()

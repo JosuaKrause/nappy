@@ -1443,6 +1443,18 @@ func outlasting_telegraph_lead(heading: Vector2, closing_speed: float,
 	return maxf(offscreen_lead(heading, closing_speed, notice),
 			(telegraph_time + notice) * closing_speed)
 
+## The least `outlasting_telegraph_lead()` can be for a row with this telegraph closing at this
+## speed, whichever way she is heading — `min_offscreen_lead()` against the same telegraph term.
+## The same per-row floor `min_offscreen_lead()` is, for the same reason: a measurement or a
+## validation that has no heading to ask about needs the worst case the director could ever site
+## the row in rather than the case one particular walk happens to produce. Where the telegraph term
+## is the larger of the two the answer does not depend on the heading at all, and this is then the
+## exact siting rather than a floor under it.
+func min_outlasting_telegraph_lead(closing_speed: float, telegraph_time: float,
+		notice: float = OFFSCREEN_NOTICE) -> float:
+	return maxf(min_offscreen_lead(closing_speed, notice),
+			(telegraph_time + notice) * closing_speed)
+
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".
 const AHEAD_MIN_SPEED := 40.0

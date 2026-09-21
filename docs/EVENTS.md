@@ -1227,6 +1227,16 @@ the midpoint — is one you can stand almost inside for free.
 cannot actually be made through at all; see "Solid things are solid". It is still the right way to
 price a **row**: it is what being close costs.
 
+**A row is priced at the point of its own life she meets it at, and for a `TOWARD_PLAYER` row that
+is inside its telegraph.** A `MAP` placement was made at dawn, so by the time she walks up to it
+the telegraph is hours over and the pass is the whole field at full strength. A row the director
+sites down her own line is created the moment it is owed and covers the ground between at
+`Tuning.TELEGRAPH_INTENSITY_FRACTION` of its intensity, so how far out it is sited decides how much
+of the meeting is spent on the warning rather than on the event. That is a placement decision
+rather than a field one, `EventDef.toward_player_lead()` is where it is taken, and the pass columns
+of `docs/COSTS.md` are measured through it — a row that arrives while still telegraphing has spent
+its whole encounter warning about itself.
+
 **Three kinds of row are priced differently from what a straight read of the field would suggest.**
 A `hard_fail` row's `walk_through_cost()` is notional, because nobody finishes the walk. `car_accident`
 is the one row whose body does not span its own field — solid at its two cars and open between them,
