@@ -832,6 +832,16 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 	city.crowd.clear()
 	var hut: WalkerDoorHold = scene["huts"][0]
 	var walker := _walker_approaching(scene, hut, 160.0, CrowdAgent.DoorAnswer.HELD)
+	# The way it points as it starts, kept for the whole crossing: "past the hut" is measured
+	# along that axis, because the walker's own heading flips the moment it turns round — and a
+	# walker that came out and then walked back would read as one that never came out at all.
+	# The line test below already guards its `crossed` against the same flip the same way.
+	var approach := walker.heading()
+	# Where the door let it go, measured on the frame the cooldown releases it — the release is
+	# by distance, so this is the walker clear of the hut under its own steam rather than the
+	# spot `_emerge_from_the_hut()` placed it on. Stays -INF if the release never comes inside
+	# the window, which the four-states sequence check reports first.
+	var came_out_at := -INF
 
 	var seen: Array[int] = [walker._door_state]
 	var occupied_off_inspection := 0
@@ -847,6 +857,8 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 		if walker._door_state == CrowdAgent.DoorState.WAITING and walker.velocity().is_zero_approx():
 			waited_at = minf(waited_at, -_past_the_hut(walker, hut))
 		if walker._door_state != seen[seen.size() - 1]:
+			if seen[seen.size() - 1] == CrowdAgent.DoorState.EMERGING:
+				came_out_at = (walker.global_position - hut.position).dot(approach)
 			seen.append(walker._door_state)
 	t.check(seen == [CrowdAgent.DoorState.WALKING, CrowdAgent.DoorState.WAITING,
 			CrowdAgent.DoorState.INSPECTION, CrowdAgent.DoorState.EMERGING,
@@ -863,8 +875,8 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 	t.check(absf(waited_at - Tuning.WALKER_DOOR_STOP_DISTANCE) < 4.0,
 			"it stops short of the hut's own body (%.1fpx against %.1f)"
 			% [waited_at, Tuning.WALKER_DOOR_STOP_DISTANCE])
-	t.check(_past_the_hut(walker, hut) > 0.0,
-			"and it comes out on the far side of the door (%.1fpx)" % _past_the_hut(walker, hut))
+	t.check(came_out_at > 0.0,
+			"and it comes out on the far side of the door (%.1fpx)" % came_out_at)
 	t.check(hut.inside == null and hut.waiting() == 0,
 			"the hut is free again once it has let somebody through")
 
