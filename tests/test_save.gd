@@ -33,6 +33,8 @@ func run(t) -> void:
 	_test_write_refuses_once_the_run_has_ended(t)
 	_test_the_escape_section_survives_a_round_trip(t)
 	_test_a_save_from_before_the_escape_still_loads(t)
+	_test_completed_resistance_alley_tiles_survive_a_round_trip(t)
+	_test_a_save_from_before_the_alley_tiles_still_loads(t)
 
 	_test_day_under_way_load_costs_one_nerve(t)
 	_test_day_under_way_load_on_the_last_nerve_ends_the_run(t)
@@ -54,9 +56,11 @@ func run(t) -> void:
 	GameSave.set_path_override("")
 	GameState.restore_snapshot(baseline)
 	# `restore_snapshot()` writes every field the *snapshot* carries, and the escape's own section
-	# is deliberately not one of them — see `_SAVED_OUTSIDE_THE_SNAPSHOT` — so this suite has to
-	# put it back by hand or the next one starts in the middle of an escape.
+	# and the resistance's used alley tiles are deliberately not among them — see
+	# `_SAVED_OUTSIDE_THE_SNAPSHOT` — so this suite has to put both back by hand or the next one
+	# starts in the middle of an escape with somebody else's used alleys still on the list.
 	GameState.escape_section = FinaleController.Section.NONE
+	GameState.completed_resistance_alley_tiles.clear()
 
 # ---------------------------------------------------------------------- policy ---
 
@@ -110,8 +114,9 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## beside `"day_under_way"`, because `GameState.snapshot_is_complete()` refuses a `"state"` missing
 ## any field this build writes: inside the snapshot it would have made every save written before
 ## the escape existed unreadable, for the sake of one int. `_test_a_save_from_before_the_escape_
-## still_loads()` is what holds that.
-const _SAVED_OUTSIDE_THE_SNAPSHOT := ["escape_section"]
+## still_loads()` is what holds that. `completed_resistance_alley_tiles` rides the same way, for
+## the same reason — `_test_a_save_from_before_the_alley_tiles_still_loads()` holds it.
+const _SAVED_OUTSIDE_THE_SNAPSHOT := ["escape_section", "completed_resistance_alley_tiles"]
 
 ## The guard the brief asks for: a field added to `GameState` later and forgotten in
 ## `GameState._SAVE_FIELDS` fails here rather than quietly not being saved. `PROPERTY_USAGE_
@@ -318,6 +323,44 @@ func _test_a_save_from_before_the_escape_still_loads(t) -> void:
 			"and the day-under-way flag beside it, unchanged")
 	t.check(GameState.escape_section == FinaleController.Section.NONE,
 			"and the run is in no section, rather than keeping whatever was in memory")
+	GameSave.clear()
+
+## The same mechanism `escape_section` rides on, for the alley tiles the resistance has already
+## used this run (M177) — closing the game between days must not hand the next mark back every
+## alley to choose from again.
+func _test_completed_resistance_alley_tiles_survive_a_round_trip(t) -> void:
+	GameState.start_run(515151)
+	GameState.completed_resistance_alley_tiles = [Vector2i(4, 9), Vector2i(-2, 15)]
+	t.check(GameSave._write_now(false), "a run with used alley tiles writes a save")
+	GameState.start_run(1)
+	t.check(GameState.completed_resistance_alley_tiles.is_empty(),
+			"a fresh run has recorded none (the check below would pass vacuously otherwise)")
+	t.check(not GameSave._read_now().is_empty(), "and the file resumes")
+	t.check(GameState.completed_resistance_alley_tiles == [Vector2i(4, 9), Vector2i(-2, 15)],
+			"onto the tiles it was closed with, Vector2i values and all")
+	GameSave.clear()
+
+## **A save written before this field existed still loads**, the same reasoning
+## `_test_a_save_from_before_the_escape_still_loads()` holds for `escape_section`: a file with no
+## mention of it is a complete save and resumes with nothing recorded, by absence.
+func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
+	GameState.start_run(626262)
+	var old_shape := JSON.stringify({
+		"format_version": GameSave.FORMAT_VERSION,
+		"build": "a build from before this field",
+		"day_under_way": true,
+		"escape_section": GameState.escape_section,
+		"state": GameState.save_snapshot(),
+	})
+	t.check(not old_shape.contains("completed_resistance_alley_tiles"),
+			"the payload really is one with no alley tiles recorded in it")
+	GameState.start_run(1)
+	GameState.completed_resistance_alley_tiles = [Vector2i(7, 7)]
+	_write_raw(old_shape)
+	var resumed := GameSave._read_now()
+	t.check(not resumed.is_empty(), "a save with no alley tiles still resumes")
+	t.check(GameState.completed_resistance_alley_tiles.is_empty(),
+			"and the list is empty, rather than keeping whatever was in memory")
 	GameSave.clear()
 
 # ------------------------------------------------------------- the lost-day path ---

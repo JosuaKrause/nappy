@@ -1093,11 +1093,18 @@ Alley tiles apply a constant `+3.0/s` excitement trickle. They are shortcuts, an
 where the resistance meets. Both facts are the point: the fastest route and the story route
 are the ones that cost you the baby's calm.
 
-A resistance pickup's chalk mark follows her rather than sitting still: it counts as placed
-only once its own position has actually been inside view, and until then, walking more than
+A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed
+only once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the
+visible world's own 180px vertical half-extent so the point is on screen on every bearing
+rather than only a favourable one — never right at the screen's own edge) of it, on screen,
+continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
+enough, that walking past it rather than to it is a choice, not the instant its tile merely
+swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
 alley tile within that radius of her instead — the alley's own mouth, on the path rather
-than off it. Its guard moves with it, at the same 66–176px band from wherever it lands.
+than off it — skipping an alley a completed step's mark already stood at as long as some
+other one is still in reach. Its guard moves with it, at the same 66–176px band from
+wherever it lands.
 
 Neither the mark nor its guard is ever offered ground she cannot reach that day: a held
 segment, a sealed alley, or the ground behind a region wall's band — including a crossing
@@ -1325,9 +1332,11 @@ run and the day, never the moment inside one (PLAYTEST-82).
 
 **A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
-history has moved, where she settled each day and the run's clock — plus two facts the run does not
-know about itself: whether a day was under way when the file was written, and which section of the
-escape it is in, if any (see "The escape, which is the run's ending"). Her position and heading,
+history has moved, where she settled each day and the run's clock — plus three facts the run does
+not know about itself: whether a day was under way when the file was written, which section of the
+escape it is in, if any (see "The escape, which is the run's ending"), and which alley tiles the
+resistance has already used for a completed mark, so a mark on a later day does not reuse one it
+does not have to. Her position and heading,
 the meter and the sleepiness, the day's own clock, every event instance and the crowd are not
 saved; the city and each day's plan need none of this either, since both are functions of the seed
 and the day. Recording the moment itself would have to carry the crowd, every event instance and

@@ -21,6 +21,14 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Find a chalk mark on a day that has one, and touch it** (day 4 onward; the mark is in an
+  alley near wherever she walks). It stays
+  put once she has been within 150px of it, on screen, for a second, and until then it moves
+  to the alley she comes across: **does it ever vanish from a place she had noticed it, or
+  sit at the screen's edge and never come nearer?** The first mark's note
+  is one sentence. Record is `DECISIONS.md`, M177, the second
+  mark is any alley she comes across.
+
 - **Walk past the man shouting, a dog walker and a loose dog, going the other way, then walk
   beside each** (without `--invincible`, which holds the meter still; `--spawn
   event:homeless_yeller` puts one in front of her). A pass nets about 11 points for the man

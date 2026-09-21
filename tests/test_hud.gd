@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_first_mark_is_never_named_but_later_ones_are(t)
 	_test_every_perform_steps_header_names_the_instruction_not_the_title(t)
+	_test_a_completed_step_puts_no_text_on_screen(t)
 	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
 
 func _hud(t) -> CanvasLayer:
@@ -401,6 +402,19 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 	hud.free()
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
+
+## *"no onscreen text for acknowledgements like this"* (PLAYTEST-117): a finished resistance step is
+## shown by the world — the mark's touched picture, the man shouting walking away — and the HUD's
+## teaching line stays out of it, for a mark and for a perform step alike.
+func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
+	var hud := _hud(t)
+	hud._teach.text = ""
+	EventBus.resistance_step_completed.emit(1)
+	t.check(hud._teach.text == "", "a completed mark puts no text on screen")
+	EventBus.resistance_step_completed.emit(2)
+	t.check(hud._teach.text == "", "a completed perform step puts no text on screen either")
+
+	hud.free()
 
 ## *(Playtest 25 finding 1, verified against the engine rather than inferred: `"%3.0f" % value`
 ## rounds to nearest, so 99.5 and everything above it already printed `100` while the day was

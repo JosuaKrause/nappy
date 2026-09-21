@@ -19,6 +19,8 @@ extends RefCounted
 ## still a complete snapshot (`GameState.snapshot_is_complete()` asks only about `"state"`) and
 ## still resumes, reading as `FinaleController.Section.NONE` by absence. Putting it in
 ## `_SAVE_FIELDS` instead would have made every save on disk unreadable for the sake of one int.
+## `"completed_resistance_alley_tiles"` rides the same way, for the same reason, reading as "none
+## recorded" by absence.
 ##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
 ## run; `set_path_override()` is the one seam a test uses to point at a scratch file instead, and
@@ -125,11 +127,15 @@ static func _write_now(day_under_way: bool) -> bool:
 	if not file:
 		push_warning("GameSave: could not open %s for writing" % _path())
 		return false
+	var alley_tiles: Array = []
+	for tile: Vector2i in GameState.completed_resistance_alley_tiles:
+		alley_tiles.append({"x": tile.x, "y": tile.y})
 	file.store_string(JSON.stringify({
 		"format_version": FORMAT_VERSION,
 		"build": TitleScreen.build_text(),
 		"day_under_way": day_under_way,
 		"escape_section": GameState.escape_section,
+		"completed_resistance_alley_tiles": alley_tiles,
 		"state": GameState.save_snapshot(),
 	}))
 	file.close()
@@ -208,4 +214,9 @@ static func _read_now() -> Dictionary:
 	# this one is not among them, so a save from a build that never wrote the key leaves the run in
 	# the ordinary fourteen days rather than half-way into an escape it never reached.
 	GameState.escape_section = int(data.get("escape_section", 0))
+	# Same reasoning, same shape, for the alley tiles the resistance has already used this run: a
+	# save from a build that never wrote the key leaves the list empty rather than half-restored.
+	GameState.completed_resistance_alley_tiles.clear()
+	for raw: Dictionary in data.get("completed_resistance_alley_tiles", []):
+		GameState.completed_resistance_alley_tiles.append(Vector2i(int(raw["x"]), int(raw["y"])))
 	return {"day_under_way": bool(data.get("day_under_way", false))}

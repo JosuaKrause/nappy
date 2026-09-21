@@ -245,6 +245,7 @@ func _on_event_telegraphed(instance: EventInstance) -> void:
 	_taught_run = true
 	_say("Double tap to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
+
 func _say(line: String, seconds: float) -> void:
 	_teach.text = line
 	_teach_left = seconds

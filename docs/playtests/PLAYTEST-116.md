@@ -39,6 +39,12 @@ Then, one message each, while the above was being read:
 > "birds are also very late to start. they shouldn't prematurely start but they should
 > basically start fluttering when I touch them not after"
 
+> "I don't like the yeller hint -- remove the \"anyone of them could be it\" this is unnecessary
+> information that sounds odd"
+
+> "can you list out the progression in the game? what is each story beat for every day, what
+> is each day introducing, and what are each day's tasks?"
+
 ## What the run says
 
 **1. The second mark was placed, pinned beside the home before she moved, and never found.**
@@ -96,3 +102,5 @@ walking decay like every row tuned before 2026-09-12.
    one door's worth, however many of them stand together.
 10. **The pigeons go up when she touches them**: not before she reaches them, and not after
     she has walked through.
+11. **The first mark's note loses its second sentence**, "Any of them could be it": it is
+    unnecessary and sounds odd. Which man shouting counts does not change.

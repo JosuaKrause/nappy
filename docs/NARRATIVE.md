@@ -155,6 +155,10 @@ words back on the following day's screen — and the HUD carries one terse line,
 rather than during one. **That line is silent until the first mark has been touched** —
 the first encounter comes with no hint at all, and only later ones are named.
 
+**A finished step is shown by the world and never by text.** A touched mark changes to its
+done color, which is all a mark needs; nothing is written on the HUD, and there is no counter,
+no objective marker and no log.
+
 **A lost day repeats its own instruction rather than moving on.** *"the words shown on the lost
 day are the words that show at the beginning of that day not the nexts."* The summary of a day
 they lost reads out the words of the mark that unlocked the task they were out to perform — the
@@ -163,11 +167,12 @@ on a lost day has its touch given back with the attempt, and the retry needs tel
 is for. A lost day 4 says nothing at all: its whole content is finding the mark, so there is
 nothing yet to repeat.
 
-A pickup mark that has never been on screen has never really been placed, so it follows
+A pickup mark the player has not actually noticed — stood near, on screen, long enough that
+walking past it rather than to it was a choice — has never really been placed, so it follows
 the player rather than sitting where the dawn plan first put it: once they are far enough from it
-to have missed it, it moves to the alley they have just come near instead, guard and all —
-so a mark the player can actually walk up to is what makes the silent first encounter fair
-rather than a dead end.
+to have missed it, it moves to the alley they have just come near instead, guard and all, skipping
+an alley an earlier task's mark already used while another is in reach — so a mark the player can
+actually walk up to is what makes the silent first encounter fair rather than a dead end.
 
 ## Endings
 
