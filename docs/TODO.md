@@ -515,9 +515,13 @@ a task is one day, whose day 14 goes to this building's front door.
       candidates allow, so a seed can end with none; the guarantee is checked when the
       footprint is accepted, never repaired afterwards. What it does to existing seeds and
       saves is measured and said. Which district it stands in is the orchestrator's and open
-      to overturn: industrial, away from the home.
-      **It is a landmark she has passed since day 1**, stacks and lit windows, so the last
-      night's target is a place she knows ([PLAYTEST-121](playtests/PLAYTEST-121.md)).
+      to overturn: industrial, and **not the home's district**, since day 9's task in M181, the
+      resistance has a reason, and a task is one day, is for a station that is across a door;
+      day 14 then crosses one, and the guarantee that the front door can be reached on day 14
+      is checked with the doors and that day's closures in place.
+      **It stands from day 1 and looks the same until the last night**, stacks and lit
+      windows, so a player who has walked that way knows the place they are sent to
+      ([PLAYTEST-121](playtests/PLAYTEST-121.md)).
 - [ ] **The blackout is everything at once.** After she has touched the front door, once she
       is a set distance from the station, every lit window goes dark, every traffic light goes
       off and every loudspeaker mast stops, in one frame. *The orchestrator recommended the
@@ -534,7 +538,8 @@ a task is one day, whose day 14 goes to this building's front door.
 - [ ] **`docs/NARRATIVE.md` says what the last night is.** Its good ending has the
       loudspeakers cutting out as the sabotage itself and the walk home after it as "the
       easiest conditions in the game, and that is the reward". With this built the masts stop
-      because the power does, the ambient floor is still zero, and **neither the walk home nor
+      because the power does — their fields, since M180, posters she notices, and loudspeakers
+      that are somewhere, leaves no city-wide floor to silence — and **neither the walk home nor
       the escape is easy** ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be
       easy!"). The "Good" ending, Act IV's day 14 and tone rule 3's "the reward is quiet" are
       rewritten with the build, and `docs/MECHANICS.md`'s account of the good ending with them.
@@ -552,9 +557,10 @@ a task is one day, whose day 14 goes to this building's front door.
 
 [PLAYTEST-117](playtests/PLAYTEST-117.md) has the whole message, the orchestrator's opinion
 and the questions put back with their options; [PLAYTEST-118](playtests/PLAYTEST-118.md) has
-the answers on the calendar's order, the spare task and the walk home. **Decided by the player; built after M179, the
-fire is on her way, and M180, posters she notices, and loudspeakers that are somewhere**, since
-two of its tasks go to places those make. The mark's noticing rule is built (`DECISIONS.md`,
+the answers on the calendar's order, the spare task and the walk home. **Decided by the
+player; built after M179, the fire is on her way, M180, posters she notices, and loudspeakers
+that are somewhere, and M183, the power station and the blackout**, since three of its tasks go
+to places those make. The mark's noticing rule is built (`DECISIONS.md`,
 M177, the second mark is any alley she comes across), and the mark is drawn as it always was.
 
 **Decided:**
@@ -579,12 +585,16 @@ M177, the second mark is any alley she comes across), and the mark is drawn as i
   overturned by the player for one-place tasks.*
 - **Four new one-place tasks**, all four chosen by the player: silence a loudspeaker mast, which
   stays quiet for the rest of the run; leave something at the burnt shell from day 3; warn a
-  neighbor before a raid, with a deadline; cross a named door.
+  neighbor before a raid, with a deadline; cross a named door. **The neighbor lives in her own
+  building, so the arrow points at them out in the city**, and the deadline is the neighbor
+  walking home into the vans (*the orchestrator's reading · taken by the player on 2026-09-21*,
+  [PLAYTEST-121](playtests/PLAYTEST-121.md)).
 - **A task done is shown by the world and never by text** (M182, a finished task is shown by
   the world): the thing she reached visibly answers, the arrow goes out, and the day summary
   says so.
-- **Days 10 to 13 get things that happen once**, all four chosen by the player, each sited from
-  where she is walking as the fire is and each leaving something permanent: a raid on her own
+- **Days 10 to 13 get things that happen once**, all four chosen by the player, each leaving
+  something permanent, and each sited from where she is walking as the fire is, except the raid,
+  which is at her own building and is what she comes home to: a raid on her own
   street whose door is boarded the next morning, the market is gone, a park is taken once she
   has reached its swing, and a column on the main road.
 
@@ -637,19 +647,17 @@ mandatory if it makes more sense") · not taken, since no row needs it.*
 | 7 | The package at the van's drop | From the group to the neighbor. The driver is a sympathizer; the package is tools and a lamp. She carries it home, which is where the neighbor lives. | Somebody else risks the building. |
 | 8 | The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A cordoned ruin is where nobody goes, so it is the dead drop. Whether day 3's fire was an accident is never answered. | The drawing goes out another way. |
 | 9 | Cross a named door | The districts closed that morning and the station is across one. She finds out whether a stroller gets through. | Somebody else finds out. |
-| 10 | Warn the neighbor before the raid | The regime has found the worker. Warned, the neighbor runs; not warned, the neighbor is taken. The door is sealed the next morning either way, and the drawing already left on day 8. | The same sealed door, for the worse reason. |
+| 10 | Warn the neighbor before the raid | The regime has found the worker. She reaches the neighbor out in the city before they walk home into the vans, which are at her own building when she gets back. Warned, the neighbor runs; not warned, the neighbor is taken. The door is sealed the next morning either way, and the drawing already left on day 8. | The same sealed door, for the worse reason. |
 | 11 | Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | The group goes in not knowing. |
-| 12 | The swing | Feeling watched, the neighbor hid the station key at the swing before the raid, so it is there whether or not she warned them. She gets it out as the park is taken. | Another courier fetches it. |
-| 13 | Into a roadblock's band | The army arrived that morning, which is the column on the main road. She finds out whether soldiers search a stroller, because the last night rests on it; they do not search a screaming baby, so the cost of the task is its cover. | The last night is a guess. |
+| 12 | The swing | Feeling watched, the neighbor hid the station key at the swing before the raid, so it is there whether or not she warned them. The parks are being fenced one at a time and the group knows this one is next, which is why it is today; she gets the key out as the park is taken. | Another courier fetches it. |
+| 13 | Into a roadblock's band | The army arrived that morning, which is the column on the main road. She finds out how close a parent with a crying baby can come to a held street before its guard moves, because the last night's way passes one; nobody looks twice at a screaming baby, so the cost of the task is its cover, and the guard's reach is still the guard's reach. | The last night is a guess. |
 | 14 | The station's front door | A hand-over: she passes the key to the neighbor's colleague on the night shift and walks away. The minutes he needs are why the lights go out once she is at a distance. Blackout, uprising, bombing, escape. | The neutral ending. |
 
 The tasks escalate: trust, carry, carry back, scout, protect, rehearse, retrieve, scout again,
-act. **Open, read by the orchestrator and not put to the player:** the neighbor lives in her
-building, so day 10's red arrow cannot point at their door; it points at the neighbor out in
-the city, and the deadline is the neighbor walking home into the vans. **And day 12's morning
-line gives away what the day shows her** (the review of this entry): "They are fencing off the
-parks" is read before she leaves, and the park taken in front of her is that day's once-only
-happening; every other line from day 8 on reports the night before.
+act. **Day 12's morning line is about the other parks** (*taken by the player on 2026-09-21*,
+[PLAYTEST-121](playtests/PLAYTEST-121.md)): "They are fencing off the parks" is read before she
+leaves, and what she then sees is the one she was sent to being taken in front of her. It is
+not the last one open, since she settles the baby in another afterwards.
 
 **The calendar, decided by the player:**
 
@@ -659,7 +667,7 @@ happening; every other line from day 8 on reports the night before.
 | 7 | The package at a van's drop · arrow | |
 | 8 | Leave something at the burnt shell · arrow | |
 | 9 | Cross a named door · arrow | The doors arrive. |
-| 10 | Warn a neighbor before the raid · arrow, deadline | The raid on her own street. |
+| 10 | Warn the neighbor, out in the city, before the raid · arrow, deadline | The raid on her own street, at her own building. |
 | 11 | Silence a loudspeaker mast · arrow | The market is gone. |
 | 12 | The swing in one park · arrow | That park is taken once she has reached the swing. |
 | 13 | Walk into a roadblock's band — any of them | A column on the main road. |
@@ -684,7 +692,7 @@ if the shape does:
 | 4 | It feels like there are more police around now. |
 | 5 | They put up masts at the intersections overnight. |
 | 6 | A curfew was announced today. There is not as much time. There are rumors of chalk messages in alleys. |
-| 7 | There are new posters on every wall. |
+| 7 | There are more posters than yesterday. The same face is on most of them. |
 | 8 | A van took someone from the next street before it was light. |
 | 9 | They have closed the districts off from each other. There are huts at the crossings. |
 | 10 | The stores on the square are boarded up. |

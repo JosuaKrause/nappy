@@ -52,7 +52,7 @@ passed since day 1.
    covering the whole of the last night — the walk home from the station under dead traffic
    lights ([PLAYTEST-119](PLAYTEST-119.md), statement 20) and the escape after it — so ease is
    no part of the good ending's reward, and open to correction. What the blackout does to the
-   meter is unchanged: the masts stop, so the ambient floor is zero.
+   meter is unchanged: the masts stop.
 4. **A day 3 she wins with no fire met still burns.** "I agree with the fire fix." If every
    siting was refused by the end of the day, the fire is lit then, off her path, on a site the
    dawn rules accept, so the shell stands on day 4 and the scar is unconditional. Meeting it
@@ -92,12 +92,28 @@ passed since day 1.
    - **The power station is a landmark she has passed since day 1**, stacks and lit windows, so
      the last night's target is a place she knows.
 
-## Left open by this conversation
+## Two questions the story left, and their answers
 
-- **Where the neighbor is on day 10.** The neighbor lives in her building, so a red arrow to
-  their door would point home. Read by the orchestrator as: the neighbor is out, and she
-  reaches them in the city before they walk home into the vans, which is the deadline. Not put
-  to the player.
-- **Day 12's morning line.** "They are fencing off the parks" is read before she leaves, and
-  the park being taken in front of her is that day's once-only happening. Raised in the review
-  and not answered.
+**Where the neighbor is on day 10.** The neighbor lives in her building, so a red arrow to
+their door would point home and the task would have no walk in it. Offered: the neighbor is out
+and she reaches them in the city before they walk home into the vans, which is the deadline, and
+she sees the raid at her own building when she gets back (recommended); or the neighbor lives
+elsewhere on her street, which costs the reason the group wants her and day 11's morning line,
+"A door down the hall was sealed in the night".
+
+**Whether day 12's morning line gives the day away.** "They are fencing off the parks" is read
+before she leaves, and the park taken in front of her is that day's once-only happening.
+Offered: (a) the fencing she reads about is the other parks and the one she is sent to is the
+last one open (recommended); (b) the line goes back to act IV's opening, smoke over the
+rooftops, and the park stays a surprise.
+
+> "1. your reading 2. (a)"
+
+9. **On day 10 the neighbor is out in the city**, the arrow points at them, and the deadline is
+   the neighbor walking home into the vans. The raid is at her own building and is what she
+   comes home to.
+10. **Day 12's morning line is about the other parks**, and stays as drafted. *The orchestrator
+    offered "the last one open" · corrected by the orchestrator while writing it down*: statement
+    18 of [PLAYTEST-119](PLAYTEST-119.md) has her settle the baby in another park once this one
+    closes, so it cannot be the last. Written as the parks being fenced one at a time, with the
+    group knowing this one is next, which is why the errand is that day; open to correction.
