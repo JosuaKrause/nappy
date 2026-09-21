@@ -163,3 +163,12 @@ straight line she is walking, and moved while unseen if she turns away:
     fine; a place off the path is never a valid site. Read by the orchestrator as the day's own
     route — the streets of the day's route tree, along the branch she is walking, ahead of her
     by distance along that route rather than along a straight line — and open to correction.
+
+Asked whether the engine parks at the fire — for the rest of the day (option A, recommended),
+for about twenty seconds, or passes through as it does on `main` since M101, the fire is found
+before the engine — with the cost named: a standing field of 26 a second out to 340px beside a
+fire she was led to:
+
+> "option A -- a fire engine has a high cost"
+
+24. **The engine parks at the fire for the rest of the day**, and its high cost is meant.

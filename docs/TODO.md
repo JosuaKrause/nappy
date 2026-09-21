@@ -388,7 +388,9 @@ so a day 3 can pass without either.
 - [ ] **Then the engine comes, and the fire is somewhere to get away from.** The engine arrives
       on sight of the fire, as built, along a street she can see it come down, **and stops
       at the fire**: in a windowed run on the branch the player saw that it "did not stop at
-      the fire" ([PLAYTEST-119](playtests/PLAYTEST-119.md)). The fairness
+      the fire" ([PLAYTEST-119](playtests/PLAYTEST-119.md)). It parks across from the fire for
+      the rest of the day, *decided by the player on 2026-09-20*, asked with twenty seconds
+      and passing through as the alternatives: "a fire engine has a high cost". The fairness
       contract for a siting she did not choose (the **events** skill) holds: she can always
       walk out of it from where she first sees it.
 
