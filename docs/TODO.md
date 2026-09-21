@@ -380,13 +380,21 @@ so a day 3 can pass without either.
 - [ ] **Day 3's fire is sited from the walk she is taking.** Not at dawn: once her direction
       for the day is clear, the fire starts on a building ahead of her, off screen, on the way
       she is going, **on the path she is on and nowhere else** ([PLAYTEST-119](playtests/PLAYTEST-119.md):
-      "valid spawn locations are only on the path"; moving it while unseen is fine), the way `EventDirector` already sites a row ahead of her — near enough that
+      "valid spawn locations are only on the path"; moving it while unseen is fine), the way
+      `EventDirector` already sites a row ahead of her — near enough that
       she reaches it, far enough that she meets it rather than watches it appear. It happens on
-      every day 3, whichever way she goes, including a day she turns round. When and how far
+      every day 3, whichever way she goes, including a day she turns round. **The walk home
+      changes nothing**: a fire she has not met is sited and moved by the same rule on the
+      return leg, and is fixed only once it has taken place
+      ([PLAYTEST-120](playtests/PLAYTEST-120.md): "if they managed to avoid it thus far they
+      should still have to try avoid it further"; *stopping at the return leg, offered by the
+      orchestrator · refused by the player on 2026-09-21*). When and how far
       ahead are the orchestrator's and open to overturn. The scar it leaves is wherever it
-      burned, for the rest of the run. **A lost day 3 gives the fire back whole**, its one-shot
-      and its scar, and the retry has a fire again ([PLAYTEST-119](playtests/PLAYTEST-119.md):
-      "nothing that happened on the day that got retried can influence the next repeat").
+      burned, for the rest of the run. **A lost day 3 gives the fire back whole**: its one-shot,
+      its scar and the block arc it advanced, whether or not she saw it burn, and the retry has
+      a fire again, sited from the walk she takes then ([PLAYTEST-119](playtests/PLAYTEST-119.md):
+      "nothing that happened on the day that got retried can influence the next repeat"). The
+      retry is otherwise the same day from the same state at its beginning, as every retry is.
 - [ ] **Then the engine comes, and the fire is somewhere to get away from.** The engine arrives
       on sight of the fire, as built, along a street she can see it come down, **and stops
       at the fire**: in a windowed run on the branch the player saw that it "did not stop at
@@ -423,22 +431,20 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       silences the city, is the masts going quiet.
 - [ ] **Posters are seen at all.** *"I have not seen a single poster in any playthrough -- I
       don't know what you're referring to here -- it needs to be way more obvious"*: the run
-      behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none, so the
-      first job is finding out why — where they are placed against where she walks, how large
-      they draw, what a finished wall looks like — before choosing a fix. Then the crew's
+      behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none. The crew's
       walls, and what they leave behind, read at walking distance as the city changing: size,
-      contrast and how many, against the act's palette. A visual attempt comes back to the player early rather than polished.
+      contrast and how many, against the act's palette. A visual attempt comes back to the
+      player early rather than polished.
 
       **Why none is seen, read from that run's log and the row itself.** A crew is placed at
       dawn anywhere in the city (`poster_crew` has the default `MAP` spawn mode, and the day's
-      corridor only weighs four to one against every other block), so of roughly ninety crews
-      placed over the run's seven days she came within a crew's 110px field once, at 59px, on
-      day 5, and within none of day 4's ten. A crew leaves nothing behind: the row has no
+      corridor only weighs four to one against every other block), so over the whole run she
+      came within a crew's 110px field once, and within none of day 4's ten. A crew leaves nothing behind: the row has no
       `scar_id`, never finishes (`duration` 0) and paints nothing on the wall, so the city
       does not accumulate posters. The poster itself is a 9x13px sheet of paper held at head
       height inside a 30x44 figure, about 18x26 on screen at the camera's 2x zoom, on a worker
       drawn in the street's own olive-grey with no second frame. And it costs nothing to
-      pass (`docs/COSTS.md`: walking through nets -5.3, scenery on purpose), so the meter never
+      pass (`docs/COSTS.md`: walking through nets a gain, scenery on purpose), so the meter never
       points at one either. Nothing can draw over it; buildings sit under the entity layer.
 
       **The fix, in the order of what the log blames:** crews work on walls along the way she
@@ -555,14 +561,14 @@ M177, the second mark is any alley she comes across), and the mark is drawn as i
   overturned by the player for one-place tasks.*
 - **Four new one-place tasks**, all four chosen by the player: silence a loudspeaker mast, which
   stays quiet for the rest of the run; leave something at the burnt shell from day 3; warn a
-  neighbor before a raid, with a deadline as the poster wall has; cross a named door.
+  neighbor before a raid, with a deadline; cross a named door.
 - **A task done is shown by the world and never by text** (M182, a finished task is shown by
   the world): the thing she reached visibly answers, the arrow goes out, and the day summary
   says so.
-- **Days 9 to 11 get things that happen once**, all four chosen by the player, each sited from
-  where she is walking as the fire is and each leaving something permanent: a park is taken in
-  front of her, a raid on her own street whose door is boarded the next morning, the market is
-  gone, and a column on the main road.
+- **Days 10 to 13 get things that happen once**, all four chosen by the player, each sited from
+  where she is walking as the fire is and each leaving something permanent: a raid on her own
+  street whose door is boarded the next morning, the market is gone, a park is taken once she
+  has reached its swing, and a column on the main road.
 
 - **The walk home after a task is an ordinary return.** Getting home is the stake, since a
   task counts only on a day she wins; the return leg has the patrols every return has.

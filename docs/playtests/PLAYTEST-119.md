@@ -46,8 +46,9 @@ And a moment later:
    nondescript face and needs no name. *The orchestrator argued against a portrait · the player
    chose it.* The rules are the official notices as proposed, and "the rest of the narrative you
    spelled out is already good": the sheets escalate by act as described above.
-2. **Both kinds are on walls from the first day poster crews appear**, and on that first
-   morning some are already up.
+2. **The portrait and the rules are on walls from the first day poster crews appear** (the
+   player's "both", said when there were two kinds), and on that first morning some are
+   already up.
 3. **A poster takes up about 60 to 80% of a tile**, large enough to be recognized as a poster.
 4. **Posters are sparse at first and denser towards the end of the run.**
 5. **The task "reach the wall before they paste over it" is in doubt.**
