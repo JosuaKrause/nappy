@@ -24,6 +24,19 @@ extends RefCounted
 ## Determinism is the day's RNG on its own stream, as everything else is. The *timing* depends
 ## on where the player walked, so no seed reproduces it from outside — which is exactly what
 ## `Telemetry`'s `roll` entries exist to write down.
+##
+## **And one thing sited here *is* a place.** `site_what_is_on_her_way()` is the second half of
+## this class and it breaks the sentence above on purpose: a row carrying
+## `EventDef.sited_on_her_way` — day 3's burning building, the only one
+## today — is a place in every sense: a tile, a body, a field, a scar that outlives the day. What it
+## cannot be is *anywhere*, because it is the authored beat of act I and a set piece on a street she
+## never walks down is a silhouette spent on nothing. So the day budgets it and this sites it, on a
+## building face ahead of her heading, once her direction for the day is clear.
+##
+## The two jobs share this class because they share the one thing neither the scheduler nor the
+## manager has: **the direction she is actually travelling, now**. They do not share a queue, an
+## interval or a spawn — a crossing is created on the spot and forgotten, and a place is written
+## into the day's own plan for `EventManager` to stream like any other.
 
 ## How far to either side of the crossing point the run reaches. A street's width, so the cat
 ## comes out of one kerb and is gone into the other.
@@ -48,6 +61,27 @@ var _return_pacing := false
 ## on every day before `Tuning.REGION_WALL_FIRST_DAY`.
 var _doors := PackedVector2Array()
 
+## Today's plans that the day budgeted and left for her walk to site — `EventDef.sited_on_her_way`,
+## which is day 3's fire and nothing else today. Read off the same plan list `_owed` is, in
+## `start_day()`, and emptied as each one is put in the world.
+var _on_her_way: Array[EventScheduler.Planned] = []
+## The day's placement context, for siting one of those against the same ground, corridor, doors and
+## protected calm every dawn placement was stated against. Null on a day with nothing to site, and
+## on any rig that starts the director without one.
+var _siting: EventScheduler.WalkSiting = null
+## Seconds of *walking* since the day started — the clock `_on_her_way` waits out, ticking only
+## while she is actually going somewhere for the same reason `due()`'s own clock does.
+var _walked := 0.0
+## For each plan still on its way to somewhere: how long it has been behind her. Keyed by the plan.
+## See `site_what_is_on_her_way()`.
+var _behind_her := {}
+## Seconds until the next siting attempt. Only a *refused* attempt sets it: a siting that lands
+## leaves the plan placed, and what happens after that is the turned-away clock rather than a retry.
+var _next_siting_in := 0.0
+## The stream the siting rolls its candidate tile out of. Derived from the day's own director stream
+## rather than drawn from it, so which building face the fire takes cannot move a single cat.
+var _walk_rng := RandomNumberGenerator.new()
+
 func _init(map: CityMap) -> void:
 	_map = map
 
@@ -62,17 +96,29 @@ func _init(map: CityMap) -> void:
 ## the scheduler's own `EventScheduler._place_one()` would place the row on a tile *and* the
 ## director would separately site a second one in front of her, from the one `EventDef` both read.
 func start_day(day: int, plans: Array[EventScheduler.Planned],
-		rng: RandomNumberGenerator) -> void:
+		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null) -> void:
 	_owed.clear()
 	_rng = rng
 	_return_owed = false
 	_return_pacing = false
 	_doors.clear()
+	_on_her_way.clear()
+	_behind_her.clear()
+	_walked = 0.0
+	_next_siting_in = 0.0
+	_siting = siting
+	# Derived from the day stream's seed rather than drawn from the stream itself: the siting rolls
+	# a candidate tile and a re-siting rolls another, and a day on which she turned round would
+	# otherwise hand every cat after it a different interval than a day on which she did not.
+	_walk_rng.seed = hash("%d:on-her-way" % rng.seed)
 	for plan in plans:
 		# A door body is read off the same list, so "where do today's doors stand" is answered once,
 		# by the plan, rather than by a second wire from the region planner to here.
 		if plan.def.redetains and plan.is_placed():
 			_doors.append(plan.position)
+		# A place the day budgeted and left unsited, read off the same list for the same reason.
+		if plan.def.sited_on_her_way and not plan.is_placed():
+			_on_her_way.append(plan)
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
 			_owed.append(plan.def)
@@ -191,6 +237,163 @@ func _owe_the_sprinkled_dog(day: int) -> void:
 
 func owed() -> int:
 	return _owed.size()
+
+# ------------------------------------------------- the place that is on her way ---
+
+## How long she has to have been **walking** before a place the day left to her walk is sited. Far
+## enough in that a heading means something — a player who steps out of the door and turns round
+## twice has not chosen a direction for the day yet — and past `LESSON_DELAY` with room to spare, so
+## day 3's run lesson is over before the fire is put anywhere.
+const ON_HER_WAY_AFTER := 18.0
+
+## And this far from the doorstep besides, in pixels. The two together rather than either alone: the
+## clock answers *has she settled into a direction* and the distance answers *is she out of the
+## notch the home sits in*, and a player who spends the first half minute in the home street has
+## satisfied one of them and neither.
+const ON_HER_WAY_BEYOND_HOME := 400.0
+
+## How much further walking, in seconds, the far end of the siting band puts between her and the
+## first sight of it — measured from the edge of the view along the heading in play, so it means
+## the same thing walking north as walking east. Still well inside the outbound leg of a 180s day
+## with the walk home in hand. The near end of the band is not a number of seconds but the
+## streaming band itself; see `_siting_band()`, which is 9 to 11 seconds of walking depending on
+## which way she is going.
+const ON_HER_WAY_SIGHT := 16.0
+
+## How far off the line she is walking a building face may be and still be *on her way*, in pixels.
+##
+## **A forward cone is the shape to avoid here, and it fails in a way that looks fine.** Anything
+## within 45° of her heading is "ahead" in the ordinary sense, and at the far end of the band that
+## is eleven hundred pixels off to one side — three screens — so a player walking dead straight
+## passes the fire without it ever entering the view, and the guarantee reads as held while the
+## thing it guarantees never happens. Stated as a drift instead, the sentence is the one the design
+## actually makes: keep going and you will see it. `Tuning.VIEW_HALF_EXTENT.y` is the narrow half of
+## the view, so the tolerance holds on the heading where the screen has least to spare.
+const ON_HER_WAY_DRIFT := Tuning.VIEW_HALF_EXTENT.y
+
+## How long the thing has to be behind her before it is moved, in seconds of walking. It is not
+## instant on purpose: three seconds of walking the wrong way is a player who has changed her mind,
+## one frame of it is a player stepping round a bollard.
+const ON_HER_WAY_TURNED_AWAY := 3.0
+
+## How far behind her it has to be to count as behind her at all, as a dot product against the unit
+## heading — past a right angle, by half.
+##
+## **A corner is not a change of mind, and a rule stated at zero cannot tell the difference.** She
+## walks a lattice: a block of walking north with the fire a thousand pixels east puts it a few
+## degrees behind square, so a threshold at zero re-sites it at every junction and she spends the
+## day chasing something that is always the same distance ahead. At −0.5 that same turn leaves it
+## alone — it is still the way she is generally going — and what does move it is a heading that has
+## genuinely put it behind her, which is the case the rule is for.
+const ON_HER_WAY_BEHIND := -0.5
+
+## How long before a refused siting is attempted again. A refusal is ordinary — there is no building
+## face ahead, or the one there is stands in a door's clear ground or would seal the city — and the
+## answer is to ask again a street later rather than to place it somewhere illegal.
+const ON_HER_WAY_RETRY := 1.0
+
+## Sites, or re-sites, whatever the day budgeted and left for her walk to place: a building face
+## ahead of her heading, off screen, `ON_HER_WAY_SIGHT` seconds of walking short of being seen.
+## Returns every plan this call moved, so the caller can give back the ground the old body was
+## standing on and take the new — `EventManager._site_what_is_on_her_way()` is that caller.
+##
+## **It may move until it is real, and never after.** A plan that has been streamed in once has
+## recorded its scar and moved its block along its arc (`EventManager._create`), so the city already
+## remembers it burning there; moving it then would mean repairing a fact, which is the one thing
+## this repository does not do to a guarantee. `Planned.was_live` is that line, and it is drawn at
+## the streaming radius rather than at the screen edge — which is 900px out against a view half
+## diagonal of about 367, so in practice it stops moving a good six seconds of walking before she
+## could ever have seen it.
+##
+## **Nothing is moved to satisfy the guarantee.** When there is no legal face ahead — the map's
+## edge, a door's clear ground, calm she has not used, a candidate whose body would seal the last
+## way to a park — this answers with nothing and asks again a second later, from wherever she has
+## got to. A day she walks into a corner is a day it waits.
+func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
+		plans: Array[EventScheduler.Planned]) -> Array[EventScheduler.Planned]:
+	var moved: Array[EventScheduler.Planned] = []
+	_forget_what_is_real()
+	if _on_her_way.is_empty() or not _siting:
+		return moved
+	var speed := velocity.length()
+	# The same clock `due()` runs on and for the same reason: a direction is something she is
+	# travelling in, not something she is facing, and a player standing still has neither.
+	if speed < Tuning.AHEAD_MIN_SPEED:
+		return moved
+	_walked += delta
+	_next_siting_in -= delta
+	if _walked < ON_HER_WAY_AFTER or _next_siting_in > 0.0:
+		return moved
+	if at.distance_to(_map.home_world_position()) < ON_HER_WAY_BEYOND_HOME:
+		return moved
+	var heading := velocity / speed
+	for plan in _on_her_way:
+		if plan.is_placed() and not _has_turned_away_from(plan, at, heading, delta):
+			continue
+		var band := _siting_band(heading)
+		var sited := _siting.ahead_of(plan.def, _walk_rng, _everything_but(plans, plan), at, heading,
+				band.x, band.y, ON_HER_WAY_DRIFT)
+		if not sited:
+			_next_siting_in = ON_HER_WAY_RETRY
+			continue
+		plan.position = sited.position
+		plan.path = sited.path
+		plan.facing = sited.facing
+		plan.role = sited.role
+		_behind_her[plan] = 0.0
+		moved.append(plan)
+	return moved
+
+## Drops from the list anything that is already real or already spent, so the loop above only ever
+## considers a plan that can still legally be moved.
+func _forget_what_is_real() -> void:
+	var still_ours: Array[EventScheduler.Planned] = []
+	for plan in _on_her_way:
+		if plan.was_live or plan.spent:
+			_behind_her.erase(plan)
+			continue
+		still_ours.append(plan)
+	_on_her_way = still_ours
+
+## Whether `plan` has been behind her long enough to be moved — see `ON_HER_WAY_TURNED_AWAY` for why
+## "behind her" alone is not the question. The clock is reset by any frame in which it is ahead, so
+## what it measures is a sustained wrong direction rather than a total.
+func _has_turned_away_from(plan: EventScheduler.Planned, at: Vector2, heading: Vector2,
+		delta: float) -> bool:
+	var toward := plan.position - at
+	if toward.length_squared() < 1.0 or toward.normalized().dot(heading) > ON_HER_WAY_BEHIND:
+		_behind_her[plan] = 0.0
+		return false
+	var behind: float = float(_behind_her.get(plan, 0.0)) + delta
+	_behind_her[plan] = behind
+	return behind >= ON_HER_WAY_TURNED_AWAY
+
+## How far along `heading` the siting goes, as a near and a far distance.
+##
+## **The near end is the streaming band**, radius plus hysteresis: a placement inside it would be in
+## the world on the frame it was made — a fire that has already recorded its scar, and so one that
+## can never be moved again, before she has walked a single step toward it. Read as time, that
+## floor is 9 seconds of walking short of the view's edge going east or west and 11 going north or
+## south, because the screen is wider than it is tall.
+##
+## **The far end is stated from the edge of the view** rather than from her, for the same reason:
+## what the band is about is how much more walking there is before she *sees* it, and a distance
+## from her means different amounts of that on different headings.
+func _siting_band(heading: Vector2) -> Vector2:
+	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+	var far := maxf(near + Tuning.TILE_SIZE,
+			Tuning.offscreen_boundary(heading) + Tuning.WALK_SPEED * ON_HER_WAY_SIGHT)
+	return Vector2(near, far)
+
+## The day's other plans, for spacing and for the walkability question — everything but the one
+## being sited, which must not be spaced against the body it is about to stop standing at.
+func _everything_but(plans: Array[EventScheduler.Planned],
+		plan: EventScheduler.Planned) -> Array[EventScheduler.Planned]:
+	var others: Array[EventScheduler.Planned] = []
+	for other in plans:
+		if other != plan:
+			others.append(other)
+	return others
 
 ## Hands the day's return leg its own pressure — `docs/TODO.md`'s M98, pressure in the empty acts
 ## — the moment `EventManager` hears `EventBus.return_phase_started`. `Tuning.RETURN_PATROLS_PER_

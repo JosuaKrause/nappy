@@ -39,6 +39,9 @@ func run(t) -> void:
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
 	_test_the_director_puts_it_in_front_of_her(t)
+	_test_the_fire_follows_her_walk_until_it_is_real(t)
+	_test_a_corner_is_not_a_change_of_mind(t)
+	_test_the_fire_is_the_days_only_unsited_place(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
 	_test_hard_fail_only_when_active(t)
 	_test_scheduler_is_deterministic(t)
@@ -1614,6 +1617,155 @@ func _test_a_crouching_event_holds_still_until_it_bolts(t) -> void:
 			% [def.duration, crossing / def.speed])
 	instance.free()
 
+# --------------------------------------- the place the day owes her walk (M179) ---
+# Day 3's fire is budgeted at dawn with no position and sited by `EventDirector` from the walk she
+# turns out to take — *"the fire should come first and be on your way guaranteed (a dynamic event
+# dependent on the route you chose that day)"* (PLAYTEST-117).
+#
+# These drive the director directly, with her position and velocity written rather than walked, so
+# the geometry is the test's own: what a city's borders happen to leave room for is the integration
+# question and it is asked in `tests/test_event_manager.gd`, against a real manager and a real
+# player. What is asked here is the rule.
+
+## Walks a synthetic player `seconds` along `heading` from `at`, stepping the director every frame,
+## and returns where she finished. `at` moves at `Tuning.WALK_SPEED` because the director's own
+## clock only runs while she is actually going somewhere.
+func _walk_the_director(director: EventDirector, plans: Array[EventScheduler.Planned],
+		at: Vector2, heading: Vector2, seconds: float, until := Callable()) -> Vector2:
+	var velocity := heading * Tuning.WALK_SPEED
+	for i in int(round(seconds / STEP)):
+		at += velocity * STEP
+		director.site_what_is_on_her_way(STEP, at, velocity, plans)
+		if until.is_valid() and until.call():
+			return at
+	return at
+
+## Day 3's plan, built fresh rather than taken from `_planned()`. These tests site the fire, which
+## writes a position into the plan — and the memoized copy is shared with every other check in this
+## suite on the understanding that nothing writes to it.
+func _fire_day_plans() -> Array[EventScheduler.Planned]:
+	var consumed: Array[String] = []
+	return EventScheduler.build_day(Tuning.RUN_TAUGHT_DAY, _rng(Tuning.RUN_TAUGHT_DAY), _map(),
+			consumed)
+
+## The day-3 fire, and the whole rig it needs: the day's own plan, a placement context built the way
+## `EventManager.start_day` builds one, and a director started on both.
+func _fire_director(day: int, plans: Array[EventScheduler.Planned]) -> EventDirector:
+	var map := _map()
+	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
+			[] as Array[Vector2i], PackedVector2Array())
+	var director := EventDirector.new(map)
+	director.start_day(day, plans, _rng(day), siting)
+	return director
+
+func _fire_in(plans: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
+	for plan in plans:
+		if plan.def.id == "burning_building":
+			return plan
+	return null
+
+## **It is sited from her walk, it may be moved while it is nobody's memory yet, and it is fixed the
+## moment it is real.**
+##
+## The third of those is the one with teeth. `EventManager._stream_in` records the scar and moves the
+## block along its arc the first time a plan enters the world, so the city already remembers this
+## fire burning *there* — and a rule that moved it afterwards would be repairing a fact rather than
+## checking one before accepting it. `Planned.was_live` is where the line is drawn, and it is drawn
+## at the streaming radius rather than at the screen edge, which is six seconds of walking earlier.
+func _test_the_fire_follows_her_walk_until_it_is_real(t) -> void:
+	var map := _map()
+	var day := Tuning.RUN_TAUGHT_DAY
+	var plans := _fire_day_plans()
+	var fire := _fire_in(plans)
+	t.check(fire != null and not fire.is_placed(),
+			"day 3 budgets the fire and leaves it with no position at all")
+	if not fire:
+		return
+	var director := _fire_director(day, plans)
+
+	# A quarter of the way across the city, walking east, so the whole siting band is inside the map
+	# whichever way she turns — the borders are the integration suite's question, not this one.
+	var at := Vector2(map.world_size().x * 0.25, map.world_size().y * 0.5)
+	at = _walk_the_director(director, plans, at, Vector2.RIGHT, 60.0,
+			func() -> bool: return fire.is_placed())
+	t.check(fire.is_placed(), "walking sites it")
+	if not fire.is_placed():
+		return
+	var first := fire.position
+	var toward := first - at
+	t.check(toward.dot(Vector2.RIGHT) > 0.0
+			and absf(toward.dot(Vector2.DOWN)) <= EventDirector.ON_HER_WAY_DRIFT,
+			"on the line she is walking: %.0fpx along it and %.0fpx off it"
+			% [toward.dot(Vector2.RIGHT), absf(toward.dot(Vector2.DOWN))])
+	t.check(toward.length() > Tuning.EVENT_STREAM_RADIUS,
+			"and outside the streaming band (%.0fpx), so it is neither seen nor real yet"
+			% toward.length())
+
+	# Turned round. It was never in the world, so it follows her.
+	at = _walk_the_director(director, plans, at, Vector2.LEFT, 30.0,
+			func() -> bool: return fire.position != first)
+	t.check(fire.position != first, "turning round before it is ever seen moves it")
+	var moved := fire.position - at
+	t.check(moved.dot(Vector2.LEFT) > 0.0
+			and absf(moved.dot(Vector2.DOWN)) <= EventDirector.ON_HER_WAY_DRIFT,
+			"and it is on the line she is walking now")
+
+	# Real. From here it is where the city remembers it burning, and nothing moves it.
+	var burning_at := fire.position
+	fire.was_live = true
+	at = _walk_the_director(director, plans, at, Vector2.RIGHT, 30.0)
+	t.check(fire.position == burning_at,
+			"once it has been in the world, walking away from it for half a minute leaves it "
+			+ "exactly where it burned")
+
+## **A corner is not a change of mind.** She walks a lattice, so a block of walking north with the
+## fire a thousand pixels east leaves it a few degrees behind square — and a rule that moved it
+## there would move it at every junction, which is a day spent chasing something that is always the
+## same distance ahead. `EventDirector.ON_HER_WAY_BEHIND` is what makes the two cases different, and
+## this is the half of it that would otherwise never be noticed: the *absence* of a move.
+func _test_a_corner_is_not_a_change_of_mind(t) -> void:
+	var map := _map()
+	var day := Tuning.RUN_TAUGHT_DAY
+	var plans := _fire_day_plans()
+	var fire := _fire_in(plans)
+	if not fire:
+		t.check(false, "day 3 budgets a fire to turn a corner past")
+		return
+	var director := _fire_director(day, plans)
+	var at := Vector2(map.world_size().x * 0.25, map.world_size().y * 0.5)
+	at = _walk_the_director(director, plans, at, Vector2.RIGHT, 60.0,
+			func() -> bool: return fire.is_placed())
+	if not fire.is_placed():
+		t.check(false, "walking east sites the fire")
+		return
+	var sited := fire.position
+
+	# North for twice the patience the rule has, which on a lattice is most of a block.
+	_walk_the_director(director, plans, at, Vector2.UP,
+			EventDirector.ON_HER_WAY_TURNED_AWAY * 2.0)
+	t.check(fire.position == sited,
+			"turning north for %.0fs with the fire still away to the east leaves it where it is"
+			% (EventDirector.ON_HER_WAY_TURNED_AWAY * 2.0))
+
+## **One plan, and the day is otherwise exactly the day it was.** A set piece the day owes her walk
+## is budgeted like any other one-shot — one plan, tagged as its own group — and nothing else in the
+## catalogue is left for the walk to site, so no other day changes shape because of this one.
+func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
+	var owed := 0
+	for day in range(1, 15):
+		for plan in _planned(day):
+			if not plan.def.sited_on_her_way:
+				continue
+			owed += 1
+			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.def.id == "burning_building",
+					"day %d: the only place the day leaves for her walk is day 3's fire, not '%s'"
+					% [day, plan.def.id])
+			t.check(not plan.is_placed() and plan.set_piece_group != "",
+					"day %d: it is planned with no position and tagged as a set piece" % day)
+			t.check(plan.def.spawn_mode == EventDef.SpawnMode.MAP and not plan.def.mobile,
+					"day %d: and it is a place that stands still, not a director's moment" % day)
+	t.check(owed == 1, "exactly one plan in a fourteen-day run is owed to her walk (%d)" % owed)
+
 ## Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
 ## spawned in in front of the player while they walk, so it happens directly in front of them
 ## every time."*
@@ -2855,6 +3007,11 @@ func _test_a_lorry_has_a_wall_to_back_into(t) -> void:
 	for day in range(3, 15):
 		for plan in _planned(day):
 			if plan.def.pavement_side != EventDef.Pavement.AGAINST_THE_BUILDING:
+				continue
+			# A place the day owes her walk has no tile yet to have a frontage behind it — day 3's
+			# fire is sited later, against the same `_wants_this_side` rule this asks about, and
+			# where it lands is asked of a real walk in `tests/test_event_manager.gd`.
+			if not plan.is_placed():
 				continue
 			backing += 1
 			var tile := map.world_to_tile(plan.position)

@@ -47,6 +47,11 @@ var _walking_the_finale := false
 ## day in `clear()`.
 var _sighted: Dictionary = {}
 
+## The run's spent one-shots — `start_day`'s own argument, kept because one kind of one-shot is
+## spent while the day is running rather than while it is being planned. See `_stream_in()`. Empty
+## until a day has been started, which is the finale's case and is right: an escape spends nothing.
+var _consumed: Array[String] = []
+
 ## Which side of a redetaining instance's own crossing she was on when its conversation started —
 ## `instance -> signf(...)`, the sign of her offset from the body against `facing_now()`. Present
 ## only while that instance's own detention is running; `_release_finished_door_detentions()` reads
@@ -125,6 +130,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	clear()
 	_hard_failed = false
 	_day = day
+	_consumed = consumed_one_shots
 	_walking_the_finale = false
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
 	# than grown again so that the walls, the friction and the picture are all stated against one
@@ -230,7 +236,12 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	for plan in _plans:
 		if plan.is_placed():
 			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
-	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
+	# The day's placement context, kept past dawn for the one kind of plan the day budgets and
+	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.sited_on_her_way`.
+	# Built from exactly what `build_day` above was handed, so a placement made later is stated
+	# against the same corridor, the same protected calm and the same doors as every other one.
+	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"),
+			EventScheduler.WalkSiting.new(day, _map, tree, GameState.settled_this_act(), doors))
 	stream_around(focus)
 
 ## Clears whatever was here and takes the escape's whole plan as given.
@@ -297,9 +308,16 @@ func stream_around(at: Vector2) -> void:
 			_stream_out(plan)
 
 func _stream_in(plan: EventScheduler.Planned) -> void:
+	var first_time := not plan.was_live
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
-	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live, plan.facing)
+	plan.live = _create(plan.def, plan.position, plan.path, first_time, plan.facing)
+	# **A set piece the day owed her walk is spent here rather than at dawn**, because here is where
+	# it becomes something that happened — see `EventScheduler._place_one_shots`. The list is the
+	# one `start_day` was handed, which in a played game is `GameState.consumed_one_shots` and in a
+	# rig is the rig's own.
+	if first_time and plan.def.sited_on_her_way and not plan.def.id in _consumed:
+		_consumed.append(plan.def.id)
 	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
 	# is a harmless no-op assignment rather than a special case here.
 	plan.live.gate_state = plan.gate_state
@@ -646,6 +664,9 @@ func total_excitement_at(world_position: Vector2) -> float:
 func _physics_process(delta: float) -> void:
 	_retire_finished()
 	if _find_player():
+		# Before the streaming, so a plan sited this frame is in the world on the same frame it
+		# would have been had the day placed it at dawn.
+		_site_what_is_on_her_way(delta)
 		stream_around(_player.global_position)
 		_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
@@ -859,6 +880,34 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
 		def.id, verb, lead,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## The other half of the director's day: a place the day budgeted and left unsited, put on a
+## building face ahead of her once her heading for the day is clear. Day 3's fire is the only row
+## that asks for this — see `EventDef.sited_on_her_way` and `EventDirector.site_what_is_on_her_way`.
+##
+## **The bookkeeping a late placement owes is the bookkeeping dawn already did for everything else.**
+## A body is recorded per tile from the *plan* so the crowd steers round it whether or not the
+## player has come near enough for it to exist (see "the bodies in the street" above), and a plan
+## that has just been moved was recorded at a position it is no longer standing at — so the old
+## footprint is given back and the new one taken, under the same owner id, in the one place that
+## knows the move happened.
+func _site_what_is_on_her_way(delta: float) -> void:
+	var body := _player as CharacterBody2D
+	if not body:
+		return
+	var moved := _director.site_what_is_on_her_way(delta, body.global_position, body.velocity,
+			_plans)
+	for plan in moved:
+		_map.release_obstruction(plan.get_instance_id())
+		_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+		# Where and why, because nothing else records it: the siting depends on the walk she took
+		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
+		# write, for the same reason.
+		Telemetry.note("ahead", "%s is sited %.0fpx ahead of her at %s, %s of where she is at %s" % [
+			plan.def.id, plan.position.distance_to(body.global_position),
+			TelemetryLog.tile(_map.world_to_tile(plan.position)),
+			_heading_name(body.velocity.normalized()),
+			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
 
 func _find_player() -> bool:
 	if not _player:
@@ -1119,6 +1168,14 @@ static func _compass_of(axis: Vector2, along: float) -> String:
 	if absf(axis.x) > absf(axis.y):
 		return "east" if along > 0.0 else "west"
 	return "south" if along > 0.0 else "north"
+
+## The same question asked of a free heading rather than of a street's own axis: whichever of the
+## two she is mostly going, named the same way. Most headings are diagonal — a press sets an
+## arbitrary unit vector — so the dominant component is the only honest one-word answer.
+static func _heading_name(heading: Vector2) -> String:
+	if absf(heading.x) > absf(heading.y):
+		return _compass_of(Vector2.RIGHT, heading.x)
+	return _compass_of(Vector2.DOWN, heading.y)
 
 func _check_hard_fails() -> void:
 	if _hard_failed or not _find_player():

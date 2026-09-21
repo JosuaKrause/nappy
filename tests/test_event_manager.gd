@@ -23,6 +23,9 @@ func run(t) -> void:
 	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
 	_test_a_day_started_through_the_manager_alone_still_carries_seals(t)
 	_test_a_streamed_pursuer_resumes_the_chase(t)
+	_test_the_fire_is_sited_on_the_way_she_is_walking(t)
+	_test_the_fire_burns_where_her_walk_put_it(t)
+	_test_a_fire_that_was_never_lit_was_not_spent(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -260,17 +263,22 @@ func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
 				"and it is as old as it was, so revisiting cannot restart its clock")
 	_city.events.stream_radius = INF
 
-## **A set piece is offered on every route and happens on one of them.** *(M50 step 2.)*
+## **A set piece happens in exactly one place, and there are two ways of guaranteeing that.** A
+## one-shot planned at every site of a covering set happens at the one she reaches — the first to
+## enter the world spends the rest. A one-shot carrying `EventDef.sited_on_her_way` is one plan with
+## no position at all, which cannot be in two places because there is only ever one of it, and which
+## nothing in this rig can put anywhere: there is no player here, so no walk for it to be sited from.
 ##
-## `tests/test_events.gd` can only see the plan, which is a set of offers — *which* one is taken is
-## decided by where she walks, so it has to be checked here, where an instance exists. The rig has
-## no player and `stream_radius` is `INF`, so every offer is reachable at once: the first one the
-## manager streams in must spend the rest, and that is the strongest form of the property.
+## `tests/test_events.gd` can only see the plan, so *which* site is taken has to be checked here,
+## where an instance exists. `stream_radius` is `INF` and there is nobody walking, so every sited
+## offer is reachable at once: the first one the manager streams in must spend the rest, which is
+## the strongest form of the property.
 ##
 ## It is the same shape as `_test_an_event_that_has_run_does_not_run_again` one level up. There a
 ## plan may not run twice; here a *group* may not.
 func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 	var offered := 0
+	var owed_to_her_walk := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		_start(day)
 		var groups := {}
@@ -281,18 +289,31 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 			seen.append(plan)
 			groups[plan.set_piece_group] = seen
 		for group: String in groups:
-			offered += 1
+			var plans: Array = groups[group]
+			var placed := 0
 			var live := 0
 			var spent := 0
-			for plan: EventScheduler.Planned in groups[group]:
+			for plan: EventScheduler.Planned in plans:
+				placed += 1 if plan.is_placed() else 0
 				live += 1 if plan.was_live else 0
 				spent += 1 if plan.spent else 0
+			if placed == 0:
+				# Nothing has been sited, so this is a set piece the day owes her walk. With no
+				# player in the rig it must still be waiting — and waiting is one plan, not several.
+				owed_to_her_walk += 1
+				t.check(plans.size() == 1 and live == 0 and spent == 0,
+						"day %d: '%s' is one unsited plan waiting for a walk that never happens here"
+						% [day, group])
+				continue
+			offered += 1
 			t.check(live == 1, "day %d: '%s' happened in exactly one place (%d)"
 					% [day, group, live])
-			t.check(spent == (groups[group] as Array).size() - 1,
+			t.check(spent == plans.size() - 1,
 					"day %d: and the other %d offers are spent (%d were)"
-					% [day, (groups[group] as Array).size() - 1, spent])
-	t.check(offered > 0, "a run offers a set piece at all (%d groups over fourteen days)" % offered)
+					% [day, plans.size() - 1, spent])
+	t.check(offered + owed_to_her_walk > 0,
+			"a run has a set piece to check at all (%d sited, %d owed to her walk, over fourteen days)"
+			% [offered, owed_to_her_walk])
 
 ## M100: "a rig driving `EventManager` before `City.start_day` seals nothing." `EventManager.
 ## start_day` used to read the day's tree as `_city.route_tree()` whenever `_city` existed at
@@ -376,3 +397,213 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 				"streamed back in through EventManager it is still chasing, not waiting")
 		t.close_to(plan.live.chase_age(), chase_age_before,
 				"and the chase clock continued from the notice rather than restarting at it", 0.05)
+
+# ------------------------------------------- the fire is on her way (M179) ---
+# *"the fire should come first and be on your way guaranteed (a dynamic event dependent on the
+# route you chose that day)"* (PLAYTEST-117). Day 3's fire carries `EventDef.sited_on_her_way`, so
+# the day budgets it with no position and `EventDirector.site_what_is_on_her_way()` puts it on a
+# building face ahead of her once her heading for the day is clear.
+#
+# **These have to be here rather than in `tests/test_events.gd`.** Everything about the siting is a
+# function of where she actually walked, so it needs a real city, a real manager and something in
+# the `player` group that moves — the same reason this suite exists at all.
+
+const WALK_STEP := 1.0 / 30.0
+## Every cardinal, and one diagonal because a press sets an arbitrary unit vector and most real
+## headings are not square to the lattice.
+const WALKS := {
+	"east": Vector2.RIGHT,
+	"west": Vector2.LEFT,
+	"north": Vector2.UP,
+	"south": Vector2.DOWN,
+	"north-east": Vector2(0.7071, -0.7071),
+}
+## Long enough that a siting at the far end of the band (`EventDirector.ON_HER_WAY_SIGHT`) is met
+## with the outbound leg of a 180s day still in hand.
+const WALK_SECONDS := 70.0
+
+## A player the manager can find, out of the physics loop and moved by hand at `Tuning.WALK_SPEED`.
+##
+## **It walks through the lattice rather than round it, and that is the rig being honest about what
+## it tests.** What is under test is where the day sites a place against the direction she is
+## *travelling*; a rig that turned at every frontage would be testing the collision shape, and one
+## that only ever walked legal ground could not hold a heading long enough to ask the question.
+func _walker(t, at: Vector2) -> Stroller:
+	var rig := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	# Set here rather than left to the engine: a camera built in code under physics interpolation is
+	# overridden to the physics callback with a warning, and a warning in a test run is a failure.
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	rig.add_child(camera)
+	t.add_child(rig)
+	rig.set_physics_process(false)
+	rig.global_position = at
+	return rig
+
+## Seconds of walking since the last `_start`, advanced by `_walk` so a test can say *when*
+## something happened without threading a clock through the walking itself.
+var _walk_clock := 0.0
+
+## Steps the manager for `seconds` of walking in `heading`, stopping the frame `until` answers true.
+## Returns the heading she was travelling on the last frame, which is `heading` unless the map's
+## edge turned her round.
+##
+## **She turns round at the border rather than walking off it**, because a straight line long enough
+## to meet a fire sited up to `EventDirector.ON_HER_WAY_SIGHT` seconds of walking ahead is longer
+## than the city on most headings. That is not a workaround: a player who reaches the boundary turns
+## round too, and it is exactly the case the re-siting exists for.
+func _walk(rig: Stroller, heading: Vector2, seconds: float, until := Callable()) -> Vector2:
+	var walked := 0.0
+	while walked < seconds:
+		var margin := heading * Tuning.TILE_SIZE * 4.0
+		if not _city.map.in_bounds(_city.map.world_to_tile(rig.global_position + margin)):
+			heading = -heading
+		rig.velocity = heading * Tuning.WALK_SPEED
+		rig.global_position += heading * Tuning.WALK_SPEED * WALK_STEP
+		_city.events._physics_process(WALK_STEP)
+		walked += WALK_STEP
+		_walk_clock += WALK_STEP
+		if until.is_valid() and until.call():
+			return heading
+	return heading
+
+func _fire_plan() -> EventScheduler.Planned:
+	for plan in _city.events.plans():
+		if plan.def.id == "burning_building":
+			return plan
+	return null
+
+## **The fire is on the way she is taking, whichever way that is.** The day plans it with no
+## position at all; walking any of the five headings below from the doorstep has it sited ahead of
+## her, off screen, and brought into view by continuing to walk.
+##
+## The two numbers checked on the siting itself are the ones the design is stated in: it is *ahead*
+## (inside `EventDirector.ON_HER_WAY_CONE` of the heading she was travelling) and it is *off screen*
+## (outside the streaming band, so nothing about it is visible and nothing about it is real yet).
+func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
+	var scars_before := GameState.scars.duplicate()
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	for heading_name: String in WALKS:
+		var heading: Vector2 = WALKS[heading_name]
+		_start(Tuning.RUN_TAUGHT_DAY)
+		var plan := _fire_plan()
+		t.check(plan != null and not plan.is_placed(),
+				"walking %s: day 3 budgets a fire and leaves it for her walk to site" % heading_name)
+		if not plan:
+			continue
+		var rig := _walker(t, _city.map.home_world_position())
+		var sited_from := Vector2.ZERO
+		var sited_at := -1.0
+		var seen_at := -1.0
+		_walk_clock = 0.0
+		while _walk_clock < WALK_SECONDS and seen_at < 0.0:
+			var before := plan.is_placed()
+			var here := rig.global_position
+			heading = _walk(rig, heading, WALK_STEP)
+			if not before and plan.is_placed():
+				sited_at = _walk_clock
+				sited_from = here
+				t.check(plan.position.distance_to(here) > Tuning.EVENT_STREAM_RADIUS,
+						("walking %s: the fire is sited %.0fpx out, past the %.0fpx streaming band, "
+						% [heading_name, plan.position.distance_to(here), Tuning.EVENT_STREAM_RADIUS])
+						+ "so it is neither visible nor real when it is placed")
+				var toward := plan.position - here
+				var across := Vector2(-heading.y, heading.x)
+				t.check(toward.dot(heading) > 0.0
+						and absf(toward.dot(across)) <= EventDirector.ON_HER_WAY_DRIFT,
+						("walking %s: and it is on the line she is walking — %.0fpx along it and "
+						% [heading_name, toward.dot(heading)])
+						+ "%.0fpx off it, inside the %.0fpx that keeps it in view when she reaches it"
+						% [absf(toward.dot(across)), EventDirector.ON_HER_WAY_DRIFT])
+			if plan.is_placed() and _city.events._is_on_screen(plan.position):
+				seen_at = _walk_clock
+		t.check(sited_at >= 0.0, "walking %s: the fire is sited at all" % heading_name)
+		t.check(seen_at >= 0.0,
+				"walking %s: and continuing to walk brings it into view (%.1fs in)"
+				% [heading_name, seen_at])
+		if seen_at >= 0.0:
+			print("      fire %s: sited %.1fs in, %.0fpx ahead, first seen %.1fs later"
+					% [heading_name, sited_at, plan.position.distance_to(sited_from),
+					seen_at - sited_at])
+		rig.free()
+	_city.events.stream_radius = INF
+	GameState.scars = scars_before
+
+## **The scar the run keeps is where it actually burned.** The whole point of siting the fire from
+## her walk is that where it stands is not known at dawn, and a scar is the city's memory of a day —
+## so this is the one property that would go wrong silently: a burnt-out shell standing for the rest
+## of the run somewhere no fire ever was.
+##
+## The rule that keeps it true is that a plan stops being movable the moment it is *real*, which is
+## the first time it streams in — `EventManager._stream_in` records the scar there. The rule itself
+## is checked in `tests/test_events.gd`, against a director with the geometry written rather than
+## walked; what is checked here is the wiring, against a real streaming manager and a real walk.
+func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
+	var scars_before := GameState.scars.duplicate()
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	_start(Tuning.RUN_TAUGHT_DAY)
+	var plan := _fire_plan()
+	t.check(plan != null, "day 3 has a fire to walk into")
+	if not plan:
+		_city.events.stream_radius = INF
+		return
+	var rig := _walker(t, _city.map.home_world_position())
+	_walk_clock = 0.0
+	var heading := _walk(rig, Vector2.RIGHT, WALK_SECONDS,
+			func() -> bool: return plan.is_placed())
+	t.check(plan.is_placed(), "walking sites it")
+	if not plan.is_placed():
+		rig.free()
+		_city.events.stream_radius = INF
+		return
+
+	heading = _walk(rig, heading, WALK_SECONDS, func() -> bool: return plan.was_live)
+	t.check(plan.was_live, "and walking on puts it in the world")
+	if plan.was_live:
+		var burning_at := plan.position
+		var scar_here := false
+		for scar in GameState.scars:
+			scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
+					and Vector2(scar["position"]).distance_to(burning_at) < 1.0)
+		t.check(scar_here, "and the scar the run keeps is where it actually burned")
+		_walk(rig, -heading, 20.0)
+		t.check(plan.position == burning_at,
+				"and turning round after it is real leaves it exactly where it burned")
+	rig.free()
+	_city.events.stream_radius = INF
+	GameState.scars = scars_before
+
+## **A fire that was never lit was not spent.** *"What the run has spent stays spent ... a fire that
+## burnt a block down did happen"* (`GameState.finish_day`) — so a set piece the day owed her walk is
+## consumed where it becomes real rather than where it is planned, and a day 3 lost before she ever
+## got near it is offered it again. A day on which it burned is not: the city remembers that one, and
+## the shell is standing in it.
+func _test_a_fire_that_was_never_lit_was_not_spent(t) -> void:
+	var scars_before := GameState.scars.duplicate()
+	var consumed: Array[String] = []
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	var day := Tuning.RUN_TAUGHT_DAY
+	_city.events.start_day(day, _rng(day), consumed)
+	t.check(not "burning_building" in consumed and _fire_plan() != null,
+			"day 3 budgets the fire without spending it, because a plan with no position promises "
+			+ "nothing yet")
+
+	# Lost without her ever walking out to it. The same day, again, still owes her one.
+	_city.events.start_day(day, _rng(day), consumed)
+	t.check(_fire_plan() != null, "a day 3 lost before she reached it is offered it again")
+
+	# Now she walks into it. That is the fire the run remembers, and there is not a second one.
+	var plan := _fire_plan()
+	var rig := _walker(t, _city.map.home_world_position())
+	_walk_clock = 0.0
+	var heading := _walk(rig, Vector2.RIGHT, WALK_SECONDS, func() -> bool: return plan.is_placed())
+	_walk(rig, heading, WALK_SECONDS, func() -> bool: return plan.was_live)
+	t.check(plan.was_live and "burning_building" in consumed,
+			"walking into it is what spends it")
+	_city.events.start_day(day, _rng(day), consumed)
+	t.check(_fire_plan() == null, "and no later day plans a second one")
+	rig.free()
+	_city.events.stream_radius = INF
+	GameState.scars = scars_before
+

@@ -543,7 +543,8 @@ EventScheduler.build_day(day_index, run_seed):
     rng = RNG(hash(run_seed, day_index))
     1. add all AMBIENT events for the current act
     2. add SCRIPTED events whose day == day_index
-    3. roll ONE_SHOT events not yet consumed this run, gated by first_day/last_day
+    3. roll ONE_SHOT events not yet consumed this run, gated by first_day/last_day —
+       except one the day owes her walk, which is budgeted here and sited later
     4. fill remaining budget with RECURRING events by weight
     5. apply park spoiling rules  (docs/CITY.md)
     6. validate: a path from home to at least one usable calm zone must exist
@@ -644,7 +645,7 @@ from the doorstep to the calm areas still worth reaching.
 | a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
 | a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
-| a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens |
+| a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens — or, with `EventDef.sited_on_her_way`, one placement with no position, put on a building face ahead of her once her heading for the day is clear |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.scenery` (`pigeon_flock`) | **none** | wherever its own rule says |
 
 **The second row is a question about the ground, not about the price, and it is asked two ways.**
@@ -757,20 +758,52 @@ than off it, and lethal rows land on the rim far more often than elsewhere, with
 share drifting down over the run as it fills up and `EVENT_SPACING_SAME` pushes the overflow
 outward. The measurement that established this is in `docs/DECISIONS.md` under M50.
 
-### A set piece is offered on every route and happens on one
+### A set piece happens where she is going
 
-The burning building is the only one-shot in the catalogue. Placed like everything else — a legal
-spot somewhere on the map, on a day she may never walk that way — an authored set piece that fires
-once per run is a fairness contract and a silhouette spent on nothing.
+An authored one-shot has to be **met**: one that fires on a street she never walks down is a
+fairness contract and a silhouette spent on nothing. There are two ways of guaranteeing that, and
+which one a row gets is `EventDef.sited_on_her_way`.
 
-So the day plans it **at every site of a covering set** — `RouteTree.covering_sites`, the smallest
-set of streets such that every route touches one — and the placements share a `set_piece_group`.
-The first one to enter the world spends the rest, in `EventManager._stream_in`, which is also
-where a scar is recorded: a run gets exactly one fire however many streets were offered. The fire
-engine is not part of this — it is never scheduled at all, and arrives only once the building it
-answers has been seen (`EventDef.spawns_on_sight`, `EventManager._summon_the_sighted_row()`).
+**The fire is sited from the walk she is taking.** `burning_building`, day 3's one-shot and the only
+row carrying the flag, is budgeted at dawn with **no position at all**. Once she has been walking
+`EventDirector.ON_HER_WAY_AFTER` seconds and is `ON_HER_WAY_BEYOND_HOME` pixels clear of the
+doorstep — far enough in that a heading means something, and past the day's run lesson —
+`EventDirector.site_what_is_on_her_way()` puts it on a building face **on the line she is walking**:
+between the far edge of the streaming band and `ON_HER_WAY_SIGHT` seconds of walking past the edge
+of the view, and no more than `ON_HER_WAY_DRIFT` off her line. That is nine to sixteen seconds of
+walking before she sees it, depending on which way she is going.
 
-Three things this gets right that choosing a site on her route would not:
+*"the fire should come first and be on your way **guaranteed** (a dynamic event dependent on the
+route you chose that day)"* (PLAYTEST-117). Three things make that hold:
+
+- **It is a place, sited late, not a moment with no place.** The tile, the role, the corridor's own
+  questions, the doors, the protected calm and the body in the street are all exactly what dawn
+  would have asked; `EventScheduler.WalkSiting` keeps the day's placement context past dawn so that
+  one candidate is judged against the same ground as every other placement. What waits is only
+  *which* of the legal tiles it takes.
+- **It may be moved until it is real, and never after.** If she turns round, and the fire has been
+  behind her — past `ON_HER_WAY_BEHIND`, so a corner is not a change of mind — for
+  `ON_HER_WAY_TURNED_AWAY` seconds of walking, it is sited again ahead of the new heading. The
+  moment it streams in it has recorded its scar and moved its block along its arc, and from then on
+  it stands where it burned for the rest of the run. That line is drawn at the streaming radius
+  rather than at the screen edge, which is six seconds of walking earlier than she could have seen
+  it.
+- **Nothing is placed illegally to satisfy the guarantee.** No building face ahead, a door's clear
+  ground, calm she has not used, a body that would seal the last way to a park — any of these and
+  the siting is simply refused and asked again a second later, from wherever she has got to. A day
+  she walks into a corner is a day it waits.
+
+The fire engine is not part of this. It is never scheduled at all, and arrives only once the
+building it answers has been seen (`EventDef.spawns_on_sight`,
+`EventManager._summon_the_sighted_row()`) — which is why the fire being on her way is also the
+engine being on her way.
+
+**A one-shot without the flag is offered on every route and happens on one.** The day plans it **at
+every site of a covering set** — `RouteTree.covering_sites`, the smallest set of streets such that
+every route touches one — and the placements share a `set_piece_group`. The first one to enter the
+world spends the rest, in `EventManager._stream_in`, which is also where a scar is recorded: a run
+gets exactly one of it however many streets were offered. Two things this gets right that choosing
+a site on her route would not:
 
 - **Nothing has to predict her.** The guarantee is structural and holds whichever way she goes.
 - **A bundle is not a guarantee.** Two distinct routes to one area share no *cell* by construction
@@ -780,9 +813,11 @@ Three things this gets right that choosing a site on her route would not:
   for a *tile she must cross*, which the city is built not to have. Rarely, the two routes use
   different cells of the very same street, and one site there covers both after all — the fallback
   a covering set of one is legal ground for, not a bug in either.
-- **The moment of choosing is the moment of walking there.** `_stream_in` is where an event becomes
-  real — where its scar is recorded and its block moves along its arc — so the alternatives stop
-  being possible on the same frame rather than when it finishes.
+
+**The moment of choosing is the moment of walking there**, either way round. `_stream_in` is where
+an event becomes real — where its scar is recorded and its block moves along its arc — so the
+alternatives stop being possible on the same frame rather than when it finishes, and so does the
+fire's own freedom to move.
 
 **An offer takes up no room, and that is not a convenience.** Spacing the rest of the day around
 all two-to-six offers would reserve ground for events that will not exist — and it breaks *"a
@@ -793,8 +828,10 @@ Because an offer costs nothing, the fill is **identical** between attempts.
 
 Two exceptions, both load-bearing. **Siblings space against each other**, because two offers on top
 of one another would be a real overlap on whichever one fires. And **nothing lethal may be planned
-into an offer**: if it does resolve there, she meets a lethal field and a burning building at once,
-which is exactly the sum the telegraph contract refuses.
+into an offer**: if it does resolve there, she meets a lethal field and a set piece at once, which
+is exactly the sum the telegraph contract refuses. A siting made from her walk is held to the same
+rule from the other side — `EventScheduler._room_around` measures the candidate against everything
+the day has already placed, so a building face inside a lethal field is not a face it may take.
 
 The three counts this splits apart are worth keeping straight, because two tests depend on it.
 `max_per_day` is a cap on **instances**, and the number of offers is not one — so a one-shot is
@@ -948,7 +985,7 @@ All implemented.
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway leaves 26px to the frontage, narrower than the pram — a **wall** by physical fit, silent or not, so the street it is on is one she walks the far side of. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
-| `burning_building` | ONE_SHOT | 3 | Placed in a building, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, and you cannot walk through the fire. |
+| `burning_building` | ONE_SHOT | 3 | Against a frontage, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is — and **sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn, on her own line, off screen, nine to sixteen seconds of walking short of being seen. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, you cannot walk through the fire, and the shell it leaves stands where it actually burned. |
 | `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md), entering along the fire's own street from off screen and ending there. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a

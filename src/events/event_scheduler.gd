@@ -715,6 +715,30 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
+		# **A one-shot the day sites from her walk is owed rather than rolled for.** The roll below
+		# spreads an ordinary one over the days it is eligible for so that meeting it feels like an
+		# accident; this one is the day's authored beat and has to happen whichever way she goes, so
+		# a roll here would be a guarantee resting on a coin flip the first time the row's eligible
+		# window was widened. It costs the day exactly what it always did — the plan is budgeted here
+		# and only its *position* is left for `EventDirector.site_what_is_on_her_way()` to choose, the
+		# same split an `AHEAD_OF_PLAYER` row is budgeted and sited under.
+		if def.sited_on_her_way:
+			var owed := Planned.new(def, Vector2.INF)
+			owed.role = _role_for(def, day)
+			# Tagged like any other set piece even though there is only ever one of it: a plan outside
+			# the group system is one `EventManager._stream_in` can never spend, silently exempt from
+			# the machinery the row is written against. See `_place_a_set_piece`'s own note.
+			owed.set_piece_group = "%s@%d" % [def.id, day]
+			planned.append(owed)
+			# **And it is not consumed here.** Every other one-shot is spent the moment the day plans
+			# it, because planning it *is* siting it; this one has no position yet, so planning it
+			# promises nothing. It is spent where it becomes real instead —
+			# `EventManager._stream_in()`. What that buys is the retry: *"what the run has spent stays
+			# spent ... a fire that burnt a block down did happen"* (`GameState.finish_day`), and a
+			# fire that was never lit did not, so a lost day 3 is offered it again.
+			Telemetry.note("roll", "one-shot %s: owed to her walk, sited when her heading is clear"
+					% def.id)
+			continue
 		# Spread a one-shot over the days it is eligible for rather than always firing it
 		# on the first: 1/n chance per remaining day makes it feel like an accident.
 		var remaining := maxi(1, (def.last_day if def.last_day > 0 else def.first_day + 2) - day + 1)
@@ -795,6 +819,113 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 			anywhere.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(anywhere)
 	return made
+
+# ------------------------------------------------- a placement made after dawn ---
+
+## The day's own placement context, kept past dawn so that a row the day left for her walk to site
+## is placed against exactly the ground, corridor, doors and protected calm every other placement
+## was stated against.
+##
+## **Why a placement can be made after dawn at all.** Every guarantee in this file is stated over a
+## *day* and decided in `build_day` — and that is untouched here: the row is budgeted at dawn, its
+## role is decided at dawn, and what it may stand on was decided at dawn. Only *which* of those
+## tiles it takes waits, because on day 3 the fire has to be on the way she actually goes and
+## nothing at dawn knows which way that is. See `EventDef.sited_on_her_way`.
+##
+## **What a late placement may not do is repair.** It cannot drop something the day already placed
+## to make room, and `_ensure_the_city_is_still_walkable` has already run and cannot run again — so
+## the walkability question that pass answers for the whole day is asked of this one candidate
+## *before* it is accepted, in `_still_leaves_a_park_reachable()` below.
+class WalkSiting extends RefCounted:
+	var _day: int
+	var _map: CityMap
+	var _corridor: Corridor
+	var _leave_alone: Array[Rect2]
+	var _doors: PackedVector2Array
+	## The same per-day cache of "which tiles may this kind of row stand on" `build_day` threads
+	## through its own placements, kept here for the day so the city is not rescanned per attempt.
+	var _ground := {}
+	var _grid: ReachabilityGrid = null
+	## Whether the day is walkable at all with nothing of ours in it, worked out once. See
+	## `_still_leaves_a_park_reachable()`.
+	var _was_walkable := -1
+
+	## `tree` is the day's corridor tree and `used_calm` is `GameState.settled_this_act()` — the two
+	## arguments `build_day` states its own placements against, taken here rather than the finished
+	## `Corridor` and rect list so the caller passes what it already has and this stays the one place
+	## that turns them into the other.
+	func _init(for_day: int, map: CityMap, tree: RouteTree, used_calm: Array[Vector2i],
+			doors: PackedVector2Array) -> void:
+		_day = for_day
+		_map = map
+		_corridor = Corridor.of(tree if tree else RouteTree.for_day(map, for_day))
+		_leave_alone = EventScheduler._calm_to_leave_alone(map, used_calm)
+		_doors = doors
+
+	## A placement for `def` on a building face ahead of `at` along `heading` — between `near` and
+	## `far` pixels *along* that line and no more than `drift` pixels off it — or `null` when there
+	## is nothing legal there, which is a retry as she walks and never a placement made anyway.
+	##
+	## **Along and across, not a cone.** The question the band answers is *how much further does she
+	## walk before she sees it*, and that is a distance down her own line; anything stated as an
+	## angle is a placement three screens to one side at the far end of the same band. See
+	## `EventDirector.ON_HER_WAY_DRIFT`.
+	##
+	## `already` is everything else the day has planned, for spacing and for the walkability question
+	## below. **The plan being sited is not in it** — a row being moved off a position it has not yet
+	## been seen at must not be spaced against its own old body, or the second siting is refused the
+	## street the first one was standing in.
+	func ahead_of(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			at: Vector2, heading: Vector2, near: float, far: float, drift: float) -> Planned:
+		var role := EventScheduler._role_for(def, _day)
+		var reachable := EventScheduler._open_ground_for(def, _map, _ground)
+		var across := Vector2(-heading.y, heading.x)
+		var offered: Array[Vector2i] = []
+		for tile in reachable:
+			var toward := _map.tile_to_world(tile) - at
+			var along := toward.dot(heading)
+			if along < near or along > far:
+				continue
+			if absf(toward.dot(across)) > drift:
+				continue
+			offered.append(tile)
+		if offered.is_empty():
+			return null
+		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
+				_leave_alone, _corridor, _doors)
+		if not candidate:
+			return null
+		if not _still_leaves_a_park_reachable(already, candidate):
+			return null
+		return candidate
+
+	## Whether the day still has a walkable way from the home to some calm ground with this one more
+	## body standing in it. `EventScheduler._ensure_the_city_is_still_walkable()` asks this of the
+	## whole day at dawn and *drops* what seals the city; a placement made after dawn has nothing it
+	## is allowed to drop, so it asks the same question of itself and declines instead.
+	##
+	## **Asked as a difference rather than as an absolute**, because the list it is asked over is the
+	## whole of what the manager is holding — the catalogue's rows, the day's seals, the region wall
+	## and its door structure — which is a stricter set than the dawn pass ever saw. If that set is
+	## already unwalkable by this measure then nothing here sealed it, and refusing for ever would
+	## turn a day the fire cannot be blamed for into a day 3 with no fire in it at all.
+	func _still_leaves_a_park_reachable(already: Array[Planned], candidate: Planned) -> bool:
+		if candidate.def.obstructs_radius <= 0.0 and not candidate.def.hard_fail:
+			return true
+		if not _grid:
+			_grid = ReachabilityGrid.build(_map)
+		var blockers: Array[Planned] = []
+		for plan in already:
+			if not plan.is_placed():
+				continue
+			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+				blockers.append(plan)
+		if _was_walkable < 0:
+			_was_walkable = 1 if EventScheduler._park_is_reachable(_map, _grid, blockers) else 0
+		if _was_walkable == 0:
+			return true
+		blockers.append(candidate)
+		return EventScheduler._park_is_reachable(_map, _grid, blockers)
 
 ## Fills the day's budget, **one stream per attempt**.
 ##
@@ -883,7 +1014,21 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	# ground too. Only the mouse asks the question at all.
 	if def.id == _MOUSE_ID:
 		open_candidates = _prefer_beside_a_sack_pile(open_candidates, map, day)
+	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
+			doors)
 
+## The acceptance half of a placement: roll `Tuning.EVENT_PLACEMENT_TRIES` candidates out of
+## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
+## perfect one or the roomiest of the rest.
+##
+## Split out of `_place_one` above because a placement made **after** dawn asks the identical
+## questions of a narrower pool — `WalkSiting.ahead_of()` offers only the building faces ahead of
+## her heading — and a second copy of this list of rules is a second copy that would agree with it
+## right up to the first time one of them gained a rule.
+static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
+		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
+		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
+		corridor: Corridor, doors: PackedVector2Array) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
 	for _try in Tuning.EVENT_PLACEMENT_TRIES:

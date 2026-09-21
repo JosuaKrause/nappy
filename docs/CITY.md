@@ -966,15 +966,17 @@ An authored set piece that fires once per run and is missed is a fairness contra
 spent on nothing — which is what placing it like everything else, at a legal spot somewhere on the
 map, produces on a day she may never walk that way.
 
-So a **set piece is sited against the tree**: the day picks a **set** of candidate sites such that
-**every corridor passes at least one**, and the one she reaches is the one that fires. That is
-better than choosing a site on her chosen route, because it needs no knowledge of what she chose —
-the guarantee is structural, and it holds whichever way she goes. `docs/EVENTS.md`, "A set piece is
-offered on every route and happens on one", is the built mechanism.
+There are two ways to make that impossible and the day picks between them per row. A **set piece
+sited against the tree** picks a **set** of candidate sites such that **every corridor passes at
+least one**, and the one she reaches is the one that fires: it needs no knowledge of what she chose,
+so the guarantee is structural and holds whichever way she goes. A **set piece sited from her walk**
+waits instead — the day budgets it with no position and puts it on a building face ahead of her once
+her heading is clear, which is what day 3's fire does. `docs/EVENTS.md`, "A set piece happens where
+she is going", is the built mechanism for both.
 
-It may not be *steered onto her*: `AHEAD_OF_PLAYER` is for moments, and a fire engine is
-deliberately a **place**. What makes it a place and still unmissable is the candidate set, not a
-director.
+Either way it stays a **place** rather than a moment: a tile, a body, a field, and every question
+the corridor asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning
+building is not one. What the second way changes is *when* the tile is chosen, never what it is.
 
 **"All routes" is load-bearing and means routes, not destinations.** A covering set that counts an
 area as met when **either**
