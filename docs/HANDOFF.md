@@ -313,8 +313,8 @@ checks and worktrees can move independently of this file.
   is day 14's task; then M181, the resistance has a reason, and a task is one day, which needs
   the places the first three make. All four are decided in `TODO.md`
   ([PLAYTEST-118](playtests/PLAYTEST-118.md), [PLAYTEST-119](playtests/PLAYTEST-119.md),
-  [PLAYTEST-120](playtests/PLAYTEST-120.md), [PLAYTEST-121](playtests/PLAYTEST-121.md)). M182, a finished task is shown by the world, has
-  the other tasks' answers open and is decided with M181.
+  [PLAYTEST-120](playtests/PLAYTEST-120.md), [PLAYTEST-121](playtests/PLAYTEST-121.md)). M182, a
+  finished task is shown by the world, has the other tasks' answers open and is decided with M181.
 - **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
   "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
   the first entry of `REVIEW.md`. M174, the man shouting costs nothing to walk beside, has one
