@@ -398,13 +398,11 @@ unless an item says otherwise.
 
 [PLAYTEST-117](playtests/PLAYTEST-117.md). A touched mark already shows that it was taken, and
 the HUD writes nothing for any step (`DECISIONS.md`, M177, the second mark is any alley she
-comes across). What is open is the other half: a perform step shows nothing at all.
+comes across), and the man shouting, handed the note, goes quiet and walks off screen
+(`DECISIONS.md`, M182, the man shouting walks off). What is open is every other task.
 
-- [ ] **The man shouting, handed the note, stops shouting and walks off screen.** The
-      look-alike she reached goes quiet and leaves the way a finished event leaves
-      (`EventInstance`'s own departure: no field while leaving, gone once out of sight), away
-      from her, at a walk. The other men shouting carry on.
-- [ ] **Every other perform step gets its own visible answer**, decided with M181, the
+- [ ] **Every other perform step gets its own visible answer**
+      (`EventInstance.leave_for_a_completed_task()` is there for the ones that leave), decided with M181, the
       resistance has a reason, and a task is one day, where the list of tasks is settled: the
       van's drop, the roadblock, the poster wall, the crowd. Each is something that happens
       where she is looking, and none is text.

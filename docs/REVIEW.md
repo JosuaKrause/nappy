@@ -30,6 +30,13 @@ item below for as long as looking takes.
   that read?** And when she comes out, **is she ever drawn, even for a moment, at the place she
   went in?** Record is `DECISIONS.md`, M178, a gate lets her out alive.
 
+- **Hand the note to a man shouting** (the day after the first chalk mark is touched; any of
+  them). He goes quiet at once and walks away from her at 60px a second, in a straight line,
+  until he is off screen; the others carry on. His picture has no quiet pose, so the whole cue
+  is the shouting stopping and him leaving. **Does it read as "he took it", with nothing
+  written anywhere?** He walks straight, so watch whether he goes through a building or across
+  a road in a way that looks wrong. Record is `DECISIONS.md`, M182, the man shouting walks off.
+
 - **Find a chalk mark on a day that has one, and touch it** (day 4 onward; the mark is in an
   alley near wherever she walks). It stays
   put once she has been within 150px of it, on screen, for a second, and until then it moves

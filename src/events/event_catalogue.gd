@@ -453,6 +453,12 @@ static func _homeless_yeller() -> EventDef:
 	# Eight tiles of footway, walked in about eight seconds each way. Long enough that where he is
 	# now is worth looking at, short enough that it is still *a place he is*.
 	def.path_length_tiles = 8
+	# `paces` never reaches the end of its own path, and he carries no `duration`, so the only way
+	# he ever leaves is the resistance handing him a note (`EventInstance.
+	# leave_for_a_completed_task()`) — this is that departure's own speed, not his pacing shuffle.
+	# Faster than the shuffle, so the note visibly changes what he is doing, and well under her
+	# own `Tuning.WALK_SPEED` (92px/s), so following him out is never the fast way home.
+	def.departs_at = 60.0
 	def.weight = 2.0
 	def.max_per_day = 18
 	return def
