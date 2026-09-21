@@ -120,7 +120,7 @@ that through the day before the last night:
 **Two kinds of task.** One any live instance of the right thing answers — the man shouting, a
 roadblock — and gets no arrow: approaching any of them is still the cost, and whichever one she
 reaches is the right one. The rest are one place, and get the red arrow, `HomeArrow`'s own form
-in a colour of its own (`Palette.TASK_ARROW`) — a decided exception to *no quest log or marker for
+in a color of its own (`Palette.TASK_ARROW`) — a decided exception to *no quest log or marker for
 the resistance*, narrowed to a task with exactly one place to be.
 
 ### Risk
@@ -161,13 +161,14 @@ by walking past it. **The task is announced at the mark and nowhere else**: the 
 touches it, its own words flash where the walking and running lessons do, and then the HUD
 carries one terse line, *somewhere out there* and what she is looking for, for as long as the
 task stands. How far in she is belongs between days rather than during one, on the day summary's
-own tally. **That line is silent until the first mark has ever been touched** — the first
-encounter comes with no hint at all, and only later ones are named. The day brief carries none of
-this: it is one or two sentences about what is true of the city that morning, the same words
-whichever way the day before it went.
+own tally. **That HUD line is silent until the first mark has ever been touched**, and only later
+ones are named. The day brief is a separate channel and says less, not more: its own line for the
+first task day names the rumor of chalk messages in alleys and nothing else — no place, no
+pointer to one — and every other day's line is one or two sentences about what is true of the
+city that morning, the same words whichever way the day before it went.
 
 **A finished task is shown by the world and never by text.** A touched mark changes to its
-done colour, which is all a mark needs; nothing is written on the HUD, and there is no counter,
+done color, which is all a mark needs; nothing is written on the HUD, and there is no counter,
 no objective marker and no log. The note for a stranger answers the same way: the moment she
 hands it to him, the man she reached stops shouting and walks away, on foot, until he is out of
 sight — the same departure any finished event takes, not a word on screen. The look-alikes she
@@ -196,9 +197,9 @@ rule 2, above: the baby is never in narrative danger from the regime directly); 
 is damning to be caught with and harmless beside the baby. **She is never told the plan**: each
 errand is small and deniable, and she learns what they were for only when the windows go dark.
 And **nothing before the last night rests on her alone**: the group has other couriers, and a
-task she skips is done by somebody else at a higher cost, which is why missing one is still
-enough. The last night has to be her, because under curfew with the army on the streets only a
-parent with a crying baby reaches that door.
+task she skips is done by somebody else at a higher cost, which is why she can miss some and it
+is still enough — see `Tuning.RESISTANCE_GOAL`. The last night has to be her, because under
+curfew with the army on the streets only a parent with a crying baby reaches that door.
 
 The tasks escalate: trust, carry, carry back, scout, protect, rehearse, retrieve, scout again,
 act.
