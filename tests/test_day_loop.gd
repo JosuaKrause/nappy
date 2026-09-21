@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_a_lost_days_brief_is_shown_and_then_cleared(t)
 	_test_the_summary_shows_when_the_day_ended(t)
 	_test_a_lost_day_gives_the_resistance_back(t)
+	_test_a_lost_day_gives_back_what_it_burned(t)
 	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
 	_test_a_lost_summary_repeats_the_days_own_instruction(t)
 
@@ -638,6 +639,68 @@ func _resistance_director(t, city: City) -> ResistanceDirector:
 ## `GameState` is an autoload and the whole suite shares one, so anything that starts a run puts
 ## back what it found. The same shape `tests/test_resistance.gd` uses, over the run-level fields
 ## these tests write rather than the resistance's alone.
+## **A lost day gives back what the attempt did to the city**, not only what it did to the
+## resistance. *("a retry always rolls new -- nothing that happened on the day that got retried can
+## influence the next repeat -- that has been a long standing rule"; "exact same state at the
+## beginning of the day. nothing else".)* Day 3's fire is the case it was asked about: an attempt
+## that burned a block down and then lost owes a fire again, leaves no shell standing, and hands the
+## block back at the step it was on that morning.
+##
+## Driven through `GameState` alone — the fire itself has no part in what is under test here, which
+## is the bookkeeping a lost attempt gives back. That the fire is what spends it is
+## `tests/test_event_manager.gd`'s.
+##
+## **And a won day keeps all of it**, which is the half that would pass on its own if the give-back
+## were simply a `clear()`.
+func _test_a_lost_day_gives_back_what_it_burned(t) -> void:
+	var saved := _save_run()
+	var block := Vector2i(3, 3)
+
+	GameState.start_run(SEED)
+	GameState.day = Tuning.RUN_TAUGHT_DAY
+	GameState.begin_day()
+	var arc_at_dawn := GameState.city_state.changed_on(block)
+	GameState.consumed_one_shots.append("burning_building")
+	GameState.add_scar("burnt_shell", Vector2(1000.0, 1000.0))
+	GameState.city_state.apply_cause(_burnable_plans(block), block, GameEnums.BlockCause.FIRE,
+			GameState.day)
+	t.check(GameState.city_state.changed_on(block) == GameState.day,
+			"the rig actually burned a block down on the day it is about to lose")
+
+	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(not "burning_building" in GameState.consumed_one_shots,
+			"a lost day 3 owes the fire again, whether or not she saw it burn")
+	t.check(GameState.scars.is_empty(), "and leaves no shell standing where it burned")
+	t.check(GameState.city_state.changed_on(block) == arc_at_dawn,
+			"and hands the block back at the step it was on that morning")
+
+	# The retry wins with a fire of its own, somewhere else. That one is the run's.
+	GameState.begin_day()
+	GameState.consumed_one_shots.append("burning_building")
+	GameState.add_scar("burnt_shell", Vector2(2000.0, 2000.0))
+	GameState.finish_day(GameEnums.DayResult.WON)
+	t.check("burning_building" in GameState.consumed_one_shots,
+			"a won day keeps the fire spent")
+	t.check(GameState.scars.size() == 1
+			and Vector2(GameState.scars[0]["position"]).is_equal_approx(Vector2(2000.0, 2000.0)),
+			"and the shell the run keeps is the one the winning attempt left")
+
+	# Losing the day after it does not reach back into the day that was won.
+	GameState.begin_day()
+	GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	t.check("burning_building" in GameState.consumed_one_shots and GameState.scars.size() == 1,
+			"and a later lost day gives back its own attempt only, never a won day's")
+
+	_restore_run(saved)
+
+## A block plan with a fire in its arc, so `CityState.apply_cause` has somewhere to advance to.
+## Built here rather than taken from the map, because which blocks a generated city happens to give
+## a fire arc is not what this check is about.
+func _burnable_plans(block: Vector2i) -> Dictionary:
+	var plan := BlockPlan.of(GameEnums.BlockPurpose.RESIDENTIAL) \
+			.then(GameEnums.BlockPurpose.BURNT_OUT, 1, GameEnums.BlockCause.FIRE)
+	return {block: plan}
+
 func _save_run() -> Dictionary:
 	return {
 		"seed": GameState.run_seed,
@@ -650,6 +713,9 @@ func _save_run() -> Dictionary:
 		"brief": GameState.pending_resistance_brief,
 		"completed": GameState.completed_resistance_steps.duplicate(),
 		"failed": GameState.failed_resistance_steps.duplicate(),
+		"consumed": GameState.consumed_one_shots.duplicate(),
+		"scars": GameState.scars.duplicate(),
+		"city": GameState.city_state.snapshot(),
 	}
 
 func _restore_run(saved: Dictionary) -> void:
@@ -663,3 +729,6 @@ func _restore_run(saved: Dictionary) -> void:
 	GameState.pending_resistance_brief = saved["brief"]
 	GameState.completed_resistance_steps = saved["completed"]
 	GameState.failed_resistance_steps = saved["failed"]
+	GameState.consumed_one_shots = saved["consumed"]
+	GameState.scars = saved["scars"]
+	GameState.city_state.restore(saved["city"])

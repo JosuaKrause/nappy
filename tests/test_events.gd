@@ -909,11 +909,12 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 ## `dog_walker` starting three tiles further up the same street is not a different day. Eight
 ## shouting men where there were two is, and that is what this stops.
 ##
-## **Two directions, because day 3's one-shot is spent when it becomes real rather than when it is
-## planned.** A day lost before she ever reached the fire gives it back, so the ordinary retry is
-## the same day down to the fire itself; a day planned after it actually burned has none of it and
-## nothing else different. The second is the one M39 was written against and it is asked here with
-## an explicitly spent list, since a retry can no longer produce one.
+## **Two directions, because a lost day gives the fire back altogether.** *("a retry always rolls
+## new -- nothing that happened on the day that got retried can influence the next repeat")* —
+## whether or not she ever reached it, so the ordinary retry is the same day down to the fire
+## itself; a day planned after it actually burned on a day she **won** has none of it and nothing
+## else different. The second is the one M39 was written against and it is asked here with an
+## explicitly spent list, since a retry can no longer produce one.
 func _test_a_retried_day_is_the_same_day(t) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for run_seed in [4242, 90210, 1234567]:
@@ -924,9 +925,9 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		var consumed: Array[String] = []
 		var first := EventScheduler.build_day(day, rng, map, consumed)
 		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
-		# where it becomes real — `EventScheduler._place_one_shots`. So the ordinary retry, after a
-		# day lost before she ever reached the fire, is the same day down to the fire itself. The
-		# other direction, a day *after* it burned, is the loop below this one.
+		# where it becomes real — `EventScheduler._place_one_shots`. And a lost day gives back what
+		# it spent (`GameState.finish_day`), so every retry is the same day down to the fire itself.
+		# The other direction, the day after it burned on a day she won, is the loop below this one.
 		t.check(consumed.is_empty(),
 				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])
 		var again := RandomNumberGenerator.new()

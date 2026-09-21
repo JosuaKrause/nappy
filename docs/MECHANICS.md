@@ -1293,10 +1293,13 @@ Three consequences, all of them chosen:
 - **A retry is the same day.** The city, the closures and the whole event plan are deterministic
   from the seed and the day number, which is what makes a retry worth having in a game about
   learning a route.
-- **What the run spent stays spent.** Consumed one-shots and advanced block arcs are run
-  history, not day content: a fire that burnt a block down did happen. Two things belong to the
-  attempt instead and are given back when it fails — **where she settled**, and **everything the
-  resistance did** — see `GameState.finish_day()`.
+- **What a lost attempt spent is given back.** *"a retry always rolls new -- nothing that happened
+  on the day that got retried can influence the next repeat -- that has been a long standing
+  rule"*, and *"it is the same day exactly how the player encountered it the first time this run.
+  exact same state at the beginning of the day. nothing else"*. A retried day is the state the run
+  was in that morning: where she settled, everything the resistance did, and everything the attempt
+  did to the city — the one-shots it consumed, the scars it left and the block arcs it advanced.
+  Only a day she **wins** keeps any of it. See `GameState.finish_day()`.
 
 **A lost day gives the resistance back.** *"a task is only complete if it is done on the day that
 won"*: a mark touched, a step performed, a contact lost to its deadline, a package picked up and
@@ -1305,6 +1308,14 @@ six fields that say what the resistance has done — the completed steps, the fa
 progress count, the package, the sabotage and the queued brief — and the loss restores them before
 the retry, so the retry is offered the same mark or the same contact, in the same place, from the
 same seed. A won day commits the photograph.
+
+**And gives the day's fire back with it.** Three more fields are photographed beside those six and
+restored the same way: `consumed_one_shots`, `scars` and the whole of `CityState`. So a day 3 lost
+after the fire burned owes a fire again — sited from whatever walk the retry takes, which is why a
+player who lost walking east and retries walking west meets it on another street — and leaves no
+shell standing in the meantime. The city photograph is taken **before** the dawn arc roll, since
+`GameState.begin_day()` runs ahead of `CityState.begin_day()`, so the retry's own dawn makes that
+roll again from the same seed and the same day rather than inheriting it.
 - **The run cannot end by running out of days while nerves remain.** The bad ending is the only
   way to lose, and the run length becomes a promise rather than a budget.
 
