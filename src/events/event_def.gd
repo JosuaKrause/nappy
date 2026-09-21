@@ -1090,14 +1090,22 @@ func ahead_of_player_lead() -> float:
 ## never happens.
 ##
 ## `closing_speed` is the row's own `speed` plus `WALK_SPEED`, since she is usually walking into it.
-## A `hard_fail` row is sited far enough out that its telegraph is over before it arrives, because
-## `EventInstance.is_lethal_at()` refuses the whole telegraph and a row that arrives inside one is
-## not lethal at all — `Tuning.outlasting_telegraph_lead()` carries that argument.
+##
+## **Every such row is sited so that its telegraph is over before it arrives, and what "arrives"
+## means is the only thing that differs between them.** A row that arrives inside its own telegraph
+## has spent its entire encounter on the warning: `EventInstance.is_lethal_at()` refuses the whole
+## telegraph, so a lethal one rides through her unable to fire, and `_notice_damping()` holds a loud
+## one at `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15), so a loud one is past her before it is ever
+## at its own intensity. Same defect, one at the kill and one at the meter.
+##
+## So `Tuning.outlasting_telegraph_lead()` gets the row's own arrival distance as its margin: zero
+## for `hard_fail`, where arriving is touching her, and `field_reach()` for anything else, where
+## arriving is its field reaching her. A lethal row's siting is unchanged by that reading — it was
+## always zero — and a loud one now goes loud a notice before she is inside it rather than a notice
+## before it is on top of her.
 func toward_player_lead(heading: Vector2) -> float:
-	var closing := speed + Tuning.WALK_SPEED
-	if hard_fail:
-		return Tuning.outlasting_telegraph_lead(heading, closing, telegraph_time, offscreen_notice)
-	return Tuning.offscreen_lead(heading, closing, offscreen_notice)
+	return Tuning.outlasting_telegraph_lead(heading, speed + Tuning.WALK_SPEED, telegraph_time,
+			offscreen_notice, 0.0 if hard_fail else field_reach())
 
 ## `toward_player_lead()` with no heading to ask about: the least it can be on any heading, which is
 ## the closest the director could ever site this row and so the cheapest version of the meeting.
@@ -1105,10 +1113,8 @@ func toward_player_lead(heading: Vector2) -> float:
 ## `Tuning.min_offscreen_lead()` exists — a figure in `docs/COSTS.md` may not depend on which way a
 ## particular walk happened to be going.
 func min_toward_player_lead() -> float:
-	var closing := speed + Tuning.WALK_SPEED
-	if hard_fail:
-		return Tuning.min_outlasting_telegraph_lead(closing, telegraph_time, offscreen_notice)
-	return Tuning.min_offscreen_lead(closing, offscreen_notice)
+	return Tuning.min_outlasting_telegraph_lead(speed + Tuning.WALK_SPEED, telegraph_time,
+			offscreen_notice, 0.0 if hard_fail else field_reach())
 
 ## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that

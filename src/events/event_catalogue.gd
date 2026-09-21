@@ -811,20 +811,37 @@ static func _burnt_shell() -> EventDef:
 ## `homeless_yeller` move.** *(2026-09-20: "what matters for the dogs is walking past them. and it
 ## shouldn't be free. at the very least restore the net gain if not a bit more".)*
 ## `tests/probes/m174_pass.gd` walks a real instance past her at `Tuning.WALK_SPEED`, moving as it
-## actually charges. At a field of 32/s and 0px of offset, against `Tuning.EXCITEMENT_DECAY_WALKING`
-## (6.0), the pass nets +11.0/s awake — against the 3.5/s decay this field was originally set
-## beside, the same pass would have netted +14.1/s. **`TOWARD_PLAYER` never earns a `WALL` role** —
+## actually charges; what the pass nets at each offset is this row's line in `docs/COSTS.md`.
+## **`TOWARD_PLAYER` never earns a `WALL` role** —
 ## `EventScheduler._role_for` answers `NONE` for anything the director sites rather than the
 ## scheduler, so nothing here trades against `Tuning.WALL_WORTH_OF_COST` the way `dog_walker`'s
 ## retuning does. **But running still has to lose to it**, `tests/test_events.gd`'s own catalogue-
 ## wide rule, and intensity alone pushes a field loud enough to break that: at 42/s the shorter,
 ## faster crossing running buys costs less than walking it, which nothing in the catalogue but
-## `car_accident` is allowed to do. 39/s is the loudest this field gets before that flips, and the
-## pass at today's decay, 0/20/40px, still comes in over the 3.5/s-decay figure at every offset
-## `tests/probes/m174_pass.gd` checks: +15.0 / +14.7 / +13.5 awake. No change to placement:
-## `TOWARD_PLAYER` costs more than the walk-through table alone suggests already, since the whole
-## point of the row is
-## that she dodges rather than walks the line.
+## `car_accident` is allowed to do. 39/s is the loudest this field gets before that flips, which is
+## why what the player asked for next was bought in timing rather than in another point of
+## intensity.
+##
+## **It is loud while it passes her, and that is a siting decision rather than a field one.**
+## *(2026-09-20: "unleashed dog still has too little influence -- needs to be more intense"; "but
+## keep things in relation to each other".)* A telegraph damps the row to
+## `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) because *this has not started yet* — and at 132px/s
+## against a walk, the ordinary offscreen margin put the dog about a second away when it was
+## created, so the whole meeting happened inside the warning and it was behind her before it was
+## ever at 39. `EventDef.toward_player_lead()` now sites it so its telegraph is over a notice before
+## its **field** touches her rather than a notice before the dog does, which is the same argument
+## `cyclist` already used for the kill. Nothing about the field moved; the dog simply arrives
+## having finished saying it is coming.
+##
+## **Its `telegraph_time` is unchanged at 2.25s and lengthening it would not have helped.** Under
+## the ordinary margin the dog was sited 225px out on the worst axis against a 190px forward reach,
+## so its field was on her 0.16s after it existed: no telegraph short enough to be over by then is
+## long enough to be fair. The warning is not shortened either — it is the same 2.25s, now spent
+## further away, and while it is off screen the screen-edge badge a faster-than-walking row earns
+## is what carries it.
+##
+## No change to placement: `TOWARD_PLAYER` costs more than the walk-through table alone suggests
+## already, since the whole point of the row is that she dodges rather than walks the line.
 static func _loose_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loose_dog"

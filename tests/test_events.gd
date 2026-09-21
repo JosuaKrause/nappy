@@ -6,6 +6,7 @@ const STEP := 1.0 / 60.0
 
 func run(t) -> void:
 	_test_the_rows_she_walks_up_to_pass_positively_awake(t)
+	_test_a_row_that_comes_at_her_is_done_telegraphing_when_it_arrives(t)
 	_test_catalogue_is_fair(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
@@ -1066,6 +1067,49 @@ func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
 			t.check(net > 0.0,
 					"%s: a pass at %.0fpx of an ordinary sidewalk nets %.2f/s awake, above zero"
 					% [id, offset, net])
+
+## **A row that comes at her has to finish telegraphing before it arrives, or the telegraph is the
+## whole encounter.** *(2026-09-20: "unleashed dog still has too little influence -- needs to be
+## more intense"; "but keep things in relation to each other".)* `EventInstance.is_lethal_at()`
+## refuses the whole telegraph and `_notice_damping()` holds the field at
+## `Tuning.TELEGRAPH_INTENSITY_FRACTION` for it, so a row sited too close rides past her unable to
+## do the one thing it is for — the kill for a `hard_fail` row, the noise for a loud one.
+##
+## Two claims, and the first is the general one. **The siting outlasts the telegraph by the row's
+## own arrival distance**: nothing for a lethal row, where arriving is touching her, and
+## `field_reach()` for anything else, where arriving is its field reaching her. Stated over
+## `min_toward_player_lead()`, the closest the director could ever put it, so a heading that gives
+## it more room cannot rescue a row that fails here.
+##
+## **And the loose dog stays above the dog walker**, which is the relation the player asked to be
+## kept: a dog running loose at 132px/s costs more to be passed by than a leashed one costs to walk
+## past. Both figures come off `M174Pass`, the same simulation `docs/COSTS.md` prints, so the two
+## can never disagree about what a pass is.
+func _test_a_row_that_comes_at_her_is_done_telegraphing_when_it_arrives(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER:
+			continue
+		checked += 1
+		var closing := def.speed + Tuning.WALK_SPEED
+		var arrival: float = 0.0 if def.hard_fail else def.field_reach()
+		var gap_at_the_end := def.min_toward_player_lead() - def.telegraph_time * closing
+		t.check(gap_at_the_end >= arrival,
+				("'%s' is sited %.0fpx out and has closed to %.0fpx by the end of its %.1fs "
+				+ "telegraph, which has to clear the %.0fpx at which it arrives")
+				% [def.id, def.min_toward_player_lead(), gap_at_the_end, def.telegraph_time,
+				arrival])
+	t.check(checked > 0, "there were rows that come at her to ask (%d)" % checked)
+
+	var dog := EventCatalogue.by_id("loose_dog")
+	var walker := EventCatalogue.by_id("dog_walker")
+	for offset in [0.0, 20.0, 40.0]:
+		var loose := M174Pass.pass_net_averaged(dog, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
+		var leashed := M174Pass.pass_net_averaged(walker, offset, Tuning.EXCITEMENT_DECAY_WALKING,
+				1.0)
+		t.check(loose > leashed,
+				("a loose dog's pass at %.0fpx costs %.2f awake, above the %.2f a dog walker's "
+				+ "does") % [offset, loose, leashed])
 
 ## **A pursuer can be a place before it is a moment.** *(M36, playtest 09: "a robber should increase
 ## excitement on sight and getting close to them should be day ending", and "if you get close they

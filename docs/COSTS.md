@@ -194,7 +194,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | fire_truck           |      31.6 |      31.5 |      31.2 |      29.5 |      26.4 |
 | burning_building     |         — |      13.2 |      12.7 |      10.2 |       5.4 |
 | burnt_shell          |         — |      -6.3 |      -5.9 |       0.0 |       0.0 |
-| loose_dog            |      -2.9 |      -2.9 |      -3.0 |      -3.2 |      -3.0 |
+| loose_dog            |      24.2 |      23.7 |      22.1 |      14.1 |       2.0 |
 | market_stall         |         — |       2.5 |       1.3 |       0.0 |       0.0 |
 | leaf_blower          |         — |      22.6 |      18.7 |       7.1 |      -0.1 |
 | pigeon_flock         |         — |         — |         — |         — |         — |
@@ -246,7 +246,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | fire_truck           |      10.9 |      10.8 |      10.7 |       9.9 |       8.4 |
 | burning_building     |         — |      -7.9 |      -8.1 |      -9.0 |     -10.6 |
 | burnt_shell          |         — |      -7.9 |      -7.2 |       0.0 |       0.0 |
-| loose_dog            |      -5.0 |      -4.9 |      -4.9 |      -4.5 |      -3.4 |
+| loose_dog            |       9.9 |       9.7 |       9.0 |       5.0 |      -0.6 |
 | market_stall         |         — |      -2.2 |      -2.2 |       0.0 |       0.0 |
 | leaf_blower          |         — |       1.3 |      -0.6 |      -6.2 |      -8.7 |
 | pigeon_flock         |         — |         — |         — |         — |         — |
