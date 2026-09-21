@@ -970,9 +970,11 @@ There are two ways to make that impossible and the day picks between them per ro
 sited against the tree** picks a **set** of candidate sites such that **every corridor passes at
 least one**, and the one she reaches is the one that fires: it needs no knowledge of what she chose,
 so the guarantee is structural and holds whichever way she goes. A **set piece sited from her walk**
-waits instead — the day budgets it with no position and puts it on a building face ahead of her once
-her heading is clear, which is what day 3's fire does. `docs/EVENTS.md`, "A set piece happens where
-she is going", is the built mechanism for both.
+waits instead — the day budgets it with no position and puts it on a building face **on the branch
+of the tree she is actually walking**, ahead of her by distance along that route, once her heading
+is clear. That is what day 3's fire does, and it is steered onto her on purpose: *"the fire needs to
+spawn on the current path the player is on"* (PLAYTEST-119). `docs/EVENTS.md`, "A set piece happens
+where she is going", is the built mechanism for both.
 
 Either way it stays a **place** rather than a moment: a tile, a body, a field, and every question
 the corridor asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning

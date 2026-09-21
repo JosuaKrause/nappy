@@ -764,16 +764,36 @@ An authored one-shot has to be **met**: one that fires on a street she never wal
 fairness contract and a silhouette spent on nothing. There are two ways of guaranteeing that, and
 which one a row gets is `EventDef.sited_on_her_way`.
 
-**The fire is sited from the walk she is taking.** `burning_building`, day 3's one-shot and the only
-row carrying the flag, is budgeted at dawn with **no position at all**. Once she has been walking
-`EventDirector.ON_HER_WAY_AFTER` seconds and is `ON_HER_WAY_BEYOND_HOME` pixels clear of the
-doorstep — far enough in that a heading means something, and past the day's run lesson —
-`EventDirector.site_what_is_on_her_way()` puts it on a building face **on the line she is walking**:
-between the far edge of the streaming band and `ON_HER_WAY_SIGHT` seconds of walking past the edge
-of the view, and no more than `ON_HER_WAY_DRIFT` off her line. So she always has the walk from
-the streaming band's edge to the edge of the view before she sees it, and at most
-`ON_HER_WAY_SIGHT` seconds more; `tools/test.sh probes/m179_fire_on_her_way.gd` prints what that
-comes to per heading.
+**The fire is sited from the walk she is taking, on the path she is on.** `burning_building`, day
+3's one-shot and the only row carrying the flag, is budgeted at dawn with **no position at all**.
+Once she has been walking `EventDirector.ON_HER_WAY_AFTER` seconds and is `ON_HER_WAY_BEYOND_HOME`
+pixels clear of the doorstep — far enough in that a heading means something, and past the day's run
+lesson — `EventDirector.site_what_is_on_her_way()` puts it on a building face **on the branch of the
+day's `RouteTree` she is walking**, and nowhere else: *"valid spawn locations are only on the path"*
+(PLAYTEST-119).
+
+The window is the day's own route rather than a line from her. `EventScheduler.WalkSiting.ahead_of()`
+walks the cells of every route through the cell she is standing on, in the direction that agrees
+with the way she is travelling, and offers the building faces standing on them. **The far end of the
+band is read along that route** — `ON_HER_WAY_SIGHT` seconds of walking past the streaming band,
+through every corner and junction, which is how much further she actually has to walk. **The near
+end is a distance across the block**, the streaming radius plus its hysteresis, because that is what
+decides whether the placement is in the world at all: a site 1200px along a route that doubles back
+can be 500px away as the crow flies, streamed in and so real and unmovable on the frame it was
+placed. A straight line is never longer than the route to the same place, so clearing the streaming
+band clears both ends at once.
+
+Three consequences worth stating, because none of them is true of a rule stated as a straight line:
+
+- **At a fork, either way out is a site**, since every route through her own cell is walked. Once
+  she commits, her cell carries one of them and an unseen fire on the other moves onto the way she
+  took.
+- **Momentarily off the tree she waits.** A park cut, an alley, a thinned seal — there is no branch
+  to be ahead on, so the attempt is refused and asked again a second later. Nothing is ever sited
+  off the path to answer a wait.
+- **The walk from the siting to the first sight is a walk of the route**, not of a line, so it is
+  longer than the straight-line band suggests. `tools/test.sh probes/m179_fire_on_her_way.gd` prints
+  what it comes to.
 
 *"the fire should come first and be on your way **guaranteed** (a dynamic event dependent on the
 route you chose that day)"* (PLAYTEST-117). Three things make that hold:
@@ -783,17 +803,22 @@ route you chose that day)"* (PLAYTEST-117). Three things make that hold:
   would have asked; `EventScheduler.WalkSiting` keeps the day's placement context past dawn so that
   one candidate is judged against the same ground as every other placement. What waits is only
   *which* of the legal tiles it takes.
-- **It may be moved until it is real, and never after.** If she turns round, and the fire has been
-  behind her — past `ON_HER_WAY_BEHIND`, so a corner is not a change of mind — for
-  `ON_HER_WAY_TURNED_AWAY` seconds of walking, it is sited again ahead of the new heading. The
+- **It may be moved until it is real, and never after.** If it has stopped being on the way she is
+  walking — behind her past `ON_HER_WAY_BEHIND`, or off the branch she is now on — for
+  `ON_HER_WAY_TURNED_AWAY` seconds of walking, it is sited again on the way she is going now. **The
+  walk home changes nothing**: *"if they managed to avoid it thus far they should still have to try
+  avoid it further. only once the event has actually taken place does it become fixed"*
+  (PLAYTEST-120). Nothing in the rule asks which leg of the day she is on. The
   moment it streams in it has recorded its scar and moved its block along its arc, and from then on
   it stands where it burned for the rest of the run. That line is drawn at the streaming radius
   rather than at the screen edge, which is six seconds of walking earlier than she could have seen
   it.
-- **Nothing is placed illegally to satisfy the guarantee.** No building face ahead, a door's clear
-  ground, calm she has not used, a body that would seal the last way to a park — any of these and
-  the siting is simply refused and asked again a second later, from wherever she has got to. A day
-  she walks into a corner is a day it waits.
+- **Nothing is placed illegally to satisfy the guarantee.** No building face on the branch ahead of
+  her, a door's clear ground, calm she has not used, a site that would close her own way out — any
+  of these and the siting is simply refused and asked again a second later, from wherever she has
+  got to. A day she walks into a corner is a day it waits. Where the band itself holds no face the
+  window widens **along the same branch**, first to twice its width and then to the end of the route
+  she is on, before anything else is considered; it never leaves the tree.
 
 The fire engine is not part of this. It is never scheduled at all, and arrives only once the
 building it answers has been seen (`EventDef.spawns_on_sight`,
@@ -803,13 +828,15 @@ engine being on her way.
 **And a siting she did not choose owes her a way out of it.** She meets this one because the day put
 it in front of her rather than because she picked the street, so the pair of them have to leave her
 somewhere to go. Three things hold at the moment she first sees it, and all three are checked rather
-than argued: she is **outside the fire's own field**, so the whole 2.2s telegraph is hers to walk
-out in; the engine is created **outside its own forward reach of her**, measured from the worst
-position the sighting allows, which is the view's half diagonal up the street rather than directly
-under the fire; and **calm ground is still reachable from the tile she is standing on**, past every
-solid body the day has placed. The last of those is the same question
-`EventScheduler.WalkSiting` asks before it accepts a candidate at all, stated from her end instead
-of from the home.
+than argued. She is **outside the inner radius where the field is at full strength, with the walk
+out of the rest of it inside the 2.2s telegraph** — which is the contract's own worst case rather
+than a hole in it: the fire stands on the route she is walking, so it can come into view from any
+direction, and the view is 180px deep against the fire's 260px field, so an approach up or down the
+screen has the outer edge of the field on her already. The engine is created **outside its own
+forward reach of her**, measured from the worst position the sighting allows, which is the view's
+half diagonal up the street rather than directly under the fire. And **the home and a calm area she
+has not used are still reachable from where she is standing**, outside both fields — the same
+question `EventScheduler.WalkSiting` asks before it accepts a candidate at all.
 
 **A one-shot without the flag is offered on every route and happens on one.** The day plans it **at
 every site of a covering set** — `RouteTree.covering_sites`, the smallest set of streets such that
@@ -998,7 +1025,7 @@ All implemented.
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway leaves 26px to the frontage, narrower than the pram — a **wall** by physical fit, silent or not, so the street it is on is one she walks the far side of. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
-| `burning_building` | ONE_SHOT | 3 | Against a frontage, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is — and **sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn, on her own line, off screen, beyond the streaming band and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking past the edge of the view. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, you cannot walk through the fire, and the shell it leaves stands where it actually burned. |
+| `burning_building` | ONE_SHOT | 3 | Against a frontage, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is — and **sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, beyond the streaming band across the block and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking further along that route. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, you cannot walk through the fire, and the shell it leaves stands where it actually burned. |
 | `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md), entering along the fire's own street from off screen and driving to the near kerb across from it. **It does not park there**: a mobile row that runs out of route carries on out of sight like every other one, so what she sees is an engine arriving and passing through. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a

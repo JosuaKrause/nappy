@@ -410,25 +410,16 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 # the `player` group that moves — the same reason this suite exists at all.
 
 const WALK_STEP := 1.0 / 30.0
-## Every cardinal, and one diagonal because a press sets an arbitrary unit vector and most real
-## headings are not square to the lattice.
-const WALKS := {
-	"east": Vector2.RIGHT,
-	"west": Vector2.LEFT,
-	"north": Vector2.UP,
-	"south": Vector2.DOWN,
-	"north-east": Vector2(0.7071, -0.7071),
-}
-## Long enough that a siting at the far end of the band (`EventDirector.ON_HER_WAY_SIGHT`) is met
-## with the outbound leg of a 180s day still in hand.
-const WALK_SECONDS := 70.0
+## Long enough for a whole route out to a calm area and back again at walking pace, which is what
+## the outbound and return legs of a 180s day are.
+const WALK_SECONDS := 240.0
 
 ## A player the manager can find, out of the physics loop and moved by hand at `Tuning.WALK_SPEED`.
 ##
-## **It walks through the lattice rather than round it, and that is the rig being honest about what
-## it tests.** What is under test is where the day sites a place against the direction she is
-## *travelling*; a rig that turned at every frontage would be testing the collision shape, and one
-## that only ever walked legal ground could not hold a heading long enough to ask the question.
+## **It walks the day's own routes**, because that is what the siting is stated over: a site is a
+## building face on the branch of the day's `RouteTree` she is walking, so a rig holding a compass
+## heading through the lattice spends its walk off the tree, where there is no branch to be ahead on
+## and the only correct answer is to wait. `_a_route_out()` turns a route into the line it walks.
 func _walker(t, at: Vector2) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
@@ -446,28 +437,76 @@ func _walker(t, at: Vector2) -> Stroller:
 ## something happened without threading a clock through the walking itself.
 var _walk_clock := 0.0
 
-## Steps the manager for `seconds` of walking in `heading`, stopping the frame `until` answers true.
-## Returns the heading she was travelling on the last frame, which is `heading` unless the map's
-## edge turned her round.
+## Steps the manager along `route` — a chain of world points — until it runs out, `WALK_SECONDS` of
+## walking have gone by, or `until` answers true. Returns the direction she was travelling on the
+## last frame, which is what a caller asking "and then she turned round" needs.
 ##
-## **She turns round at the border rather than walking off it**, because a straight line long enough
-## to meet a fire sited up to `EventDirector.ON_HER_WAY_SIGHT` seconds of walking ahead is longer
-## than the city on most headings. That is not a workaround: a player who reaches the boundary turns
-## round too, and it is exactly the case the re-siting exists for.
-func _walk(rig: Stroller, heading: Vector2, seconds: float, until := Callable()) -> Vector2:
-	var walked := 0.0
-	while walked < seconds:
-		var margin := heading * Tuning.TILE_SIZE * 4.0
-		if not _city.map.in_bounds(_city.map.world_to_tile(rig.global_position + margin)):
-			heading = -heading
-		rig.velocity = heading * Tuning.WALK_SPEED
-		rig.global_position += heading * Tuning.WALK_SPEED * WALK_STEP
-		_city.events._physics_process(WALK_STEP)
-		walked += WALK_STEP
-		_walk_clock += WALK_STEP
-		if until.is_valid() and until.call():
+## A point is walked to rather than through: the rig is moved at `Tuning.WALK_SPEED` straight at the
+## next cell centre of the route and `velocity` is set to match, since the director's clock only
+## runs while she is actually going somewhere and its heading is read off `velocity`.
+func _walk(rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vector2:
+	var heading := Vector2.RIGHT
+	# From where she already is, so a second call carries on down the same route rather than
+	# walking her back to its first point — which is what a test that stops at the siting and then
+	# keeps going needs.
+	for i in range(_nearest_on(route, rig.global_position), route.size()):
+		var toward := route[i] - rig.global_position
+		while toward.length() > Tuning.WALK_SPEED * WALK_STEP and _walk_clock < WALK_SECONDS:
+			heading = toward.normalized()
+			rig.velocity = heading * Tuning.WALK_SPEED
+			rig.global_position += heading * Tuning.WALK_SPEED * WALK_STEP
+			_city.events._physics_process(WALK_STEP)
+			_walk_clock += WALK_STEP
+			if until.is_valid() and until.call():
+				return heading
+			toward = route[i] - rig.global_position
+		if _walk_clock >= WALK_SECONDS:
 			return heading
 	return heading
+
+## The index of the route point she is standing nearest to. A route is a chain of cell centres and
+## she walks between them, so this is where a resumed walk picks up.
+func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
+	var best := 0
+	var best_distance := INF
+	for i in route.size():
+		var distance := route[i].distance_to(at)
+		if distance < best_distance:
+			best_distance = distance
+			best = i
+	return best
+
+## The tree the manager planned this day against, chosen the way `EventManager.start_day` chooses
+## it: the city's own if a `City.start_day` has ever grown one, and a fresh `RouteTree.for_day`
+## otherwise. **Asking for a fresh one unconditionally is the trap**, because this suite drives the
+## manager without the city on most of its days and with it on one — so after that one the city
+## holds a tree grown for a different day, and a rig walking a route out of a tree the fire was
+## never sited against measures nothing.
+func _days_tree(day: int) -> RouteTree:
+	var tree := _city.route_tree()
+	return tree if tree else RouteTree.for_day(_city.map, day)
+
+## The longest route of the day's own tree as the line she walks: out from the doorstep to the calm
+## area it reaches when `outward`, back down the same ground when not.
+##
+## A route runs from the area to the doorstep, which is why the walk out is the array reversed.
+func _a_route_out(day: int, outward := true) -> PackedVector2Array:
+	var tree := _days_tree(day)
+	var best: Array = []
+	for branch in tree.branches:
+		for route: Array in branch.routes:
+			if route.size() > best.size():
+				best = route
+	var points := PackedVector2Array()
+	for i in best.size():
+		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
+		points.append(EventScheduler.WalkSiting._cell_centre(_city.map, cell))
+	return points
+
+## Which cells of the day's routes carry `position`, as the branch colours `RouteTree` records —
+## empty for a point off the tree. What "on the path" means, asked of a placement.
+func _branches_on(day: int, position: Vector2) -> Array[int]:
+	return _days_tree(day).branches_on(_city.map.world_to_tile(position))
 
 func _fire_plan() -> EventScheduler.Planned:
 	for plan in _city.events.plans():
@@ -475,64 +514,74 @@ func _fire_plan() -> EventScheduler.Planned:
 			return plan
 	return null
 
-## **The fire is on the way she is taking, whichever way that is.** The day plans it with no
-## position at all; walking any of the five headings below from the doorstep has it sited ahead of
-## her, off screen, and brought into view by continuing to walk.
+## **The fire is on the path she is walking, and nowhere else.** *(PLAYTEST-119: "the fire needs to
+## spawn on the current path the player is on — moving it around works but valid spawn locations are
+## only on the path".)* The day plans it with no position at all; walking the day's own route out of
+## the doorstep has it sited on that route ahead of her, off screen, and brought into view by
+## continuing to walk. Walking the same route home again is the same rule, which is the whole of
+## PLAYTEST-120: a fire she has dodged is still ahead of her on the way back.
 ##
-## The two numbers checked on the siting itself are the ones the design is stated in: it is *ahead*
-## (along the heading she was travelling and no more than `EventDirector.ON_HER_WAY_DRIFT` off that
-## line, which is a distance across rather than an angle) and it is *off screen*
-## (outside the streaming band, so nothing about it is visible and nothing about it is real yet).
+## The three properties checked on the siting itself are the ones the design is stated in. It is
+## **on the tree** — the day's own `RouteTree` carries the tile it stands on. It is **ahead on the
+## branch she is walking**, which is `WalkSiting.still_ahead_of()`'s own question asked from where
+## she was standing. And it is **off screen**: outside the streaming band, so nothing about it is
+## visible and nothing about it is real yet.
 func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 	var scars_before := GameState.scars.duplicate()
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
-	for heading_name: String in WALKS:
-		var heading: Vector2 = WALKS[heading_name]
-		_start(Tuning.RUN_TAUGHT_DAY)
+	var day := Tuning.RUN_TAUGHT_DAY
+	for leg: String in ["out", "home again"]:
+		_start(day)
 		var plan := _fire_plan()
 		t.check(plan != null and not plan.is_placed(),
-				"walking %s: day 3 budgets a fire and leaves it for her walk to site" % heading_name)
+				"walking %s: day 3 budgets a fire and leaves it for her walk to site" % leg)
 		if not plan:
 			continue
-		var rig := _walker(t, _city.map.home_world_position())
-		var sited_from := Vector2.ZERO
-		var sited_at := -1.0
-		var seen_at := -1.0
+		var route := _a_route_out(day)
+		var rig := _walker(t, route[0])
 		_walk_clock = 0.0
-		while _walk_clock < WALK_SECONDS and seen_at < 0.0:
-			var before := plan.is_placed()
-			var here := rig.global_position
-			heading = _walk(rig, heading, WALK_STEP)
-			if not before and plan.is_placed():
-				sited_at = _walk_clock
-				sited_from = here
-				t.check(plan.position.distance_to(here) > Tuning.EVENT_STREAM_RADIUS,
-						("walking %s: the fire is sited %.0fpx out, past the %.0fpx streaming band, "
-						% [heading_name, plan.position.distance_to(here), Tuning.EVENT_STREAM_RADIUS])
-						+ "so it is neither visible nor real when it is placed")
-				var toward := plan.position - here
-				var across := Vector2(-heading.y, heading.x)
-				t.check(toward.dot(heading) > 0.0
-						and absf(toward.dot(across)) <= EventDirector.ON_HER_WAY_DRIFT,
-						("walking %s: and it is on the line she is walking — %.0fpx along it and "
-						% [heading_name, toward.dot(heading)])
-						+ "%.0fpx off it, inside the %.0fpx that keeps it in view when she reaches it"
-						% [absf(toward.dot(across)), EventDirector.ON_HER_WAY_DRIFT])
-			if plan.is_placed() and _city.events._is_on_screen(plan.position):
-				seen_at = _walk_clock
-		t.check(sited_at >= 0.0, "walking %s: the fire is sited at all" % heading_name)
+		if leg == "home again":
+			# Stood at the calm area with nothing sited, which is the state a walk out that dodged
+			# the fire ends in: the director's clock only runs while she is walking, so putting her
+			# at the far end of the route is a walk out during which no siting was ever due. What
+			# is then measured is entirely the return leg's.
+			rig.global_position = route[route.size() - 1]
+			route = _a_route_out(day, false)
+		# `_walk` stops on the frame the fire is sited, so where she is standing when it returns is
+		# where she was standing when it happened, to within one step. A lambda cannot carry that
+		# out of the walk instead: GDScript captures a local by value, so a closure assigning to one
+		# writes to its own copy and the caller reads the value it started with.
+		var heading := _walk(rig, route, func() -> bool: return plan.is_placed())
+		t.check(plan.is_placed(), "walking %s: the fire is sited at all" % leg)
+		if not plan.is_placed():
+			rig.free()
+			continue
+		var sited_from := rig.global_position
+		var sited_at := _walk_clock
+		t.check(not _branches_on(day, plan.position).is_empty(),
+				"walking %s: and it stands on the day's own route tree, never off it" % leg)
+		t.check(plan.position.distance_to(sited_from) > Tuning.EVENT_STREAM_RADIUS,
+				("walking %s: %.0fpx out, past the %.0fpx streaming band, so it is neither visible "
+				% [leg, plan.position.distance_to(sited_from), Tuning.EVENT_STREAM_RADIUS])
+				+ "nor real when it is placed")
+		var siting := _city.events.walk_siting()
+		t.check(siting != null and siting.still_ahead_of(sited_from, heading, plan.position),
+				"walking %s: and it is ahead of her along the branch she is walking" % leg)
+		var seen_at := -1.0
+		_walk(rig, route, func() -> bool: return _city.events._is_on_screen(plan.position))
+		if _city.events._is_on_screen(plan.position):
+			seen_at = _walk_clock
 		t.check(seen_at >= 0.0,
-				"walking %s: and continuing to walk brings it into view (%.1fs in)"
-				% [heading_name, seen_at])
+				"walking %s: and continuing along the route brings it into view (%.1fs in)"
+				% [leg, seen_at])
 		if seen_at >= 0.0:
 			print("      fire %s: sited %.1fs in, %.0fpx ahead, first seen %.1fs later"
-					% [heading_name, sited_at, plan.position.distance_to(sited_from),
-					seen_at - sited_at])
+					% [leg, sited_at, plan.position.distance_to(sited_from), seen_at - sited_at])
 			# The engine is what the sight of it summons, and it is summoned on that same frame.
 			var engine := false
 			for instance in _city.events.instances():
 				engine = engine or instance.def.id == "fire_truck"
-			t.check(engine, "walking %s: and seeing it calls the engine in" % heading_name)
+			t.check(engine, "walking %s: and seeing it calls the engine in" % leg)
 		rig.free()
 	_city.events.stream_radius = INF
 	GameState.scars = scars_before
@@ -555,17 +604,17 @@ func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
 	if not plan:
 		_city.events.stream_radius = INF
 		return
-	var rig := _walker(t, _city.map.home_world_position())
+	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
+	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
-	var heading := _walk(rig, Vector2.RIGHT, WALK_SECONDS,
-			func() -> bool: return plan.is_placed())
-	t.check(plan.is_placed(), "walking sites it")
+	_walk(rig, route, func() -> bool: return plan.is_placed())
+	t.check(plan.is_placed(), "walking the day's route sites it")
 	if not plan.is_placed():
 		rig.free()
 		_city.events.stream_radius = INF
 		return
 
-	heading = _walk(rig, heading, WALK_SECONDS, func() -> bool: return plan.was_live)
+	_walk(rig, route, func() -> bool: return plan.was_live)
 	t.check(plan.was_live, "and walking on puts it in the world")
 	if plan.was_live:
 		var burning_at := plan.position
@@ -574,7 +623,9 @@ func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
 			scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
 					and Vector2(scar["position"]).distance_to(burning_at) < 1.0)
 		t.check(scar_here, "and the scar the run keeps is where it actually burned")
-		_walk(rig, -heading, 20.0)
+		# Back down the route she came up, which is the walk home: it is real now, so nothing about
+		# turning round may move it.
+		_walk(rig, _a_route_out(Tuning.RUN_TAUGHT_DAY, false))
 		t.check(plan.position == burning_at,
 				"and turning round after it is real leaves it exactly where it burned")
 	rig.free()
@@ -599,9 +650,10 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		t.check(false, "day 3 has a fire to walk up to")
 		_city.events.stream_radius = INF
 		return
-	var rig := _walker(t, _city.map.home_world_position())
+	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
+	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
-	_walk(rig, Vector2.RIGHT, WALK_SECONDS,
+	_walk(rig, route,
 			func() -> bool: return plan.is_placed() and _city.events._is_on_screen(plan.position))
 	t.check(plan.is_placed() and _city.events._is_on_screen(plan.position),
 			"she walks out and finds the fire")
@@ -613,9 +665,22 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 	var fire: EventInstance = plan.live
 	t.check(fire != null, "the fire is in the world by the time it is on screen")
 	if fire:
-		t.close_to(fire.contribution_at(rig.global_position), 0.0,
-				"she is outside its field the moment she first sees it, so the whole telegraph "
-				+ "is hers to walk out in", 0.001)
+		# **What the first sight owes is the walk out of it, not a clear screen.** The fire is on the
+		# route she is walking, so it can come into view from any direction — and the view is
+		# `Tuning.VIEW_HALF_EXTENT` (320 x 180), narrower on its short axis than the fire's own
+		# 260px outer radius, so an approach up or down the screen puts it in sight with the outer
+		# edge of the field already on her. That is the telegraph contract's own worst case rather
+		# than a hole in it: what it promises is that a player who turns round the instant she sees
+		# a thing gets clear before it is at full strength, which is exactly this measurement.
+		var range_to_it := rig.global_position.distance_to(fire.global_position)
+		t.check(range_to_it > plan.def.inner_radius,
+				("she first sees it %.0fpx off, outside the %.0fpx where its field is at full "
+				% [range_to_it, plan.def.inner_radius]) + "strength")
+		t.check((plan.def.outer_radius - range_to_it) / Tuning.WALK_SPEED
+				<= plan.def.telegraph_time,
+				("and walking away from it clears the field in %.2fs, inside the %.2fs its "
+				% [maxf(plan.def.outer_radius - range_to_it, 0.0) / Tuning.WALK_SPEED,
+				plan.def.telegraph_time]) + "telegraph buys her")
 	var engines := 0
 	for instance in _city.events.instances():
 		if instance.def.id != "fire_truck":
@@ -687,10 +752,10 @@ func _test_a_fire_that_was_never_lit_was_not_spent(t) -> void:
 
 	# Now she walks into it. That is the fire the run remembers, and there is not a second one.
 	var plan := _fire_plan()
-	var rig := _walker(t, _city.map.home_world_position())
+	var route := _a_route_out(day)
+	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
-	var heading := _walk(rig, Vector2.RIGHT, WALK_SECONDS, func() -> bool: return plan.is_placed())
-	_walk(rig, heading, WALK_SECONDS, func() -> bool: return plan.was_live)
+	_walk(rig, route, func() -> bool: return plan.was_live)
 	t.check(plan.was_live and "burning_building" in consumed,
 			"walking into it is what spends it")
 	_city.events.start_day(day, _rng(day), consumed)

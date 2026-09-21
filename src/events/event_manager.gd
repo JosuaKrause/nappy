@@ -47,6 +47,12 @@ var _walking_the_finale := false
 ## day in `clear()`.
 var _sighted: Dictionary = {}
 
+## The day's placement context for a row the day left for her walk to site, or `null` on a day that
+## left none — the whole of `EventDef.sited_on_her_way`, which today is day 3's fire and nothing
+## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
+## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
+var _siting: EventScheduler.WalkSiting = null
+
 ## The run's spent one-shots — `start_day`'s own argument, kept because one kind of one-shot is
 ## spent while the day is running rather than while it is being planned. See `_stream_in()`. Empty
 ## until a day has been started, which is the finale's case and is right: an escape spends nothing.
@@ -242,19 +248,15 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# against the same corridor, the same protected calm and the same doors as every other one.
 	# Only on a day that has such a plan: the context grows a corridor and the protected-calm
 	# rects, and a day with nothing left for her walk would pay for both and read neither.
-	var siting: EventScheduler.WalkSiting = null
+	_siting = null
 	for plan in _plans:
 		if plan.def.sited_on_her_way and not plan.is_placed():
-			if not siting:
-				siting = EventScheduler.WalkSiting.new(day, _map, tree,
+			if not _siting:
+				_siting = EventScheduler.WalkSiting.new(day, _map, tree,
 						GameState.settled_this_act(), doors)
-			var others: Array[EventScheduler.Planned] = []
-			for other in _plans:
-				if other != plan:
-					others.append(other)
 			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
-			siting.prepare(plan.def, others)
-	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), siting)
+			_siting.prepare(plan.def, _everything_but(plan))
+	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting)
 	stream_around(focus)
 
 ## Clears whatever was here and takes the escape's whole plan as given.
@@ -279,6 +281,7 @@ func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -
 	# and nothing rolls here. Cleared rather than left, so a rig that ran a day before the escape
 	# does not leave yesterday's holds on the map.
 	_map.clear_day_holds()
+	_siting = null
 	_plans = plans
 	# The director owes nothing — every finale placement is `MAP`-sited — but it is started anyway
 	# so that `owed_ahead()` and its own per-day state answer for this walk rather than for
@@ -921,6 +924,22 @@ func _site_what_is_on_her_way(delta: float) -> void:
 			TelemetryLog.tile(_map.world_to_tile(plan.position)),
 			_heading_name(body.velocity.normalized()),
 			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## Everything the day has planned except `plan` — what a placement is spaced and checked against.
+## The one being placed is never in it: a row moved off a position it has not been seen at must not
+## be spaced against its own old body.
+func _everything_but(plan: EventScheduler.Planned) -> Array[EventScheduler.Planned]:
+	var others: Array[EventScheduler.Planned] = []
+	for other in _plans:
+		if other != plan:
+			others.append(other)
+	return others
+
+## The day's placement context for the row it left for her walk, or `null` on a day that left none.
+## Read by `tests/probes/m179_fire_on_her_way.gd` for the refusals a long wait was made of; nothing
+## in the game asks.
+func walk_siting() -> EventScheduler.WalkSiting:
+	return _siting
 
 func _find_player() -> bool:
 	if not _player:

@@ -1643,18 +1643,80 @@ func _test_a_crouching_event_holds_still_until_it_bolts(t) -> void:
 # question and it is asked in `tests/test_event_manager.gd`, against a real manager and a real
 # player. What is asked here is the rule.
 
-## Walks a synthetic player `seconds` along `heading` from `at`, stepping the director every frame,
-## and returns where she finished. `at` moves at `Tuning.WALK_SPEED` because the director's own
-## clock only runs while she is actually going somewhere.
+## Walks a synthetic player down `route` from `at`, stepping the director every frame, and returns
+## where she finished. She moves at `Tuning.WALK_SPEED` because the director's own clock only runs
+## while she is actually going somewhere, and the heading it reads is the direction of the next
+## point of the route — so the walk is a walk of the day's own corridor rather than a line through
+## the lattice, which is what the siting is stated over.
+##
+## `_last_heading` carries the direction of the last step out, for a caller that needs to ask what
+## she was travelling on the frame something happened.
+var _last_heading := Vector2.RIGHT
+
 func _walk_the_director(director: EventDirector, plans: Array[EventScheduler.Planned],
-		at: Vector2, heading: Vector2, seconds: float, until := Callable()) -> Vector2:
-	var velocity := heading * Tuning.WALK_SPEED
-	for i in int(round(seconds / STEP)):
-		at += velocity * STEP
-		director.site_what_is_on_her_way(STEP, at, velocity, plans)
-		if until.is_valid() and until.call():
+		at: Vector2, route: PackedVector2Array, seconds: float, until := Callable()) -> Vector2:
+	var left := seconds
+	for i in range(_nearest_on(route, at), route.size()):
+		var toward := route[i] - at
+		while toward.length() > Tuning.WALK_SPEED * STEP and left > 0.0:
+			_last_heading = toward.normalized()
+			var velocity := _last_heading * Tuning.WALK_SPEED
+			at += velocity * STEP
+			left -= STEP
+			director.site_what_is_on_her_way(STEP, at, velocity, plans)
+			if until.is_valid() and until.call():
+				return at
+			toward = route[i] - at
+		if left <= 0.0:
 			return at
 	return at
+
+func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
+	var best := 0
+	var best_distance := INF
+	for i in route.size():
+		var distance := route[i].distance_to(at)
+		if distance < best_distance:
+			best_distance = distance
+			best = i
+	return best
+
+## A way out of the doorstep that does not carry `unlike` — the other side of a fork, for the check
+## that an unseen fire follows the branch she actually took.
+func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
+	var tree := RouteTree.for_day(_map(), day)
+	var carries := tree.branches_on(_map().world_to_tile(unlike))
+	for branch in tree.branches:
+		for route: Array in branch.routes:
+			if route.size() < 8:
+				continue
+			var shares := false
+			for colour in carries:
+				shares = shares or branch.routes.size() > 0 and colour == tree.branches.find(branch)
+			if shares:
+				continue
+			var points := PackedVector2Array()
+			for i in route.size():
+				points.append(EventScheduler.WalkSiting._cell_centre(_map(),
+						route[route.size() - 1 - i]))
+			return points
+	return PackedVector2Array()
+
+## The day's longest route as the line she walks — out from the doorstep to the calm area when
+## `outward`, home again when not. A route is grown from the area to the doorstep, so the walk out
+## is the array reversed.
+func _fire_route(day: int, outward := true) -> PackedVector2Array:
+	var tree := RouteTree.for_day(_map(), day)
+	var best: Array = []
+	for branch in tree.branches:
+		for route: Array in branch.routes:
+			if route.size() > best.size():
+				best = route
+	var points := PackedVector2Array()
+	for i in best.size():
+		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
+		points.append(EventScheduler.WalkSiting._cell_centre(_map(), cell))
+	return points
 
 ## Day 3's plan, built fresh rather than taken from `_planned()`. These tests site the fire, which
 ## writes a position into the plan — and the memoized copy is shared with every other check in this
@@ -1667,12 +1729,20 @@ func _fire_day_plans() -> Array[EventScheduler.Planned]:
 ## The day-3 fire, and the whole rig it needs: the day's own plan, a placement context built the way
 ## `EventManager.start_day` builds one, and a director started on both.
 func _fire_director(day: int, plans: Array[EventScheduler.Planned]) -> EventDirector:
-	var map := _map()
-	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
-			[] as Array[Vector2i], PackedVector2Array())
-	var director := EventDirector.new(map)
-	director.start_day(day, plans, _rng(day), siting)
+	var director := EventDirector.new(_map())
+	director.start_day(day, plans, _rng(day), _fire_siting(day))
 	return director
+
+## The placement context the director above is started on, built the way `EventManager.start_day`
+## builds one. Kept as its own function so a check can ask it the same questions the director does —
+## `still_ahead_of()`, which is what "on the branch she is walking" means.
+var _shared_fire_siting: EventScheduler.WalkSiting = null
+
+func _fire_siting(day: int) -> EventScheduler.WalkSiting:
+	if not _shared_fire_siting:
+		_shared_fire_siting = EventScheduler.WalkSiting.new(day, _map(),
+				RouteTree.for_day(_map(), day), [] as Array[Vector2i], PackedVector2Array())
+	return _shared_fire_siting
 
 func _fire_in(plans: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
 	for plan in plans:
@@ -1698,49 +1768,54 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t) -> void:
 	if not fire:
 		return
 	var director := _fire_director(day, plans)
+	var siting := _fire_siting(day)
 
-	# A quarter of the way across the city, walking east, so the whole siting band is inside the map
-	# whichever way she turns — the borders are the integration suite's question, not this one.
-	var at := Vector2(map.world_size().x * 0.25, map.world_size().y * 0.5)
-	at = _walk_the_director(director, plans, at, Vector2.RIGHT, 60.0,
+	var out := _fire_route(day)
+	var at := _walk_the_director(director, plans, out[0], out, 120.0,
 			func() -> bool: return fire.is_placed())
-	t.check(fire.is_placed(), "walking sites it")
+	t.check(fire.is_placed(), "walking the day's own route out of the doorstep sites it")
 	if not fire.is_placed():
 		return
 	var first := fire.position
-	var toward := first - at
-	t.check(toward.dot(Vector2.RIGHT) > 0.0
-			and absf(toward.dot(Vector2.DOWN)) <= EventDirector.ON_HER_WAY_DRIFT,
-			"on the line she is walking: %.0fpx along it and %.0fpx off it"
-			% [toward.dot(Vector2.RIGHT), absf(toward.dot(Vector2.DOWN))])
-	t.check(toward.length() > Tuning.EVENT_STREAM_RADIUS,
+	t.check(not RouteTree.for_day(map, day).branches_on(map.world_to_tile(first)).is_empty(),
+			"on the path she is on: the day's route tree carries the tile it stands on")
+	t.check(siting.still_ahead_of(at, _last_heading, first),
+			"and ahead of her along the branch she is walking, rather than merely ahead of her")
+	t.check(first.distance_to(at) > Tuning.EVENT_STREAM_RADIUS,
 			"and outside the streaming band (%.0fpx), so it is neither seen nor real yet"
-			% toward.length())
+			% first.distance_to(at))
 
-	# Turned round. It was never in the world, so it follows her.
-	at = _walk_the_director(director, plans, at, Vector2.LEFT, 30.0,
+	# Home and out again the other way. It was never in the world, so it follows her onto the branch
+	# she actually took — which is the whole of what a fork owes, and the one case a rule stated only
+	# over "is it behind her" cannot answer: the way out she abandoned stays a few degrees off
+	# square from the way she took, for the rest of the day.
+	at = _walk_the_director(director, plans, at, _fire_route(day, false), 200.0)
+	var other := _another_branch(day, first)
+	t.check(not other.is_empty(), "the day offers a second way out to change her mind to")
+	at = _walk_the_director(director, plans, at, other, 200.0,
 			func() -> bool: return fire.position != first)
-	t.check(fire.position != first, "turning round before it is ever seen moves it")
-	var moved := fire.position - at
-	t.check(moved.dot(Vector2.LEFT) > 0.0
-			and absf(moved.dot(Vector2.DOWN)) <= EventDirector.ON_HER_WAY_DRIFT,
-			"and it is on the line she is walking now")
+	t.check(fire.position != first, "taking a different way out before it is ever seen moves it")
+	t.check(siting.still_ahead_of(at, _last_heading, fire.position),
+			"and it lands ahead of her on the branch she took instead")
 
 	# Real. From here it is where the city remembers it burning, and nothing moves it.
 	var burning_at := fire.position
 	fire.was_live = true
-	at = _walk_the_director(director, plans, at, Vector2.RIGHT, 30.0)
+	_walk_the_director(director, plans, at, _fire_route(day), 30.0)
 	t.check(fire.position == burning_at,
 			"once it has been in the world, walking away from it for half a minute leaves it "
 			+ "exactly where it burned")
 
-## **A corner is not a change of mind.** She walks a lattice, so a block of walking north with the
-## fire a thousand pixels east leaves it a few degrees behind square — and a rule that moved it
-## there would move it at every junction, which is a day spent chasing something that is always the
-## same distance ahead. `EventDirector.ON_HER_WAY_BEHIND` is what makes the two cases different, and
-## this is the half of it that would otherwise never be noticed: the *absence* of a move.
+## **A corner is not a change of mind.** A route turns every block or two, and each turning leaves
+## the fire a little behind square — a rule that moved it there would move it at every junction,
+## which is a day spent chasing something that is always the same distance ahead.
+## `EventDirector.ON_HER_WAY_BEHIND` is the coarse half of what makes the two cases different and
+## `WalkSiting.still_ahead_of()` the fine one, and this is the half of it that would otherwise never
+## be noticed: the *absence* of a move.
+##
+## **The walk has to actually turn**, or the check passes by walking in a straight line and proves
+## nothing; the corner it took is measured and asserted alongside.
 func _test_a_corner_is_not_a_change_of_mind(t) -> void:
-	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var plans := _fire_day_plans()
 	var fire := _fire_in(plans)
@@ -1748,20 +1823,26 @@ func _test_a_corner_is_not_a_change_of_mind(t) -> void:
 		t.check(false, "day 3 budgets a fire to turn a corner past")
 		return
 	var director := _fire_director(day, plans)
-	var at := Vector2(map.world_size().x * 0.25, map.world_size().y * 0.5)
-	at = _walk_the_director(director, plans, at, Vector2.RIGHT, 60.0,
+	var out := _fire_route(day)
+	var at := _walk_the_director(director, plans, out[0], out, 120.0,
 			func() -> bool: return fire.is_placed())
 	if not fire.is_placed():
-		t.check(false, "walking east sites the fire")
+		t.check(false, "walking the day's route sites the fire")
 		return
 	var sited := fire.position
 
-	# North for twice the patience the rule has, which on a lattice is most of a block.
-	_walk_the_director(director, plans, at, Vector2.UP,
-			EventDirector.ON_HER_WAY_TURNED_AWAY * 2.0)
+	# On down the same branch for twice the patience the rule has, which is several turnings.
+	var before := _last_heading
+	var sharpest := 1.0
+	var patience := EventDirector.ON_HER_WAY_TURNED_AWAY * 2.0
+	for i in int(round(patience / STEP)):
+		at = _walk_the_director(director, plans, at, out, STEP)
+		sharpest = minf(sharpest, before.dot(_last_heading))
 	t.check(fire.position == sited,
-			"turning north for %.0fs with the fire still away to the east leaves it where it is"
-			% (EventDirector.ON_HER_WAY_TURNED_AWAY * 2.0))
+			"carrying on down the same branch for %.0fs leaves the fire where it is" % patience)
+	t.check(sharpest < 0.7,
+			"and the walk really did turn a corner in that time (%.0f degrees off where it started)"
+			% rad_to_deg(acos(clampf(sharpest, -1.0, 1.0))))
 
 ## **One plan, and the day is otherwise exactly the day it was.** A set piece the day owes her walk
 ## is budgeted like any other one-shot — one plan, tagged as its own group — and nothing else in the
