@@ -175,6 +175,8 @@ fire she was led to:
 
 > "you're not supposed to go past it"
 
+> "when you see the fire the reaction should be to take a different route"
+
 25. **The fire with the engine at it is not something she walks past.** It closes the path she
     is on; she turns round or goes another way. What the siting owes in return is that
     another way exists: a calm area and the home stay reachable without entering either field.
