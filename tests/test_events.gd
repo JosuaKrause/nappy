@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_an_event_leaves_rather_than_vanishing(t)
 	_test_a_flock_is_birds_rather_than_one_bird_drawn_often(t)
 	_test_a_flock_goes_up_when_she_reaches_the_birds(t)
+	_test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t)
 	_test_a_flock_is_a_place_she_can_see(t)
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
@@ -1423,6 +1424,62 @@ func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
 		her.x += Tuning.WALK_SPEED * STEP
 	instance.free()
 	return answer
+
+## **What a flock costs is what walking through one costs, and only a walked instance can say.**
+## *(2026-09-20: "but keep things in relation to each other".)* The rate on the def is shared out
+## between eleven birds and the burst starts when she reaches them, so neither
+## `EventDef.walk_through_cost()` nor `docs/COSTS.md` prices this row — the table dashes its pass
+## columns for exactly that reason. The number is set by walking it, which makes this the place the
+## relationship has to be held.
+##
+## **And the instance has to be in the tree.** A bare `EventInstance.new()` never gets `_ready()`,
+## so `_build_the_flock()` never runs, `_flock` stays empty and `contribution_at()` falls back to
+## the modelled ring on the def — which reads far higher than eleven birds that fly up and away
+## from her actually charge. `_instance()` adds it, which is the whole reason this is a suite and
+## not arithmetic.
+##
+## Two bounds, and each is a thing somebody could break without noticing. **Above a loose dog's
+## pass**, because a flock going up in a pram's face is the louder of the two encounters and the
+## rate is easy to cut too far while chasing something else. **Under half the meter**, because a
+## row that takes half a day off her for walking a pavement is a wall, and this one is `scenery`:
+## nothing in the placement keeps it off a route, so the day will put it where she is walking.
+func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var through := _flock_walked_through(t, def, 0.0)
+	var dog := M174Pass.pass_net_averaged(EventCatalogue.by_id("loose_dog"), 0.0,
+			Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
+	t.check(through > dog,
+			"walking through a flock costs %.1f, above the %.1f a loose dog's pass costs"
+			% [through, dog])
+	t.check(through < Tuning.METER_MAX * 0.5,
+			("and %.1f is under half the meter (%.0f) — a scenery row the day puts on her route " +
+			"may not take half a day off her for walking a pavement")
+			% [through, Tuning.METER_MAX * 0.5])
+	# The rim is the other half of what a flock is for: a hot spot with a wide quiet margin, which
+	# is the whole reason it is eleven sources rather than one. Outside the birds the flush never
+	# fires at all, so what is left out there is a fraction of the rate against a decay she is
+	# earning the whole way — the line can and does come out negative, and the claim is the gap
+	# rather than its sign.
+	var skirted := _flock_walked_through(t, def, def.flock_spread + Tuning.PLAYER_BODY_RADIUS + 30.0)
+	t.check(skirted < through * 0.5,
+			"skirting one costs %.1f, far less than the %.1f of walking through it"
+			% [skirted, through])
+
+## Net points from walking a straight line past a flock at `offset` px to one side, at
+## `Tuning.WALK_SPEED`, telling the instance where she is every tick the way the world does — the
+## one thing `M174Pass`'s rig never does, and why `docs/COSTS.md` cannot price this row.
+func _flock_walked_through(t, def: EventDef, offset: float) -> float:
+	var instance := _instance(t, def, Vector2.ZERO)
+	var her := Vector2(-def.outer_radius - 120.0, offset)
+	var net := 0.0
+	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
+		instance.player_at = her
+		instance._process(STEP)
+		if her.distance_to(instance.position) <= def.outer_radius:
+			net += (instance.contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
+		her.x += Tuning.WALK_SPEED * STEP
+	instance.free()
+	return net
 
 ## **A flock exists before it is seen, and the first frame of one is never inside the view around
 ## her.** *(PLAYTEST-69: "pigeons pop in on screen — they should exist before they are visible.")*

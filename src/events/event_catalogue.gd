@@ -1006,15 +1006,40 @@ static func _leaf_blower() -> EventDef:
 ## would put *those* birds up sooner, which is the "prematurely start" half of the same sentence.
 ## `Tuning.validate_event()` asks 1.55s of this geometry and the number still clears it.
 ##
+## **Intensity 34.5, because going up on time is not the same request as costing more.** Flushing
+## at the birds charges the burst while she is *among* them rather than behind her, which on its
+## own multiplied the straight line through the middle several times over. Nobody asked for a
+## dearer flock — the request was about *when* — so the rate comes down to put that line back in
+## proportion to what else she meets: above a loose dog's pass, which a flock going up in a pram's
+## face ought to be, and well under half the meter, which a `scenery` row the day puts on her route
+## may not take off her for one pavement.
+##
+## **The number is set by walking a real instance and cannot be derived.** The rate here is shared
+## out between eleven birds that fly up and away from her while she crosses, and the flush is
+## geometric, so neither `walk_through_cost()` nor `docs/COSTS.md` prices this row — the table
+## dashes its pass columns for exactly that reason. **And the instance has to be in the tree**: a
+## bare `EventInstance.new()` never gets `_ready()`, so `_build_the_flock()` never runs, `_flock`
+## stays empty and `contribution_at()` falls back to the modelled ring on this def — which reads
+## far higher than eleven birds actually charge. `tests/test_events.gd` walks it in the tree, and
+## that is the figure the intensity was set against.
+##
+## **The rim is where the cut lands, and that is the price of the only lever left.** A line 80px
+## off the middle never comes inside the birds, so the flush never fires there and it felt the rate
+## cut and nothing else — skirting a flock is net recovery. The alternatives were a narrower field
+## or a shorter burst, and both change what the row *is* rather than what it charges.
+##
 ## **Four things have to be true for a flock to be an event at all**, and each of them is a way this
 ## row has been ineffective:
 ##
 ## - It must not be **over before she arrives**. The wait is what buys that: the telegraph is the
 ##   flock *on the pavement about to go*, and the burst outlasts her arrival rather than ending at
 ##   it.
-## - It must not be **quiet and small**: 42 over a 168px reach, in a game where a café is 12 over
-##   170, is nothing. A flock going up in a pram's face is one of the loudest things that can happen
-##   on an ordinary pavement.
+## - It must not be **quiet and small**. A flock going up in a pram's face is one of the loudest
+##   things that can happen on an ordinary pavement, and the measure of that is what walking
+##   through one actually costs rather than the rate on the page — the intensity is shared out
+##   between eleven birds, so what she meets in the middle is several overlapping fields and what
+##   she meets at the rim is one. `docs/COSTS.md` carries the rate; the cost of the line through
+##   it is measured by walking, in `tests/test_events.gd`.
 ## - It must not be **deleted at the top of its climb**, which is what `EventDef.departs_at` is for.
 ##   They fly off.
 ## - And the **birds** have to move, not just the event. Copies of one sprite at fixed offsets
@@ -1056,10 +1081,10 @@ static func _pigeon_flock() -> EventDef:
 	# `quiet_until_noticed` damps the wait and the telegraph by exactly the same fraction.
 	def.pursues_within = 150.0
 	# Birds on a pavement are nearly nothing; the event is them going up. Without this the wait
-	# would emit the full 42 — a pursuer's rule, where the thing standing there *is* the threat —
+	# would emit its full rate — a pursuer's rule, where the thing standing there *is* the threat —
 	# and a flock nobody has walked up to yet would be a place that cannot be walked past at all.
 	def.quiet_until_noticed = true
-	def.intensity = 42.0
+	def.intensity = 34.5
 	def.inner_radius = 26.0
 	def.outer_radius = 168.0
 	# Eleven of them over a 62px wheel: enough that the middle is unmistakably a crowd of birds and
