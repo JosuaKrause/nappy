@@ -379,7 +379,8 @@ so a day 3 can pass without either.
 
 - [ ] **Day 3's fire is sited from the walk she is taking.** Not at dawn: once her direction
       for the day is clear, the fire starts on a building ahead of her, off screen, on the way
-      she is going, the way `EventDirector` already sites a row ahead of her — near enough that
+      she is going, **on the path she is on and nowhere else** ([PLAYTEST-119](playtests/PLAYTEST-119.md):
+      "valid spawn locations are only on the path"; moving it while unseen is fine), the way `EventDirector` already sites a row ahead of her — near enough that
       she reaches it, far enough that she meets it rather than watches it appear. It happens on
       every day 3, whichever way she goes, including a day she turns round. When and how far
       ahead are the orchestrator's and open to overturn. The scar it leaves is wherever it

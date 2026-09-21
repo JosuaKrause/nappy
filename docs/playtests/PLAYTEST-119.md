@@ -150,3 +150,16 @@ has been settling the baby in all run" before it is fenced.
     the player's screen. Passed to that agent as a finding against M179, the fire is on her
     way, guaranteed.
 22. **The notes are pushed to the pull request and nothing merges yet.**
+
+## On M179's first build
+
+Told that the fire is sited on a building face ahead of her, off screen, within 180px of the
+straight line she is walking, and moved while unseen if she turns away:
+
+> "the fire needs to spawn on the current path the player is on -- moving it around works but
+> valid spawn locations are only on the path"
+
+23. **The fire is only ever sited on the path she is on.** Moving it while it is unseen is
+    fine; a place off the path is never a valid site. Read by the orchestrator as the day's own
+    route — the streets of the day's route tree, along the branch she is walking, ahead of her
+    by distance along that route rather than along a straight line — and open to correction.
