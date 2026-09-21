@@ -853,9 +853,10 @@ class WalkSiting extends RefCounted:
 	## through its own placements, kept here for the day so the city is not rescanned per attempt.
 	var _ground := {}
 	var _grid: ReachabilityGrid = null
-	## Whether the day is walkable at all with nothing of ours in it, worked out once. See
-	## `_still_leaves_a_park_reachable()`.
-	var _was_walkable := -1
+	## The calm tiles of the areas she has not used, worked out once for the day. See
+	## `_calm_she_has_not_used()`.
+	var _unused_calm: Array[Vector2i] = []
+	var _unused_calm_known := false
 
 	## Why attempts placed nothing, as `reason -> how many attempts ended that way`. Nothing in the
 	## game reads it: it is what lets `tests/probes/m179_fire_on_her_way.gd` report *what* a long wait
@@ -939,7 +940,7 @@ class WalkSiting extends RefCounted:
 				_leave_alone, _corridor, _doors)
 		if not candidate:
 			return _waited("every face on her branch broke a placement rule")
-		if not _still_leaves_a_park_reachable(already, candidate):
+		if not _still_leaves_a_park_reachable(already, candidate, at):
 			return _waited("the site would close her way out")
 		return candidate
 
@@ -1096,27 +1097,86 @@ class WalkSiting extends RefCounted:
 		return map.tile_to_world(cell * ReachabilityGrid.CELL) \
 				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
 
-	## Whether the day still has a walkable way from the home to some calm ground with this one more
-	## body standing in it. `EventScheduler._ensure_the_city_is_still_walkable()` asks this of the
-	## whole day at dawn and *drops* what seals the city; a placement made after dawn has nothing it
-	## is allowed to drop, so it asks the same question of itself and declines instead.
+	## **Whether the day still works around this site.** The fire and the engine that parks across
+	## from it close the street she is on, on purpose — *"you're not supposed to go past it"* — so
+	## the guarantee cannot be the one every other placement owes (a line past it along the
+	## sidewalk). It is the other direction instead, and it is stated over the whole day: from where
+	## she is standing, with **both fields taken as closed ground**, she can still reach the home and
+	## a calm area she has not used.
+	##
+	## **Both ends, one flood.** Reachability is symmetric, so a flood from her that finds the home
+	## and an unused area has also shown that the home reaches that area: she can retreat, she can
+	## get there, and she can get back. Flooding from the home as well would be the same component
+	## asked a second time.
+	##
+	## **A field is closed ground here, and that is the strong reading on purpose.** `outer_radius`
+	## rather than `field_reach()`: the engine is parked, so nothing about it is stretched forward by
+	## its own speed, and the question is what ground she will not walk through rather than what the
+	## row would charge a passer-by. `EventManager.where_the_summoned_row_stops()` says where the
+	## engine will be, so the check and the summons cannot disagree about it.
+	##
+	## **Checked before accepting, never repaired.** `EventScheduler._ensure_the_city_is_still_
+	## walkable()` asks the dawn version of this of the whole day and *drops* what seals the city; a
+	## placement made after dawn has nothing it is allowed to drop, so it asks of itself and declines
+	## instead. A refusal is ordinary and costs a second of walking.
 	##
 	## **Asked as a difference rather than as an absolute**, because the list it is asked over is the
 	## whole of what the manager is holding — the catalogue's rows, the day's seals, the region wall
-	## and its door structure — which is a stricter set than the dawn pass ever saw. If that set is
-	## already unwalkable by this measure then nothing here sealed it, and refusing for ever would
-	## turn a day the fire cannot be blamed for into a day 3 with no fire in it at all.
-	func _still_leaves_a_park_reachable(already: Array[Planned], candidate: Planned) -> bool:
-		if candidate.def.obstructs_radius <= 0.0 and not candidate.def.hard_fail:
-			return true
+	## and its door structure — which is a stricter set than the dawn pass ever saw. If she is
+	## already cut off from the home or from every unused area without the fire, nothing here did it,
+	## and refusing for ever would turn a day the fire cannot be blamed for into a day 3 with no fire
+	## in it at all. The baseline flood runs only when the candidate fails, so an accepted site costs
+	## one flood rather than two.
+	func _still_leaves_a_park_reachable(already: Array[Planned], candidate: Planned,
+			at: Vector2) -> bool:
 		var blockers := _what_already_blocks(already)
-		if _was_walkable == 0:
+		var her := _map.world_to_tile(at)
+		var blocked := EventScheduler.blocked_by(_map, blockers)
+		EventScheduler.block_a_disc(_map, blocked, candidate.position, candidate.def.outer_radius)
+		var parked := EventManager.where_the_summoned_row_stops(_map, candidate.position)
+		var summoned := EventCatalogue.by_id(candidate.def.spawns_on_sight) \
+				if candidate.def.spawns_on_sight != "" else null
+		if summoned and parked != Vector2.INF:
+			EventScheduler.block_a_disc(_map, blocked, parked, summoned.outer_radius)
+		if _she_can_still_get_away(her, blocked):
 			return true
-		blockers.append(candidate)
-		return EventScheduler._park_is_reachable(_map, _grid, blockers)
+		# Only now: was the day already like this without us?
+		return not _she_can_still_get_away(her, EventScheduler.blocked_by(_map, blockers))
 
-	## Everything in `already` that stands in the way, and — the first time it is asked — the grid
-	## and the answer for the day with nothing of ours in it.
+	## Whether a flood from her tile, over `blocked`, still finds the home and some calm area she has
+	## not settled in this act. Both, because either one alone is a day that cannot be won or a day
+	## that cannot be ended.
+	func _she_can_still_get_away(her: Vector2i, blocked: Dictionary) -> bool:
+		var reached := _grid.flood([her], blocked)
+		if not _grid.reaches(_map.home_rect.position, blocked, reached):
+			return false
+		for tile in _calm_she_has_not_used():
+			if _grid.reaches(tile, blocked, reached):
+				return true
+		return false
+
+	## The calm tiles of every area she has not settled in this act — the ground the day's own
+	## placement rules already keep clean (`_calm_to_leave_alone`), read here as the destination that
+	## has to stay reachable.
+	##
+	## **Falls back to every calm tile where she has used them all**, which is the same case
+	## `_ensure_one_usable_park` names: with nothing unused left, what the day owes is calm ground
+	## rather than fresh calm ground, and refusing every site instead would be a day 3 with no fire.
+	func _calm_she_has_not_used() -> Array[Vector2i]:
+		if _unused_calm_known:
+			return _unused_calm
+		_unused_calm_known = true
+		for block in _map.calm_blocks:
+			if _used_calm.has(block):
+				continue
+			for tile in _map.rect_tiles(EventScheduler._calm_rect(_map, block)):
+				if Tile.is_calm(_map.tile_at(tile)):
+					_unused_calm.append(tile)
+		if _unused_calm.is_empty():
+			_unused_calm = _map.calm_tiles()
+		return _unused_calm
+
+	## Everything in `already` that stands in the way, and — the first time it is asked — the grid.
 	func _what_already_blocks(already: Array[Planned]) -> Array[Planned]:
 		if not _grid:
 			_grid = ReachabilityGrid.build(_map)
@@ -1126,8 +1186,6 @@ class WalkSiting extends RefCounted:
 				continue
 			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
 				blockers.append(plan)
-		if _was_walkable < 0:
-			_was_walkable = 1 if EventScheduler._park_is_reachable(_map, _grid, blockers) else 0
 		return blockers
 
 	## Does at dawn the work the first `ahead_of()` would otherwise do in the middle of a walk: the
@@ -2811,22 +2869,34 @@ static func _blocking_radius(plan: Planned) -> float:
 ## that could drift: both are `ReachabilityGrid.flood()`/`reaches()` under a `blocked` set, and the
 ## grid does not care whether the tiles in it came from a candidate's barrier or an event's circle.
 static func _park_is_reachable(map: CityMap, grid: ReachabilityGrid, blockers: Array[Planned]) -> bool:
-	var blocked := map.closed_tiles.duplicate()
-	for plan in blockers:
-		var radius := _blocking_radius(plan)
-		var reach := ceili(radius / float(Tuning.TILE_SIZE))
-		var centre := map.world_to_tile(plan.position)
-		for dy in range(-reach, reach + 1):
-			for dx in range(-reach, reach + 1):
-				var tile := centre + Vector2i(dx, dy)
-				if map.tile_to_world(tile).distance_to(plan.position) <= radius:
-					blocked[tile] = true
-
+	var blocked := blocked_by(map, blockers)
 	var reached := grid.flood([map.home_rect.position], blocked)
 	for tile in map.calm_tiles():
 		if grid.reaches(tile, blocked, reached):
 			return true
 	return false
+
+## Today's closures plus every blocker's own obstruction circle, as the `blocked` set
+## `ReachabilityGrid.flood()` takes. Public because `WalkSiting` builds the same set and then adds
+## two fields to it, and a second copy of this loop would be a second answer to the same question.
+static func blocked_by(map: CityMap, blockers: Array[Planned]) -> Dictionary:
+	var blocked := map.closed_tiles.duplicate()
+	for plan in blockers:
+		block_a_disc(map, blocked, plan.position, _blocking_radius(plan))
+	return blocked
+
+## Paints one disc of ground into a `blocked` set — a body's obstruction, or a field treated as
+## ground she will not walk through.
+static func block_a_disc(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) -> void:
+	if radius <= 0.0:
+		return
+	var reach := ceili(radius / float(Tuning.TILE_SIZE))
+	var centre := map.world_to_tile(at)
+	for dy in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var tile := centre + Vector2i(dx, dy)
+			if map.tile_to_world(tile).distance_to(at) <= radius:
+				blocked[tile] = true
 
 ## Whether an event's field touches a rect at all — grown by `field_reach()` rather than
 ## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming

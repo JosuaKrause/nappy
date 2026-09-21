@@ -464,6 +464,46 @@ func _walk(rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vec
 			return heading
 	return heading
 
+## Paints one disc of ground into a `blocked` set, the way the day's own reachability questions do.
+func _block(blocked: Dictionary, at: Vector2, radius: float) -> void:
+	if radius <= 0.0:
+		return
+	var reach := ceili(radius / float(Tuning.TILE_SIZE))
+	var centre := _city.map.world_to_tile(at)
+	for dy in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var tile := centre + Vector2i(dx, dy)
+			if _city.map.tile_to_world(tile).distance_to(at) <= radius:
+				blocked[tile] = true
+
+## The nearest walkable tile to `from` that is not inside anything `blocked` — where she steps back
+## to when she comes round the corner into a field. `Vector2i(-1, -1)` if there is none within the
+## fire's own field, which would be a fire she cannot get out of at all.
+func _retreat_from(from: Vector2i, blocked: Dictionary) -> Vector2i:
+	var reach := ceili(EventCatalogue.by_id("burning_building").outer_radius / Tuning.TILE_SIZE)
+	for ring in range(0, reach + 1):
+		for dy in range(-ring, ring + 1):
+			for dx in range(-ring, ring + 1):
+				if maxi(absi(dx), absi(dy)) != ring:
+					continue
+				var tile := from + Vector2i(dx, dy)
+				if not blocked.has(tile) and _city.map.is_walkable(tile):
+					return tile
+	return Vector2i(-1, -1)
+
+## The calm tiles of every area she has not settled in this act — what the siting's own acceptance
+## check requires to stay reachable, worked out here from the map rather than asked of the check.
+func _calm_she_has_not_used() -> Array[Vector2i]:
+	var used := GameState.settled_this_act()
+	var tiles: Array[Vector2i] = []
+	for block in _city.map.calm_blocks:
+		if used.has(block):
+			continue
+		for tile in _city.map.rect_tiles(ClosurePlanner.calm_area_rect(_city.map, block)):
+			if Tile.is_calm(_city.map.tile_at(tile)):
+				tiles.append(tile)
+	return tiles if not tiles.is_empty() else _city.map.calm_tiles()
+
 ## The index of the route point she is standing nearest to. A route is a chain of cell centres and
 ## she walks between them, so this is where a resumed walk picks up.
 func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
@@ -703,30 +743,48 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 					"ending at the near kerb across from where the fire is actually burning", 1.0)
 	t.check(engines == 1, "seeing the fire calls in exactly one engine (%d)" % engines)
 
+	# **The whole of what the pair owes, measured where she is standing when she meets it.** Both
+	# fields are closed ground here, not only the bodies: the fire is 260px of field on a 30px body
+	# and the parked engine is 340px on no body at all, and what she is asked to do is go another
+	# way rather than walk through either. Rebuilt from the map rather than read off `WalkSiting`,
+	# so a check that agreed with the siting only because it shared its arithmetic would not pass.
 	var blocked := _city.map.closed_tiles.duplicate()
 	for other in _city.events.plans():
 		if not other.is_placed():
 			continue
 		var radius := maxf(other.def.obstructs_radius,
 				other.def.inner_radius if other.def.hard_fail else 0.0)
-		if radius <= 0.0:
-			continue
-		var reach := ceili(radius / float(Tuning.TILE_SIZE))
-		var centre := _city.map.world_to_tile(other.position)
-		for dy in range(-reach, reach + 1):
-			for dx in range(-reach, reach + 1):
-				var tile := centre + Vector2i(dx, dy)
-				if _city.map.tile_to_world(tile).distance_to(other.position) <= radius:
-					blocked[tile] = true
+		_block(blocked, other.position, radius)
+	_block(blocked, plan.position, plan.def.outer_radius)
+	var engine_def := EventCatalogue.by_id(plan.def.spawns_on_sight)
+	var parked := EventManager.where_the_summoned_row_stops(_city.map, plan.position)
+	if engine_def and parked != Vector2.INF:
+		_block(blocked, parked, engine_def.outer_radius)
 	var grid := ReachabilityGrid.build(_city.map)
-	var her := _city.map.world_to_tile(rig.global_position)
+	# **From where she can retreat to, not from where she is standing.** She sees the fire the
+	# moment it enters the view, which is 180px deep against a 260px field — so on an approach up or
+	# down the screen she is already inside the field when she first sees it, and a flood started on
+	# a blocked tile answers nothing. What the pair owes is that stepping back out of both fields is
+	# possible and leaves her somewhere to go, so the retreat is the first thing measured.
+	var her := _retreat_from(_city.map.world_to_tile(rig.global_position), blocked)
+	t.check(her != Vector2i(-1, -1),
+			"she can step back out of both fields from where she first sees the fire")
+	if her == Vector2i(-1, -1):
+		rig.free()
+		_city.events.stream_radius = INF
+		GameState.scars = scars_before
+		return
 	var reached := grid.flood([her], blocked)
+	t.check(grid.reaches(_city.map.home_rect.position, blocked, reached),
+			"and from where she is standing when she first sees it the way home is still open "
+			+ "without entering either field")
+	var unused := _calm_she_has_not_used()
 	var out := false
-	for tile in _city.map.calm_tiles():
+	for tile in unused:
 		out = out or grid.reaches(tile, blocked, reached)
-	t.check(out,
-			"and from where she is standing when she first sees it there is still a way to calm "
-			+ "ground past every body the day has placed")
+	t.check(out and not unused.is_empty(),
+			("and so is a calm area she has not used (%d tiles of them)" % unused.size())
+			+ " — the day still works around the pair")
 	rig.free()
 	_city.events.stream_radius = INF
 	GameState.scars = scars_before

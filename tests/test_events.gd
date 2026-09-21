@@ -43,6 +43,7 @@ func run(t) -> void:
 	_test_a_corner_is_not_a_change_of_mind(t)
 	_test_the_fire_is_the_days_only_unsited_place(t)
 	_test_the_engine_parks_at_the_fire(t)
+	_test_a_site_that_shuts_her_out_is_refused(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
 	_test_hard_fail_only_when_active(t)
 	_test_scheduler_is_deterministic(t)
@@ -1885,6 +1886,38 @@ func _test_the_engine_parks_at_the_fire(t) -> void:
 	t.check(instance.is_parked and not instance.is_finished,
 			"and it is still standing there, for the rest of the day")
 	instance.free()
+
+## **A site is accepted only where the day still works around it.** The fire and the engine parked
+## across from it are meant to close the street she is on, so the thing that has to be checked is the
+## other direction: from where she is, with both fields taken as closed ground, the home and a calm
+## area she has not used are still reachable. Checked before accepting; a refusal is a second of
+## walking and another attempt.
+##
+## Both directions are asked, because a check that refused everything would pass the interesting half
+## of this on its own. The refusal case is a fire sited on the doorstep itself, whose field swallows
+## the one way out of the home — the shape the check exists for, and the one no amount of walking
+## could answer.
+func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
+	var map := _map()
+	var day := Tuning.RUN_TAUGHT_DAY
+	var def := EventCatalogue.by_id("burning_building")
+	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
+			[] as Array[Vector2i], PackedVector2Array())
+	var nothing_else: Array[EventScheduler.Planned] = []
+	var route := _fire_route(day)
+	t.check(route.size() > 8, "the day has a route out of the doorstep to stand on")
+	if route.size() <= 8:
+		return
+	var at: Vector2 = route[route.size() / 2]
+
+	var far_off := EventScheduler.Planned.new(def, route[route.size() - 2])
+	t.check(siting._still_leaves_a_park_reachable(nothing_else, far_off, at),
+			"a fire at the far end of the branch she is walking leaves the day working around it")
+
+	var on_the_doorstep := EventScheduler.Planned.new(def, map.doorstep_world_position())
+	t.check(not siting._still_leaves_a_park_reachable(nothing_else, on_the_doorstep, at),
+			"and a fire whose field swallows the doorstep is refused, because the way home is what "
+			+ "she would have no way round")
 
 ## **One plan, and the day is otherwise exactly the day it was.** A set piece the day owes her walk
 ## is budgeted like any other one-shot — one plan, tagged as its own group — and nothing else in the
