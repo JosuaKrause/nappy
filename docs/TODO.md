@@ -487,12 +487,12 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       the fiction puts them — junctions, squares, the main road — drawn, with a field that
       pulses when it speaks and falls away with distance like any other row's, so a route can
       go round one. It is in `docs/COSTS.md` like any row.
-- [ ] **The city-wide floor goes.** *Asked about, not decided*: "not sure about adding a floor".
-      The orchestrator's recommendation is to remove it, for the player's own reason — a cost
-      with no place cannot be routed round, and the game's one verb is where she walks. What
-      replaces its pressure is the masts' own fields. `curfew_announce`, the other `city_wide`
-      row, is looked at the same way. The day-14 reward, that the sabotage silences the city,
-      becomes the masts going quiet. **Confirmed with the player before it is built.**
+- [ ] **The city-wide floor goes.** *Decided by the player on 2026-09-20: "Remove it"*, asked
+      with keeping it near masts only and keeping it as it is as the alternatives. A cost with
+      no place cannot be routed round, and the game's one verb is where she walks. No row is
+      `city_wide`: what replaces the loudspeaker's pressure is the masts' own fields, and
+      `curfew_announce` becomes something the masts do. The day-14 reward, that the sabotage
+      silences the city, is the masts going quiet.
 - [ ] **Posters are seen at all.** *"I have not seen a single poster in any playthrough -- I
       don't know what you're referring to here -- it needs to be way more obvious"*: the run
       behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none, so the
@@ -503,7 +503,7 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
 
 ---
 
-## M181 — The resistance has a reason, and a task is one day · design, asked for 2026-09-20
+## M181 — The resistance has a reason, and a task is one day · asked for 2026-09-20
 
 > "when doing the mark it doesn't really feel that we would need to resist against anything
 > since nothing really has visibly deterioated yet" · "we could do 1) chalk 2) it immediately
@@ -512,46 +512,62 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
 > specific location" · "we should also start with doors later since tasks should come first" ·
 > "9-11 need some extra memorable content in addition to the tasks"
 
-[PLAYTEST-117](playtests/PLAYTEST-117.md) has the whole message. **This entry is a design the
-player asked an opinion on; nothing here is built until they have answered.** The mark's noticing
-rule and the acknowledgement of a finished step are built (`DECISIONS.md`, M177, the second mark
-is any alley she comes across), and every version of this uses them.
+[PLAYTEST-117](playtests/PLAYTEST-117.md) has the whole message, the orchestrator's opinion
+and the questions put back with their options. **Decided by the player; built after M179, the
+fire is on her way, and M180, posters she notices, and loudspeakers that are somewhere**, since
+two of its tasks go to places those make. The mark's noticing rule is built (`DECISIONS.md`,
+M177, the second mark is any alley she comes across), and the mark is drawn as it always was.
 
-**The orchestrator's opinion: one day per task, yes.** A mark one day and its errand the next
-asks her to remember an instruction across a night and a day brief, makes half the resistance
-days ones where nothing can be achieved, and spends ten days on five tasks. Chalk, task shown at
-once, done the same day, makes every resistance day a whole decision — *is today's errand worth
-what it does to the route* — frees days, and is the only shape in which "start later" does not
-also mean "fewer tasks". What it costs: a day now holds the mark, the errand, the baby and the
-way home inside one clock, 144 seconds after the curfew, so a task's place has to be reachable
-with the mark on the way, and the robber's band around a mark is a larger share of the day.
+**Decided:**
 
-**Proposed shape, every number open:**
+- **A task is one day**: she touches the chalk mark, the task is announced there and then, and
+  it is done that day. Every task day starts with a mark. *A mark one day and its errand the
+  next · overturned by the player on 2026-09-20.* A task counts only on a day she wins, and a
+  lost day offers it again, as today.
+- **The first mark is on day 6**, the day the curfew is announced; tasks run on days 6 to 13,
+  eight of them. Asked with days 5, 7 and 8 as the alternatives.
+- **The goal is all but three**: five of eight. **The day-14 sabotage is a must** — *"the
+  sabotage is a must though"* — which is what `GameState.earned_good_ending()` already asks:
+  the goal and the sabotage, both.
+- **Doors start three task days after the first task**: day 9 (`Tuning.REGION_WALL_FIRST_DAY`
+  is 7 today). *"we should also start with doors later since tasks should come first."*
+- **The task is announced at the mark and nowhere else.** *"since the task will be immediately
+  announced when touching the mark there is no need to mention tasks in the day brief ata ll"*.
+  The day brief carries no task, no mark's words from yesterday and no reminder.
+- **Two kinds of task.** *Any instance* — the man shouting, the densest crowd — gets no
+  arrow. *One place* gets **the red arrow**, the home arrow's form in red, from the moment the
+  mark is touched until the task is done. *No quest log or marker for the resistance ·
+  overturned by the player for one-place tasks.*
+- **Four new one-place tasks**, all four chosen by the player: silence a loudspeaker mast, which
+  stays quiet for the rest of the run; leave something at the burnt shell from day 3; warn a
+  neighbor before a raid, with a deadline as the poster wall has; cross a named door.
+- **A task done is shown by the world and never by text** (M182, a finished task is shown by
+  the world): the thing she reached visibly answers, the arrow goes out, and the day summary
+  says so.
+- **Days 9 to 11 get things that happen once**, all four chosen by the player, each sited from
+  where she is walking as the fire is and each leaving something permanent: a park is taken in
+  front of her, a raid on her own street whose door is boarded the next morning, the market is
+  gone, and a column on the main road.
 
-- **Tasks start on day 6**, the day the curfew is announced — the first morning the city has
-  visibly been told what to do — with the masts of M180 up since day 5 and the patrols and
-  posters since day 4. Days 6 to 13 are eight task days and day 14 the sabotage.
-- **The goal is 5 of 8**, which keeps today's allowance of missing tasks and staying eligible.
-- **Doors start on day 9**, not day 7, so three task days come before the city is walled, and
-  the first door she meets is one a task has already made her want to cross.
-- **Two kinds of task.** *Any instance*: the man shouting, a roadblock's band, the densest
-  crowd — no arrow, as today. *One place*: the van's drop, the poster wall before it is
-  finished, and new ones — the burnt shell from day 3 (the city remembers, and so does she), a
-  loudspeaker mast, which goes quiet for the rest of the run when she reaches it (the only task
-  whose reward she can hear the absence of), a named door after day 9. These get **the red
-  arrow**, the home arrow's form in red, from the moment the mark is touched. *No quest log or
-  marker for the resistance · overturned by the player for one-place tasks*; the first mark
-  itself still comes with no hint.
-- **The task is announced at the mark and nowhere else.** *Decided by the player*: "since the
-  task will be immediately announced when touching the mark there is no need to mention tasks in
-  the day brief ata ll". Touching the mark says the task, in the HUD's voice, where she is
-  looking; the day brief carries no task, no mark's words from yesterday and no reminder.
-- **A task done is unmistakable, and never by text** (M182, a finished task is shown by the
-  world): the thing she reached visibly answers, the arrow goes out, and the day summary says so.
-- **Days 9 to 11 each get one thing that happens once**, the way day 3 has the fire: candidates
-  are the park she has used most being requisitioned in front of her, a night raid on her own
-  street with a neighbor's door boarded the next morning, and the market not being there. Which,
-  and whether these are the right kind of thing, is the player's.
+**The calendar, proposed by the orchestrator and the player's to reorder:**
+
+| Day | Task | What happens once |
+| --- | --- | --- |
+| 6 | A note for the man shouting — any of them | |
+| 7 | The package at a van's drop · arrow | |
+| 8 | Leave something at the burnt shell · arrow | |
+| 9 | Cross a named door · arrow | The doors arrive. A park is taken in front of her. |
+| 10 | Warn a neighbor before the raid · arrow, deadline | The raid on her own street. |
+| 11 | Silence a loudspeaker mast · arrow | The market is gone. |
+| 12 | The poster wall before the crew finishes · arrow, deadline | |
+| 13 | The middle of the densest crowd | A column on the main road. |
+| 14 | The sabotage | |
+
+That is nine tasks for eight days; the one left out is today's *walk into a roadblock's band*,
+the least distinct of them now that a named door is a toll paid on purpose. Day 9 carries the
+doors and the park together, which may be one morning too full; the park on day 9 and the doors
+on day 10 is the alternative. **Still the player's:** the calendar's order, which task is the
+spare, and whether the walk home after a task is an ordinary return or owes something.
 
 **The day brief says what happened, a draft for the player to rewrite.** *"use the freed up day
 brief text to further the narrative. write about what happened that day -- curfew announced
@@ -581,10 +597,7 @@ if the shape does:
 | 13 | The crowds are larger. Nobody is going home. |
 | 14 | The last night. |
 
-**Questions for the player:** the start day; how many tasks and how many may be missed; the door
-day; which new one-place tasks; which set pieces for days 9 to 11; and whether the walk home
-after a task should still be an ordinary return or owe something; and the brief lines above,
-which are a draft in the orchestrator's words and the player's to rewrite.
+The lines for days 8 to 13 follow the calendar above and move with it.
 
 ---
 

@@ -310,10 +310,9 @@ checks and worktrees can move independently of this file.
   two milestones in `TODO.md`: M176, the loose dog is past her before it is loud, and M178, a gate
   lets her out alive.
 - **[PLAYTEST-117](playtests/PLAYTEST-117.md) is three more**: M179, the fire is on her way,
-  guaranteed; M180, posters she notices, and loudspeakers that are somewhere (its floor item waits
-  on the player); M181, the resistance has a reason, and a task is one day, which is a design with
-  questions out to the player and is not built until they answer. The player has allowed M176 to
-  M178 to merge as they go green, with a patch release after them.
+  guaranteed; M180, posters she notices, and loudspeakers that are somewhere; M181, the resistance has a reason, and a task is one day, which the player has decided and
+  which is built after M179 and M180. M182, a finished task is shown by the world, follows M178.
+  The player has allowed M176 to M178 to merge as they go green, with a patch release after them.
 - **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
   "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
   the first entry of `REVIEW.md`. M174, the man shouting costs nothing to walk beside, has one
