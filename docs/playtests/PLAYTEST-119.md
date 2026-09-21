@@ -102,3 +102,34 @@ her getting out from under it. Day 12's task was proposed as tearing down one ma
     "etc.".
 15. **Day 12's task is still not settled**: neither reaching the wall before the crew nor
     tearing a marked wall convinces; something that fits the narrative better is asked for.
+
+## After the blackout's timing and day 12's park were proposed
+
+The orchestrator recommended the lights going out at the touch of the door, building by
+building outward, over waiting until the station is out of sight, "the player would then miss
+the one moment the whole run builds to"; and proposed day 12 as reaching a bench in "a park she
+has been settling the baby in all run" before it is fenced.
+
+> "not one by one blackout -- just wait until a certain distance away -- then everything is off
+> at once. the player wouldn't be able to see a rolling blackout anyway. "The player would then
+> miss the one moment the whole run builds to." they wouldn't miss it. it is very visible and
+> linked to her action. "a park she has been settling the baby in all run." you appear to have
+> missed that parks are not reusable so she can not in fact settle the baby in the same park.
+> but we can just force open the park she needs to go to that day. maybe make her go to the
+> swing on the playground (we don't have a bench texture). so she will have to go to a specific
+> park and go to the swing. *then* the park starts to close which will force her to go to
+> another park for settling the baby? question 1. yes all lights should go out. that actually
+> applies also to the escape sequence. it can be gloomy in the hallways and basement and maybe
+> emergency (red?) lighting in the stairs? question 2. see above."
+
+16. **The blackout is everything at once, once she is a certain distance from the station.**
+    *The orchestrator recommended the touch of the door, rolling outward · the player chose
+    distance and all at once*: a rolling blackout could not be seen from the street anyway, and
+    the moment is not missed, since it is very visible and linked to what she did.
+17. **All lights go out**, and that holds for the escape as well: the hallways and the basement
+    are gloomy, and the stairs may have emergency lighting, perhaps red.
+18. **Day 12's task is the swing on a playground in one specific park**, by the red arrow. The
+    orchestrator's premise was wrong: a park is not reusable, so it cannot be one she has been
+    settling the baby in. The park she is sent to is forced open that day. **Once she has
+    reached the swing the park starts to close**, which sends her to another park to settle the
+    baby. A swing because there is no bench picture.
