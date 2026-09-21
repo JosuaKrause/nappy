@@ -390,7 +390,10 @@ so a day 3 can pass without either.
       at the fire**: in a windowed run on the branch the player saw that it "did not stop at
       the fire" ([PLAYTEST-119](playtests/PLAYTEST-119.md)). It parks across from the fire for
       the rest of the day, *decided by the player on 2026-09-20*, asked with twenty seconds
-      and passing through as the alternatives: "a fire engine has a high cost". The fairness
+      and passing through as the alternatives: "a fire engine has a high cost". **She is not
+      supposed to go past it** ("you're not supposed to go past it"): the fire and the engine
+      close the path she is on, so a site is accepted only where a calm area and the home stay
+      reachable without entering either field. The fairness
       contract for a siting she did not choose (the **events** skill) holds: she can always
       walk out of it from where she first sees it.
 

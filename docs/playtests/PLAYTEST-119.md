@@ -172,3 +172,9 @@ fire she was led to:
 > "option A -- a fire engine has a high cost"
 
 24. **The engine parks at the fire for the rest of the day**, and its high cost is meant.
+
+> "you're not supposed to go past it"
+
+25. **The fire with the engine at it is not something she walks past.** It closes the path she
+    is on; she turns round or goes another way. What the siting owes in return is that
+    another way exists: a calm area and the home stay reachable without entering either field.
