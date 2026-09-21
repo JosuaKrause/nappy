@@ -360,7 +360,8 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
       (`EventInstance.leave_for_a_completed_task()` is there for the ones that leave), decided with M181, the
       resistance has a reason, and a task is one day, whose list of tasks is settled: the
       van's drop, the burnt shell, the named door, the neighbor warned before the raid, the
-      loudspeaker mast, the poster wall and the roadblock. Each is something that happens
+      loudspeaker mast, the swing and the roadblock; the power station's answer is the blackout
+      (M183, the power station and the blackout). Each is something that happens
       where she is looking, and none is text.
 
 ---
@@ -436,6 +437,61 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       on the building face and large enough to read at walking distance, so each day's walls
       add to the last; and the crew is seen pasting. The row's cost stays what it is: making a
       poster crew charge the meter is a change to what the row is for, and is the player's.
+- [ ] **There are four kinds of poster, and they are on the walls** ([PLAYTEST-119](playtests/PLAYTEST-119.md)).
+      *The leader's portrait*, a nondescript face with no name; *the rules*, a pale printed
+      notice with a heavy header bar, gray lines and a red stamp, joined from day 6 by a curfew
+      sheet with a clock face; *the darker uniform sheets* under one plain geometric emblem
+      that resembles nothing real, covering a wall edge to edge in act III; and *the wanted
+      notice* in act IV, rows of faces, some crossed out in red, drawn in a different style
+      from the leader's. No sheet carries readable words (`docs/NARRATIVE.md`, tone rule 1:
+      nobody explains the politics). A poster takes up about 60 to 80% of a tile, "big enough
+      to be recognizable as posters". They are on walls from the first day poster crews appear,
+      day 4, and **some are already up that first morning**; they are **sparse at first and
+      denser towards the end of the run**, each day's walls adding to the last. SVG first, as
+      every picture here is, and the first drawn wall comes back to the player as pictures in
+      the pull request before anything is polished.
+- [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
+      no button, and more than walking past. *The orchestrator recommended running along the
+      wall · the player chose pushing on 2026-09-20*, because a push can happen by accident,
+      which is how it is discovered. It is a gimmick to be judged by feel and holds nothing
+      else up. Open to overturn, set by the orchestrator: her heading has to press into the
+      postered wall for about 0.4 seconds, so brushing past does not tear; a torn poster stays
+      torn until a crew pastes that wall again; tearing costs nothing on the meter and counts
+      for nothing. **A tear has a small chance of a pursuer**: a `police_patrol` sent toward
+      her from off screen under the lead its row already owes, starting at one tear in ten, and
+      never on the first tear of a run.
+
+---
+
+## M183 — The power station and the blackout · asked for 2026-09-20
+
+> "so we need to design a power station building that is guaranteed to spawn on the map" ·
+> "just wait until a certain distance away -- then everything is off at once" · "yes all lights
+> should go out. that actually applies also to the escape sequence"
+
+[PLAYTEST-119](playtests/PLAYTEST-119.md). Built before M181, the resistance has a reason, and
+a task is one day, whose day 14 goes to this building's front door.
+
+- [ ] **Every city has a power station.** One big building — the landmark `docs/CITY.md`
+      describes, two neighboring blocks and the street between them built as one mass — is the
+      power station on every seed, with a look of its own (stacks, a fenced transformer yard)
+      and a front door on a street she can reach on day 14. Today the generator asks for
+      `Tuning.MIN_BIG_BUILDINGS` to `MAX_BIG_BUILDINGS` of them and places as many as its
+      candidates allow, so a seed can end with none; the guarantee is checked when the
+      footprint is accepted, never repaired afterwards. What it does to existing seeds and
+      saves is measured and said. Which district it stands in is the orchestrator's and open
+      to overturn: industrial, away from the home.
+- [ ] **The blackout is everything at once.** After she has touched the front door, once she
+      is a set distance from the station, every lit window goes dark, every traffic light goes
+      off and every loudspeaker mast stops, in one frame. *The orchestrator recommended the
+      touch of the door, rolling outward · the player chose distance and all at once on
+      2026-09-20*: a rolling blackout cannot be seen from the street, and the moment is "very
+      visible and linked to her action". The distance is the orchestrator's and open to
+      overturn: far enough that the station is off screen. What a dead traffic light means for
+      cars and crosswalks answers to the **crowd-traffic** rules' fairness contract for a
+      lethal road.
+- [ ] **The escape is in the dark too.** The hallways and the basement are gloomy, and the
+      stairs have emergency lighting, "maybe … (red?)", the player's to judge on a picture.
 
 ---
 
@@ -493,6 +549,42 @@ M177, the second mark is any alley she comes across), and the mark is drawn as i
   for eight days.
 - **Day 9 is the doors and nothing else new, and the park is taken on day 12**, asked with
   both on day 9, the doors on day 10 and the park on day 8 as the alternatives.
+- **Day 12's task is the swing on the playground of one specific park**
+  ([PLAYTEST-119](playtests/PLAYTEST-119.md)), by the red arrow; a swing because there is no
+  bench picture. A calm area is not reusable, so the park she is sent to is forced open that
+  day whatever its state. **Once she has reached the swing the park starts to close**, which
+  is the day's once-only happening, and she settles the baby in another. *Reaching the poster
+  wall before the crew finishes, and tearing down a marked wall · both set aside by the player
+  on 2026-09-20 as not convincing*; the poster wall has no day, like the densest crowd.
+- **The sabotage is the power station** (M183, the power station and the blackout). Day 14's
+  task is its front door, by the red arrow. *The loudspeaker system, proposed by the
+  orchestrator · refused by the player as "too low a stake. it doesn't warrant an air raid on
+  the city afterwards".*
+
+**What the tasks are for. Never said in the game; written into `docs/NARRATIVE.md` with the
+build so the story stays consistent** ([PLAYTEST-119](playtests/PLAYTEST-119.md): "those
+things need to never explicitly spelled out in the game but it needs to be spelled out in our
+narrative"). A resistance group is forming and recruiting like-minded people by chalk, because
+nothing spoken or sent is safe. It wants her because nobody stops a woman pushing a crying
+baby, she is out every day anyway, and a stroller hides things. Everything leads to one night:
+she cuts the city's power, the blackout is the signal the uprising waits for, the regime
+answers by bombing its own city, and the escape is her getting out from under it.
+
+| Day | Task | What it accomplishes |
+| --- | --- | --- |
+| 6 | The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. |
+| 7 | The package at the van's drop | The driver is a sympathizer. The package is the cutters and charges for the switch room, and the stroller carries it past everybody. |
+| 8 | The burnt shell | She leaves the package there: a cordoned ruin is where nobody goes, so it is the group's hiding place. Whether day 3's fire was an accident is never answered. |
+| 9 | Cross a named door | The station is in another district, and the doors are new that morning. She proves which crossing lets a mother through; that door is the last night's way. |
+| 10 | Warn a neighbor before the raid | The neighbor works at the station and knows the switch room, which is why the vans come. The door is boarded the next morning and nobody was home. |
+| 11 | Silence a mast | The rehearsal: a mast's feed can be cut by hand, and nobody comes. |
+| 12 | The swing | Before running, the neighbor hid the switch room's key at the swing. She gets it out as the park is taken. |
+| 13 | Into a roadblock's band | The last piece goes through the checkpoint in the stroller, because nobody searches a screaming baby. The column on the main road is the army arriving because it expects something. |
+| 14 | The station's front door | The switch room. Blackout, uprising, bombing, escape. |
+
+The player has agreed the target, day 12 and the blackout; the rows for days 6 to 11 and 13
+were proposed by the orchestrator in the same conversation and not objected to, and are the
+player's to rewrite.
 
 **The calendar, decided by the player:**
 
@@ -504,9 +596,9 @@ M177, the second mark is any alley she comes across), and the mark is drawn as i
 | 9 | Cross a named door · arrow | The doors arrive. |
 | 10 | Warn a neighbor before the raid · arrow, deadline | The raid on her own street. |
 | 11 | Silence a loudspeaker mast · arrow | The market is gone. |
-| 12 | The poster wall before the crew finishes · arrow, deadline | A park is taken in front of her. |
+| 12 | The swing in one park · arrow | That park is taken once she has reached the swing. |
 | 13 | Walk into a roadblock's band — any of them | A column on the main road. |
-| 14 | The sabotage | |
+| 14 | The power station's front door · arrow | The blackout. |
 
 **The day brief says what happened, a draft for the player to rewrite.** *"use the freed up day
 brief text to further the narrative. write about what happened that day -- curfew announced
