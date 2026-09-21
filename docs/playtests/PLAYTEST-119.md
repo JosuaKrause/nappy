@@ -1,0 +1,214 @@
+# Playtest 119 — What is on a poster, what the tasks are for, and tearing one down
+
+2026-09-20. Said in conversation, after the investigation into why no poster is ever seen
+([PLAYTEST-118](PLAYTEST-118.md)'s session; the findings are in `TODO.md` under M180, posters
+she notices, and loudspeakers that are somewhere). No run was played.
+
+## What the player said
+
+Told that a "poster" today is only a worker holding a small sheet of paper, that nothing is ever
+on a wall, and that `docs/NARRATIVE.md` never says what a poster shows:
+
+> "well the big question is what are those posters meant to contain?"
+
+The orchestrator proposed official notices that escalate by act — a plain printed sheet with a
+header bar and a red stamp in act II, a curfew sheet with a clock face from day 6, darker
+uniform sheets under one geometric emblem covering whole walls in act III, and sheets of blank
+face silhouettes, some crossed out in red, in act IV — and argued against a leader's portrait,
+readable slogans and a single design for the whole run.
+
+> "let's do two types of posters: 1) leader's portrait -- some non-descript face -- needs no
+> name 2) the "rules" as you described. both should appear on walls at/after the first day the
+> poster crews appear. when the poster crews appear some posters should already be up. they
+> should take up ~60-80% of a tile -- ie big enough to be recognizable as posters. the density
+> should be sparse at first but increase towards the end of the game -- the rest of the
+> narrative you spelled out is already good. not sure about the "reach the wall before they
+> paste over it" task, though. let's spell out exactly what the tasks actually accomplish so we
+> form a cohesive story. okay, there is a resistance group forming that is recruiting like
+> minded people. they drop hints to accomplish certain tasks that ultimately lead to a sabotage
+> (of what?). beginning with the first task, what are we giving the yeller? what does it
+> accomplish? those things need to never explicitly spelled out in the game but it needs to be
+> spelled out in our narrative so we remain consistent. next, with the posters I'm thinking of
+> a fun gimmick that the player can tear them down. but I'm not sure yet how. no new buttons or
+> anything like that. but just walking past is also too simple. also, tearing a poster down
+> should have a small chance of a pursuer spawning"
+
+And a moment later:
+
+> "oh I also like the wanted notice -- different style of face, though -- and the darker and
+> more uniform ones. we can do all four of them"
+
+## What is asked for, as statements
+
+1. **There are four kinds of poster: the leader's portrait, the rules, the darker uniform
+   sheets under one emblem, and the wanted notice**, whose faces are drawn in a different style
+   from the leader's. The portrait is a
+   nondescript face and needs no name. *The orchestrator argued against a portrait · the player
+   chose it.* The rules are the official notices as proposed, and "the rest of the narrative you
+   spelled out is already good": the sheets escalate by act as described above.
+2. **The portrait and the rules are on walls from the first day poster crews appear** (the
+   player's "both", said when there were two kinds), and on that first morning some are
+   already up.
+3. **A poster takes up about 60 to 80% of a tile**, large enough to be recognized as a poster.
+4. **Posters are sparse at first and denser towards the end of the run.**
+5. **The task "reach the wall before they paste over it" is in doubt.**
+6. **What every task accomplishes is spelled out in `docs/NARRATIVE.md` and never in the game**:
+   a resistance group is forming and recruiting like-minded people; its hints lead to tasks
+   that lead to a sabotage — of what is asked — beginning with what she gives the man shouting
+   and what that does. The game stays silent about all of it; the document keeps the story
+   consistent.
+7. **She can tear a poster down**, as a gimmick: with no new button, and by something more than
+   walking past. How is open.
+8. **Tearing a poster down has a small chance of a pursuer appearing.**
+
+## After the orchestrator's proposed story
+
+The proposal made the loudspeaker system the sabotage's target, since `docs/NARRATIVE.md`'s good
+ending is the loudspeakers cutting out mid-sentence, and offered three ways to tear a poster
+with no new button: running along the wall (recommended), stopping beside it, and walking into
+it.
+
+> "the loudspeaker system is too low a stake. it doesn't warrant an air raid on the city
+> afterwards. running next to a wall is hard to discover since running is almost never an
+> option. we can start with pushing into the wall (even if diagonal) this can happen by
+> accident so it can be discovered. it's mainly a gimmick anyway. need to get the feel of it so
+> I'd say let's not let that be a blocker for now and go with push against it (even diagonal)"
+
+9. **The loudspeaker system is too small a target**: what she sabotages has to warrant the
+   attack on the city that the escape runs through.
+10. **A poster is torn by pushing against its wall, a diagonal heading included.** *The
+    orchestrator recommended running along the wall · the player chose pushing*, because
+    running is almost never an option and a push can happen by accident, which is how it is
+    discovered. It is a gimmick, to be judged by feel, and does not hold anything else up.
+
+## After the power station was proposed
+
+The second proposal made the target the power station: she cuts the city's power, the blackout
+is the signal the uprising waits for, the regime answers by bombing the city, and the escape is
+her getting out from under it. Day 12's task was proposed as tearing down one marked wall.
+
+> "okay, so we need to design a power station building that is guaranteed to spawn on the map.
+> do we have a building we were planning anyway? so the last day's task is to go to the power
+> station front door or something (via red arrow) and then the light immediately goes out or
+> after she walks far enough for the station to not be visible anymore. that means all traffic
+> lights will turn off, all windows with lights will turn dark, etc. we can go with that and see
+> how it feels. I'm still not convinced about the day 12 task. can we come up with something
+> better that fits the narrative?"
+
+11. **The target is the power station**, taken to see how it feels.
+12. **A power station building is guaranteed on every map.**
+13. **Day 14's task is to reach the power station's front door, by the red arrow.**
+14. **Then the lights go out** — at once, or once she has walked far enough that the station is
+    out of sight; which is open. Every traffic light turns off and every lit window goes dark,
+    "etc.".
+15. **Day 12's task is still not settled**: neither reaching the wall before the crew nor
+    tearing a marked wall convinces; something that fits the narrative better is asked for.
+
+## After the blackout's timing and day 12's park were proposed
+
+The orchestrator recommended the lights going out at the touch of the door, building by
+building outward, over waiting until the station is out of sight, "the player would then miss
+the one moment the whole run builds to"; and proposed day 12 as reaching a bench in "a park she
+has been settling the baby in all run" before it is fenced.
+
+> "not one by one blackout -- just wait until a certain distance away -- then everything is off
+> at once. the player wouldn't be able to see a rolling blackout anyway. "The player would then
+> miss the one moment the whole run builds to." they wouldn't miss it. it is very visible and
+> linked to her action. "a park she has been settling the baby in all run." you appear to have
+> missed that parks are not reusable so she can not in fact settle the baby in the same park.
+> but we can just force open the park she needs to go to that day. maybe make her go to the
+> swing on the playground (we don't have a bench texture). so she will have to go to a specific
+> park and go to the swing. *then* the park starts to close which will force her to go to
+> another park for settling the baby? question 1. yes all lights should go out. that actually
+> applies also to the escape sequence. it can be gloomy in the hallways and basement and maybe
+> emergency (red?) lighting in the stairs? question 2. see above."
+
+16. **The blackout is everything at once, once she is a certain distance from the station.**
+    *The orchestrator recommended the touch of the door, rolling outward · the player chose
+    distance and all at once*: a rolling blackout could not be seen from the street anyway, and
+    the moment is not missed, since it is very visible and linked to what she did.
+17. **All lights go out**, and that holds for the escape as well: the hallways and the basement
+    are gloomy, and the stairs may have emergency lighting, perhaps red.
+18. **Day 12's task is the swing on a playground in one specific park**, by the red arrow. The
+    orchestrator's premise was wrong: a park is not reusable, so it cannot be one she has been
+    settling the baby in. The park she is sent to is forced open that day. **Once she has
+    reached the swing the park starts to close**, which sends her to another park to settle the
+    baby. A swing because there is no bench picture.
+
+## On the summary of what was written down
+
+> ""There are four poster kinds," -- did you also specify the progression of types of posters?
+> "One thing to flag: a dead traffic light changes what is fair on a lethal road." yes that is
+> part of the challenge of coming home after the sabotage. is the fire agent done? I saw a
+> playtest from it and the fire engine did not stop at the fire. let's push all the notes etal
+> to the pr but no merge yet."
+
+19. **The kinds of poster arrive in a stated progression**, which the entry owes as a table
+    rather than a sentence.
+20. **Dead traffic lights are part of the challenge of coming home after the sabotage.** The
+    roads are harder on purpose that night.
+21. **The fire engine did not stop at the fire**, in a windowed run the M179 agent started on
+    the player's screen. Passed to that agent as a finding against M179, the fire is on her
+    way, guaranteed.
+22. **The notes are pushed to the pull request and nothing merges yet.**
+
+## On M179's first build
+
+Told that the fire is sited on a building face ahead of her, off screen, within 180px of the
+straight line she is walking, and moved while unseen if she turns away:
+
+> "the fire needs to spawn on the current path the player is on -- moving it around works but
+> valid spawn locations are only on the path"
+
+23. **The fire is only ever sited on the path she is on.** Moving it while it is unseen is
+    fine; a place off the path is never a valid site. Read by the orchestrator as the day's own
+    route — the streets of the day's route tree, along the branch she is walking, ahead of her
+    by distance along that route rather than along a straight line — and open to correction.
+
+Asked whether the engine parks at the fire — for the rest of the day (option A, recommended),
+for about twenty seconds, or passes through as it does on `main` since M101, the fire is found
+before the engine — with the cost named: a standing field of 26 a second out to 340px beside a
+fire she was led to:
+
+> "option A -- a fire engine has a high cost"
+
+24. **The engine parks at the fire for the rest of the day**, and its high cost is meant.
+
+> "you're not supposed to go past it"
+
+> "when you see the fire the reaction should be to take a different route"
+
+25. **The fire with the engine at it is not something she walks past.** It closes the path she
+    is on; she turns round or goes another way. What the siting owes in return is that
+    another way exists: a calm area and the home stay reachable without entering either field.
+
+Told that the agent had made a lost day 3 keep a fire that burned as spent, with its shell
+standing, and offer the fire again only if it was never lit:
+
+> "a retry always rolls new -- nothing that happened on the day that got retried can influence
+> the next repeat -- that has been a long standing rule"
+
+26. **Nothing that happened on a lost day influences its retry.** A lost day 3 gives back the
+    fire altogether — its one-shot and its burnt shell — and the retry has a fire again, sited
+    from the walk she takes then. `GameState.finish_day()` says the opposite about one-shots
+    and block arcs today ("what the run has spent stays spent … a fire that burnt a block down
+    did happen"); the player's rule overturns it.
+
+Asked whether "rolls new" means a retry draws a different event plan, or is the same day from
+the same seed with nothing carried over:
+
+> "that has been settled already for a long time. it is the same day exactly how the player
+> encountered it the first time this run. exact same state at the beginning of the day. nothing
+> else"
+
+27. **A retry is the same day, exactly as she first met it this run**: the same state at the
+    beginning of the day and nothing else. The question had been settled long before and
+    should not have been asked; `GameState.finish_day()`'s "the retry is the same day" stands,
+    and statement 26 is what it means for the fire — the state at the beginning of day 3 has no
+    fire spent and no shell.
+
+Asked again whether the docs pull request may merge:
+
+> "NO!!!"
+
+28. **The docs pull request does not merge.**
