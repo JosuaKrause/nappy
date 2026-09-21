@@ -79,3 +79,26 @@ it.
     orchestrator recommended running along the wall · the player chose pushing*, because
     running is almost never an option and a push can happen by accident, which is how it is
     discovered. It is a gimmick, to be judged by feel, and does not hold anything else up.
+
+## After the power station was proposed
+
+The second proposal made the target the power station: she cuts the city's power, the blackout
+is the signal the uprising waits for, the regime answers by bombing the city, and the escape is
+her getting out from under it. Day 12's task was proposed as tearing down one marked wall.
+
+> "okay, so we need to design a power station building that is guaranteed to spawn on the map.
+> do we have a building we were planning anyway? so the last day's task is to go to the power
+> station front door or something (via red arrow) and then the light immediately goes out or
+> after she walks far enough for the station to not be visible anymore. that means all traffic
+> lights will turn off, all windows with lights will turn dark, etc. we can go with that and see
+> how it feels. I'm still not convinced about the day 12 task. can we come up with something
+> better that fits the narrative?"
+
+11. **The target is the power station**, taken to see how it feels.
+12. **A power station building is guaranteed on every map.**
+13. **Day 14's task is to reach the power station's front door, by the red arrow.**
+14. **Then the lights go out** — at once, or once she has walked far enough that the station is
+    out of sight; which is open. Every traffic light turns off and every lit window goes dark,
+    "etc.".
+15. **Day 12's task is still not settled**: neither reaching the wall before the crew nor
+    tearing a marked wall convinces; something that fits the narrative better is asked for.
