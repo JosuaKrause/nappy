@@ -1827,8 +1827,17 @@ func flock_velocities() -> Array[Vector2]:
 var is_leaving := false
 var _leaving_for := 0.0
 
+## Set only by `leave_for_a_completed_task()`: true when `LEAVING_GIVES_UP` may not end this
+## instance while she could still be watching it. False for every ordinary departure, which
+## keeps `_leave()`'s old behaviour byte for byte — see that function and `LEAVING_GIVES_UP`'s
+## own doc for why an *ordinary* departure needs no such wait.
+var _leaving_must_clear_sight := false
+
 ## The most it may spend on the way out. A backstop rather than a timing: with no player to be out
-## of sight of — a headless rig, a streamed-out day — nothing else would ever end it.
+## of sight of — a headless rig, a streamed-out day — nothing else would ever end it. **Not a
+## backstop for a departure she is actually standing next to**: `leave_for_a_completed_task()`
+## sets `_leaving_must_clear_sight`, which keeps this clock from ending an instance she could
+## still be watching — see `_leave()`.
 const LEAVING_GIVES_UP := 6.0
 
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
@@ -1864,11 +1873,18 @@ func _be_done() -> void:
 ## `_be_done()`'s "something on a route carries on the way it was going": a paced fixture stopped
 ## mid-beat is heading in whichever direction its beat happened to be walking, which is toward her
 ## exactly as often as away.
+##
+## **And she is standing right next to him when it starts**, unlike everything else that leaves —
+## so `_leaving_must_clear_sight` keeps `LEAVING_GIVES_UP` from popping him out of existence
+## mid-screen at six seconds if she is still nearby; see `_leave()`.
 func leave_for_a_completed_task() -> void:
 	if is_finished or is_leaving:
 		return
 	_be_done()
-	if is_leaving and player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
+	if not is_leaving:
+		return
+	_leaving_must_clear_sight = true
+	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
 		_heading = (global_position - player_at).normalized()
 
 func _leave(delta: float) -> void:
@@ -1878,7 +1894,13 @@ func _leave(delta: float) -> void:
 	_path_travelled += step
 	var gone := player_at != Vector2.INF \
 			and global_position.distance_to(player_at) > Tuning.OUT_OF_SIGHT
-	if gone or _leaving_for >= LEAVING_GIVES_UP:
+	# `LEAVING_GIVES_UP` is a backstop for a departure nobody could be watching (a headless rig, a
+	# streamed-out day) — not for one she is standing next to. `_leaving_must_clear_sight` holds
+	# the clock off until she genuinely could not be watching: no player to be out of sight of, or
+	# already past `OUT_OF_SIGHT`. An ordinary departure never sets the flag, so this changes
+	# nothing about it.
+	var may_give_up := not _leaving_must_clear_sight or player_at == Vector2.INF or gone
+	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
 		_finish()
 
 func _advance_along_path(delta: float) -> void:

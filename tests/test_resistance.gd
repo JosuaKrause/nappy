@@ -44,7 +44,8 @@ func run(t) -> void:
 	_test_starting_a_day_resets_the_package_flag(t)
 	_test_completing_the_yeller_step_sends_only_its_rider_away(t)
 	_test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t)
-	_test_a_completed_tasks_rider_emits_nothing_and_walks_off(t)
+	_test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t)
+	_test_an_ordinary_departure_still_gives_up_at_six_seconds(t)
 	_test_a_lost_day_still_offers_the_yeller_step_on_retry(t)
 	_test_the_sabotage_silences_the_city(t)
 
@@ -1104,15 +1105,19 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t) ->
 						% ("second" if on_the_second_half else "first"))
 		instance.free()
 
-## Contribution stops the instant he leaves, and he walks rather than vanishing — the same
-## departure any finished event takes (`_leave()`), bounded by `EventInstance.LEAVING_GIVES_UP`
-## (6.0s) for a rig with nobody to be out of sight of.
-func _test_a_completed_tasks_rider_emits_nothing_and_walks_off(t) -> void:
+## Contribution stops the instant he leaves, and he walks rather than vanishing. He does **not**
+## pop out of existence mid-screen at `EventInstance.LEAVING_GIVES_UP` (6.0s) while she is still
+## standing right there watching — that backstop is for a departure nobody could be watching (a
+## headless rig, a streamed-out day), not for one that starts with her in reach. He only finishes
+## once he has actually walked far enough away.
+func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]))
 	t.add_child(instance)
 	instance.set_process(false)
+	# She stands still for the whole test — the case that used to pop him out of existence
+	# mid-screen at the backstop.
 	instance.set_player_at(Vector2(20.0, 0.0))
 	t.check(instance.current_intensity() > 0.0, "shouting, before the task is done")
 
@@ -1123,14 +1128,37 @@ func _test_a_completed_tasks_rider_emits_nothing_and_walks_off(t) -> void:
 
 	var before := instance.global_position
 	var before_distance := before.distance_to(instance.player_at)
-	instance._leave(2.0)
-	t.check(not instance.is_finished, "not gone yet, two seconds in")
-	t.check(instance.global_position.distance_to(before) > 50.0, "he is walking, not vanishing")
-	t.check(instance.global_position.distance_to(instance.player_at) > before_distance,
-			"and walking away from her, not toward her")
-
 	instance._leave(EventInstance.LEAVING_GIVES_UP)
-	t.check(instance.is_finished, "gone once out of sight, or the backstop runs out")
+	t.check(not instance.is_finished,
+			"still leaving past the backstop's own six seconds, since she is still watching")
+	t.close_to(instance.contribution_at(instance.global_position), 0.0,
+			"and still contributes nothing")
+	t.check(instance.global_position.distance_to(instance.player_at) > before_distance,
+			"farther away than when he started, not stalled")
+
+	# She still has not moved. At `departs_at` (60px/s) from 20px away, he clears
+	# `Tuning.OUT_OF_SIGHT` (420px) in well under ten more seconds.
+	instance._leave(10.0)
+	t.check(instance.is_finished, "gone once he is actually out of sight, not before")
+	instance.free()
+
+## `_leaving_must_clear_sight` is set only by `leave_for_a_completed_task()`. An ordinary
+## departure — `_be_done()` reached on its own, with nothing routing it through the resistance —
+## still gives up at the plain six-second backstop, watched or not: this changes nothing about it.
+func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
+	t.add_child(instance)
+	instance.set_process(false)
+	instance.set_player_at(Vector2(20.0, 0.0))
+
+	instance._be_done()
+	t.check(instance.is_leaving, "an ordinary departure starts leaving the same way")
+
+	instance._leave(EventInstance.LEAVING_GIVES_UP - 0.1)
+	t.check(not instance.is_finished, "not gone yet, just under six seconds in")
+	instance._leave(0.2)
+	t.check(instance.is_finished, "gone at the six-second backstop, watched or not")
 	instance.free()
 
 ## "A task is only complete if it is done on the day that won" — `GameState.finish_day()` gives
