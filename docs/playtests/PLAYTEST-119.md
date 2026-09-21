@@ -33,9 +33,16 @@ readable slogans and a single design for the whole run.
 > anything like that. but just walking past is also too simple. also, tearing a poster down
 > should have a small chance of a pursuer spawning"
 
+And a moment later:
+
+> "oh I also like the wanted notice -- different style of face, though -- and the darker and
+> more uniform ones. we can do all four of them"
+
 ## What is asked for, as statements
 
-1. **There are two kinds of poster: the leader's portrait and the rules.** The portrait is a
+1. **There are four kinds of poster: the leader's portrait, the rules, the darker uniform
+   sheets under one emblem, and the wanted notice**, whose faces are drawn in a different style
+   from the leader's. The portrait is a
    nondescript face and needs no name. *The orchestrator argued against a portrait · the player
    chose it.* The rules are the official notices as proposed, and "the rest of the narrative you
    spelled out is already good": the sheets escalate by act as described above.
