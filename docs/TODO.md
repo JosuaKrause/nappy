@@ -358,8 +358,9 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 - [ ] **Every other perform step gets its own visible answer**
       (`EventInstance.leave_for_a_completed_task()` is there for the ones that leave), decided with M181, the
-      resistance has a reason, and a task is one day, where the list of tasks is settled: the
-      van's drop, the roadblock, the poster wall, the crowd. Each is something that happens
+      resistance has a reason, and a task is one day, whose list of tasks is settled: the
+      van's drop, the burnt shell, the named door, the neighbor warned before the raid, the
+      loudspeaker mast, the poster wall and the roadblock. Each is something that happens
       where she is looking, and none is text.
 
 ---
@@ -417,6 +418,25 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       walls, and what they leave behind, read at walking distance as the city changing: size,
       contrast and how many, against the act's palette. A visual attempt comes back to the player early rather than polished.
 
+      **Why none is seen, read from that run's log and the row itself.** A crew is placed at
+      dawn anywhere in the city (`poster_crew` has the default `MAP` spawn mode, and the day's
+      corridor only weighs four to one against every other block), so of roughly ninety crews
+      placed over the run's seven days she came within a crew's 110px field once, at 59px, on
+      day 5, and within none of day 4's ten. A crew leaves nothing behind: the row has no
+      `scar_id`, never finishes (`duration` 0) and paints nothing on the wall, so the city
+      does not accumulate posters. The poster itself is a 9x13px sheet of paper held at head
+      height inside a 30x44 figure, about 18x26 on screen at the camera's 2x zoom, on a worker
+      drawn in the street's own olive-grey with no second frame. And it costs nothing to
+      pass (`docs/COSTS.md`: walking through nets -5.3, scenery on purpose), so the meter never
+      points at one either. Nothing can draw over it; buildings sit under the entity layer.
+
+      **The fix, in the order of what the log blames:** crews work on walls along the way she
+      walks, the way day 3's fire is sited (M179, the fire is on her way, guaranteed), rather
+      than anywhere; a wall a crew has worked keeps its posters for the rest of the run, drawn
+      on the building face and large enough to read at walking distance, so each day's walls
+      add to the last; and the crew is seen pasting. The row's cost stays what it is: making a
+      poster crew charge the meter is a change to what the row is for, and is the player's.
+
 ---
 
 ## M181 — The resistance has a reason, and a task is one day · asked for 2026-09-20
@@ -429,7 +449,8 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
 > "9-11 need some extra memorable content in addition to the tasks"
 
 [PLAYTEST-117](playtests/PLAYTEST-117.md) has the whole message, the orchestrator's opinion
-and the questions put back with their options. **Decided by the player; built after M179, the
+and the questions put back with their options; [PLAYTEST-118](playtests/PLAYTEST-118.md) has
+the answers on the calendar's order, the spare task and the walk home. **Decided by the player; built after M179, the
 fire is on her way, and M180, posters she notices, and loudspeakers that are somewhere**, since
 two of its tasks go to places those make. The mark's noticing rule is built (`DECISIONS.md`,
 M177, the second mark is any alley she comes across), and the mark is drawn as it always was.
@@ -450,7 +471,7 @@ M177, the second mark is any alley she comes across), and the mark is drawn as i
 - **The task is announced at the mark and nowhere else.** *"since the task will be immediately
   announced when touching the mark there is no need to mention tasks in the day brief ata ll"*.
   The day brief carries no task, no mark's words from yesterday and no reminder.
-- **Two kinds of task.** *Any instance* — the man shouting, the densest crowd — gets no
+- **Two kinds of task.** *Any instance* — the man shouting, a roadblock — gets no
   arrow. *One place* gets **the red arrow**, the home arrow's form in red, from the moment the
   mark is touched until the task is done. *No quest log or marker for the resistance ·
   overturned by the player for one-place tasks.*
@@ -465,25 +486,27 @@ M177, the second mark is any alley she comes across), and the mark is drawn as i
   front of her, a raid on her own street whose door is boarded the next morning, the market is
   gone, and a column on the main road.
 
-**The calendar, proposed by the orchestrator and the player's to reorder:**
+- **The walk home after a task is an ordinary return.** Getting home is the stake, since a
+  task counts only on a day she wins; the return leg has the patrols every return has.
+- **The densest crowd is the task with no day.** *The orchestrator proposed the roadblock band
+  as the spare · the player chose the densest crowd on 2026-09-20.* Nine tasks were on offer
+  for eight days.
+- **Day 9 is the doors and nothing else new, and the park is taken on day 12**, asked with
+  both on day 9, the doors on day 10 and the park on day 8 as the alternatives.
+
+**The calendar, decided by the player:**
 
 | Day | Task | What happens once |
 | --- | --- | --- |
 | 6 | A note for the man shouting — any of them | |
 | 7 | The package at a van's drop · arrow | |
 | 8 | Leave something at the burnt shell · arrow | |
-| 9 | Cross a named door · arrow | The doors arrive. A park is taken in front of her. |
+| 9 | Cross a named door · arrow | The doors arrive. |
 | 10 | Warn a neighbor before the raid · arrow, deadline | The raid on her own street. |
 | 11 | Silence a loudspeaker mast · arrow | The market is gone. |
-| 12 | The poster wall before the crew finishes · arrow, deadline | |
-| 13 | The middle of the densest crowd | A column on the main road. |
+| 12 | The poster wall before the crew finishes · arrow, deadline | A park is taken in front of her. |
+| 13 | Walk into a roadblock's band — any of them | A column on the main road. |
 | 14 | The sabotage | |
-
-That is nine tasks for eight days; the one left out is today's *walk into a roadblock's band*,
-the least distinct of them now that a named door is a toll paid on purpose. Day 9 carries the
-doors and the park together, which may be one morning too full; the park on day 9 and the doors
-on day 10 is the alternative. **Still the player's:** the calendar's order, which task is the
-spare, and whether the walk home after a task is an ordinary return or owes something.
 
 **The day brief says what happened, a draft for the player to rewrite.** *"use the freed up day
 brief text to further the narrative. write about what happened that day -- curfew announced
@@ -509,8 +532,8 @@ if the shape does:
 | 9 | They have closed the districts off from each other. There are huts at the crossings. |
 | 10 | The stores on the square are boarded up. |
 | 11 | A door down the hall was sealed in the night. The name is still on the bell. |
-| 12 | There is smoke over the rooftops, and trucks on the main road. |
-| 13 | The crowds are larger. Nobody is going home. |
+| 12 | They are fencing off the parks. |
+| 13 | There are army trucks on the main road. |
 | 14 | The last night. |
 
 The lines for days 8 to 13 follow the calendar above and move with it.
