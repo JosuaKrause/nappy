@@ -395,6 +395,15 @@ so a day 3 can pass without either.
       a fire again, sited from the walk she takes then ([PLAYTEST-119](playtests/PLAYTEST-119.md):
       "nothing that happened on the day that got retried can influence the next repeat"). The
       retry is otherwise the same day from the same state at its beginning, as every retry is.
+      **A day 3 she wins with no fire met still burns**
+      ([PLAYTEST-121](playtests/PLAYTEST-121.md): "I agree with the fire fix"): the row's only
+      day is day 3 and it is spent only when it enters the world, so a day on which every siting
+      was refused would leave the run with no fire, no scar and no shell for day 8's task to go
+      to. If it has not been sited by the end of the day it is lit then, off her path, on a site
+      the dawn rules accept — chosen by the same acceptance rules, so nothing is repaired — and
+      the shell stands on day 4. Meeting it stays the strong guarantee; the probe reports, of
+      the day 3s she wins, how many ended with the fire unmet. That a retry walked another way
+      meets it on another street is the plan ("days don't have memory on retries").
 - [ ] **Then the engine comes, and the fire is somewhere to get away from.** The engine arrives
       on sight of the fire, as built, along a street she can see it come down, **and stops
       at the fire**: in a windowed run on the branch the player saw that it "did not stop at
@@ -507,6 +516,8 @@ a task is one day, whose day 14 goes to this building's front door.
       footprint is accepted, never repaired afterwards. What it does to existing seeds and
       saves is measured and said. Which district it stands in is the orchestrator's and open
       to overturn: industrial, away from the home.
+      **It is a landmark she has passed since day 1**, stacks and lit windows, so the last
+      night's target is a place she knows ([PLAYTEST-121](playtests/PLAYTEST-121.md)).
 - [ ] **The blackout is everything at once.** After she has touched the front door, once she
       is a set distance from the station, every lit window goes dark, every traffic light goes
       off and every loudspeaker mast stops, in one frame. *The orchestrator recommended the
@@ -520,6 +531,13 @@ a task is one day, whose day 14 goes to this building's front door.
       a crosswalk with no light keeps it.
 - [ ] **The escape is in the dark too.** The hallways and the basement are gloomy, and the
       stairs have emergency lighting, "maybe … (red?)", the player's to judge on a picture.
+- [ ] **`docs/NARRATIVE.md` says what the last night is.** Its good ending has the
+      loudspeakers cutting out as the sabotage itself and the walk home after it as "the
+      easiest conditions in the game, and that is the reward". With this built the masts stop
+      because the power does, the ambient floor is still zero, and **neither the walk home nor
+      the escape is easy** ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be
+      easy!"). The "Good" ending, Act IV's day 14 and tone rule 3's "the reward is quiet" are
+      rewritten with the build, and `docs/MECHANICS.md`'s account of the good ending with them.
 
 ---
 
@@ -592,27 +610,46 @@ M177, the second mark is any alley she comes across), and the mark is drawn as i
 **What the tasks are for. Never said in the game; written into `docs/NARRATIVE.md` with the
 build so the story stays consistent** ([PLAYTEST-119](playtests/PLAYTEST-119.md): "those
 things need to never explicitly spelled out in the game but it needs to be spelled out in our
-narrative"). A resistance group is forming and recruiting like-minded people by chalk, because
-nothing spoken or sent is safe. It wants her because nobody stops a woman pushing a crying
-baby, she is out every day anyway, and a stroller hides things. Everything leads to one night:
-she cuts the city's power, the blackout is the signal the uprising waits for, the regime
-answers by bombing its own city, and the escape is her getting out from under it.
+narrative"; the story below is [PLAYTEST-121](playtests/PLAYTEST-121.md)'s, *proposed by the
+orchestrator · agreed by the player on 2026-09-21*). A resistance group is forming and
+recruiting like-minded people by chalk, because nothing spoken or sent is safe. **It wants her
+because the neighbor down the hall works at the power station**: the group cannot approach a
+watched worker, and a parent in the same building who is out every day with a stroller can.
+Everything leads to one night: the city's power is cut, the blackout is the signal the uprising
+waits for, since it reaches everybody at once with nothing spoken or sent, the regime answers
+the uprising by bombing its own city, and the escape is her getting out from under it.
 
-| Day | Task | What it accomplishes |
-| --- | --- | --- |
-| 6 | The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. |
-| 7 | The package at the van's drop | The driver is a sympathizer. The package is the cutters and charges for the switch room, and the stroller carries it past everybody. |
-| 8 | The burnt shell | She leaves the package there: a cordoned ruin is where nobody goes, so it is the group's hiding place. Whether day 3's fire was an accident is never answered. |
-| 9 | Cross a named door | The station is in another district, and the doors are new that morning. She proves which crossing lets a mother through; that door is the last night's way. |
-| 10 | Warn a neighbor before the raid | The neighbor works at the station and knows the switch room, which is why the vans come. The door is boarded the next morning and nobody was home. |
-| 11 | Silence a mast | The rehearsal: a mast's feed can be cut by hand, and nobody comes. |
-| 12 | The swing | Before running, the neighbor hid the switch room's key at the swing. She gets it out as the park is taken. |
-| 13 | Into a roadblock's band | The last piece goes through the checkpoint in the stroller, because nobody searches a screaming baby. The column on the main road is the army arriving because it expects something. |
-| 14 | The station's front door | The switch room. Blackout, uprising, bombing, escape. |
+Four things hold across every row. **It is the same story for the mother and the father**
+("the story needs to make sense for both the woman and man"): no row rests on which parent she
+is. **Nothing in the stroller is dangerous to lie next to** (`docs/NARRATIVE.md`, tone rule 2:
+the baby is never in narrative danger from the regime directly); what she carries is damning to
+be caught with and harmless beside the baby. **She is never told the plan**: each errand is
+small and deniable, and she learns what they were for when the windows go dark. And **nothing
+before day 14 rests on her alone**: the group has other couriers, and a task she skips is done
+by somebody else at a higher cost, which is why five of eight is enough. Day 14 has to be her,
+because under curfew with the army on the streets only a parent with a crying baby reaches that
+door. *More mandatory tasks, offered by the player on 2026-09-21 ("we can also make more tasks
+mandatory if it makes more sense") · not taken, since no row needs it.*
 
-The player has agreed the target, day 12 and the blackout; the rows for days 6 to 11 and 13
-were proposed by the orchestrator in the same conversation and not objected to, and are the
-player's to rewrite.
+| Day | Task | What it accomplishes | If she skips it |
+| --- | --- | --- | --- |
+| 6 | The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she reaches is him ("which one exactly is determined by how the player plays"). | The group asks again. |
+| 7 | The package at the van's drop | From the group to the neighbor. The driver is a sympathizer; the package is tools and a lamp. She carries it home, which is where the neighbor lives. | Somebody else risks the building. |
+| 8 | The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A cordoned ruin is where nobody goes, so it is the dead drop. Whether day 3's fire was an accident is never answered. | The drawing goes out another way. |
+| 9 | Cross a named door | The districts closed that morning and the station is across one. She finds out whether a stroller gets through. | Somebody else finds out. |
+| 10 | Warn the neighbor before the raid | The regime has found the worker. Warned, the neighbor runs; not warned, the neighbor is taken. The door is sealed the next morning either way, and the drawing already left on day 8. | The same sealed door, for the worse reason. |
+| 11 | Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | The group goes in not knowing. |
+| 12 | The swing | Feeling watched, the neighbor hid the station key at the swing before the raid, so it is there whether or not she warned them. She gets it out as the park is taken. | Another courier fetches it. |
+| 13 | Into a roadblock's band | The army arrived that morning, which is the column on the main road. She finds out whether soldiers search a stroller, because the last night rests on it; they do not search a screaming baby, so the cost of the task is its cover. | The last night is a guess. |
+| 14 | The station's front door | A hand-over: she passes the key to the neighbor's colleague on the night shift and walks away. The minutes he needs are why the lights go out once she is at a distance. Blackout, uprising, bombing, escape. | The neutral ending. |
+
+The tasks escalate: trust, carry, carry back, scout, protect, rehearse, retrieve, scout again,
+act. **Open, read by the orchestrator and not put to the player:** the neighbor lives in her
+building, so day 10's red arrow cannot point at their door; it points at the neighbor out in
+the city, and the deadline is the neighbor walking home into the vans. **And day 12's morning
+line gives away what the day shows her** (the review of this entry): "They are fencing off the
+parks" is read before she leaves, and the park taken in front of her is that day's once-only
+happening; every other line from day 8 on reports the night before.
 
 **The calendar, decided by the player:**
 
@@ -1250,10 +1287,12 @@ asked and each answered by the player on 2026-09-09:**
 1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
    the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
    step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
-   `sabotage_done`), and its reward is mechanical quiet: every `city_wide` source is silenced and
-   she walks home on the easiest ground in the run. That stands. The quiet walk home is the breath
-   before the climax; the hallway scene follows it the same night, and the trucks and the masked
-   men are the regime's answer to what she did. *"No triumphalism"* still governs what is shown
+   `sabotage_done`), and what it changes is mechanical quiet: every `city_wide` source is
+   silenced. **Neither the walk home after it nor the escape is easy**
+   ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be easy!"): M183, the power
+   station and the blackout, takes the traffic lights with the power, so the roads are harder
+   that night on purpose. The hallway scene follows the same night, and the trucks and the
+   masked men are the regime's answer to what she did. *"No triumphalism"* still governs what is shown
    after the tunnel.
 2. **Losing the finale restarts the section, at no Nerve cost.** *("sounds good at that point you
    earned it.")* A day lost costs one Nerve and the day is over; the finale has no next day, and
