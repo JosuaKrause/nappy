@@ -385,7 +385,9 @@ so a day 3 can pass without either.
       ahead are the orchestrator's and open to overturn. The scar it leaves is wherever it
       burned, for the rest of the run.
 - [ ] **Then the engine comes, and the fire is somewhere to get away from.** The engine arrives
-      on sight of the fire, as built, along a street she can see it come down. The fairness
+      on sight of the fire, as built, along a street she can see it come down, **and stops
+      at the fire**: in a windowed run on the branch the player saw that it "did not stop at
+      the fire" ([PLAYTEST-119](playtests/PLAYTEST-119.md)). The fairness
       contract for a siting she did not choose (the **events** skill) holds: she can always
       walk out of it from where she first sees it.
 
@@ -447,7 +449,17 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       nobody explains the politics). A poster takes up about 60 to 80% of a tile, "big enough
       to be recognizable as posters". They are on walls from the first day poster crews appear,
       day 4, and **some are already up that first morning**; they are **sparse at first and
-      denser towards the end of the run**, each day's walls adding to the last. SVG first, as
+      denser towards the end of the run**, each day's walls adding to the last. The
+      progression, proposed by the orchestrator from the acts and the player's to move:
+
+      | From | New on the walls | How much |
+      | --- | --- | --- |
+      | Day 4 | The rules and the leader's portrait, some already up that morning | Sparse: a wall here and there, one or two sheets on it |
+      | Day 6 | The curfew sheet with its clock face, among the rules | A few more walls |
+      | Day 8, act III | The dark uniform sheets under the emblem, pasted over the older ones | Whole walls, edge to edge, on the streets she uses most |
+      | Day 12, act IV | The wanted notice | Dense: most walls on a main street carry something; the portrait is everywhere |
+
+      A kind that has arrived stays in the mix; nothing is taken down except by her. SVG first, as
       every picture here is, and the first drawn wall comes back to the player as pictures in
       the pull request before anything is polished.
 - [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
@@ -487,9 +499,11 @@ a task is one day, whose day 14 goes to this building's front door.
       touch of the door, rolling outward · the player chose distance and all at once on
       2026-09-20*: a rolling blackout cannot be seen from the street, and the moment is "very
       visible and linked to her action". The distance is the orchestrator's and open to
-      overturn: far enough that the station is off screen. What a dead traffic light means for
-      cars and crosswalks answers to the **crowd-traffic** rules' fairness contract for a
-      lethal road.
+      overturn: far enough that the station is off screen. **Dead traffic lights are part
+      of the challenge of coming home after the sabotage** (the player, 2026-09-20): the roads
+      are harder that night on purpose. What stays owed is the **crowd-traffic** rules'
+      fairness contract for a lethal road — a car she can see coming — and the brief says how
+      a crosswalk with no light keeps it.
 - [ ] **The escape is in the dark too.** The hallways and the basement are gloomy, and the
       stairs have emergency lighting, "maybe … (red?)", the player's to judge on a picture.
 

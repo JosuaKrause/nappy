@@ -133,3 +133,20 @@ has been settling the baby in all run" before it is fenced.
     settling the baby in. The park she is sent to is forced open that day. **Once she has
     reached the swing the park starts to close**, which sends her to another park to settle the
     baby. A swing because there is no bench picture.
+
+## On the summary of what was written down
+
+> ""There are four poster kinds," -- did you also specify the progression of types of posters?
+> "One thing to flag: a dead traffic light changes what is fair on a lethal road." yes that is
+> part of the challenge of coming home after the sabotage. is the fire agent done? I saw a
+> playtest from it and the fire engine did not stop at the fire. let's push all the notes etal
+> to the pr but no merge yet."
+
+19. **The kinds of poster arrive in a stated progression**, which the entry owes as a table
+    rather than a sentence.
+20. **Dead traffic lights are part of the challenge of coming home after the sabotage.** The
+    roads are harder on purpose that night.
+21. **The fire engine did not stop at the fire**, in a windowed run the M179 agent started on
+    the player's screen. Passed to that agent as a finding against M179, the fire is on her
+    way, guaranteed.
+22. **The notes are pushed to the pull request and nothing merges yet.**
