@@ -384,7 +384,10 @@ unless an item says otherwise.
       emit 6 a second and a `roadblock` 13 out to 86px, and a door is several of them a tile
       apart with a patrol beside it: three roadblocks and a patrol put 54 a second on her at
       the moment a gate let her out. Each emits less, so that a door with its usual company
-      is a price and not a loss. Which rows "guard posts" covers — the hut, the post and the
+      is a price and not a loss. The hut, the post, the gate and the roadblock already charge
+      as one source, the strongest of them where they overlap (`DECISIONS.md`, M178, a gate lets
+      her out alive), so what is left to move is that one source's own rate. Which rows "guard
+      posts" covers — the hut, the post and the
       roadblock — is the orchestrator's reading and open to overturn.
 
 ---
@@ -400,51 +403,11 @@ comes across). What is open is the other half: a perform step shows nothing at a
 - [ ] **The man shouting, handed the note, stops shouting and walks off screen.** The
       look-alike she reached goes quiet and leaves the way a finished event leaves
       (`EventInstance`'s own departure: no field while leaving, gone once out of sight), away
-      from her, at a walk. The other men shouting carry on. Built after M178, a gate lets her
-      out alive, which is editing the same event code.
+      from her, at a walk. The other men shouting carry on.
 - [ ] **Every other perform step gets its own visible answer**, decided with M181, the
       resistance has a reason, and a task is one day, where the list of tasks is settled: the
       van's drop, the roadblock, the poster wall, the crowd. Each is something that happens
       where she is looking, and none is text.
-
----
-
-## M178 — A gate lets her out alive, and where she comes out · asked for 2026-09-20
-
-> "the gate checks were placed in a way that I would basically immediately die after crossing
-> them" · "when I reappear I briefly spawn at my old location before teleporting to the new
-> location. I should directly spawn at the new location"
-
-[PLAYTEST-116](playtests/PLAYTEST-116.md): taken in with the meter at 10, let out two seconds
-later at 72 beside three roadblocks and a patrol, crying 0.4 seconds after that; four of day
-7's five losses came within two seconds of a release.
-
-- [ ] **The hold charges its toll and nothing else.** While she is inside a door the fields
-      around it keep landing on the meter and she earns no decay, so a two-second hold cost
-      62 points where `Tuning.CHAT_EXCITEMENT` says 25. *"It works in both directions with
-      the same cost each time"* is the recorded rule: the hold is the toll.
-- [ ] **Events keep a gap around a gate.** *"there should be a gap for events immediately
-      surrounding the gates"*: no event is placed within a clear distance of a door's
-      structures, on either side, and a mover's beat does not run through it — the patrol and
-      the dog walker that finished two of day 7's attempts were both inside it. The distance is
-      at least what she needs to walk out of the door's own fields and see what is next; the
-      number is the orchestrator's and open to overturn.
-- [ ] **Two gates next to each other do not add up.** *"since two gates can be adjacent to
-      each other their influence shouldn't add up"*: the structures of a door, and of doors
-      standing together, charge the meter as one source — the strongest of them where their
-      fields overlap, not their sum. Three roadblocks at 13 a second each read 39 to her today.
-      The case the player names: *"going into a hut at a corder with two huts double counts
-      the influence"* — at a corner where two doors meet, being held in one hut is charged
-      by both.
-- [ ] **The ground she is let out onto is checked before the door is accepted.** A door whose
-      far side puts her inside fields that fill the meter from the toll's level before she can
-      walk out of them is not placed, or the things that make it so are not placed beside it
-      — checked at placement, never repaired afterwards, as every closure and event is. Both
-      sides, since a door works in both directions. M176's quieter guard posts are the other
-      half of this and neither replaces the other.
-- [ ] **She reappears where she is let out.** She is hidden when she goes in, moved while
-      hidden, and shown at the release point; no frame draws her at the place she went in
-      after the camera has left it. The evidence is a burst, not a still.
 
 ---
 

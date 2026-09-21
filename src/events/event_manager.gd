@@ -198,8 +198,17 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street").
 	var seals := SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary,
 			_map.held_segments)
+	# Where today's doors stand, before a single candidate is rolled. `build_day` keeps
+	# `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around each of them — the ground she is let out
+	# onto, on either side — by refusing a candidate whose field or beat reaches inside it, which is
+	# the same "checked before it is accepted, never repaired afterwards" every closure is placed
+	# under. The wall's own bodies are deliberately not in this list: a wall is structure and stands
+	# where the boundary is.
+	var doors := PackedVector2Array()
+	for body in region_plan.door_bodies:
+		doors.append(body.position)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
-			GameState.settled_this_act(), tree, GameState.resistance_progress)
+			GameState.settled_this_act(), tree, GameState.resistance_progress, doors)
 	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -542,13 +551,89 @@ func instances() -> Array[EventInstance]:
 ## every instance whose contribution here is actually positive. `city_wide` sources are included —
 ## they are part of what reaches the meter even though `ExcitementHalo.select_sources()` excludes
 ## them from the halo itself, which has no position to draw one around.
+##
+## **Inside a door, the door's toll is the only thing that charges.** `door_holding_her_at()` below
+## says whether this point is inside a running region-door hold; while it is, the hold's own flat
+## `Tuning.CHAT_EXCITEMENT` rate is the whole of the answer and every other field in the city is
+## off. See that function for why that is a fact about where she is rather than a special case.
+##
+## **And the region boundary's own structures charge as one source rather than as their sum** —
+## *"since two gates can be adjacent to each other their influence shouldn't add up"*. Every
+## instance whose def carries `EventDef.barrier_structure` is a piece of a street being held, and
+## the strongest of them here is the one that lands; the rest contribute nothing and are not in the
+## returned pairs at all, so `Baby._update_excitement()` attributes what actually reaches the bar to
+## the structure that was the maximum and `ExcitementHalo`'s colour follows it by construction.
+## Everything else in the catalogue still sums, which is the contract the density is built on.
 func excitement_sources_at(world_position: Vector2) -> Array:
+	var inside := door_holding_her_at(world_position)
+	if inside:
+		return [[inside, inside.contribution_at(world_position)]]
 	var sources: Array = []
+	# Ties keep the first of `_instances`, which is the order the day streamed them in — a stable,
+	# seed-determined answer rather than one that depends on floating-point luck.
+	var strongest: EventInstance = null
+	var strongest_rate := 0.0
 	for instance in _instances:
 		var contribution := instance.contribution_at(world_position)
-		if contribution > 0.0:
-			sources.append([instance, contribution])
+		if contribution <= 0.0:
+			continue
+		if instance.def.barrier_structure:
+			if contribution > strongest_rate:
+				strongest_rate = contribution
+				strongest = instance
+			continue
+		sources.append([instance, contribution])
+	if strongest:
+		sources.append([strongest, strongest_rate])
 	return sources
+
+## The one barrier structure that lands at `world_position` — the strongest of them, the same
+## answer `excitement_sources_at()` keeps — or `null` when none reaches. Used once a frame by
+## `_tell_them_where_she_is()` to tell the others they are outranked, so the caret and the halo
+## agree with the meter about which body is charging her. See
+## `EventInstance.outranked_by_a_stronger_barrier`.
+func _strongest_barrier_at(world_position: Vector2) -> EventInstance:
+	var strongest: EventInstance = null
+	var strongest_rate := 0.0
+	for instance in _instances:
+		if not instance.def.barrier_structure:
+			continue
+		var contribution := instance.contribution_at(world_position)
+		if contribution > strongest_rate:
+			strongest_rate = contribution
+			strongest = instance
+	return strongest
+
+## The region door whose hold is running right now and whose own trigger circle `world_position`
+## lies inside, or `null` when this point is not inside a door. `City.excitement_sources_at()` asks
+## it too, for the crowd half of the same sum.
+##
+## **She is *inside the hut*, so the street does not reach her.** A hold is the one state in the
+## game where she is not standing on the ground the meter is being asked about: she is hidden, the
+## camera has left her, and the two seconds are a toll rather than a place —
+## *"it works in both directions with the same cost each time"* is the recorded rule, and fields
+## that keep charging through the hold make the same crossing cost whatever happens to stand beside
+## that particular door. `Tuning.EXCITEMENT_DECAY_IDLE` is already zero, so nothing gives back
+## either: with everything else silenced the hold is exactly `Tuning.CHAT_EXCITEMENT` and nothing
+## more.
+##
+## **Stated over the point rather than over "a hold is running", so the query stays pure.** The
+## ground a street away is not inside the hut and is answered for normally, which is what the
+## telemetry, the debug fields layer and a probe sampling the map all want; she is inside the
+## circle by construction for the whole hold, since the release only ever sets her down inside the
+## same trigger.
+##
+## **`redetains` rather than every detainer**, which is what keeps `chatting_mother` out of it: her
+## conversation happens on the pavement in plain sight, with her own picture, the player's and the
+## street all still drawn, so a lorry reversing beside the two of them is part of what that
+## conversation costs. A door is the opposite — she goes in.
+func door_holding_her_at(world_position: Vector2) -> EventInstance:
+	for instance in _instances:
+		if not instance.def.redetains or not instance.is_chatting():
+			continue
+		if instance.global_position.distance_to(world_position) <= instance.def.detain_distance():
+			return instance
+	return null
 
 func total_excitement_at(world_position: Vector2) -> float:
 	var total := 0.0
@@ -845,14 +930,22 @@ func _successor_of(instance: EventInstance) -> EventInstance:
 ## `run_excess_ratio`, so reading it off the untyped field is a per-frame runtime error that aborts
 ## this whole callback and stops the day dead — and `check.sh` cannot see it, because nothing is
 ## wrong until it runs.
+## **The third fact is which barrier structure is the one charging her**, and it is handed over
+## here because this is already the once-a-frame visit to every instance that knows where she is.
+## `excitement_sources_at()` keeps only the strongest of the boundary kit, so a caret or a halo
+## rim on one of the others would be promising a cost the meter is not taking — see
+## `EventInstance.outranked_by_a_stronger_barrier`.
 func _tell_them_where_she_is() -> void:
 	var stroller := _player as Stroller
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
 	var awake: bool = stroller == null or stroller.baby_is_awake()
+	var strongest := _strongest_barrier_at(_player.global_position)
 	for instance in _instances:
 		instance.player_at = _player.global_position
 		instance.player_running = running
 		instance.baby_awake = awake
+		instance.outranked_by_a_stronger_barrier = \
+				instance.def.barrier_structure and instance != strongest
 
 ## Coming within `EventDef.detain_distance()` of an instance that has not yet chatted locks her
 ## controls for `detain_seconds` — the one mechanic in the catalogue that takes them away rather
@@ -968,6 +1061,15 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		var across := offset - axis * along
 		var released_at := instance.global_position + axis * released_along + across
 		body.teleport_to(released_at)
+		# **Moved, then shown, in that order and in this one frame.** `teleport_to()` has just put
+		# her down and reset her interpolation, so the first frame drawn after this call draws her
+		# at the door she is coming out of and nowhere else. The un-hide cannot live on the
+		# instance's own clock — that runs in `_process`, a drawn frame, and every frame between it
+		# and the next physics tick drew her standing at the place she went in. The camera comes
+		# back here for the same reason: its ease home then starts from the hut toward where she
+		# actually is rather than toward where she was caught.
+		body.show_after_inspection()
+		body.release_camera_focus()
 		_latch_everything_she_was_let_out_into(released_at)
 		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
 			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),

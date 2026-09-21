@@ -21,6 +21,15 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Go through a region door, both ways, on day 7 or later** (`--day 7`; the doors are the huts
+  and gates in the region walls). The hold costs 25 points and nothing else lands while she is
+  inside; nothing is placed within 176px of a door, and the hut, the post, the gate and the
+  roadblocks beside them charge as one source, the strongest of them. **Is a crossing still a
+  price worth thinking about, or is it cheap now?** At a corner where two doors meet, **is it one
+  toll?** One red rim shows on the barrier that is charging her rather than one on each: **does
+  that read?** And when she comes out, **is she ever drawn, even for a moment, at the place she
+  went in?** Record is `DECISIONS.md`, M178, a gate lets her out alive.
+
 - **Find a chalk mark on a day that has one, and touch it** (day 4 onward; the mark is in an
   alley near wherever she walks). It stays
   put once she has been within 150px of it, on screen, for a second, and until then it moves

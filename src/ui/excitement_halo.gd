@@ -121,16 +121,24 @@ const WINDOW := Tuning.EXPECTED_IMPACT_HORIZON
 ## EVENTS.md`'s vocabulary already has its answer for that source: a HUD line, "for a `city_wide`
 ## source, which has no position and therefore nothing to stand under."
 ##
+## **A barrier structure the meter is not charging her for is excluded on the same line.** The
+## region boundary's own pieces — a door's hut, boom and post, and the `roadblock` a wall stands as
+## — charge as one source, the strongest at her position, so the others land nothing and a rim on
+## one of them would be a cue marking a thing that is costing her nothing while its neighbour reads
+## red. `EventManager` writes `outranked_by_a_stronger_barrier` once a frame; see there.
+##
 ## **The one place the duck type is peeked under.** `city_wide` is an event-only concept — a
 ## crowd body has no def and is never asked for it — so it is read only after `source is
-## EventInstance` says the object in hand actually is one.
+## EventInstance` says the object in hand actually is one, and the same guard covers the barrier
+## question beside it.
 ##
 ## Pulled out as a static function so a test can hold the selection, the floor and the drop order
 ## without a scene, a shader or a viewport — the same reason `DangerEdge.announces()` is static.
 static func select_sources(candidates: Array, at: Vector2) -> Array:
 	var ranked: Array = []
 	for source in candidates:
-		if source is EventInstance and source.def.city_wide:
+		if source is EventInstance \
+				and (source.def.city_wide or source.outranked_by_a_stronger_barrier):
 			continue
 		var contribution: float = source.contribution_at(at)
 		if contribution > CONTRIBUTION_FLOOR:

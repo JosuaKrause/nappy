@@ -1,0 +1,113 @@
+nappy rig log  2026-09-20T19:43:47  version v0.15.0-7-g8a261da2-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.1 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.6 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 1.4 ms, 240 x 338
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 0.7 ms, 454 x 358
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.7 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.8 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.9 ms, 190 x 218
+   0.0  texture  atlas page 'events' loaded in the startup: 7.6 ms, 582 x 936
+   0.0  texture  atlas page 'father' loaded in the startup: 1.5 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 22.7 ms
+
+day 7  act 2  run seed 2609743060  city seed 2609743060  length 144.0s  invincible
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 21.9 ms
+   0.0  plan     regions: 35 boundary, 24 wall, 11 door, calm by region: [1, 1, 1, 0]
+   0.0  contact  step 1 on offer at (26,36)
+   0.0  roll     chalk mark guarded: robber 164px away (band 66-176)
+   0.0  plan     closed: fallen tree v(9,5), cordoned off h(3,6)
+   0.0  plan     calm: 1 park, 1 quiet_square, 2 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burnt_out_car x68, burst_water_main x12, busker x6, cafe_tables x47, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, collapsed_frontage x19, construction x40, cyclist x8, delivery_van x32, dog_walker x16, homeless_yeller x8, ice_cream_van x5, leaf_blower x22, loose_dog x10, market_stall x27, moving_van x34, pigeon_flock, playground, police_patrol x12, poster_crew x11, reversing_lorry x6, roadblock x84, scaffolding x14, skip x13
+   0.0  start    doorstep (48,44), facing 180°
+   0.0  contact  step 1 moved to (41,37): never seen at (26,36)
+   0.0  roll     chalk mark guarded: robber 82px away (band 66-176)
+   0.0  near     roadblock (telegraph) at (48,39), 176px, exc 0, in 0.0/s (crowd 5.4, events 0.9), sleep 0
+   0.0  near     checkpoint_hut (telegraph) at (48,43), 48px, exc 0, in 0.0/s (crowd 5.4, events 0.9), sleep 0
+   0.0  near     checkpoint_gate (telegraph) at (48,45), 16px, exc 0, in 0.0/s (crowd 5.4, events 0.9), sleep 0
+   0.0  near     checkpoint_hut (telegraph) at (48,47), 80px, exc 0, in 0.0/s (crowd 5.4, events 0.9), sleep 0
+   0.0  chat     checkpoint_hut at (48,43), 2.0s, baby awake, meter +25
+   0.0  contact  step 1 seen at (41,37)
+   0.0  frame    fps 39, worst frame 245.9ms, draws 600, objects 2748, primitives 6693, process 23.53ms, physics 2.66ms
+   0.0  shot     burst started: asked for an animation burst at (47,43) | exc 0, sleep 0 | playing | asked/burst-4152123-001
+   0.0  frame    fps 36, worst frame 66.3ms, draws 600, objects 2730, primitives 6660, process 66.31ms, physics 2.44ms
+   0.0  crowd    walked into somebody at (47,43) | exc 0, in 0.0/s (crowd 22.2, events 12.5), sleep 0
+   0.0  checkpoint checkpoint_hut at (48,43), 2.0s, released on the east side
+   0.0  crowd    a car sounded its horn at her in the road at (50,44) | exc 0, in 0.0/s (crowd 44.4, events 6.0), sleep 0
+   0.0  cross    stepped into the road at (50,44), mid-block
+   0.0  cue      the mark over her head: soon for 0.0s (0.3s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cue      the mark over her head: soon for 0.0s (0.2s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  frame    fps 30, worst frame 78.4ms, draws 586, objects 2621, primitives 6235, process 76.24ms, physics 2.63ms
+   0.0  cue      the mark over her head: soon for 0.0s (0.1s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cue      the mark over her head: soon for 0.0s (0.2s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  frame    fps 31, worst frame 64.4ms, draws 590, objects 2627, primitives 6295, process 63.76ms, physics 2.42ms
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  frame    fps 77, worst frame 26.5ms, draws 594, objects 2633, primitives 6358, process 64.42ms, physics 2.38ms
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  frame    fps 97, worst frame 26.3ms, draws 606, objects 2645, primitives 6526, process 24.25ms, physics 2.42ms
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  frame    fps 83, worst frame 26.3ms, draws 601, objects 2615, primitives 6418, process 24.08ms, physics 2.39ms
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block
+   0.0  cross    stepped into the road at (49,44), mid-block

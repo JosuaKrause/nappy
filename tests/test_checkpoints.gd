@@ -23,7 +23,14 @@ func run(t) -> void:
 	_test_the_boom_bars_the_carriageway(t)
 	_test_the_three_rows_validate_and_are_never_rolled(t)
 	_test_the_manager_actually_places_the_door_structure(t)
+	_test_nothing_the_day_places_reaches_into_a_doors_gap(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
+	_test_the_hold_charges_only_its_toll(t)
+	_test_a_boundarys_structures_charge_as_one(t)
+	_test_a_corner_of_two_doors_is_one_toll(t)
+	_test_she_is_never_drawn_at_the_place_she_went_in(t)
+	_test_the_ground_she_is_let_out_onto_is_survivable(t)
+	_test_the_run_that_killed_her_five_times(t)
 	_test_a_stroller_stopped_against_the_hut_is_detained(t)
 	_test_she_and_the_guard_are_gone_during_the_hold(t)
 	_test_the_whole_hold_reads_as_one_move(t)
@@ -334,6 +341,83 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 
 	city.free()
 
+## **Nothing the day places reaches into a door's own clear ground** — *(2026-09-20, the player:
+## "there should be a gap for events immediately surrounding the gates".)* Asked of the rule
+## itself, `EventScheduler.clear_of_the_doors()`, over a whole planned day rather than over one
+## contrived placement: the ways a row gets onto the map are several (the fill, a scripted row, a
+## set piece and its fallback) and a check on one of them would say nothing about the rest.
+##
+## **And the same day planned with no doors is what says the sweep is not vacuous**, and what
+## measures the price of the rule at the same time. The second call is the identical call with the
+## argument empty, off the same seed and the same tree, so the only thing that differs between the
+## two plans is which candidates were refused. The assertion on the cost is a relationship rather
+## than a count: refusing this ground has to stay something a day absorbs by putting the row
+## somewhere else, never something that empties it.
+func _test_nothing_the_day_places_reaches_into_a_doors_gap(t) -> void:
+	var days: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, Tuning.REGION_WALL_FIRST_DAY + 4]
+	var kept := 0
+	var loose := 0
+	var found_a_door := false
+	for map: CityMap in _maps.slice(0, 2):
+		for day in days:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var doors := PackedVector2Array()
+			for body in RegionPlanner.plan_day(map, day, tree).door_bodies:
+				doors.append(body.position)
+			if doors.is_empty():
+				continue
+			found_a_door = true
+			var guarded := _planned_day(map, day, tree, doors)
+			var ungraded := _planned_day(map, day, tree, PackedVector2Array())
+			kept += _placed_count(guarded)
+			loose += _placed_count(ungraded)
+			var inside := 0
+			for plan in guarded:
+				if not plan.is_placed():
+					continue
+				if not EventScheduler.clear_of_the_doors(plan.position, plan.path, doors,
+						plan.def.field_reach()):
+					inside += 1
+			var inside_before := 0
+			for plan in ungraded:
+				if not plan.is_placed():
+					continue
+				if not EventScheduler.clear_of_the_doors(plan.position, plan.path, doors,
+						plan.def.field_reach()):
+					inside_before += 1
+			t.check(inside == 0,
+					"seed %d day %d: nothing the day placed reaches inside a door's %.0fpx gap "
+					% [map.seed_used, day, Tuning.CHECKPOINT_EVENT_GAP] + "(%d of %d)"
+					% [inside, _placed_count(guarded)])
+			t.check(inside_before > 0,
+					("seed %d day %d: and the same day planned without the gap puts %d there — " +
+					"otherwise this sweep is checking nothing")
+					% [map.seed_used, day, inside_before])
+	t.check(found_a_door, "the sampled days actually carry doors to keep clear of")
+	t.check(kept >= int(round(0.9 * float(loose))),
+			("the gap costs the day almost nothing: %d placed with it against %d without, and a " +
+			"refusal that emptied a day would be a density change rather than a spacing rule")
+			% [kept, loose])
+
+## One day's catalogue placements against `doors`, with a rig's empty run history — the same call
+## `EventManager.start_day()` makes, minus the scars and settled calm a real run carries.
+func _planned_day(map: CityMap, day: int, tree: RouteTree,
+		doors: PackedVector2Array) -> Array[EventScheduler.Planned]:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("checkpoint-gap:%d:%d" % [map.seed_used, day])
+	var consumed: Array[String] = []
+	var scars: Array[Dictionary] = []
+	var used_calm: Array[Vector2i] = []
+	return EventScheduler.build_day(day, rng, map, consumed, scars, used_calm, tree, 0, doors)
+
+func _placed_count(plans: Array[EventScheduler.Planned]) -> int:
+	var total := 0
+	for plan in plans:
+		if plan.is_placed():
+			total += 1
+	return total
+
 # ------------------------------------------------------------------- the detention ---
 # A manager with nothing in it but the map arithmetic `_check_detentions()`'s own telemetry line
 # needs, the same shape `tests/test_events.gd`'s own `_chat_manager()` is built. The stroller is
@@ -440,6 +524,467 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	hut.free()
 	stroller.free()
 	manager.free()
+
+## A `WorldContext` answering out of one `EventManager`, so a real `Baby` can be driven against the
+## same sum the game's own `City` builds — `Baby._ready()` finds it by the `world` group, which
+## `WorldContext._ready()` puts it in.
+##
+## **It forwards `excitement_sources_at()` rather than reimplementing it**, which is the whole
+## point: the rule under test (a hold silences everything else) lives in that function, and a rig
+## that summed the instances itself would pass whatever the game did.
+class _DoorWorld extends WorldContext:
+	var manager: EventManager
+	func excitement_sources_at(world_position: Vector2) -> Array:
+		return manager.excitement_sources_at(world_position)
+	func total_excitement_at(world_position: Vector2) -> float:
+		return manager.total_excitement_at(world_position)
+
+## **The hold charges its toll and nothing else.** She is inside the hut for those two seconds, not
+## on the pavement, so a door standing beside a loud field has to cost exactly what a door standing
+## on a quiet street costs — *"it works in both directions with the same cost each time"*. A
+## `roadblock` is parked across the corner at its full 13/s to make the rig mean something: with the
+## fields left running through the hold, that alone is another 26 points on a 25-point toll.
+func _test_the_hold_charges_only_its_toll(t) -> void:
+	var world := _DoorWorld.new()
+	t.add_child(world)
+	var manager := _manager(t)
+	world.manager = manager
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+	var baby := stroller.get_node_or_null("Baby") as Baby
+	t.check(baby != null, "the real stroller carries the Baby whose meter this reads")
+	stroller.set_physics_process(false)
+	baby.set_physics_process(false)
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(5200.0, 5200.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+	var loud := _door_instance(t, "roadblock", centre + Vector2(0.0, 72.0), axis)
+	# Past its own telegraph, so the field it is standing there with is the field it declares.
+	loud.age = loud.def.telegraph_time + 1.0
+	manager._instances.append(loud)
+
+	var entry := centre + axis * 60.0
+	stroller.global_position = entry
+	manager._tell_them_where_she_is()
+	var beside_it := loud.contribution_at(entry)
+	t.check(beside_it > Tuning.CHAT_EXCITEMENT / Tuning.CHECKPOINT_DETAIN_SECONDS,
+			("the roadblock reaches the door's own ground harder than the toll itself does " +
+			"(%.1f/s against %.1f/s) — otherwise this rig checks nothing")
+			% [beside_it, Tuning.CHAT_EXCITEMENT / Tuning.CHECKPOINT_DETAIN_SECONDS])
+
+	var before := baby.excitement
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "walking up to the hut starts the hold")
+	# The baby's own frame before the instances', so every frame the meter takes is a frame the
+	# hold was actually running: the clock runs out inside `EventInstance._process()`, and a baby
+	# stepped after it would spend its last frame outside a hold that had just ended.
+	var guard := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+	while hut.is_chatting() and guard > 0:
+		guard -= 1
+		baby._physics_process(STEP)
+		for instance in manager._instances:
+			instance._process(STEP)
+	t.check(not hut.is_chatting() and guard > 0, "and it runs its own clock out")
+	t.close_to(baby.excitement - before, Tuning.CHAT_EXCITEMENT,
+			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
+			% [baby.excitement - before, Tuning.CHAT_EXCITEMENT], 1.5)
+	t.close_to(loud.landed(), 0.0,
+			"and nothing of it is attributed to the roadblock beside the door (%.1f)"
+			% loud.landed(), 0.01)
+
+	# And the moment she is out, the street is back: the silence is a fact about being inside a
+	# door, not a shield the door leaves behind it.
+	manager._check_detentions()
+	manager._tell_them_where_she_is()
+	t.check(manager.total_excitement_at(stroller.global_position) > 0.0,
+			"released, the fields around the door charge her again")
+
+	hut.free()
+	loud.free()
+	stroller.free()
+	world.free()
+	manager.free()
+
+## **A wall and the door beside it are one barrier, not five.** *(2026-09-20, the player: "since
+## two gates can be adjacent to each other their influence shouldn't add up".)* The rig is the
+## corner day 7 of the run died at: a region wall's three `roadblock` bodies a tile apart across
+## one street, and a door's hut and gate across the cross street, with her standing where the
+## release sets her down.
+##
+## Three things have to agree, and the point of holding them together is that they are three
+## different code paths reading one answer: the meter's own sum, what each body's `landed()` says
+## it did, and which of them the halo would draw a rim on.
+func _test_a_boundarys_structures_charge_as_one(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+	var axis := Vector2.RIGHT
+
+	var here := Vector2(6400.0, 6400.0)
+	var kit: Array[EventInstance] = []
+	for i in 3:
+		var block := _door_instance(t, "roadblock", here + Vector2(-56.0, -32.0 + i * 32.0), axis)
+		block.age = block.def.telegraph_time + 1.0
+		kit.append(block)
+	kit.append(_door_instance(t, "checkpoint_hut", here + Vector2(0.0, 54.0), axis))
+	kit.append(_door_instance(t, "checkpoint_gate", here + Vector2(64.0, 54.0), axis))
+	var summed := 0.0
+	var strongest := 0.0
+	for body in kit:
+		manager._instances.append(body)
+		var rate := body.contribution_at(here)
+		summed += rate
+		strongest = maxf(strongest, rate)
+	t.check(summed > strongest * 1.5,
+			("the rig actually overlaps: summed %.1f/s against the strongest single %.1f/s — a " +
+			"corner where nothing overlapped would pass this test with the rule deleted")
+			% [summed, strongest])
+
+	stroller.global_position = here
+	manager._tell_them_where_she_is()
+	t.close_to(manager.total_excitement_at(here), strongest,
+			"the whole boundary kit charges the strongest of it and not the sum (%.1f/s against a "
+			% manager.total_excitement_at(here) + "sum of %.1f/s)" % summed, 0.01)
+
+	var landed_on: Array = []
+	for pair in manager.excitement_sources_at(here):
+		landed_on.append(pair[0])
+	t.check(landed_on.size() == 1, "one source reaches the bar, not five (%d)" % landed_on.size())
+	if landed_on.size() == 1:
+		t.close_to(landed_on[0].contribution_at(here), strongest,
+				"and it is the one that was the maximum, which is what its own landed() will "
+				+ "carry and what the halo's colour is traced from", 0.01)
+
+	var picked := ExcitementHalo.select_sources(kit, here)
+	t.check(picked.size() == 1,
+			("and the halo draws one rim, on that same body: a rim on a structure landing nothing " +
+			"while its neighbour reads red is a cue disagreeing with the bar (%d picked)")
+			% picked.size())
+
+	# Walk her to the other end of the wall and the answer follows her: this is a maximum at a
+	# position, not a body elected once.
+	stroller.global_position = kit[0].global_position + Vector2(0.0, -24.0)
+	manager._tell_them_where_she_is()
+	var now_strongest := 0.0
+	for body in kit:
+		now_strongest = maxf(now_strongest, body.contribution_at(stroller.global_position))
+	t.close_to(manager.total_excitement_at(stroller.global_position), now_strongest,
+			"and a step along the wall re-asks it rather than keeping the first answer", 0.01)
+
+	for body in kit:
+		body.free()
+	stroller.free()
+	manager.free()
+
+## **A corner where two doors meet is still one toll.** *"going into a hut at a corner with two
+## huts double counts the influence"* — a street door on one street and another on the street
+## crossing it stand their bodies a tile or two apart, so the ground the first one lets her out
+## onto is inside the second one's trigger. `_latch_everything_she_was_let_out_into()` arms a
+## latch for **every** redetaining body whose reach covers the release point, not only the door
+## that let her out, and the other door is exactly the case that reads as being taken straight
+## back in.
+func _test_a_corner_of_two_doors_is_one_toll(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	# One door across an east-west street, and the corner door across the north-south street it
+	# meets — its own huts facing along the other axis, the geometry `RegionPlanner._along_axis()`
+	# gives a crossing on each.
+	var corner := Vector2(6800.0, 6800.0)
+	var near_hut := _door_instance(t, "checkpoint_hut", corner, Vector2.RIGHT)
+	var cross_hut := _door_instance(t, "checkpoint_hut", corner + Vector2(0.0, -48.0), Vector2.DOWN)
+	var cross_gate := _door_instance(t, "checkpoint_gate", corner + Vector2(0.0, -80.0), Vector2.DOWN)
+	manager._instances.append(near_hut)
+	manager._instances.append(cross_hut)
+	manager._instances.append(cross_gate)
+
+	stroller.global_position = corner + Vector2.RIGHT * 60.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(near_hut.is_chatting(), "walking into the near hut starts one hold")
+	t.check(not cross_hut.is_chatting() and not cross_gate.is_chatting(),
+			"and the corner door's own bodies do not start a second one on top of it")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	var released := stroller.global_position
+	var reached_by_the_other := cross_hut.global_position.distance_to(released) \
+			<= cross_hut.def.detain_distance() \
+			or cross_gate.global_position.distance_to(released) <= cross_gate.def.detain_distance()
+	t.check(reached_by_the_other,
+			("the release lands inside the corner door's own reach (%.1fpx from its hut, trigger " +
+			"%.1fpx) — otherwise this test is not about a corner at all")
+			% [cross_hut.global_position.distance_to(released), cross_hut.def.detain_distance()])
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS * 3.0)
+	t.check(not cross_hut.is_chatting() and not cross_gate.is_chatting(),
+			"and standing where she was let out is not a second toll paid to the door round the "
+			+ "corner, however long she stands there")
+	t.check(not near_hut.is_chatting(), "nor to the one that let her out")
+	t.check(stroller.global_position.is_equal_approx(released),
+			"and she is not moved again (%s)" % stroller.global_position)
+
+	near_hut.free()
+	cross_hut.free()
+	cross_gate.free()
+	stroller.free()
+	manager.free()
+
+## **She reappears where she is let out, never for a frame where she went in** — *(2026-09-20, the
+## player: "when I reappear I briefly spawn at my old location before teleporting to the new
+## location. I should directly spawn at the new location".)*
+##
+## The two halves ran on two clocks: a hold's own seconds run down in `EventInstance._process()`, a
+## **drawn** frame, and the teleport is in `EventManager._physics_process()`. Un-hiding her where
+## the clock ran out therefore put her back on the screen at the place she went in for every frame
+## drawn before the next physics tick — at least one, and more the faster the machine draws.
+##
+## **So the rig drives the two clocks apart, which is the only way a test can see it.** Every other
+## rig in this suite steps `_process()` and `_check_detentions()` together in one loop, where the
+## fault is a frame wide and invisible; here the drawn frames run alone until the hold is over, and
+## what is asserted is that no drawn frame in that gap has her visible anywhere.
+func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(7200.0, 7200.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	var entry := centre + axis * 60.0 + Vector2(0.0, 16.0)
+	stroller.global_position = entry
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting() and not stroller.visible, "she goes in for the hold")
+
+	# Drawn frames only. The hold ends inside one of these and nothing here moves her.
+	var drawn := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+	var seen_visible_at_the_entry := false
+	for i in drawn:
+		hut._process(STEP)
+		if stroller.visible and stroller.global_position.is_equal_approx(entry):
+			seen_visible_at_the_entry = true
+	t.check(not hut.is_chatting(), "the hold's own clock runs out on a drawn frame")
+	t.check(not seen_visible_at_the_entry,
+			"and no drawn frame between that and the release has her back at the place she went in")
+	t.check(not stroller.visible, "she is still inside as far as the screen is concerned")
+	t.check(stroller.global_position.is_equal_approx(entry),
+			"and nothing has moved her yet, which is what makes the frame above worth checking")
+
+	# The physics frame that owns the release: moved, then shown, in that order.
+	manager._check_detentions()
+	t.check(stroller.visible, "the release is what shows her again")
+	t.check(not stroller.global_position.is_equal_approx(entry),
+			"and she is already on the far side of the door the frame it does (%s against %s)"
+			% [stroller.global_position, entry])
+	t.check((stroller.global_position - centre).dot(axis) < 0.0,
+			"on the side the release put her, not the one she walked in from")
+
+	hut.free()
+	stroller.free()
+	manager.free()
+
+# ------------------------------------------------- the ground she is let out onto ---
+# **A door cannot be refused or moved, so what is checked is what stands beside it.** A door is
+# exactly a boundary crossing the day's `RouteTree` uses — `RegionPlanner.plan_day()`, "the tree
+# wins, unconditionally" — so refusing one turns it into a wall across a street a route needs, and
+# a region edge may never affect a path. `docs/TODO.md`'s own item offers the other half as the
+# alternative and that is what is built: *"or the things that make it so are not placed beside
+# it"*, which is `Tuning.CHECKPOINT_EVENT_GAP`, plus the boundary kit charging as one source.
+#
+# With those two in, the release point is survivable **by construction**, and the sweep below is
+# what proves it over real cities rather than by argument:
+#
+# - She arrives at the toll, `Tuning.CHAT_EXCITEMENT`, and nothing else was charged during the hold.
+# - Out to the gap's edge, no catalogue row's field can reach her — that is what the gap *is*.
+# - The only things that can reach her there are the boundary's own structures, and they charge as
+#   one: the strongest is `roadblock` at `intensity` 13, so the ceiling is one row's peak.
+# - Walking pays back `EXCITEMENT_DECAY_WALKING` times the ground, worst case the main road's
+#   0.35 multiplier.
+#
+# **Deliberately conservative wherever it can be.** Full peak with no telegraph damping and no
+# pulse envelope; the worst ground in the city under her the whole way; a mover treated as standing
+# at the nearest point of its whole route; and a segment field read as a disc grown by its own
+# `half_length`, which over-reads off the spine rather than under-reading along it. A bound that
+# holds here holds for the real thing.
+
+## The summed field of a day's plan at a point, with the boundary kit collapsed to its strongest —
+## the same rule `EventManager.excitement_sources_at()` applies, read off plans rather than live
+## instances so a whole day can be swept without streaming it in.
+func _planned_field_at(plans: Array[EventScheduler.Planned], at: Vector2) -> float:
+	var total := 0.0
+	var strongest := 0.0
+	for plan in plans:
+		if not plan.is_placed() or plan.def.intensity <= 0.0:
+			continue
+		var gap := plan.distance_from(at)
+		if plan.def.shape != null and plan.def.shape.kind == GroundShape.Kind.SEGMENT:
+			# The field is a capsule about the body's own spine. Read as a disc grown by the spine's
+			# half length, which is the conservative direction: too loud off the axis, never too
+			# quiet along it.
+			gap = maxf(0.0, gap - plan.def.shape.half_length)
+		if gap > plan.def.outer_radius:
+			continue
+		var rate := plan.def.emission_at_distance(gap)
+		if plan.def.barrier_structure:
+			strongest = maxf(strongest, rate)
+		else:
+			total += rate
+	return total + strongest
+
+## Walks her out of a door from `from` along `heading`, starting at the toll, and answers the
+## highest the meter ever reaches before she is clear of the door's own gap. Decay at the worst
+## ground in the city, so the answer is a ceiling rather than a measurement of one street.
+func _peak_walking_out(plans: Array[EventScheduler.Planned], from: Vector2,
+		heading: Vector2) -> float:
+	var decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
+	var step := 4.0
+	var seconds_per_step := step / Tuning.WALK_SPEED
+	# Only what could possibly reach any point of this walk. A whole day is several hundred plans
+	# and the walk asks at forty-odd points; filtering once against the far end of the walk plus the
+	# row's own reach costs one distance check each and leaves a handful.
+	var near: Array[EventScheduler.Planned] = []
+	for plan in plans:
+		if not plan.is_placed() or plan.def.intensity <= 0.0:
+			continue
+		if plan.distance_from(from) <= Tuning.CHECKPOINT_EVENT_GAP + plan.def.field_reach():
+			near.append(plan)
+	var meter := Tuning.CHAT_EXCITEMENT
+	var peak := meter
+	var walked := 0.0
+	while walked <= Tuning.CHECKPOINT_EVENT_GAP:
+		var here := from + heading * walked
+		meter = maxf(0.0, meter + (_planned_field_at(near, here) - decay) * seconds_per_step)
+		peak = maxf(peak, meter)
+		walked += step
+	return peak
+
+## The release points a door body has: `Tuning.CHECKPOINT_RELEASE_MARGIN` past its own solid edge
+## on each side of the crossing, sampled across the pavement band because the release preserves
+## whatever cross-street offset she walked in on.
+func _release_points(body: EventScheduler.Planned) -> Array[Vector2]:
+	var axis: Vector2 = body.facing
+	var across := Vector2(-axis.y, axis.x)
+	var clearance := body.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			+ Tuning.CHECKPOINT_RELEASE_MARGIN
+	var points: Array[Vector2] = []
+	for side in [-1.0, 1.0]:
+		for lane in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+			points.append(body.position + axis * side * clearance
+					+ across * lane * float(Tuning.TILE_SIZE))
+	return points
+
+## **A gate never lets her out into something that kills her at once.** Swept over real days: every
+## door body, both sides, five lanes across, walked out of the door's own gap from the toll.
+##
+## **And the same days planned without the gap are what says the sweep is not vacuous.** The run
+## this milestone comes from was let out at 72 and crying 0.4s later, so the unguarded number has to
+## be able to break the same bound — a sweep whose "before" also passed would be measuring nothing.
+func _test_the_ground_she_is_let_out_onto_is_survivable(t) -> void:
+	var days: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, Tuning.REGION_WALL_FIRST_DAY + 4]
+	var worst_guarded := 0.0
+	var worst_unguarded := 0.0
+	var releases := 0
+	var unguarded_over := 0
+	for map: CityMap in _maps.slice(0, 2):
+		for day in days:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var region := RegionPlanner.plan_day(map, day, tree)
+			if region.door_bodies.is_empty():
+				continue
+			var doors := PackedVector2Array()
+			for body in region.door_bodies:
+				doors.append(body.position)
+			var guarded := _planned_day(map, day, tree, doors)
+			var unguarded := _planned_day(map, day, tree, PackedVector2Array())
+			# The wall and the door structure stand whatever the catalogue was allowed to place, so
+			# both plans carry them — otherwise the "before" would be missing the very barriers the
+			# non-additive rule is about.
+			guarded.append_array(region.wall_bodies)
+			guarded.append_array(region.door_bodies)
+			unguarded.append_array(region.wall_bodies)
+			unguarded.append_array(region.door_bodies)
+			for body in region.door_bodies:
+				for point in _release_points(body):
+					var heading := (point - body.position).normalized()
+					releases += 1
+					worst_guarded = maxf(worst_guarded, _peak_walking_out(guarded, point, heading))
+					var loose := _peak_walking_out(unguarded, point, heading)
+					worst_unguarded = maxf(worst_unguarded, loose)
+					if loose >= Tuning.METER_MAX:
+						unguarded_over += 1
+	print("[test_checkpoints] walking out of %d release points from the toll: peak %.1f with the "
+			% [releases, worst_guarded] + "gap, %.1f without (%d of them over %.0f)"
+			% [worst_unguarded, unguarded_over, Tuning.METER_MAX])
+	t.check(releases > 0, "the sampled days put release points on the map to walk out of (%d)"
+			% releases)
+	t.check(worst_guarded < Tuning.METER_MAX,
+			("walking out of every door on every sampled day, from the toll and on the worst " +
+			"ground in the city, the meter peaks at %.1f against %.0f")
+			% [worst_guarded, Tuning.METER_MAX])
+	t.check(unguarded_over > 0,
+			("and the same days without the gap put %d of %d release points over it, peaking at " +
+			"%.1f — otherwise this sweep is checking nothing")
+			% [unguarded_over, releases, worst_unguarded])
+
+## **The shape of the run that ended day 7 five times, as a regression.** She was let out on the
+## north side of a `checkpoint_hut` 57, 61 and 112px from three `roadblock`s of the region wall
+## on the cross street, with a `police_patrol` 66px off, taking 54/s and crying within half a
+## second.
+##
+## Two different rules answer the two halves of it, and the test holds both:
+##
+## - **The patrol is refused.** It is a catalogue placement, so the gap keeps it out — and the
+##   check is asked of the rule itself, at the distance the run actually put it at.
+## - **The barriers are not**, and cannot be: they are the region wall, they stand where the
+##   boundary is, and dropping one opens a street the partition means to hold. What makes them
+##   survivable is that all four bodies are one source.
+func _test_the_run_that_killed_her_five_times(t) -> void:
+	var axis := Vector2.RIGHT
+	var hut_at := Vector2(8000.0, 8000.0)
+	var hut := EventScheduler.Planned.new(EventCatalogue.by_id("checkpoint_hut"), hut_at)
+	hut.facing = axis
+	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			+ Tuning.CHECKPOINT_RELEASE_MARGIN
+	# Let out on the north side, the way the run was.
+	var released := hut_at + Vector2(0.0, -clearance)
+
+	var plans: Array[EventScheduler.Planned] = [hut]
+	var wall := EventCatalogue.by_id("roadblock")
+	for distance in [57.0, 61.0, 112.0]:
+		plans.append(EventScheduler.Planned.new(wall,
+				released + Vector2(-distance, 0.0)))
+
+	var patrol := EventCatalogue.by_id("police_patrol")
+	var patrol_at := released + Vector2(0.0, -66.0)
+	var doors := PackedVector2Array([hut_at])
+	t.check(not EventScheduler.clear_of_the_doors(patrol_at, PackedVector2Array(), doors,
+			patrol.field_reach()),
+			("a police_patrol 66px off the release point is refused at placement: %.0fpx from the " +
+			"hut against a gap of %.0f plus its own %.0fpx of field")
+			% [patrol_at.distance_to(hut_at), Tuning.CHECKPOINT_EVENT_GAP, patrol.field_reach()])
+
+	var summed := 0.0
+	for plan in plans:
+		if plan.def.barrier_structure:
+			summed += plan.def.emission_at_distance(maxf(0.0,
+					plan.position.distance_to(released)
+					- (plan.def.shape.half_length if plan.def.shape.kind
+					== GroundShape.Kind.SEGMENT else 0.0)))
+	var one_source := _planned_field_at(plans, released)
+	t.check(summed > one_source * 1.8,
+			("the four barriers summed are %.1f/s where the strongest alone is %.1f/s — the run " +
+			"took the first number") % [summed, one_source])
+
+	var peak := _peak_walking_out(plans, released, Vector2.UP)
+	t.check(peak < Tuning.METER_MAX,
+			("and walking straight out of it from the toll, on the worst ground in the city, the " +
+			"meter peaks at %.1f against %.0f") % [peak, Tuning.METER_MAX])
 
 ## How far her own outline reaches ahead of her centre while she faces `facing` — her own body's
 ## radius, or the pram's own body when that is what is between her and whatever she is walking at.

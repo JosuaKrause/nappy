@@ -143,10 +143,13 @@ const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 ## autoload so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
 ## same day twice whatever a run happens to have done. Every def below arrives already in the shape
 ## that heat puts it in — see `EventCatalogue.heated()` — so nothing in this file tests for it.
+## `doors` is where today's region-door bodies stand — `RegionPlanner.RegionPlan.door_bodies`'
+## positions, read out by `EventManager.start_day()` before this runs. Nothing this places may put
+## a field or a beat inside `Tuning.CHECKPOINT_EVENT_GAP` of one; see `_clear_of_the_doors()`.
 static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
 		used_calm: Array[Vector2i] = [], tree: RouteTree = null,
-		heat: int = 0) -> Array[Planned]:
+		heat: int = 0, doors := PackedVector2Array()) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
@@ -164,11 +167,11 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 
 	planned.append_array(_place_ambient(day, map, heat))
 	planned.append_array(_place_scars(day, scars, heat))
-	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat)
+	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
-			leave_alone, corridor, heat)
+			leave_alone, corridor, heat, doors)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat)
-	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat)
+	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors)
 	_ensure_the_run_is_taught(day, planned, heat)
 
 	_ensure_one_usable_park(map, planned, used_calm)
@@ -698,15 +701,17 @@ static func _place_ambient(day: int, map: CityMap, heat: int = 0) -> Array[Plann
 
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null, heat: int = 0) -> void:
+		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array()) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, heat):
-		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor)
+		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor,
+				NO_SITE, doors)
 		if placement:
 			planned.append(placement)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed: Array[String], planned: Array[Planned], ground := {},
-		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0) -> void:
+		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0,
+		doors := PackedVector2Array()) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
@@ -722,7 +727,8 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
-		var sited := _place_a_set_piece(day, def, rng, map, planned, ground, leave_alone, corridor)
+		var sited := _place_a_set_piece(day, def, rng, map, planned, ground, leave_alone, corridor,
+				doors)
 		if sited.is_empty():
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
@@ -763,7 +769,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## exists to answer.
 static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
-		corridor: Corridor) -> Array[Planned]:
+		corridor: Corridor, doors := PackedVector2Array()) -> Array[Planned]:
 	var made: Array[Planned] = []
 	var sites := corridor.sites() if corridor else ([] as Array[Vector3i])
 	for site in sites:
@@ -771,12 +777,14 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 		# pixels apart is what `EVENT_SPACING_SAME` is for, and two candidate sites can be adjacent.
 		var beside: Array[Planned] = already.duplicate()
 		beside.append_array(made)
-		var placement := _place_one(def, day, rng, map, beside, ground, leave_alone, corridor, site)
+		var placement := _place_one(def, day, rng, map, beside, ground, leave_alone, corridor, site,
+				doors)
 		if placement:
 			placement.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(placement)
 	if made.is_empty():
-		var anywhere := _place_one(def, day, rng, map, already, ground, leave_alone, corridor)
+		var anywhere := _place_one(def, day, rng, map, already, ground, leave_alone, corridor,
+				NO_SITE, doors)
 		if anywhere:
 			# **The fallback carries the group too, and it is a group of one.** Every other
 			# one-shot placement is tagged, and `EventManager._stream_in` spends the rest of a
@@ -798,7 +806,7 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## on, and every other event is where it was yesterday.
 static func _fill_with_recurring(day: int, base: int, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null, heat: int = 0) -> void:
+		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array()) -> void:
 	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat)
 	if eligible.is_empty():
 		return
@@ -818,7 +826,8 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 			break
 		var rng := _stream(base, FILL_SALT + attempt)
 		var def := _pick_weighted(affordable, rng)
-		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor)
+		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor,
+				NO_SITE, doors)
 		if not placement:
 			continue
 		planned.append(placement)
@@ -852,7 +861,8 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 ## has to happen: on a map with fifty events on it the honest answer is the best spot left.
 static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null, site := NO_SITE) -> Planned:
+		corridor: Corridor = null, site := NO_SITE,
+		doors := PackedVector2Array()) -> Planned:
 	var role := _role_for(def, day)
 	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is budgeted here and sited by `EventDirector`
 	# while the player walks. Costing it here rather than giving the director its own allowance is
@@ -896,6 +906,11 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		# Before the spacing, because this one is about the *ground* rather than about what is
 		# already on it, and because it can never bend.
 		if _reaches_any(candidate, leave_alone):
+			continue
+		# And for the same reason: a region door keeps clear ground around itself on both sides, so
+		# that whichever side she is let out on is ground she can read before anything charges her.
+		# See `_clear_of_the_doors()` and `Tuning.CHECKPOINT_EVENT_GAP`.
+		if not _clear_of_the_doors(candidate.position, candidate.path, doors, def.field_reach()):
 			continue
 		# And before the spacing for the same reason: a crossing a route has no way around is
 		# ground the row may not have, not a preference that bends. See
@@ -2249,6 +2264,49 @@ static func _calm_to_leave_alone(map: CityMap, used_calm: Array[Vector2i]) -> Ar
 		if not used_calm.has(block):
 			leave_alone.append(map.tile_rect_to_world(_calm_rect(map, block)))
 	return leave_alone
+
+## Whether a placement keeps `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around every one of
+## today's region-door bodies — *"there should be a gap for events immediately surrounding the
+## gates"*. `true` when there are no doors, which is every day before
+## `Tuning.REGION_WALL_FIRST_DAY`.
+##
+## **The whole route, not the spot it starts at.** `path` is a mover's beat or its run, and a
+## patrol that only *passes* a door through the gap is exactly what finished two of the attempts
+## this rule comes from — so the distance is measured to the nearest point of the route, the same
+## way `Planned.distance_from()` does, and a stationary row is that route's single point.
+##
+## **The field, not the body.** `reach` is the candidate's own `EventDef.field_reach()`, so what is
+## refused is a field arriving inside the gap rather than only a body standing in it: an event
+## outside the gap whose radius reached across it would charge the ground she is let out onto
+## without ever having stood in it.
+##
+## Shared with `EventDirector.due()`, which asks the same question of a path it is about to site in
+## front of her. Public for that reason.
+static func clear_of_the_doors(at: Vector2, path: PackedVector2Array,
+		doors: PackedVector2Array, reach: float) -> bool:
+	return _clear_of_the_doors(at, path, doors, reach)
+
+static func _clear_of_the_doors(at: Vector2, path: PackedVector2Array,
+		doors: PackedVector2Array, reach: float) -> bool:
+	if doors.is_empty():
+		return true
+	var limit := Tuning.CHECKPOINT_EVENT_GAP + reach
+	for door in doors:
+		if _distance_to_route(door, at, path) < limit:
+			return false
+	return true
+
+## Distance from `door` to the nearest part of a placement — its one position, or the nearest point
+## of the route it travels. `Planned.distance_from()`'s own arithmetic, stated over the two raw
+## fields so the director can ask it about a path that has no `Planned` yet.
+static func _distance_to_route(door: Vector2, at: Vector2, path: PackedVector2Array) -> float:
+	if path.size() < 2:
+		return door.distance_to(at)
+	var best := INF
+	for i in range(1, path.size()):
+		best = minf(best, door.distance_to(
+				Geometry2D.get_closest_point_to_segment(door, path[i - 1], path[i])))
+	return best
 
 ## Whether a candidate's field would reach any of them.
 static func _reaches_any(candidate: Planned, rects: Array[Rect2]) -> bool:
