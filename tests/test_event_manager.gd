@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_a_streamed_pursuer_resumes_the_chase(t)
 	_test_the_fire_is_sited_on_the_way_she_is_walking(t)
 	_test_the_fire_burns_where_her_walk_put_it(t)
+	_test_the_fire_she_did_not_choose_leaves_her_a_way_out(t)
 	_test_a_fire_that_was_never_lit_was_not_spent(t)
 	_teardown()
 
@@ -526,6 +527,11 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 			print("      fire %s: sited %.1fs in, %.0fpx ahead, first seen %.1fs later"
 					% [heading_name, sited_at, plan.position.distance_to(sited_from),
 					seen_at - sited_at])
+			# The engine is what the sight of it summons, and it is summoned on that same frame.
+			var engine := false
+			for instance in _city.events.instances():
+				engine = engine or instance.def.id == "fire_truck"
+			t.check(engine, "walking %s: and seeing it calls the engine in" % heading_name)
 		rig.free()
 	_city.events.stream_radius = INF
 	GameState.scars = scars_before
@@ -570,6 +576,76 @@ func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
 		_walk(rig, -heading, 20.0)
 		t.check(plan.position == burning_at,
 				"and turning round after it is real leaves it exactly where it burned")
+	rig.free()
+	_city.events.stream_radius = INF
+	GameState.scars = scars_before
+
+## **A siting she did not choose owes her a way out of it.** She walks up to this fire because the
+## day put it in front of her rather than because she picked the street, so the fire's own body,
+## its field and the engine's must never be what closes the last way off the street she is on.
+##
+## Asked as reachability rather than as a radius: from the tile she is standing on when she first
+## sees the fire, with every solid body the day has placed counted as blocked, she can still reach
+## calm ground. `EventScheduler.WalkSiting` refuses a candidate that would break the same property
+## measured from the home, and this is the other end of it — the property stated over *her*, at the
+## one moment the milestone is about.
+func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
+	var scars_before := GameState.scars.duplicate()
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	_start(Tuning.RUN_TAUGHT_DAY)
+	var plan := _fire_plan()
+	if not plan:
+		t.check(false, "day 3 has a fire to walk up to")
+		_city.events.stream_radius = INF
+		return
+	var rig := _walker(t, _city.map.home_world_position())
+	_walk_clock = 0.0
+	_walk(rig, Vector2.RIGHT, WALK_SECONDS,
+			func() -> bool: return plan.is_placed() and _city.events._is_on_screen(plan.position))
+	t.check(plan.is_placed() and _city.events._is_on_screen(plan.position),
+			"she walks out and finds the fire")
+	if not plan.is_placed():
+		rig.free()
+		_city.events.stream_radius = INF
+		return
+
+	var fire: EventInstance = plan.live
+	t.check(fire != null, "the fire is in the world by the time it is on screen")
+	if fire:
+		t.close_to(fire.contribution_at(rig.global_position), 0.0,
+				"she is outside its field the moment she first sees it, so the whole telegraph "
+				+ "is hers to walk out in", 0.001)
+	for instance in _city.events.instances():
+		if instance.def.id != "fire_truck":
+			continue
+		t.close_to(instance.contribution_at(rig.global_position), 0.0,
+				"and the engine it calls in is outside its own forward reach of her when it is "
+				+ "created, from the worst position the sighting allows", 0.001)
+
+	var blocked := _city.map.closed_tiles.duplicate()
+	for other in _city.events.plans():
+		if not other.is_placed():
+			continue
+		var radius := maxf(other.def.obstructs_radius,
+				other.def.inner_radius if other.def.hard_fail else 0.0)
+		if radius <= 0.0:
+			continue
+		var reach := ceili(radius / float(Tuning.TILE_SIZE))
+		var centre := _city.map.world_to_tile(other.position)
+		for dy in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var tile := centre + Vector2i(dx, dy)
+				if _city.map.tile_to_world(tile).distance_to(other.position) <= radius:
+					blocked[tile] = true
+	var grid := ReachabilityGrid.build(_city.map)
+	var her := _city.map.world_to_tile(rig.global_position)
+	var reached := grid.flood([her], blocked)
+	var out := false
+	for tile in _city.map.calm_tiles():
+		out = out or grid.reaches(tile, blocked, reached)
+	t.check(out,
+			"and from where she is standing when she first sees it there is still a way to calm "
+			+ "ground past every body the day has placed")
 	rig.free()
 	_city.events.stream_radius = INF
 	GameState.scars = scars_before

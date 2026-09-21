@@ -798,6 +798,17 @@ building it answers has been seen (`EventDef.spawns_on_sight`,
 `EventManager._summon_the_sighted_row()`) — which is why the fire being on her way is also the
 engine being on her way.
 
+**And a siting she did not choose owes her a way out of it.** She meets this one because the day put
+it in front of her rather than because she picked the street, so the pair of them have to leave her
+somewhere to go. Three things hold at the moment she first sees it, and all three are checked rather
+than argued: she is **outside the fire's own field**, so the whole 2.2s telegraph is hers to walk
+out in; the engine is created **outside its own forward reach of her**, measured from the worst
+position the sighting allows, which is the view's half diagonal up the street rather than directly
+under the fire; and **calm ground is still reachable from the tile she is standing on**, past every
+solid body the day has placed. The last of those is the same question
+`EventScheduler.WalkSiting` asks before it accepts a candidate at all, stated from her end instead
+of from the home.
+
 **A one-shot without the flag is offered on every route and happens on one.** The day plans it **at
 every site of a covering set** — `RouteTree.covering_sites`, the smallest set of streets such that
 every route touches one — and the placements share a `set_piece_group`. The first one to enter the
