@@ -9,7 +9,7 @@ extends Control
 ##
 ## **One class, two instances, never two drawing paths.** `colour` and `label_when_near` are
 ## the only two things that differ between the home use and the task use — see `Hud._ready()`,
-## which is the one place either is set, so `Palette` stays the one place a runtime colour is
+## which is the one place either is set, so `Palette` stays the one place a runtime color is
 ## decided.
 
 ## How far in from the screen edge the arrow sits when home is off-screen.
@@ -27,7 +27,7 @@ const SIZE := 15.0
 var target := Vector2.INF
 var active := false
 
-## Which colour this instance draws in — `Palette.HOME_ARROW` for the return-home use,
+## Which color this instance draws in — `Palette.HOME_ARROW` for the return-home use,
 ## `Palette.TASK_ARROW` for the second instance a one-place resistance task points with. Set
 ## once, from `Hud._ready()`, never per-frame.
 var colour := Palette.HOME_ARROW

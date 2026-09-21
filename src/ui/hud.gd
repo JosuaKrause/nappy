@@ -66,7 +66,7 @@ func _ready() -> void:
 	_excitement.full_colour = Color("cf4436")
 	_excitement.markers = [Tuning.EXCITEMENT_CALM_THRESHOLD, Tuning.EXCITEMENT_WAKE_THRESHOLD]
 	_reposition_meters_for_touch()
-	# Coloured here rather than in the scene so `Palette` stays the one place a runtime colour is
+	# Colored here rather than in the scene so `Palette` stays the one place a runtime color is
 	# decided — the same call `_heading.add_theme_color_override()` makes in `DaySummary._ready()`.
 	_task_arrow.colour = Palette.TASK_ARROW
 	_task_arrow.label_when_near = "task"

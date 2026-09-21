@@ -23,7 +23,7 @@ signal restart_requested()
 ## The morning's own line — one or two plain sentences saying what is true of the city by that
 ## day, from `_DAY_BRIEF` below — its own label, not a line folded into `_body`, because a screen
 ## full of ordinary lines is exactly what playtest 69 missed it in ("the day text needs to be
-## bigger to be able to be noticed"). Bigger and its own colour (`Palette.CHALK_DONE`) is what
+## bigger to be able to be noticed"). Bigger and its own color (`Palette.CHALK_DONE`) is what
 ## makes it the thing the screen is telling you rather than one more line.
 ##
 ## **Carries no task, no mark's words and no reminder** (`docs/TODO.md`, M181, the resistance has
