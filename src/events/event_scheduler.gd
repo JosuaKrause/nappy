@@ -944,6 +944,50 @@ class WalkSiting extends RefCounted:
 			return _waited("the site would close her way out")
 		return candidate
 
+	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
+	## the site is ground she was never near enough to have it exist in front of her.
+	const DUSK_CLEAR_OF_HER := Tuning.EVENT_STREAM_RADIUS
+
+	## A placement for `def` **away from her and off the day's routes**, for the one case a walk can
+	## end without the guarantee having been met: a day 3 she wins on which every siting was refused.
+	##
+	## *"I agree with the fire fix"* (PLAYTEST-121). The row's only day is day 3 and it is spent when
+	## it enters the world, so a day she wins while it waited would leave the run with no fire, no
+	## scar and no burnt shell — and the shell is what day 8's task goes to, and what the city
+	## remembering day 3 is made of. So the day lights it at dusk instead.
+	##
+	## **The same acceptance rules, chosen once, nothing repaired.** It is `_best_of` over the day's
+	## own ground with the day's own corridor, doors and protected calm, and then the same
+	## reachability check every other site is asked — from the doorstep rather than from her, which
+	## is the dawn question, because the walk is over.
+	##
+	## **Off her path** means both halves of what that can mean: not within `DUSK_CLEAR_OF_HER` of
+	## where she finished, so nothing is lit where she could have seen it, and not on ground the
+	## day's routes run along, so the street she actually walked is not the one that burns. The
+	## second bends and the first does not — the fallback is a site merely away from her, which is
+	## the same honest failure direction `_place_a_set_piece` takes when a covering set offers
+	## nothing: a run that owes a fire and has nowhere ideal to put it should still have its fire.
+	func off_her_path(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			away_from: Vector2) -> Planned:
+		var role := EventScheduler._role_for(def, _day)
+		var clear_of_the_routes: Array[Vector2i] = []
+		var merely_away: Array[Vector2i] = []
+		for tile in EventScheduler._open_ground_for(def, _map, _ground):
+			if _map.tile_to_world(tile).distance_to(away_from) < DUSK_CLEAR_OF_HER:
+				continue
+			merely_away.append(tile)
+			if not _corridor.carries_a_route(tile):
+				clear_of_the_routes.append(tile)
+		var doorstep := _map.doorstep_world_position()
+		for offered in [clear_of_the_routes, merely_away]:
+			if offered.is_empty():
+				continue
+			var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already,
+					_ground, _leave_alone, _corridor, _doors)
+			if candidate and _still_leaves_a_park_reachable(already, candidate, doorstep):
+				return candidate
+		return null
+
 	## Records why an attempt placed nothing and answers with the nothing. See `waits`.
 	func _waited(reason: String) -> Planned:
 		waits[reason] = int(waits.get(reason, 0)) + 1

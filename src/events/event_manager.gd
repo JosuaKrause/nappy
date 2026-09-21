@@ -940,6 +940,56 @@ func _site_what_is_on_her_way(delta: float) -> void:
 			_heading_name(body.velocity.normalized()),
 			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
 
+## **A day 3 she wins with the fire never met still burns.** *"I agree with the fire fix"*
+## (PLAYTEST-121). Lights whatever the day owed her walk and never got to put in the world — day 3's
+## fire and nothing else — off her path, on a site the dawn rules accept, and records everything a
+## fire records: the scar the run keeps, the arc the block it stood in moves along, and the one-shot
+## spent. Answers whether it lit anything.
+##
+## **Why it has to exist.** `burning_building` runs on day 3 and no other day, and it is spent where
+## it enters the world rather than where it is planned — so a day 3 she wins while every siting was
+## refused ends the run with no fire, no scar and no shell, and the shell is what the city
+## remembering day 3 is made of and what day 8's errand goes to. Meeting it stays the strong
+## guarantee; this is what the weak one owes.
+##
+## **Lit and then taken out of the world again**, which is not a repair: the day is over, so nothing
+## is left standing for her to walk into and nothing is drawn. What the run keeps is the scar, the
+## arc and the spend, and all three are the bookkeeping `_stream_in` does on a first instantiation —
+## reused here rather than copied, because a second copy of that list is a second answer to "what
+## does a fire do to a run".
+##
+## Called by `main._on_day_finished()` on a won day only. A lost day gives everything back
+## (`GameState.finish_day`), so lighting a fire on one would be handing the retry a shell it never
+## earned.
+func light_what_she_never_met(at: Vector2) -> bool:
+	if not _siting:
+		return false
+	for plan in _plans:
+		if not plan.def.sited_on_her_way or plan.was_live or plan.spent:
+			continue
+		# Its own stream, so a dusk placement cannot move anything the day already rolled.
+		var rng := GameState.day_rng(_day, "dusk-fire")
+		var sited := _siting.off_her_path(plan.def, rng, _everything_but(plan), at)
+		if not sited:
+			continue
+		plan.position = sited.position
+		plan.path = sited.path
+		plan.facing = sited.facing
+		plan.role = sited.role
+		_stream_in(plan)
+		_stream_out(plan)
+		# It is over the moment it is recorded: the day has ended, and a plan left unspent would be
+		# streamed back in by the next `stream_around` a rig made on the same day.
+		plan.spent = true
+		_map.release_obstruction(plan.get_instance_id())
+		# Where and why, because nothing else records it: which site a dusk fire took depends on
+		# where she finished the day, and no seed reproduces that from outside.
+		Telemetry.note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "
+				% [plan.def.id, TelemetryLog.tile(_map.world_to_tile(plan.position)),
+				plan.position.distance_to(at)] + "finished the day")
+		return true
+	return false
+
 ## Everything the day has planned except `plan` — what a placement is spaced and checked against.
 ## The one being placed is never in it: a row moved off a position it has not been seen at must not
 ## be spaced against its own old body.

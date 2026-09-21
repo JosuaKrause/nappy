@@ -48,12 +48,12 @@ func run(t) -> void:
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
-		for walk_name: String in ["out and back", "turns back"]:
+		for walk_name: String in ["out and back", "turns back", "off the path", "stays near home"]:
 			var result := _walk_one(t, city, seed_value, walk_name)
 			walks += 1
 			if result.get("met", false):
 				met += 1
-			else:
+			if result.get("never_real", false):
 				unmet_on_a_won_day += 1
 				if result.get("lit_at_dusk", false):
 					lit_at_dusk += 1
@@ -66,8 +66,9 @@ func run(t) -> void:
 		city.free()
 
 	print("")
-	print("met the fire: %d of %d walks" % [met, walks])
-	print("won with it unmet: %d — lit at dusk on %d of those" % [unmet_on_a_won_day, lit_at_dusk])
+	print("saw the fire: %d of %d walks" % [met, walks])
+	print("ended with it never in the world: %d — of those, lit at dusk on %d"
+			% [unmet_on_a_won_day, lit_at_dusk])
 	print("what the waiting was: %s" % _refusal_summary(refusals))
 	print("a siting attempt: %.1f ms mean over %d attempts, worst frame of any walk %.1f ms"
 			% [_mean(attempt_frames), attempt_frames.size(), worst_frame])
@@ -90,8 +91,7 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 		print("%-6d %-12s no fire planned" % [seed_value, walk_name])
 		return {}
 
-	var route := _out_and_back(city, day) if walk_name == "out and back" \
-			else _turns_back_at_the_first_junction(city, day)
+	var route := _the_walk(city, day, walk_name)
 	if route.size() < 2:
 		print("%-6d %-12s no route to walk" % [seed_value, walk_name])
 		return {}
@@ -112,15 +112,28 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 				% [seed_value, walk_name, state["sited_at"], state["lead"],
 				float(state["seen_at"]) - float(state["sited_at"]), state["seen_at"], widened,
 				_refusal_summary(state["refusals"])])
+		_what_the_pair_costs(city, rig, plan)
 	else:
 		print("%-6d %-12s never seen (sited at %.1fs) %25d  %s"
 				% [seed_value, walk_name, state["sited_at"], widened,
 				_refusal_summary(state["refusals"])])
 
+	# E's case: the day is won with the fire never in the world, so it is lit at dusk off her path.
+	# Asked before the lighting, which is itself what puts it in the world.
+	var never_real := not plan.was_live
+	var lit := false
+	if never_real:
+		lit = city.events.light_what_she_never_met(rig.global_position)
+		if lit:
+			print("      lit at dusk at %s, %.0fpx from where she finished"
+					% [TelemetryLog.tile(city.map.world_to_tile(plan.position)),
+					plan.position.distance_to(rig.global_position)])
 	rig.free()
 	GameState.scars = scars
 	var out := state.duplicate()
 	out["met"] = met
+	out["never_real"] = never_real
+	out["lit_at_dusk"] = lit
 	return out
 
 ## Walks `route` end to end, stepping the manager every frame and recording when the fire was sited
@@ -155,7 +168,145 @@ func _follow(city: City, rig: Stroller, route: PackedVector2Array, plan: EventSc
 		if float(state["clock"]) >= WALK_SECONDS:
 			return
 
+# ------------------------------------------------------ what the pair costs ---
+
+## The two numbers the wall is argued in, measured once the pair is actually standing: the walk is
+## stopped where she first sees the fire, so the engine is still coming down the street and the fire
+## is still inside its own telegraph. `SETTLE_SECONDS` of standing still is what it takes for the
+## engine to arrive, park and come up to full strength — and standing still sites nothing, since the
+## director's clock only runs while she walks.
+##
+## **Passing** is a walk straight past the pair down the fire's own sidewalk, from outside both
+## fields to outside both fields at `Tuning.WALK_SPEED`, summed as excitement x seconds — the meter
+## she pays for refusing to go round. **The detour** is the way round: the shortest walk on the
+## reachability grid between those same two points with both fields taken as closed ground, against
+## the straight line it replaces. Counted in grid steps and multiplied out, so it is the length of a
+## cell-grained walk rather than a measured route — what is asked is how much further round is, not
+## exactly where.
+const SETTLE_SECONDS := 14.0
+
+func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planned) -> void:
+	rig.velocity = Vector2.ZERO
+	for i in int(round(SETTLE_SECONDS / STEP)):
+		city.events._physics_process(STEP)
+		# **The instances have to be ticked by hand.** `EventInstance` moves in `_process`, a drawn
+		# frame, and the test runner runs synchronously without drawing any — so an engine left to
+		# the tree never leaves the top of its street and a fire never finishes its telegraph.
+		for instance in city.events.instances().duplicate():
+			if is_instance_valid(instance):
+				instance._process(STEP)
+	var engine_at := EventManager.where_the_summoned_row_stops(city.map, plan.position)
+	var engine := EventCatalogue.by_id(plan.def.spawns_on_sight)
+	var along := Vector2.RIGHT
+	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.position))
+	if inward != Vector2i.ZERO:
+		along = Vector2(inward.y, inward.x)
+	var from := _clear_of_the_pair(plan, engine, engine_at, -along)
+	var to := _clear_of_the_pair(plan, engine, engine_at, along)
+	var cost := 0.0
+	var steps := int(from.distance_to(to) / (Tuning.WALK_SPEED * STEP))
+	for i in steps:
+		var at: Vector2 = from.lerp(to, float(i) / float(maxi(steps - 1, 1)))
+		cost += city.events.total_excitement_at(at) * STEP
+	var parked := 0
+	for instance in city.events.instances():
+		parked += 1 if instance.def.id == "fire_truck" and instance.is_parked else 0
+	var straight := from.distance_to(to)
+	var round_about := _the_way_round(city, from, to, plan, engine, engine_at)
+	print("      %d engine parked; passing costs %.0f excitement-seconds over %.0fpx; round is %s"
+			% [parked, cost, straight,
+			"nowhere to be found" if round_about < 0.0
+			else "%.0fpx, %+.0fpx on the straight line" % [round_about, round_about - straight]])
+
+## The first point out along `direction` from the fire that is outside both fields — where a walk
+## past the pair starts and ends.
+func _clear_of_the_pair(plan: EventScheduler.Planned, engine: EventDef, engine_at: Vector2,
+		direction: Vector2) -> Vector2:
+	var reach: float = plan.def.outer_radius
+	if engine and engine_at != Vector2.INF:
+		reach = maxf(reach, engine_at.distance_to(plan.position) + engine.outer_radius)
+	return plan.position + direction * (reach + Tuning.TILE_SIZE)
+
+func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventScheduler.Planned,
+		engine: EventDef, engine_at: Vector2) -> float:
+	var grid := ReachabilityGrid.build(city.map)
+	var start := grid.node_at(city.map.world_to_tile(from))
+	var goal := grid.node_at(city.map.world_to_tile(to))
+	if start < 0 or goal < 0:
+		return -1.0
+	var seen := {start: 0}
+	var queue: Array[int] = [start]
+	var head := 0
+	while head < queue.size():
+		var node: int = queue[head]
+		head += 1
+		if node == goal:
+			return float(seen[node]) * ReachabilityGrid.CELL * Tuning.TILE_SIZE
+		for edge: Array in grid.neighbours(node):
+			var next: int = edge[0]
+			if seen.has(next):
+				continue
+			var centre := EventScheduler.WalkSiting._cell_centre(city.map, grid.cell_of(next))
+			if next != goal:
+				if centre.distance_to(plan.position) <= plan.def.outer_radius:
+					continue
+				if engine and engine_at != Vector2.INF \
+						and centre.distance_to(engine_at) <= engine.outer_radius:
+					continue
+			seen[next] = int(seen[node]) + 1
+			queue.append(next)
+	return -1.0
+
 # ------------------------------------------------------------- the two routes ---
+
+func _the_walk(city: City, day: int, walk_name: String) -> PackedVector2Array:
+	match walk_name:
+		"out and back":
+			return _out_and_back(city, day)
+		"turns back":
+			return _turns_back_at_the_first_junction(city, day)
+		"off the path":
+			return _off_the_path(city)
+		_:
+			return _stays_near_home(city, day)
+
+## **A player walking her own line rather than the day's.** She leaves the doorstep due east and
+## keeps going, through the lattice, turning round at the border — which is off the tree most of the
+## way, so most attempts find no branch to be ahead on and the fire waits. It is the case the
+## acceptance rules are meant to answer with patience, and the case E exists for: a day she can win
+## without ever having been offered the fire at all.
+func _off_the_path(city: City) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var at := city.map.doorstep_world_position()
+	var heading := Vector2.DOWN
+	var step := Tuning.TILE_SIZE * 4.0
+	for i in 80:
+		var next := at + heading * step
+		if not city.map.in_bounds(city.map.world_to_tile(next + heading * step * 4.0)):
+			heading = Vector2.RIGHT if heading == Vector2.DOWN else -heading
+			next = at + heading * step
+		at = next
+		points.append(at)
+	return points
+
+## **A player who spends the day on her own street.** She walks the first few cells of the day's
+## route and back, over and over — so she is either inside `ON_HER_WAY_BEYOND_HOME` of the doorstep,
+## where no siting is due at all, or on the tree with the fire sited a streaming band away that she
+## never closes. Either way it is a day 3 she can win with the fire owed and never once in the
+## world, which is exactly what the end-of-day lighting is for.
+func _stays_near_home(city: City, day: int) -> PackedVector2Array:
+	var route := _out_and_back(city, day)
+	var near := PackedVector2Array()
+	var stretch := mini(NEAR_HOME_CELLS, route.size())
+	for lap in 8:
+		for i in stretch:
+			near.append(route[i])
+		for i in range(stretch - 1, -1, -1):
+			near.append(route[i])
+	return near
+
+## How much of the route out a player who stays near home walks, in cells.
+const NEAR_HOME_CELLS := 8
 
 ## The day's longest route, walked from the doorstep out to its calm area and back again.
 func _out_and_back(city: City, day: int) -> PackedVector2Array:

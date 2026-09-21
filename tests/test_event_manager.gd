@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_the_fire_burns_where_her_walk_put_it(t)
 	_test_the_fire_she_did_not_choose_leaves_her_a_way_out(t)
 	_test_a_fire_that_was_never_lit_was_not_spent(t)
+	_test_a_won_day_with_the_fire_unmet_still_burns(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -45,6 +46,49 @@ func _build_city(t) -> void:
 ## replace it — the manager's reference count across days and teardown, and every picture a look
 ## can draw resolving on the `events` page — are about `AtlasLibrary` rather than about this
 ## suite's city.
+
+## **A day 3 she wins with the fire never in the world still burns.** *"I agree with the fire fix"*
+## (PLAYTEST-121). The row's only day is day 3 and it is spent where it enters the world, so a day
+## she wins while every siting waited would leave the run with no fire, no scar and no shell — and
+## the shell is what the city remembering day 3 is made of. It is lit at the end of the day instead,
+## off her path, by the same acceptance rules.
+##
+## Nothing walks here, which is the case: a day nobody walked far enough into for a siting to be due
+## is the cheapest way to produce exactly the state this is for.
+func _test_a_won_day_with_the_fire_unmet_still_burns(t) -> void:
+	var scars_before := GameState.scars.duplicate()
+	var day := Tuning.RUN_TAUGHT_DAY
+	_start(day)
+	var plan := _fire_plan()
+	t.check(plan != null and not plan.is_placed() and not plan.was_live,
+			"the day ends with the fire owed, planned and never in the world")
+	if not plan:
+		return
+	var doorstep := _city.map.doorstep_world_position()
+	t.check(_city.events.light_what_she_never_met(doorstep),
+			"the end of a won day lights it")
+	t.check(plan.is_placed() and plan.was_live,
+			"and it has been in the world, which is what records what a fire does to a run")
+	t.check(plan.position.distance_to(doorstep)
+			>= EventScheduler.WalkSiting.DUSK_CLEAR_OF_HER,
+			("it is lit %.0fpx from where she finished, past the %.0fpx streaming band, so it is "
+			% [plan.position.distance_to(doorstep),
+			EventScheduler.WalkSiting.DUSK_CLEAR_OF_HER]) + "nowhere she could have seen it happen")
+	var scar_here := false
+	for scar in GameState.scars:
+		scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
+				and Vector2(scar["position"]).distance_to(plan.position) < 1.0)
+	t.check(scar_here, "and the shell the run keeps is standing where it burned")
+	var still_alight := false
+	for instance in _city.events.instances():
+		still_alight = still_alight or instance.def.id == "burning_building"
+	t.check(not still_alight,
+			"and nothing is left burning in a day that is over")
+
+	# A second call on the same day has nothing left to light: the one-shot is spent.
+	t.check(not _city.events.light_what_she_never_met(doorstep),
+			"a run gets exactly one fire, however many times the day ends")
+	GameState.scars = scars_before
 
 func _teardown() -> void:
 	_city.free()

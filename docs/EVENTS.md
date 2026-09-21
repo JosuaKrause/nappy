@@ -822,6 +822,17 @@ route you chose that day)"* (PLAYTEST-117). Three things make that hold:
   got to. A day she walks into a corner is a day it waits. Where the band itself holds no face the
   window widens **along the same branch**, first to twice its width and then to the end of the route
   she is on, before anything else is considered; it never leaves the tree.
+- **And a day she wins while it waited still burns.** *"I agree with the fire fix"* (PLAYTEST-121).
+  The row runs on day 3 and no other day and is spent where it enters the world, so a won day on
+  which every siting was refused would leave the run with no fire, no scar and no shell — and the
+  shell is what the city remembering day 3 is made of. `EventManager.light_what_she_never_met()`
+  lights it at the end of such a day, **off her path**: past the streaming band from where she
+  finished, so it is nowhere she could have seen it happen, and off the ground the day's routes run
+  along where there is any, by the same acceptance rules every other site is chosen by. It records
+  what a fire records — the scar, the block's arc, the one-shot spent — and is taken back out of the
+  world, since the day is over. Meeting it stays the strong guarantee; this is what the weak one
+  owes. A **lost** day never lights one: a loss gives the whole attempt back (`GameState.finish_day`)
+  and the retry owes a fire again.
 
 The fire engine is not part of this. It is never scheduled at all, and arrives only once the
 building it answers has been seen (`EventDef.spawns_on_sight`,
