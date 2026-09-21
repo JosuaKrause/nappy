@@ -342,7 +342,13 @@ func _place_at_a_door(rng: RandomNumberGenerator) -> Vector2:
 	for segment in plan.doors:
 		var rect := segment.tile_rect()
 		candidates.append(rect.position + rect.size / 2)
-	return _pick_reachable(candidates, rng)
+	# `allow_held` is not optional here, it is the whole placement: every one of these tiles
+	# sits on a segment `EventManager.start_day()` already held for the day (held so no catalogue
+	# row may be sited on a door — see `CityMap.held_segments`), and this director runs after
+	# that. The held filter would refuse the exact ground the task names: with it applied, every
+	# door candidate read `held` and step 8 answered `Vector2.INF` in every run — "nowhere to
+	# go" — so the crossing task never appeared at all.
+	return _pick_reachable(candidates, rng, true)
 
 ## Where day 12's task points: the swing of one specific park's playground —
 ## `CityMap.playgrounds`, which already names only the parks currently open (a requisitioned
@@ -389,12 +395,21 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## one still returns it rather than `Vector2.INF`. `GameState.completed_resistance_alley_tiles`
 ## only ever holds `ALLEY` tiles (see `_on_contact_completed()`), so this filter is a silent no-op
 ## against every other kind of placement, none of which is ever an alley.
-func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator) -> Vector2:
+##
+## **`allow_held` skips only the `is_held_at` refusal, and only one caller passes it.** Held
+## ground means *no hazard or catalogue row may be sited here*; a contact is neither, and for a
+## step whose candidates are the held region-door segments themselves (`_place_at_a_door()`) the
+## filter would refuse the very ground the task points at. It did — see that call's own note.
+## The other four refusals stand even then: a door on closed, unwalkable, home-block or
+## walled-alley ground is still a door she cannot cross today.
+func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
+		allow_held := false) -> Vector2:
 	var walled_alleys := _walled_alleys()
 	var reachable: Array[Vector2i] = []
 	var unused: Array[Vector2i] = []
 	for tile in candidates:
-		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
+		if not _map.is_walkable(tile) or _map.is_closed(tile) \
+				or (not allow_held and _map.is_held_at(tile)) \
 				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		reachable.append(tile)
