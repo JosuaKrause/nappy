@@ -117,3 +117,37 @@ rooftops, and the park stays a surprise.
     18 of [PLAYTEST-119](PLAYTEST-119.md) has her settle the baby in another park once this one
     closes, so it cannot be the last. Written as the parks being fenced one at a time, with the
     group knowing this one is next, which is why the errand is that day; open to correction.
+
+## On the last read of the pull request
+
+The orchestrator reported the correction to "the last one open", six inconsistencies it had
+fixed, that it had put the power station outside the home's district as its own choice, that
+"a landmark she has passed since day 1" assumed a view from afar the top-down city does not
+have, and one tie between the posters and the story that it had not written down: the neighbor
+as one of the wanted notice's faces, crossed out if day 10 was failed.
+
+> "let's correct the "last one open" narration. we also don't need to stick to the same
+> taglines in day brief. we can mention other things. fix the issues you mentioned. power
+> station should be a reasonable distance away -- the route does not need to go past it from
+> day one. the narrative demands a gate crossing for reaching it. rather fix the wording about
+> "a landmark...day 1". I like the idea with the crossed out face if 10 is failed. other than
+> that we can keep this mechanic separate with no story tie in. agree with the rest of your
+> comments. after the fixes are done let's merge the PR. then start finishing up the fire PR
+> and start with the tasks redesign implementation"
+
+11. **The correction to "the last one open" stands**: the parks go one at a time and the one
+    she is sent to is next.
+12. **A day brief line is not tied to its day's task or happening.** It may mention other
+    things.
+13. **The power station is a reasonable distance from the home**, and her routes need not pass
+    it from day 1. **Reaching it takes a door crossing**, which the story demands. *Set by the
+    orchestrator as open to overturn · decided by the player.* The sentence about a landmark
+    she has passed since day 1 goes.
+14. **One face on the wanted notice is the neighbor's, crossed out if day 10 was failed.**
+    Beyond that the posters and tearing them stay separate from the story.
+15. **The rest of the orchestrator's comments are agreed**: `docs/NARRATIVE.md` is rewritten
+    with M181 and M183, and the end-of-day fire becomes an instruction on the pull request for
+    M179, the fire is on her way, guaranteed.
+16. **The docs pull request merges once these fixes are in**, which overturns statement 28 of
+    [PLAYTEST-119](PLAYTEST-119.md) on the player's word. Then M179 is finished and the build
+    of M181, the resistance has a reason, and a task is one day, starts.

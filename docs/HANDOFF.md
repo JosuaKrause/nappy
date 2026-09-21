@@ -310,8 +310,9 @@ checks and worktrees can move independently of this file.
   ([PLAYTEST-117](playtests/PLAYTEST-117.md): "that would be the next after this and warrants a
   minor release"): M179, the fire is on her way, guaranteed; M180, posters she notices, and
   loudspeakers that are somewhere; M183, the power station and the blackout, whose front door
-  is day 14's task; then M181, the resistance has a reason, and a task is one day, which needs
-  the places the first three make. All four are decided in `TODO.md`
+  is day 14's task; and M181, the resistance has a reason, and a task is one day, whose build
+  starts alongside them on the player's word, with day 11's mast and day 14's door waiting on
+  M180 and M183. All four are decided in `TODO.md`
   ([PLAYTEST-118](playtests/PLAYTEST-118.md), [PLAYTEST-119](playtests/PLAYTEST-119.md),
   [PLAYTEST-120](playtests/PLAYTEST-120.md), [PLAYTEST-121](playtests/PLAYTEST-121.md)). M182, a
   finished task is shown by the world, has the other tasks' answers open and is decided with M181.

@@ -482,6 +482,14 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       | Day 8, act III | The dark uniform sheets under the emblem, pasted over the older ones | Whole walls, edge to edge, on the streets she uses most |
       | Day 12, act IV | The wanted notice | Dense: most walls on a main street carry something; the portrait is everywhere |
 
+      **One face on the wanted notice is the neighbor's** ([PLAYTEST-121](playtests/PLAYTEST-121.md):
+      "I like the idea with the crossed out face if 10 is failed"): the neighbor she is sent to
+      warn on day 10 (M181, the resistance has a reason, and a task is one day) is among the
+      faces from day 12, drawn to match the figure she met or missed, and **crossed out in red
+      if day 10's task was not done on the day she won**. Never explained. It is the posters'
+      one tie to the story: "other than that we can keep this mechanic separate with no story
+      tie in", so tearing stays a gimmick that counts for nothing.
+
       A kind that has arrived stays in the mix; nothing is taken down except by her. SVG first, as
       every picture here is, and the first drawn wall comes back to the player as pictures in
       the pull request before anything is polished.
@@ -515,13 +523,14 @@ a task is one day, whose day 14 goes to this building's front door.
       candidates allow, so a seed can end with none; the guarantee is checked when the
       footprint is accepted, never repaired afterwards. What it does to existing seeds and
       saves is measured and said. Which district it stands in is the orchestrator's and open
-      to overturn: industrial, and **not the home's district**, since day 9's task in M181, the
-      resistance has a reason, and a task is one day, is for a station that is across a door;
-      day 14 then crosses one, and the guarantee that the front door can be reached on day 14
+      to overturn: industrial. **It is not in the home's district**, decided by the player on
+      2026-09-21, since day 9's task in M181, the resistance has a reason, and a task is one
+      day, is for a station that is across a door; day 14 crosses one, and the guarantee that the front door can be reached on day 14
       is checked with the doors and that day's closures in place.
-      **It stands from day 1 and looks the same until the last night**, stacks and lit
-      windows, so a player who has walked that way knows the place they are sent to
-      ([PLAYTEST-121](playtests/PLAYTEST-121.md)).
+      **It is a reasonable distance from the home, and reaching it takes a door crossing**
+      ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the route does not need to go past it from
+      day one. the narrative demands a gate crossing for reaching it"). It is in the city from
+      day 1 like every building, and nothing leads her to it before day 14.
 - [ ] **The blackout is everything at once.** After she has touched the front door, once she
       is a set distance from the station, every lit window goes dark, every traffic light goes
       off and every loudspeaker mast stops, in one frame. *The orchestrator recommended the
@@ -558,9 +567,12 @@ a task is one day, whose day 14 goes to this building's front door.
 [PLAYTEST-117](playtests/PLAYTEST-117.md) has the whole message, the orchestrator's opinion
 and the questions put back with their options; [PLAYTEST-118](playtests/PLAYTEST-118.md) has
 the answers on the calendar's order, the spare task and the walk home. **Decided by the
-player; built after M179, the fire is on her way, M180, posters she notices, and loudspeakers
-that are somewhere, and M183, the power station and the blackout**, since three of its tasks go
-to places those make. The mark's noticing rule is built (`DECISIONS.md`,
+player, and its build starts now on the player's word** ([PLAYTEST-121](playtests/PLAYTEST-121.md):
+"start with the tasks redesign implementation"). Three of its tasks go to places other
+milestones make: the burnt shell is M179's, the fire is on her way, guaranteed, and is a scar
+the run already records; **day 11's mast waits on M180**, posters she notices, and loudspeakers
+that are somewhere, **and day 14's front door waits on M183**, the power station and the
+blackout, until when day 14 keeps the last night's contact it has. The mark's noticing rule is built (`DECISIONS.md`,
 M177, the second mark is any alley she comes across), and the mark is drawn as it always was.
 
 **Decided:**
@@ -647,7 +659,7 @@ mandatory if it makes more sense") · not taken, since no row needs it.*
 | 7 | The package at the van's drop | From the group to the neighbor. The driver is a sympathizer; the package is tools and a lamp. She carries it home, which is where the neighbor lives. | Somebody else risks the building. |
 | 8 | The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A cordoned ruin is where nobody goes, so it is the dead drop. Whether day 3's fire was an accident is never answered. | The drawing goes out another way. |
 | 9 | Cross a named door | The districts closed that morning and the station is across one. She finds out whether a stroller gets through. | Somebody else finds out. |
-| 10 | Warn the neighbor before the raid | The regime has found the worker. She reaches the neighbor out in the city before they walk home into the vans, which are at her own building when she gets back. Warned, the neighbor runs; not warned, the neighbor is taken. The door is sealed the next morning either way, and the drawing already left on day 8. | The same sealed door, for the worse reason. |
+| 10 | Warn the neighbor before the raid | The regime has found the worker. She reaches the neighbor out in the city before they walk home into the vans, which are at her own building when she gets back. Warned, the neighbor runs; not warned, the neighbor is taken, and theirs is the face crossed out on day 12's wanted notice (M180, posters she notices, and loudspeakers that are somewhere). The door is sealed the next morning either way, and the drawing already left on day 8. | The same sealed door, for the worse reason. |
 | 11 | Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | The group goes in not knowing. |
 | 12 | The swing | Feeling watched, the neighbor hid the station key at the swing before the raid, so it is there whether or not she warned them. The parks are being fenced one at a time and the group knows this one is next, which is why it is today; she gets the key out as the park is taken. | Another courier fetches it. |
 | 13 | Into a roadblock's band | The army arrived that morning, which is the column on the main road. She finds out how close a parent with a crying baby can come to a held street before its guard moves, because the last night's way passes one; nobody looks twice at a screaming baby, so the cost of the task is its cover, and the guard's reach is still the guard's reach. | The last night is a guess. |
@@ -701,7 +713,10 @@ if the shape does:
 | 13 | There are army trucks on the main road. |
 | 14 | The last night. |
 
-The lines for days 8 to 13 follow the calendar above and move with it.
+The lines for days 8 to 13 follow the calendar above and move with it. **A line is not tied
+to its day's task or once-only happening** ([PLAYTEST-121](playtests/PLAYTEST-121.md): "we
+also don't need to stick to the same taglines in day brief. we can mention other things"), so
+one that would give the day away says something else that is true that morning.
 
 ---
 
