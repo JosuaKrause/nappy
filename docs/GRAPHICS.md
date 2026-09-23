@@ -366,25 +366,28 @@ that are somewhere, asks for. Every file below is **prepared** and unbound: no r
 scene or resource reads any of them yet — placing them on a building face, the crew that pastes
 them and tearing one down are later slices.
 
-Each is a 32×32 canvas matching a wall tile's own grid, with a 20×25px sheet (62.5% × 78% of the
-tile) drawn inside it, so a later placement can register straight onto a wall cell the way
-`wall_base.svg` already does.
+Each is a 32×32 canvas matching a wall tile's own grid, so a later placement can register
+straight onto a wall cell the way `wall_base.svg` already does. Every kind but the torn one is a
+20×22px sheet (62.5% × 69% of the tile) at x 6–26, y 3–25: a gap on all four sides of its tile,
+the foot clear of the plinth `wall_base.svg` draws from y 26, and the cell's window
+(`window_*.svg`, x 8–24, y 8–25) hidden under it.
 
 | Asset | What it draws |
 |---|---|
-| `poster_leader.svg` | The leader's portrait: a nondescript face, no name, with a plain caption-band colour strip carrying no letters. |
-| `poster_rules.svg` | The rules: a pale printed notice with a heavy header bar, four gray print-line rows and a rotated red stamp. |
-| `poster_curfew.svg` | The curfew sheet: the same notice with a clock face in place of one print line, for day 6 onward. |
+| `poster_leader.svg` | The leader's portrait: a nameless bust on a slate ground, rounded, heavy-jawed and scowling — brows pulled down to the nose, a hard stare, a mouth turned down at both corners — over a dark uniform collar, with a plain caption band carrying no letters. |
+| `poster_rules.svg` | The rules: a pale printed notice with a heavy header bar, a rotated red stamp and three print lines, each a 2×3px dark bar, a 1px gap, then a 1px gray line along the bar's foot. |
+| `poster_curfew.svg` | The curfew sheet: the same notice with a clock face under the header in place of the first print line, for day 6 onward. |
 | `poster_uniform.svg` | The dark uniform sheet: an invented ring-and-bar emblem, asymmetric so it does not read as a cross, matching no real flag, party, state or movement mark. |
-| `poster_wanted.svg` | The wanted notice: six mugshot-framed faces in two columns of three, drawn in a squarer, flatter style than the leader's oval portrait. The row-2, column-1 slot is a placeholder adult face standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their face. |
-| `poster_wanted_crossed.svg` | The same sheet with only that one slot crossed out in red, for a day 10 that was not won. |
-| `poster_torn.svg` | A generic torn sheet, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top strip stays pasted, a flap hangs loose and rotated, and the wall shows through the gap. |
+| `poster_wanted.svg` | The wanted notice: four people in two rows of two, each a flat dark head-and-shoulders silhouette on a pale mugshot panel — a different style from the leader's coloured portrait. The top-right face is crossed out in red on every copy. The bottom-left slot, the SVG group `neighbor_slot` (a 7×7 panel at 8,16), is a placeholder adult standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their figure. |
+| `poster_wanted_crossed.svg` | The same sheet with the `neighbor_slot` face crossed out in red as well, for a day 10 whose task was not done on the day she won. |
+| `poster_torn.svg` | A generic torn sheet, prepared for "she tears a poster down by pushing against its wall" (M180's second item), still on a 20×25px sheet that reaches the plinth. It does not read as torn, and is to be redrawn from reference photos the player is taking. |
 
 No sheet carries readable words — every print line, header and stamp is a colour block or a gray
 line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the politics).
 
-[The poster review sheet](evidence/poster-art-review-2026-09-23.png) shows each alone at game
-scale (2×, the camera's own zoom) and at 4× that, plus three building faces assembled from the
-real `art/buildings/` wall, window and plinth textures at each act's own daylight cast
-(`Palette.act_tint()`), carrying posters at the day 4/day 8/day 12 densities M180's own table
-asks for.
+[The poster review sheet](evidence/poster-art-review-2026-09-23-second-pass.png) shows each kind
+but the torn one on a single ground-row wall cell at game scale (2×, the camera's own zoom) and
+at 4× that, plus three building fronts assembled from the real `art/buildings/` wall, window,
+edge and plinth textures, multiplied by a building colour and each act's own cast
+(`Palette.act_tint()`), carrying one row of posters at the day 4/day 8/day 12 densities M180's
+own table asks for.
