@@ -1,0 +1,44 @@
+<!-- The wanted notice: rows of faces in a bureaucratic mugshot-frame style, distinct from the
+     leader's oval portrait. Same 20x25 sheet area as the other poster kinds — see
+     poster_leader.svg. Six slots, two columns of three; the row-2, column-1 slot (marked
+     below) is the one swappable slot — a placeholder adult face standing in for the
+     neighbor from M181's day 10, who is not drawn yet. This file is that slot's uncrossed
+     state; poster_wanted_crossed.svg is the same sheet with only that slot crossed out in
+     red. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="6" y="4" width="20" height="25" fill="#cfc9ba" stroke="#3b3034" stroke-width="1"/>
+  <rect x="6" y="4" width="20" height="3" fill="#4a463f"/>
+  <!-- row 1 -->
+  <g>
+    <rect x="9" y="7" width="7" height="6" fill="#bdb6a4" stroke="#3b3034" stroke-width="0.6"/>
+    <rect x="10.5" y="8" width="4" height="3" fill="#7d6b5a"/>
+    <rect x="10" y="11" width="5" height="2" fill="#7d6b5a"/>
+  </g>
+  <g>
+    <rect x="18" y="7" width="7" height="6" fill="#bdb6a4" stroke="#3b3034" stroke-width="0.6"/>
+    <rect x="19.5" y="8" width="4" height="3" fill="#7d6b5a"/>
+    <rect x="19" y="11" width="5" height="2" fill="#7d6b5a"/>
+  </g>
+  <!-- row 2 — left slot is the placeholder adult face, the neighbor's, swappable in a later slice -->
+  <g>
+    <rect x="9" y="15" width="7" height="6" fill="#bdb6a4" stroke="#3b3034" stroke-width="0.6"/>
+    <rect x="10.5" y="16" width="4" height="3" fill="#7d6b5a"/>
+    <rect x="10" y="19" width="5" height="2" fill="#7d6b5a"/>
+  </g>
+  <g>
+    <rect x="18" y="15" width="7" height="6" fill="#bdb6a4" stroke="#3b3034" stroke-width="0.6"/>
+    <rect x="19.5" y="16" width="4" height="3" fill="#7d6b5a"/>
+    <rect x="19" y="19" width="5" height="2" fill="#7d6b5a"/>
+  </g>
+  <!-- row 3 -->
+  <g>
+    <rect x="9" y="23" width="7" height="6" fill="#bdb6a4" stroke="#3b3034" stroke-width="0.6"/>
+    <rect x="10.5" y="24" width="4" height="3" fill="#7d6b5a"/>
+    <rect x="10" y="27" width="5" height="2" fill="#7d6b5a"/>
+  </g>
+  <g>
+    <rect x="18" y="23" width="7" height="6" fill="#bdb6a4" stroke="#3b3034" stroke-width="0.6"/>
+    <rect x="19.5" y="24" width="4" height="3" fill="#7d6b5a"/>
+    <rect x="19" y="27" width="5" height="2" fill="#7d6b5a"/>
+  </g>
+</svg>
