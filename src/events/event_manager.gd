@@ -554,6 +554,16 @@ func retire(instance: EventInstance) -> void:
 	if instance and is_instance_valid(instance) and not instance.is_finished:
 		instance._finish()
 
+## Today's own foot for a mast id, or `Vector2.INF` if today carries no mast with that id — the
+## point M181's day-11 task (silence a mast by reaching its foot, the way she touches a chalk
+## mark) needs a red arrow and a touch radius stated against. Reads the ordinary broadcast's own
+## plan, which always exists for a live mast's id; the curfew announcement shares the same foot.
+func mast_foot(mast_id: String) -> Vector2:
+	for plan in _plans:
+		if plan.mast_id == mast_id and plan.def.id == "loudspeaker":
+			return plan.position
+	return Vector2.INF
+
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
 ## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
 ## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never

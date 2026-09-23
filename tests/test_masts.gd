@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t)
 	_build_city(t)
 	_test_they_all_speak_together(t)
+	_test_mast_foot_answers_a_stable_id(t)
 	_test_silencing_one_mast_works_for_the_rest_of_the_day(t)
 	_test_silencing_every_mast_works_for_the_rest_of_the_day(t)
 	_teardown()
@@ -204,6 +205,14 @@ func _test_they_all_speak_together(t) -> void:
 	if plan_a and plan_a.live and plan_b and plan_b.live:
 		t.check(not is_equal_approx(plan_a.live.age, plan_b.live.age),
 				"they were not both stamped the instant they happened to stream in")
+
+func _test_mast_foot_answers_a_stable_id(t) -> void:
+	_city.events.start_day(Tuning.MAST_FIRST_DAY, _rng(Tuning.MAST_FIRST_DAY), [])
+	var site := _sites()[0]
+	t.check(_city.events.mast_foot(site.id).distance_to(site.foot) < 0.01,
+			"mast_foot() answers the same point MastSites named for this id")
+	t.check(_city.events.mast_foot("not_a_real_mast") == Vector2.INF,
+			"and INF for an id today does not carry")
 
 # -------------------------------------------------------------- silencing ---
 
