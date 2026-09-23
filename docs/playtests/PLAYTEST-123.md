@@ -42,3 +42,26 @@ sitting on the wall's lowest row.
    first attempt was made by a Sonnet agent, the orchestrating skill's default for
    implementation.
 9. **The emblem was not commented on**, so it stands as drawn until the player says otherwise.
+
+## Later the same day, on the second pass
+
+The orchestrator had offered a prompt for generating the posters with an image model, and
+showed the second sheet (a grumpy leader, bar-gap-line rules, head-and-shoulders silhouettes, a
+margin on every side). The player had said of the torn poster: "the 'torn poster' looks nothing
+like a torn poster. let me create some references".
+
+> "I don't want PNGs yet -- I'm giving you the references so you can make the stylized SVGs -- I
+> will use codex later to convert to png using the appropriate skills. unless claude has an image
+> creation tool now the png creation is a codex only task. the second pass looks better already.
+> one note, for the posters to work there needs to be spaces without windows on the ground floor
+> otherwise poster will be put over windows which doesn't make sense."
+
+10. **The torn poster is redrawn as a stylized SVG from the player's reference photos**; no PNG
+    comes before the SVGs are settled.
+11. **PNG conversion is Codex's**, with the illustrated-png skill, since Claude Code has no image
+    generator. A Claude session does not write image-model prompts for it.
+12. **The second pass is better** than the first.
+13. **A ground floor has stretches of wall without windows, and posters go there.** A poster
+    pasted over a window makes no sense, so the building fronts owe blank wall on the ground
+    floor for the posters to use.
+
