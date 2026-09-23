@@ -201,7 +201,7 @@ def storefronts(before_dir: Path, after_dir: Path, out: Path) -> int:
     height += pad + 22 + sum(max(im.height for im, _ in r) + 26 for r in [*big_rows, before_big]) + pad
     sheet = Image.new("RGB", (width, height), PAPER)
     d = ImageDraw.Draw(sheet)
-    d.text((pad, pad), "Storefronts: after (proposal) against before — grocer, cafe, pharmacy, sign shop",
+    d.text((pad, pad), "Storefronts: after (proposal) against before. Grocer, cafe, pharmacy, sign shop",
            fill=INK, font=font)
     y = pad + 34
     for r in rows:
