@@ -450,6 +450,9 @@ func _spawn_buildings() -> void:
 		building.district = map.starting_purpose(_block_of(rect))
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
+		# Every lot on the home block is hers — the door's own notch carves no `Building` of its
+		# own, so this is every wall standing around it.
+		building.is_home_building = _block_of(rect) == map.home_block
 		_dress_the_power_station(building, rect)
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block

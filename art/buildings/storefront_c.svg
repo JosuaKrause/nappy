@@ -1,9 +1,37 @@
-<!-- Pharmacy frontage: fixed 26×34 entrance at left and display at right. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36" viewBox="0 0 64 36" shape-rendering="crispEdges">
-  <rect width="64" height="36" fill="#789092"/>
-  <rect x="2" y="2" width="26" height="34" fill="#8d5c48"/><rect x="5" y="5" width="20" height="31" fill="#5c3a30"/>
-  <rect x="7" y="8" width="16" height="10" fill="#4a2e26"/><path d="M7 19H23" stroke="#9b6d55"/><circle cx="20" cy="27" r="1.5" fill="#c9a86a"/>
-  <rect x="34" y="4" width="26" height="30" fill="#31464f" stroke="#3b3034"/><rect x="37" y="7" width="20" height="23" fill="#87aeb0"/>
-  <path d="M47 9V28 M39 18H55" stroke="#e0d4ad" stroke-width="3"/>
-  <rect y="34" width="64" height="2" fill="#4e3a3b"/>
+<!-- Pharmacy frontage.
+     64x36, drawn in place of the plinth across two facade columns, its fill opaque over the
+     wall; the 26x34 entrance (x 2..28, y 2..36) at left, the display bay at right, both on the
+     shared ground line at y 36. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36" viewBox="0 0 64 36" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <rect width="64" height="36" fill="#d6d2c6" stroke="none"/>
+  <path d="M0 0.6 H64" fill="none" stroke="#a7a295" stroke-width="1.2"/>
+  <path d="M0 1 H2 V34 H0 Z M28 1 H30 V34 H28 Z M62 1 H64 V34 H62 Z" fill="#efece3" stroke="none"/>
+  <path d="M2 1 V34 M28 1 V34 M30 1 V34 M62 1 V34" fill="none" stroke="#a7a295" stroke-width="0.6"/>
+  <path d="M3.5 2.5 H26.5 V34 H3.5 Z" fill="#a7a295" stroke-width="0.8"/>
+  <path d="M5 4 H25 V34 H5 Z" fill="#2a2630" stroke-width="0.6"/>
+  <path d="M6 5 H24 V9.2 H6 Z" fill="#7f9496" stroke-width="0.5"/>
+  <path d="M7 8.4 L9.4 5.6 M15 8.4 L17.4 5.6" fill="none" stroke="#dfeaee" stroke-width="0.5" stroke-opacity="0.55"/>
+  <path d="M6 9.8 H18.4 V33.6 H6 Z" fill="#d6d2c6" stroke-width="0.6"/>
+  <path d="M7.6 11.4 H16.8 V25 H7.6 Z" fill="#7f9496" stroke-width="0.5"/>
+  <path d="M8.4 23.4 L13.6 12.4 M11.6 24.2 L15.8 15.4" fill="none" stroke="#dfeaee" stroke-width="0.6" stroke-opacity="0.5"/>
+  <path d="M7.6 27 H16.8 V32.4 H7.6 Z" fill="#a7a295" stroke-width="0.5"/>
+  <path d="M8.2 31.8 V27.6 H16.2" fill="none" stroke="#efece3" stroke-width="0.5"/>
+  <path d="M15.2 18 V22.6" fill="none" stroke="#d2b267" stroke-width="1.1"/>
+  <path d="M19.2 9.8 H24 V33.6 H19.2 Z" fill="#d6d2c6" stroke-width="0.6"/>
+  <path d="M20.2 11.4 H23 V25 H20.2 Z" fill="#7f9496" stroke-width="0.5"/>
+  <path d="M20.2 27 H23 V32.4 H20.2 Z" fill="#a7a295" stroke-width="0.5"/>
+  <path d="M3 33.6 H27 L27.6 35.2 H2.4 Z" fill="#aea797" stroke-width="0.5"/>
+  <path d="M30.8 1.6 H61.2 V9 H30.8 Z" fill="#3f7c77" stroke-width="0.8"/>
+  <path d="M34 3 H35.8 V4.8 H37.6 V6.6 H35.8 V8.4 H34 V6.6 H32.2 V4.8 H34 Z" fill="#5cae62" stroke-width="0.5"/><path d="M40 4.6 H44 M45.4 4.6 H48.2 M49.6 4.6 H54.4 M55.8 4.6 H58.6 M40 6.9 H46 M47.4 6.9 H52.6" fill="none" stroke="#f1efe7" stroke-width="1.1"/>
+  <path d="M30.8 9.9 H61.2 V30.4 H30.8 Z" fill="#a7a295" stroke-width="0.8"/>
+  <path d="M32 11.2 H60 V29.4 H32 Z" fill="#9fb2b3" stroke="none"/>
+  <path d="M32 11.2 H60 V15.6 H32 Z" fill="#c3d0cf" stroke="none" fill-opacity="0.6"/>
+  <path d="M32 17 H60 M32 22.5 H60 M32 28 H60" fill="none" stroke="#7f8f90" stroke-width="0.9"/><path d="M32.8 16.5 V12.5 H35.2 V16.5" fill="#6fa0b8" stroke-width="0.4"/><path d="M36.2 16.5 V13.9 H37.8 V16.5" fill="#d98f8c" stroke-width="0.4"/><path d="M38.8 16.5 V13.2 H41.2 V16.5" fill="#f2f0ea" stroke-width="0.4"/><path d="M42.2 16.5 V12.5 H43.8 V16.5" fill="#8cc08e" stroke-width="0.4"/><path d="M44.8 16.5 V13.9 H47.2 V16.5" fill="#e8d38a" stroke-width="0.4"/><path d="M48.2 16.5 V13.2 H49.8 V16.5" fill="#6fa0b8" stroke-width="0.4"/><path d="M50.8 16.5 V12.5 H53.2 V16.5" fill="#f2f0ea" stroke-width="0.4"/><path d="M54.2 16.5 V13.9 H55.8 V16.5" fill="#f2f0ea" stroke-width="0.4"/><path d="M56.8 16.5 V13.2 H59.2 V16.5" fill="#6fa0b8" stroke-width="0.4"/><path d="M32.8 22.0 V18.7 H34.4 V22.0" fill="#6fa0b8" stroke-width="0.4"/><path d="M35.4 22.0 V18.0 H37.8 V22.0" fill="#f2f0ea" stroke-width="0.4"/><path d="M38.8 22.0 V19.4 H40.4 V22.0" fill="#f2f0ea" stroke-width="0.4"/><path d="M41.4 22.0 V18.7 H43.8 V22.0" fill="#6fa0b8" stroke-width="0.4"/><path d="M44.8 22.0 V18.0 H46.4 V22.0" fill="#d98f8c" stroke-width="0.4"/><path d="M47.4 22.0 V19.4 H49.8 V22.0" fill="#f2f0ea" stroke-width="0.4"/><path d="M50.8 22.0 V18.7 H52.4 V22.0" fill="#8cc08e" stroke-width="0.4"/><path d="M53.4 22.0 V18.0 H55.8 V22.0" fill="#e8d38a" stroke-width="0.4"/><path d="M56.8 22.0 V19.4 H58.4 V22.0" fill="#6fa0b8" stroke-width="0.4"/><path d="M32.8 27.5 V24.2 H34.4 V27.5" fill="#8cc08e" stroke-width="0.4"/><path d="M35.4 27.5 V23.5 H37.8 V27.5" fill="#e8d38a" stroke-width="0.4"/><path d="M38.8 27.5 V24.9 H40.4 V27.5" fill="#6fa0b8" stroke-width="0.4"/><path d="M41.4 27.5 V24.2 H43.8 V27.5" fill="#f2f0ea" stroke-width="0.4"/><path d="M44.8 27.5 V23.5 H46.4 V27.5" fill="#f2f0ea" stroke-width="0.4"/><path d="M47.4 27.5 V24.9 H49.8 V27.5" fill="#6fa0b8" stroke-width="0.4"/><path d="M50.8 27.5 V24.2 H52.4 V27.5" fill="#d98f8c" stroke-width="0.4"/><path d="M53.4 27.5 V23.5 H55.8 V27.5" fill="#f2f0ea" stroke-width="0.4"/><path d="M56.8 27.5 V24.9 H58.4 V27.5" fill="#8cc08e" stroke-width="0.4"/><path d="M44.2 12.4 H47.8 V15.4 H50.8 V19 H47.8 V22 H44.2 V19 H41.2 V15.4 H44.2 Z" fill="#5cae62" stroke-width="0.6"/>
+  <path d="M32 11.2 H60 V29.4 H32 Z" fill="#d7e6ea" fill-opacity="0.1" stroke="none"/>
+  <path d="M33 27.6 L40.4 12 M36.4 28.6 L43.4 13.6 M48.4 27.6 L55.8 12" fill="none" stroke="#f3f7f8" stroke-width="0.8" stroke-opacity="0.38"/>
+  <path d="M45.4 11.2 H46.6 V29.4 H45.4 Z" fill="#a7a295" stroke-width="0.5"/>
+  <path d="M32 11.2 H60 V29.4 H32 Z" fill="none" stroke-width="0.7"/>
+  <path d="M31.4 30.4 H60.6 V33.6 H31.4 Z" fill="#a7a295" stroke-width="0.6"/>
+  <path d="M32.4 32.8 V31.2 H59.6" fill="none" stroke="#efece3" stroke-width="0.5"/>
+  <path d="M0 35.2 H64 V36 H0 Z" fill="#4e3a3b" stroke="none"/>
 </svg>
