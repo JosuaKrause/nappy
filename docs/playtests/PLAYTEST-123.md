@@ -155,3 +155,13 @@ fourth pass's building fronts:
     would be. On the fourth pass's fronts a poster sat in the window rhythm and read as pasted
     over a window.
 
+On the sixth pass's fronts (plain stretches of wall between window bays, posters only there):
+
+> "you can make it a placement rule for multi-story buildings that the ground floor is either a
+> blank wall (for posters later) or shops -- never windows -- the home building is an exception
+> to that rule"
+
+26. **A multi-story building's ground floor is blank wall or shops, never windows.** Blank wall
+    is where posters go later. **Her own building is the exception** and keeps its ground-floor
+    windows.
+
