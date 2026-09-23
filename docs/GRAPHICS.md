@@ -405,7 +405,7 @@ edge, still inside the tile.
 No sheet carries readable words — every print line, header and stamp is a colour block or a gray
 line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the politics).
 
-The intact kinds follow the player's poster reference sheet in shape and palette; at 20×22px
+The intact kinds follow the player's poster reference sheet (`docs/style-references/posters-01.jpg`) in shape and palette; at 20×22px
 the wanted notice keeps one print line under each frame where the reference has two.
 
 [The poster review sheet](evidence/poster-art-review-2026-09-23-plain-walls.png) shows the

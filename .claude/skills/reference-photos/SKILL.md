@@ -51,12 +51,11 @@ Five folders in this repo hold pictures and they are not interchangeable:
   ships.
 - **`assets/`** — what the engine reads at runtime, and only that.
 
-**Each folder carries a `.gdignore`, and that is load-bearing.** Godot walks every directory under
-the project and would import each photo as a texture, writing a `.import` sidecar per file and
-carrying the lot into the exported build. An empty `.gdignore` is the engine's own *this directory
-is not mine*. The script writes one into whichever folder it targets; do not delete it. `docs/`
-itself carries one too, so the walk never reaches either folder in the first place — the
-per-folder ones are the same belt-and-braces the script has always written for `docs/reference/`.
+**`docs/.gdignore` keeps the engine out of both folders.** Godot walks every directory under
+the project and would import each picture as a texture, writing a `.import` sidecar per file and
+carrying the lot into the exported build; an empty `.gdignore` is the engine's own *this
+directory is not mine*, and it covers every folder under the one it sits in. So neither folder
+carries one of its own, and `docs/.gdignore` is the one not to delete.
 
 ## The three things that happen to every file
 
