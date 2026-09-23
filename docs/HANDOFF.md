@@ -308,8 +308,8 @@ checks and worktrees can move independently of this file.
 
 - **The next work is the story's pacing, and it ends in a minor release**
   ([PLAYTEST-117](playtests/PLAYTEST-117.md): "that would be the next after this and warrants a
-  minor release"): M180, posters she notices, and loudspeakers that are somewhere; M183, the power station and the blackout, whose front door
-  is day 14's task; and M181, the resistance has a reason, and a task is one day, whose slice one
+  minor release"): M180, posters she notices, and loudspeakers that are somewhere; M183, the power station and the blackout, whose station is built and
+  whose blackout and dark escape are open, its front door being day 14's task; and M181, the resistance has a reason, and a task is one day, whose slice one
   is built and whose slice two — days 10 and 11, the once-only happenings, the neighbor — is
   open, with day 11's mast and day 14's door waiting on M180 and M183, and its late days timed
   with M184, a rig that walks the route. All of them are decided in `TODO.md`
