@@ -1,6 +1,6 @@
 <!-- fire_escape_a.svg mirrored: the same black-painted iron balcony across the first floor on
      knee brackets, with nothing standing on it and its drop ladder stowed upright against the
-     wall at the east end. Nothing comes down to the pavement. The shadow on the wall still
+     wall at the east end. Nothing comes down to the sidewalk. The shadow on the wall still
      falls down and to the east, so it is drawn outside the mirror. Transparent 48x64 facade
      overlay; drawing anchor (24,64), the ground line at the column's centre. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#231e22" stroke-linejoin="round" stroke-linecap="round">
