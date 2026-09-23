@@ -1,0 +1,25 @@
+<!-- The power station's front door in the building's cardinal 2.5D projection: a concrete
+     surround under a cantilevered slab, a steel double door with wired glass, a caged lamp
+     and a high-voltage plate, over one shallow step. Two facade columns wide. Ground anchor
+     (32,64). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M10 18 H54 V60 H10 Z" fill="#9c988f"/>
+  <path d="M13 21 H51 V60 H13 Z" fill="#6f6c68"/>
+  <path d="M16 23 H48 V60 H16 Z" fill="#56656a"/>
+  <path d="M32 23 V60" fill="none" stroke="#2f383c" stroke-width="1.2"/>
+  <rect x="19" y="27" width="10" height="9" fill="#2c3438"/>
+  <rect x="35" y="27" width="10" height="9" fill="#2c3438"/>
+  <path d="M19 31.5 H29 M24 27 V36 M35 31.5 H45 M40 27 V36" fill="none" stroke="#4b5a60" stroke-width="0.6"/>
+  <path d="M16 44 H48" fill="none" stroke="#475559" stroke-width="1"/>
+  <rect x="29" y="40" width="2" height="6" fill="#c9c6bd"/>
+  <rect x="33" y="40" width="2" height="6" fill="#c9c6bd"/>
+  <path d="M40 48 L45 57 H35 Z" fill="#e2c14a"/>
+  <path d="M40.6 50.5 L38.8 53.6 H40.8 L39.6 56 L42 52.6 H40.1 Z" fill="#3b2d32" stroke="none"/>
+  <path d="M4 12 H60 L58 18 H6 Z" fill="#c8c3b9"/>
+  <path d="M6 18 H58" fill="none" stroke="#6b6660" stroke-width="1.2"/>
+  <rect x="28" y="4" width="8" height="7" fill="#efdc8a"/>
+  <path d="M28 7.5 H36 M32 4 V11" fill="none" stroke="#5a5048" stroke-width="0.7"/>
+  <rect x="27" y="10" width="10" height="2" fill="#6b6660"/>
+  <path d="M8 60 H56 L58 63 H6 Z" fill="#b8b2a8"/>
+  <path d="M6 63 H58" fill="none" stroke="#6b6660" stroke-width="1.5"/>
+</svg>

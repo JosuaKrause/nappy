@@ -105,6 +105,21 @@ const FIRE_ESCAPE_A := &"buildings/fire_escape_a"
 const FIRE_ESCAPE_B := &"buildings/fire_escape_b"
 const CIVIC_PORTICO := &"props/civic_portico"
 
+# ------------------------------------------------------------- power station ---
+# The power station is a big building drawn as two parts: a hall over its door block and the
+# street it was built across, with the front door on its facade and two stacks on its roof, and a
+# fenced transformer yard over its other block, drawn as ground with the yard's upright things
+# standing on it rather than as wall and roof. The collision is the whole lot either way — the
+# yard is fenced, not walkable.
+
+const POWER_STATION_DOOR := &"buildings/power_station_door"
+const POWER_STATION_STACK := &"buildings/power_station_stack"
+const POWER_STATION_YARD := &"buildings/power_station_yard"
+## Where the two stacks stand on the hall's roof, as a column counted from the hall's own west end
+## and a roof row counted from the south — back to front, so the nearer one is drawn over the
+## farther one's foot. Taste, open to overturn.
+const _STACK_CELLS: Array[Vector2i] = [Vector2i(9, 2), Vector2i(4, 1)]
+
 ## Share of a storefront cell that gets the sloped-awning variant instead of the plain one.
 const STOREFRONT_AWNING_SHARE := 0.35
 ## Share of `RESIDENTIAL` buildings tall enough for one (`wall_tiles() >= 2`) that get a fire
@@ -201,6 +216,27 @@ enum Condition {
 	BOARDED,  ## Nobody home. Every window dark.
 	BURNT,    ## Blackened, roofless, windows gone.
 }
+
+## Whether this building is the city's power station — see the section above, and
+## `CityMap.power_station`. `station_door_col` and `station_yard_cols` say where its parts are.
+@export var power_station := false:
+	set(value):
+		power_station = value
+		_rebuild()
+
+## The facade column the power station's door starts at (it is `CityMap.POWER_STATION_DOOR_TILES`
+## wide), counted from the west end of the lot. Read only when `power_station` is set.
+@export var station_door_col := 0:
+	set(value):
+		station_door_col = value
+		queue_redraw()
+
+## The columns the transformer yard covers, as `(first, count)` from the west end of the lot — one
+## whole block, the one without the door. Everything else is the hall.
+@export var station_yard_cols := Vector2i.ZERO:
+	set(value):
+		station_yard_cols = value
+		queue_redraw()
 
 @export var condition := Condition.LIVED_IN:
 	set(value):
@@ -341,7 +377,11 @@ func _build_windows() -> void:
 	for i in columns() * wall_tiles():
 		_windows.append(rng.randf() < LIT_WINDOW_CHANCE)
 	var style_roll := rng.randf()
-	if style_roll < SHUTTERED_WINDOW_CHANCE:
+	if power_station:
+		# An industrial hall's tall glazing, whatever the roll says — the roll is still taken so
+		# the lit windows above come out the same as they would for any building here.
+		_window_style = _WindowStyle.TALL
+	elif style_roll < SHUTTERED_WINDOW_CHANCE:
 		_window_style = _WindowStyle.SHUTTERED
 	elif style_roll < SHUTTERED_WINDOW_CHANCE + TALL_WINDOW_CHANCE:
 		_window_style = _WindowStyle.TALL
@@ -400,8 +440,10 @@ func _draw() -> void:
 		wall_colour = Palette.burnt(wall_colour)
 		roof_colour = Palette.burnt(roof_colour)
 
+	# The columns the wall and roof are drawn over: all of them, except a power station's yard.
+	var hall := _hall_cols()
 	for row in wall_rows:
-		for col in cols:
+		for col in range(hall.x, hall.y):
 			var at := _cell(col, row)
 			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
 			var index := row * cols + col
@@ -411,9 +453,9 @@ func _draw() -> void:
 				# pixels so its sill remains visible, including the odd column that stays wall.
 				window_at.y -= 2.0
 			draw_texture(AtlasLibrary.region(_window_texture(index)), window_at)
-			if col == 0:
+			if col == hall.x:
 				draw_texture(AtlasLibrary.region(WALL_EDGE_W), at)
-			if col == cols - 1:
+			if col == hall.y - 1:
 				draw_texture(AtlasLibrary.region(WALL_EDGE_E), at)
 			# With no roof at all, the parapet is what stops the wall.
 			if roof_rows == 0 and row == wall_rows - 1:
@@ -423,7 +465,7 @@ func _draw() -> void:
 	# painted over by the neighboring half of its pair. A 36px source is offset four pixels north
 	# to keep its bottom edge on the shared ground line; facades with only one wall row keep the
 	# ordinary wall base because there is not enough height for the complete entrance.
-	for col in cols:
+	for col in range(hall.x, hall.y):
 		var ground_name := _ground_floor_texture(col)
 		if ground_name != &"":
 			var texture := AtlasLibrary.region(ground_name)
@@ -433,19 +475,50 @@ func _draw() -> void:
 	_draw_front_overlay()
 
 	for row in roof_rows:
-		for col in cols:
+		for col in range(hall.x, hall.y):
 			var at := _cell(col, wall_rows + row)
 			draw_texture(AtlasLibrary.region(ROOF), at, roof_colour)
 			if row == 0:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_S), at)
 			if row == roof_rows - 1:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
-			if col == 0:
+			if col == hall.x:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_W), at)
-			if col == cols - 1:
+			if col == hall.y - 1:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_E), at)
 
 	_draw_roof_furniture(wall_rows)
+	if power_station:
+		_draw_power_station(wall_rows, hall)
+
+## The `[first, end)` columns the wall and roof cover: the whole facade, or for the power station
+## everything but its yard, which is one block at one end of the lot.
+func _hall_cols() -> Vector2i:
+	var cols := columns()
+	if not power_station or station_yard_cols.y <= 0:
+		return Vector2i(0, cols)
+	if station_yard_cols.x == 0:
+		return Vector2i(station_yard_cols.y, cols)
+	return Vector2i(0, station_yard_cols.x)
+
+## The power station's own parts, after the hall's wall and roof: the yard over its block, then the
+## stacks on the hall's roof. The yard picture's lines run off its west edge towards the hall, so a
+## yard west of the hall is drawn mirrored — through `Sprites.draw_standing`, the one place that
+## mirrors, anchored at the yard's own bottom centre on the lot's south edge.
+func _draw_power_station(wall_rows: int, hall: Vector2i) -> void:
+	if station_yard_cols.y > 0:
+		var yard := AtlasLibrary.region(POWER_STATION_YARD)
+		var left := _cell(station_yard_cols.x, 0).x
+		var foot := Vector2(left + station_yard_cols.y * TILE * 0.5, 0.0)
+		var mirrored := station_yard_cols.x < hall.x
+		Sprites.draw_standing(self, yard, foot, Vector2.ZERO, mirrored)
+	var stack := AtlasLibrary.region(POWER_STATION_STACK)
+	var roof_rows := roof_tiles()
+	for cell in _STACK_CELLS:
+		var col := hall.x + mini(cell.x, hall.y - hall.x - 1)
+		var row := mini(cell.y, roof_rows - 1)
+		var at := _cell(col, wall_rows + row)
+		Sprites.draw_standing(self, stack, at + Vector2(TILE * 0.5, TILE))
 
 ## Top-left corner of a cell, counting rows northward from the ground line.
 func _cell(col: int, row: int) -> Vector2:
@@ -500,6 +573,9 @@ func _draw_front_overlay() -> void:
 		Sprites.draw_standing(self, AtlasLibrary.region(name), Vector2(x, 0.0))
 	if district == GameEnums.BlockPurpose.CIVIC:
 		Sprites.draw_standing(self, AtlasLibrary.region(CIVIC_PORTICO), Vector2(0.0, 0.0))
+	if power_station:
+		var x := _cell(station_door_col, 0).x + TILE * CityMap.POWER_STATION_DOOR_TILES * 0.5
+		Sprites.draw_standing(self, AtlasLibrary.region(POWER_STATION_DOOR), Vector2(x, 0.0))
 
 # ------------------------------------------------------------- roof furniture ---
 
