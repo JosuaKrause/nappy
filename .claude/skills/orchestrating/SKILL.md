@@ -112,6 +112,13 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   touch. The agent starts cold; everything it needs must be named, not assumed.
 - **The branch name** (`feature/<thing>`), and the committing rules restated: one commit per item,
   messages that explain why, docs move in the same commit as the code.
+- **Commit and push after each item, and before starting any run that takes longer than a few
+  minutes.** A WIP message is fine — **committing** already says a messy branch commit is fine.
+  A usage limit or an API error kills the agent without warning, and the committed-and-pushed
+  state is what survives it: `git log` on the branch shows where the agent stopped, and another
+  session can see that and pick it up, rather than the state living only as uncommitted edits in
+  a worktree that somebody has to find and diff by hand. This session hit exactly that: a dead
+  agent's uncommitted edits turned out to duplicate fixes another session had already pushed.
 - **A scope fence**: the files it may touch, and the files it must not — always including
   `docs/TODO.md`, `docs/HANDOFF.md`, `docs/DECISIONS.md` and the playtests (queue maintenance and
   archiving belong to the orchestrator), plus anything another live agent owns. Two agents editing
