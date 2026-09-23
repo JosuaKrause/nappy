@@ -56,6 +56,8 @@ func run(t) -> void:
 	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
+	if _city != null:
+		_city.free()
 
 # ---------------------------------------------------------------- step table ---
 
@@ -245,7 +247,16 @@ func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 
 var _city: City
 
+## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
+## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
+## `_exit_tree()` (`src/events/event_manager.gd`). This suite calls `_build_city()` many times
+## over, so a `_city` never freed between two calls would leave every earlier one standing —
+## sixteen abandoned `City` nodes in a suite that only ever needs the latest, each holding "events"
+## resident for the rest of the process. `run()` frees whichever one is still around after the
+## last call.
 func _build_city(t) -> void:
+	if _city != null:
+		_city.free()
 	_city = CITY_SCENE.instantiate()
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
@@ -1292,7 +1303,6 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 
 		EventBus.city_went_quiet.disconnect(handler)
 		director.free())
-	_city.free()
 
 # ------------------------------------------------------------ placement kinds ---
 # Day 8's burnt shell (`TargetKind.SCAR`), day 9's crossing (`TargetKind.DOOR`) and day 12's
