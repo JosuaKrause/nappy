@@ -179,3 +179,9 @@ On the combined sheet (every kind intact and torn three ways, and fronts with pl
     only (a failed day 10); another face crossed only, so a wall can show "some crossed out in
     red" on a run where the neighbor was warned.
 
+> "only one X and two Xs?"
+
+29. **The wanted notice's copies are no X, one X and two Xs**: the one-X copy crosses another
+    face, and the two-X copy adds the neighbor's slot, for a run where day 10 failed. This
+    replaces the orchestrator's split in statement 28.
+

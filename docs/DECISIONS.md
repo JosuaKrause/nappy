@@ -33,8 +33,8 @@ reference's phi on a base. *Six faces on the wanted notice* · four, so each has
 shoulders. *One torn file per kind* · masks instead, the player's option. *Two print lines under
 each wanted face*, as the reference has · one, since two do not fit in 22px; open to overturn.
 
-**Open to overturn.** The wanted notice's three copies: no X, the neighbor's slot crossed, and
-another face crossed (statement 28; the first drawing crossed the top-right face on every copy). The 20×22 size, and the 2×3 bar read as the player's "two pixel vertical
+**Open to overturn.** The wanted notice's three copies: no X; one X, on another face; two Xs, that
+face and the neighbor's slot (statement 29; the first drawing crossed the top-right face on every copy). The 20×22 size, and the 2×3 bar read as the player's "two pixel vertical
 line". The emblem's resemblance to nothing real.
 
 **The item as the queue held it when the art was drawn:**
