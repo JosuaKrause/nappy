@@ -1854,14 +1854,18 @@ Top-down camera with a fake vertical extrusion:
   painted by `Building._draw()` itself, above its own roof tiles and inside the layer of buildings
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
   is never compared against anything on the pavement.
-- **A front is district and block purpose, read the same way a roof's furniture is.** Each complete
+- **A front is district and block purpose, read the same way a roof's furniture is.** A
+  multi-story building's ground floor never shows a window: it is shops or blank wall — the wall
+  texture and its own plinth — with the entrance, the civic portico and the fire escape exactly
+  where they already stand. **Her own building is the one exception** and keeps its ground-floor
+  windows, read off `CityMap.home_block` rather than off anything drawn. A facade only one wall row
+  tall is not multi-story, so its single row is unaffected either way. Each complete
   two-column span of a `COMMERCIAL` building is a 64×36px storefront. Each facade samples the
   four types in seeded, shuffled groups, using each once before repeating and avoiding an
   immediate repeat between groups; the same building keeps its order across days. An awning
-  variant appears on a seeded share. Each is a substitution for the wall's ground-floor plinth:
-  the storefront's fill is opaque, so it covers the ordinary windows under both columns the same
-  way the plinth always did. An odd final column remains ordinary wall, and a facade only one wall
-  row tall keeps its wall base so the complete store fits. Each storefront has a 26×34px entrance
+  variant appears on a seeded share. Each is a substitution for the wall's ground-floor plinth,
+  its own fill opaque over the wall it sits on. An odd final column is blank wall rather than a
+  window, and a facade only one wall row tall keeps its wall base so the complete store fits. Each storefront has a 26×34px entrance
   aligned to the shared ground line. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
   of `RESIDENTIAL` facades tall enough for one carries a fire escape over their bottom two rows —
   both drawn as overlays, after the wall, rather than replacing a texture the way a storefront

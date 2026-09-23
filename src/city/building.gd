@@ -241,6 +241,16 @@ enum Condition {
 		station_yard_cols = value
 		queue_redraw()
 
+## Whether this building is her own — the one exception to the ground floor's blank-wall-or-shops
+## rule (`_draws_window_at()`): every other multi-story building's ground floor never shows a
+## window. Set by `City._spawn_buildings()` from the building's own lot and `CityMap.home_block`,
+## so every Building on the home block counts as hers, not only whichever lot the door notch
+## happens to touch. Never rolls anything of its own, so flipping it only ever needs a redraw.
+@export var is_home_building := false:
+	set(value):
+		is_home_building = value
+		queue_redraw()
+
 @export var condition := Condition.LIVED_IN:
 	set(value):
 		if condition == value:
@@ -429,6 +439,15 @@ func _build_front() -> void:
 
 # ------------------------------------------------------------------ drawing ---
 
+## Whether `row` draws a window at all. Every row does, except the ground floor (`row == 0`) of a
+## multi-story building that is not her own: a ground floor is shops or blank wall, never windows
+## (`docs/CITY.md`, "A front is district and block purpose"), and a one-row facade has no upper
+## floor to make it multi-story in the first place. Reads no RNG of its own — `_build_windows()`
+## still rolls exactly the same `_windows` array and `_window_style` it always has, so which upper
+## windows are lit and the window style are unaffected by this rule.
+func _draws_window_at(row: int) -> bool:
+	return row > 0 or is_home_building or wall_tiles() < 2
+
 func _draw() -> void:
 	var cols := columns()
 	var wall_rows := wall_tiles()
@@ -447,13 +466,14 @@ func _draw() -> void:
 		for col in range(hall.x, hall.y):
 			var at := _cell(col, row)
 			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
-			var index := row * cols + col
-			var window_at := at
-			if row == 1 and not _storefront_variant.is_empty():
-				# The 36px storefront rises four pixels into this row; lift every upper window two
-				# pixels so its sill remains visible, including the odd column that stays wall.
-				window_at.y -= 2.0
-			draw_texture(AtlasLibrary.region(_window_texture(index)), window_at)
+			if _draws_window_at(row):
+				var index := row * cols + col
+				var window_at := at
+				if row == 1 and not _storefront_variant.is_empty():
+					# The 36px storefront rises four pixels into this row; lift every upper window two
+					# pixels so its sill remains visible, including the odd column that stays wall.
+					window_at.y -= 2.0
+				draw_texture(AtlasLibrary.region(_window_texture(index)), window_at)
 			if col == hall.x:
 				draw_texture(AtlasLibrary.region(WALL_EDGE_W), at)
 			if col == hall.y - 1:
