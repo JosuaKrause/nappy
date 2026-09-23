@@ -102,6 +102,8 @@ assert_exit "audit-pck.sh --help"    zero ./tools/audit-pck.sh --help
 assert_exit "audit-pck.sh -h"        zero ./tools/audit-pck.sh -h
 assert_exit "cost-table.sh --help"   zero ./tools/cost-table.sh --help
 assert_exit "cost-table.sh -h"       zero ./tools/cost-table.sh -h
+assert_exit "prune-merged.sh --help" zero ./tools/prune-merged.sh --help
+assert_exit "prune-merged.sh -h"     zero ./tools/prune-merged.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
@@ -123,6 +125,9 @@ assert_exit "bake-atlases.sh --check --force" nonzero ./tools/bake-atlases.sh --
 assert_exit "audit-pck.sh --bogus"    nonzero ./tools/audit-pck.sh --bogus
 assert_exit "audit-pck.sh (two packs)" nonzero ./tools/audit-pck.sh one.pck two.pck
 assert_exit "cost-table.sh --bogus"   nonzero ./tools/cost-table.sh --bogus
+assert_exit "prune-merged.sh --bogus" nonzero ./tools/prune-merged.sh --bogus feature/x
+# With no branch named there is nothing it may safely touch, so it refuses rather than sweeping.
+assert_exit "prune-merged.sh (no branch)" nonzero ./tools/prune-merged.sh
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and
