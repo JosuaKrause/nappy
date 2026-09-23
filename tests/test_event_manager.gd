@@ -396,6 +396,26 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 		t.check(after_city.has(key),
 				"everything the manager's own fallback tree holds, City.start_day holds too")
 
+	# **This test's own `City.start_day()` call must not outlive it.** `_city` is shared across
+	# every function in this suite, and everywhere else drives `EventManager` alone, the way M100's
+	# gap describes above — but `City.start_day()` writes `_tree`, `_closures`, `_region_plan` and
+	# `map.closed_tiles` onto `_city` itself, and nothing before this fix ever cleared them back
+	# off. `_city.route_tree()` and `_city.closures()` have no fallback at all once non-null
+	# (`EventManager.start_day`'s own doc, above the holds it builds), so once this test called
+	# `City.start_day()` for `day`, every later test's "manager alone" day kept reading *this*
+	# day's corridor and closures — of whatever day `Tuning.REGION_WALL_FIRST_DAY` names — rather
+	# than growing its own, which is what "alone" is supposed to mean. That only ever changed which
+	# candidates a later day's own siting had to route around, so it stayed silent until a branch's
+	# own decision (M181, moving the day the region wall starts standing) chose a value whose
+	# leftover corridor and closures this seed's fire tests could not route around — see
+	# `docs/DECISIONS.md`, M181. `close_streets([])` is `CityMap`'s own way to clear `closed_tiles`;
+	# `_tree`, `_closures` and `_region_plan` have no such method, since nothing outside a test ever
+	# needs to un-start a day, so they are reset by hand.
+	_city.map.close_streets([])
+	_city._tree = null
+	_city._closures = []
+	_city._region_plan = null
+
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes
 ## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly
 ## and pins that its `from_noticed_at` argument restores `_noticed_at`; the gap that shipped anyway

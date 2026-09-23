@@ -1759,6 +1759,14 @@ func _process(delta: float) -> void:
 	_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_day.phase == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position())
+	# The red arrow: `ResistanceDirector.red_arrow_target()` is the one place that decides
+	# whether today's task is a one-place task with its mark already touched, so this is only
+	# ever a read of it, never a placement or a move of its own. `_resistance` can be null here —
+	# several `tests/test_main.gd` rigs drive `_process()` with a script-only `main` that never
+	# builds one, the same reason `_dev_rig` and `_frame_graph` are checked below rather than
+	# assumed.
+	var task_at := _resistance.red_arrow_target() if _resistance else Vector2.INF
+	_hud.set_task_guidance(task_at != Vector2.INF, task_at)
 	# The bar graph's own ring, fed `delta` itself — `FrameCost` below already discards which frame
 	# in a second was the long one, and the graph exists to answer exactly that. Answered here,
 	# ahead of the readout's own early return below, because `_layer_graph_on` is this layer's own

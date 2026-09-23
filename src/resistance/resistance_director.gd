@@ -7,15 +7,22 @@ extends Node
 ## safe on day 9 of this run is safe on day 9 of this run every time you replay it. The
 ## pattern is learnable; that is the difference between risk and a coin flip.
 ##
+## **A task is one day.** `start_day()` only ever offers a chalk mark (or the finale) —
+## `ResistanceSteps.for_day()` never hands back a perform step — and the perform half is
+## activated the instant the mark is touched, by `_begin_step()` again, from
+## `_on_contact_completed()`. So a mark placed at dawn and the task it unlocks a few seconds
+## later share one `start_day()`'s worth of RNG and guard bookkeeping; nothing here waits for
+## tomorrow.
+##
 ## **The mark itself needs no physics-interpolation opt-out.** `ContactPoint` follows a rider on
 ## the physics tick (correctly interpolated, like the player), and this director's own `_process`
 ## only ever relocates an unseen mark (`_move_the_mark()`) while it is beyond `NOTICE_RADIUS` —
 ## which exceeds the screen's own half-diagonal, so the jump is never on screen to be drawn
 ## sliding in the first place.
 
-## The day the first chalk mark can appear. Nothing is guarded before it, because nothing is
-## offered before it.
-const TRAP_FIRST_DAY := 4
+## The day the first chalk mark can appear, and so the first day anything is guarded — nothing
+## is offered before it.
+const TRAP_FIRST_DAY := 6
 
 ## A mark is "seen" once she has actually noticed it — see `SEEN_DISTANCE` and
 ## `SEEN_DWELL_SECONDS` for what that takes — and only then does it stop following the player.
@@ -67,8 +74,8 @@ const TRAP_DRAW_LIMIT := 24
 var _city: City
 var _map: CityMap
 var _contact: ContactPoint
-## The `EventInstance` a perform step's contact rides on. Null for a pickup or the finale,
-## which sit on a bare tile instead.
+## The `EventInstance` a perform step's contact rides on. Null for a pickup, the finale, or a
+## `DOOR`/`PARK_SWING` step, all of which sit on a bare tile instead.
 var _rider: EventInstance
 var _step: ResistanceSteps.Step
 var _elapsed := 0.0
@@ -91,7 +98,8 @@ var _seen_dwell := 0.0
 ## move can retire it and `_maybe_set_a_trap` a fresh one near wherever the mark goes.
 var _guard: EventInstance
 ## The RNG `start_day()` was handed, kept rather than re-drawn so a guard spawned later —
-## when the mark moves — still comes from the same day's stream a replay would reproduce.
+## when the mark moves, or when the mark's own touch activates today's perform step — still
+## comes from the same day's stream a replay would reproduce.
 var _rng: RandomNumberGenerator
 var _player: Stroller
 
@@ -123,19 +131,45 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	# or a retry after a nerve — see GameState.resistance_carrying_package.
 	GameState.resistance_carrying_package = false
 
-	_step = ResistanceSteps.for_day(day, GameState.completed_resistance_steps,
+	var step := ResistanceSteps.for_day(day, GameState.completed_resistance_steps,
 			GameState.failed_resistance_steps, GameState.sabotage_available())
+	_begin_step(step)
+
+## Places `step`'s own contact and offers it — a mark at dawn, or the perform half it unlocks a
+## moment after being touched (`_on_contact_completed()`), which is what makes a task one day
+## instead of two. `ResistanceSteps.TargetKind` decides how a non-pickup, non-finale step finds
+## its own place: a fresh rider (`EVENT`), the run's own recorded scar (`SCAR`, falling back to
+## an ordinary placement of the same row when the run has none), or a bare point this director
+## computes itself (`DOOR`, `PARK_SWING`).
+func _begin_step(step: ResistanceSteps.Step) -> void:
+	_step = step
 	if not _step:
 		return
 
-	var at := _place(_step, rng)
+	var scar_instance: EventInstance = null
+	if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
+		scar_instance = _find_scar_instance(_step.task_event_id)
+		if not scar_instance:
+			# The smallest honest stand-in for a run with no recorded scar: an ordinary
+			# placement of the same row, on ground `_place()` would otherwise have chosen for
+			# it — never a step with nowhere to go.
+			Telemetry.note("contact", ("step %d: no recorded scar for '%s' — an ordinary " +
+					"placement stands in for it") % [_step.index, _step.task_event_id])
+
+	var at: Vector2 = scar_instance.global_position if scar_instance else _place(_step, _rng)
 	if at == Vector2.INF:
 		push_warning("resistance step %d has nowhere to go in this city" % _step.index)
 		_step = null
 		return
 
 	_contact = ContactPoint.new()
-	if _step.task_event_id == "":
+	if scar_instance:
+		var offset := _reachable_offset(scar_instance, _rng)
+		_rider = scar_instance
+		_contact.ride(_step, scar_instance, offset)
+		at = scar_instance.global_position + offset
+	elif _step.is_pickup or _step.district >= 0 or _step.target_kind in [
+			ResistanceSteps.TargetKind.DOOR, ResistanceSteps.TargetKind.PARK_SWING]:
 		_contact.setup(_step, at)
 	else:
 		var task_def := EventCatalogue.by_id(_step.task_event_id)
@@ -146,7 +180,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 			_contact = null
 			return
 		_rider = _city.events.spawn_extra(task_def, at)
-		var offset := _reachable_offset(_rider, rng)
+		var offset := _reachable_offset(_rider, _rng)
 		_contact.ride(_step, _rider, offset)
 		at = _rider.global_position + offset
 	_contact.completed.connect(_on_contact_completed)
@@ -155,7 +189,33 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	Telemetry.note("contact", "step %d on offer at %s" % [
 		_step.index, TelemetryLog.tile(_map.world_to_tile(at))])
 
-	_maybe_set_a_trap(day, rng, at)
+	_maybe_set_a_trap(_day, _rng, at)
+
+## The live instance standing at the run's own recorded scar for `scar_id`, or null when the run
+## never recorded one — a day 3 that never actually burned this run, or a fix for that landing on
+## another branch. `GameState.scars` names the position the scar was recorded at; the scheduler
+## re-places the same def there every day after `since_day` (`EventScheduler._place_scars()`), so
+## the live instance is found by position rather than tracked by reference across days.
+func _find_scar_instance(scar_id: String) -> EventInstance:
+	if not _city or not _city.events:
+		return null
+	var at := Vector2.INF
+	for scar: Dictionary in GameState.scars:
+		if String(scar["id"]) == scar_id:
+			at = scar["position"]
+			break
+	if at == Vector2.INF:
+		return null
+	# Under a tile's own width, not an exact match: the scheduler's own placement of a solid
+	# shape can nudge it a few pixels off the recorded position (`EventScheduler._place_scars()`
+	# hands the scar's own coordinate straight to `Planned`, but the def's own centring — see
+	# `EventDef.solid()` — still applies once it becomes an `EventInstance`). Since `burnt_shell`
+	# is `SCRIPTED` and only ever placed this way, the one instance of it a day carries is the
+	# scar, whatever the exact offset.
+	for instance in _city.events.instances():
+		if instance.def.id == scar_id and instance.global_position.distance_to(at) < Tuning.TILE_SIZE:
+			return instance
+	return null
 
 ## The guard. From `TRAP_FIRST_DAY` no contact is ever placed without one — a robber drawn
 ## from the band `alley_robbery`'s own numbers fix, so *always guarded* stays survivable
@@ -253,15 +313,73 @@ func _reachable_offset(instance: EventInstance, rng: RandomNumberGenerator) -> V
 	var distance := clearance + Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
 	return Vector2.RIGHT.rotated(rng.randf() * TAU) * distance
 
-## Where a step's contact — or, for a perform step, the event it rides on — is sited.
-## Pickup and perform steps both name tile types in `placement`; only the finale names a
-## `district` instead.
+## Where a step's contact — or, for an `EVENT`/`SCAR`-fallback perform step, the event it rides
+## on — is sited. A pickup and a `district`-less perform both name tile types in `placement`;
+## the finale names a `district` instead; `DOOR` and `PARK_SWING` compute their own point from
+## today's city, since neither is a matter of picking a tile type.
 func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 	if step.district >= 0:
 		return _pick_reachable(_map.purpose_tiles(step.district as GameEnums.BlockPurpose), rng)
+	if step.target_kind == ResistanceSteps.TargetKind.DOOR:
+		return _place_at_a_door(rng)
+	if step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
+		return _place_at_a_swing(rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
+	return _pick_reachable(candidates, rng)
+
+## Where day 9's task points: one of today's region-wall doors — a `StreetNetwork.Segment` from
+## `City.region_plan().doors` — at its own crossing tile, chosen the same reachable-among-
+## candidates way `_pick_reachable()` already chooses a mark's alley. `Vector2.INF` if the city
+## opened none, which does not happen on this task's own day: `Tuning.REGION_WALL_FIRST_DAY`
+## equals the day this task is offered on.
+##
+## **Dropped before `_pick_reachable()` sees them: doors whose own segment borders the home
+## block.** `RegionPlanner._union_atoms()` only atomises the one street the doorstep notch opens
+## onto (`ClosurePlanner.home_street()`), so the block's other bordering segments are ordinary
+## boundary segments and can become doors like any other, on a city where the day's tree happens
+## to cross one. `allow_held` below skips `is_held_at()` outright, and `is_held_at()` is the half
+## of "nothing on the home block" that covers these streets (`CityMap.is_on_home_block`'s own doc
+## names `is_held_at` as the other half) — so without this filter a door on that ground would pass
+## through the held carve-out it was never meant to cover.
+func _place_at_a_door(rng: RandomNumberGenerator) -> Vector2:
+	var plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
+	if not plan or plan.doors.is_empty():
+		return Vector2.INF
+	var home_border := {}
+	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
+		home_border[segment.key()] = true
+	var candidates: Array[Vector2i] = []
+	for segment in plan.doors:
+		if home_border.has(segment.key()):
+			continue
+		var rect := segment.tile_rect()
+		candidates.append(rect.position + rect.size / 2)
+	# `allow_held` is not optional here, it is the whole placement: every remaining tile sits on
+	# a segment `EventManager.start_day()` already held for the day (held so no catalogue row may
+	# be sited on a door — see `CityMap.held_segments`), and this director runs after that. The
+	# held filter would refuse the exact ground the task names: with it applied, every door
+	# candidate read `held` and step 8 answered `Vector2.INF` in every run — "nowhere to go" — so
+	# the crossing task never appeared at all. It does not reopen the home-block exemption: that
+	# ground was filtered out above, before `allow_held` ever gets a say.
+	return _pick_reachable(candidates, rng, true)
+
+## Where day 12's task points: the swing of one specific park's playground —
+## `CityMap.playgrounds`, which already names only the parks currently open (a requisitioned
+## park has none, see that field's own doc), at the same point `City._dress_block()` draws the
+## swing frame at (`CityMap.swing_position()`). **Not "forced open whatever its state"**: that
+## would mean overriding a requisitioned park's own arc, which touches `EventScheduler`/
+## `ClosurePlanner` and is out of this slice's scope fence — picking only among parks the city
+## has already left open is the smallest honest stand-in, and the run's own guarantee of at
+## least one reachable calm area a day (`docs/CITY.md`, "Every day stays winnable") means there
+## is almost always one to choose from. `Vector2.INF` on the day nothing qualifies.
+func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
+	if not _map or _map.playgrounds.is_empty():
+		return Vector2.INF
+	var candidates: Array[Vector2i] = []
+	for rect in _map.playgrounds:
+		candidates.append(_map.world_to_tile(_map.swing_position(rect)))
 	return _pick_reachable(candidates, rng)
 
 ## A contact behind a closed street is a step the player cannot take today, and the
@@ -279,20 +397,42 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 ## `is_closed` cannot either — `CityMap.is_in_walled_alley` is the refusal built for exactly this
 ## ground. See `docs/DECISIONS.md`, M100, "A blocked-off alley has no chalk mark".
 ##
+## **Never on ground that is not actually walkable, either.** A guard against `DOOR` and
+## `PARK_SWING` candidates, which are not drawn from `CityMap.tiles_of_type()` the way every
+## other candidate here is and so are not walkable by construction of the query — a redundant
+## check for a mark or an ordinary perform step's own tile types, and the one that matters for
+## the two new placement kinds.
+##
 ## **Avoids a tile a completed step already used, unless nothing else reachable is left (M177).**
 ## Landing a fresh mark back on the very alley an earlier step's mark stood at reads as the game
 ## reusing its own prop rather than "any alley she comes across" — but the avoidance never costs
 ## the placement guarantee itself: a candidate list whose only reachable tile happens to be a used
 ## one still returns it rather than `Vector2.INF`. `GameState.completed_resistance_alley_tiles`
 ## only ever holds `ALLEY` tiles (see `_on_contact_completed()`), so this filter is a silent no-op
-## against a perform step's or the finale's own placement, neither of which is ever an alley.
-func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator) -> Vector2:
+## against every other kind of placement, none of which is ever an alley.
+##
+## **`allow_held` skips only the `is_held_at` refusal, and only one caller passes it.** Held
+## ground means *no hazard or catalogue row may be sited here*; a contact is neither, and for a
+## step whose candidates are the held region-door segments themselves (`_place_at_a_door()`) the
+## filter would refuse the very ground the task points at. It did — see that call's own note.
+## The other four refusals stand even then: a door on closed, unwalkable, home-block-lot or
+## walled-alley ground is still a door she cannot cross today.
+##
+## **Not exempted: a door on a street bordering the home block.** `is_on_home_block` only refuses
+## a tile inside the home block's own lot (its own doc says so); the streets around the block are
+## the other half of "nothing on the home block", and normally that half is exactly what
+## `is_held_at` catches — which `allow_held` would otherwise skip for a door candidate too.
+## `_place_at_a_door()` drops those candidates itself, before any candidate reaches this function,
+## so `allow_held` never has to carry that exemption.
+func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
+		allow_held := false) -> Vector2:
 	var walled_alleys := _walled_alleys()
 	var reachable: Array[Vector2i] = []
 	var unused: Array[Vector2i] = []
 	for tile in candidates:
-		if _map.is_closed(tile) or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
-				or _map.is_in_walled_alley(tile, walled_alleys):
+		if not _map.is_walkable(tile) or _map.is_closed(tile) \
+				or (not allow_held and _map.is_held_at(tile)) \
+				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		reachable.append(tile)
 		if tile not in GameState.completed_resistance_alley_tiles:
@@ -320,12 +460,12 @@ func _process(delta: float) -> void:
 	if _rider and not _contact.rider_alive():
 		_expire("lost its contact when the thing it rode on finished")
 		return
-	# Perform steps ride on their own `EventInstance` and the finale sits in a district;
-	# neither is a chalk mark, so only a pickup is ever subject to the re-placement rule. A
-	# perform step is subject to the first-reached rule instead — see `_track_first_reached()`.
+	# A pickup is the only step subject to the re-placement rule; a one-place perform step is
+	# never subject to it (its rider or its point is fixed for the day), and an any-instance
+	# perform step is subject to the first-reached rule instead.
 	if _step.is_pickup:
 		_track_sight_and_reposition(delta)
-	elif _rider:
+	elif _rider and not _step.is_one_place:
 		_track_first_reached()
 	if _step.deadline_fraction <= 0.0 or _day_length <= 0.0:
 		return
@@ -336,12 +476,13 @@ func _process(delta: float) -> void:
 ## *Asked for a hidden contact among look-alikes · overturned on 2026-09-13* (`docs/NARRATIVE.md`,
 ## "The contact is whichever look-alike she reaches first"): *"we cannot expect the player to do
 ## an exhaustive check ... so if the solution is the yeller it's always the first yeller you come
-## close enough to hand the note."* A perform step's contact is not pinned to whichever instance
-## `start_day()` happened to seed — it rides onto whichever live instance sharing the step's own
-## `task_event_id` she comes within reach of first, seeded rider included.
+## close enough to hand the note."* An any-instance perform step's contact is not pinned to
+## whichever instance `_begin_step()` happened to spawn — it rides onto whichever live instance
+## sharing the step's own `task_event_id` she comes within reach of first, seeded rider included.
+## A one-place step (`Step.is_one_place`) never runs this: its rider is the task.
 ##
 ## **The seeded rider's own guard and deadline are untouched.** `_maybe_set_a_trap()` still stands
-## a robber near the position `start_day()` rolled, and `_process()`'s own deadline check still
+## a robber near the position `_begin_step()` rolled, and `_process()`'s own deadline check still
 ## reads `_elapsed` against `_day_length` — neither reads `_rider`'s identity, so retargeting onto
 ## a different look-alike changes nothing about either rule. What it does mean: a look-alike she
 ## reaches before the seeded one is never guarded by that trap, which is the point rather than a
@@ -510,15 +651,25 @@ func _expire(message: String) -> void:
 	GameState.fail_resistance_step(_step.index)
 	_clear()
 
+## Records the step, and — for a mark — activates today's task right away, in the same
+## `start_day()`'s RNG and guard state rather than waiting for tomorrow's dawn.
 func _on_contact_completed(step_index: int) -> void:
 	Telemetry.note("contact", "step %d completed" % step_index)
 	var step := ResistanceSteps.by_index(step_index)
 	GameState.complete_resistance_step(step_index, step == null or step.grants_progress)
-	# Only a pickup's mark ever stands on an `ALLEY` tile — a perform's contact rides on its own
-	# event and the finale sits in a district — so this is the one completion worth recording for
+	# Only a pickup's mark ever stands on an `ALLEY` tile — every other kind of contact sits on
+	# a rider or a computed point — so this is the one completion worth recording for
 	# `_pick_reachable()`/`_nearest_alley_within()` to avoid reusing later (M177).
 	if step and step.is_pickup and _contact:
 		GameState.record_completed_alley_tile(_map.world_to_tile(_contact.global_position))
+	if step and step.is_pickup:
+		# The task is announced at the mark and nowhere else: `GameState.complete_resistance_
+		# step()` above already emitted `resistance_step_completed`, which is what `Hud` reads
+		# to flash the mark's own words — see `Hud._on_resistance_step_completed()`. Activating
+		# the perform half here, rather than waiting for a `start_day()` that will not come
+		# until tomorrow, is what makes the task the same day as the mark.
+		_begin_step(ResistanceSteps.by_index(step_index + 1))
+		return
 	if step and step.applies_package_weight:
 		GameState.resistance_carrying_package = true
 		Telemetry.note("contact", "the package is heavier now; the rest of today costs more")
@@ -530,13 +681,19 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.task_event_id == "homeless_yeller" and _rider and is_instance_valid(_rider):
 		_rider.leave_for_a_completed_task()
 		Telemetry.note("contact", "he took it and is leaving")
+	# Day 12's once-only happening — the park she was sent to starts to close once she has
+	# reached the swing — is a later slice's, on the same fork `_place_at_a_swing()` names: it
+	# needs `EventScheduler`/`ClosurePlanner`, out of this slice's scope fence. This is the hook:
+	# `step.target_kind == ResistanceSteps.TargetKind.PARK_SWING` is true exactly once, the
+	# instant she reaches the swing, and nothing downstream of it is built yet.
 	if not (step and step.needs_goal):
 		return
 
 	GameState.sabotage_done = true
-	# The reward for the whole subquest is quiet. Whatever is left of the last day is
-	# walked without the floor the masts have been holding under the meter since day 5.
-	if _city and _city.events and _city.events.silence_city_wide() > 0:
+	# The reward for the whole subquest is quiet. Whatever is left of the last day is walked with
+	# every mast off — no field, no arcs — rather than under whatever each one happened to be
+	# speaking when the sabotage landed.
+	if _city and _city.events and _city.events.silence_all_masts() > 0:
 		EventBus.city_went_quiet.emit()
 
 func _clear() -> void:
@@ -562,5 +719,16 @@ func contact_position() -> Vector2:
 func pointable_objective() -> Vector2:
 	var step := current_step()
 	if step == null or step.is_pickup:
+		return Vector2.INF
+	return contact_position()
+
+## Where the red arrow should point, or `Vector2.INF` when nothing warrants one: no step today,
+## today's step is the mark rather than the task, or the task is one any instance answers (the
+## man shouting, a roadblock) — the two tasks that never earn an arrow. *(PLAYTEST-117: "a red
+## arrow (like the blue home arrow but red) to point to tasks where we need to go to a specific
+## location ... unlike the yeller task where we can just go to any yeller".)*
+func red_arrow_target() -> Vector2:
+	var step := current_step()
+	if step == null or step.is_pickup or not step.is_one_place:
 		return Vector2.INF
 	return contact_position()

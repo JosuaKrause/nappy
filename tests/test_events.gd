@@ -107,8 +107,8 @@ func run(t) -> void:
 ## excitement?"; "should be a bit more".)* A wide field at a moderate rate loses more of its price
 ## to the walking decay than a narrow fierce one does, so buying back what the decay took pushes
 ## `walk_through_cost()` toward `Tuning.WALL_WORTH_OF_COST` — and a `WALL` is given zero copies on
-## any cell a route runs along (`EventScheduler._copies_of`), while `ResistanceSteps` sends her to
-## stand in a protest. A protest off every route is a task that cannot be reached.
+## any cell a route runs along (`EventScheduler._copies_of`), which would put a protest off every
+## route a day plans rather than on one she can be sent to walk through.
 ##
 ## Not "the intensity is 19.5", which would be the catalogue read back to itself: what would tell
 ## you something is that the row changed role.
@@ -117,11 +117,6 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
 	t.check(EventScheduler._role_for(def) == GameEnums.BlockerRole.FRICTION,
 			"a protest is friction, so the day may put one on a route she walks (%.1f against "
 			% def.walk_through_cost() + "the %.1f that makes a wall)" % Tuning.WALL_WORTH_OF_COST)
-	var named := false
-	for step in ResistanceSteps.all():
-		if step.task_event_id == "protest":
-			named = true
-	t.check(named, "and a resistance task is what sends her into one")
 
 ## **A door's price is the detention, not the field, and that has to stay true of the one source a
 ## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";

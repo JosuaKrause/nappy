@@ -87,39 +87,84 @@ static func _consider(found: Array[Vector2], seen: Dictionary, at: Vector2, map:
 	if _is_eligible(at, map):
 		found.append(at)
 
-## Every junction box's own centre — a corner of the streets that meet there, which is where the
-## fiction puts a mast rather than on either street's own middle.
+## A mast's own foot may stand on her own sidewalk or on a square's paving — never a road, a
+## crosswalk or a junction box. *(2026-09-23, PLAYTEST-123, statement 23: "mast in 292 is weird.
+## it's in the middle of the road".)*
+const _VALID_FOOT_TILES := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+
+## How far the search below may look for real ground before giving up on a candidate.
+const _SNAP_RADIUS := 8
+
+## The nearest tile of `_VALID_FOOT_TILES` to `from`, by an expanding square ring so the answer is
+## the closest ground rather than whichever the scan order reaches first, or `Vector2.INF` if
+## nothing valid stands within `_SNAP_RADIUS` tiles. Every raw point the three site functions below
+## compute is only *near* where the fiction puts a mast — a junction's own corner, a square's
+## centre, the main road's carriageway — and this is what turns "near" into "actually standing on
+## her own sidewalk or the square's paving".
+static func _snap_to_ground(map: CityMap, from: Vector2) -> Vector2:
+	var origin := map.world_to_tile(from)
+	if map.in_bounds(origin) and map.tile_at(origin) in _VALID_FOOT_TILES:
+		return map.tile_to_world(origin)
+	for radius in range(1, _SNAP_RADIUS + 1):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				# Only the ring's own edge — the interior was already checked at a smaller radius.
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var tile := origin + Vector2i(dx, dy)
+				if map.in_bounds(tile) and map.tile_at(tile) in _VALID_FOOT_TILES:
+					return map.tile_to_world(tile)
+	return Vector2.INF
+
+## The sidewalk corner nearest each of a junction box's own four corners — a corner of the
+## sidewalk beside the crossing, never the crossing or the carriageway between them, which the
+## flat box centre this used to read was.
 static func _junction_sites(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
 	var count := StreetNetwork.junction_count()
+	var period := CityMap.period()
+	var corners: Array[Vector2i] = [Vector2i(-1, -1), Vector2i(Tuning.STREET_WIDTH, -1),
+			Vector2i(-1, Tuning.STREET_WIDTH), Vector2i(Tuning.STREET_WIDTH, Tuning.STREET_WIDTH)]
 	for jy in count.y:
 		for jx in count.x:
 			var junction := Vector2i(jx, jy)
 			if not StreetNetwork.in_bounds(junction):
 				continue
-			var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
-			found.append(map.tile_rect_to_world(box).get_center())
+			var box_origin := junction * period
+			for corner in corners:
+				var snapped := _snap_to_ground(map, map.tile_to_world(box_origin + corner))
+				if snapped != Vector2.INF:
+					found.append(snapped)
 	return found
 
-## Every square's own centre — the same ground `poster_crew_square` and a square-sited `busker`
-## already stand on.
+## Every square's own centre, snapped the same way every other candidate is — a square's own
+## paving is already `SQUARE` ground, so this only matters when the centre itself is not walkable
+## (an obstruction, an edge case in an irregular zone shape), where it finds the paving beside it
+## rather than offering a point nothing can stand on.
 static func _square_sites(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
 	for rect in map.square_rects:
-		found.append(map.tile_rect_to_world(rect).get_center())
+		var snapped := _snap_to_ground(map, map.tile_rect_to_world(rect).get_center())
+		if snapped != Vector2.INF:
+			found.append(snapped)
 	return found
 
 ## One candidate per block along `map.main_road`'s own corridor — the spine every other siting
 ## rule in the game reads off `CityMap.main_road` for, `SealPlanner._is_the_main_road()` included.
+## Sited at the **middle of a block**, never at a junction row, so the snap lands on an ordinary
+## stretch of sidewalk rather than a crossing.
 static func _main_road_sites(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
 	if map.main_road < 0:
 		return found
-	var x := map.main_road * CityMap.period() + Tuning.STREET_WIDTH / 2
+	var period := CityMap.period()
+	var x := map.main_road * period + Tuning.STREET_WIDTH / 2
 	var count := StreetNetwork.junction_count()
-	for jy in count.y:
-		var y := jy * CityMap.period() + Tuning.STREET_WIDTH / 2
-		found.append(map.tile_to_world(Vector2i(x, y)))
+	for jy in maxi(count.y - 1, 0):
+		var y := jy * period + Tuning.STREET_WIDTH + Tuning.BLOCK_SIZE / 2
+		var snapped := _snap_to_ground(map, map.tile_to_world(Vector2i(x, y)))
+		if snapped != Vector2.INF:
+			found.append(snapped)
 	return found
 
 ## Refuses the home street and a field reaching the doorstep or a calm interior. Both margins are

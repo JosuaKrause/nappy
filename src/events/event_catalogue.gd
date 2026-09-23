@@ -46,9 +46,9 @@ static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
 static var _hot: Dictionary[String, EventDef] = {}
 
-## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a fifth completed task
-## adds nothing, because full heat is the qualification rather than the last errand. A function
-## rather than a `const`, because an autoload's constant is not available at parse time.
+## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a task completed past the
+## goal adds nothing, because full heat is the qualification rather than the last errand. A
+## function rather than a `const`, because an autoload's constant is not available at parse time.
 static func heat_levels() -> int:
 	return Tuning.RESISTANCE_GOAL + 1
 

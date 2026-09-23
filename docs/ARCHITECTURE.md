@@ -79,9 +79,12 @@ src/
   day/
 	day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/
-	resistance_director.gd  places the day's contact; the guard and the deadline
-	resistance_steps.gd     the eleven steps (five tasks, two beats each, plus the finale)
-	contact_point.gd        touch to complete — a chalk mark, or a task's own event instance
+	resistance_director.gd  places the day's contact; the guard and the deadline; activates a
+	                         perform step the moment the mark that unlocks it is touched
+	resistance_steps.gd     the calendar: a mark and the perform step it unlocks share one day,
+	                         plus the finale
+	contact_point.gd        touch to complete — a chalk mark, a task's own event instance, or a
+	                         bare point a task computes for itself (a region door, a park's swing)
   telemetry/
 	frame_cost.gd         what a frame cost the renderer and the two loops, read off Godot's
 	                      Performance monitors in one place for both the readout and the log
@@ -492,8 +495,9 @@ non-zero on any failure.
   reaching the doorstep or a calm interior, the field's own edge, the shared broadcast clock,
   and silencing one or all for the rest of the day.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
-- `test_resistance.gd` — the step table, touch-completion, a perform step riding on an
-  `EventInstance`, the seeded guard, the expiring step, and the sabotage silencing the city.
+- `test_resistance.gd` — the step table, touch-completion, a task activated the same day its
+  mark is touched, the four placement kinds a perform step may use, the seeded guard, the
+  expiring step, and the sabotage silencing the city.
 - `test_full_run.gd` — three seeds played through all 14 days with the real City,
   EventManager and ResistanceDirector, with time actually advancing. This is the check
   that catches "day 12 throws", which no amount of unit coverage does.

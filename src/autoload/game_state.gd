@@ -77,10 +77,6 @@ var sabotage_done := false
 ## picked it up yet.
 var resistance_carrying_package := false
 
-## The chalk mark's own words, set when a pickup step completes and read out once on the
-## next day brief. "" once read, or when there is nothing to say.
-var pending_resistance_brief := ""
-
 ## Alley tiles a completed pickup step's chalk mark stood at, this run — read by
 ## `ResistanceDirector._pick_reachable()` and `_nearest_alley_within()` so a later mark never
 ## relocates onto, or starts on, the same alley while another eligible one is still in reach
@@ -101,7 +97,7 @@ func record_completed_alley_tile(tile: Vector2i) -> void:
 	if tile not in completed_resistance_alley_tiles:
 		completed_resistance_alley_tiles.append(tile)
 
-## What the resistance had done when today's attempt began — the six run-scoped facts a lost day
+## What the resistance had done when today's attempt began — the five run-scoped facts a lost day
 ## gives back. `begin_day()` photographs them, `finish_day()` restores them on a loss and commits
 ## them on a win, and nothing else writes them.
 ##
@@ -113,7 +109,6 @@ var _dawn_failed_steps: Array[int] = []
 var _dawn_progress := 0
 var _dawn_sabotage_done := false
 var _dawn_carrying_package := false
-var _dawn_brief := ""
 
 ## And what today's attempt has done to the *city*, photographed the same way and given back the
 ## same way: the one-shots it consumed, the marks it left and how far along its arc each block it
@@ -193,7 +188,6 @@ func start_run(seed_value: int = 0) -> void:
 	settled_in.clear()
 	sabotage_done = false
 	resistance_carrying_package = false
-	pending_resistance_brief = ""
 	completed_resistance_alley_tiles.clear()
 	_snapshot_the_resistance()
 	print("[GameState] run started, seed=%d" % run_seed)
@@ -328,6 +322,10 @@ func sabotage_available() -> bool:
 
 ## `counts_toward_goal` is false for a pickup — the note is not the errand, only the perform
 ## half is, so `Tuning.RESISTANCE_GOAL` must not see the mark as well as the task it unlocked.
+##
+## Emits `resistance_step_completed` for `ResistanceDirector` and `Hud` to react to — a pickup's
+## own words are announced from there, at the mark and nowhere else, rather than queued here for
+## a day brief to read out later (`docs/NARRATIVE.md`, "Feedback").
 func complete_resistance_step(step: int, counts_toward_goal: bool = true) -> void:
 	if step in completed_resistance_steps:
 		return
@@ -335,9 +333,6 @@ func complete_resistance_step(step: int, counts_toward_goal: bool = true) -> voi
 	if counts_toward_goal:
 		resistance_progress += 1
 		EventBus.resistance_progress_changed.emit(resistance_progress)
-	var step_def := ResistanceSteps.by_index(step)
-	if step_def and step_def.is_pickup and step_def.brief != "":
-		pending_resistance_brief = step_def.brief
 	EventBus.resistance_step_completed.emit(step)
 
 ## A timed step that expired. The contact is gone for the rest of the run.
@@ -360,7 +355,6 @@ func _snapshot_the_resistance() -> void:
 	_dawn_progress = resistance_progress
 	_dawn_sabotage_done = sabotage_done
 	_dawn_carrying_package = resistance_carrying_package
-	_dawn_brief = pending_resistance_brief
 
 ## Photographs what today's attempt is about to be allowed to spend of the city: the run's consumed
 ## one-shots, its scars and every block's arc position. Taken beside `_snapshot_the_resistance()` and
@@ -393,55 +387,30 @@ func _give_back_what_the_attempt_spent() -> void:
 ## **The step list is restored, not repaired**, so a step the day completed is not merely
 ## uncounted: it is gone from `completed_resistance_steps`, which is the list
 ## `ResistanceSteps.for_day()` reads to decide what is on offer, so the retry meets the same mark
-## or contact again rather than an empty day.
+## again — and, once she touches it, the same task, since a task is one day rather than a mark
+## kept for tomorrow.
 ##
 ## `resistance_progress_changed` is emitted when the number actually moves, since the HUD's dots
 ## and the summary's tally are both drawn off it. Nothing announces a step *un*-completing,
 ## because nothing needs to: the HUD rebuilds its `somewhere out there:` line from scratch on
-## `day_started` at the retry, which is the next moment either is looked at.
-##
-## **And the summary is left the day's own instruction to read** — see
-## `_instruction_the_day_began_with()`. Queued over the restored brief rather than instead of it,
-## so words that were owed and never shown are never dropped on the way past.
+## `day_started` at the retry, which is the next moment either is looked at. The day brief has
+## nothing to repeat either — it is a static line for the calendar day, not a record of what an
+## attempt touched, so a lost day's own line reads exactly as it did this morning.
 func _give_the_resistance_back() -> String:
 	var progress_before := resistance_progress
 	var undone := completed_resistance_steps != _dawn_completed_steps \
 			or failed_resistance_steps != _dawn_failed_steps \
 			or resistance_progress != _dawn_progress \
 			or sabotage_done != _dawn_sabotage_done \
-			or resistance_carrying_package != _dawn_carrying_package \
-			or pending_resistance_brief != _dawn_brief
+			or resistance_carrying_package != _dawn_carrying_package
 	completed_resistance_steps = _dawn_completed_steps.duplicate()
 	failed_resistance_steps = _dawn_failed_steps.duplicate()
 	resistance_progress = _dawn_progress
 	sabotage_done = _dawn_sabotage_done
 	resistance_carrying_package = _dawn_carrying_package
-	pending_resistance_brief = _dawn_brief
-	var instruction := _instruction_the_day_began_with()
-	if instruction != "":
-		pending_resistance_brief = instruction
 	if resistance_progress != progress_before:
 		EventBus.resistance_progress_changed.emit(resistance_progress)
 	return " — and the day's resistance work with it" if undone else ""
-
-## The instruction today began with: the words of the mark that unlocked the perform step the day
-## offered at dawn — the same words the summary of the day she found that mark already read out.
-##
-## *(The player, on whether a lost day should read out the mark it was about to take back: "the
-## words shown on the lost day are the words that show at the beginning of that day not the nexts.
-## since day doesn't have words it doesn't make sense to show words on day 4".)* So a lost summary
-## repeats what the retry is for rather than a touch that no longer counts, and a day whose whole
-## content is finding the mark repeats nothing: this answers "" for a pickup, for the finale and
-## for a day with nothing on offer, which is every lost day 4.
-##
-## Read off the dawn photograph through the day's own table rather than asked of the director. The
-## step a day offers is a pure function of the calendar and what the resistance had already done,
-## which is exactly what was photographed, so this says what the day offered even when the summary
-## is drawn with no director alive.
-func _instruction_the_day_began_with() -> String:
-	var step := ResistanceSteps.for_day(day, _dawn_completed_steps, _dawn_failed_steps,
-			_dawn_progress >= Tuning.RESISTANCE_GOAL)
-	return ResistanceSteps.unlocking_brief(step)
 
 # ---------------------------------------------------------------------- RNG ---
 
@@ -490,8 +459,8 @@ const _SAVE_FIELDS := [
 	"run_seed", "player_is_male", "day", "nerves", "resistance_progress", "ending",
 	"play_seconds", "consumed_one_shots", "completed_resistance_steps", "failed_resistance_steps",
 	"scars", "city_state", "sabotage_done", "resistance_carrying_package",
-	"pending_resistance_brief", "_dawn_completed_steps", "_dawn_failed_steps", "_dawn_progress",
-	"_dawn_sabotage_done", "_dawn_carrying_package", "_dawn_brief", "settled_in",
+	"_dawn_completed_steps", "_dawn_failed_steps", "_dawn_progress",
+	"_dawn_sabotage_done", "_dawn_carrying_package", "settled_in",
 	"_dawn_consumed_one_shots", "_dawn_scars", "_dawn_city_state",
 ]
 
@@ -516,13 +485,11 @@ func save_snapshot() -> Dictionary:
 		"city_state": city_state.snapshot(),
 		"sabotage_done": sabotage_done,
 		"resistance_carrying_package": resistance_carrying_package,
-		"pending_resistance_brief": pending_resistance_brief,
 		"_dawn_completed_steps": _dawn_completed_steps.duplicate(),
 		"_dawn_failed_steps": _dawn_failed_steps.duplicate(),
 		"_dawn_progress": _dawn_progress,
 		"_dawn_sabotage_done": _dawn_sabotage_done,
 		"_dawn_carrying_package": _dawn_carrying_package,
-		"_dawn_brief": _dawn_brief,
 		"settled_in": settled_data,
 		"_dawn_consumed_one_shots": _dawn_consumed_one_shots.duplicate(),
 		"_dawn_scars": _scars_as_data(_dawn_scars),
@@ -580,13 +547,11 @@ func restore_snapshot(data: Dictionary) -> void:
 	city_state.restore(data["city_state"])
 	sabotage_done = bool(data["sabotage_done"])
 	resistance_carrying_package = bool(data["resistance_carrying_package"])
-	pending_resistance_brief = String(data["pending_resistance_brief"])
 	_dawn_completed_steps = _to_int_array(data["_dawn_completed_steps"])
 	_dawn_failed_steps = _to_int_array(data["_dawn_failed_steps"])
 	_dawn_progress = int(data["_dawn_progress"])
 	_dawn_sabotage_done = bool(data["_dawn_sabotage_done"])
 	_dawn_carrying_package = bool(data["_dawn_carrying_package"])
-	_dawn_brief = String(data["_dawn_brief"])
 	settled_in.clear()
 	for raw: Dictionary in data["settled_in"]:
 		settled_in[int(raw["day"])] = Vector2i(int(raw["x"]), int(raw["y"]))

@@ -101,6 +101,11 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
 		var home_margin := Tuning.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
 		for site in MastSites.compute(map):
 			checked += 1
+			var tile_type := map.tile_at(map.world_to_tile(site.foot))
+			t.check(tile_type == GameEnums.TileType.SIDEWALK or tile_type == GameEnums.TileType.SQUARE,
+					("seed %d: '%s' stands on her own sidewalk or a square's paving, not tile "
+					% [seed_value, site.id]) + "type %d (a mast is never in the middle of the road)"
+					% tile_type)
 			t.check(site.foot.distance_to(doorstep) >= reach,
 					"seed %d: '%s' does not reach the doorstep (%.0fpx away, reach %.0fpx)"
 					% [seed_value, site.id, site.foot.distance_to(doorstep), reach])
@@ -211,9 +216,17 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
 	if not (plan and plan.live):
 		return
 	t.check(plan.live.current_intensity() > 0.0, "and it is actually speaking")
+	var nearby := target.foot + Vector2(50.0, 0.0)
+	# Asked once before silencing, on purpose: `contribution_at()` caches per `(age, position)`,
+	# and silencing does not move `age` — without its own cache invalidation this would go on
+	# answering the pre-silence figure for the rest of the tick, exactly the defect
+	# `EventInstance._invalidate_contribution_cache()`'s own doc warns `_finish()` about.
+	var _primed := plan.live.contribution_at(nearby)
 
 	t.check(_city.events.silence_mast(target.id), "silencing a mast by id finds it")
 	t.check(is_zero_approx(plan.live.current_intensity()), "a silenced mast's field is gone")
+	t.check(is_zero_approx(plan.live.contribution_at(nearby)),
+			"and contribution_at() answers zero in the same tick, not the pre-silence cache")
 	t.check(not plan.live.is_finished, "but the mast still stands — it has not left")
 
 	# Streamed out and back in, the silence holds.

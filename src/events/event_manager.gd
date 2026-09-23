@@ -574,6 +574,10 @@ func silence_mast(mast_id: String) -> bool:
 		plan.silenced = true
 		if plan.live:
 			plan.live.silenced = true
+			# The same invalidation `_finish()` does for `is_finished` — `age` does not move the
+			# instant this flips, so the cache `contribution_at()` keeps would otherwise go on
+			# answering the pre-silence contribution for the rest of this tick.
+			plan.live._invalidate_contribution_cache()
 	return found
 
 ## Silences every mast, for the rest of the day. The masts stop because the power does, or because
@@ -588,13 +592,8 @@ func silence_all_masts() -> int:
 		plan.silenced = true
 		if plan.live:
 			plan.live.silenced = true
+			plan.live._invalidate_contribution_cache()
 	return silenced.size()
-
-## Phase 1's own forwarder, kept only because `ResistanceDirector`'s day-14 sabotage and `hud.gd`'s
-## status line still call it — both are PR 279's to repoint at `silence_all_masts()` directly; see
-## the loudspeaker-masts brief, "Two phases". Deletes with them.
-func silence_city_wide() -> int:
-	return silence_all_masts()
 
 ## How many events are in the world right now — *what is around the player* rather than what the
 ## day contains; see `planned_count()` for the other question.

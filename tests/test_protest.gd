@@ -87,18 +87,15 @@ func _with_clean_run(action: Callable) -> void:
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
 	var saved_progress := GameState.resistance_progress
 	var saved_package := GameState.resistance_carrying_package
-	var saved_brief := GameState.pending_resistance_brief
 	GameState.completed_resistance_steps = []
 	GameState.failed_resistance_steps = []
 	GameState.resistance_progress = 0
 	GameState.resistance_carrying_package = false
-	GameState.pending_resistance_brief = ""
 	action.call()
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
 	GameState.resistance_carrying_package = saved_package
-	GameState.pending_resistance_brief = saved_brief
 
 ## *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for
 ## that.")* A pickup gives `ResistanceDirector.pointable_objective()` nothing to hand back.
@@ -106,9 +103,9 @@ func _test_plain_pose_on_a_mark_step(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
-		director.start_day(4, _rng(4), 300.0)
+		director.start_day(6, _rng(6), 300.0)
 		var step := director.current_step()
-		t.check(step != null and step.is_pickup, "day 4 offers the first chalk mark")
+		t.check(step != null and step.is_pickup, "day 6 offers the first chalk mark")
 		t.check(director.pointable_objective() == Vector2.INF,
 				"a mark step gives a protester nothing to point at")
 		t.check(EventInstance._protester_texture(Vector2.ZERO, director.pointable_objective())
@@ -117,16 +114,17 @@ func _test_plain_pose_on_a_mark_step(t) -> void:
 	)
 
 ## *(2026-09-11, the player: "but the other tasks are not as easy and need pointing.")* A perform
-## step's own contact — already placed by `ResistanceDirector._place()`, M78's rules untouched —
-## is exactly what a protester points at.
+## step's own contact — already placed by `ResistanceDirector._begin_step()`, M78's rules
+## untouched — is exactly what a protester points at, activated the moment the mark it belongs to
+## is touched rather than waiting for a `start_day()` that does not come until tomorrow.
 func _test_pointing_pose_on_a_perform_step(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = [1]
 		var director := _director(t)
-		director.start_day(5, _rng(5), 300.0)
+		director.start_day(6, _rng(6), 300.0)
+		director._on_contact_completed(1)
 		var step := director.current_step()
-		t.check(step != null and not step.is_pickup, "day 5 offers the first perform step")
+		t.check(step != null and not step.is_pickup, "the yeller perform is active")
 
 		var objective := director.pointable_objective()
 		t.check(objective != Vector2.INF, "a perform step gives a protester somewhere to point")
