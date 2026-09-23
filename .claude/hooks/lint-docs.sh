@@ -31,11 +31,26 @@ case "$path" in
 		;;
 esac
 
-# The governed set: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md, docs/*.md.
+# The governed set: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md, docs/*.md --
+# exactly the set tools/lint.sh scans by default (see its own file-collecting loop). A bash
+# `case` pattern's `*` matches "/" same as any other character (a bracket-expression prefix like
+# `[!/]*` does not fix this -- the `[!/]` restricts only the one character before the `*`, and
+# the `*` itself still matches anything), so a bare `docs/*.md` also matched
+# `docs/evidence/x/README.md` and every other doc buried under a subdirectory -- flagging the
+# evidence READMEs under docs/evidence/, which legitimately record branch and commit provenance.
+# Checked instead with a parameter-expansion prefix strip: only a direct child of docs/ has no
+# "/" left in what remains after the "docs/" prefix comes off.
 governed=0
 case "$path" in
-	"$root"/AGENTS.md|"$root"/CLAUDE.md|"$root"/README.md|"$root"/.claude/skills/*/SKILL.md|"$root"/docs/*.md)
+	"$root"/AGENTS.md|"$root"/CLAUDE.md|"$root"/README.md|"$root"/.claude/skills/*/SKILL.md)
 		governed=1
+		;;
+	"$root"/docs/*.md)
+		rel="${path#"$root"/docs/}"
+		case "$rel" in
+			*/*) ;;              # a subdirectory of docs/ -- not governed
+			*)   governed=1 ;;
+		esac
 		;;
 esac
 [ "$governed" -eq 0 ] && exit 0
