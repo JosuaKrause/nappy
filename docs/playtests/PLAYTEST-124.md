@@ -29,3 +29,9 @@ in (the orchestrator's pick).
 3. **A multi-story building front with no storefront has one entrance door.** With the windows
    gone from the ground floor, a front needs a way in; a storefront already is one.
 4. **A single-story front keeps its windows and no door**, and carries no posters.
+
+## Then, while the doors were being built
+
+> "Also let's redo the store fronts as well"
+
+5. **The storefronts are redrawn** to the same bar as the new doors, in one style with them.

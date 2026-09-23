@@ -527,6 +527,9 @@ purpose").
       the fire escape, one door picture serves residential and every other purpose and an
       industrial front gets a heavier steel one, and the home block — her building, kept
       as windows — gets no extra door, since her own door is already cut into it.
+- [ ] **The storefronts are redrawn** in one style with the entrance doors
+      ([PLAYTEST-124](playtests/PLAYTEST-124.md): "Also let's redo the store fronts as well"),
+      every kind in its plain, awning and shuttered picture, on the same canvas and ground line.
 - [ ] **Her building is the whole home block** ([PLAYTEST-124](playtests/PLAYTEST-124.md): "Her
       building is the entire home square"), as built. **"We should probably not randomize it"**
       is asked back: whether the home block's look should be the same on every seed rather than
