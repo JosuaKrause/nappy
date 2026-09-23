@@ -74,9 +74,9 @@ Three shapes it takes, each worse than the last:
 - **Answering the complaint and dropping the design.** The complaint is the part that can be
   verified fixed, so it is the part that survives.
 
-**When you do ask, ask with the work already done up to the fork** — what was asked, what it now
-collides with, what each branch costs, and which you would pick. A question that hands the whole
-problem back is its own kind of failure.
+**When you do ask, ask with the work already done up to the fork**, as `CLAUDE.md`'s rule on
+questions says: what was asked, what it collides with, what each answer costs, and which you would
+pick.
 
 When a decision **is** overturned with agreement, the note says so in the player's words:
 `asked for X · overturned to Y on <date>, because Z`. A status line that cannot name who agreed is a
@@ -91,13 +91,6 @@ than picking off a menu they cannot see.
 
 So when parking something, record **what it was and why it was not taken**, and record the symptom
 as *what would make this worth discussing again*. **Never as what would authorise it.**
-
-## Explain; do not reference
-
-When citing a rule, constant, function or file, **say what it does inline**. Anything read out of a
-file is information only this side has seen, and a bare name is not a reference the player can
-follow. Give the value or the behaviour in the same sentence, and say what is at a `file:line`
-rather than just pointing at it.
 
 ## Evidence lives in the repo
 
@@ -119,16 +112,6 @@ single file inside it does. That name is self-describing on purpose, so the copy
 `<day>/` ancestor to be identifiable. A lone picture lifted out of it is evidence with its
 ancestry left behind: nothing in the copy says which run it came from or what the code was when it
 was taken.
-
-## Notes belong in the repo, never in a session's memory
-
-**Anything worth remembering about how to work on this project goes in `CLAUDE.md`, or in a skill or
-rule file beside it.** A memory is scoped to one tool, one machine and one account: it is invisible
-to everybody else who opens the repo, it is not reviewable in a diff, and it is lost the moment that
-store is cleared or the work moves.
-
-A note long enough to unbalance a file becomes a **file of its own** rather than a longer one. What
-must not happen is a note living nowhere.
 
 ## A playtest is a scarce resource
 
