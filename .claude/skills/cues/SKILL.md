@@ -1,6 +1,6 @@
 ---
 name: cues
-description: The visual danger vocabulary — what may be drawn to signal danger, why there are no rings, and the four rules that make a short vocabulary work. Load this BEFORE adding or changing any danger cue, caret, screen-edge badge, exclamation mark, HUD element, or anything in src/ui/ or Sprites.
+description: The visual danger vocabulary — what may be drawn to signal danger, why there are no rings, and the rules that make a short vocabulary work. Load this BEFORE adding or changing any danger cue, caret, screen-edge badge, exclamation mark, HUD element, or anything in src/ui/ or Sprites.
 ---
 
 # The visual vocabulary
@@ -18,27 +18,22 @@ The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary" — four cues, fo
 one language: **caret**, *stand here and this will cost you* (amber) or *end your day* (doubled
 red); **halo**, *this is costing you now, and this much*; **exclamation over the player**, *the
 clock on you has started*; **badge**, *something lethal or faster than a walk is coming, and this
-is what*. One number decides the caret and the halo — the points a source lands on the meter — and
-one direction decides all four: everything is measured with her held still, so nothing here is a
-cue for walking.
+is what*. One number decides the caret and the halo — the points a source nets her. The red caret
+and the badge are measured with her held still, because *this ends your day* and *something is
+coming* are claims about the thing's own course.
 
 - the **entity itself** carries most of it
-- a **caret above the entity** for anything **projected** to cost her that much, her position
-  held fixed and only the thing moving — amber at `Tuning.EXPECTED_IMPACT_POINTS`, doubled deep
-  red when the same projection puts her inside the thing's lethal reach on its current course,
-  flashing while it has not started yet. A stationary thing never earns one.
+- a **caret above the entity** for anything projected to net her that much if both keep doing what
+  they are doing — amber at `Tuning.EXPECTED_IMPACT_POINTS`; doubled deep red when the source's own
+  course, her position held fixed, reaches its lethal reach; flashing while it has not started yet
 - a **badge at the screen edge** whenever something lethal or faster than a walk is off-screen and
   closing **under its own steam**, carrying its own silhouette so it says *what* is coming rather
   than that something is
 - above the **player**, a flashing exclamation mark for a soon-to-be-bad spot, doubled and red for
   danger already on her
 - over the **pram**, the only cue that is not about the world — four states of the baby herself
-- a **thin rim tracing an entity's own silhouette while it is charging the meter right now**, a few
-  pixels out and no further, coloured and sized by the same points the caret projects forward — see
+- a **thin rim tracing an entity's own silhouette while it is charging the meter right now** — see
   "A glow, not a field" below
-
-**The ban on a ring round a threat is untouched.** Every reason above still holds against one: a
-ring is a number and a silhouette is a threat, whatever new thing needs signalling next.
 
 ## A glow, not a field
 
@@ -49,151 +44,85 @@ excitement. this is meant as a hint to the player so they know what to walk away
 causing excitement to go up."
 
 **The reasoning above is about danger — what a thing will do to you — and it is not what this cue
-answers.** A ring still communicates a falloff radius and a number is still not a threat, which is
-why this is not a ring round any one entity. What it answers is a question the vocabulary never
-had a cue for: *the meter is going up right now and nothing on screen says which of the six things
-around her is doing it.*
+answers.** What it answers is *the meter is going up right now and nothing on screen says which of
+the things around her is doing it.* The arithmetic is the `ExcitementHalo` class docstring and the
+"Entity halo" row of `docs/EVENTS.md`, "The visual vocabulary". **The exception is narrow, and the
+narrowness is what stops it from being the next ring somebody wants:**
 
-**Two shapes were built and rejected on screenshots before this one.** A field-sized halo drawn at
-a source's own `outer_radius` (up to 200px against a visible world of 640x360 at zoom 2) painted
-most of the frame — **and no brightness curve on top of it fixed that**, which is the part worth
-remembering: linear, squared and cubed mappings were each tried against the same two screenshots,
-and the cube that finally killed the wash also dimmed a lone source to nothing. **The footprint was
-the defect, not the curve.** A compact circle sized off `EventDef.obstructs_radius` fixed the
-footprint but was still the shape of a number rather than the shape of the thing: *(2026-09-07, the
-player: "halo meaning only the outline of the object not the influence radius ... it should use the
-outline of the sprite. that's why it needs to be a shader. or draw the sprite in a uniform color
-multiple times".)* A protest's rank of placards or a barricade's run of segments has no single
-circle that is its outline.
-
-**So the halo is traced, not sized: `EntityHalo` re-runs the entity's own body-drawing at a ring
-of offsets `HALO_MARGIN` (4px) out**, flattened to one colour by
-`assets/shaders/excitement_halo.gdshader` — "draw the sprite in a uniform colour multiple times,"
-the hack the player named, made cheap because the shader never has to trace an outline itself, only
-discard each redraw's own texture colours and keep its alpha. A `canvas_item` shader on the entity's
-own sprite could not have done this alone: it can only write inside the rect it is given, tight to
-the art, so a dilation would be clipped at the silhouette's own edge and read as an inward outline
-rather than a glow around it. `EntityHalo` is its own class rather than a method on `EventInstance`
-because `CrowdAgent` draws the same rim — see the "One cue" bullet below.
-
-**The exception is narrow, and the narrowness is what stops it from being the next ring somebody
-wants:**
-
-- **One cue, not a general licence to draw.** Nothing else in the vocabulary gets a halo of its
-  own by analogy to this one. `ExcitementHalo` is the selector — `select_sources()` decides which
-  entities earn one, once a frame, over an untyped candidate array documented as a duck type on
-  `ExcitementHalo` itself — and `EntityHalo` is the one place that draws. **The whole crowd is in
-  that candidate set, not only a caret-worthy body.** *(2026-09-08, the player: "a busy street is
-  noisy because of cars and a busy sidewalk is noisy because of people ... that will allow us to
-  attribute the source exactly".)* The crowd is the noise and the noise is attributable, so
-  `Crowd.agents()` sits beside `EventManager.instances()` on the same terms; `CONTRIBUTION_FLOOR`
-  and `MAX_SOURCES` are what keep a busy pavement legible rather than a rule about who is caret-
-  worthy. A honking car and a bumped walker clear the floor at any distance an ordinary one does,
-  so "a caret implies a halo" — the narrower rule this started as — still holds by construction.
-- **Traced from the thing, never sized to its reach.** A busker's rim is its own 11px body redrawn
-  a ring out; a barricade's is its own run of segments. **A radius that means anything about reach
-  is the ring this exception does not authorise**, and now there is no radius on a def deciding the
-  size at all — only `HALO_MARGIN`, the same few pixels for every row.
-- **For the cost being charged right now, not for what exists.** The set it draws is the sources
-  whose `contribution_at(her position)` clears a floor — a handful at a time by construction, the
-  same *"a cue that marks everything says nothing"* rule the caret already answers to. It goes to
-  nothing the moment she walks out of reach, which is the *"what to walk away from"* half answering
-  itself.
-- **Two channels now, both reading `landed()`, on different curves.** *(2026-09-07, the player: "the
-  intensity of the halo states how far away I am. the color should state how dangerous it is.")*
-  That first framing put brightness on *distance* — the fraction of a source's own peak reaching
-  her — and it was overturned the next session, once the same player asked for magnitude to be
-  tracked at all: *(2026-09-08: "the transparency shouldn't show distance since distance actually
-  doesn't matter. only the actual received amount counts ... this frees up transparency for also
-  encoding magnitude. color and transparency shouldn't be the same number. transparency can be used
-  to emphasize low values.")* **Colour** is `ExcitementHalo.colour_for()`, linear over `landed()` —
-  points that actually reached the meter, traced back from the meter's own sum in
-  `Baby._update_excitement()` rather than recomputed from `contribution_at()`, over a true
-  five-second sliding sum — pale to red by forty of the hundred-point bar. *(2026-09-08, the
-  player: "if a honking car caused 35 excitement to the player that's the number that informs the
-  color of the halo. with 1/3 of the bar that's pretty red already".)* **Brightness** is
-  `ExcitementHalo.magnitude_for()`, the same `landed()` on a curve that rises fast and saturates by
-  fifteen points, so transparency does the low end's work — a point or two is faintly there rather
-  than invisible — while colour is still climbing toward forty. **Both channels ease toward
-  whatever they are last told, in time rather than jumping** — `EntityHalo.FADE_IN_SECONDS` /
-  `FADE_OUT_SECONDS` — because *(2026-09-08, the player: "all changes should transition (hue and
-  transparency) instead of immediately showing the actual value".)* Both reach the shader as one
-  `instance uniform` — one shared material, one value per entity, set through
-  `set_instance_shader_parameter()` rather than `modulate` (which a custom fragment function does
-  not see). Each entity's ring is its own translucent layer rather than one shader's summed field,
-  so two overlapping rings read brighter where they cross the ordinary way two half-transparent
-  things do, not because anything sums their numbers.
-- **Soft and under everything.** Each ring is a child of its own entity with `show_behind_parent`,
-  so it draws behind that entity — and Y-sort, which reaches down through the whole tree, places it
-  behind the crowd and the player the same way it already places that entity's own shadow. The
-  entities, the crowd and the player still draw over it, never under it, so it stays a hint rather
-  than a wall — and the caret, the badge and the exclamation mark keep meaning exactly what they
-  meant before it existed: *worth a detour*, *something is coming*, *the contract is now about you*.
-  Three sentences, one apiece, unchanged by a fourth.
+- **One cue, not a general licence to draw.** Nothing else in the vocabulary gets a halo of its own
+  by analogy to this one. `ExcitementHalo.select_sources()` decides which entities earn one, once a
+  frame, and `EntityHalo` is the one place that draws. **The whole crowd is in the candidate set.**
+  *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
+  because of people ... that will allow us to attribute the source exactly".)*
+  `CONTRIBUTION_FLOOR` and `MAX_SOURCES` are what keep a busy sidewalk legible.
+- **Traced from the thing, never sized to its reach.** *(2026-09-07, the player: "halo meaning only
+  the outline of the object not the influence radius ... it should use the outline of the sprite.
+  that's why it needs to be a shader. or draw the sprite in a uniform color multiple times".)*
+  `EntityHalo` re-runs the entity's own body-drawing at a ring of offsets `HALO_MARGIN` (4px) out,
+  flattened to one colour by `assets/shaders/excitement_halo.gdshader`. A `canvas_item` shader on
+  the entity's own sprite cannot do it alone: it writes only inside its own rect, so a dilation is
+  clipped at the silhouette's edge. **A radius that means anything about reach is the ring this
+  exception does not authorise.**
+- **For the cost being charged right now, not for what exists.** Colour is `colour_for()`, linear
+  through `Palette.HALO_MID` over `ExcitementHalo.net_landed()`: the source's traced `landed()` less
+  its share of the decay the bar took in the same window, floored at zero. A rim reads red only
+  while the bar is climbing because of it *(2026-09-20: "he gets deep red but my bar doesn't move up
+  much")*. Transparency is `magnitude_for()` over the same net on a curve that saturates early
+  *(asked on 2026-09-07 for brightness to show distance · overturned on 2026-09-08: "the
+  transparency shouldn't show distance since distance actually doesn't matter. only the actual
+  received amount counts ... color and transparency shouldn't be the same number. transparency can
+  be used to emphasize low values.")*. Both channels ease rather than jump *(2026-09-08: "all
+  changes should transition (hue and transparency) instead of immediately showing the actual
+  value")*.
+- **Soft and under everything.** Each rim is a child of its own entity with `show_behind_parent`, so
+  Y-sort places it behind the entity, the crowd and the player; it stays a hint rather than a wall,
+  and the caret, the badge and the exclamation mark keep meaning exactly what they meant.
 
 If something new wants a glow of its own, that is a design conversation this one has not already
 settled.
 
-## Four rules that are the whole reason it beats the rings
+## The rules that make a short vocabulary work
 
-### 1. The entity carries most of it, so one picture per row
+`docs/EVENTS.md`, "The visual vocabulary", states them in full and numbers them; these are the parts
+that bite when you are writing the code.
+
+### The entity carries most of it, so one picture per row
 
 **No two rows share a look, no two looks share a silhouette.** `EventInstance.icon_for()` is the
-single table, and there is no generic to reach for.
+single table, and it is also what the badge draws. `tests/test_events.gd` holds both halves.
 
-**A *category* in an enum is a list waiting to happen.** Five categories once drew sixteen of the
-twenty-eight visible rows between them, and it cost real findings: a player can only say *"the
-robber"*, so two rows that draw the same man are one milestone spent fixing the wrong one, and the
-one cue whose entire content is *what* is coming was drawing a delivery van for a fire engine
-because it kept a second table.
+**A *category* in an enum is a list waiting to happen.** Rows collapse into it until several are
+one drawing, and a player can only report *"the robber"* — so two rows drawn as the same man are one
+row as far as any feedback is concerned. The crowd is the deliberate opposite; see the
+**crowd-traffic** skill, "The crowd is one picture on purpose".
 
-`tests/test_events.gd` holds both halves. The **crowd** is the deliberate opposite — two hundred and
-forty bodies share one `person.svg`, because a crowd is what an authored event has to stand out
-from.
-
-### 2. A cue that marks everything says nothing
+### A cue that marks everything says nothing
 
 **And a cue that marks the wrong things says something false.** *(2026-09-08, the player: "carets
-shouldn't be chosen by source value but by expected impact value".)* What decides the mark is not
-a row's own declared cost but what the thing is actually **projected** to net her:
-`EventInstance.expected_impact_at()` and `CrowdAgent.expected_impact_at()` extrapolate the
-source's own current velocity **and her own** in quarter-second steps over
-`Tuning.EXPECTED_IMPACT_HORIZON` (5s), sample the source's field at her own projected position at
-each step, sum the points, subtract the source's present rate times the horizon, then net that
-gross figure against what her own current decay would give back over the same horizon and floor it
-at zero (see "Measure the thing, not the gap" below) — so a thing she is walking away from expects
-nothing, a thing she is walking toward nets its approach less what walking is already earning her
-back, and a thing whose course does not reach her at all is unmarked regardless of what either of
-them is doing. Amber at `Tuning.EXPECTED_IMPACT_POINTS`; doubled deep red — `will_be_lethal()` on
-both classes, her position still held fixed — when a step of the source's own projection puts her
-inside its lethal reach, a `hard_fail` row's `inner_radius` or a car's strike box, on its current
-course. `tests/test_danger.gd` holds the scenarios this decides: a cat dashing at her is unmarked,
-a cyclist or a car whose line reaches her is red and one passing wide is not, and a crowd at
-ordinary arterial density around a standing player marks nobody at all.
+shouldn't be chosen by source value but by expected impact value".)* What decides the mark is what
+the thing is **projected** to net her, not a row's declared cost: `EventInstance` and `CrowdAgent`
+each answer `expected_impact_at()` and `will_be_lethal()`. `tests/test_danger.gd` holds the
+scenarios: a cat dashing at her is unmarked, a cyclist or a car whose line reaches her is red and one
+passing wide is not, and a crowd at ordinary arterial density around a standing player marks
+nobody.
 
-Two things to carry beyond that:
+- **The projection lives on the entity, not on a second table.** Both answer over the same
+  `contribution_at()` and `is_lethal_at()` every other caller uses, so there is no second formula
+  for what a thing costs to disagree with the first.
+- **A colour is the wrong channel for a phase.** `EVENT_STREAM_RADIUS` is 900px and a telegraph
+  lasts a few seconds, so an "amber means telegraphing" rule would only ever be seen on the rows
+  sited in front of her and would read as *near*. **The flash carries the phase.**
+- **Cache the projection once a frame.** `wants_a_mark()`, `mark_colour()` and the drawing all ask
+  in the same frame; `EventInstance._caret_strength()` and `CrowdAgent._caret_strength()` compute
+  it once, keyed on the entity's own clock.
 
-- **The projection lives on the entity, not on a second table.** `EventInstance` and `CrowdAgent`
-  each answer their own `expected_impact_at()` and `will_be_lethal()` over the same
-  `contribution_at()` and `is_lethal_at()` every other caller already uses, so there is no second
-  formula for what a thing costs to disagree with the first.
-- **A colour is the wrong channel for a phase.** `EVENT_STREAM_RADIUS` is 900px and no telegraph is
-  longer than 4s, so an "amber means telegraphing" rule is only ever seen on the `AHEAD_OF_PLAYER`
-  rows and in play it means *near*. **The flash carries the phase**, because a flash is a property
-  of the mark rather than of a moment she had to be present for.
-- **Cache the projection once a frame.** The caret decision runs for every visible source every
-  draw, and `wants_a_mark()`, `mark_colour()` and the drawing itself all ask in the same frame —
-  `EventInstance._caret_strength()` and `CrowdAgent._caret_strength()` compute it once, keyed on
-  the entity's own clock, the same shape `ExcitementHalo` already uses for its own once-a-frame
-  work.
-
-### 3. The mark breathes
+### The mark breathes
 
 Tracking current emission — the one thing the ring did that a discrete symbol does not get for free.
 Without it a pulsing event stops being something to time a pass through and becomes something that
 hurts at random.
 
-### 4. A cue is a claim about a *moment*
+### A cue is a claim about a *moment*
 
 **A cue is lowered by the system that can see its condition.** `Stroller.warn()` takes a source and
 `stand_down()` lowers only that source's own mark, so a hold that bridges a gap in the danger — the
@@ -201,25 +130,19 @@ space between two cars in one lane — does not also bridge the danger being ove
 
 **And measure the thing, not the gap — except where the player asked for the gap on purpose.** The
 badge's closing speed is the event's own approach with the player held still, because a rate that
-includes her 92px/s is a cue for walking; `will_be_lethal()` keeps the same shape, her position
-fixed, because *this ends your day* is a claim about the thing's own course and has to stay true
-whatever she is doing right now.
+includes her own walking is a cue for walking; `will_be_lethal()` keeps the same shape, because
+*this ends your day* has to stay true whatever she is doing right now.
 
 **The amber caret is the one exception, and it is the player's own overturn.** *(Asked on
 2026-09-08 for the source's own velocity with her position fixed, "so nothing about her own
 walking can raise or lower it" · overturned on 2026-09-20: "caret communicates anticipated net
 gain. basically if I keep doing what I'm doing I very likely get that amount in net gain (so the
-halo will match roughly the caret if that happens)".)* `expected_impact_at()` now moves her too,
-at her own current velocity, so a café she is walking straight toward *is* expected to cost her —
-the read the 2026-09-08 rule existed to prevent, now exactly the read asked for. It nets what she
-would gain against what her own current decay would give back over the same horizon
-(`Baby.decay_rate()`, `Baby.current_sensitivity()`), floored at zero, so a source is amber only
-when walking toward it genuinely costs more than walking is already giving back — the forward
-half of `ExcitementHalo.net_landed()`'s own sentence, read the other way round. Charged against
-one source at a time rather than shared across every source near her the way the halo's own
-figure is: sharing it would need every other candidate's own projection first, which
-`EventInstance`/`CrowdAgent` have never needed a second channel to the world to ask for. Open to a
-real multi-source pass if independent carets read too pessimistic in play.
+halo will match roughly the caret if that happens)".)* `expected_impact_at()` moves her too, at
+her own current velocity, and nets what she would gain against what her own current decay gives
+back over the horizon (`Baby.decay_rate()`, `Baby.current_sensitivity()`), floored at zero — the
+forward half of `net_landed()`'s sentence. It is charged against one source at a time rather than
+shared across every source near her; that reads slightly pessimistic when two sources are worth a
+mark at once, and is open to a real multi-source pass if it reads so in play.
 
 Nothing in `tests/test_danger.gd` can see a moment, which is why the `cue` telemetry entry exists.
 
@@ -279,7 +202,8 @@ reason.
 ***"Never draw in code -- at the very least use svgs."* Anything that is a *picture* — a glyph, an
 icon, a silhouette, a symbol — is authored as an image file under `art/` and drawn as a texture,
 never assembled at runtime out of `draw_circle`, `draw_rect`, `draw_line`, `draw_arc` or
-`draw_colored_polygon`.**
+`draw_colored_polygon`.** The **godot** skill carries the short version for every `_draw()`; this
+is the rule in full.
 
 **SVG or PNG, and which one is the asset's own question rather than this rule's.** SVG is the
 default for a glyph or a flat symbol, because it stays hand-editable; a painted or generated sheet
@@ -292,72 +216,41 @@ where drawing work sits in the queue is ever cover for painting a button in `_dr
 **The reason is the feedback loop, and it is decisive:** *(2026-09-06: "that way you can evaluate
 the assets independently of running code".)* An SVG can be opened and looked at — by a person, or by
 an agent reading the file — and judged on its own. A picture assembled in `_draw()` can only be
-judged by booting the game, taking a screenshot and reasoning about draw order, transforms and
-state. So a wrong asset is one file to look at and one file to fix, while a wrong `_draw()` is a
-debugging session, and **the same headless run that proves the code correct proves nothing about
-whether it looks like anything at all.**
+judged by booting the game and taking a screenshot, and **the same headless run that proves the code
+correct proves nothing about whether it looks like anything at all.** And an asset is **replaceable
+without touching code**: a consumer holds the region name `ui/joystick`, which is whatever
+`art/ui/joystick.svg` was baked from, so a better drawing is a drop-in.
 
-The second reason follows from the first: an asset is **replaceable without touching code**. A
-consumer holds the region name `ui/joystick`, which is whatever `art/ui/joystick.svg` was baked
-from, so a better drawing — from anybody, at any time — is a drop-in.
-
-**What this does not cover.** A rectangle that is a *bar* rather than a picture is layout —
-`MeterBar`'s fill is not a drawing of anything. The line is whether a person would call the result
-an *image*: a meter's fill, a scrim and a debug overlay are not, and a joystick, a hand and a
-fence are.
+**What this does not cover.** A shape that is *layout* rather than a picture — `MeterBar`'s fill, a
+scrim, a debug overlay, a pressed button's fill, a knob whose position is live state. The line is
+whether a person would call the result an *image*: a joystick, a hand and a fence are.
 
 **Prefer the engine's data over any drawing at all.** A `Button`'s circular fill is a
 `StyleBoxFlat` with corner radii and per-state overrides, not a painted disc; its glyph is the
 button's own `icon`. Reaching for `_draw()` on a `Control` is the tell that a `StyleBox`, an
 `icon` or a `TextureRect` was the answer.
 
-**`TouchControls` predates this rule and violates it** — the on-screen stick, `RUN` and pause
-button are assembled from primitives in its `_draw()`. Converting them is not urgent and is not
-free (`ScreenOrientation` remaps its input against fixed constants), but **nothing new joins it**,
-and a change that rewrites that file anyway should take the opportunity.
+## Drawing through `Sprites`
 
-## Drawing traps
+The engine traps — a negative `Rect2`, `draw_set_transform` replacing rather than composing, Y-sort,
+retained `_draw()` — are the **godot** skill, "Physics and drawing". Two things are specific to the
+cues' own drawing:
 
-**A negative-width `Rect2` does not flip `draw_texture_rect`.** It is normalised on the way through,
-so the sprite lands a full width to one side — which looks like art sliding off its own shadow, not
-like a failed flip. Mirror by setting a transform that scales x by −1 about the anchor instead.
-`Sprites.draw_standing()` is the one place that does it, and it is the only mirrored draw path in
-the game: the mother, the crowd's walkers and cars and every eight-view event family all reach it.
+**A caller that sets a canvas transform around a mirrored sprite publishes it.**
+`Sprites.draw_standing()` is the only mirrored draw path in the game, and it can only set an
+absolute matrix. So a caller pairs its own `draw_set_transform*` with
+`Sprites.set_base_transform()`, and clears it back to `Transform2D.IDENTITY` when the pass ends;
+`Sprites.mirrored_transform()` composes the mirror under it. `EntityHalo._on_draw()` and
+`EventInstance._draw()` are the two callers. A caller that forgets draws every mirrored halo offset
+on top of the body, with no rim.
 
-**And `draw_set_transform` *replaces* the canvas transform — it does not compose with one somebody
-else already set, and nothing can read back what it replaced.** Godot exposes no getter for a
-`CanvasItem`'s current custom transform, so a helper that mirrors about a point can only set an
-absolute matrix, and an absolute matrix silently throws away whatever the caller outside it had put
-there. That is not hypothetical: `EntityHalo` traces an entity's own body twelve times at a ring of
-offsets, one `draw_set_transform` apiece, and on a **mirrored** view every offset was discarded —
-twelve copies on top of each other at the body, no rim at all, for the three west-facing sectors of
-every family. So `Sprites._base_transform` is what a caller publishes before a pass of
-`draw_standing()` calls, `Sprites.mirrored_transform()` composes the mirror under it, and the
-flipped branch restores **the caller's** transform rather than identity. **If you set a canvas
-transform around anything that may draw a mirrored sprite, publish it** — `EntityHalo._on_draw()`
-and `EventInstance._draw()` are the two callers that do.
+**A redraw gate is a promise about everything the drawing reads.** `EventInstance` and
+`CrowdAgent` skip the rebuild while their picture is unchanged, so the key each compares has to
+name every time-varying quantity its `_draw()` touches, **not the ones that look like the
+picture**. A term missing from the key is a frozen picture rather than a crash, and it shows only on
+the bodies that reach the missing term — a car's registration and shadow read its **continuous**
+heading while its view, mirror and gait are quantised. A traced rim makes such a freeze visible,
+since `EntityHalo` re-draws the body every frame: the halo stands where the body belongs and the
+body does not. Sweep the continuous quantity in a test and assert the key moved with it.
 
-**Y-sorting compares origins**, so a thing whose mass extends away from its own origin sorts wrong.
-**Before reaching for a better comparison, ask whether the two things can ever legitimately be on
-opposite sides of each other.** Buildings cannot — no lot tile is walkable — so they are a layer of
-their own and sort against nothing.
-
-**`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw (the
-10k-tile city ground) is fine, but anything animated must call `queue_redraw()` itself.
-
-**And a redraw *gate* is a promise about everything the drawing reads.** `EventInstance` and
-`CrowdAgent` both skip the rebuild while their picture is unchanged — the largest single drawing
-cost in a frame otherwise — so the key each compares has to name every time-varying quantity its
-`_draw()` touches, **not the ones that look like the picture**. A term missing from the key is a
-frozen picture rather than a crash, and the tell is that it only shows on the bodies that reach the
-missing term: a car's registration and its shadow's axis are read off its **continuous** heading
-while its view, its mirror and its gait are quantised, so a key made of the quantised three left a
-car that had come round an arc wearing the anchor it had at the last sector boundary, about nine
-pixels south of its own strike box, for the rest of its run in that lane. **A traced rim is what
-makes such a freeze visible**, since `EntityHalo` re-draws the body every frame either way: the halo
-stands where the body belongs and the body does not, which is what two playtests reported before
-anybody looked at the gate. Sweep the continuous quantity in a test and assert the key moved with
-it; quantise it finely enough that nothing a screen can show is ever held back.
-
-**A green `check.sh` says nothing about whether the game looks right** — headless runs never call
-`_draw()`. If you touched anything visual, take a screenshot and actually look at it.
+**Headless runs never call `_draw()`** — see the **verify** skill, "What each one cannot see".
