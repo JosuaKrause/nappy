@@ -1335,6 +1335,14 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 		director.free()
 		GameState.scars = saved_scars)
 
+## Mirrors the real day order (`main._start_day()`: city, events, resistance) rather than
+## skipping the middle step. `EventManager.start_day()` is what holds every door segment for the
+## day (`CityMap.held_segments`, filled from `region_plan.doors` among other things) — with it
+## never run, a bare `_pick_reachable()` call would find the door tile reachable whether or not
+## `_place_at_a_door()`'s `allow_held` carve-out (`docs/DECISIONS.md`, M181) actually does
+## anything, so this test would pass whether the carve-out worked or was deleted. Also asserts
+## the chosen tile's segment reads held, so the test states it is exercising that case rather
+## than one where the held set happens to be empty.
 func _test_the_door_task_sits_at_a_region_door(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
@@ -1345,6 +1353,7 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 		t.check(not doors.is_empty(),
 				"day 9 (Tuning.REGION_WALL_FIRST_DAY) has at least one door, or this test "
 				+ "checks nothing")
+		_city.events.start_day(9, _rng(9, "events"), [], _city.map.doorstep_world_position())
 
 		var director := _director(t)
 		director.start_day(9, _rng(9, "resistance"), 300.0)
@@ -1355,6 +1364,9 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 
 		var at := director.contact_position()
 		t.check(at != Vector2.INF, "somewhere in the city")
+		t.check(_city.map.is_held_at(_city.map.world_to_tile(at)),
+				"the chosen tile's own segment is ground the day already holds — the case " +
+				"`allow_held` exists for")
 		var on_a_door := false
 		for segment in doors:
 			var rect := segment.tile_rect()
