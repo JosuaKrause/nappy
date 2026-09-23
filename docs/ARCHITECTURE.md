@@ -149,6 +149,8 @@ src/
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
 	dev_rig.gd            the flag-acting half: --spawn/--follow/--overview/--meters/--day-length
 	                       against the live City, testable without booting main
+	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/spawn:<name>)
+	                       along a real, kerb-preferring path, through the ordinary input path
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
