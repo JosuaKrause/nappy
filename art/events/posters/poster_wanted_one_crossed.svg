@@ -9,7 +9,7 @@
      Three copies differ only in their red X: poster_wanted.svg has none;
      poster_wanted_one_crossed.svg crosses the top-right face only; poster_wanted_crossed.svg
      crosses the top-right face and the neighbor_slot face, for a run whose day 10 task was not
-     done on the day she won. This file crosses both. -->
+     done on the day she won. This file crosses the top-right face. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
   <rect x="6" y="3" width="20" height="22" fill="#c2b9a6"/>
   <rect x="8" y="5" width="16" height="2" fill="#2c2a30"/>
@@ -35,7 +35,6 @@
     <rect x="3" y="3" width="1" height="0.7" fill="#4a403c"/>
     <path d="M0.8 5C1 4.1 1.8 3.6 2.7 3.5L4.3 3.5C5.2 3.6 6 4.1 6.2 5Z" fill="#4a403c"/>
     <rect x="0.25" y="0.25" width="6.5" height="4.5" fill="none" stroke="#3b3034" stroke-width="0.5"/>
-    <path d="M0.9 0.6L6.1 4.4M6.1 0.6L0.9 4.4" stroke="#b0302a" stroke-width="1" stroke-linecap="round"/>
   </g>
   <g transform="translate(17 16)">
     <rect width="7" height="5" fill="#d9d2c3"/>
