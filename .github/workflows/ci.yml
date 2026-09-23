@@ -53,6 +53,9 @@ jobs:
       - name: Check --help/-h and rejection on every shell tool
         run: ./tools/test_cli_help.sh
 
+      - name: Check the rule-loading hooks
+        run: ./tools/test_rules_hooks.sh
+
       # The Python tooling: uv reads .python-version and uv.lock, so the interpreter and every
       # package are the ones the lockfile names rather than whatever the runner image ships.
       - name: Install uv
