@@ -441,9 +441,18 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       one tie to the story: "other than that we can keep this mechanic separate with no story
       tie in", so tearing stays a gimmick that counts for nothing.
 
-      A kind that has arrived stays in the mix; nothing is taken down except by her. SVG first, as
-      every picture here is, and the first drawn wall comes back to the player as pictures in
-      the pull request before anything is polished.
+      A kind that has arrived stays in the mix; nothing is taken down except by her.
+
+      **The pictures are drawn and accepted** (`DECISIONS.md`, M180, the poster art): the six
+      intact sheets and three tear masks under `art/events/posters/`, prepared and not yet bound,
+      with the neighbor's slot on the wanted notice and the compositing recipe in
+      `docs/GRAPHICS.md`'s Posters section. **What is open is putting them on the walls**: only on
+      blank ground-floor wall, never over a window (M185, a ground floor is blank wall or shops),
+      one row to a wall, following the progression above. Where a sheet is pasted over an
+      older one, the offset is large enough that the older sheet plainly shows, never a sliver that
+      reads as a glitch ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 31); **most** new sheets
+      cover the old one exactly and replace it, and only some show the one beneath (statements 32
+      and 33: "if it's visibly over pasted for all of them then it will look weird"). PNGs are Codex's, later.
 - [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
       no button, and more than walking past. *The orchestrator recommended running along the
       wall · the player chose pushing on 2026-09-20*, because a push can happen by accident,
