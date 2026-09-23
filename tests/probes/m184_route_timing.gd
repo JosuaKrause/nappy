@@ -20,6 +20,16 @@ extends RefCounted
 ## `--day-length`: the whole question is whether the *real* clock is enough, so compressing it
 ## would answer a different one. `_TIMEOUT_SECONDS` is a safety net well past every day 6-13's own
 ## length (`Tuning.day_length()`, 144.0s for all eight), not a budget this probe is trying to fit.
+##
+## **Carries `--invincible`.** The question this table answers is "does the route fit the day's
+## clock", not "does she survive the ordinary risk of the streets she walks" — the second is a
+## real fact about the game and not a defect in the rig, but it would show up in this table as a
+## day that "did not fit" when what actually happened is a fair loss to a crowd or an event, which
+## answers a different question than the one asked. `--invincible` freezes the excitement meter
+## and the clock's own hard stop the same way the verify skill's capture guidance already leans on
+## it, without changing where she walks or how long a leg honestly takes; a non-invincible run is
+## still worth taking once by hand when this table wants explaining, and its own outcome column
+## (`LOST_CRYING`, `LOST_HARD_FAIL`, `LOST_TIMEOUT`) is exactly what to read for that.
 
 const DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
 ## The same spread `tests/test_full_run.gd` already uses, for the same reason: a single city can
@@ -47,7 +57,7 @@ func _measure(day: int, seed_value: int) -> String:
 	var project := ProjectSettings.globalize_path("res://")
 	var args: PackedStringArray = ["--headless", "--path", project, "--",
 			"--day", str(day), "--seed", str(seed_value),
-			"--route", "mark,task,calm,home", "--no-save", "--no-title"]
+			"--route", "mark,task,calm,home", "--no-save", "--no-title", "--invincible"]
 	var started_at := Time.get_unix_time_from_system()
 	var pid := OS.create_process(godot, args, false)
 	if pid <= 0:

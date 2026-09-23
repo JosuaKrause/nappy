@@ -33,24 +33,34 @@ extends Node
 ## measurement, not a bug in it.
 ##
 ## **Hugs the kerb by keeping off the carriageway, not by hand-drawn geometry.** `_plan()` first
-## asks for the shortest walk on a graph with every plain `ROAD` tile removed — so a route always
-## prefers the pavement and crosses only at a `CROSSING` (a zebra) it passes on the way — and only
-## falls back to the unrestricted graph, carriageway included, when the sidewalk-only one cannot
-## reach the target at all (the day 13 roadblock's own band is `ROAD`/`CROSSING` ground, so its own
-## last step always does). `_simplify()` then collapses a straight run along one row or column into
-## its two ends, dropping the redundant waypoints in between — see `_line_of_sight()`'s own doc for
-## why a true diagonal cut is refused outright rather than sampled: it can cross a 2x2 corner the
-## raw 4-connected walk never actually crossed.
+## asks for the shortest walk on a graph with every plain `ROAD` tile and every live hazard's own
+## kill reach removed (`_hazard_tiles()`) — so a route always prefers the pavement, crosses only at
+## a `CROSSING` (a zebra) it passes on the way, and keeps off a guard's own reach the way a player
+## backs off once the meter spikes — and only falls back to the unrestricted graph, carriageway and
+## hazard ground both included, when nothing safer can reach the target at all (the day 13
+## roadblock's own band is `ROAD`/`CROSSING` ground, so its own last step always does; see
+## `_HAZARD_MARGIN`'s own doc for why a guarded mark's own contact point never needs this). A
+## hazard the plan cannot get around at all — an unlikely last resort, not the ordinary case — is
+## walked through with hazards ignored entirely, rather than the target being reported unreachable
+## for a margin that merely made it look that way. `_simplify()` then collapses a straight run
+## along one row or column into its two ends, dropping the redundant waypoints in between — see
+## `_line_of_sight()`'s own doc for why a true diagonal cut is refused outright rather than
+## sampled: it can cross a 2x2 corner the raw 4-connected walk never actually crossed.
 ##
-## **Re-plans when the way ahead closes.** `_maybe_replan()` checks the remaining waypoints against
-## `CityMap.is_open()` and `CityMap.is_obstructed()` every `_REPLAN_INTERVAL` seconds — closures are
+## **Re-plans when the way ahead closes, or turns dangerous — and the re-plan actually routes
+## around what it found**, rather than recomputing the same path onto the same ground.
+## `_maybe_replan()` checks the remaining waypoints against `CityMap.is_open()`,
+## `CityMap.is_obstructed()` and `_is_hazardous()` every `_REPLAN_INTERVAL` seconds — closures are
 ## fixed for the day (see the city skill), but an obstruction (a fire's own spread, a parked van, a
-## roadblock's own band) moves while the day is live, and this is what catches one landing on a
-## step already planned. And it re-plans when she has simply stopped covering ground even though the
-## tiles read fine — a body she has fetched up against, or standing *inside* an obstruction's own
-## collision — which a second stall in a row escalates from a fresh plan to `_begin_unstick()`, a
-## short maneuver through the eight compass points that works her physically clear before the next
-## plan is asked for.
+## roadblock's own band) moves while the day is live and a hazard's own guard can start a pursuit
+## mid-leg, and this is what catches either landing on a step already planned.
+## `_blocked_for_phase()` folds `CityMap.obstructed_tiles` into every plan for exactly this reason:
+## a `_plan()` that never looked at it would recompute the identical route onto the same
+## obstruction and have `_maybe_replan()` catch the same thing again next check, forever. And it
+## re-plans when she has simply stopped covering ground even though the tiles read fine — a body
+## she has fetched up against, or standing *inside* an obstruction's own collision — which a second
+## stall in a row escalates from a fresh plan to `_begin_unstick()`, a short maneuver through the
+## eight compass points that works her physically clear before the next plan is asked for.
 ##
 ## **Quits the run once it is done**, win or lose — a rig meant to be driven from a headless process
 ## by `tests/probes/` cannot wait at a day summary screen for a button nobody is going to press;
@@ -102,6 +112,11 @@ var _current_target_world := Vector2.INF
 var _leg_start_elapsed := 0.0
 var _leg_start_position := Vector2.ZERO
 
+## This rig's own running total of every `_physics_process(delta)` it has been given since
+## `start_day()`, which is what `_elapsed()` reports rather than `_day.time_total -
+## _day.time_remaining` — see that function's own doc for why.
+var _elapsed_seconds := 0.0
+
 var _resolving := false
 var _resolve_elapsed := 0.0
 var _settling := false
@@ -147,6 +162,7 @@ func _cache_road_tiles() -> void:
 ## yesterday's mark.
 func start_day() -> void:
 	_target_index = 0
+	_elapsed_seconds = 0.0
 	_waypoints.clear()
 	_resolving = false
 	_settling = false
@@ -168,6 +184,7 @@ func _begin_resolving(word: String) -> void:
 func _physics_process(delta: float) -> void:
 	if _done or not _day or not _day.is_running():
 		return
+	_elapsed_seconds += delta
 	if _resolving:
 		_try_resolve(delta)
 		return
@@ -234,12 +251,15 @@ func _nearest_live_instance(event_id: String) -> Vector2:
 			best = instance.global_position
 	return best
 
-## The nearest calm tile by walking distance, sidewalks preferred exactly as `_plan()` prefers them
-## — see `_blocked_for_phase()`. `CityMap.calm_tiles()` is read live, so a park the day has already
-## spoiled (day 12, once the swing is reached) is never offered back.
+## The nearest calm tile by walking distance, sidewalks and hazard-free ground preferred exactly as
+## `_plan()` prefers them — see `_blocked_for_phase()`. `CityMap.calm_tiles()` is read live, so a
+## park the day has already spoiled (day 12, once the swing is reached) is never offered back.
 func _nearest_calm() -> Vector2:
 	var here := _city.map.world_to_tile(_player.global_position)
-	var best := _nearest_in_field(_city.map.walk_field(here, _blocked_for_phase(true)))
+	var hazards := _hazard_tiles()
+	var best := _nearest_in_field(_city.map.walk_field(here, _blocked_for_phase(true, {}, hazards)))
+	if best == Vector2i(-1, -1):
+		best = _nearest_in_field(_city.map.walk_field(here, _blocked_for_phase(false, {}, hazards)))
 	if best == Vector2i(-1, -1):
 		best = _nearest_in_field(_city.map.walk_field(here, _blocked_for_phase(false)))
 	return _city.map.tile_to_world(best) if best != Vector2i(-1, -1) else Vector2.INF
@@ -258,20 +278,108 @@ func _nearest_in_field(field: PackedInt32Array) -> Vector2i:
 
 # ----------------------------------------------------------------- planning ---
 
-## `_road_tiles` on top of today's `closed_tiles` while `sidewalk_only`, plus `avoid` — a
-## temporary detour around a tile the tile grid calls open but she cannot actually stand on or
-## pass, see `_avoid_zone()` — built fresh every call since `closed_tiles` genuinely changes day
-## to day and a stale copy would let a plan walk through today's own barrier.
-func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {}) -> Dictionary:
+## `_road_tiles` on top of today's `closed_tiles` and `CityMap.obstructed_tiles` while
+## `sidewalk_only`... no — `closed_tiles` and `obstructed_tiles` block a plan regardless of
+## `sidewalk_only`; `hazards` (see `_hazard_tiles()`) and `avoid` (a temporary detour around a tile
+## the tile grid calls open but she cannot actually stand on or pass, see `_avoid_zone()`) are
+## added on top of all of that. Built fresh every call since `closed_tiles`, every live
+## obstruction's own footprint and every live hazard's own position genuinely change day to day
+## and frame to frame, and a stale copy would let a plan walk through today's own barrier, a body
+## parked since the last check, or yesterday's guard. `CityMap.obstructed_tiles` (`src/city/
+## city_map.gd`) is what `_maybe_replan()`'s own `is_obstructed()` check reads — folding it in here
+## too is what makes a replan actually route around the thing it just detected, rather than
+## recomputing the identical path onto the same obstruction and re-detecting it forever; a plan
+## that never looked at `obstructed_tiles` at all was the shape of that bug. `hazards` is taken as
+## a dictionary rather than computed here so a caller can drop the one tile it is actually trying
+## to reach from it first — see `_shortest()`.
+func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
+		hazards: Dictionary = {}) -> Dictionary:
 	var blocked := {}
 	if sidewalk_only:
 		for tile: Vector2i in _road_tiles:
 			blocked[tile] = true
 	for tile: Vector2i in _city.map.closed_tiles:
 		blocked[tile] = true
+	for tile: Vector2i in _city.map.obstructed_tiles:
+		blocked[tile] = true
+	for tile: Vector2i in hazards:
+		blocked[tile] = true
 	for tile: Vector2i in avoid:
 		blocked[tile] = true
 	return blocked
+
+## Margin added past a live hard_fail event's own `lethal_reach()` when deciding what ground to
+## keep off — `Tuning.PLAYER_BODY_RADIUS` (14px), the width of the body actually walking the
+## boundary `_hazard_tiles()` draws. `_hazard_tiles()` tests each tile's own **nearest point**
+## against the reach, not its centre, so this margin does not also have to cover a tile's own
+## half-diagonal the way a centre-distance test would — a nearest-point test already sees a tile's
+## corner for what it is. A bigger margin here (an earlier build used the half-diagonal-plus-body
+## sum, 38px, over a centre-distance test) blocks a wider ring than the true kill radius needs,
+## and on a two-tile-wide alley — the guard's own placement, `alley_robbery.placement = [ALLEY]`,
+## and *"a robber who never moves is avoidable by walking two tiles wide of him"* — a wide enough
+## ring can span the whole width and leave no tile within one hop of wherever she is already
+## standing that is not itself still "blocked", which is a plan that can never get out from
+## wherever it started rather than one that avoids the guard. See `_hazard_tiles()`'s own doc.
+const _HAZARD_MARGIN := Tuning.PLAYER_BODY_RADIUS
+
+## Whether `instance` is a hard_fail row worth planning a route around at all — live, and
+## `not def.mobile`. A stationary kill (the guard `alley_robbery` places over every mark, an
+## idling `abduction` van, `reversing_lorry`, `car_accident`) is exactly the shape a route can
+## detour once and stay clear of for the whole leg, the same as a parked obstruction. A `mobile`
+## one (`cyclist`, `masked_pursuer`) is somewhere else by the time a replan's own path would get
+## there — blocking around its instantaneous position chases a moving point with a stale detour,
+## which is what turned day 6 seed 4242's 'task' leg (homeless_yeller's own pacing crossing a
+## cyclist's route) into a replan every `_REPLAN_INTERVAL` for the rest of the run rather than a
+## leg that ever finished. A moving hard_fail hazard is exactly what the excitement meter and the
+## screen-edge badge already warn a player to react to as it closes, not something a route is
+## planned around from a distance; this rig has no reactive dodge, so it leaves a mobile hazard to
+## `_maybe_replan()`'s ordinary stuck/obstruction handling instead of a dedicated avoidance.
+func _is_stationary_hazard(instance: EventInstance) -> bool:
+	return not instance.is_finished and instance.def.hard_fail and not instance.def.mobile
+
+## Whether `point` sits within a live stationary hard_fail event's own kill reach plus
+## `_HAZARD_MARGIN` — every mark is guarded (`docs/DECISIONS.md`, "every mark is guarded"), and the
+## guard carries no body for `is_obstructed()` to see, only a radius that ends the day. A player
+## backs off the instant the excitement meter spikes; this is what the same caution reads as for a
+## rig with no meter to watch.
+func _is_hazardous(point: Vector2) -> bool:
+	for instance: EventInstance in _city.events.instances():
+		if not _is_stationary_hazard(instance):
+			continue
+		if point.distance_to(instance.global_position) <= instance.def.lethal_reach() + _HAZARD_MARGIN:
+			return true
+	return false
+
+## Every tile within a live stationary hard_fail event's own kill reach plus `_HAZARD_MARGIN`,
+## tested against each candidate tile's own **nearest point** to the hazard rather than its
+## centre — see `_HAZARD_MARGIN`'s own doc for why a centre-distance test blocks a wider ring than
+## the true kill radius needs. Cheap: a handful of hard_fail instances are ever live at once, each
+## with a two-or-three-tile reach.
+func _hazard_tiles() -> Dictionary:
+	var blocked := {}
+	for instance: EventInstance in _city.events.instances():
+		if not _is_stationary_hazard(instance):
+			continue
+		var reach := instance.def.lethal_reach() + _HAZARD_MARGIN
+		var centre := _city.map.world_to_tile(instance.global_position)
+		var radius_tiles := ceili(reach / Tuning.TILE_SIZE) + 1
+		for dy in range(-radius_tiles, radius_tiles + 1):
+			for dx in range(-radius_tiles, radius_tiles + 1):
+				var tile := centre + Vector2i(dx, dy)
+				if _tile_nearest_distance(tile, instance.global_position) <= reach:
+					blocked[tile] = true
+	return blocked
+
+## The shortest distance from `point` to any point inside `tile`'s own square — `0.0` when `point`
+## is over the tile at all, otherwise the distance to whichever edge or corner is nearest. The test
+## `_hazard_tiles()` needs: not whether the tile's *centre* is far enough from a hazard, but
+## whether *any ground on the tile* is close enough to end the day.
+func _tile_nearest_distance(tile: Vector2i, point: Vector2) -> float:
+	var centre := _city.map.tile_to_world(tile)
+	var half := Tuning.TILE_SIZE / 2.0
+	var dx := maxf(absf(point.x - centre.x) - half, 0.0)
+	var dy := maxf(absf(point.y - centre.y) - half, 0.0)
+	return Vector2(dx, dy).length()
 
 ## A ring of tiles `radius` out from `centre`, `centre` itself deliberately excluded — folding it
 ## in would mark her own standing tile `BLOCKED`, which `CityMap.walk_field_from()` reads as
@@ -286,18 +394,43 @@ func _avoid_zone(centre: Vector2i, radius: int) -> Dictionary:
 			avoid[centre + Vector2i(dx, dy)] = true
 	return avoid
 
-## The sidewalk-only shortest walk, or the unrestricted one where the first finds nothing —
-## see the class doc, "Hugs the kerb" — smoothed by `_simplify()` either way. `avoid` is
-## `_avoid_zone()`'s own detour, `{}` for an ordinary plan.
+## The sidewalk-only shortest walk keeping off every live hazard, or the unrestricted one where
+## the first finds nothing — see the class doc, "Hugs the kerb" — or, only once both of those find
+## nothing, the unrestricted walk with hazards ignored, so a guard that has boxed in the only way
+## through skips the target rather than reporting one unreachable that a wider margin merely made
+## look that way. Smoothed by `_simplify()` either way. `avoid` is `_avoid_zone()`'s own detour,
+## `{}` for an ordinary plan.
 func _plan(from_tile: Vector2i, to_tile: Vector2i, avoid: Dictionary = {}) -> Array[Vector2i]:
 	var path := _shortest(from_tile, to_tile, true, avoid)
 	if path.is_empty():
 		path = _shortest(from_tile, to_tile, false, avoid)
+	if path.is_empty():
+		path = _shortest(from_tile, to_tile, false, avoid, false)
 	return _simplify(path)
 
+## `to_tile` is dropped from the hazard set before it blocks anything — the fairness contract that
+## guards a mark (`docs/DECISIONS.md`, "The guard robber is placed inside a building": the least a
+## guarded mark's own contact point is ever placed from its guard is `alley_robbery.inner_radius +
+## ContactPoint.REACH`, 66px) already keeps the exact point she is walking to outside the true kill
+## radius; `_HAZARD_MARGIN`'s own slack can still read the target's own tile as blocked without
+## this, which would report a guarded mark unreachable rather than merely guarded. `from_tile` is
+## dropped from the **whole** blocked set, hazard and obstruction and closure alike — the failure
+## `_avoid_zone()`'s own doc names for her own standing tile: `CityMap.walk_field_from()` reads a
+## blocked seed as nothing to sweep from at all, so anything that merely brushes wherever she
+## already legally is (a hazard's own margin close by but outside the true kill radius, since she
+## is walking and not dead; a fresh obstruction that has just closed in around her) would report
+## *every* tile unreached rather than a detour away from it — the shape of bug that turned a walk
+## past a stationary guard, at a safe distance a margin's own slack still read as blocked, into a
+## replan every check for the rest of the run rather than a route that ever got past it. The
+## ground *around* either tile keeps its ordinary rules — only the one tile she is actually
+## standing on, or the one she is actually trying to reach, is ever exempted.
 func _shortest(from_tile: Vector2i, to_tile: Vector2i, sidewalk_only: bool,
-		avoid: Dictionary = {}) -> Array[Vector2i]:
-	var field := _city.map.walk_field(from_tile, _blocked_for_phase(sidewalk_only, avoid))
+		avoid: Dictionary = {}, avoid_hazards: bool = true) -> Array[Vector2i]:
+	var hazards := _hazard_tiles() if avoid_hazards else {}
+	hazards.erase(to_tile)
+	var blocked := _blocked_for_phase(sidewalk_only, avoid, hazards)
+	blocked.erase(from_tile)
+	var field := _city.map.walk_field(from_tile, blocked)
 	if _city.map.distance_at(field, to_tile) < 0:
 		return []
 	var reversed: Array[Vector2i] = [to_tile]
@@ -350,10 +483,13 @@ func _simplify(path: Array[Vector2i]) -> Array[Vector2i]:
 const _LINE_OF_SIGHT_CLEARANCE := 24.0
 
 ## Whether the straight world-space line between two tile centres, with `_LINE_OF_SIGHT_CLEARANCE`
-## either side of it, stays on open, unobstructed, non-`ROAD` ground the whole way — `CROSSING` (a
-## zebra) is fine, since crossing there is legal; a bare `ROAD` tile is refused even if the raw
-## walk touched one nearby, so smoothing can never introduce a fresh stretch of carriageway the
-## kerb-preferring plan did not already decide it needed.
+## either side of it, stays on open, unobstructed, non-`ROAD`, non-hazardous ground the whole way —
+## `CROSSING` (a zebra) is fine, since crossing there is legal; a bare `ROAD` tile is refused even
+## if the raw walk touched one nearby, so smoothing can never introduce a fresh stretch of
+## carriageway the kerb-preferring plan did not already decide it needed. Checked against
+## `_is_hazardous()` too — the raw walk already kept off a live guard's own reach (`_hazard_tiles()`
+## in `_blocked_for_phase()`); a straight cut refusing the same ground is what keeps a corner-cut
+## from putting that ground back.
 ##
 ## **Refuses a true diagonal outright, before sampling anything.** `a` and `b` differing on both
 ## axes means the cut would cross a 2x2 corner the raw 4-connected walk never actually crossed —
@@ -380,6 +516,8 @@ func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 			if not _city.map.is_open(tile) or _city.map.is_obstructed(tile):
 				return false
 			if _city.map.tile_at(tile) == GameEnums.TileType.ROAD:
+				return false
+			if _is_hazardous(point):
 				return false
 	return true
 
@@ -410,9 +548,21 @@ func _begin_leg(target_world: Vector2) -> void:
 	_stuck_streak = 0
 	_unsticking = false
 	_unstick_cycles = 0
+	_leg_unstick_episodes = 0
 
+## Elapsed day time, in simulated seconds — this rig's own `_elapsed_seconds`, not
+## `_day.time_total - _day.time_remaining`. The two agree while the day is played straight, since
+## both are the same sum of physics deltas since the day began; they part company under
+## `--invincible`, which `DayController._process()` (`src/day/day_controller.gd`) stands still on
+## purpose — *"the clock never moves"*, so the capture it exists for never runs out of day — which
+## is exactly wrong for the number this class exists to report. A `--route` run *under*
+## `--invincible` (the only way to measure whether a day fits its clock without the meter or an
+## event ending it first) would otherwise log every target reached at a flat 0.0s, which answers
+## nothing. `Time.get_ticks_msec()` was the other candidate and is wrong for a different reason:
+## headless Godot runs unthrottled, so real wall-clock seconds and simulated seconds are not the
+## same number, and `Tuning.day_length()` is stated in simulated seconds.
 func _elapsed() -> float:
-	return _day.time_total - _day.time_remaining
+	return _elapsed_seconds
 
 # ----------------------------------------------------------------- walking ---
 
@@ -453,16 +603,35 @@ func _maybe_replan(delta: float) -> void:
 		# already tried and failed to move her — which is what standing *inside* an obstruction's
 		# own collision reads as, `is_obstructed()` true for her own tile and no route out of one
 		# tile changes that a step toward any of them is a step into the same solid body. Physically
-		# working clear of it is `_begin_unstick()`'s job, not another plan.
+		# working clear of it is `_begin_unstick()`'s job, not another plan — unless this leg has
+		# already spent `_LEG_MAX_UNSTICK_EPISODES` separate encounters clearing a wedge only to be
+		# sent straight back at it, in which case the target is given up on rather than tried again.
 		if _stuck_streak == 1:
 			_replan()
+		elif _leg_unstick_episodes >= _LEG_MAX_UNSTICK_EPISODES:
+			Telemetry.note("route", "day %d: '%s' stuck fast, skipping" % [GameState.day, _current_word])
+			_release()
+			_advance_target()
 		else:
+			_leg_unstick_episodes += 1
 			_begin_unstick()
 		return
 	_stuck_streak = 0
-	for point in _waypoints:
+	for i in _waypoints.size():
+		var point: Vector2 = _waypoints[i]
 		var tile := _city.map.world_to_tile(point)
 		if not _city.map.is_open(tile) or _city.map.is_obstructed(tile):
+			_replan()
+			return
+		# The first remaining waypoint is wherever she already legally is (about to be popped this
+		# same `_follow()` call), and the last is the exact target — `_shortest()` exempts both of
+		# those tiles from hazard blocking, for the reason its own doc gives (a guard's margin can
+		# brush a spot she is already standing on safely, or the exact contact point a mark's own
+		# fairness contract keeps just inside the margin). Checking either against the raw,
+		# unexempted `_is_hazardous()` here would replan forever over ground already accepted as
+		# safe enough to stand on, rather than catching a hazard newly astride ground *between* the
+		# two she has not reached yet.
+		if i > 0 and i < _waypoints.size() - 1 and _is_hazardous(point):
 			_replan()
 			return
 
@@ -516,11 +685,23 @@ const _UNSTICK_CLEAR_DISTANCE := 48.0
 ## not one more heading going to answer.
 const _UNSTICK_MAX_CYCLES := 3
 
+## Separate stuck-encounters given to one leg before it is given up on — not the same count as
+## `_UNSTICK_MAX_CYCLES`, which bounds one continuous wedge. `_end_unstick(true)` clears *this*
+## wedge and immediately `_replan(true)`s, so a chokepoint she cannot actually get past (a parked
+## van's own lane with the carriageway detour around it also busy, on a street with no third way
+## through) reads as "cleared" every time and sends her straight back at it — three separate
+## encounters, each up to `_UNSTICK_MAX_CYCLES` cycles, is the whole leg giving up on a spot that
+## keeps re-catching her rather than retrying it forever.
+const _LEG_MAX_UNSTICK_EPISODES := 3
+
 var _unsticking := false
 var _unstick_index := 0
 var _unstick_elapsed := 0.0
 var _unstick_anchor := Vector2.INF
 var _unstick_cycles := 0
+## Reset in `_begin_leg()`; counts every `_begin_unstick()` this leg has needed, cleared wedge or
+## not — see `_LEG_MAX_UNSTICK_EPISODES`.
+var _leg_unstick_episodes := 0
 
 func _begin_unstick() -> void:
 	_unsticking = true
