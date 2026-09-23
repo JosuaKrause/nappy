@@ -35,6 +35,9 @@ func run(t) -> void:
 	_test_resolve_target_spawn_reaches_devrig(t)
 	_test_resolve_target_unknown_word_warns_and_answers_inf(t)
 	_test_nearest_calm_excludes_ground_the_day_has_spoiled(t)
+	_test_pace_does_not_advance_the_target(t)
+	_test_check_settled_waits_for_asleep(t)
+	_test_on_day_finished_won_still_finishes(t)
 	_test_a_real_leg_walks_her_there_and_reports_it(t)
 	_teardown(t)
 
@@ -282,6 +285,65 @@ func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t) -> void:
 			"once the nearest calm tile is spoiled, 'calm' answers a different one (%s vs %s)"
 			% [first, second])
 	_city.map.set_tile(spoiled_tile, original)
+	rig.free()
+
+# ------------------------------------------------------------------ settling ---
+
+## `_pace()` presses toward the far end of its own short walk and nothing else — the regression for
+## a stray `_advance_target()` once left at the end of this function, which skipped the whole point
+## of settling (waiting for `Baby.state == ASLEEP`, see `_check_settled()`'s own doc) the moment
+## she took her very first step of it: `calm` would "settle" in one physics frame regardless of
+## whether the baby was anywhere near asleep.
+func _test_pace_does_not_advance_the_target(t) -> void:
+	var rig := _rig(t)
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+	rig._settle_anchor = _stroller.global_position
+	rig._settle_forward = true
+	var before := rig._target_index
+	for i in 5:
+		rig._pace()
+	t.check(rig._target_index == before, "pacing never advances the target on its own (%d -> %d)"
+			% [before, rig._target_index])
+	rig.free()
+
+## `_check_settled()` only advances once `Baby.state` reaches `ASLEEP`, and paces meanwhile rather
+## than standing — the other half of the regression above: pacing alone must never finish the leg,
+## and settling must actually wait for the state the meter reports rather than a fixed number of
+## calls. `Baby.force_sleep()` is the same dev affordance `--spawn` rigs already use to skip walking
+## the meter up by hand.
+func _test_check_settled_waits_for_asleep(t) -> void:
+	var baby: Baby = _stroller.get_node("Baby")
+	baby.reset()
+	var rig := _rig(t)
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+	rig._baby = baby
+	rig._targets = ["mark", "task", "calm", "home"]
+	rig._target_index = 2
+	rig._settling = true
+	rig._settle_anchor = _stroller.global_position
+	rig._settle_forward = true
+	rig._check_settled()
+	t.check(rig._settling and rig._target_index == 2, "still settling while the baby is awake")
+	baby.force_sleep()
+	rig._check_settled()
+	t.check(not rig._settling and rig._target_index == 3,
+			"settling ends and the target advances once the baby is asleep")
+	rig.free()
+
+## `_on_day_finished(WON)` finishes the rig rather than treating a win as a no-op — the regression
+## for the race that function's own doc now names: `DayController`'s own `WON` can fire the moment
+## she is anywhere on the `HOME` tile, a looser check than `_arrive()`'s own `_ARRIVE_RADIUS` of the
+## exact doorstep point, so a day can win a few pixels before `_arrive()` would have. Only
+## `get_tree().quit()`'s own side effect is left unchecked here — `run_tests.gd` already calls it
+## once every suite has run, so a second, earlier request from this call is harmless.
+func _test_on_day_finished_won_still_finishes(t) -> void:
+	var rig := _rig(t)
+	rig._current_word = "home"
+	t.check(not rig._done, "not finished before the signal")
+	rig._on_day_finished(GameEnums.DayResult.WON)
+	t.check(rig._done, "WON finishes the rig rather than being ignored")
 	rig.free()
 
 # ------------------------------------------------------------ end to end ---

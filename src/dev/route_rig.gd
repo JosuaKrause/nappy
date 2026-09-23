@@ -72,6 +72,17 @@ extends Node
 ## `_simplify()` drew.
 const _ARRIVE_RADIUS := 10.0
 
+## World-space half-length of `_pace()`'s own back-and-forth walk while settling at `calm` —
+## comfortably inside half `Tuning.TILE_SIZE` (16px) even measured from the tile's own centre, so a
+## lap can never carry her onto a neighbouring tile's own `sleepiness_multiplier()` or off calm
+## ground entirely. See `_pace()`'s own doc for why she paces instead of standing.
+const _SETTLE_PACE_HALF := 10.0
+
+## How close counts as "reached this end of the pace" — well under `_SETTLE_PACE_HALF` so the walk
+## actually covers most of it before turning, unlike `_ARRIVE_RADIUS`, which is sized against
+## `ContactPoint.REACH` for a different kind of arrival entirely.
+const _SETTLE_ARRIVE_RADIUS := 3.0
+
 ## How long an unresolved target (no mark today, the task not yet unlocked, an any-instance task
 ## with nothing live yet) is given before it is logged and skipped — long enough that a task
 ## unlocked a frame after the mark is touched is never mistaken for one that never will be.
@@ -120,6 +131,13 @@ var _elapsed_seconds := 0.0
 var _resolving := false
 var _resolve_elapsed := 0.0
 var _settling := false
+## Where `_pace()` centres the little back-and-forth walk `_check_settled()` keeps her on — the
+## exact calm point `_nearest_calm()` verified (`_current_target_world`), not wherever
+## `_ARRIVE_RADIUS` let her stop short of it, so the pace never carries the slop of one radius into
+## the other. `Vector2.INF` outside a settle. See `_pace()`'s own doc for why she paces at all.
+var _settle_anchor := Vector2.INF
+## Which end of the pace she is walking toward — flips every time she reaches one.
+var _settle_forward := true
 var _replan_elapsed := 0.0
 ## Where she stood at the last `_maybe_replan()` check — `Vector2.INF` right after a leg begins,
 ## so the very first check has nothing to compare against yet. See `_STUCK_DISTANCE`.
@@ -166,6 +184,7 @@ func start_day() -> void:
 	_waypoints.clear()
 	_resolving = false
 	_settling = false
+	_settle_anchor = Vector2.INF
 	_unsticking = false
 	_unstick_cycles = 0
 	_stuck_streak = 0
@@ -748,20 +767,49 @@ func _arrive() -> void:
 			% [GameState.day, _current_word, _elapsed(), distance])
 	if _current_word == "calm":
 		_settling = true
+		_settle_anchor = _current_target_world
+		_settle_forward = true
 		return
 	_advance_target()
 
-## `calm` presses nothing and waits — the same standing still a played day's own settle is — until
-## `Baby.state` reaches `ASLEEP`. Read every physics frame rather than on the `baby_state_changed`
-## signal: this node is already ticking every frame it is not walking, and a poll costs nothing a
-## signal connection would not have, without a second lifetime to manage.
+## `calm` keeps her pacing rather than standing, until `Baby.state` reaches `ASLEEP` — **standing
+## still is the wrong way to settle her.** `Baby._update_sleepiness()` (`src/player/baby.gd`) only
+## fills the sleepiness meter while she is walking, scaled by the ground's own
+## `sleepiness_multiplier()` (`Tuning.SLEEPINESS_GAIN_WALKING`, 0.42/s); standing idle *drains* it
+## instead, at `Tuning.SLEEPINESS_DRAIN_IDLE` (1.0/s) — faster than walking on calm ground fills it
+## at any lot size under the multiplier's own cap. An earlier build of this class had her stop and
+## wait the way a played day's own doorstep return does, which cannot reach `ASLEEP` from any
+## sleepiness below the max: the meter only ever drains from there, so she stood at a park forever.
+## `_pace()` is what being "at" `calm` and not idle looks like for a rig with no thumb to rock the
+## pram with. Read every physics frame rather than on the `baby_state_changed` signal: this node is
+## already ticking every frame it is not walking a leg, and a poll costs nothing a signal
+## connection would not have, without a second lifetime to manage.
 func _check_settled() -> void:
-	if _baby.state != GameEnums.BabyState.ASLEEP:
+	if _baby.state == GameEnums.BabyState.ASLEEP:
+		_settling = false
+		_settle_anchor = Vector2.INF
+		_release()
+		Telemetry.note("route", "day %d: baby settled at 'calm', %.1fs (day time)"
+				% [GameState.day, _elapsed()])
+		_advance_target()
 		return
-	_settling = false
-	Telemetry.note("route", "day %d: baby settled at 'calm', %.1fs (day time)"
-			% [GameState.day, _elapsed()])
-	_advance_target()
+	_pace()
+
+## A short walk between two points `_SETTLE_PACE_HALF` either side of `_settle_anchor`, turning
+## around at `_SETTLE_ARRIVE_RADIUS` of whichever end is currently ahead — see `_check_settled()`'s
+## own doc for why standing still cannot settle the baby at all. Along the world X axis only,
+## which is the ordinary case for open calm ground; a calm tile narrow enough on that axis to catch
+## her mid-pace is the same shape of edge case `_begin_unstick()` already exists to work her clear
+## of.
+func _pace() -> void:
+	var target := _settle_anchor + (Vector2.RIGHT if _settle_forward else Vector2.LEFT) * _SETTLE_PACE_HALF
+	var offset := target - _player.global_position
+	if offset.length() <= _SETTLE_ARRIVE_RADIUS:
+		_settle_forward = not _settle_forward
+		return
+	var direction := offset.normalized()
+	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
 
 func _advance_target() -> void:
 	_target_index += 1
@@ -776,18 +824,34 @@ func _finish() -> void:
 	Telemetry.note("route", "day %d: route done, %.1fs (day time)" % [GameState.day, _elapsed()])
 	get_tree().quit()
 
-## A loss ends the measurement the same way reaching the last target does — logged and quit,
-## rather than left to sit at a day summary nobody headless is going to dismiss. A `WON` result is
-## deliberately not handled here: it can only ever follow *this* node walking her onto a `HOME`
-## tile while `DayController.phase` is `RETURNING`, which is exactly `_arrive()`'s own `home` case,
-## so that path already reports and quits before this signal could add anything to it.
+## Any day ending — a loss, or a win — is logged and quit rather than left to sit at a day summary
+## nobody headless is going to dismiss.
+##
+## **`WON` is not a no-op here, and finding out why it has to be one is worth keeping.** A won day
+## can only follow *this* node walking her onto a `HOME` tile while `DayController.phase` is
+## `RETURNING`, which reads as `_arrive()`'s own `home` case — so the first build of this class
+## left `WON` unhandled, on the reasoning that `_arrive()` already reports and quits before this
+## signal could add anything to it. That reasoning assumes the two checks agree on the instant
+## "home" happens, and they do not: `DayController`'s own `WON` fires the moment she is anywhere
+## on the `HOME` tile, while `_arrive()`'s own arrival is `_ARRIVE_RADIUS` (10px) of
+## `CityMap.home_world_position()` specifically, a tighter target inside the same tile she can
+## still be a few pixels short of. A day that wins on that gap ends — `_day.is_running()` false —
+## before `_arrive()` ever fires, and `_physics_process()`'s own first line already returns without
+## reaching it, so nothing downstream was ever going to catch the miss: the rig sat there for the
+## rest of whatever timeout was watching it, headless and silent. Seed 4242, day 6, `mark,task,
+## calm,home` is the reproduction — `task` gives up, `calm` settles, and the walk home wins the day
+## a few pixels before `_arrive()`'s own check would have.
 func _on_day_finished(result: GameEnums.DayResult) -> void:
-	if _done or result == GameEnums.DayResult.WON:
+	if _done:
 		return
 	_done = true
 	_release()
-	Telemetry.note("route", "day %d: day ended (%s) before reaching '%s', %.1fs (day time)"
-			% [GameState.day, GameEnums.DayResult.keys()[result], _current_word, _elapsed()])
+	if result == GameEnums.DayResult.WON:
+		Telemetry.note("route", "day %d: day won at %.1fs (day time), still walking to '%s'"
+				% [GameState.day, _elapsed(), _current_word])
+	else:
+		Telemetry.note("route", "day %d: day ended (%s) before reaching '%s', %.1fs (day time)"
+				% [GameState.day, GameEnums.DayResult.keys()[result], _current_word, _elapsed()])
 	get_tree().quit()
 
 func _release() -> void:
