@@ -1,28 +1,31 @@
-<!-- The leader's portrait: a nameless bust, and not a nice fellow - heavy brows pulled down to
-     the nose, a hard level stare under them and a mouth turned down at both corners, over a
-     dark uniform collar. Resembles nobody real. The caption band under it is a plain strip,
-     never letters.
+<!-- The leader's portrait: a nameless, scowling, jowly middle-aged man - hair receding at the
+     temples, heavy brows over a hard stare, a big nose, a mouth turned down, a dark suit with
+     the white of a collar - filling a warm gray backing inside a thin cream border, with a
+     large dark band across the bottom that carries no letters. Resembles nobody real. Flat
+     fills with a clean dark outline, after the player's poster reference sheet.
      Every poster kind is a 20x22 sheet (62.5% x 69% of the tile) on a 32x32 canvas matching a
      wall cell's own grid: x 6..26, y 3..25, a gap on all four sides, and the bottom gap clears
-     the plinth drawn from y 26 by wall_base.svg. The sheet also hides the cell's window
-     (window_*.svg, x 8..24, y 8..25) completely. -->
+     the plinth drawn from y 26 by wall_base.svg. A poster goes on blank wall, never over a
+     window. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <rect x="6" y="3" width="20" height="22" fill="#ded6c4"/>
-  <rect x="8" y="5" width="16" height="15" fill="#5f6878"/>
-  <path d="M8.3 20C8.8 17.3 11.2 16.2 13.6 15.9L18.4 15.9C20.8 16.2 23.2 17.3 23.7 20Z" fill="#2c2a30"/>
-  <path d="M14 15.9L16 18.4L18 15.9Z" fill="#c9c2ae"/>
-  <rect x="14.6" y="13.6" width="2.8" height="2.6" fill="#a9805f"/>
-  <ellipse cx="12.3" cy="11" rx="0.7" ry="1.1" fill="#b58f70"/>
-  <ellipse cx="19.7" cy="11" rx="0.7" ry="1.1" fill="#b58f70"/>
-  <path d="M12.3 10.4C12.2 7.3 13.9 6.1 16 6.1C18.1 6.1 19.8 7.3 19.7 10.4L19.5 13.4C19.2 15 17.8 15.7 16 15.7C14.2 15.7 12.8 15 12.5 13.4Z" fill="#c9a07c"/>
-  <path d="M16 6.1C18.1 6.1 19.8 7.3 19.7 10.4L19.5 13.4C19.2 15 17.8 15.7 16 15.7C17.4 14.8 18.2 13.2 18.2 10.6C18.2 8.4 17.4 6.8 16 6.1Z" fill="#b58f70"/>
-  <path d="M12.3 10C12.1 6.9 13.9 5.8 16 5.8C18.1 5.8 19.9 6.9 19.7 10L19.3 8.4C18.2 7.7 13.8 7.7 12.7 8.4Z" fill="#2e2a2c"/>
-  <path d="M13.1 9.2L15.4 10.3M18.9 9.2L16.6 10.3" fill="none" stroke="#2e2a2c" stroke-width="1.1" stroke-linecap="round"/>
-  <ellipse cx="14.4" cy="11.3" rx="0.6" ry="0.42" fill="#221f28"/>
-  <ellipse cx="17.6" cy="11.3" rx="0.6" ry="0.42" fill="#221f28"/>
-  <path d="M16 10.9L15.4 12.7L16.5 12.8Z" fill="#a9805f"/>
-  <path d="M14.5 12.8Q13.9 13.7 14.1 14.9M17.5 12.8Q18.1 13.7 17.9 14.9" fill="none" stroke="#a9805f" stroke-width="0.45" stroke-linecap="round"/>
-  <path d="M14.6 14.6Q16 13.8 17.4 14.6" fill="none" stroke="#3b2226" stroke-width="0.6" stroke-linecap="round"/>
-  <rect x="8" y="21" width="16" height="2" fill="#3b3034"/>
+  <rect x="6" y="3" width="20" height="22" fill="#e6dfcd"/>
+  <rect x="8" y="5" width="16" height="14" fill="#b3ab9b"/>
+  <path d="M8 19V17.3C9.6 16.5 11 16.2 12.4 16L19.6 16C21 16.2 22.4 16.5 24 17.3V19Z" fill="#3a3031" stroke="#221f28" stroke-width="0.5" stroke-linejoin="round"/>
+  <path d="M12.9 16.6L15.2 19H12.2ZM19.1 16.6L16.8 19H19.8Z" fill="#e2ddd0"/>
+  <ellipse cx="11.9" cy="11.4" rx="0.8" ry="1.2" fill="#bf946f" stroke="#221f28" stroke-width="0.4"/>
+  <ellipse cx="20.1" cy="11.4" rx="0.8" ry="1.2" fill="#bf946f" stroke="#221f28" stroke-width="0.4"/>
+  <path d="M12.2 9.6C12.2 7.2 13.8 6.1 16 6.1C18.2 6.1 19.8 7.2 19.8 9.6L20.2 13.6C20.3 15.8 18.6 17.6 16 17.6C13.4 17.6 11.7 15.8 11.8 13.6Z" fill="#cfa47e" stroke="#221f28" stroke-width="0.5" stroke-linejoin="round"/>
+  <path d="M16.4 6.4C18.1 6.6 19.4 7.7 19.5 9.7L19.9 13.6C19.9 15.5 18.6 17 16.5 17.3C17.9 16.1 18.5 14.8 18.5 12.4C18.5 9.6 18 7.5 16.4 6.4Z" fill="#b8906b"/>
+  <path d="M12.2 9.9C11.9 6.9 13.6 5.5 16 5.5C18.4 5.5 20.1 6.9 19.8 9.9L19.2 8.2C18.8 7.6 18.2 7.4 17.5 7.7C16.8 7.2 15.2 7.2 14.5 7.7C13.8 7.4 13.2 7.6 12.8 8.2Z" fill="#5a4636" stroke="#221f28" stroke-width="0.5" stroke-linejoin="round"/>
+  <path d="M14.4 8.5Q16 8.1 17.6 8.5" fill="none" stroke="#a37a58" stroke-width="0.35" stroke-linecap="round"/>
+  <path d="M12.9 9.7L15.4 10.5M19.1 9.7L16.6 10.5" fill="none" stroke="#3a2a26" stroke-width="1.1" stroke-linecap="round"/>
+  <ellipse cx="14.4" cy="11.4" rx="0.55" ry="0.42" fill="#221f28"/>
+  <ellipse cx="17.6" cy="11.4" rx="0.55" ry="0.42" fill="#221f28"/>
+  <path d="M13.8 12.2Q14.4 12.5 15 12.2M17 12.2Q17.6 12.5 18.2 12.2" fill="none" stroke="#a37a58" stroke-width="0.35" stroke-linecap="round"/>
+  <path d="M16 10.9L15 13.7Q16 14.2 17 13.7Z" fill="#b08665"/>
+  <path d="M14.4 13.3Q13.5 14.7 13.9 16.1M17.6 13.3Q18.5 14.7 18.1 16.1" fill="none" stroke="#a37a58" stroke-width="0.45" stroke-linecap="round"/>
+  <path d="M14.7 15.4Q16 14.7 17.3 15.4" fill="none" stroke="#3b2226" stroke-width="0.6" stroke-linecap="round"/>
+  <rect x="8" y="5" width="16" height="14" fill="none" stroke="#3b3034" stroke-width="0.5"/>
+  <rect x="8" y="19" width="16" height="4" fill="#2c2a30"/>
   <rect x="6.5" y="3.5" width="19" height="21" fill="none" stroke="#3b3034" stroke-width="1"/>
 </svg>
