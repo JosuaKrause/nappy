@@ -2,53 +2,29 @@
 
 Working guidelines for this repo. The *game* is documented in `docs/`.
 
-**These guidelines and `.claude/skills/` are shared by Claude Code and Codex.** Claude uses
-`.claude/settings.json`; Codex uses `.codex/hooks.json` and an adapter that runs the same
-rule-loading and lint scripts. Codex discovers the same skills through `.agents/skills`, which
-links to `.claude/skills`.
+**These guidelines and `.claude/skills/` are shared by Claude Code and Codex.** Hooks inject
+**orchestrating** at session start and the path rules before each edit (the table below); if a
+rule did not arrive, or is no longer in context, read its skill file before the governed work.
+Every matching skill applies, to edits through any tool, patches and scripts included, and so
+does any skill whose description matches the task; one asked for by name is read from its file
+even if the skill picker does not list it. A skill's relative resource paths resolve from its own
+directory. The system, developer and user instructions take precedence over repository guidance.
 
 ## Codex integration
 
-Claude Code's hooks in `.claude/settings.json` and Codex's hooks in `.codex/hooks.json` supply the
-same rule text through their native lifecycle events. Codex uses `tools/codex-hooks.py` to
-translate patch payloads to the existing Claude hook scripts. It loads rules for every patch path,
-including rename destinations, and lints edited docs. Session start, resume, compaction and
-subagent start reload the startup rules.
-
-The hooks need Python 3.9+, Bash and jq. In Codex, trust the repository and review the hooks
-through `/hooks`; untrusted or disabled hooks do not execute. Restart Codex if new hooks or skills
-do not appear. If a rule has not actually arrived in context, read its file explicitly before
-doing the governed work.
-
-At session start, read `.claude/skills/orchestrating/SKILL.md` before deciding how to divide the
-work. Delegation is recommended for specified implementation, using the cheaper-model defaults in
-`.codex/config.toml` and the skill's model-selection guidance. Keep design and final review in the
-orchestrating session. Before editing any file, consult `.claude/hooks/project-rules.sh`, the
-executable path-to-skill mapping, and read each matching `.claude/skills/<skill>/SKILL.md` in full.
-All matches apply: an event GDScript file requires both `events` and `godot`. These rules apply to
-edits through any tool, including patches and scripts.
-
-Also load `playtest-feedback` before responding to playtest feedback or design instructions, `committing`
-before git mutations or commit messages, `merging-main` before merging main into a PR/branch,
-and `session-cleanup` before the final report. Read any
-other skill whose description matches the task, and follow its referenced resources as needed. An
-explicit request for a repository skill means reading its file directly even if it is absent from
-the skill picker. Resolve relative resource paths from that skill's directory. Re-read rules after
-context loss if their contents are no longer available. Hooks observe nested tool calls made
-through code mode as well.
-
-If `.claude/rules/` is added, read its unscoped Markdown rules at startup and its path-scoped rules
-before work on matching files, respecting their `paths` frontmatter. Read any nested `CLAUDE.md`
-governing files you touch. The system, developer and user instructions take precedence over
-repository guidance.
-
-Codex uses file-reading tools or shell reads where a rule says `Read`, and `apply_patch` where it
-says `Edit` or `Write`. Preserve reviewable diffs and failures on stale matches. Where a skill
-names Claude's `Agent`/`Task` tools or Sonnet, use the available Codex delegation tools and models;
-preserve scope fences and verification requirements, and do not assume an agent has an isolated
-worktree unless one was actually created. Ordinary edits use patches; arbitrary shell scripts are
-for tools, git and inspection. Run `./tools/lint.sh` before committing even when post-edit lint
-hooks ran; it includes this entry point. A request for a PR ends with a reviewable PR.
+Codex finds the skills through `.agents/skills`, a link to `.claude/skills`, and runs the same
+hook scripts through `.codex/hooks.json` and the adapter `tools/codex-hooks.py`: it loads the rules
+for every path a patch touches, rename destinations included, lints each edited doc, and reloads
+the startup rules on session start, resume, compaction and subagent start. The hooks need Python
+3.9+, Bash and jq, and run only once the repository is trusted and the hooks are reviewed through
+`/hooks`; restart Codex if new hooks or skills do not appear. Where a rule says `Read`, Codex uses
+file-reading tools or shell reads; where it says `Edit` or `Write`, `apply_patch`, which keeps the
+diff reviewable, fails on a stale match and is what the path rules load on — shell scripts are for
+tools, git and inspection. Where a skill names Claude's `Agent`/`Task` tools or Sonnet, use the
+Codex delegation tools and models with the same scope fences and verification; an agent has an
+isolated worktree only if one was actually created. The post-edit lint hook does not replace
+`./tools/lint.sh` before committing a governed doc, `CLAUDE.md` included. A request for a PR ends
+with a reviewable PR.
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is
@@ -93,23 +69,21 @@ is the moment somebody is about to touch the file.
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify** |
 | `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **playtest-feedback** |
-| `art/illustrated/**`, `src/visuals/**` | **illustrated-png** |
+| `art/illustrated/**` | **illustrated-png** |
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
 | `docs/evidence/archive/session-captures/**` | **session-captures** |
 | `docs/reference/**` | **reference-photos** |
 | any `*.gd` | **godot** |
 | any `*.svg` | **svg-art** |
-| spawning a sub-agent (the `Agent`/`Task` tool — a tool, not a path) | **orchestrating** |
-| `src/**`, `tests/**` (a backstop — `session-rules.sh` below already loads this at session start) | **orchestrating** |
+| `src/**`, `tests/**` | **orchestrating** |
+| spawning a sub-agent (the `Agent`/`Task` tool, not a path) | **orchestrating** |
 
 **And one arrives before anything at all.** `.claude/hooks/session-rules.sh`, wired to `SessionStart`
 in `.claude/settings.json`, loads **orchestrating** at the start of every session, because
 *delegating is the default* is decided before the first tool call — an `Agent` spawn is that
 decision already going the right way and a first edit to `src/` or `tests/` is it already going the
-wrong one. Of the table's two `orchestrating` rows, only the second is a path trigger; the `Agent`/
-`Task` row above it is a tool trigger, not a path, same as the table already says. Both are
-backstops for the one loaded here and share its marker, so a session gets **orchestrating** exactly
-once however it is triggered.
+wrong one. The table's two **orchestrating** rows are backstops that share its marker, so a
+session gets it once however it is triggered, and again after compaction.
 
 **Keep that list to one skill unless there is a real second.** Everything loaded at the start is
 paid for in every session whether or not it turns out to be relevant, which is the exact cost the
@@ -166,8 +140,8 @@ History goes to `docs/DECISIONS.md`.
 Keep the *reason* a thing is the way it is — that is current, and it is most of what makes this
 project reviewable. Move the *incident* that taught it.
 
-**Why:** reading the current state used to mean reading every past state first, and a stale sentence
-is indistinguishable from a live one, so a reader cannot tell which half of a paragraph to believe.
+**Why:** a stale sentence is indistinguishable from a live one, so a reader cannot tell which half
+of a paragraph to believe without reading every past state first.
 
 The test is a reader, not a diff: **somebody who opens any single file and believes every sentence
 in it is wrong about nothing.**
@@ -186,9 +160,6 @@ log wherever it stands: `TODO.md` holds open work only, `HANDOFF.md` holds the p
 
 The playtest files are the exception and are never rewritten. `docs/playtests/PLAYTEST-NN.md` are primary
 sources: a player's own words on a date.
-
-**Run the session-cleanup skill at the end of every session**, so this stays true by maintenance
-rather than by milestone.
 
 ---
 
@@ -235,9 +206,8 @@ holds for a small change as much as for the large-scale and structural work a sc
 tool for: moving a file whole, splitting a document, deleting a whole section, renaming an
 identifier across the tree, applying the same change to thirty files.
 
-**And grep for what pointed at it before you move anything.** Six documents in this repo referred to
-`CLAUDE.md` sections by name, and all six were wrong within the hour of those sections moving into
-skills. A reference is not visible from the file being moved.
+**And grep for what pointed at it before you move anything**, since a reference is not visible
+from the file being moved.
 
 ---
 
@@ -279,27 +249,13 @@ repo (eg claude.md) *not* storing it as memory".)* It never means an assistant's
 
 Each was a decision. Do not "fix" one without a reason; the reasoning is in `docs/DECISIONS.md`.
 
-- **Closures and events are checked before they are accepted, never repaired afterwards.** If you
-  find yourself writing a pass that deletes what a previous pass placed *in order to make a
-  guarantee true*, this is the rule you are about to rediscover — the guarantee is then resting on
-  the repair, and nothing has checked the result.
-
-  **One exception, and what makes it one is the direction:** a pass that only ever *removes*
-  obstruction is safe, because every guarantee here is about **reaching** somewhere and taking a
-  barrier away can only add reachable ground. So the seal-thinning pass, which drops a fraction of
-  the day's soft seals to keep the walls from reading as guardrails, is allowed where a pass that
-  added or moved one would not be. **The test is monotonicity, not intent**: a pass that removes
-  some things and places others is not covered, and neither is one whose removal could make a
-  *cost* guarantee false rather than a reachability one. State the direction argument next to any
-  such pass, or the next reader deletes it on sight.
-- **Counting distinct routes is a max flow, not a search for routes.**
-- **No spatial hash for events.** The concurrent count stays a few dozen even on the last day, so a
-  linear scan is free.
-- **No `impulse` field on events.** A sharp spike is a short `duration` at high `intensity`.
-- **Events are defined in code, not `.tres`.**
-- **No quest log or marker for the resistance** — *asked for X · overturned to Y on 2026-08-31,
-  because the risk was run and did not pay off.* Half of it survives and the half is the point: the
-  **first** encounter comes with no hint at all, because finding the difficulty dial is meant to be
+- **The engine and city non-choices live in the city and events skills**: closures and events are
+  checked before they are accepted, never repaired afterwards, with its one monotonic exception;
+  counting distinct routes is a max flow; the home's doorstep is exempt from the route-redundancy
+  guarantee (**city**); no spatial hash, no `impulse` field, and events defined in code rather
+  than `.tres` (**events**).
+- **No quest log or marker for the resistance** — *asked for no marker and no quest log (playtest
+  2) · overturned on 2026-08-31 to "Only the first encounter (the chalk mark) should come without
+  hint" (playtest 16, finding 7), because the risk was run and did not pay off.* The first
+  encounter still comes with no hint at all, because finding the difficulty dial is meant to be
   the player's own doing. After that the resistance speaks.
-- **The home's doorstep is exempt from the route-redundancy guarantee.** The home is a notch with
-  one exit, so sealing that street seals the player in.
