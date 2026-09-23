@@ -21,9 +21,9 @@ ways. The recipe is in `docs/GRAPHICS.md`'s Posters section.
 **The passes.** First (Sonnet): too neutral a leader, faces that did not read, posters touching
 the floor, and a torn sheet that "looks nothing like a torn poster". Second (Opus): a grumpy
 leader, bar-gap-line rules, silhouettes, a margin all round — "looks better already". The player's
-generated reference sheet then set the look of the fourth pass; it is not committed, since
-copying it into the repo was refused by the permission check and the player's answer on adding
-it is pending. The torn poster was drawn without a reference at the player's word, three ways,
+generated reference sheet then set the look of the fourth pass
+(`docs/style-references/posters-01.jpg`, brought in with `tools/reference.sh --style` after a
+drawing agent's plain copy of it was refused by the permission check). The torn poster was drawn without a reference at the player's word, three ways,
 then turned into masks ("one per kind or make it a mask … vary between the torn pattern").
 Building fronts on the sheets moved posters off windows onto plain wall, which became M185, a
 ground floor is blank wall or shops.
