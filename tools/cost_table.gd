@@ -90,17 +90,14 @@ func _ready() -> void:
 
 # ------------------------------------------------------------------ row selection ---
 
-## Every catalogue row except the city-wide ones — `curfew_announce`, `loudspeaker` — which have
-## no distance to be measured at (`EventDef.walk_through_cost()` answers zero for them by
-## construction; `city_wide` events apply everywhere at once rather than falling away from a
-## place). Catalogue order, not sorted: a new row appended to `EventCatalogue._build()` appends
-## here too, which is what "fixed row order" means for a table that is meant to diff cleanly when
-## one row's numbers move rather than when the whole table gets re-sorted under it.
+## Every catalogue row, in catalogue order rather than sorted: a new row appended to
+## `EventCatalogue._build()` appends here too, which is what "fixed row order" means for a table
+## that is meant to diff cleanly when one row's numbers move rather than when the whole table gets
+## re-sorted under it. `curfew_announce` and `loudspeaker` are masts now, with a real place and a
+## real edge like any other row's — see `docs/EVENTS.md`, "No row is `city_wide`".
 func _included_rows() -> Array[EventDef]:
 	var out: Array[EventDef] = []
 	for def in EventCatalogue.all():
-		if def.city_wide:
-			continue
 		out.append(def)
 	return out
 
@@ -323,11 +320,6 @@ func _header_text() -> String:
 	lines.append("- `Tuning.SLEEPING_SENSITIVITY` = %.2f" % Tuning.SLEEPING_SENSITIVITY)
 	lines.append("- `Tuning.WALK_SPEED` = %.1f px/s" % Tuning.WALK_SPEED)
 	lines.append("- `Tuning.WALL_WORTH_OF_COST` = %.1f points" % Tuning.WALL_WORTH_OF_COST)
-	lines.append("")
-	lines.append("**Excluded from every table**: `curfew_announce` and `loudspeaker`, the two " +
-			"`city_wide` rows — they apply everywhere at once rather than falling away from a " +
-			"place, so there is no distance to put in a column and `walk_through_cost()` answers " +
-			"zero for both by construction.")
 	lines.append("")
 	lines.append("**`" + TITLE_GEOMETRY + "`** is what a row's own data says, unconditionally: " +
 			"`role` is `EventScheduler._role_for()` at day 0 (a row's cold shape, before any " +

@@ -25,14 +25,6 @@ signal event_telegraphed(instance)
 signal event_activated(instance)
 signal hard_fail_triggered(reason: String)
 
-## What is currently holding a floor under the whole city, by display name, or "" for nothing.
-##
-## A `city_wide` source has no position, so it is the one thing in the game that cannot be drawn
-## *over*: there is nothing to put a mark above. Without this signal the loudspeaker masts hold a
-## floor under the meter from day 5 with nothing on screen to say so, and a player watching
-## excitement refuse to drain has no way at all to find out why.
-signal city_wide_changed(what: String)
-
 # ------------------------------------------------------------------- bodies ---
 # Reported rather than logged where they happen: the crowd is a gameplay file and the telemetry
 # stays out of the files that decide things.

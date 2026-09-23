@@ -2583,8 +2583,9 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 ## *(Playtest 63 raised the walking decay past what a poster crew emits, so "nearly free" became
 ## "free" and the row needs the exemption it used to sit just above. Nothing about the row moved;
 ## the ground under it did.)* (`barricade` and the other pure obstructions emit nothing at all and
-## are covered by the blanket `intensity <= 0.0` exemption; `loudspeaker` is `city_wide` and has
-## no line to walk through at all.)
+## are covered by the blanket `intensity <= 0.0` exemption. `loudspeaker` and `curfew_announce`
+## are masts now, with a real field like any other row's — see `docs/EVENTS.md`, "No row is
+## `city_wide`".)
 const _SCENERY := ["burnt_shell", "poster_crew", "poster_crew_square"]
 
 ## The other exemption, and it is a different sentence: these rows are not cheap, they are **not
@@ -2661,8 +2662,6 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 					+ "if that has stopped being true, take it off the list rather than keeping it")
 					% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
 			continue
-		if def.city_wide:
-			continue   # No line through it, so no crossing to compare.
 		if def.pursues:
 			pursuers += 1
 			# Walking loses ground and running gains it. Everything else about a pursuit follows
@@ -2708,7 +2707,7 @@ func _test_nothing_chases_her_before_the_run_is_taught(t) -> void:
 ## −0.1 points to walk straight through, so the correct play was to plough into it.
 func _test_nothing_is_cheaper_to_walk_through_than_around(t) -> void:
 	for def in EventCatalogue.all():
-		if def.city_wide or def.intensity <= 0.0 or def.id in _SCENERY:
+		if def.intensity <= 0.0 or def.id in _SCENERY:
 			continue
 		if def.id in _PRICED_BY_THEIR_CAPTURE:
 			# The exemption owes its own check, or it is a way of not being tested: a row excused
@@ -3100,9 +3099,9 @@ func _test_everything_that_stands_still_is_solid(t) -> void:
 		# to a park, so `EventDef.validate()` refuses a body on one outright.
 		if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
-		# Nothing drawn, nothing to bump into: a city-wide announcement, a playground the park
-		# itself draws.
-		if def.city_wide or def.look == EventDef.Look.NONE:
+		# Nothing drawn, nothing to bump into: a curfew announcement carried by a mast that is
+		# already solid on its own, a playground the park itself draws.
+		if def.look == EventDef.Look.NONE:
 			continue
 		# A flock is several bodies wheeling inside one disc with pavement between them, so there is
 		# no silhouette for a body to be half of — and being walked into is the whole event, which a
@@ -3450,12 +3449,12 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 			"and the days sampled have walked-sidewalk bands to ask it of (%d)" % bands_checked)
 
 ## `plan` as `[position.x, position.y, obstructs_radius]`, appended to `bodies` — or not, for the
-## same three exemptions the rule and its own probe make: a `checkpoint_hut`/`checkpoint_gate`
-## door body costs by design, `city_wide` and `scenery` rows have no ground to keep clear of.
+## same two exemptions the rule and its own probe make: a `checkpoint_hut`/`checkpoint_gate` door
+## body costs by design, and a `scenery` row has no ground to keep clear of.
 func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 	if not plan.is_placed() or plan.def.obstructs_radius <= 0.0:
 		return
-	if plan.def.city_wide or plan.def.scenery or plan.def.id.begins_with("checkpoint"):
+	if plan.def.scenery or plan.def.id.begins_with("checkpoint"):
 		return
 	bodies.append(Vector3(plan.position.x, plan.position.y, plan.def.obstructs_radius))
 
@@ -3478,10 +3477,11 @@ func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 ## any more — a row that forgets to choose one is invisible, which is the quietest way for an
 ## event to stop working.
 func _test_no_two_rows_draw_the_same_picture(t) -> void:
-	# Four rows are legitimately invisible: something else already draws the ground they stand
-	# on, the whole city is inside them, or — the finale's explosion — the whole of the row is that
-	# it happens somewhere she cannot see, and what it leaves behind is a different row.
-	var invisible := ["playground", "loudspeaker", "curfew_announce", "finale_explosion"]
+	# Three rows are legitimately invisible: something else already draws the ground they stand
+	# on, a mast's own picture carries its curfew announcement too (`EventCatalogue.
+	# _curfew_announce()`), or — the finale's explosion — the whole of the row is that it happens
+	# somewhere she cannot see, and what it leaves behind is a different row.
+	var invisible := ["playground", "curfew_announce", "finale_explosion"]
 	var owner_of := {}
 	for def in EventCatalogue.all():
 		if def.look == EventDef.Look.NONE:

@@ -38,6 +38,10 @@ const MASKED_MAN_REACH := 28.0
 ## `_test_a_spread_body_fits_the_ground_it_stands_on`, checks it over the whole catalogue.
 const SIDEWALK_SPREAD_MAX := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 
+## `mast.svg` is thinner than a person — a pole, not a body to edge past. Solid enough that she
+## cannot walk through it; the field, not the pole, is what a route goes round.
+const MAST_BODY := 6.0
+
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
 static var _hot: Dictionary[String, EventDef] = {}
@@ -1570,41 +1574,60 @@ static func _poster_crew_square() -> EventDef:
 	def.max_per_day = 1
 	return def
 
-## The masts switch on and there is nowhere in the city they do not reach. City-wide, so
-## it has no edge to route around — the first event in the game the player cannot walk
-## away from. Pitched under the walking decay: like the arterial, it does not raise the
-## meter, it stops you clearing it.
+## A mast on a street, with a field around it — six of them, planted by `MastSites` and placed
+## every day from `Tuning.MAST_FIRST_DAY` by `EventScheduler._place_masts()` rather than by the
+## ordinary catalogue roll: `scripted_day` stays 0, the seal pictures' own sentinel for "a planner
+## places me directly, and `EventDef.available_on()` must never roll one" (see the seal table in
+## `docs/EVENTS.md`). Its own geometry is `homeless_yeller`'s — same inner and outer radius, same
+## `falloff_power` — so that walking straight past a speaking mast on its own sidewalk costs what
+## walking past him does; `docs/COSTS.md` carries both rows and they agree by construction rather
+## than by tuning. `telegraph_time` and `pulse_period` are the ones this replaced: a 3s telegraph
+## and a 22s period, "unless the contracts force otherwise" — they do not.
 static func _loudspeaker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loudspeaker"
-	def.display_name = "Public address"
+	def.display_name = "Loudspeaker mast"
 	def.kind = GameEnums.EventKind.SCRIPTED
-	def.scripted_day = 5
-	def.look = EventDef.Look.NONE
+	def.scripted_day = 0
+	def.look = EventDef.Look.LOUDSPEAKER_MAST
 	def.act_tag = 2
-	def.city_wide = true
-	def.intensity = 2.4
+	def.solid(GroundShape.point(MAST_BODY))
+	def.intensity = 20.0
+	def.inner_radius = 45.0
+	def.outer_radius = 210.0
 	def.telegraph_time = 3.0
 	def.pulse_period = 22.0
 	def.cost = 0
+	# `_place_masts()` places one at every site `MastSites.compute()` names, which is
+	# `Tuning.MAST_COUNT` of them: not a roll's own cap, but the true count a day carries, which is
+	# what `tests/test_events.gd`'s `_test_scheduler_respects_placement_and_caps` reads it as.
+	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
-## The curfew announcement itself. The mechanical bite is in Tuning.day_length, which
-## shortens every day from 6 onward; this is the moment you are told.
+## What the masts carry on `Tuning.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast —
+## `EventScheduler._place_masts()` places one of these at every mast site that morning, alongside
+## the mast's own `loudspeaker` instance, which keeps drawing the pole, the lamp and the arcs: this
+## row is `Look.NONE` and adds only the field, the same way a park's own playground frame draws
+## itself while `_playground()` merely prices it. Its own duration and ramp are unchanged from the
+## city-wide row this replaces; only its position and field are new — the same shape as the mast's
+## ordinary one, so "from their own positions with the same field shape" is true by construction.
+## **Stronger than an ordinary broadcast**: intensity half again `_loudspeaker()`'s own.
 static func _curfew_announce() -> EventDef:
 	var def := EventDef.new()
 	def.id = "curfew_announce"
 	def.display_name = "Curfew announcement"
 	def.kind = GameEnums.EventKind.SCRIPTED
-	def.scripted_day = 6
+	def.scripted_day = 0
 	def.look = EventDef.Look.NONE
 	def.act_tag = 2
-	def.city_wide = true
-	def.intensity = 6.0
+	def.inner_radius = 45.0
+	def.outer_radius = 210.0
+	def.intensity = 30.0
 	def.duration = 26.0
 	def.telegraph_time = 2.0
 	def.intensity_ramp = 0.2
 	def.cost = 0
+	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
 ## Closes a street and is loud about it. The first event that takes a route away rather

@@ -907,9 +907,6 @@ construction, in `tests/test_telemetry.gd`'s `_check_a_glyph_says_what_it_is`.
   line. **Horns are never dropped**: whether the carriageway is a decision or a place people
   wander into is the question the traffic exists to pose, and the horn is the last entry before a
   `lost` line when the answer is the second one.
-- **No `near` entries for `city_wide` sources.** A field with no edge cannot be approached.
-  What the loudspeaker masts are doing shows up in every meter breakdown instead — which is also
-  the most misleading gap in the trace today; the fix is queued in `docs/TODO.md`.
 - **No sampling of the player's position on a timer, in the log.** Where they were is
   reconstructable from the entries, and a position every half second would be a metrics dump
   wearing a log's clothes. The dusk map's trail (see "The trail" above) is not an exception to

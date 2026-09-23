@@ -518,6 +518,19 @@ const BOOM_GATE_EW_RAISED := "checkpoints/boom_gate_ew_raised"
 ## than a body: `steam.svg` is 32×48 and stands on the ground it rises from.
 const STEAM := "events/steam"
 
+## The mast — a pole and horns standing on a street — and the two overlays `_draw_mast()` puts
+## above it, never its own colour, so a lamp and a set of arcs can be tinted per state rather than
+## baked into a second picture. `MAST_LAMP` sits at the horn housing; `SOUND_PULSE` is
+## `art/events/sound_pulse.svg`, prepared unbound since M100 and bound here for the first time —
+## its own comment already names the anchor `_MAST_PULSE_AT` reads from.
+const MAST := "events/mast"
+const MAST_LAMP := "events/mast_lamp"
+const SOUND_PULSE := "events/sound_pulse"
+## `mast.svg`'s own horn housing, read off the source the way `_HUT_ANCHOR` is — where the lamp
+## sits and where the arcs rise from, both measured from the mast's own bottom-centre ground point.
+const _MAST_LAMP_AT := Vector2(0.0, -44.0)
+const _MAST_PULSE_AT := Vector2(0.0, -48.0)
+
 ## The finale's crater, the mark an off-screen explosion leaves on the street. One of the three
 ## prepared sizes; the row obstructs at exactly half this picture's width, so the hole and the
 ## ground she cannot walk on are the same circle — see `EventCatalogue._impact_crater()`.
@@ -614,6 +627,7 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.IMPACT_CRATER: return IMPACT_CRATER
 		EventDef.Look.MASKED_PURSUER: return GUARD_LUNGING
 		EventDef.Look.STEAM: return STEAM
+		EventDef.Look.LOUDSPEAKER_MAST: return MAST
 		_: return ""
 
 ## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted
@@ -698,6 +712,12 @@ var path: PackedVector2Array = PackedVector2Array()
 
 var age := 0.0
 var is_finished := false
+
+## A mast that has been reached and silenced — `EventManager.silence_mast()`/`silence_all_masts()`
+## set this rather than calling `_finish()`, since a silenced mast still stands, with no arcs and
+## no field, and `is_finished` means *this has left*. Harmless on every row but a mast: nothing
+## else ever sets it. See `current_intensity()` and `_draw_mast()`.
+var silenced := false
 
 ## `DevFlags.skip_events()`, read once at spawn — the same "read once" shape `main._debug` and
 ## `main._readout_requested` are, and for the same two reasons: re-parsing `--skip`'s comma list
@@ -1093,10 +1113,10 @@ func solid_part_shapes() -> Array[GroundShape]:
 		shapes.append(piece.shape)
 	return shapes
 
-## Built once for every instance, whether or not `ExcitementHalo` ever picks it — a `city_wide`
-## source is excluded by kind (see `ExcitementHalo.select_sources()`) and simply never draws, which
-## is cheaper to leave true by construction than to special-case here. `EntityHalo` gets `self`'s
-## own `_draw_body` and `_current_bob` so its ring rides the same lift `_draw()` gives the body.
+## Built once for every instance, whether or not `ExcitementHalo` ever picks it — cheaper to leave
+## true by construction than to special-case which rows never earn a place. `EntityHalo` gets
+## `self`'s own `_draw_body` and `_current_bob` so its ring rides the same lift `_draw()` gives the
+## body.
 func _build_halo() -> void:
 	_halo = EntityHalo.new(_draw_body, _current_bob)
 	add_child(_halo)
@@ -2057,6 +2077,10 @@ func current_intensity() -> float:
 		# On the way out it is scenery. Emitting while it goes would mean the excitement of an
 		# event trailing after her for as long as it took the thing to get off screen.
 		return 0.0
+	if silenced:
+		# A silenced mast still stands, but its field is gone — unlike `is_finished`, which means
+		# the thing itself has left. See the field's own doc.
+		return 0.0
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
 		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
@@ -2163,11 +2187,11 @@ var _contribution_at := Vector2.INF
 var _contribution_cache := 0.0
 
 ## Forces the next `contribution_at()` call to recompute rather than trust the cache. `age` never
-## moves outside this instance's own `_process()`, but `is_finished`/`is_leaving` can:
-## `EventManager.silence_city_wide()` and `.retire()` call `_finish()` directly, with no
-## `_process()` tick of this instance's own in between, so a cache keyed only on `(age,
-## world_position)` would otherwise go on answering the pre-finish contribution for the rest of the
-## tick that finished it — the same class of defect `CrowdAgent.contribution_at()`'s own doc names
+## moves outside this instance's own `_process()`, but `is_finished`/`is_leaving` can: `.retire()`
+## calls `_finish()` directly, with no `_process()` tick of this instance's own in between, so a
+## cache keyed only on `(age, world_position)` would otherwise go on answering the pre-finish
+## contribution for the rest of the tick that finished it — the same class of defect
+## `CrowdAgent.contribution_at()`'s own doc names
 ## as the reason that method has no cache at all, since its position and jolt are written from
 ## outside its `_process()` the same way. `_finish()` and `_be_done()` both call this the instant
 ## either flag flips to `true`; neither flag is ever cleared afterwards, so one invalidation at the
@@ -2201,9 +2225,6 @@ func _contribution_at_uncached(world_position: Vector2, intensity_override: floa
 	if is_finished or is_leaving:
 		return 0.0
 	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
-	# A city-wide source has no falloff: there is nowhere in the city it does not reach.
-	if def.city_wide:
-		return intensity
 	if not _flock.is_empty():
 		return _flock_contribution_at(world_position, intensity)
 	var velocity := velocity_override if velocity_override != Vector2.INF else travel_velocity()
@@ -2311,7 +2332,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## (`player_velocity - velocity`), not the source's alone — a fast source she is outrunning no
 ## longer over-reaches its true closing distance the way comparing only its own speed would.
 func expected_impact_at(player_position: Vector2) -> float:
-	if is_finished or is_leaving or def.city_wide:
+	if is_finished or is_leaving:
 		return 0.0
 	# A barrier the meter is not charging her for has no impact to project: the strongest structure
 	# of a boundary is the whole of what lands, and the others would each promise the same cost
@@ -2728,10 +2749,9 @@ func _caret_strength() -> int:
 	_caret_strength_age = age
 	_caret_strength_at = player_at
 	_caret_strength_cache = 0
-	# A floor under the whole city has nothing to stand over — that is the HUD's job — and a
-	# permanent feature of a fixed map never appears, so there is no moment to mark: the same
+	# A permanent feature of a fixed map never appears, so there is no moment to mark: the same
 	# reason the fairness contract exempts an `AMBIENT` row.
-	if not (is_finished or is_leaving or def.city_wide or def.kind == GameEnums.EventKind.AMBIENT):
+	if not (is_finished or is_leaving or def.kind == GameEnums.EventKind.AMBIENT):
 		if will_be_lethal(player_at):
 			_caret_strength_cache = 2
 		elif expected_impact_at(player_at) >= Tuning.EXPECTED_IMPACT_POINTS:
@@ -2963,6 +2983,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [GUARD_STANDING, GUARD_LUNGING])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM])
+		EventDef.Look.LOUDSPEAKER_MAST:
+			_collect(sources, [MAST, MAST_LAMP, SOUND_PULSE])
 	# A `Dictionary` while it is being built, because several arms reach the same picture twice —
 	# the dog walker's own dog is the loose dog's, and the guard stands at three different rows —
 	# and a look's pictures are a set rather than a list.
@@ -3103,6 +3125,8 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_masked_pursuer(canvas)
 		EventDef.Look.STEAM:
 			_draw_simple(STEAM, canvas)
+		EventDef.Look.LOUDSPEAKER_MAST:
+			_draw_mast(canvas)
 		EventDef.Look.NONE:
 			pass
 
@@ -3475,6 +3499,37 @@ func _draw_busker(canvas: CanvasItem = self) -> void:
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	var by_view := BUSKER_BY_VIEW_B if _idle_stepping(BUSKER_STRUM_PERIOD) else BUSKER_BY_VIEW
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
+
+## The pole and horns stand whether the mast is live or silenced — a mast never leaves. On top of
+## it, the lamp and the arcs say what the pole alone cannot: amber and dark during the telegraph
+## ("it has not started yet" — the same sentence the flash carries everywhere else in the
+## vocabulary, docs/EVENTS.md, "The visual vocabulary"), green with the arcs rising while it
+## speaks, and neither once `silenced` — *(2026-09-23, the player: "there should be a visible
+## indicator about when a mast is active / has a broadcast")*.
+func _draw_mast(canvas: CanvasItem = self) -> void:
+	_draw_simple(MAST, canvas)
+	if silenced:
+		return
+	if _mast_is_telegraphing_now():
+		Sprites.draw_standing(canvas, _drawn(MAST_LAMP), _MAST_LAMP_AT, Vector2.ZERO, false,
+				Palette.SIGNAL_AMBER)
+		return
+	Sprites.draw_standing(canvas, _drawn(MAST_LAMP), _MAST_LAMP_AT, Vector2.ZERO, false,
+			Palette.SIGNAL_GREEN)
+	Sprites.draw_standing(canvas, _drawn(SOUND_PULSE), _MAST_PULSE_AT, Vector2.ZERO, false)
+
+## Whether the mast is in the silent, amber-lamped warning that opens every broadcast cycle right
+## now — `Tuning.MAST_FIRST_DAY`'s own "a 3s telegraph, a 22s period", read off `age` because a
+## mast's `age` **is** the city's broadcast clock (`EventManager._broadcast_clock`, carried in at
+## every `resume()`), not a per-instance clock that started whenever she happened to walk up.
+## That is what makes the telegraph repeat every period rather than firing once at creation the way
+## `is_telegraphing()` does for an ordinary row, and what keeps two masts met minutes apart in the
+## same phase of it. `current_intensity()`'s own cosine pulse is untouched by this — the field
+## keeps swelling and fading on the same clock; this only decides the lamp and the arcs.
+func _mast_is_telegraphing_now() -> bool:
+	if def.pulse_period <= 0.0:
+		return false
+	return fmod(age, def.pulse_period) < def.telegraph_time
 
 ## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
 ## first, then clockwise. Kept beside the poses themselves rather than built in the function, so

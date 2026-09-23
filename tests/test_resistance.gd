@@ -1243,8 +1243,10 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 	GameState.day = saved_day
 	GameState.nerves = saved_nerves
 
-## The whole subquest pays out in quiet. On the last walk home the masts stop, and the
-## floor they have been holding under the meter since day 5 goes with them.
+## The whole subquest pays out in quiet. On the last walk home every mast stops, and the field
+## each one has been holding near itself since day 5 goes with it — `EventManager.
+## silence_all_masts()`, not the deleted `city_wide` floor: a mast has an edge like any other
+## row's, so what the sabotage silences is everywhere a mast actually stands, not the whole map.
 func _test_the_sabotage_silences_the_city(t) -> void:
 	_with_clean_run(func() -> void:
 		GameState.completed_resistance_steps = _completed_through(8)
@@ -1252,14 +1254,25 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		GameState.sabotage_done = false
 		t.check(GameState.sabotage_available(), "the finale is on offer")
 
-		# A live mast, the way day 5 onwards leaves one.
-		var mast := _city.events.spawn_extra(EventCatalogue.by_id("loudspeaker"),
-				Vector2(400.0, 400.0))
+		# A live mast, the way day 5 onwards leaves one — planned for real, at one of
+		# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: silencing reads
+		# `Planned.mast_id`, which only a real plan carries.
+		var site := MastSites.compute(_city.map)[0]
+		_city.events.stream_radius = INF
+		_city.events.start_day(Tuning.RUN_LENGTH_DAYS,
+				_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot)
+		var mast_plan: EventScheduler.Planned = null
+		for plan in _city.events.plans():
+			if plan.mast_id == site.id and plan.def.id == "loudspeaker":
+				mast_plan = plan
+		t.check(mast_plan != null and mast_plan.live != null,
+				"the mast at her focus is live from the day it was started")
+		var mast := mast_plan.live
 		for i in int(round((mast.def.telegraph_time + 0.2) / STEP)):
 			mast._process(STEP)
-		var somewhere := Vector2(9000.0, 9000.0)
-		t.check(mast.contribution_at(somewhere) > 0.0,
-				"the mast reaches the far side of the city while it is on")
+		var nearby := site.foot + Vector2(50.0, 0.0)
+		t.check(mast.contribution_at(nearby) > 0.0,
+				"the mast reaches its own nearby sidewalk while it is on")
 
 		var quiet: Array[bool] = []
 		var handler := func() -> void: quiet.append(true)
@@ -1273,10 +1286,9 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 
 		t.check(GameState.sabotage_done, "completing it does the sabotage")
 		t.check(quiet.size() == 1, "and the city goes quiet, once")
-		t.close_to(mast.contribution_at(somewhere), 0.0,
+		t.check(mast.silenced, "the mast is marked silenced")
+		t.close_to(mast.contribution_at(nearby), 0.0,
 				"the mast contributes nothing afterwards")
-		t.close_to(_city.events.total_excitement_at(somewhere), 0.0,
-				"and there is no floor left anywhere")
 
 		EventBus.city_went_quiet.disconnect(handler)
 		director.free())

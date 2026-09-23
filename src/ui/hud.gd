@@ -44,10 +44,6 @@ var _baby: Baby
 var _contact_step := 0
 var _announcement := ""
 var _announcement_for := 0.0
-## What is holding a floor under the whole city, or "" for nothing. Debug-only readout (see
-## `_refresh_state()`); a city-wide source still holds the meter up in a release build, it is just
-## not named on screen any more.
-var _city_wide := ""
 
 const _STATE_TEXT := {
 	GameEnums.BabyState.AWAKE: "awake",
@@ -85,7 +81,6 @@ func _ready() -> void:
 	EventBus.resistance_step_completed.connect(_on_resistance_step_completed)
 	EventBus.resistance_contact_available.connect(_on_contact_available)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
-	EventBus.city_wide_changed.connect(_on_city_wide_changed)
 	EventBus.event_telegraphed.connect(_on_event_telegraphed)
 	EventBus.day_started.connect(_teach_the_day)
 	EventBus.day_started.connect(func(_d: int) -> void:
@@ -297,8 +292,8 @@ func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 	_refresh_state()
 
 ## The status line. An announcement always uses it — "The loudspeakers cut out mid-sentence." has
-## nowhere else to go — but the baby's state, `stall_reason()` and the city-wide note are debug-only:
-## the state is already visible on the pram itself, and the other two are read between days.
+## nowhere else to go — but the baby's state and `stall_reason()` are debug-only: the state is
+## already visible on the pram itself.
 func _refresh_state() -> void:
 	if not _baby:
 		return
@@ -312,10 +307,6 @@ func _refresh_state() -> void:
 	var reason := _baby.stall_reason()
 	if reason != "":
 		text += "   (not settling: %s)" % reason
-	# Last, and phrased as a place rather than as a source: a player cannot walk away from this
-	# one, and the useful thing to tell them is that walking away is not the move.
-	if _city_wide != "":
-		text += "   [%s - nowhere is quiet]" % _city_wide.to_lower()
 	_state_label.text = text
 
 func _on_day_time_changed(remaining: float, total: float) -> void:
@@ -417,10 +408,6 @@ func set_task_guidance(showing: bool, at: Vector2) -> void:
 		_task_arrow.show_toward(at)
 	else:
 		_task_arrow.hide_arrow()
-
-func _on_city_wide_changed(what: String) -> void:
-	_city_wide = what
-	_refresh_state()
 
 func _on_city_went_quiet() -> void:
 	_announcement = "The loudspeakers cut out mid-sentence."
