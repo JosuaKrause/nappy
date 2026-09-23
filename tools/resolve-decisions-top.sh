@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Resolves the one merge-conflict shape merging origin/main into a PR branch produces in
 # docs/DECISIONS.md almost every time: both sides insert a new `## ...` section directly under
-# the file's `# Decisions` heading, from an empty merge base -- the orchestrator resolved it by
-# hand four times on 2026-09-23 (PRs 289, 298, 297, 300) the same way: keep both sections, the
-# branch's own ("ours") above main's ("theirs"), one blank line between them, then
-# `git diff --check`. See .claude/skills/merging-main/SKILL.md for what this script does not
+# the file's `# Decisions` heading, from an empty merge base. The resolution is always the same:
+# keep both sections, the branch's own ("ours") above main's ("theirs"), one blank line between
+# them, then `git diff --check`. See .claude/skills/merging-main/SKILL.md for what this script does not
 # replace: semantic review still applies to every merge, mechanical conflict or not.
 #
 # Run inside a checkout already mid-merge (`git merge --no-ff --no-commit origin/main`):
