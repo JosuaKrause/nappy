@@ -4,7 +4,7 @@ This is experimental output and measurement evidence, not an approved style refe
 Generator: built-in `image_gen.imagegen`. Inputs are the existing SVGs rendered by Godot
 4.7.2, `graphics-reference-urban-01.jpeg` for illustrated urban linework/material, and
 `graphics-reference-cardinal.jpeg` for the supplied style-transferred gameplay appearance.
-The latter references are in the parent evidence folder. UI and debug annotations are excluded.
+The latter references are in `docs/style-references/`. UI and debug annotations are excluded.
 
 ## Runtime source atlas
 

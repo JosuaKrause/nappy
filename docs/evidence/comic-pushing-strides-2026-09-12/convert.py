@@ -58,8 +58,8 @@ def _dependency_paths() -> list[Path]:
         HERE / "prompt-c-row.txt",
         HERE / "prompt-pass4-side-ne.txt",
         ROOT / "docs/evidence/comic-carrying-redraw-2026-09-12/source/pushing-atlas-edit-target.png",
-        ROOT / "docs/evidence/graphics-reference-urban-01.jpeg",
-        ROOT / "docs/evidence/graphics-reference-cardinal.jpeg",
+        ROOT / "docs/style-references/graphics-reference-urban-01.jpeg",
+        ROOT / "docs/style-references/graphics-reference-cardinal.jpeg",
         ROOT / "tools/remove-checkerboard.py",
         HERE / "convert.py",
         HERE / "make-source-review.py",
@@ -505,8 +505,8 @@ def register(output: Path, selection: str) -> None:
         "style_references": {
             str(path.relative_to(ROOT)): _sha256(path)
             for path in (
-                ROOT / "docs/evidence/graphics-reference-urban-01.jpeg",
-                ROOT / "docs/evidence/graphics-reference-cardinal.jpeg",
+                ROOT / "docs/style-references/graphics-reference-urban-01.jpeg",
+                ROOT / "docs/style-references/graphics-reference-cardinal.jpeg",
             )
         },
         "review_font": str(FONT_PATH),

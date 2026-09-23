@@ -11,8 +11,8 @@ The built-in image generator received these inspected inputs in order:
    preserved as `source-references/icon-stroller-before.png`.
 2. `.claude/worktrees/comic-props/assets/logo.png` — logo layout and wordmark identity raster,
    preserved as `source-references/logo-before.png`.
-3. `docs/evidence/graphics-reference-urban-01.jpeg` — approved comic style only.
-4. `docs/evidence/graphics-reference-cardinal.jpeg` — approved comic style only.
+3. `docs/style-references/graphics-reference-urban-01.jpeg` — approved comic style only.
+4. `docs/style-references/graphics-reference-cardinal.jpeg` — approved comic style only.
 
 The source SVGs for the identity rasters are preserved alongside them. The exact prompt is preserved in
 [`prompts/stroller-mark.txt`](prompts/stroller-mark.txt), and the raw transparent redraw is

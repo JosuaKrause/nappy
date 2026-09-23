@@ -32,7 +32,7 @@
       ]
     },
     {
-      "path": "../graphics-reference-urban-01.jpeg",
+      "path": "../../style-references/graphics-reference-urban-01.jpeg",
       "role": "Comic style only",
       "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
       "dimensions": [
@@ -41,7 +41,7 @@
       ]
     },
     {
-      "path": "../graphics-reference-cardinal.jpeg",
+      "path": "../../style-references/graphics-reference-cardinal.jpeg",
       "role": "Comic style only",
       "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7",
       "dimensions": [

@@ -28,8 +28,8 @@ SVG does not satisfy style transfer. The SVG defines subject, recognizable color
 canvas, pose, direction and functional placement; its primitive interior shapes are not an
 exact tracing template. Preserve gameplay boundaries and anchors while giving the artwork
 the references' authored contours and shading.
-Inspect it and both `docs/evidence/graphics-reference-urban-01.jpeg` and
-`docs/evidence/graphics-reference-cardinal.jpeg` before generation. The latter two supply style
+Inspect it and both `docs/style-references/graphics-reference-urban-01.jpeg` and
+`docs/style-references/graphics-reference-cardinal.jpeg` before generation. The latter two supply style
 only: omit their interface and debug annotations. Do not substitute a different character identity,
 projection or composition. Archived experiments and unapproved outputs are not style references.
 

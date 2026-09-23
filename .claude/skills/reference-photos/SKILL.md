@@ -20,14 +20,18 @@ is a privacy one.
 ## What the folder is, and what it is not
 
 **Reference is an *input to drawing*: a photograph of the real thing, held up next to the art.**
-Four folders in this repo hold pictures and they are not interchangeable:
+Five folders in this repo hold pictures and they are not interchangeable:
 
 - **`docs/reference/`** — the real world. Never shipped, never shown, never cited as proof of
   anything. It exists so a sprite can be drawn from something rather than from memory.
-- **`docs/evidence/`** — the game, captured, plus the approved style references
-  (`graphics-reference-*.jpeg`) that illustrated-png draws from. It is proof: a doc sentence
-  points at it, and the **playtest-feedback** rule requires the picture to land in the same commit
-  as the sentence.
+- **`docs/style-references/`** — the approved illustration-style references
+  (`graphics-reference-*.jpeg`) that illustrated-png draws from: flat, no subfolders, added
+  through `tools/reference.sh --style`. See `docs/style-references/README.md` for what each file
+  is a reference for.
+- **`docs/evidence/`** — the game, captured, plus the generation records, review sheets and
+  provenance that point at the style references above. It is proof: a doc sentence points at it,
+  and the **playtest-feedback** rule requires the picture to land in the same commit as the
+  sentence.
 - **`art/`** — the authoring pictures. Behind a `.gdignore`, so the engine never imports one
   and nothing under it ships except `art/social-card.png`, which `.github/workflows/deploy.yml`
   copies to the exported build; the atlas bake reads the rest and the pages it writes are what
