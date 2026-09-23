@@ -61,8 +61,8 @@ of it.
 hurts.** `Tuning.validate_event()` asserts it on load and `tests/test_events.gd` checks the whole
 catalogue. A violation is a bug, not a difficulty setting.
 
-Two documented exemptions: `AMBIENT` events (they never "appear") and `city_wide` ones (no edge to
-walk out of).
+One documented exemption: `AMBIENT` events, which never "appear". Nothing is city-wide: every row
+has a place and an edge to walk out of, the loudspeaker masts included.
 
 A director-sited (`AHEAD_OF_PLAYER`/`TOWARD_PLAYER`) event is **not** an exemption — it has no
 telegraph she can see coming from down the street, so the contract is paid in geometry: the

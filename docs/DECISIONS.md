@@ -1,5 +1,133 @@
 # Decisions
 
+## M180 — Posters she notices, and loudspeakers that are somewhere: the loudspeaker masts · built 2026-09-23
+
+*([PLAYTEST-117](playtests/PLAYTEST-117.md); [PLAYTEST-122](playtests/PLAYTEST-122.md)
+statement 5, "there should be a visible indicator about when a mast is active / has a
+broadcast"; [PLAYTEST-123](playtests/PLAYTEST-123.md) statements 23 and 34, "mast in 292 is
+weird. it's in the middle of the road", then "mast looks fine now, too".)* One agent on
+`feature/loudspeaker-masts`, in two phases around M181's slice one; reviewed here.
+
+**What was built.** `MastSites.compute(map)` farthest-point-samples `Tuning.MAST_COUNT` (6) sites
+from junction corners, squares and main-road points, each snapped to the nearest sidewalk or
+square tile, never the home street (`MAST_HOME_STREET_MARGIN`) or a calm interior
+(`MAST_CALM_INTERIOR_MARGIN`); `EventScheduler._place_masts()` plants a `loudspeaker` plan at each
+from `Tuning.MAST_FIRST_DAY` (day 5), the same sites every day, skipping a site on a day whose
+closures, wall or huts hold that tile. The field is `homeless_yeller`'s geometry (45/210px) at
+intensity 20 on the old 22s pulse with a 3s telegraph: walking past costs 40.0 in
+`docs/COSTS.md`, the man shouting's own figure. The picture is `art/events/mast.svg` with a lamp
+overlay — unlit when silenced, amber through the telegraph, green with `sound_pulse.svg`'s arcs
+while it speaks — on one broadcast clock for all masts. On day 6 a co-located, invisible
+`curfew_announce` plan (intensity 30, 26s, ramp 0.2) is the masts carrying the curfew.
+`EventManager.silence_mast(id)`, `silence_all_masts()` and `mast_foot(id)` are there for day 11
+and day 14; a silenced mast still stands. **`EventDef.city_wide` is gone** with every reader: the
+HUD's "nowhere is quiet" line, `EventBus.city_wide_changed`, the `silence_city_wide()` forwarder;
+day 14's sabotage calls `silence_all_masts()`. A mast is halo'd, badged, careted, drawn in the
+debug layers and logged like any placed row.
+
+**Found and fixed on the branch.** Silencing did not invalidate the contribution cache, so a
+silenced mast kept its pre-silence figure for the rest of the tick. A fixed site could stand on a
+day's held ground (a closure, wall or hut). The first siting used raw box centres, so a mast stood
+in the road — the player's catch; every site now snaps to sidewalk or square, with a test.
+
+**Open to overturn, chosen where the design was silent.** Six masts. The field equal to the man
+shouting's. Every square counts as a commercial square. A junction corner is the sidewalk tile
+nearest a box corner. The home-street and calm margins. A 6px pole body. The curfew as a second
+invisible plan stacked on the broadcast rather than replacing it. **A mast whose site is held on a
+day, or reaches a door the siting-time refusal missed (an alley door, since that refusal is stated
+over every boundary segment's own street door and not the private detection an alley crossing
+needs), does not stand that day** rather than moving, a narrow gap in "the same places every day".
+Run-long silencing belongs to M181's day 11.
+
+**The items as the queue held them when this was built:**
+
+- [ ] **A loudspeaker is a mast on a street with a field around it.** Placed from day 5 where
+      the fiction puts them — junctions, squares, the main road — drawn, with a field that
+      pulses when it speaks and falls away with distance like any other row's, so a route can
+      go round one. It is in `docs/COSTS.md` like any row. **A mast shows when it is live and when it
+      broadcasts** ([PLAYTEST-122](playtests/PLAYTEST-122.md): "there should be a visible
+      indicator about when a mast is active / has a broadcast"): a live mast looks different from a
+      silenced one, and each broadcast is telegraphed before it starts, without sound.
+- [ ] **The city-wide floor goes.** *Decided by the player on 2026-09-20: "Remove it"*, asked
+      with keeping it near masts only and keeping it as it is as the alternatives. A cost with
+      no place cannot be routed round, and the game's one verb is where she walks. No row is
+      `city_wide`: what replaces the loudspeaker's pressure is the masts' own fields, and
+      `curfew_announce` becomes something the masts do. The day-14 reward, that the sabotage
+      silences the city, is the masts going quiet.
+
+## The burst water main, redrawn · 2026-09-23
+
+*([PLAYTEST-123](playtests/PLAYTEST-123.md), statements 24 and 35: "can you have an opus agent
+redraw the water main break image?", then "new water main looks good".)* One Opus agent on
+`feature/burst-main-redraw`; art only, no code changed.
+
+**What changed** in `art/events/burst_water_main.svg` (north-south street) and
+`burst_water_main_vertical.svg` (east-west): water fountains upright out of the break, the crater
+reads as a hole (a lit far wall, shaded ends, pooled water) ringed by heaved asphalt slabs, the
+split main runs along the street with both broken mouths showing, a puddle spreads across the road
+with run-off to both kerbs, and the barriers are striped boards on legs with an amber lamp,
+end-on on the east-west street as the roadworks barrier's vertical file already is. Canvas sizes,
+anchors, the fit to the 192px obstruction, the choice of file by street axis and the absence of a
+shadow are unchanged. `--spawn event:burst_water_main` puts one on screen for a still.
+
+**Open to overturn, chosen where the brief was silent.** The fountain, the one part standing
+above the ground, which the no-shadow rule's reasoning ("the crater is on the ground") did not
+foresee; the fallback is foam and pooled water only. The main along the street rather than across
+it. The barriers where the old ones stood, near the building line.
+
+## M180 — Posters she notices, and loudspeakers that are somewhere: the poster art · drawn 2026-09-23
+
+*([PLAYTEST-123](playtests/PLAYTEST-123.md), statements 1 to 27; the player on the last sheet:
+"posters all look good now".)* A Sonnet first pass, then Opus from the second on, on
+`feature/poster-art`; six review sheets, each answered by the player. Art only: nothing is bound.
+
+**What was drawn** (`art/events/posters/`, each a 20×22 sheet at 6..26 × 3..25 on a 32×32 wall
+tile, a gap on all four sides): the leader's portrait (jowly, scowling, receding hair, dark suit,
+gray backing, dark band); the rules (an inset dark header, four entries of a 2×3 bar, a 1px gap
+and two gray lines, a red ring stamp with a diagonal band); the curfew sheet (a ticked clock with
+hands at four, two entries, the stamp); the uniform sheet (a phi-on-a-base emblem on near-black);
+the wanted notice and its crossed copy (four head-and-shoulders silhouettes in mugshot frames,
+one print line under each, the top-right always crossed, and a `neighbor_slot` group bottom-left
+crossed only in the second file). **Torn posters are three tear masks**, each a mask of the paper
+that stays and an overlay of the tear's fringe, shadow, bare wall, glue and crumbs (B adds a
+hanging flap), composited as mask alpha × poster, then the overlay — so every kind tears three
+ways. The recipe is in `docs/GRAPHICS.md`'s Posters section.
+
+**The passes.** First (Sonnet): too neutral a leader, faces that did not read, posters touching
+the floor, and a torn sheet that "looks nothing like a torn poster". Second (Opus): a grumpy
+leader, bar-gap-line rules, silhouettes, a margin all round — "looks better already". The player's
+generated reference sheet then set the look of the fourth pass
+(`docs/style-references/posters-01.jpg`, brought in with `tools/reference.sh --style` after a
+drawing agent's plain copy of it was refused by the permission check). The torn poster was drawn without a reference at the player's word, three ways,
+then turned into masks ("one per kind or make it a mask … vary between the torn pattern").
+Building fronts on the sheets moved posters off windows onto plain wall, which became M185, a
+ground floor is blank wall or shops.
+
+**Tried and rejected.** *A ring with an upside-down T* as the emblem · replaced by the
+reference's phi on a base. *Six faces on the wanted notice* · four, so each has a neck and
+shoulders. *One torn file per kind* · masks instead, the player's option. *Two print lines under
+each wanted face*, as the reference has · one, since two do not fit in 22px; open to overturn.
+
+**Open to overturn.** The wanted notice's two copies, one X on a face that is never the neighbor's
+and two Xs adding the neighbor's slot, so the neighbor's cross is always the second (statement 30). The 20×22 size, and the 2×3 bar read as the player's "two pixel vertical
+line". The emblem's resemblance to nothing real.
+
+**The item as the queue held it when the art was drawn:**
+
+      A kind that has arrived stays in the mix; nothing is taken down except by her. SVG first, as
+      every picture here is, and the first drawn wall comes back to the player as pictures in
+      the pull request before anything is polished.
+
+      **The first pictures were answered** ([PLAYTEST-123](playtests/PLAYTEST-123.md)): the
+      leader's portrait is grumpy ("the leader is not going to be a nice fellow"); each printed
+      line on the rules notice starts with a two-pixel bar, a one-pixel gap, then the line;
+      the wanted notice's faces are proper head-and-shoulders silhouettes; people on posters are
+      less blocky; a poster has a gap on all four sides of its tile; the torn poster is shown on
+      its own; one row of posters on a wall is fine; and the drawing is Opus 5.5's. **Posters go on blank wall, never over a window**
+      ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 13): the ground floor gets stretches
+      of wall without windows, and a crew pastes there. **The torn poster is redrawn as an SVG
+      from the player's reference photos**; PNGs are Codex's, later.
+||||||| 160322ec
 ## M181 — The resistance has a reason, and a task is one day, slice one · built 2026-09-23
 
 *([PLAYTEST-117](playtests/PLAYTEST-117.md) to [PLAYTEST-122](playtests/PLAYTEST-122.md).)* One

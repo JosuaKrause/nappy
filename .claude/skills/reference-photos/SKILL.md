@@ -1,43 +1,61 @@
 ---
 name: reference-photos
-description: How a real-world photo or video gets into the repo as drawing reference — the one folder it goes in, the shrink-and-strip pass every file goes through, and what may not be committed at all. Load this BEFORE adding any photograph, phone video or camera capture to the repository.
+description: How a real-world photo or video gets into the repo as drawing reference, or an approved illustration-style reference gets added — which of the two folders each goes in, the shrink-and-strip pass every file goes through, and what may not be committed at all. Load this BEFORE adding any photograph, phone video, camera capture or style reference to the repository.
 ---
 
-# Real-world reference
+# Real-world reference and style references
 
-**Reference material goes in `docs/reference/`, and it gets there through `tools/reference.sh`.**
+**Reference material goes in `docs/reference/`, an approved style reference goes in
+`docs/style-references/`, and both get there through `tools/reference.sh`.**
 
 ```sh
 tools/reference.sh ~/Desktop/pram-on-a-kerb.heic
 tools/reference.sh ~/Pictures/street-walk/          # a whole folder
+tools/reference.sh --style ~/Desktop/new-illustration-ref.jpeg   # into docs/style-references/
 tools/reference.sh --force one-that-is-already-there.jpg
 ```
 
-**Never copy a file into that folder by hand.** Everything below is what the script does, and a
+**Never copy a file into either folder by hand.** Everything below is what the script does, and a
 hand-copied photo has none of it — which is not a tidiness problem, because the second guarantee
 is a privacy one.
+
+## The script needs a file on disk, not a picture in the conversation
+
+`tools/reference.sh` takes a path and cannot act on a picture that has none. An image pasted into
+the prompt from a clipboard — a screenshot, something copied out of a browser tab or out of an
+image generator — arrives in the session as image data with no file behind it: the session can see
+it, shown as `[Image #n]`, but has nothing to hand the script or an agent. An image *attached* from
+a saved file carries a real path and works exactly like any other input. The CLI shows both the
+same way, so when a picture shows up with no path attached to it, ask where it is saved, or ask for
+it to be dragged in from Finder or the Downloads folder, rather than describing what it shows —
+a description is not a file the script can shrink and strip.
 
 ## What the folder is, and what it is not
 
 **Reference is an *input to drawing*: a photograph of the real thing, held up next to the art.**
-Four folders in this repo hold pictures and they are not interchangeable:
+Five folders in this repo hold pictures and they are not interchangeable:
 
 - **`docs/reference/`** — the real world. Never shipped, never shown, never cited as proof of
   anything. It exists so a sprite can be drawn from something rather than from memory.
-- **`docs/evidence/`** — the game, captured, plus the approved style references
-  (`graphics-reference-*.jpeg`) that illustrated-png draws from. It is proof: a doc sentence
-  points at it, and the **playtest-feedback** rule requires the picture to land in the same commit
-  as the sentence.
+- **`docs/style-references/`** — the approved illustration-style references
+  (`graphics-reference-*.jpeg`) that illustrated-png draws from: flat, no subfolders, added
+  through `tools/reference.sh --style`. See `docs/style-references/README.md` for what each file
+  is a reference for.
+- **`docs/evidence/`** — the game, captured, plus the generation records, review sheets and
+  provenance that point at the style references above. It is proof: a doc sentence points at it,
+  and the **playtest-feedback** rule requires the picture to land in the same commit as the
+  sentence.
 - **`art/`** — the authoring pictures. Behind a `.gdignore`, so the engine never imports one
   and nothing under it ships except `art/social-card.png`, which `.github/workflows/deploy.yml`
   copies to the exported build; the atlas bake reads the rest and the pages it writes are what
   ships.
 - **`assets/`** — what the engine reads at runtime, and only that.
 
-**The folder carries a `.gdignore`, and that is load-bearing.** Godot walks every directory under
-the project and would import each photo as a texture, writing a `.import` sidecar per file and
-carrying the lot into the exported build. An empty `.gdignore` is the engine's own *this directory
-is not mine*. The script writes it; do not delete it.
+**`docs/.gdignore` keeps the engine out of both folders.** Godot walks every directory under
+the project and would import each picture as a texture, writing a `.import` sidecar per file and
+carrying the lot into the exported build; an empty `.gdignore` is the engine's own *this
+directory is not mine*, and it covers every folder under the one it sits in. So neither folder
+carries one of its own, and `docs/.gdignore` is the one not to delete.
 
 ## The three things that happen to every file
 

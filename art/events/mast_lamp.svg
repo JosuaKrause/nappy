@@ -1,0 +1,9 @@
+<!-- The mast's own indicator lamp: drawn over mast.svg's horn housing, tinted per state by
+     EventInstance._draw_mast() (amber while telegraphing, green while it speaks, not drawn at
+     all when silenced or before Tuning.MAST_FIRST_DAY). viewBox 0 0 8 8; centre anchor (4,4) —
+     Sprites.draw_standing() reads it bottom-centre, so it is registered a half-height above the
+     point EventInstance._MAST_LAMP_AT names. Drawn near-white so the modulate tint reads true. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" shape-rendering="geometricPrecision">
+  <circle cx="4" cy="4" r="3.6" fill="#f4f0e2" opacity="0.32"/>
+  <circle cx="4" cy="4" r="2" fill="#fbf8ee"/>
+</svg>

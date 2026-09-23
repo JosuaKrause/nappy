@@ -44,8 +44,8 @@ SVG/PNG pairs, anchors and runtime consumers. The existing SVGs precede this con
 at source commit 28fe845.
 
 Each built-in image generator call uses its numbered source sheet as the geometry and palette
-target, then `docs/evidence/graphics-reference-urban-01.jpeg` and
-`docs/evidence/graphics-reference-cardinal.jpeg` as style-only inputs, in that order.
+target, then `docs/style-references/graphics-reference-urban-01.jpeg` and
+`docs/style-references/graphics-reference-cardinal.jpeg` as style-only inputs, in that order.
 `prompt-01.txt` through `prompt-04.txt` preserve the exact prompts. `generated-01.png` through
 `generated-04.png` are the unmodified 1254×1254 outputs.
 

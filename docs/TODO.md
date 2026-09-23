@@ -373,22 +373,10 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 > city with a defined field. not sure about adding a floor. it just makes losing unfair because
 > things that worked before don't anymore for no obvious (or visible) reason."
 
-[PLAYTEST-117](playtests/PLAYTEST-117.md). The `loudspeaker` row is `city_wide` from day 5: no
-position, no picture, 2.4 a second everywhere on a 22 second pulse.
+[PLAYTEST-117](playtests/PLAYTEST-117.md). **The masts are built** (`DECISIONS.md`, M180,
+the loudspeaker masts): six from day 5, on sidewalks, with a field, a lamp that says when they
+speak, and nothing city-wide left. What is open is the posters.
 
-- [ ] **A loudspeaker is a mast on a street with a field around it.** Placed from day 5 where
-      the fiction puts them — junctions, squares, the main road — drawn, with a field that
-      pulses when it speaks and falls away with distance like any other row's, so a route can
-      go round one. It is in `docs/COSTS.md` like any row. **A mast shows when it is live and when it
-      broadcasts** ([PLAYTEST-122](playtests/PLAYTEST-122.md): "there should be a visible
-      indicator about when a mast is active / has a broadcast"): a live mast looks different from a
-      silenced one, and each broadcast is telegraphed before it starts, without sound.
-- [ ] **The city-wide floor goes.** *Decided by the player on 2026-09-20: "Remove it"*, asked
-      with keeping it near masts only and keeping it as it is as the alternatives. A cost with
-      no place cannot be routed round, and the game's one verb is where she walks. No row is
-      `city_wide`: what replaces the loudspeaker's pressure is the masts' own fields, and
-      `curfew_announce` becomes something the masts do. The day-14 reward, that the sabotage
-      silences the city, is the masts going quiet.
 - [ ] **Posters are seen at all.** *"I have not seen a single poster in any playthrough -- I
       don't know what you're referring to here -- it needs to be way more obvious"*: the run
       behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none. The crew's
@@ -441,9 +429,18 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       one tie to the story: "other than that we can keep this mechanic separate with no story
       tie in", so tearing stays a gimmick that counts for nothing.
 
-      A kind that has arrived stays in the mix; nothing is taken down except by her. SVG first, as
-      every picture here is, and the first drawn wall comes back to the player as pictures in
-      the pull request before anything is polished.
+      A kind that has arrived stays in the mix; nothing is taken down except by her.
+
+      **The pictures are drawn and accepted** (`DECISIONS.md`, M180, the poster art): the six
+      intact sheets and three tear masks under `art/events/posters/`, prepared and not yet bound,
+      with the neighbor's slot on the wanted notice and the compositing recipe in
+      `docs/GRAPHICS.md`'s Posters section. **What is open is putting them on the walls**: only on
+      blank ground-floor wall, never over a window (M185, a ground floor is blank wall or shops),
+      one row to a wall, following the progression above. Where a sheet is pasted over an
+      older one, the offset is large enough that the older sheet plainly shows, never a sliver that
+      reads as a glitch ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 31); **most** new sheets
+      cover the old one exactly and replace it, and only some show the one beneath (statements 32
+      and 33: "if it's visibly over pasted for all of them then it will look weird"). PNGs are Codex's, later.
 - [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
       no button, and more than walking past. *The orchestrator recommended running along the
       wall · the player chose pushing on 2026-09-20*, because a push can happen by accident,
@@ -503,6 +500,34 @@ a task is one day, whose day 14 goes to this building's front door.
       the escape is easy** ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be
       easy!"). The "Good" ending, Act IV's day 14 and tone rule 3's "the reward is quiet" are
       rewritten with the build, and `docs/MECHANICS.md`'s account of the good ending with them.
+
+---
+
+## M185 — A ground floor is blank wall or shops · asked for 2026-09-23
+
+> "you can make it a placement rule for multi-story buildings that the ground floor is either a
+> blank wall (for posters later) or shops -- never windows -- the home building is an exception
+> to that rule"
+
+[PLAYTEST-123](playtests/PLAYTEST-123.md), statements 13, 25 and 26: a poster pasted over a
+window makes no sense, so the posters of M180, posters she notices, and loudspeakers that are
+somewhere, need wall to go on, and the player made that a rule for every building. Today a
+building's ground floor carries the same window rows as the floors above, except where a
+`COMMERCIAL` span's storefront covers them (`docs/CITY.md`, "A front is district and block
+purpose").
+
+- [ ] **The ground floor of a multi-story building has no windows**: it is shops or blank wall.
+      Which is which is the orchestrator's and open to overturn: a `COMMERCIAL` building keeps its
+      storefronts, and its odd final column becomes blank wall rather than a window; every other
+      purpose's ground floor is blank wall — the wall texture and its plinth with no window —
+      with its entrance, the civic portico and the fire escape where they are today. A facade one
+      wall row tall is not multi-story and is unchanged; the power station draws its own front.
+- [ ] **Her own building keeps its ground-floor windows**, the one exception.
+- [ ] **The blank wall is where posters go**: the cells a later slice of M180 pastes on are
+      exactly the blank ground-floor cells this draws, so a poster can never land on a window.
+- [ ] **Shown to the player before it is finished**: stills of a residential, a commercial and an
+      industrial street and of her own building, at the ordinary view and zoomed out with
+      `--zoom`.
 
 ---
 
@@ -1192,8 +1217,8 @@ asked and each answered by the player on 2026-09-09:**
 1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
    the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
    step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
-   `sabotage_done`), and what it changes is mechanical quiet: every `city_wide` source is
-   silenced. **Neither the walk home after it nor the escape is easy**
+   `sabotage_done`), and what it changes is mechanical quiet: every loudspeaker mast is
+   silenced (`EventManager.silence_all_masts()`). **Neither the walk home after it nor the escape is easy**
    ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be easy!"): M183, the power
    station and the blackout, takes the traffic lights with the power, so the roads are harder
    that night on purpose. The hallway scene follows the same night, and the trucks and the

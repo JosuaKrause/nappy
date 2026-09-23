@@ -40,6 +40,13 @@ var _day := 0
 ## Read by `_owe_the_return()` only — see there for why the difference matters.
 var _walking_the_finale := false
 
+## Elapsed seconds since this day started, advanced every physics frame regardless of whether
+## anybody is near a mast. **The city's own broadcast clock** — every mast reads it, not its own
+## age, at the moment it streams in (`_stream_in()`), which is what makes six masts met minutes
+## apart still speak in phase: they are not coordinated frame to frame, they are all telling the
+## same time. Reset with the rest of the day in `clear()`.
+var _broadcast_clock := 0.0
+
 ## Which planned events have already summoned the row their own `spawns_on_sight` names, so a
 ## `burning_building` streamed out and back in — a fresh `EventInstance` every time, unlike the
 ## `Planned` it comes from, see `_stream_in()` — does not hand out a second fire engine. Keyed by
@@ -304,6 +311,7 @@ func clear() -> void:
 	_door_entry_side.clear()
 	_door_release_latches.clear()
 	_sighted.clear()
+	_broadcast_clock = 0.0
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
 ## of it. Idempotent, and cheap: one distance check per planned event.
@@ -315,8 +323,7 @@ func stream_around(at: Vector2) -> void:
 	for plan in _plans:
 		if plan.spent or not plan.is_placed():
 			continue
-		# A city-wide source is everywhere by definition, so there is no "near" to wait for.
-		var distance := 0.0 if plan.def.city_wide else plan.distance_from(at)
+		var distance := plan.distance_from(at)
 		if plan.live == null:
 			if distance <= stream_radius:
 				_stream_in(plan)
@@ -351,7 +358,14 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# `plan.noticed_at` carries the same resume for a `pursues_within` row: without it a pursuer
 	# streamed out mid-chase forgets she was ever noticed and comes back `is_waiting()`, standing
 	# where the day planted it rather than still coming for her.
-	plan.live.resume(plan.age, plan.travelled, plan.noticed_at)
+	#
+	# **A mast's own age is the broadcast clock, not `plan.age`.** Every mast reads the same clock
+	# at every stream-in, first time or the fifth, so two masts met minutes apart still read the
+	# same pulse phase — "all masts speak at once" is true because they are all telling the same
+	# time, not because anything coordinates them frame to frame. See `_broadcast_clock` below.
+	var resume_age := _broadcast_clock if plan.mast_id != "" else plan.age
+	plan.live.resume(resume_age, plan.travelled, plan.noticed_at)
+	plan.live.silenced = plan.silenced
 	plan.was_live = true
 	_instances.append(plan.live)
 	_spend_the_rest_of_the_group(plan)
@@ -532,25 +546,64 @@ func spawn_extra(def: EventDef, at: Vector2) -> EventInstance:
 	return _spawn_unplanned(def, at)
 
 ## Retires one unplanned instance outside the day's own closures and events — the resistance
-## director's own use, when a chalk mark moves and the guard standing over the old spot has
-## to go with it. Same path `silence_city_wide()` takes per instance: mark it finished and
-## let `_retire_finished()`'s ordinary sweep free it, rather than freeing it here and risking
-## a reference something else still holds this frame.
+## director's own use, when a chalk mark moves and the guard standing over the old spot has to go
+## with it: mark it finished and let `_retire_finished()`'s ordinary sweep free it, rather than
+## freeing it here and risking a reference something else still holds this frame. Unlike a mast
+## going quiet, the thing retired here really is leaving.
 func retire(instance: EventInstance) -> void:
 	if instance and is_instance_valid(instance) and not instance.is_finished:
 		instance._finish()
 
-## Retires every city-wide source. The loudspeakers cut out mid-sentence, and for the
-## first time since the masts went up on day 5 there is no floor under the meter — the
-## good ending's reward is that the last walk home is the easiest in the game.
-## Returns how many were silenced.
-func silence_city_wide() -> int:
-	var silenced := 0
-	for instance in _instances:
-		if instance.def.city_wide and not instance.is_finished:
-			instance._finish()
-			silenced += 1
-	return silenced
+## Today's own foot for a mast id, or `Vector2.INF` if today carries no mast with that id — the
+## point M181's day-11 task (silence a mast by reaching its foot, the way she touches a chalk
+## mark) needs a red arrow and a touch radius stated against. Reads the ordinary broadcast's own
+## plan, which always exists for a live mast's id; the curfew announcement shares the same foot.
+func mast_foot(mast_id: String) -> Vector2:
+	for plan in _plans:
+		if plan.mast_id == mast_id and plan.def.id == "loudspeaker":
+			return plan.position
+	return Vector2.INF
+
+## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
+## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
+## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never
+## does. Returns whether a mast with that id was found. Matches every plan whose `mast_id` is this
+## one — a mast's ordinary broadcast and, on `Tuning.CURFEW_ANNOUNCE_DAY`, its curfew announcement
+## too, so silencing a mast mid-announcement silences both at once.
+##
+## **Run-long persistence (M181's day-11 task) is not built here.** The id this takes is
+## `MastSites.Site.id`, stable across days, so a caller that wants "stays quiet for the rest of the
+## run" has a name to remember past today — the natural next step is a `GameState`-held set of
+## silenced ids, read here before a mast plan is even added to `_plans`, the same way a scar is.
+func silence_mast(mast_id: String) -> bool:
+	var found := false
+	for plan in _plans:
+		if plan.mast_id != mast_id:
+			continue
+		found = true
+		plan.silenced = true
+		if plan.live:
+			plan.live.silenced = true
+			# The same invalidation `_finish()` does for `is_finished` — `age` does not move the
+			# instant this flips, so the cache `contribution_at()` keeps would otherwise go on
+			# answering the pre-silence contribution for the rest of this tick.
+			plan.live._invalidate_contribution_cache()
+	return found
+
+## Silences every mast, for the rest of the day. The masts stop because the power does, or because
+## the last night's sabotage does — either way this is the mechanism, and the good ending's reward
+## is that the walk home carries no floor under the meter. Returns how many masts were silenced.
+func silence_all_masts() -> int:
+	var silenced := {}
+	for plan in _plans:
+		if plan.mast_id == "":
+			continue
+		silenced[plan.mast_id] = true
+		plan.silenced = true
+		if plan.live:
+			plan.live.silenced = true
+			plan.live._invalidate_contribution_cache()
+	return silenced.size()
 
 ## How many events are in the world right now — *what is around the player* rather than what the
 ## day contains; see `planned_count()` for the other question.
@@ -582,9 +635,7 @@ func instances() -> Array[EventInstance]:
 # ------------------------------------------------------------ WorldContext ---
 
 ## Every live instance's own contribution at this point, as `[instance, contribution]` pairs, for
-## every instance whose contribution here is actually positive. `city_wide` sources are included —
-## they are part of what reaches the meter even though `ExcitementHalo.select_sources()` excludes
-## them from the halo itself, which has no position to draw one around.
+## every instance whose contribution here is actually positive.
 ##
 ## **Inside a door, the door's toll is the only thing that charges.** `door_holding_her_at()` below
 ## says whether this point is inside a running region-door hold; while it is, the hold's own flat
@@ -678,6 +729,7 @@ func total_excitement_at(world_position: Vector2) -> float:
 # ------------------------------------------------------------------ ticking ---
 
 func _physics_process(delta: float) -> void:
+	_broadcast_clock += delta
 	_retire_finished()
 	if _find_player():
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
@@ -690,7 +742,6 @@ func _physics_process(delta: float) -> void:
 		_warn_about_the_ground_she_is_on()
 		_check_detentions()
 	_check_hard_fails()
-	_announce_the_city_wide_sources()
 
 # ------------------------------------------------------- called in on sight ---
 # The opposite of a successor: `_successor_of()` hands the day something the moment a row is
@@ -795,23 +846,6 @@ static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 		return Vector2.INF
 	return at - Vector2(inward) * (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 
-## The one kind of source that cannot be drawn over, told to the HUD instead.
-##
-## Announced only when it *changes*, so the HUD is not re-rendering a string sixty times a
-## second for something that is true for nine days running.
-func _announce_the_city_wide_sources() -> void:
-	var what := ""
-	for instance in _instances:
-		if instance.def.city_wide and not instance.is_finished and not instance.is_telegraphing():
-			what = instance.def.display_name
-			break
-	if what == _announced_city_wide:
-		return
-	_announced_city_wide = what
-	EventBus.city_wide_changed.emit(what)
-
-var _announced_city_wide := ""
-
 # ------------------------------------------------------- the mark over her head ---
 # There are no rings around dangerous things. This is the half of what replaces them that is about
 # the player rather than about the thing; `Crowd` does the same for the traffic, and the two
@@ -858,7 +892,7 @@ func _warn_about_the_ground_she_is_on() -> void:
 	if not body:
 		return
 	for instance in _instances:
-		if instance.is_finished or instance.def.city_wide or not instance.def.hard_fail:
+		if instance.is_finished or not instance.def.hard_fail:
 			continue
 		var gap := instance.global_position.distance_to(here) - instance.def.inner_radius
 		# `SOON` is anything that cannot kill her *yet* — a telegraph running, or a pursuer that has

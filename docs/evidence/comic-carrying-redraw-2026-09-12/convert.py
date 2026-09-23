@@ -98,8 +98,8 @@ def prepare(output: Path) -> None:
                 "pushing_crop_sha256": _sha256(identity_path),
                 "carrying_pose": "source/carrying-sheet-svg.png",
                 "style_references": [
-                    "docs/evidence/graphics-reference-urban-01.jpeg",
-                    "docs/evidence/graphics-reference-cardinal.jpeg",
+                    "docs/style-references/graphics-reference-urban-01.jpeg",
+                    "docs/style-references/graphics-reference-cardinal.jpeg",
                 ],
             },
             indent=2,

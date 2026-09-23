@@ -1,0 +1,9 @@
+<!-- Tear mask B: a strip across the top of the sheet stays pasted, plus a scrap of the bottom-
+     right corner. Opaque where the paper stays, transparent where it is torn away; the colour
+     is unused. Applied to any intact poster kind drawn on the same 20x22 sheet box (x 6..26, y
+     3..25): the poster's alpha is multiplied by this mask's alpha, then
+     poster_tear_b_overlay.svg is drawn on top. See docs/GRAPHICS.md, "Posters". -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <path d="M6 3H26V12.6L26.0 12.6L25.0 12.8L24.1 13.5L23.7 13.8L22.2 12.7L21.5 13.6L20.7 13.5L19.9 13.6L18.7 13.1L18.2 14.5L17.6 13.7L17.0 13.9L15.8 13.0L14.7 13.5L13.5 13.0L12.7 14.2L12.6 13.5L6 14.2Z" fill="#ffffff"/>
+  <path d="M26 25H18.6L18.6 25.0L18.4 24.1L18.8 23.4L20.0 23.5L19.8 22.8L20.9 22.0L20.4 21.6L20.8 21.0L21.2 20.7L22.2 20.5L22.2 19.6L23.3 19.4L23.4 19.4L24.2 19.1L24.8 18.5L25.5 18.5L26.0 18.2Z" fill="#ffffff"/>
+</svg>

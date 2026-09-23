@@ -127,15 +127,14 @@ func _draw() -> void:
 ## Every emitter's actual falloff boundary — `GroundShape.field_outline()`, the same effective-
 ## distance arithmetic `Tuning.falloff()` prices, so this layer cannot disagree with what the
 ## meter does: a capsule about a stationary body's own spine, an ellipse (focus at the emitter)
-## about a moving one, and a plain circle at zero speed, exactly as it always drew. **Skips
-## `city_wide`** — it has no position to stand a boundary on, the same exemption
-## `ExcitementHalo.select_sources()` already makes. A flock draws one pair per bird, at its own
-## position and its own `heading * speed`, and `flock_outer_radius()` rather than `outer_radius` —
-## the same radius `_flock_contribution_at()` sums over, so drawing the flat number instead would
-## show a field wider than what the birds actually emit.
+## about a moving one, and a plain circle at zero speed, exactly as it always drew — a mast's field
+## included, now that it stands somewhere. A flock draws one pair per bird, at its own position and
+## its own `heading * speed`, and `flock_outer_radius()` rather than `outer_radius` — the same
+## radius `_flock_contribution_at()` sums over, so drawing the flat number instead would show a
+## field wider than what the birds actually emit.
 func _draw_fields() -> void:
 	for instance in _events.instances():
-		if instance.is_finished or instance.def.city_wide:
+		if instance.is_finished:
 			continue
 		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
 		var offsets := instance.flock_offsets()

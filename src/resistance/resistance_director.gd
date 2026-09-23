@@ -690,9 +690,10 @@ func _on_contact_completed(step_index: int) -> void:
 		return
 
 	GameState.sabotage_done = true
-	# The reward for the whole subquest is quiet. Whatever is left of the last day is
-	# walked without the floor the masts have been holding under the meter since day 5.
-	if _city and _city.events and _city.events.silence_city_wide() > 0:
+	# The reward for the whole subquest is quiet. Whatever is left of the last day is walked with
+	# every mast off — no field, no arcs — rather than under whatever each one happened to be
+	# speaking when the sabotage landed.
+	if _city and _city.events and _city.events.silence_all_masts() > 0:
 		EventBus.city_went_quiet.emit()
 
 func _clear() -> void:

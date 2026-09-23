@@ -153,13 +153,14 @@ street axis without rotating the pixels.
 | Fallen-tree seal | `fallen_tree.svg` and `fallen_tree_vertical.svg`: authored whole-street scenes chosen by street axis and fitted to the obstruction. |
 | Car-accident seal | `car_accident.svg` and `car_accident_vertical.svg`, with matching `car_accident_shadow.svg` and `car_accident_vertical_shadow.svg`: authored scene and ground-contact shadow chosen by street axis. |
 | Skip and scaffolding seals | `skip.svg` is one pavement picture; `scaffolding.svg` repeats across the other pavement frontage. |
-| Burst-main seal | `burst_water_main.svg` and `burst_water_main_vertical.svg`: authored whole-street scenes chosen by street axis and fitted to the obstruction. |
+| Burst-main seal | `burst_water_main.svg` and `burst_water_main_vertical.svg`: authored whole-street scenes chosen by street axis and fitted to the obstruction — a crater of heaved asphalt with the split main in it, water fountaining out and spreading towards both kerbs, and a barrier at each end, broadside on a north-south street and in its narrow end-on projection on an east-west one. The ground is overhead and the fountain and barriers upright; neither file carries a shadow and the row draws none (`draws_body_shadow` off), because the crater is sunk into the road. |
 | Moving-van pair | `moving_van.svg` and `moving_van_vertical.svg`: the vans stand parallel to their street; the street axis selects the side or end projection while preserving authored proportions, unchanged by this milestone. `moving_van_{front,back,front_diagonal,back_diagonal}.svg` stay prepared and unbound: the seal's own axis choice is a binary (parallel to the street or across it) with no heading that ever turns to a diagonal, and `moving_van_vertical.svg` already serves the "across" projection as its own authored scene — ramp down, doors open — rather than a generic end view, the same reason `gunman`'s own front/back/diagonal stay prepared. |
 | Burnt-out-car seal | `burnt_out_car.svg` and `burnt_out_car_vertical.svg`: four wrecks form a hard seal across the whole street. Each car lies perpendicular to the street; its axis selects the side or end projection. |
 | Collapsed-frontage seal | `collapsed_frontage.svg`: the debris segment repeats across one hard seal spanning the whole street, kerb to kerb. |
 | Impact crater | `art/props/impact_crater_2x2.svg`, not `art/events/`: a 64×64 hole in the road drawn flat and **centred** on its own ground point through `EventInstance._draw_at_anchor()`, which is what makes it the one look in the catalogue that is ground rather than an object standing on ground. It carries **no drop shadow** for the same reason — a shadow under a hole reads as a mound. The `impact_crater_{1x1,3x3}.svg` sources stay prepared and unbound: `spawns_on_finish` names one row, so a second size would need a second explosion row to leave it, and three sizes of the same hole would be three looks nobody could tell apart on the screen-edge badge. |
 | Masked pursuer | `art/checkpoints/guard_standing.svg` while the telegraph runs and `guard_lunging.svg` once he is coming — the same pair a heated `roadblock`'s guards take when they leave the post, on a row that was never a barrier. `guard_lunging.svg` is also this look's own badge silhouette, which is what keeps it distinct from `checkpoint_post`'s (`guard_standing.svg`). |
 | Steam | `steam.svg`: one 32×48 picture standing on the ground it rises from, mirrored east/west like `mouse` and `skip` rather than switching pose, since a cloud has no front. |
+| Loudspeaker mast | `mast.svg` (20×58, bottom-centre anchor): one standing picture, pole and horns, no heading to select — `EventInstance._draw_mast()` draws it through `_draw_simple()` the same way `mouse` and `steam` are. `mast_lamp.svg` (8×8, centre anchor) is a small overlay near the horn housing, tinted by `Sprites.draw_standing()`'s own `modulate` argument rather than baked as a second picture: `Palette.SIGNAL_AMBER` during the repeating telegraph, `Palette.SIGNAL_GREEN` while it speaks, undrawn when `silenced` — the player's 2026-09-23 amendment asking for a visible live/silenced and telegraph/speaking indicator. `sound_pulse.svg` (48×32, source anchor (24, 32)), prepared since M100 and unbound until now, is drawn above the lamp while the mast speaks — see "Sound lines" in `docs/EVENTS.md`, "The visual vocabulary". |
 
 ## Prepared SVG assets without runtime bindings
 
@@ -212,7 +213,7 @@ arm direction; ordinary movement suffixes describe the body's facing.
 | M100 — Small, real, and nobody's (mouse) | `art/events/mouse.svg` is the east-facing 24×14 source, bound to the `alley_mouse` catalogue row through `EventDef.Look.MOUSE` and drawn by `EventInstance._draw_simple()`, mirrored east/west the same plain way `skip` is rather than through a directional family; its own `mouse_b.svg` dash frame is bound alongside it — see "Events and seal pictures" above. `mouse_{front,back}.svg` (18×18), `mouse_{front,back}_diagonal.svg` (24×18) and their own `_b` siblings stay prepared and unbound, since the row they would serve does not pick a picture by heading either — see `EventCatalogue._alley_mouse()`. Sound remains unbound. |
 | M56 — The resistance is noticed (night-raid duplicate end view) | `art/events/riot_van_end.svg`: 34×50, anchor (17, 50), a south-facing barred windscreen and headlights with wheel edges alongside the body — the same picture `riot_van_front.svg` draws. The night-raid drawing selects `riot_van_front.svg` for that heading instead (see "Events and seal pictures" above), so this duplicate stays unbound. |
 | M65 — A protester points at the objective | `art/events/protester_point_{n,ne,e,se,s,sw,w,nw}.svg`: eight 44×52 poses sharing feet anchor (22, 52). |
-| M100 — Small, real, and nobody's | `art/events/sound_pulse.svg`: 48×32 open arcs with source anchor (24, 32). `industrial_vent.svg` and `civic_portico.svg`, prepared here, are now live — see "City ground and buildings" above. |
+| M100 — Small, real, and nobody's | `industrial_vent.svg` and `civic_portico.svg`, prepared here, are now live — see "City ground and buildings" above. `art/events/sound_pulse.svg`, also prepared here, is now live too — see "Events and seal pictures" above, the loudspeaker mast's own row. |
 | M102 — The finale: out of the apartment, out of the city (impact craters) | `art/props/impact_crater_1x1.svg`: 32×32 with centre anchor (16, 16). `impact_crater_3x3.svg`: 96×96 with centre anchor (48, 48). Both stay prepared and unbound; `impact_crater_2x2.svg` is the one the `impact_crater` row draws — see "Events and seal pictures" above — and any other event or city feature that needs a crater may reuse the other two. |
 
 ## Other unbound SVGs
@@ -358,3 +359,61 @@ until code, a scene or a resource actually binds it. When binding or removing on
 sources as well as `assets/ground_tileset.tres`, `scenes/` and `project.godot`; the TileSet and
 application icon are deliberately indirect. For state, direction or animation families, keep a
 glob only when it names every member of the family and no unrelated file.
+
+## Posters
+
+`art/events/posters/` holds the four poster kinds M180, posters she notices, and loudspeakers
+that are somewhere, asks for. Every file below is **prepared** and unbound: no runtime source,
+scene or resource reads any of them yet — placing them on a building face, the crew that pastes
+them and tearing one down are later slices.
+
+Each is a 32×32 canvas matching a wall tile's own grid, so a later placement can register
+straight onto a wall cell the way `wall_base.svg` already does. Every poster is a 20×22px sheet
+(62.5% × 69% of the tile) at x 6–26, y 3–25: a gap on all four sides of its tile, and the foot
+clear of the plinth `wall_base.svg` draws from y 26. A poster goes on blank wall, never over a
+window (`docs/playtests/PLAYTEST-123.md`, statements 13 and 25), so a front that carries posters
+needs visible plain wall — stretches with no window at all that break the window rhythm — not a
+window cell with the window left out.
+
+| Asset | What it draws |
+|---|---|
+| `poster_leader.svg` | The leader's portrait: a nameless, jowly, scowling middle-aged man — hair receding at the temples, heavy brows over a hard stare, a dark suit with the white of a collar — on a warm gray backing inside a thin cream border, over a large dark band carrying no letters. Flat fills with a clean dark outline. |
+| `poster_rules.svg` | The rules: a pale printed notice under an inset dark header bar, four entries — each a 2×3px dark bar, a 1px gap, then two 1px gray print lines two pixels apart, the second shorter — and a round red stamp, a ring crossed by a thick diagonal band, over the lower right. |
+| `poster_curfew.svg` | The curfew sheet: the same header, a large clock with a dark rim, twelve tick marks and its hands at four, then two of the rules' entries and the same stamp, for day 6 onward. |
+| `poster_uniform.svg` | The dark uniform sheet: a cream emblem invented for this game, like the letter phi on a base — a tall ring, a vertical bar through it standing out above and below, on a flat foot bar — matching no real flag, party, state or movement mark. |
+| `poster_wanted.svg` | The wanted notice: gray-beige paper under an inset dark header, four 7×5 mugshot frames in two rows of two, each a dark head-and-shoulders silhouette in a thin dark frame with one gray print line beneath it — a different style from the leader's coloured portrait. This copy has one X: a red X over the top-right face, a face that is never the neighbor's. The bottom-left frame, the SVG group `neighbor_slot` (top-left corner at 8,16), is a placeholder adult standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their figure. |
+| `poster_wanted_crossed.svg` | The same sheet with two Xs: that face and the `neighbor_slot` face, for a run whose day 10 task was not done on the day she won. |
+| `poster_tear_a_mask.svg`, `poster_tear_a_overlay.svg` | Tear A, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top and upper left of the sheet stay pasted, plus a scrap of the bottom-right corner. |
+| `poster_tear_b_mask.svg`, `poster_tear_b_overlay.svg` | Tear B: a strip across the top stays pasted, plus a scrap of the bottom-right corner; the overlay adds a flap peeled from the lower left, hanging off the strip with its blank back showing, the crease dark at the fold and a shadow on the wall. |
+| `poster_tear_c_mask.svg`, `poster_tear_c_overlay.svg` | Tear C: a ragged strip down the left edge stays pasted, plus a small scrap in the top-right corner. |
+
+**A torn poster is any intact kind with a tear applied**, so every kind tears three ways and no
+torn file carries print. Each tear is two files on the same 20×22 sheet box: a mask, opaque
+where the paper stays (its colour is unused), and an overlay carrying no print — the faint
+shadow and pale paper-core fringe along each tear, and the bare wall where the sheet was, a
+faint shade darker (cut around the kept paper with an even-odd fill, so the remnant is not
+darkened), with glue marks and paper crumbs. The recipe, per pixel, with the poster, the mask
+and the overlay rendered at the same scale and registration:
+
+1. `torn.rgb = poster.rgb`, `torn.a = poster.a × mask.a`;
+2. the overlay is drawn over `torn` with ordinary source-over blending;
+3. the result is drawn on the wall cell like any intact poster.
+
+A mask stays inside the sheet box, so the result registers on a wall cell exactly as the intact
+poster does; overlay B's hanging flap and its shadow reach about a pixel past the box's left
+edge, still inside the tile.
+
+No sheet carries readable words — every print line, header and stamp is a colour block or a gray
+line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the politics).
+
+The intact kinds follow the player's poster reference sheet (`docs/style-references/posters-01.jpg`) in shape and palette; at 20×22px
+the wanted notice keeps one print line under each frame where the reference has two.
+
+[The poster review sheet](evidence/poster-art-review-2026-09-23-plain-walls.png) shows the
+intact kinds and every tear applied to each of them by that recipe, on blank ground-row wall
+cells at game scale (2×, the camera's own zoom) and at 4× that; each mask and overlay alone; and
+three building fronts assembled from the real `art/buildings/` wall, window, edge and plinth
+textures, multiplied by a building colour and each act's own cast (`Palette.act_tint()`), at
+the day 4/day 8/day 12 densities M180's own table asks for. On those fronts, stretches of plain
+wall two or three columns wide with no window on any floor break the window rhythm, and posters
+go only there — some of it bare, and three torn sheets on day 12.

@@ -133,7 +133,7 @@ Every agent prompt contains, explicitly:
   integrity checks and provenance, but do not hold a useful attempt for polish or repeated
   generation. Let the player's response steer the next visual pass while independent work
   continues. The player's CLI cannot display images: push review artifacts first, then embed
-  them in the PR description using commit-pinned links or say exactly where to find them there.
+  them in the PR description as images with commit-pinned URLs, as **committing** says.
   A local file link is not a delivered visual review. Showing an attempt does not authorize
   runtime installation.
 - **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions

@@ -24,7 +24,6 @@ func run(t) -> void:
 	_test_a_weak_source_is_left_out(t)
 	_test_a_source_above_the_floor_is_selected(t)
 	_test_it_goes_to_zero_out_of_reach(t)
-	_test_a_city_wide_source_is_never_drawn_at_a_point(t)
 	_test_the_cap_keeps_the_strongest(t)
 	_test_landed_accumulates_and_decays(t)
 	_test_net_landed_shares_decay_by_proportion(t)
@@ -94,20 +93,6 @@ func _test_it_goes_to_zero_out_of_reach(t) -> void:
 	var far := Vector2(def.outer_radius + 1.0, 0.0)
 	t.check(ExcitementHalo.select_sources([instance], far).is_empty(),
 			"a field she has walked out of contributes nothing, so nothing is drawn for it")
-	instance.free()
-
-# -------------------------------------------------------------- city-wide ---
-
-func _test_a_city_wide_source_is_never_drawn_at_a_point(t) -> void:
-	var def := _def("loudspeaker", 40.0)
-	def.city_wide = true
-	var instance := _instance_at(def, Vector2(2000.0, 2000.0))
-	# `contribution_at()` answers this one from anywhere in the city — there is no falloff to
-	# draw a localised field for, and the vocabulary already has its answer for it (a HUD line).
-	t.check(instance.contribution_at(Vector2.ZERO) > ExcitementHalo.CONTRIBUTION_FLOOR,
-			"a city-wide source is genuinely above the floor everywhere, which is the point")
-	t.check(ExcitementHalo.select_sources([instance], Vector2.ZERO).is_empty(),
-			"but it has no position to draw a halo around, so the halo excludes it by kind")
 	instance.free()
 
 # ------------------------------------------------------------------- the cap ---
@@ -495,26 +480,23 @@ func _test_event_instance_contribution_is_cached_per_frame_per_position(t) -> vo
 			"a new frame recomputes rather than serving last frame's cached contribution")
 	instance.free()
 
-## The CI failure this guards against, reproduced directly: `EventManager.retire()` and
-## `.silence_city_wide()` (the resistance's own masts going quiet on the last walk home) both call
+## The CI failure this guards against, reproduced directly: `EventManager.retire()` calls
 ## `_finish()` straight from outside, with no `_process()` tick of the instance's own in between --
 ## so `age` never moves, and a cache keyed only on `(age, world_position)` went on answering the
 ## pre-finish contribution for the rest of that tick. `_be_done()`'s `is_leaving = true` branch is
 ## the other half of the same guard `contribution_at()`'s early return reads, and gets the same
 ## check.
 func _test_finishing_outside_process_invalidates_the_contribution_cache(t) -> void:
-	var def := _def("mast", 40.0)
-	def.city_wide = true
+	var def := _def("finishable", 40.0)
 	var instance := _instance_at(def, Vector2(400.0, 400.0))
-	var somewhere := Vector2(9000.0, 9000.0)
-	t.check(instance.contribution_at(somewhere) > 0.0,
-			"a live city-wide source reaches anywhere in the city, which the cache now holds")
+	var nearby := Vector2(400.0, 300.0)
+	t.check(instance.contribution_at(nearby) > 0.0,
+			"a live source reaches a point inside its own field, which the cache now holds")
 
-	instance._finish() # the exact call EventManager.retire()/silence_city_wide() makes
-	t.close_to(instance.contribution_at(somewhere), 0.0,
+	instance._finish() # the exact call EventManager.retire() makes
+	t.close_to(instance.contribution_at(nearby), 0.0,
 			"finishing outside _process() invalidates the cache rather than leaving the pre-" +
-			"finish answer standing for the rest of the tick (this is the resistance's masts " +
-			"going quiet, tests/test_resistance.gd's own scenario)")
+			"finish answer standing for the rest of the tick")
 	instance.free()
 
 	# The other flag `contribution_at()`'s early return reads, forced the same way `_be_done()`

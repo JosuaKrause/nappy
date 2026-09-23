@@ -32,8 +32,8 @@ The generator inputs, in order, are:
    that source atlas are outside the crop and never reach the generator.
 2. `source/carrying-sheet-svg.png` — the authoritative carrying pose, baby direction and occlusion
    reference, copied from the reviewed SVG evidence.
-3. `docs/evidence/graphics-reference-urban-01.jpeg` — approved comic style reference only.
-4. `docs/evidence/graphics-reference-cardinal.jpeg` — approved comic style reference only.
+3. `docs/style-references/graphics-reference-urban-01.jpeg` — approved comic style reference only.
+4. `docs/style-references/graphics-reference-cardinal.jpeg` — approved comic style reference only.
 
 `prompt.txt` is the exact edit prompt. It directs the generator to preserve each pushing figure's
 head, hair, torso, coat, legs, shoes, height, direction and gait while changing only the arms and

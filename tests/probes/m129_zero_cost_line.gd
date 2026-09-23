@@ -61,8 +61,8 @@ extends RefCounted
 ##   is skipped. `EventScheduler._line_reach_of()` is the one place that arithmetic lives, and this
 ##   probe asks it rather than keeping a second copy: the placement rules refuse what this measures,
 ##   so a probe reading a different disc could not tell whether they had worked.
-## - **`city_wide` rows are excluded**: they have no place, so there is no other side of the street
-##   to walk on, and the telegraph contract exempts them for the same reason.
+## - **A mast is excluded**: planted once by `MastSites`, off the corridor-aware placement this
+##   guarantee is stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc.
 ## - **Rows with no tile are excluded**: `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` queue rows are sited
 ##   by `EventDirector` out of where the player turns out to walk, so they have no position at plan
 ##   time (`Planned.is_placed()` is false) and no route can be measured against them. They are
@@ -368,15 +368,17 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 
 # ------------------------------------------------------------------------- the rows ---
 
-## A row is skipped rather than read where PLAYTEST-71 says it is never a block: `city_wide` rows
-## have no place to keep clear of; `scenery` rows (`pigeon_flock`) are exempt the way
-## `EventScheduler._role_for` exempts them from the wall/friction cost test; a region door
-## (`checkpoint_hut`, `checkpoint_gate`) costs by design; and a mobile row that does not pace is
-## passed by crossing, waiting and crossing back, never by routing around it.
+## A row is skipped rather than read where PLAYTEST-71 says it is never a block: a mast
+## (`plan.mast_id != ""`) is planted once, off the corridor-aware placement this guarantee is
+## stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc; `scenery` rows
+## (`pigeon_flock`) are exempt the way `EventScheduler._role_for` exempts them from the
+## wall/friction cost test; a region door (`checkpoint_hut`, `checkpoint_gate`) costs by design;
+## and a mobile row that does not pace is passed by crossing, waiting and crossing back, never by
+## routing around it.
 func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 	var rows: Array = []
 	for plan: EventScheduler.Planned in plans:
-		if not plan.is_placed() or plan.def.city_wide:
+		if not plan.is_placed() or plan.mast_id != "":
 			continue
 		var def := plan.def
 		if def.scenery or def.id.begins_with("checkpoint") or (def.mobile and not def.paces):

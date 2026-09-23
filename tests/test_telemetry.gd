@@ -610,10 +610,10 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 
 	var plan: EventScheduler.Planned = null
 	for candidate in city.events.plans():
-		if candidate.is_placed() and not candidate.def.city_wide:
+		if candidate.is_placed():
 			plan = candidate
 			break
-	t.check(plan != null, "day 3 places something sited and not city-wide to test against")
+	t.check(plan != null, "day 3 places something sited to test against")
 	if plan == null:
 		city.free()
 		return
@@ -663,10 +663,10 @@ func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 
 	var plan: EventScheduler.Planned = null
 	for candidate in city.events.plans():
-		if candidate.is_placed() and not candidate.def.city_wide:
+		if candidate.is_placed():
 			plan = candidate
 			break
-	t.check(plan != null, "day 3 places something sited and not city-wide to walk near")
+	t.check(plan != null, "day 3 places something sited to walk near")
 	if plan == null:
 		city.free()
 		return

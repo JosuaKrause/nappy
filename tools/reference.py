@@ -4,6 +4,7 @@
 Run it through the wrapper, which owns the environment:
 
     tools/reference.sh <file-or-directory>...
+    tools/reference.sh --style <file-or-directory>...   # into docs/style-references/ instead
 
 Three things happen to everything that goes in, and each of them is the point:
 
@@ -42,7 +43,10 @@ except ImportError:  # pragma: no cover - the wrapper installs it; a bare run ma
     HEIF = False
 
 REPO = Path(__file__).resolve().parent.parent
-FOLDER = REPO / "docs" / "reference"
+REFERENCE_FOLDER = REPO / "docs" / "reference"
+# The approved illustration-style references illustrated-png draws from -- flat, no subfolders,
+# see docs/style-references/README.md. --style routes the same shrink-and-strip pass here instead.
+STYLE_FOLDER = REPO / "docs" / "style-references"
 
 # The game's own design box -- see src/ui/screen_orientation.gd, which authors every screen
 # against 1280x720. A reference that fits the same box can be held up against a screenshot.
@@ -172,17 +176,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("paths", nargs="+", type=Path, help="photos, videos, or directories of them")
     parser.add_argument("--force", action="store_true", help="overwrite an existing file of the same name")
+    parser.add_argument(
+        "--style",
+        action="store_true",
+        help="place the result in docs/style-references/ instead of docs/reference/",
+    )
     args = parser.parse_args()
 
-    FOLDER.mkdir(parents=True, exist_ok=True)
-    # Godot walks every directory under the project and would import each of these as a texture,
-    # writing a .import sidecar per file and carrying them into the exported game. An empty
-    # .gdignore is the engine's own "this directory is not mine".
-    (FOLDER / ".gdignore").touch()
+    folder = STYLE_FOLDER if args.style else REFERENCE_FOLDER
+    dest = folder.relative_to(REPO).as_posix()
+    folder.mkdir(parents=True, exist_ok=True)
 
     failures = 0
     for source in sources(args.paths):
-        stem = FOLDER / slugify(source.stem)
+        stem = folder / slugify(source.stem)
         existing = [p for p in (stem.with_suffix(s) for s in (".jpg", ".png", ".mp4")) if p.exists()]
         if existing and not args.force:
             print(f"  refused (already there, use --force): {existing[0].name}")
@@ -207,14 +214,14 @@ def main() -> int:
             continue
         before = source.stat().st_size / 1e6
         after = out.stat().st_size / 1e6
-        print(f"  {source.name} -> docs/reference/{out.name}  ({before:.1f}MB -> {after:.1f}MB)")
+        print(f"  {source.name} -> {dest}/{out.name}  ({before:.1f}MB -> {after:.1f}MB)")
 
     # The one thing this script cannot do for you, said out loud rather than left in a rule
     # somebody has to remember. A camera stem is frequently the capture timestamp -- Google's
     # `PXL_YYYYMMDD_HHMMSSsss` is UTC to the millisecond -- so committing one puts back, in the
     # filename, the `DateTime` the pass above just stripped out of the EXIF.
     camera_named = sorted(
-        p.name for p in FOLDER.iterdir() if p.suffix.lower() in {".jpg", ".png", ".mp4"} and CAMERA_STEM.match(p.stem)
+        p.name for p in folder.iterdir() if p.suffix.lower() in {".jpg", ".png", ".mp4"} and CAMERA_STEM.match(p.stem)
     )
     if camera_named:
         print(f"\n{len(camera_named)} file(s) still carry a camera stem, e.g. {camera_named[0]}")

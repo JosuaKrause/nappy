@@ -239,17 +239,11 @@ func _cost_table() -> void:
 	var rows: Array = []
 	for def in EventCatalogue.all():
 		rows.append({"id": def.id, "walk": def.walk_through_cost(),
-				"run": _run_through_cost(def), "city_wide": def.city_wide,
+				"run": _run_through_cost(def),
 				"hard_fail": def.hard_fail, "flock": def.flock_size > 1,
 				"pursues": def.pursues, "emission": def.mean_emission_along_the_line(),
 				"intensity": def.intensity, "outer": def.outer_radius})
-	# City-wide rows first, the way the document keeps them: they have no line through them, so
-	# `walk_through_cost()` answers zero for them and sorting on that number would file them among
-	# the rows that genuinely cost nothing.
-	rows.sort_custom(func(a, b):
-		if a["city_wide"] != b["city_wide"]:
-			return a["city_wide"]
-		return a["walk"] < b["walk"])
+	rows.sort_custom(func(a, b): return a["walk"] < b["walk"])
 	print("| Event | walk through | run through |")
 	print("| --- | ---: | ---: |")
 	for row in rows:
@@ -258,8 +252,8 @@ func _cost_table() -> void:
 			mark = " *"
 		elif row["flock"]:
 			mark = " †"
-		var walk := "—" if row["city_wide"] else "%+.1f" % row["walk"]
-		var run := "—" if row["city_wide"] or row["pursues"] else "%+.1f" % row["run"]
+		var walk := "%+.1f" % row["walk"]
+		var run := "—" if row["pursues"] else "%+.1f" % row["run"]
 		print("| `%s`%s | %s | %s |" % [row["id"], mark, walk, run])
 
 	# What the table above is *made* of, and the column a decay change is read against. A row is
@@ -269,8 +263,6 @@ func _cost_table() -> void:
 	print("\n-- mean emission along the line, against a candidate walking decay --")
 	print("  %-20s %9s %9s %9s %9s" % ["event", "emission", "intensity", "outer", "walk@now"])
 	for row in rows:
-		if row["city_wide"]:
-			continue
 		print("  %-20s %9.2f %9.2f %9.0f %9.1f"
 				% [row["id"], row["emission"], row["intensity"], row["outer"], row["walk"]])
 

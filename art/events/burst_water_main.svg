@@ -1,24 +1,104 @@
-<!-- A hard seal: a crater with water spread across the asphalt and a municipal barrier at each
-     kerb — one picture spanning the street, native width 200 over the 192px this row obstructs,
-     drawn once by `_draw_wide_scene` the same way fallen_tree.svg is. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <g>
-    <path d="M6 12 L24 12 L24 30 L6 30 Z" fill="#e0d8c4"/>
-    <path d="M6 13 L24 13 L24 19 L6 25 Z M6 27 L24 21 L24 27 L15 30 L6 30 Z" fill="#c4503c"/>
-    <path d="M9 30 L8 39 M21 30 L23 39" fill="none" stroke="#58524d" stroke-width="2"/>
+<!-- A hard seal on a north-south street: the main under the carriageway has split, the asphalt
+     above it has heaved up into broken slabs around a crater, water fountains out of the break and
+     spreads across the road towards both kerbs, and a municipal barrier stands at each end.
+     Native width 200 over the 192px this row obstructs, drawn once by `_draw_wide_scene` the same
+     way fallen_tree.svg is, bottom edge on the ground point. The ground (puddle, crater, slabs) is
+     seen from overhead with the far inner wall showing; the fountain and the barriers stand upright
+     and are seen from the front. No shadow anywhere: the crater is sunk into the road. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <clipPath id="burst-h-board">
+      <rect x="0" y="10" width="20" height="14" rx="1"/>
+    </clipPath>
+  </defs>
+  <!-- Water running off towards each kerb, under everything else. -->
+  <path d="M50 45 C43 47 36 46 29 43.5 M150 44 C157 46 164 45 171 42.5" fill="none" stroke="#1f4460" stroke-width="3.4"/>
+  <path d="M50 45 C43 47 36 46 29 43.5 M150 44 C157 46 164 45 171 42.5" fill="none" stroke="#3b7fae" stroke-width="1.8"/>
+  <!-- The spreading puddle, darker along its near edge. -->
+  <path d="M36 37 C34 32 41 28 49 30 C54 25 63 25 69 24 L131 23 C138 24 147 25 152 29 C160 28 168 32 166 37 C170 42 163 46 155 45 C150 49 139 49 131 47 C124 50 112 50 104 48 C96 50.5 84 50 77 47 C69 50 56 49 50 46 C41 47 33 43 36 37 Z" fill="#3b7fae" stroke="#1f4460" stroke-width="0.9"/>
+  <path d="M38 41 C42 44.5 47 45.5 51 44.5 C56 47.5 66 48.5 72 46 L73 47.4 C66 49.6 56 49 50.4 46.6 C44 47.4 39 45 38 41 Z M128 46 C135 48 146 48 151 44.2 C157 45 163 43 165 40 C165 44 160 46.4 155 45.6 C150 49 139 49.4 131 47.4 Z" fill="#2c6690" stroke="none"/>
+  <path d="M42 36 C45 33 50 33 53 34 M147 32 C151 30.5 156 31 159 33 M56 44 C60 45 65 45 68 44 M133 45 C138 45.5 143 45 147 44" fill="none" stroke="#9fd3ea" stroke-width="1"/>
+  <path d="M46 39 C49 38 52 38 54 39 M152 37.5 C155 36.5 158 36.5 160 37.5" fill="none" stroke="#e6f6fb" stroke-width="0.8"/>
+  <!-- Slabs heaved up behind the far rim; the hole's edge cuts into them. -->
+  <path d="M76 19 L86 16.5 L91 20.5 L80 23.5 Z M110 18 L120 16.5 L125 20 L114 22.5 Z" fill="#5c5654"/>
+  <path d="M77 19 L85.6 17 M111 18 L119.6 16.8" fill="none" stroke="#8a8280" stroke-width="0.8"/>
+  <!-- The crater: a dark hole, the far wall lit, the ends in shade, water pooled in the bottom. -->
+  <path d="M64 34 L68 27 L76 25 L82 21 L91 23 L99 20 L108 22 L116 21 L124 24 L131 27 L136 33 L132 39 L124 42 L116 46 L106 44 L96 46 L86 44 L78 44 L70 40 Z" fill="#231b18"/>
+  <path d="M65.5 33.5 L68.8 27.6 L76.4 25.6 L82.2 21.8 L91 23.8 L99 20.8 L108 22.8 L116 21.8 L123.6 24.8 L130.4 27.6 L134.5 33 L129 31 L123 29.5 L116 28 L108 29 L99 27 L91 29.5 L82 28 L76 31 L69 33 Z" fill="#6b5140" stroke="none"/>
+  <path d="M68 30.5 L76 28.3 L82 25 L91 26.6 L99 24 L108 25.9 L116 25 L123 27 L131 30" fill="none" stroke="#8b6b52" stroke-width="0.8"/>
+  <path d="M69 28.2 L76.4 26.6 L82.4 23 M99 21.8 L107.6 23.8 M116.4 22.8 L123.4 25.6" fill="none" stroke="#a5856a" stroke-width="0.7"/>
+  <path d="M65.5 34 L69 33 L74 36.5 L70.5 39.5 Z M134.5 33.2 L129 31 L126 36 L131.8 38.6 Z" fill="#3a2c25" stroke="none"/>
+  <g fill="#4a3a30" stroke="none">
+    <path d="M75 34.6 L77.6 33.8 L77.4 35.6 Z M85 32.6 L87.4 32 L87 33.8 Z M114 32.4 L116.6 32 L116 33.8 Z M124 34.4 L126.4 33.8 L126 35.6 Z"/>
   </g>
-  <path d="M43 31 L52 23 L66 25 L77 19 L91 23 L103 18 L116 23 L130 20 L143 25 L160 23 L171 31 L164 39 L149 37 L135 43 L119 39 L105 45 L90 41 L74 45 L62 39 L49 40 Z" fill="#3e3a38"/>
-  <path d="M52 32 Q72 25 91 31 Q110 36 128 29 Q147 24 164 33 Q145 44 123 40 Q102 37 83 43 Q63 46 52 32 Z" fill="#326f98"/>
-  <path d="M57 31 Q78 27 95 33 Q111 38 130 31 Q145 27 159 32" fill="none" stroke="#78b4d0" stroke-width="2"/>
-  <path d="M46 28 L69 28 L75 33 L68 37 L45 36 Z M170 29 L148 29 L143 34 L149 38 L172 37 Z" fill="#657581"/>
-  <path d="M48 29 L66 29 L66 36 L47 35 Z M153 30 L170 30 L171 36 L153 37 Z" fill="#87969e"/>
-  <ellipse cx="69" cy="33" rx="4.5" ry="4" fill="#1f2930" stroke="#a5b0b4" stroke-width="1.2"/>
-  <ellipse cx="149" cy="34" rx="4.5" ry="4" fill="#1f2930" stroke="#a5b0b4" stroke-width="1.2"/>
-  <path d="M66 32 Q69 29 72 32 M146 33 Q149 30 152 33" fill="none" stroke="#c0c8c9" stroke-width="1"/>
-  <path d="M71 33 Q87 21 99 34 Q111 45 125 32" fill="none" stroke="#6fa3c4" stroke-width="3"/>
+  <path d="M72 38 C84 34.5 116 34.5 129.5 37 L124 41.5 L116 45 L106 43 L96 45 L86 43 L78 43 Z" fill="#2c6690" stroke="#1f4460" stroke-width="0.7"/>
+  <path d="M78 40 C82 39 86 39 89 40 M112 39.8 C116 38.8 120 39 123 40" fill="none" stroke="#74b3d6" stroke-width="0.8"/>
+  <!-- The split main along the street: the far length out of the far wall, the near length
+       under the near rim, both broken mouths open. -->
+  <path d="M96.5 23.5 L103.5 23.5 L103.5 31 L96.5 31 Z" fill="#5d6a73"/>
+  <path d="M97.7 24 L97.7 30.5" fill="none" stroke="#8b99a1" stroke-width="1.2"/>
+  <path d="M102.3 24 L102.3 30.5" fill="none" stroke="#3a4248" stroke-width="1.2"/>
+  <ellipse cx="100" cy="31.4" rx="3.4" ry="1.5" fill="#12171b" stroke="#8b99a1" stroke-width="0.9"/>
+  <path d="M96.5 40 L103.5 40 L103.5 45.5 L96.5 45.5 Z" fill="#5d6a73"/>
+  <path d="M97.7 40.5 L97.7 45" fill="none" stroke="#8b99a1" stroke-width="1.2"/>
+  <ellipse cx="100" cy="40" rx="3.4" ry="1.5" fill="#12171b" stroke="#8b99a1" stroke-width="0.9"/>
+  <!-- Heaved slabs of asphalt around the side and near rim: a lit top, a dark broken edge. -->
   <g>
-    <path d="M176 12 L194 12 L194 30 L176 30 Z" fill="#e0d8c4"/>
-    <path d="M176 13 L194 13 L194 19 L176 25 Z M176 27 L194 21 L194 27 L185 30 L176 30 Z" fill="#c4503c"/>
-    <path d="M179 30 L178 39 M191 30 L193 39" fill="none" stroke="#58524d" stroke-width="2"/>
+    <path d="M57 35 L61 38 L71 36 L71 38.6 L61 40.6 L57 37.6 Z M131 35 L141 37 L145 30 L145 32.6 L141 39.6 L131 37.6 Z M72 45 L78 48 L89 46 L89 47.8 L78 49.6 L72 46.8 Z M113 47.6 L124 47 L128 43 L128 44.8 L124 49.2 L113 49.6 Z" fill="#2f2a2b"/>
+    <path d="M56 30 L65 25 L73 28 L71 36 L61 38 L57 35 Z M127 26 L137 25 L145 30 L141 37 L131 35 Z M74 42 L85 42 L89 46 L78 48 L72 45 Z M110 44 L120 41 L128 43 L124 47 L113 47.6 Z" fill="#5c5654"/>
+    <path d="M57 30.2 L64.8 26 L72 28.6 M128 26.4 L136.6 25.8 L143.8 30 M75 42.6 L84.4 42.6 M111 44.4 L119.8 41.8 L127 43.4" fill="none" stroke="#8a8280" stroke-width="0.8"/>
+    <path d="M60 33 L66 31.5 M133 29 L138 31" fill="none" stroke="#3e3839" stroke-width="0.6"/>
+    <path d="M142 41 L146 40 L147 42.4 L143 43 Z M53 40 L56.5 39.4 L56 41.8 Z" fill="#5c5654" stroke-width="0.7"/>
+  </g>
+  <!-- The fountain out of the break: a crown of foam on the pool, a column shaded on its right,
+       two falling arcs and loose drops. -->
+  <path d="M88 36.5 C90 33 93 34 95 32.5 C97 35 103 35 105 32.5 C107 34 110 33 112 36.5 C106 39 94 39 88 36.5 Z" fill="#eef7fa" stroke="#1f4460" stroke-width="0.8"/>
+  <path d="M93 12 C86 10 80 14 78 22 C81 17 86 15 93 15.5 Z M107 12 C114 10 120 14 122 22 C119 17 114 15 107 15.5 Z" fill="#9fd3ea" stroke="#1f4460" stroke-width="0.8"/>
+  <path d="M95.5 35 C95 28 93.5 21 92.5 15 C91.5 10 94 6.5 97 7.5 C98.5 4 101.5 4 103 7.5 C106 6.5 108.5 10 107.5 15 C106.5 21 105 28 104.5 35 Z" fill="#9fd3ea" stroke="none"/>
+  <path d="M101.5 35 C102.5 28 104 21 105 15 C106 11 105 8.5 103.5 8 C106 7.5 108.2 10.5 107.5 15 C106.5 21 105 28 104.5 35 Z" fill="#6fb0d4" stroke="none"/>
+  <path d="M97.5 34 C97 26 96.5 18 97.2 11 C98 9.4 99.4 9.4 99.8 11 C100 18 99.8 26 99.4 34 Z" fill="#e6f6fb" stroke="none"/>
+  <path d="M95.5 35 C95 28 93.5 21 92.5 15 C91.5 10 94 6.5 97 7.5 C98.5 4 101.5 4 103 7.5 C106 6.5 108.5 10 107.5 15 C106.5 21 105 28 104.5 35" fill="none" stroke="#1f4460" stroke-width="1"/>
+  <g fill="#cfeaf4" stroke="#1f4460" stroke-width="0.6">
+    <circle cx="77" cy="25.5" r="1.4"/>
+    <circle cx="123" cy="25.5" r="1.4"/>
+    <circle cx="74" cy="18.5" r="1"/>
+    <circle cx="126" cy="18" r="1"/>
+    <circle cx="88" cy="6" r="1"/>
+    <circle cx="112.5" cy="5" r="1.1"/>
+    <circle cx="83" cy="10.5" r="0.9"/>
+    <circle cx="117.5" cy="9.5" r="0.9"/>
+  </g>
+  <!-- A municipal barrier at each end: a striped board on splayed legs with a warning lamp. -->
+  <g transform="translate(5 0)">
+    <path d="M4 23 L4.5 36 M16 23 L15.5 36" fill="none" stroke="#2a2226" stroke-width="3"/>
+    <path d="M4 23 L4.5 36 M16 23 L15.5 36" fill="none" stroke="#4a443e" stroke-width="1.4"/>
+    <path d="M2.5 23 L1.8 40 M17.5 23 L18.2 40" fill="none" stroke="#2a2226" stroke-width="3.4"/>
+    <path d="M2.5 23 L1.8 40 M17.5 23 L18.2 40" fill="none" stroke="#6b6357" stroke-width="1.8"/>
+    <path d="M0 10 L20 10 L20 24 L0 24 Z" fill="#e8dfc8" stroke="none"/>
+    <g clip-path="url(#burst-h-board)" stroke="none">
+      <path d="M-8 10 L-2 10 L5 24 L-1 24 Z M4 10 L10 10 L17 24 L11 24 Z M16 10 L22 10 L29 24 L23 24 Z" fill="#c4503c"/>
+      <path d="M0 20.5 L20 20.5 L20 24 L0 24 Z" fill="#3b2020" fill-opacity="0.24"/>
+      <path d="M0.8 11.3 L19.2 11.3" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="0.9"/>
+    </g>
+    <rect x="0" y="10" width="20" height="14" rx="1" fill="none" stroke-width="1.2"/>
+    <path d="M8.5 10 L8.5 7.8 L11.5 7.8 L11.5 10 Z" fill="#3a3436"/>
+    <circle cx="10" cy="5.6" r="2.5" fill="#f2b53a"/>
+    <circle cx="9.2" cy="4.8" r="0.85" fill="#fff3c4" stroke="none"/>
+  </g>
+  <g transform="translate(175 0)">
+    <path d="M4 23 L4.5 36 M16 23 L15.5 36" fill="none" stroke="#2a2226" stroke-width="3"/>
+    <path d="M4 23 L4.5 36 M16 23 L15.5 36" fill="none" stroke="#4a443e" stroke-width="1.4"/>
+    <path d="M2.5 23 L1.8 40 M17.5 23 L18.2 40" fill="none" stroke="#2a2226" stroke-width="3.4"/>
+    <path d="M2.5 23 L1.8 40 M17.5 23 L18.2 40" fill="none" stroke="#6b6357" stroke-width="1.8"/>
+    <path d="M0 10 L20 10 L20 24 L0 24 Z" fill="#e8dfc8" stroke="none"/>
+    <g clip-path="url(#burst-h-board)" stroke="none">
+      <path d="M-8 10 L-2 10 L5 24 L-1 24 Z M4 10 L10 10 L17 24 L11 24 Z M16 10 L22 10 L29 24 L23 24 Z" fill="#c4503c"/>
+      <path d="M0 20.5 L20 20.5 L20 24 L0 24 Z" fill="#3b2020" fill-opacity="0.24"/>
+      <path d="M0.8 11.3 L19.2 11.3" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="0.9"/>
+    </g>
+    <rect x="0" y="10" width="20" height="14" rx="1" fill="none" stroke-width="1.2"/>
+    <path d="M8.5 10 L8.5 7.8 L11.5 7.8 L11.5 10 Z" fill="#3a3436"/>
+    <circle cx="10" cy="5.6" r="2.5" fill="#f2b53a"/>
+    <circle cx="9.2" cy="4.8" r="0.85" fill="#fff3c4" stroke="none"/>
   </g>
 </svg>

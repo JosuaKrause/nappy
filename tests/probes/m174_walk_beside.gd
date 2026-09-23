@@ -25,8 +25,8 @@ extends RefCounted
 ## `City._ground_decay_multiplier()`'s fallback — because that is where all three named rows are
 ## placed (`SIDEWALK`/`SQUARE`, none of calm, alley, precinct or main road).
 ##
-## **What is excluded**, and why none of it is "a place to stand beside": `city_wide` rows (no
-## position), zero-intensity rows (nothing to receive), the two free lists `tests/test_events.gd`
+## **What is excluded**, and why none of it is "a place to stand beside": zero-intensity rows
+## (nothing to receive), the two free lists `tests/test_events.gd`
 ## already names (`_SCENERY`, priced at zero on purpose; the detainers, priced through their own
 ## capture rather than a field), anything `AHEAD_OF_PLAYER` (three seconds of cat, never a place),
 ## and anything that pursues or waits to (the encounter is a chase, not a walk beside a field).
@@ -68,7 +68,7 @@ func run(t) -> void:
 	t.check(true, "zz_m174 walk-beside probe ran")
 
 func _walkable_beside(def: EventDef) -> bool:
-	if def.city_wide or def.intensity <= 0.0:
+	if def.intensity <= 0.0:
 		return false
 	if def.id in _SCENERY or def.id in _DETAINERS:
 		return false
