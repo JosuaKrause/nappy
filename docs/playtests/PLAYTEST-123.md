@@ -185,3 +185,13 @@ On the combined sheet (every kind intact and torn three ways, and fronts with pl
     face, and the two-X copy adds the neighbor's slot, for a run where day 10 failed. This
     replaces the orchestrator's split in statement 28.
 
+The orchestrator pointed out that the one-X copy crosses a face that is never the neighbor's, so
+the neighbor's cross is always the second, and asked whether to keep a no-X copy as well.
+
+> "if it's always Xed out then it cannot be mistaken with the neighbor" · "only X and double X"
+> · "sgtm"
+
+30. **The wanted notice has two copies: one X and two Xs.** The one-X copy crosses a face that is
+    never the neighbor's; the two-X copy adds the neighbor's slot. There is no copy without an X,
+    which replaces statements 28 and 29.
+
