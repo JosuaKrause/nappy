@@ -123,3 +123,20 @@ yard seen through its fence. It asked whether a power-station reference was want
     red X over the bottom-left face. Flat fills, clean dark outlines, muted colors; the repeats on
     the sheet are the same kinds (statement 14).
 
+## On the fourth pass, the torn variants, the station and the masts
+
+The orchestrator showed the fourth poster sheet (drawn from the player's reference sheet), the
+three torn variants (A the leader, B the rules with a flap, C the uniform sheet), the power
+station's redrawn street front, and asked which torn variant to keep.
+
+> "yes, one per kind or make it a mask that can be applied on a given poster (subtractive
+> composite). all three looks good. vary between the torn pattern. power station looks good.
+> mast in 292 is weird. it's in the middle of the road"
+
+20. **A torn poster exists for every kind**, either drawn per kind or as a tear mask applied to
+    any poster by subtractive composite.
+21. **All three torn variants are good, and the tear pattern varies** between them.
+22. **The power station's redrawn front is accepted.**
+23. **A loudspeaker mast does not stand in the middle of the road**: the one in PR 292's picture
+    does.
+
