@@ -547,8 +547,12 @@ rest of a front is not, so the standard door stands out.
       wtwwwwtw
       ```
 
-      The flights must meet the landings from floor to floor, the ground-floor platform must
-      match the texture's own, and the plant variant stays.
+      The texture is the balcony with its diagonal flight hanging below it, and every flight
+      faces the same direction, always — up a stack and across both variants, which differ only
+      in the plant (statements 14 and 15). The flights must meet the landings from floor to
+      floor, the ground-floor platform must match the texture's own, and the plant variant stays.
+      The ground floor's platform is a picture of its own, derived from the stair picture with
+      the stairs removed (statement 16).
 - [ ] **Then the whole front is looked at again**, the standard entrance door included: stills of
       a residential, a commercial and an industrial street at the ordinary view and zoomed out,
       before and after. The door is changed only if it still pops out.

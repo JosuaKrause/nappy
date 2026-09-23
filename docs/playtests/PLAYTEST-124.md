@@ -100,3 +100,18 @@ animals (PR 300) and street obstructions (PR 301):
     platform at the texture's top end, with no ladder — so nothing of the escape comes down to
     the sidewalk. In the example, a five-story front has the escape on its three middle floors,
     the platform alone on the ground floor, and plain wall on the top floor.
+
+## Then, on which fire escape picture is stacked
+
+> "the diagonal stairs are okay -- also, don't alternate the sides -- make both stairs face the
+> same direction. always"
+
+14. **The stacked fire escape is the balcony with its diagonal flight** hanging below it, the
+    first redraw: the flight comes down from each balcony to the one below.
+15. **Every flight faces the same direction, always**: the flights do not alternate up a stack,
+    and the two variants are not mirrored.
+
+> "you need to derive a texture without stairs though"
+
+16. **The ground floor's platform is its own texture**, derived from the stair picture with the
+    stairs taken out, rather than the stair picture cut short.
