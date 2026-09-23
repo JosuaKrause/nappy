@@ -195,3 +195,13 @@ the neighbor's cross is always the second, and asked whether to keep a no-X copy
     never the neighbor's; the two-X copy adds the neighbor's slot. There is no copy without an X,
     which replaces statements 28 and 29.
 
+Asked about the day-8 front, where two uniform sheets sit slightly off-center over older sheets
+and a sliver of the older one shows at an edge, as the M180 progression's "pasted over the older
+ones" asks:
+
+> "one note -- it looks like there was an attempt to put multiple posters on top of each other?"
+> · "it looks odd -- the offset should be a bit bigger so it doesn't look like a glitch"
+
+31. **A poster pasted over an older one is offset enough to read as deliberate**: more than a
+    sliver of the older sheet shows, so it does not look like a drawing glitch.
+
