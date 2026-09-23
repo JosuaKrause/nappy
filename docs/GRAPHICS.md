@@ -367,7 +367,7 @@ scene or resource reads any of them yet — placing them on a building face, the
 them and tearing one down are later slices.
 
 Each is a 32×32 canvas matching a wall tile's own grid, so a later placement can register
-straight onto a wall cell the way `wall_base.svg` already does. Every file is a 20×22px sheet
+straight onto a wall cell the way `wall_base.svg` already does. Every poster is a 20×22px sheet
 (62.5% × 69% of the tile) at x 6–26, y 3–25: a gap on all four sides of its tile, and the foot
 clear of the plinth `wall_base.svg` draws from y 26. A poster goes on blank wall, never over a
 window (`docs/playtests/PLAYTEST-123.md`, statement 13), so a ground floor that carries posters
@@ -381,9 +381,25 @@ needs cells without one.
 | `poster_uniform.svg` | The dark uniform sheet: a cream emblem invented for this game, like the letter phi on a base — a tall ring, a vertical bar through it standing out above and below, on a flat foot bar — matching no real flag, party, state or movement mark. |
 | `poster_wanted.svg` | The wanted notice: gray-beige paper under an inset dark header, four 7×5 mugshot frames in two rows of two, each a dark head-and-shoulders silhouette in a thin dark frame with one gray print line beneath it — a different style from the leader's coloured portrait. The top-right face is crossed out in red on every copy. The bottom-left frame, the SVG group `neighbor_slot` (top-left corner at 8,16), is a placeholder adult standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their figure. |
 | `poster_wanted_crossed.svg` | The same sheet with a red X over the `neighbor_slot` face as well, for a day 10 whose task was not done on the day she won. |
-| `poster_torn.svg` | The leader's portrait torn down, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top and upper left still pasted with the scowling brows and eyes, and a scrap of the bottom-right corner. Every torn file is an intact kind clipped along an irregular tear with a pale paper-core fringe and a faint shadow under it, over the bare wall where the sheet was — a faint shade darker, with glue marks and paper crumbs. The torn files still carry the earlier print of the leader, the rules and the uniform sheet (a ring-and-T emblem), not the reference sheet's. |
-| `poster_torn_rules.svg` | The rules notice torn down: the header strip kept, a peeled flap hanging off the tear with its blank back showing, and a corner scrap with part of the red stamp. One of three torn variants for the player to choose between. |
-| `poster_torn_uniform.svg` | The uniform sheet torn down: a ragged strip down the left edge with half the emblem's ring, and a small scrap in the top-right corner. One of three torn variants for the player to choose between. |
+| `poster_tear_a_mask.svg`, `poster_tear_a_overlay.svg` | Tear A, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top and upper left of the sheet stay pasted, plus a scrap of the bottom-right corner. |
+| `poster_tear_b_mask.svg`, `poster_tear_b_overlay.svg` | Tear B: a strip across the top stays pasted, plus a scrap of the bottom-right corner; the overlay adds a flap peeled from the lower left, hanging off the strip with its blank back showing, the crease dark at the fold and a shadow on the wall. |
+| `poster_tear_c_mask.svg`, `poster_tear_c_overlay.svg` | Tear C: a ragged strip down the left edge stays pasted, plus a small scrap in the top-right corner. |
+
+**A torn poster is any intact kind with a tear applied**, so every kind tears three ways and no
+torn file carries print. Each tear is two files on the same 20×22 sheet box: a mask, opaque
+where the paper stays (its colour is unused), and an overlay carrying no print — the faint
+shadow and pale paper-core fringe along each tear, and the bare wall where the sheet was, a
+faint shade darker (cut around the kept paper with an even-odd fill, so the remnant is not
+darkened), with glue marks and paper crumbs. The recipe, per pixel, with the poster, the mask
+and the overlay rendered at the same scale and registration:
+
+1. `torn.rgb = poster.rgb`, `torn.a = poster.a × mask.a`;
+2. the overlay is drawn over `torn` with ordinary source-over blending;
+3. the result is drawn on the wall cell like any intact poster.
+
+A mask stays inside the sheet box, so the result registers on a wall cell exactly as the intact
+poster does; overlay B's hanging flap and its shadow reach about a pixel past the box's left
+edge, still inside the tile.
 
 No sheet carries readable words — every print line, header and stamp is a colour block or a gray
 line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the politics).
@@ -396,6 +412,6 @@ intact kind on a single blank ground-row wall cell at game scale (2×, the camer
 at 4× that, plus three building fronts assembled from the real `art/buildings/` wall, window,
 edge and plinth textures, multiplied by a building colour and each act's own cast
 (`Palette.act_tint()`), carrying one row of posters at the day 4/day 8/day 12 densities M180's
-own table asks for, on the ground floor's blank cells. [The torn poster sheet](evidence/poster-art-review-2026-09-23-torn.png)
-shows the three torn files alone at game scale and at 4× that, and each on blank ground-row wall
-beside the intact poster it was, at game scale and at 2× that.
+own table asks for, on the ground floor's blank cells. [The tear sheet](evidence/poster-art-review-2026-09-23-tear-masks.png)
+shows every tear applied to every intact kind by that recipe, on blank ground-row wall cells at
+game scale and at 4× that, then each mask and overlay alone.
