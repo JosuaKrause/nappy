@@ -19,6 +19,17 @@ tools/reference.sh --force one-that-is-already-there.jpg
 hand-copied photo has none of it — which is not a tidiness problem, because the second guarantee
 is a privacy one.
 
+## The script needs a file on disk, not a picture in the conversation
+
+`tools/reference.sh` takes a path and cannot act on a picture that has none. An image pasted into
+the prompt from a clipboard — a screenshot, something copied out of a browser tab or out of an
+image generator — arrives in the session as image data with no file behind it: the session can see
+it, shown as `[Image #n]`, but has nothing to hand the script or an agent. An image *attached* from
+a saved file carries a real path and works exactly like any other input. The CLI shows both the
+same way, so when a picture shows up with no path attached to it, ask where it is saved, or ask for
+it to be dragged in from Finder or the Downloads folder, rather than describing what it shows —
+a description is not a file the script can shrink and strip.
+
 ## What the folder is, and what it is not
 
 **Reference is an *input to drawing*: a photograph of the real thing, held up next to the art.**

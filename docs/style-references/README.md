@@ -22,5 +22,11 @@ this folder rather than into `docs/reference/`. Rename it by subject as that ski
 its row to the table above, and say what family and role it serves before citing it from a
 generation record.
 
+The source has to be a file on disk: a picture pasted into the prompt from a clipboard has no path
+behind it and cannot be handed to the script, even though the session can see it. Ask where it is
+saved, or have it dragged in from Finder or the Downloads folder, before running the command above
+— see the reference-photos skill, "The script needs a file on disk, not a picture in the
+conversation".
+
 Raw evidence, review sheets, run captures and generation records stay in `docs/evidence/`; only an
 approved style reference belongs here.
