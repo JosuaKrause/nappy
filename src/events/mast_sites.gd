@@ -24,10 +24,10 @@ class Site extends RefCounted:
 
 ## The chosen sites, in a stable order (`mast_0`, `mast_1`, …) so the id a plan or a save carries
 ## today is the same id tomorrow. Never on the home street, and never with a field that would reach
-## the doorstep or a calm block's interior — checked here, before a site is ever offered, rather
-## than repaired once six have already been chosen (`docs/DECISIONS.md`, the city and events
-## non-choices: "closures and events are checked before they are accepted, never repaired
-## afterwards").
+## the doorstep, a calm block's interior, or where a region door could ever stand — checked here,
+## before a site is ever offered, rather than repaired once six have already been chosen
+## (`docs/DECISIONS.md`, the city and events non-choices: "closures and events are checked before
+## they are accepted, never repaired afterwards").
 static func compute(map: CityMap) -> Array[Site]:
 	var candidates := _eligible_candidates(map)
 	if candidates.is_empty():
@@ -167,11 +167,13 @@ static func _main_road_sites(map: CityMap) -> Array[Vector2]:
 			found.append(snapped)
 	return found
 
-## Refuses the home street and a field reaching the doorstep or a calm interior. Both margins are
-## generous on purpose — a site excluded here is simply not offered to the farthest-point sampling
-## above, so refusing a little too much costs variety and refusing too little costs the guarantee.
+## Refuses the home street, a field reaching the doorstep or a calm interior, and a field reaching
+## where a region door could ever stand. Every margin is generous on purpose — a site excluded here
+## is simply not offered to the farthest-point sampling above, so refusing a little too much costs
+## variety and refusing too little costs a guarantee.
 static func _is_eligible(at: Vector2, map: CityMap) -> bool:
-	return not _too_close_to_home(at, map) and not _reaches_a_calm_interior(at, map)
+	return not _too_close_to_home(at, map) and not _reaches_a_calm_interior(at, map) \
+			and not _reaches_a_possible_door(at, map)
 
 static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
 	var margin := Tuning.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
@@ -195,6 +197,33 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 				-Tuning.MAST_CALM_INTERIOR_MARGIN)
 		if interior.has_area() and _circle_touches_rect(at, reach, interior):
 			return true
+	return false
+
+## Whether a mast's own field, planted here, would reach inside `Tuning.CHECKPOINT_EVENT_GAP` of
+## where a region door could ever stand — every boundary segment's own door position, not only the
+## doors today's `RegionPlanner.plan_day()` happens to open. `RegionPlanner.assign()` partitions
+## the city into regions and decides which end of each boundary segment its wall stands at
+## (`map.boundary_wall_at_a`) once, at generation, before a day or a route tree exists
+## (`CityGenerator.generate()` calls it directly) — so a boundary segment's own door position is
+## exactly as day-independent as `MastSites` itself, and refusing near it here keeps "the same
+## places every day" rather than trading it for a per-day check. The three points a street door
+## would stand at (two huts and a gate) are `RegionPlanner._add_door_bodies()`'s own math, read
+## from the same public calls it makes; an alley door is not checked here, since a through-alley's
+## own crossing needs `RegionPlanner`'s private detection of which alleys actually cross a
+## boundary — `EventScheduler._place_masts()`'s own `_clear_of_the_doors()` check is the safety net
+## for that and for anything this misses, exactly as it is for held ground.
+## *(2026-09-23, CI on PR 292, tests/test_checkpoints.gd: "nothing the day placed reaches inside a
+## door's 176px gap" — the gap this had never checked at all.)*
+static func _reaches_a_possible_door(at: Vector2, map: CityMap) -> bool:
+	var limit := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.by_id("loudspeaker").field_reach()
+	for segment in RegionPlanner.boundary_segments(map):
+		var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
+				< RegionPlanner.region_of_junction(map, segment.b)
+		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+		var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
+		for position in SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE):
+			if at.distance_to(position) < limit:
+				return true
 	return false
 
 static func _circle_touches_rect(at: Vector2, radius: float, rect: Rect2) -> bool:

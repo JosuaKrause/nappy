@@ -177,7 +177,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 
 	planned.append_array(_place_ambient(day, map, heat))
 	planned.append_array(_place_scars(day, scars, heat))
-	planned.append_array(_place_masts(day, map, heat))
+	planned.append_array(_place_masts(day, map, heat, doors))
 	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
 			leave_alone, corridor, heat, doors)
@@ -699,10 +699,20 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## a closure or a wall is one street's own width, not the whole city — and it costs a day's worth
 ## of one mast rather than a guarantee.
 ##
+## **And a day whose own doors it would reach.** `MastSites._reaches_a_possible_door()` already
+## refuses a site near *any* boundary segment's own door position — the boundary and the wall's
+## own end are fixed at generation (`RegionPlanner.assign()`), so that exclusion is as
+## day-independent as the sites themselves, and it is `MastSites`' own count that shows how few
+## sites it actually costs. `doors` is only today's *open* doors, narrower than every boundary
+## segment could ever be, so this second check is a safety net for whatever the siting-time
+## exclusion cannot see (an alley door among them) rather than the rule's main work — see
+## `_clear_of_the_doors()`, the same guarantee `tests/test_checkpoints.gd` holds for every row.
+##
 ## On `Tuning.CURFEW_ANNOUNCE_DAY` every standing site also gets a `curfew_announce` plan
 ## alongside its ordinary `loudspeaker` one — see that row's own doc for why a second, invisible
 ## plan is what "the masts carry the announcement" means rather than a second mast.
-static func _place_masts(day: int, map: CityMap, heat: int = 0) -> Array[Planned]:
+static func _place_masts(day: int, map: CityMap, heat: int = 0,
+		doors := PackedVector2Array()) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
 		return planned
@@ -712,6 +722,9 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0) -> Array[Planned
 	for site in MastSites.compute(map):
 		var tile := map.world_to_tile(site.foot)
 		if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
+			continue
+		if not _clear_of_the_doors(site.foot, PackedVector2Array(), doors,
+				loudspeaker.field_reach()):
 			continue
 		var mast := Planned.new(loudspeaker, site.foot)
 		mast.mast_id = site.id

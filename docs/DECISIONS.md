@@ -34,7 +34,9 @@ in the road — the player's catch; every site now snaps to sidewalk or square, 
 shouting's. Every square counts as a commercial square. A junction corner is the sidewalk tile
 nearest a box corner. The home-street and calm margins. A 6px pole body. The curfew as a second
 invisible plan stacked on the broadcast rather than replacing it. **A mast whose site is held on a
-day does not stand that day** rather than moving, a narrow gap in "the same places every day".
+day, or reaches a door the siting-time refusal missed (an alley door, since that refusal is stated
+over every boundary segment's own street door and not the private detection an alley crossing
+needs), does not stand that day** rather than moving, a narrow gap in "the same places every day".
 Run-long silencing belongs to M181's day 11.
 
 **The items as the queue held them when this was built:**
