@@ -53,6 +53,7 @@ func run(t) -> void:
 	_test_the_burnt_shell_task_rides_the_recorded_scar(t)
 	_test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
 	_test_the_door_task_sits_at_a_region_door(t)
+	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 
@@ -1376,6 +1377,60 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 		t.check(on_a_door, "exactly at one of today's own region doors")
 
 		director.free())
+
+## `allow_held` (`docs/DECISIONS.md`, M181) skips `is_held_at()` outright, and `is_held_at()` is
+## the half of "nothing on the home block" that covers the streets around it, not just the lot
+## `is_on_home_block()` covers — so without `_place_at_a_door()`'s own home-border filter, a door
+## on one of those streets would sit through the held carve-out along with the rest. Sweeps the
+## same seed set `_test_no_alley_robbery_stands_near_the_doorstep` does; several draws per city
+## (`_pick_reachable()` picks uniformly among every reachable door) rather than one, because a
+## single draw could miss the one candidate that borders the home block even with the filter
+## deleted. Seed 2295276695 is where a home-bordering door actually exists on day 9 — measure
+## again with `tools/test.sh probes/<name>.gd` naming that seed and printing `RegionPlanner.
+## plan_day`'s own doors against `StreetNetwork.around_blocks` if this ever needs re-checking.
+func _test_the_door_task_never_borders_the_home_block(t) -> void:
+	var seeds: Array[int] = [4242, 90210, 2295276695, 291862120, 314159, 555555]
+	var day := 9
+	var draws := 20
+	var checked := 0
+	for seed_value: int in seeds.slice(0, RULE_SEEDS):
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(CityGenerator.generate(seed_value))
+		var closure_state := CityState.new()
+		closure_state.begin_day(city.map.block_plans, day)
+		var closure_rng := RandomNumberGenerator.new()
+		closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
+		city.start_day(closure_state, day, closure_rng)
+		var events_rng := RandomNumberGenerator.new()
+		events_rng.seed = hash("%d:events:%d" % [seed_value, day])
+		city.events.start_day(day, events_rng, [], city.map.doorstep_world_position())
+
+		var home_border := StreetNetwork.around_blocks(
+				Rect2i(city.map.home_block, Vector2i.ONE))
+		var home_border_keys := {}
+		for segment in home_border:
+			home_border_keys[segment.key()] = true
+
+		var director := ResistanceDirector.new()
+		t.add_child(director)
+		director.set_process(false)
+		director.setup(city, city.map)
+		for draw in draws:
+			var door_rng := RandomNumberGenerator.new()
+			door_rng.seed = hash("%d:door:%d:%d" % [seed_value, day, draw])
+			var at: Vector2 = director._place_at_a_door(door_rng)
+			if at == Vector2.INF:
+				continue
+			checked += 1
+			var segment := StreetNetwork.segment_containing(city.map.world_to_tile(at))
+			var bordering := segment != null and home_border_keys.has(segment.key())
+			t.check(not bordering,
+					("seed %d day %d draw %d: the door task never sits on a segment bordering " +
+					"the home block") % [seed_value, day, draw])
+		director.free()
+		city.free()
+	t.check(checked > 0, "some (seed, draw) actually placed a door contact to check (%d)" % checked)
 
 func _test_the_swing_task_sits_at_an_open_playground(t) -> void:
 	_build_city(t)

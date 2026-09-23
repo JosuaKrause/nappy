@@ -334,20 +334,35 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 ## candidates way `_pick_reachable()` already chooses a mark's alley. `Vector2.INF` if the city
 ## opened none, which does not happen on this task's own day: `Tuning.REGION_WALL_FIRST_DAY`
 ## equals the day this task is offered on.
+##
+## **Dropped before `_pick_reachable()` sees them: doors whose own segment borders the home
+## block.** `RegionPlanner._union_atoms()` only atomises the one street the doorstep notch opens
+## onto (`ClosurePlanner.home_street()`), so the block's other bordering segments are ordinary
+## boundary segments and can become doors like any other, on a city where the day's tree happens
+## to cross one. `allow_held` below skips `is_held_at()` outright, and `is_held_at()` is the half
+## of "nothing on the home block" that covers these streets (`CityMap.is_on_home_block`'s own doc
+## names `is_held_at` as the other half) — so without this filter a door on that ground would pass
+## through the held carve-out it was never meant to cover.
 func _place_at_a_door(rng: RandomNumberGenerator) -> Vector2:
 	var plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
 	if not plan or plan.doors.is_empty():
 		return Vector2.INF
+	var home_border := {}
+	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
+		home_border[segment.key()] = true
 	var candidates: Array[Vector2i] = []
 	for segment in plan.doors:
+		if home_border.has(segment.key()):
+			continue
 		var rect := segment.tile_rect()
 		candidates.append(rect.position + rect.size / 2)
-	# `allow_held` is not optional here, it is the whole placement: every one of these tiles
-	# sits on a segment `EventManager.start_day()` already held for the day (held so no catalogue
-	# row may be sited on a door — see `CityMap.held_segments`), and this director runs after
-	# that. The held filter would refuse the exact ground the task names: with it applied, every
-	# door candidate read `held` and step 8 answered `Vector2.INF` in every run — "nowhere to
-	# go" — so the crossing task never appeared at all.
+	# `allow_held` is not optional here, it is the whole placement: every remaining tile sits on
+	# a segment `EventManager.start_day()` already held for the day (held so no catalogue row may
+	# be sited on a door — see `CityMap.held_segments`), and this director runs after that. The
+	# held filter would refuse the exact ground the task names: with it applied, every door
+	# candidate read `held` and step 8 answered `Vector2.INF` in every run — "nowhere to go" — so
+	# the crossing task never appeared at all. It does not reopen the home-block exemption: that
+	# ground was filtered out above, before `allow_held` ever gets a say.
 	return _pick_reachable(candidates, rng, true)
 
 ## Where day 12's task points: the swing of one specific park's playground —
@@ -400,8 +415,15 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## ground means *no hazard or catalogue row may be sited here*; a contact is neither, and for a
 ## step whose candidates are the held region-door segments themselves (`_place_at_a_door()`) the
 ## filter would refuse the very ground the task points at. It did — see that call's own note.
-## The other four refusals stand even then: a door on closed, unwalkable, home-block or
+## The other four refusals stand even then: a door on closed, unwalkable, home-block-lot or
 ## walled-alley ground is still a door she cannot cross today.
+##
+## **Not exempted: a door on a street bordering the home block.** `is_on_home_block` only refuses
+## a tile inside the home block's own lot (its own doc says so); the streets around the block are
+## the other half of "nothing on the home block", and normally that half is exactly what
+## `is_held_at` catches — which `allow_held` would otherwise skip for a door candidate too.
+## `_place_at_a_door()` drops those candidates itself, before any candidate reaches this function,
+## so `allow_held` never has to carry that exemption.
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 		allow_held := false) -> Vector2:
 	var walled_alleys := _walled_alleys()
