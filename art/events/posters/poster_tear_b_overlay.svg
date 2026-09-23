@@ -1,0 +1,19 @@
+<!-- Tear overlay B: drawn on top of an intact poster cut by poster_tear_b_mask.svg. The bare
+     wall where the sheet was, a faint shade darker, with glue marks and paper crumbs; along
+     both tears a faint shadow and the pale paper-core fringe; and a flap of the sheet, peeled
+     from the lower left, hanging off the strip with its blank back showing, the crease dark at
+     the fold and a shadow on the wall. It carries no print, so it serves every poster kind. See
+     docs/GRAPHICS.md, "Posters". -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <path d="M6 3H26V25H6ZM6 3H26V12.6L26.0 12.6L25.0 12.8L24.1 13.5L23.7 13.8L22.2 12.7L21.5 13.6L20.7 13.5L19.9 13.6L18.7 13.1L18.2 14.5L17.6 13.7L17.0 13.9L15.8 13.0L14.7 13.5L13.5 13.0L12.7 14.2L12.6 13.5L6 14.2ZM26 25H18.6L18.6 25.0L18.4 24.1L18.8 23.4L20.0 23.5L19.8 22.8L20.9 22.0L20.4 21.6L20.8 21.0L21.2 20.7L22.2 20.5L22.2 19.6L23.3 19.4L23.4 19.4L24.2 19.1L24.8 18.5L25.5 18.5L26.0 18.2Z" fill-rule="evenodd" fill="#221f28" fill-opacity="0.07"/>
+  <path d="M15.2 17.4L19.6 16.6M13.4 22.1L16.6 21.2" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="1" stroke-linecap="round"/>
+  <path d="M14.1 24.8L14.5 24.1L15.7 24.3L15.4 24.8Z M25.8 15.1L25 15.6L25.3 16.6L25.8 16.4Z" fill="#e4ddcc"/>
+  <path d="M26.0 12.6L25.0 12.8L24.1 13.5L23.7 13.8L22.2 12.7L21.5 13.6L20.7 13.5L19.9 13.6L18.7 13.1L18.2 14.5L17.6 13.7L17.0 13.9L15.8 13.0L14.7 13.5L13.5 13.0L12.7 14.2L12.6 13.5" transform="translate(0.4 0.5)" fill="none" stroke="#221f28" stroke-opacity="0.35" stroke-width="0.9" stroke-linejoin="round"/>
+  <path d="M26.0 12.6L25.0 12.8L24.1 13.5L23.7 13.8L22.2 12.7L21.5 13.6L20.7 13.5L19.9 13.6L18.7 13.1L18.2 14.5L17.6 13.7L17.0 13.9L15.8 13.0L14.7 13.5L13.5 13.0L12.7 14.2L12.6 13.5" fill="none" stroke="#f2eee4" stroke-width="0.7" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M18.6 25.0L18.4 24.1L18.8 23.4L20.0 23.5L19.8 22.8L20.9 22.0L20.4 21.6L20.8 21.0L21.2 20.7L22.2 20.5L22.2 19.6L23.3 19.4L23.4 19.4L24.2 19.1L24.8 18.5L25.5 18.5L26.0 18.2" transform="translate(-0.4 -0.5)" fill="none" stroke="#221f28" stroke-opacity="0.35" stroke-width="0.9" stroke-linejoin="round"/>
+  <path d="M18.6 25.0L18.4 24.1L18.8 23.4L20.0 23.5L19.8 22.8L20.9 22.0L20.4 21.6L20.8 21.0L21.2 20.7L22.2 20.5L22.2 19.6L23.3 19.4L23.4 19.4L24.2 19.1L24.8 18.5L25.5 18.5L26.0 18.2" fill="none" stroke="#f2eee4" stroke-width="0.7" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M6 14.2L12.6 13.5L13.1 15.3L12 16.3L12.5 17.7L11 18.8L11.3 20.3L9.4 20.8L8.4 22.2L6.6 21.1L5.4 21.6L5.2 17.4Z" transform="translate(0.9 0.8)" fill="#221f28" fill-opacity="0.35"/>
+  <path d="M6 14.2L12.6 13.5L13.1 15.3L12 16.3L12.5 17.7L11 18.8L11.3 20.3L9.4 20.8L8.4 22.2L6.6 21.1L5.4 21.6L5.2 17.4Z" fill="#d3cbb9" stroke="#f2eee4" stroke-width="0.6" stroke-linejoin="round"/>
+  <path d="M6 14.2L12.6 13.5L12.8 14.6L6 15.5Z" fill="#a9a190"/>
+  <path d="M7.4 17.4L10.6 16.9M7.2 19.4L9.6 19.1" fill="none" stroke="#bfb7a5" stroke-width="0.6" stroke-linecap="round"/>
+</svg>
