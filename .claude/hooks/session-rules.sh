@@ -21,6 +21,7 @@ set -uo pipefail
 input=$(cat)
 session=$(printf '%s' "$input" | jq -r '.session_id // "nosession"' 2>/dev/null)
 agent=$(printf '%s' "$input" | jq -r '.agent_id // empty' 2>/dev/null)
+source=$(printf '%s' "$input" | jq -r '.source // empty' 2>/dev/null)
 
 # Repo root: this script lives at <root>/.claude/hooks/
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
@@ -31,6 +32,19 @@ else
 	state="${TMPDIR:-/tmp}/claude-nappy-rules/$session"
 fi
 mkdir -p "$state" 2>/dev/null
+
+# `source` is "startup" on a fresh session and "resume", "clear" or "compact" otherwise -- and on
+# all three of those, whatever was in context, including this hook's own earlier injection, is
+# gone or unreliable, but the marker files survive on disk. Left alone, a compacted session would
+# never see the startup rule or any path rule again for the rest of its life. So on anything but
+# "startup", clear this invocation's own marker directory before injecting -- this mirrors
+# tools/codex-hooks.py's SessionStart/SubagentStart handling, which unlinks every skill marker
+# under its own state dir before calling this same script. Keyed on $state (above), this only
+# ever clears the session -- or, for a sub-agent, the one sub-agent -- that is actually restarting;
+# a main session's compaction never touches a sub-agent's own directory and vice versa.
+if [ -n "$source" ] && [ "$source" != "startup" ]; then
+	rm -f "$state"/* 2>/dev/null
+fi
 
 # Loaded at the start of every session, in this order.
 at_the_start=(orchestrating)
