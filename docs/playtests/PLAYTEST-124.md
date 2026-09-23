@@ -115,3 +115,7 @@ animals (PR 300) and street obstructions (PR 301):
 
 16. **The ground floor's platform is its own texture**, derived from the stair picture with the
     stairs taken out, rather than the stair picture cut short.
+
+> "a two floor building cannot have a fire escape"
+
+17. **A two-story building has no fire escape**; the fewest floors that carry one is three.
