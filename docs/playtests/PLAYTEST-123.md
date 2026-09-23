@@ -140,3 +140,18 @@ station's redrawn street front, and asked which torn variant to keep.
 23. **A loudspeaker mast does not stand in the middle of the road**: the one in PR 292's picture
     does.
 
+> "can you have an opus agent redraw the water main break image?"
+
+24. **The burst water main's picture is redrawn by Opus**, with no complaint given beyond that.
+
+On the tear-mask sheet (three tears applied to every kind, on single blank wall cells) and the
+fourth pass's building fronts:
+
+> "also have plain walls -- you had that in one of the poster examples but they are gone now --
+> and it looks like posters go over windows now"
+
+25. **The building fronts show plain walls**: stretches of ground floor with no window, visibly
+    so, as one of the earlier sheets had, and not a window cell with a poster where the window
+    would be. On the fourth pass's fronts a poster sat in the window rhythm and read as pasted
+    over a window.
+
