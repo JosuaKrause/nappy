@@ -379,7 +379,10 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
 - [ ] **A loudspeaker is a mast on a street with a field around it.** Placed from day 5 where
       the fiction puts them — junctions, squares, the main road — drawn, with a field that
       pulses when it speaks and falls away with distance like any other row's, so a route can
-      go round one. It is in `docs/COSTS.md` like any row.
+      go round one. It is in `docs/COSTS.md` like any row. **A mast shows when it is live and when it
+      broadcasts** ([PLAYTEST-122](playtests/PLAYTEST-122.md): "there should be a visible
+      indicator about when a mast is active / has a broadcast"): a live mast looks different from a
+      silenced one, and each broadcast is telegraphed before it starts, without sound.
 - [ ] **The city-wide floor goes.** *Decided by the player on 2026-09-20: "Remove it"*, asked
       with keeping it near masts only and keeping it as it is as the alternatives. A cost with
       no place cannot be routed round, and the game's one verb is where she walks. No row is
@@ -503,6 +506,28 @@ a task is one day, whose day 14 goes to this building's front door.
 
 ---
 
+## M184 — A rig walks the route · asked for 2026-09-23
+
+> "we should have a test-rig mode where she just follows the edges of a path that way we can test
+> paths properly and do those timing checks without having to guess the right inputs"
+
+[PLAYTEST-122](playtests/PLAYTEST-122.md). `--walk` replays a script of timed headings, so
+measuring a route means guessing the inputs that walk it, and a guess that clips a kerb measures
+the guess. M181's late days need their clock measured (day 12's second park first) and the
+pacing of days 9 to 13 is to be measured before anything is cut.
+
+- [ ] **A dev flag walks her along a path's edges with no scripted inputs**: from where she
+      stands, along the sidewalk edges of a walkable path to a named target and on to the next —
+      the day's mark, its task, a calm area, home — at `Tuning.WALK_SPEED`, through the ordinary
+      game, so the meter, the events and the clock all run as they would for a player. It reports
+      when she reached each target. A dev flag only: a pathfinding walk handed to the player is the
+      mechanism `DECISIONS.md` records as deleted under M82, because it hands the route decision to
+      the game. It follows the **cli-tools** rules, and `tools/shot.sh` and the probes can drive it.
+- [ ] **Days 10 to 13 are timed with it** on a spread of seeds, day 12's swing-then-second-park
+      first, and the figures go into M181's entry before slice two's brief is final.
+
+---
+
 ## M181 — The resistance has a reason, and a task is one day · asked for 2026-09-20
 
 > "when doing the mark it doesn't really feel that we would need to resist against anything
@@ -577,6 +602,29 @@ M177, the second mark is any alley she comes across), and the mark is drawn as i
   orchestrator · refused by the player as "too low a stake. it doesn't warrant an air raid on
   the city afterwards".*
 
+**Decided on 2026-09-23** ([PLAYTEST-122](playtests/PLAYTEST-122.md), each proposed by the
+orchestrator and agreed by the player unless it says otherwise):
+
+- **The convoys start on day 13**, the morning the army arrives: `military_convoy`'s
+  `first_day` moves from 12, so day 12 stays the parks.
+- **Two marks are reworded.** Day 8: "Something was left in the stroller in the night. Take it
+  to the burnt building." (the drawing arrives, rather than an "it" nothing showed). Day 13:
+  "Walk up to the roadblock. See how close they let you come." (a roadblock is solid, and the
+  task is its band).
+- **Day 11's mast is silenced by her reaching its foot**, as a mark is touched; its field makes
+  the approach cost while it broadcasts, so timing it between broadcasts is the skill. A mast
+  shows whether it is live and when it broadcasts (M180, posters she notices, and loudspeakers
+  that are somewhere).
+- **Day 10's raid is vans in the street at her building with a patrol, and the doorstep stays
+  reachable.** *"we will have to see how that one feels"*: once built it goes to `REVIEW.md`.
+- **Day 12 guarantees a second open park she can reach from the swing**, checked when the day is
+  planned; and **whether days 10 to 13 fit their clock is measured** — the mark, the task, the
+  happening and the walk home — with M184, a rig that walks the route, before anything is cut.
+- **The neighbor is seen from day 1**: on days 1 to 9, a figure in work clothes leaves her
+  building each morning as she does and walks off, and nothing points at them; from day 11 they
+  are gone. This is the figure day 10's arrow finds and day 12's wanted notice draws.
+- **A skipped task is answered by somebody else**, and the world shows nothing for it.
+
 **What the tasks are for. Never said in the game; written into `docs/NARRATIVE.md` with the
 build so the story stays consistent** ([PLAYTEST-119](playtests/PLAYTEST-119.md): "those
 things need to never explicitly spelled out in the game but it needs to be spelled out in our
@@ -596,21 +644,25 @@ the baby is never in narrative danger from the regime directly); what she carrie
 be caught with and harmless beside the baby. **She is never told the plan**: each errand is
 small and deniable, and she learns what they were for when the windows go dark. And **nothing
 before day 14 rests on her alone**: the group has other couriers, and a task she skips is done
-by somebody else at a higher cost, which is why five of eight is enough. Day 14 has to be her,
-because under curfew with the army on the streets only a parent with a crying baby reaches that
-door. *More mandatory tasks, offered by the player on 2026-09-21 ("we can also make more tasks
+by somebody else, which is why five of eight is enough. **Five is the group's trust**: only a
+courier who has proven reliable is given the key, which is why day 14 is offered only at the
+goal, and **on the neutral ending nothing happens that night** — the uprising waits, and she goes
+home ([PLAYTEST-122](playtests/PLAYTEST-122.md)). Day 14 has to be her, because under curfew
+with the army on the streets only a parent out walking a baby who won't settle reaches that
+door. **Her cover is never a crying baby**, since crying is a lost day: *proposed by the
+orchestrator · agreed by the player on 2026-09-23*. *More mandatory tasks, offered by the player on 2026-09-21 ("we can also make more tasks
 mandatory if it makes more sense") · not taken, since no row needs it.*
 
 | Day | Task | What it accomplishes | If she skips it |
 | --- | --- | --- | --- |
-| 6 | The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she reaches is him ("which one exactly is determined by how the player plays"). | The group asks again. |
+| 6 | The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she reaches is him ("which one exactly is determined by how the player plays"). | Somebody else answers. |
 | 7 | The package at the van's drop | From the group to the neighbor. The driver is a sympathizer; the package is tools and a lamp. She carries it home, which is where the neighbor lives. | Somebody else risks the building. |
 | 8 | The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A cordoned ruin is where nobody goes, so it is the dead drop. Whether day 3's fire was an accident is never answered. | The drawing goes out another way. |
 | 9 | Cross a named door | The districts closed that morning and the station is across one. She finds out whether a stroller gets through. | Somebody else finds out. |
 | 10 | Warn the neighbor before the raid | The regime has found the worker. She reaches the neighbor out in the city before they walk home into the vans, which are at her own building when she gets back. Warned, the neighbor runs; not warned, the neighbor is taken, and theirs is the face crossed out on day 12's wanted notice (M180, posters she notices, and loudspeakers that are somewhere). The door is sealed the next morning either way, and the drawing already left on day 8. | The same sealed door, for the worse reason. |
-| 11 | Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | The group goes in not knowing. |
+| 11 | Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | Somebody else answers. |
 | 12 | The swing | Feeling watched, the neighbor hid the station key at the swing before the raid, so it is there whether or not she warned them. The parks are being fenced one at a time and the group knows this one is next, which is why it is today; she gets the key out as the park is taken. | Another courier fetches it. |
-| 13 | Into a roadblock's band | The army arrived that morning, which is the column on the main road. She finds out how close a parent with a crying baby can come to a held street before its guard moves, because the last night's way passes one; nobody looks twice at a screaming baby, so the cost of the task is its cover, and the guard's reach is still the guard's reach. | The last night is a guess. |
+| 13 | Into a roadblock's band | The army arrived that morning, which is the column on the main road. She finds out how close a parent with a baby who won't settle can come to a held street before its guard moves, because the last night's way passes one; nobody looks twice at a parent walking a baby who won't settle, so the cost of the task is its cover, and the guard's reach is still the guard's reach. | Somebody else answers. |
 | 14 | The station's front door | A hand-over: she passes the key to the neighbor's colleague on the night shift and walks away. The minutes he needs are why the lights go out once she is at a distance. Blackout, uprising, bombing, escape. | The neutral ending. |
 
 The tasks escalate: trust, carry, carry back, scout, protect, rehearse, retrieve, scout again,
@@ -640,7 +692,8 @@ explains the politics, the danger is noise, nothing triumphant — each naming t
 introduces, so the brief is also where a new obstacle is first heard of. **One thing a morning** (*"focus on one thing only otherwise it becomes too dense"*), in
 American English, which the player asked for in everything said to them. Days 1, 3, 4 and 6 are
 the player's own wording or close to it; day 6 names the rumor of chalk, which overturns *the
-first encounter comes with no hint at all* on the player's word; day 7 waits on M180 making a
+first encounter comes with no hint at all* on the player's word, confirmed on 2026-09-23
+([PLAYTEST-122](playtests/PLAYTEST-122.md): "we do now hint at the first task"); day 7 waits on M180 making a
 poster something she has ever seen. Written against the proposed shape above, so the days move
 if the shape does:
 
@@ -1146,8 +1199,8 @@ re-pitched:
       (`Palette.CHALK` to `CHALK_DONE`) under her feet, and the `resistance ....` dots are
       performs only, so a pick-up moves none. The mark's own words now reach her on that day's
       summary whether it was won or lost, in their own larger line (`DECISIONS.md`, M132), so
-      what is left open is the moment of the touch itself. The design's own rule is no quest log
-      — *the first encounter comes with no hint at all* — so how much a touch may say is the
+      what is left open is the moment of the touch itself. The first mark is hinted at by day 6's brief
+      ([PLAYTEST-122](playtests/PLAYTEST-122.md)), and how much a touch may say is the
       player's call: nothing more; the mark's colour made unmistakable; or a one-line status
       change on the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review:
       she adds something to the existing mark to indicate she has seen it.
