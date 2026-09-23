@@ -39,6 +39,11 @@ func run(t) -> void:
 	_test_mobile_follows_its_path(t)
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
 	_test_the_director_puts_it_in_front_of_her(t)
+	_test_the_fire_follows_her_walk_until_it_is_real(t)
+	_test_a_corner_is_not_a_change_of_mind(t)
+	_test_the_fire_is_the_days_only_unsited_place(t)
+	_test_the_engine_parks_at_the_fire(t)
+	_test_a_site_that_shuts_her_out_is_refused(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
 	_test_hard_fail_only_when_active(t)
 	_test_scheduler_is_deterministic(t)
@@ -900,17 +905,16 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 ## day.
 ##
 ## **What is asserted is the day's *composition*, not every coordinate**, and the difference is the
-## measurement rather than a hedge. A spent one-shot is genuinely gone, and `fire_truck`'s route is
-## sixty tiles — nineteen hundred pixels of corridor that the recurring fill had to keep
-## `EVENT_SPACING_ANY` clear of. With it gone, the long mobile rows whose own routes brushed that
-## corridor now fit where they did not, so they start a few tiles along the street they were always
-## going to be on. Measured over three seeds: the multiset of event **kinds** is identical every
-## time, and the positions that move are `dog_walker` and `reversing_lorry` — the sited, route rows
-## still left. `cyclist` and `loose_dog` are `TOWARD_PLAYER` now: the scheduler never gives either a
-## coordinate at all, so neither can appear in that count regardless of what a spent one-shot frees.
-##
-## A dog walker starting three tiles further up the same street is not a different day. Eight
+## measurement rather than a hedge: the multiset of event **kinds** has to be identical, and a
+## `dog_walker` starting three tiles further up the same street is not a different day. Eight
 ## shouting men where there were two is, and that is what this stops.
+##
+## **Two directions, because a lost day gives the fire back altogether.** *("a retry always rolls
+## new -- nothing that happened on the day that got retried can influence the next repeat")* —
+## whether or not she ever reached it, so the ordinary retry is the same day down to the fire
+## itself; a day planned after it actually burned on a day she **won** has none of it and nothing
+## else different. The second is the one M39 was written against and it is asked here with an
+## explicitly spent list, since a retry can no longer produce one.
 func _test_a_retried_day_is_the_same_day(t) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for run_seed in [4242, 90210, 1234567]:
@@ -920,7 +924,12 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 
 		var consumed: Array[String] = []
 		var first := EventScheduler.build_day(day, rng, map, consumed)
-		t.check(not consumed.is_empty(), "day %d spends a one-shot on seed %d" % [day, run_seed])
+		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
+		# where it becomes real — `EventScheduler._place_one_shots`. And a lost day gives back what
+		# it spent (`GameState.finish_day`), so every retry is the same day down to the fire itself.
+		# The other direction, the day after it burned on a day she won, is the loop below this one.
+		t.check(consumed.is_empty(),
+				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])
 		var again := RandomNumberGenerator.new()
 		again.seed = rng.seed
 		var second := EventScheduler.build_day(day, again, map, consumed.duplicate())
@@ -946,6 +955,19 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 			changed += 1 if int(after.get(id, 0)) != expected else 0
 		t.check(changed == 0,
 				"seed %d: and nothing else moves at all (%d kinds did)" % [run_seed, changed])
+
+		# And the day *after* the fire actually burned: the one-shot is gone and nothing else is.
+		# This is the half of the property a retry can no longer ask, since a lost day gives the
+		# fire back — and it is the half M39 was written for, so it is asked here instead.
+		var spent: Array[String] = ["burning_building"]
+		var third_rng := RandomNumberGenerator.new()
+		third_rng.seed = rng.seed
+		var third := _kinds_in(EventScheduler.build_day(day, third_rng, map, spent))
+		for id: String in before.keys() + third.keys():
+			var expected: int = 0 if id in spent else int(before.get(id, 0))
+			t.check(int(third.get(id, 0)) == expected,
+					"seed %d: a day after the fire burned has %d '%s' where the day had %d"
+					% [run_seed, int(third.get(id, 0)), id, expected])
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
 func _kinds_in(plans: Array[EventScheduler.Planned]) -> Dictionary:
@@ -1613,6 +1635,309 @@ func _test_a_crouching_event_holds_still_until_it_bolts(t) -> void:
 			"it lives long enough (%.2fs) to cross the whole street (%.2fs)"
 			% [def.duration, crossing / def.speed])
 	instance.free()
+
+# --------------------------------------- the place the day owes her walk (M179) ---
+# Day 3's fire is budgeted at dawn with no position and sited by `EventDirector` from the walk she
+# turns out to take — *"the fire should come first and be on your way guaranteed (a dynamic event
+# dependent on the route you chose that day)"* (PLAYTEST-117).
+#
+# These drive the director directly, with her position and velocity written rather than walked, so
+# the geometry is the test's own: what a city's borders happen to leave room for is the integration
+# question and it is asked in `tests/test_event_manager.gd`, against a real manager and a real
+# player. What is asked here is the rule.
+
+## Walks a synthetic player down `route` from `at`, stepping the director every frame, and returns
+## where she finished. She moves at `Tuning.WALK_SPEED` because the director's own clock only runs
+## while she is actually going somewhere, and the heading it reads is the direction of the next
+## point of the route — so the walk is a walk of the day's own corridor rather than a line through
+## the lattice, which is what the siting is stated over.
+##
+## `_last_heading` carries the direction of the last step out, for a caller that needs to ask what
+## she was travelling on the frame something happened.
+var _last_heading := Vector2.RIGHT
+
+func _walk_the_director(director: EventDirector, plans: Array[EventScheduler.Planned],
+		at: Vector2, route: PackedVector2Array, seconds: float, until := Callable()) -> Vector2:
+	var left := seconds
+	for i in range(_nearest_on(route, at), route.size()):
+		var toward := route[i] - at
+		while toward.length() > Tuning.WALK_SPEED * STEP and left > 0.0:
+			_last_heading = toward.normalized()
+			var velocity := _last_heading * Tuning.WALK_SPEED
+			at += velocity * STEP
+			left -= STEP
+			director.site_what_is_on_her_way(STEP, at, velocity, plans)
+			if until.is_valid() and until.call():
+				return at
+			toward = route[i] - at
+		if left <= 0.0:
+			return at
+	return at
+
+func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
+	var best := 0
+	var best_distance := INF
+	for i in route.size():
+		var distance := route[i].distance_to(at)
+		if distance < best_distance:
+			best_distance = distance
+			best = i
+	return best
+
+## A way out of the doorstep that does not carry `unlike` — the other side of a fork, for the check
+## that an unseen fire follows the branch she actually took.
+func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
+	var tree := RouteTree.for_day(_map(), day)
+	var carries := tree.branches_on(_map().world_to_tile(unlike))
+	for branch in tree.branches:
+		for route: Array in branch.routes:
+			if route.size() < 8:
+				continue
+			var shares := false
+			for colour in carries:
+				shares = shares or branch.routes.size() > 0 and colour == tree.branches.find(branch)
+			if shares:
+				continue
+			var points := PackedVector2Array()
+			for i in route.size():
+				points.append(EventScheduler.WalkSiting._cell_centre(_map(),
+						route[route.size() - 1 - i]))
+			return points
+	return PackedVector2Array()
+
+## The day's longest route as the line she walks — out from the doorstep to the calm area when
+## `outward`, home again when not. A route is grown from the area to the doorstep, so the walk out
+## is the array reversed.
+func _fire_route(day: int, outward := true) -> PackedVector2Array:
+	var tree := RouteTree.for_day(_map(), day)
+	var best: Array = []
+	for branch in tree.branches:
+		for route: Array in branch.routes:
+			if route.size() > best.size():
+				best = route
+	var points := PackedVector2Array()
+	for i in best.size():
+		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
+		points.append(EventScheduler.WalkSiting._cell_centre(_map(), cell))
+	return points
+
+## Day 3's plan, built fresh rather than taken from `_planned()`. These tests site the fire, which
+## writes a position into the plan — and the memoized copy is shared with every other check in this
+## suite on the understanding that nothing writes to it.
+func _fire_day_plans() -> Array[EventScheduler.Planned]:
+	var consumed: Array[String] = []
+	return EventScheduler.build_day(Tuning.RUN_TAUGHT_DAY, _rng(Tuning.RUN_TAUGHT_DAY), _map(),
+			consumed)
+
+## The day-3 fire, and the whole rig it needs: the day's own plan, a placement context built the way
+## `EventManager.start_day` builds one, and a director started on both.
+func _fire_director(day: int, plans: Array[EventScheduler.Planned]) -> EventDirector:
+	var director := EventDirector.new(_map())
+	director.start_day(day, plans, _rng(day), _fire_siting(day))
+	return director
+
+## The placement context the director above is started on, built the way `EventManager.start_day`
+## builds one. Kept as its own function so a check can ask it the same questions the director does —
+## `still_ahead_of()`, which is what "on the branch she is walking" means.
+var _shared_fire_siting: EventScheduler.WalkSiting = null
+
+func _fire_siting(day: int) -> EventScheduler.WalkSiting:
+	if not _shared_fire_siting:
+		_shared_fire_siting = EventScheduler.WalkSiting.new(day, _map(),
+				RouteTree.for_day(_map(), day), [] as Array[Vector2i], PackedVector2Array())
+	return _shared_fire_siting
+
+func _fire_in(plans: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
+	for plan in plans:
+		if plan.def.id == "burning_building":
+			return plan
+	return null
+
+## **It is sited from her walk, it may be moved while it is nobody's memory yet, and it is fixed the
+## moment it is real.**
+##
+## The third of those is the one with teeth. `EventManager._stream_in` records the scar and moves the
+## block along its arc the first time a plan enters the world, so the city already remembers this
+## fire burning *there* — and a rule that moved it afterwards would be repairing a fact rather than
+## checking one before accepting it. `Planned.was_live` is where the line is drawn, and it is drawn
+## at the streaming radius rather than at the screen edge, which is six seconds of walking earlier.
+func _test_the_fire_follows_her_walk_until_it_is_real(t) -> void:
+	var map := _map()
+	var day := Tuning.RUN_TAUGHT_DAY
+	var plans := _fire_day_plans()
+	var fire := _fire_in(plans)
+	t.check(fire != null and not fire.is_placed(),
+			"day 3 budgets the fire and leaves it with no position at all")
+	if not fire:
+		return
+	var director := _fire_director(day, plans)
+	var siting := _fire_siting(day)
+
+	var out := _fire_route(day)
+	var at := _walk_the_director(director, plans, out[0], out, 120.0,
+			func() -> bool: return fire.is_placed())
+	t.check(fire.is_placed(), "walking the day's own route out of the doorstep sites it")
+	if not fire.is_placed():
+		return
+	var first := fire.position
+	t.check(not RouteTree.for_day(map, day).branches_on(map.world_to_tile(first)).is_empty(),
+			"on the path she is on: the day's route tree carries the tile it stands on")
+	t.check(siting.still_ahead_of(at, _last_heading, first),
+			"and ahead of her along the branch she is walking, rather than merely ahead of her")
+	t.check(first.distance_to(at) > Tuning.EVENT_STREAM_RADIUS,
+			"and outside the streaming band (%.0fpx), so it is neither seen nor real yet"
+			% first.distance_to(at))
+
+	# Home and out again the other way. It was never in the world, so it follows her onto the branch
+	# she actually took — which is the whole of what a fork owes, and the one case a rule stated only
+	# over "is it behind her" cannot answer: the way out she abandoned stays a few degrees off
+	# square from the way she took, for the rest of the day.
+	at = _walk_the_director(director, plans, at, _fire_route(day, false), 200.0)
+	var other := _another_branch(day, first)
+	t.check(not other.is_empty(), "the day offers a second way out to change her mind to")
+	at = _walk_the_director(director, plans, at, other, 200.0,
+			func() -> bool: return fire.position != first)
+	t.check(fire.position != first, "taking a different way out before it is ever seen moves it")
+	t.check(siting.still_ahead_of(at, _last_heading, fire.position),
+			"and it lands ahead of her on the branch she took instead")
+
+	# Real. From here it is where the city remembers it burning, and nothing moves it.
+	var burning_at := fire.position
+	fire.was_live = true
+	_walk_the_director(director, plans, at, _fire_route(day), 30.0)
+	t.check(fire.position == burning_at,
+			"once it has been in the world, walking away from it for half a minute leaves it "
+			+ "exactly where it burned")
+
+## **A corner is not a change of mind.** A route turns every block or two, and each turning leaves
+## the fire a little behind square — a rule that moved it there would move it at every junction,
+## which is a day spent chasing something that is always the same distance ahead.
+## `EventDirector.ON_HER_WAY_BEHIND` is the coarse half of what makes the two cases different and
+## `WalkSiting.still_ahead_of()` the fine one, and this is the half of it that would otherwise never
+## be noticed: the *absence* of a move.
+##
+## **The walk has to actually turn**, or the check passes by walking in a straight line and proves
+## nothing; the corner it took is measured and asserted alongside.
+func _test_a_corner_is_not_a_change_of_mind(t) -> void:
+	var day := Tuning.RUN_TAUGHT_DAY
+	var plans := _fire_day_plans()
+	var fire := _fire_in(plans)
+	if not fire:
+		t.check(false, "day 3 budgets a fire to turn a corner past")
+		return
+	var director := _fire_director(day, plans)
+	var out := _fire_route(day)
+	var at := _walk_the_director(director, plans, out[0], out, 120.0,
+			func() -> bool: return fire.is_placed())
+	if not fire.is_placed():
+		t.check(false, "walking the day's route sites the fire")
+		return
+	var sited := fire.position
+
+	# On down the same branch for twice the patience the rule has, which is several turnings.
+	var before := _last_heading
+	var sharpest := 1.0
+	var patience := EventDirector.ON_HER_WAY_TURNED_AWAY * 2.0
+	for i in int(round(patience / STEP)):
+		at = _walk_the_director(director, plans, at, out, STEP)
+		sharpest = minf(sharpest, before.dot(_last_heading))
+	t.check(fire.position == sited,
+			"carrying on down the same branch for %.0fs leaves the fire where it is" % patience)
+	t.check(sharpest < 0.7,
+			"and the walk really did turn a corner in that time (%.0f degrees off where it started)"
+			% rad_to_deg(acos(clampf(sharpest, -1.0, 1.0))))
+
+## **The engine parks at the fire and stays there for the rest of the day.** *(2026-09-20, the
+## player, asked whether it parks, waits twenty seconds or passes through: "option A -- a fire engine
+## has a high cost"; "you're not supposed to go past it".)* Driven here rather than in a city,
+## because what is under test is what an instance does when its route runs out — which needs a route
+## and a clock and nothing else.
+##
+## Four things are checked and every one of them was wrong before the flag existed. It **stops**
+## where the route ended rather than driving on out of sight. It is **not over**: it still emits,
+## which is the entire cost the player asked for, where `is_leaving` would have silenced it. It
+## **answers zero for its travel**, which is what the screen-edge badge reads as a closing speed.
+## And the distance it has covered **stops growing**, because the gait is driven by distance and a
+## parked engine would otherwise bob at the kerb for ever.
+func _test_the_engine_parks_at_the_fire(t) -> void:
+	var def := EventCatalogue.by_id("fire_truck")
+	t.check(def != null and def.stops_where_it_arrives,
+			"the fire engine is the row that stops where it arrives")
+	if not def:
+		return
+	var kerb := Vector2(def.speed * 2.0, 0.0)
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, kerb]))
+	# Past the end of a two-second route by a good margin, and then a while longer.
+	_advance(instance, 4.0)
+	t.check(instance.is_parked, "it parks when its route runs out")
+	t.check(not instance.is_leaving and not instance.is_finished,
+			"and parking is not an ending: it has neither left nor finished")
+	t.close_to(instance.global_position.distance_to(kerb), 0.0,
+			"it is standing at the end of its route, the near kerb across from the fire", 1.0)
+	t.close_to(instance.travel_velocity().length(), 0.0,
+			"and it answers zero for how fast it is travelling, so nothing reads it as closing",
+			0.001)
+	t.check(instance.contribution_at(kerb + Vector2(def.inner_radius * 0.5, 0.0)) > 0.0,
+			"it is still emitting where it stands, which is the cost the pair is made of")
+	var travelled := instance.path_travelled()
+	_advance(instance, 6.0)
+	t.close_to(instance.path_travelled(), travelled,
+			"and ten seconds later it has covered no more ground, so the gait it is drawn with "
+			+ "has stopped too", 0.001)
+	t.check(instance.is_parked and not instance.is_finished,
+			"and it is still standing there, for the rest of the day")
+	instance.free()
+
+## **A site is accepted only where the day still works around it.** The fire and the engine parked
+## across from it are meant to close the street she is on, so the thing that has to be checked is the
+## other direction: from where she is, with both fields taken as closed ground, the home and a calm
+## area she has not used are still reachable. Checked before accepting; a refusal is a second of
+## walking and another attempt.
+##
+## Both directions are asked, because a check that refused everything would pass the interesting half
+## of this on its own. The refusal case is a fire sited on the doorstep itself, whose field swallows
+## the one way out of the home — the shape the check exists for, and the one no amount of walking
+## could answer.
+func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
+	var map := _map()
+	var day := Tuning.RUN_TAUGHT_DAY
+	var def := EventCatalogue.by_id("burning_building")
+	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
+			[] as Array[Vector2i], PackedVector2Array())
+	var nothing_else: Array[EventScheduler.Planned] = []
+	var route := _fire_route(day)
+	t.check(route.size() > 8, "the day has a route out of the doorstep to stand on")
+	if route.size() <= 8:
+		return
+	var at: Vector2 = route[route.size() / 2]
+
+	var far_off := EventScheduler.Planned.new(def, route[route.size() - 2])
+	t.check(siting._still_leaves_a_park_reachable(nothing_else, far_off, at),
+			"a fire at the far end of the branch she is walking leaves the day working around it")
+
+	var on_the_doorstep := EventScheduler.Planned.new(def, map.doorstep_world_position())
+	t.check(not siting._still_leaves_a_park_reachable(nothing_else, on_the_doorstep, at),
+			"and a fire whose field swallows the doorstep is refused, because the way home is what "
+			+ "she would have no way round")
+
+## **One plan, and the day is otherwise exactly the day it was.** A set piece the day owes her walk
+## is budgeted like any other one-shot — one plan, tagged as its own group — and nothing else in the
+## catalogue is left for the walk to site, so no other day changes shape because of this one.
+func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
+	var owed := 0
+	for day in range(1, 15):
+		for plan in _planned(day):
+			if not plan.def.sited_on_her_way:
+				continue
+			owed += 1
+			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.def.id == "burning_building",
+					"day %d: the only place the day leaves for her walk is day 3's fire, not '%s'"
+					% [day, plan.def.id])
+			t.check(not plan.is_placed() and plan.set_piece_group != "",
+					"day %d: it is planned with no position and tagged as a set piece" % day)
+			t.check(plan.def.spawn_mode == EventDef.SpawnMode.MAP and not plan.def.mobile,
+					"day %d: and it is a place that stands still, not a director's moment" % day)
+	t.check(owed == 1, "exactly one plan in a fourteen-day run is owed to her walk (%d)" % owed)
 
 ## Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
 ## spawned in in front of the player while they walk, so it happens directly in front of them
@@ -2855,6 +3180,11 @@ func _test_a_lorry_has_a_wall_to_back_into(t) -> void:
 	for day in range(3, 15):
 		for plan in _planned(day):
 			if plan.def.pavement_side != EventDef.Pavement.AGAINST_THE_BUILDING:
+				continue
+			# A place the day owes her walk has no tile yet to have a frontage behind it — day 3's
+			# fire is sited later, against the same `_wants_this_side` rule this asks about, and
+			# where it lands is asked of a real walk in `tests/test_event_manager.gd`.
+			if not plan.is_placed():
 				continue
 			backing += 1
 			var tile := map.world_to_tile(plan.position)

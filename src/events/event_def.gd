@@ -335,6 +335,21 @@ func spawn_mode_on(day: int) -> SpawnMode:
 		return spawn_mode_after_first_day
 	return spawn_mode
 
+## Whether the day budgets this row but leaves *where* it stands to the walk she takes.
+##
+## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
+## whole plan is stated against the day's corridor exactly as it would have been at dawn. What
+## moves is the moment: `EventScheduler._place_one_shots` plans it with no position, and
+## `EventDirector.site_what_is_on_her_way()` puts it on a building face ahead of her once her
+## direction for the day is clear, off screen and far enough that she meets it rather than watches
+## it appear. Until it has been in the world it may be moved again, so a day she turns round is
+## still a day it is on her way.
+##
+## **This is not `AHEAD_OF_PLAYER`**, and the difference is the whole reason it is a second field
+## rather than a fourth `SpawnMode`. A director-sited row has no tile at all, may not obstruct, and
+## is never asked the corridor's questions; this one is asked all of them, just later than dawn.
+@export var sited_on_her_way := false
+
 ## Seconds of closing this row needs beyond the screen edge before `EventDirector` will site it —
 ## `Tuning.OFFSCREEN_NOTICE` (0.2) unless a row overrides it. Only `AHEAD_OF_PLAYER` (`pursues`) and
 ## `TOWARD_PLAYER` rows read this; a `MAP` row is placed at dawn and never asks.
@@ -622,6 +637,29 @@ enum Pavement {
 
 ## Event id to spawn where this one ends. How a military convoy leaves a barricade behind it.
 @export var spawns_on_finish := ""
+
+## Whether this row **stops where its route ends and stays there for the rest of the day**, instead
+## of driving on out of sight the way everything else that runs out of route does.
+##
+## The fire engine is the only row that carries it, and the flag says what it means rather than
+## borrowing a mechanism that means something else: a `spawns_on_finish` would also keep it where it
+## arrived, by finishing it and leaving a successor behind, but what it leaves would be a second row
+## standing in for the first and nothing about that arrangement says *parks*.
+##
+## **It is a decision about cost, not about motion.** *(2026-09-20, the player, asked whether the
+## engine parks at the fire for the rest of the day, for twenty seconds, or passes through: "option
+## A -- a fire engine has a high cost"; "you're not supposed to go past it".)* A standing 26/s field
+## out to 340px beside a fire she was led to is the wall the day puts across the street she is on,
+## and the answer it asks for is to turn round or go another way. The pair is why a site is only
+## accepted where the home and a calm area she has not used stay reachable outside both fields —
+## see `EventScheduler.WalkSiting`.
+##
+## Three things in `EventInstance` read it and all three would be wrong left alone: `_be_done()`
+## neither finishes nor leaves such a row, `_advance_along_path()` stops adding to the distance it
+## has covered (a gait is driven by distance, so a parked engine would bob for ever), and
+## `travel_velocity()` answers zero (the screen-edge badge reads that as a closing speed, and a
+## parked thing is not closing).
+@export var stops_where_it_arrives := false
 
 ## Event id to spawn the moment this one is first seen. The opposite direction from
 ## `spawns_on_finish` above: that names what a row leaves behind when it is done; this names
@@ -947,6 +985,25 @@ func validate() -> bool:
 				% [id, spawn_mode_switches_after_day + 1, obstructs_radius])
 				+ "nothing checks that it leaves a route to a park")
 		return false
+	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
+	# `EventScheduler._place_one_shots` reads the flag, and only `EventDirector` sites what it
+	# leaves unplaced — so on any other kind it is a decision that silently did not happen. The two
+	# geometric halves are load-bearing rather than tidiness: the siting is a tile with the
+	# corridor's own questions asked of it, which a director-sited row never has, and a thing that
+	# moves has no one place for its scar to be recorded at.
+	if sited_on_her_way:
+		if kind != GameEnums.EventKind.ONE_SHOT:
+			push_error("event '%s' is sited from her walk and is not a one-shot: nothing but " % id
+					+ "EventScheduler._place_one_shots leaves a plan for her walk to site")
+			return false
+		if spawn_mode != SpawnMode.MAP:
+			push_error("event '%s' is sited from her walk and is director-sited besides: it is " % id
+					+ "a place chosen late, not a moment with no place at all")
+			return false
+		if mobile:
+			push_error("event '%s' is sited from her walk and moves: a row that may be re-sited " % id
+					+ "until it is real needs one place to stop being re-sited at")
+			return false
 	# A flock is several bodies wheeling inside one disc, so there is no silhouette for a body to
 	# be half of — and being walked into is the event. See `obstructs_radius` above.
 	if flock_size > 0 and obstructs_radius > 0.0:
@@ -954,6 +1011,17 @@ func validate() -> bool:
 				% [id, flock_size, obstructs_radius]
 				+ "silhouette to be solid at, and being walked into is what it is for")
 		return false
+	# The same shape: a row that stops where it arrives has to have somewhere to arrive, and
+	# `_be_done()` cannot both hold it where it is and hand its place to a successor.
+	if stops_where_it_arrives:
+		if not mobile:
+			push_error("event '%s' stops where it arrives and does not move: there is no route " % id
+					+ "for it to run out of")
+			return false
+		if spawns_on_finish != "":
+			push_error("event '%s' stops where it arrives and spawns '%s' when it finishes: it "
+					% [id, spawns_on_finish] + "does one or the other, never both")
+			return false
 	# A flag nothing can read is a decision that silently did not happen: without a trigger there is
 	# no waiting state for `quiet_until_noticed` to quieten.
 	if quiet_until_noticed and pursues_within <= 0.0:

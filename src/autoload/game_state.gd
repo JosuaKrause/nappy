@@ -115,6 +115,24 @@ var _dawn_sabotage_done := false
 var _dawn_carrying_package := false
 var _dawn_brief := ""
 
+## And what today's attempt has done to the *city*, photographed the same way and given back the
+## same way: the one-shots it consumed, the marks it left and how far along its arc each block it
+## touched has moved.
+##
+## The rule they exist for is older and wider than the resistance's: *"a retry always rolls new --
+## nothing that happened on the day that got retried can influence the next repeat -- that has been
+## a long standing rule"*, and *"it is the same day exactly how the player encountered it the first
+## time this run. exact same state at the beginning of the day. nothing else"*. A fire that burnt a
+## block down on a lost day did not happen, because the day did not happen.
+##
+## `city_state` is photographed **before** the dawn arc roll — `GameState.begin_day()` runs ahead of
+## `CityState.begin_day()`, which is what advances every block whose next step was waiting for the
+## calendar. So a loss gives back that roll as well, and the retry's own dawn makes it again from the
+## same seed and the same day: identical by construction rather than by nothing having touched it.
+var _dawn_consumed_one_shots: Array[String] = []
+var _dawn_scars: Array[Dictionary] = []
+var _dawn_city_state := {}
+
 ## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`.
 ##
 ## Run-scoped and gameplay-owned, deliberately *not* read out of the telemetry log even though
@@ -192,6 +210,7 @@ func begin_day() -> void:
 	# the same thing a moment later for the rigs that drive it with no day loop around it.
 	resistance_carrying_package = false
 	_snapshot_the_resistance()
+	_snapshot_what_the_attempt_can_spend()
 
 ## Record the outcome of the day. Returns true if the run continues.
 ##
@@ -203,8 +222,13 @@ func begin_day() -> void:
 ## - **The retry is the same day.** Everything about one is deterministic from the seed and the
 ##   day number — the city, the closures, the whole event plan — which is exactly what makes a
 ##   retry worth having in a game about learning a route.
-## - **What the run has spent stays spent.** The one-shots it consumed and the block arcs it
-##   advanced are run history, not day content: a fire that burnt a block down did happen.
+## - **What a lost attempt spent is given back.** *("a retry always rolls new -- nothing that
+##   happened on the day that got retried can influence the next repeat -- that has been a long
+##   standing rule"; "exact same state at the beginning of the day. nothing else".)* The one-shots
+##   it consumed, the scars it left and the block arcs it advanced are facts about the attempt
+##   rather than about the run, so a day 3 lost after the fire burned owes a fire again — sited from
+##   whatever walk the retry takes — and leaves no shell behind it. Only a day she **wins** keeps
+##   any of it.
 ## - **Except where she settled.** That is a fact about the attempt rather than about the run,
 ##   and `settled_in` is read to decide what tomorrow spoils. Left in place, an attempt that
 ##   reached a park and then lost the day would send tomorrow's loud event to a park she never
@@ -228,6 +252,7 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 		# `nerves <= 0` branch too: an attempt that failed did not count, and a run that ends on it
 		# has no reason to be the exception — the `ending` entry then reports what actually stood.
 		var also_undone := _give_the_resistance_back()
+		_give_back_what_the_attempt_spent()
 		# Which nerve went, and on which day. The nerve economy has never been tested against
 		# a game that bites early, and this is the entry that will say whether it survives it —
 		# a question a retry sharpens rather than settles, since five nerves now buy five
@@ -243,6 +268,7 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 	# A won day commits what it did: the attempt that stood is the one the next photograph starts
 	# from, whether or not anything calls `begin_day()` before the next `finish_day()`.
 	_snapshot_the_resistance()
+	_snapshot_what_the_attempt_can_spend()
 	if is_final_day():
 		_end_run(GameEnums.Ending.GOOD if earned_good_ending() else GameEnums.Ending.NEUTRAL)
 		return false
@@ -335,6 +361,31 @@ func _snapshot_the_resistance() -> void:
 	_dawn_sabotage_done = sabotage_done
 	_dawn_carrying_package = resistance_carrying_package
 	_dawn_brief = pending_resistance_brief
+
+## Photographs what today's attempt is about to be allowed to spend of the city: the run's consumed
+## one-shots, its scars and every block's arc position. Taken beside `_snapshot_the_resistance()` and
+## at the same two moments, for the same reason — dawn, and again on a won day, which is what makes a
+## win a commit.
+##
+## The scar array is duplicated one level deep only, and that is enough: a scar dictionary is written
+## once by `add_scar()` and never edited, so nothing can reach into the photograph through a shared
+## entry.
+func _snapshot_what_the_attempt_can_spend() -> void:
+	_dawn_consumed_one_shots = consumed_one_shots.duplicate()
+	_dawn_scars = scars.duplicate()
+	_dawn_city_state = city_state.snapshot()
+
+## Puts the city back where the lost day found it. A one-shot the attempt spent is owed again, the
+## shell it left is gone, and the block it burned is back at the step it was on this morning.
+##
+## **Restored rather than counted back**, exactly like the resistance's step lists: those lists are
+## what the next attempt's planning reads — `EventScheduler._place_one_shots` skips a consumed row
+## and `build_day` stands a permanent body on every scar — so putting the photograph back is the
+## whole of it.
+func _give_back_what_the_attempt_spent() -> void:
+	consumed_one_shots = _dawn_consumed_one_shots.duplicate()
+	scars = _dawn_scars.duplicate()
+	city_state.restore(_dawn_city_state)
 
 ## Puts the resistance back where the lost day found it, and says so for the `nerve` entry —
 ## "" when the day touched none of it, which is most days.
@@ -441,15 +492,11 @@ const _SAVE_FIELDS := [
 	"scars", "city_state", "sabotage_done", "resistance_carrying_package",
 	"pending_resistance_brief", "_dawn_completed_steps", "_dawn_failed_steps", "_dawn_progress",
 	"_dawn_sabotage_done", "_dawn_carrying_package", "_dawn_brief", "settled_in",
+	"_dawn_consumed_one_shots", "_dawn_scars", "_dawn_city_state",
 ]
 
 func save_snapshot() -> Dictionary:
-	var scars_data: Array = []
-	for scar in scars:
-		var position: Vector2 = scar["position"]
-		scars_data.append({
-			"id": scar["id"], "x": position.x, "y": position.y, "since_day": scar["since_day"],
-		})
+	var scars_data := _scars_as_data(scars)
 	var settled_data: Array = []
 	for settled_day: int in settled_in:
 		var block: Vector2i = settled_in[settled_day]
@@ -477,7 +524,33 @@ func save_snapshot() -> Dictionary:
 		"_dawn_carrying_package": _dawn_carrying_package,
 		"_dawn_brief": _dawn_brief,
 		"settled_in": settled_data,
+		"_dawn_consumed_one_shots": _dawn_consumed_one_shots.duplicate(),
+		"_dawn_scars": _scars_as_data(_dawn_scars),
+		"_dawn_city_state": _dawn_city_state.duplicate(true),
 	}
+
+## A scar list as the plain arrays a JSON file can hold — a `Vector2` cannot survive
+## `JSON.stringify()`. Shared by the run's own scars and by the photograph a lost day gives back,
+## so the two can never be written in two shapes.
+static func _scars_as_data(from: Array[Dictionary]) -> Array:
+	var data: Array = []
+	for scar in from:
+		var position: Vector2 = scar["position"]
+		data.append({
+			"id": scar["id"], "x": position.x, "y": position.y, "since_day": scar["since_day"],
+		})
+	return data
+
+## The other half of `_scars_as_data()`. JSON has no integer type, so every number is cast.
+static func _scars_from_data(raw: Array) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	for scar: Dictionary in raw:
+		found.append({
+			"id": String(scar["id"]),
+			"position": Vector2(float(scar["x"]), float(scar["y"])),
+			"since_day": int(scar["since_day"]),
+		})
+	return found
 
 ## Whether `data` (a save's own `"state"` object) carries every field `save_snapshot()` writes —
 ## checked before `restore_snapshot()` ever runs, so a save missing a field from a shape this
@@ -503,13 +576,7 @@ func restore_snapshot(data: Dictionary) -> void:
 	consumed_one_shots.assign(data["consumed_one_shots"])
 	completed_resistance_steps = _to_int_array(data["completed_resistance_steps"])
 	failed_resistance_steps = _to_int_array(data["failed_resistance_steps"])
-	scars.clear()
-	for raw: Dictionary in data["scars"]:
-		scars.append({
-			"id": String(raw["id"]),
-			"position": Vector2(float(raw["x"]), float(raw["y"])),
-			"since_day": int(raw["since_day"]),
-		})
+	scars = _scars_from_data(data["scars"])
 	city_state.restore(data["city_state"])
 	sabotage_done = bool(data["sabotage_done"])
 	resistance_carrying_package = bool(data["resistance_carrying_package"])
@@ -523,6 +590,13 @@ func restore_snapshot(data: Dictionary) -> void:
 	settled_in.clear()
 	for raw: Dictionary in data["settled_in"]:
 		settled_in[int(raw["day"])] = Vector2i(int(raw["x"]), int(raw["y"]))
+	# The photograph of what the attempt may spend rides along with the rest of the dawn fields, so
+	# a run resumed mid-day gives back exactly what that day had spent when it was written — see
+	# `_snapshot_what_the_attempt_can_spend()` and `main._ready()`, which loses a day that was under
+	# way through the ordinary lost-day path.
+	_dawn_consumed_one_shots.assign(data["_dawn_consumed_one_shots"])
+	_dawn_scars = _scars_from_data(data["_dawn_scars"])
+	_dawn_city_state = (data["_dawn_city_state"] as Dictionary).duplicate(true)
 
 ## `Array[int]` from a JSON array of floats — see `restore_snapshot()`'s own doc for why every
 ## number here is cast rather than assigned.

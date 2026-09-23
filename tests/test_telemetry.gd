@@ -298,8 +298,9 @@ func _test_tracing_a_day_does_not_change_it(t) -> void:
 	Telemetry.end_run()
 
 	t.check(not Telemetry.is_active(), "the test put telemetry back the way it found it")
-	# Day 3 is the one that matters: `fire_truck` is the catalogue's only one-shot and it is
-	# the roll that got hoisted. If the log ever stops covering it this test has gone quiet.
+	# Day 3 is the one that matters: `burning_building` is the catalogue's only one-shot, and the
+	# `roll` line saying what became of it is written while the day is being planned. If the log
+	# ever stops covering it this test has gone quiet.
 	t.check(wrote > 0, "tracing fourteen days wrote something (%d lines)" % wrote)
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(quiet[day - 1] == traced[day - 1],
@@ -829,8 +830,8 @@ func _test_the_map_picture_draws_the_corridor(t) -> void:
 ## drifted from `role_mark` is worse than no picture, because it answers the one question the
 ## milestone can get badly wrong — *is that wall on the corridor or beside it* — confidently and
 ## wrongly. Two days rather than one because the vocabulary has four roles and no single day places
-## in all of them: day 9 has walls and friction and no one-shot, day 3 is the day the fire engine
-## runs.
+## in all of them: day 9 has walls and friction and no one-shot, day 3 is the day the fire is on her
+## way.
 ##
 ## What is not asserted here is whether it is **legible**, which is a PNG to open and look at. That
 ## split is this project's oldest and the marks were moved twice by looking: the route lines were
@@ -843,6 +844,14 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 	for day in [3, 9]:
 		var tree := RouteTree.for_day(map, day)
 		var plans := EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree)
+		# Day 3's set piece is budgeted with no position and sited from the walk she takes
+		# (`EventDef.sited_on_her_way`), so a day's plan on its own carries no set-piece mark to
+		# draw. The picture has to be able to draw one, and what it draws is a sited plan — so this
+		# stands in for the walk, which is nothing this test has or wants.
+		for plan in plans:
+			if plan.def.sited_on_her_way and not plan.is_placed():
+				plan.position = map.tile_to_world(
+						map.tiles_of_type(GameEnums.TileType.SIDEWALK)[0])
 		var plain := TelemetryMap.render(map, [], tree)
 		var drawn := TelemetryMap.render(map, [], tree, plans)
 		t.check(plain.get_data() != drawn.get_data(),

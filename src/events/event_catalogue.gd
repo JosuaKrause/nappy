@@ -687,9 +687,10 @@ static func _construction() -> EventDef:
 	def.cost = 2
 	return def
 
-## Audible from streets away, moving fast down an arterial road, and it stops at the fire
-## `burning_building` calls it in for. Long telegraph, because the whole point of the approach
-## is that you hear it coming and have time to get off that street.
+## Audible from streets away, moving fast down an arterial road, and it parks at the fire
+## `burning_building` calls it in for and stays there for the rest of the day. Long telegraph,
+## because the whole point of the approach is that you hear it coming and have time to get off that
+## street.
 ##
 ## Never scheduled directly — a SCRIPTED def with no day, created only once the fire has been
 ## seen (`EventDef.spawns_on_sight`, `EventManager._summon_what_has_been_sighted()`). The engine
@@ -719,11 +720,21 @@ static func _fire_truck() -> EventDef:
 	def.telegraph_time = 6.27
 	def.mobile = true
 	def.speed = 190.0
+	# And it stays at the fire once it gets there. See `EventDef.stops_where_it_arrives`: the
+	# standing field beside a fire she was led to is the cost the player asked for, and the pair of
+	# them is a street she is meant to turn round rather than walk down.
+	def.stops_where_it_arrives = true
 	return def
 
-## Act I's finale, and the day's own one-shot: placed in a building like every other set piece,
-## rather than left behind by something that drove through it. `spawns_on_sight` is what calls
-## the engine in the moment she first sees it.
+## Act I's finale, and the day's own one-shot: a building alight on a sidewalk, with the engine
+## called in the moment she first sees it (`spawns_on_sight`).
+##
+## **It is on her way, because the day sites it from the walk she is taking.** `sited_on_her_way`
+## leaves the plan without a position at dawn and `EventDirector.site_what_is_on_her_way()` puts it
+## on a building face ahead of her heading once her direction for the day is clear — *"the fire
+## should come first and be on your way guaranteed (a dynamic event dependent on the route you
+## chose that day)"*. A set piece sited anywhere in the city is a day-3 that can pass without a
+## fire in it and without an engine, which is the one authored beat of act I spent on nothing.
 ##
 ## **The telegraph is no longer an arrival's warning; it is how long she has once it is in
 ## view.** A fire that was already burning when she turned the corner has no approach to
@@ -743,6 +754,7 @@ static func _burning_building() -> EventDef:
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
+	def.sited_on_her_way = true
 	def.intensity = 18.0
 	def.inner_radius = 60.0
 	def.outer_radius = 260.0

@@ -72,7 +72,8 @@ src/
 	event_scheduler.gd    builds a day's event set from seed + day
 	event_manager.gd      owns the live instances and one reference on the `events` atlas page;
 	                       answers total_excitement_at
-	event_director.gd     sites the budgeted one-shots in front of her as she walks
+	event_director.gd     sites what the day budgeted and did not place, from her own walk:
+	                       the moments that cross her line, and day 3's fire
   day/
 	day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/

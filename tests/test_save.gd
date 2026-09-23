@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_a_save_from_before_the_alley_tiles_still_loads(t)
 
 	_test_day_under_way_load_costs_one_nerve(t)
+	_test_a_day_under_way_gives_back_the_fire_it_lit(t)
 	_test_day_under_way_load_on_the_last_nerve_ends_the_run(t)
 	_test_summary_load_costs_nothing(t)
 	_test_double_load_does_not_charge_twice(t)
@@ -387,6 +388,37 @@ func _test_day_under_way_load_costs_one_nerve(t) -> void:
 	t.check(GameState.resistance_progress == 0,
 			"the resistance work the attempt did is given back, the same as any other lost day")
 	t.check(resume["day_under_way"], "the resume dict this all hangs off of is the one asserted")
+
+## **A run closed mid-day gives back what that day burned, through the same path an ordinary loss
+## takes.** `main._ready()` hands a save written with `day_under_way` to `GameState.finish_day()` as
+## a hard fail, so the whole of the give-back has to survive the file: the photograph of what the
+## attempt may spend rides in `_SAVE_FIELDS` beside the resistance's, or a day 3 closed after the
+## fire burned would come back with the fire spent, a shell standing and no fire owed on the retry.
+##
+## The round trip is the point, so the state is written, wiped to something else, and read back
+## before the day is lost — a check that never left memory would pass with the three fields missing
+## from the save entirely.
+func _test_a_day_under_way_gives_back_the_fire_it_lit(t) -> void:
+	GameState.start_run(59)
+	GameState.day = Tuning.RUN_TAUGHT_DAY
+	GameState.nerves = 3
+	GameState.begin_day()
+	GameState.consumed_one_shots.append("burning_building")
+	GameState.add_scar("burnt_shell", Vector2(640.0, 640.0))
+	t.check(GameSave._write_now(true), "the run is saved with the day under way and the fire lit")
+
+	# Wiped to a different run entirely, so what comes back can only have come out of the file.
+	GameState.start_run(60)
+	var resume := GameSave._read_now()
+	t.check(resume.get("day_under_way") == true, "the save says a day was under way")
+	t.check("burning_building" in GameState.consumed_one_shots and GameState.scars.size() == 1,
+			"and it comes back with the fire spent and its shell standing, as the attempt left it")
+
+	GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(not "burning_building" in GameState.consumed_one_shots,
+			"losing the resumed day owes the fire again")
+	t.check(GameState.scars.is_empty(),
+			"and takes the shell down with it, the same as any other lost day")
 
 ## The last nerve ends the run exactly as it does when a day is lost by playing it out — and the
 ## ending clears the save, since there is nothing left to resume.

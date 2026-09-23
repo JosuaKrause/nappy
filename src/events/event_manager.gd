@@ -47,6 +47,17 @@ var _walking_the_finale := false
 ## day in `clear()`.
 var _sighted: Dictionary = {}
 
+## The day's placement context for a row the day left for her walk to site, or `null` on a day that
+## left none — the whole of `EventDef.sited_on_her_way`, which today is day 3's fire and nothing
+## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
+## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
+var _siting: EventScheduler.WalkSiting = null
+
+## The run's spent one-shots — `start_day`'s own argument, kept because one kind of one-shot is
+## spent while the day is running rather than while it is being planned. See `_stream_in()`. Empty
+## until a day has been started, which is the finale's case and is right: an escape spends nothing.
+var _consumed: Array[String] = []
+
 ## Which side of a redetaining instance's own crossing she was on when its conversation started —
 ## `instance -> signf(...)`, the sign of her offset from the body against `facing_now()`. Present
 ## only while that instance's own detention is running; `_release_finished_door_detentions()` reads
@@ -125,6 +136,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	clear()
 	_hard_failed = false
 	_day = day
+	_consumed = consumed_one_shots
 	_walking_the_finale = false
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
 	# than grown again so that the walls, the friction and the picture are all stated against one
@@ -230,7 +242,21 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	for plan in _plans:
 		if plan.is_placed():
 			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
-	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
+	# The day's placement context, kept past dawn for the one kind of plan the day budgets and
+	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.sited_on_her_way`.
+	# Built from exactly what `build_day` above was handed, so a placement made later is stated
+	# against the same corridor, the same protected calm and the same doors as every other one.
+	# Only on a day that has such a plan: the context grows a corridor and the protected-calm
+	# rects, and a day with nothing left for her walk would pay for both and read neither.
+	_siting = null
+	for plan in _plans:
+		if plan.def.sited_on_her_way and not plan.is_placed():
+			if not _siting:
+				_siting = EventScheduler.WalkSiting.new(day, _map, tree,
+						GameState.settled_this_act(), doors)
+			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
+			_siting.prepare(plan.def, _everything_but(plan))
+	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting)
 	stream_around(focus)
 
 ## Clears whatever was here and takes the escape's whole plan as given.
@@ -255,6 +281,7 @@ func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -
 	# and nothing rolls here. Cleared rather than left, so a rig that ran a day before the escape
 	# does not leave yesterday's holds on the map.
 	_map.clear_day_holds()
+	_siting = null
 	_plans = plans
 	# The director owes nothing — every finale placement is `MAP`-sited — but it is started anyway
 	# so that `owed_ahead()` and its own per-day state answer for this walk rather than for
@@ -297,9 +324,16 @@ func stream_around(at: Vector2) -> void:
 			_stream_out(plan)
 
 func _stream_in(plan: EventScheduler.Planned) -> void:
+	var first_time := not plan.was_live
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
-	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live, plan.facing)
+	plan.live = _create(plan.def, plan.position, plan.path, first_time, plan.facing)
+	# **A set piece the day owed her walk is spent here rather than at dawn**, because here is where
+	# it becomes something that happened — see `EventScheduler._place_one_shots`. The list is the
+	# one `start_day` was handed, which in a played game is `GameState.consumed_one_shots` and in a
+	# rig is the rig's own.
+	if first_time and plan.def.sited_on_her_way and not plan.def.id in _consumed:
+		_consumed.append(plan.def.id)
 	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
 	# is a harmless no-op assignment rather than a special case here.
 	plan.live.gate_state = plan.gate_state
@@ -646,6 +680,9 @@ func total_excitement_at(world_position: Vector2) -> float:
 func _physics_process(delta: float) -> void:
 	_retire_finished()
 	if _find_player():
+		# Before the streaming, so a plan sited this frame is in the world on the same frame it
+		# would have been had the day placed it at dawn.
+		_site_what_is_on_her_way(delta)
 		stream_around(_player.global_position)
 		_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
@@ -722,12 +759,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
 	if inward == Vector2i.ZERO:
 		return false
 	var along := Vector2(inward.y, inward.x)
-	# `pavement_inward` points away from the carriageway, into the block she is walking beside —
-	# see that function's own doc — so the road is the other way, and `AGAINST_THE_BUILDING`
-	# placed `at` on the sidewalk tile touching the building, the far tile of the two-tile band
-	# (`Tuning.SIDEWALK_WIDTH`) from the kerb: the near edge of the carriageway is that many
-	# tiles further in `-inward`.
-	var road_at := at - Vector2(inward) * (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+	var road_at := where_the_summoned_row_stops(_map, at)
 	var closing := summoned.speed + Tuning.WALK_SPEED
 	var lead := maxf(Tuning.offscreen_lead(along, closing, summoned.offscreen_notice),
 			summoned.field_reach() + Tuning.VIEW_HALF_EXTENT.length())
@@ -742,6 +774,26 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
 		_instances.append(instance)
 		return true
 	return false
+
+## Where a row summoned on sight comes to rest: the near kerb across from `at`, which is the
+## sidewalk point the row that summoned it is standing on. `Vector2.INF` where `at` is not beside a
+## carriageway at all, which is a point with no kerb to park at.
+##
+## **One place decides it, because two callers have to agree about it exactly.**
+## `_summon_the_sighted_row()` sends the engine here, and `EventScheduler.WalkSiting` treats the
+## field standing here as closed ground before it will accept a site for the fire — so a second copy
+## of this arithmetic would be a day whose acceptance check was made about a different kerb than the
+## engine parks at, and nothing would ever say so.
+##
+## `CityMap.pavement_inward` points away from the carriageway, into the block she is walking beside,
+## so the road is the other way; `AGAINST_THE_BUILDING` puts `at` on the sidewalk tile touching the
+## building, the far tile of the two-tile band (`Tuning.SIDEWALK_WIDTH`) from the kerb, and the near
+## edge of the carriageway is that many tiles further in `-inward`.
+static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
+	var inward := map.pavement_inward(map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return Vector2.INF
+	return at - Vector2(inward) * (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 
 ## The one kind of source that cannot be drawn over, told to the HUD instead.
 ##
@@ -859,6 +911,100 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
 		def.id, verb, lead,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## The other half of the director's day: a place the day budgeted and left unsited, put on a
+## building face ahead of her once her heading for the day is clear. Day 3's fire is the only row
+## that asks for this — see `EventDef.sited_on_her_way` and `EventDirector.site_what_is_on_her_way`.
+##
+## **The bookkeeping a late placement owes is the bookkeeping dawn already did for everything else.**
+## A body is recorded per tile from the *plan* so the crowd steers round it whether or not the
+## player has come near enough for it to exist (see "the bodies in the street" above), and a plan
+## that has just been moved was recorded at a position it is no longer standing at — so the old
+## footprint is given back and the new one taken, under the same owner id, in the one place that
+## knows the move happened.
+func _site_what_is_on_her_way(delta: float) -> void:
+	var body := _player as CharacterBody2D
+	if not body:
+		return
+	var moved := _director.site_what_is_on_her_way(delta, body.global_position, body.velocity,
+			_plans)
+	for plan in moved:
+		_map.release_obstruction(plan.get_instance_id())
+		_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+		# Where and why, because nothing else records it: the siting depends on the walk she took
+		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
+		# write, for the same reason.
+		Telemetry.note("ahead", "%s is sited %.0fpx ahead of her at %s, %s of where she is at %s" % [
+			plan.def.id, plan.position.distance_to(body.global_position),
+			TelemetryLog.tile(_map.world_to_tile(plan.position)),
+			_heading_name(body.velocity.normalized()),
+			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## **A day 3 she wins with the fire never met still burns.** *"I agree with the fire fix"*
+## (PLAYTEST-121). Lights whatever the day owed her walk and never got to put in the world — day 3's
+## fire and nothing else — off her path, on a site the dawn rules accept, and records everything a
+## fire records: the scar the run keeps, the arc the block it stood in moves along, and the one-shot
+## spent. Answers whether it lit anything.
+##
+## **Why it has to exist.** `burning_building` runs on day 3 and no other day, and it is spent where
+## it enters the world rather than where it is planned — so a day 3 she wins while every siting was
+## refused ends the run with no fire, no scar and no shell, and the shell is what the city
+## remembering day 3 is made of and what day 8's errand goes to. Meeting it stays the strong
+## guarantee; this is what the weak one owes.
+##
+## **Lit and then taken out of the world again**, which is not a repair: the day is over, so nothing
+## is left standing for her to walk into and nothing is drawn. What the run keeps is the scar, the
+## arc and the spend, and all three are the bookkeeping `_stream_in` does on a first instantiation —
+## reused here rather than copied, because a second copy of that list is a second answer to "what
+## does a fire do to a run".
+##
+## Called by `main._on_day_finished()` on a won day only. A lost day gives everything back
+## (`GameState.finish_day`), so lighting a fire on one would be handing the retry a shell it never
+## earned.
+func light_what_she_never_met(at: Vector2) -> bool:
+	if not _siting:
+		return false
+	for plan in _plans:
+		if not plan.def.sited_on_her_way or plan.was_live or plan.spent:
+			continue
+		# Its own stream, so a dusk placement cannot move anything the day already rolled.
+		var rng := GameState.day_rng(_day, "dusk-fire")
+		var sited := _siting.off_her_path(plan.def, rng, _everything_but(plan), at)
+		if not sited:
+			continue
+		plan.position = sited.position
+		plan.path = sited.path
+		plan.facing = sited.facing
+		plan.role = sited.role
+		_stream_in(plan)
+		_stream_out(plan)
+		# It is over the moment it is recorded: the day has ended, and a plan left unspent would be
+		# streamed back in by the next `stream_around` a rig made on the same day.
+		plan.spent = true
+		_map.release_obstruction(plan.get_instance_id())
+		# Where and why, because nothing else records it: which site a dusk fire took depends on
+		# where she finished the day, and no seed reproduces that from outside.
+		Telemetry.note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "
+				% [plan.def.id, TelemetryLog.tile(_map.world_to_tile(plan.position)),
+				plan.position.distance_to(at)] + "finished the day")
+		return true
+	return false
+
+## Everything the day has planned except `plan` — what a placement is spaced and checked against.
+## The one being placed is never in it: a row moved off a position it has not been seen at must not
+## be spaced against its own old body.
+func _everything_but(plan: EventScheduler.Planned) -> Array[EventScheduler.Planned]:
+	var others: Array[EventScheduler.Planned] = []
+	for other in _plans:
+		if other != plan:
+			others.append(other)
+	return others
+
+## The day's placement context for the row it left for her walk, or `null` on a day that left none.
+## Read by `tests/probes/m179_fire_on_her_way.gd` for the refusals a long wait was made of; nothing
+## in the game asks.
+func walk_siting() -> EventScheduler.WalkSiting:
+	return _siting
 
 func _find_player() -> bool:
 	if not _player:
@@ -1119,6 +1265,14 @@ static func _compass_of(axis: Vector2, along: float) -> String:
 	if absf(axis.x) > absf(axis.y):
 		return "east" if along > 0.0 else "west"
 	return "south" if along > 0.0 else "north"
+
+## The same question asked of a free heading rather than of a street's own axis: whichever of the
+## two she is mostly going, named the same way. Most headings are diagonal — a press sets an
+## arbitrary unit vector — so the dominant component is the only honest one-word answer.
+static func _heading_name(heading: Vector2) -> String:
+	if absf(heading.x) > absf(heading.y):
+		return _compass_of(Vector2.RIGHT, heading.x)
+	return _compass_of(Vector2.DOWN, heading.y)
 
 func _check_hard_fails() -> void:
 	if _hard_failed or not _find_player():

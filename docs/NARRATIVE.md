@@ -48,7 +48,9 @@ Warm palette. Full sun. Lots of pedestrians, dogs, kids in the playground. The o
 are *pleasant* things — a busker, a cat, a friendly neighbour. The only genuinely
 unpleasant thing is a man yelling on a corner, and everyone walks around him.
 
-Day 3 ends with the fire truck and a burning building. Read as an accident.
+On day 3 the fire meets her on her way. It is on whatever street she takes, the engine comes
+and parks across from it, and between them the street is shut for the rest of the day, so she
+turns round or goes another way. Still read as an accident.
 
 ### Act II — "Notices" (days 4–7)
 
