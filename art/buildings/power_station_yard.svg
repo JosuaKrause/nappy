@@ -1,0 +1,77 @@
+<!-- The power station's transformer yard: one whole block of its lot, seen the way the city's
+     ground is seen, with the upright things on it drawn standing. Gravel inside a chain-link
+     fence, three transformers on concrete pads with their insulators, a steel gantry carrying
+     the lines to the hall, and a warning plate on the street fence. The canvas is the block's
+     own lot, eight tiles square; its top-left corner is the lot's north-west corner. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="0" y="0" width="256" height="256" fill="#8f8b82" stroke="none"/>
+  <g fill="#7d796f" stroke="none">
+    <rect x="18" y="40" width="3" height="2"/><rect x="61" y="22" width="2" height="2"/>
+    <rect x="140" y="30" width="3" height="2"/><rect x="210" y="48" width="2" height="2"/>
+    <rect x="34" y="120" width="2" height="2"/><rect x="118" y="146" width="3" height="2"/>
+    <rect x="196" y="132" width="2" height="2"/><rect x="72" y="198" width="3" height="2"/>
+    <rect x="160" y="214" width="2" height="2"/><rect x="228" y="190" width="3" height="2"/>
+  </g>
+  <g fill="#a19c92" stroke="none">
+    <rect x="44" y="12" width="2" height="2"/><rect x="102" y="64" width="2" height="2"/>
+    <rect x="182" y="84" width="2" height="2"/><rect x="24" y="170" width="2" height="2"/>
+    <rect x="138" y="182" width="2" height="2"/><rect x="236" y="104" width="2" height="2"/>
+  </g>
+  <path d="M8 26 V246 M248 26 V246" fill="none" stroke="#5d5a55" stroke-width="1.4"/>
+  <g fill="#6b6862" stroke="none">
+    <rect x="6" y="60" width="4" height="4"/><rect x="6" y="110" width="4" height="4"/>
+    <rect x="6" y="160" width="4" height="4"/><rect x="6" y="210" width="4" height="4"/>
+    <rect x="246" y="60" width="4" height="4"/><rect x="246" y="110" width="4" height="4"/>
+    <rect x="246" y="160" width="4" height="4"/><rect x="246" y="210" width="4" height="4"/>
+  </g>
+  <path d="M8 26 V6 H248 V26" fill="none" stroke="#5d5a55" stroke-width="1.4"/>
+  <path d="M8 10 H248 M8 18 H248" fill="none" stroke="#77736d" stroke-width="0.6"/>
+  <path d="M40 6 V26 M80 6 V26 M120 6 V26 M160 6 V26 M200 6 V26" fill="none" stroke="#5d5a55" stroke-width="1.2"/>
+  <path d="M40 58 V34 M216 58 V34" fill="none" stroke="#4e5256" stroke-width="2"/>
+  <path d="M34 36 H222" fill="none" stroke="#4e5256" stroke-width="2.4"/>
+  <path d="M60 38 C90 56 110 56 128 44 M128 44 C150 58 176 58 196 38 M60 38 L64 96 M128 44 V96 M196 38 L192 96" fill="none" stroke="#2f2b2e" stroke-width="0.7"/>
+  <path d="M0 38 C14 44 26 44 34 38" fill="none" stroke="#2f2b2e" stroke-width="0.7"/>
+  <g>
+    <path d="M36 150 H92 L96 158 H40 Z" fill="#b3aea4"/>
+    <path d="M40 158 H96 V168 H40 Z" fill="#9c978d"/>
+    <path d="M44 112 H88 L92 120 H48 Z" fill="#8a9690"/>
+    <path d="M48 120 H92 V152 H48 Z" fill="#6e7a74"/>
+    <path d="M54 124 V148 M60 124 V148 M66 124 V148 M72 124 V148 M78 124 V148 M84 124 V148" fill="none" stroke="#56615c" stroke-width="0.9"/>
+    <path d="M56 112 V100 M68 112 V100 M80 112 V100" fill="none" stroke="#3b2d32" stroke-width="1.4"/>
+    <ellipse cx="56" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="56" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+    <ellipse cx="68" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="68" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+    <ellipse cx="80" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="80" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+  </g>
+  <g>
+    <path d="M100 150 H156 L160 158 H104 Z" fill="#b3aea4"/>
+    <path d="M104 158 H160 V168 H104 Z" fill="#9c978d"/>
+    <path d="M108 112 H152 L156 120 H112 Z" fill="#8a9690"/>
+    <path d="M112 120 H156 V152 H112 Z" fill="#6e7a74"/>
+    <path d="M118 124 V148 M124 124 V148 M130 124 V148 M136 124 V148 M142 124 V148 M148 124 V148" fill="none" stroke="#56615c" stroke-width="0.9"/>
+    <path d="M120 112 V100 M132 112 V100 M144 112 V100" fill="none" stroke="#3b2d32" stroke-width="1.4"/>
+    <ellipse cx="120" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="120" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+    <ellipse cx="132" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="132" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+    <ellipse cx="144" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="144" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+  </g>
+  <g>
+    <path d="M164 150 H220 L224 158 H168 Z" fill="#b3aea4"/>
+    <path d="M168 158 H224 V168 H168 Z" fill="#9c978d"/>
+    <path d="M172 112 H216 L220 120 H176 Z" fill="#8a9690"/>
+    <path d="M176 120 H220 V152 H176 Z" fill="#6e7a74"/>
+    <path d="M182 124 V148 M188 124 V148 M194 124 V148 M200 124 V148 M206 124 V148 M212 124 V148" fill="none" stroke="#56615c" stroke-width="0.9"/>
+    <path d="M184 112 V100 M196 112 V100 M208 112 V100" fill="none" stroke="#3b2d32" stroke-width="1.4"/>
+    <ellipse cx="184" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="184" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+    <ellipse cx="196" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="196" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+    <ellipse cx="208" cy="104" rx="3" ry="1.4" fill="#c8b98f"/><ellipse cx="208" cy="100" rx="3" ry="1.4" fill="#c8b98f"/>
+  </g>
+  <path d="M40 196 H216" fill="none" stroke="#6f6b64" stroke-width="3" stroke-dasharray="10 6"/>
+  <path d="M0 254 H256" fill="none" stroke="#3b2d32" stroke-width="1.6"/>
+  <path d="M4 254 V222 H252 V254" fill="#b8b4ab" fill-opacity="0.18" stroke="#5d5a55" stroke-width="1.6"/>
+  <path d="M4 228 H252 M4 240 H252" fill="none" stroke="#77736d" stroke-width="0.6"/>
+  <path d="M4 222 L36 254 M36 222 L68 254 M68 222 L100 254 M100 222 L132 254 M132 222 L164 254 M164 222 L196 254 M196 222 L228 254 M228 222 L252 246" fill="none" stroke="#8a867f" stroke-width="0.5"/>
+  <path d="M36 222 L4 254 M68 222 L36 254 M100 222 L68 254 M132 222 L100 254 M164 222 L132 254 M196 222 L164 254 M228 222 L196 254 M252 230 L228 254" fill="none" stroke="#8a867f" stroke-width="0.5"/>
+  <path d="M4 220 V254 M36 220 V254 M68 220 V254 M100 220 V254 M132 220 V254 M164 220 V254 M196 220 V254 M228 220 V254 M252 220 V254" fill="none" stroke="#4f4c48" stroke-width="1.6"/>
+  <rect x="112" y="228" width="32" height="18" fill="#e2c14a"/>
+  <path d="M128 230 L121 243 H135 Z" fill="#e2c14a" stroke="#3b2d32" stroke-width="0.9"/>
+  <path d="M128.6 233.5 L126.6 237.8 H128.8 L127.4 241 L130.2 236.6 H128.1 Z" fill="#3b2d32" stroke="none"/>
+</svg>

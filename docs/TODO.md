@@ -460,25 +460,12 @@ speak, and nothing city-wide left. What is open is the posters.
 > "just wait until a certain distance away -- then everything is off at once" · "yes all lights
 > should go out. that actually applies also to the escape sequence"
 
-[PLAYTEST-119](playtests/PLAYTEST-119.md). Built before M181, the resistance has a reason, and
-a task is one day, whose day 14 goes to this building's front door.
+[PLAYTEST-119](playtests/PLAYTEST-119.md). **The station itself is built** (`DECISIONS.md`, M183,
+slice one, the power station): one on every seed, across a region door from home, with its own
+look and a front door that day 14's route always reaches. What is open is the blackout and the
+dark escape, and the red arrow of M181, the resistance has a reason, and a task is one day, which
+points at the door (`CityMap.power_station_door_position()`).
 
-- [ ] **Every city has a power station.** One big building — the landmark `docs/CITY.md`
-      describes, two neighboring blocks and the street between them built as one mass — is the
-      power station on every seed, with a look of its own (stacks, a fenced transformer yard)
-      and a front door on a street she can reach on day 14. Today the generator asks for
-      `Tuning.MIN_BIG_BUILDINGS` to `MAX_BIG_BUILDINGS` of them and places as many as its
-      candidates allow, so a seed can end with none; the guarantee is checked when the
-      footprint is accepted, never repaired afterwards. What it does to existing seeds and
-      saves is measured and said. Which district it stands in is the orchestrator's and open
-      to overturn: industrial. **It is not in the home's district**, decided by the player on
-      2026-09-21, since day 9's task in M181, the resistance has a reason, and a task is one
-      day, is for a station that is across a door; day 14 crosses one, and the guarantee that the front door can be reached on day 14
-      is checked with the doors and that day's closures in place.
-      **It is a reasonable distance from the home, and reaching it takes a door crossing**
-      ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the route does not need to go past it from
-      day one. the narrative demands a gate crossing for reaching it"). It is in the city from
-      day 1 like every building, and nothing leads her to it before day 14.
 - [ ] **The blackout is everything at once.** After she has touched the front door, once she
       is a set distance from the station, every lit window goes dark, every traffic light goes
       off and every loudspeaker mast stops, in one frame. *The orchestrator recommended the
@@ -490,6 +477,9 @@ a task is one day, whose day 14 goes to this building's front door.
       are harder that night on purpose. What stays owed is the **crowd-traffic** rules'
       fairness contract for a lethal road — a car she can see coming — and the brief says how
       a crosswalk with no light keeps it.
+      **The station's own hall goes dark with the city**: its clerestory windows
+      (`art/buildings/power_station_clerestory.svg`) are drawn unlit today and need a dim lit
+      state for the night of day 14, so the hall is seen to go out.
 - [ ] **The escape is in the dark too.** The hallways and the basement are gloomy, and the
       stairs have emergency lighting, "maybe … (red?)", the player's to judge on a picture.
 - [ ] **`docs/NARRATIVE.md` says what the last night is.** Its good ending has the

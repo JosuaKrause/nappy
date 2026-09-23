@@ -1,6 +1,7 @@
 class_name RouteTree
 extends RefCounted
-## The day's corridor: one branch from the doorstep to every calm area still worth reaching.
+## The day's corridor: one branch from the doorstep to every calm area still worth reaching, and
+## on the power station's day a spur to its front door as well (`_grow_the_spur_to_the_door`).
 ##
 ## The design is docs/CITY.md, "Diversions — the design" and "How the corridor is built", and
 ## docs/TODO.md, M69, "The day's route tree moves onto the grid too".
@@ -231,12 +232,18 @@ static func for_the_run(map: CityMap) -> RouteTree:
 ## that included them would differ from the one the day was planned against — the random walk sees
 ## a different graph, not merely a shorter one — and the picture would then be of a plan nobody
 ## used.
+##
+## **On `Tuning.POWER_STATION_DAY` the tree also reaches the power station's front door**, the
+## day's task — see `_grow_the_spur_to_the_door`. On every other day nothing leads her there.
 static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
 	var grid := ReachabilityGrid.build(map)
-	return grow(map, ClosurePlanner.home_street(map), ClosurePlanner.calm_areas(map),
+	var tree := grow(map, ClosurePlanner.home_street(map), ClosurePlanner.calm_areas(map),
 			map.blocked_segments(), grid, rng)
+	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
+		tree._grow_the_spur_to_the_door(map.rect_tiles(map.power_station_door))
+	return tree
 
 ## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets a
 ## calm zone absorbed. Their ground is already reflected in `grid` as walkable calm tiles, so it
@@ -632,6 +639,68 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 		if _colours.has(node):
 			var path := _unwind(previous, node)
 			path.reverse()
+			return path
+		var edges := _ways(node) if avoid_spine else _ways_including_the_spine(node)
+		for edge: Array in edges:
+			var next: int = edge[0]
+			if previous.has(next):
+				continue
+			previous[next] = node
+			queue.append(next)
+	return []
+
+## Joins the power station's front door to the tree on the day she is sent there, so the door is
+## tree ground like a calm area's way in — which is what every guarantee about the day is stated
+## over. A boundary crossing the spur takes is a door rather than wall (`RegionPlanner.plan_day`),
+## nothing seals it (`SealPlanner`) and no closure lands on it (`ClosurePlanner`), all by the rules
+## they already follow for the rest of the tree; the door is outside the home's region, so the spur
+## always crosses at least one.
+##
+## **Grown after the branches and the trunk, and from nothing they rolled**: a breadth-first search
+## from the door's own pavement to the nearest cell already on the tree, the trunk's own shape run
+## from the other end, adopted under the merge point's lowest colour. So the rest of the day's
+## corridor is exactly what it would have been without the station, and only the spur is added —
+## the day is not bent toward the door, the door is joined to the day. Tried without the main road
+## first and with it only if nothing else joins, as the trunk is.
+##
+## A no-op when nothing grew, or when the door cannot reach the tree at all; the first leaves the day
+## to `EventScheduler._ensure_the_city_is_still_walkable`, the second cannot happen on a city
+## `CityGenerator.validate()` accepted, since every walkable tile is reachable from the home.
+func _grow_the_spur_to_the_door(door_tiles: Array[Vector2i]) -> void:
+	if _colours.is_empty() or not grid:
+		return
+	var sources: Array[int] = []
+	for tile in door_tiles:
+		var node := grid.node_at(tile)
+		if node >= 0 and not sources.has(node):
+			sources.append(node)
+	if sources.is_empty():
+		return
+	var path := _spur_path(sources, true)
+	if path.is_empty():
+		path = _spur_path(sources, false)
+	if path.is_empty():
+		return
+	if path.size() == 1:
+		return   # the door's own pavement is already on the tree
+	_adopt(path, _any_colour_of(path[path.size() - 1]))
+	_street_keys_built = false
+	_street_keys.clear()
+
+## The shortest way from the door's nodes to the nearest node already on the tree, door first and
+## merge point last, which is the orientation `_adopt()` expects of a probe.
+func _spur_path(sources: Array[int], avoid_spine: bool) -> Array[int]:
+	var previous := {}
+	var queue: Array[int] = []
+	for node in sources:
+		previous[node] = -1
+		queue.append(node)
+	var head := 0
+	while head < queue.size():
+		var node: int = queue[head]
+		head += 1
+		if _colours.has(node):
+			var path := _unwind(previous, node)
 			return path
 		var edges := _ways(node) if avoid_spine else _ways_including_the_spine(node)
 		for edge: Array in edges:
