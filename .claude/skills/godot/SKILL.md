@@ -75,11 +75,8 @@ policy built on it are separate, so `--touch` can render a touch-only screen on 
 touchscreen, and a screenshot rig can photograph it.
 
 **Why it is a rule rather than a preference: a hard-tied gate makes a whole branch unreachable from
-every test you own.** The invincibility bug in `docs/playtests/PLAYTEST-25.md` is the case that earned this
-entry — `Telemetry` returns early on `OS.has_feature("web")`, so no test and no desktop session
-could ever run the day-ending path with the observer absent, and a runtime type error sat on the
-live site through a full CI suite and a hundred plays. **The gate did not cause the bug; it made the
-bug unfindable**, which is worse, because nothing about it looked like a gap.
+every test you own** — it does not cause a bug, it makes one unfindable, and nothing about it looks
+like a gap. `Telemetry.begin_run()`'s web gate carries `?telemetry=1` for exactly this reason.
 
 The test is not "can I reach this branch" but **"can somebody watching a screen reach it"**. A branch
 only the deploy target can enter is a branch nobody has seen.
@@ -99,21 +96,21 @@ node is looked up by path.**
 **Nodes are not refcounted.** A test double extending a `Node` class must be `free()`d by hand or it
 leaks. `RefCounted` doubles do not.
 
-**Never commit `.godot/`.** It is gitignored, which means a fresh clone has no `class_name` registry
-and every typed reference fails to parse until `check.sh` runs the import pass.
+**Never commit `.godot/`** — the **committing** skill, "Never commit", says why and what a fresh
+clone needs instead.
 
 **Texture `.import` sidecars are repository files; `.godot/imported/` is the cache.** A folder
 excluded by `.gdignore`, including all its descendants, keeps no `.import` sidecars; remove
 obsolete sidecars when moving assets into such a folder. `art/`, `docs/` and `tools/` are all
 excluded this way, so the game's own pictures have no sidecars at all: they are baked into atlas
 pages, and only the pages — written into the gitignored `assets/atlases/baked/` — are imported.
-After checking out an asset branch, run
-`check.sh` in the actual test folder: a worktree's imported textures do not travel with commits.
-`run.sh` checks for missing global classes and for `.import` sidecars whose imported copy is
-absent, and runs the import pass itself when either is found; `shot.sh` and a bare `godot --path`
-do not. A failed texture preload can leave a GDScript uncompiled and produce nonexistent `new()`
-followed by nil-method errors. Read the first load/parse error before changing the constructor. For illustrated assets,
-follow the explicit opt-in boot and visual gates in the **illustrated-png** skill.
+After checking out an asset branch, run `check.sh` in the actual test folder: a worktree's imported
+textures do not travel with commits. `run.sh` checks for missing global classes and for `.import`
+sidecars whose imported copy is absent, and runs the import pass itself when either is found;
+`shot.sh` and a bare `godot --path` do not. A failed texture preload can leave a GDScript
+uncompiled and produce nonexistent `new()` followed by nil-method errors. Read the first load/parse
+error before changing the constructor. For illustrated assets, follow the explicit opt-in boot and
+visual gates in the **illustrated-png** skill.
 
 ## Pausing
 
@@ -148,22 +145,30 @@ afterwards is worse: it throws away the slide's own correction, so walking into 
 as idle and starts making sleep progress. **A second displacement goes through its own
 `move_and_collide()`**, which respects walls and touches nothing.
 
-**A negative-width `Rect2` does not flip `draw_texture_rect`.** It is normalised on the way through,
-so the sprite lands a full width to one side. Mirror by setting a transform that scales x by −1
-about the anchor instead.
+**A picture is an asset, never code.** A glyph, an icon, a silhouette or a symbol is an image file
+under `art/` drawn as a texture, never assembled in `_draw()` out of `draw_circle`, `draw_rect`,
+`draw_line`, `draw_arc` or `draw_colored_polygon`; layout — a bar's fill, a scrim, a debug overlay —
+is not a picture. The rule in full, with its reasons, is the **cues** skill, "A picture is an asset,
+never code".
 
-**`draw_set_transform` replaces the canvas transform and there is no getter to read the old one
-back.** So a helper that sets an absolute matrix silently discards whatever its caller had already
-set, and the caller cannot defend itself — it can only hand the helper what it set. `Sprites`
-carries the base transform for exactly this reason; see the **cues** skill, "Drawing traps", for
-the cue that went missing on half the headings in the game before it did.
+**A negative-width `Rect2` does not flip `draw_texture_rect`.** It is normalised on the way through,
+so the sprite lands a full width to one side — which looks like art sliding off its own shadow, not
+like a failed flip. Mirror by setting a transform that scales x by −1 about the anchor instead;
+`Sprites.draw_standing()` is the one place that does.
+
+**`draw_set_transform` *replaces* the canvas transform — it does not compose with one somebody else
+already set, and there is no getter to read the old one back.** So a helper that sets an absolute
+matrix silently discards whatever its caller had already set, and the caller cannot defend itself —
+it can only hand the helper what it set. `Sprites` carries a base transform for exactly this reason;
+the contract a caller keeps is the **cues** skill, "Drawing through `Sprites`".
 
 **Y-sorting compares origins**, so a thing whose mass extends away from its own origin sorts wrong.
-Before reaching for a better comparison, ask whether the two things can ever legitimately be on
-opposite sides of each other.
+**Before reaching for a better comparison, ask whether the two things can ever legitimately be on
+opposite sides of each other.** Buildings cannot — no lot tile is walkable — so they are a layer of
+their own and sort against nothing.
 
-**`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw is
-fine, but anything animated must call `queue_redraw()` itself.
+**`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw (the
+city ground) is fine, but anything animated must call `queue_redraw()` itself.
 
 ## Performance
 
@@ -202,6 +207,5 @@ is the only part that governs the code in front of them.
   there.
 - Section dividers inside longer files:
   `# ---------------------------------------------------------------- drawing ---`
-- **Comments explain why, never what.**
 - Leading underscore for private members and methods. Godot lifecycle methods (`_ready`, `_draw`,
   `_process`) are the exception and are not private.
