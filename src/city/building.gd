@@ -73,12 +73,13 @@ const TALL_WINDOW_CHANCE := 0.3
 const SHUTTERED_WINDOW_CHANCE := 0.15
 
 # ------------------------------------------------------------------- fronts ---
-# A storefront replaces `WALL_BASE` across a two-column ground row (its own fill is opaque, so it
-# covers the ordinary windows drawn under it the same way `WALL_BASE`'s plinth always sat over the wall); a
-# fire escape and a civic portico are overlays drawn after the wall, in front of everything a
-# ground-floor cell already drew. The tint rules are untouched either way: none of these three
+# A storefront replaces `WALL_BASE` across a two-column ground row (its own fill is opaque over the
+# wall it sits on, the same way `WALL_BASE`'s plinth sits over the wall); an entrance door, a fire
+# escape and a civic portico are overlays drawn after the wall, in front of everything a
+# ground-floor cell already drew. The tint rules are untouched either way: none of these
 # textures is multiplied by `Palette.building_wall` — they are already-coloured overlays, the
-# same footing `WINDOW_DARK`/`WINDOW_LIT` already stand on.
+# same footing `WINDOW_DARK`/`WINDOW_LIT` already stand on. A door's transparent margin is what
+# lets the building's own tinted wall show round its surround.
 
 const STOREFRONT_TEXTURES: Array[StringName] = [
 	&"buildings/storefront_a",
@@ -104,6 +105,13 @@ const STOREFRONT_SHUTTERED_TEXTURES: Array[StringName] = [
 const FIRE_ESCAPE_A := &"buildings/fire_escape_a"
 const FIRE_ESCAPE_B := &"buildings/fire_escape_b"
 const CIVIC_PORTICO := &"props/civic_portico"
+## The one way in a multi-story front with no storefront and no portico has — see
+## `entrance_door_col()`. 32×36px, a whole wall cell wide and rising four pixels into the row above
+## the way a storefront does, drawn standing on the ground line at its column's centre. An
+## `INDUSTRIAL` front gets the heavier steel one; every other purpose that gets a door gets the
+## plain one.
+const ENTRANCE_DOOR := &"buildings/entrance_door"
+const ENTRANCE_DOOR_INDUSTRIAL := &"buildings/entrance_door_industrial"
 
 # ------------------------------------------------------------- power station ---
 # The power station is a big building drawn as two parts: a hall over its door block and the
@@ -241,6 +249,16 @@ enum Condition {
 		station_yard_cols = value
 		queue_redraw()
 
+## Whether this building is her own — the one exception to the ground floor's blank-wall-or-shops
+## rule (`_draws_window_at()`): every other multi-story building's ground floor never shows a
+## window. Set by `City._spawn_buildings()` from the building's own lot and `CityMap.home_block`,
+## so every Building on the home block counts as hers, not only whichever lot the door notch
+## happens to touch. Never rolls anything of its own, so flipping it only ever needs a redraw.
+@export var is_home_building := false:
+	set(value):
+		is_home_building = value
+		queue_redraw()
+
 @export var condition := Condition.LIVED_IN:
 	set(value):
 		if condition == value:
@@ -291,6 +309,10 @@ var _storefront_shutter_severity: Array[float] = []
 ## the share that rolled none.
 var _fire_escape_col := -1
 var _fire_escape_variant_b := false
+## The ground-floor column an entrance door would stand in, rolled for every building by
+## `_build_entrance()` whether or not it ends up with one — `entrance_door_col()` is what decides
+## that, so the home flag and the district's own entrance can change without rolling anything.
+var _door_col := 0
 ## One entry per roof unit: `{"cell": Vector2i, "kind": _Furniture, "span": int}`. Sorted
 ## north-most (highest row) first at build time, so `_draw_roof_furniture` can paint far units
 ## before near ones without re-sorting every frame — the same back-to-front order a unit taller
@@ -341,6 +363,7 @@ func _rebuild() -> void:
 	_collision.position = Vector2(0.0, -shape.half_extents.y)
 	_build_windows()
 	_build_front()
+	_build_entrance()
 	_build_roof_furniture()
 	set_process(_has_vent)
 	queue_redraw()
@@ -427,7 +450,70 @@ func _build_front() -> void:
 		_fire_escape_col = rng.randi_range(1, cols - 2) if cols >= 3 else rng.randi_range(0, cols - 1)
 		_fire_escape_variant_b = rng.randf() < 0.5
 
+## Which ground-floor column the entrance door stands in. A seed of its own, distinct from
+## `_build_windows()`'s and `_build_front()`'s, so the door moves no window, style, storefront,
+## awning, shutter or fire-escape roll. Read after `_build_front()`, since the door keeps clear of
+## the fire escape — see `_door_col_from()`.
+func _build_entrance() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("door:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
+	_door_col = _door_col_from(columns(), _fire_escape_col, rng)
+
+## The door's column, rolled from the first non-empty tier: an interior column clear of the fire
+## escape and both its neighbours, then any column clear of all three, then any column but the
+## escape's own. The escape's landings reach eight pixels into both neighbouring columns at the
+## ground floor, so a door beside it would be half hidden; the corner columns come second only as
+## the courtesy the fire escape pays `WALL_EDGE_W`/`WALL_EDGE_E`, since the door's own margin
+## clears the edge line. Static so a test can replay it against the same stream.
+static func _door_col_from(cols: int, escape: int, rng: RandomNumberGenerator) -> int:
+	var tiers: Array[Array] = [[], [], []]
+	for col in cols:
+		var clear := escape < 0 or absi(col - escape) > 1
+		var interior := cols < 3 or (col > 0 and col < cols - 1)
+		if clear and interior:
+			tiers[0].append(col)
+		if clear:
+			tiers[1].append(col)
+		if col != escape:
+			tiers[2].append(col)
+	for tier in tiers:
+		if not tier.is_empty():
+			var picked: int = tier[rng.randi_range(0, tier.size() - 1)]
+			return picked
+	return 0
+
+## The ground-floor column this front's entrance door stands in, or -1 for a front that has none:
+## a multi-story front is a way in, and a front that already has one gets no second. A storefront
+## is a commercial front's way in and the portico is a civic front's; her own building keeps its
+## ground-floor windows and her own door is already cut into her block; a one-row facade keeps its
+## windows and has no door; the power station draws its own. A commercial front too narrow for a
+## single complete storefront — one column — is the one commercial front that gets a door.
+func entrance_door_col() -> int:
+	if power_station or is_home_building or wall_tiles() < 2:
+		return -1
+	if district == GameEnums.BlockPurpose.CIVIC:
+		return -1
+	if district == GameEnums.BlockPurpose.COMMERCIAL and not _storefront_variant.is_empty():
+		return -1
+	return _door_col
+
+## The door picture for this front's district: steel on an `INDUSTRIAL` block, the plain one on
+## every other.
+func _entrance_door_texture() -> StringName:
+	if district == GameEnums.BlockPurpose.INDUSTRIAL:
+		return ENTRANCE_DOOR_INDUSTRIAL
+	return ENTRANCE_DOOR
+
 # ------------------------------------------------------------------ drawing ---
+
+## Whether `row` draws a window at all. Every row does, except the ground floor (`row == 0`) of a
+## multi-story building that is not her own: a ground floor is shops or blank wall, never windows
+## (`docs/CITY.md`, "A front is district and block purpose"), and a one-row facade has no upper
+## floor to make it multi-story in the first place. Reads no RNG of its own — `_build_windows()`
+## still rolls exactly the same `_windows` array and `_window_style` it always has, so which upper
+## windows are lit and the window style are unaffected by this rule.
+func _draws_window_at(row: int) -> bool:
+	return row > 0 or is_home_building or wall_tiles() < 2
 
 func _draw() -> void:
 	var cols := columns()
@@ -447,13 +533,14 @@ func _draw() -> void:
 		for col in range(hall.x, hall.y):
 			var at := _cell(col, row)
 			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
-			var index := row * cols + col
-			var window_at := at
-			if row == 1 and not _storefront_variant.is_empty():
-				# The 36px storefront rises four pixels into this row; lift every upper window two
-				# pixels so its sill remains visible, including the odd column that stays wall.
-				window_at.y -= 2.0
-			draw_texture(AtlasLibrary.region(_window_texture(index)), window_at)
+			if _draws_window_at(row):
+				var index := row * cols + col
+				var window_at := at
+				if row == 1 and (not _storefront_variant.is_empty() or entrance_door_col() >= 0):
+					# A 36px storefront or door rises four pixels into this row; lift every upper
+					# window two pixels so its sill remains visible, the whole row alike.
+					window_at.y -= 2.0
+				draw_texture(AtlasLibrary.region(_window_texture(index)), window_at)
 			if col == hall.x:
 				draw_texture(AtlasLibrary.region(WALL_EDGE_W), at)
 			if col == hall.y - 1:
@@ -570,6 +657,39 @@ func _ground_floor_texture(col: int) -> StringName:
 		return STOREFRONT_SHUTTERED_TEXTURES[index]
 	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[store] else STOREFRONT_TEXTURES[index]
 
+## The ground-floor cells with nothing on them but the plain wall and its plinth — no window, no
+## storefront, no civic entrance, no entrance door and not the column a fire escape stands against.
+## Local space, one `Vector2(TILE, TILE)` rect per blank column, in
+## the same top-left convention `_cell()` already uses for every draw call in this file. Empty for
+## the power station (it draws its own front), her own building (the blank-wall rule's one
+## exception) and a one-row facade (not multi-story, so the rule never reaches it). Nothing calls
+## this yet — it is the ground a poster crew pastes on.
+func blank_ground_floor_cells() -> Array[Rect2]:
+	var result: Array[Rect2] = []
+	if power_station or is_home_building or wall_tiles() < 2:
+		return result
+	var entrance_cols := _civic_entrance_cols()
+	var door_col := entrance_door_col()
+	for col in columns():
+		if entrance_cols.has(col) or col == door_col or col == _fire_escape_col:
+			continue
+		if _ground_floor_texture(col) == WALL_BASE:
+			result.append(Rect2(_cell(col, 0), Vector2(TILE, TILE)))
+	return result
+
+## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
+## assumed: the portico is a fixed 32px overlay centred on the facade (`_draw_front_overlay()`),
+## which straddles two columns whenever `columns()` is even rather than landing on one exactly.
+func _civic_entrance_cols() -> Array[int]:
+	var result: Array[int] = []
+	if district != GameEnums.BlockPurpose.CIVIC:
+		return result
+	for col in columns():
+		var x := _cell(col, 0).x
+		if x < 16.0 and x + TILE > -16.0:
+			result.append(col)
+	return result
+
 ## The window pair for a wall cell, from `_window_style` — except a `BOARDED` block, which forces
 ## `SHUTTERED` regardless of the building's own roll. Never lit there either, but only because
 ## `_lit()` already answers false off `LIVED_IN`; an ordinary `SHUTTERED` building lights up like
@@ -584,12 +704,17 @@ func _window_texture(index: int) -> StringName:
 		_:
 			return WINDOW_LIT if _lit(index) else WINDOW_DARK
 
-## The one piece of a front that leaves the wall plane: a fire escape bolted to a `RESIDENTIAL`
-## facade or a portico at a `CIVIC` entrance, drawn after every ground-floor cell so it stands in
-## front of the shopfront or plinth rather than under it. Anchored at local `y = 0`, the ground
+## The overlays on a front: its entrance door, a fire escape bolted to a `RESIDENTIAL` facade or a
+## portico at a `CIVIC` entrance, drawn after every ground-floor cell so each stands in front of the
+## shopfront or plinth rather than under it. The door goes first, since it is set in the wall plane
+## the escape stands out from. Anchored at local `y = 0`, the ground
 ## line `_cell`'s own row 0 already sits on, so `Sprites.draw_standing()`'s bottom-centre contract
 ## needs no offset math here.
 func _draw_front_overlay() -> void:
+	var door_col := entrance_door_col()
+	if door_col >= 0:
+		var door_x := _cell(door_col, 0).x + TILE * 0.5
+		Sprites.draw_standing(self, AtlasLibrary.region(_entrance_door_texture()), Vector2(door_x, 0.0))
 	if _fire_escape_col >= 0:
 		var name := FIRE_ESCAPE_B if _fire_escape_variant_b else FIRE_ESCAPE_A
 		var x := _cell(_fire_escape_col, 0).x + TILE * 0.5

@@ -1,0 +1,25 @@
+<!-- A building's front entrance in the cardinal 2.5D projection: a stone surround under a
+     cornice hood, a glazed fanlight, a pair of painted panelled doors with glass uppers and brass
+     pulls, and a stone step on the ground line. One facade column wide; transparent round the
+     surround so the building's own tinted wall shows. Ground anchor (16,36). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="36" viewBox="0 0 32 36" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="4.5" y="5" width="23" height="28" fill="#bdb4a3"/>
+  <path d="M5.3 5.8 H26.7" fill="none" stroke="#d8d1c3" stroke-width="0.9"/>
+  <path d="M7 7 H25 V33 H7 Z" fill="#2c2830"/>
+  <path d="M8 8 H24 V12.4 H8 Z" fill="#3c4a55"/>
+  <path d="M9.2 11.4 L13 8.6 M18.6 11.4 L22.4 8.6" fill="none" stroke="#8fa3ad" stroke-width="0.6" stroke-opacity="0.8"/>
+  <path d="M12 8 V12.4 M16 8 V12.4 M20 8 V12.4" fill="none" stroke="#6d5e52" stroke-width="0.7"/>
+  <path d="M7.6 12.4 H24.4 V13.8 H7.6 Z" fill="#6d5e52"/>
+  <path d="M8 13.8 H16 V33 H8 Z M16 13.8 H24 V33 H16 Z" fill="#3f5c4e"/>
+  <path d="M9.5 15.3 H14.5 V23 H9.5 Z M17.5 15.3 H22.5 V23 H17.5 Z" fill="#35414b"/>
+  <path d="M10.3 21.8 L13.8 16.2 M18.3 21.8 L21.8 16.2" fill="none" stroke="#9fb3bb" stroke-width="0.6" stroke-opacity="0.7"/>
+  <path d="M9.5 25 H14.5 V31 H9.5 Z M17.5 25 H22.5 V31 H17.5 Z" fill="#4b6b5b"/>
+  <path d="M9.9 30.5 V25.4 H14.1 M17.9 30.5 V25.4 H22.1" fill="none" stroke="#6e8f7d" stroke-width="0.6"/>
+  <path d="M14.3 20.5 V25.5 M17.7 20.5 V25.5" fill="none" stroke="#d2b267" stroke-width="1.1"/>
+  <path d="M1.8 2.6 H30.2 V5.4 H1.8 Z" fill="#c8c0b0"/>
+  <path d="M3 0.8 H29 L30.2 2.6 H1.8 Z" fill="#ddd6c8"/>
+  <path d="M4.5 5.4 H27.5" fill="none" stroke="#221f28" stroke-width="0.9" stroke-opacity="0.35"/>
+  <path d="M3 32.2 H29 L30.4 34.2 H1.6 Z" fill="#cbc3b4"/>
+  <path d="M1.6 34.2 H30.4 V35.6 H1.6 Z" fill="#9d968a"/>
+  <path d="M1 35.6 H31" fill="none" stroke="#5f5b56" stroke-width="0.9"/>
+</svg>
