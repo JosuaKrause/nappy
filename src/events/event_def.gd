@@ -85,6 +85,10 @@ enum Look {
 	MASKED_PURSUER,  ## A masked man on foot, coming. The same two postures a roadblock's guards
 	                 ## take when they leave the post, on a body that was never a barrier.
 	STEAM,           ## A vent letting go. Nobody is in it and it is still somewhere to wait out.
+	LOUDSPEAKER_MAST, ## A pole and horns, standing on a street. `loudspeaker` and
+	                  ## `curfew_announce` are two things the same mast does, not two masts — see
+	                  ## `EventInstance._draw_mast()` for the lamp that says whether it is live and
+	                  ## the arcs that say it is speaking right now.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -787,10 +791,6 @@ func lethal_reach() -> float:
 ## any other expensive row.
 @export var scenery := false
 
-## Applies everywhere at once, ignoring distance — a floor under the whole city rather
-## than a place to avoid. Loudspeaker masts, not a man shouting.
-@export var city_wide := false
-
 ## Intensity multiplier reached at the end of `duration`. 1.0 holds steady; above 1.0
 ## swells (a protest gathering), below 1.0 fades.
 @export var intensity_ramp := 1.0
@@ -962,10 +962,6 @@ func validate() -> bool:
 					+ "ground neither shape describes")
 			return false
 	if kind == GameEnums.EventKind.AMBIENT:
-		return true
-	# A city-wide event has no edge to walk out of, so the escape-distance rule is
-	# meaningless for it. It is never a hazard on its own — see the loudspeaker.
-	if city_wide:
 		return true
 	# Neither `AHEAD_OF_PLAYER` nor `TOWARD_PLAYER` has a tile, so `_ensure_the_city_is_still_
 	# walkable` never sees either and cannot check that what it blocks leaves a route to a park.
@@ -1219,12 +1215,10 @@ func field_reach() -> float:
 ## the field integrated along the line, less the walking decay over the same time.
 ##
 ## Cached, because `EventInstance.wants_a_mark()` asks it on every `_draw()` and the answer is a
-## property of the def rather than of the moment. `city_wide` has no line through it and answers
-## zero; nothing reads that answer, and returning it is cheaper than a special case at every caller.
+## property of the def rather than of the moment.
 func walk_through_cost() -> float:
 	if _cost_cache == INF:
-		_cost_cache = 0.0 if city_wide else \
-				(mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_WALKING) \
+		_cost_cache = (mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_WALKING) \
 				* (outer_radius * 2.0 / Tuning.WALK_SPEED)
 	return _cost_cache
 

@@ -25,6 +25,16 @@ class Planned extends RefCounted:
 	## `RegionPlanner._add_door_bodies`. `null` for every plan but a gate's own.
 	var gate_state: RegionPlanner.GateState = null
 
+	## `MastSites.Site.id` for a mast's own plan (its ordinary broadcast and, on
+	## `Tuning.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
+	## question `EventManager.silence_mast()` and the broadcast clock's own sync ask before
+	## touching a plan.
+	var mast_id := ""
+	## Set by `EventManager.silence_mast()`/`silence_all_masts()` for the rest of the day. Carried
+	## on the plan, not only the live instance, so a mast silenced while out of reach is still
+	## silenced the next time she comes near it — see `EventManager._stream_in()`.
+	var silenced := false
+
 	func _init(definition: EventDef, at: Vector2,
 			route := PackedVector2Array()) -> void:
 		def = definition
@@ -167,6 +177,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 
 	planned.append_array(_place_ambient(day, map, heat))
 	planned.append_array(_place_scars(day, scars, heat))
+	planned.append_array(_place_masts(day, map, heat))
 	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
 			leave_alone, corridor, heat, doors)
@@ -672,6 +683,31 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 			continue
 		suitable.append(def)
 	return suitable
+
+## The masts: `MastSites.compute()`'s own sites, planted from `Tuning.MAST_FIRST_DAY` and standing
+## at the same places every day. Bypasses `_place_scripted`/`_place_one` entirely — a mast is not a
+## tile the day's own roll chose, it is a fixture the city already carries, the same way
+## `_place_ambient()` beside this hands out one plan per playground rather than rolling for one.
+##
+## On `Tuning.CURFEW_ANNOUNCE_DAY` every site also gets a `curfew_announce` plan alongside its
+## ordinary `loudspeaker` one — see that row's own doc for why a second, invisible plan is what
+## "the masts carry the announcement" means rather than a second mast.
+static func _place_masts(day: int, map: CityMap, heat: int = 0) -> Array[Planned]:
+	var planned: Array[Planned] = []
+	if day < Tuning.MAST_FIRST_DAY:
+		return planned
+	var loudspeaker := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"), heat)
+	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
+			if day == Tuning.CURFEW_ANNOUNCE_DAY else null
+	for site in MastSites.compute(map):
+		var mast := Planned.new(loudspeaker, site.foot)
+		mast.mast_id = site.id
+		planned.append(mast)
+		if curfew:
+			var announcement := Planned.new(curfew, site.foot)
+			announcement.mast_id = site.id
+			planned.append(announcement)
+	return planned
 
 ## Permanent marks left by earlier days, placed again exactly where they happened.
 static func _place_scars(day: int, scars: Array[Dictionary], heat: int = 0) -> Array[Planned]:
@@ -1861,7 +1897,11 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ## reach. Five kinds of row are outside it, and each is outside for its own reason rather than for
 ## convenience:
 ##
-## - **`city_wide`** has no place, so there is no other side of the street to walk on.
+## - **a mast** (`Planned.mast_id != ""`) is planted once by `MastSites`, off the corridor-aware
+##   placement every other row here goes through — `_leaves_the_route_junctions_open` and the rest
+##   of this section have a `Corridor` to ask about; a fixture that stands at the same six sites all
+##   fourteen days does not. `MastSites._is_eligible()` keeps it off the home street and a calm
+##   interior instead, which is a per-run check rather than a per-day one.
 ## - **`scenery`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
 ##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
 ## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
@@ -1887,7 +1927,7 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
 ## about whether a line exists past one.
 static func _counts_against_the_line(plan: Planned) -> bool:
-	return plan.is_placed() and _a_line_has_to_avoid(plan.def)
+	return plan.is_placed() and plan.mast_id == "" and _a_line_has_to_avoid(plan.def)
 
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to
 ## ask about: `_role_for` decides a role before any tile is chosen. Everything a placement adds —
@@ -1905,7 +1945,7 @@ static func _counts_against_the_line(plan: Planned) -> bool:
 ## never placed at dawn (`_place_one_shots` plans it with no position), so nothing else in the day
 ## is judged differently because of it.
 static func _a_line_has_to_avoid(def: EventDef) -> bool:
-	if def.city_wide or def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
+	if def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
 		return false
 	if def.sited_on_her_way:
 		return false

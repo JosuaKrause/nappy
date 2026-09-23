@@ -10,7 +10,6 @@ var _map: CityMap
 func run(t) -> void:
 	_map = CityGenerator.generate(SEED)
 	_test_acts_are_gated_by_day(t)
-	_test_city_wide_sources_have_no_edge(t)
 	_test_a_protest_grows(t)
 	_test_scars_outlive_the_day_that_made_them(t)
 	_test_a_park_stays_reachable_every_day(t)
@@ -50,21 +49,6 @@ func _instance(t, def: EventDef, at := Vector2.ZERO) -> EventInstance:
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance._process(STEP)
-
-func _test_city_wide_sources_have_no_edge(t) -> void:
-	var def := EventCatalogue.by_id("loudspeaker")
-	t.check(def.city_wide, "the loudspeaker is city-wide")
-	t.check(def.validate(), "a city-wide event is exempt from the escape-distance rule")
-	t.check(def.intensity < Tuning.EXCITEMENT_DECAY_WALKING,
-			"the loudspeaker cannot raise the meter on its own, only stall recovery")
-
-	var instance := _instance(t, def)
-	_advance(instance, def.telegraph_time + 0.05)
-	var here := instance.contribution_at(Vector2.ZERO)
-	var far := instance.contribution_at(Vector2(50000.0, 50000.0))
-	t.close_to(far, here, "a city-wide source reaches the far side of the map undiminished")
-	t.check(here > 0.0, "and it is actually contributing something")
-	instance.free()
 
 func _test_a_protest_grows(t) -> void:
 	var def := EventCatalogue.by_id("protest")
