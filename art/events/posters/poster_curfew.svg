@@ -1,0 +1,15 @@
+<!-- The curfew sheet: the rules notice joined by a clock face, from day 6 onward — the same
+     sheet, header bar and red stamp as poster_rules.svg with one print line traded for the
+     clock. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="6" y="4" width="20" height="25" fill="#e8e2d4" stroke="#3b3034" stroke-width="1"/>
+  <rect x="6" y="4" width="20" height="6" fill="#221f28"/>
+  <circle cx="16" cy="16" r="4" fill="none" stroke="#3b3034" stroke-width="1"/>
+  <path d="M16 16L16 13 M16 16L18.4 17.2" stroke="#3b3034" stroke-width="1" stroke-linecap="round"/>
+  <rect x="9" y="22" width="14" height="1" fill="#9a958a"/>
+  <rect x="9" y="24.5" width="10" height="1" fill="#9a958a"/>
+  <g transform="rotate(-10 21 26)">
+    <circle cx="21" cy="26" r="2.6" fill="#a33b34" fill-opacity="0.55" stroke="#a33b34" stroke-width="0.6"/>
+    <path d="M19.5 25.2H22.5 M19.5 26.8H21.5" stroke="#a33b34" stroke-width="0.6"/>
+  </g>
+</svg>
