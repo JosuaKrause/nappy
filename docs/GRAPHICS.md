@@ -101,12 +101,15 @@ the day's route graph; they are separate from the event pictures with similar no
 
 | Assets | Runtime behaviour |
 |---|---|
-| `art/closures/barrier_{across,along}.svg` | Repeated on the two sides of a closed street, choosing the drawing by the closure's axis. |
-| `art/closures/sign_closed.svg` | Added at the end of the closure facing approaching traffic. |
-| `art/closures/roadworks.svg` | Centre marker for a roadworks closure. |
-| `art/closures/fallen_tree.svg` | Centre marker for a fallen-tree closure. |
-| `art/closures/crashed_car.svg` | Centre marker for a crash closure. |
-| `art/closures/rubble.svg` | Centre marker for a rubble closure. |
+| `art/closures/barrier_{across,along}.svg` | Repeated across both mouths of a closed street, choosing the drawing by the closure's axis: `across` (22×24) is laid edge to edge along a north-south street's mouth, `along` (14×26) is stacked down an east-west one, each stretched to its share of the street. Two white rails with amber diagonal stripes on posts — amber and white so a closure reads as civil rather than as the grey barricade an event leaves, two rails so it is not the roadworks event's single red board. `across` is broadside on, one post per panel; `along` is the same two rails end-on, one post's splayed foot per panel. The rails run edge to edge and the stripes repeat on a period that divides the panel, so the line reads as one continuous barrier. |
+| `art/closures/sign_closed.svg` | Standing on the middle panel of each barrier line, facing the junction: a red plate with a white bar and a white reflective rim on a steel post. |
+| `art/closures/roadworks.svg` | Centre marker for a roadworks closure: a trench cut in the road with a ladder standing in it, its spoil heap with a shovel in it, a length of concrete pipe with its hollow mouth showing, and a traffic cone. |
+| `art/closures/fallen_tree.svg` | Centre marker for a fallen-tree closure: the root plate torn up on edge, the trunk along the road with a snapped branch, and the crown on its side, the same clumped olive broadleaf as the illustrated street trees. |
+| `art/closures/crashed_car.svg` | Centre marker for a crash closure: two crowd-car profiles nose to nose, both fronts crushed, the red one's hood sprung, steam, glass, a bumper and a hubcap on the road. |
+| `art/closures/rubble.svg` | Centre marker for a rubble closure: a heap of fallen facade — a slab of brick wall, a window in its frame, a concrete slab, a timber beam, bent reinforcing bars and loose bricks over dusty concrete. |
+
+Every cause is drawn feet-anchored with its own point shadow under it (`ClosureMarker._draw()`),
+and the same picture stands on either street axis.
 
 ### Events and seal pictures
 

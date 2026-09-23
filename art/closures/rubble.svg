@@ -1,10 +1,45 @@
-<!-- A facade in the road. Act IV: the street is closed because it fell down. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="86" height="34" viewBox="0 0 86 34" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <path d="M2 34 L14 12 L40 6 L64 14 L84 34 Z" fill="#6b6357"/>
-  <path d="M8 34 L18 18 L38 14 L56 20 L70 34 Z" fill="#847a6b"/>
-  <rect x="24" y="16" width="14" height="8" fill="#4e4a44"/>
-  <rect x="46" y="22" width="11" height="7" fill="#4e4a44"/>
-  <rect x="12" y="26" width="9" height="6" fill="#5c564d"/>
-  <rect x="60" y="27" width="12" height="5" fill="#5c564d"/>
-  <rect x="36" y="28" width="8" height="4" fill="#3a3630"/>
+<!-- A facade in the road. Act IV: the street is closed because it fell down. A heap of broken
+     masonry: a slab of brick wall still in its courses, a window with its frame, a concrete
+     floor slab, a timber beam, bent reinforcing bars and loose bricks, over a mound of dusty
+     concrete. `ClosureMarker` draws it feet-anchored at the bottom centre with its own point
+     shadow under it, so none is drawn here. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="86" height="34" viewBox="0 0 86 34" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Reinforcing bars sticking up out of the heap. -->
+  <path d="M24 12 C23 8 25 5 27 3 M28 11 C29 7 32 6 33 3.5 M70 20 C72 16 75 15 77 13" fill="none" stroke="#2a2226" stroke-width="2.2"/>
+  <path d="M24 12 C23 8 25 5 27 3 M28 11 C29 7 32 6 33 3.5 M70 20 C72 16 75 15 77 13" fill="none" stroke="#8a5238" stroke-width="0.9"/>
+  <!-- The mound of dusty concrete, its upper faces lit, dark gaps between the pieces. -->
+  <path d="M2 33 L6 26 L12 22 L16 16 L24 13 L30 8 L38 6 L46 9 L52 8 L58 13 L66 15 L72 21 L78 24 L84 33 Z" fill="#6b6357" stroke-width="1.2"/>
+  <g fill="#8a8278" stroke="none">
+    <path d="M8 26 L13 22.5 L18 22 L14 27 Z"/>
+    <path d="M24 13.5 L30 9 L36 8 L31 13 Z"/>
+    <path d="M52 9 L57 13 L50 14 Z"/>
+    <path d="M66 16 L71 21 L64 20 Z"/>
+  </g>
+  <g fill="#2f2a2b" stroke="none">
+    <path d="M34 30 L38 26 L42 27 L40 31 Z"/>
+    <path d="M62 27 L66 26.5 L68 29 Z"/>
+    <path d="M20 16.4 L24 15.2 L22 19 Z"/>
+    <path d="M9 30 L12 28 L13 31.6 Z"/>
+  </g>
+  <!-- A slab of brick wall, still in its courses, its broken edge showing its thickness. -->
+  <path d="M31 32 L34 20 L35.6 21 L32.6 32.6 Z" fill="#6e3d2e"/>
+  <path d="M14 30 L18 18 L34 20 L31 32 Z" fill="#9a5a44"/>
+  <path d="M17 21 L33.4 23 M16.2 24 L32.7 26 M15.4 27 L32 29 M22 18.6 L21.2 21.6 M28 19.4 L27.3 22.4 M19 21.4 L18.2 24.4 M25 22.2 L24.3 25.2 M31 23 L30.3 26 M21.6 24.4 L20.9 27.4 M27.8 25.2 L27.1 28.2 M18.4 27.4 L17.8 30.2 M24.6 28.2 L24 31" fill="none" stroke="#d6c4ae" stroke-width="0.6"/>
+  <path d="M14 30 L18 18 L34 20 L31 32 Z" fill="none"/>
+  <!-- A window torn out with its frame, one pane gone. -->
+  <path d="M36 13 L46 11 L47.5 21 L37.5 23 Z" fill="#e8e2d4"/>
+  <path d="M37.6 14.3 L41 13.6 L41.9 17 L38.3 17.7 Z M42.2 13.4 L45.2 12.8 L46 16.4 L43 17 Z M38.6 18.8 L42 18.1 L42.8 21.5 L39.2 22.2 Z M43.1 17.9 L46.1 17.3 L46.8 20.7 L43.8 21.3 Z" fill="#2f3742" stroke-width="0.6"/>
+  <path d="M38.6 15 L40.2 14.6 M43 14 L44.4 13.7 M44 18.6 L45.4 18.3" fill="none" stroke="#9fb3c2" stroke-width="0.6"/>
+  <path d="M39.2 20 L41.6 19.4 L40.2 21.6 Z" fill="#231b18" stroke="none"/>
+  <!-- A concrete floor slab, lit on top, its broken edge in shade. -->
+  <path d="M50 29 L66 24 L66 26.5 L50 31.5 Z" fill="#5c5654"/>
+  <path d="M44 22 L60 18 L66 24 L50 29 Z" fill="#a39b8e"/>
+  <path d="M46.4 22.2 L59.6 19" fill="none" stroke="#c9c3b8" stroke-width="0.7"/>
+  <!-- A timber beam across the heap. -->
+  <path d="M56 12 L76 22 L74.5 24 L54.5 14 Z" fill="#7a5236"/>
+  <path d="M56.6 12.8 L75.6 22.3" fill="none" stroke="#9a6c45" stroke-width="0.7"/>
+  <!-- Loose bricks and a block at the foot of the heap, and dust along it. -->
+  <path d="M6 32 C20 31 40 32 60 31.5 C70 31.2 78 31.8 82 32.5" fill="none" stroke="#8a8278" stroke-width="0.8"/>
+  <path d="M4 31 L8 30 L8.6 32.4 L4.6 33.4 Z M76 30 L80 29.4 L80.6 31.8 L76.4 32.4 Z" fill="#9a5a44" stroke-width="0.8"/>
+  <path d="M60 31 L63.4 30.4 L63.8 32.6 L60.4 33.1 Z" fill="#a39b8e" stroke-width="0.8"/>
 </svg>
