@@ -200,6 +200,12 @@ the PR merged has commits nobody pushed, and that is the branch worth looking at
 `worktree-agent-*` branch has no PR and points at its worktree's base, so `-d` still answers
 for it.
 
+**In Claude Code's auto mode the permission classifier refuses `git worktree remove` and
+`git branch -D` as destructive**, even after the check above has passed. Do not look for another
+command that achieves the same thing. Give the player the exact line, with the `!` prefix so it
+runs in the session, and say what the check found: the tip matches the merged head, and the
+worktree has no uncommitted changes.
+
 **But retarget every PR stacked on that branch to `main` before the branch goes.** GitHub
 closes a pull request whose base branch is deleted, and a closed PR whose base no longer exists
 cannot be reopened or retargeted — the work has to be proposed again as a new PR. So for a

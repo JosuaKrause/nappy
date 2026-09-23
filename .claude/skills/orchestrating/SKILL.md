@@ -147,7 +147,6 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   repository shares one `user://`, so the player's save is in reach of any game an agent starts.
   `GameSave.uses_save()` already refuses a headless run and any run carrying a dev flag;
   `--no-save` is what a flagless `tools/run.sh` session needs to say the same thing.
-- **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions
 - **Visual attempts come back early.** The player welcomes repeated feedback and prefers seeing
   an attempt to waiting through a long internal revision loop. Ask the agent for a prompt preview
   in the player's requested format, naming the visual point that remains uncertain. Keep cheap
@@ -252,6 +251,14 @@ merging is what collides — so parallelism is planned at the file level, before
   last tool calls. Its first two steps are to commit the inherited work as it stands and to
   merge `origin/main`. Say plainly that nothing inherited has been reviewed: one inherited file
   here did not compile.
+
+  **Before inheriting anything, compare the worktree with its own branch on the remote.** Another
+  session can pick the same branch up while the agent is dead: the remote then carries pushed
+  commits the worktree never saw, and committing the inherited edits on top of the stale head
+  forks the branch. Fetch, and count `git rev-list HEAD..@{u}`. If it is not zero, diff the
+  inherited edits against what was pushed; where the pushed commits already do the same work,
+  save the inherited diff outside the tree, discard it, fast-forward, and brief the fresh agent
+  from the pushed state instead.
 - **Nothing is committed into a worktree an agent is working in.** Queue docs, a merge of
   `main`, a fix the player wants urgently: wait for the agent's report, or do the work on a
   branch of its own from `main` and tell the agent what it will touch, so the later merge is
