@@ -100,6 +100,10 @@ class Page extends RefCounted:
 	var loaded_at_usec := -1
 	## Region name -> the `AtlasTexture` handed out for it, dropped with the page.
 	var textures: Dictionary = {}
+	## Which group's own file a load actually reads, for a `borrow_group_for_tests()` page whose
+	## key is a name no real consumer asks for. Empty for every real, baked group, which reads its
+	## own name's file the way it always has.
+	var disk_group: StringName = &""
 
 # ------------------------------------------------------------------ the names ---
 
@@ -567,7 +571,8 @@ static func acquire(group: StringName) -> void:
 		return
 	var moment := moment_for_a_load()
 	var started := Time.get_ticks_usec()
-	var path := BAKED_ROOT + String(group) + ".png"
+	var disk_name := page.disk_group if page.disk_group != &"" else group
+	var path := BAKED_ROOT + String(disk_name) + ".png"
 	var texture: Texture2D = load(path)
 	if texture == null:
 		push_error("Baked atlas page missing: %s" % path)
@@ -713,3 +718,37 @@ static func reset_for_tests() -> void:
 	_resident = {}
 	_load_moments = {}
 	release_the_loading_moments()
+
+# ------------------------------------------------------------- the test seam ---
+
+## A page name no real consumer ever asks for, backed by `source_group`'s own baked file so the
+## load it provokes is a genuine disk read of a genuine page rather than a fabricated one.
+##
+## **Every real group now has a runtime consumer** (see the class note's own list, and every
+## `acquire(` under `src/`), so a suite proving `acquire()`/`release()`'s telemetry lines has
+## nothing it can ask for on a real group's own name without its precondition depending on
+## whether some other suite's live node already holds it. Borrowing a name instead means the
+## count this suite watches starts at nought regardless of anything else in the process, and
+## `forget_test_group()` is how it leaves no trace once the suite is done — unlike
+## `reset_for_tests()`, which zeroes every group at once and would desync a real consumer's own
+## count if one is still in the tree from an earlier suite.
+static func borrow_group_for_tests(source_group: StringName) -> StringName:
+	_load_table()
+	var name := StringName("__test_only__" + String(source_group))
+	var source: Page = _pages.get(source_group)
+	if source == null:
+		push_error("No baked atlas group '%s' to borrow for a test" % source_group)
+		return name
+	var page := Page.new()
+	page.size = source.size
+	page.padding = source.padding
+	page.disk_group = source_group
+	_pages[name] = page
+	return name
+
+## Drops the page `borrow_group_for_tests()` added, and every count, residency or load-moment
+## record it left, so nothing about it survives into a suite that runs after.
+static func forget_test_group(name: StringName) -> void:
+	_pages.erase(name)
+	_resident.erase(name)
+	_load_moments.erase(name)
