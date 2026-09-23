@@ -1,0 +1,13 @@
+<!-- The leader's portrait: a nondescript face, no name. A pasted sheet on a 20x25 area of the
+     32x32 tile canvas (62.5% x 78% of the tile), matching the wall texture's own grid so a
+     later slice can drop it straight onto a building's wall cell. No readable marks: the
+     caption band at the bottom is a plain colour strip, never letters. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="6" y="4" width="20" height="25" fill="#ded6c4" stroke="#3b3034" stroke-width="1"/>
+  <rect x="24" y="27" width="2" height="2" fill="#c7bda6"/>
+  <rect x="9" y="6" width="14" height="15" fill="#8a7360"/>
+  <rect x="12" y="11" width="2" height="2" fill="#3b3034"/>
+  <rect x="18" y="11" width="2" height="2" fill="#3b3034"/>
+  <rect x="13" y="17" width="6" height="1" fill="#3b3034" fill-opacity="0.6"/>
+  <rect x="6" y="23" width="20" height="4" fill="#3b3034"/>
+</svg>
