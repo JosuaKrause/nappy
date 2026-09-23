@@ -111,6 +111,7 @@ going quietly stale.
 | `--follow <event id>` | Park a camera on an event wherever it goes |
 | `--force <event id> [seconds]` | Hand out **only** that row, over and over, every `seconds` (default 6) of walking — for looking at one encounter rather than one city. Bypasses `first_day` and the day's budget; `--seed` and `--day` still decide everything around it |
 | `--overview` | Frame the whole city at once |
+| `--zoom <factor>` | Scale the camera's zoom by `factor` (`0.5` shows twice as much each way) with everything else as a player sees it; anything but a positive number is ignored with a warning |
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
 | `--walk north\|south\|east\|west\|<script>` | Hold a direction down for the whole run, or walk a script of timed steps — `1s5e` is one second south then five east, and `3@45@2e` is three seconds at a bearing of 45° then two east. A bearing is degrees clockwise from north, delimited by a pair of `@`s so its digits do not run into the next step's |
 | `--flee [delay]` | Turn round and run when something starts chasing her, after dithering for `delay` seconds |

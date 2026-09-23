@@ -25,7 +25,24 @@ var _follow_id := ""
 ## not exist when the day starts — a mobile event mid-route, or the fire a fire engine leaves
 ## behind when it stops. `parent` is whatever node the camera should live under — `main` for an
 ## ordinary run.
+##
+## **It is also where `--zoom` is applied**, because this is the one dev-rig call `main` makes once
+## the day's camera is current: whichever camera that is — hers, `--overview`'s, or the one built
+## here for `--follow` — has its own zoom scaled by the factor. See `apply_zoom()`.
 func setup_follow_camera(parent: Node) -> void:
+	_setup_follow(parent)
+	apply_zoom(parent.get_viewport().get_camera_2d() if parent.is_inside_tree() else null,
+			DevFlags.zoom_override())
+
+## Scales `camera`'s own zoom by `factor` — relative to whatever zoom the camera is authored with, so
+## `0.5` on her camera is half her normal zoom whatever that is. A no-op for a factor of one or no
+## camera.
+static func apply_zoom(camera: Camera2D, factor: float) -> void:
+	if not camera or is_equal_approx(factor, 1.0):
+		return
+	camera.zoom *= factor
+
+func _setup_follow(parent: Node) -> void:
 	_follow_id = DevFlags.follow_target()
 	if _follow_id == "":
 		return

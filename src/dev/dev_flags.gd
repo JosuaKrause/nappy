@@ -43,6 +43,7 @@ extends RefCounted
 ##   --follow        1
 ##   --force         1?
 ##   --overview      0
+##   --zoom          1
 ##   --start-escape  0w?
 ##   --ending        1
 ##   --controls      1
@@ -377,6 +378,28 @@ static func day_length_override() -> float:
 	if index == -1 or index + 1 >= args.size():
 		return -1.0
 	return maxf(1.0, float(args[index + 1]))
+
+## `--zoom <factor>` — the gameplay camera's zoom relative to its normal one, so `0.5` shows twice
+## as much of the world each way with everything else — lighting, entities, HUD — exactly as a
+## player sees it. For a capture of something bigger than the normal view, where `--overview` is the
+## whole city at a scale nothing is played at. `1.0` is "not given". See `parse_zoom()` for what it
+## refuses.
+static func zoom_override() -> float:
+	var args := _args()
+	var index := args.find("--zoom")
+	if index == -1 or index + 1 >= args.size():
+		return 1.0
+	return parse_zoom(args[index + 1])
+
+## The bare parsing of a `--zoom` value, pulled out so a test can drive it without a command line.
+## Anything that is not a positive number refuses the whole flag — a warning and the normal zoom —
+## rather than being clamped into one: a capture at a zoom nobody asked for is a picture of the wrong
+## thing that says nothing about it, the reasoning `_validate_skip_words()` gives for `--skip`.
+static func parse_zoom(raw: String) -> float:
+	if not raw.is_valid_float() or float(raw) <= 0.0:
+		push_warning("--zoom: '%s' is not a positive number, ignoring the flag" % raw)
+		return 1.0
+	return float(raw)
 
 ## `--ending bad|neutral|good` — the raw word, or "" if none was given. Mapping it onto
 ## `GameEnums.Ending` and warning on an unknown word stays in `main.gd`, the only caller.
