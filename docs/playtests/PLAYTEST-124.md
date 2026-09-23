@@ -35,3 +35,31 @@ in (the orchestrator's pick).
 > "Also let's redo the store fronts as well"
 
 5. **The storefronts are redrawn** to the same bar as the new doors, in one style with them.
+
+## Then, on the doors, the redrawn storefronts and the two SVG reworks
+
+Asked what "we should probably not randomize it" meant, with the orchestrator's reading (the home
+block looks the same on every seed), and shown the doors and storefronts on PR 298 and the redrawn
+animals (PR 300) and street obstructions (PR 301):
+
+> "Yes, the home block should have fixed visuals. That way we can craft a convincing house that
+> also matches with the interiors of the escape."
+
+6. **The home block has fixed visuals**, the same on every seed, so it can be crafted into a
+   convincing house that matches the escape's interiors.
+
+> "All graphics look okay so far. We can merge them. I will have a closer look later and probably
+> ask for some more changes but for now it's a clear improvement."
+
+7. **The doors, the storefronts, the animals and the street obstructions are accepted for now**
+   and merged; a closer look may bring more changes.
+
+> "Only thing so far is the new standard door (industrial door and home door look fine). It pops
+> out. But that is probably because the other parts of the buildings (walls, windows, fire
+> escapes, etc) are not updated and look flat in comparison. So if say we update all those too
+> and then have another look at the overall picture. Meanwhile let's merge what we have"
+
+8. **The standard entrance door pops out** against the rest of the front; the industrial door
+   and the home door look fine.
+9. **The rest of the building is redrawn to the same bar** — walls, windows, fire escapes and the
+   other parts — and then the whole picture is looked at again.
