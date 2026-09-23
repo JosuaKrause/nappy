@@ -1,0 +1,17 @@
+<!-- The power station hall's cladding: ribbed grey steel panels with a seam at the foot and a
+     little weathering. One facade cell, authored in its own colours rather than near-white,
+     since the station is never tinted by a building variant. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#8c9291"/>
+  <rect x="3" y="0" width="1" height="32" fill="#767c7b"/>
+  <rect x="4" y="0" width="1" height="32" fill="#a1a6a4"/>
+  <rect x="11" y="0" width="1" height="32" fill="#767c7b"/>
+  <rect x="12" y="0" width="1" height="32" fill="#a1a6a4"/>
+  <rect x="19" y="0" width="1" height="32" fill="#767c7b"/>
+  <rect x="20" y="0" width="1" height="32" fill="#a1a6a4"/>
+  <rect x="27" y="0" width="1" height="32" fill="#767c7b"/>
+  <rect x="28" y="0" width="1" height="32" fill="#a1a6a4"/>
+  <rect x="0" y="31" width="32" height="1" fill="#646a69"/>
+  <rect x="7" y="18" width="1" height="9" fill="#7f8483"/>
+  <rect x="23" y="9" width="1" height="12" fill="#7f8483"/>
+</svg>

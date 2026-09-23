@@ -10,8 +10,11 @@
       "members": [
         "art/buildings/fire_escape_a.svg",
         "art/buildings/fire_escape_b.svg",
+        "art/buildings/power_station_base.svg",
+        "art/buildings/power_station_clerestory.svg",
         "art/buildings/power_station_door.svg",
         "art/buildings/power_station_stack.svg",
+        "art/buildings/power_station_wall.svg",
         "art/buildings/power_station_yard.svg",
         "art/buildings/roof.svg",
         "art/buildings/roof_edge_e.svg",

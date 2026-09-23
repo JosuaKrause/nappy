@@ -115,6 +115,9 @@ const CIVIC_PORTICO := &"props/civic_portico"
 const POWER_STATION_DOOR := &"buildings/power_station_door"
 const POWER_STATION_STACK := &"buildings/power_station_stack"
 const POWER_STATION_YARD := &"buildings/power_station_yard"
+const POWER_STATION_WALL := &"buildings/power_station_wall"
+const POWER_STATION_BASE := &"buildings/power_station_base"
+const POWER_STATION_CLERESTORY := &"buildings/power_station_clerestory"
 ## Where the two stacks stand on the hall's roof, as a column counted from the hall's own west end
 ## and a roof row counted from the south — back to front, so the nearer one is drawn over the
 ## farther one's foot. Taste, open to overturn.
@@ -377,11 +380,7 @@ func _build_windows() -> void:
 	for i in columns() * wall_tiles():
 		_windows.append(rng.randf() < LIT_WINDOW_CHANCE)
 	var style_roll := rng.randf()
-	if power_station:
-		# An industrial hall's tall glazing, whatever the roll says — the roll is still taken so
-		# the lit windows above come out the same as they would for any building here.
-		_window_style = _WindowStyle.TALL
-	elif style_roll < SHUTTERED_WINDOW_CHANCE:
+	if style_roll < SHUTTERED_WINDOW_CHANCE:
 		_window_style = _WindowStyle.SHUTTERED
 	elif style_roll < SHUTTERED_WINDOW_CHANCE + TALL_WINDOW_CHANCE:
 		_window_style = _WindowStyle.TALL
@@ -442,7 +441,9 @@ func _draw() -> void:
 
 	# The columns the wall and roof are drawn over: all of them, except a power station's yard.
 	var hall := _hall_cols()
-	for row in wall_rows:
+	if power_station:
+		_draw_station_facade(wall_rows, hall)
+	for row in (0 if power_station else wall_rows):
 		for col in range(hall.x, hall.y):
 			var at := _cell(col, row)
 			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
@@ -465,7 +466,7 @@ func _draw() -> void:
 	# painted over by the neighboring half of its pair. A 36px source is offset four pixels north
 	# to keep its bottom edge on the shared ground line; facades with only one wall row keep the
 	# ordinary wall base because there is not enough height for the complete entrance.
-	for col in range(hall.x, hall.y):
+	for col in range(hall.x, hall.y if not power_station else hall.x):
 		var ground_name := _ground_floor_texture(col)
 		if ground_name != &"":
 			var texture := AtlasLibrary.region(ground_name)
@@ -490,6 +491,28 @@ func _draw() -> void:
 	_draw_roof_furniture(wall_rows)
 	if power_station:
 		_draw_power_station(wall_rows, hall)
+
+## The power station hall's own facade in place of the ordinary wall, windows and ground floor —
+## industrial rather than a block of flats: steel cladding, a hazard-striped ground course, and a
+## clerestory band of tall, narrow, unlit windows filling the top two wall rows. Its own colours,
+## never the variant's tint. The parapet turns at either end are the ordinary edge overlays. A
+## station's lot is always eight tiles deep, so its wall is always tall enough for the base and a
+## two-row clerestory; a shorter one would simply lose the band.
+func _draw_station_facade(wall_rows: int, hall: Vector2i) -> void:
+	var has_band := wall_rows >= 3
+	for row in wall_rows:
+		for col in range(hall.x, hall.y):
+			var at := _cell(col, row)
+			var tile := POWER_STATION_WALL
+			if row == 0:
+				tile = POWER_STATION_BASE
+			draw_texture(AtlasLibrary.region(tile), at)
+	if has_band:
+		for col in range(hall.x, hall.y):
+			draw_texture(AtlasLibrary.region(POWER_STATION_CLERESTORY), _cell(col, wall_rows - 1))
+	for row in wall_rows:
+		draw_texture(AtlasLibrary.region(WALL_EDGE_W), _cell(hall.x, row))
+		draw_texture(AtlasLibrary.region(WALL_EDGE_E), _cell(hall.y - 1, row))
 
 ## The `[first, end)` columns the wall and roof cover: the whole facade, or for the power station
 ## everything but its yard, which is one block at one end of the lot.
