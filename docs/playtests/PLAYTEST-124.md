@@ -70,3 +70,33 @@ animals (PR 300) and street obstructions (PR 301):
 
 10. **A fire escape ends one floor above the ground**: its lowest landing is at the first floor,
     and no flight comes down to the sidewalk.
+
+## Then, on the first-floor fire escape (PR 303, at 81251559)
+
+> "also, fire escape ladders. the graphics for them are good -- I like the variation with the
+> flower pot. the placement is wrong. you start at the bottom of the top floor then the same
+> texture gets placed on each floor. on the ground floor you only place the platform -- without a
+> ladder (so from a certain angle that means there is no fire ladder on the ground floor). so if
+>
+> w - wall
+> f - current fire escape texture
+> t - only the platform of the fire escape at the top end of the texture
+>
+> a building looks like this
+>
+> ```
+> wwwwwwww
+> wfwwwwfw
+> wfwwwwfw
+> wfwwwwfw
+> wtwwwwtw
+> ```
+>
+> five story building for example"
+
+12. **The fire escape graphics are good**, the potted-plant variant included.
+13. **A fire escape climbs the whole front, one piece per floor**: the current texture is placed
+    on every floor from the bottom of the top floor down, and the ground floor carries only the
+    platform at the texture's top end, with no ladder — so nothing of the escape comes down to
+    the sidewalk. In the example, a five-story front has the escape on its three middle floors,
+    the platform alone on the ground floor, and plain wall on the top floor.

@@ -530,9 +530,25 @@ rest of a front is not, so the standard door stands out.
       whatever `src/city/building.gd` draws a front from under `art/buildings/`, the power station
       aside. The wall stays white where the runtime tints it, every canvas, ground line and tiling
       seam is kept, and a window's lit and unlit pair and its three styles stay telling apart.
-- [ ] **A fire escape ends one floor above the ground** ([PLAYTEST-124](playtests/PLAYTEST-124.md),
-      statement 10: "Fire escapes don't reach a ground floor. They always end one floor above"):
-      its lowest landing is the first floor's and nothing comes down to the sidewalk.
+- [ ] **A fire escape climbs the whole front, one piece per floor**
+      ([PLAYTEST-124](playtests/PLAYTEST-124.md), statements 10, 12 and 13). The pictures are
+      accepted: "the graphics for them are good -- I like the variation with the flower pot. the
+      placement is wrong." Today one 48×64 overlay covers the bottom two rows only. Instead, the
+      same texture is placed once per floor, "you start at the bottom of the top floor", and "on
+      the ground floor you only place the platform -- without a ladder", so nothing comes down to
+      the sidewalk. The player's five-story example, `w` wall, `f` the current texture, `t` only
+      the platform at the texture's top end:
+
+      ```
+      wwwwwwww
+      wfwwwwfw
+      wfwwwwfw
+      wfwwwwfw
+      wtwwwwtw
+      ```
+
+      The flights must meet the landings from floor to floor, the ground-floor platform must
+      match the texture's own, and the plant variant stays.
 - [ ] **Then the whole front is looked at again**, the standard entrance door included: stills of
       a residential, a commercial and an industrial street at the ordinary view and zoomed out,
       before and after. The door is changed only if it still pops out.
