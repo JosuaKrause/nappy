@@ -8,6 +8,8 @@
         "src/city/building.gd"
       ],
       "members": [
+        "art/buildings/entrance_door.svg",
+        "art/buildings/entrance_door_industrial.svg",
         "art/buildings/fire_escape_a.svg",
         "art/buildings/fire_escape_b.svg",
         "art/buildings/power_station_base.svg",

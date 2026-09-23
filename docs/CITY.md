@@ -1871,6 +1871,21 @@ Top-down camera with a fake vertical extrusion:
   both drawn as overlays, after the wall, rather than replacing a texture the way a storefront
   does. The awning is the one piece of a front that leaves the wall plane; it stays inside the
   wall's own footprint rather than reaching over the pavement's walkable band.
+- **A multi-story front with no other way in has one entrance door**
+  (`Building.entrance_door_col()`), since a ground floor with no windows needs a way in. A
+  storefront is a commercial front's way in and the portico a civic front's, so neither gets a
+  second; her own block keeps its windows and has her own door; a one-row facade keeps its
+  windows and has no door; the power station draws its own. Everything else — every `RESIDENTIAL`
+  and `INDUSTRIAL` front, and a `COMMERCIAL` front one column wide, too narrow for a storefront —
+  gets exactly one, an overlay standing on the ground line at its column's centre: the plain
+  `entrance_door.svg`, or the steel `entrance_door_industrial.svg` on an `INDUSTRIAL` block.
+  Its column is rolled from a stream of its own, so no window, style, storefront, awning, shutter
+  or fire-escape roll moves because of it; it keeps off the fire escape's column and, wherever
+  the front has another to offer, off both columns beside it, which the escape's landings reach
+  into, and off the corner columns where there is still a choice. Like a storefront, the door is
+  36px tall and rises four pixels into the row above, so every window on that row sits two
+  pixels higher to keep its sill clear. The door's cell and the fire escape's are not blank wall:
+  `Building.blank_ground_floor_cells()`, the cells a poster can go on, leaves both out.
 - **A building's upper-floor windows carry one of three styles, rolled once for the whole
   building**: the plain pair, a tall sash pair, or a shuttered pair that lights up like any other —
   ordinary street variety, unconnected to the day or the block's own condition. Going
