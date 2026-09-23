@@ -590,6 +590,37 @@ func _ground_floor_texture(col: int) -> StringName:
 		return STOREFRONT_SHUTTERED_TEXTURES[index]
 	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[store] else STOREFRONT_TEXTURES[index]
 
+## The ground-floor cells with nothing on them but the plain wall and its plinth — no window, no
+## storefront, no civic entrance. Local space, one `Vector2(TILE, TILE)` rect per blank column, in
+## the same top-left convention `_cell()` already uses for every draw call in this file. Empty for
+## the power station (it draws its own front), her own building (the blank-wall rule's one
+## exception) and a one-row facade (not multi-story, so the rule never reaches it). Nothing calls
+## this yet — it is the ground a poster crew pastes on.
+func blank_ground_floor_cells() -> Array[Rect2]:
+	var result: Array[Rect2] = []
+	if power_station or is_home_building or wall_tiles() < 2:
+		return result
+	var entrance_cols := _civic_entrance_cols()
+	for col in columns():
+		if entrance_cols.has(col):
+			continue
+		if _ground_floor_texture(col) == WALL_BASE:
+			result.append(Rect2(_cell(col, 0), Vector2(TILE, TILE)))
+	return result
+
+## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
+## assumed: the portico is a fixed 32px overlay centred on the facade (`_draw_front_overlay()`),
+## which straddles two columns whenever `columns()` is even rather than landing on one exactly.
+func _civic_entrance_cols() -> Array[int]:
+	var result: Array[int] = []
+	if district != GameEnums.BlockPurpose.CIVIC:
+		return result
+	for col in columns():
+		var x := _cell(col, 0).x
+		if x < 16.0 and x + TILE > -16.0:
+			result.append(col)
+	return result
+
 ## The window pair for a wall cell, from `_window_style` — except a `BOARDED` block, which forces
 ## `SHUTTERED` regardless of the building's own roll. Never lit there either, but only because
 ## `_lit()` already answers false off `LIVED_IN`; an ordinary `SHUTTERED` building lights up like

@@ -481,6 +481,10 @@ non-zero on any failure.
 - `test_power_station.gd` — the power station across a spread of seeds: exactly one, outside the
   home's region, its door a reasonable walk away on a real street, and reachable on its day only
   through a region door with that day's walls, seals and closures in place.
+- `test_ground_floor.gd` — the ground floor of a multi-story building is shops or blank wall,
+  never windows, except hers: fixtures per district plus a spread of generated cities, the
+  `_build_windows()`/`_build_front()` RNG streams pinned unchanged, and `Building.
+  blank_ground_floor_cells()`'s own contract (ground-floor, non-window, non-entrance).
 - `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
   one-shot consumption and the usable-park rule.

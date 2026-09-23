@@ -3,7 +3,8 @@ extends RefCounted
 ## except her own. `Building._draws_window_at()` is the one place that decides whether row 0 draws
 ## a window at all; `_build_windows()`/`_build_front()` still roll exactly the same streams they
 ## always have, so what changed is only which of their rolls get painted at the ground floor,
-## never what the rolls are.
+## never what the rolls are. `Building.blank_ground_floor_cells()` is the new accessor a later
+## poster slice pastes on.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## A spread of cities, built in full (buildings, street trees, crowd, events) so the sweep exercises
@@ -17,6 +18,7 @@ func run(t) -> void:
 	_test_commercial_storefronts_remain_and_the_odd_column_is_blank(t)
 	_test_her_own_building_keeps_ground_floor_windows(t)
 	_test_a_one_row_facade_is_unchanged(t)
+	_test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t)
 	_test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t)
 	_test_the_home_flag_changes_no_front_roll(t)
 	_test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
@@ -82,6 +84,71 @@ func _test_a_one_row_facade_is_unchanged(t) -> void:
 				% is_home)
 		building.free()
 
+# ---------------------------------------------------------------- the accessor ---
+
+func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t) -> void:
+	# CIVIC, an odd column count: the portico lands on exactly the one middle column.
+	var civic_odd := _new_building(t, GameEnums.BlockPurpose.CIVIC, Vector2(96.0, 96.0), 64.0)
+	var odd_entrance := civic_odd._civic_entrance_cols()
+	t.check(odd_entrance.size() == 1, "an odd-width civic front's portico lands on one column (%d)" % odd_entrance.size())
+	var odd_cells := civic_odd.blank_ground_floor_cells()
+	t.check(odd_cells.size() == civic_odd.columns() - odd_entrance.size(),
+			"a civic front's blank cells are every ground-floor column but the portico's (%d of %d)"
+			% [odd_cells.size(), civic_odd.columns()])
+	civic_odd.free()
+
+	# CIVIC, an even column count: the portico straddles the two middle columns instead of landing
+	# on one exactly.
+	var civic_even := _new_building(t, GameEnums.BlockPurpose.CIVIC, Vector2(128.0, 96.0), 64.0)
+	var even_entrance := civic_even._civic_entrance_cols()
+	t.check(even_entrance.size() == 2,
+			"an even-width civic front's portico straddles two columns (%d)" % even_entrance.size())
+	var even_cells := civic_even.blank_ground_floor_cells()
+	t.check(even_cells.size() == civic_even.columns() - even_entrance.size(),
+			"an even-width civic front excludes both columns the portico straddles (%d of %d)"
+			% [even_cells.size(), civic_even.columns()])
+	civic_even.free()
+
+	# COMMERCIAL: the storefront pair's own columns are never blank; the odd final column is.
+	var commercial := _new_building(t, GameEnums.BlockPurpose.COMMERCIAL, Vector2(96.0, 96.0), 64.0)
+	var commercial_cells := commercial.blank_ground_floor_cells()
+	t.check(commercial_cells.size() == 1,
+			"a three-column commercial front has exactly one blank cell, the odd final column (%d)"
+			% commercial_cells.size())
+	if not commercial_cells.is_empty():
+		var odd_col_cell := Rect2(commercial._cell(2, 0), Vector2(Building.TILE, Building.TILE))
+		t.check(commercial_cells[0] == odd_col_cell, "the one blank cell is exactly the odd final column")
+	commercial.free()
+
+	# Every returned cell is ground-floor (row 0's own y) and exactly one tile.
+	var residential := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0)
+	var residential_cells := residential.blank_ground_floor_cells()
+	t.check(residential_cells.size() == residential.columns(),
+			"a residential front with no entrance to exclude is blank across every column (%d of %d)"
+			% [residential_cells.size(), residential.columns()])
+	var ground_row_y := residential._cell(0, 0).y
+	for cell in residential_cells:
+		t.check(is_equal_approx(cell.position.y, ground_row_y), "every accessor cell sits on the ground row")
+		t.check(cell.size == Vector2(Building.TILE, Building.TILE), "every accessor cell is exactly one tile")
+	residential.free()
+
+	# The three guards: the power station, her own building and a one-row facade offer nothing.
+	var station := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, Vector2(96.0, 256.0), 64.0)
+	station.power_station = true
+	t.check(station.blank_ground_floor_cells().is_empty(),
+			"the power station draws its own front, so the accessor has nothing to offer")
+	station.free()
+
+	var home := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0, true)
+	t.check(home.blank_ground_floor_cells().is_empty(),
+			"her own building keeps its windows, so the accessor has nothing to offer")
+	home.free()
+
+	var shallow := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 32.0), 32.0)
+	t.check(shallow.blank_ground_floor_cells().is_empty(),
+			"a one-row facade is not multi-story, so the accessor has nothing to offer")
+	shallow.free()
+
 # ------------------------------------------------------------------- RNG streams ---
 
 ## Replays `_build_windows()`'s own RNG stream and `_window_texture()`'s own style match, using only
@@ -146,6 +213,22 @@ func _test_the_home_flag_changes_no_front_roll(t) -> void:
 
 # --------------------------------------------------------------------- the sweep ---
 
+## Every accessor cell a real building offers is plain wall (`_ground_floor_texture()` says
+## `WALL_BASE`) and never one of `_civic_entrance_cols()`'s own columns — the same two contracts
+## `_test_the_accessor_returns_ground_floor_non_window_non_entrance_cells` pins on fixtures, asked
+## again of whatever the generator actually builds.
+func _check_accessor_invariant(t, building: Building, seed_used: int) -> void:
+	var entrance_cols := building._civic_entrance_cols()
+	var ground_row_y := building._cell(0, 0).y
+	for cell in building.blank_ground_floor_cells():
+		var col := int(roundf((cell.position.x - building._cell(0, 0).x) / Building.TILE))
+		t.check(is_equal_approx(cell.position.y, ground_row_y),
+				"seed %d: every accessor cell sits on the ground row" % seed_used)
+		t.check(building._ground_floor_texture(col) == Building.WALL_BASE,
+				"seed %d: every accessor cell is plain wall, not a window or a storefront" % seed_used)
+		t.check(not entrance_cols.has(col),
+				"seed %d: no accessor cell is the civic entrance's own column" % seed_used)
+
 ## Full `City` scenes across a spread of seeds — the only path that exercises
 ## `City._spawn_buildings()`'s own wiring of `is_home_building` off `CityMap.home_block`, rather
 ## than a fixture set directly.
@@ -159,6 +242,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 		t.add_child(city)
 		city.build(map)
 		for building: Building in city.buildings():
+			_check_accessor_invariant(t, building, map.seed_used)
 			if building.power_station:
 				continue
 			if building.is_home_building:
