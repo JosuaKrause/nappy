@@ -52,9 +52,9 @@ user://telemetry/2026-09-03/run-205437-seed2102613802-v0.0.0-49-gdb09693-dirty/
   so a bad week of testing can be cleared with one `rm -rf` of its date folders.
 - **`<run>`** is the individual run, and its name carries what a level per commit used to split
   across two folders: `run-` when a person was at the controls, `rig-` for a headless boot or
-  anything driven by `--screenshot`, `--walk`, `--flee` or `--press`; the full `HHMMSS` time of day
-  the run started; the seed; and last `git describe --tags --always`'s own form — the nearest
-  version tag, commits since, and the abbreviated hash the run was played on
+  anything driven by `--screenshot`, `--walk`, `--flee`, `--press` or `--route`; the full `HHMMSS`
+  time of day the run started; the seed; and last `git describe --tags --always`'s own form — the
+  nearest version tag, commits since, and the abbreviated hash the run was played on
   (`v0.0.0-49-gab12cd3`), with `-dirty` appended if the tree was not clean, the same mark as the
   log's own first line. `tools/telemetry.sh -p` compares that tail against the same `git describe`,
   by path alone, to say what is stale. The full time of day in the run's own name is the only clock
@@ -269,6 +269,7 @@ name the question it answers, or it is a metric and does not belong.
 | `checkpoint` | `EventManager` | A region door's toll paid — where she was held, how long, and which side she came out on. Written on release rather than on capture, since "released on the north side" is the fact a reader wants and the teleport is what makes it true |
 | `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial, and did an unseen pickup mark have to move to stay findable — where it was, and where it went |
 | `start` | observer | Where the day began |
+| `route` | `RouteRig` | **Under `--route` only: whether the rig's own day fits its clock.** A target reached — elapsed day time and distance walked — a re-plan when the way ahead closed, a target given up on as unavailable, unreachable or physically stuck, and the day ending before a target was reached |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? |
 | `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |
 | `path` | observer | **Was she on the day's corridor?** A line each way as she crosses on or off it, and one at dusk with the share of her street time she spent on it. It is what makes *"going off the paths lets me skip events and is safer than going on the path"* a measurement rather than an argument. Time in a park or an alley is counted separately from "off it": the corridor is made of streets and the destination is not one, so folding them together would credit every won day with a long safe stretch off the paths |

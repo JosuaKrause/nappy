@@ -194,6 +194,10 @@ var _save_indicator: SaveIndicator
 ## `--day-length` lookups against the live city need no instance and are called on `DevRig`
 ## itself.
 var _dev_rig := DevRig.new()
+## `--route`'s own walker, `null` outside a debug build or with no `--route` given — see
+## `src/dev/route_rig.gd`. Unlike `_dev_rig`, this owns a whole target queue that has to survive
+## across a day's frames, so it is a child node rather than a bag of static lookups.
+var _route_rig: RouteRig
 ## Dev spawn and meter overrides apply to the opening day only; every later day starts on
 ## the doorstep with a fresh baby, like the game intends.
 var _first_day := true
@@ -392,6 +396,15 @@ func _ready() -> void:
 		trace.name = "FrameTrace"
 		add_child(trace)
 		trace.setup(self, _city, _player, _day)
+
+	# Built before `_start_day()`, which calls `_route_rig.start_day()` once the day it is meant
+	# to walk actually exists — see `src/dev/route_rig.gd`.
+	if not DevFlags.route_targets().is_empty():
+		_route_rig = RouteRig.new()
+		_route_rig.name = "RouteRig"
+		add_child(_route_rig)
+		_pauses_with_the_game(_route_rig)
+		_route_rig.setup(_city, _player, _baby, _resistance, _day)
 
 	_start_day()
 	_write_dawn_for_a_resumed_run()
@@ -1499,6 +1512,8 @@ func _start_day() -> void:
 			_city.events.plans())
 	if _observer:
 		_observer.start_day()
+	if _route_rig:
+		_route_rig.start_day()
 
 ## Whatever `_start_day()`'s own dawn should say about the day it just built, said right after
 ## that call returns — pulled out of `_ready()` on its own so a test can drive the decision
@@ -1887,9 +1902,10 @@ func _tile_name(type: GameEnums.TileType) -> String:
 ##
 ## - **There is no window.** `check.sh` and the test suite boot the game headless; nobody could be
 ##   playing whatever else is true.
-## - **Something else is holding the keys.** `--screenshot` exists to take a picture and quit, and
-##   `--walk`, `--flee` and `--press` are rigs that supply the input themselves. A run driven by one
-##   of them can be long, busy and completely unplayed, which is exactly the case the size heuristic
+## - **Something else is holding the keys.** `--screenshot` exists to take a picture and quit,
+##   `--walk`, `--flee` and `--press` are rigs that supply the input themselves, and `--route`
+##   (`src/dev/route_rig.gd`) walks a whole day's worth of it on its own. A run driven by one of
+##   them can be long, busy and completely unplayed, which is exactly the case the size heuristic
 ##   in `tools/telemetry.sh` could never catch.
 ##
 ## **`--seed`, `--day`, `--spawn`, `--overview` and the rest are *not* here**, and that is the line:
@@ -1897,13 +1913,13 @@ func _tile_name(type: GameEnums.TileType) -> String:
 ## `--day 9` is a playtest.
 ##
 ## Reads `DevFlags.active_args()` rather than the command line directly, so a release export —
-## where none of the four rig flags below can do anything anyway — never misreads an ordinary
+## where none of the five rig flags below can do anything anyway — never misreads an ordinary
 ## player for one.
 func _somebody_is_playing() -> bool:
 	if DisplayServer.get_name() == "headless":
 		return false
 	var args := DevFlags.active_args()
-	for rig in ["--screenshot", "--walk", "--flee", "--press"]:
+	for rig in ["--screenshot", "--walk", "--flee", "--press", "--route"]:
 		if rig in args:
 			return false
 	return true
