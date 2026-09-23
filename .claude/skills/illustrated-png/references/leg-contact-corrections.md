@@ -2,7 +2,7 @@
 
 These are reusable strategies for revising an existing illustrated family. Choose the operation
 that addresses the visible defect and review its result; none guarantees acceptance. Preserve
-SVG-first source provenance, frozen raster inputs, prompts, masks, transforms and reproducible
+source provenance, frozen raster inputs, prompts, masks, transforms and reproducible
 assembly recipes. The attempts and player verdicts are recorded under M160, the father's opposite
 contact, and M167, the father's natural legs, in `docs/DECISIONS.md`.
 
@@ -64,5 +64,5 @@ phase timing; include both native and enlarged views. Keep diagnostic overlays s
 
 Install only the accepted family. Keep original generation records immutable and use explicit
 manifest overrides for accepted derivatives; verify runtime bytes against those derivatives,
-preserve import identities, and check the actual texture loader and atlas bindings. Static
+rebake, and check the region in `assets/atlases/baked/regions.json`. Static
 sheets establish poses; a runtime burst establishes the moving assembly.
