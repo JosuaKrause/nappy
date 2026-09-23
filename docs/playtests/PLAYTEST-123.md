@@ -105,3 +105,21 @@ yard seen through its fence. It asked whether a power-station reference was want
 18. **The station's street front is redrawn by Opus** as proposed, without a reference, for the
     player to review.
 
+## The reference sheet stays in the conversation
+
+> "I can't get a good reference right now"
+
+19. **The pasted reference sheet is not in the repository**, so the orchestrator's description
+    of it stands in for it. What it showed, per kind: *the leader* — a detailed, jowly, scowling
+    middle-aged man with receding hair, heavy brows and a hard stare, dark suit, on a gray
+    backing, a dark band across the bottom; *the rules* — a dark header bar, then four entries,
+    each a short dark vertical bar beside two gray print lines, and a round red stamp with a
+    diagonal slash overlapping the lower right; *the curfew sheet* — the header, a large plain
+    clock (hands near four) with tick marks, then two bar-and-two-lines entries and the same
+    stamp; *the uniform sheet* — near-black, with a cream emblem: a ring with a vertical bar
+    through it that stands out above and below, on a flat foot bar, like the letter phi on a
+    base; *the wanted notice* — gray-beige paper, a dark header, four mugshot frames each with a
+    dark head-and-shoulders silhouette and two print lines beneath it, and in the crossed copy a
+    red X over the bottom-left face. Flat fills, clean dark outlines, muted colors; the repeats on
+    the sheet are the same kinds (statement 14).
+
