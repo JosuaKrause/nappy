@@ -358,3 +358,33 @@ until code, a scene or a resource actually binds it. When binding or removing on
 sources as well as `assets/ground_tileset.tres`, `scenes/` and `project.godot`; the TileSet and
 application icon are deliberately indirect. For state, direction or animation families, keep a
 glob only when it names every member of the family and no unrelated file.
+
+## Posters
+
+`art/events/posters/` holds the four poster kinds M180, posters she notices, and loudspeakers
+that are somewhere, asks for. Every file below is **prepared** and unbound: no runtime source,
+scene or resource reads any of them yet — placing them on a building face, the crew that pastes
+them and tearing one down are later slices.
+
+Each is a 32×32 canvas matching a wall tile's own grid, with a 20×25px sheet (62.5% × 78% of the
+tile) drawn inside it, so a later placement can register straight onto a wall cell the way
+`wall_base.svg` already does.
+
+| Asset | What it draws |
+|---|---|
+| `poster_leader.svg` | The leader's portrait: a nondescript face, no name, with a plain caption-band colour strip carrying no letters. |
+| `poster_rules.svg` | The rules: a pale printed notice with a heavy header bar, four gray print-line rows and a rotated red stamp. |
+| `poster_curfew.svg` | The curfew sheet: the same notice with a clock face in place of one print line, for day 6 onward. |
+| `poster_uniform.svg` | The dark uniform sheet: an invented ring-and-bar emblem, asymmetric so it does not read as a cross, matching no real flag, party, state or movement mark. |
+| `poster_wanted.svg` | The wanted notice: six mugshot-framed faces in two columns of three, drawn in a squarer, flatter style than the leader's oval portrait. The row-2, column-1 slot is a placeholder adult face standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their face. |
+| `poster_wanted_crossed.svg` | The same sheet with only that one slot crossed out in red, for a day 10 that was not won. |
+| `poster_torn.svg` | A generic torn sheet, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top strip stays pasted, a flap hangs loose and rotated, and the wall shows through the gap. |
+
+No sheet carries readable words — every print line, header and stamp is a colour block or a gray
+line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the politics).
+
+[The poster review sheet](evidence/poster-art-review-2026-09-23.png) shows each alone at game
+scale (2×, the camera's own zoom) and at 4× that, plus three building faces assembled from the
+real `art/buildings/` wall, window and plinth textures at each act's own daylight cast
+(`Palette.act_tint()`), carrying posters at the day 4/day 8/day 12 densities M180's own table
+asks for.
