@@ -193,12 +193,13 @@ merging is what collides — so parallelism is planned at the file level, before
   request, and merge it once the `test` check is green — GitHub runs that check on the merge result,
   which is exactly the "two green branches can still be wrong together" case. **A second agent's PR
   needs its branch brought up to date with the new `main` before it can merge**, since the ruleset
-  requires strict status checks, and that re-run is the gate on the second merge. Then remove the
-  worktree (`git worktree unlock` first if the harness locked it) and delete the branch.
-- **Sweep the harness's own branches at the end.** Each spawn also leaves a `worktree-agent-*`
-  branch pointing at the worktree's base; after the feature branches are merged, `git worktree
-  prune` and delete them with `git branch -d`, which still answers for a branch that has no
-  pull request; a feature branch goes by the **committing** skill's PR-state check.
+  requires strict status checks, and that re-run is the gate on the second merge. Then retire it
+  with `tools/prune-merged.sh <branch>` from the main checkout (see **committing**), which
+  removes the worktree and deletes the branch only once GitHub vouches for it.
+- **The harness's own branches go with the same script.** Each spawn also leaves a
+  `worktree-agent-*` branch pointing at the worktree's base. `tools/prune-merged.sh` deletes the
+  ones whose worktree is gone, with `git branch -d`, and keeps a live agent's: that worktree has
+  a feature branch checked out, so "is it checked out" says nothing about whether it is in use.
 - **An agent branches from `main`, never from an open docs branch.** When a milestone's entry
   is still in an unmerged docs pull request, wait for it to merge before spawning rather than
   telling the agent to branch from the docs branch. That pull request reaches `main` as one

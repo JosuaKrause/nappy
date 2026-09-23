@@ -200,11 +200,14 @@ the PR merged has commits nobody pushed, and that is the branch worth looking at
 `worktree-agent-*` branch has no PR and points at its worktree's base, so `-d` still answers
 for it.
 
-**In Claude Code's auto mode the permission classifier refuses `git worktree remove` and
-`git branch -D` as destructive**, even after the check above has passed. Do not look for another
-command that achieves the same thing. Give the player the exact line, with the `!` prefix so it
-runs in the session, and say what the check found: the tip matches the merged head, and the
-worktree has no uncommitted changes.
+**`tools/prune-merged.sh <branch>...` is that check, executable, and the way a merged branch is
+retired.** It refuses unless the pull request is MERGED and the local tip is its merged head, then
+removes the branch's worktree (never with `--force`, so git refuses a dirty one), the local branch
+and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
+whose worktree is gone. Run it from the main checkout. **Use it rather than the bare commands**:
+Claude Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as
+destructive however the check came out, and `.claude/settings.json` allows this script by name
+because it cannot delete anything the check did not clear.
 
 **But retarget every PR stacked on that branch to `main` before the branch goes.** GitHub
 closes a pull request whose base branch is deleted, and a closed PR whose base no longer exists
