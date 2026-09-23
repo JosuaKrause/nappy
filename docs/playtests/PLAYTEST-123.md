@@ -172,3 +172,10 @@ On the combined sheet (every kind intact and torn three ways, and fronts with pl
 27. **The poster art is accepted**: the six intact sheets, the three tear masks and the look of
     posters on plain wall.
 
+> "hmm, there is no version of the wanted poster without X anymore?"
+
+28. **The wanted notice has a version with no X.** Both drawn copies crossed the top-right face.
+    The orchestrator split it three ways, open to overturn: no X; the neighbor's slot crossed
+    only (a failed day 10); another face crossed only, so a wall can show "some crossed out in
+    red" on a run where the neighbor was warned.
+
