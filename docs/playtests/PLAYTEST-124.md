@@ -63,3 +63,10 @@ animals (PR 300) and street obstructions (PR 301):
    and the home door look fine.
 9. **The rest of the building is redrawn to the same bar** — walls, windows, fire escapes and the
    other parts — and then the whole picture is looked at again.
+
+## Then, on her own building
+
+> "The home has windows behind the door. Let's remove them"
+
+11. **No window shows behind her front door**: the ground-floor window drawn on the home block's
+    wall where the door stands is removed, so the door stands on plain wall.
