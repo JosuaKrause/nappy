@@ -219,14 +219,18 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ##
 ## **Two things it cannot do, and both are properties of the plan rather than of this search.** A
 ## row the director sites while she walks has no position at dawn — `cat_dash`, `cyclist`,
-## `loose_dog`, and `charging_dog` on `Tuning.RUN_TAUGHT_DAY` — so `event:<id>` never finds one and
-## falls back to the doorstep with a warning. And a row that waits for her (`pursues_within`) is
+## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
+## the day budgets and sites from her walk (`EventDef.sited_on_her_way`) — so `event:<id>` never
+## finds one and falls back to the doorstep with a warning that names the row and says why.
+## `--follow <id>` tracks such a row once it exists. And a row that waits for her (`pursues_within`) is
 ## stood *inside* its own trigger by the offset below, so it has noticed her by the first frame: a
 ## rig can photograph what a `pigeon_flock` or an `alley_robbery` does, but not the silence before
 ## it.
 static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
+	var waits_for_her_walk := false
 	for plan in city.events.plans():
 		if not plan.is_placed():
+			waits_for_her_walk = waits_for_her_walk or plan.def.id == wanted_id
 			continue
 		if wanted_id != "" and wanted_id != "event":
 			if plan.def.id != wanted_id:
@@ -235,7 +239,11 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 			continue
 		var offset := pavement_offset(city.map, plan.position, plan.def.outer_radius)
 		return nearest_walkable(city.map, plan.position + offset)
-	push_warning("no non-ambient events planned today")
+	if waits_for_her_walk:
+		push_warning(("'%s' is planned today with no position: it is sited from her walk, so there "
+				% wanted_id) + "is nowhere to stand at dawn. Use --follow %s once it exists" % wanted_id)
+	else:
+		push_warning("no non-ambient events planned today")
 	return city.map.home_world_position()
 
 ## The step from a found event's position to somewhere just off it, **across the street it stands

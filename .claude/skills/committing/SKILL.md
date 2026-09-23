@@ -1,12 +1,12 @@
 ---
 name: committing
-description: The git workflow for this repo — one branch per milestone, one commit per TODO item, what a commit message must explain, and when to merge and delete. Load this BEFORE committing, branching, merging or writing a commit message.
+description: The git workflow for this repo — one branch per work item, one commit per TODO item, what a commit message must explain, and when to merge and delete. Load this BEFORE committing, branching, merging or writing a commit message.
 ---
 
 # Git workflow
 
-**Manage local branches and commits autonomously. PR merges require explicit permission in
-the current session**, including enabling auto-merge or delegating the merge to an agent.
+**Manage local branches and commits autonomously. Merging a PR requires explicit permission in
+the current session** — see "Merging".
 
 ## Pushing
 
@@ -18,6 +18,13 @@ is a specific good reason, documented in the final report. Use a draft PR when t
 unfinished, and include the PR link in the final report. This is standing authorization; no
 separate request to push or open the PR is needed.
 
+**A ready-for-review PR carries the completed work and its verification** (see "Before
+committing"). An unfinished draft may be pushed with failing or outstanding checks, stated in the
+PR; backing it up does not claim that it is ready to merge. Unfinished work stays out of `main`,
+which is the tree a fresh clone receives.
+
+## Merging
+
 **Merging a PR requires explicit permission in the current session.** This includes enabling
 auto-merge, manually merging, and asking an agent or monitor to merge. Permission from another
 session does not carry over. Finishing implementation, opening a PR and green CI do not imply
@@ -25,14 +32,8 @@ merge permission. Leave the PR open and report its link when permission has not 
 
 When merging is explicitly authorized, check mergeability and let CI gate the merge. Resolve
 conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**
-(`gh pr merge <n> --squash`) and delete the merged branch. A dependent wait belongs to a background agent, not a polling loop
-in the orchestrating session.
-
-**A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,
-the suites the change touches, and `./tools/lint.sh` if a governed doc moved. An unfinished draft
-may be pushed with failing or outstanding checks, stated in the PR; backing it up does not claim
-that it is ready to merge. **The full suite runs in CI on the pull request**, on the merge result.
-Unfinished work stays out of `main`, which is the tree a fresh clone receives.
+(`gh pr merge <n> --squash`) and retire the branch (see "Branches"). A dependent wait belongs to
+a background agent, not a polling loop in the orchestrating session.
 
 ## The squash commit is the pull request's title and description
 
@@ -177,12 +178,12 @@ the branch's colliding identities in every numbered namespace, including milesto
 playtests, without combining unrelated records. Side-selection shortcuts
 such as `--ours` and `--theirs` do not satisfy that review.
 
-**One branch per milestone**, named `feature/<thing>`, squash-merged to `main`. One commit per
-pull request is the project's spine.
+**One branch per work item** (which may span several milestone numbers), named
+`feature/<thing>`; `main` receives it as one squashed commit.
 
 **Delete a branch as soon as its pull request is merged, always, without being asked.** The
 squashed commit is what the project keeps; the branch pointer is scaffolding. Left alone they
-accumulate one per milestone, and the cost is not clutter — it is that `git branch` stops being
+accumulate one per work item, and the cost is not clutter — it is that `git branch` stops being
 able to answer the only question it is good for: **is there work that is not on `main`?**
 
 **Git cannot see a squash as a merge, so the PR's state is the check, not `git branch -d`.**
@@ -200,14 +201,22 @@ the PR merged has commits nobody pushed, and that is the branch worth looking at
 `worktree-agent-*` branch has no PR and points at its worktree's base, so `-d` still answers
 for it.
 
-**But retarget every PR stacked on that branch to `main` before the branch goes.** GitHub
-closes a pull request whose base branch is deleted, and a closed PR whose base no longer exists
-cannot be reopened or retargeted — the work has to be proposed again as a new PR. So for a
-stacked PR the order is: merge the lower PR *without* `--delete-branch`, `gh pr edit <upper>
---base main`, and only then delete the branch. The repository's own auto-delete of merged head
-branches does not run this order for you. After the squash the upper branch still carries the lower
-one's original commits, so merge `main` into it under the **merging-main** skill before it is
-reviewed again; its diff against `main` is then its own work only.
+**`tools/prune-merged.sh <branch>...` is that check, executable, and the way a merged branch is
+retired.** It refuses unless the pull request is MERGED and the local tip is its merged head, then
+removes the branch's worktree (never with `--force`, so git refuses a dirty one), the local branch
+and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
+whose worktree is gone. Run it from the main checkout. **Use it rather than the bare commands**:
+Claude Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as
+destructive however the check came out, and `.claude/settings.json` allows this script by name
+because it cannot delete anything the check did not clear.
+
+**A PR stacked on another is retargeted to `main` before its base branch goes.** The repository
+deletes a merged head branch on GitHub by itself; for a branch deleted by hand (`git push
+--delete`, or `--delete-branch` on the merge), run `gh pr edit <upper> --base main` first, since
+GitHub closes a pull request whose base branch is deleted. Either way, the upper branch still
+carries the lower one's original commits after the squash, so merge `main` into it under the
+**merging-main** skill before it is reviewed again; its diff against `main` is then its own work
+only.
 
 ## Commits
 
@@ -258,17 +267,12 @@ A message that restates the diff is worth nothing; the diff is right there.
 
 ## Before committing
 
-Run the verification loop — see the **verify** skill. `./tools/check.sh`, the suites your change
-touches, and a screenshot if you touched anything visual.
-
-**Nobody runs the unfiltered suite locally as a gate.** It runs in CI on the pull request, against
-the merge result, and `main`'s ruleset will not let anything land without it — so a local full run
-buys an answer several minutes before the PR gives a better one. A `PARTIAL RUN` marker is the
-expected state of a local run. The reasoning is in **verify**, which also names the two cases where
-running it locally is still the fast thing to do.
+Run the verification loop — see the **verify** skill, which owns it: `./tools/check.sh`, the
+suites your change touches, and a screenshot if you touched anything visual. The full suite is CI's
+on the pull request, not a local gate.
 
 Run `./tools/lint.sh` too if the commit touches a governed doc (`CLAUDE.md`, a skill, `README.md`
-or anything under `docs/` besides `DECISIONS.md` and the `PLAYTEST-NN.md` files). A hit is a stop:
+or a top-level `docs/*.md` besides `DECISIONS.md`). A hit is a stop:
 fix the sentence or commit nothing. And `./tools/pycheck.sh` if it touches `tools/*.py`,
 `pyproject.toml` or `uv.lock` — see the **python-tooling** skill.
 

@@ -7,8 +7,8 @@ description: Rules for the run log — the one invariant it must never break, wh
 
 The run log is an **ordered log, not a metrics dump** — what happened, in what order, readable top
 to bottom with no tool. It records what the code **cannot recompute**, above all the random outcomes
-that branch a run: a one-shot that fired, a block arc that advanced, an alley trap that was set.
-Those depend on run history, so no seed reproduces them.
+that branch a run: a one-shot that fired, a block arc that advanced. Those depend on run history, so
+no seed reproduces them.
 
 **Anything derivable from the seed, `Tuning` or the catalogue stays out.**
 
@@ -19,22 +19,23 @@ Read a run back with `./tools/telemetry.sh`. The table of entry kinds is `docs/T
 **No RNG. No `day_rng()` stream. Nothing that changes a placement or a roll.**
 
 Where a system logs a random outcome it **hoists the existing roll into a variable** to print it; it
-never adds one:
+never adds one. `EventScheduler`'s one-shot roll is the model:
 
 ```gdscript
-# Hoisted so the roll can be written down.
+# Hoisted out of the comparison purely so it can be written down.
 var roll := rng.randf()
-if roll >= TRAP_CHANCE:
-    Telemetry.note("roll", "alley trap: %.2f >= %.2f — the contact is a friend" % [roll, TRAP_CHANCE])
-    return
+var threshold := 1.0 / float(remaining)
+if roll > threshold:
+    Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today" % [def.id, roll, threshold])
+    continue
 ```
 
 That hoist is a one-line edit with a way to be **catastrophically wrong**: consume one extra value
 from a day's RNG and every event placed after it moves, and the determinism invariant takes every
 other guarantee in the game down with it.
 
-`tests/test_telemetry.gd` plans all fourteen days with the log off and again with it on and requires
-the plans to be **identical event for event**.
+`tests/test_telemetry.gd` plans every day of the run (`Tuning.RUN_LENGTH_DAYS`) with the log off and
+again with it on and requires the plans to be **identical event for event**.
 
 ## Per-frame checks go in the observer
 
@@ -52,14 +53,9 @@ is a metric and does not belong.
 
 ## What the log is for
 
-A green suite says nothing about whether a *run* behaves. If you changed anything the player
-experiences, **play a minute of it and read the log back.** Defects found only that way include a
-`run` entry claiming a six-hundred-pixel event was "in reach", and a meter breakdown reading
-`crowd 0.0, events 0.0` while the meter climbed, because the player was doing it to herself with the
-run button and nothing said so.
-
-The `cue` entry exists because nothing in `tests/test_danger.gd` can see a *moment*, and two cue
-defects reached a player for exactly that reason.
+Reading a played minute back is how a run's behaviour is checked — see the **verify** skill, "What
+each one cannot see". The `cue` entry exists because nothing in `tests/test_danger.gd` can see a
+*moment*.
 
 ## Whose run is it
 

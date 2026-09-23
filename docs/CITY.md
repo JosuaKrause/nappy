@@ -862,6 +862,18 @@ one needs is a phase rather than a lane, and its two rules are the next two sect
 man's field here as though he stood still would refuse him the route's own sidewalk for the one
 reason a beat answers by itself.
 
+**One row is exempt, and closing the route is exactly what it is for.** Day 3's fire is sited on the
+branch she is walking and the engine parks across from it for the rest of the day: *"you're not
+supposed to go past it"*, *"when you see the fire the reaction should be to take a different route"*
+(PLAYTEST-119). Asking whether a line survives along that sidewalk would refuse every site the beat
+of the day is made of, so `EventScheduler._a_line_has_to_avoid` leaves a `sited_on_her_way` row out
+of the line rules altogether. **What replaces the guarantee is stated over the day rather than over
+the street**, and it is the stronger statement of the two: a site is accepted only where, from where
+she is standing and with **both fields taken as closed ground**, the home and a calm area she has not
+used are still reachable. So the street she is on can be shut, and the day always has another way
+round it. Checked before accepting, never repaired — a refused siting is asked again a second later
+from wherever she has walked to.
+
 ### A pacing row is passed by waiting, or left at a crossing
 
 **A man walking a footway and back is a timing problem rather than a routing one.** *"Time pass —
@@ -966,15 +978,19 @@ An authored set piece that fires once per run and is missed is a fairness contra
 spent on nothing — which is what placing it like everything else, at a legal spot somewhere on the
 map, produces on a day she may never walk that way.
 
-So a **set piece is sited against the tree**: the day picks a **set** of candidate sites such that
-**every corridor passes at least one**, and the one she reaches is the one that fires. That is
-better than choosing a site on her chosen route, because it needs no knowledge of what she chose —
-the guarantee is structural, and it holds whichever way she goes. `docs/EVENTS.md`, "A set piece is
-offered on every route and happens on one", is the built mechanism.
+There are two ways to make that impossible and the day picks between them per row. A **set piece
+sited against the tree** picks a **set** of candidate sites such that **every corridor passes at
+least one**, and the one she reaches is the one that fires: it needs no knowledge of what she chose,
+so the guarantee is structural and holds whichever way she goes. A **set piece sited from her walk**
+waits instead — the day budgets it with no position and puts it on a building face **on the branch
+of the tree she is actually walking**, ahead of her by distance along that route, once her heading
+is clear. That is what day 3's fire does, and it is steered onto her on purpose: *"the fire needs to
+spawn on the current path the player is on"* (PLAYTEST-119). `docs/EVENTS.md`, "A set piece happens
+where she is going", is the built mechanism for both.
 
-It may not be *steered onto her*: `AHEAD_OF_PLAYER` is for moments, and a fire engine is
-deliberately a **place**. What makes it a place and still unmissable is the candidate set, not a
-director.
+Either way it stays a **place** rather than a moment: a tile, a body, a field, and every question
+the corridor asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning
+building is not one. What the second way changes is *when* the tile is chosen, never what it is.
 
 **"All routes" is load-bearing and means routes, not destinations.** A covering set that counts an
 area as met when **either**

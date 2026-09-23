@@ -366,58 +366,6 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 ---
 
-## M179 — The fire is on her way, guaranteed · asked for 2026-09-20
-
-> "I have never seen a fire truck. I mentioned a couple of times that the fire should come
-> first and be on your way *guaranteed* (a dynamic event dependent on the route you chose that
-> day) then the fire truck should come and player better get away from the fire."
-
-[PLAYTEST-117](playtests/PLAYTEST-117.md). M101, the fire is found before the engine
-(`DECISIONS.md`), made the engine come when she sees the fire; the fire itself is still sited
-once at dawn, anywhere — at (14,34) with her doorstep at (80,84) in the run that prompted this —
-so a day 3 can pass without either.
-
-- [ ] **Day 3's fire is sited from the walk she is taking.** Not at dawn: once her direction
-      for the day is clear, the fire starts on a building ahead of her, off screen, on the way
-      she is going, **on the path she is on and nowhere else** ([PLAYTEST-119](playtests/PLAYTEST-119.md):
-      "valid spawn locations are only on the path"; moving it while unseen is fine), the way
-      `EventDirector` already sites a row ahead of her — near enough that
-      she reaches it, far enough that she meets it rather than watches it appear. It happens on
-      every day 3, whichever way she goes, including a day she turns round. **The walk home
-      changes nothing**: a fire she has not met is sited and moved by the same rule on the
-      return leg, and is fixed only once it has taken place
-      ([PLAYTEST-120](playtests/PLAYTEST-120.md): "if they managed to avoid it thus far they
-      should still have to try avoid it further"; *stopping at the return leg, offered by the
-      orchestrator · refused by the player on 2026-09-21*). When and how far
-      ahead are the orchestrator's and open to overturn. The scar it leaves is wherever it
-      burned, for the rest of the run. **A lost day 3 gives the fire back whole**: its one-shot,
-      its scar and the block arc it advanced, whether or not she saw it burn, and the retry has
-      a fire again, sited from the walk she takes then ([PLAYTEST-119](playtests/PLAYTEST-119.md):
-      "nothing that happened on the day that got retried can influence the next repeat"). The
-      retry is otherwise the same day from the same state at its beginning, as every retry is.
-      **A day 3 she wins with no fire met still burns**
-      ([PLAYTEST-121](playtests/PLAYTEST-121.md): "I agree with the fire fix"): the row's only
-      day is day 3 and it is spent only when it enters the world, so a day on which every siting
-      was refused would leave the run with no fire, no scar and no shell for day 8's task to go
-      to. If it has not been sited by the end of the day it is lit then, off her path, on a site
-      the dawn rules accept — chosen by the same acceptance rules, so nothing is repaired — and
-      the shell stands on day 4. Meeting it stays the strong guarantee; the probe reports, of
-      the day 3s she wins, how many ended with the fire unmet. That a retry walked another way
-      meets it on another street is the plan ("days don't have memory on retries").
-- [ ] **Then the engine comes, and the fire is somewhere to get away from.** The engine arrives
-      on sight of the fire, as built, along a street she can see it come down, **and stops
-      at the fire**: in a windowed run on the branch the player saw that it "did not stop at
-      the fire" ([PLAYTEST-119](playtests/PLAYTEST-119.md)). It parks across from the fire for
-      the rest of the day, *decided by the player on 2026-09-20*, asked with twenty seconds
-      and passing through as the alternatives: "a fire engine has a high cost". **She is not
-      supposed to go past it** ("you're not supposed to go past it"): the fire and the engine
-      close the path she is on, so a site is accepted only where a calm area and the home stay
-      reachable without entering either field. The fairness
-      contract for a siting she did not choose (the **events** skill) holds: she can always
-      walk out of it from where she first sees it.
-
----
-
 ## M180 — Posters she notices, and loudspeakers that are somewhere · asked for 2026-09-20
 
 > "posters need to be more obvious. the loudspeaker part was not apparent to me. since we
@@ -457,7 +405,7 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       points at one either. Nothing can draw over it; buildings sit under the entity layer.
 
       **The fix, in the order of what the log blames:** crews work on walls along the way she
-      walks, the way day 3's fire is sited (M179, the fire is on her way, guaranteed), rather
+      walks, the way day 3's fire is sited (`DECISIONS.md`, M179, the fire is on her way), rather
       than anywhere; a wall a crew has worked keeps its posters for the rest of the run, drawn
       on the building face and large enough to read at walking distance, so each day's walls
       add to the last; and the crew is seen pasting. The row's cost stays what it is: making a
@@ -569,7 +517,7 @@ and the questions put back with their options; [PLAYTEST-118](playtests/PLAYTEST
 the answers on the calendar's order, the spare task and the walk home. **Decided by the
 player, and its build starts now on the player's word** ([PLAYTEST-121](playtests/PLAYTEST-121.md):
 "start with the tasks redesign implementation"). Three of its tasks go to places other
-milestones make: the burnt shell is M179's, the fire is on her way, guaranteed, and is a scar
+milestones make: the burnt shell is day 3's fire's (`DECISIONS.md`, M179, the fire is on her way), a scar
 the run already records; **day 11's mast waits on M180**, posters she notices, and loudspeakers
 that are somewhere, **and day 14's front door waits on M183**, the power station and the
 blackout, until when day 14 keeps the last night's contact it has. The mark's noticing rule is built (`DECISIONS.md`,

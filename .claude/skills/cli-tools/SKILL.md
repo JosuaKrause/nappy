@@ -18,7 +18,10 @@ Three obligations, each checked before the tool does anything else:
   one example. Nothing else happens on that path — no Godot launch, no export, no file written.
 - **An unknown flag, a flag missing its value, or a stray word is rejected**: the usage on stderr,
   a non-zero exit, and again nothing else happens. A tool that forwards arguments to something
-  else validates them first; forwarding is not a reason to accept anything.
+  else validates them first; forwarding is not a reason to accept anything. **One exception:**
+  `tools/test.sh`'s filtered run passes words it does not know to the test scene as suite
+  filters or scene flags; its own flags (`--serial`, `--plan`, `--shard`, `--record-costs`) are
+  still validated.
 - **The flag list lives in one place per tool.** A script that forwards dev flags to the game
   reads its list from where the game declares them, or the two drift within a milestone. `README.md`'s
   flag section is documentation of that list, not a second copy of it.
@@ -34,6 +37,10 @@ know, and assert that neither did the work. `tools/test_cli_help.sh` holds the s
 `README.md`'s flag section agrees with the game's own table; `tools/test_cli_help.py` holds the
 Python tools' cases and runs under `tools/pycheck.sh`. A new tool adds its two cases to the one
 that matches.
+
+**A new tool also adds its row to the using-tools catalogue**, in the same commit — see
+`.claude/skills/using-tools/SKILL.md`, which `tools/test_cli_help.sh` checks against every
+`tools/*.sh` and `tools/*.py` entry point.
 
 **The dev-flag list is the game's, read live.** `src/dev/dev_flags.gd` declares every flag and its
 arity in one table; `tools/lib_dev_flags.sh` reads that table for `run.sh` and `shot.sh` to

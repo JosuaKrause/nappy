@@ -13,14 +13,15 @@ can go dark, a residential block can burn — and only ever along the arc `CityG
 it up front. **The geometry the player learns stays true; the meaning of it does not.**
 
 **No purpose change may move a walkable tile.** `tests/test_blocks.gd` pushes every block to the end
-of its arc across 40 seeds and asserts the walkable set is identical tile for tile. Per-day
+of its arc across the suite's seeds and asserts the walkable set is identical tile for tile. Per-day
 *closures* remain events with an `obstructs_radius`, not tile edits.
 
 ## The lattice is not a full grid
 
-A four-block calm zone absorbs the streets between its own blocks, so the city has one or two holes
-in it, four T-junctions per hole, and a junction in the middle of each zone that nothing reaches.
-Three consequences:
+Every city has one or two calm zones (`Tuning.CALM_ZONE_SHAPES`: 2x2, 2x1 or 1x2), each absorbing
+the streets between its blocks, so the lattice has holes in it — T-junctions where an absorbed
+street used to meet one, and in a square zone a junction in the middle that nothing reaches (counts
+in `docs/CITY.md`, "Calm zones"). Three consequences:
 
 - **Route redundancy is not true by construction.** A full lattice cannot be disconnected by
   removing one corridor; this one can. It is checked by search — `StreetNetwork.route_count()`.
@@ -30,9 +31,9 @@ Three consequences:
   merged set** — one that takes only the closures will happily route down the middle of a park and
   overstate the redundancy.
 - **A block is not the unit; a lot is.** `block_plans`, `block_layouts` and `calm_blocks` are keyed
-  by the block that *anchors* a lot, so a zone is one entry with four blocks of ground. Anything
-  counting calm areas counts a zone once. `CityMap.anchor_of()` and `lot_rect()` reach the other
-  three blocks.
+  by the block that *anchors* a lot, so a zone is one entry with several blocks of ground. Anything
+  counting calm areas counts a zone once. `CityMap.anchor_of()` and `lot_rect()` reach its other
+  blocks.
 
 **An absorbed street is calm ground, not a closure.** The tiles are park and the player walks over
 them — a zone is a shortcut as well as a destination. Only the *lattice* lost the street, which is
@@ -43,9 +44,8 @@ travels the lattice asks `CityMap.is_street()`, not `is_walkable()`.**
 
 The scheduler guarantees one unspoiled park and a walkable route from home to a park. On top of
 that, `ClosurePlanner` keeps **at least two distinct calm areas reachable**
-(`Tuning.MIN_CALM_AREAS_REACHABLE`), checked **before accepting each closure** rather than repairing
-the day afterwards, so a bad set never exists even briefly. Anything new that closes a street must
-go through it — `tests/test_routes.gd` fails the build if it does not.
+(`Tuning.MIN_CALM_AREAS_REACHABLE`), checked **before accepting each closure**. Anything new that
+closes a street must go through it — `tests/test_routes.gd` fails the build if it does not.
 
 **Two areas is the count; reachability is the strength.** Two *areas* is what stops a day arriving
 where the only calm left is the one this morning spoiled; dropping to one reachable area is an
@@ -54,25 +54,34 @@ Menger, two routes to different areas means no single street is a cut — and `t
 asserts that sentence directly, about the city rather than about each area.
 
 Two exemptions, and they are the same exemption at both ends of the journey: **a doorway is not a
-route.** The street outside the home is never closed (the home is a notch with one exit), and an
-area is reached by arriving at *either end* of a street it opens onto, so a courtyard with one
-archway is still reachable two ways.
+route.** The street outside the home is never closed (the home is a notch with one exit, so sealing
+that street seals the player in), and an area is reached by arriving at *either end* of a street it
+opens onto, so a courtyard with one archway is still reachable two ways.
 
-**Counting distinct routes is a max flow, not a search for routes.** Two BFS augmentations on a
-64-node graph, not a flood fill over ten thousand tiles — which is why it can run on every candidate
+**Counting distinct routes is a max flow, not a search for routes.** Two BFS augmentations over the
+junction graph, not a flood fill over every tile — which is why it can run on every candidate
 closure, every day.
 
 ## Check before accepting; never repair afterwards
 
-**Closures are checked before they are accepted.** The obvious shape — place N closures, then drop
-them until the day is legal — has an order-dependent answer and a window where the day is illegal.
-Testing each candidate against the invariant before accepting it is the same cost and has neither
-problem.
+**Closures and events are checked before they are accepted.** The obvious shape — place N closures,
+then drop them until the day is legal — has an order-dependent answer and a window where the day is
+illegal, and the guarantee then rests on the repair with nothing checking the result. Testing each
+candidate against the invariant before accepting it is the same cost and has neither problem. The
+same holds for events: refusing the ground (`EventScheduler._calm_to_leave_alone`) keeps every
+unvisited calm area clean and *raises* the density, because a repair spends the budget twice. **If
+you find yourself writing a pass that deletes what a previous pass placed in order to make a
+guarantee true, this is the rule you are about to rediscover.**
 
-**The same rule applies to events.** Refusing the ground (`EventScheduler._calm_to_leave_alone`)
-keeps every unvisited calm area clean and *raises* the density, because a repair spends the budget
-twice. **If you find yourself writing a pass that deletes what a previous pass placed, this is the
-rule you are about to rediscover.**
+**One exception, and the direction is what makes it one:** a pass that only ever *removes*
+obstruction is safe, because every guarantee here is about **reaching** somewhere and taking a
+barrier away can only add reachable ground. The seal-thinning pass
+(`SealPlanner._thin_soft_pairs`, which drops one body of `Tuning.SEAL_THINNING_FRACTION` of the
+day's soft seals so the walls do not read as guardrails) is that case, where a pass that added or
+moved a seal would not be. **The test is monotonicity, not intent**: a pass that removes some things
+and places others is not covered, and neither is one whose removal could make a *cost* guarantee
+false rather than a reachability one. State the direction argument next to any such pass, or the
+next reader deletes it on sight.
 
 ## The words for placement
 
@@ -85,8 +94,7 @@ The full table is `docs/CITY.md`, "The words for it". Three axes, not one:
   inside it), or `set piece` (placed so she meets it).
 
 The **corridor** is the ground a day's routes run through. **Do not reintroduce the bare word
-"blocker"** for any of these: three questions answered by one word is why this design had to be
-restated three times.
+"blocker"** for any of these: it answers three questions with one word.
 
 ## A closure is silent
 
@@ -100,16 +108,13 @@ right now has a full bounding box even though there are gaps in the sprite. the 
 only be the crashed cars but it should emanate an excitement field that prevents the player from
 walking past it".)* `car_accident` is solid only where its two cars are, so its picture's own gaps
 are walkable and `Tuning.CAR_ACCIDENT_INTENSITY` is what stands in them. **That is a catalogue row
-emitting, not a closure emitting** — a seal is an `EventDef` and always was, so nothing was added to
-the sum. A `RoadClosure` still contributes nothing, and a seal whose picture leaves no gap
-(`fallen_tree`, `burst_water_main`) still carries `intensity = 0.0`. The test for a new one is
-whether the body can match the picture: where it can, the silence stands.
+emitting, not a closure emitting** — a seal is an `EventDef`, so nothing is added to the sum. A
+`RoadClosure` contributes nothing, and a seal whose picture leaves no gap (`fallen_tree`,
+`burst_water_main`) carries `intensity = 0.0`. The test for a new one is whether the body can match
+the picture: where it can, the silence stands.
 
-This is **consistent** with the diversion design in `docs/CITY.md`, "Guiding her to the calm". A
-road closure there is *"not lethal but prevents full access"* — an absolute stop that does not kill
-and does not shout. The things that guide by being **expensive** are ordinary catalogue events, and
-they already emit. What diversions ask is that closures and events be **placed to point somewhere**,
-which is a scheduler decision and not a change to what a closure is.
+Diversions (`docs/CITY.md`, "Diversions — the design") ask that closures and events be **placed to
+point somewhere** — a scheduler decision, not a change to what a closure is.
 
 ## The street hierarchy
 
@@ -117,8 +122,9 @@ which is a scheduler decision and not a change to what a closure is.
 `CityMap.precinct_spans`); `Tuning.PRECINCT_BLOCKS`, `PRECINCT_BUSYNESS`, `EVENT_PRECINCT_WEIGHT`
 and the `EXCITEMENT_DECAY_*_MULTIPLIER` family decides *what it means*.
 
-**Five places have to agree and the failure mode of each is silent:**
+**Every place that reads it has to agree, and the failure mode of each is silent:**
 
+- `CityMap.street_kind` — what kind of street a stretch is
 - `GroundTiles` — what it looks like
 - `CrowdLanes.busyness_for` + `walkable_offsets` — who walks and drives there
 - `City.decay_multiplier` — what the ground does to the meter
@@ -136,16 +142,16 @@ the real one but with no lights, no dark asphalt and no clearway.
 
 ## The ground is a rate, not a category
 
-Calm 2.0, precinct 1.5, ordinary street 1.0, alley 0.58, main road 0.35, multiplying the excitement
+Calm 2.0, precinct 1.5, ordinary street 1.0, alley 0.58, main road 0.02, multiplying the excitement
 decay — so choosing a route is choosing a **recovery rate** and not only a set of things to walk
 past. It is what makes a precinct worth walking to although it is loud, what keeps an alley a
 shortcut rather than a rest, and most of what *"a main road is crossed, not walked"* means
 arithmetically.
 
 **The multipliers are ratios and the absolute rates are the design.** Move the walking decay and
-every one of them is re-derived to hold its own ground's rate — the spine gives back 2.1/s and an
-alley 3.5/s whatever the walking rate is. `tests/probes/m117_decay.gd` walks each ground and prints
-what it actually does, which is how the rates are set rather than guessed.
+every one of them is re-derived to hold its own ground's rate (the list of rates is the
+`EXCITEMENT_DECAY_*_MULTIPLIER` docstring in `tuning.gd`). `tests/probes/m117_decay.gd` walks each
+ground and prints what it actually does, which is how the rates are set rather than guessed.
 
 ## Adding things
 
@@ -155,11 +161,11 @@ what it actually does, which is how the rates are set rather than guessed.
 then wherever the generator should emit it.
 
 **Add a block purpose** — `GameEnums.BlockPurpose`, the ground it puts down in
-`CityMap.open_tile_for`, `Tile.is_calm` if it is calm ground, and the arcs that may reach it in
-`CityGenerator._plan_arcs`. If it is calm, check `MIN_CALM_BLOCKS_AT_END` still holds — `validate()`
-will tell you, on every seed, if it does not. **Write it against `map.lot_rect(block)` rather than
-`CityMap.block_rect(block)`**, or it will be a quarter of the ground on a four-block calm zone and
-nobody will notice on the lots that are one block.
+`CityMap.open_tile_for`, `BlockPlan.is_calm` (and `Tile.is_calm` for its tile type) if it is calm
+ground, and the arcs that may reach it in `CityGenerator._plan_arcs`. If it is calm, check
+`MIN_CALM_BLOCKS_AT_END` still holds — `validate()` will tell you, on every seed, if it does not.
+**Write it against `map.lot_rect(block)` rather than `CityMap.block_rect(block)`**, or it will cover
+one block of a multi-block calm zone and nobody will notice on the lots that are one block.
 
 **Add a closure kind** — `RoadClosure.Kind`, a row in `RoadClosure.KINDS` (name, first day, weight),
 an SVG in `art/closures/`, and a line in `ClosureMarker.CAUSES` — unless it has nothing to leave
@@ -167,14 +173,8 @@ in the road, like `CORDON`, in which case the barriers are the whole of it. Noth
 differ in look and timing only, because a street you cannot walk down is a street you cannot walk
 down.
 
-## Performance notes that are really correctness notes
+## A per-tile predicate in a sweep is a lookup table
 
-**A `Dictionary` keyed by `Vector2i` hashes a Variant on every lookup.** Fine for a set of today's
-closures; not fine for a flood fill, where it costs about 3.6× a flat `PackedInt32Array` indexed by
-tile. Two things that come with it: **paint the blocked set into the grid before the sweep** rather
-than asking about it per neighbour, since building a `Vector2i` four times per tile is most of what
-is left; and **write the four neighbour steps out** rather than looping an offset array, because the
-loop's own bounds test costs more than the arithmetic it guards.
-
-Same shape one level down: a `Tile.is_walkable()` call per tile becomes a `PackedByteArray` indexed
-by tile type, built *from* `Tile.is_walkable` so it stays the one place that decides.
+A `Tile.is_walkable()` call per tile becomes a `PackedByteArray` indexed by tile type
+(`CityMap._lut`), built *from* `Tile.is_walkable` so it stays the one place that decides. The rest of flood-fill performance
+(a `Vector2i`-keyed `Dictionary` against a flat array) is the **godot** skill, "Performance".

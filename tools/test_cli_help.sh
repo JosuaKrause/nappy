@@ -102,6 +102,10 @@ assert_exit "audit-pck.sh --help"    zero ./tools/audit-pck.sh --help
 assert_exit "audit-pck.sh -h"        zero ./tools/audit-pck.sh -h
 assert_exit "cost-table.sh --help"   zero ./tools/cost-table.sh --help
 assert_exit "cost-table.sh -h"       zero ./tools/cost-table.sh -h
+assert_exit "prune-merged.sh --help" zero ./tools/prune-merged.sh --help
+assert_exit "prune-merged.sh -h"     zero ./tools/prune-merged.sh -h
+assert_exit "agent-status.sh --help" zero ./tools/agent-status.sh --help
+assert_exit "agent-status.sh -h"     zero ./tools/agent-status.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
@@ -123,6 +127,10 @@ assert_exit "bake-atlases.sh --check --force" nonzero ./tools/bake-atlases.sh --
 assert_exit "audit-pck.sh --bogus"    nonzero ./tools/audit-pck.sh --bogus
 assert_exit "audit-pck.sh (two packs)" nonzero ./tools/audit-pck.sh one.pck two.pck
 assert_exit "cost-table.sh --bogus"   nonzero ./tools/cost-table.sh --bogus
+assert_exit "prune-merged.sh --bogus" nonzero ./tools/prune-merged.sh --bogus feature/x
+# With no branch named there is nothing it may safely touch, so it refuses rather than sweeping.
+assert_exit "prune-merged.sh (no branch)" nonzero ./tools/prune-merged.sh
+assert_exit "agent-status.sh --bogus" nonzero ./tools/agent-status.sh --bogus
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and
@@ -248,6 +256,26 @@ while read -r flag; do
         failures=$(( failures + 1 ))
     fi
 done < <(dev_flag_names)
+
+# ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
+# The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
+# undocumented the way audit-pck.sh, export-web.sh, release.sh, serve-web.sh and stats.sh used to
+# be. lib_* and test_* are helpers and this suite's own files, not entry points a person reaches
+# for, so they carry no row and are excluded here the same way they are excluded from the skill.
+catalogue="$root/.claude/skills/using-tools/SKILL.md"
+for f in "$root"/tools/*.sh "$root"/tools/*.py; do
+    name="$(basename "$f")"
+    case "$name" in
+        lib_*|test_*) continue ;;
+    esac
+    checks=$(( checks + 1 ))
+    if grep -qF -- "\`tools/$name\`" "$catalogue"; then
+        echo "ok   using-tools catalogues $name"
+    else
+        echo "FAIL $name has no row in .claude/skills/using-tools/SKILL.md's catalogue" >&2
+        failures=$(( failures + 1 ))
+    fi
+done
 
 echo
 echo "$checks checks, $failures failures"

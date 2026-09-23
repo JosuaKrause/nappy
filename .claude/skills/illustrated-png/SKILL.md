@@ -1,6 +1,6 @@
 ---
 name: illustrated-png
-description: Add or revise illustrated PNG textures and their reproducible integration workflow. Use before changing art/illustrated or src/visuals, or preparing an illustrated checkout for testing.
+description: Generate, register and install illustrated PNGs for SVG sources under art/illustrated/. Load BEFORE adding or changing a PNG there.
 ---
 
 # SVG-to-PNG workflow
@@ -8,10 +8,11 @@ description: Add or revise illustrated PNG textures and their reproducible integ
 **Every PNG asset must have a corresponding SVG asset, and the SVG always comes first.** Author
 and review the SVG before generating its PNG; do not create an SVG after the fact to legitimize
 a PNG-only asset. Keep the SVG as the editable source of subject and functional placement. Record
-the source/derivative pair in the conversion manifest, including UI and identity assets. Raw
-generator outputs belong with generation evidence, not in the runtime asset catalogue.
+the source/derivative pair in the family's evidence manifest, including UI and identity assets.
+The catalogue-wide conversion manifest is open work under M109, convert the SVG catalogue to PNG.
+Raw generator outputs belong with generation evidence, not in the runtime asset catalogue.
 
-Read `docs/VISUALS.md`, SVG-to-PNG style transfer in `docs/TODO.md`, and
+Read `docs/VISUALS.md`, M109, convert the SVG catalogue to PNG, in `docs/TODO.md`, and
 [the integration procedure](references/texture-integration.md) before working on this presentation.
 **The presentation is chosen by the bake, not by the running game.** The default
 `tools/bake-atlases.sh` takes the registered PNG wherever one exists beside its SVG, and the
@@ -32,7 +33,7 @@ Inspect it and both `docs/evidence/graphics-reference-urban-01.jpeg` and
 only: omit their interface and debug annotations. Do not substitute a different character identity,
 projection or composition. Archived experiments and unapproved outputs are not style references.
 
-Player generation targets and runtime SVG fallback artwork have separate roles. Preserve the
+Player generation targets and the runtime SVG in `art/rig/` have separate roles. Preserve the
 creation-reference family in `docs/graphics-creation/player/`; its manifest links each
 creation SVG, runtime SVG and illustrated PNG. Both families provide contact and together poses.
 Use the preserved creation target when
@@ -40,8 +41,8 @@ reproducing its high-fidelity PNG, and keep the original source hashes and autho
 
 ## Directions, frames and variants form one family
 
-Review the complete facing × animation × state matrix together. The mother carrying the baby
-must be recognizably the same woman pushing the stroller: preserve hair, face, proportions,
+Review the complete facing × animation × state matrix together. Each parent carrying the baby
+must be recognizably the same person pushing the stroller: preserve hair, face, proportions,
 clothing colors and construction, shoes, line weight and material shading wherever the SVGs
 share them. Apply the same consistency requirement to other families with multiple variants.
 
@@ -67,14 +68,9 @@ it. The final assignment recipe is `docs/evidence/stroller-view-assignment-2026-
 it reads frozen originals. Never apply another N/S or opposite-diagonal swap to installed textures.
 
 For walking figures, preserve identity and continuous articulation through the pelvis, coat hem,
-thighs and knees. A local composite needs a matching body pose and a continuous garment join;
-an arbitrary horizontal splice does not establish either. Use the
+thighs and knees. See the
 [walking-frame correction toolbox](references/leg-contact-corrections.md) for donor selection,
-uncrossed pose guides, material matching and constrained body/hem reuse. Check anatomical leg
-ownership from hip to shoe through both contacts; recoloring
-the same leg silhouettes does not establish an opposite step. Diagonal contacts retain the same
-projected travel axis while the legs exchange leading and trailing positions. Review three-quarter
-torso and pelvis silhouettes separately from front views.
+anatomical leg ownership, uncrossed pose guides, material matching and constrained body/hem reuse.
 
 Measure stature across all facings and frames after registration. Fitting an over-wide pose
 into its canvas must not shrink the person when she turns. Redraw a compact pose with consistent
@@ -90,12 +86,12 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
 
 ## Asset contract
 
-- Read the imagegen skill and use the built-in generator for raster generation or editing.
-  Inspect local inputs with `view_image` first. State each input's role in the exact saved prompt.
-- Preserve SVGs and raw generated outputs for accepted assets, candidates suggested for human
-  review and artwork rejected by a human. Keep drafts rejected only internally by an assistant
-  outside the repository. Record extraction commands, tool versions, source dimensions and
-  registration measurements for retained derivatives.
+- Raster generation uses the host's image generator (Codex: the imagegen skill; Claude Code has
+  none, so say so and stop rather than improvise). Inspect inputs visually first (Codex
+  `view_image`, Claude Read). State each input's role in the exact saved prompt.
+- Preserve SVGs and raw generated outputs for retained derivatives, following rejected-graphics
+  for what a draft's disposition keeps or discards. Record extraction commands, tool versions,
+  source dimensions and registration measurements for retained derivatives.
 - Runtime PNGs use `art/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
   `art/<family>/<name>.svg`. Match native canvas dimensions, ground anchors and functional
   placement. Preserve the generated artwork's true alpha and expressive silhouette; do not
@@ -114,77 +110,38 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   buffer is not an alpha mask. Do not erase every neutral pixel to remove background residue:
   gray materials and enclosed light details are artwork too. Correct persistent background
   artifacts with the generator and preserve that correction's input and prompt.
-- **Commit a runtime PNG on its own: `art/` carries a `.gdignore`, so nothing under it has an
-  `.import` sidecar and the engine never imports it.** Only `tools/bake_atlases.gd` reads it, with
-  `FileAccess`, and the page it bakes is the only raster in the build. A sidecar under `art/` is
-  a file naming an imported copy that is never written, and `find art -name '*.import'` is empty
-  on purpose. `.godot/` is rebuildable and ignored; evidence under `docs/` is excluded by
-  `docs/.gdignore`.
+- **Commit a runtime PNG on its own: `art/` has a `.gdignore`, so no `.import` sidecar exists and
+  the bake reads the files itself** (VISUALS.md, "Where the pictures live").
 - **A new or changed picture is not in the game until the pages are rebaked**, and every tool
   that starts the engine does that for you: `tools/bake-atlases.sh` compares a hash per source
   and bakes only when one moved. A new picture also needs a line in
-  `assets/atlases/membership.json` naming the group it belongs on, or it is baked nowhere and
-  `AtlasLibrary` answers `has_region()` false for it. **Which of the group's three lists it goes
-  in says which bake draws it**: `members` for a picture both modes carry, `members_png` or
-  `members_svg` for one only that mode draws — a bake reads and hashes its own mode's lists
-  alone, so a picture in the other's does not make this tree stale.
-- **A PNG whose size disagrees with its SVG fails the bake by name.** There is no fallback left:
-  the game holds no second copy of the picture to fall back to, so a mismatch is a committed
-  mistake rather than an unfinished art drop to work around.
+  `assets/atlases/membership.json` naming the group it belongs on, in `members` if both bakes draw
+  it or `members_png`/`members_svg` if only one does — a bake reads and hashes its own mode's
+  lists alone, so it is baked nowhere and `AtlasLibrary` answers `has_region()` false for it until
+  that line exists.
+- **A PNG whose size disagrees with its SVG fails the bake by name.** There is no fallback: the
+  game holds no second copy of the picture to fall back to, so a mismatch is a committed mistake
+  rather than an unfinished art drop to work around.
 
 ## Runtime and review
 
 Keep every script used to create retained graphics, comparison sheets, walking rollouts and GIFs
-beside its output under `docs/evidence/<family>/`. Include source paths and hashes, extraction
+beside its output under `docs/evidence/<family>-<YYYY-MM-DD>/`. Include source paths and hashes, extraction
 bounds, frame order, mirroring, scale, GIF timing, tool/font requirements and exact regeneration
 commands. Preserve immutable inputs or fail loudly when their hashes change. Link each recipe
 from `docs/evidence/README.md` and the family's graphics documentation so it can be found again.
 Distinguish nondeterministic image generation from reproducible extraction and assembly of its
 saved output. A temporary script or chat-only command is insufficient provenance.
 
-For opaque ground tiles, extract fixed atlas cells rather than fitting visible bounding boxes.
-Cell edges are part of the texture's placement contract. Generated atlas dimensions need not
-divide evenly by the grid: record normalized cells and rounded pixel bounds. Compare opposite
-road-line halves assembled as neighbors as well as repeated full tiles; alpha equality alone
-cannot reveal shifted markings, unwanted grid borders or a material that changes between variants.
-Keep low-contrast ground texture quiet enough for actors and route markings to remain legible.
-Rectangular paving needs complete slab joints across tile boundaries as well as inside each tile.
-Inspect repeated patches in both axes: center-only seams can merge neighboring rectangles into
-larger unintended slabs. Preserve the selected material when completing its boundary joints.
-
-Review street-surface continuity in actual generated map layouts, using `GroundTiles.source_for`
-and the runtime TileSet mapping. Include repeated runs, both sidewalk lanes, both street axes and
-junction corners. Short isolated neighbor strips do not expose all repeated joints or corner
-transitions. Keep diagnostic labels and grid overlays separate from the clean assembled artwork.
-
-Ground variants share their base material. Build sidewalk variants from one paving texture and
-road variants from one asphalt texture; use transparent layers for curbstones, red main-street
-edges, yellow lines, crosswalks and damage. Remove the ground background from detail artwork
-before alpha compositing it over the actual base. Preserve the layer inputs and composition
-recipe, including SVG sources for the components. Pixels outside the overlay remain identical
-to the base. Damage variations share pools by severity across floor materials; inspect each
-stencil over every supported base so extracted slab joints do not become a second floor grid.
-Keep final registered paving inputs separate from the original material inputs used to extract
-damage. Rebuilding components must retain the reviewed base's boundary joints.
-Inspect repeated bases in both axes for lighting gradients and brightness jumps;
-a shared texture still needs to tile cleanly. Blend curbstones, markings, damage and grass
-features over their bases in the engine, retaining the separate component graphics. The
-rotation/offset blend that smooths the asphalt and grass bases is an offline preparation step.
-Separate existing grass features from a soft green base and place them sparsely with stable
-city-seed variation, keeping grass detail quieter than the actors and route markings.
-Validate component IDs and rotations against the authored TileSet and ground selector rather
-than inferring their order from filenames. Verify the composed grass atlas itself as well as
-its selection logic; a missing component is a `push_error` naming the source and the component,
-and that source then draws nothing — a default bake's `ground` page carries no whole authored
-tile for a composed source to fall back to. Crop
-grass features to their visible bounds before placing them so their clumps remain whole.
+For opaque ground tiles, extraction, boundary joints and the layered variant/damage/grass
+composition are in [the ground-tile reference](references/ground-tiles.md).
 
 Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,
-camera and gameplay behavior. Missing or differently sized replacements fall back to the SVG;
-do not hide an unfinished family with unrelated generated art.
+camera and gameplay behavior. A missing PNG bakes from its SVG; a mis-sized one fails the bake by
+name. Do not hide an unfinished family with unrelated generated art.
 
-Run the import/boot check in the exact checkout the player will use, then focused suites in the
-default PNG mode and forced SVG mode as applicable. Read the first resource error; passing assertions
+Run the import/boot check in the exact checkout the player will use, then focused suites
+(`tools/test.sh` always bakes PNG). Read the first resource error; passing assertions
 do not excuse script or import errors. Read `verify` before tests or captures and use at most one
 or two purposeful gameplay captures. Report source registration, appearance and player acceptance
 separately. The player approves SVG-first style transfer as the authoring workflow. M108,

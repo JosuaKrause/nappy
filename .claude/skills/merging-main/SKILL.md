@@ -6,8 +6,8 @@ description: Merge main into an existing PR or branch with explicit theirs/ours/
 # Merge main into a branch
 
 Use this skill before updating a PR branch with main, and read `committing` for the repository's
-git workflow. This updates the branch; it does not authorize merging the PR into main or releasing
-it. Keep design and final semantic review in the orchestrating session.
+git workflow. This updates the branch; merging the PR into main follows **committing** (explicit
+permission in this session). Keep design and final semantic review in the orchestrating session.
 
 ## Establish the three histories
 
@@ -40,9 +40,9 @@ where available; do not choose an arbitrary base and call it authoritative.
 Compare additions on both sides by their **content and provenance**, not just filenames, heading
 numbers or similar words. Distinct records must remain distinct. This applies to **anything
 independently numbered across PRs**: milestones, TODO items, playtests, findings, design entries,
-and other numbered identities. Do not limit the collision audit to a known filename pattern.
-A clean textual
-merge can silently concatenate unrelated findings under one heading or reuse an identifier.
+and other numbered identities. Do not limit the collision audit to a known filename pattern. A
+clean textual merge can silently concatenate unrelated findings under one heading or reuse an
+identifier.
 
 When main and the branch independently introduce the same number within an identity namespace:
 
@@ -130,17 +130,17 @@ one requirement because its implementation is older or on the branch labeled “
 ## Verify and finish
 
 Confirm no unresolved index entries or conflict markers remain, and review staged and unstaged
-diffs against both parents. **`git diff --check` is the confirmation, not the eye**: the repo's
-`diff3` conflict style writes a fourth marker, the `|||||||` line that opens the base section,
-and a resolution that deletes the other three by hand and leaves that one behind reads as a
-clean file until the next merge parses it. Four such lines reached `main` in DECISIONS.md this
-way, one per merge, before a merge that ran the check found them. Recheck every renumbered record against its original and search for
-stale references; inspect the PR description too. Preserve `.import` sidecars and source assets.
+diffs against both parents. **`git diff --check` is the confirmation, not the eye**: a
+diff3/zdiff3 conflict writes a fourth `|||||||` marker that survives a hand-resolution deleting
+the other three.
+
+Recheck every renumbered record against its original and search for stale references; inspect
+the PR description too. Preserve `.import` sidecars and source assets.
 
 Run `./tools/check.sh` in the actual merged checkout, focused tests for the affected interactions,
 `./tools/lint.sh` and `git diff --check`. Add a focused regression test when a resolved semantic
-conflict exposes an uncovered behavior. Follow `verify` for visual gates; full-suite validation
-belongs in CI unless its documented exception applies. A clean merge or green CI is evidence,
+conflict exposes an uncovered behavior. Follow `verify` for visual gates; the full suite is CI's
+unless one of verify's two local-run cases applies. A clean merge or green CI is evidence,
 not a substitute for the semantic review.
 
 Commit the reviewed merge and update the authorized PR. Report the three-way resolutions,

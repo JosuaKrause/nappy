@@ -1572,6 +1572,15 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# subtracting `delta`, not the instant it crosses zero), which would otherwise read a few
 	# milliseconds past the day's own length.
 	var elapsed_seconds := clampf(_day.time_total - _day.time_remaining, 0.0, _day.time_total)
+	# **A day she wins with day 3's fire never met still burns.** The row's only day is day 3 and it
+	# is spent when it enters the world, so a won day on which every siting was refused would leave
+	# the run with no fire, no scar and no shell for day 4 to come out to. Lit here, off her path,
+	# on a site the dawn rules accept — before the observer's own line below, since it happened in
+	# the day rather than after it, and before `GameState.finish_day()`, which is what commits a won
+	# day's spending. A lost day gives everything back, so it is asked of a win only. See
+	# `EventManager.light_what_she_never_met()`.
+	if result == GameEnums.DayResult.WON and _player:
+		_city.events.light_what_she_never_met(_player.global_position)
 	# Before the calendar moves, so the outcome is written above the nerve it cost — and
 	# before `end_day()` stops the clock, so it is timestamped where it happened.
 	if _observer:

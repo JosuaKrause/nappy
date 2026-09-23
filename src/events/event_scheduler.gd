@@ -715,6 +715,30 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
+		# **A one-shot the day sites from her walk is owed rather than rolled for.** The roll below
+		# spreads an ordinary one over the days it is eligible for so that meeting it feels like an
+		# accident; this one is the day's authored beat and has to happen whichever way she goes, so
+		# a roll here would be a guarantee resting on a coin flip the first time the row's eligible
+		# window was widened. It costs the day exactly what it always did — the plan is budgeted here
+		# and only its *position* is left for `EventDirector.site_what_is_on_her_way()` to choose, the
+		# same split an `AHEAD_OF_PLAYER` row is budgeted and sited under.
+		if def.sited_on_her_way:
+			var owed := Planned.new(def, Vector2.INF)
+			owed.role = _role_for(def, day)
+			# Tagged like any other set piece even though there is only ever one of it: a plan outside
+			# the group system is one `EventManager._stream_in` can never spend, silently exempt from
+			# the machinery the row is written against. See `_place_a_set_piece`'s own note.
+			owed.set_piece_group = "%s@%d" % [def.id, day]
+			planned.append(owed)
+			# **And it is not consumed here.** Every other one-shot is spent the moment the day plans
+			# it, because planning it *is* siting it; this one has no position yet, so planning it
+			# promises nothing. It is spent where it becomes real instead —
+			# `EventManager._stream_in()`. What that buys is the retry: *"what the run has spent stays
+			# spent ... a fire that burnt a block down did happen"* (`GameState.finish_day`), and a
+			# fire that was never lit did not, so a lost day 3 is offered it again.
+			Telemetry.note("roll", "one-shot %s: owed to her walk, sited when her heading is clear"
+					% def.id)
+			continue
 		# Spread a one-shot over the days it is eligible for rather than always firing it
 		# on the first: 1/n chance per remaining day makes it feel like an accident.
 		var remaining := maxi(1, (def.last_day if def.last_day > 0 else def.first_day + 2) - day + 1)
@@ -795,6 +819,427 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 			anywhere.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(anywhere)
 	return made
+
+# ------------------------------------------------- a placement made after dawn ---
+
+## The day's own placement context, kept past dawn so that a row the day left for her walk to site
+## is placed against exactly the ground, corridor, doors and protected calm every other placement
+## was stated against.
+##
+## **Why a placement can be made after dawn at all.** Every guarantee in this file is stated over a
+## *day* and decided in `build_day` — and that is untouched here: the row is budgeted at dawn, its
+## role is decided at dawn, and what it may stand on was decided at dawn. Only *which* of those
+## tiles it takes waits, because on day 3 the fire has to be on the way she actually goes and
+## nothing at dawn knows which way that is. See `EventDef.sited_on_her_way`.
+##
+## **What a late placement may not do is repair.** It cannot drop something the day already placed
+## to make room, and `_ensure_the_city_is_still_walkable` has already run and cannot run again — so
+## the walkability question that pass answers for the whole day is asked of this one candidate
+## *before* it is accepted, in `_still_leaves_a_park_reachable()` below.
+class WalkSiting extends RefCounted:
+	var _day: int
+	var _map: CityMap
+	## The day's routes themselves, not only the corridor made of them: a siting on the branch she
+	## is walking needs the ordered chain of cells. See `_the_way_she_is_going()`.
+	var _tree: RouteTree
+	var _corridor: Corridor
+	var _leave_alone: Array[Rect2]
+	## The calm areas she has already settled in this act, kept beside the rects `_leave_alone`
+	## turns them into: the acceptance check is about the areas she has *not* used, which is the
+	## same list read the other way round.
+	var _used_calm: Array[Vector2i] = []
+	var _doors: PackedVector2Array
+	## The same per-day cache of "which tiles may this kind of row stand on" `build_day` threads
+	## through its own placements, kept here for the day so the city is not rescanned per attempt.
+	var _ground := {}
+	var _grid: ReachabilityGrid = null
+	## The calm tiles of the areas she has not used, worked out once for the day. See
+	## `_calm_she_has_not_used()`.
+	var _unused_calm: Array[Vector2i] = []
+	var _unused_calm_known := false
+
+	## Why attempts placed nothing, as `reason -> how many attempts ended that way`. Nothing in the
+	## game reads it: it is what lets `tests/probes/m179_fire_on_her_way.gd` report *what* a long wait
+	## was made of, which is the difference between a branch with no frontage on it and a day whose
+	## every site would close her way out.
+	var waits := {}
+	## How many sitings had to widen past the band to the end of her branch, for the same probe.
+	var widened := 0
+
+	## `tree` is the day's corridor tree and `used_calm` is `GameState.settled_this_act()` — the two
+	## arguments `build_day` states its own placements against, taken here rather than the finished
+	## `Corridor` and rect list so the caller passes what it already has and this stays the one place
+	## that turns them into the other. **The tree itself is kept as well as the corridor it makes**:
+	## the corridor answers *how far off the routes is this tile*, and what a siting on her own branch
+	## needs is the ordered chain of cells a route actually runs along.
+	func _init(for_day: int, map: CityMap, tree: RouteTree, used_calm: Array[Vector2i],
+			doors: PackedVector2Array) -> void:
+		_day = for_day
+		_map = map
+		_tree = tree if tree else RouteTree.for_day(map, for_day)
+		_corridor = Corridor.of(_tree)
+		_used_calm = used_calm.duplicate()
+		_leave_alone = EventScheduler._calm_to_leave_alone(map, used_calm)
+		_doors = doors
+
+	## A placement for `def` on a building face **on the branch of the day's route tree she is
+	## walking**, between `near` and `far` pixels ahead of her measured *along that route*, or `null`
+	## when there is nothing legal there — which is a retry as she walks and never a placement made
+	## anyway.
+	##
+	## **The path is the day's route tree, and a place off it is never a site.** *(PLAYTEST-119: "the
+	## fire needs to spawn on the current path the player is on — moving it around works but valid
+	## spawn locations are only on the path".)* A straight line from her is the wrong measure twice
+	## over: it offers faces on streets her route never reaches, and it prices a face round the corner
+	## as nearer than it is to walk to. So the window is walked cell by cell down the route, through
+	## its corners and its junctions, and only the faces standing on those cells are offered.
+	##
+	## **The far end is read along the route and the near end is a straight line**, and they are two
+	## different questions rather than one measured twice. Far is how much more walking there is
+	## before she sees it, which is what the route says. Near is whether it is in the world at all,
+	## which is the streaming radius and therefore a distance across the block: a site 1200px along a
+	## route that doubles back can be 500px from her, streamed in — and so real, and unmovable — on
+	## the frame it was placed. A straight line is never longer than the route to the same place, so
+	## clearing the streaming band clears the near end of the band along the route as well.
+	##
+	## **At a fork, either way out is a site.** Every route through the cell she is standing on is
+	## walked, so before she commits both are on offer; once she has taken one, her own cell carries
+	## only that one and `EventDirector._is_no_longer_on_her_way()` moves an unseen fire off the other.
+	##
+	## **A window with no face in it widens along the same branch before anything else is
+	## considered** — to the end of the route rather than off the tree — because "further along the
+	## way she is going" is still the way she is going, and the alternative on a short branch is a
+	## fire that waits all day. Nothing else about the candidate bends.
+	##
+	## `already` is everything else the day has planned, for spacing and for the walkability question
+	## below. **The plan being sited is not in it** — a row being moved off a position it has not yet
+	## been seen at must not be spaced against its own old body, or the second siting is refused the
+	## street the first one was standing in.
+	func ahead_of(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			at: Vector2, heading: Vector2, near: float, far: float) -> Planned:
+		var role := EventScheduler._role_for(def, _day)
+		var ahead := _the_way_she_is_going(at, heading, far)
+		if ahead.is_empty():
+			return _waited("she is off the day's routes")
+		var offered := _faces_on(def, ahead, at, near, far)
+		if offered.is_empty():
+			# Widened along the same branch: twice the band first, then the whole of the route she
+			# is on. Stepped rather than straight to the end, because the widening is for "a little
+			# further along the way she is going" and `_best_of` takes the roomiest of what it is
+			# offered — handed the whole branch it picks the emptiest street on it, which is the far
+			# end of a walk she has not decided to take yet.
+			for wider in [far * 2.0, INF]:
+				ahead = _the_way_she_is_going(at, heading, wider)
+				offered = _faces_on(def, ahead, at, near, wider)
+				if not offered.is_empty():
+					break
+			if offered.is_empty():
+				return _waited("no building face on the branch ahead of her")
+			widened += 1
+		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
+				_leave_alone, _corridor, _doors)
+		if not candidate:
+			return _waited("every face on her branch broke a placement rule")
+		if not _still_leaves_a_park_reachable(already, candidate, at):
+			return _waited("the site would close her way out")
+		return candidate
+
+	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
+	## the site is ground she was never near enough to have it exist in front of her.
+	const DUSK_CLEAR_OF_HER := Tuning.EVENT_STREAM_RADIUS
+
+	## A placement for `def` **away from her and off the day's routes**, for the one case a walk can
+	## end without the guarantee having been met: a day 3 she wins on which every siting was refused.
+	##
+	## *"I agree with the fire fix"* (PLAYTEST-121). The row's only day is day 3 and it is spent when
+	## it enters the world, so a day she wins while it waited would leave the run with no fire, no
+	## scar and no burnt shell — and the shell is what day 8's task goes to, and what the city
+	## remembering day 3 is made of. So the day lights it at dusk instead.
+	##
+	## **The same acceptance rules, chosen once, nothing repaired.** It is `_best_of` over the day's
+	## own ground with the day's own corridor, doors and protected calm, and then the same
+	## reachability check every other site is asked — from the doorstep rather than from her, which
+	## is the dawn question, because the walk is over.
+	##
+	## **Off her path** means both halves of what that can mean: not within `DUSK_CLEAR_OF_HER` of
+	## where she finished, so nothing is lit where she could have seen it, and not on ground the
+	## day's routes run along, so the street she actually walked is not the one that burns. The
+	## second bends and the first does not — the fallback is a site merely away from her, which is
+	## the same honest failure direction `_place_a_set_piece` takes when a covering set offers
+	## nothing: a run that owes a fire and has nowhere ideal to put it should still have its fire.
+	func off_her_path(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			away_from: Vector2) -> Planned:
+		var role := EventScheduler._role_for(def, _day)
+		var clear_of_the_routes: Array[Vector2i] = []
+		var merely_away: Array[Vector2i] = []
+		for tile in EventScheduler._open_ground_for(def, _map, _ground):
+			if _map.tile_to_world(tile).distance_to(away_from) < DUSK_CLEAR_OF_HER:
+				continue
+			merely_away.append(tile)
+			if not _corridor.carries_a_route(tile):
+				clear_of_the_routes.append(tile)
+		var doorstep := _map.doorstep_world_position()
+		for offered in [clear_of_the_routes, merely_away]:
+			if offered.is_empty():
+				continue
+			var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already,
+					_ground, _leave_alone, _corridor, _doors)
+			if candidate and _still_leaves_a_park_reachable(already, candidate, doorstep):
+				return candidate
+		return null
+
+	## Records why an attempt placed nothing and answers with the nothing. See `waits`.
+	func _waited(reason: String) -> Planned:
+		waits[reason] = int(waits.get(reason, 0)) + 1
+		return null
+
+	## Whether `position` is still somewhere ahead of her along the branch she is walking — the
+	## question `EventDirector._is_no_longer_on_her_way()` asks of a placement already made, once a
+	## second, to find the fire she left behind on a fork she did not take.
+	##
+	## **Ahead by any distance, not inside the siting band.** She is walking toward it, so the
+	## distance shrinks with every step; asking the band again would move a fire she is about to
+	## reach.
+	##
+	## **True when the answer cannot be had.** Off the tree — a park cut, an alley, a thinned seal —
+	## there is no branch to be ahead on, and the honest answer there is to leave the placement alone
+	## rather than to re-site it for a corner she is cutting.
+	func still_ahead_of(at: Vector2, heading: Vector2, position: Vector2) -> bool:
+		var ahead := _the_way_she_is_going(at, heading, INF)
+		if ahead.is_empty():
+			return true
+		return ahead.has(_cell_of(position))
+
+	## Every cell of the day's route tree that lies ahead of `at` along the branch she is walking, as
+	## `cell -> how far she walks down the route to reach it`, out to `limit` pixels.
+	##
+	## Empty when she is not standing on the tree at all, which is a real answer rather than a
+	## failure: a route is the ground she is offered, and she is allowed to be off it.
+	##
+	## **Which way is "ahead" is read off her heading against the route itself**, not assumed to be
+	## outbound. A route runs from the calm area to the doorstep (`RouteTree.Branch.routes`), so the
+	## walk out is toward the head of the array and the walk home is toward its tail, and the one that
+	## agrees with the direction she is actually travelling is the one taken. At a corner both
+	## neighbours can be off her heading; the better of the two is still the way the route goes, which
+	## is what puts the site round the corner she is about to turn.
+	func _the_way_she_is_going(at: Vector2, heading: Vector2, limit: float) -> Dictionary:
+		var found := {}
+		if not _tree or not _tree.grid:
+			return found
+		var her_tile := _map.world_to_tile(at)
+		if _tree.branches_on(her_tile).is_empty():
+			return found
+		var her_cell := _tree.grid.cell_of(_tree.grid.node_at(her_tile))
+		for branch in _tree.branches:
+			for route: Array in branch.routes:
+				var index := route.find(her_cell)
+				if index < 0:
+					continue
+				var step := _onward_from(route, index, heading)
+				if step == 0:
+					continue
+				var travelled := 0.0
+				var from := at
+				var i := index + step
+				while i >= 0 and i < route.size():
+					var cell: Vector2i = route[i]
+					var centre := _cell_centre(_map, cell)
+					travelled += from.distance_to(centre)
+					if travelled > limit:
+						break
+					from = centre
+					if not found.has(cell) or travelled < float(found[cell]):
+						found[cell] = travelled
+					i += step
+		return found
+
+	## Which way along `route` from `index` agrees with the direction she is travelling: `-1` toward
+	## the calm area, `+1` toward the doorstep, or `0` where the route has no neighbour to go to at
+	## all (a route one cell long, which is a calm area on the doorstep's own street).
+	##
+	## **Asked over `_ONWARD_LOOKAHEAD` cells rather than the next one**, because a route is a
+	## loop-erased walk and its next step is as often sideways as onward: a single-cell tangent flips
+	## from one direction to the other at every wiggle, so a placement would read as ahead of her on
+	## one frame and behind her on the next. Looking a block down each way asks the question the
+	## walk is actually about — which end of this route is she heading for.
+	const _ONWARD_LOOKAHEAD := 8
+
+	func _onward_from(route: Array, index: int, heading: Vector2) -> int:
+		var here := _cell_centre(_map, route[index])
+		var step := 0
+		var best := -INF
+		for candidate in [-1, 1]:
+			var i: int = clampi(index + candidate * _ONWARD_LOOKAHEAD, 0, route.size() - 1)
+			if i == index or (i - index) * candidate < 0:
+				continue
+			var toward: Vector2 = _cell_centre(_map, route[i]) - here
+			if toward.length_squared() < 1.0:
+				continue
+			var score := toward.normalized().dot(heading)
+			if score > best:
+				best = score
+				step = candidate
+		return step
+
+	## The tiles `def` may stand on that are on one of `ahead`'s cells, no more than `far` down the
+	## route from her and no less than `near` away across the block — see `ahead_of()` for why the
+	## two ends of the band are measured differently.
+	##
+	## The cells are asked for their tiles rather than the ground pool being scanned for its cells,
+	## which is what keeps a refused attempt off the frame budget: a window is a few dozen cells and
+	## the pool is every sidewalk in the city.
+	func _faces_on(def: EventDef, ahead: Dictionary, at: Vector2, near: float,
+			far: float) -> Array[Vector2i]:
+		var pool := _ground_as_a_set(def)
+		var offered: Array[Vector2i] = []
+		for cell: Vector2i in ahead:
+			if float(ahead[cell]) > far:
+				continue
+			for dy in ReachabilityGrid.CELL:
+				for dx in ReachabilityGrid.CELL:
+					var tile: Vector2i = cell * ReachabilityGrid.CELL + Vector2i(dx, dy)
+					if not pool.has(tile):
+						continue
+					# **A cell is not always one piece.** `ReachabilityGrid` splits a cell into a
+					# node per connected component of it, and a route carries nodes — so a cell the
+					# route runs through can hold a second node, on the other side of a wall, that
+					# the route never touches. The tree's own answer for the tile is what decides.
+					if _tree.branches_on(tile).is_empty():
+						continue
+					if _map.tile_to_world(tile).distance_to(at) < near:
+						continue
+					offered.append(tile)
+		return offered
+
+	## `_open_ground_for`'s list as a set, so a cell can ask whether one of its four tiles is in it.
+	##
+	## **The precinct weighting is dropped here and that is correct rather than a shortcut.** The
+	## weighting offers a retail tile several times so the day's own roll lands there more often;
+	## this roll is over the handful of faces on one branch inside one window, where which street she
+	## is walking has already decided everything the weight was for.
+	func _ground_as_a_set(def: EventDef) -> Dictionary:
+		var key := "set|%s|%d" % [def.placement, def.pavement_side]
+		if not _ground.has(key):
+			var found := {}
+			for tile in EventScheduler._open_ground_for(def, _map, _ground):
+				found[tile] = true
+			_ground[key] = found
+		return _ground[key]
+
+	func _cell_of(position: Vector2) -> Vector2i:
+		if not _tree or not _tree.grid:
+			return Vector2i(-1, -1)
+		var node := _tree.grid.node_at(_map.world_to_tile(position))
+		if node < 0:
+			return Vector2i(-1, -1)
+		return _tree.grid.cell_of(node)
+
+	## The centre of a `ReachabilityGrid` cell in world space. A cell is two tiles square and
+	## `CityMap.tile_to_world` answers the centre of a tile, so the cell's centre is half a tile
+	## further along both axes than its first tile's.
+	static func _cell_centre(map: CityMap, cell: Vector2i) -> Vector2:
+		return map.tile_to_world(cell * ReachabilityGrid.CELL) \
+				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
+
+	## **Whether the day still works around this site.** The fire and the engine that parks across
+	## from it close the street she is on, on purpose — *"you're not supposed to go past it"* — so
+	## the guarantee cannot be the one every other placement owes (a line past it along the
+	## sidewalk). It is the other direction instead, and it is stated over the whole day: from where
+	## she is standing, with **both fields taken as closed ground**, she can still reach the home and
+	## a calm area she has not used.
+	##
+	## **Both ends, one flood.** Reachability is symmetric, so a flood from her that finds the home
+	## and an unused area has also shown that the home reaches that area: she can retreat, she can
+	## get there, and she can get back. Flooding from the home as well would be the same component
+	## asked a second time.
+	##
+	## **A field is closed ground here, and that is the strong reading on purpose.** `outer_radius`
+	## rather than `field_reach()`: the engine is parked, so nothing about it is stretched forward by
+	## its own speed, and the question is what ground she will not walk through rather than what the
+	## row would charge a passer-by. `EventManager.where_the_summoned_row_stops()` says where the
+	## engine will be, so the check and the summons cannot disagree about it.
+	##
+	## **Checked before accepting, never repaired.** `EventScheduler._ensure_the_city_is_still_
+	## walkable()` asks the dawn version of this of the whole day and *drops* what seals the city; a
+	## placement made after dawn has nothing it is allowed to drop, so it asks of itself and declines
+	## instead. A refusal is ordinary and costs a second of walking.
+	##
+	## **Asked as a difference rather than as an absolute**, because the list it is asked over is the
+	## whole of what the manager is holding — the catalogue's rows, the day's seals, the region wall
+	## and its door structure — which is a stricter set than the dawn pass ever saw. If she is
+	## already cut off from the home or from every unused area without the fire, nothing here did it,
+	## and refusing for ever would turn a day the fire cannot be blamed for into a day 3 with no fire
+	## in it at all. The baseline flood runs only when the candidate fails, so an accepted site costs
+	## one flood rather than two.
+	func _still_leaves_a_park_reachable(already: Array[Planned], candidate: Planned,
+			at: Vector2) -> bool:
+		var blockers := _what_already_blocks(already)
+		var her := _map.world_to_tile(at)
+		var blocked := EventScheduler.blocked_by(_map, blockers)
+		EventScheduler.block_a_disc(_map, blocked, candidate.position, candidate.def.outer_radius)
+		var parked := EventManager.where_the_summoned_row_stops(_map, candidate.position)
+		var summoned := EventCatalogue.by_id(candidate.def.spawns_on_sight) \
+				if candidate.def.spawns_on_sight != "" else null
+		if summoned and parked != Vector2.INF:
+			EventScheduler.block_a_disc(_map, blocked, parked, summoned.outer_radius)
+		if _she_can_still_get_away(her, blocked):
+			return true
+		# Only now: was the day already like this without us?
+		return not _she_can_still_get_away(her, EventScheduler.blocked_by(_map, blockers))
+
+	## Whether a flood from her tile, over `blocked`, still finds the home and some calm area she has
+	## not settled in this act. Both, because either one alone is a day that cannot be won or a day
+	## that cannot be ended.
+	func _she_can_still_get_away(her: Vector2i, blocked: Dictionary) -> bool:
+		var reached := _grid.flood([her], blocked)
+		if not _grid.reaches(_map.home_rect.position, blocked, reached):
+			return false
+		for tile in _calm_she_has_not_used():
+			if _grid.reaches(tile, blocked, reached):
+				return true
+		return false
+
+	## The calm tiles of every area she has not settled in this act — the ground the day's own
+	## placement rules already keep clean (`_calm_to_leave_alone`), read here as the destination that
+	## has to stay reachable.
+	##
+	## **Falls back to every calm tile where she has used them all**, which is the same case
+	## `_ensure_one_usable_park` names: with nothing unused left, what the day owes is calm ground
+	## rather than fresh calm ground, and refusing every site instead would be a day 3 with no fire.
+	func _calm_she_has_not_used() -> Array[Vector2i]:
+		if _unused_calm_known:
+			return _unused_calm
+		_unused_calm_known = true
+		for block in _map.calm_blocks:
+			if _used_calm.has(block):
+				continue
+			for tile in _map.rect_tiles(EventScheduler._calm_rect(_map, block)):
+				if Tile.is_calm(_map.tile_at(tile)):
+					_unused_calm.append(tile)
+		if _unused_calm.is_empty():
+			_unused_calm = _map.calm_tiles()
+		return _unused_calm
+
+	## Everything in `already` that stands in the way, and — the first time it is asked — the grid.
+	func _what_already_blocks(already: Array[Planned]) -> Array[Planned]:
+		if not _grid:
+			_grid = ReachabilityGrid.build(_map)
+		var blockers: Array[Planned] = []
+		for plan in already:
+			if not plan.is_placed():
+				continue
+			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+				blockers.append(plan)
+		return blockers
+
+	## Does at dawn the work the first `ahead_of()` would otherwise do in the middle of a walk: the
+	## scan for ground `def` may stand on and the set a cell asks about, the reachability grid, and
+	## the flood of the day as it is without the candidate. Together they are several physics frames,
+	## which at dawn is part of a load and mid-walk is a hitch on the one beat of the day she is meant
+	## to be watching. Nothing here rolls, so the day is the same day whether or not this ran.
+	func prepare(def: EventDef, already: Array[Planned]) -> void:
+		_ground_as_a_set(def)
+		_what_already_blocks(already)
 
 ## Fills the day's budget, **one stream per attempt**.
 ##
@@ -883,7 +1328,21 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	# ground too. Only the mouse asks the question at all.
 	if def.id == _MOUSE_ID:
 		open_candidates = _prefer_beside_a_sack_pile(open_candidates, map, day)
+	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
+			doors)
 
+## The acceptance half of a placement: roll `Tuning.EVENT_PLACEMENT_TRIES` candidates out of
+## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
+## perfect one or the roomiest of the rest.
+##
+## Split out of `_place_one` above because a placement made **after** dawn asks the identical
+## questions of a narrower pool — `WalkSiting.ahead_of()` offers only the building faces on the
+## branch of the day's route tree she is walking — and a second copy of this list of rules is a
+## second copy that would agree with it right up to the first time one of them gained a rule.
+static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
+		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
+		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
+		corridor: Corridor, doors: PackedVector2Array) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
 	for _try in Tuning.EVENT_PLACEMENT_TRIES:
@@ -1430,11 +1889,25 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 static func _counts_against_the_line(plan: Planned) -> bool:
 	return plan.is_placed() and _a_line_has_to_avoid(plan.def)
 
-## The same five exemptions asked of the **def** alone, for the one caller that has no placement to
+## The same exemptions asked of the **def** alone, for the one caller that has no placement to
 ## ask about: `_role_for` decides a role before any tile is chosen. Everything a placement adds —
 ## *is it actually standing anywhere* — is the caller's own question above.
+##
+## **A row the day sites from her own walk is the sixth, and it is the only one that is exempt
+## because closing the way is the point.** *(PLAYTEST-119: "you're not supposed to go past it";
+## "when you see the fire the reaction should be to take a different route".)* Day 3's fire is put
+## on the branch she is walking so that the street she is on stops being a way through, and the
+## engine parks across from it for the rest of the day — so asking whether a line survives along
+## that sidewalk would refuse every site the design exists to make. What replaces the guarantee is
+## strictly stronger and is stated over the day rather than over the street:
+## `WalkSiting._still_leaves_a_park_reachable()` refuses any site that leaves her unable to reach
+## the home, or a calm area she has not used, **outside both fields**. A row carrying this flag is
+## never placed at dawn (`_place_one_shots` plans it with no position), so nothing else in the day
+## is judged differently because of it.
 static func _a_line_has_to_avoid(def: EventDef) -> bool:
 	if def.city_wide or def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
+		return false
+	if def.sited_on_her_way:
 		return false
 	if def.mobile and not def.paces:
 		return false
@@ -2440,22 +2913,34 @@ static func _blocking_radius(plan: Planned) -> float:
 ## that could drift: both are `ReachabilityGrid.flood()`/`reaches()` under a `blocked` set, and the
 ## grid does not care whether the tiles in it came from a candidate's barrier or an event's circle.
 static func _park_is_reachable(map: CityMap, grid: ReachabilityGrid, blockers: Array[Planned]) -> bool:
-	var blocked := map.closed_tiles.duplicate()
-	for plan in blockers:
-		var radius := _blocking_radius(plan)
-		var reach := ceili(radius / float(Tuning.TILE_SIZE))
-		var centre := map.world_to_tile(plan.position)
-		for dy in range(-reach, reach + 1):
-			for dx in range(-reach, reach + 1):
-				var tile := centre + Vector2i(dx, dy)
-				if map.tile_to_world(tile).distance_to(plan.position) <= radius:
-					blocked[tile] = true
-
+	var blocked := blocked_by(map, blockers)
 	var reached := grid.flood([map.home_rect.position], blocked)
 	for tile in map.calm_tiles():
 		if grid.reaches(tile, blocked, reached):
 			return true
 	return false
+
+## Today's closures plus every blocker's own obstruction circle, as the `blocked` set
+## `ReachabilityGrid.flood()` takes. Public because `WalkSiting` builds the same set and then adds
+## two fields to it, and a second copy of this loop would be a second answer to the same question.
+static func blocked_by(map: CityMap, blockers: Array[Planned]) -> Dictionary:
+	var blocked := map.closed_tiles.duplicate()
+	for plan in blockers:
+		block_a_disc(map, blocked, plan.position, _blocking_radius(plan))
+	return blocked
+
+## Paints one disc of ground into a `blocked` set — a body's obstruction, or a field treated as
+## ground she will not walk through.
+static func block_a_disc(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) -> void:
+	if radius <= 0.0:
+		return
+	var reach := ceili(radius / float(Tuning.TILE_SIZE))
+	var centre := map.world_to_tile(at)
+	for dy in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var tile := centre + Vector2i(dx, dy)
+			if map.tile_to_world(tile).distance_to(at) <= radius:
+				blocked[tile] = true
 
 ## Whether an event's field touches a rect at all — grown by `field_reach()` rather than
 ## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming

@@ -1,5 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "permissions": {
+    "allow": [
+      "Bash(./tools/prune-merged.sh:*)",
+      "Bash(tools/prune-merged.sh:*)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
