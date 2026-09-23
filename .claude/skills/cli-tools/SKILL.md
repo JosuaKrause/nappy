@@ -18,7 +18,10 @@ Three obligations, each checked before the tool does anything else:
   one example. Nothing else happens on that path — no Godot launch, no export, no file written.
 - **An unknown flag, a flag missing its value, or a stray word is rejected**: the usage on stderr,
   a non-zero exit, and again nothing else happens. A tool that forwards arguments to something
-  else validates them first; forwarding is not a reason to accept anything.
+  else validates them first; forwarding is not a reason to accept anything. **One exception:**
+  `tools/test.sh`'s filtered run passes words it does not know to the test scene as suite
+  filters or scene flags; its own flags (`--serial`, `--plan`, `--shard`, `--record-costs`) are
+  still validated.
 - **The flag list lives in one place per tool.** A script that forwards dev flags to the game
   reads its list from where the game declares them, or the two drift within a milestone. `README.md`'s
   flag section is documentation of that list, not a second copy of it.
