@@ -165,3 +165,10 @@ On the sixth pass's fronts (plain stretches of wall between window bays, posters
     is where posters go later. **Her own building is the exception** and keeps its ground-floor
     windows.
 
+On the combined sheet (every kind intact and torn three ways, and fronts with plain wall):
+
+> "posters all look good now"
+
+27. **The poster art is accepted**: the six intact sheets, the three tear masks and the look of
+    posters on plain wall.
+

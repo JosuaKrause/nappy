@@ -438,19 +438,14 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       one tie to the story: "other than that we can keep this mechanic separate with no story
       tie in", so tearing stays a gimmick that counts for nothing.
 
-      A kind that has arrived stays in the mix; nothing is taken down except by her. SVG first, as
-      every picture here is, and the first drawn wall comes back to the player as pictures in
-      the pull request before anything is polished.
+      A kind that has arrived stays in the mix; nothing is taken down except by her.
 
-      **The first pictures were answered** ([PLAYTEST-123](playtests/PLAYTEST-123.md)): the
-      leader's portrait is grumpy ("the leader is not going to be a nice fellow"); each printed
-      line on the rules notice starts with a two-pixel bar, a one-pixel gap, then the line;
-      the wanted notice's faces are proper head-and-shoulders silhouettes; people on posters are
-      less blocky; a poster has a gap on all four sides of its tile; the torn poster is shown on
-      its own; one row of posters on a wall is fine; and the drawing is Opus 5.5's. **Posters go on blank wall, never over a window**
-      ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 13): the ground floor gets stretches
-      of wall without windows, and a crew pastes there. **The torn poster is redrawn as an SVG
-      from the player's reference photos**; PNGs are Codex's, later.
+      **The pictures are drawn and accepted** (`DECISIONS.md`, M180, the poster art): the six
+      intact sheets and three tear masks under `art/events/posters/`, prepared and not yet bound,
+      with the neighbor's slot on the wanted notice and the compositing recipe in
+      `docs/GRAPHICS.md`'s Posters section. **What is open is putting them on the walls**: only on
+      blank ground-floor wall, never over a window (M185, a ground floor is blank wall or shops),
+      one row to a wall, following the progression above. PNGs are Codex's, later.
 - [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
       no button, and more than walking past. *The orchestrator recommended running along the
       wall · the player chose pushing on 2026-09-20*, because a push can happen by accident,
