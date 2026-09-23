@@ -20,14 +20,18 @@ is a privacy one.
 ## What the folder is, and what it is not
 
 **Reference is an *input to drawing*: a photograph of the real thing, held up next to the art.**
-Three folders in this repo hold pictures and they are not interchangeable:
+Four folders in this repo hold pictures and they are not interchangeable:
 
 - **`docs/reference/`** — the real world. Never shipped, never shown, never cited as proof of
   anything. It exists so a sprite can be drawn from something rather than from memory.
-- **`docs/evidence/`** — the game, captured. It is proof: a doc sentence points at it, and the
-  **playtest-feedback** rule requires the picture to land in the same commit as the sentence.
+- **`docs/evidence/`** — the game, captured, plus the approved style references
+  (`graphics-reference-*.jpeg`) that illustrated-png draws from. It is proof: a doc sentence
+  points at it, and the **playtest-feedback** rule requires the picture to land in the same commit
+  as the sentence.
 - **`art/`** — the authoring pictures. Behind a `.gdignore`, so the engine never imports one
-  and nothing under it ships; the atlas bake reads them and the pages it writes are what ships.
+  and nothing under it ships except `art/social-card.png`, which `.github/workflows/deploy.yml`
+  copies to the exported build; the atlas bake reads the rest and the pages it writes are what
+  ships.
 - **`assets/`** — what the engine reads at runtime, and only that.
 
 **The folder carries a `.gdignore`, and that is load-bearing.** Godot walks every directory under
@@ -67,8 +71,7 @@ hyphens, safe in a URL and a shell — because nothing in a converter can know w
 **Renaming to say what the thing is happens before the commit**, and there are two separate reasons.
 
 **A camera stem is usually a timestamp, and that is the metadata the pass just removed.** Google's
-is `PXL_YYYYMMDD_HHMMSSsss`, in UTC to the millisecond — checked against a real file's own EXIF
-`DateTime`, which was the same instant offset by the capture's timezone. Stripping the tag and
+is `PXL_YYYYMMDD_HHMMSSsss`, in UTC to the millisecond. Stripping the tag and
 keeping the filename **puts the capture time back**, in the one place `ls` shows it. Apple's
 `IMG_####` and Canon's `DSC#####` are only counters rather than clocks, but they are equally
 useless, so the rule is one rule.
@@ -108,13 +111,7 @@ report that proves the strip worked by pasting the `location=` line out of a sou
 published the coordinate the strip existed to remove — into git history and onto a public pull
 request, where it outlives the file it came from and is indexed besides.
 
-**Including here.** This section does not quote the value either, and the first draft of it did:
-naming the field was written down as the rule and the rule's own example broke it in the same
-sentence. If an example is unavoidable, invent one.
-
-**This has already happened here once**, in the pull request for the first batch and in that
-branch's own commit message, and it was caught by the player rather than by anything in the
-process. Both were rewritten; the branch was unmerged, which is the only reason the fix was cheap.
+This section does not quote a value either; if an example is unavoidable, invent one.
 
 Write the evidence as **which fields were present and that they are gone**:
 
@@ -139,8 +136,8 @@ furniture, that is what to keep in frame.
 The script exits non-zero and names every file it could not handle — a missing input, an
 unreadable source, an ffmpeg that is not installed, an output that did not appear or came out
 empty, a name already taken without `--force`. **A pass that silently converted nothing looks
-exactly like a pass that worked**, which is the same reason this project prefers `Edit` over a
-`sed` one-liner. Read the output; a partial run is a failure.
+exactly like a pass that worked** (CLAUDE.md, "Editing files"). Read the output; a partial run is
+a failure.
 
 **Videos need `ffmpeg` on `PATH`.** Stills need only the locked Python environment, which
 `uv run` builds from `pyproject.toml` on first use — see the **python-tooling** rule. The reading

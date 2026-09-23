@@ -44,15 +44,14 @@ For modular states, preserve the shared canvas and the meaningful fixed point: a
 a person's feet or a hut's ground anchor. Annotate non-default anchors inside the SVG. Ground
 decals use their centre; standing sprites usually use bottom centre through `Sprites`.
 
-Compare a character's state variants as one family: carrying the baby and pushing the stroller
-must preserve the mother's identity, clothing and proportions across every facing. Keep shared
-head geometry consistent between gait frames. Articulate the pelvis, thighs and coat hem with a
-full stride; a fixed torso crop across the hip joint cannot support that movement. Trace each
-leg continuously from hip to shoe instead of using a color swap as an opposite step. In diagonal
-views, keep the projected travel axis fixed across contacts while the legs exchange leading and
-trailing positions. Review the whole
-facing/frame/state matrix together before PNG transfer; the illustrated-png skill covers shared
-generation grids and matching existing derivatives.
+Compare a character's state variants as one family: each parent carrying the baby must be
+recognizably the same person pushing the stroller, preserving clothing and proportions across
+every facing. Keep shared head geometry consistent between gait frames. Trace each leg
+continuously from hip to shoe instead of using a color swap as an opposite step (see the
+illustrated-png skill's [walking-frame correction toolbox](../illustrated-png/references/leg-contact-corrections.md)
+for donor selection and diagonal-contact anatomy). Review the whole facing/frame/state matrix
+together before PNG transfer; the illustrated-png skill covers shared generation grids and
+matching existing derivatives.
 
 Use contact shadows beneath individual objects. A scene containing empty roadway should not
 inherit one full-width ellipse across its people, cars and gaps. Check whether runtime code adds
@@ -90,6 +89,8 @@ Run the scratch script with the installed Godot binary, `--headless --path <impo
 an unimported worktree can fail on unrelated autoload types before the renderer runs. A minimal
 scratch project without game autoloads is another option. Do not wait for a failed script to quit
 if an error prevents its normal exit; inspect the output and stop that process.
+`docs/evidence/male-player-2026-09-19/render-sources.gd` is a committed instance of this script;
+run it with `--help` for its exact usage.
 
 **Open and inspect the saved images.** A successful command only proves that a file was written.
 Review native size for recognition, enlargement for malformed joins and clipping, and a neutral
@@ -105,28 +106,28 @@ and preserve the final evidence through `session-captures` where it is a gamepla
 
 ## Integrate and leave the inventory accurate
 
-**A game SVG has no `.import` sidecar.** The authoring sources live under `art/`, which carries
-a `.gdignore`: the engine imports nothing there, so a sidecar beside one would name an imported
-copy that is never written. `tools/bake_atlases.gd` reads the file itself and bakes it into its
-group's page, which is the only raster in the build; `.godot/` is rebuildable cache. Evidence
-under `docs/` has no sidecars for the same reason `docs/.gdignore` gives. Check both revisions if GitHub's
-image-diff viewer fails: malformed XML in the old side can break the comparison while the new
-file is valid. Link a current rendered preview rather than repeatedly altering valid artwork.
+SVGs under `docs/evidence/` are evidence, not assets: none of this section applies to them;
+rejected-graphics governs the archive.
+
+**A game SVG has no `.import` sidecar, except the root `icon.svg`.** `art/` has a `.gdignore`: no
+`.import` sidecars, the bake reads the files (VISUALS.md, "Where the pictures live"). Check both
+revisions if GitHub's image-diff viewer fails: malformed XML in the old side can break the
+comparison while the new file is valid. Link a current rendered preview rather than repeatedly
+altering valid artwork.
 
 Update `docs/GRAPHICS.md` with file paths, registration and actual current use. A prepared asset
 stays unbound in the catalogue until code or a resource uses it. In graphics-dependent milestones,
-name the files and intended states to reuse without closing outstanding gameplay decisions.
-Keep drafts rejected only internally by an assistant outside the repository. Preserve artwork
-rejected by a human or suggested for human review, with the review outcome in
-`docs/DECISIONS.md`; preserve the player's words in the playtest record. PR image links use a
-commit containing the image, as `committing` requires.
+name the files and intended states to reuse without closing outstanding gameplay decisions. The
+rejected-graphics skill governs what a draft's disposition keeps or discards, and a human's review
+outcome goes in `docs/DECISIONS.md`; preserve the player's words in the playtest record. PR image
+links use a commit containing the image, as `committing` requires.
 
 Run import/boot and XML/doc lint. Add focused tests only for behavior a picture cannot verify,
 such as axis selection or grounding. Test the drawing path the runtime actually takes; do not
 re-derive repetition arithmetic for a whole-scene renderer that never repeats a texture.
 
-A new picture also needs a line in `assets/atlases/membership.json` naming the group it belongs
-on, or nothing can draw it: the bake carries only what the membership lists, and
+A new picture also needs a line in `assets/atlases/membership.json` naming its group — `members`
+if both bakes draw it, `members_png`/`members_svg` if only one does — or nothing can draw it:
 `AtlasLibrary.region()` answers null with an error for a name it does not know.
 
 Commit each finished image promptly after visual review and validation. Do not wait for the whole
