@@ -19,30 +19,27 @@ things must not be inside each other, move them apart; do not ask them to want t
 **And the separation must not be doing the placement's job.** Front-to-back resolution
 **compounds**: the shortfall a car sees is its own overlap plus everything already moved ahead of
 it, so a bunched queue shunts the rearmost car several lengths backwards in one frame. A car
-choosing an arm of a junction has to look before it commits. Three things to carry:
+choosing an arm of a junction has to look before it commits:
 
 - **`TrafficIndex` is the look, and it is a frame stale on purpose.** A car covers three pixels in a
   frame and the question is about a car's length.
 - **Two placements in the same frame cannot see each other**, and that is not a rare case —
   recycling is what happens to every car that leaves the box, and they all aim at the same entry
   band. `TrafficIndex.claim()` is the smallest thing that closes it.
-- **A retry is not a guarantee.** Six re-rolls into a busy lane all miss about once a minute.
+- **A retry is not a guarantee.** Re-rolls into a busy lane still all miss now and then.
   `_join_the_back_of_the_queue()` is the fallback, because behind the last car is the one place in a
   lane that is free by construction.
 
-**The morning is placed without consulting itself, so the unpack happens before the first frame is
-drawn.** `Crowd.start_day()` ends by running the same front-to-back resolve the first physics frame
-would run, because a day starts from an *idle* frame: the engine draws the placement and only then
-reaches the tick that would have corrected it, so a correction left to frame one is a car jumping a
-car's length on the street she is standing in. Nobody has seen a previous frame of that street,
-which is what makes the correction legal — and nobody has seen a *drawn* frame of it either, which
-is what makes doing it early free.
+**The morning's resolve runs before the first frame is drawn.** `Crowd.start_day()` ends with the
+same front-to-back resolve the first physics frame would run, because a day starts from an idle
+frame: the engine draws the placement before the tick that would correct it, so a correction left
+to frame one is a car jumping a car's length on the street she is standing in.
 
-**That is not the same thing as spacing the crowd in `start_day`, which stays refused**: spacing
-places cars at `Tuning.CAR_GAP_MIN` headway and turns a random morning into tight platoons, and
-three balance tests correctly object. The resolve chooses no position — a car that was not inside
-another one does not move at all. Keep the distinction in the docstring at the call site, because
-the two look identical from the outside and only one of them is allowed.
+**That is not spacing the crowd in `start_day`, which stays refused**: spacing places cars at
+`Tuning.CAR_GAP_MIN` headway and turns a random morning into tight platoons, and the balance tests
+object. The resolve chooses no position — a car that was not inside another one does not move at
+all. Keep the distinction in the docstring at the call site, because the two look identical from
+the outside and only one of them is allowed.
 
 **And a retry is not a guarantee one scale out either.** When re-rolling the small decision keeps
 failing, re-take the big one — a car handed a corridor whose visible stretch is all precinct
@@ -50,7 +47,7 @@ re-rolls its position and finds bollards every time, so `CrowdAgent.setup` picks
 
 ## A lane is a queue; a junction is a box
 
-`Crowd.give_way_at_junctions()` is the rule and four clauses of it are load-bearing:
+`Crowd.give_way_at_junctions()` is the rule, and every clause of it is load-bearing:
 
 - **Only crossing traffic conflicts.** Two cars meeting head-on are in different lanes and pass.
 - **A car that cannot stop is counted as already in the box**, not asked to brake — the zebra's
@@ -62,9 +59,8 @@ re-rolls its position and finds bollards every time, so `CrowdAgent.setup` picks
   per box per frame. A light overrides the whole negotiation where there is one.
 - **A car turning in a box holds the whole of it, on both axes, until it is out.** Its path crosses
   both arms and its tail is still in the way after its nose has left. It claims it from the moment
-  the arc begins and not from the moment it commits: a car that has planned a turn from the
-  junction's sight distance away is still queueing for the box like anybody else, and holding it for
-  the length of an approach empties the crossing street for a second and a half.
+  the arc begins and not from the moment it commits: holding it for the length of an approach
+  empties the crossing street for no reason.
 
 The collision that gets through is deliberate and is **not** a catalogue row: it startles the cars
 it happened to, which composes by addition like every other body. An event nobody meets in a run is
@@ -79,41 +75,35 @@ far-side at 48 and an about-face at 16 with no choice in it at all. **If you fin
 turn-radius dial, that is the thing this entry exists to stop** — the number would have to agree
 with the lane geometry to land on a lane, so it is the geometry.
 
-Three things about the shape of it that are easy to get wrong:
+The shape of it is easy to get wrong:
 
-- **A body swings to the outside of its turn.** A 28px car in a 32px lane has two pixels of slack,
-  so nine degrees of rotation drags its tail over the kerb. The arm that turns *away* from its own
-  kerb therefore cannot begin at the carriageway's edge; it waits until the tail is inside the
-  junction. Measured as exactly the two pixels, and it refused every far-side turn in the city until
-  the entry moved.
-- **A half turn between two lanes cannot be contained by their own street.** The arc is 16px and the
-  body's corners reach 40 from the centre of it, against 32 to the kerb. So an about-face is taken
-  in a junction box, where the crossing street's carriageway is the room it needs — and the street
-  version, which is the only manoeuvre in the game whose swept body crosses a kerb, is the last
-  resort before a barrier.
+- **A body swings to the outside of its turn.** A car has two pixels of slack in its lane, so a few
+  degrees of rotation drags its tail over the kerb. The arm that turns *away* from its own kerb
+  therefore cannot begin at the carriageway's edge; it waits until the tail is inside the junction.
+- **A half turn between two lanes cannot be contained by their own street.** The body's corners
+  reach further from the arc's centre than the kerb is. So an about-face is taken in a junction box,
+  where the crossing street's carriageway is the room it needs — and the street version, the only
+  manoeuvre whose swept body crosses a kerb, is the last resort before a barrier.
 - **Refusing outright is not available.** Cars that cannot turn round stop, one nose-to-wall car
-  holds the junction it is standing in, and the street behind it queues: measured, 33 of 34 cars at
-  a standstill inside ninety seconds. Whatever replaces a manoeuvre has to keep the road moving.
-- **And the last resort is stated over *why* an arc was refused, never over how much room is left.**
+  holds the junction it is standing in, and the street behind it queues. Whatever replaces a
+  manoeuvre has to keep the road moving.
+- **The last resort is stated over *why* an arc was refused, never over how much room is left.**
   Reversing a heading where the car stands is the one manoeuvre with no path in it, so it may only
   be reached from a state that waiting cannot mend. "Stopped with less than a nose's length of
-  manoeuvring room" is not that state — it is every car that has braked to its own aim point, which
-  is where the brake was aiming, so the test fires on the ordinary case and a single frame's refusal
-  is enough to spin a car round. Split the refusals: **a lane occupied at the landing empties by
-  itself and the ground, the geometry and the map do not.** Wait on the first, and bound the wait,
-  because waiting on a car that is itself stopped is the deadlock the entry above measures.
+  room" is every car that has braked to its own aim point, so that test spins cars round on the
+  ordinary case. Split the refusals: **a lane occupied at the landing empties by itself; the
+  ground, the geometry and the map do not.** Wait on the first, and bound the wait, because waiting
+  on a car that is itself stopped is a deadlock.
 - **A reversal that lands in the same state is the flicker, not the escape.** It swaps the lane a
-  car belongs to without moving it, and the ordinary cross-steer then slides the body to the other
-  lane's centre at three pixels a frame — under every jump threshold, and from outside a car shaking
-  its head. So a car with less than a half turn's road *both* ways stands still instead, and leaves
-  the way a pocketed body leaves, once nobody can see it go. **Ask what the manoeuvre changes about
-  the state that caused it**; if the answer is nothing, it is not a manoeuvre.
+  car belongs to without moving it, and the cross-steer then slides the body to the other lane's
+  centre under every jump threshold — a car shaking its head. So a car with less than a half turn's
+  road *both* ways stands still instead, and leaves the way a pocketed body leaves, once nobody can
+  see it go. **Ask what the manoeuvre changes about the state that caused it**; if the answer is
+  nothing, it is not a manoeuvre.
 
 **And a car that lands from a turn has to be able to leave.** The arm probe is a single point seven
-tiles out and looks straight past a two-tile plug — harmless while a car could reverse its heading
-anywhere, and a car parked in a cul-de-sac for the rest of the day once it cannot. The exit is
-checked for a turnaround's worth of road, which is the same *nothing enters a junction it cannot
-leave* rule read one street further on.
+tiles out and looks straight past a two-tile plug. The exit is checked for a turnaround's worth of
+road, which is the same *nothing enters a junction it cannot leave* rule read one street further on.
 
 ## A shared slot has to be given back on every way out, not on the way you were thinking of
 
@@ -122,25 +112,23 @@ no longer exists shuts that door to the crowd for the rest of the day — and no
 wrong, because the hut is a point on the map and the walker was hidden anyway.
 
 **The way out you will write is the one you are thinking about** — the inspection ending. The ones
-that cost a door are the others: a walker **recycled** at the edge of the crowd's field (which is
-every walker eventually, and a stationary one sooner, since the field moves with the player and she
-walks faster than they do), a walker **turned away** by a barrier while it was still queueing, and
-the whole crowd being **cleared** at the end of a day. All four go through one `release`.
+that cost a door are the others: a walker **recycled** at the edge of the crowd's field (every
+walker eventually, since the field moves with the player and she walks faster than they do), a
+walker **turned away** by a barrier while it was still queueing, and the whole crowd being
+**cleared** at the end of a day. All four go through one `release`.
 
 **Ask what else ends a body's stay somewhere, and make every answer call the same function.** A
 slot handed back in only the expected case is a leak with a picture on it.
 
 ## An approach arrives late, so the guarantee is positional
 
-**A brake and a sidestep both aim at a point and get there a frame after they should.** A car
-easing toward a blockage overshoots by whatever the last frame's speed bought it; a walker crossing
-to the other lane of its footway is still half way over when it draws level with a café's first
-table. So *"nothing ever stands inside a solid body"* cannot be bought by tuning either of them —
+**A brake and a sidestep both aim at a point and get there a frame after they should.** So *"nothing
+ever stands inside a solid body"* cannot be bought by tuning either of them —
 `CrowdAgent._keep_out_of_a_body()` holds the step inside the tile the agent started the frame on,
 which is the same shape `nudge_back()` already has for the backward direction.
 
 **The sideways half is given up before the forward half, and the ordering is the whole of it.**
-Refusing both at once wedges a walker crossing a pavement beside a body for good, because its
+Refusing both at once wedges a walker crossing a sidewalk beside a body for good, because its
 steering target does not move and the identical step is refused on every frame after. Undoing only
 the cross step leaves it walking along the street beside the body and crossing once it is past.
 
@@ -151,43 +139,37 @@ placement into a permanent one.
 
 `CrowdAgent._detour` has already carried a walker off its own lane, so a scan taken from the tile it
 is **standing on** finds the clear lane it just moved into, lets the detour go, and steers it
-straight back into the body it was avoiding — a two-frame oscillation that looks like dithering and
-reads as a walker standing in a café.
+straight back into the body it was avoiding — a two-frame oscillation that reads as a walker
+standing in a café.
 
 **`_lane` is where the walker belongs and the detour is how far off it currently is.** State the
 decision over the first and it is stable while the second is being acted on. Ties go to `_lane`,
 which is what makes *"and it steps back afterwards"* happen at all.
 
-**A car's lookahead is the same rule and the row either side of a lane is why.** `_look_ahead()`
-walks tiles from the car's *lane centre*, not from its body: a car still steering onto its lane
-straddles two rows, and the neighbouring row of a carriageway is the other lane or the kerb — where
-a solid body this car will never meet stands and where a precinct's paving starts. Asked from the
-body, the scan reports a wall two tiles ahead that is not on this car's road, and reports it
-*intermittently*, as the body crosses the row boundary and back. A walker still asks from its body,
-because a walker acting on a detour really is on the ground it is standing on.
+**A car's lookahead is the same rule.** `_look_ahead()` walks tiles from the car's *lane centre*,
+not from its body: a car still steering onto its lane straddles two rows, and the neighbouring row
+is the other lane or the kerb. Asked from the body, the scan reports a wall that is not on this
+car's road, and reports it *intermittently*, as the body crosses the row boundary and back. A
+walker still asks from its body, because a walker acting on a detour really is on the ground it is
+standing on.
 
 **The same trap one level up: a turn has no runway.** A walker rounds a corner wherever its old
-along coordinate left it, which can be a few pixels from the next street's first tile — so the lane
-it lands on has to be **chosen at the turn**, and an arm whose landing is taken with no room left to
-cross is an arm the walker does not turn into. A sidestep cannot rescue a decision that left it
-nowhere to sidestep in.
+along coordinate left it, so the lane it lands on has to be **chosen at the turn**, and an arm whose
+landing is taken with no room left to cross is an arm the walker does not turn into.
 
 ## A barrier is met at the distance the manoeuvre needs
 
 **The two kinds do not get the same warning, and the reason is what each can do about one.** A car's
 answer to a wall is an arc that needs a junction box to fit in, and there is no reverse gear — so it
 has to decide while the last junction is still in front of it, which is what `LOOKAHEAD_TILES` is
-measured to reach, and a car that drove up to the wall would stand there nose-on with its street
-queued behind it. A walker's answer costs a stride and can be taken anywhere, so it acts only when
+measured to reach. A walker's answer costs a stride and can be taken anywhere, so it acts only when
 the barrier is the **next tile** (`CrowdAgent._acts_on_a_barrier_within()`).
 
-**Deciding early is not free, and what it costs is the whole city's ground.** A street a walker
-gives up from a junction away is a street with nobody on it for its whole length — which emptied
-every sealed block and every offshoot of the day's route, and left the walkers who were already in
-one pacing the junction they had left. *(2026-09-19: "they should only give up if they touch an
+**Deciding early is not free: a street a walker gives up from a junction away is a street with
+nobody on it for its whole length.** *(2026-09-19: "they should only give up if they touch an
 impassable wall"; "they should still go into the section until they cannot continue".)* So a walker
 picking an arm asks only whether the arm is street **at all** (`_no_street_ahead()`), never what is
-standing down it; and the record a walker is stopped by is the bodies themselves, while the
+standing down it; the record a walker is stopped by is the bodies themselves, while the
 segment-wide hold is a car's warning and nobody else's.
 
 **If you find yourself unifying the two, this is the entry.** The symmetric version is the one that
@@ -202,17 +184,16 @@ still has a line down it and a tile whose centre it covers has none. That is the
 by.
 
 **Counting every tile a body touches instead is not conservative, it is wrong at the kerb.** A van
-pinned to the kerb is a 22px body around a lane centre 16px from it: six pixels of overhang, one
-whole 32px lane tile of carriageway in the record, and every car on that street turning for
-something parked on the pavement.
+pinned to the kerb overhangs its lane tile by a few pixels, which would put a whole lane of
+carriageway in the record and turn every car on that street for something parked on the sidewalk.
 
 ## The heading is the datum, and it is continuous
 
 `CrowdAgent.heading()` is a unit vector along the car's actual line of travel — cardinal in a lane,
 the **tangent of its own arc** mid-turn — and `velocity()` is that times the speed it is really
 doing. Everything downstream reads it: the lethal strike box and the horn, right of way at a box,
-the checkpoint gate's along/across projection, the shadow, and the picture. **A turn that changed
-the axis without changing this pointed every one of them at a car that was not there.**
+the checkpoint gate's along/across projection, the shadow, and the picture. **A turn that changes
+the axis without changing this points every one of them at a car that is not there.**
 
 `travelling_vertically()` follows the heading mid-turn for the same reason: a car that has swung
 past the diagonal is across the traffic it used to be queueing with.
@@ -246,30 +227,23 @@ offsets stop a car at *every* junction, so the cycle is derived from the block s
 car population is a number about capacity as well as about noise: a car waiting at a light beside
 you is louder for longer than one going past.
 
-**The green wave serves one direction, and a two-way wave is not available at any setting of this
-constant.** With offsets `j·travel`, a car going *with* the wave holds its phase exactly, and one
-going *against* it advances `2·travel` per junction, which is only constant if the cycle **divides**
-`2·travel` — true at `blocks = 1` and nowhere else. That needs `cycle = 2·travel` = 5.7s, and the
-side green plus its ambers is 9.0s before the main road gets a second. The asymmetric offset is the
-*best* answer, not a compromise: `θ = travel` gives 72% overall, and `θ = cycle/2` — the
-symmetric-looking one — puts both directions on a three-phase sweep at 47%.
-
-Two things to carry, because the shape recurs:
+**The green wave serves one direction, and a two-way wave is not available at any setting.** The
+arithmetic, and why the asymmetric offset is the best answer rather than a compromise, is the
+`Tuning.SIGNAL_PROGRESSION_BLOCKS` docstring. Two things to carry, because the shape recurs:
 
 - **An identity is not the property.** Asserting `cycle / travel` is an even multiple is *true* and
   pins nothing, because it is not the condition the sentence beside it claims.
   `tests/test_crowd.gd` walks a car down the platoon instead.
-- **The stopped fraction is not the speed spread.** `CAR_SPEED` is 130–185 against a wave tuned for
-  157.5, so a slow car drifts 0.6s per junction — but a car lives 3.8 junctions on the spine and
-  needs 13 to drift out of a green band, and the **fast** half stops more than the slow half. Drift
-  is real and it is not the mechanism. The mechanism is that the main arm is red 53% of the cycle
-  and only half the traffic gets the wave.
+- **The stopped fraction is not the speed spread.** A car's speed drifts it against the wave, but
+  it does not live long enough on the spine to drift out of a green band, and the fast half stops
+  more than the slow half. The mechanism is the main arm's red share of the cycle and that only half
+  the traffic gets the wave.
 
 ## A weighting applied inside a fixed split cannot cross it
 
-Cars pick their **axis** by weight, not 50/50 before the corridor — otherwise no weight at all, 5 or
-50 or any number, can put more than half the traffic on one street. Walkers keep the even split on
-purpose, because a pavement has no hierarchy for them to follow.
+Cars pick their **axis** by weight, not 50/50 before the corridor — otherwise no weight at all can
+put more than half the traffic on one street. Walkers keep the even split on purpose, because a
+sidewalk has no hierarchy for them to follow.
 
 **Ask what the weight is competing inside of**: a number that looks like a global priority is a
 local one if something upstream has already chosen the bracket.
@@ -310,6 +284,6 @@ frame and is what a rig calls.
 
 ## The crowd is one picture on purpose
 
-Two hundred and forty bodies share one `person.svg`, because **a crowd is what an authored event has
-to stand out from**. This is the deliberate opposite of the one-picture-per-row rule for the
-catalogue.
+The whole crowd shares one walker drawing (`art/crowd/walker_*`), because **a crowd is what an
+authored event has to stand out from**. This is the deliberate opposite of the one-picture-per-row
+rule for the catalogue.
