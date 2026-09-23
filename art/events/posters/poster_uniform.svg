@@ -1,11 +1,12 @@
 <!-- The dark uniform sheet: one plain geometric emblem, invented for this game and matching no
-     real flag, party, state or movement mark — a ring, a bar through it and an offset second
-     bar, asymmetric so it reads as insignia rather than a cross. Same 20x25 sheet area as the
-     other poster kinds — see poster_leader.svg. Act III pastes this one edge to edge over the
-     older notices. -->
+     real flag, party, state or movement mark - a ring, a bar down through it and an offset
+     second bar across its foot, asymmetric so it reads as insignia rather than a cross. Same
+     20x22 sheet as every poster kind; see poster_leader.svg. Act III pastes this one edge to
+     edge over the older notices. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect x="6" y="4" width="20" height="25" fill="#2c2a30" stroke="#1a181d" stroke-width="1"/>
-  <circle cx="16" cy="16" r="6.5" fill="none" stroke="#c9c2ae" stroke-width="1"/>
-  <rect x="15" y="10" width="2" height="11" fill="#c9c2ae"/>
-  <rect x="12" y="19" width="8" height="2" fill="#c9c2ae"/>
+  <rect x="6" y="3" width="20" height="22" fill="#2c2a30"/>
+  <circle cx="16" cy="14" r="6" fill="none" stroke="#c9c2ae" stroke-width="1" shape-rendering="geometricPrecision"/>
+  <rect x="15" y="8" width="2" height="11" fill="#c9c2ae"/>
+  <rect x="12" y="17" width="8" height="2" fill="#c9c2ae"/>
+  <rect x="6.5" y="3.5" width="19" height="21" fill="none" stroke="#1a181d" stroke-width="1"/>
 </svg>
