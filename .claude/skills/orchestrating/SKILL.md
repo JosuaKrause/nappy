@@ -19,11 +19,15 @@ checkout for implementation. Create the worktree explicitly if the tool does not
 Read-only review can share a checkout. If delegation is unavailable, do the bounded work locally
 and retain the same verification gate. Tool or model names do not require changing hosts.
 
-**In Codex, visible usage-limit errors are treated as resolved, not as a continuing delegation
-block.** Delegate the next bounded task normally when the session can continue. Do not carry a
-limit message from an earlier agent or turn forward as a reason to implement locally.
-*(2026-09-12: "when you see usage limit errors that means they are already resolved. if the usage
-limit was reached you wouldn't see anything.")*
+**A usage or quota limit is already over by the time the orchestrator hears of it**, in Claude
+Code and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no
+cheaper models, no implementing locally to save quota. Do not carry a limit message from an
+earlier agent or turn forward as a reason to do anything differently. *(2026-09-12: "when you see
+usage limit errors that means they are already resolved. if the usage limit was reached you
+wouldn't see anything."; 2026-09-22: "by the time _you_ hear of it the quota or usage is fully
+restored so there is no need to change behavior due to it (ie no reducing agent usage or things
+like that). quota limits happen from time to time.")* What an interruption does change is which
+agents can continue — see "Recovering from an interruption".
 
 ## Codex: match the subagent to the task's difficulty
 
@@ -270,3 +274,29 @@ merging is what collides — so parallelism is planned at the file level, before
   test.")* That means freeing the agent's worktree first if it holds the branch (`git worktree
   remove`), then `git checkout` in the main folder, and saying so; and while the player is testing
   there, nothing touches that checkout but docs commits on the same branch.
+
+## Recovering from an interruption
+
+**A limit or an outage stops every agent at once, and the pause's length decides what happens
+next.** The player usually tries to hand the session off before a limit hits, so the next one
+starts fresh at the reset, but not every limit is seen coming. *(2026-09-22: "long pauses let the
+cache expire which means we probably shouldn't let existing agents continue and start a new agent
+with a precise updated prompt instead. if the pause was brief nudging the existing agents is
+enough since the cache is still warm and they can just continue. usually, I'll tell you which kind
+of interruption it was.")*
+
+1. **Establish how far everything got, on disk and on GitHub, before touching anything.** For each
+   agent worktree: its branch, uncommitted files, how far it is ahead of and behind its own
+   upstream (another session may have pushed to it), and its PR's CI state. For each agent: its
+   last tool calls, from its transcript.
+2. **Take the pause's kind from the player.** If they have not said, it is long when the
+   agent's last request is older than the cache window less five minutes (see "A finished agent
+   is not resumed after it has gone cold"), and brief otherwise.
+3. **Brief pause: nudge each agent with `SendMessage`**: the limit is over, what its worktree
+   and branch now hold if that moved, and continue. The cache is warm, so the agent's own
+   context is the cheapest brief there is.
+4. **Long pause: replace each agent** in its own worktree, as "An agent that died mid-task is
+   replaced in its own worktree" says, with a brief updated to what step 1 found. Never resume a
+   cold one.
+5. **Tell the player what was found per agent and which way each went**, before waiting on any
+   of them.
