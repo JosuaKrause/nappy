@@ -1,18 +1,52 @@
-<!-- Two cars that met. Slewed across the carriageway, one wing off, glass on the road. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="80" height="38" viewBox="0 0 80 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <rect x="4" y="14" width="40" height="17" fill="#8a6f60"/>
-  <rect x="4" y="14" width="40" height="4" fill="#a08475"/>
-  <rect x="10" y="18" width="12" height="7" fill="#4d5a63"/>
-  <rect x="26" y="18" width="12" height="7" fill="#4d5a63"/>
-  <rect x="40" y="16" width="7" height="13" fill="#5c4c44"/>
-  <rect x="44" y="10" width="32" height="16" fill="#57606b"/>
-  <rect x="44" y="10" width="32" height="4" fill="#6c7683"/>
-  <rect x="50" y="14" width="10" height="6" fill="#4d5a63"/>
-  <rect x="62" y="14" width="10" height="6" fill="#4d5a63"/>
-  <rect x="42" y="30" width="5" height="2" fill="#9aa4ac"/>
-  <rect x="52" y="32" width="4" height="2" fill="#9aa4ac"/>
-  <rect x="34" y="33" width="4" height="2" fill="#9aa4ac"/>
-  <circle cx="14" cy="31" r="4" fill="#221f28"/>
-  <circle cx="36" cy="31" r="4" fill="#221f28"/>
-  <circle cx="68" cy="27" r="4" fill="#221f28"/>
+<!-- Two cars that met head on, slewed across the carriageway: the red one in front with its nose
+     crushed and its hood sprung up, the blue one behind, nudged back and up the road, crushed to
+     match. Steam from the wreck, glass, a bumper and a hubcap on the road. Both are the crowd
+     cars' profile, drawn with their fronts folded in. `ClosureMarker` draws it feet-anchored at
+     the bottom centre with its own point shadow under it, so none is drawn here. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="38" viewBox="0 0 80 38" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <!-- The blue car, behind, facing west: its own profile mirrored, front folded in. -->
+  <g transform="translate(79 10) scale(-0.78 0.78)" stroke-width="1.3">
+    <path d="M2 11 Q4 9 10 9 L15 3 Q18 1 35 2 L40 8.5 L44 9.5 L46.5 12 L44.8 14 L48.5 16 L46 18.5 L48 22 L3 22 Q1 18 2 11 Z" fill="#5d6f8a"/>
+    <path d="M12 9 L17 3 Q25 1 35 3 L40 9 Z" fill="#7486a0" stroke="none"/>
+    <path d="M2.4 18 Q22 20 46.6 18.6 L48 22 L3 22 Z" fill="#46546a" stroke="none"/>
+    <path d="M14 9 L19 4 L25 4 L25 9 Z M27 4 L34 4 L38 9 L27 9 Z" fill="#2f3742"/>
+    <path d="M16 8 L20 5 L24 5 L24 8 Z M28 5 L33 5 L36 8 L28 8 Z" fill="#556779" stroke="none"/>
+    <path d="M30 5 L32 8 M32 6.2 L34.4 5.4" fill="none" stroke="#cfe3ea" stroke-width="0.9"/>
+    <path d="M29 12.5 L32 14.5 L30 16.5 M40 11 L42.5 13" fill="none" stroke="#2f3a4a" stroke-width="1"/>
+    <path d="M2 12 L5 12 L5 15 L2 15 Z" fill="#a8443a"/>
+    <path d="M2 11 Q4 9 10 9 L15 3 Q18 1 35 2 L40 8.5 L44 9.5 L46.5 12 L44.8 14 L48.5 16 L46 18.5 L48 22 L3 22 Q1 18 2 11 Z" fill="none"/>
+    <circle cx="14" cy="24" r="5" fill="#26232a"/>
+    <circle cx="38" cy="24" r="5" fill="#26232a"/>
+    <circle cx="14" cy="24" r="2" fill="#6a6570"/>
+    <circle cx="38" cy="24" r="2" fill="#6a6570"/>
+  </g>
+  <!-- The red car, in front, facing east: nose crushed, hood sprung up, windscreen cracked. -->
+  <g transform="translate(1 14) scale(0.78)" stroke-width="1.3">
+    <path d="M2 11 Q4 9 10 9 L15 3 Q18 1 35 2 L40 8.5 L44 9.5 L46.5 12 L44.8 14 L48.5 16 L46 18.5 L48 22 L3 22 Q1 18 2 11 Z" fill="#a8503f"/>
+    <path d="M12 9 L17 3 Q25 1 35 3 L40 9 Z" fill="#c26a57" stroke="none"/>
+    <path d="M2.4 18 Q22 20 46.6 18.6 L48 22 L3 22 Z" fill="#83392d" stroke="none"/>
+    <path d="M14 9 L19 4 L25 4 L25 9 Z M27 4 L34 4 L38 9 L27 9 Z" fill="#2f3742"/>
+    <path d="M16 8 L20 5 L24 5 L24 8 Z M28 5 L33 5 L36 8 L28 8 Z" fill="#556779" stroke="none"/>
+    <path d="M31 5 L33 8 M33 6 L35.6 5.2 M33 8 L35.4 8.6" fill="none" stroke="#cfe3ea" stroke-width="0.9"/>
+    <path d="M30 12.5 L33 14.5 L31 16.5" fill="none" stroke="#6a2a21" stroke-width="1"/>
+    <path d="M2 12 L5 12 L5 15 L2 15 Z" fill="#e0862a"/>
+    <path d="M2 11 Q4 9 10 9 L15 3 Q18 1 35 2 L40 8.5 L44 9.5 L46.5 12 L44.8 14 L48.5 16 L46 18.5 L48 22 L3 22 Q1 18 2 11 Z" fill="none"/>
+    <path d="M36.6 9.2 L44.6 3.6 L46.6 5.6 L39.6 10.4 Z" fill="#c26a57"/>
+    <circle cx="14" cy="24" r="5" fill="#26232a"/>
+    <circle cx="38" cy="24" r="5" fill="#26232a"/>
+    <circle cx="14" cy="24" r="2" fill="#6a6570"/>
+    <circle cx="38" cy="24" r="2" fill="#6a6570"/>
+  </g>
+  <!-- Steam out of the crushed noses. -->
+  <path d="M34 10.4 C32 7.6 35 4.6 38 5.4 C39 2.2 44 2 45.4 5 C48.4 4.8 49.6 8.4 47 10 C44 11.6 37.4 11.8 34 10.4 Z" fill="#e6e3dd" stroke="#8f8a84" stroke-width="0.8"/>
+  <path d="M37 8.6 C38.6 7.4 40.6 7.4 42 8.4" fill="none" stroke="#b9b4ad" stroke-width="0.7"/>
+  <path d="M43 3.4 C44 1.6 46.6 1.4 47.4 3" fill="none" stroke="#b9b4ad" stroke-width="0.8"/>
+  <!-- On the road: glass, a torn-off bumper, a hubcap. -->
+  <path d="M16 36.8 L25 36 L25.4 37.4 L16.4 38 Z" fill="#3a3436" stroke-width="0.8"/>
+  <g fill="#bfe0ea" stroke="#5f7f8c" stroke-width="0.6">
+    <path d="M36 36.4 L37.6 35.6 L37.8 37 Z"/>
+    <path d="M42.6 37.2 L44.4 36.6 L43.8 37.8 Z"/>
+    <path d="M47.4 35.6 L48.8 35.2 L48.6 36.4 Z"/>
+  </g>
+  <ellipse cx="59" cy="36" rx="2.2" ry="1.1" fill="#9aa4ac" stroke-width="0.8"/>
 </svg>

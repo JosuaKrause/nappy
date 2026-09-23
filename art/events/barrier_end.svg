@@ -1,9 +1,19 @@
-<!-- The post that caps each end of a blocking object. Cream with a red top, the same hazard
-     family as `barrier_segment.svg`'s diagonal stripes — a post rather than a board, so it stays
-     mostly structural and lets the repeated segments carry the warning. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="6" height="26" viewBox="0 0 6 26" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <rect x="0" y="0" width="6" height="26" fill="#e0d8c4"/>
-  <rect x="0" y="0" width="6" height="4" fill="#c4503c"/>
-  <rect x="4" y="0" width="2" height="26" fill="#c9c0a8"/>
-  <rect x="0" y="24" width="6" height="2" fill="#221f28"/>
+<!-- The post that caps each end of a blocking object: a cream pole banded red, the same hazard
+     family as `barrier_segment.svg`'s stripes, on a rubber foot, with the amber warning lamp the
+     burst main's barriers carry. Taller than the board so the lamp stands clear of it. It is
+     drawn on both street axes by `_draw_spread`, inset so its outer edge lands on the
+     obstruction's edge; the same upright post reads at either end of a broadside board and at
+     the far and near ends of an end-on one. Feet-anchored at the bottom centre. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="6" height="26" viewBox="0 0 6 26" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Rubber foot. -->
+  <path d="M0.6 25.4 L0.9 23.4 L5.1 23.4 L5.4 25.4 Z" fill="#3a3436"/>
+  <!-- The pole: cream, two red bands, shaded down its right side. -->
+  <path d="M1.8 6.2 L4.2 6.2 L4.2 23.4 L1.8 23.4 Z" fill="#e8dfc8" stroke="none"/>
+  <path d="M1.8 9.6 L4.2 9.6 L4.2 12.8 L1.8 12.8 Z M1.8 16 L4.2 16 L4.2 19.2 L1.8 19.2 Z" fill="#c4503c" stroke="none"/>
+  <path d="M3.4 6.2 L4.2 6.2 L4.2 23.4 L3.4 23.4 Z" fill="#3b2020" fill-opacity="0.26" stroke="none"/>
+  <path d="M1.8 6.2 L4.2 6.2 L4.2 23.4 L1.8 23.4 Z" fill="none" stroke-width="1.1"/>
+  <!-- The lamp on its bracket. -->
+  <path d="M2.1 6.2 L2.1 4.8 L3.9 4.8 L3.9 6.2 Z" fill="#3a3436" stroke-width="0.8"/>
+  <circle cx="3" cy="2.8" r="2.2" fill="#f2b53a" stroke-width="0.9"/>
+  <circle cx="2.3" cy="2.1" r="0.75" fill="#fff3c4" stroke="none"/>
 </svg>
