@@ -515,6 +515,22 @@ purpose").
 - [ ] **Her own building keeps its ground-floor windows**, the one exception.
 - [ ] **The blank wall is where posters go**: the cells a later slice of M180 pastes on are
       exactly the blank ground-floor cells this draws, so a poster can never land on a window.
+- [ ] **A multi-story front with no storefront has one entrance door**
+      ([PLAYTEST-124](playtests/PLAYTEST-124.md): "now that we don't have groundfloor windows (to
+      have places for posters) we need entrances. If there is no store front we need one entrance
+      door per building front (if it's multistory). Single story can still keep windows only (no
+      posters on them)"). A storefront is already a way in, and the civic portico is the civic
+      front's; every other multi-story front gets exactly one door on its ground floor, drawn SVG
+      first, and the door's cell is not a blank cell a poster can use. A single-story front keeps
+      its windows, no door and no posters. Set by the orchestrator, open to overturn: the door's
+      column is rolled from a stream of its own so no existing roll moves, it never lands under
+      the fire escape, one door picture serves residential and every other purpose and an
+      industrial front gets a heavier steel one, and the home block — her building, kept
+      as windows — gets no extra door, since her own door is already cut into it.
+- [ ] **Her building is the whole home block** ([PLAYTEST-124](playtests/PLAYTEST-124.md): "Her
+      building is the entire home square"), as built. **"We should probably not randomize it"**
+      is asked back: whether the home block's look should be the same on every seed rather than
+      rolled like any other block's.
 - [ ] **Shown to the player before it is finished**: stills of a residential, a commercial and an
       industrial street and of her own building, at the ordinary view and zoomed out with
       `--zoom`.
