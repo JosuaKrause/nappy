@@ -43,18 +43,13 @@ says what it is *for*, not its full usage.
 
 ## A manual sequence done a second time becomes a script
 
-**The player, on why there was no catalogue to point at:** *(2026-09-22: "if you find yourself
-doing similar things over and over again that require a lot of manual work maybe that's a time
-to move them to shell scripts and note them down somewhere. is there a skill about how to use
-the scripts in the tools folder?")*
+`CLAUDE.md` states the rule, with the player's words. What it means here: when the same manual
+sequence of shell commands — git and gh housekeeping, checking on an agent, a verification pass, a
+capture, a build — comes up a second time, it becomes a script rather than being retyped a third
+time. The new script follows **cli-tools** for what it owes, gets its two CLI test cases in
+`tools/test_cli_help.sh` or `tools/test_cli_help.py`, and adds its row to the table above — all in
+the same commit, so the catalogue is never behind what it describes.
 
-When the same manual sequence of shell commands — git and gh housekeeping, checking on an agent,
-a verification pass, a capture, a build — comes up a second time, it becomes a script rather than
-being retyped or re-derived a third time. The new script follows **cli-tools** for what it owes
-(`--help`/`-h`, rejection of anything it does not understand, one place its flag list lives), gets
-its two CLI test cases in `tools/test_cli_help.sh` or `tools/test_cli_help.py`, and adds its row
-to the table above — all in the same commit, so the catalogue is never behind what it describes.
-
-**The check below is enforced, not remembered.** `tools/test_cli_help.sh` fails if any `tools/*.sh`
+**The row is enforced, not remembered.** `tools/test_cli_help.sh` fails if any `tools/*.sh`
 or `tools/*.py` entry point (excluding `lib_*` and `test_*`) has no row in this table, so a tool
 added without its row is a red check rather than a gap somebody has to notice.

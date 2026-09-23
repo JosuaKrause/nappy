@@ -13,6 +13,7 @@
 #     sub-agent's own markers from before the compact are untouched
 #   - each path added to the mapping (src/routes/**, src/city/traffic_signals.gd,
 #     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd) injects its skill
+#   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
@@ -172,6 +173,13 @@ assert_eq "src/ground_shape.gd -> crowd-traffic (not city -- it is not under src
     "crowd-traffic,godot,orchestrating," "$(project_rules_skills ground-shape-session "" "src/ground_shape.gd")"
 assert_eq "src/autoload/telemetry.gd -> telemetry" \
     "godot,orchestrating,telemetry," "$(project_rules_skills telemetry-session "" "src/autoload/telemetry.gd")"
+
+# src/visuals/ holds loader code, not pictures: it gets the GDScript rules and never the
+# PNG-drawing ones, which govern art/illustrated/ alone.
+assert_eq "src/visuals/atlas_library.gd -> godot + orchestrating, not illustrated-png" \
+    "godot,orchestrating," "$(project_rules_skills visuals-session "" "src/visuals/atlas_library.gd")"
+assert_eq "art/illustrated/**.png -> illustrated-png" \
+    "illustrated-png," "$(project_rules_skills illustrated-session "" "art/illustrated/svg-transfer/x/y.png")"
 
 # Control: an unrelated src/city/*.gd file gets city but not crowd-traffic, proving the new
 # crowd-traffic mapping is scoped to the three named files and not all of src/city/.

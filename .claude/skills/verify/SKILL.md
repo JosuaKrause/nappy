@@ -1,6 +1,6 @@
 ---
 name: verify
-description: How to verify a change in this project — the three tools, what each one cannot see, the dev flags that make a screenshot worth taking, and the testing policy. Load this BEFORE committing anything, and BEFORE writing or changing a test.
+description: How to verify a change in this project — the verification commands, what each one cannot see, the dev flags that make a screenshot worth taking, and the testing policy. Load this BEFORE committing anything, and BEFORE writing or changing a test.
 ---
 
 # Verification
@@ -41,7 +41,7 @@ and `"headless"` is the name Godot gives that null server.
 
 **Whether a sub-agent can take one is a property of its environment, not of being a sub-agent** —
 some background worktrees reach a display and photograph the game perfectly well. So do not assume
-either way: **the guard is what answers it**, because a run with no display now says so and exits
+either way: **the guard is what answers it**, because a run with no display says so and exits
 instead of sitting there. If an agent reports that capture "stalls" or hangs, that is the message it
 should have got, and the branch is worth pulling and photographing from a session that does have a
 display. A missing screenshot from an agent is a missing check, never evidence that the change is
@@ -71,7 +71,7 @@ check and the full suite on the *merge result*. So the full run happens on exact
 matters, on a machine that is not yours, whether or not anybody remembers to ask for it.
 
 **Which makes a local full run duplicated cost.** It is the slow thing in the loop by an order of
-magnitude, and what it buys is an answer eight minutes before the PR gives the same answer about a
+magnitude, and what it buys is an answer minutes before the PR gives the same answer about a
 better tree. **A `PARTIAL RUN` marker is the expected state of a local run**, not a failure to
 apologise for.
 
@@ -81,10 +81,6 @@ apologise for.
   radius before you push a red PR for everyone to look at.
 - **CI came back red and you are iterating on the failure.** Reproducing locally beats pushing to
   ask a question.
-
-**Do not quote a check count in a doc.** It changes on almost every milestone, and three files in
-this repo once carried three different answers to that one question. Say what the command is, not
-what it prints.
 
 ## What each one cannot see
 
@@ -133,9 +129,9 @@ somewhere.
   notch wall for the whole run — and its log looks exactly like a run. If a `--walk` rig is meant
   to meet something, check it actually travelled before reading anything else off the run.
 - **`--walk 1s5e` and `--walk 3@45@2e`** walk a script of timed steps instead, left to right: one
-  second south then five east, or three seconds at a bearing of 45° then two east. **A bearing is
-  what a player's route actually looks like** — a press sets an arbitrary unit vector, so most
-  headings are diagonal and a four-letter script can only reproduce the axes. Degrees run clockwise
+  second south then five east, or three seconds at a bearing of 45° then two east (whole seconds
+  only). **A bearing is what a player's route actually looks like** — a press sets an arbitrary
+  unit vector, so most headings are diagonal and a four-letter script can only reproduce the axes. Degrees run clockwise
   from north, and the pair of `@`s is a delimiter rather than decoration: a bearing's digits would
   otherwise run into the next step's. Every step presses both `move_*` axes at fractional strength
   through the same call the touch scheme uses, so the vector stays unit length and the rig walks at
@@ -147,10 +143,10 @@ somewhere.
   hold a direction can only ever demonstrate the *wrong* answer to a pursuit; the delay is the axis
   worth measuring — what the right answer costs when it is given late.
 - **`--press <action> <seconds>`** pushes a real input event. Nothing in the suite or in a
-  screenshot presses a key on its own, so a pause screen that never opens passes both. Note what its
-  first version got wrong: `Input.action_press()` sets the **polled** state and nothing else, which
-  is right for `--walk` and useless for anything answered in `_unhandled_input`. Push a real event
-  with `Input.parse_input_event`.
+  screenshot presses a key on its own, so a pause screen that never opens passes both.
+  `Input.action_press()` sets the **polled** state and nothing else, which is right for `--walk`
+  and useless for anything answered in `_unhandled_input`, so the flag pushes a real event with
+  `Input.parse_input_event`.
 - **`--press key:r 3.5`** — a bare key is not an action. `InputEventAction` reaches actions in the
   input map and nothing else, while a screen's own shortcuts are usually read as **keycodes**. The
   flag may be repeated, because one tap can only ever photograph one screen and what usually needs
@@ -158,28 +154,26 @@ somewhere.
   re-presses, so a rig restarting the game loops for ever — read the boot lines rather than waiting
   for the PNG.
 - **`--spawn corner:nw|ne|sw|se`** points the camera where two border bands meet. It stands a couple
-  of tiles inside the corner, on the pavement — `_nearest_walkable` will otherwise happily leave her
-  on the boundary carriageway.
+  of tiles inside the corner, on the pavement — `DevRig.nearest_walkable` (`src/dev/dev_rig.gd`,
+  the closest walkable point to a target) will otherwise happily leave her on the boundary
+  carriageway.
 - **`--after` is in seconds, not frames.** The windowed build draws ~110fps, so a frame count is
   quietly useless.
-
 - **`--press snapshot_burst <seconds>` records a burst instead of a still.** *(2026-09-11: "use
   burst mode for mid turn capture"; "add somewhere that taking burst captures is an option when
   recording evidence / creating screenshots".)* A still lands on a two-second turn, a stride or a
   wing beat by luck, and cannot establish that motion was smooth; the burst is the same rig with
   thirty-six frames over three seconds and a timing record, so **evidence about anything that
-  moves is a burst, not a screenshot** — two branches spent their whole capture budget failing to
-  photograph a turn before anybody reached for it. `tools/shot.sh out.png 10 --seed 4242 --spawn
+  moves is a burst, not a screenshot**. `tools/shot.sh out.png 10 --seed 4242 --spawn
   signal --layers 2,3 --press snapshot_burst 5` records from second five to eight and quits at
   ten; `tools/clip.sh` makes the video, and the **session-captures** skill says what is kept and
   what a frame may be said to prove.
 - **`--invincible` keeps the day running so the capture can wait for its moment.** *(2026-09-11:
   "make future agents aware that invincibility exists to capture things where timing to avoid a
   death screen would be difficult to do".)* A rig standing still at a busy junction pushes the
-  meter to a hundred inside ten seconds, and a `--after 13` shot lands on the summary screen —
-  that is how one branch lost its best try at a turn. Under the flag nothing ends the day, the
-  clock never moves and the excitement meter never rises, so the light stays where the day
-  started and no alarm flashes over the capture; a car or a hard fail does not end it either. So
+  meter to a hundred inside ten seconds, and a `--after 13` shot lands on the summary screen.
+  Under the flag nothing ends the day, the clock never moves and the excitement meter never
+  rises, so the light stays where the day started and no alarm flashes over the capture; a car or a hard fail does not end it either. So
   **any capture whose timing is hard to hit adds `--invincible`** and waits as long as it needs
   to. The HUD shows `INVINCIBLE` and the run log says so in its day header, which is what stops
   the picture being mistaken for a real run; a capture meant to show *cost* or a *loss* leaves
@@ -224,10 +218,8 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
   to ask (%d)"`) is what stops a passing test from having checked nothing; an **ordering between two
   constants** survives every rebalance that respects it; and anything the incident list in this file
   names, which is a defect that has already shipped once.
-- **A test that is true by luck is worse than no test.** Two have been found here — a determinism
-  guarantee that stayed green because one seed happened to generate a different city, and a crowd
-  predicate that asserted the wrong thing for eleven milestones. **If a test would pass with the
-  code deleted, or passes only on the seed it was written against, it is not holding anything.**
+- **A test that is true by luck is worse than no test**: if it would pass with the code deleted,
+  or passes only on the seed it was written against, it is not holding anything.
 - **An identity is not the property.** Asserting a relationship that is *true* but is not the
   condition the sentence beside it claims pins nothing.
 - The suite must exit clean. **Leak warnings at shutdown mean a real retain bug.**
@@ -238,18 +230,17 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
 load.** `run_tests.gd` calls each suite's `run()` synchronously and then `get_tree().quit()`; an
 error *inside* a suite's own `run()` — a runtime bug in the suite's own test logic, not a parse
 error — aborts `_ready()` before the quit, so the headless process sits there forever printing
-nothing. That path is still open and still worth knowing about; the loader guard below closes
-only the one below it.
+nothing. The loader guard below does not cover this path.
 
 **A suite that fails to parse is a named `FAIL` line and a normal exit, not a hang.** `_discover`
-still loads every suite before running any, but `load()` on a broken suite returns a `GDScript`
-that `can_instantiate()` refuses, and `_ready()` checks that before calling `.new()` — the call
-that used to fail with nothing to catch it and take the whole run down with it. A suite that
+loads every suite before running any, but `load()` on a broken suite returns a `GDScript`
+that `can_instantiate()` refuses, and `_ready()` checks that before calling `.new()`. A suite that
 cannot load is recorded as a failure by name, the suites that did load still run, and the runner
 reaches `quit()` non-zero either way. `tests/runner_fixtures/unparseable_suite.gd.src` is the
 fixture that proves it — kept off its real `.gd` name because an unparseable `.gd` anywhere in
 the tree can break the atlas bake's own engine boot when `.godot/`'s class-name cache is cold; see
-that file's own header and M172 in `docs/DECISIONS.md`.
+that file's own header and M172, a suite that fails to parse fails the test run, in
+`docs/DECISIONS.md`.
 
 **The way to see a genuine hang is to stop piping the run into `tail`** — `tail` prints nothing
 until EOF, so a hung run and a silent one look identical. Redirect to a file and read it; the

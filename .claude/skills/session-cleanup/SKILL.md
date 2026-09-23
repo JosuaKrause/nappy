@@ -12,17 +12,8 @@ answers to the same question, and no way to tell which is current.**
 
 It is a short pass when it is done every time and a milestone when it is not.
 
-## The standard this enforces
-
-**Every document states what is true now and only what is true now.** No "used to be", no "since
-M33", no "this was wrong for twelve milestones", no caveats about what a sentence meant before.
-
-**Keep the reason a thing is the way it is; move the incident that taught it.** "A negative-width
-`Rect2` is normalised on the way through, so the sprite lands a full width to one side" is a rule.
-"M12c spent a day on this" is history.
-
-**The test is a reader, not a diff:** somebody who opens any single file and believes every sentence
-in it is wrong about nothing.
+The standard it enforces is `CLAUDE.md`'s "Documentation is written in the present tense": every
+document states what is true now, keeps the reason and moves the incident to `DECISIONS.md`.
 
 ## The pass
 
@@ -30,7 +21,7 @@ in it is wrong about nothing.
 
 Check what the session touched, then check what claims things about it. The usual suspects:
 
-- **`docs/HANDOFF.md`** — the tree state, the branch, what is queued. This file is wrong more often
+- **`docs/HANDOFF.md`** — the tree state and what is queued. This file is wrong more often
   than any other because it is the one that talks about *now*.
 - **`CLAUDE.md` and `.claude/skills/`** — did a rule change, or a file get renamed out from under
   one?
@@ -40,13 +31,9 @@ Check what the session touched, then check what claims things about it. The usua
 
 ### 2. Never quote a number with a short shelf life
 
-**Do not put a check count, a commit hash you are not currently standing on, or a measured figure
-into a doc unless the doc's job is to record that measurement.** Say what the command is, not what
-it prints. This repo once carried three different answers to "how many checks does the suite run".
-
-Run `./tools/lint.sh` rather than relying on the eye to catch this — it scans the governed docs for
-exactly these shapes (a commit hash, a branch name, a check count, a ticked box, a status word in a
-heading) and fails loudly on a hit.
+`CLAUDE.md` states the rule. Run `./tools/lint.sh` rather than relying on the eye to catch a
+break of it: it scans the governed docs for exactly these shapes (a commit hash, a branch name, a
+check count, a ticked box, a status word in a heading) and fails loudly on a hit.
 
 Where a measurement *is* the point — a density, a cost, a ratio — say what it was measured over and
 when, and put it in `docs/DECISIONS.md` rather than in a rule.
@@ -54,21 +41,18 @@ when, and put it in `docs/DECISIONS.md` rather than in a rule.
 ### 2a. Grep for what pointed at anything you moved
 
 **A reference is not visible from the file being moved.** If this session renamed, split or
-relocated anything, search the repo for its old name before finishing. Six documents pointed at
-`CLAUDE.md` sections by name and all six were wrong within the hour of those sections becoming
-skills — correct when written, stale immediately, and invisible from the diff that caused it.
+relocated anything, search the repo for its old name before finishing — hooks, `.codex/`, `tools/`
+and settings included:
 
 ```sh
-grep -rn "<old name>" --include='*.md' --include='*.gd' . | grep -v DECISIONS.md
+git grep -n "<old name>" -- ':!docs/DECISIONS.md' ':!docs/playtests/'
 ```
 
 ### 2b. The drift guard
 
 **If `src/autoload/tuning.gd` or `src/events/event_catalogue.gd` changed this session**, grep the
 governed docs for the name of every constant or row that moved and re-check every quoted figure
-against it. The number re-audit that produced M40's finishing pass found all of its drift around
-retuned constants whose doc sentences stood still — the code changed and nothing reread the
-sentence that quoted its old value.
+against it: when the code changes, nothing else rereads the sentence that quoted its old value.
 
 ### 3. Move what is now history
 
@@ -79,18 +63,16 @@ measurement that justified them. Dated, and naming the milestone and playtest th
 **The test:** every fact lifted out of a docstring or a rule must be findable in `DECISIONS.md` by
 searching for the symbol or the noun it was attached to.
 
-**The playtest files are never rewritten.** `docs/playtests/PLAYTEST-NN.md` are primary sources — a player's
-own words on a date — and putting one in the present tense would destroy the only record of what was
-said. `DECISIONS.md` cites them.
+**The playtest files are never rewritten**, not even into the present tense: they are the only
+record of what was said, and `DECISIONS.md` cites them.
 
 ### 4. Prune the queue
 
 In `docs/TODO.md`:
 
-- **Tick what got done**, and move the completed entry's narrative out to `DECISIONS.md`. A ticked
-  item is history the moment it is ticked.
-- **Check the headings.** A milestone heading that says "not started" over merged work is the
-  cheapest possible lie and the easiest to miss.
+- **Remove what got done.** A finished entry leaves `TODO.md` and its record goes to
+  `DECISIONS.md`; nothing is ticked.
+- **No status words in headings.** A heading names the work, never its state.
 - **Reassess anything long open.** An item nobody has touched in ten milestones is either still
   wanted, superseded, or already done by something else. Say which, in the entry. An open item with
   no reassessment date is an item that will be read as current forever.
@@ -99,24 +81,20 @@ In `docs/TODO.md`:
 
 ### 5. Check the rules did not drift out of their skill
 
-If this session established a working rule, it belongs in a skill or in `CLAUDE.md` — **not only in
-an assistant's memory**, which is invisible to everybody else who opens the repo. If a skill has
-grown past what it is about, split it rather than letting `CLAUDE.md` grow.
+If this session established a working rule, it is in a skill or in `CLAUDE.md` (see its "Notes
+belong in the repo"). If a skill has grown past what it is about, split it rather than letting
+`CLAUDE.md` grow.
 
 ### 6. Commit and propose
 
 Commit each piece as it is settled; a decision that is only in the working tree is only in the
-session. Push the branch and create or update its PR. Leave it open unless the user explicitly
-allows merging in this session; this also governs auto-merge and delegated merges. If a branch
-is fully merged, delete it — see the **committing** skill.
+session. Push the branch and create or update its PR. Merging follows **committing** (explicit
+permission in this session), and so does retiring a merged branch.
 
 ### 6a. Leave the review list true
 
-`docs/REVIEW.md` holds what waits on a person. Anything this session built that a rig measured
-and nobody felt gets an entry — what to do, where to look, the question — and anything a playtest
-this session covered leaves, with its finding in the playtest file. A run is asked against this
-list, so a stale entry costs the player a look at something already settled, and a missing one
-costs a whole run.
+`docs/REVIEW.md` holds what waits on a person: **committing** says when a PR adds an entry and
+**playtest-feedback** when a playtest removes one; check both happened for this session's work.
 
 ### 7. Leave the handoff true
 

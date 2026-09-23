@@ -25,9 +25,10 @@ the environment manually or install packages with bare `pip`.
 
 ## Check it
 
-`tools/pycheck.sh` is the gate for everything under `tools/*.py`, and CI runs it on every push and
-pull request. In order: `ruff check`, `ruff format --check`, `mypy` (strict), then every
-`tools/test_*.py` `unittest` file. `tools/pycheck.sh --fix` lets ruff rewrite imports and formatting first.
+`tools/pycheck.sh` is the gate for everything under `tools/*.py`, and CI runs it on pushes to
+`main` and on pull requests. In order: `ruff check`, `ruff format --check`, `mypy` (strict), then
+the `unittest` files listed in `pycheck.sh`; a new one is added there. `tools/pycheck.sh --fix`
+lets ruff rewrite imports and formatting first.
 
 **Run it before committing anything that touches `tools/*.py`, `pyproject.toml` or `uv.lock`.** A
 hit is a stop, the same as `lint.sh`'s.

@@ -102,7 +102,7 @@ case "$path" in
 	*/src/autoload/telemetry.gd) wanted+=(telemetry) ;;
 esac
 case "$path" in
-	*/art/illustrated/*|*/src/visuals/*) wanted+=(illustrated-png) ;;
+	*/art/illustrated/*)       wanted+=(illustrated-png) ;;
 esac
 case "$path" in
 	*/docs/evidence/archive/rejected-graphics/*) wanted+=(rejected-graphics) ;;
