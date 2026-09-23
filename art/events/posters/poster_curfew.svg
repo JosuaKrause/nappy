@@ -1,0 +1,24 @@
+<!-- The curfew sheet, from day 6 onward: the rules notice's inset header, a large plain clock
+     with a dark rim, tick marks and its hands at four, then two of the rules' entries (a short
+     dark bar, a gap, two gray print lines) and the same red stamp. After the player's poster
+     reference sheet. Same 20x22 sheet as every poster kind; see poster_leader.svg. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="6" y="3" width="20" height="22" fill="#ebe4d2"/>
+  <rect x="8" y="5" width="16" height="2" fill="#2c2a30"/>
+  <g shape-rendering="geometricPrecision">
+    <circle cx="16" cy="11.6" r="3.4" fill="#f6f2e8" stroke="#221f28" stroke-width="0.9"/>
+    <path d="M16.00 9.20L16.00 8.55M17.35 9.26L17.52 8.96M18.34 10.25L18.64 10.07M18.40 11.60L19.05 11.60M18.34 12.95L18.64 13.12M17.35 13.94L17.52 14.24M16.00 14.00L16.00 14.65M14.65 13.94L14.47 14.24M13.66 12.95L13.36 13.12M13.60 11.60L12.95 11.60M13.66 10.25L13.36 10.07M14.65 9.26L14.47 8.96" stroke="#3b3034" stroke-width="0.35"/>
+    <path d="M16 11.6L17.47 12.45M16 11.6L16 9.1" stroke="#221f28" stroke-width="0.6" stroke-linecap="round"/>
+  </g>
+  <rect x="8" y="16" width="2" height="3" fill="#3b3034"/>
+  <rect x="11" y="16" width="13" height="1" fill="#8f8a80"/>
+  <rect x="11" y="18" width="9" height="1" fill="#8f8a80"/>
+  <rect x="8" y="20" width="2" height="3" fill="#3b3034"/>
+  <rect x="11" y="20" width="12" height="1" fill="#8f8a80"/>
+  <rect x="11" y="22" width="7" height="1" fill="#8f8a80"/>
+  <g shape-rendering="geometricPrecision">
+    <circle cx="21.8" cy="20.2" r="2.7" fill="none" stroke="#a33b34" stroke-width="0.7"/>
+    <path d="M19.9 21.3L23.7 19.1" stroke="#a33b34" stroke-width="1.5" stroke-linecap="butt"/>
+  </g>
+  <rect x="6.5" y="3.5" width="19" height="21" fill="none" stroke="#3b3034" stroke-width="1"/>
+</svg>
