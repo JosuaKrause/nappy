@@ -199,23 +199,26 @@ rule 2, above: the baby is never in narrative danger from the regime directly); 
 is damning to be caught with and harmless beside the baby. **She is never told the plan**: each
 errand is small and deniable, and she learns what they were for only when the windows go dark.
 And **nothing before the last night rests on her alone**: the group has other couriers, and a
-task she skips is done by somebody else at a higher cost, which is why she can miss some and it
-is still enough — see `Tuning.RESISTANCE_GOAL`. The last night has to be her, because under
-curfew with the army on the streets only a parent with a crying baby reaches that door.
+task she skips is answered by somebody else, which is why she can miss some and it is still
+enough — see `Tuning.RESISTANCE_GOAL`. **That number is the group's trust**: only a courier who
+has proven reliable is given the key, which is why the last night is offered only at the goal.
+The last night has to be her, because under curfew with the army on the streets only a parent
+out walking a baby who won't settle reaches that door. **Her cover is never a crying baby**:
+crying is a lost day.
 
 The tasks escalate: trust, carry, carry back, scout, protect, rehearse, retrieve, scout again,
 act.
 
 | Task | What it accomplishes | If she skips it |
 | --- | --- | --- |
-| The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she reaches is him — which one exactly is decided by how she plays. | The group asks again. |
+| The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she reaches is him — which one exactly is decided by how she plays. | Somebody else answers. |
 | The package at the van's drop | From the group to the neighbor. The driver is a sympathizer; the package is tools and a lamp. She carries it home, which is where the neighbor lives. | Somebody else risks the building. |
 | The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A cordoned ruin is where nobody goes, so it is the dead drop. Whether the fire was an accident is never answered. | The drawing goes out another way. |
 | Cross a named door | The districts closed that morning and the station is across one. She finds out whether a stroller gets through. | Somebody else finds out. |
 | Warn the neighbor before the raid | The regime has found the worker. She reaches the neighbor out in the city before they walk home into the vans, which are at her own building when she gets back. Warned, the neighbor runs; not warned, the neighbor is taken, and theirs is the face crossed out on the wanted notice. The door is sealed the next morning either way, and the drawing already left at the burnt shell. | The same sealed door, for the worse reason. |
-| Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | The group goes in not knowing. |
+| Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | Somebody else answers. |
 | The swing | Feeling watched, the neighbor hid the station key at the swing before the raid, so it is there whether or not she warned them. The parks are being fenced one at a time and the group knows this one is next, which is why it is today; she gets the key out as the park is taken. | Another courier fetches it. |
-| Into a roadblock's band | The army arrived that morning. She finds out how close a parent with a crying baby can come to a held street before its guard moves, because the last night's way passes one; nobody looks twice at a screaming baby, so the cost of the task is its cover, and the guard's reach is still the guard's reach. | The last night is a guess. |
+| Into a roadblock's band | The army arrived that morning. She finds out how close a parent with a baby who won't settle can come to a held street before its guard moves, because the last night's way passes one; nobody looks twice at a parent walking a baby who won't settle, so the cost of the task is its cover, and the guard's reach is still the guard's reach. | Somebody else answers. |
 | The station's front door | A hand-over: she passes the key to the neighbor's colleague on the night shift and walks away. The minutes he needs are why the lights go out once she is at a distance. Blackout, uprising, bombing, escape. | The neutral ending. |
 
 ## Endings
@@ -227,7 +230,9 @@ them. Short, flat epilogue text over a static shot of the apartment window.
 
 ### Neutral — survive 14 days, resistance incomplete
 
-The baby sleeps. The city is quiet now, in the way an occupied city is quiet. Epilogue over
+The baby sleeps. On the last night nothing happens: the group gave its key to nobody it
+trusted, the uprising waits, and she goes home. The city is quiet now, in the way an occupied
+city is quiet. Epilogue over
 the same daily walk route, now empty of everything the player learned to avoid.
 
 ### Good — resistance complete + day 14 sabotage
