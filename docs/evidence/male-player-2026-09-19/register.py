@@ -46,8 +46,8 @@ def config():
         HERE / "prepare.py",
         HERE / "render-sources.gd",
         ROOT / "tools/remove-checkerboard.py",
-        ROOT / "docs/evidence/graphics-reference-urban-01.jpeg",
-        ROOT / "docs/evidence/graphics-reference-cardinal.jpeg",
+        ROOT / "docs/style-references/graphics-reference-urban-01.jpeg",
+        ROOT / "docs/style-references/graphics-reference-cardinal.jpeg",
     ]
     paths += sorted((HERE / "inputs").glob("*.png"))
     paths += sorted((ROOT / "assets/rig").glob("father_*.svg"))

@@ -57,8 +57,8 @@ Generator: built-in `image_gen.imagegen`.
 The binding identity target is
 `docs/evidence/comic-carrying-redraw-2026-09-12/source/pushing-atlas-edit-target.png`. It contains
 only the two accepted original pushing rows; rejected carrying rows never enter this generation.
-`docs/evidence/graphics-reference-urban-01.jpeg` and
-`docs/evidence/graphics-reference-cardinal.jpeg` are style references only. The reviewed P2 SVG
+`docs/style-references/graphics-reference-urban-01.jpeg` and
+`docs/style-references/graphics-reference-cardinal.jpeg` are style references only. The reviewed P2 SVG
 sheet supplies pose and leg-ownership guidance. `input-manifest.json` freezes the hashes and roles
 of these inputs, all prompts, all raw selected results, the P1 anchor art, P2 generation SVGs, pram
 PNGs, extraction code, recipe scripts, font, CPython 3.14.7 and Pillow 12.3.0.

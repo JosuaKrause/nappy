@@ -121,6 +121,13 @@ const GAME_OVER := Color("b2434a")
 const CHALK := Color(0.92, 0.92, 0.88, 0.62)
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
+## `HomeArrow`'s own form, in red, for a one-place resistance task — a decided exception to "no
+## quest log or marker for the resistance" (`CLAUDE.md`, "Things deliberately not done"),
+## narrowed to one-place tasks only. *(PLAYTEST-117: "a red arrow (like the blue home arrow but
+## red) to point to tasks where we need to go to a specific location".)* Distinct from every
+## other red in this file — `SIGNAL_RED`, `MARK_LETHAL`, `GAME_OVER` — since none of those is
+## about a place to walk to.
+const TASK_ARROW := Color("d1453a")
 
 # ------------------------------------------------------------------ buttons ---
 # `ModeButton` draws a solid filled disc with a white glyph on top — one shared, neutral fill

@@ -72,7 +72,7 @@ is the moment somebody is about to touch the file.
 | `art/illustrated/**` | **illustrated-png** |
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
 | `docs/evidence/archive/session-captures/**` | **session-captures** |
-| `docs/reference/**` | **reference-photos** |
+| `docs/reference/**`, `docs/style-references/**` | **reference-photos** |
 | any `*.gd` | **godot** |
 | any `*.svg` | **svg-art** |
 | `src/**`, `tests/**` | **orchestrating** |
@@ -254,8 +254,9 @@ Each was a decision. Do not "fix" one without a reason; the reasoning is in `doc
   counting distinct routes is a max flow; the home's doorstep is exempt from the route-redundancy
   guarantee (**city**); no spatial hash, no `impulse` field, and events defined in code rather
   than `.tres` (**events**).
-- **No quest log or marker for the resistance** — *asked for no marker and no quest log (playtest
-  2) · overturned on 2026-08-31 to "Only the first encounter (the chalk mark) should come without
-  hint" (playtest 16, finding 7), because the risk was run and did not pay off.* The first
-  encounter still comes with no hint at all, because finding the difficulty dial is meant to be
-  the player's own doing. After that the resistance speaks.
+- **No quest log for the resistance** — *asked for no marker and no quest log (playtest 2) ·
+  overturned on 2026-08-31 to "Only the first encounter (the chalk mark) should come without
+  hint" (playtest 16, finding 7) · overturned again on 2026-09-23: "we do now hint at the first
+  task" (playtest 122).* Nothing lists the tasks and the day brief carries none; day 6's brief
+  names the rumor of chalk, and a task sent to one place has a red arrow (M181, the resistance
+  has a reason, and a task is one day).

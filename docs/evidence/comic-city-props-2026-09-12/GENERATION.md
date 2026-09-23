@@ -8,8 +8,8 @@ anchor authority. The corrected white-background redraws in `raw/roof-white.png`
 tile. The original checker-background raws remain beside them as retained generation inputs.
 The OpenAI image generation tool created the redraws using the saved style-transfer and
 background-extraction prompts. `source/roof-atlas.png` and `source/trees-atlas.png` retain the
-atlas inputs supplied to generation. `docs/evidence/graphics-reference-urban-01.jpeg` and
-`docs/evidence/graphics-reference-cardinal.jpeg` supply the comic drawing style, not subjects
+atlas inputs supplied to generation. `docs/style-references/graphics-reference-urban-01.jpeg` and
+`docs/style-references/graphics-reference-cardinal.jpeg` supply the comic drawing style, not subjects
 or layouts.
 Exact prompts are preserved in `prompts/roof.txt`, `prompts/roof-background.txt`,
 `prompts/trees.txt`, `prompts/trees-background.txt` and `prompts/pit.txt`.

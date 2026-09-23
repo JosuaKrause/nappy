@@ -32,8 +32,8 @@ The mother atlas uses these inputs in order:
    pushing-mother and pram concept sheet.
 3. `docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png` — carrying
    mother concept sheet.
-4. `docs/evidence/graphics-reference-urban-01.jpeg` — approved comic style reference only.
-5. `docs/evidence/graphics-reference-cardinal.jpeg` — approved comic style reference only.
+4. `docs/style-references/graphics-reference-urban-01.jpeg` — approved comic style reference only.
+5. `docs/style-references/graphics-reference-cardinal.jpeg` — approved comic style reference only.
 
 `mother-prompt.txt` produced the retained first candidate,
 `mother-atlas-generated-v1.png`, 1402×1122 RGB. It established a coherent family but made the

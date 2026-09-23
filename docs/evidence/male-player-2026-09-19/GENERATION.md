@@ -54,7 +54,7 @@ The source grids and individual renders use white only as a review background.
 `reference-male-scene.jpeg` is the supplied AI-generated scene
 `Gemini_Generated_Image_7080ww7080ww7080.jpeg`: its central man's short hair and blue shirt
 supply the male silhouette and clothing identity. The two official style inputs,
-`../graphics-reference-urban-01.jpeg` and `../graphics-reference-cardinal.jpeg`,
+`../../style-references/graphics-reference-urban-01.jpeg` and `../../style-references/graphics-reference-cardinal.jpeg`,
 govern comic contours, material detail and deliberate shadows, excluding their interface.
 
 ## Generation

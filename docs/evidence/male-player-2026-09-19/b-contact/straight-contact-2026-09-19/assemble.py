@@ -46,8 +46,8 @@ def input_record():
         HERE.parent / "inputs/father_front_diagonal_b-8x.png",
         HERE.parent / "proof/side-identity-upper.png",
         HERE.parent / "proof/front_diagonal-identity-upper.png",
-        ROOT / "docs/evidence/graphics-reference-urban-01.jpeg",
-        ROOT / "docs/evidence/graphics-reference-cardinal.jpeg",
+        ROOT / "docs/style-references/graphics-reference-urban-01.jpeg",
+        ROOT / "docs/style-references/graphics-reference-cardinal.jpeg",
     ]
     return {"pillow": pillow_version, "files": {
         str(p.relative_to(ROOT)): digest(p) for p in paths

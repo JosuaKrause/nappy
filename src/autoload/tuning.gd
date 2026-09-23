@@ -271,7 +271,11 @@ const DAY_LENGTH_SECONDS := 180.0
 ## Curfew (day 6+) shortens the day by this fraction.
 const CURFEW_DAY_LENGTH_MULTIPLIER := 0.8
 
-const RESISTANCE_GOAL := 4
+## Five of the tasks the calendar carries — `ResistanceSteps`'s own row count, which this slice
+## builds six of eight for (days 10 and 11 wait on a later slice; see that file's `_build()`) —
+## so a player who does all the legwork bar one still reaches the good ending. The day-14
+## sabotage is a must on top of it: `GameState.earned_good_ending()` asks for both.
+const RESISTANCE_GOAL := 5
 
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
@@ -295,10 +299,11 @@ const HEAT_PRESSES_POPULATION := 1.6
 ## centre becomes 13.5/s. Deliberately the smaller of the two multipliers — an intensity rise is the
 ## one the player feels without seeing anything change, so it is the seasoning rather than the meal.
 const HEAT_PRESSES_INTENSITY := 1.35
-## The progress at which a pressing row stops merely running its route and starts coming over. Half
-## way, so the first half of the subquest is the city being *denser* and the second is it being
+## The progress at which a pressing row stops merely running its route and starts coming over. As
+## close to half way through `RESISTANCE_GOAL` as a whole task lets it land (`roundi(5 / 2.0)`),
+## so the first half of the subquest is the city being *denser* and the second is it being
 ## *interested* — two escalations rather than one continuous number nobody can name the moment of.
-const HEAT_INVESTIGATES_LEVEL := 2
+const HEAT_INVESTIGATES_LEVEL := 3
 ## How fast it follows, and it is the same 130px/s every other pursuer in the game moves at.
 ## `validate_pursuit` allows the band `WALK_SPEED + PURSUIT_MIN_MARGIN` to
 ## `RUN_SPEED - PURSUIT_MIN_MARGIN` — 112 to 148 — and a second speed inside it would be a second
@@ -318,8 +323,9 @@ const HEAT_INVESTIGATE_SECONDS := 4.0
 ## number rather than the patrol's `HEAT_INVESTIGATES_LEVEL`, deliberately: sharing one would put
 ## both rungs of the ladder in the same moment, where neither reads as its own step. *(Player,
 ## 2026-09-02, on when the van should start hunting: "after the patrol but still early enough to
-## happen more than just once".)*
-const HEAT_HUNTS_LEVEL := 3
+## happen more than just once".)* `RESISTANCE_GOAL - 1` keeps the old ratio's own meaning — one
+## task's worth of progress left before the goal — rather than the fraction that produced it.
+const HEAT_HUNTS_LEVEL := RESISTANCE_GOAL - 1
 ## How fast it hunts once it starts — the same 130px/s every other pursuer in the game moves at
 ## (`charging_dog`, `alley_robbery`, the investigating patrol). `validate_pursuit` allows the band
 ## `WALK_SPEED + PURSUIT_MIN_MARGIN` to `RUN_SPEED - PURSUIT_MIN_MARGIN` — 112 to 148 — and a
@@ -786,10 +792,12 @@ const REGION_COUNT := 4
 
 ## The day the region wall starts standing. Before it the regions exist — the partition is a fact
 ## about the city from generation on — but nothing is drawn: `RegionPlanner.plan_day` returns no
-## walls and no doors. Set to the existing `roadblock` row's own `first_day`, since the player's
-## words are "checkpoints in the later acts" and this is the day the milestone that introduced them
-## already uses.
-const REGION_WALL_FIRST_DAY := 7
+## walls and no doors. Three task days after the first one, day 6 — *"we should also start with
+## doors later since tasks should come first"* — so the resistance has a reason to exist before
+## the city starts dividing itself against her. Day 9 is also the day `ResistanceSteps` sends her
+## across one of the doors this opens, on purpose: it is the day she finds out whether a stroller
+## gets through.
+const REGION_WALL_FIRST_DAY := 9
 
 ## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her — *(2026-09-10, playtest 55:
 ## "the checkpoint itself, 2s should be enough".)* Short rather than heavier than
