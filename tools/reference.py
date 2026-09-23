@@ -186,11 +186,6 @@ def main() -> int:
     folder = STYLE_FOLDER if args.style else REFERENCE_FOLDER
     dest = folder.relative_to(REPO).as_posix()
     folder.mkdir(parents=True, exist_ok=True)
-    # Godot walks every directory under the project and would import each of these as a texture,
-    # writing a .import sidecar per file and carrying them into the exported game. An empty
-    # .gdignore is the engine's own "this directory is not mine". docs/.gdignore already covers
-    # docs/style-references/ too, but writing one here costs nothing and matches docs/reference/.
-    (folder / ".gdignore").touch()
 
     failures = 0
     for source in sources(args.paths):

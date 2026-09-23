@@ -165,3 +165,61 @@ On the sixth pass's fronts (plain stretches of wall between window bays, posters
     is where posters go later. **Her own building is the exception** and keeps its ground-floor
     windows.
 
+On the combined sheet (every kind intact and torn three ways, and fronts with plain wall):
+
+> "posters all look good now"
+
+27. **The poster art is accepted**: the six intact sheets, the three tear masks and the look of
+    posters on plain wall.
+
+> "hmm, there is no version of the wanted poster without X anymore?"
+
+28. **The wanted notice has a version with no X.** Both drawn copies crossed the top-right face.
+    The orchestrator split it three ways, open to overturn: no X; the neighbor's slot crossed
+    only (a failed day 10); another face crossed only, so a wall can show "some crossed out in
+    red" on a run where the neighbor was warned.
+
+> "only one X and two Xs?"
+
+29. **The wanted notice's copies are no X, one X and two Xs**: the one-X copy crosses another
+    face, and the two-X copy adds the neighbor's slot, for a run where day 10 failed. This
+    replaces the orchestrator's split in statement 28.
+
+The orchestrator pointed out that the one-X copy crosses a face that is never the neighbor's, so
+the neighbor's cross is always the second, and asked whether to keep a no-X copy as well.
+
+> "if it's always Xed out then it cannot be mistaken with the neighbor" · "only X and double X"
+> · "sgtm"
+
+30. **The wanted notice has two copies: one X and two Xs.** The one-X copy crosses a face that is
+    never the neighbor's; the two-X copy adds the neighbor's slot. There is no copy without an X,
+    which replaces statements 28 and 29.
+
+Asked about the day-8 front, where two uniform sheets sit slightly off-center over older sheets
+and a sliver of the older one shows at an edge, as the M180 progression's "pasted over the older
+ones" asks:
+
+> "one note -- it looks like there was an attempt to put multiple posters on top of each other?"
+> · "it looks odd -- the offset should be a bit bigger so it doesn't look like a glitch"
+
+31. **A poster pasted over an older one is offset enough to read as deliberate**: more than a
+    sliver of the older sheet shows, so it does not look like a drawing glitch.
+
+> "some posters that are pasted over old ones can also just plain replace them"
+
+32. **A new poster may cover an old one exactly**, replacing it, as well as being pasted over it
+    with a visible offset.
+
+> "if it's visibly over pasted for all of them then it will look weird"
+
+33. **Visible overpasting is the exception**: most new sheets replace the old one exactly, and
+    only some are pasted over it with an offset.
+
+On the retaken mast still (PR 292) and the burst water main's redraw (PR 295), which adds a
+fountain, a crater that reads as a hole, the split pipe and lamp-topped barriers:
+
+> "mast looks fine now, too" · "new water main looks good"
+
+34. **The loudspeaker mast's picture is accepted**, standing off the road.
+35. **The burst water main's redraw is accepted**, fountain included.
+
