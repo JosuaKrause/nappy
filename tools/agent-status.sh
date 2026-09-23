@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Survey every agent worktree: what is on disk, how it stands with its own remote, its pull
 # request's CI state, its brief, and whether its transcript is still warm enough to resume.
+# Also warns when the worktree kept changing well after its credited agent's transcript did --
+# the sign of a replacement started into it without its `agent:` line being updated (see the
+# orchestrating skill's "An agent that died mid-task is replaced in its own worktree").
 # Read-only apart from a `git fetch` — see the orchestrating skill's "Recovering from an
 # interruption", whose first step this script is.
 #
@@ -9,6 +12,10 @@
 #
 # The main checkout (always the first entry in `git worktree list`, same convention
 # tools/prune-merged.sh uses) is never one of the blocks -- there is no agent in it to report on.
+#
+# AGENT_STATUS_BRIEFS overrides the briefs directory (default: the main checkout's
+# `.claude/briefs`) -- for exercising the stale-ownership warning against a throwaway brief
+# without writing into a worktree-isolated agent's own checkout.
 set -uo pipefail
 
 usage() {
@@ -18,9 +25,13 @@ usage: tools/agent-status.sh [--help|-h] [--no-fetch]
 Prints one block per agent worktree (every entry in `git worktree list` except the main
 checkout): its path, branch and uncommitted file count; how far it is ahead/behind its own
 upstream; its pull request's number, state, draft flag and CI rollup; its brief file if one
-exists; and its agent id with the age of its transcript and a warm/cold verdict.
+exists; its agent id with the age of its transcript and a warm/cold verdict; and a warning if
+the worktree changed well after that agent's last transcript write.
 
 --no-fetch skips the `git fetch` and reports ahead/behind against whatever was last fetched.
+
+AGENT_STATUS_BRIEFS=<dir> reads brief files from <dir> instead of the main checkout's
+`.claude/briefs` (env var, not a flag).
 
   tools/agent-status.sh
   tools/agent-status.sh --no-fetch
@@ -45,6 +56,11 @@ cd "$root" || exit 1
 # the last minute a transcript still counts as warm here.
 WARM_MINUTES=55
 
+# A live agent's own commit can land a few minutes after its transcript's last write -- the
+# request that triggers the write and the `git commit` that follows it are not the same instant.
+# Only drift past this margin is worth a warning.
+STALE_MARGIN_MINUTES=5
+
 mtime_of() {
     case "$(uname -s)" in
         Darwin) stat -f %m "$1" ;;
@@ -60,6 +76,10 @@ fi
 # relies on the same fact).
 main_checkout="$(cd "$(git worktree list --porcelain | awk '/^worktree /{print substr($0, 10); exit}')" \
     && pwd -P)"
+
+# Briefs live in the main checkout, except when AGENT_STATUS_BRIEFS names a stand-in -- see the
+# header comment.
+briefs_dir="${AGENT_STATUS_BRIEFS:-$main_checkout/.claude/briefs}"
 
 # One "path<TAB>branch" line per worktree, main checkout first, "(detached)" for a worktree with
 # no branch checked out.
@@ -107,6 +127,31 @@ transcript_for_id() {
     local id="$1"
     [[ -z "$id" || ! -d "$projects_dir" ]] && return 0
     find "$projects_dir" -mindepth 3 -maxdepth 3 -type f -name "agent-$id.jsonl" -path '*/subagents/*' 2>/dev/null | head -1
+}
+
+# The newest of HEAD's committer time and the mtimes of its uncommitted files (deleted paths
+# skipped -- they have none to read) -- the last moment anything in the worktree changed, a
+# commit or an edit alike. $1 is the worktree's own path.
+worktree_activity_epoch() {
+    local wt="$1" newest ct line status_code rest fpath fmtime
+    ct="$(git -C "$wt" log -1 --format=%ct 2>/dev/null)"
+    newest="${ct:-0}"
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        status_code="${line:0:2}"
+        rest="${line:3}"
+        case "$rest" in
+            *" -> "*) rest="${rest#*" -> "}" ;;
+        esac
+        case "$status_code" in
+            *D*) continue ;;
+        esac
+        fpath="$wt/$rest"
+        [[ -e "$fpath" ]] || continue
+        fmtime="$(mtime_of "$fpath" 2>/dev/null)" || continue
+        [[ -n "$fmtime" && "$fmtime" -gt "$newest" ]] && newest="$fmtime"
+    done < <(git -C "$wt" status --porcelain 2>/dev/null)
+    printf '%s' "$newest"
 }
 
 # gh's own jq engine rolls a PR's checks up to one word: "fail" if any check completed anything
@@ -170,9 +215,9 @@ for entry in "${worktrees[@]}"; do
     fi
 
     slug_branch="${branch//\//-}"
-    brief_file="$main_checkout/.claude/briefs/$slug_branch.md"
+    brief_file="$briefs_dir/$slug_branch.md"
     if [[ -f "$brief_file" ]]; then
-        echo "brief:       .claude/briefs/$slug_branch.md"
+        echo "brief:       $brief_file"
     else
         echo "brief:       none"
     fi
@@ -187,10 +232,10 @@ for entry in "${worktrees[@]}"; do
     transcript=""
     [[ -n "$agent_id" ]] && transcript="$(transcript_for_id "$agent_id")"
 
+    now="$(date +%s)"
     if [[ -z "$transcript" ]]; then
         echo "agent:       transcript not found"
     else
-        now="$(date +%s)"
         mtime="$(mtime_of "$transcript")"
         age_min=$(( (now - mtime) / 60 ))
         if [[ "$age_min" -lt "$WARM_MINUTES" ]]; then
@@ -199,6 +244,22 @@ for entry in "${worktrees[@]}"; do
             verdict="cold"
         fi
         echo "agent:       $agent_id — last write ${age_min}m ago — $verdict"
+    fi
+
+    # Stale ownership: the worktree kept changing well after the credited agent's transcript did
+    # (or nobody is credited at all while it keeps changing) -- the shape a replacement started
+    # into this worktree without its `agent:` line being appended leaves behind.
+    activity_epoch="$(worktree_activity_epoch "$path")"
+    if [[ -n "$transcript" ]]; then
+        drift_min=$(( (activity_epoch - mtime) / 60 ))
+        if [[ "$drift_min" -gt "$STALE_MARGIN_MINUTES" ]]; then
+            echo "warning:     worktree changed ${drift_min}m after $agent_id's last write — another agent working here? append its agent: line to the brief"
+        fi
+    elif [[ -z "$agent_id" ]]; then
+        recent_min=$(( (now - activity_epoch) / 60 ))
+        if [[ "$recent_min" -ge 0 && "$recent_min" -le "$WARM_MINUTES" ]]; then
+            echo "warning:     worktree changed ${recent_min}m ago with no credited agent — someone working here? append its agent: line to the brief"
+        fi
     fi
 done
 

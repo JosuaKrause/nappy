@@ -122,6 +122,10 @@ Then a blank line, then the brief. Every later `SendMessage` that changes the ag
 task is appended under `## Amendment <ISO date>`, so the file on disk stays what the agent was
 actually told rather than what it was told at spawn time.
 
+**Any agent started into an existing worktree gets its `agent:` line appended the moment its id
+is known** — a fresh spawn and a replacement into a dead agent's worktree alike; see "An agent
+that died mid-task is replaced in its own worktree" for the replacement case.
+
 - **A read-first list, in order**: `CLAUDE.md`, the milestone's `TODO.md` section, the
   `DECISIONS.md` sections that carry its design, and the specific docs and source files it will
   touch. The agent starts cold; everything it needs must be named, not assumed.
@@ -280,6 +284,12 @@ merging is what collides — so parallelism is planned at the file level, before
   inherited work as it stands and to merge `origin/main`. Say plainly that nothing inherited has
   been reviewed: one inherited file here did not compile.
 
+  **Starting the replacement includes updating ownership.** Right after spawning it, append
+  `agent: <new id>` to the worktree's brief, and write the `worktree:` line if it is missing. If
+  no brief exists, create one with the header and a pointer to where the original brief is.
+  `agent-status.sh` reads the last `agent:` line, and a non-isolated agent's meta names no
+  worktree, so skipping this step leaves the worktree credited to the dead agent.
+
   **Before inheriting anything, compare the worktree with its own branch on the remote.** Another
   session can pick the same branch up while the agent is dead: the remote then carries pushed
   commits the worktree never saw, and committing the inherited edits on top of the stale head
@@ -318,9 +328,10 @@ of interruption it was.")*
    is not resumed after it has gone cold"), and brief otherwise.
 3. **Brief pause: nudge each agent with `SendMessage`**: the limit is over, what its worktree
    and branch now hold if that moved, and continue. The cache is warm, so the agent's own
-   context is the cheapest brief there is.
+   context is the cheapest brief there is. **This changes no ownership** — the agent named on the
+   brief is still the one working, so append nothing.
 4. **Long pause: replace each agent** in its own worktree, as "An agent that died mid-task is
-   replaced in its own worktree" says, with a brief updated to what step 1 found. Never resume a
-   cold one.
+   replaced in its own worktree" says, with a brief updated to what step 1 found, and its
+   ownership updated the moment the replacement's id is known. Never resume a cold one.
 5. **Tell the player what was found per agent and which way each went**, before waiting on any
    of them.
