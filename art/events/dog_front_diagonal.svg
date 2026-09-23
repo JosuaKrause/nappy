@@ -2,43 +2,45 @@
      EventInstance: the same animal as dog.svg (tan coat, cream chest and muzzle, hanging
      ears, tail up, blue collar), drawn in the same idiom from this side. Faces south-east, towards the viewer and to the right;
      EventInstance mirrors it for south-west. Canvas 38x28, ground anchor bottom centre
-     (19,28); the nearest paw stands on y 26, the farther ones a little higher up the
-     ground they stand on.
+     (19,28); the nearest paw stands on the canvas bottom, the farther ones a little
+     higher up the ground they stand on.
+     The loose dog's lead starts at (0,-8) from the anchor and the walker's ends at (0,-6):
+     both points fall on the body.
      The a and b frames share every body path; only the legs move. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="38" height="28" viewBox="0 0 38 28" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <path d="M10.4 11.4 Q7 10 6.4 5.6" fill="none" stroke-width="2.40"/>
-  <path d="M10.4 11.4 Q7 10 6.4 5.6" fill="none" stroke="#9a7450" stroke-width="1.50"/>
-  <path d="M13.6 15 L14.4 19 L14.8 22.7" fill="none" stroke-width="2.60"/>
-  <path d="M13.6 15 L14.4 19 L14.8 22.7" fill="none" stroke="#6c4f38" stroke-width="1.70"/>
-  <path d="M23.6 16.5 L22.8 20.4 L22.4 23.7" fill="none" stroke-width="2.60"/>
-  <path d="M23.6 16.5 L22.8 20.4 L22.4 23.7" fill="none" stroke="#6c4f38" stroke-width="1.70"/>
-  <path d="M11.2 15.2 L10.4 19 L9.2 20.8 L9.2 24.1" fill="none" stroke-width="2.60"/>
-  <path d="M11.2 15.2 L10.4 19 L9.2 20.8 L9.2 24.1" fill="none" stroke="#9a7450" stroke-width="1.70"/>
-  <path d="M25.4 17 L26.8 21 L27.4 24.7" fill="none" stroke-width="2.60"/>
-  <path d="M25.4 17 L26.8 21 L27.4 24.7" fill="none" stroke="#9a7450" stroke-width="1.70"/>
-  <clipPath id="dog-body"><path d="M9.8 11.6 C11.4 10 16 10.2 20 10.8 C23 11.2 25 12 26.4 13.4 C27.4 15.6 26.8 18.2 25 19.2 C23 20 20.4 18.8 17.4 18.8 C14.2 18.8 11.4 18.6 10.2 17 C9.2 15.6 9.2 13 9.8 11.6 Z"/></clipPath>
-  <path d="M9.8 11.6 C11.4 10 16 10.2 20 10.8 C23 11.2 25 12 26.4 13.4 C27.4 15.6 26.8 18.2 25 19.2 C23 20 20.4 18.8 17.4 18.8 C14.2 18.8 11.4 18.6 10.2 17 C9.2 15.6 9.2 13 9.8 11.6 Z" fill="#9a7450" stroke="none"/>
+  <path d="M10.4 13.4 Q7 12 6.4 7.6" fill="none" stroke-width="2.40"/>
+  <path d="M10.4 13.4 Q7 12 6.4 7.6" fill="none" stroke="#9a7450" stroke-width="1.50"/>
+  <path d="M13.6 17 L14.4 21 L14.8 24.7" fill="none" stroke-width="2.60"/>
+  <path d="M13.6 17 L14.4 21 L14.8 24.7" fill="none" stroke="#6c4f38" stroke-width="1.70"/>
+  <path d="M23.6 18.5 L22.8 22.4 L22.4 25.7" fill="none" stroke-width="2.60"/>
+  <path d="M23.6 18.5 L22.8 22.4 L22.4 25.7" fill="none" stroke="#6c4f38" stroke-width="1.70"/>
+  <path d="M11.2 17.2 L10.4 21 L9.2 22.8 L9.2 26.1" fill="none" stroke-width="2.60"/>
+  <path d="M11.2 17.2 L10.4 21 L9.2 22.8 L9.2 26.1" fill="none" stroke="#9a7450" stroke-width="1.70"/>
+  <path d="M25.4 19 L26.8 23 L27.4 26.7" fill="none" stroke-width="2.60"/>
+  <path d="M25.4 19 L26.8 23 L27.4 26.7" fill="none" stroke="#9a7450" stroke-width="1.70"/>
+  <clipPath id="dog-body"><path d="M9.8 13.6 C11.4 12 16 12.2 20 12.8 C23 13.2 25 14 26.4 15.4 C27.4 17.6 26.8 20.2 25 21.2 C23 22.8 21 23 18.4 23 C15 23 11.6 21.6 10.2 19 C9.2 17.6 9.2 15 9.8 13.6 Z"/></clipPath>
+  <path d="M9.8 13.6 C11.4 12 16 12.2 20 12.8 C23 13.2 25 14 26.4 15.4 C27.4 17.6 26.8 20.2 25 21.2 C23 22.8 21 23 18.4 23 C15 23 11.6 21.6 10.2 19 C9.2 17.6 9.2 15 9.8 13.6 Z" fill="#9a7450" stroke="none"/>
   <g clip-path="url(#dog-body)" stroke="none">
-    <path d="M8 16 C12 18 18 18 22 18.2 C24 18.4 26 18 28 17 L28 23 L8 23 Z" fill="#76573c"/>
-    <path d="M8 12 C11 10.2 16 10.6 20 11.2 C23 11.8 25 12.6 27 14 L27 8 L8 8 Z" fill="#b58e66"/>
-    <path d="M24.6 14 C26.4 14.2 27.8 16 27.6 18 C27.2 19.8 26 20.8 24.6 20.6 C25.2 18.4 25.4 16 24.6 14 Z" fill="#e3d2b0"/>
+    <path d="M8 18 C12 20 18 20 22 20.2 C24 20.4 26 20 28 19 L28 25 L8 25 Z" fill="#76573c"/>
+    <path d="M8 14 C11 12.2 16 12.6 20 13.2 C23 13.8 25 14.6 27 16 L27 10 L8 10 Z" fill="#b58e66"/>
+    <path d="M24.6 16 C26.4 16.2 27.8 18 27.6 20 C27.2 21.8 26 22.8 24.6 22.6 C25.2 20.4 25.4 18 24.6 16 Z" fill="#e3d2b0"/>
   </g>
-  <path d="M9.8 11.6 C11.4 10 16 10.2 20 10.8 C23 11.2 25 12 26.4 13.4 C27.4 15.6 26.8 18.2 25 19.2 C23 20 20.4 18.8 17.4 18.8 C14.2 18.8 11.4 18.6 10.2 17 C9.2 15.6 9.2 13 9.8 11.6 Z" fill="none"/>
-  <path d="M13.6 12.4 C11.4 13.2 10.6 15.2 11.2 17.2" fill="none" stroke="#5a412d" stroke-width="0.55"/>
-  <path d="M25.2 9.8 Q25.4 12.6 27.8 14.2" fill="none" stroke-width="1.90"/>
-  <path d="M25.2 9.8 Q25.4 12.6 27.8 14.2" fill="none" stroke="#3f6d9e" stroke-width="1.10"/>
-  <path d="M31.2 5.6 C32.8 5.2 33.8 6.4 33.6 8.4 C33 8.6 32.2 8.2 31.8 7.6 Z" fill="#5f4430"/>
-  <clipPath id="dog-head"><path d="M25 9.6 C24.8 7 26.6 5.4 28.8 5.4 C31 5.4 32.4 7 32.6 9.2 L34.6 10.6 C35.4 11.4 35.2 13 34.2 13.6 C32.8 14.4 30.6 14.8 29 14.4 C26.6 13.8 25.1 12 25 9.6 Z"/></clipPath>
-  <path d="M25 9.6 C24.8 7 26.6 5.4 28.8 5.4 C31 5.4 32.4 7 32.6 9.2 L34.6 10.6 C35.4 11.4 35.2 13 34.2 13.6 C32.8 14.4 30.6 14.8 29 14.4 C26.6 13.8 25.1 12 25 9.6 Z" fill="#9a7450" stroke="none"/>
+  <path d="M9.8 13.6 C11.4 12 16 12.2 20 12.8 C23 13.2 25 14 26.4 15.4 C27.4 17.6 26.8 20.2 25 21.2 C23 22.8 21 23 18.4 23 C15 23 11.6 21.6 10.2 19 C9.2 17.6 9.2 15 9.8 13.6 Z" fill="none"/>
+  <path d="M13.6 14.4 C11.4 15.2 10.6 17.2 11.2 19.2" fill="none" stroke="#5a412d" stroke-width="0.55"/>
+  <path d="M25.2 11.8 Q25.4 14.6 27.8 16.2" fill="none" stroke-width="1.90"/>
+  <path d="M25.2 11.8 Q25.4 14.6 27.8 16.2" fill="none" stroke="#3f6d9e" stroke-width="1.10"/>
+  <path d="M31.2 7.6 C32.8 7.2 33.8 8.4 33.6 10.4 C33 10.6 32.2 10.2 31.8 9.6 Z" fill="#5f4430"/>
+  <clipPath id="dog-head"><path d="M25 11.6 C24.8 9 26.6 7.4 28.8 7.4 C31 7.4 32.4 9 32.6 11.2 L34.6 12.6 C35.4 13.4 35.2 15 34.2 15.6 C32.8 16.4 30.6 16.8 29 16.4 C26.6 15.8 25.1 14 25 11.6 Z"/></clipPath>
+  <path d="M25 11.6 C24.8 9 26.6 7.4 28.8 7.4 C31 7.4 32.4 9 32.6 11.2 L34.6 12.6 C35.4 13.4 35.2 15 34.2 15.6 C32.8 16.4 30.6 16.8 29 16.4 C26.6 15.8 25.1 14 25 11.6 Z" fill="#9a7450" stroke="none"/>
   <g clip-path="url(#dog-head)" stroke="none">
-    <path d="M24 8 C26 5.8 30 5.4 32.6 7.4 L33 4 L24 4 Z" fill="#b58e66"/>
-    <path d="M30.4 11.4 C31.8 10.8 33.6 10.6 35.6 11 L35.6 15 L30 15 Z" fill="#e3d2b0"/>
-    <path d="M24 11.6 C25.4 13.4 27.2 14 29.6 14 L29.6 16 L24 16 Z" fill="#76573c"/>
+    <path d="M24 10 C26 7.8 30 7.4 32.6 9.4 L33 6 L24 6 Z" fill="#b58e66"/>
+    <path d="M30.4 13.4 C31.8 12.8 33.6 12.6 35.6 13 L35.6 17 L30 17 Z" fill="#e3d2b0"/>
+    <path d="M24 13.6 C25.4 15.4 27.2 16 29.6 16 L29.6 18 L24 18 Z" fill="#76573c"/>
   </g>
-  <path d="M25 9.6 C24.8 7 26.6 5.4 28.8 5.4 C31 5.4 32.4 7 32.6 9.2 L34.6 10.6 C35.4 11.4 35.2 13 34.2 13.6 C32.8 14.4 30.6 14.8 29 14.4 C26.6 13.8 25.1 12 25 9.6 Z" fill="none"/>
-  <path d="M26.8 6.2 C25.2 6 24.2 7.6 24.4 10.2 C24.6 11.6 25.8 12 26.6 11 C27.2 9.6 27.6 7.6 26.8 6.2 Z" fill="#5f4430"/>
-  <circle cx="29.4" cy="9.4" r="0.58" fill="#221f28" stroke="none"/>
-  <circle cx="32.0" cy="8.8" r="0.48" fill="#221f28" stroke="none"/>
-  <circle cx="34.7" cy="11.3" r="0.85" fill="#221f28" stroke="none"/>
-  <path d="M31.4 13.6 Q32.6 14 33.8 13.4" fill="none" stroke-width="0.45"/>
+  <path d="M25 11.6 C24.8 9 26.6 7.4 28.8 7.4 C31 7.4 32.4 9 32.6 11.2 L34.6 12.6 C35.4 13.4 35.2 15 34.2 15.6 C32.8 16.4 30.6 16.8 29 16.4 C26.6 15.8 25.1 14 25 11.6 Z" fill="none"/>
+  <path d="M26.8 8.2 C25.2 8 24.2 9.6 24.4 12.2 C24.6 13.6 25.8 14 26.6 13 C27.2 11.6 27.6 9.6 26.8 8.2 Z" fill="#5f4430"/>
+  <circle cx="29.4" cy="11.4" r="0.58" fill="#221f28" stroke="none"/>
+  <circle cx="32.0" cy="10.8" r="0.48" fill="#221f28" stroke="none"/>
+  <circle cx="34.7" cy="13.3" r="0.85" fill="#221f28" stroke="none"/>
+  <path d="M31.4 15.6 Q32.6 16 33.8 15.4" fill="none" stroke-width="0.45"/>
 </svg>

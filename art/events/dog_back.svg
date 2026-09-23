@@ -1,36 +1,39 @@
 <!-- The walked or loose dog, back view, one of DOG_BY_VIEW / DOG_BY_VIEW_B in
      EventInstance: the same animal as dog.svg (tan coat, cream chest and muzzle, hanging
-     ears, tail up, blue collar), drawn in the same idiom from this side. Canvas 30x28, ground anchor bottom centre (15,28); the paws stand on
-     y 26. Seen from behind: rump, tail up, the back of the head and its ears.
+     ears, tail up, blue collar), drawn in the same idiom from this side. Canvas 30x28, ground anchor bottom centre (15,28); the nearest paw
+     stands on the canvas bottom. Seen from behind: rump, tail up, the back of the head
+     and its ears.
+     The loose dog's lead starts at (0,-8) from the anchor and the walker's ends at (0,-6):
+     both points fall on the body.
      The a and b frames share every body path; only the legs move. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="28" viewBox="0 0 30 28" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <clipPath id="dog-head"><path d="M11.4 8 C11.4 5.4 13 4 15 4 C17 4 18.6 5.4 18.6 8 C18.6 10.2 17 11.4 15 11.4 C13 11.4 11.4 10.2 11.4 8 Z"/></clipPath>
-  <path d="M11.4 8 C11.4 5.4 13 4 15 4 C17 4 18.6 5.4 18.6 8 C18.6 10.2 17 11.4 15 11.4 C13 11.4 11.4 10.2 11.4 8 Z" fill="#9a7450" stroke="none"/>
+  <clipPath id="dog-head"><path d="M11.4 10 C11.4 7.4 13 6 15 6 C17 6 18.6 7.4 18.6 10 C18.6 12.2 17 13.4 15 13.4 C13 13.4 11.4 12.2 11.4 10 Z"/></clipPath>
+  <path d="M11.4 10 C11.4 7.4 13 6 15 6 C17 6 18.6 7.4 18.6 10 C18.6 12.2 17 13.4 15 13.4 C13 13.4 11.4 12.2 11.4 10 Z" fill="#9a7450" stroke="none"/>
   <g clip-path="url(#dog-head)" stroke="none">
-    <path d="M10 7 C12 4.6 18 4.6 20 7 L20 3 L10 3 Z" fill="#b58e66"/>
-    <path d="M10 9.6 C12 11 18 11 20 9.6 L20 13 L10 13 Z" fill="#76573c"/>
+    <path d="M10 9 C12 6.6 18 6.6 20 9 L20 5 L10 5 Z" fill="#b58e66"/>
+    <path d="M10 11.6 C12 13 18 13 20 11.6 L20 15 L10 15 Z" fill="#76573c"/>
   </g>
-  <path d="M11.4 8 C11.4 5.4 13 4 15 4 C17 4 18.6 5.4 18.6 8 C18.6 10.2 17 11.4 15 11.4 C13 11.4 11.4 10.2 11.4 8 Z" fill="none"/>
-  <path d="M12 5.2 C10 5 9.2 7 9.6 9.6 C9.9 10.8 11 11 11.6 10 C12.2 8.6 12.6 6.6 12 5.2 Z" fill="#5f4430"/>
-  <path d="M18 5.2 C20 5 20.8 7 20.4 9.6 C20.1 10.8 19 11 18.4 10 C17.8 8.6 17.4 6.6 18 5.2 Z" fill="#5f4430"/>
-  <path d="M11.8 10.4 Q15 12.2 18.2 10.4" fill="none" stroke-width="1.90"/>
-  <path d="M11.8 10.4 Q15 12.2 18.2 10.4" fill="none" stroke="#3f6d9e" stroke-width="1.10"/>
-  <path d="M12.8 16 L12.8 23.2" fill="none" stroke-width="2.60"/>
-  <path d="M12.8 16 L12.8 23.2" fill="none" stroke="#6c4f38" stroke-width="1.70"/>
-  <path d="M17.2 16 L17.2 22.4" fill="none" stroke-width="2.60"/>
-  <path d="M17.2 16 L17.2 22.4" fill="none" stroke="#6c4f38" stroke-width="1.70"/>
-  <path d="M11.6 18 L11.2 21.5 L11.2 24.7" fill="none" stroke-width="2.60"/>
-  <path d="M11.6 18 L11.2 21.5 L11.2 24.7" fill="none" stroke="#9a7450" stroke-width="1.70"/>
-  <path d="M18.4 18 L18.8 21.5 L18.8 23.9" fill="none" stroke-width="2.60"/>
-  <path d="M18.4 18 L18.8 21.5 L18.8 23.9" fill="none" stroke="#9a7450" stroke-width="1.70"/>
-  <clipPath id="dog-body"><path d="M10.2 15.5 C10.2 12.2 12 10.6 15 10.6 C18 10.6 19.8 12.2 19.8 15.5 C20 18.6 18.2 21 15 21 C11.8 21 10 18.6 10.2 15.5 Z"/></clipPath>
-  <path d="M10.2 15.5 C10.2 12.2 12 10.6 15 10.6 C18 10.6 19.8 12.2 19.8 15.5 C20 18.6 18.2 21 15 21 C11.8 21 10 18.6 10.2 15.5 Z" fill="#9a7450" stroke="none"/>
+  <path d="M11.4 10 C11.4 7.4 13 6 15 6 C17 6 18.6 7.4 18.6 10 C18.6 12.2 17 13.4 15 13.4 C13 13.4 11.4 12.2 11.4 10 Z" fill="none"/>
+  <path d="M12 7.2 C10 7 9.2 9 9.6 11.6 C9.9 12.8 11 13 11.6 12 C12.2 10.6 12.6 8.6 12 7.2 Z" fill="#5f4430"/>
+  <path d="M18 7.2 C20 7 20.8 9 20.4 11.6 C20.1 12.8 19 13 18.4 12 C17.8 10.6 17.4 8.6 18 7.2 Z" fill="#5f4430"/>
+  <path d="M11.8 12.4 Q15 14.2 18.2 12.4" fill="none" stroke-width="1.90"/>
+  <path d="M11.8 12.4 Q15 14.2 18.2 12.4" fill="none" stroke="#3f6d9e" stroke-width="1.10"/>
+  <path d="M12.8 18 L12.8 25.2" fill="none" stroke-width="2.60"/>
+  <path d="M12.8 18 L12.8 25.2" fill="none" stroke="#6c4f38" stroke-width="1.70"/>
+  <path d="M17.2 18 L17.2 24.4" fill="none" stroke-width="2.60"/>
+  <path d="M17.2 18 L17.2 24.4" fill="none" stroke="#6c4f38" stroke-width="1.70"/>
+  <path d="M11.6 20 L11.2 23.5 L11.2 26.7" fill="none" stroke-width="2.60"/>
+  <path d="M11.6 20 L11.2 23.5 L11.2 26.7" fill="none" stroke="#9a7450" stroke-width="1.70"/>
+  <path d="M18.4 20 L18.8 23.5 L18.8 25.9" fill="none" stroke-width="2.60"/>
+  <path d="M18.4 20 L18.8 23.5 L18.8 25.9" fill="none" stroke="#9a7450" stroke-width="1.70"/>
+  <clipPath id="dog-body"><path d="M10.2 17.5 C10.2 14.2 12 12.6 15 12.6 C18 12.6 19.8 14.2 19.8 17.5 C20 20.6 18.2 23 15 23 C11.8 23 10 20.6 10.2 17.5 Z"/></clipPath>
+  <path d="M10.2 17.5 C10.2 14.2 12 12.6 15 12.6 C18 12.6 19.8 14.2 19.8 17.5 C20 20.6 18.2 23 15 23 C11.8 23 10 20.6 10.2 17.5 Z" fill="#9a7450" stroke="none"/>
   <g clip-path="url(#dog-body)" stroke="none">
-    <path d="M9 17.6 C12 20 18 20 21 17.6 L21 23 L9 23 Z" fill="#76573c"/>
-    <path d="M13 10 C14 12 16 12 17 10 Z" fill="#b58e66"/>
+    <path d="M9 19.6 C12 22 18 22 21 19.6 L21 25 L9 25 Z" fill="#76573c"/>
+    <path d="M13 12 C14 14 16 14 17 12 Z" fill="#b58e66"/>
   </g>
-  <path d="M10.2 15.5 C10.2 12.2 12 10.6 15 10.6 C18 10.6 19.8 12.2 19.8 15.5 C20 18.6 18.2 21 15 21 C11.8 21 10 18.6 10.2 15.5 Z" fill="none"/>
-  <path d="M15 16.4 L15 20.6" fill="none" stroke="#5a412d" stroke-width="0.55"/>
-  <path d="M15 15.2 Q14.4 11.4 16.6 8.4" fill="none" stroke-width="2.40"/>
-  <path d="M15 15.2 Q14.4 11.4 16.6 8.4" fill="none" stroke="#9a7450" stroke-width="1.50"/>
+  <path d="M10.2 17.5 C10.2 14.2 12 12.6 15 12.6 C18 12.6 19.8 14.2 19.8 17.5 C20 20.6 18.2 23 15 23 C11.8 23 10 20.6 10.2 17.5 Z" fill="none"/>
+  <path d="M15 18.4 L15 22.6" fill="none" stroke="#5a412d" stroke-width="0.55"/>
+  <path d="M15 17.2 Q14.4 13.4 16.6 10.4" fill="none" stroke-width="2.40"/>
+  <path d="M15 17.2 Q14.4 13.4 16.6 10.4" fill="none" stroke="#9a7450" stroke-width="1.50"/>
 </svg>
