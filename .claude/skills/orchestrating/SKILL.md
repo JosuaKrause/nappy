@@ -309,10 +309,11 @@ with a precise updated prompt instead. if the pause was brief nudging the existi
 enough since the cache is still warm and they can just continue. usually, I'll tell you which kind
 of interruption it was.")*
 
-1. **Establish how far everything got, on disk and on GitHub, before touching anything.** For each
-   agent worktree: its branch, uncommitted files, how far it is ahead of and behind its own
-   upstream (another session may have pushed to it), and its PR's CI state. For each agent: its
-   last tool calls, from its transcript.
+1. **Run `tools/agent-status.sh` before touching anything.** It covers every worktree's branch,
+   uncommitted files, how far it is ahead of and behind its own upstream (another session may have
+   pushed to it), its PR's CI state, its brief file, and its agent's warm/cold verdict in one pass.
+   What it cannot show is where an agent stopped inside an item — for that, read its transcript's
+   last tool calls, the file `agent-status.sh` named.
 2. **Take the pause's kind from the player.** If they have not said, it is long when the
    agent's last request is older than the cache window less five minutes (see "A finished agent
    is not resumed after it has gone cold"), and brief otherwise.
