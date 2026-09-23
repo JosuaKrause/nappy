@@ -13,7 +13,10 @@ the whole queue and the player's words.
 Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a
 PR, removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or
 contracts warrant it, by judgement *(2026-09-11: "for wait tasks like this haiku makes more sense
--- use your judgement")*. In Codex, pick the subagent tier by the task's remaining difficulty: see
+-- use your judgement")*. **Drawing is Opus's**: an agent that makes or revises artwork — SVG,
+PNG, a review sheet — runs on Opus, since the result is judged by eye and a weaker first pass
+costs the player a review round *(2026-09-23: "what is the model making those images? use opus
+5.5")*. In Codex, pick the subagent tier by the task's remaining difficulty: see
 `references/codex-models.md`. The contract is the same on either host: fresh context, a bounded
 scope and an isolated checkout for implementation. Create the worktree explicitly if the tool
 does not create one. Read-only review can share a checkout. If delegation is unavailable, do the
