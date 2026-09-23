@@ -19,11 +19,15 @@ checkout for implementation. Create the worktree explicitly if the tool does not
 Read-only review can share a checkout. If delegation is unavailable, do the bounded work locally
 and retain the same verification gate. Tool or model names do not require changing hosts.
 
-**In Codex, visible usage-limit errors are treated as resolved, not as a continuing delegation
-block.** Delegate the next bounded task normally when the session can continue. Do not carry a
-limit message from an earlier agent or turn forward as a reason to implement locally.
-*(2026-09-12: "when you see usage limit errors that means they are already resolved. if the usage
-limit was reached you wouldn't see anything.")*
+**A usage or quota limit is already over by the time the orchestrator hears of it**, in Claude
+Code and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no
+cheaper models, no implementing locally to save quota. Do not carry a limit message from an
+earlier agent or turn forward as a reason to do anything differently. *(2026-09-12: "when you see
+usage limit errors that means they are already resolved. if the usage limit was reached you
+wouldn't see anything."; 2026-09-22: "by the time _you_ hear of it the quota or usage is fully
+restored so there is no need to change behavior due to it (ie no reducing agent usage or things
+like that). quota limits happen from time to time.")* What an interruption does change is which
+agents can continue — see "Recovering from an interruption".
 
 ## Codex: match the subagent to the task's difficulty
 
@@ -147,7 +151,6 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   repository shares one `user://`, so the player's save is in reach of any game an agent starts.
   `GameSave.uses_save()` already refuses a headless run and any run carrying a dev flag;
   `--no-save` is what a flagless `tools/run.sh` session needs to say the same thing.
-- **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions
 - **Visual attempts come back early.** The player welcomes repeated feedback and prefers seeing
   an attempt to waiting through a long internal revision loop. Ask the agent for a prompt preview
   in the player's requested format, naming the visual point that remains uncertain. Keep cheap
@@ -194,12 +197,13 @@ merging is what collides — so parallelism is planned at the file level, before
   request, and merge it once the `test` check is green — GitHub runs that check on the merge result,
   which is exactly the "two green branches can still be wrong together" case. **A second agent's PR
   needs its branch brought up to date with the new `main` before it can merge**, since the ruleset
-  requires strict status checks, and that re-run is the gate on the second merge. Then remove the
-  worktree (`git worktree unlock` first if the harness locked it) and delete the branch.
-- **Sweep the harness's own branches at the end.** Each spawn also leaves a `worktree-agent-*`
-  branch pointing at the worktree's base; after the feature branches are merged, `git worktree
-  prune` and delete them with `git branch -d`, which still answers for a branch that has no
-  pull request; a feature branch goes by the **committing** skill's PR-state check.
+  requires strict status checks, and that re-run is the gate on the second merge. Then retire it
+  with `tools/prune-merged.sh <branch>` from the main checkout (see **committing**), which
+  removes the worktree and deletes the branch only once GitHub vouches for it.
+- **The harness's own branches go with the same script.** Each spawn also leaves a
+  `worktree-agent-*` branch pointing at the worktree's base. `tools/prune-merged.sh` deletes the
+  ones whose worktree is gone, with `git branch -d`, and keeps a live agent's: that worktree has
+  a feature branch checked out, so "is it checked out" says nothing about whether it is in use.
 - **An agent branches from `main`, never from an open docs branch.** When a milestone's entry
   is still in an unmerged docs pull request, wait for it to merge before spawning rather than
   telling the agent to branch from the docs branch. That pull request reaches `main` as one
@@ -252,6 +256,14 @@ merging is what collides — so parallelism is planned at the file level, before
   last tool calls. Its first two steps are to commit the inherited work as it stands and to
   merge `origin/main`. Say plainly that nothing inherited has been reviewed: one inherited file
   here did not compile.
+
+  **Before inheriting anything, compare the worktree with its own branch on the remote.** Another
+  session can pick the same branch up while the agent is dead: the remote then carries pushed
+  commits the worktree never saw, and committing the inherited edits on top of the stale head
+  forks the branch. Fetch, and count `git rev-list HEAD..@{u}`. If it is not zero, diff the
+  inherited edits against what was pushed; where the pushed commits already do the same work,
+  save the inherited diff outside the tree, discard it, fast-forward, and brief the fresh agent
+  from the pushed state instead.
 - **Nothing is committed into a worktree an agent is working in.** Queue docs, a merge of
   `main`, a fix the player wants urgently: wait for the agent's report, or do the work on a
   branch of its own from `main` and tell the agent what it will touch, so the later merge is
@@ -262,3 +274,29 @@ merging is what collides — so parallelism is planned at the file level, before
   test.")* That means freeing the agent's worktree first if it holds the branch (`git worktree
   remove`), then `git checkout` in the main folder, and saying so; and while the player is testing
   there, nothing touches that checkout but docs commits on the same branch.
+
+## Recovering from an interruption
+
+**A limit or an outage stops every agent at once, and the pause's length decides what happens
+next.** The player usually tries to hand the session off before a limit hits, so the next one
+starts fresh at the reset, but not every limit is seen coming. *(2026-09-22: "long pauses let the
+cache expire which means we probably shouldn't let existing agents continue and start a new agent
+with a precise updated prompt instead. if the pause was brief nudging the existing agents is
+enough since the cache is still warm and they can just continue. usually, I'll tell you which kind
+of interruption it was.")*
+
+1. **Establish how far everything got, on disk and on GitHub, before touching anything.** For each
+   agent worktree: its branch, uncommitted files, how far it is ahead of and behind its own
+   upstream (another session may have pushed to it), and its PR's CI state. For each agent: its
+   last tool calls, from its transcript.
+2. **Take the pause's kind from the player.** If they have not said, it is long when the
+   agent's last request is older than the cache window less five minutes (see "A finished agent
+   is not resumed after it has gone cold"), and brief otherwise.
+3. **Brief pause: nudge each agent with `SendMessage`**: the limit is over, what its worktree
+   and branch now hold if that moved, and continue. The cache is warm, so the agent's own
+   context is the cheapest brief there is.
+4. **Long pause: replace each agent** in its own worktree, as "An agent that died mid-task is
+   replaced in its own worktree" says, with a brief updated to what step 1 found. Never resume a
+   cold one.
+5. **Tell the player what was found per agent and which way each went**, before waiting on any
+   of them.

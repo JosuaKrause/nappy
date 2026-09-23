@@ -125,6 +125,15 @@ If a skill turns out not to cover something it should, add it there rather than 
 too long for one file becomes a file of its own, and this one does not grow.** If a new area of the
 tree needs rules, add the path to the hook script as well, or the rule is only a suggestion.
 
+**A skill found wrong is fixed, and the fix is flagged to the player.** *(2026-09-22: "if you
+ever notice that a skill doesn't work correctly or contains incorrect information or otherwise
+could be improved fix that and flag the fix to me since I want to understand how skills can be
+improved.")* Wrong includes a step that fails in practice, a sentence that is no longer true, a
+broken or duplicated passage, and a gap that let a mistake through. The fix goes on a branch and
+PR like any other change, and the report to the player names the skill, what was wrong, the
+moment it showed, and what the text now says — the point is that the player learns how a skill
+fails, not only that one was edited.
+
 Two things to know before extending the mapping. **A path may match several skills** and all of them
 fire together, so a `.gd` file under `src/events/` brings both `events` and `godot` — keep an eye on
 the combined size, because a large injection is written to a file and summarised rather than placed
