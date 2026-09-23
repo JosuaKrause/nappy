@@ -561,7 +561,7 @@ func restore_snapshot(data: Dictionary) -> void:
 	# way through the ordinary lost-day path.
 	_dawn_consumed_one_shots.assign(data["_dawn_consumed_one_shots"])
 	_dawn_scars = _scars_from_data(data["_dawn_scars"])
-	_dawn_city_state = (data["_dawn_city_state"] as Dictionary).duplicate(true)
+	_dawn_city_state = _cast_dawn_city_state(data["_dawn_city_state"])
 
 ## `Array[int]` from a JSON array of floats — see `restore_snapshot()`'s own doc for why every
 ## number here is cast rather than assigned.
@@ -570,3 +570,20 @@ func _to_int_array(raw: Array) -> Array[int]:
 	for value in raw:
 		result.append(int(value))
 	return result
+
+## `_dawn_city_state` is `CityState.snapshot()`'s own shape carried as a plain Dictionary rather
+## than through a second `CityState` field, so nothing above casts its numbers back from the
+## floats a JSON round trip leaves them — the one place this function's own doc says every other
+## field avoids. **Cast key by key instead of always writing both of `CityState.snapshot()`'s
+## own keys**: a run that has not yet reached `begin_day()` leaves this field the untouched `{}`,
+## and forcing it through a real `CityState` would answer `{"stage": [], "changed_on": []}` for
+## that case instead of the `{}` a `save_snapshot()` taken right after this one would still write,
+## which is exactly the equality mismatch this exists to prevent.
+static func _cast_dawn_city_state(raw: Dictionary) -> Dictionary:
+	var cast := {}
+	for key: String in raw:
+		var cast_entries: Array = []
+		for entry: Dictionary in (raw[key] as Array):
+			cast_entries.append({"x": int(entry["x"]), "y": int(entry["y"]), "v": int(entry["v"])})
+		cast[key] = cast_entries
+	return cast
