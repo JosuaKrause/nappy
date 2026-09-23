@@ -380,9 +380,8 @@ window cell with the window left out.
 | `poster_rules.svg` | The rules: a pale printed notice under an inset dark header bar, four entries — each a 2×3px dark bar, a 1px gap, then two 1px gray print lines two pixels apart, the second shorter — and a round red stamp, a ring crossed by a thick diagonal band, over the lower right. |
 | `poster_curfew.svg` | The curfew sheet: the same header, a large clock with a dark rim, twelve tick marks and its hands at four, then two of the rules' entries and the same stamp, for day 6 onward. |
 | `poster_uniform.svg` | The dark uniform sheet: a cream emblem invented for this game, like the letter phi on a base — a tall ring, a vertical bar through it standing out above and below, on a flat foot bar — matching no real flag, party, state or movement mark. |
-| `poster_wanted.svg` | The wanted notice: gray-beige paper under an inset dark header, four 7×5 mugshot frames in two rows of two, each a dark head-and-shoulders silhouette in a thin dark frame with one gray print line beneath it — a different style from the leader's coloured portrait. This copy has no red X. The bottom-left frame, the SVG group `neighbor_slot` (top-left corner at 8,16), is a placeholder adult standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their figure. |
-| `poster_wanted_one_crossed.svg` | The same sheet with a red X over the top-right face only, so a wall shows faces crossed out in red on any run. |
-| `poster_wanted_crossed.svg` | The same sheet with red Xs over the top-right face and the `neighbor_slot` face, for a run whose day 10 task was not done on the day she won. |
+| `poster_wanted.svg` | The wanted notice: gray-beige paper under an inset dark header, four 7×5 mugshot frames in two rows of two, each a dark head-and-shoulders silhouette in a thin dark frame with one gray print line beneath it — a different style from the leader's coloured portrait. This copy has one X: a red X over the top-right face, a face that is never the neighbor's. The bottom-left frame, the SVG group `neighbor_slot` (top-left corner at 8,16), is a placeholder adult standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their figure. |
+| `poster_wanted_crossed.svg` | The same sheet with two Xs: that face and the `neighbor_slot` face, for a run whose day 10 task was not done on the day she won. |
 | `poster_tear_a_mask.svg`, `poster_tear_a_overlay.svg` | Tear A, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top and upper left of the sheet stay pasted, plus a scrap of the bottom-right corner. |
 | `poster_tear_b_mask.svg`, `poster_tear_b_overlay.svg` | Tear B: a strip across the top stays pasted, plus a scrap of the bottom-right corner; the overlay adds a flap peeled from the lower left, hanging off the strip with its blank back showing, the crease dark at the fold and a shadow on the wall. |
 | `poster_tear_c_mask.svg`, `poster_tear_c_overlay.svg` | Tear C: a ragged strip down the left edge stays pasted, plus a small scrap in the top-right corner. |
@@ -409,12 +408,11 @@ line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the poli
 The intact kinds follow the player's poster reference sheet in shape and palette; at 20×22px
 the wanted notice keeps one print line under each frame where the reference has two.
 
-[The poster review sheet](evidence/poster-art-review-2026-09-23-wanted-copies.png) shows the
+[The poster review sheet](evidence/poster-art-review-2026-09-23-plain-walls.png) shows the
 intact kinds and every tear applied to each of them by that recipe, on blank ground-row wall
 cells at game scale (2×, the camera's own zoom) and at 4× that; each mask and overlay alone; and
 three building fronts assembled from the real `art/buildings/` wall, window, edge and plinth
 textures, multiplied by a building colour and each act's own cast (`Palette.act_tint()`), at
 the day 4/day 8/day 12 densities M180's own table asks for. On those fronts, stretches of plain
 wall two or three columns wide with no window on any floor break the window rhythm, and posters
-go only there — some of it bare, and on day 12 the wanted notice with no X and with one, and
-three torn sheets.
+go only there — some of it bare, and three torn sheets on day 12.
