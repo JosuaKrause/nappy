@@ -64,7 +64,7 @@ def inputs():
     result = [HERE / "candidate-raw.png", HERE / "prompt.txt"]
     result += [ROOT / "tools/remove-checkerboard.py", HERE.parent / "review-raster.py"]
     result += [HERE.parent / "inputs/svg-targets-8x.png", HERE.parent / "proof/identity-upper-only.png"]
-    result += [ROOT / f"docs/evidence/graphics-reference-{name}.jpeg" for name in ("urban-01", "cardinal")]
+    result += [ROOT / f"docs/style-references/graphics-reference-{name}.jpeg" for name in ("urban-01", "cardinal")]
     for view in VIEWS:
         result += [installed_path(view, pose) for pose in "acb"]
         result += [HERE.parent / f"inputs/father_{view}_b-{scale}x.png" for scale in (1, 3)]

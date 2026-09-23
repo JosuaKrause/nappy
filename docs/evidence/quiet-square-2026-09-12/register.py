@@ -23,9 +23,9 @@ NEIGHBOR_FILES = {
 	"grass_base": LAYER_RUNTIME / "grass_base.png",
 }
 REFERENCE_FILES = (
-	"docs/evidence/graphics-reference-urban-01.jpeg",
-	"docs/evidence/graphics-reference-urban-02.jpeg",
-	"docs/evidence/graphics-reference-cardinal.jpeg",
+	"docs/style-references/graphics-reference-urban-01.jpeg",
+	"docs/style-references/graphics-reference-urban-02.jpeg",
+	"docs/style-references/graphics-reference-cardinal.jpeg",
 )
 
 

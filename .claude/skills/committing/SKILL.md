@@ -134,11 +134,20 @@ returns a 404 the moment the branch is deleted — and this workflow deletes eve
 it is merged, so every such link in every merged PR is dead. The description is the one place the
 before-and-after pictures live once the PR is closed, so a dead link there is the evidence gone.
 
-Link the commit instead:
+Link the commit instead, and **embed a picture with image syntax, never as a bare URL**:
 
 ```
-https://raw.githubusercontent.com/<owner>/<repo>/<full-commit-sha>/docs/evidence/x.png
+![what the picture shows](https://raw.githubusercontent.com/<owner>/<repo>/<full-commit-sha>/docs/evidence/x.png)
 ```
+
+*(2026-09-23: "the images don't show up inline"; "while they do show up inline for the other
+prs".)* GitHub renders a bare URL in a description as a link, so the player has to open every
+picture to see it, which is exactly what a visual review is meant to spare them.
+
+**A pull request that went through several visual passes opens with the current proposal**, its
+pictures embedded, and lists the superseded passes last as plain links. *(2026-09-23: "it's not
+clear what the current proposal is".)* A description that grows a section per pass reads as a
+history, and the reviewer has to work out which picture is the one being asked about.
 
 A branch commit's URL survives both the squash and the branch's deletion because GitHub keeps
 every pull request's commits reachable under `refs/pull/<n>/head`. **The hash has to be the one

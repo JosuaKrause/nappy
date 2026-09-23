@@ -9,8 +9,8 @@ sacks use a bottom-center anchor at y=320 in each cell. Flat litter decals use a
 The SVG-first sources and their imports are present at source commit `105ef597`. The exact
 generator prompt is preserved in [`prompt.txt`](prompt.txt). Built-in `image_gen.imagegen` inputs
 in order: `source/litter-sheet-svg.png` is the geometry target;
-`docs/evidence/graphics-reference-urban-01.jpeg` and
-`docs/evidence/graphics-reference-cardinal.jpeg` are style-only inputs. Their paths are relative
+`docs/style-references/graphics-reference-urban-01.jpeg` and
+`docs/style-references/graphics-reference-cardinal.jpeg` are style-only inputs. Their paths are relative
 to the repository root except for the local source sheet. Sack and pile material remains black
 plastic from their source SVGs. Preparation used Godot 4.7.2; registration used CPython
 3.14.7, Pillow 12.3.0 and the locked `uv` environment.

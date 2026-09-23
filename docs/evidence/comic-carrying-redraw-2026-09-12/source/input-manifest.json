@@ -10,7 +10,7 @@
   "pushing_crop_sha256": "f88b7c1f50cd7ca064ea37648528dd03fa47761bd83e95c16263895967198e8e",
   "carrying_pose": "source/carrying-sheet-svg.png",
   "style_references": [
-    "docs/evidence/graphics-reference-urban-01.jpeg",
-    "docs/evidence/graphics-reference-cardinal.jpeg"
+    "docs/style-references/graphics-reference-urban-01.jpeg",
+    "docs/style-references/graphics-reference-cardinal.jpeg"
   ]
 }

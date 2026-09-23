@@ -506,6 +506,34 @@ a task is one day, whose day 14 goes to this building's front door.
 
 ---
 
+## M185 — A ground floor is blank wall or shops · asked for 2026-09-23
+
+> "you can make it a placement rule for multi-story buildings that the ground floor is either a
+> blank wall (for posters later) or shops -- never windows -- the home building is an exception
+> to that rule"
+
+[PLAYTEST-123](playtests/PLAYTEST-123.md), statements 13, 25 and 26: a poster pasted over a
+window makes no sense, so the posters of M180, posters she notices, and loudspeakers that are
+somewhere, need wall to go on, and the player made that a rule for every building. Today a
+building's ground floor carries the same window rows as the floors above, except where a
+`COMMERCIAL` span's storefront covers them (`docs/CITY.md`, "A front is district and block
+purpose").
+
+- [ ] **The ground floor of a multi-story building has no windows**: it is shops or blank wall.
+      Which is which is the orchestrator's and open to overturn: a `COMMERCIAL` building keeps its
+      storefronts, and its odd final column becomes blank wall rather than a window; every other
+      purpose's ground floor is blank wall — the wall texture and its plinth with no window —
+      with its entrance, the civic portico and the fire escape where they are today. A facade one
+      wall row tall is not multi-story and is unchanged; the power station draws its own front.
+- [ ] **Her own building keeps its ground-floor windows**, the one exception.
+- [ ] **The blank wall is where posters go**: the cells a later slice of M180 pastes on are
+      exactly the blank ground-floor cells this draws, so a poster can never land on a window.
+- [ ] **Shown to the player before it is finished**: stills of a residential, a commercial and an
+      industrial street and of her own building, at the ordinary view and zoomed out with
+      `--zoom`.
+
+---
+
 ## M184 — A rig walks the route · asked for 2026-09-23
 
 > "we should have a test-rig mode where she just follows the edges of a path that way we can test
