@@ -127,6 +127,14 @@ func _parse_log(path: String) -> Dictionary:
 			reached["settled"] = elapsed
 		elif text.contains("route done"):
 			reached["done"] = elapsed
+		elif text.contains("day won"):
+			# `_on_day_finished()`'s own report of the race its own doc names: `DayController`'s
+			# `WON` can fire before `_arrive()`'s tighter `_ARRIVE_RADIUS` does, so a day this
+			# table calls "home" may never print `RouteRig`'s own "reached 'home'" line at all —
+			# this is the only record of when she actually got there. `target` is always `home`,
+			# the one word `_current_word` can be while `DayController.phase` is `RETURNING`.
+			reached[target] = elapsed
+			outcome = "won (before the rig's own arrival check)"
 		elif text.contains("day ended"):
 			outcome = "%s before '%s' at %.1fs" % [text.get_slice("(", 1).get_slice(")", 0),
 					target, elapsed]
