@@ -102,6 +102,10 @@ A justified result can match one side, but only after the other side's intent an
 examined and the semantic decision is explicit. Use `diff3` conflict display if helpful, but still
 explain the three versions; marker removal is not reconciliation.
 
+`tools/resolve-decisions-top.sh` mechanically resolves `docs/DECISIONS.md`'s one recurring shape —
+both sides inserting a new `## …` section directly under `# Decisions`, from an empty base — and
+refuses anything else; running it does not exempt that merge from the semantic review below.
+
 ## Check semantic alignment for every merge
 
 **Semantic review is mandatory for every merge: clean, conflicted, or manually resolved.**
