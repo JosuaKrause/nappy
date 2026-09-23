@@ -1,0 +1,54 @@
+<!-- The rules notice, torn down: the header bar and the first line of print are still
+     pasted across the top, the tear below them jagged with a pale paper fringe. A flap of the
+     sheet peeled from the lower left hangs off the torn strip, showing its blank back with the
+     crease dark at the fold and a shadow on the wall; a scrap of the bottom-right corner keeps
+     part of the red stamp. The bare wall shows where the sheet was, a faint shade darker, with glue
+     smears and paper crumbs. Same 20x22 sheet as every poster kind; see poster_leader.svg.
+     A variant of poster_torn.svg for the player to choose between. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <defs>
+    <clipPath id="keep"><path d="M6 3H26V12.6L26.0 12.6L25.0 12.8L24.1 13.5L23.7 13.8L22.2 12.7L21.5 13.6L20.7 13.5L19.9 13.6L18.7 13.1L18.2 14.5L17.6 13.7L17.0 13.9L15.8 13.0L14.7 13.5L13.5 13.0L12.7 14.2L12.6 13.5L6 14.2Z"/></clipPath>
+    <clipPath id="corner"><path d="M26 25H18.6L18.6 25.0L18.4 24.1L18.8 23.4L20.0 23.5L19.8 22.8L20.9 22.0L20.4 21.6L20.8 21.0L21.2 20.7L22.2 20.5L22.2 19.6L23.3 19.4L23.4 19.4L24.2 19.1L24.8 18.5L25.5 18.5L26.0 18.2Z"/></clipPath>
+  </defs>
+  <rect x="6" y="3" width="20" height="22" fill="#221f28" fill-opacity="0.07"/>
+  <path d="M15.2 17.4L19.6 16.6M13.4 22.1L16.6 21.2" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="1" stroke-linecap="round"/>
+  <path d="M14.1 24.8L14.5 24.1L15.7 24.3L15.4 24.8Z M25.8 15.1L25 15.6L25.3 16.6L25.8 16.4Z" fill="#e4ddcc"/>
+  <path d="M26.0 12.6L25.0 12.8L24.1 13.5L23.7 13.8L22.2 12.7L21.5 13.6L20.7 13.5L19.9 13.6L18.7 13.1L18.2 14.5L17.6 13.7L17.0 13.9L15.8 13.0L14.7 13.5L13.5 13.0L12.7 14.2L12.6 13.5" transform="translate(0.4 0.5)" fill="none" stroke="#221f28" stroke-opacity="0.35" stroke-width="0.9" stroke-linejoin="round"/>
+  <g clip-path="url(#keep)">
+    <rect x="6" y="3" width="20" height="22" fill="#e8e2d4"/>
+    <rect x="6" y="3" width="20" height="5" fill="#221f28"/>
+    <rect x="8" y="10" width="2" height="3" fill="#3b3034"/>
+    <rect x="11" y="12" width="13" height="1" fill="#9a958a"/>
+    <rect x="8" y="14" width="2" height="3" fill="#3b3034"/>
+    <rect x="11" y="16" width="10" height="1" fill="#9a958a"/>
+    <rect x="8" y="18" width="2" height="3" fill="#3b3034"/>
+    <rect x="11" y="20" width="12" height="1" fill="#9a958a"/>
+    <g transform="rotate(-10 21 20)" shape-rendering="geometricPrecision">
+      <circle cx="21" cy="20" r="2.8" fill="#a33b34" fill-opacity="0.55" stroke="#a33b34" stroke-width="0.6"/>
+      <path d="M19.4 19.3H22.6 M19.4 20.8H21.8" stroke="#a33b34" stroke-width="0.6"/>
+    </g>
+    <rect x="6.5" y="3.5" width="19" height="21" fill="none" stroke="#3b3034" stroke-width="1"/>
+  </g>
+  <path d="M26.0 12.6L25.0 12.8L24.1 13.5L23.7 13.8L22.2 12.7L21.5 13.6L20.7 13.5L19.9 13.6L18.7 13.1L18.2 14.5L17.6 13.7L17.0 13.9L15.8 13.0L14.7 13.5L13.5 13.0L12.7 14.2L12.6 13.5" fill="none" stroke="#f2eee4" stroke-width="0.7" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M18.6 25.0L18.4 24.1L18.8 23.4L20.0 23.5L19.8 22.8L20.9 22.0L20.4 21.6L20.8 21.0L21.2 20.7L22.2 20.5L22.2 19.6L23.3 19.4L23.4 19.4L24.2 19.1L24.8 18.5L25.5 18.5L26.0 18.2" transform="translate(0.4 0.5)" fill="none" stroke="#221f28" stroke-opacity="0.35" stroke-width="0.9" stroke-linejoin="round"/>
+  <g clip-path="url(#corner)">
+    <rect x="6" y="3" width="20" height="22" fill="#e8e2d4"/>
+    <rect x="6" y="3" width="20" height="5" fill="#221f28"/>
+    <rect x="8" y="10" width="2" height="3" fill="#3b3034"/>
+    <rect x="11" y="12" width="13" height="1" fill="#9a958a"/>
+    <rect x="8" y="14" width="2" height="3" fill="#3b3034"/>
+    <rect x="11" y="16" width="10" height="1" fill="#9a958a"/>
+    <rect x="8" y="18" width="2" height="3" fill="#3b3034"/>
+    <rect x="11" y="20" width="12" height="1" fill="#9a958a"/>
+    <g transform="rotate(-10 21 20)" shape-rendering="geometricPrecision">
+      <circle cx="21" cy="20" r="2.8" fill="#a33b34" fill-opacity="0.55" stroke="#a33b34" stroke-width="0.6"/>
+      <path d="M19.4 19.3H22.6 M19.4 20.8H21.8" stroke="#a33b34" stroke-width="0.6"/>
+    </g>
+    <rect x="6.5" y="3.5" width="19" height="21" fill="none" stroke="#3b3034" stroke-width="1"/>
+  </g>
+  <path d="M18.6 25.0L18.4 24.1L18.8 23.4L20.0 23.5L19.8 22.8L20.9 22.0L20.4 21.6L20.8 21.0L21.2 20.7L22.2 20.5L22.2 19.6L23.3 19.4L23.4 19.4L24.2 19.1L24.8 18.5L25.5 18.5L26.0 18.2" fill="none" stroke="#f2eee4" stroke-width="0.7" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M6 14.2L12.6 13.5L13.1 15.3L12 16.3L12.5 17.7L11 18.8L11.3 20.3L9.4 20.8L8.4 22.2L6.6 21.1L5.4 21.6L5.2 17.4Z" transform="translate(0.9 0.8)" fill="#221f28" fill-opacity="0.35"/>
+  <path d="M6 14.2L12.6 13.5L13.1 15.3L12 16.3L12.5 17.7L11 18.8L11.3 20.3L9.4 20.8L8.4 22.2L6.6 21.1L5.4 21.6L5.2 17.4Z" fill="#d3cbb9" stroke="#f2eee4" stroke-width="0.6" stroke-linejoin="round"/>
+  <path d="M6 14.2L12.6 13.5L12.8 14.6L6 15.5Z" fill="#a9a190"/>
+  <path d="M7.4 17.4L10.6 16.9M7.2 19.4L9.6 19.1" fill="none" stroke="#bfb7a5" stroke-width="0.6" stroke-linecap="round"/>
+</svg>
