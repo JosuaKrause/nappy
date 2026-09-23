@@ -60,6 +60,43 @@ var dead_ends := {}
 ## `CityGenerator._place_big_buildings`.
 var big_buildings: Array[Rect2i] = []
 
+## The one big building that is the city's power station, as its pair of blocks — also in
+## `big_buildings`, which is every landmark including this one. `Rect2i()` on a map that has none,
+## which `CityGenerator.validate()` refuses, so only a hand-built map ever reads it empty. Always two
+## blocks wide and one deep: the front door is on its long south side, the one face the 2.5D view
+## draws (see `Building`). See `CityGenerator._place_power_station`.
+var power_station := Rect2i()
+## The street the power station's front door opens onto, as a `StreetNetwork.Segment.key()` — the
+## real street south of one of its two blocks. See `power_station_door_street()`.
+var power_station_door_key := Vector3i(-1, -1, -1)
+## The pavement tiles directly in front of the power station's front door: `POWER_STATION_DOOR_TILES`
+## wide, one deep, on the first sidewalk row of `power_station_door_key`'s street. Where she stands
+## to reach the door. See `power_station_door_position()`.
+var power_station_door := Rect2i()
+## How many of the power station's two blocks were `INDUSTRIAL` before it was built over them — the
+## district preference it was placed under, kept because the blocks' own purpose becomes
+## `BIG_BUILDING` the moment the mass goes down and nothing else remembers what they were.
+var power_station_industrial_blocks := 0
+
+## How wide the power station's front door is, in tiles.
+const POWER_STATION_DOOR_TILES := 2
+
+## Whether this city has its power station — false only on a map `CityGenerator.validate()` would
+## refuse.
+func has_power_station() -> bool:
+	return power_station.size != Vector2i.ZERO
+
+## The street the power station's front door faces, or null when there is no station.
+func power_station_door_street() -> StreetNetwork.Segment:
+	if not has_power_station():
+		return null
+	return StreetNetwork.by_key(power_station_door_key)
+
+## The world point in front of the power station's front door: the middle of the pavement tiles
+## `power_station_door` names, which is where she stands to reach it and what an arrow aims at.
+func power_station_door_position() -> Vector2:
+	return tile_rect_to_world(power_station_door).get_center()
+
 ## Whether a street is missing because something was built over it rather than because a calm zone
 ## painted a park across it. The question every rule about *zones* actually wants to ask, now that
 ## `absent_segments` has two kinds of thing in it.

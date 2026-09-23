@@ -25,7 +25,24 @@ var _follow_id := ""
 ## not exist when the day starts — a mobile event mid-route, or the fire a fire engine leaves
 ## behind when it stops. `parent` is whatever node the camera should live under — `main` for an
 ## ordinary run.
+##
+## **It is also where `--zoom` is applied**, because this is the one dev-rig call `main` makes once
+## the day's camera is current: whichever camera that is — hers, `--overview`'s, or the one built
+## here for `--follow` — has its own zoom scaled by the factor. See `apply_zoom()`.
 func setup_follow_camera(parent: Node) -> void:
+	_setup_follow(parent)
+	apply_zoom(parent.get_viewport().get_camera_2d() if parent.is_inside_tree() else null,
+			DevFlags.zoom_override())
+
+## Scales `camera`'s own zoom by `factor` — relative to whatever zoom the camera is authored with, so
+## `0.5` on her camera is half her normal zoom whatever that is. A no-op for a factor of one or no
+## camera.
+static func apply_zoom(camera: Camera2D, factor: float) -> void:
+	if not camera or is_equal_approx(factor, 1.0):
+		return
+	camera.zoom *= factor
+
+func _setup_follow(parent: Node) -> void:
 	_follow_id = DevFlags.follow_target()
 	if _follow_id == "":
 		return
@@ -51,9 +68,12 @@ static func day_length(day: int) -> float:
 	var override := DevFlags.day_length_override()
 	return override if override > 0.0 else Tuning.day_length(day)
 
-## `--spawn park|alley|square|arterial|closure|event` drops the player onto a tile type or next
-## to something live, so the WorldContext answers can be checked without walking across the city
-## to find one.
+## `--spawn <target>` drops the player onto a tile type or next to something live, so the
+## WorldContext answers can be checked without walking across the city to find one. The targets are
+## `park`, `alley`, `square`, `playground`, `arterial`, `closure[:n]`, `zone[:n]`, `landmark`,
+## `power_station`, `signal`, `edge[:s|e|w]`, `precinct`, `corner[:nw|ne|sw|se]`, `contact` and
+## `event[:id]`; anything else warns and starts her on the doorstep — `for_spawn_target` below is
+## the one list, one branch per target.
 static func spawn_position(city: City, resistance: ResistanceDirector) -> Vector2:
 	return for_spawn_target(DevFlags.spawn_target(), city, resistance)
 
@@ -124,6 +144,16 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 				if pair.size.x == 2 \
 				else Vector2i(mass.position.x - 2, mass.get_center().y - Tuning.STREET_WIDTH)
 		return nearest_walkable(city.map, city.map.tile_to_world(beside))
+	# The power station's front door, stood on its own pavement a door's width east of it so the
+	# door is in frame beside her rather than behind the pram. The door is on the station's south
+	# face, which is the one the camera sees, so this is also where its picture is judged from.
+	if target == "power_station":
+		if not city.map.has_power_station():
+			push_warning("this city has no power station")
+			return city.map.home_world_position()
+		var door := city.map.power_station_door_position()
+		return nearest_walkable(city.map,
+				door + Vector2.RIGHT * CityMap.POWER_STATION_DOOR_TILES * Tuning.TILE_SIZE)
 	# A signalled junction on the spine, stood a little back down the side street, so that the
 	# main road, its lights and one of its zebras are all in the same frame. The lights
 	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a

@@ -1,0 +1,20 @@
+<!-- The power station hall's ground course: its cladding over a yellow-and-black hazard band
+     and a concrete plinth on the ground line. One facade cell; the stripes run at 45 degrees on a
+     16px period, so the band repeats seamlessly from column to column. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <rect x="0" y="0" width="32" height="15" fill="#8c9291"/>
+  <rect x="3" y="0" width="1" height="15" fill="#767c7b"/>
+  <rect x="4" y="0" width="1" height="15" fill="#a1a6a4"/>
+  <rect x="11" y="0" width="1" height="15" fill="#767c7b"/>
+  <rect x="12" y="0" width="1" height="15" fill="#a1a6a4"/>
+  <rect x="19" y="0" width="1" height="15" fill="#767c7b"/>
+  <rect x="20" y="0" width="1" height="15" fill="#a1a6a4"/>
+  <rect x="27" y="0" width="1" height="15" fill="#767c7b"/>
+  <rect x="28" y="0" width="1" height="15" fill="#a1a6a4"/>
+  <rect x="0" y="15" width="32" height="9" fill="#dcb843"/>
+  <path d="M-8 24 L1 15 H9 L0 24 Z M8 24 L17 15 H25 L16 24 Z M24 24 L33 15 H41 L32 24 Z" fill="#2e2a2c"/>
+  <rect x="0" y="14" width="32" height="1" fill="#4a4f51"/>
+  <rect x="0" y="24" width="32" height="8" fill="#9c978d"/>
+  <rect x="0" y="24" width="32" height="1" fill="#b8b2a8"/>
+  <rect x="0" y="31" width="32" height="1" fill="#6b6660"/>
+</svg>

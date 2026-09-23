@@ -56,6 +56,8 @@ func run(t) -> void:
 	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
+	if _city != null:
+		_city.free()
 
 # ---------------------------------------------------------------- step table ---
 
@@ -245,7 +247,16 @@ func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 
 var _city: City
 
+## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
+## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
+## `_exit_tree()` (`src/events/event_manager.gd`). This suite calls `_build_city()` many times
+## over, so a `_city` never freed between two calls would leave every earlier one standing —
+## sixteen abandoned `City` nodes in a suite that only ever needs the latest, each holding "events"
+## resident for the rest of the process. `run()` frees whichever one is still around after the
+## last call.
 func _build_city(t) -> void:
+	if _city != null:
+		_city.free()
 	_city = CITY_SCENE.instantiate()
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
@@ -343,15 +354,20 @@ func _test_the_guard_is_seeded(t) -> void:
 		var robbery := EventCatalogue.by_id("alley_robbery")
 		var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 		var max_distance: float = robbery.pursues_within + ContactPoint.REACH
-		var search := max_distance + 40.0
 
 		for day in [6, 7, 8, 9]:
 			GameState.completed_resistance_steps = _completed_through(2 * (day - 6))
 			var director := _director(t)
 			director.start_day(day, _rng(day, "resistance"), 300.0)
 			var at := director.contact_position()
-			var guard := _find_robbery_near(at, search)
-			t.check(guard != null, "day %d's mark is guarded" % day)
+			# The director's own `_guard`, not a proximity search over `_city.events.instances()`:
+			# this loop never retires a day's guard before the next iteration spawns another, so a
+			# search by distance alone can pick up an earlier day's stale robber instead of the one
+			# this day's trap actually set — which is what a search radius wide enough to catch a
+			# station-shrunk city's tighter geometry made real. Reading the tracked instance is
+			# precedented by `_test_the_burnt_shell_task_rides_the_recorded_scar`'s `director._rider`.
+			var guard: EventInstance = director._guard
+			t.check(guard != null and is_instance_valid(guard), "day %d's mark is guarded" % day)
 			var distance := guard.global_position.distance_to(at) if guard else -1.0
 			if guard:
 				t.check(distance >= min_distance - 0.5 and distance <= max_distance + 0.5,
@@ -361,8 +377,8 @@ func _test_the_guard_is_seeded(t) -> void:
 
 			var replay := _director(t)
 			replay.start_day(day, _rng(day, "resistance"), 300.0)
-			var replay_guard := _find_robbery_near(replay.contact_position(), search)
-			if guard and replay_guard:
+			var replay_guard: EventInstance = replay._guard
+			if guard and replay_guard and is_instance_valid(replay_guard):
 				t.close_to(replay_guard.global_position.distance_to(replay.contact_position()),
 						distance, "day %d's guard distance replays the same way" % day, 0.5)
 			replay.free())
@@ -375,16 +391,6 @@ func _test_the_guard_is_seeded(t) -> void:
 			"the guard distance is not the same every day")
 
 var _seen_guard_distances: Array[float] = []
-
-func _find_robbery_near(at: Vector2, within: float) -> EventInstance:
-	if at == Vector2.INF:
-		return null
-	for instance in _city.events.instances():
-		if instance.def.id != "alley_robbery":
-			continue
-		if instance.global_position.distance_to(at) <= within:
-			return instance
-	return null
 
 # ------------------------------------------------------------- re-placement ---
 # Playtest 19 finding 6, in the player's own words: "if it was placed but never on screen it
@@ -1292,7 +1298,6 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 
 		EventBus.city_went_quiet.disconnect(handler)
 		director.free())
-	_city.free()
 
 # ------------------------------------------------------------ placement kinds ---
 # Day 8's burnt shell (`TargetKind.SCAR`), day 9's crossing (`TargetKind.DOOR`) and day 12's
@@ -1303,13 +1308,25 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var saved_scars := GameState.scars.duplicate()
-		var sidewalks := _city.map.tiles_of_type(GameEnums.TileType.SIDEWALK)
-		var scar_at := _city.map.tile_to_world(sidewalks[sidewalks.size() / 2])
+		var doorstep := _city.map.doorstep_world_position()
+		# Within `EVENT_STREAM_RADIUS` (900px) of the focus `_city.events.start_day()` is given
+		# below — `EventManager.stream_around()` only materialises a live instance for a planned
+		# event that close, scars included, so a scar recorded further out would never become the
+		# live instance `_find_scar_instance()` is looking for and this test would be exercising
+		# the no-recorded-scar fallback by accident. A flat "the middle sidewalk tile" picked
+		# whichever one that landed to be past 900px from home on a station-reshaped city, which
+		# is what turned this into the fallback path rather than the recorded-scar one it names.
+		var near_sidewalks: Array[Vector2i] = []
+		for tile in _city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+			if _city.map.tile_to_world(tile).distance_to(doorstep) < Tuning.EVENT_STREAM_RADIUS:
+				near_sidewalks.append(tile)
+		t.check(not near_sidewalks.is_empty(), "home has sidewalks within streaming range")
+		var scar_at := _city.map.tile_to_world(near_sidewalks[near_sidewalks.size() / 2])
 		GameState.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
 		# `_find_scar_instance()` reads live instances off `_city.events`, which only exist once
 		# the day's own events have actually been built — `_place_scars()` is what turns the
 		# recorded scar into a live `burnt_shell` instance at `scar_at`.
-		_city.events.start_day(8, _rng(8, "events"), [], _city.map.doorstep_world_position())
+		_city.events.start_day(8, _rng(8, "events"), [], doorstep)
 
 		var director := _director(t)
 		director.start_day(8, _rng(8, "resistance"), 300.0)

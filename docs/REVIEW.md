@@ -21,6 +21,11 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Find the power station** (`--spawn power_station` stands her at its door; `--zoom 0.35`
+  shows the whole of it; `--day 14` is the day the route reaches it). **From the street, does it
+  read as a power station and its door as the way in?** **On day 14, is the walk to it through a
+  region door a reasonable part of the day, and is it far enough from home?** Record is
+  `DECISIONS.md`, M183, slice one, the power station.
 - **Walk day 5 and day 6 past the loudspeaker masts** (`--day 5`; six masts on sidewalk corners,
   squares and the main road, a lamp amber before each broadcast and green with arcs while it
   speaks; day 6 carries the curfew). **Can you tell when a mast is about to speak and route round

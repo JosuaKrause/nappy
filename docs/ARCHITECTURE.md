@@ -480,6 +480,9 @@ non-zero on any failure.
   in docs/MECHANICS.md, driven at a fixed timestep against a fake world.
 - `test_generator.gd` — 200 seeds: connectivity, park count/spread, home-to-park distance,
   exact building coverage, and route redundancy under street closures.
+- `test_power_station.gd` — the power station across a spread of seeds: exactly one, outside the
+  home's region, its door a reasonable walk away on a real street, and reachable on its day only
+  through a region door with that day's walls, seals and closures in place.
 - `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
   one-shot consumption and the usable-park rule.
