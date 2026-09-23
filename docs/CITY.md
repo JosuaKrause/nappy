@@ -1858,8 +1858,10 @@ Top-down camera with a fake vertical extrusion:
   multi-story building's ground floor never shows a window: it is shops or blank wall — the wall
   texture and its own plinth — with the entrance, the civic portico and the fire escape exactly
   where they already stand. **Her own building is the one exception** and keeps its ground-floor
-  windows, read off `CityMap.home_block` rather than off anything drawn. A facade only one wall row
-  tall is not multi-story, so its single row is unaffected either way. Each complete
+  windows, read off `CityMap.home_block` rather than off anything drawn — except the column(s) her
+  own front door's footprint overlaps (`Building.door_world_x_range`), which draw plain wall
+  instead, since a window behind a door she is standing in front of never showed anything. A
+  facade only one wall row tall is not multi-story, so its single row is unaffected either way. Each complete
   two-column span of a `COMMERCIAL` building is a 64×36px storefront. Each facade samples the
   four types in seeded, shuffled groups, using each once before repeating and avoiding an
   immediate repeat between groups; the same building keeps its order across days. An awning

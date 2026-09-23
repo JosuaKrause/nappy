@@ -253,10 +253,26 @@ enum Condition {
 ## rule (`_draws_window_at()`): every other multi-story building's ground floor never shows a
 ## window. Set by `City._spawn_buildings()` from the building's own lot and `CityMap.home_block`,
 ## so every Building on the home block counts as hers, not only whichever lot the door notch
-## happens to touch. Never rolls anything of its own, so flipping it only ever needs a redraw.
+## happens to touch. Never rolls anything of its own, so flipping it only ever needs a redraw. The
+## door's own column(s) still draw no window — see `door_world_x_range`.
 @export var is_home_building := false:
 	set(value):
 		is_home_building = value
+		queue_redraw()
+
+## The door's own world-space x-span, `[min, max)`, or `Vector2.INF` for a building nobody told
+## about one — the same "no such point" sentinel `touch_controls.gd`'s `_drag_origin_focus` and
+## `home_arrow.gd`'s `target` already use, and `_column_under_door()`'s overlap test always answers
+## false against it, since nothing is ever greater than `INF`. Set by `City._spawn_buildings()` for
+## every building on the home block, from the same `map.home_rect` centre `City._spawn_home()`
+## places the door sprite at: the door is a separate sprite standing in front of whatever the wall
+## would otherwise draw, so the column(s) behind it (`_column_under_door()`) draw plain wall
+## instead of a window regardless of `is_home_building`. Meaningless off `is_home_building`, since
+## nobody else ever draws a ground-floor window to begin with. A geometry fact, not a roll, so
+## setting it only needs a redraw.
+@export var door_world_x_range := Vector2.INF:
+	set(value):
+		door_world_x_range = value
 		queue_redraw()
 
 @export var condition := Condition.LIVED_IN:
@@ -506,14 +522,29 @@ func _entrance_door_texture() -> StringName:
 
 # ------------------------------------------------------------------ drawing ---
 
-## Whether `row` draws a window at all. Every row does, except the ground floor (`row == 0`) of a
-## multi-story building that is not her own: a ground floor is shops or blank wall, never windows
-## (`docs/CITY.md`, "A front is district and block purpose"), and a one-row facade has no upper
-## floor to make it multi-story in the first place. Reads no RNG of its own — `_build_windows()`
-## still rolls exactly the same `_windows` array and `_window_style` it always has, so which upper
-## windows are lit and the window style are unaffected by this rule.
-func _draws_window_at(row: int) -> bool:
+## Whether `row` draws a window at ground-floor column `col`. Every row does, except the ground
+## floor (`row == 0`) of a multi-story building that is not her own: a ground floor is shops or
+## blank wall, never windows (`docs/CITY.md`, "A front is district and block purpose"), and a
+## one-row facade has no upper floor to make it multi-story in the first place. Her own building
+## keeps its ground-floor windows too, except the column(s) `door_world_x_range` covers
+## (`_column_under_door()`) — the door is a separate sprite standing in front of whatever the wall
+## would otherwise draw there, so a window behind it never showed anything but the door's own back.
+## `col` defaults to 0 for every caller that does not care, since it only matters where
+## `is_home_building` and the door might actually overlap. Reads no RNG of its own —
+## `_build_windows()` still rolls exactly the same `_windows` array and `_window_style` it always
+## has, so which upper windows are lit and the window style are unaffected by this rule.
+func _draws_window_at(row: int, col: int = 0) -> bool:
+	if row == 0 and is_home_building and _column_under_door(col):
+		return false
 	return row > 0 or is_home_building or wall_tiles() < 2
+
+## Whether ground-floor column `col`'s own world-space footprint overlaps `door_world_x_range`.
+## The door is 26px wide against a `TILE` (32px) column, so it may straddle two of them; both then
+## draw plain wall instead of a window. Called only from `_draws_window_at()`, and only once
+## `is_home_building` already is.
+func _column_under_door(col: int) -> bool:
+	var min_x := global_position.x + _cell(col, 0).x
+	return min_x < door_world_x_range.y and min_x + TILE > door_world_x_range.x
 
 func _draw() -> void:
 	var cols := columns()
@@ -533,7 +564,7 @@ func _draw() -> void:
 		for col in range(hall.x, hall.y):
 			var at := _cell(col, row)
 			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
-			if _draws_window_at(row):
+			if _draws_window_at(row, col):
 				var index := row * cols + col
 				var window_at := at
 				if row == 1 and (not _storefront_variant.is_empty() or entrance_door_col() >= 0):
