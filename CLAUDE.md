@@ -83,10 +83,11 @@ is the moment somebody is about to touch the file.
 | Path | Rules that arrive |
 |---|---|
 | `src/events/**` | **events** |
-| `src/city/**` | **city** |
+| `src/city/**`, `src/routes/**` | **city** |
 | `src/crowd/**` | **crowd-traffic** |
+| `src/city/traffic_signals.gd`, `src/city/traffic_light.gd`, `src/ground_shape.gd` | **crowd-traffic** |
 | `src/ui/**`, `sprites.gd`, `palette.gd` | **cues** |
-| `src/telemetry/**` | **telemetry** |
+| `src/telemetry/**`, `src/autoload/telemetry.gd` | **telemetry** |
 | `src/autoload/tuning.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
@@ -99,12 +100,16 @@ is the moment somebody is about to touch the file.
 | any `*.gd` | **godot** |
 | any `*.svg` | **svg-art** |
 | spawning a sub-agent (the `Agent`/`Task` tool — a tool, not a path) | **orchestrating** |
+| `src/**`, `tests/**` (a backstop — `session-rules.sh` below already loads this at session start) | **orchestrating** |
 
 **And one arrives before anything at all.** `.claude/hooks/session-rules.sh`, wired to `SessionStart`
 in `.claude/settings.json`, loads **orchestrating** at the start of every session, because
 *delegating is the default* is decided before the first tool call — an `Agent` spawn is that
-decision already going the right way and a first edit to `src/` is it already going the wrong one.
-The two path triggers are backstops and share its marker, so a session gets it exactly once.
+decision already going the right way and a first edit to `src/` or `tests/` is it already going the
+wrong one. Of the table's two `orchestrating` rows, only the second is a path trigger; the `Agent`/
+`Task` row above it is a tool trigger, not a path, same as the table already says. Both are
+backstops for the one loaded here and share its marker, so a session gets **orchestrating** exactly
+once however it is triggered.
 
 **Keep that list to one skill unless there is a real second.** Everything loaded at the start is
 paid for in every session whether or not it turns out to be relevant, which is the exact cost the

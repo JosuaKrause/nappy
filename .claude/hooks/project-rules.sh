@@ -76,14 +76,30 @@ esac
 case "$path" in
 	*/src/city/*)              wanted+=(city) ;;
 esac
+# StreetNetwork, ClosurePlanner, RouteTree, SealPlanner and RegionPlanner live here, and the
+# `city` skill's description names them.
+case "$path" in
+	*/src/routes/*)            wanted+=(city) ;;
+esac
 case "$path" in
 	*/src/crowd/*)             wanted+=(crowd-traffic) ;;
+esac
+# TrafficSignals and TrafficLight sit under src/city/ (so already get `city` above) and
+# GroundShape sits at the top of src/ -- none of them match */src/crowd/*, but the
+# `crowd-traffic` skill's description names TrafficSignals and GroundShape.tiles_under() is the
+# crowd's footprint rule, so all three also need the crowd rules.
+case "$path" in
+	*/src/city/traffic_signals.gd|*/src/city/traffic_light.gd|*/src/ground_shape.gd) wanted+=(crowd-traffic) ;;
 esac
 case "$path" in
 	*/src/ui/*|*/sprites.gd|*/palette.gd)   wanted+=(cues) ;;
 esac
 case "$path" in
 	*/src/telemetry/*)         wanted+=(telemetry) ;;
+esac
+# The run-log autoload lives outside src/telemetry/.
+case "$path" in
+	*/src/autoload/telemetry.gd) wanted+=(telemetry) ;;
 esac
 case "$path" in
 	*/art/illustrated/*|*/src/visuals/*) wanted+=(illustrated-png) ;;
