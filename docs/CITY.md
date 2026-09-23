@@ -176,6 +176,9 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
 - The home is in the **middle block**, and is at least `MIN_HOME_TO_PARK_TILES` (30) *walking*
   tiles from the nearest park. Both, together — see "The home".
 - Building rects tile the `BUILDING` tiles exactly, with no overlaps and no gaps.
+- Exactly one big building is the **power station**, its front door on a real street at least
+  `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
+  See "The power station".
 
 ## The home
 
@@ -599,7 +602,8 @@ Four kinds of street may not be a dead end, and the last is the one that only sh
   It is the absorbed-corridor rule read backwards: calm ground beside a dead end makes the dead end
   a doorway.
 
-**A big building joins two blocks, and it is a landmark.** One or two per city: two neighbouring
+**A big building joins two blocks, and it is a landmark.** One or two per city, one of them the
+power station (see "The power station" below): two neighbouring
 blocks and the street between them, built as a single mass twenty-two tiles long and tall enough to
 be the tallest thing in the district. **Every other street around the pair stays**, and so does
 every junction — a car still turns at all of them — so what is gone is one road and not the grid
@@ -637,6 +641,48 @@ cul-de-sacs are the point. Every dead end takes one of some area's ways in, so a
 refuses exactly the interesting candidates — and *"sealing off a section of the map is allowed,
 and it is the point."* What a hard blocker may never do is make calm unreachable, because it
 holds for the whole run: a day can be bad, a run cannot be dead.
+
+### The power station
+
+**One big building on every city is the power station**, and any other is an ordinary landmark.
+`Tuning.MIN_BIG_BUILDINGS` to `MAX_BIG_BUILDINGS` counts it, so the ordinary ones are one fewer
+than the roll. The last day's task is its front door, so what is guaranteed is where it stands as
+well as that it does, and every clause is **checked when the footprint is accepted, never repaired
+afterwards** (`CityGenerator._place_power_station`):
+
+- **Two blocks wide, never two deep.** The front door is on its long south side, the one face the
+  2.5D view draws — `Building` draws no east or west face at all, so a door on the long side of a
+  mass two blocks deep could not be seen.
+- **Every rule an ordinary landmark obeys**: the exclusions above and the calm-reachability gate.
+- **A front door on a real street**: the south street of one of its two blocks, still in the
+  lattice, with that block at least `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the
+  home block in lattice (Manhattan) distance. A reasonable walk rather than the edge of the map:
+  her routes need not pass it before the day she is sent there.
+- **Not in the home's region.** The door's street ground (`RegionPlanner.ground_region_of`)
+  belongs to another region than the home street's, so once the wall stands, reaching the door
+  takes a door crossing — which the story needs.
+
+**The region clause has an ordering problem, and building first is how it is answered.** Regions are
+grown over the streets the hard blockers leave and never across one a big building took, so the
+station's own street changes the partition it is asked about. So the station is the last hard
+blocker placed: each candidate is built, the regions are grown on the city it makes, and it is kept
+only if its door comes out in another region than the home's — otherwise the city is put back
+exactly as it was and the next candidate is tried. That is the tentative-then-check shape every
+hard blocker's street already has, widened to the tiles because region growth reads tiles as well as
+streets. Generation grows the regions once more afterwards, as it always does, and gets the same
+answer.
+
+**Industrial where it can be.** Candidates are tried with both blocks `INDUSTRIAL` first, then one,
+then the pair nearest industrial ground (`CityGenerator.power_station_rank`), the seed's own shuffle
+breaking ties. The industrial district is six blocks placed one at a time, so a free two-wide
+industrial pair that is also far enough out and outside the home's region is rare, and the station
+usually stands on one industrial block or beside the district. `CityMap.power_station_industrial_
+blocks` records which, since the blocks themselves become `BIG_BUILDING` once the mass is down.
+
+A city where no candidate passes has no station, and `validate()` refuses it like any other broken
+guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pair,
+`power_station_door` the pavement in front of the door, `power_station_door_street()` the street it
+faces and `power_station_door_position()` the point she stands on to reach it.
 
 ### The words for it
 

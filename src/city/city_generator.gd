@@ -1097,13 +1097,21 @@ static func _runs_beside_calm(segment: StreetNetwork.Segment, calm: Dictionary) 
 ## the reference tree, and the tree needs the calm areas, and those need the block layouts — so by
 ## the time this can be decided the blocks have already been carved. Converting them is a few lines
 ## and keeps the ordering honest; deciding it early would have meant deciding it blind.
+##
+## **One of them is the power station, and it is placed last.** The rolled count includes it, so the
+## ordinary landmarks are one fewer than the roll and go down first, from the same shuffled pool;
+## then `_place_power_station` takes the station from what is left. Last because the station's own
+## guarantee is a question about regions, and regions are grown over whatever streets the hard
+## blockers left — so the station can only be asked about once every other street it could depend on
+## has been decided.
 static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
 		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
 		calm: Dictionary, rng: RandomNumberGenerator) -> void:
 	var wanted := rng.randi_range(Tuning.MIN_BIG_BUILDINGS, Tuning.MAX_BIG_BUILDINGS)
+	var pool := _big_building_candidates(map, purposes, home, reference, calm, rng)
 	var made := 0
-	for pair in _big_building_candidates(map, purposes, home, reference, calm, rng):
-		if made >= wanted:
+	for pair in pool:
+		if made >= wanted - 1:
 			break
 		# Asked **again**, here, and not only when the pool was built. The pool is enumerated
 		# before anything is placed, so the first big building's blocks are news to the second
@@ -1118,6 +1126,182 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 			made += 1
 		else:
 			map.absent_segments.erase(between.key())
+	_place_power_station(map, purposes, block_rects, home, areas, reference, calm, pool)
+
+# ------------------------------------------------------------- power station ---
+
+## The one big building that is the power station, guaranteed on every city that passes
+## `validate()`. The last day's task is its front door, so what is guaranteed is not only that it
+## stands but where, and every clause is **checked when the footprint is accepted, never repaired
+## afterwards**:
+##
+## - **A pair two blocks wide**, never two deep, so its long side is the south face the 2.5D view
+##   draws and the front door on it can be seen (`Building` draws no east or west face at all).
+## - **Every rule an ordinary landmark obeys** — `_the_pair_is_free` and the calm-reachability gate.
+## - **A front door on a real street**: the south street of one of its two blocks, still in the
+##   lattice, at least `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home block in
+##   lattice distance. See `_door_blocks`.
+## - **Not in the home's region.** The narrative has a region door between the home and the station,
+##   so the door's street ground (`RegionPlanner.ground_region_of`) must belong to another region
+##   than the home street does.
+##
+## The last clause is the one with an ordering problem: regions are grown over the streets the hard
+## blockers left, and never across one a big building took, so the station's own street changes the
+## answer. **So each candidate is built, the regions are grown on the city it makes, and the
+## candidate is accepted only if its door comes out in another region** — otherwise the city is put
+## back exactly as it was and the next candidate is tried. That is the same tentative-then-check
+## shape `_place_dead_ends` and the landmark loop already use for the street they remove, widened to
+## the tiles because the region growth reads tiles as well as streets; nothing that was accepted is
+## ever taken back. `_attempt` grows the regions once more afterwards, which gives the same answer
+## for the accepted station since both growths see the same city.
+##
+## **Industrial where it can be.** Candidates are tried in `_power_station_rank` order — both blocks
+## `INDUSTRIAL`, then one, then the pair nearest industrial ground — and the pool's own shuffle
+## breaks ties, so a seed with an eligible industrial pair gets one.
+##
+## A city where no candidate passes has no station, which `validate()` refuses, so `generate` rolls
+## the next seed — the failure direction every other guarantee here already has.
+static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
+		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
+		calm: Dictionary, pool: Array[Rect2i]) -> void:
+	var industrial := _industrial_blocks(purposes)
+	for pair in _power_station_candidates(pool, industrial):
+		if not _the_pair_is_free(map, purposes, pair, home, reference, calm):
+			continue
+		var door_blocks := _door_blocks(map, pair)
+		if door_blocks.is_empty():
+			continue
+		var between := _street_between(pair)
+		map.absent_segments[between.key()] = true
+		if not _the_calm_survives(map, home, areas):
+			map.absent_segments.erase(between.key())
+			continue
+		var before := _Undo.new(map, purposes, block_rects, pair)
+		var industrial_count := _industrial_count(pair, industrial)
+		_make_the_pair_solid(map, purposes, block_rects, pair, between)
+		_assign_regions(map)
+		var home_region := RegionPlanner.home_region(map)
+		for block in door_blocks:
+			var street := StreetNetwork.beside_block(block, StreetNetwork.Side.SOUTH)
+			if RegionPlanner.ground_region_of(map, street) == home_region:
+				continue
+			map.power_station = pair
+			map.power_station_door_key = street.key()
+			map.power_station_door = _door_rect(block)
+			map.power_station_industrial_blocks = industrial_count
+			return
+		before.restore(map, purposes, block_rects, between)
+
+## The pool's horizontal pairs, in the order the station tries them: `_power_station_rank` first and
+## the pool's own shuffled order after it, so the preference is strict and the tie is the seed's.
+static func _power_station_candidates(pool: Array[Rect2i], industrial: Dictionary) -> Array[Rect2i]:
+	var ranked: Array = []
+	for index in pool.size():
+		var pair := pool[index]
+		if pair.size != Vector2i(2, 1):
+			continue
+		ranked.append([power_station_rank(pair, industrial), index, pair])
+	# Sorted on (rank, index) so the order does not rest on `sort_custom` being stable.
+	ranked.sort_custom(func(x: Array, y: Array) -> bool:
+		return x[0] < y[0] or (x[0] == y[0] and x[1] < y[1]))
+	var found: Array[Rect2i] = []
+	for entry: Array in ranked:
+		found.append(entry[2])
+	return found
+
+## How far a pair is from being industrial ground, lower being better: `0` when both blocks are
+## `INDUSTRIAL`, `1` when one is, and `1 + d` when neither is, `d` being the lattice distance from
+## the pair to the nearest `INDUSTRIAL` block — so a pair beside the industrial district beats one
+## across the city from it. A city with no industrial block at all ranks every pair the same.
+## `industrial` is a set of blocks (`_industrial_blocks`). Public so a test can hold the ordering.
+static func power_station_rank(pair: Rect2i, industrial: Dictionary) -> int:
+	var count := _industrial_count(pair, industrial)
+	if count > 0:
+		return 2 - count
+	var nearest := -1
+	for other: Vector2i in industrial:
+		for block in _blocks_in(pair):
+			var away := absi(other.x - block.x) + absi(other.y - block.y)
+			if nearest < 0 or away < nearest:
+				nearest = away
+	return 1 + maxi(nearest, 1)
+
+static func _industrial_count(pair: Rect2i, industrial: Dictionary) -> int:
+	var count := 0
+	for block in _blocks_in(pair):
+		if industrial.has(block):
+			count += 1
+	return count
+
+## Every block whose starting purpose is `INDUSTRIAL`, as a set.
+static func _industrial_blocks(purposes: Dictionary) -> Dictionary:
+	var found := {}
+	for block: Vector2i in purposes:
+		if purposes[block] == GameEnums.BlockPurpose.INDUSTRIAL:
+			found[block] = true
+	return found
+
+## The blocks of `pair` the front door may be on, best first: those whose south street is still in
+## the lattice and whose lattice distance from the home block is at least
+## `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME`, the nearer to the home first and then west before
+## east — an order and nothing more, since either one is a door on the same south face.
+static func _door_blocks(map: CityMap, pair: Rect2i) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for block in _blocks_in(pair):
+		var street := StreetNetwork.beside_block(block, StreetNetwork.Side.SOUTH)
+		if not street or not map.has_street(street.key()):
+			continue
+		if blocks_from_home(block) < Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME:
+			continue
+		found.append(block)
+	found.sort_custom(func(x: Vector2i, y: Vector2i) -> bool:
+		var dx := blocks_from_home(x)
+		var dy := blocks_from_home(y)
+		return dx < dy or (dx == dy and x.x < y.x))
+	return found
+
+## The lattice (Manhattan) distance in blocks from the home block to `block`.
+static func blocks_from_home(block: Vector2i) -> int:
+	var away := (block - home_block()).abs()
+	return away.x + away.y
+
+## The pavement in front of the door on `block`'s south frontage: `CityMap.POWER_STATION_DOOR_TILES`
+## wide, centred on the block, on the first sidewalk row of the street below it.
+static func _door_rect(block: Vector2i) -> Rect2i:
+	var lot := CityMap.block_rect(block)
+	var width := CityMap.POWER_STATION_DOOR_TILES
+	return Rect2i(Vector2i(lot.position.x + (lot.size.x - width) / 2, lot.end.y), Vector2i(width, 1))
+
+## Everything `_make_the_pair_solid` changes for one pair, held so a station candidate that fails
+## its region check can put the city back exactly as it found it. A candidate is only ever built
+## tentatively and undone before anything else is placed, so this never has to reason about a
+## later change sitting on top of the one it reverts.
+class _Undo extends RefCounted:
+	var tiles: PackedByteArray
+	var purposes := {}
+	var plans := {}
+	var layouts := {}
+	var rects := {}
+
+	func _init(map: CityMap, purpose_of: Dictionary, block_rects: Dictionary, pair: Rect2i) -> void:
+		tiles = map.tiles.duplicate()
+		for block in CityGenerator._blocks_in(pair):
+			purposes[block] = purpose_of[block]
+			plans[block] = map.block_plans[block]
+			layouts[block] = map.block_layouts[block]
+			rects[block] = block_rects[block]
+
+	func restore(map: CityMap, purpose_of: Dictionary, block_rects: Dictionary,
+			between: StreetNetwork.Segment) -> void:
+		map.tiles = tiles
+		for block: Vector2i in purposes:
+			purpose_of[block] = purposes[block]
+			map.block_plans[block] = plans[block]
+			map.block_layouts[block] = layouts[block]
+			block_rects[block] = rects[block]
+		map.big_buildings.pop_back()
+		map.built_over.erase(between.key())
+		map.absent_segments.erase(between.key())
 
 ## Every pair of neighbouring blocks that could be one, in the order this city will try them.
 ##
@@ -1360,4 +1544,32 @@ static func validate(map: CityMap) -> String:
 		if StreetNetwork.route_count(home, area.access, map.blocked_segments(), 1) < 1:
 			return "calm area %s cannot be reached from the home street" % area.block
 
+	# The power station, asked of the city that came out rather than trusted to the placement that
+	# made it — the same second opinion the calm gets above. Its absence is the one failure the
+	# placement can end with, since every clause is a refusal of a candidate rather than a repair.
+	var station := _power_station_problem(map)
+	if station != "":
+		return station
+
+	return ""
+
+## Why the city's power station breaks its guarantee, or "" when it keeps it: one of the big
+## buildings, two blocks wide, its door on a real street at the distance floor, and that street's
+## ground in a region other than the home's. See `_place_power_station`.
+static func _power_station_problem(map: CityMap) -> String:
+	if not map.has_power_station():
+		return "no power station was placed"
+	if not map.big_buildings.has(map.power_station) or map.power_station.size != Vector2i(2, 1):
+		return "the power station %s is not a two-block-wide landmark" % map.power_station
+	var street := map.power_station_door_street()
+	if not street or not map.has_street(street.key()):
+		return "the power station's door does not open onto a street"
+	# A segment key names the block it runs along the north edge of, so the block the door is on —
+	# the one the street runs along the south edge of — is one step north of it.
+	var door_block := Vector2i(street.key().x, street.key().y - 1)
+	if blocks_from_home(door_block) < Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME:
+		return "the power station's door is %d blocks from the home, need %d" % [
+			blocks_from_home(door_block), Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME]
+	if RegionPlanner.ground_region_of(map, street) == RegionPlanner.home_region(map):
+		return "the power station's door is in the home's region"
 	return ""
