@@ -1,8 +1,20 @@
-<!-- An unlit window. Not modulated by the building colour: glass is glass whatever the
-     wall is painted. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect x="9" y="8" width="14" height="17" fill="#221f28" fill-opacity="0.32"/>
-  <rect x="10" y="9" width="12" height="14" fill="#3b3a46"/>
-  <rect x="15" y="9" width="1" height="14" fill="#221f28" fill-opacity="0.5"/>
-  <rect x="8" y="23" width="16" height="2" fill="#ffffff" fill-opacity="0.22"/>
+<!-- An unlit window: a pair of casements in a painted frame, set in the wall under a stone
+     lintel and over a stone sill that throws a shadow on the brick. Dark glass with a curtain at
+     each side and a streak of reflected sky. Not modulated by the building colour: glass and
+     stone are what they are whatever the wall is. Registers exactly with window_lit.svg; only
+     the light differs. Everything stays between y 2 and 30, so the two-pixel lift over a
+     storefront or a door keeps the whole window in its own cell. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M8.6 25.6 H25 V26.8 H8.6 Z" fill="#221f28" fill-opacity="0.3" stroke="none"/>
+  <path d="M9.4 7.6 H22.6 V24 H9.4 Z" fill="#2a2630"/>
+  <path d="M10.2 8.4 H21.8 V23.8 H10.2 Z" fill="#d3ccbc" stroke-width="0.6"/>
+  <path d="M11.3 9.5 H15.5 V22.7 H11.3 Z M16.5 9.5 H20.7 V22.7 H16.5 Z" fill="#35414b" stroke-width="0.5"/>
+  <path d="M11.3 9.5 H12.9 C12.5 13.8 13.1 18.2 12.5 22.7 H11.3 Z M20.7 9.5 H19.1 C19.5 13.8 18.9 18.2 19.5 22.7 H20.7 Z" fill="#4a4552" stroke="none"/>
+  <path d="M11.3 9.5 H20.7 V11 H11.3 Z" fill="#221f28" fill-opacity="0.35" stroke="none"/>
+  <path d="M13.2 21 L15.2 16.6 M18.3 21 L20.3 16.6" fill="none" stroke="#9fb3bb" stroke-width="0.6" stroke-opacity="0.7"/>
+  <path d="M8 4.8 H24 V7.8 H8 Z" fill="#c4bba9"/>
+  <path d="M8.7 5.6 H23.3" fill="none" stroke="#e0d9cb" stroke-width="0.7"/>
+  <path d="M8.6 7.4 H23.4" fill="none" stroke="#9d9484" stroke-width="0.5"/>
+  <path d="M8.4 23.8 H23.6 L24.6 24.8 V25.8 H7.4 V24.8 Z" fill="#b8af9e"/>
+  <path d="M8.2 24.6 H23.8" fill="none" stroke="#e0d9cb" stroke-width="0.7"/>
 </svg>

@@ -1,7 +1,19 @@
-<!-- Narrow residential window behind closed shutters, warmly lit at the slats. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect x="7" y="6" width="18" height="21" fill="#221f28" fill-opacity="0.36"/>
-  <rect x="9" y="8" width="14" height="17" fill="#c4a36b"/>
-  <path d="M8 7V27 M12 7V27 M20 7V27 M24 7V27" stroke="#705649" stroke-width="1"/>
-  <rect x="6" y="25" width="20" height="2" fill="#f2d88a" fill-opacity="0.38"/>
+<!-- A window behind closed shutters, lit: window_shuttered_dark.svg with the room's light on
+     behind it, registering with it exactly — the same leaves, louvres, lintel and sill, with warm
+     light showing between the slats and down the gap where the leaves meet, and catching the
+     sill. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M8.2 26.2 H24.6 V27.4 H8.2 Z" fill="#221f28" fill-opacity="0.3" stroke="none"/>
+  <path d="M8.8 6.6 H23.2 V24.6 H8.8 Z" fill="#2a2630"/>
+  <path d="M9.4 7.2 H15.8 V24.4 H9.4 Z M16.2 7.2 H22.6 V24.4 H16.2 Z" fill="#5b6e63" stroke-width="0.7"/>
+  <path d="M10.6 9.2 H14.6 M10.6 11 H14.6 M10.6 12.8 H14.6 M10.6 14.6 H14.6 M10.6 18.4 H14.6 M10.6 20.2 H14.6 M10.6 22 H14.6 M17.4 9.2 H21.4 M17.4 11 H21.4 M17.4 12.8 H21.4 M17.4 14.6 H21.4 M17.4 18.4 H21.4 M17.4 20.2 H21.4 M17.4 22 H21.4" fill="none" stroke="#f2c46c" stroke-width="0.7"/>
+  <path d="M10.6 9.9 H14.6 M10.6 11.7 H14.6 M10.6 13.5 H14.6 M10.6 15.3 H14.6 M10.6 19.1 H14.6 M10.6 20.9 H14.6 M10.6 22.7 H14.6 M17.4 9.9 H21.4 M17.4 11.7 H21.4 M17.4 13.5 H21.4 M17.4 15.3 H21.4 M17.4 19.1 H21.4 M17.4 20.9 H21.4 M17.4 22.7 H21.4" fill="none" stroke="#859a8c" stroke-width="0.45"/>
+  <path d="M9.4 16.3 H15.8 V17.5 H9.4 Z M16.2 16.3 H22.6 V17.5 H16.2 Z" fill="#6d8175" stroke-width="0.5"/>
+  <path d="M10 8 V23.6 M16.8 8 V23.6" fill="none" stroke="#7d9185" stroke-width="0.5"/>
+  <path d="M16 7.4 V24.4" fill="none" stroke="#f2c46c" stroke-width="0.5"/>
+  <path d="M7.6 3.8 H24.4 V6.8 H7.6 Z" fill="#c4bba9"/>
+  <path d="M8.3 4.6 H23.7" fill="none" stroke="#e0d9cb" stroke-width="0.7"/>
+  <path d="M8.2 6.4 H23.8" fill="none" stroke="#9d9484" stroke-width="0.5"/>
+  <path d="M8 24.4 H24 L25 25.2 V26.2 H7 V25.2 Z" fill="#b8af9e"/>
+  <path d="M7.8 25 H24.2" fill="none" stroke="#f3e0b0" stroke-width="0.7"/>
 </svg>
