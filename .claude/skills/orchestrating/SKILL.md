@@ -107,6 +107,21 @@ the wrong one. It is the one rule in this project that cannot be hung on a file.
 
 A vague prompt returns work that cannot be merged. Every agent prompt contains, explicitly:
 
+**Before spawning, the orchestrator writes the brief verbatim to `.claude/briefs/<branch with
+"/" replaced by "-">.md`.** The file opens with a header of `key: value` lines that
+`tools/agent-status.sh` parses:
+
+```
+branch: feature/<thing>
+worktree: /abs/path/to/worktree   (added once known)
+agent: <agent id>                 (added after spawning; one line per agent, the newest last)
+spawned: <ISO date>
+```
+
+Then a blank line, then the brief. Every later `SendMessage` that changes the agent's scope or
+task is appended under `## Amendment <ISO date>`, so the file on disk stays what the agent was
+actually told rather than what it was told at spawn time.
+
 - **A read-first list, in order**: `CLAUDE.md`, the milestone's `TODO.md` section, the
   `DECISIONS.md` sections that carry its design, and the specific docs and source files it will
   touch. The agent starts cold; everything it needs must be named, not assumed.
@@ -256,13 +271,15 @@ merging is what collides — so parallelism is planned at the file level, before
 - **An agent that died mid-task is replaced in its own worktree.** A usage limit or an API
   error kills the agent and leaves every edit it made, usually uncommitted. Past the cache
   window *(2026-09-20: "don't let them continue because their cache is expired")*, start the
-  fresh agent without worktree isolation, pointed at the dead agent's worktree path. The brief
-  it needs is the original one — recoverable verbatim from the previous session's transcript
-  under `~/.claude/projects/` — plus what the orchestrator verified on disk: which files are
-  modified, what was never run, and where the dead agent stopped, read from its own transcript's
-  last tool calls. Its first two steps are to commit the inherited work as it stands and to
-  merge `origin/main`. Say plainly that nothing inherited has been reviewed: one inherited file
-  here did not compile.
+  fresh agent without worktree isolation, pointed at the dead agent's worktree path. The brief it
+  needs comes from `.claude/briefs/<branch-slug>.md` — the file the orchestrator wrote before
+  spawning, kept current by every amendment sent since; the previous session's transcript under
+  `~/.claude/projects/` is only the fallback when no such file exists. Its replacement agent's
+  prompt is "read `.claude/briefs/<file>`, then what changed: …", plus what the orchestrator
+  verified on disk: which files are modified, what was never run, and where the dead agent
+  stopped, read from its own transcript's last tool calls. Its first two steps are to commit the
+  inherited work as it stands and to merge `origin/main`. Say plainly that nothing inherited has
+  been reviewed: one inherited file here did not compile.
 
   **Before inheriting anything, compare the worktree with its own branch on the remote.** Another
   session can pick the same branch up while the agent is dead: the remote then carries pushed
