@@ -1,37 +1,80 @@
-<!-- A north-south street seen across its width: two cars seen end-on, locked side by side,
-     with one upright onlooker on each pavement. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <g transform="translate(9 6)">
-    <rect x="5" y="29" width="4" height="13" fill="#46506b"/><rect x="10" y="29" width="4" height="13" fill="#46506b"/>
-    <rect x="4" y="40" width="5" height="2" fill="#221f28"/><rect x="10" y="40" width="5" height="2" fill="#221f28"/>
-    <rect x="2" y="12" width="14" height="18" fill="#6b7a8c"/><rect x="2" y="24" width="14" height="6" fill="#5c697a"/>
-    <circle cx="9" cy="7" r="6" fill="#d9a878"/><path d="M3 7 A6 6 0 0 1 15 7 Z" fill="#3a2b26"/>
+<!-- A north-south street seen across its width: two cars locked side by side across the
+     carriageway after they met — the blue one seen from behind, its right flank stove in, the
+     red one seen from the front, its left flank crushed to match — with glass and a torn-off
+     bumper on the road, coolant spreading under them, steam rising, and an onlooker on each
+     pavement. The cars are the crowd cars' end-on projection; the onlookers are the event
+     `person` figure (`person_front_diagonal.svg`, the right one mirrored), each turned towards
+     the crash. Native 200x50, fitted by `_draw_wide_scene` to the 192px obstruction with its
+     bottom edge on the ground point. The cars stand at x 63-91 and 92-120 over their ground
+     contacts in `car_accident_shadow.svg` (77 and 106), which `EventCatalogue.
+     _car_accident_parts()` reads as the two solid bodies: they must not move. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(9 6)" stroke="#3b2d32" stroke-width="0.8">
+    <path d="M10 28 L14 28 L14 39 L10 39 Z M5 29 L9 30 L9 41 L5 41 Z" fill="#46506b"/>
+    <path d="M10 38 L14 38 L16 40 L10 40 Z M5 40 L9 40 L12 41.5 L5 41.5 Z" fill="#221f28"/>
+    <path d="M12 13 L15 13 L16 24 L13 25 Z" fill="#5c697a"/>
+    <path d="M13 24 L16 24 L16 27 L13 27 Z" fill="#d9a878"/>
+    <path d="M5 12 L12 11 L15 15 L14 29 L8 32 L3 29 L3 16 Z" fill="#6b7a8c"/>
+    <path d="M3 16 L7 14 L8 32 L3 29 Z M7 26 L14 24 L14 29 L8 32 Z" fill="#5c697a"/>
+    <path d="M11 14 L12 28" fill="none"/>
+    <path d="M3 15 Q5 13 7 16 L7 26 L3 27 Z" fill="#6b7a8c"/>
+    <path d="M3 26 L7 26 L7 29 Q5 31 3 29 Z" fill="#d9a878"/>
+    <path d="M4 5 Q5 1 10 1 Q15 1 15 6 L16.5 8 L14 9 L13 12 L8 13 L4 9 Z" fill="#d9a878"/>
+    <path d="M4 8 Q2 3 7 1 Q13 -0.5 15 4 L10 4 L8 7 L6 6 L6 10 Z" fill="#3a2b26"/>
+    <path d="M6 7 Q9 6 8 10" fill="none"/>
+    <circle cx="12.5" cy="6.5" r="0.65" fill="#221f28" stroke="none"/>
   </g>
-  <g transform="translate(62 2) rotate(-3 15 23)">
-    <path d="M7 4 Q15 1 23 4 L27 10 L27 36 Q16 43 4 37 L3 11 Z" fill="#7d8a9a"/>
-    <path d="M7 5 Q15 2 23 5 L26 11 L4 12 Z" fill="#8fa0b0"/>
-    <path d="M7 14 Q15 11 23 14 L23 26 Q15 29 7 26 Z" fill="#2f3742"/>
-    <path d="M9 15 Q15 13 21 15 L21 24 Q15 26 9 24 Z" fill="#556779"/>
-    <path d="M4 34 Q15 39 27 34 L26 39 Q16 45 5 39 Z" fill="#677482"/>
-    <rect x="1" y="14" width="3" height="7" fill="#221f28"/><rect x="26" y="14" width="3" height="7" fill="#221f28"/>
-    <rect x="1" y="30" width="3" height="7" fill="#221f28"/><rect x="26" y="30" width="3" height="7" fill="#221f28"/>
-    <path d="M6 36 L11 37 L9 41 L4 39 M21 36 L27 34 L28 38 L23 41" fill="#4e5967"/>
+  <!-- Coolant spreading from under the crash. -->
+  <path d="M80 45.4 C84 43.6 96 43.4 102 44.8 C106 45.8 104 47.8 98 48 C92 48.6 84 48.4 80.6 47.4 C78.6 46.8 78.6 46 80 45.4 Z" fill="#1d1a20" fill-opacity="0.45" stroke="none"/>
+  <g transform="translate(62.5 2.2) scale(0.93) rotate(-3 15 26)" stroke-width="1.1">
+    <path d="M1 19 L4 19 L4 26 L1 26 Z M26 19 L29 19 L29 26 L26 26 Z M1 35 L4 35 L4 43 L1 43 Z M26 35 L29 35 L29 43 L26 43 Z" fill="#26232a"/>
+    <path d="M7 9 Q15 7 23 9 L26 18 L26.6 24 L24.4 26.4 L27.2 29.6 L24.8 32.6 L27 36 L27 41 Q15 45 3 41 L4 18 Z" fill="#6d7f99"/>
+    <path d="M7.4 9.4 L22.6 9.4 L24 16 L6 16 Z M8 23 L22 23 L23 32 L7 32 Z" fill="#8797b0" stroke="none"/>
+    <path d="M4.2 37.6 L26.4 37.6 L26.8 41.2 Q15 44.6 3.2 41.2 Z" fill="#50607a" stroke="none"/>
+    <path d="M6 16 L24 16 L24 22 L6 22 Z M7 33 L23 33 L25 38 L5 38 Z" fill="#2f3742"/>
+    <path d="M8 17.4 L13 17.4 M9 34.4 L14 34.4" fill="none" stroke="#556779" stroke-width="1"/>
+    <path d="M9.4 24.6 L20.4 24.6" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.9"/>
+    <path d="M18.6 33.6 L20.4 36 M20.4 36 L22.8 34.4 M20.4 36 L21 37.8" fill="none" stroke="#cfe3ea" stroke-width="0.8"/>
+    <path d="M22.6 25 L24.2 27.6 L22.4 30.4 M21 34 L23.4 35.6" fill="none" stroke="#3a4658" stroke-width="1"/>
+    <path d="M5 39 L10 39 L10 41.6 L5 41.6 Z" fill="#c4503c" stroke-width="0.8"/>
+    <path d="M20 39 L25 39 L25 41.6 L20 41.6 Z" fill="#3a3436" stroke-width="0.8"/>
+    <path d="M12 40.8 L18 40.8" fill="none" stroke="#c9c3b8" stroke-width="1"/>
+    <path d="M7 9 Q15 7 23 9 L26 18 L26.6 24 L24.4 26.4 L27.2 29.6 L24.8 32.6 L27 36 L27 41 Q15 45 3 41 L4 18 Z" fill="none"/>
   </g>
-  <g transform="translate(91 2) rotate(4 15 23)">
-    <path d="M7 5 Q15 1 23 5 L27 11 L27 37 Q15 42 3 37 L3 11 Z" fill="#a8503f"/>
-    <path d="M7 5 Q15 2 23 5 L26 12 L4 12 Z" fill="#bf6a58"/>
-    <path d="M7 15 Q15 12 23 15 L23 27 Q15 30 7 27 Z" fill="#2f3742"/>
-    <path d="M9 16 Q15 14 21 16 L21 25 Q15 27 9 25 Z" fill="#556779"/>
-    <path d="M3 34 L9 36 L13 34 L19 38 L27 34 L27 39 Q15 44 3 39 Z" fill="#8d4035"/>
-    <rect x="1" y="14" width="3" height="7" fill="#221f28"/><rect x="26" y="14" width="3" height="7" fill="#221f28"/>
-    <rect x="1" y="30" width="3" height="7" fill="#221f28"/><rect x="26" y="30" width="3" height="7" fill="#221f28"/>
+  <g transform="translate(91.3 2.2) scale(0.93) rotate(4 15 26)" stroke-width="1.1">
+    <path d="M1 19 L4 19 L4 26 L1 26 Z M26 19 L29 19 L29 26 L26 26 Z M1 35 L4 35 L4 43 L1 43 Z M26 35 L29 35 L29 43 L26 43 Z" fill="#26232a"/>
+    <path d="M7 9 Q15 7 23 9 L26 18 L27 41 Q15 45 3 41 L3 36 L5.2 32.6 L2.8 29.6 L5.6 26.4 L3.4 24 L4 18 Z" fill="#a8503f"/>
+    <path d="M7.4 9.4 L22.6 9.4 L24 16 L6 16 Z M8 23 L22 23 L23 32 L7 32 Z" fill="#c26a57" stroke="none"/>
+    <path d="M4.2 37.6 L26.4 37.6 L26.8 41.2 Q15 44.6 3.2 41.2 Z" fill="#83392d" stroke="none"/>
+    <path d="M6 16 L24 16 L24 22 L6 22 Z M7 33 L23 33 L25 38 L5 38 Z" fill="#2f3742"/>
+    <path d="M8 17.4 L13 17.4 M9 34.4 L14 34.4" fill="none" stroke="#556779" stroke-width="1"/>
+    <path d="M9.4 24.6 L20.4 24.6" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.9"/>
+    <path d="M11.4 33.6 L9.6 36 M9.6 36 L7.2 34.4 M9.6 36 L9 37.8" fill="none" stroke="#cfe3ea" stroke-width="0.8"/>
+    <path d="M7.4 25 L5.8 27.6 L7.6 30.4 M9 34 L6.6 35.6" fill="none" stroke="#6a2a21" stroke-width="1"/>
+    <path d="M20 39 L25 39 L25 41.6 L20 41.6 Z" fill="#f0d99a" stroke-width="0.8"/>
+    <path d="M5 39 L10 39 L10 41.6 L5 41.6 Z" fill="#3a3436" stroke-width="0.8"/>
+    <path d="M12 40.8 L18 40.8" fill="none" stroke="#c9c3b8" stroke-width="1"/>
+    <path d="M7 9 Q15 7 23 9 L26 18 L27 41 Q15 45 3 41 L3 36 L5.2 32.6 L2.8 29.6 L5.6 26.4 L3.4 24 L4 18 Z" fill="none"/>
   </g>
-  <path d="M91 34 l4 -4 l3 4 l5 -2 l3 5 l5 -3" fill="none" stroke="#cfd6da" stroke-width="1.2"/>
-  <path d="M88 40 l-4 4 M97 41 l2 5 M105 41 l4 4" stroke="#a8c1c6" stroke-width="1.2"/>
-  <g transform="translate(173 6)">
-    <rect x="5" y="29" width="4" height="13" fill="#46506b"/><rect x="10" y="29" width="4" height="13" fill="#46506b"/>
-    <rect x="4" y="40" width="5" height="2" fill="#221f28"/><rect x="10" y="40" width="5" height="2" fill="#221f28"/>
-    <rect x="2" y="12" width="14" height="18" fill="#6b7a8c"/><rect x="2" y="24" width="14" height="6" fill="#5c697a"/>
-    <circle cx="9" cy="7" r="6" fill="#d9a878"/><path d="M3 7 A6 6 0 0 1 15 7 Z" fill="#3a2b26"/>
+  <!-- On the road: the red car's bumper, glass, a hubcap. -->
+  <path d="M100 46.2 L111 44.6 L111.4 46.2 L100.4 47.8 Z" fill="#3a3436" stroke-width="0.8"/>
+  <path d="M84 46.4 L85.6 45.6 L85.8 47.0 Z M89 48.2 L90.6 47.400000000000006 L90.8 48.800000000000004 Z M95 45.6 L96.6 44.800000000000004 L96.8 46.2 Z M58 47.4 L59.6 46.6 L59.8 48.0 Z M123 47.8 L124.6 47.0 L124.8 48.4 Z" fill="#bfe0ea" stroke="#5f7f8c" stroke-width="0.6"/>
+  <ellipse cx="129" cy="46.6" rx="2.2" ry="1.1" fill="#9aa4ac" stroke-width="0.8"/>
+  <path d="M84 9.2 C82 6.2 85 3.2 88 4.2 C89 1.2 94 1.0 95.4 4.2 C98.4 4.0 99.6 7.6000000000000005 97 9.2 C94 10.799999999999999 87.4 11.0 84 9.2 Z" fill="#e6e3dd" stroke="#8f8a84" stroke-width="0.8"/>
+  <path d="M87 7.8 C88.6 6.6000000000000005 90.6 6.6000000000000005 92 7.6000000000000005" fill="none" stroke="#b9b4ad" stroke-width="0.7"/>
+  <g transform="translate(191 6) scale(-1 1)" stroke="#3b2d32" stroke-width="0.8">
+    <path d="M10 28 L14 28 L14 39 L10 39 Z M5 29 L9 30 L9 41 L5 41 Z" fill="#46506b"/>
+    <path d="M10 38 L14 38 L16 40 L10 40 Z M5 40 L9 40 L12 41.5 L5 41.5 Z" fill="#221f28"/>
+    <path d="M12 13 L15 13 L16 24 L13 25 Z" fill="#5c697a"/>
+    <path d="M13 24 L16 24 L16 27 L13 27 Z" fill="#d9a878"/>
+    <path d="M5 12 L12 11 L15 15 L14 29 L8 32 L3 29 L3 16 Z" fill="#6b7a8c"/>
+    <path d="M3 16 L7 14 L8 32 L3 29 Z M7 26 L14 24 L14 29 L8 32 Z" fill="#5c697a"/>
+    <path d="M11 14 L12 28" fill="none"/>
+    <path d="M3 15 Q5 13 7 16 L7 26 L3 27 Z" fill="#6b7a8c"/>
+    <path d="M3 26 L7 26 L7 29 Q5 31 3 29 Z" fill="#d9a878"/>
+    <path d="M4 5 Q5 1 10 1 Q15 1 15 6 L16.5 8 L14 9 L13 12 L8 13 L4 9 Z" fill="#d9a878"/>
+    <path d="M4 8 Q2 3 7 1 Q13 -0.5 15 4 L10 4 L8 7 L6 6 L6 10 Z" fill="#3a2b26"/>
+    <path d="M6 7 Q9 6 8 10" fill="none"/>
+    <circle cx="12.5" cy="6.5" r="0.65" fill="#221f28" stroke="none"/>
   </g>
 </svg>

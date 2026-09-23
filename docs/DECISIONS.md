@@ -10,6 +10,47 @@ does exactly that and refuses every other shape, which stays the **merging-main*
 three-way review; the semantic review of the merge is not skipped because the conflict was
 mechanical.
 
+## The street obstructions, redrawn · 2026-09-23
+
+*(Chosen from the same survey as the street animals; accepted in
+[PLAYTEST-124](playtests/PLAYTEST-124.md), statement 7.)* One Opus agent on
+`feature/svg-rework-obstructions` redrew 16 files to the burst water main's bar: the roadworks
+barrier (PLAYTEST-64: "vertical barriers look wrong (just sideways textures stacked on top of each
+other)"), the closure kit's rails, sign and four causes, the market stall, the delivery van's side
+view, the fallen-tree seal and the car-accident seal, whose onlookers are now the event `person`
+figure (PLAYTEST-50: "the people should look like people in the game").
+
+**Kept:** every canvas and ground point; the car-accident shadow files untouched, since
+`EventCatalogue._car_accident_parts()` reads the cars' ground contacts off them, and the cars drawn
+inside the x ranges it states; stripe periods that divide each repeated piece, because the code
+stretches a segment to its share of a mouth; the amber-and-white closure rails, whose file says a
+closure must read as civil. **Open to overturn, chosen by the agent:** the red no-entry plate over
+an American "ROAD CLOSED" board; one leg per broadside segment; the east-west fallen tree falling
+toward the camera; a ladder in the roadworks trench. **What drawing could not fix** is queued as
+M187, a closure lies across the street it closes.
+
+## The street animals, redrawn · 2026-09-23
+
+*(The player, 2026-09-23: "have a opus work on redoing svg graphics that currently don't have a
+png equivalent yet. Choose graphics that need updates yourself"; accepted in
+[PLAYTEST-124](playtests/PLAYTEST-124.md), statement 7.)* A read-only Opus survey rendered every
+SVG family without a PNG and ranked them against the art accepted that week (posters, mast, power
+station, burst water main); the orchestrator chose the animals and the street obstructions as the
+most visible on every day. One Opus agent on `feature/svg-rework-animals` redrew 45 files: the dog,
+the charging dog, the cat and the pigeon, each family in one outlined, shaded style from every
+view. Each family's side view had been stacked rectangles while its other views were shaped, so
+the animal changed style as it turned.
+
+**Kept:** every canvas, the bottom-centre ground point, east-facing sides and diagonals (the code
+mirrors the west), the lead points `(0, -8)` and `(0, -6)` on the dog's body, and stride frames on
+one registration; a pigeon's up and down frames differ only in the wings. **Found in review:**
+the dogs' front, back and diagonal views stood 2px above the ground point while the sides stood on
+it, so a turning dog hopped; they stand on it now. **Open to overturn, chosen by the agent:** the
+walked dog's blue collar; the charging dog told apart by black-and-tan and raised hackles; a gray
+tabby cat; dark pigeon beaks. **Next in the survey's ranking, not started:** the crowd walker with
+the event `person` (the look ~130 people files follow), the crowd car once "Cars bob on their
+wheels" settles its wheel layer.
+
 ## M184 — A rig walks the route · built 2026-09-23
 
 *([PLAYTEST-122](playtests/PLAYTEST-122.md).)* One Sonnet agent on `feature/rig-walks-the-route`
