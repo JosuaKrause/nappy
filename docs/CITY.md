@@ -1854,19 +1854,38 @@ Top-down camera with a fake vertical extrusion:
   painted by `Building._draw()` itself, above its own roof tiles and inside the layer of buildings
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
   is never compared against anything on the pavement.
-- **A front is district and block purpose, read the same way a roof's furniture is.** Each complete
+- **A front is district and block purpose, read the same way a roof's furniture is.** A
+  multi-story building's ground floor never shows a window: it is shops or blank wall — the wall
+  texture and its own plinth — with the entrance, the civic portico and the fire escape exactly
+  where they already stand. **Her own building is the one exception** and keeps its ground-floor
+  windows, read off `CityMap.home_block` rather than off anything drawn. A facade only one wall row
+  tall is not multi-story, so its single row is unaffected either way. Each complete
   two-column span of a `COMMERCIAL` building is a 64×36px storefront. Each facade samples the
   four types in seeded, shuffled groups, using each once before repeating and avoiding an
   immediate repeat between groups; the same building keeps its order across days. An awning
-  variant appears on a seeded share. Each is a substitution for the wall's ground-floor plinth:
-  the storefront's fill is opaque, so it covers the ordinary windows under both columns the same
-  way the plinth always did. An odd final column remains ordinary wall, and a facade only one wall
-  row tall keeps its wall base so the complete store fits. Each storefront has a 26×34px entrance
+  variant appears on a seeded share. Each is a substitution for the wall's ground-floor plinth,
+  its own fill opaque over the wall it sits on. An odd final column is blank wall rather than a
+  window, and a facade only one wall row tall keeps its wall base so the complete store fits. Each storefront has a 26×34px entrance
   aligned to the shared ground line. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
   of `RESIDENTIAL` facades tall enough for one carries a fire escape over their bottom two rows —
   both drawn as overlays, after the wall, rather than replacing a texture the way a storefront
   does. The awning is the one piece of a front that leaves the wall plane; it stays inside the
   wall's own footprint rather than reaching over the pavement's walkable band.
+- **A multi-story front with no other way in has one entrance door**
+  (`Building.entrance_door_col()`), since a ground floor with no windows needs a way in. A
+  storefront is a commercial front's way in and the portico a civic front's, so neither gets a
+  second; her own block keeps its windows and has her own door; a one-row facade keeps its
+  windows and has no door; the power station draws its own. Everything else — every `RESIDENTIAL`
+  and `INDUSTRIAL` front, and a `COMMERCIAL` front one column wide, too narrow for a storefront —
+  gets exactly one, an overlay standing on the ground line at its column's centre: the plain
+  `entrance_door.svg`, or the steel `entrance_door_industrial.svg` on an `INDUSTRIAL` block.
+  Its column is rolled from a stream of its own, so no window, style, storefront, awning, shutter
+  or fire-escape roll moves because of it; it keeps off the fire escape's column and, wherever
+  the front has another to offer, off both columns beside it, which the escape's landings reach
+  into, and off the corner columns where there is still a choice. Like a storefront, the door is
+  36px tall and rises four pixels into the row above, so every window on that row sits two
+  pixels higher to keep its sill clear. The door's cell and the fire escape's are not blank wall:
+  `Building.blank_ground_floor_cells()`, the cells a poster can go on, leaves both out.
 - **A building's upper-floor windows carry one of three styles, rolled once for the whole
   building**: the plain pair, a tall sash pair, or a shuttered pair that lights up like any other —
   ordinary street variety, unconnected to the day or the block's own condition. Going

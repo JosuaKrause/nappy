@@ -149,6 +149,8 @@ src/
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
 	dev_rig.gd            the flag-acting half: --spawn/--follow/--overview/--meters/--day-length
 	                       against the live City, testable without booting main
+	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/spawn:<name>)
+	                       along a real, kerb-preferring path, through the ordinary input path
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
@@ -481,6 +483,10 @@ non-zero on any failure.
 - `test_power_station.gd` — the power station across a spread of seeds: exactly one, outside the
   home's region, its door a reasonable walk away on a real street, and reachable on its day only
   through a region door with that day's walls, seals and closures in place.
+- `test_ground_floor.gd` — the ground floor of a multi-story building is shops or blank wall,
+  never windows, except hers: fixtures per district plus a spread of generated cities, the
+  `_build_windows()`/`_build_front()` RNG streams pinned unchanged, and `Building.
+  blank_ground_floor_cells()`'s own contract (ground-floor, non-window, non-entrance).
 - `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
   one-shot consumption and the usable-park rule.

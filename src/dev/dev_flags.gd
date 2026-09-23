@@ -41,6 +41,7 @@ extends RefCounted
 ##   --meters        2
 ##   --spawn         1
 ##   --follow        1
+##   --route         1
 ##   --force         1?
 ##   --overview      0
 ##   --zoom          1
@@ -270,6 +271,22 @@ static func follow_target() -> String:
 	if index == -1 or index + 1 >= args.size():
 		return ""
 	return args[index + 1]
+
+## `--route mark,task,calm,home` — an ordered list of target words `src/dev/route_rig.gd`'s
+## `RouteRig` walks to in turn, split on commas with nothing else validated: a word `RouteRig`
+## does not recognise is its own `push_warning`, the same split `spawn_target()` above leaves to
+## `DevRig.for_spawn_target()`, since it is the live `City` that decides what a word means and not
+## the raw argv. `[]` for an absent flag or an empty value, which `main.gd` reads as "no rig".
+static func route_targets() -> Array[String]:
+	var args := _args()
+	var index := args.find("--route")
+	if index == -1 or index + 1 >= args.size():
+		return []
+	var result: Array[String] = []
+	for word in args[index + 1].split(","):
+		if word != "":
+			result.append(word)
+	return result
 
 ## `--force <event id> [seconds]` — the raw id, or "" if none was given.
 ##

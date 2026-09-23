@@ -1,4 +1,46 @@
-<!-- cat running front diagonal; muzzle and face lead the pose. Bottom-centre ground anchor; prepared and unbound. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="38" height="24" viewBox="0 0 38 24" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <path d="M8 8 Q15 8 26 13 L25 19 L9 14 Z" fill="#58524d" />  <path d="M10 12 L5 15 L2 14 M13 15 L8 20 L5 19 M25 18 L29 22 L33 21 M23 17 L23 22 L27 23" fill="none" stroke="#3f3a36" stroke-width="2"/>  <path d="M25 13 L24 7 L28 10 L31 8 L33 13 Q36 19 30 20 Q25 20 25 13 Z" fill="#58524d" />  <path d="M28 16 L31 17 L33 16 L32 19 L29 19 Z" fill="#81736b" />  <path d="M32 16 L34 16 L33 18 Z" fill="#221f28" /><circle cx="29" cy="13.5" r="0.7" fill="#e8ddc8"/>  <path d="M9 10 L4 7 L1 3" fill="none" stroke="#58524d" stroke-width="2"/>
+<!-- The cat, running, front diagonal view, one of CAT_RUNNING_BY_VIEW / CAT_RUNNING_BY_VIEW_B: the dash, ears back and tail streaming.
+     The same gray tabby as cat_crouched.svg and cat_running.svg (pale chest and muzzle,
+     yellow eyes, dark stripes across the back) from this side. Faces south-east, towards the viewer and to the
+     right; EventInstance mirrors it for south-west. Canvas 38x24, ground anchor bottom
+     centre (19,24); the near front paw stands on the bottom edge.
+     The a and b frames share every body path; only the legs move. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="38" height="24" viewBox="0 0 38 24" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M10 11.4 Q6 9.6 4.4 5.6 Q3.6 3.6 2 3.4" fill="none" stroke-width="2.40"/>
+  <path d="M10 11.4 Q6 9.6 4.4 5.6 Q3.6 3.6 2 3.4" fill="none" stroke="#6f6a66" stroke-width="1.50"/>
+  <path d="M13.4 14.4 L10.6 17 L7.4 18.4 L6.6 18.2" fill="none" stroke-width="2.40"/>
+  <path d="M13.4 14.4 L10.6 17 L7.4 18.4 L6.6 18.2" fill="none" stroke="#504a46" stroke-width="1.50"/>
+  <path d="M24.4 15.4 L28 17.6 L31.4 18.6 L32.2 18.4" fill="none" stroke-width="2.40"/>
+  <path d="M24.4 15.4 L28 17.6 L31.4 18.6 L32.2 18.4" fill="none" stroke="#504a46" stroke-width="1.50"/>
+  <path d="M11.6 14.8 L8.4 17.8 L5 20.4 L4.2 20.6" fill="none" stroke-width="2.40"/>
+  <path d="M11.6 14.8 L8.4 17.8 L5 20.4 L4.2 20.6" fill="none" stroke="#6f6a66" stroke-width="1.50"/>
+  <path d="M25.6 16.2 L29 19.8 L32 22.8 L33 22.8" fill="none" stroke-width="2.40"/>
+  <path d="M25.6 16.2 L29 19.8 L32 22.8 L33 22.8" fill="none" stroke="#6f6a66" stroke-width="1.50"/>
+  <clipPath id="cat-body"><path d="M9.4 12 C10.6 10 14 9.8 17.6 10.6 C21 11.4 24 12.4 26.2 14 C27.6 15.6 27.2 17.8 25.4 18.4 C23 19 20.6 17.8 17.6 17.4 C14.6 17 11.6 16.6 10.2 15.2 C9.2 14.4 9 13 9.4 12 Z"/></clipPath>
+  <path d="M9.4 12 C10.6 10 14 9.8 17.6 10.6 C21 11.4 24 12.4 26.2 14 C27.6 15.6 27.2 17.8 25.4 18.4 C23 19 20.6 17.8 17.6 17.4 C14.6 17 11.6 16.6 10.2 15.2 C9.2 14.4 9 13 9.4 12 Z" fill="#6f6a66" stroke="none"/>
+  <g clip-path="url(#cat-body)" stroke="none">
+    <path d="M8 15 C12 16.8 18 16.4 22 16.8 C24 17 26 16.8 28 16 L28 21 L8 21 Z" fill="#55504c"/>
+    <path d="M8 12.6 C11 10.8 16 11.2 20 12 C23 12.6 25 13.4 27 14.6 L27 7 L8 7 Z" fill="#8b847e"/>
+    <path d="M24.4 14.6 C26 14.8 27.4 15.8 27.4 17.2 C27 18.2 26 18.6 25 18.6 C25.2 17.2 25 15.8 24.4 14.6 Z" fill="#ddd5c8"/>
+    <path d="M13 9.6 L12.6 13.8 L13.5 13.8 L13.9 9.6 Z" fill="#45403d"/>
+    <path d="M16.2 10 L16 14.4 L16.9 14.4 L17.1 10 Z" fill="#45403d"/>
+    <path d="M19.4 10.8 L19.4 15 L20.3 15 L20.3 10.8 Z" fill="#45403d"/>
+    <path d="M22.4 11.6 L22.6 15.8 L23.5 15.8 L23.3 11.6 Z" fill="#45403d"/>
+  </g>
+  <path d="M9.4 12 C10.6 10 14 9.8 17.6 10.6 C21 11.4 24 12.4 26.2 14 C27.6 15.6 27.2 17.8 25.4 18.4 C23 19 20.6 17.8 17.6 17.4 C14.6 17 11.6 16.6 10.2 15.2 C9.2 14.4 9 13 9.4 12 Z" fill="none"/>
+  <path d="M30.4 9.6 L31.4 6 L32.8 10.2 Z" fill="#504a46"/>
+  <clipPath id="cat-head"><path d="M25.4 13.2 C25.2 10.8 27 9.2 29.2 9.2 C31.4 9.2 33.2 10.8 33.2 13.2 L34.8 14.4 C35.2 15.2 34.8 16.2 34 16.2 C33 17.4 31.2 18 29.6 17.8 C27.2 17.6 25.5 15.6 25.4 13.2 Z"/></clipPath>
+  <path d="M25.4 13.2 C25.2 10.8 27 9.2 29.2 9.2 C31.4 9.2 33.2 10.8 33.2 13.2 L34.8 14.4 C35.2 15.2 34.8 16.2 34 16.2 C33 17.4 31.2 18 29.6 17.8 C27.2 17.6 25.5 15.6 25.4 13.2 Z" fill="#6f6a66" stroke="none"/>
+  <g clip-path="url(#cat-head)" stroke="none">
+    <path d="M24 12 C26 9.4 30 9 33 11 L33 7 L24 7 Z" fill="#8b847e"/>
+    <path d="M30.6 14.4 C32 13.8 33.8 13.6 35.6 14 L35.6 19 L29.8 19 Z" fill="#ddd5c8"/>
+    <path d="M28.4 9.4 L28.8 11.2 L29.4 11.2 L29.1 9.4 Z" fill="#45403d"/>
+  </g>
+  <path d="M25.4 13.2 C25.2 10.8 27 9.2 29.2 9.2 C31.4 9.2 33.2 10.8 33.2 13.2 L34.8 14.4 C35.2 15.2 34.8 16.2 34 16.2 C33 17.4 31.2 18 29.6 17.8 C27.2 17.6 25.5 15.6 25.4 13.2 Z" fill="none"/>
+  <path d="M26.4 11.4 L24.4 7.6 L28.4 9.8 Z" fill="#6f6a66"/>
+  <path d="M26.4 10.4 L25.4 8.6 L27.4 9.8 Z" fill="#c98a86" stroke="none"/>
+  <circle cx="29.3" cy="12.7" r="0.76" fill="#d9c64c" stroke="none"/>
+  <ellipse cx="29.3" cy="12.7" rx="0.24" ry="0.61" fill="#221f28" stroke="none"/>
+  <circle cx="32" cy="12.3" r="0.64" fill="#d9c64c" stroke="none"/>
+  <ellipse cx="32" cy="12.3" rx="0.20" ry="0.51" fill="#221f28" stroke="none"/>
+  <path d="M34.1 14.2 L35.1 14.4 L34.6 15.1 Z" fill="#c98a86" stroke="none"/>
 </svg>

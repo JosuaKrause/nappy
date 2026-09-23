@@ -495,51 +495,78 @@ points at the door (`CityMap.power_station_door_position()`).
 
 ## M185 — A ground floor is blank wall or shops · asked for 2026-09-23
 
-> "you can make it a placement rule for multi-story buildings that the ground floor is either a
-> blank wall (for posters later) or shops -- never windows -- the home building is an exception
-> to that rule"
+> "Yes, the home block should have fixed visuals. That way we can craft a convincing house that
+> also matches with the interiors of the escape."
 
-[PLAYTEST-123](playtests/PLAYTEST-123.md), statements 13, 25 and 26: a poster pasted over a
-window makes no sense, so the posters of M180, posters she notices, and loudspeakers that are
-somewhere, need wall to go on, and the player made that a rule for every building. Today a
-building's ground floor carries the same window rows as the floors above, except where a
-`COMMERCIAL` span's storefront covers them (`docs/CITY.md`, "A front is district and block
-purpose").
+The rule itself is built (`DECISIONS.md`, M185, a ground floor is blank wall or shops): shops or
+blank wall on every multi-story ground floor, one entrance door on a front with no other way in,
+the storefronts redrawn, and her home block keeping its ground-floor windows
+([PLAYTEST-124](playtests/PLAYTEST-124.md)). What is open is her house.
 
-- [ ] **The ground floor of a multi-story building has no windows**: it is shops or blank wall.
-      Which is which is the orchestrator's and open to overturn: a `COMMERCIAL` building keeps its
-      storefronts, and its odd final column becomes blank wall rather than a window; every other
-      purpose's ground floor is blank wall — the wall texture and its plinth with no window —
-      with its entrance, the civic portico and the fire escape where they are today. A facade one
-      wall row tall is not multi-story and is unchanged; the power station draws its own front.
-- [ ] **Her own building keeps its ground-floor windows**, the one exception.
-- [ ] **The blank wall is where posters go**: the cells a later slice of M180 pastes on are
-      exactly the blank ground-floor cells this draws, so a poster can never land on a window.
-- [ ] **Shown to the player before it is finished**: stills of a residential, a commercial and an
-      industrial street and of her own building, at the ordinary view and zoomed out with
-      `--zoom`.
+- [ ] **The home block has fixed visuals** ([PLAYTEST-124](playtests/PLAYTEST-124.md),
+      statement 6): its buildings look the same on every seed — window style, which windows are
+      lit, heights, front and roof furniture — rather than being rolled like any other block, so
+      it can be crafted into a convincing house that matches the interiors of the escape (M102,
+      the finale: out of the apartment, out of the city, whose stairwell, hallways and basement are
+      in `art/interior/`). The block's size and shape still come from the seed's lattice; what is
+      fixed is how it is drawn. The crafted look is drawn SVG first and goes to the player as
+      pictures before it is installed, beside the escape's interiors.
 
 ---
 
+## M186 — The building fronts are redrawn to one bar · asked for 2026-09-23
+
+> "Only thing so far is the new standard door (industrial door and home door look fine). It pops
+> out. But that is probably because the other parts of the buildings (walls, windows, fire
+> escapes, etc) are not updated and look flat in comparison. So if say we update all those too
+> and then have another look at the overall picture."
+
+[PLAYTEST-124](playtests/PLAYTEST-124.md), statements 8 and 9. The entrance doors and the
+storefronts are drawn to the bar of the accepted art (outlines, shaded planes, material); the
+rest of a front is not, so the standard door stands out.
+
+- [ ] **Every other part of a building is redrawn to the same bar**: the wall and its plinth,
+      its edges and the roof, the six window pictures, the fire escape and the civic portico —
+      whatever `src/city/building.gd` draws a front from under `art/buildings/`, the power station
+      aside. The wall stays white where the runtime tints it, every canvas, ground line and tiling
+      seam is kept, and a window's lit and unlit pair and its three styles stay telling apart.
+- [ ] **Then the whole front is looked at again**, the standard entrance door included: stills of
+      a residential, a commercial and an industrial street at the ordinary view and zoomed out,
+      before and after. The door is changed only if it still pops out.
+
+---
+
+## M187 — A closure lies across the street it closes · asked for 2026-09-23
+
+Found by the street-obstructions redraw (PR 301) and queued with the player's agreement; the
+pictures themselves are accepted ([PLAYTEST-124](playtests/PLAYTEST-124.md), statement 7).
+
+- [ ] **A closure's cause has a picture for each street axis.** The fallen tree, the crashed cars,
+      the rubble and the roadworks under `art/closures/` are one picture drawn for both axes, so on
+      an east-west street they lie along the road rather than across it.
+- [ ] **A roadworks end post seen end-on stays at the barrier's end.** The code that repeats a
+      barrier along a mouth anchors each piece at its bottom, so on an end-on run the 26px end
+      posts cover most of a 64px column.
+
+---
 ## M184 — A rig walks the route · asked for 2026-09-23
 
 > "we should have a test-rig mode where she just follows the edges of a path that way we can test
 > paths properly and do those timing checks without having to guess the right inputs"
 
-[PLAYTEST-122](playtests/PLAYTEST-122.md). `--walk` replays a script of timed headings, so
-measuring a route means guessing the inputs that walk it, and a guess that clips a kerb measures
-the guess. M181's late days need their clock measured (day 12's second park first) and the
-pacing of days 9 to 13 is to be measured before anything is cut.
+[PLAYTEST-122](playtests/PLAYTEST-122.md). The rig is built (`DECISIONS.md`, M184, a rig walks
+the route): `--route mark,task,calm,home` walks her along a real path's edges, at walking pace,
+through the ordinary game, and `tests/probes/m184_route_timing.gd` times days 6 to 13 with it.
+What is open is where it gives up, which is what keeps M181's late days from being fully timed.
 
-- [ ] **A dev flag walks her along a path's edges with no scripted inputs**: from where she
-      stands, along the sidewalk edges of a walkable path to a named target and on to the next —
-      the day's mark, its task, a calm area, home — at `Tuning.WALK_SPEED`, through the ordinary
-      game, so the meter, the events and the clock all run as they would for a player. It reports
-      when she reached each target. A dev flag only: a pathfinding walk handed to the player is the
-      mechanism `DECISIONS.md` records as deleted under M82, because it hands the route decision to
-      the game. It follows the **cli-tools** rules, and `tools/shot.sh` and the probes can drive it.
-- [ ] **Days 10 to 13 are timed with it** on a spread of seeds, day 12's swing-then-second-park
-      first, and the figures go into M181's entry before slice two's brief is final.
+- [ ] **The rig gets through chokepoints.** In 12 of the 24 measured runs one leg ends "stuck
+      fast": wedged by the crowd or a parked vehicle more times than its budget of three stuck
+      episodes per leg allows. A player walks round them; the rig should too, or wait them out.
+- [ ] **Five legs find no path at all** (day 7's mark on seed 1234567 and its task on 90210, day
+      8's task on 90210, day 9's mark on 4242, day 13's task on 4242). The implementing agent's
+      best guess for day 13 is that the roadblock closes its own street and the plan closes the
+      contact point with it; each is checked and either fixed in the rig or reported as a real
+      unreachable target.
 
 ---
 
@@ -612,7 +639,12 @@ blackout; until then day 14 keeps the last night's district contact.
 - [ ] **The late days are timed** — the mark, the task, the happening and the walk home, day
       12's swing-then-second-park first — with M184, a rig that walks the route, before anything
       is cut ([PLAYTEST-122](playtests/PLAYTEST-122.md)). The figures go here, into slice two's
-      brief. **Each late day's happening arrives differently** — waiting at home, found gone,
+      brief. **Measured so far** (`--route mark,task,calm,home --invincible`, days 6 to 13 on seeds
+      4242, 90210 and 1234567; the table is in `DECISIONS.md`, M184): every day she walked home
+      from had at least 22 seconds left, most 50 to 120; on day 12 the second open park was
+      reached a tenth of a second after the swing on the one seed whose swing the rig reached;
+      days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
+      rig gave up a leg in half the runs (M184), so the late days are not fully measured yet. **Each late day's happening arrives differently** — waiting at home, found gone,
       closing in front of her, coming on her way — and slice two keeps that variety.
 
 ---

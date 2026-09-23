@@ -1,6 +1,30 @@
-<!-- Pharmacy frontage shuttered across its fixed entrance and display bays. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36" viewBox="0 0 64 36" shape-rendering="crispEdges">
-  <rect width="64" height="36" fill="#637779"/><rect x="2" y="2" width="26" height="34" fill="#8d5c48"/><rect x="5" y="5" width="20" height="31" fill="#4b4d53"/><rect x="34" y="4" width="26" height="30" fill="#4b4d53" stroke="#3b3034"/>
-  <path d="M6 8H24 M6 12H24 M6 16H24 M6 20H24 M6 24H24 M6 28H24 M6 32H24 M35 8H59 M35 12H59 M35 16H59 M35 20H59 M35 24H59 M35 28H59 M35 32H59" stroke="#77797a"/><path d="M7 10H23 M7 22H23 M36 10H58 M36 22H58" stroke="#62666b"/><path d="M47 10V28 M39 19H55" stroke="#9b8f77" stroke-opacity="0.7" stroke-width="2"/>
-  <rect y="34" width="64" height="2" fill="#3b3034"/>
+<!-- Pharmacy frontage closed: roller shutters down over the entrance and display, paint gone dull, a tag across the shutter.
+     64x36, drawn in place of the plinth across two facade columns, its fill opaque over the
+     wall; the 26x34 entrance (x 2..28, y 2..36) at left, the display bay at right, both on the
+     shared ground line at y 36. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36" viewBox="0 0 64 36" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <rect width="64" height="36" fill="#a09c94" stroke="none"/>
+  <path d="M0 0.6 H64" fill="none" stroke="#868179" stroke-width="1.2"/>
+  <path d="M0 1 H2 V34 H0 Z M28 1 H30 V34 H28 Z M62 1 H64 V34 H62 Z" fill="#adaaa4" stroke="none"/>
+  <path d="M2 1 V34 M28 1 V34 M30 1 V34 M62 1 V34" fill="none" stroke="#868179" stroke-width="0.6"/>
+  <path d="M3.5 2.5 H26.5 V34 H3.5 Z" fill="#868179" stroke-width="0.8"/>
+  <path d="M5 4 H25 V34 H5 Z" fill="#2a2630" stroke-width="0.6"/>
+  <path d="M4.2 3.2 H25.8 V6.8 H4.2 Z" fill="#75777a" stroke-width="0.7"/>
+  <path d="M5 6.8 H25 V33.4 H5 Z" fill="#7d8286" stroke-width="0.6"/>
+  <path d="M5.4 8.0 H24.6 M5.4 10.1 H24.6 M5.4 12.2 H24.6 M5.4 14.3 H24.6 M5.4 16.4 H24.6 M5.4 18.5 H24.6 M5.4 20.6 H24.6 M5.4 22.7 H24.6 M5.4 24.8 H24.6 M5.4 26.9 H24.6 M5.4 29.0 H24.6 M5.4 31.1 H24.6" fill="none" stroke="#5f6468" stroke-width="0.6"/>
+  <path d="M5.4 8.8 H24.6 M5.4 10.9 H24.6 M5.4 13.0 H24.6 M5.4 15.1 H24.6 M5.4 17.2 H24.6 M5.4 19.3 H24.6 M5.4 21.4 H24.6 M5.4 23.5 H24.6 M5.4 25.6 H24.6 M5.4 27.7 H24.6 M5.4 29.8 H24.6 M5.4 31.9 H24.6" fill="none" stroke="#a0a5a8" stroke-width="0.5"/>
+  <path d="M5 31.8 H25 V33.6 H5 Z" fill="#5a5f63" stroke-width="0.5"/>
+  <path d="M14 31.2 H16.2 V33.2 H14 Z" fill="#b89a4a" stroke-width="0.4"/><path d="M14.4 31.2 C14.4 29.8 15.8 29.8 15.8 31.2" fill="none" stroke-width="0.5"/>
+  <path d="M3 33.6 H27 L27.6 35.2 H2.4 Z" fill="#aea797" stroke-width="0.5"/>
+  <path d="M30.8 1.6 H61.2 V9 H30.8 Z" fill="#4c6c68" stroke-width="0.8"/>
+  <path d="M34 3 H35.8 V4.8 H37.6 V6.6 H35.8 V8.4 H34 V6.6 H32.2 V4.8 H34 Z" fill="#5c885d" stroke-width="0.5"/><path d="M40 4.6 H44 M45.4 4.6 H48.2 M49.6 4.6 H54.4 M55.8 4.6 H58.6 M40 6.9 H46 M47.4 6.9 H52.6" fill="none" stroke="#aeaca6" stroke-width="1.1"/>
+  <path d="M30.8 9.9 H61.2 V30.4 H30.8 Z" fill="#868179" stroke-width="0.8"/>
+  <path d="M31.2 10 H60.8 V13.2 H31.2 Z" fill="#75777a" stroke-width="0.7"/>
+  <path d="M31.8 13.2 H60.2 V33.4 H31.8 Z" fill="#7d8286" stroke-width="0.6"/>
+  <path d="M32.2 14.6 H59.8 M32.2 16.7 H59.8 M32.2 18.8 H59.8 M32.2 20.9 H59.8 M32.2 23.0 H59.8 M32.2 25.1 H59.8 M32.2 27.2 H59.8 M32.2 29.3 H59.8 M32.2 31.4 H59.8" fill="none" stroke="#5f6468" stroke-width="0.6"/>
+  <path d="M32.2 15.4 H59.8 M32.2 17.5 H59.8 M32.2 19.6 H59.8 M32.2 21.7 H59.8 M32.2 23.8 H59.8 M32.2 25.9 H59.8 M32.2 28.0 H59.8 M32.2 30.1 H59.8 M32.2 32.2 H59.8" fill="none" stroke="#a0a5a8" stroke-width="0.5"/>
+  <path d="M31.8 31.8 H60.2 V33.6 H31.8 Z" fill="#5a5f63" stroke-width="0.5"/>
+  <path d="M44.9 31.2 H47.1 V33.2 H44.9 Z" fill="#b89a4a" stroke-width="0.4"/><path d="M45.3 31.2 C45.3 29.8 46.7 29.8 46.7 31.2" fill="none" stroke-width="0.5"/>
+  <path d="M34.5 25 C36 19.5 38.5 19.8 38 24.2 C37.6 27 40.6 21 42.2 21.4 C43.8 21.8 41.6 26.4 44 25.4 C46.2 24.4 47.6 19.8 49.6 21.6 C51 23 49.2 26.6 52.6 24.6" fill="none" stroke="#b7564a" stroke-width="1.1" stroke-opacity="0.85"/>
+  <path d="M0 35.2 H64 V36 H0 Z" fill="#4e3a3b" stroke="none"/>
 </svg>
