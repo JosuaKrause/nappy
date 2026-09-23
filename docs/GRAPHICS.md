@@ -154,7 +154,7 @@ street axis without rotating the pixels.
 | Fallen-tree seal | `fallen_tree.svg` and `fallen_tree_vertical.svg`: authored whole-street scenes chosen by street axis and fitted to the obstruction. |
 | Car-accident seal | `car_accident.svg` and `car_accident_vertical.svg`, with matching `car_accident_shadow.svg` and `car_accident_vertical_shadow.svg`: authored scene and ground-contact shadow chosen by street axis. |
 | Skip and scaffolding seals | `skip.svg` is one pavement picture; `scaffolding.svg` repeats across the other pavement frontage. |
-| Burst-main seal | `burst_water_main.svg` and `burst_water_main_vertical.svg`: authored whole-street scenes chosen by street axis and fitted to the obstruction. |
+| Burst-main seal | `burst_water_main.svg` and `burst_water_main_vertical.svg`: authored whole-street scenes chosen by street axis and fitted to the obstruction — a crater of heaved asphalt with the split main in it, water fountaining out and spreading towards both kerbs, and a barrier at each end, broadside on a north-south street and in its narrow end-on projection on an east-west one. The ground is overhead and the fountain and barriers upright; neither file carries a shadow and the row draws none (`draws_body_shadow` off), because the crater is sunk into the road. |
 | Moving-van pair | `moving_van.svg` and `moving_van_vertical.svg`: the vans stand parallel to their street; the street axis selects the side or end projection while preserving authored proportions, unchanged by this milestone. `moving_van_{front,back,front_diagonal,back_diagonal}.svg` stay prepared and unbound: the seal's own axis choice is a binary (parallel to the street or across it) with no heading that ever turns to a diagonal, and `moving_van_vertical.svg` already serves the "across" projection as its own authored scene — ramp down, doors open — rather than a generic end view, the same reason `gunman`'s own front/back/diagonal stay prepared. |
 | Burnt-out-car seal | `burnt_out_car.svg` and `burnt_out_car_vertical.svg`: four wrecks form a hard seal across the whole street. Each car lies perpendicular to the street; its axis selects the side or end projection. |
 | Collapsed-frontage seal | `collapsed_frontage.svg`: the debris segment repeats across one hard seal spanning the whole street, kerb to kerb. |
@@ -406,7 +406,7 @@ edge, still inside the tile.
 No sheet carries readable words — every print line, header and stamp is a colour block or a gray
 line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the politics).
 
-The intact kinds follow the player's poster reference sheet in shape and palette; at 20×22px
+The intact kinds follow the player's poster reference sheet (`docs/style-references/posters-01.jpg`) in shape and palette; at 20×22px
 the wanted notice keeps one print line under each frame where the reference has two.
 
 [The poster review sheet](evidence/poster-art-review-2026-09-23-plain-walls.png) shows the

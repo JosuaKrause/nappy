@@ -215,3 +215,11 @@ ones" asks:
 33. **Visible overpasting is the exception**: most new sheets replace the old one exactly, and
     only some are pasted over it with an offset.
 
+On the retaken mast still (PR 292) and the burst water main's redraw (PR 295), which adds a
+fountain, a crater that reads as a hole, the split pipe and lamp-topped barriers:
+
+> "mast looks fine now, too" · "new water main looks good"
+
+34. **The loudspeaker mast's picture is accepted**, standing off the road.
+35. **The burst water main's redraw is accepted**, fountain included.
+

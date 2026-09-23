@@ -67,7 +67,26 @@ goes on the block nearer home, then west. The hall and the yard are two halves o
       day one. the narrative demands a gate crossing for reaching it"). It is in the city from
       day 1 like every building, and nothing leads her to it before day 14.
 
-||||||| 548a259d
+## The burst water main, redrawn · 2026-09-23
+
+*([PLAYTEST-123](playtests/PLAYTEST-123.md), statements 24 and 35: "can you have an opus agent
+redraw the water main break image?", then "new water main looks good".)* One Opus agent on
+`feature/burst-main-redraw`; art only, no code changed.
+
+**What changed** in `art/events/burst_water_main.svg` (north-south street) and
+`burst_water_main_vertical.svg` (east-west): water fountains upright out of the break, the crater
+reads as a hole (a lit far wall, shaded ends, pooled water) ringed by heaved asphalt slabs, the
+split main runs along the street with both broken mouths showing, a puddle spreads across the road
+with run-off to both kerbs, and the barriers are striped boards on legs with an amber lamp,
+end-on on the east-west street as the roadworks barrier's vertical file already is. Canvas sizes,
+anchors, the fit to the 192px obstruction, the choice of file by street axis and the absence of a
+shadow are unchanged. `--spawn event:burst_water_main` puts one on screen for a still.
+
+**Open to overturn, chosen where the brief was silent.** The fountain, the one part standing
+above the ground, which the no-shadow rule's reasoning ("the crater is on the ground") did not
+foresee; the fallback is foam and pooled water only. The main along the street rather than across
+it. The barriers where the old ones stood, near the building line.
+
 ## M180 — Posters she notices, and loudspeakers that are somewhere: the poster art · drawn 2026-09-23
 
 *([PLAYTEST-123](playtests/PLAYTEST-123.md), statements 1 to 27; the player on the last sheet:
@@ -89,9 +108,9 @@ ways. The recipe is in `docs/GRAPHICS.md`'s Posters section.
 **The passes.** First (Sonnet): too neutral a leader, faces that did not read, posters touching
 the floor, and a torn sheet that "looks nothing like a torn poster". Second (Opus): a grumpy
 leader, bar-gap-line rules, silhouettes, a margin all round — "looks better already". The player's
-generated reference sheet then set the look of the fourth pass; it is not committed, since
-copying it into the repo was refused by the permission check and the player's answer on adding
-it is pending. The torn poster was drawn without a reference at the player's word, three ways,
+generated reference sheet then set the look of the fourth pass
+(`docs/style-references/posters-01.jpg`, brought in with `tools/reference.sh --style` after a
+drawing agent's plain copy of it was refused by the permission check). The torn poster was drawn without a reference at the player's word, three ways,
 then turned into masks ("one per kind or make it a mask … vary between the torn pattern").
 Building fronts on the sheets moved posters off windows onto plain wall, which became M185, a
 ground floor is blank wall or shops.
