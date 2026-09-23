@@ -28,8 +28,8 @@
         "inputs/svg-targets-8x.png",
         "proof/ownership-source-8x.png",
         "proof/identity-upper-only.png",
-        "../../graphics-reference-urban-01.jpeg",
-        "../../graphics-reference-cardinal.jpeg"
+        "../../../style-references/graphics-reference-urban-01.jpeg",
+        "../../../style-references/graphics-reference-cardinal.jpeg"
       ],
       "output_sha256": "20d4a2542b6e32f811fcc7a638682941bc56b86490ce2e65bb54c9520e4add50",
       "rejected_output_external_path": "/Users/krause/.codex/generated_images/01a0b9bd-c552-7250-aae5-3fba8d84a760/exec-f775fa2c-6b17-468e-9429-a0514050d05c.png",
@@ -50,8 +50,8 @@
       "references_in_order": [
         "proof/ownership-b-only-8x.png",
         "proof/identity-upper-only.png",
-        "../../graphics-reference-urban-01.jpeg",
-        "../../graphics-reference-cardinal.jpeg"
+        "../../../style-references/graphics-reference-urban-01.jpeg",
+        "../../../style-references/graphics-reference-cardinal.jpeg"
       ],
       "output_sha256": "871f5eb163095a201938beaaedcf6a26c7f0826f91d1306b931d85530a866f54",
       "rejected_output_external_path": "/Users/krause/.codex/generated_images/01a0b9bd-c552-7250-aae5-3fba8d84a760/exec-f1370b5e-cc73-4370-815c-e604dcbaeccf.png",

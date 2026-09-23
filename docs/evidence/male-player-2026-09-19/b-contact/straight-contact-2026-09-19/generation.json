@@ -22,12 +22,12 @@
           "sha256": "4a7e04e19546840d061c28a90a4f46a76ff6dfb4e116f74d025fd8fa8654d947"
         },
         {
-          "path": "docs/evidence/graphics-reference-urban-01.jpeg",
+          "path": "docs/style-references/graphics-reference-urban-01.jpeg",
           "role": "comic style only; omit subjects, scene, UI",
           "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
         },
         {
-          "path": "docs/evidence/graphics-reference-cardinal.jpeg",
+          "path": "docs/style-references/graphics-reference-cardinal.jpeg",
           "role": "comic style only; omit subjects, scene, UI",
           "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
         }
@@ -55,12 +55,12 @@
           "sha256": "4a7e04e19546840d061c28a90a4f46a76ff6dfb4e116f74d025fd8fa8654d947"
         },
         {
-          "path": "docs/evidence/graphics-reference-urban-01.jpeg",
+          "path": "docs/style-references/graphics-reference-urban-01.jpeg",
           "role": "comic style only; omit subjects, scene, UI",
           "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
         },
         {
-          "path": "docs/evidence/graphics-reference-cardinal.jpeg",
+          "path": "docs/style-references/graphics-reference-cardinal.jpeg",
           "role": "comic style only; omit subjects, scene, UI",
           "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
         }
@@ -88,12 +88,12 @@
           "sha256": "bb8b96ab4ddc1e4af95b784e9ea041a90cf412eee0fd336633d958eb275ff556"
         },
         {
-          "path": "docs/evidence/graphics-reference-urban-01.jpeg",
+          "path": "docs/style-references/graphics-reference-urban-01.jpeg",
           "role": "comic style only; omit subjects, scene, UI",
           "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
         },
         {
-          "path": "docs/evidence/graphics-reference-cardinal.jpeg",
+          "path": "docs/style-references/graphics-reference-cardinal.jpeg",
           "role": "comic style only; omit subjects, scene, UI",
           "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
         }
@@ -126,12 +126,12 @@
           "sha256": "62a5680553d51fcb709e1a8edeefa534f2bf0ed1094a602821c74adef956b939"
         },
         {
-          "path": "docs/evidence/graphics-reference-urban-01.jpeg",
+          "path": "docs/style-references/graphics-reference-urban-01.jpeg",
           "role": "comic style only; omit subjects, scene, UI",
           "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
         },
         {
-          "path": "docs/evidence/graphics-reference-cardinal.jpeg",
+          "path": "docs/style-references/graphics-reference-cardinal.jpeg",
           "role": "comic style only; omit subjects, scene, UI",
           "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
         }

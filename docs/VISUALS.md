@@ -31,8 +31,8 @@ functional placement. Transfer that idea into the references' comic drawing lang
 redrawn forms, expressive outlines and deliberate shadow shapes. Adding texture to the SVG's
 primitive drawing is insufficient. Preserve anchors, gameplay boundaries and tile joins;
 interior marks and contours should be authored in the reference style.
-`evidence/graphics-reference-urban-01.jpeg` supplies the diagonal illustrated urban style;
-`evidence/graphics-reference-cardinal.jpeg` supplies the style-transferred gameplay reference.
+`style-references/graphics-reference-urban-01.jpeg` supplies the diagonal illustrated urban style;
+`style-references/graphics-reference-cardinal.jpeg` supplies the style-transferred gameplay reference.
 Use these for the illustration style. Exclude their interface, debug notes and annotations.
 Keep the game's perspective and the SVG subject's identity.
 
