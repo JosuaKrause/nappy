@@ -450,7 +450,8 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       blank ground-floor wall, never over a window (M185, a ground floor is blank wall or shops),
       one row to a wall, following the progression above. Where a sheet is pasted over an
       older one, the offset is large enough that the older sheet plainly shows, never a sliver that
-      reads as a glitch ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 31). PNGs are Codex's, later.
+      reads as a glitch ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 31); some new sheets
+      instead cover the old one exactly and replace it (statement 32). PNGs are Codex's, later.
 - [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
       no button, and more than walking past. *The orchestrator recommended running along the
       wall · the player chose pushing on 2026-09-20*, because a push can happen by accident,

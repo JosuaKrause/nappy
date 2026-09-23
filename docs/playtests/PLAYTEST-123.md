@@ -205,3 +205,8 @@ ones" asks:
 31. **A poster pasted over an older one is offset enough to read as deliberate**: more than a
     sliver of the older sheet shows, so it does not look like a drawing glitch.
 
+> "some posters that are pasted over old ones can also just plain replace them"
+
+32. **A new poster may cover an old one exactly**, replacing it, as well as being pasted over it
+    with a visible offset.
+
