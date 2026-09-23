@@ -512,6 +512,11 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
       fixed is how it is drawn. The crafted look is drawn SVG first and goes to the player as
       pictures before it is installed, beside the escape's interiors.
 
+- [ ] **No window shows behind her front door** ([PLAYTEST-124](playtests/PLAYTEST-124.md),
+      statement 11: "The home has windows behind the door. Let's remove them"). The home block
+      keeps its ground-floor windows everywhere else; the cell or cells the door covers are plain
+      wall.
+
 ---
 
 ## M186 — The building fronts are redrawn to one bar · asked for 2026-09-23
