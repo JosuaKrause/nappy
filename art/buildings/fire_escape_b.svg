@@ -1,22 +1,20 @@
 <!-- fire_escape_a.svg mirrored: the same black-painted iron balcony across the first floor on
-     knee brackets, with nothing standing on it, and its drop flight hung from the west end,
-     running down to the east and stopping short of the pavement. The shadow on the wall still
+     knee brackets, with nothing standing on it and its drop ladder stowed upright against the
+     wall at the east end. Nothing comes down to the pavement. The shadow on the wall still
      falls down and to the east, so it is drawn outside the mirror. Transparent 48x64 facade
      overlay; drawing anchor (24,64), the ground line at the column's centre. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#231e22" stroke-linejoin="round" stroke-linecap="round">
   <g fill="#221f28" fill-opacity="0.24" stroke="none">
     <path d="M4 30.6 H47.4 V33.6 H5.6 Z"/>
-    <path d="M6.8 33.6 L8.2 32.4 L37.2 57.4 L35.8 58.6 Z"/>
     <path d="M6.2 37.8 L12.4 31.6 H13.6 L7.4 38.6 Z M44.2 37.8 L40.2 31.6 H41.4 L45.4 38.2 Z"/>
+    <path d="M39 7 H40.6 V26.4 H39 Z M43 7 H44.6 V26.4 H43 Z"/>
   </g>
   <g transform="translate(48 0) scale(-1 1)">
+    <path d="M6.5 5.4 V26.4 M10.5 5.4 V26.4" fill="none" stroke-width="1.1"/>
+    <path d="M6.5 8 H10.5 M6.5 11 H10.5 M6.5 14 H10.5 M6.5 17 H10.5 M6.5 20 H10.5 M6.5 23 H10.5" fill="none" stroke-width="0.8"/>
+    <path d="M10.9 5.8 V25.8" fill="none" stroke="#8d949b" stroke-width="0.4"/>
+    <path d="M5.8 5.2 C5.8 3.4 11.2 3.4 11.2 5.2" fill="none" stroke-width="1.1"/>
     <path d="M4.5 30.6 V37.6 L11 30.6 M43.5 30.6 V37.6 L37 30.6" fill="none" stroke-width="1"/>
-    <path d="M42 31 L13 56" fill="none" stroke-width="2.4"/>
-    <path d="M41.6 30.9 L12.8 55.6" fill="none" stroke="#6d747c" stroke-width="0.6"/>
-    <path d="M35.6 31.6 H39.2 V32.8 H35.6 Z M32.2 34.6 H35.8 V35.8 H32.2 Z M28.8 37.5 H32.4 V38.7 H28.8 Z M25.4 40.4 H29 V41.6 H25.4 Z M22 43.4 H25.6 V44.6 H22 Z M18.6 46.3 H22.2 V47.5 H18.6 Z M15.2 49.2 H18.8 V50.4 H15.2 Z M11.8 52.1 H15.4 V53.3 H11.8 Z" fill="#737a82" stroke-width="0.5"/>
-    <path d="M36 27.8 V35 M29.2 33.6 V40.8 M22.4 39.5 V46.7 M15.6 45.4 V52.6 M13 47.6 V56.4" fill="none" stroke-width="0.8"/>
-    <path d="M42 22.6 L13 47.6" fill="none" stroke-width="1.4"/>
-    <path d="M41.8 22.1 L12.9 47" fill="none" stroke="#8d949b" stroke-width="0.45"/>
     <path d="M2.5 26.4 H45.5 V28.4 H2.5 Z" fill="#737a82" stroke-width="0.7"/>
     <path d="M2.5 28.4 H45.5 V30.6 H2.5 Z" fill="#454a51" stroke-width="0.7"/>
     <path d="M3.2 27 H44.8" fill="none" stroke="#9aa1a7" stroke-width="0.45"/>

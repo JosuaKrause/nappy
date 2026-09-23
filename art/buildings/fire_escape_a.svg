@@ -1,26 +1,24 @@
-<!-- A fire escape in black-painted iron, bolted to the facade over the ground floor's two
-     rows: a balcony across the first floor on knee brackets, its railing in front of the window
-     behind it and a potted plant standing on it, and a drop flight hung from its east end that
-     runs down parallel to the facade to the west and stops short of the pavement, handrail and
-     open treads over a stringer. The iron casts its shadow on the wall down and to the east.
+<!-- A fire escape in black-painted iron, ending at the first floor as a real one does: a
+     railed balcony across the first floor on knee brackets, in front of that floor's window,
+     with its drop ladder stowed upright against the wall at the west end and a potted plant
+     standing on it. Nothing comes down to the pavement: below the balcony there is only the
+     brackets that carry it, and the shadow the iron casts on the wall down and to the east.
      Transparent 48x64 facade overlay; drawing anchor (24,64), the ground line at the column's
      centre. fire_escape_b.svg is the same escape mirrored, with no plant. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#231e22" stroke-linejoin="round" stroke-linecap="round">
   <g fill="#221f28" fill-opacity="0.24" stroke="none">
     <path d="M4 30.6 H47.4 V33.6 H5.6 Z"/>
-    <path d="M43.4 32.4 L45 33.6 L15.6 58.8 L14 57.6 Z"/>
     <path d="M6.2 37.8 L12.4 31.6 H13.6 L7.4 38.6 Z M44.2 37.8 L40.2 31.6 H41.4 L45.4 38.2 Z"/>
+    <path d="M7.4 7 H9 V26.4 H7.4 Z M11.4 7 H13 V26.4 H11.4 Z"/>
   </g>
+  <path d="M6.5 5.4 V26.4 M10.5 5.4 V26.4" fill="none" stroke-width="1.1"/>
+  <path d="M6.5 8 H10.5 M6.5 11 H10.5 M6.5 14 H10.5 M6.5 17 H10.5 M6.5 20 H10.5 M6.5 23 H10.5" fill="none" stroke-width="0.8"/>
+  <path d="M6.1 5.8 V25.8" fill="none" stroke="#8d949b" stroke-width="0.4"/>
+  <path d="M5.8 5.2 C5.8 3.4 11.2 3.4 11.2 5.2" fill="none" stroke-width="1.1"/>
   <path d="M29.4 22.4 H34.2 L33.6 26.5 H30 Z" fill="#a95d3e" stroke-width="0.6"/>
   <path d="M29.6 23.2 H34" fill="none" stroke="#c97c57" stroke-width="0.5"/>
   <path d="M30.2 22.4 C29 20.6 30 19.2 31.4 20.2 C31.4 18.4 33.4 18.4 33.2 20.2 C34.6 19.4 35.4 21.2 33.8 22.4 Z" fill="#5d7a4a" stroke-width="0.5"/>
   <path d="M4.5 30.6 V37.6 L11 30.6 M43.5 30.6 V37.6 L37 30.6" fill="none" stroke-width="1"/>
-  <path d="M42 31 L13 56" fill="none" stroke-width="2.4"/>
-  <path d="M41.6 30.9 L12.8 55.6" fill="none" stroke="#6d747c" stroke-width="0.6"/>
-  <path d="M35.6 31.6 H39.2 V32.8 H35.6 Z M32.2 34.6 H35.8 V35.8 H32.2 Z M28.8 37.5 H32.4 V38.7 H28.8 Z M25.4 40.4 H29 V41.6 H25.4 Z M22 43.4 H25.6 V44.6 H22 Z M18.6 46.3 H22.2 V47.5 H18.6 Z M15.2 49.2 H18.8 V50.4 H15.2 Z M11.8 52.1 H15.4 V53.3 H11.8 Z" fill="#737a82" stroke-width="0.5"/>
-  <path d="M36 27.8 V35 M29.2 33.6 V40.8 M22.4 39.5 V46.7 M15.6 45.4 V52.6 M13 47.6 V56.4" fill="none" stroke-width="0.8"/>
-  <path d="M42 22.6 L13 47.6" fill="none" stroke-width="1.4"/>
-  <path d="M41.8 22.1 L12.9 47" fill="none" stroke="#8d949b" stroke-width="0.45"/>
   <path d="M2.5 26.4 H45.5 V28.4 H2.5 Z" fill="#737a82" stroke-width="0.7"/>
   <path d="M2.5 28.4 H45.5 V30.6 H2.5 Z" fill="#454a51" stroke-width="0.7"/>
   <path d="M3.2 27 H44.8" fill="none" stroke="#9aa1a7" stroke-width="0.45"/>
