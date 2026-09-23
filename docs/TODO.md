@@ -530,6 +530,9 @@ rest of a front is not, so the standard door stands out.
       whatever `src/city/building.gd` draws a front from under `art/buildings/`, the power station
       aside. The wall stays white where the runtime tints it, every canvas, ground line and tiling
       seam is kept, and a window's lit and unlit pair and its three styles stay telling apart.
+- [ ] **A fire escape ends one floor above the ground** ([PLAYTEST-124](playtests/PLAYTEST-124.md),
+      statement 10: "Fire escapes don't reach a ground floor. They always end one floor above"):
+      its lowest landing is the first floor's and nothing comes down to the sidewalk.
 - [ ] **Then the whole front is looked at again**, the standard entrance door included: stills of
       a residential, a commercial and an industrial street at the ordinary view and zoomed out,
       before and after. The door is changed only if it still pops out.

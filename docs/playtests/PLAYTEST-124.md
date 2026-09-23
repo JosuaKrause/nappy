@@ -63,3 +63,10 @@ animals (PR 300) and street obstructions (PR 301):
    and the home door look fine.
 9. **The rest of the building is redrawn to the same bar** — walls, windows, fire escapes and the
    other parts — and then the whole picture is looked at again.
+
+## Then, on the redrawn building fronts (M186, PR 303)
+
+> "Fire escapes don't reach a ground floor. They always end one floor above"
+
+10. **A fire escape ends one floor above the ground**: its lowest landing is at the first floor,
+    and no flight comes down to the sidewalk.
