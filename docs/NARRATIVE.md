@@ -238,9 +238,10 @@ the same daily walk route, now empty of everything the player learned to avoid.
 ### Good — resistance complete + day 14 sabotage
 
 The loudspeakers cut out mid-sentence. First real silence in the run, and it is mechanical
-rather than described: completing the sabotage retires every `city_wide` source, so the
-ambient floor is **zero** for the first time since the masts went up on day 5. The player
-walks home in the easiest conditions in the game, and that is the reward.
+rather than described: completing the sabotage silences every mast at once
+(`EventManager.silence_all_masts()`), so no mast anywhere in the city is speaking for the
+first time since they went up on day 5. The player walks home in the easiest conditions in
+the game, and that is the reward.
 
 It is also the only moment the HUD says anything out loud — one line, for seven seconds,
 where the "not settling" hint normally sits.

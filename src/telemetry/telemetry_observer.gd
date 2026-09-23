@@ -678,7 +678,7 @@ func _where_is(id: String) -> String:
 func _what_raised_the_mark() -> String:
 	var here := _player.global_position
 	for instance in _city.events.instances():
-		if instance.is_finished or instance.def.city_wide or not instance.def.hard_fail:
+		if instance.is_finished or not instance.def.hard_fail:
 			continue
 		var distance := instance.global_position.distance_to(here)
 		if distance <= instance.def.outer_radius:
@@ -839,9 +839,7 @@ func _because_of_a_closure() -> String:
 func _watch_what_is_near(here: Vector2) -> void:
 	var live := {}
 	for instance in _city.events.instances():
-		# A field with no edge cannot be approached, so "near" is meaningless for it. What a
-		# city-wide source is doing to the meter shows up in every `freeze` line instead.
-		if instance.def.city_wide or instance.is_finished:
+		if instance.is_finished:
 			continue
 		var id := instance.get_instance_id()
 		var distance := instance.global_position.distance_to(here)
@@ -984,15 +982,11 @@ func _watch_the_trail(here: Vector2) -> void:
 ## that says whether a placement did anything to her, which is what decides whether it was a wall
 ## or decoration. See `docs/TODO.md`, M66, "Which events she actually met".
 ##
-## A `city_wide` source has no edge to enter — the same reasoning `_watch_what_is_near` gives for
-## excluding it there — so it can never be "met" and is skipped rather than answered `false`
-## forever.
-##
 ## Once a plan is met it stays met for the rest of the day: the dictionary is never cleared except
 ## in `start_day()`, so streaming an event back out and in again does not un-meet it.
 func _watch_met_events(here: Vector2) -> void:
 	for plan in _city.events.plans():
-		if _met_events.has(plan) or not plan.is_placed() or not plan.live or plan.def.city_wide:
+		if _met_events.has(plan) or not plan.is_placed() or not plan.live:
 			continue
 		if plan.live.global_position.distance_to(here) <= plan.def.outer_radius:
 			_met_events[plan] = true
@@ -1075,7 +1069,7 @@ func _nearest() -> String:
 	var closest: EventInstance = null
 	var best := INF
 	for instance in _city.events.instances():
-		if instance.def.city_wide or instance.is_finished:
+		if instance.is_finished:
 			continue
 		var distance := instance.global_position.distance_to(_player.global_position)
 		if distance < best:

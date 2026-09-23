@@ -118,7 +118,7 @@ func _measure(delta: float) -> void:
 	_watch_generation += 1
 
 	for instance in _events.instances():
-		if instance.is_finished or instance.def.city_wide:
+		if instance.is_finished:
 			continue
 		var id := instance.get_instance_id()
 		var at := instance.global_position

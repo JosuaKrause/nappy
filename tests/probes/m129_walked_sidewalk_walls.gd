@@ -64,9 +64,9 @@ extends RefCounted
 ##
 ## # What counts as a solid body
 ##
-## Every placed row with `obstructs_radius > 0.0`, minus the three exemptions the production rule
-## and its own probe already make and for the same reasons: `city_wide` (no place to keep clear
-## of), `scenery` (`pigeon_flock` — *"basically free already"*), and a `checkpoint_hut`/
+## Every placed row with `obstructs_radius > 0.0`, minus the two exemptions the production rule
+## and its own probe already make and for the same reasons: `scenery` (`pigeon_flock` —
+## *"basically free already"*), and a `checkpoint_hut`/
 ## `checkpoint_gate` door body (*"a region door is never a block... it costs by design"*,
 ## `docs/DECISIONS.md`; the region **wall**'s own body is not a door and still counts). A pacing
 ## row's body is read at its dawn position, the same simplification
@@ -370,7 +370,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		if not plan.is_placed():
 			continue
 		var def := plan.def
-		if def.obstructs_radius <= 0.0 or def.city_wide or def.scenery:
+		if def.obstructs_radius <= 0.0 or def.scenery:
 			continue
 		if def.id.begins_with(_DOOR_ID_PREFIX):
 			continue

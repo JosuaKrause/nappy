@@ -196,9 +196,9 @@ func _test_an_event_waits_until_she_is_near_it(t) -> void:
 
 	var plan: EventScheduler.Planned = null
 	for candidate in _city.events.plans():
-		# Not city-wide, which has no "near", and not mobile: a route means the reach is
-		# measured to the nearest point of it, which is a different check.
-		if candidate.is_placed() and not candidate.def.city_wide and candidate.path.is_empty():
+		# Not mobile: a route means the reach is measured to the nearest point of it, which is a
+		# different check.
+		if candidate.is_placed() and candidate.path.is_empty():
 			plan = candidate
 			break
 	t.check(plan != null, "day 1 has a stationary event somewhere in the city")
@@ -231,8 +231,7 @@ func _test_an_event_waits_until_she_is_near_it(t) -> void:
 func _widest_field() -> float:
 	var widest := 0.0
 	for def in EventCatalogue.all():
-		if not def.city_wide:
-			widest = maxf(widest, def.outer_radius)
+		widest = maxf(widest, def.outer_radius)
 	return widest
 
 ## The other half, and the one a naive implementation gets wrong: an event that has already
@@ -243,8 +242,7 @@ func _test_an_event_that_has_run_does_not_run_again(t) -> void:
 	_start(1)
 	var plan: EventScheduler.Planned = null
 	for candidate in _city.events.plans():
-		if candidate.is_placed() and not candidate.def.city_wide \
-				and candidate.def.spawns_on_finish == "":
+		if candidate.is_placed() and candidate.def.spawns_on_finish == "":
 			plan = candidate
 			break
 	if not plan:

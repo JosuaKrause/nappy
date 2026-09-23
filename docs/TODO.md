@@ -373,22 +373,10 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 > city with a defined field. not sure about adding a floor. it just makes losing unfair because
 > things that worked before don't anymore for no obvious (or visible) reason."
 
-[PLAYTEST-117](playtests/PLAYTEST-117.md). The `loudspeaker` row is `city_wide` from day 5: no
-position, no picture, 2.4 a second everywhere on a 22 second pulse.
+[PLAYTEST-117](playtests/PLAYTEST-117.md). **The masts are built** (`DECISIONS.md`, M180,
+the loudspeaker masts): six from day 5, on sidewalks, with a field, a lamp that says when they
+speak, and nothing city-wide left. What is open is the posters.
 
-- [ ] **A loudspeaker is a mast on a street with a field around it.** Placed from day 5 where
-      the fiction puts them — junctions, squares, the main road — drawn, with a field that
-      pulses when it speaks and falls away with distance like any other row's, so a route can
-      go round one. It is in `docs/COSTS.md` like any row. **A mast shows when it is live and when it
-      broadcasts** ([PLAYTEST-122](playtests/PLAYTEST-122.md): "there should be a visible
-      indicator about when a mast is active / has a broadcast"): a live mast looks different from a
-      silenced one, and each broadcast is telegraphed before it starts, without sound.
-- [ ] **The city-wide floor goes.** *Decided by the player on 2026-09-20: "Remove it"*, asked
-      with keeping it near masts only and keeping it as it is as the alternatives. A cost with
-      no place cannot be routed round, and the game's one verb is where she walks. No row is
-      `city_wide`: what replaces the loudspeaker's pressure is the masts' own fields, and
-      `curfew_announce` becomes something the masts do. The day-14 reward, that the sabotage
-      silences the city, is the masts going quiet.
 - [ ] **Posters are seen at all.** *"I have not seen a single poster in any playthrough -- I
       don't know what you're referring to here -- it needs to be way more obvious"*: the run
       behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none. The crew's
@@ -1219,8 +1207,8 @@ asked and each answered by the player on 2026-09-09:**
 1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
    the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
    step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
-   `sabotage_done`), and what it changes is mechanical quiet: every `city_wide` source is
-   silenced. **Neither the walk home after it nor the escape is easy**
+   `sabotage_done`), and what it changes is mechanical quiet: every loudspeaker mast is
+   silenced (`EventManager.silence_all_masts()`). **Neither the walk home after it nor the escape is easy**
    ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be easy!"): M183, the power
    station and the blackout, takes the traffic lights with the power, so the roads are harder
    that night on purpose. The hallway scene follows the same night, and the trucks and the

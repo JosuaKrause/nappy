@@ -2377,3 +2377,34 @@ const FINALE_GUARDS_PER_STREET := 2
 ## And how many explosions are sited off the chain per open street. Off screen by definition, so
 ## these are placed *beside* the corridor rather than on it — see `FinalePlanner`.
 const FINALE_EXPLOSIONS_PER_STREET := 1
+
+# --------------------------------------------------------------------- masts ---
+# M180, posters she notices, and loudspeakers that are somewhere: a loudspeaker is a mast on a
+# street with a field, not a floor under the whole city. See `MastSites`, `EventScheduler.
+# _place_masts()` and `EventManager`'s own broadcast clock.
+
+## How many masts a city carries. The orchestrator's own number, open to overturn: enough that one
+## is never far from a route without turning every street into one.
+const MAST_COUNT := 6
+
+## Masts go up overnight before this day and stand at the same places for the rest of the run —
+## `docs/TODO.md`, M180: "Masts go up overnight before day 5". One day ahead of `_loudspeaker()`'s
+## old `scripted_day`, which was the day she could first meet one; the mast itself is older than
+## that by a night.
+const MAST_FIRST_DAY := 5
+
+## The day the masts carry the curfew announcement instead of their ordinary broadcast — the day
+## `_curfew_announce()` used to be `scripted_day` for, kept as a named day rather than re-read off
+## the def so the two rows do not have to agree about which field means "when" any more.
+const CURFEW_ANNOUNCE_DAY := 6
+
+## A candidate site is refused if it is this close to the home's own doorstep, whether or not a
+## mast's field would reach that far — "never on the home street" is a stronger promise than "never
+## in range of it". One full block-and-street period, so a site has to be a street away from home
+## rather than merely outside the field.
+const MAST_HOME_STREET_MARGIN := 1.0
+
+## A candidate site is refused if a mast's own field would reach inside a calm block's interior —
+## measured from the block's lot rect shrunk in by one tile on every side, so a field may still
+## brush a calm area's own pavement edge without being read as *inside* it.
+const MAST_CALM_INTERIOR_MARGIN := 32.0

@@ -26,6 +26,11 @@ item below for as long as looking takes.
   read as a power station and its door as the way in?** **On day 14, is the walk to it through a
   region door a reasonable part of the day, and is it far enough from home?** Record is
   `DECISIONS.md`, M183, slice one, the power station.
+- **Walk day 5 and day 6 past the loudspeaker masts** (`--day 5`; six masts on sidewalk corners,
+  squares and the main road, a lamp amber before each broadcast and green with arcs while it
+  speaks; day 6 carries the curfew). **Can you tell when a mast is about to speak and route round
+  it, and does its cost feel like the man shouting's?** Record is `DECISIONS.md`, M180, the
+  loudspeaker masts.
 - **Play days 6 to 9 and 12 to 13 as a run would** (`--day 6` and on; a task is announced at
   its mark and done that day, a one-place task has a red arrow, and the day brief carries a line
   about the day instead of the task). **Does the mark's announcement read as an instruction you
