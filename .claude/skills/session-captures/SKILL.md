@@ -16,8 +16,11 @@ tools/shot.sh /private/tmp/nappy-shot.png 4 --seed 4242 --spawn arterial --walk 
 
 New evidence goes in `docs/evidence/<mNNN|playtest-NN>-<slug>-<date>/` as the whole run folder
 under its original name (playtest-feedback, "Evidence lives in the repo"). `archive/session-captures/<date>/`
-holds earlier captures. Update every in-repo link when moving one. If capture aborts or the
-display is headless, report it instead of fabricating a frame.
+holds earlier captures. *(2026-09-23: the player chose this over copying a single named PNG into
+the dated archive folder, which had drifted from playtest-feedback's "copy the whole `<run>/`
+folder" and from how every current evidence folder is actually named.)* Update every in-repo
+link when moving one. If capture aborts or the display is headless, report it instead of
+fabricating a frame.
 
 ## Animation sequences
 
