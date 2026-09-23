@@ -333,11 +333,9 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	var saved_completed := GameState.completed_resistance_steps.duplicate()
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
 	var saved_progress := GameState.resistance_progress
-	var saved_brief := GameState.pending_resistance_brief
 	GameState.completed_resistance_steps = []
 	GameState.failed_resistance_steps = []
 	GameState.resistance_progress = 0
-	GameState.pending_resistance_brief = ""
 
 	var hud := _hud(t)
 
@@ -348,7 +346,7 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 
 	hud._debug = true
 	hud._on_contact_available(1)
-	t.check(hud._resistance_label.text == "resistance ....",
+	t.check(hud._resistance_label.text == "resistance %s" % ".".repeat(Tuning.RESISTANCE_GOAL),
 			"a debug build keeps its own progress dots, but no title beside them either")
 
 	GameState.complete_resistance_step(1, false)
@@ -373,12 +371,12 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
-	GameState.pending_resistance_brief = saved_brief
 
-## The wording rule holds for all five marks, not only the first: every perform step names
-## `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which stays
-## unused by the header and is reserved for the progress dots. `docs/TODO.md`, M132: "Whatever
-## wording rule is chosen holds for all five marks and is written next to `Step.brief`."
+## The wording rule holds for every built task, not only the first: every available perform step
+## names `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which
+## stays unused by the header and is reserved for the progress dots. A day whose task is not yet
+## built (`not step.available`) has no header to check — it also has no mark, so nothing ever
+## activates it.
 func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> void:
 	var saved_completed := GameState.completed_resistance_steps.duplicate()
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
@@ -387,7 +385,7 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 	var hud := _hud(t)
 	hud._debug = false
 	for step in ResistanceSteps.all():
-		if step.is_pickup or step.needs_goal:
+		if step.is_pickup or step.needs_goal or not step.available:
 			continue
 		t.check(step.header != "", "perform step %d has its own header phrase" % step.index)
 		# Non-empty so the HUD's own "already touched a mark" gate is open.
@@ -403,16 +401,23 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
 
-## *"no onscreen text for acknowledgements like this"* (PLAYTEST-117): a finished resistance step is
-## shown by the world — the mark's touched picture, the man shouting walking away — and the HUD's
-## teaching line stays out of it, for a mark and for a perform step alike.
+## *"no onscreen text for acknowledgements like this"* (PLAYTEST-117): a **finished** resistance
+## step is shown by the world — the mark's touched picture, the man shouting walking away — and
+## the HUD's teaching line stays out of acknowledging that, for a mark and for a perform step
+## alike. A **mark**'s own completion is the one exception, and a decided one: *"since the task
+## will be immediately announced when touching the mark there is no need to mention tasks in the
+## day brief at all"* moved the announcement onto the world's own teaching line instead of
+## removing it — see `Hud._on_resistance_step_completed()`.
 func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
 	var hud := _hud(t)
 	hud._teach.text = ""
 	EventBus.resistance_step_completed.emit(1)
-	t.check(hud._teach.text == "", "a completed mark puts no text on screen")
+	t.check(hud._teach.text == ResistanceSteps.by_index(1).brief,
+			"a completed mark announces its own words on the teaching line — the mark and " +
+			"nowhere else — rather than staying silent")
+	hud._teach.text = ""
 	EventBus.resistance_step_completed.emit(2)
-	t.check(hud._teach.text == "", "a completed perform step puts no text on screen either")
+	t.check(hud._teach.text == "", "a completed perform step puts no text on screen")
 
 	hud.free()
 

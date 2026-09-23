@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_a_save_from_before_the_escape_still_loads(t)
 	_test_completed_resistance_alley_tiles_survive_a_round_trip(t)
 	_test_a_save_from_before_the_alley_tiles_still_loads(t)
+	_test_a_save_from_before_a_task_was_one_day_still_loads(t)
 
 	_test_day_under_way_load_costs_one_nerve(t)
 	_test_a_day_under_way_gives_back_the_fire_it_lit(t)
@@ -162,13 +163,11 @@ func _test_round_trip_preserves_every_field(t) -> void:
 			{Vector2i(3, 4): _fake_block_plan()}, Vector2i(3, 4), GameEnums.BlockCause.FIRE, 6)
 	GameState.sabotage_done = false
 	GameState.resistance_carrying_package = true
-	GameState.pending_resistance_brief = "meet at the fountain"
 	GameState._dawn_completed_steps = [0]
 	GameState._dawn_failed_steps = []
 	GameState._dawn_progress = 1
 	GameState._dawn_sabotage_done = false
 	GameState._dawn_carrying_package = false
-	GameState._dawn_brief = "an earlier brief"
 	GameState.settled_in = {5: Vector2i(-2, 7), 6: Vector2i(9, 9)}
 
 	var written := GameState.save_snapshot()
@@ -193,11 +192,8 @@ func _test_round_trip_preserves_every_field(t) -> void:
 	t.check(GameState.city_state.changed_on(Vector2i(3, 4)) == 6,
 			"the city's own block-arc history survives — a fire that burned did happen")
 	t.check(GameState.resistance_carrying_package == true, "resistance_carrying_package survives")
-	t.check(GameState.pending_resistance_brief == "meet at the fountain",
-			"pending_resistance_brief survives")
 	t.check(GameState._dawn_completed_steps == [0], "the dawn snapshot's own steps survive")
 	t.check(GameState._dawn_progress == 1, "_dawn_progress survives")
-	t.check(GameState._dawn_brief == "an earlier brief", "_dawn_brief survives")
 	t.check(GameState.settled_in.get(5) == Vector2i(-2, 7)
 			and GameState.settled_in.get(6) == Vector2i(9, 9),
 			"settled_in survives with its Vector2i values and integer day keys intact")
@@ -362,6 +358,41 @@ func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
 	t.check(not resumed.is_empty(), "a save with no alley tiles still resumes")
 	t.check(GameState.completed_resistance_alley_tiles.is_empty(),
 			"and the list is empty, rather than keeping whatever was in memory")
+	GameSave.clear()
+
+## **A save from before a task was one day still loads.** `pending_resistance_brief` and
+## `_dawn_brief` are gone from `GameState` (M181, the resistance has a reason, and a task is one
+## day: the day brief carries no task and no mark's words, so nothing reads them back any more) —
+## removed rather than added, so `snapshot_is_complete()` only ever asks for a field this build
+## still names, and an older file naming two more than that still has every one of them.
+## `completed_resistance_steps` from an old run names indices out of the old two-beat table, which
+## no longer exists in that shape: `ResistanceSteps.by_index()` answers null for anything the new
+## one-task-per-day table does not have at that index, which `GameState` and `ResistanceDirector`
+## already treat as nothing, so the resumed run simply offers whatever the new table's own
+## `for_day()` finds for the day it resumes on.
+func _test_a_save_from_before_a_task_was_one_day_still_loads(t) -> void:
+	GameState.start_run(636363)
+	GameState.day = 7
+	GameState.nerves = 4
+	GameState.completed_resistance_steps = [1, 2, 3]
+	GameState.resistance_progress = 1
+	var snapshot := GameState.save_snapshot()
+	snapshot["pending_resistance_brief"] = "meet at the fountain"
+	snapshot["_dawn_brief"] = "an earlier brief"
+	var old_shape := JSON.stringify({
+		"format_version": GameSave.FORMAT_VERSION,
+		"build": "a build from before a task was one day",
+		"day_under_way": true,
+		"state": snapshot,
+	})
+	GameState.start_run(1)
+	_write_raw(old_shape)
+	var resumed := GameSave._read_now()
+	t.check(not resumed.is_empty(), "a save naming the old brief fields still resumes")
+	t.check(GameState.run_seed == 636363 and GameState.day == 7 and GameState.nerves == 4,
+			"with every field the new build still reads")
+	t.check(GameState.completed_resistance_steps == [1, 2, 3],
+			"and its old-table step indices, carried over rather than dropped")
 	GameSave.clear()
 
 # ------------------------------------------------------------- the lost-day path ---

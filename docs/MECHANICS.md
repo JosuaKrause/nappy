@@ -1302,14 +1302,14 @@ Three consequences, all of them chosen:
   Only a day she **wins** keeps any of it. See `GameState.finish_day()`.
 
 **A lost day gives the resistance back.** *"a task is only complete if it is done on the day that
-won"*: a mark touched, a step performed, a contact lost to its deadline, a package picked up and
-the day-14 sabotage are all undone when the day is lost. `GameState.begin_day()` photographs the
-six fields that say what the resistance has done — the completed steps, the failed ones, the
-progress count, the package, the sabotage and the queued brief — and the loss restores them before
-the retry, so the retry is offered the same mark or the same contact, in the same place, from the
-same seed. A won day commits the photograph.
+won"*: a mark touched, the task it unlocked, a contact lost to its deadline, a package picked up
+and the day-14 sabotage are all undone when the day is lost — a task is one day, so both halves of
+it are the same attempt's to lose. `GameState.begin_day()` photographs the five fields that say
+what the resistance has done — the completed steps, the failed ones, the progress count, the
+package and the sabotage — and the loss restores them before the retry, so the retry starts at the
+same mark again, in the same place, from the same seed. A won day commits the photograph.
 
-**And gives the day's fire back with it.** Three more fields are photographed beside those six and
+**And gives the day's fire back with it.** Three more fields are photographed beside those five and
 restored the same way: `consumed_one_shots`, `scars` and the whole of `CityState`. So a day 3 lost
 after the fire burned owes a fire again — sited from whatever walk the retry takes, which is why a
 player who lost walking east and retries walking west meets it on another street — and leaves no
@@ -1369,8 +1369,8 @@ nerve ending the run exactly as it does there. **The title comes up on every boo
 a save to come back to**, with the street outside her own front door running behind it exactly as
 it does for a fresh run. Pressing start with a save on disk brings up the day brief instead of
 starting the day outright — the screen `DaySummary` draws between days, carrying the day, the
-nerves and the resistance's own pending brief, plus the line that a day was lost to leaving it
-when the load itself charged the nerve above. Continuing from the day brief is the
+nerves and the morning's own line for the calendar day, plus the line that a day was lost to
+leaving it when the load itself charged the nerve above. Continuing from the day brief is the
 moment the day actually starts, and the moment the first of the two writes above says so. If the
 load spends the run's last nerve, the day brief never shows at all — the ending does, the same
 screen and the same continue any other run-ending reaches. A save written once a day has already
