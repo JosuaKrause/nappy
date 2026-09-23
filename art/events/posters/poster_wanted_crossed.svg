@@ -1,41 +1,53 @@
-<!-- The wanted notice: four people in two rows of two, each a flat dark head-and-shoulders
-     silhouette - head, neck, shoulders - on a pale mugshot panel, a different style from the
-     leader's coloured, featured portrait. The top-right face is crossed out in red on every
-     copy. Same 20x22 sheet as every poster kind; see poster_leader.svg.
-     The bottom-left slot, the group "neighbor_slot" (a 7x7 panel whose top-left corner is at
+<!-- The wanted notice: gray-beige paper under an inset dark header, four mugshot frames in two
+     rows of two, each a dark head-and-shoulders silhouette in a thin dark frame with a gray
+     print line beneath it - a different style from the leader's coloured portrait. After the
+     player's poster reference sheet, which has two print lines under each frame; at 20x22 only
+     one fits. The top-right face is crossed out on every copy. Same 20x22 sheet as every poster
+     kind; see poster_leader.svg.
+     The bottom-left slot, the group "neighbor_slot" (a 7x5 frame whose top-left corner is at
      8,16), is the one swappable slot: a placeholder adult standing in for the neighbor from
-     M181's day 10, who is not drawn yet. This file is that slot crossed out in red, for a
-     day 10 whose task was not done on the day she won; poster_wanted.svg is the same sheet
-     with the slot uncrossed. -->
+     M181's day 10, who is not drawn yet. This file is that slot crossed out with a red X,
+     for a day 10 whose task was not done on the day she won; poster_wanted.svg is the same
+     sheet uncrossed. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <rect x="6" y="3" width="20" height="22" fill="#cfc9ba"/>
-  <rect x="6" y="3" width="20" height="3" fill="#4a463f"/>
-  <g transform="translate(8 7)">
-    <rect width="7" height="7" fill="#b3ab98"/>
-    <rect x="2.9" y="3.8" width="1.2" height="1.4" fill="#3f3a36"/>
-    <path d="M0.3 7C0.5 5.6 1.5 5 2.6 4.9L4.4 4.9C5.5 5 6.5 5.6 6.7 7Z" fill="#3f3a36"/>
-    <ellipse cx="3.5" cy="2.4" rx="1.5" ry="1.7" fill="#3f3a36"/>
+  <rect x="6" y="3" width="20" height="22" fill="#c2b9a6"/>
+  <rect x="8" y="5" width="16" height="2" fill="#2c2a30"/>
+  <g transform="translate(8 8)">
+    <rect width="7" height="5" fill="#d9d2c3"/>
+    <ellipse cx="3.5" cy="1.9" rx="1.25" ry="1.4" fill="#4a403c"/>
+    <rect x="3" y="3" width="1" height="0.7" fill="#4a403c"/>
+    <path d="M0.8 5C1 4.1 1.8 3.6 2.7 3.5L4.3 3.5C5.2 3.6 6 4.1 6.2 5Z" fill="#4a403c"/>
+    <rect x="0.25" y="0.25" width="6.5" height="4.5" fill="none" stroke="#3b3034" stroke-width="0.5"/>
   </g>
-  <g transform="translate(17 7)">
-    <rect width="7" height="7" fill="#b3ab98"/>
-    <rect x="2.9" y="3.8" width="1.2" height="1.4" fill="#3f3a36"/>
-    <path d="M0.3 7C0.5 5.6 1.5 5 2.6 4.9L4.4 4.9C5.5 5 6.5 5.6 6.7 7Z" fill="#3f3a36"/>
-    <path d="M1.9 2.4C1.9 1 2.6 0.6 3.5 0.6C4.4 0.6 5.1 1 5.1 2.4L5.3 4.4L4.3 4.3L3.5 4.2L2.7 4.3L1.7 4.4Z" fill="#3f3a36"/>
-    <path d="M0.8 0.8L6.2 6.2M6.2 0.8L0.8 6.2" stroke="#a33b34" stroke-width="1" stroke-linecap="round"/>
+  <g transform="translate(17 8)">
+    <rect width="7" height="5" fill="#d9d2c3"/>
+    <ellipse cx="3.5" cy="1.9" rx="1.25" ry="1.4" fill="#4a403c"/>
+    <rect x="3" y="3" width="1" height="0.7" fill="#4a403c"/>
+    <path d="M0.8 5C1 4.1 1.8 3.6 2.7 3.5L4.3 3.5C5.2 3.6 6 4.1 6.2 5Z" fill="#4a403c"/>
+    <rect x="0.25" y="0.25" width="6.5" height="4.5" fill="none" stroke="#3b3034" stroke-width="0.5"/>
+    <path d="M0.9 0.6L6.1 4.4M6.1 0.6L0.9 4.4" stroke="#b0302a" stroke-width="1" stroke-linecap="round"/>
   </g>
   <!-- the swappable slot: the neighbor's -->
   <g id="neighbor_slot" transform="translate(8 16)">
-    <rect width="7" height="7" fill="#b3ab98"/>
-    <rect x="2.9" y="3.8" width="1.2" height="1.4" fill="#3f3a36"/>
-    <path d="M0.3 7C0.5 5.6 1.5 5 2.6 4.9L4.4 4.9C5.5 5 6.5 5.6 6.7 7Z" fill="#3f3a36"/>
-    <ellipse cx="3.5" cy="2.4" rx="1.5" ry="1.7" fill="#3f3a36"/>
-    <path d="M0.8 0.8L6.2 6.2M6.2 0.8L0.8 6.2" stroke="#a33b34" stroke-width="1" stroke-linecap="round"/>
+    <rect width="7" height="5" fill="#d9d2c3"/>
+    <ellipse cx="3.5" cy="1.9" rx="1.25" ry="1.4" fill="#4a403c"/>
+    <rect x="3" y="3" width="1" height="0.7" fill="#4a403c"/>
+    <path d="M0.8 5C1 4.1 1.8 3.6 2.7 3.5L4.3 3.5C5.2 3.6 6 4.1 6.2 5Z" fill="#4a403c"/>
+    <rect x="0.25" y="0.25" width="6.5" height="4.5" fill="none" stroke="#3b3034" stroke-width="0.5"/>
+    <path d="M0.9 0.6L6.1 4.4M6.1 0.6L0.9 4.4" stroke="#b0302a" stroke-width="1" stroke-linecap="round"/>
   </g>
   <g transform="translate(17 16)">
-    <rect width="7" height="7" fill="#b3ab98"/>
-    <rect x="2.9" y="3.8" width="1.2" height="1.4" fill="#3f3a36"/>
-    <path d="M0 7C0.2 5.4 1.3 4.9 2.5 4.8L4.5 4.8C5.7 4.9 6.8 5.4 7 7Z" fill="#3f3a36"/>
-    <ellipse cx="3.5" cy="2.5" rx="1.7" ry="1.8" fill="#3f3a36"/>
+    <rect width="7" height="5" fill="#d9d2c3"/>
+    <ellipse cx="3.5" cy="1.9" rx="1.25" ry="1.4" fill="#4a403c"/>
+    <rect x="3" y="3" width="1" height="0.7" fill="#4a403c"/>
+    <path d="M0.8 5C1 4.1 1.8 3.6 2.7 3.5L4.3 3.5C5.2 3.6 6 4.1 6.2 5Z" fill="#4a403c"/>
+    <rect x="0.25" y="0.25" width="6.5" height="4.5" fill="none" stroke="#3b3034" stroke-width="0.5"/>
+  </g>
+  <g shape-rendering="crispEdges" fill="#7f786c">
+    <rect x="8" y="14" width="6" height="1"/>
+    <rect x="17" y="14" width="5" height="1"/>
+    <rect x="8" y="22" width="5" height="1"/>
+    <rect x="17" y="22" width="6" height="1"/>
   </g>
   <rect x="6.5" y="3.5" width="19" height="21" fill="none" stroke="#3b3034" stroke-width="1"/>
 </svg>
