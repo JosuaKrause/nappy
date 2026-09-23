@@ -65,3 +65,20 @@ like a torn poster. let me create some references".
     pasted over a window makes no sense, so the building fronts owe blank wall on the ground
     floor for the posters to use.
 
+## Then, sending a reference
+
+The player sent a generated reference sheet for the posters in the conversation: the leader, the
+rules, the curfew sheet, the uniform sheet with a phi-like emblem, and the wanted notice plain
+and crossed. The orchestrator asked for it as a file, since a pasted image cannot be read by an
+agent.
+
+> "note, some poster types are repeated"
+
+> "btw the docs/evidence folder is a mess. it's good for keeping raw evidence but art style
+> references should be in their own folder that is easy to find (no intermediate folders that
+> have lots of files/folders)"
+
+14. **The reference sheet repeats some kinds**: the repeats are the same poster, not new kinds.
+15. **Art style references live in a folder of their own, easy to find**, with no intermediate
+    folder full of other files on the way to it. `docs/evidence/` keeps raw evidence only.
+
