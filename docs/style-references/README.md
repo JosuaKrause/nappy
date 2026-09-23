@@ -9,6 +9,7 @@ no subfolders — so a name is the only lookup a search needs. What each file is
 | `graphics-reference-urban-02.jpeg` | City/environment | Style | A second illustrated urban view, for the same street/vehicle/shop/crowd detail the first alone does not cover. |
 | `graphics-reference-cardinal.jpeg` | Player/gameplay | Style | The style-transferred gameplay reference — the floor for the available cardinal perspective, not the illustrated style or detail target on its own. |
 | `graphics-reference-mother.jpeg` | Player (mother) | Identity + style | The mother, her clothing, face, pram and baby: brown hair in a high bun, green coat, and the broader illustrated-city style read together with the urban pair. |
+| `posters-01.jpg` | Posters (`art/events/posters/`) | Style + content | The player's generated reference sheet for M180's posters — the leader, rules, curfew, uniform and wanted notices, some kinds repeated. |
 
 `docs/VISUALS.md`, "Reference roles" says how illustrated-png generation actually uses these; this
 file only says which picture is for what.

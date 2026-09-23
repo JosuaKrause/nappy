@@ -1,19 +1,21 @@
 ---
 name: reference-photos
-description: How a real-world photo or video gets into the repo as drawing reference — the one folder it goes in, the shrink-and-strip pass every file goes through, and what may not be committed at all. Load this BEFORE adding any photograph, phone video or camera capture to the repository.
+description: How a real-world photo or video gets into the repo as drawing reference, or an approved illustration-style reference gets added — which of the two folders each goes in, the shrink-and-strip pass every file goes through, and what may not be committed at all. Load this BEFORE adding any photograph, phone video, camera capture or style reference to the repository.
 ---
 
-# Real-world reference
+# Real-world reference and style references
 
-**Reference material goes in `docs/reference/`, and it gets there through `tools/reference.sh`.**
+**Reference material goes in `docs/reference/`, an approved style reference goes in
+`docs/style-references/`, and both get there through `tools/reference.sh`.**
 
 ```sh
 tools/reference.sh ~/Desktop/pram-on-a-kerb.heic
 tools/reference.sh ~/Pictures/street-walk/          # a whole folder
+tools/reference.sh --style ~/Desktop/new-illustration-ref.jpeg   # into docs/style-references/
 tools/reference.sh --force one-that-is-already-there.jpg
 ```
 
-**Never copy a file into that folder by hand.** Everything below is what the script does, and a
+**Never copy a file into either folder by hand.** Everything below is what the script does, and a
 hand-copied photo has none of it — which is not a tidiness problem, because the second guarantee
 is a privacy one.
 
@@ -38,10 +40,12 @@ Five folders in this repo hold pictures and they are not interchangeable:
   ships.
 - **`assets/`** — what the engine reads at runtime, and only that.
 
-**The folder carries a `.gdignore`, and that is load-bearing.** Godot walks every directory under
+**Each folder carries a `.gdignore`, and that is load-bearing.** Godot walks every directory under
 the project and would import each photo as a texture, writing a `.import` sidecar per file and
 carrying the lot into the exported build. An empty `.gdignore` is the engine's own *this directory
-is not mine*. The script writes it; do not delete it.
+is not mine*. The script writes one into whichever folder it targets; do not delete it. `docs/`
+itself carries one too, so the walk never reaches either folder in the first place — the
+per-folder ones are the same belt-and-braces the script has always written for `docs/reference/`.
 
 ## The three things that happen to every file
 
