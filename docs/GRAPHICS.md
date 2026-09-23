@@ -367,10 +367,11 @@ scene or resource reads any of them yet — placing them on a building face, the
 them and tearing one down are later slices.
 
 Each is a 32×32 canvas matching a wall tile's own grid, so a later placement can register
-straight onto a wall cell the way `wall_base.svg` already does. Every kind but the torn one is a
-20×22px sheet (62.5% × 69% of the tile) at x 6–26, y 3–25: a gap on all four sides of its tile,
-the foot clear of the plinth `wall_base.svg` draws from y 26, and the cell's window
-(`window_*.svg`, x 8–24, y 8–25) hidden under it.
+straight onto a wall cell the way `wall_base.svg` already does. Every file is a 20×22px sheet
+(62.5% × 69% of the tile) at x 6–26, y 3–25: a gap on all four sides of its tile, and the foot
+clear of the plinth `wall_base.svg` draws from y 26. A poster goes on blank wall, never over a
+window (`docs/playtests/PLAYTEST-123.md`, statement 13), so a ground floor that carries posters
+needs cells without one.
 
 | Asset | What it draws |
 |---|---|
@@ -380,7 +381,9 @@ the foot clear of the plinth `wall_base.svg` draws from y 26, and the cell's win
 | `poster_uniform.svg` | The dark uniform sheet: an invented ring-and-bar emblem, asymmetric so it does not read as a cross, matching no real flag, party, state or movement mark. |
 | `poster_wanted.svg` | The wanted notice: four people in two rows of two, each a flat dark head-and-shoulders silhouette on a pale mugshot panel — a different style from the leader's coloured portrait. The top-right face is crossed out in red on every copy. The bottom-left slot, the SVG group `neighbor_slot` (a 7×7 panel at 8,16), is a placeholder adult standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their figure. |
 | `poster_wanted_crossed.svg` | The same sheet with the `neighbor_slot` face crossed out in red as well, for a day 10 whose task was not done on the day she won. |
-| `poster_torn.svg` | A generic torn sheet, prepared for "she tears a poster down by pushing against its wall" (M180's second item), still on a 20×25px sheet that reaches the plinth. It does not read as torn, and is to be redrawn from reference photos the player is taking. |
+| `poster_torn.svg` | The leader's portrait torn down, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top and upper left still pasted with the scowling brows and eyes, and a scrap of the bottom-right corner. Every torn file is an intact kind clipped along an irregular tear with a pale paper-core fringe and a faint shadow under it, over the bare wall where the sheet was — a faint shade darker, with glue marks and paper crumbs. |
+| `poster_torn_rules.svg` | The rules notice torn down: the header strip kept, a peeled flap hanging off the tear with its blank back showing, and a corner scrap with part of the red stamp. One of three torn variants for the player to choose between. |
+| `poster_torn_uniform.svg` | The uniform sheet torn down: a ragged strip down the left edge with half the emblem's ring, and a small scrap in the top-right corner. One of three torn variants for the player to choose between. |
 
 No sheet carries readable words — every print line, header and stamp is a colour block or a gray
 line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the politics).
@@ -390,4 +393,6 @@ but the torn one on a single ground-row wall cell at game scale (2×, the camera
 at 4× that, plus three building fronts assembled from the real `art/buildings/` wall, window,
 edge and plinth textures, multiplied by a building colour and each act's own cast
 (`Palette.act_tint()`), carrying one row of posters at the day 4/day 8/day 12 densities M180's
-own table asks for.
+own table asks for. [The torn poster sheet](evidence/poster-art-review-2026-09-23-torn.png)
+shows the three torn files alone at game scale and at 4× that, and each on blank ground-row wall
+beside the intact poster it was, at game scale and at 2× that.
