@@ -107,7 +107,7 @@ going quietly stale.
 | `--meters S E` | Seed the two meters, to screenshot a UI state |
 | `--spawn park\|alley\|square\|playground` | Drop the player on a tile type |
 | `--spawn event[:id]` | Drop the player beside a live event |
-| `--spawn arterial\|zone[:n]\|signal\|landmark\|closure[:n]\|edge[:s\|e\|w]\|corner[:nw\|ne\|sw\|se]` | Drop her at one of the places worth photographing: the busiest pavement, a multi-block calm zone (`zone:1` for the second one, which is where a 2×1 will be), a signalled junction on the spine, a big building, a closed street seen from its junction, one of the ways out of the map, or a corner of it where two bands of the border meet |
+| `--spawn arterial\|zone[:n]\|signal\|landmark\|power_station\|closure[:n]\|edge[:s\|e\|w]\|corner[:nw\|ne\|sw\|se]` | Drop her at one of the places worth photographing: the busiest pavement, a multi-block calm zone (`zone:1` for the second one, which is where a 2×1 will be), a signalled junction on the spine, a big building, the power station's front door, a closed street seen from its junction, one of the ways out of the map, or a corner of it where two bands of the border meet |
 | `--follow <event id>` | Park a camera on an event wherever it goes |
 | `--force <event id> [seconds]` | Hand out **only** that row, over and over, every `seconds` (default 6) of walking — for looking at one encounter rather than one city. Bypasses `first_day` and the day's budget; `--seed` and `--day` still decide everything around it |
 | `--overview` | Frame the whole city at once |
