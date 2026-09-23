@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_industrial_ground_is_preferred(t)
 	_test_the_door_is_reached_on_its_day_through_a_region_door(t)
 	_test_no_other_day_is_bent_toward_it(t)
+	_test_an_older_save_with_the_station_block_advanced_still_loads(t)
 
 # ------------------------------------------------------------------ generation ---
 
@@ -244,3 +245,34 @@ func _routes_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
 	return rng
+
+# ------------------------------------------------------------------ saves ---
+
+## A save holds the run seed, not the city, so a save written before the station existed is
+## restored onto this build's city — where one of the blocks it had boarded up or burnt may now be
+## the station, whose arc has one step. Built here the way such a save arrives: a `CityState`
+## snapshot through JSON, with a station block recorded past step 0. It loads: the block reads as
+## the station for the whole run, the day's arcs advance around it, and the mass stays solid.
+func _test_an_older_save_with_the_station_block_advanced_still_loads(t) -> void:
+	var map := CityGenerator.generate(BASE_SEED)
+	var block := map.power_station.position
+	var plan: BlockPlan = map.block_plans[block]
+	t.check(plan.steps.size() == 1, "the station's block has a one-step arc (%d)" % plan.steps.size())
+	var saved := {"stage": [{"x": block.x, "y": block.y, "v": 2}],
+			"changed_on": [{"x": block.x, "y": block.y, "v": 5}]}
+	var data: Dictionary = JSON.parse_string(JSON.stringify(saved))
+	var state := CityState.new()
+	state.restore(data)
+	t.check(state.purpose_of(map.block_plans, block) == GameEnums.BlockPurpose.BIG_BUILDING,
+			"a stage past the station's arc reads as the station")
+	state.begin_day(map.block_plans, Tuning.POWER_STATION_DAY)
+	map.repaint(state)
+	t.check(state.purpose_of(map.block_plans, block) == GameEnums.BlockPurpose.BIG_BUILDING,
+			"and stays the station once the day's arcs have advanced")
+	var solid := true
+	for tile in map.rect_tiles(CityMap.blocks_tile_rect(map.power_station)):
+		if map.is_walkable(tile):
+			solid = false
+			break
+	t.check(solid, "the station's mass is still solid after the repaint")
+	t.check(not state.calm_blocks(map.block_plans).is_empty(), "the city still has calm ground")
