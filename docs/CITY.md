@@ -679,6 +679,20 @@ industrial pair that is also far enough out and outside the home's region is rar
 usually stands on one industrial block or beside the district. `CityMap.power_station_industrial_
 blocks` records which, since the blocks themselves become `BIG_BUILDING` once the mass is down.
 
+**On the day she is sent there, the corridor reaches the door, and on no other day.** On
+`Tuning.POWER_STATION_DAY` — the last day — `RouteTree.for_day` joins the door's pavement to the
+day's tree with a spur: the shortest way from the door to the nearest cell already on the tree,
+grown after the branches and the trunk and rolling nothing, so the rest of the day's corridor is
+exactly what it would have been without the station. That one addition is what keeps the door
+reachable, through rules the day already follows for the rest of the tree: a boundary crossing
+the spur takes is a door rather than wall, no seal stands on it, and no closure lands on it. And
+`ClosurePlanner` asks for the door beside the calm before accepting each closure that day, so a
+closure that would cut it off is refused, not repaired — the second opinion, as it is for the calm.
+Because the door is outside the home's region, every way there crosses a region door;
+`tests/test_power_station.gd` plans the day with its walls, seals and closures standing, finds the
+door reachable, and finds it out of reach again with the doors shut. On every other day the tree
+ignores the station, so nothing leads her there before she is sent.
+
 A city where no candidate passes has no station, and `validate()` refuses it like any other broken
 guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pair,
 `power_station_door` the pavement in front of the door, `power_station_door_street()` the street it
@@ -752,7 +766,8 @@ today's routes run through, from the doorstep to the calm areas that are still w
 **The target is every calm area still available that day, not one of them.** Each gets a corridor
 and **the player chooses which to take** — the guidance is the set of offers, not a single
 instruction. So the day's plan is a small **tree**: the doorstep at the root, one path per
-available calm area.
+available calm area. On the power station's day it also carries one spur to the station's front
+door, the day's task — see "The power station".
 
 **One corridor per calm area, and overlaps are a resource rather than a problem.** Paths may share
 ground on the way out and separate later, since they end in distinct places. Where several

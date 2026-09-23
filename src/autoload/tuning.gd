@@ -587,6 +587,11 @@ const MAX_BIG_BUILDINGS := 2
 ## beside this floor. Set by the orchestrator, open to overturn.
 const POWER_STATION_MIN_BLOCKS_FROM_HOME := 4
 
+## The day she is sent to the power station's front door, which is the last day of the run. On this
+## day only, the corridor reaches the door (`RouteTree.for_day`) and the closures may not cut it off
+## (`ClosurePlanner`); on every other day nothing leads her there.
+const POWER_STATION_DAY := RUN_LENGTH_DAYS
+
 ## Per-purpose chance a block is split by a through-alley.
 const ALLEY_CHANCE := {
 	GameEnums.BlockPurpose.RESIDENTIAL: 0.25,
