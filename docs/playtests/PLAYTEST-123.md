@@ -210,3 +210,8 @@ ones" asks:
 32. **A new poster may cover an old one exactly**, replacing it, as well as being pasted over it
     with a visible offset.
 
+> "if it's visibly over pasted for all of them then it will look weird"
+
+33. **Visible overpasting is the exception**: most new sheets replace the old one exactly, and
+    only some are pasted over it with an offset.
+
