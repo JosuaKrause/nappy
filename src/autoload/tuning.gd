@@ -581,9 +581,22 @@ const CUL_DE_SAC_WALL_TILES := 2
 ## twenty-two tiles long. Every other street around the pair stays — it takes one road out of the
 ## lattice, not the ring. One or two per city, because this is a **landmark** — a thing a player
 ## says "past the big grey one" about — and a city with five of them has landmarks the way a forest
-## has notable trees.
+## has notable trees. **The count includes the power station**, which every city has and which is
+## one of these: the rest are ordinary landmarks.
 const MIN_BIG_BUILDINGS := 1
 const MAX_BIG_BUILDINGS := 2
+
+## How far the power station's front door stands from the home, as the lattice (Manhattan) distance
+## in blocks from the home block to the block the door is on. A reasonable walk rather than the
+## far edge of the map: her routes need not pass it before the day she is sent there, and the
+## narrative has a region door between the two, which `CityGenerator._place_power_station` checks
+## beside this floor. Set by the orchestrator, open to overturn.
+const POWER_STATION_MIN_BLOCKS_FROM_HOME := 4
+
+## The day she is sent to the power station's front door, which is the last day of the run. On this
+## day only, the corridor reaches the door (`RouteTree.for_day`) and the closures may not cut it off
+## (`ClosurePlanner`); on every other day nothing leads her there.
+const POWER_STATION_DAY := RUN_LENGTH_DAYS
 
 ## Per-purpose chance a block is split by a through-alley.
 const ALLEY_CHANCE := {

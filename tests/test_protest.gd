@@ -14,6 +14,8 @@ func run(t) -> void:
 	_test_plain_pose_with_no_objective(t)
 	_test_plain_pose_on_a_mark_step(t)
 	_test_pointing_pose_on_a_perform_step(t)
+	if _city != null:
+		_city.free()
 
 # ---------------------------------------------------------------- bearing ---
 
@@ -65,7 +67,15 @@ func _test_plain_pose_with_no_objective(t) -> void:
 # The same city-and-director rig `test_resistance.gd` builds `ResistanceDirector` with, kept
 # separate rather than shared so this file never writes to one the resistance suite also owns.
 
+## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires
+## the "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
+## `_exit_tree()` (`src/events/event_manager.gd`). Two tests here each call this once, so a
+## `_city` never freed would leave the group resident for the rest of the process — a suite
+## sharing a later shard with `tests/test_telemetry.gd` then finds "events" already held before
+## its own load/release test even starts.
 func _build_city(t) -> void:
+	if _city != null:
+		_city.free()
 	_city = CITY_SCENE.instantiate()
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))

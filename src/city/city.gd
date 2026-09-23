@@ -450,11 +450,24 @@ func _spawn_buildings() -> void:
 		building.district = map.starting_purpose(_block_of(rect))
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
+		_dress_the_power_station(building, rect)
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block
 		# boundary stacking the way the eye expects.
 		_buildings_layer.add_child(building)
 		_buildings.append(building)
+
+## Makes `building` the power station when `rect` is its mass: the door over the pavement
+## `CityMap.power_station_door` names, and the transformer yard over the other block — the hall is
+## the door's block and the street the mass was built across.
+func _dress_the_power_station(building: Building, rect: Rect2i) -> void:
+	if not map.has_power_station() or rect != CityMap.blocks_tile_rect(map.power_station):
+		return
+	building.power_station = true
+	building.station_door_col = map.power_station_door.position.x - rect.position.x
+	var door_is_west := building.station_door_col < Tuning.BLOCK_SIZE
+	building.station_yard_cols = Vector2i(rect.size.x - Tuning.BLOCK_SIZE if door_is_west else 0,
+			Tuning.BLOCK_SIZE)
 
 ## The block a lot belongs to.
 func _block_of(rect: Rect2i) -> Vector2i:

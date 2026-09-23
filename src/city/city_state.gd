@@ -46,11 +46,20 @@ func restore(data: Dictionary) -> void:
 	for raw: Dictionary in data.get("changed_on", []):
 		_changed_on[Vector2i(int(raw["x"]), int(raw["y"]))] = int(raw["v"])
 
+## What `block` is now: the step of its arc the run has reached.
+##
+## **A recorded stage past the end of the arc reads as the arc's last step.** The stage comes from a
+## save, and a save holds the run seed rather than the city, so a save written by a build whose
+## generator made a different city is restored onto arcs that are not the ones it advanced. The case
+## that exists is a block a newer build turned into the power station — a one-step `BIG_BUILDING`
+## arc — which an older build's run had already boarded up or burnt. Reading the last step keeps
+## that save loading into the city this build generates rather than indexing off the arc; nothing a
+## current run records can be past its own arc, since `_can_advance` never steps beyond it.
 func purpose_of(plans: Dictionary, block: Vector2i) -> GameEnums.BlockPurpose:
 	var plan: BlockPlan = plans.get(block)
 	if not plan:
 		return GameEnums.BlockPurpose.RESIDENTIAL
-	return plan.steps[_index(block)].purpose
+	return plan.steps[mini(_index(block), plan.steps.size() - 1)].purpose
 
 ## The day this block last became something else. 1 if it never has.
 func changed_on(block: Vector2i) -> int:

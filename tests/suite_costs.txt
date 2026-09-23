@@ -43,6 +43,7 @@ test_meters.gd 106
 test_orientation.gd 364
 test_pause.gd 1196
 test_performance.gd 3
+test_power_station.gd 20400
 test_presentation_mode.gd 3
 test_protest.gd 791
 test_quit_option.gd 1

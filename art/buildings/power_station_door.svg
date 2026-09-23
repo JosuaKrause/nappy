@@ -1,0 +1,38 @@
+<!-- The power station's front door in the building's cardinal 2.5D projection: a heavy steel
+     service door under a steel lintel, braced and riveted, with a small personnel door set in
+     it, a high-voltage plate, hazard-striped guard posts either side, a caged work lamp and a
+     tread-plate threshold. Two facade columns wide. Ground anchor (32,64). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M8 12 H56 V61 H8 Z" fill="#6c7271"/>
+  <path d="M11 17 H53 V61 H11 Z" fill="#56646a"/>
+  <path d="M11 17 L53 61 M53 17 L11 61" fill="none" stroke="#46535a" stroke-width="2.2"/>
+  <path d="M11 39 H53" fill="none" stroke="#46535a" stroke-width="2.2"/>
+  <path d="M11 17 H53 V61 H11 Z" fill="none"/>
+  <g fill="#8b979c" stroke="none">
+    <circle cx="14" cy="20" r="0.9"/><circle cx="50" cy="20" r="0.9"/>
+    <circle cx="14" cy="39" r="0.9"/><circle cx="50" cy="39" r="0.9"/>
+    <circle cx="14" cy="58" r="0.9"/><circle cx="50" cy="58" r="0.9"/>
+    <circle cx="32" cy="20" r="0.9"/><circle cx="32" cy="58" r="0.9"/>
+  </g>
+  <path d="M25 33 H39 V61 H25 Z" fill="#4c5a60"/>
+  <rect x="28" y="36" width="8" height="5" fill="#2c3438"/>
+  <rect x="35" y="47" width="2.4" height="5" fill="#c9c6bd"/>
+  <path d="M18 22 L23.5 31 H12.5 Z" fill="#e2c14a"/>
+  <path d="M18.6 24.5 L16.8 27.4 H18.8 L17.6 29.8 L20 26.6 H18.1 Z" fill="#3b2d32" stroke="none"/>
+  <rect x="42" y="23" width="8" height="5" fill="#d8d3c8"/>
+  <path d="M43.5 25.5 H48.5" fill="none" stroke="#3b2d32" stroke-width="0.7"/>
+  <path d="M4 9 H60 V14 H4 Z" fill="#4e5558"/>
+  <path d="M4 11.5 H60" fill="none" stroke="#3a4043" stroke-width="0.6"/>
+  <path d="M2 18 H8 V62 H2 Z" fill="#dcb843"/>
+  <path d="M2 24 L8 20 V26 L2 30 Z M2 36 L8 32 V38 L2 42 Z M2 48 L8 44 V50 L2 54 Z" fill="#2e2a2c" stroke="none"/>
+  <path d="M2 18 H8 V62 H2 Z" fill="none"/>
+  <path d="M56 18 H62 V62 H56 Z" fill="#dcb843"/>
+  <path d="M56 24 L62 20 V26 L56 30 Z M56 36 L62 32 V38 L56 42 Z M56 48 L62 44 V50 L56 54 Z" fill="#2e2a2c" stroke="none"/>
+  <path d="M56 18 H62 V62 H56 Z" fill="none"/>
+  <rect x="28" y="2" width="8" height="6" fill="#dfe6e3"/>
+  <path d="M28 5 H36 M30.7 2 V8 M33.3 2 V8" fill="none" stroke="#4e5558" stroke-width="0.7"/>
+  <rect x="27" y="7.5" width="10" height="1.8" fill="#4e5558"/>
+  <path d="M8 60 H56 L58 63 H6 Z" fill="#7c8184"/>
+  <path d="M14 61.5 L16 60.5 M22 61.5 L24 60.5 M30 61.5 L32 60.5 M38 61.5 L40 60.5 M46 61.5 L48 60.5" fill="none" stroke="#5f6467" stroke-width="0.6"/>
+  <path d="M6 63 H58" fill="none" stroke="#5f5b56" stroke-width="1.5"/>
+</svg>

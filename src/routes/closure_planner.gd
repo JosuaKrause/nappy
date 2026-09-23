@@ -83,11 +83,12 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 	# below.
 	var emptied: Array[Vector2i] = []
 	var today_closed := {}
+	var door := station_door_today(map, day)
 	for segment in _shuffled_candidates(map, home, areas, corridor, regions, rng):
 		if chosen.size() >= wanted:
 			break
 		today_closed[segment.key()] = true
-		if _invariant_holds(map, grid, areas, today_closed):
+		if _invariant_holds(map, grid, areas, today_closed, door):
 			var kind := _pick_kind(kinds, rng, tree_segments.has(segment.key())) as RoadClosure.Kind
 			chosen.append(RoadClosure.new(kind, segment))
 			if kind == RoadClosure.Kind.FALLEN_TREE:
@@ -204,10 +205,24 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ## clarification is why it does not: *"the two routes guarantee is not a hard rule."* See
 ## `Tuning.MIN_CALM_AREAS_REACHABLE` for what that leaves standing and what it deliberately does
 ## not weaken.
+##
+## **On the power station's day it also asks for the station's front door** (`door`, the pavement
+## in front of it, empty on every other day): a closure that would cut the door off is refused the
+## same way one that would cut the calm off is, before it is accepted. The day's tree reaches the
+## door on that day (`RouteTree.for_day`) and every closure is placed off the tree, so like the calm
+## half this is the second opinion rather than the thing that keeps it.
 static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[CalmArea],
-		today_closed: Dictionary) -> bool:
+		today_closed: Dictionary, door: Array[Vector2i] = []) -> bool:
 	var blocked := _barrier_tiles(map, today_closed)
 	var reached := grid.flood([_home_tile(map)], blocked)
+	if not door.is_empty():
+		var door_reached := false
+		for tile in door:
+			if grid.reaches(tile, blocked, reached):
+				door_reached = true
+				break
+		if not door_reached:
+			return false
 	var reachable := 0
 	for area in areas:
 		if _area_is_reached(map, grid, reached, blocked, area):
@@ -215,6 +230,13 @@ static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[
 			if reachable >= Tuning.MIN_CALM_AREAS_REACHABLE:
 				return true
 	return false
+
+## The pavement in front of the power station's front door on the day she is sent there, and
+## nothing on any other day — what `_invariant_holds` must still reach besides the calm.
+static func station_door_today(map: CityMap, day: int) -> Array[Vector2i]:
+	if day != Tuning.POWER_STATION_DAY or not map.has_power_station():
+		return []
+	return map.rect_tiles(map.power_station_door)
 
 static func _home_tile(map: CityMap) -> Vector2i:
 	return map.world_to_tile(map.doorstep_world_position())
