@@ -10,14 +10,18 @@ the orchestrating session designs, specifies, reviews integration and maintains 
 The split gives implementation fresh context and a fenced scope while orchestration retains
 the whole queue and the player's words.
 
-Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a
-PR, removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or
-contracts warrant it, by judgement *(2026-09-11: "for wait tasks like this haiku makes more sense
--- use your judgement")*. In Codex, pick the subagent tier by the task's remaining difficulty: see
-`references/codex-models.md`. The contract is the same on either host: fresh context, a bounded
-scope and an isolated checkout for implementation. Create the worktree explicitly if the tool
-does not create one. Read-only review can share a checkout. If delegation is unavailable, do the
-bounded work locally and retain the same verification gate.
+Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a PR,
+removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or contracts
+warrant it, by judgement *(2026-09-11: "for wait tasks like this haiku makes more sense -- use your
+judgement")*. **In Claude Code, drawing is Opus's**: an agent that makes or revises artwork — SVG,
+PNG, a review sheet — runs on Opus, since the result is judged by eye and a weaker first pass costs
+the player a review round *(2026-09-23: "what is the model making those images? use opus 5.5")*;
+Codex has its own model hierarchy and keeps its own tiering for art *(2026-09-23: "make the opus
+guidance claude only -- codex has a different model hierarchy here")*. In Codex, pick the subagent
+tier by the task's remaining difficulty: see `references/codex-models.md`. The contract is the same
+on either host: fresh context, a bounded scope and an isolated checkout for implementation. Create
+the worktree explicitly if the tool does not create one. Read-only review can share a checkout. If
+delegation is unavailable, do the bounded work locally and retain the same verification gate.
 
 **A usage or quota limit is already over by the time the orchestrator hears of it**, in Claude
 Code and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no
