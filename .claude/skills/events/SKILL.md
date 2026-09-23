@@ -10,11 +10,10 @@ field; resist adding a script per event.
 
 ## Adding a row
 
-`src/events/event_catalogue.gd` in the act's section, a line in the `docs/EVENTS.md` table, and **a
-drawing**: an `EventDef.Look` of its own, an SVG in `art/events/`, a `_draw_*` in
-`EventInstance`, and a row in `EventInstance.icon_for()` so the screen-edge badge has a silhouette.
-That last part is not optional and there is no generic to borrow — `tests/test_events.gd` fails the
-build if two rows share a picture.
+The steps are `docs/EVENTS.md`, "Adding a new event". The one that gets skipped is **a drawing**:
+an `EventDef.Look` of its own, an SVG in `art/events/`, a `_draw_*` in `EventInstance`, and a row
+in `EventInstance.icon_for()` so the screen-edge badge has a silhouette. There is no generic to
+borrow — `tests/test_events.gd` fails the build if two rows share a picture.
 
 If it needs behaviour no field covers, add the field to `EventDef` and handle it in `EventInstance`.
 
@@ -23,28 +22,31 @@ If it needs behaviour no field covers, add the field to `EventDef` and handle it
 **`spawn_mode` is a decision.** `MAP` is the default and is right for anything the player could plan
 around: it is a place, and finding out it is there is what walking a street is for.
 `AHEAD_OF_PLAYER` is for the small number whose entire content is *the moment it happens to you* —
-three seconds of cat is not a place — and it may not obstruct.
+three seconds of cat is not a place. `TOWARD_PLAYER` (`cyclist`, `loose_dog`) is sited on her line
+coming at her: traffic she answers with a route, not an ambush. Neither director-sited mode may
+obstruct.
+
+**`sited_on_her_way` is a decision about *when* a place is chosen.** A `MAP` one-shot, never
+mobile, placed by her walk rather than at dawn; `EventDef.validate()` refuses any other
+combination.
 
 **`hard_fail` is a decision, and it decides where the thing goes as well as what it does.**
 
-**The role is not a decision.** `EventScheduler._role_for` reads it off the def — lethal is a
-**wall** and goes off the day's corridor, a one-shot is a **set piece** and goes where every route
-touches it, anything else placed on a tile is **friction** and is weighted onto the corridor. One
-row's role is read off its **placement** instead and for a reason worth copying: what makes a
-**pacing** row passable is where its beat runs — one that passes a junction's crosswalk or a side
-route off the sidewalk can be left there, one that passes neither cannot — so `_a_pacing_beat_walls_a_sidewalk`
-answers it in the candidate loop, where the beat exists. A role that depends on geometry the def
-does not carry belongs there rather than in `_role_for`. A new
-row is placed against the day's routes without anybody writing a rule for it. If a new row wants a
-role its effect does not imply, that is a design conversation and a change to `_role_for`, not a
-field on the def.
+**The role is not a decision.** `EventScheduler._role_for` reads it off the def: scenery, ambient
+and director-sited rows get none; a one-shot is a **set piece** (sited where every route touches
+it); `hard_fail`, a `walk_through_cost()` at or over `Tuning.WALL_WORTH_OF_COST` (48 points), or a
+reach that leaves no line past it along a sidewalk makes a **wall** (zero copies on any cell a
+route runs along); anything else is **friction** (weighted onto the corridor). A `paces` row's role
+depends on where its beat runs, so `_a_pacing_beat_walls_a_sidewalk` decides it in the candidate
+loop, where the beat exists. A row that wants a role its data does not imply needs a change to
+`_role_for`, not a new field.
 
 **`obstructs_radius` is not a decision.** If it stands still and it is drawn, it is solid at half
 its silhouette.
 
-**`pavement_side` usually is not one either** — `ANY` is right for almost everything. The two rows
-that use it do so because a parked vehicle belongs at a kerb and a thing that reverses into a yard
-needs a wall.
+**`pavement_side` usually is not one either** — `ANY` is right for most rows. A kerb
+(`AT_THE_KERB`) is for what parks at the road's edge, a van or a skip; a wall
+(`AGAINST_THE_BUILDING`) is for what belongs to a frontage, a lorry backing in or a poster crew.
 
 **`departs_at` is only a decision for a stationary event with a `duration`.** Anything mobile
 already leaves at its own speed, and anything without a duration never ends.
@@ -62,40 +64,23 @@ catalogue. A violation is a bug, not a difficulty setting.
 Two documented exemptions: `AMBIENT` events (they never "appear") and `city_wide` ones (no edge to
 walk out of).
 
-An `AHEAD_OF_PLAYER` event is **not** an exemption — it has no telegraph phase the player can see
-coming, so the contract is paid in geometry instead. It is sited far enough ahead that she is
-outside its outer radius for the whole telegraph, and `EventDef.validate()` refuses one that
-obstructs, because nothing checks a route around a thing with no tile.
+A director-sited (`AHEAD_OF_PLAYER`/`TOWARD_PLAYER`) event is **not** an exemption — it has no
+telegraph she can see coming from down the street, so the contract is paid in geometry: the
+director sites it a row-specific lead ahead of her, `EventDef.validate()` refuses a `TOWARD_PLAYER`
+field that would reach her from that lead, and it refuses any director-sited row that obstructs,
+because nothing checks a route around a thing with no tile.
 
 ## The contract is per event and the player experiences the sum
 
-At one event per block the outer radii overlap, so walking out of one field can mean walking into
-another — the density working, right up until the field she walks into is one of the three that end
-the day.
-
 **Nothing else happens inside a lethal event's field.** A `hard_fail` event keeps its whole
-`outer_radius` clear of every other event at placement, and it is the one spacing rule with no
-fallback — an abduction that cannot find room is not placed. `EventScheduler._room_around()`
-enforces it. If a new event becomes lethal, it inherits this, not just the telegraph.
+`outer_radius` clear of every other event at placement (`EventScheduler._room_around()`), and it is
+the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
+inherits this, not just the telegraph.
 
-**Off the day's corridor is exempt, and the exemption is the design.** There is no route she is
-meant to take off the corridor — the point of that ground is that she should not be on it — so
-lethal fields there may overlap each other and everything else. Under the old rule "deadly all over"
-was not merely hard, it was arithmetic: six lethal rows capped at three to five, at radii of
-145–380px, cannot tile anything.
-
-The exemption is exactly the `WALL` role, by construction: `_copies_of` offers a wall zero copies of
-any tile a route actually runs along (`Corridor.carries_a_route`, the cell grain rather than the
-street's), so a lethal placement carrying that role is off the routes or it does not exist. The far
-sidewalk of a route's own street is not ground a route runs along and is legal for a wall; what
-keeps a wide one off it is the width rule, not this. `EventScheduler._keeps_its_field_clear` is the one place that decides. **The telegraph
-contract is untouched by this** — that one is about a single event's own geometry.
-
-**A pursuer is the third exemption, for the same reason as a wall: it has no place to be kept
-clear of anything** — it follows her rather than sitting on a tile the day chose.
-`_keeps_its_field_clear` excludes anything with `pursues` set, which `charging_dog` and
-`alley_robbery` both already needed and now get by name rather than by accident of the `WALL`
-classification.
+Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
+is off the day's routes by construction, and a **pursuer**, which follows her.
+`EventScheduler._keeps_its_field_clear` names both. The reasoning is `docs/EVENTS.md`, "The contract
+is per event, and the player experiences the sum".
 
 ## A lethal radius and a solid body are the same mechanism
 
@@ -111,110 +96,69 @@ draws a blocking object at exactly the width it obstructs for the same reason in
 direction.
 
 Four exemptions, each written down in `docs/EVENTS.md`, "Solid things are solid": anything
-**mobile** (a moving wall pins her), anything `AHEAD_OF_PLAYER` (`validate()` refuses it), anything
+**mobile** (a moving wall pins her), anything **director-sited** (`validate()` refuses it), anything
 with no silhouette, and a **flock** (`validate()` refuses that too — several bodies wheeling inside
 one disc have no silhouette to be half of, and being walked into is the event).
 `tests/test_events.gd` requires everything else to have one.
 
 **A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can
-walk around does not close a 704px lot; one you have to route around does. **If a rule tests
+walk around does not close a park; one you have to route around does. **If a rule tests
 `obstructs_radius > 0`, ask whether it means *has a body* or *closes ground*.**
 
 ## A fixture can move, and `EventDef.paces` is how
 
 A **beat** rather than a journey: it walks its route, turns round at the ends, and neither departs
-nor expires. A stationary source is a fixed price on a fixed patch of ground — a line you draw once
-and never think about again — and a man pacing two hundred and fifty pixels of footway is a timing
-problem on top of a routing one.
+nor expires. A stationary source is a line the player draws once; a man pacing a stretch of
+sidewalk is a timing problem on top of a routing one.
 
 The price is the body: anything mobile is exempt from the solidity rule, so making something pace
 **takes its `obstructs_radius` away**, and what has to replace it is intensity.
 
 ## Nothing vanishes while you are looking at it
 
-An event that is over **leaves**. `EventInstance._be_done()` puts it in a leaving phase where it
-emits nothing, cannot end the day and carries no cue, and it moves until it is past
-`Tuning.OUT_OF_SIGHT` before it is deleted.
+An event that is over **leaves**: `EventInstance._be_done()` puts it in a phase where it emits
+nothing, cannot end the day and carries no cue, and moves until it is past `Tuning.OUT_OF_SIGHT`
+(420px) before it is deleted. **It is over the moment it starts leaving.**
 
-- **Anything `mobile` leaves at its own `speed` and needs no data.** `EventDef.departs_at` is for
-  the rest — a flock, which has to fly, and a pursuer that has lost interest.
-- **It is over the moment it starts leaving.** A cat that trailed its field behind it for the two
-  seconds it took to reach the kerb would be a worse bug than the one being fixed.
-- **Two things never leave**, and both would break something that reads the finishing position: an
-  event with a `spawns_on_finish` stops where the thing it leaves belongs, and anything that was a
-  *place* rather than a moment has always simply been over.
+**Three things never leave**, and each would break something that reads the finishing position: a
+`spawns_on_finish` row stops where the thing it leaves belongs; a `stops_where_it_arrives` row parks
+and stays — still emitting, still the same event (the fire engine at its fire); and anything that
+was a *place* rather than a moment is simply over. The rest is `docs/EVENTS.md`, "Going away".
 
 ## Pursuits
 
-**A pursuit has two shapes and a third state.** `charging_dog` on its teaching day is a **moment**
-— the director sites it in front of her and the chase is all of it; from the day after it is a map
-placement (`EventDef.spawn_mode_on(day)` answers `MAP` past `spawn_mode_switches_after_day`) that
-still charges the moment it streams in. `EventDef.pursues_within` is the other shape: a thing
-that is *somewhere*, that can be seen and priced and routed around, and that becomes a chase if she
-walks up to it. **The field is wider than its name**: a row with `pursues_within` and no `pursues`
-waits the same way, unclocked and still, and then runs its own event instead of turning to follow
-her — `alley_mouse` and `pigeon_flock` are those rows, and the field exists because a map
-placement's clock otherwise starts at the stream radius, 900px out, so a short dash or a burst
-would be over before it was on screen. **It is also how a row that must be seen before it happens
-gets to be a place at all**: the flock is on its tile and pecking from the moment it streams in,
-which is what `AHEAD_OF_PLAYER` cannot give anything — a fixed lead in front of her is inside the
-view on a sideways heading, and eleven birds arriving there is a patch of pavement nobody could
-have planned around. Three things about the waiting state are easy to get backwards:
+The mechanics — the stand-off, the break-off as a rate, the waiting state — are
+`docs/MECHANICS.md`, "Running that matters" and the sections under it. **A fairness contract about
+a moving encounter is stated over distance and checked by walking**, never by asserting the numbers
+it was written from. The traps:
 
-- **The clock starts when it notices her**, not when the day put it there. A telegraph that ran at
-  dawn four streets away arrives with no notice in it at all.
-- **Its notice does not damp what it emits.** `TELEGRAPH_INTENSITY_FRACTION` means *this has not
-  started yet*; a man standing in that alley has started, and what has not started is the lunge. It
-  is the one telegraph in the game that does not quieten the thing it is warning about — unless the
-  row sets `quiet_until_noticed`, which is the honest answer where the waiting thing genuinely is
-  nearly nothing: birds pecking are not a flock going up, and without the flag one that nobody has
-  walked up to yet charges its full rate all morning.
-- **Whatever draws it has to know about the wait as well as the telegraph.** `is_waiting()` and
-  `is_telegraphing()` are both false in the other's phase, so a picture that asks only the second
-  question holds its whole wait in the wrong posture — the flock's birds flying in place over a
-  pavement for as long as it takes her to walk up to them.
+- **Clamping the approach at zero is not a stand-off.** The pursuer stands still while *she* closes
+  the gap and dies on the first lethal frame; it has to back off (`Tuning.pursuit_standoff()`).
+- **A break-off stated as a distance needs two inequalities, and they fight.**
+  `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a **rate** — the gap opening — which only running can
+  do, and it is stated over *her*, because a proxy over the pursuer's geometry resets at every
+  corner and kerb.
+- **Check it with a rig that accelerates.** Nobody turns round in nought seconds; reversing a walk
+  into a run takes `(WALK + RUN) / ACCELERATION`, and the contract includes it.
+- **A rig that runs on a timer runs into it.** The director sites a pursuit in front of the
+  direction she is *actually travelling*, so a `--flee` that starts early puts the pursuit in front
+  of the run. It waits for the chase.
 
-**A fairness contract stated in seconds is not stated at all.** When a contract is about a moving
-encounter, **state it over distance and check it by walking**, not by asserting the numbers it was
-written from. `Tuning.pursuit_standoff()` is the notice as a distance; `tests/test_events.gd` walks
-the answers. Four traps:
-
-- **Clamping the approach at zero is not a stand-off.** It leaves the pursuer standing politely
-  still while *she* closes the last hundred pixels and dies on the first lethal frame — the contract
-  true of the thing and false of the encounter. It has to back off, and the price is the wart: a
-  stand-off wide enough to be seen doing it is a dog that visibly reverses.
-- **A break-off stated as a distance needs two inequalities and they fight.**
-  `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a **rate**: the pursuer is faster than a walk and
-  slower than a run by construction, so *only running can open the gap*.
-- **Check it with a rig that accelerates.** A rig holding a constant speed from frame one passes
-  while a player reports the encounter as unplayable, because nobody can turn round in nought
-  seconds. Reversing a walk into a run takes `(WALK + RUN) / ACCELERATION`. **Put every body in the
-  encounter into the contract, including the cost of the player's own answer.**
-- **A rig that runs on a timer runs into it.** The director sites what it owes in front of the
-  direction she is *actually travelling*, so a `--flee` that starts before the pursuit is placed
-  puts the pursuit in front of the run. It waits for the chase.
-
-**When a rule is about what the player did, state it over the player.** A proxy that is equivalent
-in the ideal case is not equivalent in a street, and every measurement you take of the proxy will
-agree with you. `PURSUIT_SHAKEN_OFF` ends a chase when *she* has been opening the gap — stated over
-the pursuer's geometry instead, a corner, a kerb, a body in the way or a 0.37s about-turn resets it
-and the dog chases somebody who is plainly sprinting.
-
-**A trigger at or past the break-off distance is a pursuit that loses interest the instant it
-starts** — she is already standing where "it has lost her" means, so walking away works, and walking
-away is the one answer that must never work. A break-off stated as a rate cannot reproduce it at any
-trigger distance.
+Two more about the waiting state (`pursues_within`): **the clock starts when it notices her**, not
+at dawn; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
+false in the other's phase, so a picture that asks only the second holds its whole wait in the
+wrong posture.
 
 ## A thing made of several bodies has to be made of several bodies
 
 `EventDef.flock_size`, and three things about it are worth copying:
 
 - **The excitement stays a pure query, one level down.** The world sums `contribution_at()` over
-  instances; a flock sums over its birds. That is what makes the middle of a flock cost five times
+  instances; a flock sums over its birds. That is what makes the middle of a flock cost more than
   the rim, which is a *route* decision where one disc could only ever be a price.
 - **The birds are held inside `flock_spread`, and `flock_spread` comes out of `outer_radius`.** A
-  bird emits over `outer_radius - flock_spread`, so the union of eleven moving fields is inside the
+  bird emits over `outer_radius - flock_spread`, so the union of the moving fields is inside the
   one disc `validate_event` checked. A moving emitter is only legal while that is true.
 - **`lerp` cannot turn a vector round.** Interpolating a unit vector toward its opposite runs down
   the same line to zero and back out the way it came, so normalising gives the heading it started
