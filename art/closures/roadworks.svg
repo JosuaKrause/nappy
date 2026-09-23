@@ -1,10 +1,48 @@
-<!-- What is in the middle of the street: a trench, its spoil heap and a length of pipe. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="30" viewBox="0 0 64 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <rect x="2" y="20" width="60" height="10" fill="#3a3630"/>
-  <rect x="4" y="22" width="56" height="6" fill="#2a2724"/>
-  <path d="M6 20 L14 8 L24 12 L32 20 Z" fill="#7a6a52"/>
-  <path d="M10 20 L16 12 L22 15 Z" fill="#8f7d61"/>
-  <rect x="38" y="10" width="22" height="9" fill="#8b8478"/>
-  <rect x="38" y="10" width="22" height="3" fill="#a49c8e"/>
-  <rect x="38" y="10" width="4" height="9" fill="#5c564d"/>
+<!-- What is in the middle of the street: a trench cut in the asphalt, its spoil heap with a
+     shovel left in it, a length of concrete pipe waiting to go in and a traffic cone. The trench
+     is seen from above with its far wall showing; the heap, the pipe and the cone stand up from
+     the road. `ClosureMarker` draws it feet-anchored at the bottom centre and puts its own point
+     shadow under it, so none is drawn here. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="30" viewBox="0 0 64 30" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <!-- The spoil heap: loose earth, lit on top, shaded on its right, a few stones in it. -->
+  <path d="M1 27 C2 20 6 13 12 11 C16 9.5 20 12 23 17 C25 20 26 24 26 27.5 C18 29 8 29 1 27 Z" fill="#7a5a40"/>
+  <path d="M4 20 C6 15 9 12.5 12.5 12 C15.5 11.5 18 13 20 16 C15 15 10 16.5 4 20 Z" fill="#9a7552" stroke="none"/>
+  <path d="M20 16 C23 19 25 23 25.4 27.3 C22 28.1 19 28.4 16 28.5 C19 25 20 21 20 16 Z" fill="#4e3a2a" stroke="none"/>
+  <g fill="#8a8278" stroke-width="0.7">
+    <circle cx="8" cy="24" r="1.1"/>
+    <circle cx="14" cy="26" r="0.9"/>
+    <circle cx="19" cy="21.5" r="0.9"/>
+  </g>
+  <!-- The shovel, blade down in the heap. -->
+  <path d="M17.4 3.4 L14.2 14.6" fill="none" stroke="#2a2226" stroke-width="2.6"/>
+  <path d="M17.4 3.4 L14.2 14.6" fill="none" stroke="#a0764a" stroke-width="1.2"/>
+  <path d="M15.6 2.9 L19.2 3.9" fill="none" stroke="#2a2226" stroke-width="1.8"/>
+  <path d="M12.2 14 L16.2 15.2 L15.4 17.6 L11.6 16.6 Z" fill="#8b99a1" stroke-width="0.9"/>
+  <!-- A length of concrete pipe on the road, its hollow mouth turned towards us. -->
+  <path d="M46 11 L60 11 Q62.6 11 62.6 16 Q62.6 21 60 21 L46 21 Z" fill="#9a948a"/>
+  <path d="M46 18.4 L60.6 18.4 Q62.2 18.2 62.5 17.4 Q62.3 21 60 21 L46 21 Z" fill="#6f6a62" stroke="none"/>
+  <path d="M47.6 12.6 L59.6 12.6" fill="none" stroke="#c9c3b8" stroke-width="0.8"/>
+  <ellipse cx="46" cy="16" rx="3" ry="5" fill="#b3ada3"/>
+  <ellipse cx="46.3" cy="16" rx="1.8" ry="3.4" fill="#2a2427" stroke-width="0.7"/>
+  <!-- The trench, cut into the road and seen from above: a ragged dark hole, its far wall of
+       earth lit, its ends in shade, broken asphalt heaved up along the near rim. -->
+  <path d="M15 22.4 L19 19.6 L27 20.2 L33 19 L41 19.8 L47 19 L51 21.6 L51.4 26.6 L47.6 29.4 L40 28.8 L33 29.6 L25 29 L18.6 29.6 L14.8 27 Z" fill="#231b18" stroke="none"/>
+  <path d="M15.4 22.6 L19.2 20.2 L27 20.8 L33 19.6 L41 20.4 L46.8 19.6 L50.6 21.8 L46 23.2 L41 23.6 L33 23.2 L27 23.8 L20 23.6 Z" fill="#6b5140" stroke="none"/>
+  <path d="M19.4 21 L26.8 21.4 L33 20.3 M41 21 L46.6 20.3" fill="none" stroke="#a5856a" stroke-width="0.6"/>
+  <path d="M15.4 22.8 L19.6 25.4 L18.8 28.8 L15.2 26.8 Z M50.8 22 L51 26.4 L47.6 28.6 L46.6 25.2 Z" fill="#3a2c25" stroke="none"/>
+  <path d="M15 22.4 L19 19.6 L27 20.2 L33 19 L41 19.8 L47 19 L51 21.6" fill="none" stroke-width="1.2"/>
+  <path d="M51.4 26.6 L47.6 29.4 L40 28.8 L33 29.6 L25 29 L18.6 29.6 L14.8 27" fill="none" stroke="#8a8280" stroke-width="1.2"/>
+  <path d="M19.8 30 L23.4 27.8 L28.4 28.4 L27.4 30.2 Z M36.4 30 L40.4 28 L45 28.4 L44.2 30.4 Z" fill="#5c5654" stroke-width="0.8"/>
+  <path d="M23.4 27.8 L28.4 28.4 M40.4 28 L45 28.4" fill="none" stroke="#a39b8e" stroke-width="0.6"/>
+  <!-- A ladder standing in the trench, its top leaning out over the far rim. -->
+  <path d="M29.6 26 L32.6 11.6 M33.4 26.4 L36.4 12" fill="none" stroke="#2a2226" stroke-width="2.4"/>
+  <path d="M29.6 26 L32.6 11.6 M33.4 26.4 L36.4 12" fill="none" stroke="#b9bcc0" stroke-width="1"/>
+  <path d="M30.4 22.4 L34.2 22.8 M31.1 19 L34.9 19.4 M31.8 15.6 L35.6 16" fill="none" stroke="#2a2226" stroke-width="1.6"/>
+  <path d="M30.4 22.4 L34.2 22.8 M31.1 19 L34.9 19.4 M31.8 15.6 L35.6 16" fill="none" stroke="#b9bcc0" stroke-width="0.6"/>
+  <!-- A traffic cone at the near corner: orange, a white band, shaded on its right. -->
+  <path d="M54 29.6 L63 29.6 L63 28 L54 28 Z" fill="#2a2226"/>
+  <path d="M56 28 L57.8 18.4 Q58.5 17.4 59.2 18.4 L61 28 Z" fill="#e0862a"/>
+  <path d="M56.9 23 L60.1 23 L60.5 25 L56.5 25 Z" fill="#f2eee4" stroke="none"/>
+  <path d="M58.6 17.8 L59.2 18.4 L61 28 L58.6 28 Z" fill="#3b2410" fill-opacity="0.24" stroke="none"/>
+  <path d="M56 28 L57.8 18.4 Q58.5 17.4 59.2 18.4 L61 28" fill="none"/>
 </svg>

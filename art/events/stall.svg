@@ -1,16 +1,45 @@
-<!-- One trestle of a market stall: crates of fruit under a striped awning. Repeated across the
-     width the event obstructs, like the café tables, so what is drawn is exactly what is in
-     the way. Read against `cafe_table.svg`: taller, with a canopy, so the two things that take
-     a pavement in act I are not the same silhouette twice. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="26" height="36" viewBox="0 0 26 36" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <rect x="2" y="8" width="22" height="4" fill="#c4503c"/>
-  <rect x="6" y="8" width="4" height="4" fill="#e8ddc8"/>
-  <rect x="14" y="8" width="4" height="4" fill="#e8ddc8"/>
-  <rect x="3" y="12" width="2" height="10" fill="#6b543f"/>
-  <rect x="21" y="12" width="2" height="10" fill="#6b543f"/>
-  <rect x="3" y="22" width="20" height="4" fill="#8a6f52"/>
-  <rect x="5" y="18" width="7" height="4" fill="#c4503c"/>
-  <rect x="14" y="18" width="7" height="4" fill="#4f8f6b"/>
-  <rect x="5" y="26" width="6" height="8" fill="#6b543f"/>
-  <rect x="14" y="26" width="6" height="8" fill="#6b543f"/>
+<!-- One trestle of a market stall: fruit and greens in crates on a wooden counter, under a
+     red-and-cream striped awning. Repeated across the width the event obstructs, like the café
+     tables, so what is drawn is exactly what is in the way. Read against `cafe_table.svg`:
+     taller, with a canopy, so the two things that take a pavement in act I are not the same
+     silhouette twice. The awning spans the whole canvas and its six stripes start red at one edge
+     and end cream at the other, so neighbouring trestles join into one continuous striped canopy
+     however `_draw_spread` stretches them (narrower broadside on, shorter end-on).
+     Feet-anchored at the bottom centre; the row's own shadow is drawn by the code. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="36" viewBox="0 0 26 36" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <!-- The awning's two poles and the counter's legs. -->
+  <path d="M2 12 L2 35.2 M24 12 L24 35.2" fill="none" stroke="#2a2226" stroke-width="2.4"/>
+  <path d="M2 12.4 L2 35 M24 12.4 L24 35" fill="none" stroke="#8a6440" stroke-width="1"/>
+  <path d="M6 29 L6 34.6 M20 29 L20 34.6" fill="none" stroke="#2a2226" stroke-width="2"/>
+  <!-- The counter: a plank front, shaded along its foot. -->
+  <path d="M3 20.6 L23 20.6 L23 29.6 L3 29.6 Z" fill="#8a6440"/>
+  <path d="M3.6 23.6 L22.4 23.6 M3.6 26.6 L22.4 26.6" fill="none" stroke="#5e4128" stroke-width="0.7"/>
+  <path d="M3.5 27.8 L22.5 27.8 L22.5 29.1 L3.5 29.1 Z" fill="#3b2410" fill-opacity="0.3" stroke="none"/>
+  <!-- Three crates on the counter, heaped with apples, oranges and greens. -->
+  <path d="M3 17.4 L23 17.4 L23 20.6 L3 20.6 Z" fill="#b08456"/>
+  <path d="M9.6 17.4 L9.6 20.6 M16.4 17.4 L16.4 20.6" fill="none" stroke-width="0.8"/>
+  <path d="M3.6 18.4 L22.4 18.4" fill="none" stroke="#d2ad7c" stroke-width="0.6"/>
+  <path d="M3.4 17.6 Q3.6 14.6 5.4 14.8 Q6.4 13.4 7.8 14.4 Q9.6 14.2 9.4 17.6 Z" fill="#c4503c" stroke-width="0.8"/>
+  <path d="M10 17.6 Q9.8 14.8 11.8 14.8 Q13 13.2 14.4 14.4 Q16.4 14.4 16 17.6 Z" fill="#e0862a" stroke-width="0.8"/>
+  <path d="M16.8 17.6 Q16.4 15 18.2 14.6 Q19.2 13 20.8 14.2 Q22.8 14.4 22.6 17.6 Z" fill="#6f8f4a" stroke-width="0.8"/>
+  <g fill="#ffffff" fill-opacity="0.55" stroke="none">
+    <circle cx="5.2" cy="15.8" r="0.55"/>
+    <circle cx="7.6" cy="15.4" r="0.55"/>
+    <circle cx="11.8" cy="15.8" r="0.55"/>
+    <circle cx="14.2" cy="15.4" r="0.55"/>
+    <circle cx="18.6" cy="15.6" r="0.55"/>
+  </g>
+  <path d="M5.4 16.8 L6.4 15.8 M12.4 16.8 L13.4 15.8 M19.2 16.8 L20.2 15.6" fill="none" stroke="#2a2226" stroke-opacity="0.5" stroke-width="0.5"/>
+  <!-- The awning's shade falling on the goods. -->
+  <path d="M3 13.6 L23 13.6 L23 16 L3 16 Z" fill="#1c1418" fill-opacity="0.22" stroke="none"/>
+  <!-- The awning: its top seen from above and lit, its scalloped front hanging in the light. -->
+  <g stroke="none">
+    <path d="M1.00 3 L5.00 3 L4.33 8 L0.00 8 Z M9.00 3 L13.00 3 L13.00 8 L8.67 8 Z M17.00 3 L21.00 3 L21.67 8 L17.33 8 Z" fill="#d8705a"/>
+    <path d="M5.00 3 L9.00 3 L8.67 8 L4.33 8 Z M13.00 3 L17.00 3 L17.33 8 L13.00 8 Z M21.00 3 L25.00 3 L26.00 8 L21.67 8 Z" fill="#f2ecdc"/>
+    <path d="M0.00 8 L4.33 8 L4.33 12 Q2.17 15.2 0.00 12 Z M8.67 8 L13.00 8 L13.00 12 Q10.83 15.2 8.67 12 Z M17.33 8 L21.67 8 L21.67 12 Q19.50 15.2 17.33 12 Z" fill="#c4503c"/>
+    <path d="M4.33 8 L8.67 8 L8.67 12 Q6.50 15.2 4.33 12 Z M13.00 8 L17.33 8 L17.33 12 Q15.17 15.2 13.00 12 Z M21.67 8 L26.00 8 L26.00 12 Q23.83 15.2 21.67 12 Z" fill="#e8dfc8"/>
+  </g>
+  <path d="M0 10.8 L26 10.8" fill="none" stroke="#3b2020" stroke-opacity="0.18" stroke-width="1.6"/>
+  <path d="M1 3 L25 3 L26 8 L0 8 Z" fill="none" stroke-width="1.1"/>
+  <path d="M0 8 L26 8 L26 12 Q23.83 15.2 21.67 12 Q19.50 15.2 17.33 12 Q15.17 15.2 13.00 12 Q10.83 15.2 8.67 12 Q6.50 15.2 4.33 12 Q2.17 15.2 0.00 12 Z" fill="none" stroke-width="1.1"/>
 </svg>
