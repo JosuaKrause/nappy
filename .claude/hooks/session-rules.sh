@@ -10,17 +10,26 @@
 # whether or not it turns out to be relevant, which is exactly the cost the
 # path-triggered hook exists to avoid.
 #
+# Keyed on the agent as well as the session, the same way project-rules.sh is and for the same
+# reason: `$session` for the main session, `$session-<agent_id>` for a sub-agent, so a sub-agent
+# never shares -- or clears -- another agent's markers.
+#
 # Reads the hook JSON on stdin; prints hookSpecificOutput.additionalContext or nothing.
 
 set -uo pipefail
 
 input=$(cat)
 session=$(printf '%s' "$input" | jq -r '.session_id // "nosession"' 2>/dev/null)
+agent=$(printf '%s' "$input" | jq -r '.agent_id // empty' 2>/dev/null)
 
 # Repo root: this script lives at <root>/.claude/hooks/
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 skills="$root/.claude/skills"
-state="${TMPDIR:-/tmp}/claude-nappy-rules/$session"
+if [ -n "$agent" ]; then
+	state="${TMPDIR:-/tmp}/claude-nappy-rules/$session-$agent"
+else
+	state="${TMPDIR:-/tmp}/claude-nappy-rules/$session"
+fi
 mkdir -p "$state" 2>/dev/null
 
 # Loaded at the start of every session, in this order.

@@ -8,6 +8,15 @@
 # Injected once per skill per session: the marker files under $STATE stop the same
 # rules being repeated on every subsequent edit to the same area.
 #
+# A sub-agent's PreToolUse payload carries its own `agent_id`, but `session_id` is the
+# *parent's* -- an orchestrator and every sub-agent it spawns share one session_id. Keyed on
+# session_id alone, the first of them to touch an area silently used up that area's marker for
+# all the others, and in two observed sessions only one of nine sub-agents that edited a .gd file
+# ever received the godot rules. So the state directory is keyed on the agent too: plain
+# `$session` for the main session (no agent_id in its payload), `$session-<agent_id>` for a
+# sub-agent -- giving every sub-agent its own markers and so its own first-touch delivery of
+# each area's rules.
+#
 # Reads the hook JSON on stdin; prints hookSpecificOutput.additionalContext or nothing.
 
 set -uo pipefail
@@ -16,11 +25,16 @@ input=$(cat)
 tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
 path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 session=$(printf '%s' "$input" | jq -r '.session_id // "nosession"' 2>/dev/null)
+agent=$(printf '%s' "$input" | jq -r '.agent_id // empty' 2>/dev/null)
 
 # Repo root: this script lives at <root>/.claude/hooks/
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 skills="$root/.claude/skills"
-state="${TMPDIR:-/tmp}/claude-nappy-rules/$session"
+if [ -n "$agent" ]; then
+	state="${TMPDIR:-/tmp}/claude-nappy-rules/$session-$agent"
+else
+	state="${TMPDIR:-/tmp}/claude-nappy-rules/$session"
+fi
 mkdir -p "$state" 2>/dev/null
 
 # One rule triggers on a tool rather than a path: spawning a sub-agent is an Agent/Task
