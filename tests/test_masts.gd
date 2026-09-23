@@ -251,11 +251,22 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
 	_city.events.start_day(Tuning.CURFEW_ANNOUNCE_DAY, _rng(Tuning.CURFEW_ANNOUNCE_DAY), [])
 	for site in _sites():
 		_city.events.stream_around(site.foot)
+	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `_place_masts()` skips a
+	# site whose tile is today's own closure, region wall or checkpoint ground rather than
+	# planting on top of it (`tests/test_events.gd`,
+	# `_test_nothing_the_catalogue_places_stands_on_held_ground`), so a day may carry fewer.
+	var standing_ids := {}
+	for plan in _city.events.plans():
+		if plan.mast_id != "":
+			standing_ids[plan.mast_id] = true
+	t.check(standing_ids.size() > 0 and standing_ids.size() <= Tuning.MAST_COUNT,
+			"today carries between one and Tuning.MAST_COUNT masts (%d)" % standing_ids.size())
+
 	var silenced := _city.events.silence_all_masts()
-	t.check(silenced == Tuning.MAST_COUNT,
-			("silencing every mast silences exactly Tuning.MAST_COUNT of them (%d wanted, %d "
-			% [Tuning.MAST_COUNT, silenced])
-			+ "got) — one per site, not one per row sharing that site on the curfew day")
+	t.check(silenced == standing_ids.size(),
+			("silencing every mast silences exactly the masts standing today (%d wanted, %d got) "
+			% [standing_ids.size(), silenced])
+			+ "— one per site, not one per row sharing that site on the curfew day")
 	var mast_plans_checked := 0
 	for plan in _city.events.plans():
 		if plan.mast_id == "":
@@ -265,9 +276,9 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
 		if plan.live:
 			t.check(is_zero_approx(plan.live.current_intensity()),
 					"'%s' at '%s' has no field" % [plan.def.id, plan.mast_id])
-	t.check(mast_plans_checked == Tuning.MAST_COUNT * 2,
-			("and both of the day's own mast rows were checked (%d): the ordinary broadcast and "
-			% mast_plans_checked) + "the curfew announcement, one pair per site")
+	t.check(mast_plans_checked == standing_ids.size() * 2,
+			("and both of today's mast rows were checked (%d): the ordinary broadcast and "
+			% mast_plans_checked) + "the curfew announcement, one pair per standing site")
 
 func _teardown() -> void:
 	if _city:

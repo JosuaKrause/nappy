@@ -689,9 +689,19 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## tile the day's own roll chose, it is a fixture the city already carries, the same way
 ## `_place_ambient()` beside this hands out one plan per playground rather than rolling for one.
 ##
-## On `Tuning.CURFEW_ANNOUNCE_DAY` every site also gets a `curfew_announce` plan alongside its
-## ordinary `loudspeaker` one — see that row's own doc for why a second, invisible plan is what
-## "the masts carry the announcement" means rather than a second mast.
+## **Except a day whose own closures, region wall or checkpoints need that exact tile.** `map`
+## already carries today's holds and closures by the time `build_day` runs them — `EventManager.
+## start_day()` populates both before calling this — so a site is skipped for the day rather than
+## planted on top of a barricade or a hut: `tests/test_events.gd`,
+## `_test_nothing_the_catalogue_places_stands_on_held_ground`, holds this for every row the
+## catalogue places and a mast is no longer an exception to it. `MastSites` already keeps every
+## site a full block off the home street and its own field off a calm interior, so this is rare —
+## a closure or a wall is one street's own width, not the whole city — and it costs a day's worth
+## of one mast rather than a guarantee.
+##
+## On `Tuning.CURFEW_ANNOUNCE_DAY` every standing site also gets a `curfew_announce` plan
+## alongside its ordinary `loudspeaker` one — see that row's own doc for why a second, invisible
+## plan is what "the masts carry the announcement" means rather than a second mast.
 static func _place_masts(day: int, map: CityMap, heat: int = 0) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
@@ -700,6 +710,9 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0) -> Array[Planned
 	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
 			if day == Tuning.CURFEW_ANNOUNCE_DAY else null
 	for site in MastSites.compute(map):
+		var tile := map.world_to_tile(site.foot)
+		if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
+			continue
 		var mast := Planned.new(loudspeaker, site.foot)
 		mast.mast_id = site.id
 		planned.append(mast)
