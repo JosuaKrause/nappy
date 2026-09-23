@@ -88,3 +88,20 @@ agent.
 16. **The torn poster is drawn without a reference**, by Opus, and comes back to the player for
     review.
 
+## On the power station, the same session
+
+The orchestrator showed M183's first stills (the power station and the blackout): a door view,
+where the hall's front reads as an apartment block, and a 4x crop of the overview, and proposed
+redrawing the street front with high industrial windows, a heavy door, a hazard band and the
+yard seen through its fence. It asked whether a power-station reference was wanted.
+
+> "maybe for the full picture zoom out from the regular view instead of zooming in from the
+> overview"
+
+> "also, yes, go ahead and let opus try"
+
+17. **A whole-building picture is the ordinary view zoomed out**, not an enlarged crop of the
+    overview.
+18. **The station's street front is redrawn by Opus** as proposed, without a reference, for the
+    player to review.
+
