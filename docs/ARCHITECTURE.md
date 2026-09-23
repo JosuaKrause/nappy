@@ -70,6 +70,8 @@ src/
 	                       it draws is a region of the baked `events` page, by path
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + day
+	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
+	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      owns the live instances and one reference on the `events` atlas page;
 	                       answers total_excitement_at
 	event_director.gd     sites what the day budgeted and did not place, from her own walk:
@@ -484,8 +486,11 @@ non-zero on any failure.
 - `test_crowd.gd` — the crowd against a real city: population per act, determinism, agents
   staying on the right surface through a corner, and the emergent noise floor (a busy street
   never lets the meter fall; a back street does; a park is out of earshot).
-- `test_acts.gd` — act gating, city-wide sources, protest growth,
-  scar persistence, and walkability under accumulated street closures.
+- `test_acts.gd` — act gating, protest growth, scar persistence, and walkability under
+  accumulated street closures.
+- `test_masts.gd` — the loudspeaker masts: fixed sites from `Tuning.MAST_FIRST_DAY`, none
+  reaching the doorstep or a calm interior, the field's own edge, the shared broadcast clock,
+  and silencing one or all for the rest of the day.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
 - `test_resistance.gd` — the step table, touch-completion, a perform step riding on an
   `EventInstance`, the seeded guard, the expiring step, and the sabotage silencing the city.
