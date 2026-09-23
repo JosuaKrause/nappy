@@ -203,8 +203,8 @@ def input_record() -> dict[str, object]:
         paths.append(HERE.parent / f"inputs/father_{view}_b.svg")
     paths.extend(
         [
-            ROOT / "docs/evidence/graphics-reference-urban-01.jpeg",
-            ROOT / "docs/evidence/graphics-reference-cardinal.jpeg",
+            ROOT / "docs/style-references/graphics-reference-urban-01.jpeg",
+            ROOT / "docs/style-references/graphics-reference-cardinal.jpeg",
         ]
     )
     assert all(path.is_file() for path in paths)

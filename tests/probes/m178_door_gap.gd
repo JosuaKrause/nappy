@@ -17,12 +17,15 @@ extends RefCounted
 ## the nearest point of its route rather than to the spot it starts at. That is the rule itself
 ## rather than a second copy of it, which is the only way the count can be trusted.
 ##
-## Days 7 and 11 are the sample: `Tuning.REGION_WALL_FIRST_DAY` is 7, so day 7 is the first day a
-## door exists at all and day 11 is a late, dense one in a different act.
+## The sample is the first day a door exists at all (`Tuning.REGION_WALL_FIRST_DAY`) and day 11,
+## a late, dense one in a different act. A function rather than a `const`, because an autoload's
+## constant is not available at parse time.
 
 const SEEDS := 6
 const BASE_SEED := 305117
-const DAYS := [7, 11]
+
+static func _days() -> Array[int]:
+	return [Tuning.REGION_WALL_FIRST_DAY, 11]
 
 func run(_t) -> void:
 	print("\n== events inside a region door's gap (%.0fpx of clear ground, field-to-body) =="
@@ -35,7 +38,7 @@ func run(_t) -> void:
 	var placed_after := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		for day: int in DAYS:
+		for day: int in _days():
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)

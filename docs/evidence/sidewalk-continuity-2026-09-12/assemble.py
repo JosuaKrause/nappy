@@ -312,16 +312,16 @@ def _generation_inputs(name: str) -> list[dict[str, str]]:
             ("edit target and exact material authority", RUNTIME_TILES / "sidewalk_kerb_n.png"),
             ("SVG-derived functional source", HERE / "source/sidewalk-svg-6x.png"),
             ("accepted curb-family material reference", HERE / "source/accepted-controls-native-6x.png"),
-            ("approved comic urban style reference", ROOT / "docs/evidence/graphics-reference-urban-01.jpeg"),
-            ("approved cardinal gameplay style reference", ROOT / "docs/evidence/graphics-reference-cardinal.jpeg"),
+            ("approved comic urban style reference", ROOT / "docs/style-references/graphics-reference-urban-01.jpeg"),
+            ("approved cardinal gameplay style reference", ROOT / "docs/style-references/graphics-reference-cardinal.jpeg"),
         )
     else:
         paths = (
             ("edit target and exact family base", HERE / "generated/sidewalk.png"),
             ("SVG-derived damage source", HERE / f"source/{name}-svg-6x.png"),
             ("accepted curb-family material reference", HERE / "source/accepted-controls-native-6x.png"),
-            ("approved comic urban style reference", ROOT / "docs/evidence/graphics-reference-urban-01.jpeg"),
-            ("approved cardinal gameplay style reference", ROOT / "docs/evidence/graphics-reference-cardinal.jpeg"),
+            ("approved comic urban style reference", ROOT / "docs/style-references/graphics-reference-urban-01.jpeg"),
+            ("approved cardinal gameplay style reference", ROOT / "docs/style-references/graphics-reference-cardinal.jpeg"),
         )
     return [{"role": role, "path": str(path.relative_to(ROOT)), "sha256": _sha256(path)} for role, path in paths]
 

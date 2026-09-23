@@ -9,9 +9,9 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 ## Step 1, "A chalk mark", is the pickup `ResistanceSteps.for_day()` selects on a fresh run from
-## its own `first_day` — the same day `tests/test_resistance.gd`'s determinism test uses, and the
+## its own `day` — the same day `tests/test_resistance.gd`'s determinism test uses, and the
 ## smallest day that gives `--spawn contact` something to find.
-const DAY := 4
+const DAY := 6
 
 var _city: City
 var _resistance: ResistanceDirector
@@ -20,7 +20,6 @@ var _saved_completed: Array[int]
 var _saved_failed: Array[int]
 var _saved_progress: int
 var _saved_package: bool
-var _saved_brief: String
 
 func run(t) -> void:
 	_build_day(t)
@@ -59,12 +58,10 @@ func _build_day(t) -> void:
 	_saved_failed = GameState.failed_resistance_steps.duplicate()
 	_saved_progress = GameState.resistance_progress
 	_saved_package = GameState.resistance_carrying_package
-	_saved_brief = GameState.pending_resistance_brief
 	GameState.completed_resistance_steps = []
 	GameState.failed_resistance_steps = []
 	GameState.resistance_progress = 0
 	GameState.resistance_carrying_package = false
-	GameState.pending_resistance_brief = ""
 
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
@@ -77,7 +74,6 @@ func _teardown(t) -> void:
 	GameState.failed_resistance_steps = _saved_failed
 	GameState.resistance_progress = _saved_progress
 	GameState.resistance_carrying_package = _saved_package
-	GameState.pending_resistance_brief = _saved_brief
 	_resistance.free()
 	_city.free()
 

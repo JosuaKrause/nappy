@@ -640,6 +640,14 @@ func tile_rect_to_world(rect: Rect2i) -> Rect2:
 	return Rect2(Vector2(rect.position) * Tuning.TILE_SIZE,
 			Vector2(rect.size) * Tuning.TILE_SIZE)
 
+## The swing frame's own point inside `playground` — the playground's world-rect centre, 8px
+## above its bottom edge — so a caller can point at the swing itself rather than the whole
+## playground box. Kept in step with where `City._dress_block()` actually draws the frame: both
+## read the same two numbers off the same rect.
+func swing_position(playground: Rect2i) -> Vector2:
+	var world := tile_rect_to_world(playground)
+	return Vector2(world.get_center().x, world.end.y - 8.0)
+
 func world_size() -> Vector2:
 	return Vector2(size) * Tuning.TILE_SIZE
 

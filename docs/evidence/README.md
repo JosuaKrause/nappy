@@ -7,10 +7,14 @@ can clean up the log folder.")*
 
 The rule is in the [playtest-feedback skill](../../.claude/skills/playtest-feedback/SKILL.md), "Evidence lives in the repo". The
 short version: `user://telemetry/` is a scratch directory the player has to be able to empty, and a
-finding whose evidence was in it stops being checkable the moment they do. Approved design
-references stay at this level; historical runtime captures are organized by date under
-[`archive/session-captures/`](archive/session-captures/), and rejected graphics are under the
-guarded [`archive/rejected-graphics/`](archive/rejected-graphics/) archive.
+finding whose evidence was in it stops being checkable the moment they do. **This tree is evidence
+only** — raw captures, review sheets, generation records and their provenance; historical runtime
+captures are organized by date under [`archive/session-captures/`](archive/session-captures/), and
+rejected graphics are under the guarded [`archive/rejected-graphics/`](archive/rejected-graphics/)
+archive. Approved art style references live beside this tree in
+[`../style-references/`](../style-references/) instead, flat and easy to find; a generation
+record's own frozen input copies of one (`source-references/`, `frozen-inputs/`) still stay here,
+since they are that record's raw evidence rather than the canonical file.
 
 Keep the original filename. It carries the run's timestamp, seed and commit, which is most of what
 makes the file worth having.

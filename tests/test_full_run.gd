@@ -40,6 +40,12 @@ func _play_a_run(t, seed_value: int) -> void:
 
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		GameState.day = day
+		# The city becomes today's city before anything is placed in it — the real day opens
+		# the same way (`main._start_day()`), and this is where the day's region plan is built,
+		# which is what the day-9 crossing task asks for when its mark is touched.
+		GameState.city_state.begin_day(city.map.block_plans, day)
+		city.start_day(GameState.city_state, day, GameState.day_rng(day, "closures"))
+
 		city.set_act(GameState.current_act())
 		city.events.start_day(day, GameState.day_rng(day), GameState.consumed_one_shots)
 		director.start_day(day, GameState.day_rng(day, "resistance"), Tuning.day_length(day))
@@ -69,8 +75,17 @@ func _play_a_run(t, seed_value: int) -> void:
 
 		if director.current_step():
 			contacts_offered += 1
-			# Walk the step through, the way a player who went and stood there would.
-			director._on_contact_completed(director.current_step().index)
+			# A task is one day: touching the mark announces today's task and activates its
+			# perform half in the same moment (`ResistanceDirector._on_contact_completed()`), so
+			# a player who does every errand touches the mark and then does what it says before
+			# the day is banked — only the perform half grants progress, and nothing offers it
+			# again at tomorrow's dawn. `current_step()` keeps naming the finished step until
+			# the next `start_day()`, so the index comparison is what ends the walk.
+			var offered: int = director.current_step().index
+			director._on_contact_completed(offered)
+			while director.current_step() and director.current_step().index != offered:
+				offered = director.current_step().index
+				director._on_contact_completed(offered)
 
 		# The day was survivable, so bank the win and move on.
 		GameState.finish_day(GameEnums.DayResult.WON)

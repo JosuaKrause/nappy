@@ -17,8 +17,8 @@
       "references_in_order": [
         "../../raw/pushing.png",
         "../inputs/svg-targets-8x.png",
-        "../../../graphics-reference-urban-01.jpeg",
-        "../../../graphics-reference-cardinal.jpeg"
+        "../../../../style-references/graphics-reference-urban-01.jpeg",
+        "../../../../style-references/graphics-reference-cardinal.jpeg"
       ],
       "output_sha256": "dadcac23bf205d7fdcc697d3014e457822d18916d921b6fe9c1b4f653659a5e9",
       "external_output": "/Users/krause/.codex/generated_images/01a0bad5-a6d5-7803-b7b8-3dd1c9d6a065/exec-6e3f93dc-bba4-4a26-95d1-7ac0c39dd112.png",
@@ -32,8 +32,8 @@
         "../../raw/pushing.png",
         "../../../comic-pushing-strides-2026-09-12/registered/p2-selected-generation.png",
         "../inputs/svg-targets-8x.png",
-        "../../../graphics-reference-urban-01.jpeg",
-        "../../../graphics-reference-cardinal.jpeg"
+        "../../../../style-references/graphics-reference-urban-01.jpeg",
+        "../../../../style-references/graphics-reference-cardinal.jpeg"
       ],
       "output_sha256": "cbb440ecf4333085bf79a4bd03062bd8edd515fe99506814f815a6f4fec4c222",
       "external_output": "/Users/krause/.codex/generated_images/01a0bad5-a6d5-7803-b7b8-3dd1c9d6a065/exec-6b3c8920-007d-4895-9a44-b0c57607fb71.png",

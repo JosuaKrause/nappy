@@ -20,12 +20,16 @@ signal restart_requested()
 ## folded into `_body`, since the two hide independently of each other.
 @onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
-## The chalk mark's own words, once a pickup has just been touched — its own label, not a line
-## folded into `_body`, because a screen full of ordinary lines is exactly what playtest 69
-## missed it in ("the day text needs to be bigger to be able to be noticed"). Bigger and its own
-## colour (`Palette.CHALK_DONE`, the same one the touched mark itself turns, so the line reads as
-## the mark speaking rather than as a summary bullet) is what makes it the thing the screen is
-## telling you rather than one more line.
+## The morning's own line — one or two plain sentences saying what is true of the city by that
+## day, from `_DAY_BRIEF` below — its own label, not a line folded into `_body`, because a screen
+## full of ordinary lines is exactly what playtest 69 missed it in ("the day text needs to be
+## bigger to be able to be noticed"). Bigger and its own color (`Palette.CHALK_DONE`) is what
+## makes it the thing the screen is telling you rather than one more line.
+##
+## **Carries no task, no mark's words and no reminder** (`docs/TODO.md`, M181, the resistance has
+## a reason, and a task is one day: "since the task will be immediately announced when touching
+## the mark there is no need to mention tasks in the day brief at all"). A task is announced at
+## the mark and nowhere else — see `Hud._on_resistance_step_completed()`.
 @onready var _brief: Label = $Root/Center/Lines/Brief
 ## Always empty — see `PauseScreen._hint`'s own doc for why the label stays but nothing writes to
 ## it any more: the continue/restart pair already says what a tap does, and nothing left to say
@@ -42,6 +46,34 @@ signal restart_requested()
 ## its own doc), but still gates `_wants_rotation()` and the mouse branch in
 ## `_handle_restart_touch()` below.
 var _touch := TouchInput.available()
+
+## One or two plain sentences a morning, in American English, under `docs/NARRATIVE.md`'s tone
+## rules — nobody explains the politics, the danger is noise, nothing triumphant. Each names the
+## thing that day introduces, so this is also where a new obstacle is first heard of; a line is
+## not tied to its own day's resistance task or once-only happening, so one that would give a
+## task away says something else that is true that morning instead. Read directly off
+## `GameState.day` rather than a parameter, since the same table has to answer for both
+## `show_day_brief()` (a resumed run's own gate) and `show_day()` (the ordinary transition every
+## other day reaches this screen through) — a static fact about the calendar day, never about
+## what an attempt touched, so a lost day's own line reads exactly as it did this morning.
+const _DAY_BRIEF := {
+	1: "She won't settle indoors. It is quiet in the park. Walk until she sleeps, then bring "
+			+ "her home.",
+	2: "There are bicycles on the sidewalk again.",
+	3: "The streets smell of smoke today.",
+	4: "It feels like there are more police around now.",
+	5: "They put up masts at the intersections overnight.",
+	6: "A curfew was announced today. There is not as much time. There are rumors of chalk "
+			+ "messages in alleys.",
+	7: "There are more posters than yesterday. The same face is on most of them.",
+	8: "A van took someone from the next street before it was light.",
+	9: "They have closed the districts off from each other. There are huts at the crossings.",
+	10: "The stores on the square are boarded up.",
+	11: "A door down the hall was sealed in the night. The name is still on the bell.",
+	12: "They are fencing off the parks.",
+	13: "There are army trucks on the main road.",
+	14: "The last night.",
+}
 
 const _DAY_TITLE := {
 	GameEnums.DayResult.WON: "She's asleep.",
@@ -124,14 +156,12 @@ func _refresh_buttons() -> void:
 ## button has been pressed — `main._show_the_resume_gate()`'s own call, made after
 ## `GameState.finish_day()` has already charged whatever the load itself costs, so `day` and
 ## `nerves` are already the numbers the retry (or the day exactly as the save left it) actually
-## has. Three things, no more: the day, the nerves, and the resistance's own pending brief — the
-## same field `show_day()` reads and clears below, so words queued and never shown (a save closed
-## before its own end-of-day message was read) are never dropped on the way past. `lost_note` is
-## `main._RESUMED_DAY_LOST_NOTE` when the load itself spent a nerve, or `""` for a save that cost
-## nothing, in which case this is exactly what a fresh day 1 skips by going straight from the title
-## into `main._engage_the_day()` instead. Continuing from here reaches that same function, through
-## `main._on_summary_continued()`'s own `_resume_gate_open` branch — the moment the day actually
-## starts, and the moment the save says so.
+## has. Three things, no more: the day, the nerves, and the morning's own line from `_DAY_BRIEF`.
+## `lost_note` is `main._RESUMED_DAY_LOST_NOTE` when the load itself spent a nerve, or `""` for a
+## save that cost nothing, in which case this is exactly what a fresh day 1 skips by going
+## straight from the title into `main._engage_the_day()` instead. Continuing from here reaches
+## that same function, through `main._on_summary_continued()`'s own `_resume_gate_open` branch —
+## the moment the day actually starts, and the moment the save says so.
 func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
 	_heading.hide()
 	_showing_ending = false
@@ -139,9 +169,8 @@ func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
 	_note.visible = lost_note != ""
 	_title.text = "Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]
 	_body.text = "last nerve" if nerves == 1 else "%d nerves left" % nerves
-	_brief.text = GameState.pending_resistance_brief
+	_brief.text = _DAY_BRIEF.get(day, "")
 	_brief.visible = _brief.text != ""
-	GameState.pending_resistance_brief = ""
 	_hint.text = ""
 	_present()
 
@@ -179,19 +208,12 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 		lines.append("")
 		lines.append(_resistance_tally_line())
 	_body.text = "\n".join(lines)
-	# The brief is shown here whichever `DayResult` this is, and shown before it is cleared: this is
-	# the only screen that ever reads the resistance's words back to her, so a screen that skipped
-	# them would lose them for good. What is queued differs by outcome, and `GameState` decides it
-	# rather than this screen — on a won day, the words of a mark she touched today; on a lost one,
-	# the instruction the day itself began with, since the touch is given back with the attempt and
-	# the retry needs telling what the day is for. *(Playtest 69, the reported run: touched the
-	# day-4 mark, lost the day, and reached day 5 with no idea who the note was for —
-	# `has_joined_resistance()` gated this whole block, and a pickup grants no progress, so
-	# `resistance_progress` was still 0 and the brief that would have told her never showed at
-	# all.)*
-	_brief.text = GameState.pending_resistance_brief
+	# `GameState.day` rather than the `day` parameter (which is `finished_day`, the day that just
+	# ended): `GameState.finish_day()` has already run by the time `main._on_day_finished()` calls
+	# this, so on a win `day` moves on to the day this screen is the brief for while a loss leaves
+	# it exactly where a retry needs it — see `_DAY_BRIEF`'s own doc.
+	_brief.text = _DAY_BRIEF.get(GameState.day, "")
 	_brief.visible = _brief.text != ""
-	GameState.pending_resistance_brief = ""
 	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
 	# carries on, but the continue/restart pair below already says what a tap does, and nothing
 	# left to say here does not name a key — see `PauseScreen._hint`'s own doc for the same call
@@ -225,10 +247,9 @@ func _elapsed_line(result: GameEnums.DayResult, reason: String, clock: String) -
 		_:
 			return "%s After %s." % [reason, clock]
 
-## The tally alone — how many errands are done and how many are lost. The chalk mark's own
-## words are `_brief`'s job now, shown and cleared directly in `show_day()` regardless of
-## `has_joined_resistance()`, since a pending brief has to survive a day this tally itself never
-## appears on (progress is still 0 the moment a pickup, which grants none, is what queued it).
+## The tally alone. The morning's own line is `_brief`'s job now — a static fact about the
+## calendar day, shown unconditionally in `show_day()` — so this stays about progress and losses
+## only, which is why it is still gated on `has_joined_resistance()` at the call site.
 func _resistance_tally_line() -> String:
 	if GameState.sabotage_available():
 		return "You have done enough. There is one more night."
@@ -256,8 +277,7 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_body.text = "%s\n\nTime played: %s" \
 			% [_ENDING_BODY.get(ending, ""), GameState.format_clock(GameState.play_seconds)]
 	_hint.text = ""
-	# The ending is not a day summary and never reads a brief back — a run that ends still
-	# carrying a pending one just has nowhere left to spend it.
+	# The ending is not a day summary and has no morning line of its own to show.
 	_brief.visible = false
 	# Never carried from the day brief a resumed run's own last nerve replaces with this screen —
 	# see `main._show_the_resume_gate()`.

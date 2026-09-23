@@ -61,9 +61,9 @@ day gets shorter.
 The burnt building from day 3 is still there, cordoned off, never repaired. Same tile,
 every day, for the rest of the run.
 
-**Day 4:** the first `resistance_contact` appears in an alley. No prompt, no quest marker
-beyond a chalk mark on the wall that the player may or may not notice, and it is guarded
-from this first appearance on — see "Risk" below.
+**Day 6, the day of the curfew:** the first `resistance_contact` appears in an alley. No prompt,
+no quest marker beyond a chalk mark on the wall that the player may or may not notice, and it is
+guarded from this first appearance on — see "Risk" below.
 
 ### Act III — "Vans" (days 8–11)
 
@@ -94,24 +94,36 @@ ends when she is out. See `docs/MECHANICS.md`, "The escape, which is the run's e
 The subquest must *cost the core resource*. Joining the resistance means deliberately
 choosing the worst routes for your baby: alleys, crowds, closed districts, a stranger's
 own field. The player trades the thing they have spent the whole game protecting, and every
-task is one verb — **get to a guarded place and touch it.**
+task is one verb — **get to a guarded place and touch it**, the same day the mark that names it
+is touched.
 
 ### Structure
 
-A task is two beats: pick up the instruction at a chalk mark, then perform it the next day.
-Touching either is instant — there is no key to hold, and no standing still to pay for. Only
-the perform half grants **1 resistance progress**; the mark is the note, not the errand.
-`RESISTANCE_GOAL` is 4 of the 5 perform beats, which lets the player miss one task
-entirely and still reach the good ending.
+A task is one day: she touches the chalk mark, the task is announced there and then, and it is
+performed the same day. Every task day starts with a mark. Touching either — the mark or the
+task's own contact — is instant: there is no key to hold, and no standing still to pay for. Only
+completing the task itself grants **1 resistance progress**; the mark is the note, not the
+errand. Reaching `Tuning.RESISTANCE_GOAL` (five) tasks earns the chance at the good ending; the
+day-14 sabotage is the act on top of it — see "The finale" below.
 
-| Days | Task | What |
-| --- | --- | --- |
-| 4 / 5 | A note for a stranger | A chalk mark, then touch whichever `homeless_yeller` they reach first — several are live at once and look alike, so there is no wrong one to single out first. |
-| 6 / 7 | The package | A chalk mark, then touch the delivery van's drop. Picking it up makes the pram heavier for the rest of the day. |
-| 8 / 9 | The checkpoint | A chalk mark, then walk into the `roadblock`'s own band — the poured-concrete street closure, not a region door's hut — rather than round it. |
-| 10 / 11 | The wall | A chalk mark, then reach the poster crew's wall before they finish it — the window closes if the crew moves on first. |
-| 12 / 13 | The protest | A chalk mark, then reach the middle of the densest crowd in the city. |
-| 14 | The last night | The finale, offered only once the goal is met. Sabotage. |
+The first mark is on the day the curfew is announced, and a task day follows most days after
+that through the day before the last night:
+
+| Day | Task | Reached by | Arrow |
+| --- | --- | --- | --- |
+| 6 | A note for a stranger | Touch whichever `homeless_yeller` she reaches first — several are live at once and look alike, so there is no wrong one to single out first. | any instance |
+| 7 | The package | The delivery van's own drop. Picking it up makes the pram heavier for the rest of the day. | red |
+| 8 | The burnt shell | Wherever this run's own day-3 fire left its scar. | red |
+| 9 | The crossing | One of that day's own region doors, the first day the wall stands at all. | red |
+| 12 | The swing | The playground of one specific park. | red |
+| 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's hut — rather than round it. | any instance |
+| 14 | The last night | The finale, offered only once the goal is met. Sabotage. | none |
+
+**Two kinds of task.** One any live instance of the right thing answers — the man shouting, a
+roadblock — and gets no arrow: approaching any of them is still the cost, and whichever one she
+reaches is the right one. The rest are one place, and get the red arrow, `HomeArrow`'s own form
+in a color of its own (`Palette.TASK_ARROW`) — a decided exception to *no quest log or marker for
+the resistance*, narrowed to a task with exactly one place to be.
 
 ### Risk
 
@@ -121,22 +133,19 @@ entirely and still reach the good ending.
   notices them. Seeded from the run and the day, so the distance that was safe on day 9 of
   this run is safe on day 9 every time you replay it — the pattern is learnable, which is
   the difference between risk and a coin flip.
-- **The contact is whichever look-alike the player hands the note to.** A perform step's contact does
+- **The any-instance contact is whichever look-alike the player hands the note to.** It does
   not wait at the one instance the day happened to seed; it rides onto whichever live
-  look-alike — a `homeless_yeller`, a `delivery_van`, a `roadblock`, a `poster_crew` or a
-  `protest` — the player is within reach of, and follows them from one to the next until they touch
-  one. There is no exhaustive check to run and no wrong candidate to cost the player anything:
-  approaching the field of any of them is still the cost, but any one they have noticed and walk
-  up to is the right one. *(2026-09-13: "the task is always solved by going to any yeller she
-  notices.")*
-- **The deadline.** The wall's window closes when the poster crew's own instance is gone —
-  paste it over and the contact goes with it, for the rest of the run.
+  look-alike — a `homeless_yeller` or a `roadblock` — the player is within reach of, and follows
+  them from one to the next until they touch one. There is no exhaustive check to run and no
+  wrong candidate to cost the player anything: approaching the field of any of them is still the
+  cost, but any one they have noticed and walk up to is the right one. *(2026-09-13: "the task is
+  always solved by going to any yeller she notices.")*
 - **Only a day the player wins counts.** *"a task is only complete if it is done on the day that won"* —
-  a mark touched, a step performed, a contact lost to its deadline, a package picked up or the
-  last night's sabotage are all given back when the day is lost, and the retry offers the same
-  mark or contact again. So the errand is never spent on an attempt that failed, and a task
-  cannot be lost to a day that did not happen; the price of a bad day is the nerve, not the
-  subquest. See `GameState.finish_day()`.
+  a mark touched, the task it unlocked, a contact lost to its deadline, a package picked up or the
+  last night's sabotage are all given back when the day is lost, and the retry starts at the mark
+  again. So the errand is never spent on an attempt that failed, and a task cannot be lost to a
+  day that did not happen; the price of a bad day is the nerve, not the subquest. See
+  `GameState.finish_day()`.
 
 ### The finale
 
@@ -148,36 +157,69 @@ ending is the one ending nobody is simply told about.
 
 ### Feedback
 
-There is no quest log and no marker. In the world a pickup is a chalk mark on an alley
-wall, drawn *under* everything that stands on it, found by walking past it; a perform's
-contact is invisible, riding silently on the ordinary-looking thing it rides on. The day
-brief is the only channel that ever tells the player what is next — touching a mark reads its
-words back on the following day's screen — and the HUD carries one terse line,
-*somewhere out there* and what they are looking for. How far in they are belongs between days
-rather than during one. **That line is silent until the first mark has been touched** —
-the first encounter comes with no hint at all, and only later ones are named.
+There is no quest log and no marker beyond the red arrow's own narrow exception above. In the
+world a mark is a chalk mark on an alley wall, drawn *under* everything that stands on it, found
+by walking past it. **The task is announced at the mark and nowhere else**: the instant she
+touches it, its own words flash where the walking and running lessons do, and then the HUD
+carries one terse line, *somewhere out there* and what she is looking for, for as long as the
+task stands. How far in she is belongs between days rather than during one, on the day summary's
+own tally. **That HUD line is silent until the first mark has ever been touched**, and only later
+ones are named. The day brief is a separate channel and says less, not more: its own line for the
+first task day names the rumor of chalk messages in alleys and nothing else — no place, no
+pointer to one — and every other day's line is one or two sentences about what is true of the
+city that morning, the same words whichever way the day before it went.
 
-**A finished step is shown by the world and never by text.** A touched mark changes to its
+**A finished task is shown by the world and never by text.** A touched mark changes to its
 done color, which is all a mark needs; nothing is written on the HUD, and there is no counter,
 no objective marker and no log. The note for a stranger answers the same way: the moment she
 hands it to him, the man she reached stops shouting and walks away, on foot, until he is out of
 sight — the same departure any finished event takes, not a word on screen. The look-alikes she
 never reached carry on shouting exactly as before.
 
-**A lost day repeats its own instruction rather than moving on.** *"the words shown on the lost
-day are the words that show at the beginning of that day not the nexts."* The summary of a day
-they lost reads out the words of the mark that unlocked the task they were out to perform — the
-same words the summary of the day they found that mark already gave them — because a mark touched
-on a lost day has its touch given back with the attempt, and the retry needs telling what the day
-is for. A lost day 4 says nothing at all: its whole content is finding the mark, so there is
-nothing yet to repeat.
-
-A pickup mark the player has not actually noticed — stood near, on screen, long enough that
+A chalk mark the player has not actually noticed — stood near, on screen, long enough that
 walking past it rather than to it was a choice — has never really been placed, so it follows
 the player rather than sitting where the dawn plan first put it: once they are far enough from it
 to have missed it, it moves to the alley they have just come near instead, guard and all, skipping
 an alley an earlier task's mark already used while another is in reach — so a mark the player can
 actually walk up to is what makes the silent first encounter fair rather than a dead end.
+
+## What the tasks are for — never said in the game
+
+A resistance group is forming and recruiting like-minded people by chalk, because nothing spoken
+or sent is safe. **It wants her because the neighbor down the hall works at the power station**:
+the group cannot approach a watched worker, and a parent in the same building who is out every
+day with a stroller can. Everything leads to one night: the city's power is cut, the blackout is
+the signal the uprising waits for, since it reaches everybody at once with nothing spoken or
+sent, the regime answers the uprising by bombing its own city, and the escape is her getting out
+from under it.
+
+Four things hold across every task. **It is the same story for the mother and the father** — no
+task rests on which parent she is. **Nothing in the stroller is dangerous to lie next to** (tone
+rule 2, above: the baby is never in narrative danger from the regime directly); what she carries
+is damning to be caught with and harmless beside the baby. **She is never told the plan**: each
+errand is small and deniable, and she learns what they were for only when the windows go dark.
+And **nothing before the last night rests on her alone**: the group has other couriers, and a
+task she skips is answered by somebody else, which is why she can miss some and it is still
+enough — see `Tuning.RESISTANCE_GOAL`. **That number is the group's trust**: only a courier who
+has proven reliable is given the key, which is why the last night is offered only at the goal.
+The last night has to be her, because under curfew with the army on the streets only a parent
+out walking a baby who won't settle reaches that door. **Her cover is never a crying baby**:
+crying is a lost day.
+
+The tasks escalate: trust, carry, carry back, scout, protect, rehearse, retrieve, scout again,
+act.
+
+| Task | What it accomplishes | If she skips it |
+| --- | --- | --- |
+| The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she reaches is him — which one exactly is decided by how she plays. | Somebody else answers. |
+| The package at the van's drop | From the group to the neighbor. The driver is a sympathizer; the package is tools and a lamp. She carries it home, which is where the neighbor lives. | Somebody else risks the building. |
+| The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A cordoned ruin is where nobody goes, so it is the dead drop. Whether the fire was an accident is never answered. | The drawing goes out another way. |
+| Cross a named door | The districts closed that morning and the station is across one. She finds out whether a stroller gets through. | Somebody else finds out. |
+| Warn the neighbor before the raid | The regime has found the worker. She reaches the neighbor out in the city before they walk home into the vans, which are at her own building when she gets back. Warned, the neighbor runs; not warned, the neighbor is taken, and theirs is the face crossed out on the wanted notice. The door is sealed the next morning either way, and the drawing already left at the burnt shell. | The same sealed door, for the worse reason. |
+| Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | Somebody else answers. |
+| The swing | Feeling watched, the neighbor hid the station key at the swing before the raid, so it is there whether or not she warned them. The parks are being fenced one at a time and the group knows this one is next, which is why it is today; she gets the key out as the park is taken. | Another courier fetches it. |
+| Into a roadblock's band | The army arrived that morning. She finds out how close a parent with a baby who won't settle can come to a held street before its guard moves, because the last night's way passes one; nobody looks twice at a parent walking a baby who won't settle, so the cost of the task is its cover, and the guard's reach is still the guard's reach. | Somebody else answers. |
+| The station's front door | A hand-over: she passes the key to the neighbor's colleague on the night shift and walks away. The minutes he needs are why the lights go out once she is at a distance. Blackout, uprising, bombing, escape. | The neutral ending. |
 
 ## Endings
 
@@ -188,7 +230,9 @@ them. Short, flat epilogue text over a static shot of the apartment window.
 
 ### Neutral — survive 14 days, resistance incomplete
 
-The baby sleeps. The city is quiet now, in the way an occupied city is quiet. Epilogue over
+The baby sleeps. On the last night nothing happens: the group gave its key to nobody it
+trusted, the uprising waits, and she goes home. The city is quiet now, in the way an occupied
+city is quiet. Epilogue over
 the same daily walk route, now empty of everything the player learned to avoid.
 
 ### Good — resistance complete + day 14 sabotage

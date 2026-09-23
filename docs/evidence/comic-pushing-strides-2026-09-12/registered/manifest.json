@@ -40,8 +40,8 @@
     "docs/evidence/comic-pushing-strides-2026-09-12/prompt.txt": "400e5f0181aee7a134d9ab579002dabec1d3425c7e97305bc35cb8d241304f88"
   },
   "style_references": {
-    "docs/evidence/graphics-reference-urban-01.jpeg": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
-    "docs/evidence/graphics-reference-cardinal.jpeg": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
+    "docs/style-references/graphics-reference-urban-01.jpeg": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
+    "docs/style-references/graphics-reference-cardinal.jpeg": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
   },
   "review_font": "/System/Library/Fonts/SFNS.ttf",
   "review_font_sha256": "2bfd40dc72e6759e248f82a52a40d551338979fffc9b5c070e685b4b7ad19e66",
