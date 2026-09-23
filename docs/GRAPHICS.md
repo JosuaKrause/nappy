@@ -370,8 +370,9 @@ Each is a 32×32 canvas matching a wall tile's own grid, so a later placement ca
 straight onto a wall cell the way `wall_base.svg` already does. Every poster is a 20×22px sheet
 (62.5% × 69% of the tile) at x 6–26, y 3–25: a gap on all four sides of its tile, and the foot
 clear of the plinth `wall_base.svg` draws from y 26. A poster goes on blank wall, never over a
-window (`docs/playtests/PLAYTEST-123.md`, statement 13), so a ground floor that carries posters
-needs cells without one.
+window (`docs/playtests/PLAYTEST-123.md`, statements 13 and 25), so a front that carries posters
+needs visible plain wall — stretches with no window at all that break the window rhythm — not a
+window cell with the window left out.
 
 | Asset | What it draws |
 |---|---|
@@ -407,11 +408,11 @@ line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the poli
 The intact kinds follow the player's poster reference sheet in shape and palette; at 20×22px
 the wanted notice keeps one print line under each frame where the reference has two.
 
-[The poster review sheet](evidence/poster-art-review-2026-09-23-reference-pass.png) shows each
-intact kind on a single blank ground-row wall cell at game scale (2×, the camera's own zoom) and
-at 4× that, plus three building fronts assembled from the real `art/buildings/` wall, window,
-edge and plinth textures, multiplied by a building colour and each act's own cast
-(`Palette.act_tint()`), carrying one row of posters at the day 4/day 8/day 12 densities M180's
-own table asks for, on the ground floor's blank cells. [The tear sheet](evidence/poster-art-review-2026-09-23-tear-masks.png)
-shows every tear applied to every intact kind by that recipe, on blank ground-row wall cells at
-game scale and at 4× that, then each mask and overlay alone.
+[The poster review sheet](evidence/poster-art-review-2026-09-23-plain-walls.png) shows the
+intact kinds and every tear applied to each of them by that recipe, on blank ground-row wall
+cells at game scale (2×, the camera's own zoom) and at 4× that; each mask and overlay alone; and
+three building fronts assembled from the real `art/buildings/` wall, window, edge and plinth
+textures, multiplied by a building colour and each act's own cast (`Palette.act_tint()`), at
+the day 4/day 8/day 12 densities M180's own table asks for. On those fronts, stretches of plain
+wall two or three columns wide with no window on any floor break the window rhythm, and posters
+go only there — some of it bare, and three torn sheets on day 12.
