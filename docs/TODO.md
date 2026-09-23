@@ -441,9 +441,18 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       one tie to the story: "other than that we can keep this mechanic separate with no story
       tie in", so tearing stays a gimmick that counts for nothing.
 
-      A kind that has arrived stays in the mix; nothing is taken down except by her. SVG first, as
-      every picture here is, and the first drawn wall comes back to the player as pictures in
-      the pull request before anything is polished.
+      A kind that has arrived stays in the mix; nothing is taken down except by her.
+
+      **The pictures are drawn and accepted** (`DECISIONS.md`, M180, the poster art): the six
+      intact sheets and three tear masks under `art/events/posters/`, prepared and not yet bound,
+      with the neighbor's slot on the wanted notice and the compositing recipe in
+      `docs/GRAPHICS.md`'s Posters section. **What is open is putting them on the walls**: only on
+      blank ground-floor wall, never over a window (M185, a ground floor is blank wall or shops),
+      one row to a wall, following the progression above. Where a sheet is pasted over an
+      older one, the offset is large enough that the older sheet plainly shows, never a sliver that
+      reads as a glitch ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 31); **most** new sheets
+      cover the old one exactly and replace it, and only some show the one beneath (statements 32
+      and 33: "if it's visibly over pasted for all of them then it will look weird"). PNGs are Codex's, later.
 - [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
       no button, and more than walking past. *The orchestrator recommended running along the
       wall · the player chose pushing on 2026-09-20*, because a push can happen by accident,
@@ -493,6 +502,34 @@ points at the door (`CityMap.power_station_door_position()`).
       the escape is easy** ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be
       easy!"). The "Good" ending, Act IV's day 14 and tone rule 3's "the reward is quiet" are
       rewritten with the build, and `docs/MECHANICS.md`'s account of the good ending with them.
+
+---
+
+## M185 — A ground floor is blank wall or shops · asked for 2026-09-23
+
+> "you can make it a placement rule for multi-story buildings that the ground floor is either a
+> blank wall (for posters later) or shops -- never windows -- the home building is an exception
+> to that rule"
+
+[PLAYTEST-123](playtests/PLAYTEST-123.md), statements 13, 25 and 26: a poster pasted over a
+window makes no sense, so the posters of M180, posters she notices, and loudspeakers that are
+somewhere, need wall to go on, and the player made that a rule for every building. Today a
+building's ground floor carries the same window rows as the floors above, except where a
+`COMMERCIAL` span's storefront covers them (`docs/CITY.md`, "A front is district and block
+purpose").
+
+- [ ] **The ground floor of a multi-story building has no windows**: it is shops or blank wall.
+      Which is which is the orchestrator's and open to overturn: a `COMMERCIAL` building keeps its
+      storefronts, and its odd final column becomes blank wall rather than a window; every other
+      purpose's ground floor is blank wall — the wall texture and its plinth with no window —
+      with its entrance, the civic portico and the fire escape where they are today. A facade one
+      wall row tall is not multi-story and is unchanged; the power station draws its own front.
+- [ ] **Her own building keeps its ground-floor windows**, the one exception.
+- [ ] **The blank wall is where posters go**: the cells a later slice of M180 pastes on are
+      exactly the blank ground-floor cells this draws, so a poster can never land on a window.
+- [ ] **Shown to the player before it is finished**: stills of a residential, a commercial and an
+      industrial street and of her own building, at the ordinary view and zoomed out with
+      `--zoom`.
 
 ---
 
