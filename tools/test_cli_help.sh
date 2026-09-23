@@ -257,6 +257,26 @@ while read -r flag; do
     fi
 done < <(dev_flag_names)
 
+# ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
+# The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
+# undocumented the way audit-pck.sh, export-web.sh, release.sh, serve-web.sh and stats.sh used to
+# be. lib_* and test_* are helpers and this suite's own files, not entry points a person reaches
+# for, so they carry no row and are excluded here the same way they are excluded from the skill.
+catalogue="$root/.claude/skills/using-tools/SKILL.md"
+for f in "$root"/tools/*.sh "$root"/tools/*.py; do
+    name="$(basename "$f")"
+    case "$name" in
+        lib_*|test_*) continue ;;
+    esac
+    checks=$(( checks + 1 ))
+    if grep -qF -- "\`tools/$name\`" "$catalogue"; then
+        echo "ok   using-tools catalogues $name"
+    else
+        echo "FAIL $name has no row in .claude/skills/using-tools/SKILL.md's catalogue" >&2
+        failures=$(( failures + 1 ))
+    fi
+done
+
 echo
 echo "$checks checks, $failures failures"
 if [[ "$failures" -gt 0 ]]; then

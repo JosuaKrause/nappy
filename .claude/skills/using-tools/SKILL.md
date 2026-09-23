@@ -1,0 +1,60 @@
+---
+name: using-tools
+description: The catalogue of what every entry point in tools/ is for, and the rule that a manual sequence done a second time becomes a script. Load this BEFORE running a sequence of shell commands by hand — git/gh housekeeping, checking on an agent, verification, a capture, a build — and whenever the same manual steps come up a second time.
+---
+
+# Using the tools
+
+**Everything in `tools/` is a shortcut for a sequence somebody has already typed by hand once
+and did not want to type again.** This is the map: what each entry point does, when to reach
+for it, and which skill carries the detail behind it. `.claude/skills/cli-tools/SKILL.md` covers
+what every one of them owes — `--help`/`-h`, rejection of anything it does not understand, one
+place the flag list lives — not what each is for; that gap is this file's job.
+
+## The catalogue
+
+| Tool | What it does | Reach for it when | Detail |
+|---|---|---|---|
+| `tools/agent-status.sh` | Surveys every agent worktree: uncommitted files, how far it is ahead/behind its own upstream, its pull request's state and CI rollup, its brief file, and its agent's transcript age with a warm/cold verdict. | Before touching a live agent's worktree, and as step one of recovering from an interruption. | orchestrating |
+| `tools/audit-pck.sh` | Lists an exported `.pck` and reports every baked atlas member still packed as its own texture — a duplicate the atlas bake was supposed to remove. | After `tools/export-web.sh`, to confirm a baked group did not double-ship. | none — this catalogue is its documentation |
+| `tools/bake-atlases.sh` | Bakes the atlas pages from `assets/atlases/membership.json` and the pictures it names, only when a source hash has moved. `--check` asks without baking, `--force` bakes regardless, `--svg` runs the local SVG bake. | Rarely by hand — `check.sh`, `test.sh`, `run.sh` and `export-web.sh` all call it first. Reach for `--check` or `--force` directly to inspect or force staleness. | illustrated-png |
+| `tools/check.sh` | Imports assets, then boots the project headless and fails on any script error — the one thing that builds `.godot/`'s class-name registry on a fresh clone. | Before committing, and after any fresh clone or pull. | verify |
+| `tools/clip.py` | The Python half of `tools/clip.sh`; the same job, reached through the wrapper rather than directly. | Never directly — see `tools/clip.sh`. | session-captures |
+| `tools/clip.sh` | Converts a completed gameplay burst folder into a timing-accurate H.264 MP4, from the burst's own recorded elapsed times rather than a nominal frame rate. | After a `--press snapshot_burst` capture. | session-captures |
+| `tools/codex-hooks.py` | Adapts Codex's patch and lifecycle payloads to the same Claude hook scripts that load skills and lint docs, so Codex and Claude Code share one rule-loading path. | Runs on its own through `.codex/hooks.json`; reach for it directly only to debug the adapter itself. | python-tooling |
+| `tools/cost-table.sh` | Regenerates `docs/COSTS.md`, the checked-in survey of what every event catalogue row costs, from the live `EventDef`/`EventInstance`/`Tuning` code. `--check` compares against the checked-in file and writes nothing. | After any change to an event's cost or a `Tuning` constant. | balance |
+| `tools/export-web.sh` | Headless Web export into `build/web/` (gitignored) — release by default, `debug` for a build where `?telemetry=1` and the other debug-only query strings answer. | To produce a web build to inspect or publish. | none — this catalogue is its documentation |
+| `tools/lint.sh` | The volatile-fact linter for governed docs: catches a commit hash, a branch name, a check count, a ticked box or a status marker before it goes stale, and checks every tracked SVG is well-formed XML. | Whenever a governed doc moved, before committing. | committing |
+| `tools/prune-merged.sh` | Retires a branch whose pull request is squash-merged: its worktree, local branch and remote branch, only once GitHub confirms the pull request is merged and the local tip is the commit it merged. Also sweeps the harness's own `worktree-agent-*` branches whose worktree is gone. | After a pull request merges. | committing |
+| `tools/pycheck.sh` | The gate for `tools/*.py`: ruff, format, mypy, then the unittest files, in that order of cost, through uv's locked environment. | After touching any `tools/*.py`, `pyproject.toml` or `uv.lock`. | python-tooling |
+| `tools/reference.py` | The Python half of `tools/reference.sh`; the same job, reached through the wrapper rather than directly. | Never directly — see `tools/reference.sh`. | reference-photos |
+| `tools/reference.sh` | Brings a real-world photo or video into `docs/reference/`, shrunk to fit inside 1280x720 with its aspect ratio kept and every scrap of metadata dropped; a video also loses its audio track and drops to 15fps. | Whenever a photo or capture is added to the repository as drawing reference. | reference-photos |
+| `tools/release.sh` | Reads the latest version tag, bumps it by the given part (major/minor/patch), prints the plan, and — only with a trailing `push` argument — tags and pushes, which is what triggers the deploy workflow. | To cut a release. | none — this catalogue is its documentation |
+| `tools/remove-checkerboard.py` | Extracts painted pixels from a neutral checkerboard PNG without changing geometry, bounded to neutral, bright, connected regions. | When an illustrated PNG's real alpha needs recovering from a checkerboard-painted source. | illustrated-png |
+| `tools/run.sh` | Plays the game; everything passed on the command line is forwarded to it as a dev flag, validated against the game's own flag table before Godot ever launches. | For a real windowed session. | verify |
+| `tools/serve-web.sh` | Exports a debug Web build and serves it on a local port (default 8060) — a Web export cannot be opened from `file://`, and nothing else here serves one. | To try the web build in a browser. | none — this catalogue is its documentation |
+| `tools/shot.sh` | Renders the game to a PNG, or a timed burst of PNGs with `--press snapshot_burst <seconds>`, forwarding every dev flag after the wait time. | Whenever the thing being checked is what the screen looks like. | verify |
+| `tools/stats.sh` | Aggregates the run logs into playtest counts and rig counts separately, so a review of how the game is playing is not skewed by rig traffic. | To see how much of the telemetry is real play rather than `check.sh` and `shot.sh` booting the game. | none — this catalogue is its documentation |
+| `tools/telemetry.sh` | Prints, follows, lists or prunes the run logs under `user://`, which nobody can be expected to remember the path to. | To read back what the last run actually did. | telemetry |
+| `tools/test.sh` | Runs the headless test suite, sharded across local processes or across CI's matrix. `--serial`, `--plan`, `--shard I/N` and `--record-costs` are its own modes. | Before committing, on the suites the change touches. | verify |
+
+A tool's own header and `--help` are still the source of truth for its exact flags; this table
+says what it is *for*, not its full usage.
+
+## A manual sequence done a second time becomes a script
+
+**The player, on why there was no catalogue to point at:** *(2026-09-22: "if you find yourself
+doing similar things over and over again that require a lot of manual work maybe that's a time
+to move them to shell scripts and note them down somewhere. is there a skill about how to use
+the scripts in the tools folder?")*
+
+When the same manual sequence of shell commands — git and gh housekeeping, checking on an agent,
+a verification pass, a capture, a build — comes up a second time, it becomes a script rather than
+being retyped or re-derived a third time. The new script follows **cli-tools** for what it owes
+(`--help`/`-h`, rejection of anything it does not understand, one place its flag list lives), gets
+its two CLI test cases in `tools/test_cli_help.sh` or `tools/test_cli_help.py`, and adds its row
+to the table above — all in the same commit, so the catalogue is never behind what it describes.
+
+**The check below is enforced, not remembered.** `tools/test_cli_help.sh` fails if any `tools/*.sh`
+or `tools/*.py` entry point (excluding `lib_*` and `test_*`) has no row in this table, so a tool
+added without its row is a red check rather than a gap somebody has to notice.

@@ -35,6 +35,10 @@ know, and assert that neither did the work. `tools/test_cli_help.sh` holds the s
 Python tools' cases and runs under `tools/pycheck.sh`. A new tool adds its two cases to the one
 that matches.
 
+**A new tool also adds its row to the using-tools catalogue**, in the same commit — see
+`.claude/skills/using-tools/SKILL.md`, which `tools/test_cli_help.sh` checks against every
+`tools/*.sh` and `tools/*.py` entry point.
+
 **The dev-flag list is the game's, read live.** `src/dev/dev_flags.gd` declares every flag and its
 arity in one table; `tools/lib_dev_flags.sh` reads that table for `run.sh` and `shot.sh` to
 validate against, so a flag added to the game is accepted by the scripts without a second edit
