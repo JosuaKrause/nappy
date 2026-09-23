@@ -115,15 +115,31 @@ rather than a place:
 
 | Before you… | Load |
 |---|---|
+| run a sequence of shell commands by hand — git/gh housekeeping, checking on agents, verification, a capture, a build | **using-tools** |
 | respond to a playtest or a design instruction, *before* any file is touched | **playtest-feedback** |
 | commit, branch, merge, or write a commit message | **committing** |
 | review a pull request — the findings go on the PR as comments | **committing** |
 | merge main into a PR or branch | **merging-main** |
 | **end a session** | **session-cleanup** |
 
+**A manual sequence done a second time becomes a script.** *(2026-09-22: "if you find yourself
+doing similar things over and over again that require a lot of manual work maybe that's a time to
+move them to shell scripts and note them down somewhere. is there a skill about how to use the
+scripts in the tools folder?")* It follows **cli-tools** for what a command-line entry point owes,
+and its row goes into the **using-tools** catalogue in the same commit. This is a conversation
+rule rather than a hook: the moment a second manual pass is noticed, nothing has been edited yet,
+so there is no file to hang it on.
+
 If a skill turns out not to cover something it should, add it there rather than here — **anything
 too long for one file becomes a file of its own, and this one does not grow.** If a new area of the
 tree needs rules, add the path to the hook script as well, or the rule is only a suggestion.
+
+Two things to know before extending the mapping. **A path may match several skills** and all of them
+fire together, so a `.gd` file under `src/events/` brings both `events` and `godot` — keep an eye on
+the combined size, because a large injection is written to a file and summarised rather than placed
+inline. And **the hook cannot reach a rule about a conversation**: anything that governs what you
+*say* rather than what you *edit* has to live in this file, because there is no tool call to hang it
+on.
 
 **A skill found wrong is fixed, and the fix is flagged to the player.** *(2026-09-22: "if you
 ever notice that a skill doesn't work correctly or contains incorrect information or otherwise
@@ -133,13 +149,6 @@ broken or duplicated passage, and a gap that let a mistake through. The fix goes
 PR like any other change, and the report to the player names the skill, what was wrong, the
 moment it showed, and what the text now says — the point is that the player learns how a skill
 fails, not only that one was edited.
-
-Two things to know before extending the mapping. **A path may match several skills** and all of them
-fire together, so a `.gd` file under `src/events/` brings both `events` and `godot` — keep an eye on
-the combined size, because a large injection is written to a file and summarised rather than placed
-inline. And **the hook cannot reach a rule about a conversation**: anything that governs what you
-*say* rather than what you *edit* has to live in this file, because there is no tool call to hang it
-on.
 
 ---
 

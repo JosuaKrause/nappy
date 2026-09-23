@@ -107,11 +107,32 @@ the wrong one. It is the one rule in this project that cannot be hung on a file.
 
 A vague prompt returns work that cannot be merged. Every agent prompt contains, explicitly:
 
+**Before spawning, the orchestrator writes the brief verbatim to `.claude/briefs/<branch with
+"/" replaced by "-">.md`.** The file opens with a header of `key: value` lines that
+`tools/agent-status.sh` parses:
+
+```
+branch: feature/<thing>
+worktree: /abs/path/to/worktree   (added once known)
+agent: <agent id>                 (added after spawning; one line per agent, the newest last)
+spawned: <ISO date>
+```
+
+Then a blank line, then the brief. Every later `SendMessage` that changes the agent's scope or
+task is appended under `## Amendment <ISO date>`, so the file on disk stays what the agent was
+actually told rather than what it was told at spawn time.
+
 - **A read-first list, in order**: `CLAUDE.md`, the milestone's `TODO.md` section, the
   `DECISIONS.md` sections that carry its design, and the specific docs and source files it will
   touch. The agent starts cold; everything it needs must be named, not assumed.
 - **The branch name** (`feature/<thing>`), and the committing rules restated: one commit per item,
   messages that explain why, docs move in the same commit as the code.
+- **Commit and push after each item, and before starting any run that takes longer than a few
+  minutes.** A WIP message is fine — **committing** already says a messy branch commit is fine.
+  A usage limit or an API error kills the agent without warning, and the committed-and-pushed
+  state is what survives it: `git log` on the branch shows where the agent stopped, and another
+  session can see that and pick it up, rather than the state living only as uncommitted edits in
+  a worktree that somebody has to find and diff by hand.
 - **A scope fence**: the files it may touch, and the files it must not — always including
   `docs/TODO.md`, `docs/HANDOFF.md`, `docs/DECISIONS.md` and the playtests (queue maintenance and
   archiving belong to the orchestrator), plus anything another live agent owns. Two agents editing
@@ -249,13 +270,15 @@ merging is what collides — so parallelism is planned at the file level, before
 - **An agent that died mid-task is replaced in its own worktree.** A usage limit or an API
   error kills the agent and leaves every edit it made, usually uncommitted. Past the cache
   window *(2026-09-20: "don't let them continue because their cache is expired")*, start the
-  fresh agent without worktree isolation, pointed at the dead agent's worktree path. The brief
-  it needs is the original one — recoverable verbatim from the previous session's transcript
-  under `~/.claude/projects/` — plus what the orchestrator verified on disk: which files are
-  modified, what was never run, and where the dead agent stopped, read from its own transcript's
-  last tool calls. Its first two steps are to commit the inherited work as it stands and to
-  merge `origin/main`. Say plainly that nothing inherited has been reviewed: one inherited file
-  here did not compile.
+  fresh agent without worktree isolation, pointed at the dead agent's worktree path. The brief it
+  needs comes from `.claude/briefs/<branch-slug>.md` — the file the orchestrator wrote before
+  spawning, kept current by every amendment sent since; the previous session's transcript under
+  `~/.claude/projects/` is only the fallback when no such file exists. Its replacement agent's
+  prompt is "read `.claude/briefs/<file>`, then what changed: …", plus what the orchestrator
+  verified on disk: which files are modified, what was never run, and where the dead agent
+  stopped, read from its own transcript's last tool calls. Its first two steps are to commit the
+  inherited work as it stands and to merge `origin/main`. Say plainly that nothing inherited has
+  been reviewed: one inherited file here did not compile.
 
   **Before inheriting anything, compare the worktree with its own branch on the remote.** Another
   session can pick the same branch up while the agent is dead: the remote then carries pushed
@@ -285,10 +308,11 @@ with a precise updated prompt instead. if the pause was brief nudging the existi
 enough since the cache is still warm and they can just continue. usually, I'll tell you which kind
 of interruption it was.")*
 
-1. **Establish how far everything got, on disk and on GitHub, before touching anything.** For each
-   agent worktree: its branch, uncommitted files, how far it is ahead of and behind its own
-   upstream (another session may have pushed to it), and its PR's CI state. For each agent: its
-   last tool calls, from its transcript.
+1. **Run `tools/agent-status.sh` before touching anything.** It covers every worktree's branch,
+   uncommitted files, how far it is ahead of and behind its own upstream (another session may have
+   pushed to it), its PR's CI state, its brief file, and its agent's warm/cold verdict in one pass.
+   What it cannot show is where an agent stopped inside an item — for that, read its transcript's
+   last tool calls, the file `agent-status.sh` named.
 2. **Take the pause's kind from the player.** If they have not said, it is long when the
    agent's last request is older than the cache window less five minutes (see "A finished agent
    is not resumed after it has gone cold"), and brief otherwise.

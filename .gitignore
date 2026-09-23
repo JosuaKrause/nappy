@@ -39,3 +39,7 @@ __pycache__/
 
 # Agent worktrees (full checkouts; never content of the repo itself)
 .claude/worktrees/
+
+# Per-session agent briefs the orchestrator writes before spawning (tools/agent-status.sh reads
+# them back). Local working state, never repo content.
+.claude/briefs/
