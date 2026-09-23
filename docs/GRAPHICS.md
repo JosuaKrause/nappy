@@ -375,24 +375,27 @@ needs cells without one.
 
 | Asset | What it draws |
 |---|---|
-| `poster_leader.svg` | The leader's portrait: a nameless bust on a slate ground, rounded, heavy-jawed and scowling — brows pulled down to the nose, a hard stare, a mouth turned down at both corners — over a dark uniform collar, with a plain caption band carrying no letters. |
-| `poster_rules.svg` | The rules: a pale printed notice with a heavy header bar, a rotated red stamp and three print lines, each a 2×3px dark bar, a 1px gap, then a 1px gray line along the bar's foot. |
-| `poster_curfew.svg` | The curfew sheet: the same notice with a clock face under the header in place of the first print line, for day 6 onward. |
-| `poster_uniform.svg` | The dark uniform sheet: an invented ring-and-bar emblem, asymmetric so it does not read as a cross, matching no real flag, party, state or movement mark. |
-| `poster_wanted.svg` | The wanted notice: four people in two rows of two, each a flat dark head-and-shoulders silhouette on a pale mugshot panel — a different style from the leader's coloured portrait. The top-right face is crossed out in red on every copy. The bottom-left slot, the SVG group `neighbor_slot` (a 7×7 panel at 8,16), is a placeholder adult standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their figure. |
-| `poster_wanted_crossed.svg` | The same sheet with the `neighbor_slot` face crossed out in red as well, for a day 10 whose task was not done on the day she won. |
-| `poster_torn.svg` | The leader's portrait torn down, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top and upper left still pasted with the scowling brows and eyes, and a scrap of the bottom-right corner. Every torn file is an intact kind clipped along an irregular tear with a pale paper-core fringe and a faint shadow under it, over the bare wall where the sheet was — a faint shade darker, with glue marks and paper crumbs. |
+| `poster_leader.svg` | The leader's portrait: a nameless, jowly, scowling middle-aged man — hair receding at the temples, heavy brows over a hard stare, a dark suit with the white of a collar — on a warm gray backing inside a thin cream border, over a large dark band carrying no letters. Flat fills with a clean dark outline. |
+| `poster_rules.svg` | The rules: a pale printed notice under an inset dark header bar, four entries — each a 2×3px dark bar, a 1px gap, then two 1px gray print lines two pixels apart, the second shorter — and a round red stamp, a ring crossed by a thick diagonal band, over the lower right. |
+| `poster_curfew.svg` | The curfew sheet: the same header, a large clock with a dark rim, twelve tick marks and its hands at four, then two of the rules' entries and the same stamp, for day 6 onward. |
+| `poster_uniform.svg` | The dark uniform sheet: a cream emblem invented for this game, like the letter phi on a base — a tall ring, a vertical bar through it standing out above and below, on a flat foot bar — matching no real flag, party, state or movement mark. |
+| `poster_wanted.svg` | The wanted notice: gray-beige paper under an inset dark header, four 7×5 mugshot frames in two rows of two, each a dark head-and-shoulders silhouette in a thin dark frame with one gray print line beneath it — a different style from the leader's coloured portrait. The top-right face is crossed out in red on every copy. The bottom-left frame, the SVG group `neighbor_slot` (top-left corner at 8,16), is a placeholder adult standing in for the neighbor from M181, the resistance has a reason, and a task is one day, day 10, who is not drawn yet — the slot a later slice swaps for their figure. |
+| `poster_wanted_crossed.svg` | The same sheet with a red X over the `neighbor_slot` face as well, for a day 10 whose task was not done on the day she won. |
+| `poster_torn.svg` | The leader's portrait torn down, prepared for "she tears a poster down by pushing against its wall" (M180's second item): the top and upper left still pasted with the scowling brows and eyes, and a scrap of the bottom-right corner. Every torn file is an intact kind clipped along an irregular tear with a pale paper-core fringe and a faint shadow under it, over the bare wall where the sheet was — a faint shade darker, with glue marks and paper crumbs. The torn files still carry the earlier print of the leader, the rules and the uniform sheet (a ring-and-T emblem), not the reference sheet's. |
 | `poster_torn_rules.svg` | The rules notice torn down: the header strip kept, a peeled flap hanging off the tear with its blank back showing, and a corner scrap with part of the red stamp. One of three torn variants for the player to choose between. |
 | `poster_torn_uniform.svg` | The uniform sheet torn down: a ragged strip down the left edge with half the emblem's ring, and a small scrap in the top-right corner. One of three torn variants for the player to choose between. |
 
 No sheet carries readable words — every print line, header and stamp is a colour block or a gray
 line, never a letter (`docs/NARRATIVE.md`, tone rule 1: nobody explains the politics).
 
-[The poster review sheet](evidence/poster-art-review-2026-09-23-second-pass.png) shows each kind
-but the torn one on a single ground-row wall cell at game scale (2×, the camera's own zoom) and
+The intact kinds follow the player's poster reference sheet in shape and palette; at 20×22px
+the wanted notice keeps one print line under each frame where the reference has two.
+
+[The poster review sheet](evidence/poster-art-review-2026-09-23-reference-pass.png) shows each
+intact kind on a single blank ground-row wall cell at game scale (2×, the camera's own zoom) and
 at 4× that, plus three building fronts assembled from the real `art/buildings/` wall, window,
 edge and plinth textures, multiplied by a building colour and each act's own cast
 (`Palette.act_tint()`), carrying one row of posters at the day 4/day 8/day 12 densities M180's
-own table asks for. [The torn poster sheet](evidence/poster-art-review-2026-09-23-torn.png)
+own table asks for, on the ground floor's blank cells. [The torn poster sheet](evidence/poster-art-review-2026-09-23-torn.png)
 shows the three torn files alone at game scale and at 4× that, and each on blank ground-row wall
 beside the intact poster it was, at game scale and at 2× that.
