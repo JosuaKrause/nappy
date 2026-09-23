@@ -82,3 +82,9 @@ agent.
 15. **Art style references live in a folder of their own, easy to find**, with no intermediate
     folder full of other files on the way to it. `docs/evidence/` keeps raw evidence only.
 
+> "I cannot get a good reference for the ripped off poster. let opus give it a try and I'll
+> review."
+
+16. **The torn poster is drawn without a reference**, by Opus, and comes back to the player for
+    review.
+
