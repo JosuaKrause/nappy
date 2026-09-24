@@ -829,23 +829,18 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
-- [ ] **The push at the top that ends the day crying is a little tighter**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "we can make the extra push needed to end the
-      day a tiny bit more aggressive/tighter"). Today it is `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`,
-      10 points of overflow at the cap, within `Tuning.EXCITEMENT_OVERFLOW_WINDOW`, 3 seconds
-      (`DECISIONS.md`, M96, the day ends crying only after a push at the top). Playtest 126's
-      reason for the gate still holds — one bump into one aggravated walker is not a failure — so
-      one bump at the cap (8.9 points of overflow, measured by
-      `tests/probes/m96_crying_at_the_top.gd`) keeps her awake, and a sustained push ends the day
-      sooner than it does now
+- [ ] **`--quit-when-still` is off while a signalled junction on screen is red for her**
+      ([PLAYTEST-128](playtests/PLAYTEST-128.md), statements 13 and 14: "How about just
+      deactivating the watch when the light is red and the intersection is visible. If she's
+      stuck she will be stuck when it turns green still"). `StillWatch.facing_a_red_light()`
+      (`src/dev/still_watch.gd`) holds the watch today only while she stands on the sidewalk
+      inside the junction's `Tuning.STREET_WIDTH` (6) tile box (`DECISIONS.md`, M189, a hold is
+      not a stand); her position stops mattering, and a red light at the signalled junction on
+      screen is enough. The signals run a green wave with a different offset per junction, so
+      two junctions on screen can disagree; the one nearest her decides
 
 **Drawings, as SVG:**
 
-- [ ] **The home block carries no fire escape** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "the
-      home building shouldn't have a fire escape (it has a double staircase inside)"). Every
-      building on the home block is hers (`Building.is_home_building`, playtest 124), and
-      `Building._build_front()` rolls a `RESIDENTIAL` front's escape without asking; the home
-      block's fixed visuals match the escape's interior, whose two staircases are inside
 - [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
       least two frames** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the
       main break) or puffs of smoke (from the car crash) or steam (from the escape) should have
@@ -882,14 +877,6 @@ re-pitched:
       threaded build would need
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
-
-- [ ] **How close to a red light counts as waiting at it, for `--quit-when-still`.** The dev
-      flag's watch (`StillWatch`, `src/dev/still_watch.gd`) ignores her while
-      `facing_a_red_light()` holds: anywhere on the sidewalk inside the signalled junction's
-      `Tuning.STREET_WIDTH` (6) tile box while the main road's light is not hers (`DECISIONS.md`,
-      M189, a hold is not a stand). Put to the player on 2026-09-24 without saying what the watch
-      was ([PLAYTEST-128](playtests/PLAYTEST-128.md)); open until they say whether the box
-      should be tighter
 
 - [ ] **The alley mouse faces where it runs** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "The
       code comment is positive, the queue is normative."). `EventCatalogue._alley_mouse()` draws

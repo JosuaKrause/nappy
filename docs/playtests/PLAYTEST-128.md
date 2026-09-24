@@ -75,3 +75,17 @@ play followed.
     top).
 12. **The main break's water, the car crash's smoke and the escape's steam each animate over at
     least two frames**, so each reads as what it is.
+
+## Follow-up, the same day
+
+Told what the still watch is — `StillWatch`, the dev tool behind `--quit-when-still`, which ends
+a run with a picture once she has stood still for about a second, and ignores her today while she
+is on the sidewalk inside a signalled junction's 6-tile box with the main road's light not hers:
+
+> "How about just deactivating the watch when the light is red and the intersection is visible.
+> If she's stuck she will be stuck when it turns green still"
+
+13. **The watch is off while a signalled junction on screen shows her a red light**, wherever
+    she stands; how close she is to the curb no longer matters.
+14. **Why:** a mother who is really stuck is still stuck once the light turns green, and the
+    watch catches her then.
