@@ -435,8 +435,8 @@ speak, and nothing city-wide left. What is open is the posters.
       desired proportion, one drawn at random and removed per tear, refilled with the same set
       when empty, so every bag's share is exact ("it has the desired probability but feels
       fair"). A first, pre-bag holds only "no pursuit" marbles, one per tear guaranteed safe.
-      The player's example is a pre-bag of three and then two pursuits in ten; which numbers
-      apply is the player's. Only poster tears use a marble bag.
+      The bag is the queue's numbers (statement 5): a pre-bag of one safe tear, then one
+      pursuit in every ten. Only poster tears use a marble bag.
 
 ---
 
