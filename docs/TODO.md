@@ -288,6 +288,27 @@ it); what is open is the half that stops the move from happening.
 
 ---
 
+## M192 — A curfew day is the old full day, and a free day is longer · asked for 2026-09-24
+
+> "Maybe we could make the curfew have the currently normal time and the normal time be a bit
+> longer" · asked how long days 1 to 5 should be, 210 s or 225 s, "210"
+
+- [ ] **Days 1 to 5 are 210 s and a curfew day, 6 to 14, is 180 s** (today 180 s and 144 s). The
+      curfew stays visibly shorter, and the late days get 36 s more each, which is where the
+      route timing is tight. `Tuning.day_length()` says it as two lengths rather than a
+      multiplier; `tests/test_meters.gd` already holds the street-alone contract in terms of
+      `day_length()`, and at `SLEEPINESS_GAIN_WALKING` (0.42/s) a 210 s day of clean street walking
+      reaches 88 % of the meter — still short, as the contract needs; 238 s would reach it. **The
+      escape stays 180 s** (`FINALE_LENGTH_SECONDS`, today tied to the ordinary day): the player
+      asked that "the escape shouldn't be easy" ([PLAYTEST-121](playtests/PLAYTEST-121.md)), so it
+      is stated on its own rather than growing with day 1; asked with the day length and not yet
+      answered, so it is the unchanged value, open to overturn. Every number that quotes 180 s or
+      144 s as a day moves with it: docstrings, `docs/MECHANICS.md`, tests, the probes, and the
+      neighbor's walk home, which is sized against a 144 s day
+      (`Tuning.NEIGHBOR_WALK_HOME_SECONDS`, 55 s, "chosen, not measured").
+
+---
+
 ## M182 — A finished task is shown by the world, never by text · asked for 2026-09-20
 
 > "yeller should just start walking offscreen -- no onscreen text for acknowledgements like this"
@@ -362,21 +383,20 @@ leaves that has no picture yet.
       no picture of a sealed door; where she would see it — her building's street door, or a
       door inside — is not yet decided.
 
-- [ ] **The late days are timed** — the mark, the task, the happening and the walk home, day
-      12's swing-then-second-park first — with M184, a rig that walks the route, before anything
-      is cut ([PLAYTEST-122](playtests/PLAYTEST-122.md)); the figures go here. **Measured so far** (`--route mark,task,calm,home --invincible`, days 6 to 13 on seeds
-      4242, 90210 and 1234567; the table is in `DECISIONS.md`, M184): every day she walked home
-      from had at least 22 seconds left, most 50 to 120; on day 12 the second open park was
-      reached a tenth of a second after the swing on the one seed whose swing the rig reached;
-      days 10 and 11 have their tasks now and are not yet timed, and the rig reported "task
-      unavailable" for a bare-point task and stuck on day 11's mark on seed 4242 when slice two
-      was built. The rig now gets through every chokepoint (`DECISIONS.md`, M184, the rig gets through
-      chokepoints): 23 of the 24 runs walk the whole route. **Day 9 on seed 90210 does not fit**:
-      the mark at 27.7 s, the task at 91.5 s (3537px off, through four doors), the calm area at
-      99.6 s, and the day's 144 s run out on the walk home. Open: whether that task sits too far
-      on that seed, or the rig should take a calm area on the way home rather than the one
-      nearest the task. **Each late day's happening arrives differently** — waiting at home, found gone,
-      closing in front of her, coming on her way — and slice two keeps that variety.
+- [ ] **The last three late-day runs are timed.** The player asked for the late days to be timed
+      — the mark, the task, the happening and the walk home — before anything is cut
+      ([PLAYTEST-122](playtests/PLAYTEST-122.md)); 24 of the 27 runs are (`DECISIONS.md`, M181,
+      the late days are timed, with the table), and the day-length change that follows is M192. Three
+      runs the route rig does not finish, each for a reason of the rig's or the city's rather than
+      the clock's: day 12 on seed 90210, where a door at tile (75,97) holds her three times on the
+      way to the mark and the rig gives up; day 12 on 1234567, where the calm tile chosen at the
+      moment the swing is reached reads calm but the ground she paces on reads ordinary — most
+      likely the swing's own park being taken as she reaches it, which the rig should route away
+      from to the day's second calm area, not yet confirmed; and two legs walked round rather than
+      through (day 10's mark on 1234567 stalls in the crowd, day 11's mast on 1234567 against
+      scaffolding's outline). Nothing is cut until these are measured and the player has the
+      figures. **Each late day's happening arrives differently** — waiting at home, found gone,
+      closing in front of her, coming on her way — and the table shows the variety holding
 
 ---
 
@@ -692,11 +712,11 @@ is still true.
 
 **Drawings, as SVG:**
 
-- [ ] **The basement vent's pipe vanishes between blows.** `steam.svg` draws the pipe and the
-      cloud as one picture, and `InteriorEvents` keeps no instance between blows, so the pipe is
-      only on screen while it steams; a vent that is there all the time, blowing or not, is what
-      a player can plan around. Found while animating the steam (`DECISIONS.md`, M100, water,
-      smoke and steam move)
+- [ ] **The basement's floor decals are drawn over her feet.** The puddle, debris and rat decals
+      sit in the building's depth-sorted layer (`InteriorScene._rebuild_overlays()`), so each is
+      drawn over her feet while she stands on its northern half; the vent's grate lies at the floor
+      tiles' own layer for exactly this reason (`DECISIONS.md`, M100, the basement vent is a floor
+      grate)
 
 **Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
 the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses

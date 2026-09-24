@@ -1,5 +1,5 @@
 extends RefCounted
-## Whether days 6 to 13 fit their clock, walked mark → task → calm → home by `RouteRig`
+## Whether days 6 to 14 fit their clock, walked mark → task → calm → home by `RouteRig`
 ## (`src/dev/route_rig.gd`, `--route`) rather than guessed at with `--walk`'s own timed headings.
 ## Not a suite: it prints a table rather than asserting relationships, so it lives under
 ## `tests/probes/`, where the runner never discovers it, and runs only by name:
@@ -18,8 +18,8 @@ extends RefCounted
 ## Each run is headless, carries `--no-save` and `--no-title` (a title screen left up is a title
 ## screen `RouteRig` never gets past — `main.gd` pauses everything behind it), and is given no
 ## `--day-length`: the whole question is whether the *real* clock is enough, so compressing it
-## would answer a different one. `_TIMEOUT_SECONDS` is a safety net well past every day 6-13's own
-## length (`Tuning.day_length()`, 144.0s for all eight), not a budget this probe is trying to fit.
+## would answer a different one. `_TIMEOUT_SECONDS` is a safety net well past every day 6-14's own
+## length (`Tuning.day_length()`, 144.0s for all nine), not a budget this probe is trying to fit.
 ##
 ## **Carries `--invincible`.** The question this table answers is "does the route fit the day's
 ## clock", not "does she survive the ordinary risk of the streets she walks" — the second is a
@@ -30,8 +30,14 @@ extends RefCounted
 ## it, without changing where she walks or how long a leg honestly takes; a non-invincible run is
 ## still worth taking once by hand when this table wants explaining, and its own outcome column
 ## (`LOST_CRYING`, `LOST_HARD_FAIL`, `LOST_TIMEOUT`) is exactly what to read for that.
+##
+## **Day 14's `mark` and `task` read `unavailable` on their own**, by design rather than by a
+## defect this probe or the rig owns: the last night has no mark
+## (`ResistanceSteps._finale()`) and is only offered once `GameState.sabotage_available()` holds
+## (`Tuning.RESISTANCE_GOAL` earlier tasks done), which a bare `--day 14` subprocess with nothing
+## played first never carries. `calm` and `home` still time normally on that day.
 
-const DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
+const DAYS := [6, 7, 8, 9, 10, 11, 12, 13, 14]
 ## The same spread `tests/test_full_run.gd` already uses, for the same reason: a single city can
 ## be lucky, and a fact about one seed is not yet a fact about the day.
 const SEEDS := [4242, 90210, 1234567]
@@ -120,7 +126,8 @@ func _find_log(started_at: float, seed_value: int) -> String:
 
 ## Every `route` line, in order — the exact sentences `RouteRig`'s own `Telemetry.note()` calls
 ## write (`src/dev/route_rig.gd`), read back rather than re-derived. Two regexes carry the whole
-## grammar: the day-time before `s (day time)`, and the first quoted target name.
+## grammar: the day-time before `s (day time)`, and the first quoted target name — `[a-z:]+` rather
+## than `[a-z]+` so `calm:home` (item 3's rig option) parses the same as the plain words.
 func _parse_log(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if not file:
@@ -128,7 +135,7 @@ func _parse_log(path: String) -> Dictionary:
 	var time_pattern := RegEx.new()
 	time_pattern.compile("(\\d+\\.\\d+)s \\(day time\\)")
 	var target_pattern := RegEx.new()
-	target_pattern.compile("'([a-z]+)'")
+	target_pattern.compile("'([a-z:]+)'")
 	var reached := {}
 	var outcome := ""
 	var held: Array[String] = []

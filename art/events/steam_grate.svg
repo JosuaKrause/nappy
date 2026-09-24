@@ -1,0 +1,24 @@
+<!-- Basement steam vent: an iron floor grate seen from above, there whether it blows or not. A
+     ground decal like `art/interior/puddle.svg`, drawn at floor level under everything that
+     stands, so she walks over it. `steam.svg` and `steam_b.svg` draw the cloud rising out of it:
+     their bottom-centre anchor is this grate's centre. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#2a2629" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Ground anchor is the canvas centre. -->
+  <!-- The damp the steam leaves on the floor around it. -->
+  <path d="M2 16C2 9 8 5 16 5C24 5 30 9 30 16C30 23 24 27 16 27C8 27 2 23 2 16Z" fill="#23272a" fill-opacity="0.45" stroke="none"/>
+  <!-- The frame set into the floor. -->
+  <rect x="4" y="8" width="24" height="16" rx="1.5" fill="#5f6669" stroke-width="1"/>
+  <path d="M5 9H27" fill="none" stroke="#8a9092" stroke-width="0.8"/>
+  <!-- The dark shaft under the bars, which is what makes it a hole and not a plate. -->
+  <rect x="6.5" y="10.5" width="19" height="11" fill="#131115" stroke="none"/>
+  <!-- Four bars and one crossbar over the shaft, each lit on its north edge. -->
+  <path d="M9.7 10.5V21.5M13.9 10.5V21.5M18.1 10.5V21.5M22.3 10.5V21.5" fill="none" stroke="#6f7679" stroke-width="2" stroke-linecap="butt"/>
+  <path d="M6.5 16H25.5" fill="none" stroke="#6f7679" stroke-width="1.4" stroke-linecap="butt"/>
+  <path d="M9.2 11V13M13.4 11V13M17.6 11V13M21.8 11V13M7 15.5H25" fill="none" stroke="#a3a8a6" stroke-width="0.6"/>
+  <!-- A bolt at each corner, and rust where the damp sits on the iron. -->
+  <circle cx="5.3" cy="9.3" r="0.6" fill="#9a9d98" stroke="none"/>
+  <circle cx="26.7" cy="9.3" r="0.6" fill="#9a9d98" stroke="none"/>
+  <circle cx="5.3" cy="22.7" r="0.6" fill="#9a9d98" stroke="none"/>
+  <circle cx="26.7" cy="22.7" r="0.6" fill="#9a9d98" stroke="none"/>
+  <path d="M8 23H12M21 23H24" fill="none" stroke="#7d5a3f" stroke-width="0.8" stroke-opacity="0.8"/>
+</svg>
