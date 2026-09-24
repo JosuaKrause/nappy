@@ -841,11 +841,6 @@ is still true.
 
 **Drawings, as SVG:**
 
-- [ ] **The home block carries no fire escape** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "the
-      home building shouldn't have a fire escape (it has a double staircase inside)"). Every
-      building on the home block is hers (`Building.is_home_building`, playtest 124), and
-      `Building._build_front()` rolls a `RESIDENTIAL` front's escape without asking; the home
-      block's fixed visuals match the escape's interior, whose two staircases are inside
 - [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
       least two frames** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the
       main break) or puffs of smoke (from the car crash) or steam (from the escape) should have
