@@ -494,28 +494,6 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M186 — The building fronts are redrawn to one bar · asked for 2026-09-23
-
-> "Only thing so far is the new standard door (industrial door and home door look fine). It pops
-> out. But that is probably because the other parts of the buildings (walls, windows, fire
-> escapes, etc) are not updated and look flat in comparison. So if say we update all those too
-> and then have another look at the overall picture."
-
-[PLAYTEST-124](playtests/PLAYTEST-124.md), statements 8 and 9. The entrance doors and the
-storefronts are drawn to the bar of the accepted art (outlines, shaded planes, material); the
-rest of a front is not, so the standard door stands out.
-
-- [ ] **Every other part of a building is redrawn to the same bar**: the wall and its plinth,
-      its edges and the roof, the six window pictures, the fire escape and the civic portico —
-      whatever `src/city/building.gd` draws a front from under `art/buildings/`, the power station
-      aside. The wall stays white where the runtime tints it, every canvas, ground line and tiling
-      seam is kept, and a window's lit and unlit pair and its three styles stay telling apart.
-- [ ] **Then the whole front is looked at again**, the standard entrance door included: stills of
-      a residential, a commercial and an industrial street at the ordinary view and zoomed out,
-      before and after. The door is changed only if it still pops out.
-
----
-
 ## M187 — A closure lies across the street it closes · asked for 2026-09-23
 
 Found by the street-obstructions redraw (PR 301) and queued with the player's agreement; the

@@ -1,11 +1,35 @@
-<!-- Roof fill: flat felt-and-gravel. Near-white for the same reason as wall.svg. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+<!-- Roof fill: a flat roof of weathered membrane — soft, uneven patches where it has faded or
+     held the wet, and a scatter of grit. No seams or courses: a roof many cells wide reads as
+     one surface rather than a grid. Neutral greys, white where the runtime tints it, for the
+     same reason as wall.svg: the variant's roof colour is multiplied over the whole cell. Every
+     mark stays inside the cell, so the tile repeats with no join. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
   <rect x="0" y="0" width="32" height="32" fill="#ffffff"/>
-  <rect x="3" y="5" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="18" y="2" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="25" y="12" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="9" y="19" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="21" y="26" width="2" height="2" fill="#f4f2ef"/>
-  <rect x="13" y="10" width="1" height="1" fill="#f4f2ef"/>
-  <rect x="29" y="22" width="1" height="1" fill="#f4f2ef"/>
+  <path d="M3 5.5 C4.5 3.2 9.5 3.4 11 5.2 C12.2 6.8 10.4 9.4 7.6 9.2 C5 9 1.8 7.6 3 5.5 Z" fill="#f5f5f5"/>
+  <path d="M17.5 19 C19.5 16.8 25.8 17.2 27 19.6 C28 21.8 25 24 21.6 23.6 C18.4 23.2 16 21 17.5 19 Z" fill="#f6f6f6"/>
+  <path d="M22.4 4.6 C23.6 3.6 26.6 4 27 5.6 C27.4 7.2 25.4 8.4 23.8 8 C22.4 7.6 21.6 5.6 22.4 4.6 Z" fill="#f8f8f8"/>
+  <path d="M5.6 22.2 C6.8 20.6 11.4 21 12 23 C12.6 25 9.4 26.6 7.2 26 C5.4 25.4 4.8 23.4 5.6 22.2 Z" fill="#f8f8f8"/>
+  <path d="M12.6 12.6 C14 11.8 17.4 12.4 17.4 13.8 C17.4 15 15 15.6 13.6 15.2 C12.4 14.8 11.8 13.2 12.6 12.6 Z" fill="#f6f6f6"/>
+  <g fill="#e2e2e2">
+    <rect x="6" y="13" width="1" height="1"/>
+    <rect x="15" y="4" width="1" height="1"/>
+    <rect x="21" y="12" width="1" height="1"/>
+    <rect x="29" y="9" width="1" height="1"/>
+    <rect x="9" y="18" width="1" height="1"/>
+    <rect x="14" y="27" width="1" height="1"/>
+    <rect x="25" y="28" width="1" height="1"/>
+    <rect x="2" y="29" width="1" height="1"/>
+    <rect x="30" y="16" width="1" height="1"/>
+    <rect x="19" y="8" width="1" height="1"/>
+  </g>
+  <g fill="#ececec">
+    <rect x="4" y="16" width="1" height="1"/>
+    <rect x="11" y="1" width="1" height="1"/>
+    <rect x="26" y="13" width="1" height="1"/>
+    <rect x="18" y="29" width="1" height="1"/>
+    <rect x="9" y="30" width="1" height="1"/>
+    <rect x="1" y="10" width="1" height="1"/>
+    <rect x="23" y="25" width="1" height="1"/>
+    <rect x="16" y="22" width="1" height="1"/>
+  </g>
 </svg>

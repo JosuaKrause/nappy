@@ -1,10 +1,32 @@
-<!-- Facade fill. Authored near-white so the per-variant wall colour can be multiplied
-     over it; the detail here is only the courses that break up a flat face. -->
+<!-- Facade fill: brick in running bond, eight 4px courses of 8px bricks, the mortar a shade
+     darker than the brick and a few bricks a touch off the rest so the face reads as laid
+     rather than printed. Authored in neutral greys, white where the runtime tints it: the
+     per-variant wall colour is multiplied over the whole cell, so the district's colour is the
+     brick's colour. Seamless both ways: the bond repeats every 8px across and every 8px up. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
   <rect x="0" y="0" width="32" height="32" fill="#ffffff"/>
-  <rect x="0" y="7" width="32" height="1" fill="#f0eeeb"/>
-  <rect x="0" y="15" width="32" height="1" fill="#f0eeeb"/>
-  <rect x="0" y="23" width="32" height="1" fill="#f0eeeb"/>
-  <rect x="0" y="31" width="32" height="1" fill="#f0eeeb"/>
-  <rect x="0" y="24" width="32" height="8" fill="#f8f6f4"/>
+  <g fill="#ececec">
+    <rect x="9" y="0" width="7" height="3"/>
+    <rect x="21" y="4" width="7" height="3"/>
+    <rect x="1" y="8" width="7" height="3"/>
+    <rect x="13" y="12" width="7" height="3"/>
+    <rect x="25" y="16" width="7" height="3"/>
+    <rect x="5" y="20" width="7" height="3"/>
+    <rect x="17" y="24" width="7" height="3"/>
+    <rect x="29" y="28" width="3" height="3"/>
+    <rect x="0" y="28" width="4" height="3"/>
+  </g>
+  <g fill="#f5f5f5">
+    <rect x="25" y="0" width="7" height="3"/>
+    <rect x="5" y="4" width="7" height="3"/>
+    <rect x="17" y="8" width="7" height="3"/>
+    <rect x="29" y="12" width="3" height="3"/>
+    <rect x="0" y="12" width="4" height="3"/>
+    <rect x="9" y="16" width="7" height="3"/>
+    <rect x="21" y="20" width="7" height="3"/>
+    <rect x="1" y="24" width="7" height="3"/>
+    <rect x="13" y="28" width="7" height="3"/>
+  </g>
+  <path d="M0 3.5H32 M0 7.5H32 M0 11.5H32 M0 15.5H32 M0 19.5H32 M0 23.5H32 M0 27.5H32 M0 31.5H32" stroke="#d2d2d2" stroke-width="1"/>
+  <path d="M0.5 0V3 M8.5 0V3 M16.5 0V3 M24.5 0V3 M4.5 4V7 M12.5 4V7 M20.5 4V7 M28.5 4V7 M0.5 8V11 M8.5 8V11 M16.5 8V11 M24.5 8V11 M4.5 12V15 M12.5 12V15 M20.5 12V15 M28.5 12V15 M0.5 16V19 M8.5 16V19 M16.5 16V19 M24.5 16V19 M4.5 20V23 M12.5 20V23 M20.5 20V23 M28.5 20V23 M0.5 24V27 M8.5 24V27 M16.5 24V27 M24.5 24V27 M4.5 28V31 M12.5 28V31 M20.5 28V31 M28.5 28V31" stroke="#d8d8d8" stroke-width="1"/>
 </svg>

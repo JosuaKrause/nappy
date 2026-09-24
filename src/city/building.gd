@@ -102,8 +102,15 @@ const STOREFRONT_SHUTTERED_TEXTURES: Array[StringName] = [
 	&"buildings/storefront_c_shuttered",
 	&"buildings/storefront_d_shuttered",
 ]
+## One floor of a fire escape — a balcony with its flight hanging below it to the balcony one floor
+## down — and the same balcony with the flight taken out, for the first floor's floor line. `a` has a
+## potted plant on its balcony, `b` does not, and which one shows is rolled balcony by balcony
+## rather than once for the whole escape — see `FIRE_ESCAPE_POT_SHARE` and `_draw_fire_escape()`.
+## Every flight faces the same way on both.
 const FIRE_ESCAPE_A := &"buildings/fire_escape_a"
 const FIRE_ESCAPE_B := &"buildings/fire_escape_b"
+const FIRE_ESCAPE_PLATFORM_A := &"buildings/fire_escape_platform_a"
+const FIRE_ESCAPE_PLATFORM_B := &"buildings/fire_escape_platform_b"
 const CIVIC_PORTICO := &"props/civic_portico"
 ## The one way in a multi-story front with no storefront and no portico has — see
 ## `entrance_door_col()`. 32×36px, a whole wall cell wide and rising four pixels into the row above
@@ -133,9 +140,36 @@ const _STACK_CELLS: Array[Vector2i] = [Vector2i(9, 2), Vector2i(4, 1)]
 
 ## Share of a storefront cell that gets the sloped-awning variant instead of the plain one.
 const STOREFRONT_AWNING_SHARE := 0.35
-## Share of `RESIDENTIAL` buildings tall enough for one (`wall_tiles() >= 2`) that get a fire
-## escape at all.
+## Share of `RESIDENTIAL` buildings tall enough for one (`FIRE_ESCAPE_MIN_WALL_ROWS`) that get a
+## fire escape at all.
 const FIRE_ESCAPE_SHARE := 0.3
+## The fewest wall rows a front carries a fire escape on — three floors, the top one plain, one
+## flight and the ground floor's platform (`fire_escape_landings()`). *(2026-09-23, the player,
+## PLAYTEST-124.md statement 17: "a two floor building cannot have a fire escape".)* On two, the
+## escape would be the platform alone, a balcony with no way down.
+const FIRE_ESCAPE_MIN_WALL_ROWS := 3
+## Share of any one balcony — a stair piece or the ground-floor platform, on either escape a front
+## carries — that shows the potted-plant picture, rolled independently balcony by balcony rather
+## than once for the whole escape. *(2026-09-23, the player, PLAYTEST-124.md statement 19: "the
+## flower pot version should be chosen at random.")* A third reads as lived-in without turning busy.
+const FIRE_ESCAPE_POT_SHARE := 1.0 / 3.0
+## How far apart (in whole columns, centre to centre) two escapes on the same front must stand.
+## *(2026-09-23, the player, PLAYTEST-124.md statement 20: "a wide building front could support two
+## fire escapes but only if there is enough of a gap between them (at least 1.5 full fire escape
+## widths between them)".)* The escape picture is 48px wide (1.5 columns of `TILE`, 32px), so 1.5
+## widths of gap between the pictures' own edges is 1.5 × 48 = 72px; each picture's own half-width
+## off its centre column is half of 48px, 0.75 columns, so the centres sit at least
+## 0.75 + 72.0 / TILE + 0.75 = 3.75 columns apart, rounded up to the nearest whole column a column
+## index can actually move to.
+const FIRE_ESCAPE_GAP_COLUMNS := 4
+## The fewest columns a front needs to even try for a second escape. Both escapes keep off the
+## corner columns, so each is drawn from the interior range `[1, cols - 2]`, `cols - 2` values
+## wide; fitting two picks `FIRE_ESCAPE_GAP_COLUMNS` apart inside it needs that range to span at
+## least the gap, i.e. `(cols - 2) - 1 >= FIRE_ESCAPE_GAP_COLUMNS`, so `cols >= 7`.
+const SECOND_FIRE_ESCAPE_MIN_COLUMNS := 7
+## Share of a front wide enough for a second escape (`SECOND_FIRE_ESCAPE_MIN_COLUMNS`, and already
+## carrying the first) that rolls one.
+const SECOND_FIRE_ESCAPE_SHARE := 0.4
 ## Share of a `LIVED_IN` commercial storefront that has gone shuttered by the time
 ## `Tuning.degradation_for(day)` reaches 1.0 — read against each cell's own fixed severity roll
 ## the same way `GroundTiles._cracked()` reads the ground's. A `BOARDED` block ignores this and
@@ -321,10 +355,14 @@ var _storefront_awning: Array[bool] = []
 ## in the run and stays shuttered, the same "fixed severity, the day decides how far it has been
 ## crossed" shape `GroundTiles._cracked()` uses for a crack.
 var _storefront_shutter_severity: Array[float] = []
-## The one ground-floor column a `RESIDENTIAL` building's fire escape stands against, or -1 for
-## the share that rolled none.
-var _fire_escape_col := -1
-var _fire_escape_variant_b := false
+## The column(s) a `RESIDENTIAL` building's fire escape(s) climb, floor by floor: empty for the
+## share that rolled none, one entry for the ordinary share, two for a wide front that also rolled
+## the second (`SECOND_FIRE_ESCAPE_MIN_COLUMNS`, `SECOND_FIRE_ESCAPE_SHARE`), first-rolled first.
+var _fire_escape_cols: Array[int] = []
+## Per escape column, whether each of its landings (`fire_escape_landings()`'s own rows) shows the
+## potted-plant picture — `col` to `{row: bool}` — rolled independently balcony by balcony rather
+## than once for the whole escape (`FIRE_ESCAPE_POT_SHARE`). Empty wherever `_fire_escape_cols` is.
+var _fire_escape_pots: Dictionary = {}
 ## The ground-floor column an entrance door would stand in, rolled for every building by
 ## `_build_entrance()` whether or not it ends up with one — `entrance_door_col()` is what decides
 ## that, so the home flag and the district's own entrance can change without rolling anything.
@@ -426,14 +464,18 @@ func _build_windows() -> void:
 	else:
 		_window_style = _WindowStyle.PLAIN
 
-## The ground floor's own shops, and the one fire escape a `RESIDENTIAL` facade may carry. A
+## The ground floor's own shops, and the fire escape(s) a `RESIDENTIAL` facade may carry. A
 ## district's own seed, distinct from `_build_windows()`'s, so an awning roll or a fire-escape
-## roll never shifts which windows are lit.
+## roll never shifts which windows are lit. The first escape's own presence and column are this
+## stream's own roll, unchanged from before there was a second escape or a per-balcony pot; both
+## of those newer rolls come from `_build_fire_escape_extras()`'s own stream instead, so neither can
+## move this one on any seed.
 func _build_front() -> void:
 	_storefront_variant.clear()
 	_storefront_awning.clear()
 	_storefront_shutter_severity.clear()
-	_fire_escape_col = -1
+	_fire_escape_cols.clear()
+	_fire_escape_pots.clear()
 	var cols := columns()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("front:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
@@ -463,34 +505,93 @@ func _build_front() -> void:
 			and rng.randf() < FIRE_ESCAPE_SHARE:
 		# Away from the corner columns where there is room to choose one, so the escape does not
 		# sit on top of `WALL_EDGE_W`/`WALL_EDGE_E`'s own parapet turn.
-		_fire_escape_col = rng.randi_range(1, cols - 2) if cols >= 3 else rng.randi_range(0, cols - 1)
-		_fire_escape_variant_b = rng.randf() < 0.5
+		var first_col := rng.randi_range(1, cols - 2) if cols >= 3 else rng.randi_range(0, cols - 1)
+		# Rolled on every front of two rows or more and only then dropped from the ones too short
+		# to carry it, so the stream is consumed exactly as far on every front and the bound can
+		# move without moving a roll.
+		if wall_tiles() >= FIRE_ESCAPE_MIN_WALL_ROWS:
+			_fire_escape_cols.append(first_col)
+	if not _fire_escape_cols.is_empty():
+		_build_fire_escape_extras(cols)
+
+## The rolls a fire escape needs beyond whether it exists and its own column — which balconies show
+## the potted-plant picture, and whether a wide front carries a second escape — drawn from a seed of
+## their own so that neither can shift `_build_front()`'s own `front:` stream: "the flower pot
+## version should be chosen at random" and "a wide building front could support two fire escapes"
+## (PLAYTEST-124.md statements 19 and 20). Read only once the first escape's own column is fixed, so
+## the second escape's own gap check always has a first column to measure against.
+func _build_fire_escape_extras(cols: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("escape:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
+	var extras := _roll_fire_escape_extras(cols, _fire_escape_cols[0], fire_escape_landings(), rng)
+	_fire_escape_cols = extras["cols"]
+	_fire_escape_pots = extras["pots"]
+
+## The pure roll behind `_build_fire_escape_extras()`, split out so a test can replay it against the
+## same stream the way `_door_col_from()` already is. `first_col` is the column `_build_front()`'s
+## own `front:` stream already fixed; `landing_rows` is `fire_escape_landings()`'s own row list,
+## the same for every escape on one front since it comes from `wall_tiles()` alone. Returns
+## `{"cols": Array[int], "pots": Dictionary}` — `cols` holds `first_col` alone, or both, if the
+## front is wide enough (`SECOND_FIRE_ESCAPE_MIN_COLUMNS`) and the second escape's own roll lands;
+## `pots` maps each of those columns to its own `{row: bool}`, from `_roll_pots()`.
+static func _roll_fire_escape_extras(cols: int, first_col: int, landing_rows: Array[int],
+		rng: RandomNumberGenerator) -> Dictionary:
+	var escape_cols: Array[int] = [first_col]
+	var pots := {first_col: _roll_pots(landing_rows, rng)}
+	if cols >= SECOND_FIRE_ESCAPE_MIN_COLUMNS and rng.randf() < SECOND_FIRE_ESCAPE_SHARE:
+		var candidates: Array[int] = []
+		for col in range(1, cols - 1):
+			if absi(col - first_col) >= FIRE_ESCAPE_GAP_COLUMNS:
+				candidates.append(col)
+		if not candidates.is_empty():
+			var second_col: int = candidates[rng.randi_range(0, candidates.size() - 1)]
+			escape_cols.append(second_col)
+			pots[second_col] = _roll_pots(landing_rows, rng)
+	return {"cols": escape_cols, "pots": pots}
+
+## One `randf() < FIRE_ESCAPE_POT_SHARE` draw per landing, in the order `landing_rows` lists them —
+## lowest first, the same order `fire_escape_landings()` returns.
+static func _roll_pots(landing_rows: Array[int], rng: RandomNumberGenerator) -> Dictionary:
+	var pots := {}
+	for row in landing_rows:
+		pots[row] = rng.randf() < FIRE_ESCAPE_POT_SHARE
+	return pots
 
 ## Which ground-floor column the entrance door stands in. A seed of its own, distinct from
 ## `_build_windows()`'s and `_build_front()`'s, so the door moves no window, style, storefront,
 ## awning, shutter or fire-escape roll. Read after `_build_front()`, since the door keeps clear of
-## the fire escape — see `_door_col_from()`.
+## every fire escape the front has — see `_door_col_from()`. `_fire_escape_cols` already holds both
+## columns by the time this runs, since `_rebuild()` calls `_build_front()` first, so a second
+## escape is avoided the same way the first always was and the door's own roll — its tiering and
+## how many values it draws from the `door:` stream — is unchanged on any front that still has zero
+## or one.
 func _build_entrance() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("door:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
-	_door_col = _door_col_from(columns(), _fire_escape_col, rng)
+	_door_col = _door_col_from(columns(), _fire_escape_cols, rng)
 
-## The door's column, rolled from the first non-empty tier: an interior column clear of the fire
-## escape and both its neighbours, then any column clear of all three, then any column but the
-## escape's own. The escape's landings reach eight pixels into both neighbouring columns at the
-## ground floor, so a door beside it would be half hidden; the corner columns come second only as
-## the courtesy the fire escape pays `WALL_EDGE_W`/`WALL_EDGE_E`, since the door's own margin
+## The door's column, rolled from the first non-empty tier: an interior column clear of every fire
+## escape and both its neighbours, then any column clear of all of them, then any column but an
+## escape's own. `escapes` holds zero, one or two columns — empty or one entry reads exactly the way
+## the old single `escape` int (`-1` or a column) did, so a front with no second escape rolls this
+## the same as before. The escapes' landings reach eight pixels into both neighbouring columns at
+## the ground floor, so a door beside one would be half hidden; the corner columns come second only
+## as the courtesy a fire escape pays `WALL_EDGE_W`/`WALL_EDGE_E`, since the door's own margin
 ## clears the edge line. Static so a test can replay it against the same stream.
-static func _door_col_from(cols: int, escape: int, rng: RandomNumberGenerator) -> int:
+static func _door_col_from(cols: int, escapes: Array[int], rng: RandomNumberGenerator) -> int:
 	var tiers: Array[Array] = [[], [], []]
 	for col in cols:
-		var clear := escape < 0 or absi(col - escape) > 1
+		var clear := true
+		for escape in escapes:
+			if absi(col - escape) <= 1:
+				clear = false
+				break
 		var interior := cols < 3 or (col > 0 and col < cols - 1)
 		if clear and interior:
 			tiers[0].append(col)
 		if clear:
 			tiers[1].append(col)
-		if col != escape:
+		if not escapes.has(col):
 			tiers[2].append(col)
 	for tier in tiers:
 		if not tier.is_empty():
@@ -689,7 +790,7 @@ func _ground_floor_texture(col: int) -> StringName:
 	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[store] else STOREFRONT_TEXTURES[index]
 
 ## The ground-floor cells with nothing on them but the plain wall and its plinth — no window, no
-## storefront, no civic entrance, no entrance door and not the column a fire escape stands against.
+## storefront, no civic entrance, no entrance door and not a column a fire escape stands against.
 ## Local space, one `Vector2(TILE, TILE)` rect per blank column, in
 ## the same top-left convention `_cell()` already uses for every draw call in this file. Empty for
 ## the power station (it draws its own front), her own building (the blank-wall rule's one
@@ -702,7 +803,7 @@ func blank_ground_floor_cells() -> Array[Rect2]:
 	var entrance_cols := _civic_entrance_cols()
 	var door_col := entrance_door_col()
 	for col in columns():
-		if entrance_cols.has(col) or col == door_col or col == _fire_escape_col:
+		if entrance_cols.has(col) or col == door_col or _fire_escape_cols.has(col):
 			continue
 		if _ground_floor_texture(col) == WALL_BASE:
 			result.append(Rect2(_cell(col, 0), Vector2(TILE, TILE)))
@@ -735,10 +836,10 @@ func _window_texture(index: int) -> StringName:
 		_:
 			return WINDOW_LIT if _lit(index) else WINDOW_DARK
 
-## The overlays on a front: its entrance door, a fire escape bolted to a `RESIDENTIAL` facade or a
-## portico at a `CIVIC` entrance, drawn after every ground-floor cell so each stands in front of the
-## shopfront or plinth rather than under it. The door goes first, since it is set in the wall plane
-## the escape stands out from. Anchored at local `y = 0`, the ground
+## The overlays on a front: its entrance door, the fire escape(s) bolted to a `RESIDENTIAL` facade
+## or a portico at a `CIVIC` entrance, drawn after every ground-floor cell so each stands in front of
+## the shopfront or plinth rather than under it. The door goes first, since it is set in the wall
+## plane the escape stands out from. Anchored at local `y = 0`, the ground
 ## line `_cell`'s own row 0 already sits on, so `Sprites.draw_standing()`'s bottom-centre contract
 ## needs no offset math here.
 func _draw_front_overlay() -> void:
@@ -746,15 +847,55 @@ func _draw_front_overlay() -> void:
 	if door_col >= 0:
 		var door_x := _cell(door_col, 0).x + TILE * 0.5
 		Sprites.draw_standing(self, AtlasLibrary.region(_entrance_door_texture()), Vector2(door_x, 0.0))
-	if _fire_escape_col >= 0:
-		var name := FIRE_ESCAPE_B if _fire_escape_variant_b else FIRE_ESCAPE_A
-		var x := _cell(_fire_escape_col, 0).x + TILE * 0.5
-		Sprites.draw_standing(self, AtlasLibrary.region(name), Vector2(x, 0.0))
+	if not _fire_escape_cols.is_empty():
+		_draw_fire_escape()
 	if district == GameEnums.BlockPurpose.CIVIC:
 		Sprites.draw_standing(self, AtlasLibrary.region(CIVIC_PORTICO), Vector2(0.0, 0.0))
 	if power_station:
 		var x := _cell(station_door_col, 0).x + TILE * CityMap.POWER_STATION_DOOR_TILES * 0.5
 		Sprites.draw_standing(self, AtlasLibrary.region(POWER_STATION_DOOR), Vector2(x, 0.0))
+
+## The rows whose floor line carries one of this front's fire-escape balconies, lowest first, or
+## empty for a front with none. The same rows for every escape the front has — a floor's height
+## does not depend on which column the escape stands in. A row's floor line is its bottom edge, so
+## row 1's balcony is the first floor's, standing on the ground floor's top edge, and the last is
+## the top floor's: "you start at the bottom of the top floor then the same texture gets placed on
+## each floor" (PLAYTEST-124.md, statement 13). Every balcony but the lowest hangs a flight down
+## through the floor below it to the next balcony down; the lowest is the platform alone, so the
+## ground floor carries only the brackets under it and nothing comes down to the sidewalk.
+func fire_escape_landings() -> Array[int]:
+	var result: Array[int] = []
+	if _fire_escape_cols.is_empty():
+		return result
+	for row in range(1, wall_tiles()):
+		result.append(row)
+	return result
+
+## The picture for the balcony on `row`'s floor line of the escape standing in `col`: the platform
+## alone on the lowest, the balcony and its flight on every other; the potted-plant picture or the
+## plain one, per `_fire_escape_pots[col][row]` — rolled balcony by balcony rather than once for the
+## whole escape, so the two pictures mix within one escape and between the two on a wide front.
+func fire_escape_texture(col: int, row: int) -> StringName:
+	var pots: Dictionary = _fire_escape_pots.get(col, {})
+	var pot: bool = pots.get(row, false)
+	if row <= 1:
+		return FIRE_ESCAPE_PLATFORM_A if pot else FIRE_ESCAPE_PLATFORM_B
+	return FIRE_ESCAPE_A if pot else FIRE_ESCAPE_B
+
+## Every fire escape the front carries, one picture per floor (`fire_escape_landings()`) per column
+## (`_fire_escape_cols`). Each picture's balcony sits one row above its bottom edge and its flight
+## hangs through the row below, so the balcony on `row`'s floor line is anchored on the floor line
+## of `row - 1`. Each escape is drawn from the top down, so each balcony's railing stands in front
+## of the foot of the flight that comes down onto it. Every picture is drawn the same way round: the
+## flights all face one direction, never alternating, on either escape.
+func _draw_fire_escape() -> void:
+	var landings := fire_escape_landings()
+	for col in _fire_escape_cols:
+		var x := _cell(col, 0).x + TILE * 0.5
+		for i in range(landings.size() - 1, -1, -1):
+			var row := landings[i]
+			var foot := Vector2(x, _cell(col, row - 1).y + TILE)
+			Sprites.draw_standing(self, AtlasLibrary.region(fire_escape_texture(col, row)), foot)
 
 # ------------------------------------------------------------- roof furniture ---
 
