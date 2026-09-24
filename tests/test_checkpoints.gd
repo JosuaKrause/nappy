@@ -46,6 +46,7 @@ func run(t) -> void:
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
 	_test_the_boom_never_inspects_her(t)
 	_test_the_arm_never_comes_down_on_her(t)
+	_test_a_walk_under_the_boom_is_seen(t)
 	_test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
 
 # ------------------------------------------------------------------------ setup ---
@@ -1629,3 +1630,95 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t) -> void:
 	gate_instance.free()
 	stroller.free()
 	manager.free()
+
+# ------------------------------------------------------------------ under the boom ---
+
+## A real street door — its gate and the two huts on its line, from `RegionPlanner.plan_day()` on
+## a door day — stood up live in a real `City`'s manager, with a real stroller. A real city because
+## what a walk under the boom sets off is added to it like any unplanned event, and asks its map for
+## walkable ground.
+func _street_door_rig(t) -> Dictionary:
+	var day := Tuning.REGION_WALL_FIRST_DAY
+	var map := CityGenerator.generate(BASE_SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	_repaint_for(map, day)
+	var plan := RegionPlanner.plan_day(map, day, RouteTree.for_day(map, day))
+	t.check(not plan.gates.is_empty(), "day %d on seed %d has a street door" % [day, BASE_SEED])
+	var gate: EventInstance = null
+	var huts: Array[EventInstance] = []
+	if not plan.gates.is_empty():
+		var state: RegionPlanner.GateState = plan.gates[0]
+		for body in plan.door_bodies:
+			if body.gate_state == state:
+				gate = city.events._create(body.def, body.position, PackedVector2Array(), false,
+						body.facing)
+				gate.gate_state = state
+				city.events._instances.append(gate)
+		for body in plan.door_bodies:
+			if gate and body.def.id == "checkpoint_hut" \
+					and absf((body.position - gate.global_position).dot(body.facing)) <= 1.0:
+				var hut := city.events._create(body.def, body.position, PackedVector2Array(),
+						false, body.facing)
+				city.events._instances.append(hut)
+				huts.append(hut)
+	var stroller := _real_stroller(t)
+	city.events._player = stroller
+	t.check(gate != null and huts.size() == 2,
+			"the rig stood a gate and the two huts on its line (%d huts)" % huts.size())
+	return {"city": city, "gate": gate, "huts": huts, "stroller": stroller}
+
+func _free_street_door_rig(rig: Dictionary) -> void:
+	(rig["stroller"] as Stroller).free()
+	(rig["city"] as City).free()
+
+## Puts her at `at` and has the manager look at the door lines, the once-a-frame check its physics
+## tick runs.
+func _step_her_to(rig: Dictionary, at: Vector2) -> void:
+	(rig["stroller"] as Stroller).global_position = at
+	(rig["city"] as City).events._watch_the_door_lines()
+
+## **Walking under the boom is detected, not guessed.** *(2026-09-24: "The guards should start
+## pursuing her in that case".)* She walks across the door's own line on the carriageway, raised
+## or not — nothing asks the arm — and each crossing counts; standing short of it does not. The
+## hut's own inspection, whose release sets her down across the same line, is a teleport and not a
+## walk, so it counts nothing.
+func _test_a_walk_under_the_boom_is_seen(t) -> void:
+	var rig := _street_door_rig(t)
+	var city: City = rig["city"]
+	var gate: EventInstance = rig["gate"]
+	var huts: Array[EventInstance] = []
+	huts.assign(rig["huts"])
+	if not gate or huts.size() != 2:
+		_free_street_door_rig(rig)
+		return
+	var axis := gate.facing_now()
+	var across := Vector2(-axis.y, axis.x)
+	gate.gate_state.raised = true
+	var lane := gate.global_position + across * 16.0
+	_step_her_to(rig, lane - axis * 20.0)
+	_step_her_to(rig, lane - axis * 2.0)
+	t.check(city.events.walks_under_a_boom() == 0, "walking up to the line is nothing")
+	_step_her_to(rig, lane + axis * 20.0)
+	t.check(city.events.walks_under_a_boom() == 1, "walking across it under the boom is one")
+	_step_her_to(rig, lane - axis * 20.0)
+	t.check(city.events.walks_under_a_boom() == 2, "and walking back under it is another")
+
+	var before := city.events.walks_under_a_boom()
+	var hut := huts[0]
+	var side := (hut.global_position - gate.global_position).normalized()
+	_step_her_to(rig, hut.global_position - axis * 60.0 + side * 8.0)
+	city.events._check_detentions()
+	t.check(hut.is_chatting(), "walking up the sidewalk to a hut starts its inspection")
+	for i in int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 5:
+		hut._process(STEP)
+		city.events._watch_the_door_lines()
+		city.events._check_detentions()
+	var released := (rig["stroller"] as Stroller).global_position
+	t.check((released - hut.global_position).dot(axis) > 0.0, "the release sets her across the line")
+	city.events._watch_the_door_lines()
+	t.check(city.events.walks_under_a_boom() == before,
+			"and being let through is not a walk under (%d, %d before)"
+			% [city.events.walks_under_a_boom(), before])
+	_free_street_door_rig(rig)

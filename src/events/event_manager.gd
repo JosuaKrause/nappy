@@ -71,6 +71,15 @@ var _consumed: Array[String] = []
 ## and clears it the frame the conversation ends. See `EventDef.redetains`.
 var _door_entry_side: Dictionary = {}
 
+## Where she stood the last time `_watch_the_door_lines()` looked, and how many outright moves
+## (`Stroller.outright_moves`) she had had by then — the frame-to-frame step the walk-under check
+## reads. `Vector2.INF` until the first look of a day, so a day's first frame compares nothing.
+var _last_seen_at := Vector2.INF
+var _last_outright_moves := 0
+## How many times today she has walked across a door's own line rather than being let through it.
+## Read by `walks_under_a_boom()`; the run log has a line for each.
+var _walked_under := 0
+
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
 ## the frame the release teleports her, with that instance's own trigger circle, and holding until
 ## she is measured outside it: the far side of a door is inside the door's own reach, so without
@@ -336,6 +345,8 @@ func clear() -> void:
 		_map.clear_day_obstructions()
 	_door_entry_side.clear()
 	_door_release_latches.clear()
+	_last_seen_at = Vector2.INF
+	_walked_under = 0
 	_sighted.clear()
 	_broadcast_clock = 0.0
 
@@ -791,6 +802,7 @@ func _physics_process(delta: float) -> void:
 		_summon_what_has_been_sighted()
 		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()
+		_watch_the_door_lines()
 		_check_detentions()
 	_check_hard_fails()
 
@@ -1373,6 +1385,71 @@ func _update_door_release_latches(body: Stroller) -> void:
 			spent.append(instance)
 	for instance in spent:
 		_door_release_latches.erase(instance)
+
+# ------------------------------------------------------------ under the boom ---
+# *(2026-09-24, the player: "If a car opens it for her and she walks through she would probably get
+# hit by the car, no?" · "A yes".)* A raised boom is ground she may walk under, and that skips the
+# huts' inspection. **It is detected, not guessed**: a door's huts, its posts and a lowered boom are
+# solid, and an inspection's release is a teleport, so a crossing of a door's own line that she
+# *walked* is a crossing under a raised boom and nothing else. Nothing here asks where the arm is.
+
+## How many times today she has walked across a door's line rather than being let through it —
+## the count `tests/test_route_rig.gd` holds a rig run to zero on.
+func walks_under_a_boom() -> int:
+	return _walked_under
+
+## Once a frame: whether she has crossed a door body's own cross-street line since the last look,
+## and no `Stroller.teleport_to()` (nor `reset_at()`) moved her in between. Run before
+## `_check_detentions()`, so a release that teleports her this frame is seen by the next look as
+## the outright move it is.
+##
+## **A door's line is its bodies' line, one body's width at a time.** Each door body — a hut, a
+## post, the boom — stands on the crossing's own cross-street line (the one an inspection's release
+## is reflected through, `facing_now()`'s axis), and the crossing counts against the body whose own
+## reach across that line it happened inside, so the three bodies of a street door cover the street
+## kerb to kerb between them and a line through a door never extends past the door.
+func _watch_the_door_lines() -> void:
+	var body := _player as Stroller
+	if not body:
+		return
+	var here := body.global_position
+	var was := _last_seen_at
+	var put_down := body.outright_moves != _last_outright_moves
+	_last_seen_at = here
+	_last_outright_moves = body.outright_moves
+	if was == Vector2.INF or put_down:
+		return
+	for instance in _instances:
+		if not instance.def.redetains and not instance.def.lifts_for_traffic:
+			continue
+		var crossing := where_she_crossed(instance.global_position, instance.facing_now(),
+				instance.def.obstructs_radius, was, here)
+		if crossing == Vector2.INF:
+			continue
+		_walked_under += 1
+		Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
+			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
+			_heading_name(here - was),
+			(", the boom up" if instance.is_raised() else ", the boom down")
+			if instance.def.lifts_for_traffic else ""])
+		return
+
+## Where the step from `was` to `here` crosses the line through `at` across `axis` — the door
+## body's own cross-street line — if it crosses it within `reach` of `at` along the line, or
+## `Vector2.INF` if it does not. Which side she is on is read the way `_check_detentions()` reads
+## an entry side: level with the line counts as the positive side, so standing on it is on one of
+## the two rather than on both.
+static func where_she_crossed(at: Vector2, axis: Vector2, reach: float, was: Vector2,
+		here: Vector2) -> Vector2:
+	var before := (was - at).dot(axis)
+	var after := (here - at).dot(axis)
+	if (before < 0.0) == (after < 0.0):
+		return Vector2.INF
+	var crossing := was.lerp(here, before / (before - after))
+	var offset := crossing - at
+	if (offset - axis * offset.dot(axis)).length() > reach:
+		return Vector2.INF
+	return crossing
 
 ## Which compass direction `along` (a signed distance down `axis`) points at — `axis` is always
 ## `Vector2.RIGHT` (an east-west street) or `Vector2.DOWN` (north-south, since Y grows downward on

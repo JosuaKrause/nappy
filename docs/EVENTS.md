@@ -449,6 +449,15 @@ it, as it already does for a car within a length; cars go on passing under it me
 precondition rather than a repair, since the arm never moves while she is there. See
 `docs/CITY.md`, "Regions and the wall".
 
+**Walking under a raised boom is detected, not guessed.** Every physics frame
+`EventManager._watch_the_door_lines()` asks whether she has crossed a door body's own cross-street
+line — the one an inspection's release is reflected through — within that body's own reach along
+it, since the last frame, with no `Stroller.teleport_to()` or `reset_at()` in between
+(`Stroller.outright_moves` counts them). The huts, the posts and a lowered boom are solid and a
+release is a teleport, so a crossing she walked is a crossing under a raised boom and nothing else;
+nothing asks where the arm is. The run log's `checkpoint` line records each one
+(`docs/TELEMETRY.md`), and `EventManager.walks_under_a_boom()` counts them for a rig.
+
 **The boundary's structures charge as one source, never their sum.** *(2026-09-20, the player:
 "since two gates can be adjacent to each other their influence shouldn't add up" · "otherwise
 going into a hut at a corner with two huts double counts the influence".)* `EventDef.
