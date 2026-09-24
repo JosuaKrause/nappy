@@ -1544,8 +1544,26 @@ func _stands_on_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[
 
 ## Every mark and every contact a task activates stands on walkable, unobstructed ground — swept
 ## over days 6-13 and the seeds the route rig timed, through the real day order (`City.start_day()`,
-## then `EventManager.start_day()`, then `ResistanceDirector.start_day()`) so
-## `CityMap.obstructed_tiles` is the day's real record rather than an empty one.
+## then `EventManager.start_day()`, then `ResistanceDirector.start_day()`, then one `_process()`
+## tick with her standing at the doorstep) so `CityMap.obstructed_tiles` is the day's real record
+## rather than an empty one, and a mark that only moves once she is actually in the world is
+## checked where she would actually find it.
+##
+## **The one `_process()` tick is load-bearing, not a nicety.** A `--day 9 --seed 4242 --route
+## mark,task,calm,home --no-title` boot of the real game showed this directly: day 9's mark rolled
+## legal ground at dawn (108,67), but she starts at the doorstep, more than `NOTICE_RADIUS` from
+## it, so `_track_sight_and_reposition()` relocates it on the very first frame — before this sweep
+## ever existed, straight onto an obstructed tile, (79,90), that `_pick_reachable()`'s own dawn
+## check never had a chance to refuse because the draw itself was never the problem. A sweep that
+## only asked `start_day()` was asking a question the real game never actually asks: `main.gd`'s
+## own order (`_resistance.start_day()`, then `_player.reset_at(start_at)`, then the tree's first
+## `_process()`) means a played mark is always checked here at frame 0, standing wherever the
+## relocation left it, not wherever the dawn roll did. Skipping it also drew the day's RNG stream
+## one guard-placement short of a real day: `_move_the_mark()` re-rolls the guard through the same
+## `_rng` the day's later placements share, so a sweep that never relocated the mark answered
+## every placement *after* it — the task's own `_reachable_offset()` included — from a stream a
+## real boot never sees, which is why an earlier sweep's own "moved" list did not match the route
+## rig's real cases at all.
 ##
 ## **Each day is asked fresh**, the same "no history, just this day" state `--day N`
 ## (`DevFlags.day_override()`) boots into — `GameState.start_run()` runs before `GameState.day` is
@@ -1557,9 +1575,9 @@ func _stands_on_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[
 ## wait on) and are swept anyway rather than skipped, so the loop's own day range reads as "days
 ## 6-13" without a silent gap; `current_step() == null` there is expected and checked nothing.
 ##
-## Named cases this sweep carries (`docs/TODO.md`, M188): day 9 seed 4242 (a mark on obstructed
-## ground) and days 7 and 8 seed 90210 (a contact's offset landing inside a building) are all
-## within this sweep's own days and seeds, so the general loop below checks them along with
+## Named cases this sweep carries (`docs/TODO.md`, M188): day 9 seed 4242 (a mark relocated onto
+## obstructed ground) and days 7 and 8 seed 90210 (a contact's offset landing inside a building) are
+## all within this sweep's own days and seeds, so the general loop below checks them along with
 ## everything else rather than as a separate case.
 func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> void:
 	_with_clean_run(func() -> void:
@@ -1585,6 +1603,11 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 				director.setup(city, city.map)
 				director.start_day(day, _production_rng(seed_value, day, "resistance"),
 						Tuning.day_length(day))
+				# `main.gd`'s own order: the player is placed at the doorstep only after
+				# `_resistance.start_day()` returns, and the tree's first `_process()` runs after
+				# that — so a mark checked before this tick is checked somewhere she never sees.
+				var player := _rig_player(t, city.map.doorstep_world_position())
+				director._process(STEP)
 
 				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
 				var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
@@ -1607,6 +1630,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 								("seed %d day %d: step %d's contact stands on walkable, " +
 								"unobstructed ground at %s") % [seed_value, day, task_step.index,
 								task_tile])
+				player.free()
 				director.free()
 			city.free()
 		GameState.completed_resistance_alley_tiles = saved_tiles

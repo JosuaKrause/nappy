@@ -717,12 +717,20 @@ func _track_sight_and_reposition(delta: float) -> void:
 	_move_the_mark(nearest, here)
 
 ## The nearest `ALLEY` tile to `here` that is not closed, is walkable, and is not held, on the
-## home block or inside a walled-off crossing alley (see `_pick_reachable`'s own doc — the M78
-## relocation is the same placement question as the initial roll, asked again, and the same
-## refusal has to hold or a mark could relocate into a sealed alley even though it is never placed
-## there to start with), within `NOTICE_RADIUS` — or `Vector2.INF` if there is none. Linear over
-## `tiles_of_type()`, which is already cached; there is one active mark at a time, so this runs
-## once a frame at most.
+## home block, inside a walled-off crossing alley or standing on a solid event body (see
+## `_pick_reachable`'s own doc — the M78 relocation is the same placement question as the initial
+## roll, asked again, and the same refusal has to hold or a mark could relocate into a sealed alley
+## or a building even though it is never placed there to start with), within `NOTICE_RADIUS` — or
+## `Vector2.INF` if there is none. Linear over `tiles_of_type()`, which is already cached; there is
+## one active mark at a time, so this runs once a frame at most.
+##
+## **`is_obstructed()` was missing here even after M188 added it to `_pick_reachable()` and
+## `_reachable_offset()`.** A `--day 9 --seed 4242 --route mark,task,calm,home --no-title` boot of
+## the real game still stood day 9's mark inside a building: the dawn draw itself landed on legal
+## ground at (108,67), but she starts at the doorstep, more than `NOTICE_RADIUS` from it, so
+## `_track_sight_and_reposition()` relocated it on the very first frame — straight to (79,90), an
+## obstructed tile this function had no refusal for. The dawn roll was never the bug on this seed;
+## the relocation search silently undid it one frame later.
 ##
 ## **Avoids a tile a completed step already used, the same rule and the same fallback
 ## `_pick_reachable()` applies to the dawn placement (M177):** the nearest eligible tile that is
@@ -739,7 +747,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
 		if _map.is_closed(tile) or not _map.is_walkable(tile) \
 				or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
-				or _map.is_in_walled_alley(tile, walled_alleys):
+				or _map.is_in_walled_alley(tile, walled_alleys) or _map.is_obstructed(tile):
 			continue
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
