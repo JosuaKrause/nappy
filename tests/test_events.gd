@@ -4482,6 +4482,7 @@ func _chat_stroller(t) -> Stroller:
 	var stroller := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	stroller.add_child(camera)
 	t.add_child(stroller)
 	stroller.set_physics_process(false)

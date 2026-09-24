@@ -736,30 +736,11 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **Two more rigs trigger the physics-mode camera warning.** Godot prints it once per
-      process, so the balance rig's copy hid these: `_chat_stroller` in `tests/test_events.gd` and
-      `_build_pickup` in `tests/test_resistance.gd` add a `Camera2D` without setting
-      `process_callback` to `CAMERA2D_PROCESS_PHYSICS`, as `stroller.tscn`'s camera and the balance
-      rig now do.
-- [ ] **The finale planner may ask "is this the main road" by hand.** `src/finale/finale_planner.gd`
-      compares `map.main_road == lot.position.x`, a block index rather than a corridor index; check
-      whether it means the main road and, if so, route it through `CityMap.is_main_road()`.
 - [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
       own body takes her in, and nobody on screen is the one doing it — the guards stand at the
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
       stepping to the arm, or the boom stops being a detaining body and the huts alone are the
       toll, with the boom's picture still barring the lanes for the cars. The player's call
-- [ ] **A rig cannot be spawned at a row the day's plan never holds, and cannot stand outside
-      a waiting one.** `--spawn event:<id>` reads `DevRig.first_event_position()`, which
-      searches the day's planned placements, so a queue-fed row (`cat_dash`, `cyclist`,
-      `loose_dog`, the day-3 `charging_dog`, anything `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`) is
-      never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
-      M121, what the captures could not catch); the flock is map-placed now and can be found
-      (`DECISIONS.md`, M131). Either the flag refuses such a row by name, or it stands her where
-      the row would first trigger; the **cli-tools** rule wants the refusal at least. And for a
-      row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
-      the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
-      just outside the trigger is the other half of this item
 
 - [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
       table in `src/day/day_controller.gd` has no line for `masked_pursuer`, so the summary falls
