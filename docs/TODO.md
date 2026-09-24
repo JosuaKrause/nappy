@@ -14,50 +14,6 @@ mid-way through.
 
 ## The order
 
-### M108 — Eight-direction entity graphics
-
-The SVG-only authoring and subsequent integration requests are recorded in [PLAYTEST-53](playtests/PLAYTEST-53.md).
-Drafts rejected only internally by an assistant stay outside the repository; retain artwork
-suggested for human review or rejected by a human.
-
-This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
-approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
-before catalogue-wide conversion. See `DECISIONS.md` under Eight-direction style transfer.
-Use the reviewed N, NE, E, SE, S, SW, W, NW source coverage and existing animation/state variants.
-Preserve native scale, ground anchors, actor identity and gameplay. Follow the documented mirror
-symmetry; choose an authored projection rather than rotating an upright picture.
-
-The prepared source families and their complete facing/state matrices are in `GRAPHICS.md` and
-its linked people, vehicle/animal and environment inventories. The source-art record is in
-`DECISIONS.md` under SVG completion and selective rejection retention. Work below binds those
-pictures to their actual runtime consumers. The crowd walkers and the event people, animals and
-riders are bound, through the shared `EightDirection` selector every family below extends
-(`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
-their single side picture by the choices recorded there. Moving families use two frames per view
-(`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), with three mother
-poses in each of the pushing and carrying open/together/opposite-open/together cycles. The
-café sitters lean and the busker strums on a timer; whether a standing guard shifts is the
-player's to say, and until then he keeps one frame.
-- [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
-      could bop up and down while the wheels stay in the same place")* A moving car's body rises
-      and falls about a pixel on a phase advanced by its speed, and its wheels stay on the ground.
-      A crowd car is two layers today, `art/crowd/car_{view}_{body,trim}.svg`, the tintable
-      paint and one trim holding windows, tyres and lights together, so the wheels come out of the
-      trim into a third layer per view, `car_{view}_wheels.svg`, SVG first and on the same canvas
-      and anchor; body and the remaining trim bob together, the wheels draw fixed, and a stopped
-      car sits still. The halo traces the bobbing silhouette as it does the mother's lift
-      (`EntityHalo` asks each owner for its `bob()`; the crowd's answers zero today). Crowd cars
-      first, with the vehicle binding below; the event vehicles that move — the police car, the
-      vans, the lorry, the fire engine — the same way, and a parked one sits still
-- [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
-      only for callers actually wired. Check SVG override and illustrated fallback so an available
-      cardinal PNG cannot replace a newly selected diagonal SVG or lose its state/registration.
-      PNG generation stays with M109, convert the SVG catalogue to PNG. Use focused selector and
-      caller tests, import/boot checks and movement evidence; keep prepared families unbound until
-      their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
-      M102, the finale, owns the carrying mother and interior sequence. The protester's eight
-      pointing poses are bound (`DECISIONS.md`, M65).
-
 ### M109 — Convert the SVG catalogue to PNG
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
@@ -103,9 +59,12 @@ findings supported by the conversion and review.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
-      UI buttons, the application icon and identity/export consumers. Provide registered PNG
-      bindings for every live SVG without altering draw transforms; verify both flag states and
-      missing/mismatched fallback. The SVG override remains the comparison control during review.
+      UI buttons and identity/export consumers. The application icon is done — it is the root
+      `icon.png`, bound directly rather than through the SVG-override comparison, since nothing
+      else reads `icon.svg` any more (`DECISIONS.md`, the application icon is the enhanced
+      stroller). Provide registered PNG bindings for every remaining live SVG without altering
+      draw transforms; verify both flag states and missing/mismatched fallback. The SVG override
+      remains the comparison control during review.
 - [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
       facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
       evidence in the PR; document actual bindings and make SVG-first followed by transfer the
@@ -871,6 +830,12 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
+- [ ] **Open question: directional guards.** `guard_{standing,lunging}_{views}` — eight-view art —
+      are authored and bound to nothing; the masked pursuer and the heated roadblock guard chase
+      her while drawn as a single side picture. Either they get heading-selected views like the
+      robber, read through the shared `_draw_eight_view()` helper every other moving family uses,
+      or the files go to the rejected-graphics archive as unbound art with no owner. Nothing is
+      decided.
 
 ---
 
@@ -988,6 +953,20 @@ re-pitched:
       she adds something to the existing mark to indicate she has seen it.
       `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
       remains here
+- [ ] **Open question: the chalk is drawn in code, not from an asset.**
+      `ContactPoint._draw_chalk()` (in `src/resistance/`, M188's) paints the mark itself with
+      `draw_arc`/`draw_line`, while `props/chalk_mark.svg` and `chalk_mark_touched.svg` sit
+      unbound — which breaks "a picture is an asset, never code". Either `ContactPoint` is rebound
+      to draw the SVG sources, which would fold the touch item above into the same picture swap,
+      or the two SVGs are rejected as superseded by the code-drawn mark. Nothing is decided
+- [ ] **Open question: the mouse's views.** The integration table above asks to "bind the mouse
+      family with the alley event"; `EventCatalogue._alley_mouse()`'s own docstring records that
+      the mouse takes no heading-selected picture at all — it draws with `_draw_simple()`,
+      mirrored east/west like `busker` or `delivery_van`, since it is small, already still, and
+      keeps no second posture even for its own telegraph. Either the table row is reworded to
+      match — binding the mouse's one side picture to `_draw_simple()` as authored — or
+      `_alley_mouse()` is changed to read a heading through `_draw_eight_view()` like the moving
+      families. Nothing is decided
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a

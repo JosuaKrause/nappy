@@ -205,7 +205,7 @@ replacement on the page where one exists and the SVG's raster where none does;
 runtime selects a mode. The authoring sources live in `art/`, which the engine ignores.
 The existing drawing transforms and animation remain in charge.
 Read [VISUALS.md](VISUALS.md) for reference roles and where the pictures live, and
-M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
+M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
 Compare each character's directions, gait frames and state variants as one family; the
 illustrated-PNG skill describes the identity references and extraction checks that keep them aligned.

@@ -6,7 +6,7 @@ Godot 4.7, GDScript. 2D scene tree with y-sorting for the 2.5D look.
 
 ```
 project.godot
-icon.svg
+icon.png
 docs/                     design documentation (this folder)
 scenes/
   main.tscn               root: boots GameState, holds World + HUD
@@ -144,6 +144,8 @@ src/
 	ground_layers.gd      shared ground bases, transparent overlays and sparse grass atlases,
 	                       then every TileSetAtlasSource packed into one texture through margins
 	eight_direction.gd    the eight-sector heading selector the stroller and the crowd both draw by
+	wheel_bob.gd          the rise and fall a vehicle's body rides over wheels that stay on the
+	                       ground, shared by the crowd's cars and the moving event vehicles
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	still_watch.gd        --quit-when-still: once she has moved, quits and saves a picture the

@@ -1,0 +1,7 @@
+<!-- unmarked van side wheels: the tyres alone, on unmarked_van.svg's own canvas and anchor, drawn fixed on the ground while the body rides the bob. Bottom-centre ground anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="32" viewBox="0 0 50 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <circle cx="13" cy="27" r="5" fill="#26232a"/>
+  <circle cx="38" cy="27" r="5" fill="#26232a"/>
+  <circle cx="13" cy="27" r="2" fill="#3a373f"/>
+  <circle cx="38" cy="27" r="2" fill="#3a373f"/>
+</svg>

@@ -1,6 +1,5 @@
-<!-- Fire engine facing southeast: ladder above the long equipment flank; windshield on the near end. Bottom-centre ground anchor; prepared and unbound. -->
+<!-- Fire engine facing southeast: ladder above the long equipment flank; windshield on the near end. Bottom-centre ground anchor. The tyres are fire_engine_front_diagonal_wheels.svg. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="56" height="50" viewBox="0 0 56 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-
   <path d="M4 12 L19 4 L52 21 L36 29 Z" fill="#d96a52"/>
   <path d="M4 12 L36 29 L36 44 L4 27 Z" fill="#b64436"/>
   <path d="M36 29 L52 21 L52 36 L36 44 Z" fill="#c4503c"/>
@@ -15,8 +14,4 @@
   <path d="M39 37 L49 32 M40 39 L48 35" fill="none" stroke="#8a95a4"/>
   <path d="M37 37 L40 35 L40 38 L37 40 Z M48 31 L51 29 L51 32 L48 34 Z" fill="#e8ddc8"/>
   <path d="M17 31 L17 35 M26 36 L26 40" stroke="#e8b64a"/>
-  <ellipse cx="11" cy="31" rx="3.4" ry="5" fill="#26232a"/>
-  <ellipse cx="29" cy="41" rx="3.4" ry="5" fill="#26232a"/>
-  <ellipse cx="11" cy="31" rx="1.2" ry="2" fill="#4a464f"/>
-  <ellipse cx="29" cy="41" rx="1.2" ry="2" fill="#4a464f"/>
 </svg>
