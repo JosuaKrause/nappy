@@ -24,6 +24,33 @@ extends Node
 ## and the day summary both pause the tree to show themselves (`DaySummary._present()`), so
 ## `get_tree().paused` is what excludes both of those without a third flag naming either by name.
 ##
+## **And not while she cannot presently choose to walk somewhere.** Position-only tracking cannot
+## tell a mother who has stopped moving from one who has had the choice taken off her, so `_held()`
+## answers that separately for three cases, all the player's own words (2026-09-23): *"in general
+## is_detained shouldn't trigger it -- same with stroller lady"* and *"yes also red light (a human
+## player would like pace back and forth with a red light to minimize excitement)"*.
+##
+## - **`Stroller.is_detained()`** — the one gate every `EventDef.detain_seconds` row goes through,
+##   so this alone covers `chatting_mother` ("Another mother" and her pram, 5s) and all three
+##   checkpoint rows (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) for the whole of the
+##   controls-locked part of their hold. It is the single call site (`EventManager._check_detentions()`
+##   → `body.detain()`) every input-taking mechanic in the catalogue runs through, so nothing else in
+##   the game needs a query of its own.
+## - **`EventManager.door_holding_her_at()`** — only a `redetains` row (the three checkpoint ones)
+##   ever needs this on top of `is_detained()`, because a checkpoint's own hold is a clock on the
+##   instance (`EventInstance.is_chatting()`, ticked in a drawn `_process()`) and the input lock is a
+##   separate clock on `Stroller` (ticked in `_physics_process()`); see that function's own note on
+##   why a hold can still be running a frame after the input lock has already cleared. Read at her
+##   own position, which is what the function already answers for the excitement meter.
+## - **`facing_a_red_light()`** — standing on the sidewalk at the corner of a signalled junction
+##   while the main road's own light has not yet turned hers. See that function for how close to the
+##   curb counts.
+##
+## **The hold restarts rather than resumes the instant any of these ends.** `_feed()`'s `held`
+## argument re-anchors her at wherever she actually is on every frame it is true, so a mother
+## released from a hut, waved off a chat or let off a curb needs the whole of `_seconds` again
+## rather than being caught the instant she can move — see `_feed()`'s own note.
+##
 ## **Reuses `AutoScreenshot`'s own `_capture()`** — the headless guard, the wait for
 ## `RenderingServer.frame_post_draw`, the save, the stdout line and the quit — through
 ## `AutoScreenshot.immediate()`, rather than a second writer of the same picture. This file owns
@@ -70,21 +97,46 @@ func setup(city: City, player: Stroller, day: DayController, hold_seconds: float
 func _process(delta: float) -> void:
 	if _done:
 		return
-	if _feed(_player.global_position, delta, _watching()):
+	if _feed(_player.global_position, delta, _watching(), _held()):
 		_trigger()
 
 func _watching() -> bool:
 	return _day.is_running() and not get_tree().paused
+
+## Whether she cannot presently choose to walk somewhere — see the class doc for the three cases
+## and why each is needed. Touches `_city` and `_player`, so unlike `_feed()` this has no pure test
+## of its own; the geometry and signal half of it (`facing_a_red_light()`) does.
+func _held() -> bool:
+	if _player.is_detained():
+		return true
+	if _city.events and _city.events.door_holding_her_at(_player.global_position):
+		return true
+	return facing_a_red_light(_city.map, _city.signals, _player.global_position)
 
 ## The pure heuristic behind the flag: an anchor at wherever she last effectively stopped, armed
 ## only once she has moved away from wherever she started, and a hold that restarts every time she
 ## moves past `STILL_RADIUS` from the anchor. `active` false — the day is not running, or the tree
 ## is paused — neither advances the hold nor resets it, so a hold interrupted by a pause picks back
 ## up where it left off rather than starting over, or (worse) firing the instant the game resumes
-## on a mother who has not actually been still that long. Touches no scene tree, `City` or
-## `Stroller`, so a test drives it with synthetic positions, deltas and an `active` flag alone.
-func _feed(position: Vector2, delta: float, active: bool) -> bool:
+## on a mother who has not actually been still that long.
+##
+## **`held` is a different kind of interruption and gets a different answer.** A detention, a
+## checkpoint's hold or a wait at a red light can run for several seconds with her position not
+## moving at all, which is exactly what the flag is watching for — so freezing the count the way
+## `active` does would let whatever had already accumulated survive the hold and fire the instant
+## it ends, catching a mother the moment she is released rather than giving her a fresh `_seconds`
+## to actually stand still in. So a `held` frame re-anchors at wherever she currently is and zeroes
+## the count, every frame it is true, the same reset a real move past `STILL_RADIUS` gets — the
+## first frame after `held` goes false starts counting from zero at that spot.
+##
+## Touches no scene tree, `City` or `Stroller`, so a test drives it with synthetic positions,
+## deltas, an `active` flag and a `held` flag alone.
+func _feed(position: Vector2, delta: float, active: bool, held: bool = false) -> bool:
 	if not active:
+		return false
+	if held:
+		_anchor = position
+		_elapsed = 0.0
 		return false
 	if _anchor == Vector2.INF:
 		_anchor = position
@@ -98,6 +150,36 @@ func _feed(position: Vector2, delta: float, active: bool) -> bool:
 		return false
 	_elapsed += delta
 	return _elapsed >= _seconds
+
+## Whether she is on the sidewalk at the corner of a signalled junction while the main road's own
+## light has not yet turned hers — the same wait a driver gets from `TrafficLight`, read for her
+## instead of for a car.
+##
+## **How close to the curb counts: the whole of the junction's own sidewalk, not a tighter radius
+## around one crossing's paint.** `CityMap.junction_at()` answers a `Tuning.STREET_WIDTH` (6) tile
+## square — both corridors' full width where they overlap — as one piece of ground, *"exactly where
+## a zebra or a signalled line stands"* (`route_tree.gd`, on why routing keeps the whole box rather
+## than the crosswalk cells alone). A corner two tiles the wrong way along a 192px kerb is still the
+## same corner a real pedestrian reads as "waiting at this light" rather than "walking the street",
+## so this asks the same box rather than measuring a fresh distance to the paint.
+##
+## **Stepping onto `ROAD` or `CROSSING` ends it.** Once she is on the carriageway she has committed
+## to crossing rather than waiting for permission to, and a mother stood still there while it is
+## unsafe is a real thing for the flag to catch, not a false one to swallow.
+##
+## **Which arm is asked is fixed, not read off her heading.** The only signalled junctions are on
+## the main road (`TrafficSignals.is_signalled()`), and its own light is `arm_is_vertical` true in
+## `TrafficLight` — see `TrafficSignals.main_arm_is_vertical()`'s own note that a second spine would
+## change this and nothing else. Green or amber on that arm is traffic moving or clearing on the
+## road she would be crossing, the same red-means-go reading `TrafficLight._lamp()` draws for her.
+static func facing_a_red_light(map: CityMap, signals: TrafficSignals, position: Vector2) -> bool:
+	var tile := map.world_to_tile(position)
+	if map.tile_at(tile) != GameEnums.TileType.SIDEWALK:
+		return false
+	var junction := CityMap.junction_at(tile)
+	if junction == Vector2i(-1, -1) or not signals.is_signalled(junction):
+		return false
+	return signals.green_for(junction, true) or signals.amber_for(junction, true)
 
 ## Notes the moment, then hands off to `AutoScreenshot` for the picture and the quit.
 func _trigger() -> void:
