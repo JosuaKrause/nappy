@@ -1,0 +1,9 @@
+<!-- fire engine back diagonal wheels: the tyres alone, on fire_engine_back_diagonal.svg's own canvas and anchor, drawn fixed on the ground while the body rides the bob. Bottom-centre ground anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="50" viewBox="0 0 56 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<g transform="translate(56 0) scale(-1 1)">
+  <ellipse cx="11" cy="31" rx="3.4" ry="5" fill="#26232a"/>
+  <ellipse cx="29" cy="41" rx="3.4" ry="5" fill="#26232a"/>
+  <ellipse cx="11" cy="31" rx="1.2" ry="2" fill="#4a464f"/>
+  <ellipse cx="29" cy="41" rx="1.2" ry="2" fill="#4a464f"/>
+</g>
+</svg>

@@ -47,7 +47,10 @@ shape.
 Contact shadows and leads belong to the callers: EventInstance draws a separate shadow before
 each vehicle/animal, per-bird shadows at ground positions, and code-drawn taut or trailing dog
 leads. These source additions do not bake in duplicate shadows or leads. Crowd cars draw their
-tinted paint first and untinted glass, tire and lamp trim second.
+tinted paint first, untinted glass and lamp trim second and
+untinted wheels third; the police car, fire engine, unmarked van, riot van, army truck and lorry
+draw each view's wheels as a picture of their own too. `docs/GRAPHICS.md` says how the body rides
+a bob over them.
 
 The source review uses Godot Image.load_svg_from_string at 1× and 3×, XML validation, the
 repository import/boot check and documentation lint. The full gameplay suite belongs to
