@@ -57,6 +57,7 @@ func run(t) -> void:
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
+	_test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t)
 	if _city != null:
 		_city.free()
 
@@ -1610,3 +1611,77 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 			city.free()
 		GameState.completed_resistance_alley_tiles = saved_tiles
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
+
+## The first `RandomNumberGenerator.seed` whose first `randi_range(0, pool_size - 1)` answers
+## `wanted_index` — found by trying seeds in order rather than inverted by hand, since nothing here
+## needs a *particular* seed, only one that reproduces a chosen draw so the next test can control
+## which pool entry a fresh RNG picks.
+func _seed_that_draws(pool_size: int, wanted_index: int) -> int:
+	for seed_value in range(1, 100000):
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		if rng.randi_range(0, pool_size - 1) == wanted_index:
+			return seed_value
+	return -1
+
+## **A placement that is valid today stays exactly where it is; only a candidate the new check
+## rejects is replaced.** `_pick_reachable()` draws one index over the whole pool exactly as it did
+## before `is_obstructed()` was ever checked, and only asks the question of the tile the draw
+## actually landed on — so a pool with nothing obstructed in it, or a draw that lands on a tile
+## that never was, answers exactly what a bare `pool[rng.randi_range(...)]` would.
+##
+## Proven directly rather than inferred from a sweep's own before/after numbers: two real, legal
+## alley tiles as the whole pool, one seed engineered to draw each index first
+## (`_seed_that_draws()`). Neither candidate obstructed draws candidate_a exactly; candidate_a
+## obstructed replaces it with candidate_b, the pool's only other legal tile, never a third,
+## nonexistent one; and the seed that would have drawn candidate_b anyway still draws it,
+## unmoved by an obstruction on a *different* candidate it was never going to answer with.
+func _test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		# Neither candidate this test picks may already be "used" (M177) — an unrelated leftover
+		# would shrink the pool below the two entries every check below assumes.
+		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		GameState.completed_resistance_alley_tiles.clear()
+
+		var legal: Array[Vector2i] = []
+		for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
+			if _city.map.is_walkable(tile) and not _city.map.is_closed(tile) \
+					and not _city.map.is_held_at(tile) and not _city.map.is_on_home_block(tile):
+				legal.append(tile)
+			if legal.size() >= 2:
+				break
+		t.check(legal.size() >= 2, "the test city has at least two legal alley candidates")
+		if legal.size() < 2:
+			GameState.completed_resistance_alley_tiles = saved_tiles
+			return
+
+		var candidate_a: Vector2i = legal[0]
+		var candidate_b: Vector2i = legal[1]
+		var candidates: Array[Vector2i] = [candidate_a, candidate_b]
+		var seed_for_a := _seed_that_draws(candidates.size(), 0)
+		var seed_for_b := _seed_that_draws(candidates.size(), 1)
+
+		var director := _director(t)
+		var rng_a := RandomNumberGenerator.new()
+		rng_a.seed = seed_for_a
+		t.check(director._pick_reachable(candidates, rng_a) == _city.map.tile_to_world(candidate_a),
+				"neither candidate obstructed: the draw lands exactly where it always would")
+
+		var obstruction: Array[Vector2i] = [candidate_a]
+		_city.map.obstruct_tiles(self.get_instance_id(), obstruction)
+		var rng_a2 := RandomNumberGenerator.new()
+		rng_a2.seed = seed_for_a
+		t.check(director._pick_reachable(candidates, rng_a2) == _city.map.tile_to_world(candidate_b),
+				"candidate_a obstructed: the same draw is replaced by the pool's only other " +
+				"legal candidate")
+
+		var rng_b := RandomNumberGenerator.new()
+		rng_b.seed = seed_for_b
+		t.check(director._pick_reachable(candidates, rng_b) == _city.map.tile_to_world(candidate_b),
+				"a draw whose own candidate was never obstructed still lands exactly there, " +
+				"unmoved by an obstruction on the other one")
+
+		_city.map.release_obstruction(self.get_instance_id())
+		GameState.completed_resistance_alley_tiles = saved_tiles
+		director.free())
