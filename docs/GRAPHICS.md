@@ -374,9 +374,12 @@ glob only when it names every member of the family and no unrelated file.
 ## Posters
 
 `art/events/posters/` holds the four poster kinds M180, posters she notices, and loudspeakers
-that are somewhere, asks for. Every file below is **prepared** and unbound: no runtime source,
-scene or resource reads any of them yet — placing them on a building face, the crew that pastes
-them and tearing one down are later slices.
+that are somewhere, asks for. Every file below but `poster_wanted_crossed.svg` is **bound**: baked
+on the `buildings` page and drawn by `Building._draw_posters()` on blank ground-floor wall cells,
+from what `PosterWalls` says is pasted there; `PosterArt` names the regions. The crossed copy stays
+prepared and unbound: it is for a run whose day 10 task was failed, and M181, the resistance has a
+reason, and a task is one day, has not built day 10 yet, so the neighbor's slot is drawn as the
+plain placeholder face on every wanted notice.
 
 Each is a 32×32 canvas matching a wall tile's own grid, so a later placement can register
 straight onto a wall cell the way `wall_base.svg` already does. Every poster is a 20×22px sheet
@@ -409,6 +412,13 @@ and the overlay rendered at the same scale and registration:
 1. `torn.rgb = poster.rgb`, `torn.a = poster.a × mask.a`;
 2. the overlay is drawn over `torn` with ordinary source-over blending;
 3. the result is drawn on the wall cell like any intact poster.
+
+`PosterArt.prepare()` composes the fifteen torn sheets exactly this way once, from the baked
+page's own pixels, when the city is built; a torn sheet on a wall is one of those.
+
+**A sheet pasted over an older one with an offset** (`PosterArt.UNDER_OFFSET`, `OVER_OFFSET`)
+draws the older one 4px to one side and 2px up and the newer one 4px to the other, so two fifths
+of the older sheet shows and both stay inside the cell with a gap on every side.
 
 A mask stays inside the sheet box, so the result registers on a wall cell exactly as the intact
 poster does; overlay B's hanging flap and its shadow reach about a pixel past the box's left
