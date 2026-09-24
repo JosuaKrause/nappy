@@ -1,0 +1,85 @@
+<!-- A north-south street seen across its width: two cars locked side by side across the
+     carriageway after they met — the blue one seen from behind, its right flank stove in, the
+     red one seen from the front, its left flank crushed to match — with glass and a torn-off
+     bumper on the road, coolant spreading under them, smoke puffing up off the seam (the second of its two frames:
+     the puffs one beat further up; everything else identical to `car_accident.svg`), and an onlooker on each
+     pavement. The cars are the crowd cars' end-on projection; the onlookers are the event
+     `person` figure (`person_front_diagonal.svg`, the right one mirrored), each turned towards
+     the crash. Native 200x50, fitted by `_draw_wide_scene` to the 192px obstruction with its
+     bottom edge on the ground point. The cars stand at x 63-91 and 92-120 over their ground
+     contacts in `car_accident_shadow.svg` (77 and 106), which `EventCatalogue.
+     _car_accident_parts()` reads as the two solid bodies: they must not move. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(9 6)" stroke="#3b2d32" stroke-width="0.8">
+    <path d="M10 28 L14 28 L14 39 L10 39 Z M5 29 L9 30 L9 41 L5 41 Z" fill="#46506b"/>
+    <path d="M10 38 L14 38 L16 40 L10 40 Z M5 40 L9 40 L12 41.5 L5 41.5 Z" fill="#221f28"/>
+    <path d="M12 13 L15 13 L16 24 L13 25 Z" fill="#5c697a"/>
+    <path d="M13 24 L16 24 L16 27 L13 27 Z" fill="#d9a878"/>
+    <path d="M5 12 L12 11 L15 15 L14 29 L8 32 L3 29 L3 16 Z" fill="#6b7a8c"/>
+    <path d="M3 16 L7 14 L8 32 L3 29 Z M7 26 L14 24 L14 29 L8 32 Z" fill="#5c697a"/>
+    <path d="M11 14 L12 28" fill="none"/>
+    <path d="M3 15 Q5 13 7 16 L7 26 L3 27 Z" fill="#6b7a8c"/>
+    <path d="M3 26 L7 26 L7 29 Q5 31 3 29 Z" fill="#d9a878"/>
+    <path d="M4 5 Q5 1 10 1 Q15 1 15 6 L16.5 8 L14 9 L13 12 L8 13 L4 9 Z" fill="#d9a878"/>
+    <path d="M4 8 Q2 3 7 1 Q13 -0.5 15 4 L10 4 L8 7 L6 6 L6 10 Z" fill="#3a2b26"/>
+    <path d="M6 7 Q9 6 8 10" fill="none"/>
+    <circle cx="12.5" cy="6.5" r="0.65" fill="#221f28" stroke="none"/>
+  </g>
+  <!-- Coolant spreading from under the crash. -->
+  <path d="M80 45.4 C84 43.6 96 43.4 102 44.8 C106 45.8 104 47.8 98 48 C92 48.6 84 48.4 80.6 47.4 C78.6 46.8 78.6 46 80 45.4 Z" fill="#1d1a20" fill-opacity="0.45" stroke="none"/>
+  <g transform="translate(62.5 2.2) scale(0.93) rotate(-3 15 26)" stroke-width="1.1">
+    <path d="M1 19 L4 19 L4 26 L1 26 Z M26 19 L29 19 L29 26 L26 26 Z M1 35 L4 35 L4 43 L1 43 Z M26 35 L29 35 L29 43 L26 43 Z" fill="#26232a"/>
+    <path d="M7 9 Q15 7 23 9 L26 18 L26.6 24 L24.4 26.4 L27.2 29.6 L24.8 32.6 L27 36 L27 41 Q15 45 3 41 L4 18 Z" fill="#6d7f99"/>
+    <path d="M7.4 9.4 L22.6 9.4 L24 16 L6 16 Z M8 23 L22 23 L23 32 L7 32 Z" fill="#8797b0" stroke="none"/>
+    <path d="M4.2 37.6 L26.4 37.6 L26.8 41.2 Q15 44.6 3.2 41.2 Z" fill="#50607a" stroke="none"/>
+    <path d="M6 16 L24 16 L24 22 L6 22 Z M7 33 L23 33 L25 38 L5 38 Z" fill="#2f3742"/>
+    <path d="M8 17.4 L13 17.4 M9 34.4 L14 34.4" fill="none" stroke="#556779" stroke-width="1"/>
+    <path d="M9.4 24.6 L20.4 24.6" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.9"/>
+    <path d="M18.6 33.6 L20.4 36 M20.4 36 L22.8 34.4 M20.4 36 L21 37.8" fill="none" stroke="#cfe3ea" stroke-width="0.8"/>
+    <path d="M22.6 25 L24.2 27.6 L22.4 30.4 M21 34 L23.4 35.6" fill="none" stroke="#3a4658" stroke-width="1"/>
+    <path d="M5 39 L10 39 L10 41.6 L5 41.6 Z" fill="#c4503c" stroke-width="0.8"/>
+    <path d="M20 39 L25 39 L25 41.6 L20 41.6 Z" fill="#3a3436" stroke-width="0.8"/>
+    <path d="M12 40.8 L18 40.8" fill="none" stroke="#c9c3b8" stroke-width="1"/>
+    <path d="M7 9 Q15 7 23 9 L26 18 L26.6 24 L24.4 26.4 L27.2 29.6 L24.8 32.6 L27 36 L27 41 Q15 45 3 41 L4 18 Z" fill="none"/>
+  </g>
+  <g transform="translate(91.3 2.2) scale(0.93) rotate(4 15 26)" stroke-width="1.1">
+    <path d="M1 19 L4 19 L4 26 L1 26 Z M26 19 L29 19 L29 26 L26 26 Z M1 35 L4 35 L4 43 L1 43 Z M26 35 L29 35 L29 43 L26 43 Z" fill="#26232a"/>
+    <path d="M7 9 Q15 7 23 9 L26 18 L27 41 Q15 45 3 41 L3 36 L5.2 32.6 L2.8 29.6 L5.6 26.4 L3.4 24 L4 18 Z" fill="#a8503f"/>
+    <path d="M7.4 9.4 L22.6 9.4 L24 16 L6 16 Z M8 23 L22 23 L23 32 L7 32 Z" fill="#c26a57" stroke="none"/>
+    <path d="M4.2 37.6 L26.4 37.6 L26.8 41.2 Q15 44.6 3.2 41.2 Z" fill="#83392d" stroke="none"/>
+    <path d="M6 16 L24 16 L24 22 L6 22 Z M7 33 L23 33 L25 38 L5 38 Z" fill="#2f3742"/>
+    <path d="M8 17.4 L13 17.4 M9 34.4 L14 34.4" fill="none" stroke="#556779" stroke-width="1"/>
+    <path d="M9.4 24.6 L20.4 24.6" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.9"/>
+    <path d="M11.4 33.6 L9.6 36 M9.6 36 L7.2 34.4 M9.6 36 L9 37.8" fill="none" stroke="#cfe3ea" stroke-width="0.8"/>
+    <path d="M7.4 25 L5.8 27.6 L7.6 30.4 M9 34 L6.6 35.6" fill="none" stroke="#6a2a21" stroke-width="1"/>
+    <path d="M20 39 L25 39 L25 41.6 L20 41.6 Z" fill="#f0d99a" stroke-width="0.8"/>
+    <path d="M5 39 L10 39 L10 41.6 L5 41.6 Z" fill="#3a3436" stroke-width="0.8"/>
+    <path d="M12 40.8 L18 40.8" fill="none" stroke="#c9c3b8" stroke-width="1"/>
+    <path d="M7 9 Q15 7 23 9 L26 18 L27 41 Q15 45 3 41 L3 36 L5.2 32.6 L2.8 29.6 L5.6 26.4 L3.4 24 L4 18 Z" fill="none"/>
+  </g>
+  <!-- On the road: the red car's bumper, glass, a hubcap. -->
+  <path d="M100 46.2 L111 44.6 L111.4 46.2 L100.4 47.8 Z" fill="#3a3436" stroke-width="0.8"/>
+  <path d="M84 46.4 L85.6 45.6 L85.8 47.0 Z M89 48.2 L90.6 47.400000000000006 L90.8 48.800000000000004 Z M95 45.6 L96.6 44.800000000000004 L96.8 46.2 Z M58 47.4 L59.6 46.6 L59.8 48.0 Z M123 47.8 L124.6 47.0 L124.8 48.4 Z" fill="#bfe0ea" stroke="#5f7f8c" stroke-width="0.6"/>
+  <ellipse cx="129" cy="46.6" rx="2.2" ry="1.1" fill="#9aa4ac" stroke-width="0.8"/>
+  <!-- Smoke off the crushed fronts, one beat on: the seam's puff has swelled and lifted, the
+       older one has drifted higher and thinned, and a new wisp is starting at the seam. -->
+  <path d="M75.8 4.2 C74.6 2.6 76.4 0.9 78.6 1.4 C79.6 0.4 82.8 0.4 84 1.4 C86.4 1 87.6 3 86.2 4.2 C84.8 5.8 78.2 6 75.8 4.2 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.6"/>
+  <path d="M85.6 8.6 C84.2 6.8 86 4.8 88.2 5.4 C89 3.6 92.2 3.6 93.2 5.4 C95.4 5.4 96 7.8 94.4 8.8 C92.6 10.2 87.6 10.2 85.6 8.6 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.9"/>
+  <path d="M87.8 7.4 C89.2 6.4 91.2 6.4 92.4 7.2" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
+  <path d="M89.4 11.6 C88.8 10.6 89.8 9.6 90.8 10 C91.4 9.2 92.8 9.4 93 10.4 C93.8 10.8 93.4 12 92.4 12 C91.4 12.4 90 12.4 89.4 11.6 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.95"/>
+  <g transform="translate(191 6) scale(-1 1)" stroke="#3b2d32" stroke-width="0.8">
+    <path d="M10 28 L14 28 L14 39 L10 39 Z M5 29 L9 30 L9 41 L5 41 Z" fill="#46506b"/>
+    <path d="M10 38 L14 38 L16 40 L10 40 Z M5 40 L9 40 L12 41.5 L5 41.5 Z" fill="#221f28"/>
+    <path d="M12 13 L15 13 L16 24 L13 25 Z" fill="#5c697a"/>
+    <path d="M13 24 L16 24 L16 27 L13 27 Z" fill="#d9a878"/>
+    <path d="M5 12 L12 11 L15 15 L14 29 L8 32 L3 29 L3 16 Z" fill="#6b7a8c"/>
+    <path d="M3 16 L7 14 L8 32 L3 29 Z M7 26 L14 24 L14 29 L8 32 Z" fill="#5c697a"/>
+    <path d="M11 14 L12 28" fill="none"/>
+    <path d="M3 15 Q5 13 7 16 L7 26 L3 27 Z" fill="#6b7a8c"/>
+    <path d="M3 26 L7 26 L7 29 Q5 31 3 29 Z" fill="#d9a878"/>
+    <path d="M4 5 Q5 1 10 1 Q15 1 15 6 L16.5 8 L14 9 L13 12 L8 13 L4 9 Z" fill="#d9a878"/>
+    <path d="M4 8 Q2 3 7 1 Q13 -0.5 15 4 L10 4 L8 7 L6 6 L6 10 Z" fill="#3a2b26"/>
+    <path d="M6 7 Q9 6 8 10" fill="none"/>
+    <circle cx="12.5" cy="6.5" r="0.65" fill="#221f28" stroke="none"/>
+  </g>
+</svg>

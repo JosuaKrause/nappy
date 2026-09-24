@@ -568,6 +568,14 @@ item below for as long as looking takes.
   brush-raised pose read as pasting from a normal walking distance?** Record is `DECISIONS.md`,
   M180, seen, walled and torn.
 
+- **Watch the burst main, a car crash and the basement vent move.** Each now alternates two
+  frames (`--seed 4242 --spawn event:burst_water_main`, `--spawn event:car_accident`,
+  `tools/run.sh --start-escape basement`, all with `--no-save`). **Does each read as water, smoke
+  and steam at play scale?** Two things the build left open: **is the crash's smoke too small to
+  notice** — making it bigger means a taller picture — and **should the steam hold still during
+  its notice**, so that billowing means the passage is shut, rather than billowing the whole
+  time as it does now? Record is `DECISIONS.md`, M100, water, smoke and steam move.
+
 - **Touch a chalk mark and watch it change.** The mark is now drawn from `chalk_mark.svg`, and
   the moment she touches it the picture becomes `chalk_mark_touched.svg`, her own addition to the
   mark, instead of the chalk turning pale green (`tools/run.sh --seed 4242 --day 6 --no-save`,
@@ -589,7 +597,9 @@ item below for as long as looking takes.
   in a way that feels fair — you judge crossings by the cars, since no light stops them now? And
   in the escape (`--start-escape`), **do the gloom, the darker basement and the red stairwells read
   as a building with its power out** — or does the red need a small lamp drawn on the stairwell
-  wall? Record is `DECISIONS.md`, M183, the blackout is everything at once.
+  wall? Record is `DECISIONS.md`, M183, the blackout is everything at once. A car now honks up
+  to 296px out at its own speed rather than at 200px at most (`DECISIONS.md`, M191, the horn
+  watches as far as the contract needs): **is the earlier horn a warning you can act on, or noise?**
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

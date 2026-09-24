@@ -1,0 +1,28 @@
+nappy rig log  2026-09-24T08:48:07  version v0.16.0-2-g3b4e8170
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.9 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.5 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.2 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 2.0 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.6 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.8 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.8 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 9.5 ms, 810 x 820
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.5 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 24.9 ms
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 23.9 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks v(8,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
+   0.0  start    doorstep (18,10), facing 180°
+   0.0  near     car_accident (telegraph) at (17,10), 48px, exc 0, in 0.0/s (crowd 3.6, events 7.5), sleep 0
+   0.0  frame    fps 24, worst frame 283.9ms, draws 450, objects 2128, primitives 4957, process 25.37ms, physics 1.16ms
+   0.0  frame    fps 117, worst frame 17.9ms, draws 446, objects 2114, primitives 4875, process 16.84ms, physics 1.11ms
+   0.0  shot     burst started: asked for an animation burst at (18,10) | exc 0, sleep 0 | playing | asked/burst-5292680-001
+   0.0  frame    fps 51, worst frame 72.3ms, draws 442, objects 2106, primitives 4811, process 71.24ms, physics 1.26ms
+   0.0  frame    fps 27, worst frame 67.7ms, draws 434, objects 2093, primitives 4686, process 67.35ms, physics 1.24ms
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  frame    fps 24, worst frame 69.2ms, draws 436, objects 2097, primitives 4721, process 67.90ms, physics 1.32ms
+   0.0  frame    fps 92, worst frame 65.2ms, draws 436, objects 2097, primitives 4721, process 64.43ms, physics 1.22ms

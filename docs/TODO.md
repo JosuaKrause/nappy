@@ -307,28 +307,6 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 ---
 
-## M191 — A car's horn is early enough at every speed · found 2026-09-24
-
-The **crowd-traffic** rule's fairness contract: a car on a street she may step onto warns her with
-its horn early enough to walk the whole carriageway with the doubled hard-fail margin
-(`Tuning.validate_traffic()`, 1.39 s). With the power out on day 14 the spine's traffic no longer
-stops at a light, so the main road's crossings rest on the same contract (`DECISIONS.md`, M183, the
-blackout is everything at once). Measuring it found it untrue on every street: the crowd only
-watches her for the horn and the strike within `CAR_ZEBRA_SIGHT` (200px), so a car's warning is
-capped at 200px of travel whatever its speed, and above 144px/s it is shorter than the contract —
-first horns at 198 to 199px, 1.27 s at 157px/s and 1.10 s at 181px/s, against car speeds spread
-over 130 to 185px/s.
-
-- [ ] **The horn's watch reaches as far as the contract needs at the car's own speed** — at least
-      speed × the contract's time, 185 × 1.6 ≈ 296px for the fastest car — while the strike keeps
-      its own reach, and `Tuning.validate_traffic()` checks the watch against the fastest car's
-      speed so the contract fails at boot rather than on the street. A horn heard earlier is a
-      number she can feel, and it is the contract's own number, so the change is the contract
-      being made true rather than a new balance. `tests/probes/` measures the first-horn distance
-      and time per speed before and after.
-
----
-
 ## M185 — A ground floor is blank wall or shops · asked for 2026-09-23
 
 > "Yes, the home block should have fixed visuals. That way we can craft a convincing house that
@@ -719,11 +697,50 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
-      own body takes her in, and nobody on screen is the one doing it — the guards stand at the
-      huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
-      stepping to the arm, or the boom stops being a detaining body and the huts alone are the
-      toll, with the boom's picture still barring the lanes for the cars. The player's call
+- [ ] **The boom never inspects her, and a raised one lets her pass** *(2026-09-24: "Boom
+      shouldn't inspect her. It should block her. If a car opens it for her and she walks through
+      she would probably get hit by the car, no?")*. A `checkpoint_gate` stops being a detaining body: a lowered boom blocks her, and a
+      street door's inspection happens only at its two huts (an alley door's at its posts,
+      unchanged). The gate keeps barring and lifting for the cars as it does now: up once a car
+      has waited at it `Tuning.GATE_STOP_SECONDS` (1.2 s), down the moment no car is within a
+      length of it. **A raised boom lets her through** *(2026-09-24: "I didn't say it should stay
+      solid when it's open"; asked whether a raised boom lets her through or blocks her either
+      way: "A yes")*: while a car holds the arm up she may walk under it and skip the hut's
+      inspection, and the price is that car — she is on its carriageway, the horn and the strike
+      apply as on any street, and the traffic fairness contract (**crowd-traffic**) must hold for
+      this crossing too. Every door then offers the choice: the hut's hold, or a dash past a car.
+      A lowered boom blocks her, and the gate is never a detaining body either way. **Slipping
+      under the boom sets the guards on her** *(2026-09-24: "The guards should start pursuing her
+      in that case")*. It is detected, not guessed: every frame, she has crossed a door's own
+      cross-street line (the one an inspection's release is reflected through) since the last
+      frame without `Stroller.teleport_to()` having moved her. The huts and the lowered boom are
+      solid, and an inspection's release is a teleport, so a walked crossing is a crossing under a
+      raised boom and nothing else. The chase is a pursuit under the existing pursuit contract
+      (`Tuning`'s chase-length and `PURSUIT_SHAKEN_OFF` rules, **events**: it lets go, and running
+      outpaces it). **The pursuers spawn at the huts** *(2026-09-24: "Or guards that pursue her
+      should spawn at the huts")*: they set off from that door's huts, and the guards drawn at
+      the huts stay at their posts, so the door stays manned. The run log notes each
+      walk under a boom, and a route-rig test requires none across its runs. **A catch ends the
+      day, and one guard is enough** *(2026-09-24, asked whether a catch ends the day or returns
+      her through an inspection, and whether one or two set off: "The day ends, not going through
+      the checkpoint is a clear unlawful thing here. She gets detained/imprisoned or whatever in
+      that case. This is independent of the resistance. She shouldn't do it. One guard is
+      enough")*. The pursuer is `hard_fail` at every heat level and on every day a door stands —
+      it is not a rung of the heat ladder — and the summary's hard-fail line says she was
+      detained. One pursuer spawns, at the hut nearer to her. The dash is meant to be a
+      temptation she should refuse: the hut's hold is the lawful price, the car and the guard the
+      unlawful one. **The
+      route rig never routes through the boom, either way** *(2026-09-24: "The bot shouldn't route
+      through the boom either way")*. Found while capturing the inspection: the boom's own body
+      took her in with nobody on screen doing it, since the guards stand at the huts; a guard
+      stepping to the arm was the other option and was not taken. What changes with it:
+      `checkpoint_gate`'s detention in `event_catalogue.gd`, the release latch's "every body of
+      the door whose reach she lands in", `docs/EVENTS.md` "Checkpoints" and the row, which say
+      the gate detains as a hut does (`docs/CITY.md` says "the gate only ever stops a car, never
+      her"), the gate's solid body (solid to her only while lowered), `docs/MECHANICS.md` and
+      `docs/CITY.md` where a door is "passable only by detention", and the route rig's door
+      handling (`src/dev/route_rig.gd`). Waits for M181's slice
+      two and M184's chokepoints to land, which are in those files
 
 - [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
       table in `src/day/day_controller.gd` has no line for `masked_pursuer`, so the summary falls
@@ -742,12 +759,11 @@ is still true.
 
 **Drawings, as SVG:**
 
-- [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
-      least two frames** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the
-      main break) or puffs of smoke (from the car crash) or steam (from the escape) should have
-      (at least) a two frame animation to convey what they are better"). `burst_water_main`,
-      the car crash and `basement_steam` each draw one still picture today; each gets a second
-      frame or more, authored as SVG, alternated while the event is live
+- [ ] **The basement vent's pipe vanishes between blows.** `steam.svg` draws the pipe and the
+      cloud as one picture, and `InteriorEvents` keeps no instance between blows, so the pipe is
+      only on screen while it steams; a vent that is there all the time, blowing or not, is what
+      a player can plan around. Found while animating the steam (`DECISIONS.md`, M100, water,
+      smoke and steam move)
 
 **Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
 the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses

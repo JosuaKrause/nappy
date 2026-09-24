@@ -41,6 +41,7 @@ func run(t) -> void:
 	_test_the_arterial_is_the_busiest_street(t)
 	_test_the_traffic_contract_is_fair(t)
 	_test_a_car_can_always_stop_for_a_zebra_it_can_see(t)
+	_test_the_horn_watches_further_than_the_strike_does(t)
 	_test_every_car_drives_on_its_own_right(t)
 	_test_the_strike_box_never_crosses_the_kerb(t)
 	_test_the_car_picture_agrees_with_its_strike_box(t)
@@ -426,6 +427,13 @@ func _test_the_traffic_contract_is_fair(t) -> void:
 	# the slowest a car ever goes as well as the fastest.
 	t.check(Tuning.CAR_SPEED.x * Tuning.CAR_HORN_TIME > Tuning.CAR_STRIKE_HALF_LENGTH * 2.0,
 			"even the slowest car sounds its horn from further off than its own length")
+	# M191: the duration above is only true if the crowd watches far enough out to let a car
+	# sound it. `CAR_HORN_SIGHT` is that watch, wider than the strike's own `CAR_ZEBRA_SIGHT`
+	# so the fastest car is not clipped short of `CAR_HORN_TIME` by the watch itself.
+	t.check(Tuning.CAR_HORN_SIGHT >= Tuning.required_horn_sight(),
+			"the horn's watch (%.0fpx) reaches as far as the fastest car's own horn needs "
+			% Tuning.CAR_HORN_SIGHT + "(%.0fpx/s x %.2fs = %.0fpx)"
+			% [Tuning.CAR_SPEED.y, Tuning.CAR_HORN_TIME, Tuning.required_horn_sight()])
 
 ## Giving way has to be *visible from the kerb*, which means the braking starts well before
 ## the crossing rather than at it. Stated as a relationship so a faster car or a softer brake
@@ -453,6 +461,54 @@ func _test_a_car_can_always_stop_for_a_zebra_it_can_see(t) -> void:
 			% [eases_from, Tuning.CAR_SPEED.y])
 	t.check(Tuning.CAR_ZEBRA_APPROACH_BRAKE < Tuning.CAR_BRAKE,
 			"and the approach is gentler than the brake it keeps in reserve")
+
+## M191: the horn's own watch reaches further than the strike's, so a fast car sounds it before
+## she is close enough to be run over rather than the watch clipping the warning short at
+## `CAR_ZEBRA_SIGHT` the way it used to. A constants check alone (above) would still pass with
+## the old gate restored, since it says nothing about which watch the loop actually reads — this
+## drives the real `Crowd._physics_process`.
+func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
+	_city.crowd.start_day(1, _rng(1))
+	# A few frames to clear the day's own opening unpack (`space_out_the_traffic`'s own doc,
+	# "the first frame is the day being built"), so the one frame under test moves the target car
+	# by a few pixels of separation correction rather than by whatever that unpacking needed.
+	for i in 3:
+		_city.crowd.step(STEP)
+
+	var rig := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	rig.add_child(camera)
+	t.add_child(rig)
+	rig.set_physics_process(false)
+
+	# Halfway between the two watches, so a few pixels of separation correction cannot land the
+	# test on the wrong side of either.
+	var distance := Tuning.CAR_ZEBRA_SIGHT + (Tuning.CAR_HORN_SIGHT - Tuning.CAR_ZEBRA_SIGHT) * 0.5
+	var tested := false
+	for agent in _city.crowd.agents():
+		if agent.kind != CrowdAgent.Kind.CAR:
+			continue
+		var forward := agent.heading()
+		var at := agent.global_position + forward * distance
+		if not Tile.is_road(_city.map.tile_type_at_world(at)):
+			continue
+		agent._speed = Tuning.CAR_SPEED.y
+		agent.pedestrian_ahead = Vector2.INF
+		rig.global_position = at
+		_city.crowd._physics_process(STEP)
+		tested = true
+		t.check(agent.is_startled(),
+				("a car %.0fpx off — beyond the strike's own watch (CAR_ZEBRA_SIGHT %.0fpx) but "
+				+ "inside the horn's (CAR_HORN_SIGHT %.0fpx) — sounds its horn")
+				% [distance, Tuning.CAR_ZEBRA_SIGHT, Tuning.CAR_HORN_SIGHT])
+		t.check(agent.pedestrian_ahead == Vector2.INF,
+				"and the give-way scan still does not see her from beyond its own watch")
+		break
+	t.check(tested, "there was a car with clear road ahead to test the wider watch on")
+	_city.crowd._player = null
+	rig.free()
 
 ## Playtest 05, finding 2: *"the cars are not consistently driving on the right side."* True, and
 ## derivable — the convention was stated over the lane *offset*, and the side of the road that

@@ -1,5 +1,57 @@
 # Decisions
 
+## M191 — The horn watches as far as the contract needs · built 2026-09-24
+
+*(Found while measuring M183's dark junctions, not asked for by a playtest.)*
+
+**What was wrong.** The traffic fairness contract says a car on a street she may step onto sounds
+its horn early enough for her to walk the whole carriageway with the doubled hard-fail margin
+(`Tuning.validate_traffic()`, 1.39 s required against `CAR_HORN_TIME`'s 1.6 s). But
+`Crowd._physics_process` watched her for the horn, the strike and the give-way scan through one
+gate, `CAR_ZEBRA_SIGHT` (200px), so a car's warning was capped at 200px of travel whatever its
+speed. Above 144px/s that is shorter than the contract, and cars run 130 to 185px/s: first horns
+at 198 to 199px, 1.27 s at 157px/s and 1.10 s at 181px/s. The check passed because it read only
+the tuning numbers, never the watch.
+
+**What was built.** A second watch, `Tuning.CAR_HORN_SIGHT` (296px, exactly
+`CAR_SPEED.y × CAR_HORN_TIME` for the fastest car, no padding), used only for the horn; the strike
+and the give-way scan keep `CAR_ZEBRA_SIGHT`. `_horn()` still caps its own warning at the car's
+`speed × CAR_HORN_TIME`, so a slower car does not honk any earlier than its speed asks.
+`validate_traffic()` now also fails at boot if `CAR_HORN_SIGHT` is short of
+`required_horn_sight()`. The same distance query serves both watches; the added `_horn()` calls
+measured about 1.7 µs each, at most about 58 µs a frame with a day's 34 cars all in range.
+
+**Measured.** `tests/probes/m191_horn_watch.gd` prints first-horn distance and time per speed from
+the code's own formula (`min(speed × CAR_HORN_TIME, watch)`): before, every speed from 130 to
+185px/s was clipped at 200px (1.54 s down to 1.08 s); after, every speed gets 1.60 s (208 to
+296px). `tests/test_crowd.gd` drives the real `_physics_process` with a live car beyond 200px to
+check the wiring rather than the constants alone.
+
+**Open to overturn** (the agent's choices where the design was silent): the watch has no margin
+above the fastest car's need; the give-way scan stays at 200px, since nothing asked for it to
+widen; the probe's tables are the formula rather than a measured run.
+
+## M100 — Water, smoke and steam move · built 2026-09-24
+
+*([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the main break) or puffs of
+smoke (from the car crash) or steam (from the escape) should have (at least) a two frame
+animation to convey what they are better".)* `burst_water_main`, `car_accident` and
+`basement_steam` each have a second frame (`_b`), on the same canvas and anchor as the first, and
+alternate on the existing `_idle_stepping()` clock the busker and the café use, offset per
+instance: the water surges every 0.5s (`BURST_MAIN_SPLASH_PERIOD`), the steam billows every 0.7s
+(`STEAM_BILLOW_PERIOD`) and the smoke rises every 1.2s (`CAR_ACCIDENT_SMOKE_PERIOD`). The crash had
+no smoke, only one small white cloud, so its first frame was redrawn with grey puffs too; its two
+frames share one shadow. `_picture_key()` carries the frame bit, since without it a still event
+never redraws, and `tests/test_event_redraw.gd` checks that each row swaps frames and that each
+swap changes the key. Review sheet and bursts: `evidence/m100-two-frame-effects-2026-09-24/`.
+
+**Open to overturn, chosen by the agent:** grey smoke for the crash; the three periods, water
+fastest and smoke slowest; the steam billowing through its 1.2s notice as well as its blow. **Left
+open:** the crash's smoke is small at play scale, because it fits above the cars on the 200×50
+canvas — larger smoke needs a taller canvas for both frames and both shadows; and whether the
+steam should hold still during its notice, so that billowing means the passage is shut. Both are
+in `REVIEW.md`.
+
 ## M183 — The blackout is everything at once, and the escape is dark · built 2026-09-24
 
 *([PLAYTEST-119](playtests/PLAYTEST-119.md): "just wait until a certain distance away -- then

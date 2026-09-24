@@ -261,14 +261,16 @@ telegraph: the **painted carriageway**, which is permanent and learnable and whi
 step onto, and the **horn**, which must be long enough to walk the whole width of it with the
 doubled hard-fail margin.
 
-**The horn can only be as early as the car is watching her, and `validate_traffic()` cannot see
-that.** `Crowd._physics_process` hands the strike and the horn only the cars within
-`CAR_ZEBRA_SIGHT` (200px) of her, so a car sounds its horn at `min(CAR_HORN_TIME × speed, 200px)`,
-and every car faster than `200 / CAR_HORN_TIME` (125px/s) warns later than `CAR_HORN_TIME` — under
-the contract's own `required_horn_time()` above 144px/s, which is most of `CAR_SPEED`'s range.
-A check of the horn against the carriageway that reads only `Tuning` passes whatever that radius
-is, so **a change to either the horn or the radius the crowd watches her from is checked against
-the other by hand.**
+**The horn can only be as early as the car is watching her, so it gets its own watch.**
+`Crowd._physics_process` hands the strike and the give-way scan (`pedestrian_ahead`) only the
+cars within `CAR_ZEBRA_SIGHT` (200px) of her — both are about a car that has already noticed
+her, and neither needs more — but the horn's own contract needs more warning than 200px of travel
+gives a fast car, so it is checked against a second, wider watch instead: `CAR_HORN_SIGHT`
+(296px), at least `CAR_SPEED.y × CAR_HORN_TIME` (the fastest car's own warning distance) so the
+watch is never what clips a car's horn short of `CAR_HORN_TIME`. `Tuning.validate_traffic()`
+checks `CAR_HORN_SIGHT` against the fastest car the same way it checks `CAR_HORN_TIME` against
+`required_horn_time()`, so **a change to the horn, to `CAR_SPEED`, or to either watch fails at
+boot rather than only on the street** if the two stop agreeing.
 
 **If anything else ever becomes lethal without being in the catalogue, it needs its own stated
 contract in the same place.** A hard fail with no written contract is a bug waiting to be called a

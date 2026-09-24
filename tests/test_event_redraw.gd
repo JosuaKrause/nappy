@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_asking_for_the_key_does_not_freeze_the_caret(t)
 	_test_the_buskers_strum_moves_the_key_without_him_moving(t)
 	_test_the_cafe_sitters_lean_moves_the_key(t)
+	_test_the_smoke_the_water_and_the_steam_move_the_key(t)
 	_test_a_waiting_robber_turning_to_face_her_moves_the_key(t)
 	_test_a_chatting_mother_moves_her_key_while_frozen(t)
 	_test_a_raised_boom_moves_the_gates_key(t)
@@ -268,6 +269,53 @@ func _test_the_cafe_sitters_lean_moves_the_key(t) -> void:
 		keys[instance._picture_key()] = true
 	t.check(keys.size() == 2, "a café frontage's key takes exactly its two lean frames")
 	instance.free()
+
+## The crash's smoke, the burst main's fountain and the basement vent's steam alternate two frames
+## off `_idle_stepping()` while standing perfectly still, so every frame swap has to be a key change
+## or the gate freezes the scene on whichever frame it drew first. Walked over the steam's whole
+## blow (its instance is one blow and then finishes) and over three periods of each seal.
+func _test_the_smoke_the_water_and_the_steam_move_the_key(t) -> void:
+	var periods := {
+		"car_accident": EventInstance.CAR_ACCIDENT_SMOKE_PERIOD,
+		"burst_water_main": EventInstance.BURST_MAIN_SPLASH_PERIOD,
+		"basement_steam": EventInstance.STEAM_BILLOW_PERIOD,
+	}
+	for id: String in periods:
+		var period: float = periods[id]
+		var instance := EventInstance.new()
+		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
+		instance._process(STEP)
+		var start := instance.position
+		var was := instance._idle_stepping(period)
+		var key := instance._picture_key()
+		var swaps := 0
+		var silent_swaps := 0
+		for i in int(ceil(period * 3.0 / STEP)):
+			instance._process(STEP)
+			if instance.is_finished:
+				break
+			var now := instance._idle_stepping(period)
+			var now_key := instance._picture_key()
+			if now != was:
+				swaps += 1
+				if now_key == key:
+					silent_swaps += 1
+			was = now
+			key = now_key
+		t.check(instance.position == start, "%s did not move at all" % id)
+		t.check(swaps >= 2, "%s swapped frames at least twice while live (%d)" % [id, swaps])
+		t.check(silent_swaps == 0, "and every one of %s's swaps moved the key" % id)
+		instance.free()
+	# The crash's two frames stand on the same ground contacts, so the second frame keeps the shadow.
+	for vertical in [false, true]:
+		var a := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, vertical)
+		var b := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, vertical, true)
+		t.check(a != b, "the crash has its own second frame (vertical %s)" % vertical)
+		t.check(EventInstance._wide_scene_shadow(b) == EventInstance._wide_scene_shadow(a),
+				"and it draws the first frame's shadow (vertical %s)" % vertical)
+		t.check(EventInstance._wide_scene_texture(EventDef.Look.BURST_MAIN, vertical, true)
+				!= EventInstance._wide_scene_texture(EventDef.Look.BURST_MAIN, vertical),
+				"the burst main has its own second frame (vertical %s)" % vertical)
 
 # ------------------------------------------------------- what turns without moving ---
 
