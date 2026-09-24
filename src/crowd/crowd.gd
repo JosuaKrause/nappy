@@ -288,17 +288,36 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 ##
 ## Movement first and separation after, which is the order the world settles in — see
 ## `test_crowd.gd`, "cars do not drive through each other", for why that order is the honest one.
-##
-## **And the walkers' own doors last**, for the same reason the whole function exists: a rig that
-## walked the agents without it would run a crowd in which nobody is ever held at a checkpoint, and
-## nothing about that looks like a missing call.
+## `_advance_the_world()` is exactly that separation half, unchanged by putting a name on it: none
+## of its four lines reads an agent's position, so moving the agent stepping ahead of it rather
+## than into the middle of it (`_signals.advance` and `_pockets.refresh` are both bookkeeping
+## about the day's clock and its map, not about where anybody is standing) changes nothing this
+## frame settles on.
 func step(delta: float) -> void:
-	if _signals:
-		_signals.advance(delta)
-	_pockets.refresh(_map, _crossable_segments)
 	for agent in _agents:
 		agent._process(delta)
+	_advance_the_world(delta)
+
+## The frame's shared prologue, whatever is driving it: the day's signal clock, the map's own
+## pockets, the traffic queue and the walkers' doors, in that order. `step()` (a rig's manual
+## frame) and `_physics_process()` (the live tick) both open with exactly this, and used to spell
+## it out twice — once interleaving the agent stepping only `step()` needs in the middle of it,
+## which was two copies of four lines agreeing today and a silent place for the next one added to
+## drift. Extracted so the only difference left between the two callers is `step()`'s own agent
+## stepping and `_physics_process()`'s own player half.
+func _advance_the_world(delta: float) -> void:
+	if _signals:
+		_signals.advance(delta)
+	# A no-op on every frame but the one after a seal moves — see `CrowdPockets.refresh()`. Beside
+	# the signal clock rather than inside `space_out_the_traffic()`, since it is a fact about the
+	# day's map that both kinds read and not part of resolving a queue.
+	_pockets.refresh(_map, _crossable_segments)
+	# Traffic has to queue whether or not anybody is watching: a car driving through another one
+	# at the far end of the street is still a car driving through another one, and a test rig has
+	# no player in it.
 	space_out_the_traffic(delta)
+	# And so does a queue at a checkpoint, for the same reason: a door with nobody watching it
+	# still lets one walker through at a time.
 	_hold_walkers_at_doors(delta)
 
 ## Tells every car how much clear road it has in front of it, and pulls apart any two that have
@@ -705,19 +724,7 @@ func _physics_process(delta: float) -> void:
 	# population, so the street stands full of standing people and parked cars.
 	if _skip_motion:
 		return
-	if _signals:
-		_signals.advance(delta)
-	# A no-op on every frame but the one after a seal moves — see `CrowdPockets.refresh()`. Beside
-	# the signal clock rather than inside `space_out_the_traffic()`, since it is a fact about the
-	# day's map that both kinds read and not part of resolving a queue.
-	_pockets.refresh(_map, _crossable_segments)
-	# Before the player check, because traffic has to queue whether or not anybody is watching:
-	# a car driving through another one at the far end of the street is still a car driving
-	# through another one, and a test rig has no player in it.
-	space_out_the_traffic(delta)
-	# And so does a queue at a checkpoint, for the same reason and on the same side of the return
-	# below: a door with nobody watching it still lets one walker through at a time.
-	_hold_walkers_at_doors(delta)
+	_advance_the_world(delta)
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:
