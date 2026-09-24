@@ -500,6 +500,24 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
+## M189 — A still mother ends the run with a picture · asked for 2026-09-23
+
+> "can we have a flag for automatically taking a screenshot and terminating the game if the
+> player doesn't move for a second or so?" · "also, it looks like the walking rig is a good way
+> to find bugs"
+
+- [ ] **`--quit-when-still [seconds]`**, a dev flag: once she has moved at all, if she then stays
+      within a few pixels of one spot for the given time (about a second by default) while the
+      day is running — not paused, not on a brief or summary screen — the game saves a
+      screenshot into the run's telemetry folder, notes it in the run log, prints the path and
+      quits. It counts her position, not the input, so a mother pushing into something she
+      cannot pass is still, and it works the same under a human's hands (`tools/run.sh`) and
+      under the route rig (`--route`), where it turns every place the rig wedges into a picture.
+      Set by the orchestrator and open to overturn: the default time, the few-pixel radius, and
+      waiting for her first move so the opening seconds of a day do not trigger it.
+
+---
+
 ## M184 — A rig walks the route · asked for 2026-09-23
 
 > "we should have a test-rig mode where she just follows the edges of a path that way we can test
