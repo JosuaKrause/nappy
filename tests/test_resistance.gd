@@ -1,7 +1,7 @@
 extends RefCounted
 ## The resistance subquest: the step table, touch-completion, a task activated the same day its
 ## mark is touched, the four placement kinds a perform step may use, the seeded guard, the
-## expiring step, and the sabotage silencing the city.
+## expiring step, and the sabotage putting the city's masts out once she has walked away.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242

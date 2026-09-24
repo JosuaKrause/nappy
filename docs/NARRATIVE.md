@@ -82,10 +82,14 @@ baby are taken, day over, one Nerve gone.
 Smoke, sirens, barricades. Military convoys re-shape the map as they pass. Protests grow.
 Whole districts close.
 
-**Day 14** is the finale — either the sabotage route (good ending) or simply the last walk
-home (neutral ending). The sabotage route does not end on a screen: winning day 14 with every
-task complete goes on the same night to the escape, the building and then the city, and the run
-ends when she is out. See `docs/MECHANICS.md`, "The escape, which is the run's ending".
+**Day 14** is the last night — either the sabotage (good ending) or simply the last walk home
+(neutral ending). The sabotage is a hand-over at the power station's front door, and she is
+walking away from it when the city goes dark: every lit window, every traffic light and every
+loudspeaker at once, the masts because they run on the same power. The walk home is under dead
+lights, harder than the day before it rather than easier. And it does not end on a screen:
+winning day 14 with every task complete goes on the same night to the escape, the building and
+then the city, both in the dark, and the run ends when she is out. See `docs/MECHANICS.md`, "The
+escape, which is the run's ending".
 
 ## The resistance subquest
 
@@ -237,18 +241,28 @@ the same daily walk route, now empty of everything the player learned to avoid.
 
 ### Good — resistance complete + day 14 sabotage
 
-The loudspeakers cut out mid-sentence. First real silence in the run, and it is mechanical
-rather than described: completing the sabotage silences every mast at once
-(`EventManager.silence_all_masts()`), so no mast anywhere in the city is speaking for the
-first time since they went up on day 5. The player walks home in the easiest conditions in
-the game, and that is the reward.
+She hands the key over at the station's door and walks away, and nothing happens. Then, once the
+station is out of sight, the city goes dark around her in one frame: every lit window, every
+traffic light, the station's own hall. The loudspeakers cut out mid-sentence — the first real
+silence in the run, and it is mechanical rather than described: the masts have no power of their
+own, so the blackout stops every one of them at once (`Blackout`, through
+`EventManager.silence_all_masts()`), and no mast anywhere in the city is speaking for the first
+time since they went up on day 5.
 
 It is also the only moment the HUD says anything out loud — one line, for seven seconds,
 where the "not settling" hint normally sits.
+
+**Nothing after it is easy.** *([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't
+be easy!")* The walk home is under dead traffic lights, across a main road that no longer stops
+for anybody; the blackout is the uprising's signal and the regime answers it by bombing its own
+city; and the escape — out of her building, then out of the city — is walked in the dark. The
+silence is the one thing the blackout gives her. What the good ending earns is a way out, not an
+easy one.
 
 ## Tone rules for writing content
 
 1. Never have a character explain the politics. The player infers.
 2. The baby is never in narrative danger from the regime directly — the danger is always
    *noise*. Keep the horror ambient.
-3. No triumphalism in the good ending. The reward is quiet, not victory.
+3. No triumphalism in the good ending. What it earns is a silence and a way out — never a
+   victory, and never an easy walk.

@@ -1241,6 +1241,14 @@ whole escape, which is what the checkpoints come back to. `--start-escape` reach
 sequence directly, with a fresh run behind it, so it can be walked without playing fourteen days
 first.
 
+**Nothing about the last night is the easy half.** *([PLAYTEST-121](playtests/PLAYTEST-121.md):
+"the escape shouldn't be easy!")* The sabotage is a hand-over at the power station's door and
+changes nothing there; once she is `Tuning.BLACKOUT_DISTANCE` from the station the city's power
+goes (docs/CITY.md, "The power station"). Every mast stops with it, so the rest of the walk home
+has no loudspeaker anywhere — but it is walked under dead traffic lights, across a spine that no
+longer stops for anybody, with everything else the last day carries still out. The escape after it
+is in the dark as well.
+
 **A full clock per section, `Tuning.FINALE_LENGTH_SECONDS`, which is a day's own length.** Each
 brief starts one, so the time spent walking down three floors is not time the city has lost: at the
 service door the building's clock stops and the city's brief starts its own.
