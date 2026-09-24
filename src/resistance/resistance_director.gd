@@ -891,7 +891,7 @@ func _reachable_from_home(tile: Vector2i) -> bool:
 	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
 
 func _process(delta: float) -> void:
-	_happenings.tick(delta, _player_position(), _sight)
+	_happenings.tick(delta, _player_position(), _player_velocity(), _sight)
 	if _taken_neighbor:
 		_take_the_neighbor_away()
 	if not _step or _expired or not _contact or _contact.is_done:
@@ -1172,6 +1172,11 @@ func _clear() -> void:
 	_mast_id = ""
 
 # ------------------------------------------------------------------ queries ---
+
+## Her velocity, or zero with no player in the tree. Read after `_player_position()`, which finds
+## her.
+func _player_velocity() -> Vector2:
+	return _player.velocity if _player and is_instance_valid(_player) else Vector2.ZERO
 
 ## Where she is, or `Vector2.INF` with no player in the tree — a rig's bare director.
 func _player_position() -> Vector2:

@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_a_waiting_robber_turning_to_face_her_moves_the_key(t)
 	_test_a_chatting_mother_moves_her_key_while_frozen(t)
 	_test_a_raised_boom_moves_the_gates_key(t)
+	_test_a_masts_lamp_and_its_silence_move_its_key(t)
 	_test_a_leaving_event_moves_its_key(t)
 	_test_the_flock_and_the_drawn_flames_are_never_gated(t)
 	_test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t)
@@ -448,4 +449,27 @@ func _test_the_key_is_stable_within_a_tick(t) -> void:
 		instance._process(STEP)
 		t.check(instance._picture_key() == instance._picture_key(),
 				"the key answers the same way twice inside tick %d" % i)
+	instance.free()
+
+# ------------------------------------------------------------------ the mast ---
+
+## A mast's picture is its broadcast cycle — the amber lamp of the telegraph that opens every
+## period, then the green lamp and the arcs while it speaks — and nothing at all on top of the pole
+## once silenced (`EventInstance._draw_mast()`). Both are clocks the ordinary key terms never see:
+## the cycle runs on the city's broadcast clock (`_mast_is_telegraphing_now()`) long after the
+## once-at-creation `is_telegraphing()` has gone false, and silencing flips a flag without moving
+## anything. A key without them keeps the arcs on a mast day 11's task has just silenced.
+func _test_a_masts_lamp_and_its_silence_move_its_key(t) -> void:
+	var def := EventCatalogue.by_id("loudspeaker")
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	instance.age = def.pulse_period + def.telegraph_time + 1.0
+	var speaking := instance._picture_key()
+	instance.age = 2.0 * def.pulse_period + 0.5
+	t.check(instance._mast_is_telegraphing_now() and instance._picture_key() != speaking,
+			"the next cycle's telegraph moves the mast's key")
+	instance.age = 2.0 * def.pulse_period + def.telegraph_time + 1.0
+	var before := instance._picture_key()
+	instance.silenced = true
+	t.check(instance._picture_key() != before, "silencing the mast moves its key")
 	instance.free()

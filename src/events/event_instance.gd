@@ -2785,6 +2785,12 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if gate_state != null and gate_state.raised else 0)
 	flags = flags * 2 + (1 if gate_runs_north_south(_heading) else 0)
 	flags = flags * 2 + (1 if flashed_off else 0)
+	# A mast's lamp and arcs (`_draw_mast()`): amber in the telegraph that opens every broadcast
+	# cycle, green with the arcs while it speaks, and neither once silenced — read off the city's
+	# broadcast clock rather than `is_telegraphing()`, which a mast passes once at creation.
+	var mast := def.look == EventDef.Look.LOUDSPEAKER_MAST
+	flags = flags * 2 + (1 if mast and silenced else 0)
+	flags = flags * 2 + (1 if mast and _mast_is_telegraphing_now() else 0)
 	var sector := EightDirection.update(_view_sector, _drawn_heading())
 	return Vector4i(
 			flags,

@@ -52,11 +52,11 @@ var _raid_vans := PackedVector2Array()
 var _raid_beat := PackedVector2Array()
 
 ## How long today has run, and how much of it she has spent walking rather than standing — a
-## happening sited on her way waits for her to have chosen a way, as day 3's fire does.
+## happening sited on her way waits for her to have chosen a way, as day 3's fire does, on the same
+## clock (`EventDirector.site_what_is_on_her_way()`: seconds at `Tuning.AHEAD_MIN_SPEED` or more).
 var _elapsed := 0.0
 var _walked := 0.0
-## Where she was last frame, and the way she is going, read off her own movement.
-var _last_her := Vector2.INF
+## The way she is going, read off her own velocity while she moves.
 var _heading := Vector2.ZERO
 ## Counts down to the next look for the market's block — once a second, not every frame.
 var _look_in := 0.0
@@ -89,7 +89,6 @@ func start_day(day: int) -> void:
 	_raid_beat = PackedVector2Array()
 	_elapsed = 0.0
 	_walked = 0.0
-	_last_her = Vector2.INF
 	_heading = Vector2.ZERO
 	_look_in = 0.0
 	_siting = null
@@ -105,15 +104,13 @@ func start_day(day: int) -> void:
 		_plan_the_raid()
 
 ## Once a frame, from the director: brings in whatever the day is waiting to bring in. `her` is her
-## position, `Vector2.INF` with no player; `sight` is the danger edge's own on-screen test, which a
-## rig may leave unset.
-func tick(delta: float, her: Vector2, sight: Callable) -> void:
+## position, `Vector2.INF` with no player, and `velocity` hers; `sight` is the danger edge's own
+## on-screen test, which a rig may leave unset.
+func tick(delta: float, her: Vector2, velocity: Vector2, sight: Callable) -> void:
 	_elapsed += delta
-	if her != Vector2.INF:
-		if _last_her != Vector2.INF and her.distance_to(_last_her) > 0.01:
-			_heading = (her - _last_her).normalized()
-			_walked += delta
-		_last_her = her
+	if her != Vector2.INF and velocity.length() >= Tuning.AHEAD_MIN_SPEED:
+		_heading = velocity.normalized()
+		_walked += delta
 	if not _raid_vans.is_empty() and raid.is_empty():
 		_maybe_raid(her, sight)
 	if _market_owed:
@@ -370,8 +367,9 @@ func _close_a_ring(delta: float) -> void:
 ## telegraph is over before its field reaches her, and it drives on past her.
 ##
 ## **What it leaves is the barricade** its rear truck stops at, out of her sight beyond where she
-## stood — the row's own `spawns_on_finish`, so it is a scar and stands for the rest of the run —
-## but only where she can still reach home and a calm area with it standing
+## stood — or, where nothing beyond her will do, short of her on the stretch it drives in on — the
+## row's own `spawns_on_finish`, so it is a scar and stands for the rest of the run, but only where
+## she can still reach home and a calm area with it standing
 ## (`EventScheduler.WalkSiting.leaves_her_a_way()`), checked before the stop is accepted, a block
 ## further on at a time. The trucks ahead of it drive on without one. A column with nowhere to stop
 ## leaves nothing and says so.
@@ -418,7 +416,12 @@ func send_the_column(her: Vector2) -> Array[EventInstance]:
 				going = -going
 	var lane_x := CrowdLanes.lane_centre(_map.main_road, CrowdLanes.road_lane(true, going))
 	var start_y := clampf(her.y - going * lead, top, bottom)
-	var stop := _where_the_column_stops(her, lane_x, her.y + going * past, going, def)
+	# Beyond her first, the way it is going; and where no stop ahead of her will do, short of her,
+	# on the stretch it drives in on, before it has reached her at all.
+	var stop := _where_the_column_stops(her, lane_x, her.y + going * past, going, INF, def)
+	if stop == Vector2.INF:
+		stop = _where_the_column_stops(her, lane_x, her.y - going * past, -going,
+				absf(start_y - her.y), def)
 	var far_y := bottom if going > 0.0 else top
 	var trailing := EventScheduler._without_its_aftermath(def)
 	for i in Tuning.COLUMN_TRUCKS:
@@ -435,11 +438,12 @@ func send_the_column(her: Vector2) -> Array[EventInstance]:
 				else ", with nowhere to stop"])
 	return column
 
-## Where the rear truck stops and leaves its barricade: from `wanted_y` on along the road, the first
-## point in the middle of a street (never a junction, which would close the crossing with it) whose
-## barricade leaves her a way home and to a calm area — or `Vector2.INF`.
+## Where the rear truck stops and leaves its barricade: from `wanted_y` on along the road in the
+## direction `going`, no further than `limit` from her, the first point in the middle of a street
+## (never a junction, which would close the crossing with it) whose barricade leaves her a way home
+## and to a calm area — or `Vector2.INF`.
 func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going: float,
-		def: EventDef) -> Vector2:
+		limit: float, def: EventDef) -> Vector2:
 	var barricade := EventCatalogue.by_id(def.spawns_on_finish)
 	if not barricade:
 		return Vector2.INF
@@ -451,10 +455,12 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 	# A block at a time once a stop is refused, three blocks at most: each refusal is a flood.
 	var refused := 0
 	while _map.in_bounds(tile) and refused < 3:
+		var at := Vector2(lane_x, _map.tile_to_world(tile).y)
+		if absf(at.y - her.y) > limit:
+			return Vector2.INF
 		if StreetNetwork.segment_containing(tile) == null or not _map.is_driveable_at(true, tile):
 			tile += step
 			continue
-		var at := Vector2(lane_x, _map.tile_to_world(tile).y)
 		if _siting.leaves_her_a_way(_city.events.plans(),
 				EventScheduler.Planned.new(barricade, at), her):
 			return at

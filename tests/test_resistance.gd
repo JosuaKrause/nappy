@@ -1752,12 +1752,13 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	happenings.setup(_city, _city.map)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
-	happenings.tick(STEP, door, Callable())
+	happenings.tick(STEP, door, Vector2.ZERO, Callable())
 	t.check(happenings.raid.is_empty(), "nothing arrives while she is at her door")
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0),
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
 			func(_at: Vector2) -> bool: return true)
 	t.check(happenings.raid.is_empty(), "or while any of it would be on screen")
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
+			Callable())
 	var vans := 0
 	var patrols := 0
 	var door_tile := _city.map.world_to_tile(door)
@@ -1777,7 +1778,8 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	for instance in happenings.raid:
 		_city.events.retire(instance)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY + 1)
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
+			Callable())
 	t.check(happenings.raid.is_empty(), "and only on day 10")
 
 ## Plans `day` on the test city through the real day order with `state` as the run's own
@@ -1808,11 +1810,11 @@ func _test_the_market_is_found_gone(t) -> void:
 		var candidates := ResistanceHappenings.market_candidates(_city.map, state)
 		t.check(not candidates.is_empty(),
 				"the test city has a block waiting to board up, or this test checks nothing")
-		happenings.tick(STEP, door, Callable())
+		happenings.tick(STEP, door, Vector2.ZERO, Callable())
 		t.check(happenings.market_block.x < 0, "nothing is gone before she has walked anywhere")
 		happenings._elapsed = Tuning.MARKET_GONE_BY
 		happenings._walked = EventDirector.ON_HER_WAY_AFTER
-		happenings.tick(STEP, door, Callable())
+		happenings.tick(STEP, door, Vector2.ZERO, Callable())
 		var block := happenings.market_block
 		t.check(block in candidates, "by then a block waiting to board up is gone (%s)" % block)
 		if block.x >= 0:
@@ -1835,7 +1837,7 @@ func _test_the_market_is_found_gone(t) -> void:
 			state.begin_day(_city.map.block_plans, ResistanceHappenings.MARKET_DAY + 1)
 			t.check(state.purpose_of(_city.map.block_plans, block)
 					== GameEnums.BlockPurpose.BOARDED_UP, "and it stays boarded")
-		happenings.tick(STEP, door, Callable())
+		happenings.tick(STEP, door, Vector2.ZERO, Callable())
 		t.check(happenings.market_block == block, "and the market is gone once")
 		director.free())
 	GameState.city_state = saved_state
@@ -1874,11 +1876,12 @@ func _test_the_park_closes_in_front_of_her_and_stays_taken(t) -> void:
 					count += 1
 			return count
 		var before: int = calm_left.call()
-		happenings.tick(Tuning.PARK_CLOSING_SECONDS * 0.5, Vector2.INF, Callable())
+		happenings.tick(Tuning.PARK_CLOSING_SECONDS * 0.5, Vector2.INF, Vector2.ZERO, Callable())
 		var halfway: int = calm_left.call()
 		t.check(halfway > 0 and halfway < before,
 				"a ring at a time, from the edges in (%d of %d left half way)" % [halfway, before])
-		happenings.tick(Tuning.PARK_CLOSING_SECONDS * 0.5 + 0.1, Vector2.INF, Callable())
+		happenings.tick(Tuning.PARK_CLOSING_SECONDS * 0.5 + 0.1, Vector2.INF, Vector2.ZERO,
+				Callable())
 		t.check(calm_left.call() == 0 and not happenings.is_closing(),
 				"until none of it is calm")
 		var frame_left := false
@@ -1898,8 +1901,8 @@ func _test_the_park_closes_in_front_of_her_and_stays_taken(t) -> void:
 ## Day 13: the column. The convoys start that morning; the column is `Tuning.COLUMN_TRUCKS` trucks
 ## in one lane of the main road, coming toward the point level with her from far enough up the road
 ## that their telegraph is over before their field reaches her, and the rear one stops out of her
-## sight, on a street rather than a junction, where its barricade still leaves her a way home — the
-## trucks ahead of it leave nothing. It comes once she nears the main road, or at
+## sight — beyond her, or short of her where nothing beyond will do — on a street rather than a
+## junction, where its barricade still leaves her a way home; the trucks ahead of it leave nothing. It comes once she nears the main road, or at
 ## `Tuning.COLUMN_BY` wherever she is, and once.
 func _test_the_column_comes_down_the_main_road(t) -> void:
 	var convoy := EventCatalogue.by_id("military_convoy")
@@ -1918,11 +1921,11 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		var spine := happenings._spine_x()
 		var far_from_it := Vector2(spine + Tuning.COLUMN_WITHIN * 2.0, door.y)
 		happenings._walked = EventDirector.ON_HER_WAY_AFTER
-		happenings.tick(STEP, far_from_it, Callable())
+		happenings.tick(STEP, far_from_it, Vector2.ZERO, Callable())
 		t.check(happenings.column.is_empty(), "nothing comes while she is far from the main road")
 		var her := Vector2(spine - Tuning.STREET_WIDTH * 0.5 * Tuning.TILE_SIZE + Tuning.TILE_SIZE,
 				map.size.y * Tuning.TILE_SIZE * 0.5)
-		happenings.tick(STEP, her, Callable())
+		happenings.tick(STEP, her, Vector2.ZERO, Callable())
 		var trucks := happenings.column
 		t.check(trucks.size() == Tuning.COLUMN_TRUCKS,
 				"near it, a column of %d trucks comes (%d)" % [Tuning.COLUMN_TRUCKS, trucks.size()])
@@ -1947,17 +1950,15 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 						"and it stops out of her sight")
 				t.check(StreetNetwork.segment_containing(map.world_to_tile(stop)) != null,
 						"on a street, not a junction")
-				t.check(signf(stop.y - her.y) == signf(truck.path[1].y - truck.path[0].y),
-						"beyond her, the way it was going")
 		t.check(leaving == 1, "one barricade's worth, from the rear truck (%d)" % leaving)
-		happenings.tick(STEP, her, Callable())
+		happenings.tick(STEP, her, Vector2.ZERO, Callable())
 		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
 		for truck in trucks:
 			_city.events.retire(truck)
 
 		director.start_day(ResistanceHappenings.COLUMN_DAY, _rng(13, "resistance"), 300.0)
 		happenings._elapsed = Tuning.COLUMN_BY
-		happenings.tick(STEP, far_from_it, Callable())
+		happenings.tick(STEP, far_from_it, Vector2.ZERO, Callable())
 		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,
 				"at COLUMN_BY it comes wherever she is")
 		for truck in happenings.column:
