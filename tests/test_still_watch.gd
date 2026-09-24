@@ -1,9 +1,13 @@
 extends RefCounted
-## `StillWatch._feed()`, the pure stillness heuristic behind `--quit-when-still`: positions and
-## deltas in, a trigger out, armed only once she has moved and frozen rather than reset while
-## inactive (paused, or the day not running). No `City`, `Stroller` or running day anywhere here —
-## a bare `StillWatch.new()` off the tree drives it directly, the same way `tests/test_auto_screenshot
-## .gd` calls `AutoScreenshot._parse_script()` without ever adding that node to a tree either.
+## `StillWatch._feed()`, the pure stillness heuristic behind `--quit-when-still`: positions,
+## deltas, an `active` flag and a `held` flag in, a trigger out. Armed only once she has moved,
+## frozen rather than reset while inactive (paused, or the day not running), and reset — not
+## frozen — every frame `held` is true (a detention, a checkpoint's hold, a wait at a red light).
+## No `City`, `Stroller` or running day anywhere here — a bare `StillWatch.new()` off the tree
+## drives it directly, the same way `tests/test_auto_screenshot.gd` calls
+## `AutoScreenshot._parse_script()` without ever adding that node to a tree either. The geometry and
+## signal half of `held` — `StillWatch.facing_a_red_light()` — is pure too, over a bare `CityMap`
+## and `TrafficSignals` with no `City` around either.
 ##
 ## Every step below uses a `0.25` delta rather than the more obvious `0.1`: ten additions of `0.1`
 ## land on `0.9999999999999999` in double precision, one tick short of the `1.0` hold this suite
@@ -22,6 +26,13 @@ func run(t) -> void:
 	_test_a_further_move_restarts_the_hold_from_the_new_spot(t)
 	_test_jitter_inside_the_radius_does_not_reset_the_hold(t)
 	_test_inactive_frames_freeze_the_hold_instead_of_resetting_it(t)
+	_test_held_frames_never_trigger_however_long_they_run(t)
+	_test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t)
+	_test_facing_a_red_light_on_the_main_arms_green_or_amber(t)
+	_test_facing_a_red_light_false_once_the_side_arm_has_green(t)
+	_test_facing_a_red_light_false_off_the_sidewalk(t)
+	_test_facing_a_red_light_false_away_from_any_junction(t)
+	_test_facing_a_red_light_false_at_an_unsignalled_junction(t)
 
 func _watch(hold_seconds := 1.0) -> StillWatch:
 	var w := StillWatch.new()
@@ -110,3 +121,90 @@ func _test_inactive_frames_freeze_the_hold_instead_of_resetting_it(t: Object) ->
 	triggered = w._feed(Vector2(10, 0), _TICK, true)
 	t.check(triggered, "the hold resumes once active again, counted from before the pause")
 	w.free()
+
+## `held` true — a detention, a checkpoint's hold or a wait at a red light — never fires however
+## long it runs, unlike an inactive frame, which only pauses a count already under way.
+func _test_held_frames_never_trigger_however_long_they_run(t: Object) -> void:
+	var w := _watch(1.0)
+	w._feed(Vector2.ZERO, _TICK, true)
+	w._feed(Vector2(10, 0), _TICK, true)
+	var triggered := false
+	for i in 40:
+		triggered = w._feed(Vector2(10, 0), _TICK, true, true) or triggered
+	t.check(not triggered, "ten seconds held never fires, whatever was held")
+	w.free()
+
+## The distinction from a plain pause: a hold **restarts** the count on release rather than
+## resuming it. Without this, whatever had accumulated *before* the hold began survives it and
+## fires the instant she is free to move again — exactly the checkpoint bug this exists to fix.
+func _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t: Object) -> void:
+	var w := _watch(1.0)
+	w._feed(Vector2.ZERO, _TICK, true)
+	w._feed(Vector2(10, 0), _TICK, true)
+	for i in 3:
+		w._feed(Vector2(10, 0), _TICK, true)
+	# 0.75s accumulated here — one more active tick would fire on its own.
+	for i in 5:
+		w._feed(Vector2(10, 0), _TICK, true, true)
+	var triggered := false
+	for i in 3:
+		triggered = w._feed(Vector2(10, 0), _TICK, true) or triggered
+	t.check(not triggered, "0.75s after release is short of a fresh 1.0s hold — the pre-hold " +
+			"0.75s did not survive it")
+	triggered = w._feed(Vector2(10, 0), _TICK, true)
+	t.check(triggered, "the fourth tick after release fires — a full fresh hold, not the leftover " +
+			"0.25s a resume would have needed")
+	w.free()
+
+## Junction (0, 0): the main road's own corridor and, once the map says so, the signalled one —
+## `CityMap.junction_at()` and `TrafficSignals._offset()` both answer zero there, so `elapsed`
+## alone drives the phase with nothing else to account for. Tile (1, 1) sits inside the box on
+## both corridors' sidewalk band (`SIDEWALK_WIDTH` is 2), and tile (3, 3) sits in the box on both
+## corridors' road band — the same corner and the same carriageway `route_tree.gd`'s own note
+## keeps as one piece of ground.
+func _signalled_map(main_road_index := 0) -> CityMap:
+	var map := CityMap.new()
+	map.main_road = main_road_index
+	map.set_tile(Vector2i(1, 1), GameEnums.TileType.SIDEWALK)
+	map.set_tile(Vector2i(3, 3), GameEnums.TileType.ROAD)
+	map.set_tile(Vector2i(10, 10), GameEnums.TileType.SIDEWALK)
+	return map
+
+func _test_facing_a_red_light_on_the_main_arms_green_or_amber(t: Object) -> void:
+	var map := _signalled_map()
+	var signals := TrafficSignals.new(map)
+	var kerb := map.tile_to_world(Vector2i(1, 1))
+	signals.elapsed = 0.0
+	t.check(StillWatch.facing_a_red_light(map, signals, kerb),
+			"the main road's own green is a red light for the pedestrian crossing it")
+	signals.elapsed = Tuning.signal_main_green_seconds() + 0.1
+	t.check(StillWatch.facing_a_red_light(map, signals, kerb),
+			"and so is its amber — the crossing arm stays red through the clearance period")
+
+func _test_facing_a_red_light_false_once_the_side_arm_has_green(t: Object) -> void:
+	var map := _signalled_map()
+	var signals := TrafficSignals.new(map)
+	signals.elapsed = Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
+	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(1, 1))),
+			"the side arm's own green is what lets her cross the main road")
+
+func _test_facing_a_red_light_false_off_the_sidewalk(t: Object) -> void:
+	var map := _signalled_map()
+	var signals := TrafficSignals.new(map)
+	signals.elapsed = 0.0
+	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(3, 3))),
+			"standing on the carriageway is committing to cross, not waiting for a light")
+
+func _test_facing_a_red_light_false_away_from_any_junction(t: Object) -> void:
+	var map := _signalled_map()
+	var signals := TrafficSignals.new(map)
+	signals.elapsed = 0.0
+	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(10, 10))),
+			"a sidewalk tile with no junction near it is never a red light")
+
+func _test_facing_a_red_light_false_at_an_unsignalled_junction(t: Object) -> void:
+	var map := _signalled_map(5)
+	var signals := TrafficSignals.new(map)
+	signals.elapsed = 0.0
+	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(1, 1))),
+			"an ordinary junction has no light to wait at, whatever the phase clock reads")
