@@ -1890,12 +1890,6 @@ func _process(delta: float) -> void:
 	# the same "gated rather than merely hidden" rule holds.
 	if not (_debug or _readout_requested) or not _layer_readout_on:
 		return
-	# Feeds the process/physics lines' one-second `mean`/`max` window — a readout-only cost, so it
-	# is fed only while the readout itself is on, right where the rest of this block is gated the
-	# same way. `Time.get_ticks_msec()` rather than `_day.time_remaining` or `GameState.play_seconds`,
-	# since the window is about wall-clock stutter and must keep moving through a pause, a
-	# compressed `--day-length` and `--invincible`'s own frozen day clock alike.
-	FrameCost.sample(Time.get_ticks_msec() / 1000.0)
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
 		_build_text = TitleScreen.build_text()
