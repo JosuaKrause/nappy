@@ -121,12 +121,12 @@ func _test_a_calm_park_still_settles_her(t) -> void:
 ## down there, which is what makes the walk to the park the decision the game is about.
 ##
 ## **M125: walked for `ARTERIAL_WINDOW` (60s), not the whole day.** Measured first: printing
-## `_baby.sleepiness` every ten seconds over a full 180s walk showed it climb to ~3.1 by t=10s
-## and then hold there, unmoved, through t=170s — the arterial's noise floor is stationary for
-## the whole of a day with one act and no scheduled lull, so a longer walk than the plateau
-## itself takes to reach is not a longer look at anything, only more frames of the same reading.
-## Sixty seconds is six times that settling time, which is margin against the plateau being
-## reached slower on a seed or a day this test does not use.
+## `_baby.sleepiness` every ten seconds over a full day-1 walk (`Tuning.day_length(1)`, 210s)
+## showed it climb to ~3.2 by t=10s and then hold there, unmoved, through t=210s — the arterial's
+## noise floor is stationary for the whole of a day with one act and no scheduled lull, so a
+## longer walk than the plateau itself takes to reach is not a longer look at anything, only more
+## frames of the same reading. Sixty seconds is six times that settling time, which is margin
+## against the plateau being reached slower on a seed or a day this test does not use.
 func _test_the_arterial_never_settles_her(t) -> void:
 	_start_day(1)
 	var street := CrowdLanes.arterial_pavement(_city.map)

@@ -326,7 +326,7 @@ static func _cat_dash() -> EventDef:
 	# the director also has pigeons and, from day 3, the dog.
 	def.weight = 2.5
 	# Deliberately low where the rest of the catalogue's caps are not. A cat is sited by the director
-	# while she walks and `AHEAD_INTERVAL` spreads them 11-26s apart over a 180s day, so past this
+	# while she walks and `AHEAD_INTERVAL` spreads them 11-26s apart over a 210s day, so past this
 	# there is nowhere left for one to happen and the budget goes on cats the day cannot fit.
 	def.max_per_day = 8
 	return def
@@ -350,7 +350,7 @@ static func _cat_dash() -> EventDef:
 ## **Acts and cap, derived from the cat's.** `first_day`, `last_day` and `act_tag` are left at
 ## their defaults (1, 0, 1) — exactly what `_cat_dash` leaves them at — so a mouse is everyday
 ## background texture for the same reason a cat is: neither is a thing the acts turn on. The cap
-## is half of the cat's 8. The cat's own is sized against how many `AHEAD_INTERVAL` slots a 180s
+## is half of the cat's 8. The cat's own is sized against how many `AHEAD_INTERVAL` slots a 210s
 ## day has room for; an `ALLEY` tile is scarcer than every `ROAD` and `CROSSING` tile a cat may
 ## cross, and `_refuses_required_alleys` above narrows the pool further still, so a cap the day
 ## can actually spend has to sit well under the cat's rather than beside it.
@@ -692,7 +692,7 @@ static func _delivery_van() -> EventDef:
 ## **19.3 is the lowest tenth, measured with `Baby`'s own real update functions rather than a
 ## rate, at which a whole day never fills the sleep meter standing at his own core.**
 ## `tests/probes/m128_park_beats.gd` simulates exactly that: one busker, alone, at `inner_radius`,
-## starting at the calm threshold with an empty sleep meter, `Tuning.DAY_LENGTH_SECONDS` (180s)
+## starting at the calm threshold with an empty sleep meter, `Tuning.DAY_LENGTH_SECONDS` (210s)
 ## plus a margin. At the previous number (13.0) the sleep meter already fills in **under six
 ## seconds** standing there — nowhere near "does not go down" in the sense that matters. The
 ## sweep's own bare crossing is 19.2, which is not a coincidence: it is exactly `12.0 / 0.625`,

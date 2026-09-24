@@ -38,6 +38,10 @@ item below for as long as looking takes.
   brief lines read as the city changing, and which would you rewrite?** They are the draft as it
   stood. Record is `DECISIONS.md`, M181, the resistance has a reason, and a task is one day,
   slice one.
+- **Play a day before and after the curfew** (`--day 5`, then `--day 6`). Days 1 to 5 are now
+  210 s and curfew days 180 s. **Does day 6 still feel shorter — "we don't have as much time" —
+  and do the early days feel roomy rather than like waiting for dusk?** Record is `DECISIONS.md`,
+  M192, a curfew day is the old full day.
 - **Try the boom at a checkpoint** (`--day 9` or later; wait at a door on the road until a car
   raises the arm). Walk under it once walking and once running. **Does the chance read as a
   temptation, and does the guard stepping out of the hut read as the price?** Is running away

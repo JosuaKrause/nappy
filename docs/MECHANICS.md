@@ -67,11 +67,12 @@ for one traverse of itself — **1.4 traverses for a single block against 1.05 f
 has nothing to do with what it is, and *which* calm area to head for stays a real question.
 `tests/test_generator.gd` holds that ratio rather than either number.
 
-**A day is aimed at a minute of play, with a grace of three.** Dusk at 180s is the outer bound, not
-the target: a day walked well is over in about a minute, and the rest of the clock is there for a
-day that goes wrong. It also means the day is not lost to the *meter* — once calm ground is reached
-the meter is a formality — so **the difficulty has to live in the walk**, which is what every
-obstacle between the doorstep and the park is for.
+**A day is aimed at a minute of play, with a grace of three and a half.** Dusk — 210s on an
+ordinary day (1 to 5), 180s once curfew shortens it (6 on) — is the outer bound, not the target: a
+day walked well is over in about a minute, and the rest of the clock is there for a day that goes
+wrong. It also means the day is not lost to the *meter* — once calm ground is reached the meter is
+a formality — so **the difficulty has to live in the walk**, which is what every obstacle between
+the doorstep and the park is for.
 
 The first two are asserted in terms of `day_length()` rather than as numbers
 (`tests/test_meters.gd`), so lengthening the day cannot quietly make the street sufficient
@@ -1205,8 +1206,9 @@ never on the closed-street list and never on a `StreetNetwork` segment.
 
 ## Day timer
 
-Each day runs for `DAY_LENGTH_SECONDS` (default `180 s`, 3 minutes) of in-game dusk, and is
-aimed at being won in about a third of that.
+Each day runs for `Tuning.day_length()`'s length of in-game dusk — `DAY_LENGTH_SECONDS` (210 s) on
+an ordinary day, `CURFEW_DAY_LENGTH_SECONDS` (180 s) once curfew starts (day 6 on) — and is aimed
+at being won in about a third of that.
 Running out is a day loss. The timer is shown as a light-level shift rather than a number,
 with an explicit clock in the HUD corner, `m:ss` through `GameState.format_clock_seconds()`.
 
@@ -1259,9 +1261,11 @@ has no loudspeaker anywhere — but it is walked under dead traffic lights, acro
 longer stops for anybody, with everything else the last day carries still out. The escape after it
 is in the dark as well.
 
-**A full clock per section, `Tuning.FINALE_LENGTH_SECONDS`, which is a day's own length.** Each
-brief starts one, so the time spent walking down three floors is not time the city has lost: at the
-service door the building's clock stops and the city's brief starts its own.
+**A full clock per section, `Tuning.FINALE_LENGTH_SECONDS` (180s), stated on its own rather than
+reused from the ordinary day's length** — the player asked that the escape not be easy, so it does
+not grow when the ordinary day does. Each brief starts one, so the time spent walking down three
+floors is not time the city has lost: at the service door the building's clock stops and the
+city's brief starts its own.
 `FinaleController` owns a `DayController` rather than being a second one: the countdown, the three
 losing paths, the `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the
 clock still are all a day's already and none of them change. What the escape does differently is

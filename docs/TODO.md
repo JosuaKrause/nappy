@@ -288,27 +288,6 @@ it); what is open is the half that stops the move from happening.
 
 ---
 
-## M192 — A curfew day is the old full day, and a free day is longer · asked for 2026-09-24
-
-> "Maybe we could make the curfew have the currently normal time and the normal time be a bit
-> longer" · asked how long days 1 to 5 should be, 210 s or 225 s, "210"
-
-- [ ] **Days 1 to 5 are 210 s and a curfew day, 6 to 14, is 180 s** (today 180 s and 144 s). The
-      curfew stays visibly shorter, and the late days get 36 s more each, which is where the
-      route timing is tight. `Tuning.day_length()` says it as two lengths rather than a
-      multiplier; `tests/test_meters.gd` already holds the street-alone contract in terms of
-      `day_length()`, and at `SLEEPINESS_GAIN_WALKING` (0.42/s) a 210 s day of clean street walking
-      reaches 88 % of the meter — still short, as the contract needs; 238 s would reach it. **The
-      escape stays 180 s** (`FINALE_LENGTH_SECONDS`, today tied to the ordinary day): the player
-      asked that "the escape shouldn't be easy" ([PLAYTEST-121](playtests/PLAYTEST-121.md)), so it
-      is stated on its own rather than growing with day 1; asked with the day length and not yet
-      answered, so it is the unchanged value, open to overturn. Every number that quotes 180 s or
-      144 s as a day moves with it: docstrings, `docs/MECHANICS.md`, tests, the probes, and the
-      neighbor's walk home, which is sized against a 144 s day
-      (`Tuning.NEIGHBOR_WALK_HOME_SECONDS`, 55 s, "chosen, not measured").
-
----
-
 ## M182 — A finished task is shown by the world, never by text · asked for 2026-09-20
 
 > "yeller should just start walking offscreen -- no onscreen text for acknowledgements like this"
@@ -653,6 +632,17 @@ stopped, and the seed-retry fact is stated in `docs/CITY.md`, so neither is here
 is still true.
 
 **Defects, each a few lines once found:**
+
+- [ ] **Does the escape grow with the ordinary day?** It stays 180 s (`Tuning.FINALE_LENGTH_SECONDS`,
+      now stated on its own) while days 1 to 5 went to 210 s (`DECISIONS.md`, M192, a curfew day
+      is the old full day). Asked with the day length, not yet answered; 180 s keeps "the escape
+      shouldn't be easy" ([PLAYTEST-121](playtests/PLAYTEST-121.md))
+
+- [ ] **`test_finale.gd` leaves `GameState.escape_section` set.** Run in one process just before
+      `test_resistance.gd`, a finale test leaves the section at `BUILDING`, so the next `City`'s
+      `Blackout` starts dark at `setup()` (`_in_the_escape()` reads that flag) and
+      `_test_the_sabotage_silences_the_city` fails three checks; every suite is green alone and CI's
+      shards keep them apart. Found building M192
 
 - [ ] **Day 8's mark line runs off the screen at 1280×720.** The player's own wording, 79
       characters ("Something was left in the stroller in the night. Take it to the burnt

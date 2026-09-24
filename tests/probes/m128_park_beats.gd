@@ -34,9 +34,9 @@ func run(t) -> void:
 
 # --------------------------------------------------------------- sleep over a whole day ---
 
-## The DAY_LENGTH_SECONDS margin so a chosen intensity does not sit exactly on the line — see
-## the sweep below.
-const _SLEEP_CAP_SECONDS := 200.0
+## `DAY_LENGTH_SECONDS` (210s, `busker.first_day` is day 2, an ordinary day) plus a 20s margin so
+## a chosen intensity does not sit exactly on the line — see the sweep below.
+const _SLEEP_CAP_SECONDS := 230.0
 const _SWEEP_STEP := 0.1
 const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; never exceeded.
 
