@@ -170,7 +170,12 @@ func _maybe_raid(her: Vector2, sight: Callable) -> void:
 	for at in _raid_vans:
 		raid.append(_city.events.spawn_extra(van, at))
 	if _raid_beat.size() == 2:
-		var patrol: EventDef = EventCatalogue.by_id("police_patrol").duplicate()
+		var row := EventCatalogue.by_id("police_patrol")
+		var patrol: EventDef = row.duplicate()
+		# `shape` is a plain `RefCounted` field `Resource.duplicate()` does not copy (the note on
+		# `EventScheduler._without_its_aftermath()`); dropped, the car draws and charges nothing.
+		patrol.shape = row.shape
+		patrol.solid_parts = row.solid_parts
 		patrol.paces = true
 		raid.append(_city.events.spawn_extra(patrol, _raid_beat[0], _raid_beat))
 	Telemetry.note("contact", "the raid is at her building: %d vans and a patrol" % _raid_vans.size())

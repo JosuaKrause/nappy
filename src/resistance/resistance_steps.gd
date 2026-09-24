@@ -288,7 +288,7 @@ static func _build() -> Array[Step]:
 		# regime has found the worker; the neighbor is out in the city and walks home into the
 		# vans, and the walk is the deadline. Warned, they run; not warned, they are taken.
 		_mark(9, "Another mark", 10,
-				"They are coming for your neighbor tonight. Reach them before they get home."),
+				"They come for your neighbor tonight. Get to them first."),
 		_perform(10, "Warn the neighbor", 10, "neighbor", [GameEnums.TileType.SIDEWALK], true,
 				TargetKind.NEIGHBOR, false, "your neighbor, on the way home"),
 
@@ -297,7 +297,7 @@ static func _build() -> Array[Step]:
 		# cost while it broadcasts, so timing it between broadcasts is the skill. The rehearsal:
 		# a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own.
 		_mark(11, "Another mark", 11,
-				"Silence the loudspeaker mast. Its wire comes down at the foot."),
+				"Silence the loudspeaker mast. The wire is at its foot."),
 		_perform(12, "Silence a mast", 11, "", [], true, TargetKind.MAST, false,
 				"the loudspeaker mast"),
 

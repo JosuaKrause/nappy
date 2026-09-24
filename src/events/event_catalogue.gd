@@ -216,8 +216,15 @@ const NEIGHBOR_RUN_SPEED := 150.0
 ## is the task lost — and who, warned first, runs (`departs_at`), which `EventInstance.
 ## leave_for_a_completed_task()` turns away from her. A copy rather than a second row, since it is
 ## the same person in the same picture.
+##
+## `shape` and `solid_parts` are carried across by hand, as every copy of a row does
+## (`EventScheduler._without_its_aftermath()`): `Resource.duplicate()` does not copy a plain
+## `RefCounted` field, and a copy without its shape has nothing to draw its shadow with.
 static func neighbor_heading_home() -> EventDef:
-	var def: EventDef = by_id("neighbor").duplicate()
+	var row := by_id("neighbor")
+	var def: EventDef = row.duplicate()
+	def.shape = row.shape
+	def.solid_parts = row.solid_parts
 	def.stops_where_it_arrives = true
 	def.departs_at = NEIGHBOR_RUN_SPEED
 	return def

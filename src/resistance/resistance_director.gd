@@ -1203,9 +1203,12 @@ func pointable_objective() -> Vector2:
 ## man shouting, a roadblock) — the two tasks that never earn an arrow. The last night's front
 ## door is one place and has it from dawn, since the finale has no mark. *(PLAYTEST-117: "a red
 ## arrow (like the blue home arrow but red) to point to tasks where we need to go to a specific
-## location ... unlike the yeller task where we can just go to any yeller".)*
+## location ... unlike the yeller task where we can just go to any yeller".)* **And none once the
+## task is done**: the arrow is there until she has reached the place, and the world answers after
+## that (`docs/NARRATIVE.md`: "A finished task is shown by the world and never by text"), not a pointer back at where she
+## has just been.
 func red_arrow_target() -> Vector2:
 	var step := current_step()
-	if step == null or step.is_pickup or not step.is_one_place:
+	if step == null or step.is_pickup or not step.is_one_place or _contact.is_done:
 		return Vector2.INF
 	return contact_position()

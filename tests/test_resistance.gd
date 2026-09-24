@@ -1702,6 +1702,8 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 		var neighbor := director._rider
 		t.check(neighbor != null and neighbor.def.id == "neighbor" and neighbor.def.mobile,
 				"who is out in the city, walking")
+		t.check(neighbor != null and neighbor.def.shape != null,
+				"with the row's own shape, which a copy has to carry by hand")
 		if neighbor:
 			var door := _city.map.doorstep_world_position()
 			t.check(neighbor.path[neighbor.path.size() - 1].distance_to(door) < 1.0,
@@ -1769,6 +1771,7 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 						"a van's body is off her own sidewalk (%s)" % tile)
 		elif instance.def.id == "police_patrol":
 			patrols += 1
+			t.check(instance.def.shape != null, "the patrol car keeps its shape")
 	t.check(vans == 2 and patrols == 1, "two vans and a patrol at her building (%d, %d)"
 			% [vans, patrols])
 	for instance in happenings.raid:
@@ -1988,6 +1991,10 @@ func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
 		t.check(van.red_arrow_target() != Vector2.INF
 				and van.red_arrow_target() == van.contact_position(),
 				"the package's van is one place, so it earns the arrow, exactly at the contact")
+		var task := van.current_step()
+		van._contact._complete()
+		t.check(task != null and van.red_arrow_target() == Vector2.INF,
+				"and it goes out once she has reached it")
 		van.free())
 
 # ------------------------------------------------------ M188: reachable targets ---
