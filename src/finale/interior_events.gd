@@ -11,7 +11,9 @@ extends Node
 ## one of each — so what this does is the four things an instance actually needs from whatever owns
 ## it: put it in the world, tell it where she is, sum what it contributes, and fire the hard fail
 ## when one of them reaches her. Everything else about an event — the telegraph, the field, the
-## path, the pursuit, the drawing — is `EventInstance`'s own and works unchanged indoors.
+## path, the pursuit, the drawing — is `EventInstance`'s own and works unchanged indoors. And what
+## everything *around* the events reads — the badge, the halo, the debug view, the run log — is
+## `instances()`, which this answers under the name `EventManager` does; see there.
 ##
 ## **The pressure is the same two meters.** `InteriorScene` is a `WorldContext` and asks this for
 ## its excitement, so the baby is woken by a mouse in the basement in exactly the way she is woken
@@ -129,6 +131,11 @@ func stand_down() -> void:
 func burning_side() -> String:
 	return _BURNING_SIDE
 
+## Everything standing in the building right now. **This and `total_excitement_at()` are the whole
+## of what the world's readers ask of an event source** — the screen-edge badge, the excitement
+## halo, the debug view, the readout and the run log's observer — so answering them under the same
+## names `EventManager` does is what makes the building show what the city shows, with no adapter
+## between them. *("The escape shouldn't behave any different than the rest of the game.")*
 func instances() -> Array[EventInstance]:
 	return _instances
 

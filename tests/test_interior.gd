@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_no_pocket_between_two_vents_outlasts_the_noise(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
 	_test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
+	_test_the_building_shows_what_the_city_shows(t)
 
 func _test_the_map_builds(t: Node) -> void:
 	var f := InteriorMap.build()
@@ -1656,5 +1657,93 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 
 	twin.free()
 	twin_scene.free()
+	events.free()
+	scene.free()
+
+## *"The escape shouldn't behave any different than the rest of the game."* The screen-edge badge,
+## the excitement halo and the debug view read the building's `InteriorEvents` the way they read a
+## day's `EventManager` — the one question each asks being `instances()` — and none of them needs
+## a crowd. Each is driven here against the real building rather than a stand-in, so what is
+## checked is that the masked man coming up a stairwell raises a badge, the fire she is standing
+## beside wears a rim, and the building's walls are bodies the bounding-box layer traces.
+func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var fire: EventInstance = null
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "burning_building":
+			fire = instance
+		elif instance.def.id == "masked_pursuer":
+			man = instance
+	t.check(fire != null and man != null, "the building has its fire and its masked man")
+	if not fire or not man:
+		events.free()
+		scene.free()
+		return
+
+	# **The halo**, with no crowd at all: a source that has landed points on her reads a rim.
+	var player := Node2D.new()
+	t.add_child(player)
+	var baby := Baby.new()
+	var halo := ExcitementHalo.new()
+	t.add_child(halo)
+	halo.setup(events, null, player, baby)
+	player.global_position = fire.global_position + Vector2(fire.def.inner_radius * 0.5, 0.0)
+	# Past its notice, the way `InteriorEvents` hands an explosion over: a fire still telegraphing
+	# emits nothing, and a rim on it would be the cue marking a thing that costs her nothing.
+	fire.resume(fire.def.telegraph_time, 0.0, INF)
+	t.check(fire.contribution_at(player.global_position) > ExcitementHalo.CONTRIBUTION_FLOOR,
+			"standing beside the fire, it reaches her")
+	fire.accumulate_landed(20.0)
+	halo._process(STEP)
+	t.check(fire._halo._target_alpha > 0.0,
+			"the fire she is standing beside wears a rim, read from InteriorEvents with no crowd")
+	t.check(not man._halo._target_alpha > 0.0,
+			"and the masked man on the other shaft, charging her nothing, does not")
+
+	# **The badge.** Placed far off any screen and walked in towards her, so the only thing that
+	# can raise it is his own approach — the same test a fire engine coming down a street meets.
+	var edge := DangerEdge.new()
+	t.add_child(edge)
+	edge.size = ScreenOrientation.DESIGN_SIZE
+	edge.setup(events, player)
+	var far := Vector2(-40000.0, -40000.0)
+	player.global_position = far
+	man.global_position = far + Vector2(man.def.outer_radius + 400.0, 0.0)
+	edge._measure(0.1)
+	man.global_position -= Vector2(30.0, 0.0)
+	edge._measure(0.1)
+	var announced: Array[String] = []
+	for badge in edge.announcing():
+		announced.append(badge["id"])
+	t.check(announced.has("masked_pursuer"),
+			"the masked man closing on her from off screen raises a badge (%s)" % str(announced))
+
+	# **The debug view.** The world is the building, so the bounding-box layer walks its walls and
+	# the fire's body; no crowd, no props, and nothing about either is a crash.
+	var stroller := Stroller.new()
+	var layers := DebugLayers.new()
+	t.add_child(layers)
+	layers.setup(events, null, scene, stroller)
+	var bodies := DebugLayers.collision_nodes_under(scene).size()
+	t.check(bodies > 0, "the building's own bodies are found (%d)" % bodies)
+	t.check(layers.body_outline_count() == bodies + DebugLayers.collision_nodes_under(stroller).size(),
+			"and the layer outlines every one of them, with no crowd to add a strike box")
+	t.check(layers._live().size() == events.instances().size(),
+			"its fields and shadows read the same instances InteriorEvents holds")
+
+	layers.free()
+	stroller.free()
+	edge.free()
+	halo.free()
+	baby.free()
+	player.free()
 	events.free()
 	scene.free()

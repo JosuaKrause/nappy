@@ -240,7 +240,10 @@ static func net_landed(landed: float, total_landed: float, decay: float) -> floa
 		return 0.0
 	return maxf(0.0, landed - decay * (landed / total_landed))
 
-var _events: EventManager
+## The event source: anything answering `instances() -> Array[EventInstance]` — `EventManager` in
+## the city, `InteriorEvents` in the escape's building. See `setup()`.
+var _events: Node
+## The crowd, or null where there is none — the escape's building has nobody in it but the events.
 var _crowd: Crowd
 var _player: Node2D
 var _baby: Baby
@@ -251,7 +254,14 @@ var _baby: Baby
 ## whose size barely moves frame to frame.
 var _candidates: Array = []
 
-func setup(events: EventManager, crowd: Crowd, player: Node2D, baby: Baby) -> void:
+## **The building shows what the city shows.** `events` is an event source rather than a day, the
+## one question asked of it being `instances()`, and `crowd` may be null — so `InteriorEvents` and
+## no crowd is a whole candidate set, and a masked man on the stairs or a steam vent in the
+## basement wears the same rim a dog on a sidewalk does. `Baby._update_excitement()` traces
+## `landed()` from `WorldContext.excitement_sources_at()`, which `InteriorScene` answers from the
+## same instances, so nothing about the netting changes indoors. **Called again when the escape
+## walks out of the service door**, with the city's source and crowd in place of the building's.
+func setup(events: Node, crowd: Crowd, player: Node2D, baby: Baby) -> void:
 	_events = events
 	_crowd = crowd
 	_player = player
@@ -288,7 +298,7 @@ func setup(events: EventManager, crowd: Crowd, player: Node2D, baby: Baby) -> vo
 ## source whose own projection is nothing (far away, or both bodies held still) answers zero and
 ## costs nothing but the reach check `expected_gross_at()` already opens with.
 func _process(_delta: float) -> void:
-	if not _events or not _crowd or not _player or not _baby:
+	if not _events or not _player or not _baby:
 		return
 	var here := _player.global_position
 	var player_velocity := (_player as CharacterBody2D).velocity \
@@ -297,7 +307,8 @@ func _process(_delta: float) -> void:
 	var player_sensitivity := _baby.current_sensitivity()
 	_candidates.clear()
 	_candidates.append_array(_events.instances())
-	_candidates.append_array(_crowd.agents())
+	if _crowd:
+		_candidates.append_array(_crowd.agents())
 	var picked := select_sources(_candidates, here)
 	# A `Dictionary` keyed by the picked objects themselves, built once off the (at most
 	# `MAX_SOURCES`) picked set, so the loop below tests membership in O(1) rather than running a

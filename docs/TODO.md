@@ -142,9 +142,8 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 
 **M102, the finale, is built and is the run's ending**: a won day 14 with every task complete goes
 on to it, and `--start-escape` reaches it directly. It is the good ending's last scene — out of
-the apartment, out of the city — and its section holds the brief, the four answered collisions,
-and the one item still open: the building's badge, halo and debug layers, and the escape's
-telemetry observer. The record of what was built is in `DECISIONS.md`.
+the apartment, out of the city. Its brief, the four collisions the player answered and the record
+of what was built are in `DECISIONS.md` under M102; what only a play can settle is in `REVIEW.md`.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -528,8 +527,9 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       before/after evidence with identical-behavior checks. Establish repeatable full active-play
       windows before ranking modest readout, graph, telemetry or pacing costs. Keep rejected short
       trials visible. CPU callbacks do not measure physical display presentation, and unchanged
-      counters do not rule out unobserved script work. M143, readout labels and windows, separately
-      owns the engine's previous-second `process` and `physics` maxima. A pacing switch remains
+      counters do not rule out unobserved script work. The readout's `process` and `physics`
+      lines are the engine's previous-second maxima (`DECISIONS.md`, M143), not per-frame costs.
+      A pacing switch remains
       diagnostic, not a shipping decision.
 - [ ] **Profile the current phone build only after that baseline.** Divide CPU time between the
       baby's every-physics-tick crowd contribution sweep, the halo's rendered-frame contribution
@@ -548,31 +548,6 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       platform allows it. No result here is assumed to explain the older laptop hitch, which
       predates every atlas path, and the native-host evidence supports neither worker jobs nor
       larger pages.
-
----
-
-## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
-the readout's `process` and `physics` lines measure. `Performance.TIME_PROCESS` and
-`TIME_PHYSICS_PROCESS` are not per-frame times: the engine keeps the longest process interval
-and the longest physics interval of the running second and hands each over once a second,
-and the process interval runs from the start of the frame's `_process` through the rendering
-server's sync and draw. So the readout's `last` is the worst frame of the previous second,
-`mean` is the mean of a number that changes once a second, and `max` is the larger of two
-such numbers — three columns of which one is a measurement. Every phone reading so far read
-`mean` as a per-frame cost, which is why it always outran the frame the `fps` line implied.
-
-- [ ] **One column each, named for what it is.** `FrameCost.readout_lines()` prints
-      `process  worst 24.3 ms` and `physics  worst 1.7 ms` — the engine's own number, labelled
-      as the worst interval of the last second — and drops `last`, `mean` and `max`, their
-      rolling windows and `sample()`'s feeding of them, unless a window still has a reader.
-      The run log's `frame` line keeps its `process`/`physics` fields but `docs/TELEMETRY.md`
-      says at the column's explanation and at the readout's that both are the worst interval
-      of the second, that the process interval includes the render submit, and that `worst
-      frame` (the observer's own longest delta) and `process` are therefore two readings of
-      the same hitch from two sides. The test that drives `readout_lines()` follows the new
-      shape. No evidence: a still of the readout says nothing a test does not.
 
 ---
 
@@ -824,6 +799,17 @@ is still true.
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
 
+- [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
+      table in `src/day/day_controller.gd` has no line for `masked_pursuer`, so the summary falls
+      back to the generic text. Found building the escape's run log (`DECISIONS.md`, M102, the
+      building shows what the city shows)
+- [ ] **A retried escape section holds its automatic snapshots back** until the new clock passes
+      the time of the last shot, because a section's clock restarts at zero. Found with the item
+      above
+- [ ] **The readout said "awake" while the baby was drawn asleep**, once, in a building capture
+      under `--start-escape stairwell:right --invincible`. Not investigated; check whether the
+      readout and the picture read the same state in the escape
+
 **Drawings, as SVG:**
 
 - [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
@@ -914,91 +900,3 @@ re-pitched:
       the agents onto it would draw the whole crowd at thirty frames a second, not merely decide
       for it at that rate, which is a larger piece of the trade than it was. Docs/evidence/
       audit-2026-09-13/AUDIT.md, finding 3.1, has the full reasoning.
-
----
-
-## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
-
-**The sequence is the run's ending**: a won day 14 with every task complete goes on to it, and
-`--start-escape` reaches it directly. It is the building with its events, the service exit onto the city,
-the two chains through three calm areas each to the tunnel and the bridge, the explosions and their
-craters, the two hint lines, the millisecond clock, the section restart and the epilogue. What it
-does, what was measured and what was chosen where the design was silent is in `DECISIONS.md` under
-M102, the finale built behind the flag, and M102, the finale is the run's ending; what only a
-play can settle is in `REVIEW.md`. **One item is open**, what the audit of a day against a
-section found and could not wire.
-
-**The brief, in the player's words:**
-
-> "for the good ending. after completing all tasks. after the last day ends the next scene is the
-> hallway in front of the apartment at night with the player holding the sleeping baby (sleep bar
-> is full) the goal is to escape. masked men are trying to capture the player, army trucks are
-> driving on the streets, explosions happen off screen (but loud enough to cause excitement)
-> leaving craters on the street. burnt cars, blockades, craters, etc. block paths through the city.
-> but before reaching the city we need to get out of the house. elevator is non-functioning so we
-> need to take the staircase down a few floors (not excessively many). the main entrance of the
-> building is barricaded so we need to go to the basement walk through the basement corridors to
-> the service entrance. we can keep the events inside the house relatively minimal. maybe some
-> mice. some masked pursuers that run up the stairs that can be avoided by going into a corridor
-> and letting them pass. there might be a fire on one staircase forcing us to use the other
-> staircase (all buildings have two egresses). maybe some steam in the basement etc. once back on
-> the street grid (emerging from the service exit on the side of the main building). no regular
-> cars or regular people on the street. there is a single path through the city that crosses three
-> parks (the player can use them to calm down or get the baby back to sleep if it wakes up) ending
-> at the tunnel or bridge (or maybe one path for each and the player can choose). this is the
-> climax of the story with lots of lethal and dangerous events. help messages show "escape the
-> apartment" and "exit the city" in the appropriate places (only in the beginning of each section
-> like normal tutorial hints). the timer shows milli second precision for dramatic effect (instead
-> of the regular second precision of the main game)"
-
-**What is still open:**
-
-- [ ] **The building shows what the city shows, and the escape is in the run log as a day is**
-      ([PLAYTEST-115](playtests/PLAYTEST-115.md): "The escape shouldn't behave any different
-      than the rest of the game"). The screen-edge badge, the excitement halo and the debug
-      view's layers are built for the city section only, because each reads a `City`'s own
-      `EventManager` and crowd, and the building's `InteriorEvents` is not shaped like one; and
-      neither section has the telemetry observer a day has, which is built around a day's
-      `City`, route tree and corridor. Each needs an adapter or an observer of its own rather
-      than wiring.
-
-**Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
-asked and each answered by the player on 2026-09-09:**
-
-1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
-   the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
-   step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
-   `sabotage_done`), and what it changes is mechanical quiet: every loudspeaker mast is
-   silenced (`EventManager.silence_all_masts()`). **Neither the walk home after it nor the escape is easy**
-   ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be easy!"): M183, the power
-   station and the blackout, takes the traffic lights with the power, so the roads are harder
-   that night on purpose. The hallway scene follows the same night, and the trucks and the
-   masked men are the regime's answer to what she did. *"No triumphalism"* still governs what is shown
-   after the tunnel.
-2. **Losing the finale restarts the section, at no Nerve cost.** *("sounds good at that point you
-   earned it.")* A day lost costs one Nerve and the day is over; the finale has no next day, and
-   the run is already won on paper. Capture, the meter reaching 100, or the clock running out each
-   put her back at the start of the section she was in — the hallway, or the service exit — with
-   Nerves untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes.
-3. **The clock is a day's clock with milliseconds on it, and zero loses.** *("the timer for the
-   sequence is the same length and running out loses (the bridge/tunnel collapses or something
-   like that). the only change is that in addition to minutes and seconds the timer also shows
-   milliseconds. this makes the timer appear faster than just the seconds alone which adds
-   additional tension.")* *Asked for one clock counting down through both sections · overturned
-   by the player on 2026-09-20 to "180s per section"
-   ([PLAYTEST-113](playtests/PLAYTEST-113.md)), because each section is its own day and a shared
-   clock could leave the city's checkpoint unwinnable.* So: each section's clock is
-   `DAY_LENGTH_SECONDS` (180s) long like any day; at zero the way out is gone — the bridge or
-   the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
-   change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
-   milliseconds ticking make the same countdown read as faster.
-4. **Two paths.** *("two paths it is.")* Two chains of the shape above, one ending at the tunnel
-   at the north end of the main road and one at the bridge at its south end, each through its own
-   three parks. They part at the service exit, or as near it as the lattice allows, and do not
-   overlap after that — *"no overlapping routes"* — so the choice is made once, at the door, and
-   is the game's verb; the home lot sits between the two ends of the main road so neither exit is
-   trivially nearer.
-
-**And what the finale is not.** No fighting, no button — the tone rules stand: the danger is
-noise, the men are the same masked men as act III's abductions, and the baby is never threatened by
-anything but being woken.
