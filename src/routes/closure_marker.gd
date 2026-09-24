@@ -25,8 +25,9 @@ const FENCE_ACROSS := &"closures/barrier_across"
 const FENCE_ALONG := &"closures/barrier_along"
 const SIGN := &"closures/sign_closed"
 
-## What each kind leaves in the road. `CORDON` has nothing: an order is not an object, and
-## the barriers are the whole of it.
+## What each kind leaves in the road, drawn lying left to right across the screen, which is
+## across a north-south street. `CORDON` has nothing: an order is not an object, and the
+## barriers are the whole of it.
 const CAUSES := {
 	RoadClosure.Kind.ROADWORKS: &"closures/roadworks",
 	RoadClosure.Kind.FALLEN_TREE: &"closures/fallen_tree",
@@ -34,9 +35,23 @@ const CAUSES := {
 	RoadClosure.Kind.RUBBLE: &"closures/rubble",
 }
 
+## The same causes lying down the screen, away from the camera, which is across an east-west
+## street. Each is a picture of its own in the game's projection rather than a `CAUSES` picture
+## turned, since turning one would lay its upright parts — a root plate, a car, a heap — on their
+## sides. Every one lies along the bottom of its canvas over the same length of road its `CAUSES`
+## picture spans, which is what `cause_feet()` centres on the street.
+const CAUSES_VERTICAL := {
+	RoadClosure.Kind.ROADWORKS: &"closures/roadworks_vertical",
+	RoadClosure.Kind.FALLEN_TREE: &"closures/fallen_tree_vertical",
+	RoadClosure.Kind.CRASH: &"closures/crashed_car_vertical",
+	RoadClosure.Kind.RUBBLE: &"closures/rubble_vertical",
+}
+
 @export var piece := Piece.FENCE
 @export var kind := RoadClosure.Kind.ROADWORKS
-## True when the barrier line runs left to right across the screen.
+## True when the closure runs left to right across the screen, which it does on a north-south
+## street (`RoadClosure.barrier_runs_across()`): it picks the barrier panel and the picture of the
+## cause alike.
 @export var across := true
 ## Width of one fence panel, so a line of them covers the street exactly.
 @export var span := 22.0
@@ -54,20 +69,49 @@ func _exit_tree() -> void:
 func _draw() -> void:
 	match piece:
 		Piece.CAUSE:
-			var name: StringName = CAUSES.get(kind, &"")
-			if name == &"":
-				return
-			var texture := AtlasLibrary.region(name)
-			# `texture.get_size().x * 0.32` is this cause's own point shape's radius, read off its
-			# own picture the same way a tree's is.
-			Sprites.draw_shadow(self, Vector2.ZERO, texture.get_size().x * 0.32)
-			Sprites.draw_standing(self, texture, Vector2.ZERO)
+			_draw_cause()
 		_:
 			_draw_panel()
 			if piece == Piece.SIGN:
 				# On the barrier rather than beside it, so it shares the panel's y and cannot
 				# be sorted behind the thing it is bolted to.
 				Sprites.draw_standing(self, AtlasLibrary.region(SIGN), Vector2(0.0, 2.0))
+
+## What closed the street, centred on the street's middle with its own contact shadow under it.
+## Lying across the screen it stands on this node with a point shadow as wide as 0.64 of its
+## picture; lying down the screen its shadow is a band down the screen instead, as long as 0.64
+## of the road it lies along and as wide as the point shadow of a picture its own width would be.
+func _draw_cause() -> void:
+	var name := cause_picture(kind, across)
+	if name == &"":
+		return
+	var texture := AtlasLibrary.region(name)
+	# `x * 0.32` is a cause's own point shape's radius, read off its own picture the same way a
+	# tree's is.
+	var radius := texture.get_size().x * 0.32
+	if across:
+		Sprites.draw_shadow(self, Vector2.ZERO, radius)
+	else:
+		var lie := float(AtlasLibrary.native_size(CAUSES[kind]).x)
+		GroundShape.segment(maxf(0.0, lie * 0.32 - radius), radius) \
+				.draw_shadow(self, Vector2.ZERO, Vector2.DOWN)
+	Sprites.draw_standing(self, texture, cause_feet(kind, across))
+
+## The picture a cause is drawn with: its `CAUSES` one lying across the screen, its
+## `CAUSES_VERTICAL` one lying down it, and `&""` for a kind that leaves nothing in the road.
+static func cause_picture(cause_kind: int, lies_across: bool) -> StringName:
+	var table: Dictionary = CAUSES if lies_across else CAUSES_VERTICAL
+	return table.get(cause_kind, &"")
+
+## Where a cause's picture stands, relative to the street's middle. Lying across the screen its
+## feet are the middle; lying down the screen it spans the length of road its `CAUSES` picture
+## spans across, up from its feet, so its feet stand half that below the middle and the length is
+## centred on it. `int` rather than `RoadClosure.Kind`: see the **godot** skill on cross-script
+## enums.
+static func cause_feet(cause_kind: int, lies_across: bool) -> Vector2:
+	if lies_across or not CAUSES.has(cause_kind):
+		return Vector2.ZERO
+	return Vector2(0.0, AtlasLibrary.native_size(CAUSES[cause_kind]).x * 0.5)
 
 ## One panel, stretched to exactly the width it is covering. A gap between panels would be a
 ## lie about where the player can walk, which is the same rule the event barriers follow.

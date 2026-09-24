@@ -1,0 +1,57 @@
+<!-- The roadworks of `roadworks.svg` across an east-west street: the trench is cut north to south,
+     away from the camera, so the same dig is drawn again in the game's own projection rather than
+     turned. The trench runs down the screen with its far end wall of earth lit and a ladder
+     standing in it, leaning out over that far rim; the spoil heap with the shovel in it stands
+     beside its far half, a length of concrete pipe lies beside its near half with its hollow mouth
+     turned to us, and a traffic cone stands at the near corner. Feet-anchored at the bottom
+     centre; the dig lies along the bottom 64px of the canvas, the same length of road
+     `roadworks.svg` spans across a north-south street, and `ClosureMarker` stands it half that
+     below the street's middle so it is centred there, with its own ground shadow under it; none is
+     drawn here. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="78" viewBox="0 0 36 78" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <!-- The trench, cut into the road and seen from above: a ragged dark hole, its far end wall of
+       earth lit, its long sides in shade, broken asphalt heaved up round the near rim. -->
+  <path d="M12.4 19 L17 17.6 L22 18.2 L25 20.4 L25.6 30 L24.8 40 L25.6 50 L24.8 60 L25.4 68 L22 71.4 L17 70.8 L12.6 71.6 L11 67 L11.6 58 L10.8 48 L11.6 38 L10.8 28 Z" fill="#231b18" stroke="none"/>
+  <path d="M12.6 19.6 L17 18.2 L22 18.8 L24.8 20.8 L24.8 25.4 L20.4 24.2 L16 24.8 L11.2 25.8 Z" fill="#6b5140" stroke="none"/>
+  <path d="M13.4 20.4 L17 19.2 L21.8 19.8 L23.6 21.2" fill="none" stroke="#a5856a" stroke-width="0.6"/>
+  <path d="M11.2 26 L13.4 27.4 L13 38 L13.8 48 L13 58 L13.6 67 L12.4 70.6 L11 67 L11.6 58 L10.8 48 L11.6 38 L10.8 28 Z M24.8 25.6 L25.4 30 L24.6 40 L25.4 50 L24.6 60 L25.2 67.6 L23.6 69.4 L23.2 60 L23.8 50 L23 40 L23.6 30 Z" fill="#3a2c25" stroke="none"/>
+  <path d="M11 67 L11.6 58 L10.8 48 L11.6 38 L10.8 28 L12.4 19 L17 17.6 L22 18.2 L25 20.4 L25.6 30 L24.8 40 L25.6 50 L24.8 60 L25.4 68" fill="none" stroke-width="1.2"/>
+  <path d="M25.4 68 L22 71.4 L17 70.8 L12.6 71.6 L11 67" fill="none" stroke="#8a8280" stroke-width="1.2"/>
+  <path d="M12.2 74.6 L15.6 72.4 L20 73 L19.2 75 Z M20.6 74.8 L23.6 72.6 L26.4 73.2 L25.6 75.2 Z M7.8 52.6 L10.2 49 L11.4 55 L9 56.4 Z" fill="#5c5654" stroke-width="0.8"/>
+  <path d="M15.6 72.4 L20 73 M23.6 72.6 L26.4 73.2 M10.2 49 L11.4 55" fill="none" stroke="#a39b8e" stroke-width="0.6"/>
+  <!-- A ladder standing in the trench, its top leaning out over the far rim. -->
+  <path d="M15.6 38 L15 8.6 M20.6 38 L21.2 8.6" fill="none" stroke="#2a2226" stroke-width="2.4"/>
+  <path d="M15.6 38 L15 8.6 M20.6 38 L21.2 8.6" fill="none" stroke="#b9bcc0" stroke-width="1"/>
+  <path d="M15.4 31.6 L20.8 31.6 M15.3 25 L20.9 25 M15.2 18.4 L21 18.4 M15.1 11.8 L21.1 11.8" fill="none" stroke="#2a2226" stroke-width="1.6"/>
+  <path d="M15.4 31.6 L20.8 31.6 M15.3 25 L20.9 25 M15.2 18.4 L21 18.4 M15.1 11.8 L21.1 11.8" fill="none" stroke="#b9bcc0" stroke-width="0.6"/>
+  <!-- The spoil heap beside the far half of the trench: loose earth, lit on top, shaded on its
+       right, a few stones in it. -->
+  <path d="M0.6 45.4 C0 41 0.8 37.4 2.4 35.2 C1.8 31.4 3 27.6 5.4 26 C6 21.6 8.6 19 11 19.6 C13.4 20.2 14.4 23.4 14 26.4 C15.4 29 15.6 32.6 14.6 35.4 C15.6 38.4 15.4 42.6 14.2 45.6 C9.6 46.8 4.8 46.8 0.6 45.4 Z" fill="#7a5a40"/>
+  <path d="M2.2 38.4 C2.2 36.6 2.8 35.6 3.8 34.8 C3.4 31.6 4.4 28.8 6.4 27.6 C7 23.6 9 21.2 11.2 21.2 C9.8 22.6 9 24.8 8.8 27.6 C7 28.6 6 31 6.2 34.4 C4.6 35.4 3.4 36.6 2.2 38.4 Z" fill="#9a7552" stroke="none"/>
+  <path d="M12.6 21.6 C13.6 23 13.8 25 13.4 27 C14.6 29.4 14.8 32.6 13.8 35.4 C14.8 38.4 14.6 42.4 13.6 45.2 C12 45.6 10.6 45.8 9.2 45.8 C11.4 42 11.6 38.4 11 35.6 C12 32.6 11.8 29.6 10.6 27.6 C11.8 25.6 12.4 23.6 12.6 21.6 Z" fill="#4e3a2a" stroke="none"/>
+  <path d="M2.8 35.4 C4.6 34.4 7 34.4 9 35.6 M5.6 27 C7.4 26.4 9.4 26.8 10.8 28" fill="none" stroke="#4e3a2a" stroke-width="0.7"/>
+  <g fill="#8a8278" stroke-width="0.7">
+    <circle cx="4.2" cy="41.4" r="1.1"/>
+    <circle cx="9.4" cy="42.6" r="0.9"/>
+    <circle cx="7.6" cy="31" r="0.9"/>
+    <circle cx="10.6" cy="24.2" r="0.8"/>
+  </g>
+  <!-- The shovel, blade down in the heap. -->
+  <path d="M8.8 3.4 L7.4 17.4" fill="none" stroke="#2a2226" stroke-width="2.6"/>
+  <path d="M8.8 3.4 L7.4 17.4" fill="none" stroke="#a0764a" stroke-width="1.2"/>
+  <path d="M7 3 L10.6 3.6" fill="none" stroke="#2a2226" stroke-width="1.8"/>
+  <path d="M5.4 16.8 L9.4 17.2 L9 20 L5.2 19.6 Z" fill="#8b99a1" stroke-width="0.9"/>
+  <!-- A length of concrete pipe lying beside the near half of the trench, its top lit and its
+       hollow mouth turned towards us. -->
+  <path d="M25.6 60 L25.6 46 Q25.6 43 30.6 43 Q35.6 43 35.6 46 L35.6 60 Z" fill="#9a948a"/>
+  <path d="M33.2 44 Q35.4 44.4 35.4 46.4 L35.4 60 L33.2 60 Z" fill="#6f6a62" stroke="none"/>
+  <path d="M27.4 45.4 L27.4 57" fill="none" stroke="#c9c3b8" stroke-width="0.8"/>
+  <circle cx="30.6" cy="60" r="5" fill="#b3ada3"/>
+  <circle cx="30.6" cy="60" r="3.2" fill="#2a2427" stroke-width="0.7"/>
+  <!-- A traffic cone at the near corner: orange, a white band, shaded on its right. -->
+  <path d="M27.6 77.4 L36 77.4 L36 75.8 L27.6 75.8 Z" fill="#2a2226"/>
+  <path d="M29.4 75.8 L31.2 66.2 Q31.9 65.2 32.6 66.2 L34.4 75.8 Z" fill="#e0862a"/>
+  <path d="M30.3 70.8 L33.5 70.8 L33.9 72.8 L29.9 72.8 Z" fill="#f2eee4" stroke="none"/>
+  <path d="M32 65.6 L32.6 66.2 L34.4 75.8 L32 75.8 Z" fill="#3b2410" fill-opacity="0.24" stroke="none"/>
+  <path d="M29.4 75.8 L31.2 66.2 Q31.9 65.2 32.6 66.2 L34.4 75.8" fill="none"/>
+</svg>

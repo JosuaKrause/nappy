@@ -104,13 +104,19 @@ the day's route graph; they are separate from the event pictures with similar no
 |---|---|
 | `art/closures/barrier_{across,along}.svg` | Repeated across both mouths of a closed street, choosing the drawing by the closure's axis: `across` (22×24) is laid edge to edge along a north-south street's mouth, `along` (14×26) is stacked down an east-west one, each stretched to its share of the street. Two white rails with amber diagonal stripes on posts — amber and white so a closure reads as civil rather than as the grey barricade an event leaves, two rails so it is not the roadworks event's single red board. `across` is broadside on, one post per panel; `along` is the same two rails end-on, one post's splayed foot per panel. The rails run edge to edge and the stripes repeat on a period that divides the panel, so the line reads as one continuous barrier. |
 | `art/closures/sign_closed.svg` | Standing on the middle panel of each barrier line, facing the junction: a red plate with a white bar and a white reflective rim on a steel post. |
-| `art/closures/roadworks.svg` | Centre marker for a roadworks closure: a trench cut in the road with a ladder standing in it, its spoil heap with a shovel in it, a length of concrete pipe with its hollow mouth showing, and a traffic cone. |
-| `art/closures/fallen_tree.svg` | Centre marker for a fallen-tree closure: the root plate torn up on edge, the trunk along the road with a snapped branch, and the crown on its side, the same clumped olive broadleaf as the illustrated street trees. |
-| `art/closures/crashed_car.svg` | Centre marker for a crash closure: two crowd-car profiles nose to nose, both fronts crushed, the red one's hood sprung, steam, glass, a bumper and a hubcap on the road. |
-| `art/closures/rubble.svg` | Centre marker for a rubble closure: a heap of fallen facade — a slab of brick wall, a window in its frame, a concrete slab, a timber beam, bent reinforcing bars and loose bricks over dusty concrete. |
+| `art/closures/roadworks{,_vertical}.svg` | Centre marker for a roadworks closure: a trench cut in the road with a ladder standing in it, its spoil heap with a shovel in it, a length of concrete pipe with its hollow mouth showing, and a traffic cone. `roadworks` (64×30) lies across a north-south street; `_vertical` (36×78) is the same dig cut north to south across an east-west one, the trench running down the screen with its far end wall lit and the ladder leaning out over it, the pipe's mouth turned to the camera. |
+| `art/closures/fallen_tree{,_vertical}.svg` | Centre marker for a fallen-tree closure: the root plate torn up on edge, the trunk along the road with a snapped branch, and the crown on its side, the same clumped olive broadleaf as the illustrated street trees. `fallen_tree` (98×40) lies across a north-south street; `_vertical` (44×122) lies across an east-west one, the root plate at the far end with its torn face to the camera, the trunk down the screen and the crown at the near end. |
+| `art/closures/crashed_car{,_vertical}.svg` | Centre marker for a crash closure: two crowd cars nose to nose, both fronts crushed, the red one's hood sprung, steam, glass, a bumper and a hubcap on the road. `crashed_car` (80×38) is the two profiles across a north-south street; `_vertical` (40×84) is the two in the crowd cars' end view, slewed, across an east-west one: the blue car far and facing the camera, the red one near and facing away. |
+| `art/closures/rubble{,_vertical}.svg` | Centre marker for a rubble closure: a heap of fallen facade — a slab of brick wall, a window in its frame, a concrete slab, a timber beam, bent reinforcing bars and loose bricks over dusty concrete. `rubble` (86×34) lies across a north-south street; `_vertical` (44×106) is the heap lying north to south across an east-west one, its crest down the middle, lit on the left and shaded on the right, its near end facing the camera. |
 
-Every cause is drawn feet-anchored with its own point shadow under it (`ClosureMarker._draw()`),
-and the same picture stands on either street axis.
+`ClosureMarker.cause_picture()` picks a cause's picture by the street's axis: `CAUSES` for a
+north-south street, `CAUSES_VERTICAL` for an east-west one. Each `_vertical` picture is drawn again
+in the game's projection, never the across one turned, because turning it would lay its upright
+parts on their sides. Every cause is drawn feet-anchored with its own shadow under it
+(`ClosureMarker._draw_cause()`): across, a point shadow at the street's middle; down the screen, a
+band down the screen. A `_vertical` picture lies along the bottom of its canvas over the same
+length of road its across picture spans, and stands half that below the street's middle
+(`ClosureMarker.cause_feet()`), so both are centred on the street they close.
 
 ### Events and seal pictures
 
