@@ -1,0 +1,30 @@
+nappy rig log  2026-09-24T01:17:37  version v0.15.1-39-gbba49733-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.9 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.4 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 3.0 ms, 328 x 542
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 2.5 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 2.0 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.7 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.7 ms, 190 x 218
+   0.0  texture  atlas page 'events' loaded in the startup: 11.0 ms, 904 x 590
+   0.0  texture  atlas page 'father' loaded in the startup: 1.6 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 36.2 ms
+
+day 9  act 3  run seed 970135478  city seed 970135478  length 144.0s  invincible
+   0.0  arc      block (7,5) commercial -> boarded_up (scheduled)
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 37.4 ms
+   0.0  plan     regions: 41 boundary, 33 wall, 8 door, calm by region: [1, 0, 1, 1]
+   0.0  contact  step 7 on offer at (68,10)
+   0.0  roll     chalk mark guarded: robber 134px away (band 66-176)
+   0.0  plan     closed: roadworks v(7,8), accident h(3,8), accident h(6,5)
+   0.0  plan     calm: 1 forest, 1 quiet_square, 3 park, 4 courtyard
+   0.0  plan     events: abduction x4, alley_mouse x4, alley_robbery x4, burnt_out_car x36, burst_water_main x12, busker x9, cafe_tables x45, car_accident x14, cat_dash x7, charging_dog x3, chatting_mother x2, checkpoint_gate x8, checkpoint_hut x16, collapsed_frontage x12, construction x34, cyclist x5, delivery_van x28, dog_walker x21, fallen_tree, homeless_yeller x10, ice_cream_van x5, leaf_blower x19, loose_dog x17, loudspeaker x6, market_stall x37, moving_van x42, pigeon_flock x5, playground x3, police_patrol x12, poster_crew x12, reversing_lorry x5, roadblock x111, scaffolding x16, skip x18
+   0.0  start    doorstep (20,58), facing 180°
+   0.0  contact  step 7 moved to (13,66): never seen at (68,10)
+   0.0  roll     chalk mark guarded: robber 145px away (band 66-176)
+   0.0  near     checkpoint_hut (telegraph) at (20,57), 48px, exc 0, in 0.0/s (crowd 0.0, events 0.6), sleep 0
+   0.0  near     checkpoint_gate (telegraph) at (20,59), 16px, exc 0, in 0.0/s (crowd 0.0, events 0.6), sleep 0
+   0.0  near     checkpoint_hut (telegraph) at (20,61), 80px, exc 0, in 0.0/s (crowd 0.0, events 0.6), sleep 0
+   0.0  chat     checkpoint_hut at (20,57), 2.0s, baby awake, meter +25
+   0.0  frame    fps 1, worst frame 246.6ms, draws 353, objects 2197, primitives 4906, process 9.97ms, physics 2.02ms
+   0.0  still    quit-when-still, 1.0s held | (19,57) | near: checkpoint_hut 46px
