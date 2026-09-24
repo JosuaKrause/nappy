@@ -1316,10 +1316,19 @@ line a door is well under the three and a half seconds he spends standing still 
 So the side she switched to is not a side she can settle on, which is the whole point of him: the
 way down is a sequence of crossings rather than one.
 
+**The building is dark, because it is the night of the blackout.** *(The player, 2026-09-20: "it
+can be gloomy in the hallways and basement and maybe emergency (red?) lighting in the stairs".)*
+Nothing in it has power: the wall lamps and the chandeliers are drawn unlit, and the part she is in
+is multiplied by one light, her included (`InteriorScene.lighting_at()`) — a cold gloom in the
+hallways and the lobby, darker in the windowless basement, and the red of the emergency lighting in
+the two stairwells. The light changes only when she changes part, which is under a door's fade to
+black. The city she walks out into is the same night, with every window and traffic light dark
+from its first frame (docs/CITY.md, "The power station").
+
 **The night outside is light and noise, and they are separate things.** Every
 `Tuning.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
-hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS`, and the meter takes the
-hit, wherever she is standing. Between those, far more often, a distant flash lights the same
+hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS` and the hallway she is in
+is lit with it, and the meter takes the hit, wherever she is standing. Between those, far more often, a distant flash lights the same
 windows the same way and does nothing else at all — no event, no field, nothing on the meter. A
 shelled city is what she can see out of the window; what she is charged for is only what is close
 enough to hear.

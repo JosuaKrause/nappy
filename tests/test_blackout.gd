@@ -34,6 +34,7 @@ func run(t) -> void:
 	_city.free()
 
 	_test_the_escape_is_dark_from_its_first_frame(t)
+	_test_the_building_is_dark_too(t)
 	GameState.sabotage_done = saved_sabotage
 	GameState.escape_section = saved_section
 
@@ -250,3 +251,40 @@ func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
 	t.check(not city.signals.powered, "its lights with it")
 	city.free()
 	GameState.escape_section = FinaleController.Section.NONE
+
+## The building she escapes through is the same night: the hallways and the lobby in the gloom, the
+## basement darker, the stairwells on the red emergency lighting, and a hallway lit by a blast while
+## its windows flash. Every door is asked which part it is in, since a door's id names its part and
+## the light is chosen by the part.
+func _test_the_building_is_dark_too(t) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var plan := InteriorMap.build()
+	var misplaced := 0
+	for id: String in plan.doors:
+		var door: InteriorMapPlan.Door = plan.doors[id]
+		if InteriorMap.part_at(door.tile) != id.split(":")[0]:
+			misplaced += 1
+	t.check(plan.doors.size() > 0 and misplaced == 0,
+			"every door is in the part its id names (%d of %d misplaced)"
+			% [misplaced, plan.doors.size()])
+	var hallway := scene.lighting_at(plan.waypoints["hallway_second"])
+	var lobby := scene.lighting_at(plan.waypoints["lobby"])
+	var basement := scene.lighting_at(plan.waypoints["basement"])
+	var stairs := scene.lighting_at(plan.waypoints["stairwell_left"])
+	t.check(hallway == Palette.ESCAPE_GLOOM and lobby == Palette.ESCAPE_GLOOM,
+			"the hallways and the lobby are in the gloom")
+	t.check(basement.get_luminance() < hallway.get_luminance(),
+			"and the basement is darker than they are")
+	t.check(stairs == Palette.ESCAPE_EMERGENCY_RED and stairs.r > stairs.g * 2.0,
+			"the stairwells are on the red emergency lighting")
+	t.check(scene.lighting_at(plan.waypoints["stairwell_right"]) == stairs,
+			"both of them")
+	t.check(hallway.get_luminance() < 0.6, "and nothing in the building is lit as it was")
+	scene.flash_windows()
+	t.check(scene.lighting_at(plan.waypoints["hallway_second"]).get_luminance()
+			> hallway.get_luminance(), "a hallway is lit up while its windows flash")
+	t.check(scene.lighting_at(plan.waypoints["stairwell_left"]) == stairs,
+			"a stairwell, with no windows, is not")
+	scene.free()
