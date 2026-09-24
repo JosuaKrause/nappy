@@ -111,6 +111,7 @@ func _parse_log(path: String) -> Dictionary:
 	target_pattern.compile("'([a-z]+)'")
 	var reached := {}
 	var outcome := ""
+	var held: Array[String] = []
 	while not file.eof_reached():
 		var line := file.get_line()
 		var columns := line.strip_edges().split(" ", false)
@@ -144,8 +145,13 @@ func _parse_log(path: String) -> Dictionary:
 			reached[target + "_skip"] = "unreachable"
 		elif text.contains("stuck fast"):
 			reached[target + "_skip"] = "stuck fast"
+			# "'<target>' stuck fast at (x,y) against <what>, skipping" — where she was and what
+			# held her, so the table says which chokepoint each stuck leg met.
+			held.append("%s at %s" % [target,
+					text.get_slice("stuck fast at ", 1).get_slice(", skipping", 0)])
 	file.close()
 	reached["outcome"] = outcome
+	reached["held"] = "; ".join(held)
 	return reached
 
 func _row(day: int, seed_value: int, reached: Dictionary, note: String) -> String:
@@ -162,6 +168,9 @@ func _row(day: int, seed_value: int, reached: Dictionary, note: String) -> Strin
 	var outcome: String = reached.get("outcome", "")
 	if outcome == "" and reached.has("done"):
 		outcome = "route done"
+	var held: String = reached.get("held", "")
+	if held != "":
+		outcome += " | stuck: " + held
 	return "%3d  %-9d %6s  %6s  %6s  %6s  %6s  %4s  %s" \
 			% [day, seed_value, mark, task, calm, settled, home, left, outcome]
 

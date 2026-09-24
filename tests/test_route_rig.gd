@@ -28,7 +28,9 @@ func run(t) -> void:
 	_test_line_of_sight_refuses_a_bare_road_tile(t)
 	_test_line_of_sight_allows_a_crossing_tile(t)
 	_test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t)
-	_test_avoid_zone_excludes_only_its_own_centre(t)
+	_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t)
+	_test_a_replan_keeps_off_the_ground_round_what_caught_her(t)
+	_test_unstick_tries_the_direction_away_from_what_caught_her_first(t)
 	_test_reachable_point_near_returns_centre_when_already_open(t)
 	_test_reachable_point_near_steps_off_obstructed_ground(t)
 	_test_resolve_target_mark_is_todays_contact(t)
@@ -41,6 +43,8 @@ func run(t) -> void:
 	_test_check_settled_waits_for_asleep(t)
 	_test_on_day_finished_won_still_finishes(t)
 	_test_maybe_replan_waits_before_forcing_a_physical_maneuver(t)
+	_test_a_mark_leg_follows_the_mark_when_it_moves(t)
+	_test_a_mark_leg_ends_when_the_director_records_the_mark(t)
 	_test_a_real_leg_walks_her_there_and_reports_it(t)
 	_teardown(t)
 
@@ -208,17 +212,152 @@ func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t) ->
 			% road_steps)
 	rig.free()
 
-# --------------------------------------------------------------- _avoid_zone ---
+# ---------------------------------------------------------------- bodies ---
 
-func _test_avoid_zone_excludes_only_its_own_centre(t) -> void:
+## A kerb tile with a two-lane pavement behind it and a building behind that, the carriageway in
+## front, and the same on the three tiles either side along the street — the site a `delivery_van`
+## (`pavement_side = AT_THE_KERB`) is parked on — far enough from the doorstep that nothing this
+## suite walks passes it, and with no live body's clearance already reaching its frontage tile.
+## Scanned rather than hard-coded, like `_find_tile()`. Answers `Vector2i(-1, -1)` if none.
+func _find_kerb_site(t, rig: RouteRig) -> Vector2i:
+	var doorstep := _city.map.world_to_tile(_city.map.doorstep_world_position())
+	var clear := rig._body_clear_tiles()
+	for y in range(4, _city.map.size.y - 4):
+		for x in range(4, _city.map.size.x - 4):
+			var kerb := Vector2i(x, y)
+			if absi(kerb.x - doorstep.x) + absi(kerb.y - doorstep.y) < 12:
+				continue
+			var inward := _city.map.pavement_inward(kerb)
+			if inward == Vector2i.ZERO:
+				continue
+			if _kerb_site_fits(kerb, inward, clear):
+				return kerb
+	t.check(false, "seed %d day %d has a clear kerb with a two-lane pavement to park a van at"
+			% [SEED, DAY])
+	return Vector2i(-1, -1)
+
+func _kerb_site_fits(kerb: Vector2i, inward: Vector2i, clear: Dictionary) -> bool:
+	var along := Vector2i(inward.y, inward.x)
+	for k in range(-3, 4):
+		var here := kerb + along * k
+		if _city.map.pavement_inward(here) != inward \
+				or _city.map.tile_at(here - inward) != GameEnums.TileType.ROAD \
+				or _city.map.tile_at(here - inward * 2) != GameEnums.TileType.ROAD \
+				or _city.map.tile_at(here + inward) != GameEnums.TileType.SIDEWALK \
+				or _city.map.is_walkable(here + inward * 2):
+			return false
+		for tile: Vector2i in [here, here + inward, here - inward, here - inward * 2]:
+			if not _city.map.is_open(tile) or _city.map.is_obstructed(tile) or clear.has(tile):
+				return false
+	return true
+
+## The chokepoint the rig stalled at: a kerbed `delivery_van` (22px) covers only its own kerb
+## tile's centre, so `CityMap.obstructed_tiles` records that tile alone — yet the frontage tile
+## beside it is 10px from the van's side, under her 14px radius, and so is the carriageway's first
+## lane. `_body_clear_tiles()` must keep a plan off both, and off the kerb tiles either side, while
+## leaving the carriageway's second lane open: that is the way past a van at the kerb.
+func _test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t) -> void:
 	var rig := _rig(t)
-	var centre := Vector2i(10, 10)
-	var zone := rig._avoid_zone(centre, 2)
-	t.check(not zone.has(centre), "the avoid zone never blocks the tile she is standing on")
-	t.check(zone.size() == 24, "a radius-2 ring is the 5x5 block minus its own centre (got %d)"
-			% zone.size())
-	t.check(zone.has(centre + Vector2i(2, 2)) and zone.has(centre + Vector2i(-2, -2)),
-			"the ring reaches its full radius")
+	var kerb := _find_kerb_site(t, rig)
+	if kerb == Vector2i(-1, -1):
+		rig.free()
+		return
+	var inward := _city.map.pavement_inward(kerb)
+	var along := Vector2i(inward.y, inward.x)
+	var van := _city.events.spawn_extra(EventCatalogue.by_id("delivery_van"),
+			_city.map.tile_to_world(kerb))
+	t.check(van.is_solid(), "the van stands with a solid body")
+	var frontage := kerb + inward
+	t.check(_city.map.is_obstructed(kerb) and not _city.map.is_obstructed(frontage),
+			"the tile record has the van's kerb tile and not the frontage tile beside it")
+	var clear := rig._body_clear_tiles()
+	t.check(clear.has(frontage), "the frontage tile beside the van is kept clear of")
+	t.check(clear.has(kerb - inward), "the carriageway's first lane beside the van is kept clear of")
+	t.check(clear.has(kerb - along) and clear.has(kerb + along),
+			"the kerb tiles either side of the van are kept clear of")
+	t.check(not clear.has(kerb - inward * 2), "the carriageway's second lane stays open")
+	var caught := rig._tiles_near_body(van, RouteRig._CAUGHT_CLEARANCE)
+	t.check(caught.has(frontage + along) and caught.has(frontage - along),
+			"the ground round a van that caught her reaches past its own clearance")
+	t.check(not caught.has(kerb - inward * 2),
+			"and still leaves the carriageway's second lane open past it")
+
+	var from := frontage - along * 3
+	var to := frontage + along * 3
+	var path := rig._plan(from, to)
+	t.check(not path.is_empty(), "a plan past the van along its own pavement exists")
+	t.check(rig._plan_kept_clear, "and keeps clear of every body")
+	var pressed := 0
+	for tile in _walked(rig._to_world(path)):
+		if clear.has(tile) and tile != from and tile != to:
+			pressed += 1
+	t.check(pressed == 0, "no step of the plan past the van is one she cannot stand in the middle"
+			+ " of (%d found)" % pressed)
+	_city.events.retire(van)
+	_city.map.release_obstruction(van.get_instance_id())
+	rig.free()
+
+## Every tile a walk down `waypoints` passes through, in order — `_simplify()` keeps only the ends
+## of a straight run, and every run is along one row or column (`_line_of_sight()` refuses a
+## diagonal), so the tiles between two waypoints are a straight line of them.
+func _walked(waypoints: Array[Vector2]) -> Array[Vector2i]:
+	var walked: Array[Vector2i] = []
+	for i in waypoints.size():
+		var a := _city.map.world_to_tile(waypoints[i])
+		if i == waypoints.size() - 1:
+			walked.append(a)
+			break
+		var b := _city.map.world_to_tile(waypoints[i + 1])
+		var step := Vector2i(signi(b.x - a.x), signi(b.y - a.y))
+		var tile := a
+		while tile != b:
+			walked.append(tile)
+			tile += step
+	return walked
+
+## A re-plan keeps off `_leg_avoid`, the ground round what has caught her this leg, rather than
+## ringing her own position and walking her straight back to the same pinch. Pinned directly on a
+## tile the ordinary plan walks through, rather than by wedging a real body, since the claim under
+## test is what `_replan()` does with the zone once `_note_what_caught_her()` has filled it.
+func _test_a_replan_keeps_off_the_ground_round_what_caught_her(t) -> void:
+	var rig := _rig(t)
+	rig._resistance = _resistance
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+	var calm := rig._resolve_target("calm")
+	t.check(calm != Vector2.INF, "a calm target exists for this leg")
+	if calm == Vector2.INF:
+		rig.free()
+		return
+	rig._begin_leg(calm)
+	var first := _walked(rig._waypoints)
+	t.check(first.size() >= 5, "the ordinary plan to calm ground has a middle to take away")
+	if first.size() < 5:
+		rig.free()
+		return
+	var pinch := first[first.size() / 2]
+	rig._leg_avoid = {pinch: true}
+	rig._replan()
+	t.check(not rig._waypoints.is_empty() and not _walked(rig._waypoints).has(pinch),
+			"the re-plan walks round the ground round what caught her (%s)" % pinch)
+	rig.free()
+
+## The maneuver starts from the compass point pointing most directly away from what caught her,
+## rather than always from north — pressing into the body first spends a whole
+## `_UNSTICK_TRY_SECONDS` on the one direction that cannot work.
+func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t) -> void:
+	var rig := _rig(t)
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+	rig._caught_away = Vector2.LEFT
+	rig._begin_unstick()
+	t.check(rig._unstick_order[0] == Vector2.LEFT, "the first direction tried is away from the body")
+	t.check(rig._unstick_order[rig._unstick_order.size() - 1] == Vector2.RIGHT,
+			"the last is straight back into it")
+	rig._caught_away = Vector2.ZERO
+	rig._begin_unstick()
+	t.check(rig._unstick_order == RouteRig._UNSTICK_DIRECTIONS,
+			"with nothing solid touching her, the plain compass order")
 	rig.free()
 
 # --------------------------------------------------------- _reachable_point_near ---
@@ -438,6 +577,48 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	t.check(rig._unsticking and rig._leg_stall_episodes == 1,
 			"still stuck right after waiting escalates to the physical maneuver, not a second wait")
 
+	rig.free()
+
+## A mark nobody has seen is moved to an alley near her (`ResistanceDirector._move_the_mark()`),
+## usually on the day's first frame, after the rig has planned to where it stood at dawn — the
+## day 6 seed 1234567 leg that walked the other way across the city and stalled far from any mark.
+## The contact is moved by hand here, the one field the director's own move writes.
+func _test_a_mark_leg_follows_the_mark_when_it_moves(t) -> void:
+	var rig := _rig(t)
+	rig._resistance = _resistance
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+	rig._current_word = "mark"
+	var dawn := _resistance.contact_position()
+	rig._begin_leg(dawn)
+	t.check(rig._leg_step == _resistance.current_step(), "a mark leg remembers the step it walks to")
+	t.check(not rig._retarget_if_moved(), "a mark still where the leg aimed is not re-planned to")
+	var moved := _city.map.home_world_position()
+	_resistance._contact.global_position = moved
+	t.check(rig._retarget_if_moved() and rig._current_target_world == moved,
+			"a mark that has moved is re-planned to where it is now")
+	_resistance._contact.global_position = dawn
+	rig.free()
+
+## A `mark` leg ends when the director records the mark completed, whatever the waypoints say —
+## `ContactPoint.REACH` (36px) completes it before the last waypoint, which a body beside the mark
+## can keep her from.
+func _test_a_mark_leg_ends_when_the_director_records_the_mark(t) -> void:
+	var rig := _rig(t)
+	rig._resistance = _resistance
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+	rig._targets = ["mark", "home"]
+	rig._target_index = 0
+	rig._current_word = "mark"
+	rig._begin_leg(_resistance.contact_position())
+	t.check(not rig._waypoints.is_empty(), "the mark leg has waypoints left to walk")
+	var step := _resistance.current_step()
+	GameState.completed_resistance_steps.append(step.index)
+	rig._follow(0.0)
+	t.check(rig._target_index == 1 and rig._current_word == "home",
+			"the leg ends once its step is recorded completed, and the next target begins")
+	GameState.completed_resistance_steps.erase(step.index)
 	rig.free()
 
 # ------------------------------------------------------------ end to end ---
