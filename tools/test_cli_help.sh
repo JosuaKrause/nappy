@@ -110,6 +110,8 @@ assert_exit "resolve-decisions-top.sh --help" zero ./tools/resolve-decisions-top
 assert_exit "resolve-decisions-top.sh -h"     zero ./tools/resolve-decisions-top.sh -h
 assert_exit "update-pr.sh --help" zero ./tools/update-pr.sh --help
 assert_exit "update-pr.sh -h"     zero ./tools/update-pr.sh -h
+assert_exit "land-prs.sh --help" zero ./tools/land-prs.sh --help
+assert_exit "land-prs.sh -h"     zero ./tools/land-prs.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
@@ -141,6 +143,13 @@ assert_exit "update-pr.sh --bogus" nonzero ./tools/update-pr.sh --bogus
 # than guessing a target.
 assert_exit "update-pr.sh (no target)" nonzero ./tools/update-pr.sh
 assert_exit "update-pr.sh (two targets)" nonzero ./tools/update-pr.sh 1 2
+assert_exit "land-prs.sh --bogus"    nonzero ./tools/land-prs.sh --bogus 1
+# With no PR number there is nothing to land, and a non-numeric argument is not a PR number --
+# both are rejected before any gh call, same as a real PR number would trigger one.
+assert_exit "land-prs.sh (no PR)"        nonzero ./tools/land-prs.sh
+assert_exit "land-prs.sh (bad PR number)" nonzero ./tools/land-prs.sh abc
+assert_exit "land-prs.sh --timeout (missing value)" nonzero ./tools/land-prs.sh --timeout
+assert_exit "land-prs.sh --timeout (not a number)"  nonzero ./tools/land-prs.sh --timeout foo 1
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and

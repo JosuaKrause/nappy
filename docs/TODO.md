@@ -307,28 +307,6 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 ---
 
-## M191 — A car's horn is early enough at every speed · found 2026-09-24
-
-The **crowd-traffic** rule's fairness contract: a car on a street she may step onto warns her with
-its horn early enough to walk the whole carriageway with the doubled hard-fail margin
-(`Tuning.validate_traffic()`, 1.39 s). With the power out on day 14 the spine's traffic no longer
-stops at a light, so the main road's crossings rest on the same contract (`DECISIONS.md`, M183, the
-blackout is everything at once). Measuring it found it untrue on every street: the crowd only
-watches her for the horn and the strike within `CAR_ZEBRA_SIGHT` (200px), so a car's warning is
-capped at 200px of travel whatever its speed, and above 144px/s it is shorter than the contract —
-first horns at 198 to 199px, 1.27 s at 157px/s and 1.10 s at 181px/s, against car speeds spread
-over 130 to 185px/s.
-
-- [ ] **The horn's watch reaches as far as the contract needs at the car's own speed** — at least
-      speed × the contract's time, 185 × 1.6 ≈ 296px for the fastest car — while the strike keeps
-      its own reach, and `Tuning.validate_traffic()` checks the watch against the fastest car's
-      speed so the contract fails at boot rather than on the street. A horn heard earlier is a
-      number she can feel, and it is the contract's own number, so the change is the contract
-      being made true rather than a new balance. `tests/probes/` measures the first-horn distance
-      and time per speed before and after.
-
----
-
 ## M185 — A ground floor is blank wall or shops · asked for 2026-09-23
 
 > "Yes, the home block should have fixed visuals. That way we can craft a convincing house that
@@ -742,12 +720,11 @@ is still true.
 
 **Drawings, as SVG:**
 
-- [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
-      least two frames** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the
-      main break) or puffs of smoke (from the car crash) or steam (from the escape) should have
-      (at least) a two frame animation to convey what they are better"). `burst_water_main`,
-      the car crash and `basement_steam` each draw one still picture today; each gets a second
-      frame or more, authored as SVG, alternated while the event is live
+- [ ] **The basement vent's pipe vanishes between blows.** `steam.svg` draws the pipe and the
+      cloud as one picture, and `InteriorEvents` keeps no instance between blows, so the pipe is
+      only on screen while it steams; a vent that is there all the time, blowing or not, is what
+      a player can plan around. Found while animating the steam (`DECISIONS.md`, M100, water,
+      smoke and steam move)
 
 **Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
 the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses

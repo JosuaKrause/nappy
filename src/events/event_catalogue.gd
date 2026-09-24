@@ -2129,7 +2129,9 @@ static func _fallen_tree() -> EventDef:
 
 ## A hard seal: two cars locked together across the carriageway, debris between them and an
 ## onlooker on each pavement — the player's other own example. Same single-copy geometry as
-## `fallen_tree`, for the same reason: one continuous scene rather than a repeated segment.
+## `fallen_tree`, for the same reason: one continuous scene rather than a repeated segment. Smoke
+## puffs up off the wreck over two frames (`EventInstance.CAR_ACCIDENT_B` and its vertical
+## sibling) that stand on the same contacts, so the parts below hold for both.
 ##
 ## **The one seal that is solid only in parts, and the one that emits.** *(2026-09-12: "a car crash
 ## right now has a full bounding box even though there are gaps in the sprite. the bounding box
@@ -2231,7 +2233,8 @@ static func _scaffolding() -> EventDef:
 ## A hard seal: a crater with water across the asphalt and a municipal barrier at each kerb — "the
 ## one that explains why the road is out too" (`docs/DECISIONS.md`, "Eight seal pictures").
 ## Single-copy geometry, same as
-## `fallen_tree` and `car_accident`.
+## `fallen_tree` and `car_accident`. The fountain surges and splashes over two frames
+## (`EventInstance.BURST_MAIN_B` and its vertical sibling), so the water reads as water.
 static func _burst_water_main() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burst_water_main"
@@ -2583,7 +2586,8 @@ static func _masked_pursuer() -> EventDef:
 ## **One vent is a gate; the corridor is several of them on their own clocks.** The count, the
 ## periods and how long a blow lasts are `Tuning.FINALE_STEAM_PERIODS` and
 ## `Tuning.FINALE_STEAM_BLOWS_FOR`; `InteriorEvents` sites them along the basement's own walk and
-## runs their clocks. What this row owns is one blow: notice, body, field, over.
+## runs their clocks. What this row owns is one blow: notice, body, field, over. Its plume billows
+## over two frames (`EventInstance.STEAM_B`) for the whole blow.
 static func _basement_steam() -> EventDef:
 	var def := EventDef.new()
 	def.id = "basement_steam"

@@ -479,7 +479,10 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
 2. **The horn.** A car sounds it `1.6 s` out at anybody standing in its lane, which must
    exceed the time to walk the whole width of the carriageway with the doubled margin every
    hard fail is owed: `64px × 2 / 92 = 1.39 s`. The horn is itself a jolt (~8 points), so a
-   near miss costs something even when it stays a near miss.
+   near miss costs something even when it stays a near miss. The crowd watches for it from
+   `CAR_HORN_SIGHT` (296px) out — wider than the 200px the strike and the give-way scan use,
+   since a fast car needs more than 200px of travel to sound the whole `1.6 s` — and
+   `Tuning.validate_traffic()` checks that reach against the fastest car on boot.
 
 The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
 vocabulary. See docs/EVENTS.md.
