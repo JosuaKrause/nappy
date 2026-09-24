@@ -421,6 +421,14 @@ func _ready() -> void:
 	if screenshot:
 		add_child(screenshot)
 
+	# Apart from the boot-order block above and below: `StillWatch` only reads `_city`, `_player`
+	# and `_day`, which already exist by here, and does not affect what day starts or how.
+	if DevFlags.quit_when_still_requested():
+		var still_watch := StillWatch.new()
+		still_watch.name = "StillWatch"
+		add_child(still_watch)
+		still_watch.setup(_city, _player, _day, DevFlags.quit_when_still_seconds())
+
 	# **Except under a rig.** A screenshot tool that opened onto the title screen would photograph
 	# the title screen, which is every `tools/shot.sh` recipe quietly answering the wrong
 	# question, and `--press` and `--walk` would hold keys against a game that has not begun.
