@@ -71,6 +71,13 @@ const SEEN_DWELL_SECONDS := 1.0
 ## doc for the fallback when it does.
 const TRAP_DRAW_LIMIT := 24
 
+## How many bearings `_reachable_offset` tries before it settles for the last one drawn — a task's
+## rider sits wherever `EventScheduler` put it, which can be flush against a building, so the fixed
+## clearance distance can land inside that same building on some bearings and not others. The same
+## shape of budget as `TRAP_DRAW_LIMIT`, for the same reason: a draw has to stop somewhere; see
+## `_reachable_offset`'s own doc for the fallback when it does.
+const REACHABLE_OFFSET_DRAW_LIMIT := 24
+
 var _city: City
 var _map: CityMap
 var _contact: ContactPoint
@@ -306,12 +313,38 @@ func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, away_from: Ve
 ## Clear of any obstruction the rider carries, in a direction the day's own RNG chose — a
 ## fixed offset rather than a re-rolled one, so a contact that has to clear a body sits at a
 ## learnable spot. Zero for a rider with no body at all, like the yeller.
+##
+## **Redrawn, up to `REACHABLE_OFFSET_DRAW_LIMIT` times, against the same ground-legality check
+## every other placement in this file keeps** (`_pick_reachable()`'s five refusals, plus
+## `is_obstructed()` — see `_draw_guard_position`, which circles a point the same way for the same
+## reason): the fixed distance this draws at is clear of the rider's *own* body by construction,
+## but a rider sited flush against a building or another body — `EventScheduler` never asked this
+## question when it placed the rider, only whether the rider's own footprint fit — can still put
+## some bearings inside a wall. Rejected rather than repaired, the same rule as everywhere else.
+## **The last bearing drawn stands in if every attempt fails** rather than leaving the contact with
+## nowhere at all: `_begin_step()` has no branch for "this step has no reachable ground" the way
+## `_place()` does, and a task whose seeded rider is that thoroughly walled in is a placement bug
+## worth seeing in play (Telemetry notes it) rather than a step silently dropped.
 func _reachable_offset(instance: EventInstance, rng: RandomNumberGenerator) -> Vector2:
 	var clearance: float = instance.def.obstructs_radius
 	if clearance <= 0.0:
 		return Vector2.ZERO
 	var distance := clearance + Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
-	return Vector2.RIGHT.rotated(rng.randf() * TAU) * distance
+	var walled_alleys := _walled_alleys()
+	var offset := Vector2.ZERO
+	for attempt in REACHABLE_OFFSET_DRAW_LIMIT:
+		offset = Vector2.RIGHT.rotated(rng.randf() * TAU) * distance
+		var tile := _map.world_to_tile(instance.global_position + offset)
+		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
+				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys) \
+				or _map.is_obstructed(tile):
+			if attempt == REACHABLE_OFFSET_DRAW_LIMIT - 1:
+				Telemetry.note("contact", ("step %d: no reachable offset found for '%s' in %d " +
+						"draws — the last bearing drawn stands in") % [_step.index if _step else -1,
+						instance.def.id, REACHABLE_OFFSET_DRAW_LIMIT])
+			continue
+		return offset
+	return offset
 
 ## Where a step's contact — or, for an `EVENT`/`SCAR`-fallback perform step, the event it rides
 ## on — is sited. A pickup and a `district`-less perform both name tile types in `placement`;
@@ -403,6 +436,13 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## check for a mark or an ordinary perform step's own tile types, and the one that matters for
 ## the two new placement kinds.
 ##
+## **Never inside a solid event body, either.** `CityMap.is_obstructed()` is the day's own record
+## of where a café's tables, a construction band, a kerbed van or any other stationary body
+## stands, filled by `EventManager.start_day()` from the whole day's plan before this director
+## ever runs — an open, walkable tile can still have a body parked on it, which `is_walkable()`
+## has no way to see. Rejected rather than repaired, the same rule every other placement in this
+## file keeps.
+##
 ## **Avoids a tile a completed step already used, unless nothing else reachable is left (M177).**
 ## Landing a fresh mark back on the very alley an earlier step's mark stood at reads as the game
 ## reusing its own prop rather than "any alley she comes across" — but the avoidance never costs
@@ -415,8 +455,8 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## ground means *no hazard or catalogue row may be sited here*; a contact is neither, and for a
 ## step whose candidates are the held region-door segments themselves (`_place_at_a_door()`) the
 ## filter would refuse the very ground the task points at. It did — see that call's own note.
-## The other four refusals stand even then: a door on closed, unwalkable, home-block-lot or
-## walled-alley ground is still a door she cannot cross today.
+## The other five refusals stand even then: a door on closed, unwalkable, obstructed, home-block-lot
+## or walled-alley ground is still a door she cannot cross today.
 ##
 ## **Not exempted: a door on a street bordering the home block.** `is_on_home_block` only refuses
 ## a tile inside the home block's own lot (its own doc says so); the streets around the block are
@@ -432,7 +472,8 @@ func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 	for tile in candidates:
 		if not _map.is_walkable(tile) or _map.is_closed(tile) \
 				or (not allow_held and _map.is_held_at(tile)) \
-				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
+				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys) \
+				or _map.is_obstructed(tile):
 			continue
 		reachable.append(tile)
 		if tile not in GameState.completed_resistance_alley_tiles:

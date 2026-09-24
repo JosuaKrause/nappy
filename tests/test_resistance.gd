@@ -56,6 +56,7 @@ func run(t) -> void:
 	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
+	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	if _city != null:
 		_city.free()
 
@@ -1511,3 +1512,101 @@ func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
 				and van.red_arrow_target() == van.contact_position(),
 				"the package's van is one place, so it earns the arrow, exactly at the contact")
 		van.free())
+
+# ------------------------------------------------------ M188: reachable targets ---
+# The route rig (M184, a rig walks the route) found a mark and two contacts standing on ground
+# `_pick_reachable()`/`_reachable_offset()` never checked was clear of a solid body —
+# `CityMap.is_obstructed()`, filled by `EventManager.start_day()` from the day's whole plan before
+# this director ever places anything (`main.gd`'s own day order: `_city.events.start_day()` runs
+# before `_resistance.start_day()`). Both now refuse obstructed ground.
+
+## The same three seeds `tests/probes/m184_route_timing.gd` times days 6-13 against.
+const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
+const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
+
+## `GameState.day_rng()`'s own hash, built without touching the `GameState.run_seed` global this
+## sweep has no other use for — same stream a played day actually draws from, for a seed and a day
+## this test chooses rather than the run's own.
+func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
+	return rng
+
+## Every refusal `_pick_reachable()` and `_reachable_offset()` both check today — `is_held_at`
+## excepted for the one task deliberately sited on held ground, the crossing at a region door
+## (`_place_at_a_door()`'s own `allow_held`).
+func _stands_on_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[Rect2i],
+		allow_held: bool) -> bool:
+	return map.is_walkable(tile) and not map.is_closed(tile) \
+			and (allow_held or not map.is_held_at(tile)) and not map.is_on_home_block(tile) \
+			and not map.is_in_walled_alley(tile, walled_alleys) and not map.is_obstructed(tile)
+
+## Every mark and every contact a task activates stands on walkable, unobstructed ground — swept
+## over days 6-13 and the seeds the route rig timed, through the real day order (`City.start_day()`,
+## then `EventManager.start_day()`, then `ResistanceDirector.start_day()`) so
+## `CityMap.obstructed_tiles` is the day's real record rather than an empty one.
+##
+## **Each day is asked fresh**, the same "no history, just this day" state `--day N`
+## (`DevFlags.day_override()`) boots into — `GameState.start_run()` runs before `GameState.day` is
+## set, so a rig timing day 9 alone never played days 6-8 first — matching every other single-day
+## placement test in this file (`_test_the_door_task_sits_at_a_region_door` and others call
+## `director.start_day()` for one chosen day with no days before it either).
+##
+## Days 10 and 11 offer no mark (`ResistanceSteps._build()`'s own comment on the later slice they
+## wait on) and are swept anyway rather than skipped, so the loop's own day range reads as "days
+## 6-13" without a silent gap; `current_step() == null` there is expected and checked nothing.
+##
+## Named cases this sweep carries (`docs/TODO.md`, M188): day 9 seed 4242 (a mark on obstructed
+## ground) and days 7 and 8 seed 90210 (a contact's offset landing inside a building) are all
+## within this sweep's own days and seeds, so the general loop below checks them along with
+## everything else rather than as a separate case.
+func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> void:
+	_with_clean_run(func() -> void:
+		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		var checked := 0
+		for seed_value in REACHABILITY_SWEEP_SEEDS:
+			var city: City = CITY_SCENE.instantiate()
+			t.add_child(city)
+			city.build(CityGenerator.generate(seed_value))
+			for day in REACHABILITY_SWEEP_DAYS:
+				GameState.completed_resistance_steps = []
+				GameState.failed_resistance_steps = []
+				GameState.completed_resistance_alley_tiles.clear()
+				var closure_state := CityState.new()
+				closure_state.begin_day(city.map.block_plans, day)
+				city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
+				city.events.start_day(day, _production_rng(seed_value, day, "events"), [],
+						city.map.doorstep_world_position())
+
+				var director := ResistanceDirector.new()
+				t.add_child(director)
+				director.set_process(false)
+				director.setup(city, city.map)
+				director.start_day(day, _production_rng(seed_value, day, "resistance"),
+						Tuning.day_length(day))
+
+				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
+				var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+				var mark_step := director.current_step()
+				if mark_step != null:
+					checked += 1
+					var mark_tile := city.map.world_to_tile(director.contact_position())
+					t.check(_stands_on_legal_ground(city.map, mark_tile, walled_alleys, false),
+							("seed %d day %d: step %d's mark stands on walkable, unobstructed " +
+							"ground at %s") % [seed_value, day, mark_step.index, mark_tile])
+
+					director._on_contact_completed(mark_step.index)
+					var task_step := director.current_step()
+					if task_step != null:
+						checked += 1
+						var task_tile := city.map.world_to_tile(director.contact_position())
+						var allow_held := task_step.target_kind == ResistanceSteps.TargetKind.DOOR
+						t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
+								allow_held),
+								("seed %d day %d: step %d's contact stands on walkable, " +
+								"unobstructed ground at %s") % [seed_value, day, task_step.index,
+								task_tile])
+				director.free()
+			city.free()
+		GameState.completed_resistance_alley_tiles = saved_tiles
+		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
