@@ -138,3 +138,10 @@ animals (PR 300) and street obstructions (PR 301):
     balcony of one variant.
 20. **A wide front may carry two fire escapes**, but only with a gap of at least one and a half
     full fire escape widths between them.
+
+## Then, on the closures across the street (M187, PR 306, at 35bbefe9)
+
+> "the top construction pole is drawn above the barried when it should be behind"
+
+21. **On an end-on roadworks barrier the far end post is drawn behind the barrier**, not over
+    it; only the near post stands in front.

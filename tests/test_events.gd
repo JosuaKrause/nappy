@@ -403,19 +403,43 @@ func _test_a_spread_never_lands_on_a_corner(t) -> void:
 ## `EventInstance._draw_spread`'s own docstring is the contract; the repeated segments already meet
 ## it, and the cap is the half that used to break it — centred at `±half`, `barrier_end.svg` (6px
 ## wide) hung 3px past each end of a `construction` barrier's 64px obstruction.
-## `EventInstance._cap_offset` is the pure arithmetic the drawing calls, so this asserts the outer
-## edge it produces against the real asset size and the real `obstructs_radius`, for the one row
-## that carries a cap.
+## `EventInstance._cap_offset` and `_cap_along` are the pure arithmetic the drawing calls, so this
+## asserts the outer edge they produce against the real asset size and the real `obstructs_radius`
+## of `construction`, broadside and end-on.
 func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 	var def := EventCatalogue.by_id("construction")
 	var half := maxf(11.0, def.obstructs_radius)
-	var cap_along := EventInstance._native_size(EventInstance.BARRIER_END).x
+	var cap_size := EventInstance._native_size(EventInstance.BARRIER_END)
+	var cap_along := EventInstance._cap_along(cap_size)
 	var offset := EventInstance._cap_offset(half, cap_along, 1.0)
 	t.check(is_equal_approx(offset + cap_along * 0.5, half),
 			"the cap's outer edge (%.1f) lands on the %.1fpx obstruction, not past it"
 			% [offset + cap_along * 0.5, half])
 	t.check(not is_equal_approx(offset, half),
 			"and it is not simply centred at ±half any more (%.1f)" % offset)
+	# End-on, the extent along the run is the post's picture height; what it covers of the run is
+	# still its width. The near post's feet stand within that width of the barrier's near end, past
+	# the last segment's own feet, rather than half a post's height in toward the middle.
+	var segment := EventInstance._native_size(EventInstance.BARRIER_SEGMENT_VERTICAL)
+	var segments := maxi(1, ceili(half * 2.0 / segment.y))
+	var last_segment_feet := half - half / segments
+	t.check(cap_size.y > cap_size.x * 2.0,
+			"the post is an upright picture (%s), so its height and width are different questions"
+			% cap_size)
+	t.check(half - offset <= cap_size.x and offset > last_segment_feet,
+			"end-on, the near post stands at the barrier's end (%.1f of %.1f), beyond the last"
+			% [offset, half] + " segment's feet (%.1f)" % last_segment_feet)
+	# The spread is one node, so draw order is its only depth. End-on, the side drawn behind the
+	# board has to be the far end, up the screen (`_spread_at` puts side −1 at negative y), and
+	# the near end is the only one drawn over it; broadside, both stand level with the board.
+	var behind := EventInstance._cap_sides(true, true)
+	var in_front := EventInstance._cap_sides(true, false)
+	t.check(behind.size() == 1 and behind[0] < 0.0 and in_front.size() == 1 and in_front[0] > 0.0,
+			"end-on, the far post is drawn behind the board (%s) and only the near one over it (%s)"
+			% [behind, in_front])
+	t.check(EventInstance._cap_sides(false, true).is_empty()
+			and EventInstance._cap_sides(false, false).size() == 2,
+			"broadside, both posts are drawn over the board")
 
 ## **A whole-scene hard seal has to use a distinct authored picture on either axis and span its
 ## obstruction at the ground point.** `EventInstance._wide_scene_texture` is the pure selector

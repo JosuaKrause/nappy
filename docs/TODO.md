@@ -500,19 +500,6 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M187 — A closure lies across the street it closes · asked for 2026-09-23
-
-Found by the street-obstructions redraw (PR 301) and queued with the player's agreement; the
-pictures themselves are accepted ([PLAYTEST-124](playtests/PLAYTEST-124.md), statement 7).
-
-- [ ] **A closure's cause has a picture for each street axis.** The fallen tree, the crashed cars,
-      the rubble and the roadworks under `art/closures/` are one picture drawn for both axes, so on
-      an east-west street they lie along the road rather than across it.
-- [ ] **A roadworks end post seen end-on stays at the barrier's end.** The code that repeats a
-      barrier along a mouth anchors each piece at its bottom, so on an end-on run the 26px end
-      posts cover most of a 64px column.
-
----
 ## M184 — A rig walks the route · asked for 2026-09-23
 
 > "we should have a test-rig mode where she just follows the edges of a path that way we can test
