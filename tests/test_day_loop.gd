@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_being_woken_resumes_walking(t)
 	_test_crying_loses(t)
 	_test_hard_fail_loses_with_a_reason(t)
+	_test_the_masked_pursuer_has_its_own_hard_fail_line(t)
 	_test_a_day_ends_only_once(t)
 	_test_nerves_and_endings(t)
 	_test_the_city_learns_where_she_settled(t)
@@ -152,6 +153,20 @@ func _test_hard_fail_loses_with_a_reason(t) -> void:
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("something_unwritten")
 	t.check(_day.failure_reason != "", "an unwritten hard fail still says something")
+	_teardown()
+
+## The escape's own catch — `EventBus.hard_fail_triggered` is the same signal a day's own lethal
+## rows fire (`InteriorEvents._check_hard_fails()`), so this table has to carry it too, or losing
+## the section on the stairs falls back to the generic "It went wrong." the table's own default
+## reads whenever an id has no line.
+func _test_the_masked_pursuer_has_its_own_hard_fail_line(t) -> void:
+	_build(t)
+	_day.start(300.0)
+	EventBus.hard_fail_triggered.emit("masked_pursuer")
+	t.check(_results == [GameEnums.DayResult.LOST_HARD_FAIL], "the masked man ends the day too")
+	t.check(_day.failure_reason == "He caught you on the stairs.",
+			"and names him rather than falling back to the generic line (got '%s')"
+			% _day.failure_reason)
 	_teardown()
 
 ## Every outcome runs through _end(), and a day that has already ended must stay ended —
