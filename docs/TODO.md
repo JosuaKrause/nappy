@@ -376,8 +376,9 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 [PLAYTEST-122](playtests/PLAYTEST-122.md). The rig is built (`DECISIONS.md`, M184, a rig walks
 the route): `--route mark,task,calm,home` walks her along a real path's edges, at walking pace,
 through the ordinary game, and `tests/probes/m184_route_timing.gd` times days 6 to 13 with it.
-What is open is where it gives up, which is what keeps M181's late days from being fully timed;
-the legs that find no path are the game's (M188, a resistance target can always be reached).
+What is open is where it still gets stuck, which is what keeps M181's late days from being fully
+timed; the legs that found no path at all are fixed (`DECISIONS.md`, M188, a resistance target can
+always be reached).
 
 - [ ] **The rig gets through chokepoints.** In 14 of the 24 measured runs a leg ends "stuck
       fast", wedged more often than its budget of three stuck episodes a leg. Waiting three
@@ -479,6 +480,24 @@ is done and the masts already expose what the task needs.
       days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
       rig gave up a leg in half the runs (M184), so the late days are not fully measured yet. **Each late day's happening arrives differently** — waiting at home, found gone,
       closing in front of her, coming on her way — and slice two keeps that variety.
+- [ ] **Open question: should the door, swing and finale-district placements be guaranteed
+      reachable too?** `_pick_reachable()`'s `require_reachable` check (`DECISIONS.md`, M188, a
+      resistance target can always be reached) is off for `_place_at_a_door()` (day 9's door
+      task), `_place_at_a_swing()` (day 12's swing task) and day 14's own `district` pool
+      (`ResistanceSteps._finale`'s civic-district contact) — each a handful of candidate tiles (one
+      door, one park's swing, one civic-purpose tile), unlike the hundreds a mark or a contact's
+      bearing offset draws from. Checked directly against a seed 4242 fixture while building M188:
+      turning the check on for the finale, day 14's draw (`GameEnums.BlockPurpose.CIVIC`, 72
+      candidates) came back with zero reachable, because the day's own event bodies happened to
+      ring the whole district — not a bug, but `docs/CITY.md`'s winnability guarantee only
+      promises a route from home to *some* calm area, never to this one district, door or swing.
+      Two options, and nothing is decided between them: **extend the guarantee to cover these
+      three pools**, which would mean the city keeps at least one civic tile, the named door or
+      the named swing reachable every day — a stronger and more expensive promise than
+      `docs/CITY.md` makes today; or **leave `require_reachable` off for them**, which keeps
+      today's behavior — a day's own obstruction can seal one of these off, and `_begin_step()`'s
+      existing fallback (the step becomes unavailable rather than a crash) is what a run sees when
+      that happens.
 
 ---
 
@@ -863,7 +882,7 @@ re-pitched:
       `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
       remains here
 - [ ] **Open question: the chalk is drawn in code, not from an asset.**
-      `ContactPoint._draw_chalk()` (in `src/resistance/`, M188's) paints the mark itself with
+      `ContactPoint._draw_chalk()` (in `src/resistance/`, `DECISIONS.md`'s M188) paints the mark itself with
       `draw_arc`/`draw_line`, while `props/chalk_mark.svg` and `chalk_mark_touched.svg` sit
       unbound — which breaks "a picture is an asset, never code". Either `ContactPoint` is rebound
       to draw the SVG sources, which would fold the touch item above into the same picture swap,
