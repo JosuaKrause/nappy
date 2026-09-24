@@ -53,6 +53,14 @@ unwinnable day. **No one street cuts off all the calm** is the guarantee's own s
 Menger, two routes to different areas means no single street is a cut — and `tests/test_routes.gd`
 asserts that sentence directly, about the city rather than about each area.
 
+**A day's narrow target is kept reachable the same way.** On day 9 (a named door), day 12 (a
+park's swing) and day 14 (the finale's district), the route tree, `ClosurePlanner` and the
+scheduler's walkability pass each keep at least one tile of the day's target pool
+(`ResistanceSteps.target_candidates()`) reachable from home, checked before a closure or a body is
+accepted, as the power station's door already is. Anything new that closes a street or stands a
+body on those days goes through the same checks; `docs/CITY.md`, "Guarantees", states what the
+guarantee does not cover.
+
 Two exemptions, and they are the same exemption at both ends of the journey: **a doorway is not a
 route.** The street outside the home is never closed (the home is a notch with one exit, so sealing
 that street seals the player in), and an area is reached by arriving at *either end* of a street it
