@@ -307,42 +307,25 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 ---
 
-## M183 — The power station and the blackout · asked for 2026-09-20
+## M191 — A car's horn is early enough at every speed · found 2026-09-24
 
-> "so we need to design a power station building that is guaranteed to spawn on the map" ·
-> "just wait until a certain distance away -- then everything is off at once" · "yes all lights
-> should go out. that actually applies also to the escape sequence"
+The **crowd-traffic** rule's fairness contract: a car on a street she may step onto warns her with
+its horn early enough to walk the whole carriageway with the doubled hard-fail margin
+(`Tuning.validate_traffic()`, 1.39 s). With the power out on day 14 the spine's traffic no longer
+stops at a light, so the main road's crossings rest on the same contract (`DECISIONS.md`, M183, the
+blackout is everything at once). Measuring it found it untrue on every street: the crowd only
+watches her for the horn and the strike within `CAR_ZEBRA_SIGHT` (200px), so a car's warning is
+capped at 200px of travel whatever its speed, and above 144px/s it is shorter than the contract —
+first horns at 198 to 199px, 1.27 s at 157px/s and 1.10 s at 181px/s, against car speeds spread
+over 130 to 185px/s.
 
-[PLAYTEST-119](playtests/PLAYTEST-119.md). **The station itself is built** (`DECISIONS.md`, M183,
-slice one, the power station): one on every seed, across a region door from home, with its own
-look and a front door that day 14's route always reaches. What is open is the blackout and the
-dark escape, and the red arrow of M181, the resistance has a reason, and a task is one day, which
-points at the door (`CityMap.power_station_door_position()`).
-
-- [ ] **The blackout is everything at once.** After she has touched the front door, once she
-      is a set distance from the station, every lit window goes dark, every traffic light goes
-      off and every loudspeaker mast stops, in one frame. *The orchestrator recommended the
-      touch of the door, rolling outward · the player chose distance and all at once on
-      2026-09-20*: a rolling blackout cannot be seen from the street, and the moment is "very
-      visible and linked to her action". The distance is the orchestrator's and open to
-      overturn: far enough that the station is off screen. **Dead traffic lights are part
-      of the challenge of coming home after the sabotage** (the player, 2026-09-20): the roads
-      are harder that night on purpose. What stays owed is the **crowd-traffic** rules'
-      fairness contract for a lethal road — a car she can see coming — and the brief says how
-      a crosswalk with no light keeps it.
-      **The station's own hall goes dark with the city**: its clerestory windows
-      (`art/buildings/power_station_clerestory.svg`) are drawn unlit today and need a dim lit
-      state for the night of day 14, so the hall is seen to go out.
-- [ ] **The escape is in the dark too.** The hallways and the basement are gloomy, and the
-      stairs have emergency lighting, "maybe … (red?)", the player's to judge on a picture.
-- [ ] **`docs/NARRATIVE.md` says what the last night is.** Its good ending has the
-      loudspeakers cutting out as the sabotage itself and the walk home after it as "the
-      easiest conditions in the game, and that is the reward". With this built the masts stop
-      because the power does — their fields, since M180, posters she notices, and loudspeakers
-      that are somewhere, leaves no city-wide floor to silence — and **neither the walk home nor
-      the escape is easy** ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be
-      easy!"). The "Good" ending, Act IV's day 14 and tone rule 3's "the reward is quiet" are
-      rewritten with the build, and `docs/MECHANICS.md`'s account of the good ending with them.
+- [ ] **The horn's watch reaches as far as the contract needs at the car's own speed** — at least
+      speed × the contract's time, 185 × 1.6 ≈ 296px for the fastest car — while the strike keeps
+      its own reach, and `Tuning.validate_traffic()` checks the watch against the fastest car's
+      speed so the contract fails at boot rather than on the street. A horn heard earlier is a
+      number she can feel, and it is the contract's own number, so the change is the contract
+      being made true rather than a new balance. `tests/probes/` measures the first-horn distance
+      and time per speed before and after.
 
 ---
 
@@ -752,6 +735,10 @@ is still true.
 - [ ] **The readout said "awake" while the baby was drawn asleep**, once, in a building capture
       under `--start-escape stairwell:right --invincible`. Not investigated; check whether the
       readout and the picture read the same state in the escape
+
+- [ ] **The run log's `quiet` line still says "the sabotage went through"**, and
+      `EventBus.city_went_quiet`'s docstring still describes the sabotage, though both now fire
+      at the blackout (`DECISIONS.md`, M183, the blackout is everything at once)
 
 **Drawings, as SVG:**
 
