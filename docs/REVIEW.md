@@ -569,6 +569,12 @@ item below for as long as looking takes.
   fade below the 60px/s turn speed read as the car settling into a turn, or does the bob cut off
   too abruptly?** Both the 1px height and the 64px stride are felt values, not derived. Record is
   `DECISIONS.md`, M108, the audit and cars bob on their wheels.
+- **Look at the live favicon and the window/dock icon at their real, on-screen size.** The
+  enhanced stroller icon (`icon.png`, 256×256) was only compared as a still sheet at 16, 32, 64
+  and 256px, never captured live: `tools/serve-web.sh` for the browser tab's favicon, `tools/run.sh`
+  for the windowed build's title-bar and dock/taskbar icon. **Does the stroller read at a real
+  favicon's size, and does the window/dock icon look right next to other apps' icons?** Record is
+  `DECISIONS.md`, the application icon is the enhanced stroller.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

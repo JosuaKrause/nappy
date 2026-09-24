@@ -59,9 +59,12 @@ findings supported by the conversion and review.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
-      UI buttons, the application icon and identity/export consumers. Provide registered PNG
-      bindings for every live SVG without altering draw transforms; verify both flag states and
-      missing/mismatched fallback. The SVG override remains the comparison control during review.
+      UI buttons and identity/export consumers. The application icon is done — it is the root
+      `icon.png`, bound directly rather than through the SVG-override comparison, since nothing
+      else reads `icon.svg` any more (`DECISIONS.md`, the application icon is the enhanced
+      stroller). Provide registered PNG bindings for every remaining live SVG without altering
+      draw transforms; verify both flag states and missing/mismatched fallback. The SVG override
+      remains the comparison control during review.
 - [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
       facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
       evidence in the PR; document actual bindings and make SVG-first followed by transfer the
