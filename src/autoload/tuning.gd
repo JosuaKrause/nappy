@@ -25,10 +25,10 @@ const IDLE_SPEED_THRESHOLD := 12.0
 const METER_MAX := 100.0
 
 ## The pitch these three make together is the whole loop: **an ordinary street makes real
-## progress and never enough.** A whole day of clean street walking reaches about three quarters
-## of the meter, so the walk out is worth something and the walk out alone can never finish.
-## Only calm ground can, which is what stops a day being winnable by circling the doorstep and
-## the city being decoration.
+## progress and never enough.** A whole day of clean street walking reaches 88% of the meter
+## (a 210s day at this rate — `DAY_LENGTH_SECONDS`), so the walk out is worth something and the
+## walk out alone can never finish. Only calm ground can, which is what stops a day being winnable
+## by circling the doorstep and the city being decoration.
 ##
 ## `tests/test_meters.gd` holds both halves in terms of `day_length()` rather than in numbers,
 ## so a change to the length of a day cannot quietly make the street sufficient again.
@@ -308,16 +308,18 @@ const RUN_LENGTH_DAYS := 14
 ## Asked for rather than derived, and still unmeasured: the run log's `nerve` entries say where
 ## they went. See `docs/TODO.md`'s open question.
 const STARTING_NERVES := 5
-## A day is aimed at **about a minute of play, with a grace of three**. Dusk is the grace,
-## not the target: a day walked well is over in a minute, and the three minutes are there for
-## a day that goes wrong — a bad route, a park that turned out to be spoiled, a baby woken on
-## the way home.
+## A day is aimed at **about a minute of play**, with dusk as the grace rather than the target: a
+## day walked well is over in a minute, and the rest of the clock is there for a day that goes
+## wrong — a bad route, a park that turned out to be spoiled, a baby woken on the way home. An
+## ordinary day (1 to 5) carries three and a half minutes of that grace; curfew trims it to three,
+## which is what keeps a curfew day reading as visibly shorter.
 ##
 ## **Dusk must not become the typical length.** A day long enough that the clock is what stands
 ## between the player and the end of it is a game about waiting rather than about routing.
-const DAY_LENGTH_SECONDS := 180.0
-## Curfew (day 6+) shortens the day by this fraction.
-const CURFEW_DAY_LENGTH_MULTIPLIER := 0.8
+const DAY_LENGTH_SECONDS := 210.0
+## Curfew (day 6 on) day length — kept shorter than an ordinary day so the curfew still reads as
+## a tightening once it starts.
+const CURFEW_DAY_LENGTH_SECONDS := 180.0
 
 ## Five of the eight tasks the calendar carries (`ResistanceSteps._build()`, days 6 to 13), so a
 ## player who skips or fails three still reaches the good ending. The day-14
@@ -330,7 +332,7 @@ const RESISTANCE_GOAL := 5
 ## vans. Chosen, not measured, and open to overturn once the late days are timed: at
 ## `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s) it is about eighty tiles of walk, which puts
 ## them several blocks out in the city on every city, while she, at twice that pace, can
-## still meet them on their way in from anywhere she found the mark. A curfew day is 144s.
+## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
 const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
 ## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
@@ -2194,12 +2196,12 @@ func act_for_day(day: int) -> int:
 			act = i + 1
 	return act
 
-## Length of a given day in seconds, accounting for the curfew announcement.
+## Length of a given day in seconds: an ordinary day (1 to 5) or, once curfew is announced
+## (day 6 on), the shorter curfew day.
 func day_length(day: int) -> float:
-	var length := DAY_LENGTH_SECONDS
 	if day >= 6:
-		length *= CURFEW_DAY_LENGTH_MULTIPLIER
-	return length
+		return CURFEW_DAY_LENGTH_SECONDS
+	return DAY_LENGTH_SECONDS
 
 # ------------------------------------------------------------ degradation ---
 
@@ -2360,15 +2362,19 @@ func falloff(d: float, intensity: float, inner_radius: float, outer_radius: floa
 
 # ----------------------------------------------------------------- the finale ---
 # The fifteenth and sixteenth walks, which are not an ordinary day: escaping the building, then
-# escaping the city, one way through each. Every number here is stated against something that
-# already exists rather than chosen — each section reuses the day's own clock, the catalogue's
-# own rows and the sealing's own placement, so what it needs of its own is a length, a density and
-# two reaches.
+# escaping the city, one way through each. Most numbers here are stated against something that
+# already exists rather than chosen — the catalogue's own rows and the sealing's own placement —
+# so what the finale needs of its own is a length, a density and two reaches. The length is the
+# one exception: it is chosen on its own rather than reused from the ordinary day, because the
+# escape is asked to stay exactly as hard as it always was while the ordinary day grows around it.
 
-## How long one section of the escape runs — a day's own length, because each section is its own
-## day with a brief and a restart checkpoint of its own, and the player's answer was *"180s per
-## section"*. Not a second number: read through here so the finale and a day can never drift apart.
-const FINALE_LENGTH_SECONDS := DAY_LENGTH_SECONDS
+## How long one section of the escape runs, on top of a real `DayController`'s own clock — each
+## section is its own day with a brief and a restart checkpoint of its own, and the player's
+## answer was *"180s per section"*. Stated on its own rather than reused from the ordinary day's
+## length: the player asked that *"the escape shouldn't be easy!"* (`docs/playtests/PLAYTEST-121.md`),
+## so the escape does not grow when the ordinary day does. Asked alongside the ordinary day's
+## length and not yet answered whether it should grow too — open to overturn.
+const FINALE_LENGTH_SECONDS := 180.0
 
 ## How many calm blocks each chain runs through between the service exit and its edge — *"a single
 ## path through the city that crosses three parks"*. The chains are built one street-walk at a

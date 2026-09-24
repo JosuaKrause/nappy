@@ -120,7 +120,7 @@ one place it is made.
 ```
 nappy run log  2026-08-26T22:39:25  version v0.0.0-49-gab12cd3-dirty
 
-day 6  act 2  run seed 4242  city seed 4242  length 144.0s
+day 6  act 2  run seed 4242  city seed 4242  length 180.0s
    0.0  contact  step 1 on offer at (79,94)
    0.0  plan     closed: cordoned off h(2,5), cordoned off h(4,7)
    0.0  plan     calm: 2 forest, 2 park, 3 courtyard
@@ -238,7 +238,7 @@ overturning the flag's own first build the same evening, [PLAYTEST-57](playtests
 "when invincible the timer should never go down and excitement should never go up. this is just
 noisy flashing of alarms and the day gets dark.")* The day header notes the flag itself the same
 way it notes the seed, appended once when the day opens rather than as a per-frame entry —
-`day 6  act 2  run seed 4242  city seed 4242  length 144.0s  invincible` — so a log from an
+`day 6  act 2  run seed 4242  city seed 4242  length 180.0s  invincible` — so a log from an
 invincible day is recognisable without reading a single `lost` or `nerve` line that never comes.
 The HUD's own debug header (`hud.gd`'s `_refresh_header()`) appends `INVINCIBLE` for the same
 reason, so no capture from such a run is mistaken for one where a loss meant anything.

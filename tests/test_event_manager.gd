@@ -473,7 +473,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 
 const WALK_STEP := 1.0 / 30.0
 ## Long enough for a whole route out to a calm area and back again at walking pace, which is what
-## the outbound and return legs of a 180s day are.
+## the outbound and return legs of a 210s day are.
 const WALK_SECONDS := 240.0
 
 ## A player the manager can find, out of the physics loop and moved by hand at `Tuning.WALK_SPEED`.

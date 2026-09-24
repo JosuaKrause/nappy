@@ -267,7 +267,7 @@ const ON_HER_WAY_BEYOND_HOME := 400.0
 
 ## How much further she may have to walk past the streaming band to reach the site, in seconds —
 ## the width of the siting band, measured **along the route she is on** like the rest of it. Still
-## well inside the outbound leg of a 180s day with the walk home in hand. The near end of the band
+## well inside the outbound leg of a 210s day with the walk home in hand. The near end of the band
 ## is not a number of seconds but the streaming band itself; see `_siting_band()`.
 const ON_HER_WAY_SIGHT := 16.0
 
