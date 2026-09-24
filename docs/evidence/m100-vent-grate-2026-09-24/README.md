@@ -15,5 +15,22 @@ the grate while it blows.
   `art/events/steam_grate.svg art/events/steam.svg art/events/steam_b.svg
   art/interior/basement_floor.svg`) and `compose-sheet.py` (run with `uv run python`, the render
   directory and the output path).
+- `rig-164957-seed1713581249-…/still-between-blows.png`: a still in the building's basement
+  before any vent has blown, with two vents' grates in the floor and no cloud; the mouse's
+  notice stands over the lower one, drawn over the grate as everything standing is.
+  `tools/shot.sh … 2.4 --start-escape basement --invincible --no-save --press ui_accept 1.5`.
+- `rig-165019-seed1219710399-…`: the whole run with its burst and the burst's MP4.
+  `tools/shot.sh … 6 --start-escape basement --invincible --no-save --press ui_accept 1.5 --press
+  snapshot_burst 2`.
+- `burst-vent-frames.png`: the same crop from every third frame of that burst. The lower grate
+  lies there alone, then blows, the cloud rising out of it in both frames; in the last frame the
+  upper grate starts its own blow. Made by
+  `../m100-two-frame-effects-2026-09-24/compose-burst-strip.py` with the box `600 20 900 320`,
+  scale 1, every 3rd frame.
+
+The escape is dark (the building's own lighting), so the in-game frames are dimmer than the
+sheet's first two rows. Each frame only shows the build and moment it was taken from; none of
+them has her standing on a grate, so *under her* is held by `tests/test_interior.gd` rather than
+by a picture.
 
 The earlier pass, a standing pipe, is in `../m100-vent-pipe-2026-09-24/` with its verdict.
