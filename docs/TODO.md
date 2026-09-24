@@ -514,54 +514,6 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M186 — The building fronts are redrawn to one bar · asked for 2026-09-23
-
-> "Only thing so far is the new standard door (industrial door and home door look fine). It pops
-> out. But that is probably because the other parts of the buildings (walls, windows, fire
-> escapes, etc) are not updated and look flat in comparison. So if say we update all those too
-> and then have another look at the overall picture."
-
-[PLAYTEST-124](playtests/PLAYTEST-124.md), statements 8 and 9. The entrance doors and the
-storefronts are drawn to the bar of the accepted art (outlines, shaded planes, material); the
-rest of a front is not, so the standard door stands out.
-
-- [ ] **Every other part of a building is redrawn to the same bar**: the wall and its plinth,
-      its edges and the roof, the six window pictures, the fire escape and the civic portico —
-      whatever `src/city/building.gd` draws a front from under `art/buildings/`, the power station
-      aside. The wall stays white where the runtime tints it, every canvas, ground line and tiling
-      seam is kept, and a window's lit and unlit pair and its three styles stay telling apart.
-- [ ] **A fire escape climbs the whole front, one piece per floor**
-      ([PLAYTEST-124](playtests/PLAYTEST-124.md), statements 10, 12 and 13). The pictures are
-      accepted: "the graphics for them are good -- I like the variation with the flower pot. the
-      placement is wrong." Today one 48×64 overlay covers the bottom two rows only. Instead, the
-      same texture is placed once per floor, "you start at the bottom of the top floor", and "on
-      the ground floor you only place the platform -- without a ladder", so nothing comes down to
-      the sidewalk. The player's five-story example, `w` wall, `f` the current texture, `t` only
-      the platform at the texture's top end:
-
-      ```
-      wwwwwwww
-      wfwwwwfw
-      wfwwwwfw
-      wfwwwwfw
-      wtwwwwtw
-      ```
-
-      The texture is the balcony with its diagonal flight hanging below it, and every flight
-      faces the same direction, always — up a stack and across both variants, which differ only
-      in the plant (statements 14 and 15). The flights must meet the landings from floor to
-      floor, the ground-floor platform must match the texture's own, and the plant variant stays.
-      The ground floor's platform is a picture of its own, derived from the stair picture with
-      the stairs removed (statement 16). A front of two floors carries none (statement 17).
-      Each balcony has the flower pot or not at random (statement 19), and a front wide enough
-      for two escapes with at least one and a half escape widths of wall between them may carry
-      a second one (statement 20).
-- [ ] **Then the whole front is looked at again**, the standard entrance door included: stills of
-      a residential, a commercial and an industrial street at the ordinary view and zoomed out,
-      before and after. The door is changed only if it still pops out.
-
----
-
 ## M187 — A closure lies across the street it closes · asked for 2026-09-23
 
 Found by the street-obstructions redraw (PR 301) and queued with the player's agreement; the
