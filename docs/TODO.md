@@ -697,15 +697,19 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The boom never inspects her** *(2026-09-24: "Boom shouldn't inspect her. It should block
-      her. If a car opens it for her and she walks through she would probably get hit by the car,
-      no?")*. A `checkpoint_gate` stops being a detaining body: a lowered boom blocks her, and a
+- [ ] **The boom never inspects her, and a raised one lets her pass** *(2026-09-24: "Boom
+      shouldn't inspect her. It should block her. If a car opens it for her and she walks through
+      she would probably get hit by the car, no?")*. A `checkpoint_gate` stops being a detaining body: a lowered boom blocks her, and a
       street door's inspection happens only at its two huts (an alley door's at its posts,
       unchanged). The gate keeps barring and lifting for the cars as it does now: up once a car
       has waited at it `Tuning.GATE_STOP_SECONDS` (1.2 s), down the moment no car is within a
-      length of it. **Open: whether a raised boom lets her through** — a free crossing while a car
-      is under the arm, paid for with the car — or blocks her raised or lowered; asked
-      2026-09-24, not yet answered ("I didn't say it should stay solid when it's open"). **The
+      length of it. **A raised boom lets her through** *(2026-09-24: "I didn't say it should stay
+      solid when it's open"; asked whether a raised boom lets her through or blocks her either
+      way: "A yes")*: while a car holds the arm up she may walk under it and skip the hut's
+      inspection, and the price is that car — she is on its carriageway, the horn and the strike
+      apply as on any street, and the traffic fairness contract (**crowd-traffic**) must hold for
+      this crossing too. Every door then offers the choice: the hut's hold, or a dash past a car.
+      A lowered boom blocks her, and the gate is never a detaining body either way. **The
       route rig never routes through the boom, either way** *(2026-09-24: "The bot shouldn't route
       through the boom either way")*. Found while capturing the inspection: the boom's own body
       took her in with nobody on screen doing it, since the guards stand at the huts; a guard
@@ -713,7 +717,9 @@ is still true.
       `checkpoint_gate`'s detention in `event_catalogue.gd`, the release latch's "every body of
       the door whose reach she lands in", `docs/EVENTS.md` "Checkpoints" and the row, which say
       the gate detains as a hut does (`docs/CITY.md` says "the gate only ever stops a car, never
-      her"), and the route rig's door handling (`src/dev/route_rig.gd`). Waits for M181's slice
+      her"), the gate's solid body (solid to her only while lowered), `docs/MECHANICS.md` and
+      `docs/CITY.md` where a door is "passable only by detention", and the route rig's door
+      handling (`src/dev/route_rig.gd`). Waits for M181's slice
       two and M184's chokepoints to land, which are in those files
 
 - [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
