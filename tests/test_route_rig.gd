@@ -45,6 +45,7 @@ func run(t) -> void:
 	_test_maybe_replan_waits_before_forcing_a_physical_maneuver(t)
 	_test_a_mark_leg_follows_the_mark_when_it_moves(t)
 	_test_a_mark_leg_ends_when_the_director_records_the_mark(t)
+	_test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t)
 	_test_a_real_leg_walks_her_there_and_reports_it(t)
 	_teardown(t)
 
@@ -619,6 +620,36 @@ func _test_a_mark_leg_ends_when_the_director_records_the_mark(t) -> void:
 	t.check(rig._target_index == 1 and rig._current_word == "home",
 			"the leg ends once its step is recorded completed, and the next target begins")
 	GameState.completed_resistance_steps.erase(step.index)
+	rig.free()
+
+## A door's hold (`Stroller.is_detained()`) is not a stall — she stands still because a checkpoint
+## is talking to her — so the stall ladder stays at its first rung however long it lasts, and the
+## door setting her down on its far side (`_teleported`, a jump no step covers) re-plans from where
+## she lands rather than walking her back to the stale waypoints on the side she came from.
+func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t) -> void:
+	var rig := _rig(t)
+	rig._resistance = _resistance
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+	var calm := rig._resolve_target("calm")
+	t.check(calm != Vector2.INF, "a calm target exists for this leg")
+	if calm == Vector2.INF:
+		rig.free()
+		return
+	rig._begin_leg(calm)
+	rig._stuck_streak = 1
+	_stroller.detain(2.0)
+	t.check(rig._held_at_a_door() and rig._stuck_streak == 0 and rig._stuck_reference == Vector2.INF,
+			"while a door holds her the rig waits it out without counting a stall")
+	_stroller._detained_for = 0.0
+	var landed := _city.map.tile_to_world(_city.map.world_to_tile(calm))
+	_stroller.global_position = landed
+	rig._teleported = true
+	rig._held_at_a_door()
+	t.check(not rig._held and not rig._teleported, "the release is consumed once")
+	t.check(not rig._waypoints.is_empty()
+			and rig._waypoints[0].distance_to(landed) <= Tuning.TILE_SIZE,
+			"the plan after the door starts where the door set her down")
 	rig.free()
 
 # ------------------------------------------------------------ end to end ---

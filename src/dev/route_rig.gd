@@ -86,6 +86,10 @@ extends Node
 ## records its step completed, which is what reaching it means, rather than at a point 10px from
 ## its centre that a body beside it may keep her from.
 ##
+## **Waits out a door and plans from its far side.** A checkpoint holding her is not a stall, and
+## the door sets her down on its far side, where the plan made before it is stale — see
+## `_held_at_a_door()`.
+##
 ## **Quits the run once it is done**, win or lose — a rig meant to be driven from a headless process
 ## by `tests/probes/` cannot wait at a day summary screen for a button nobody is going to press;
 ## see `_finish()` and `_on_day_finished()`.
@@ -122,6 +126,10 @@ const _REPLAN_INTERVAL := 0.5
 ## (a crowd she cannot press through, a body she has fetched up against) is caught within a couple
 ## of checks even where every tile involved still answers `is_open()`.
 const _STUCK_DISTANCE := 8.0
+
+## Further than this in one physics frame is a teleport, not a step — a tile, where walking covers
+## `Tuning.WALK_SPEED` (92px/s) over a sixtieth of a second, about a pixel and a half.
+const _TELEPORT_DISTANCE := Tuning.TILE_SIZE * 1.0
 
 const _STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
 
@@ -194,6 +202,13 @@ var _leg_step: ResistanceSteps.Step
 ## what lets `_maybe_replan()` re-plan when a body newly streamed in reaches over a waypoint, without
 ## re-planning every check onto a plan that had to give the clearance up to find a way at all.
 var _plan_kept_clear := false
+## Whether a door was holding her at the last walking frame — see `_held_at_a_door()`.
+var _held := false
+## Where she stood at the last physics frame, and whether she has moved further than
+## `_TELEPORT_DISTANCE` since — which walking never does, and a door setting her down on its far
+## side always does. `Vector2.INF` before the day's first frame.
+var _last_position := Vector2.INF
+var _teleported := false
 ## The day this rig's queue was started for, read once in `start_day()`. `GameState.day` has
 ## already moved to the next day by the time `DayController.day_finished` reports a win, so a line
 ## written from `_on_day_finished()` would otherwise name the wrong day.
@@ -245,6 +260,9 @@ func start_day() -> void:
 	_leg_avoid = {}
 	_caught_away = Vector2.ZERO
 	_leg_step = null
+	_held = false
+	_last_position = Vector2.INF
+	_teleported = false
 	_release()
 	_done = _targets.is_empty()
 	if not _done:
@@ -260,6 +278,9 @@ func _physics_process(delta: float) -> void:
 	if _done or not _day or not _day.is_running():
 		return
 	_elapsed_seconds += delta
+	var here := _player.global_position
+	_teleported = _last_position != Vector2.INF and here.distance_to(_last_position) > _TELEPORT_DISTANCE
+	_last_position = here
 	if _resolving:
 		_try_resolve(delta)
 		return
@@ -728,6 +749,27 @@ func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 				return false
 	return true
 
+## The tile a plan starts from: the one she stands on, or — where that is not open ground at all —
+## the nearest open tile to her. A door can set her down on a tile that is not ground
+## (`EventManager._release_finished_door_detentions()` mirrors her through the door without
+## asking what is there), and a sweep seeded on a building reaches nothing, which read as every
+## target unreachable from there.
+func _standing_tile() -> Vector2i:
+	var here := _player.global_position
+	var tile := _city.map.world_to_tile(here)
+	if _city.map.is_open(tile):
+		return tile
+	var best := tile
+	var best_distance := INF
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			var near := tile + Vector2i(dx, dy)
+			var distance := _city.map.tile_to_world(near).distance_to(here)
+			if _city.map.is_open(near) and distance < best_distance:
+				best = near
+				best_distance = distance
+	return best
+
 func _to_world(path: Array[Vector2i]) -> Array[Vector2]:
 	var world: Array[Vector2] = []
 	for tile in path:
@@ -740,7 +782,7 @@ func _begin_leg(target_world: Vector2) -> void:
 	_leg_step = null
 	if (_current_word == "mark" or _current_word == "task") and _resistance:
 		_leg_step = _resistance.current_step()
-	var here_tile := _city.map.world_to_tile(_player.global_position)
+	var here_tile := _standing_tile()
 	var target_tile := _city.map.world_to_tile(target_world)
 	var path := _plan(here_tile, target_tile)
 	if path.is_empty():
@@ -783,6 +825,8 @@ func _follow(delta: float) -> void:
 	if _waypoints.is_empty() or _step_completed():
 		_arrive()
 		return
+	if _held_at_a_door():
+		return
 	_maybe_replan(delta)
 	if _waypoints.is_empty() or _resolving:
 		return
@@ -795,6 +839,33 @@ func _follow(delta: float) -> void:
 	var direction := offset.normalized()
 	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
 	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+
+## Whether a door is holding her (`Stroller.is_detained()` — a `checkpoint_hut` or `checkpoint_gate`
+## she walked into, which talks to her for `Tuning.CHECKPOINT_DETAIN_SECONDS` and then sets her down
+## on its far side), and the re-plan from wherever it set her down once it lets go. **A hold is not
+## a stall**: she stands still because the door is doing what a door does, so the stall ladder is
+## held at its first rung for as long as it lasts rather than spending the leg's episodes on it.
+## **And the plan made before the door is stale once she is through it** — its next waypoints are
+## still on the side she came from, and walking back to them took her into the same door from the
+## far side, which set her down where she started, over and over. The hold ends a frame before
+## `EventManager` sets her down (`Stroller.teleport_to()`), so the re-plan that counts is the one
+## made once `_teleported` sees her land.
+func _held_at_a_door() -> bool:
+	if _player.is_detained():
+		_held = true
+		_release()
+		_stuck_reference = Vector2.INF
+		_stuck_streak = 0
+		_replan_elapsed = 0.0
+		return true
+	if _held or _teleported:
+		# Consumed here: `_follow()` calls itself once per waypoint it pops, and a flag left up
+		# would re-plan on every one of those calls within the same frame.
+		_held = false
+		_teleported = false
+		_replan()
+		return _waypoints.is_empty() or _resolving
+	return false
 
 ## Checked every `_REPLAN_INTERVAL`: a remaining waypoint that has closed or is now obstructed, or
 ## — whatever the tiles say — that she has covered less than `_STUCK_DISTANCE` since the last
@@ -935,11 +1006,11 @@ func _give_up_stuck() -> void:
 ## `_end_wait()` has let a crowd flow past, and once `_unstick()` has worked her clear: see those
 ## functions' own docs for why a plan alone cannot answer either of the last two.
 func _replan() -> void:
-	var here_tile := _city.map.world_to_tile(_player.global_position)
+	var here_tile := _standing_tile()
 	var path := _plan(here_tile, _current_target_tile, _leg_avoid)
 	if path.is_empty():
-		Telemetry.note("route", "day %d: '%s' no longer reachable, skipping"
-				% [_day_number, _current_word])
+		Telemetry.note("route", "day %d: '%s' no longer reachable from %s, skipping"
+				% [_day_number, _current_word, TelemetryLog.tile(here_tile)])
 		_release()
 		_advance_target()
 		return
