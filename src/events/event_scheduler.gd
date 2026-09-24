@@ -156,10 +156,18 @@ const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 ## `doors` is where today's region-door bodies stand — `RegionPlanner.RegionPlan.door_bodies`'
 ## positions, read out by `EventManager.start_day()` before this runs. Nothing this places may put
 ## a field or a beat inside `Tuning.CHECKPOINT_EVENT_GAP` of one; see `_clear_of_the_doors()`.
+##
+## `target` is the day's narrow resistance target — the tiles of day 9's door, day 12's swing or the
+## finale's district the contact may stand on today, already past every refusal the director makes
+## of the tile itself — and `standing` is what obstructs the day whatever this plans: the seals and
+## the region wall's own bodies, both planned before this runs. Both empty on every other day, and
+## then the day is planned exactly as it would be without them. See
+## `_ensure_the_city_is_still_walkable()`.
 static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
 		used_calm: Array[Vector2i] = [], tree: RouteTree = null,
-		heat: int = 0, doors := PackedVector2Array()) -> Array[Planned]:
+		heat: int = 0, doors := PackedVector2Array(), target: Array[Vector2i] = [],
+		standing: Array[Planned] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
@@ -186,7 +194,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	_ensure_the_run_is_taught(day, planned, heat)
 
 	_ensure_one_usable_park(map, planned, used_calm)
-	_ensure_the_city_is_still_walkable(map, planned)
+	_ensure_the_city_is_still_walkable(map, planned, target, standing)
 	_hand_to_her_walk(planned)
 	return planned
 
@@ -2996,7 +3004,26 @@ static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
 ##
 ## Hard-fail events count as walls here too: an abduction in progress is not something you
 ## walk through to reach the park behind it.
-static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Planned]) -> void:
+##
+## **On days 9, 12 and the finale's it keeps a route to the day's resistance target as well**
+## (`target`: the tiles of the door, the swing or the district the contact may stand on, already
+## past the director's own refusals of the tile — see `EventManager.start_day()`). The day is
+## planned so the route exists: the target is tree ground (`RouteTree.for_day`), so no seal stands
+## on the way, no closure lands on it and no wall is placed on it, and this is the last line under
+## that for the catalogue's own bodies — which may stand on the corridor as friction — the same
+## second opinion it is for the calm. Asked the way `ResistanceDirector._reachable_from_home()` asks
+## it, so the tile the director then picks is one this guarantees: under `blocked_by()`'s discs of
+## every obstructing or hard-fail plan, `standing` included, since the seals and the region wall's
+## own bodies (planned before this, and never this pass's to drop) obstruct the day too.
+##
+## **Only ever a removal, the one monotonic exception the city keeps** (**city**, "Check before
+## accepting"): dropping a body can only add reachable ground, so nothing another pass decided
+## becomes false here, and a day whose target is already reachable loses nothing. When `standing`
+## alone seals the target off, dropping the catalogue's bodies cannot help, so the target half asks
+## nothing of them rather than emptying the day for no route — a construction failure the
+## resistance suite's sweep exists to catch, noted in the run log if it ever happens in play.
+static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Planned],
+		target: Array[Vector2i] = [], standing: Array[Planned] = []) -> void:
 	var blockers: Array[Planned] = []
 	for plan in planned:
 		if not plan.is_placed():
@@ -3012,8 +3039,34 @@ static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Plan
 	# Built once and asked once per blocker dropped, which is a handful of iterations at most —
 	# the grid is the day's tiles, which none of this loop changes.
 	var grid := ReachabilityGrid.build(map)
-	while not blockers.is_empty() and not _park_is_reachable(map, grid, blockers):
+	var fixed: Array[Planned] = []
+	for plan in standing:
+		if plan.is_placed() and (plan.def.obstructs_radius > 0.0 or plan.def.hard_fail):
+			fixed.append(plan)
+	var kept_target: Array[Vector2i] = target
+	if not target.is_empty() and not _target_is_reachable(map, grid, target, fixed):
+		Telemetry.note("plan", "the day's own seals and wall cut the resistance's target off")
+		kept_target = []
+	while not blockers.is_empty() and not (_park_is_reachable(map, grid, blockers)
+			and _target_is_reachable(map, grid, kept_target, fixed, blockers)):
 		planned.erase(blockers.pop_front())
+
+## Whether some tile of `target` is reached from the home with every one of `blockers` and
+## `more_blockers` standing — `ResistanceDirector._reachable_from_home()`'s own question, asked of
+## the pool rather than of one tile. True of an empty `target`, which is every day without a narrow
+## resistance target.
+static func _target_is_reachable(map: CityMap, grid: ReachabilityGrid, target: Array[Vector2i],
+		blockers: Array[Planned], more_blockers: Array[Planned] = []) -> bool:
+	if target.is_empty():
+		return true
+	var blocked := blocked_by(map, blockers)
+	for plan in more_blockers:
+		block_a_disc(map, blocked, plan.position, _blocking_radius(plan))
+	var reached := grid.flood([map.home_rect.position], blocked)
+	for tile in target:
+		if grid.reaches(tile, blocked, reached):
+			return true
+	return false
 
 static func _blocking_radius(plan: Planned) -> float:
 	return maxf(plan.def.obstructs_radius, plan.def.inner_radius if plan.def.hard_fail else 0.0)

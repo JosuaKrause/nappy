@@ -1198,6 +1198,12 @@ dropped — widest first — until a route exists again. Hard-fail events count 
 this check: an abduction in progress is not something you walk through to reach the park
 behind it.
 
+**On the three days the resistance sends her to one narrow place** — day 9's region door, day
+12's swing, the finale's district — the same pass also keeps a route to one tile of that place,
+counting the day's seals and region wall as standing (it never drops those). The day is planned
+so that route exists before this pass ever runs; the pass is the last line for the catalogue's
+own bodies. `docs/CITY.md`, "Guarantees", has the whole of it.
+
 ## The emission model
 
 An event never pushes a value at the baby. Each frame the baby asks the world for the total

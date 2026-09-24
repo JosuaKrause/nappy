@@ -238,8 +238,19 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
 		doors.append(body.position)
+	# The day's narrow resistance target — day 9's door, day 12's swing, the finale's district —
+	# as the tiles its contact may stand on today, and what obstructs the day whatever the
+	# catalogue does: the seals just planned and the region wall's own bodies. `build_day` keeps a
+	# route from home to one of those tiles among the day's own bodies, the way it keeps one to the
+	# calm (`docs/CITY.md`, "Guarantees"). Here rather than in `build_day` because only here is every
+	# hold the director refuses already on the map — the closures, the wall and doors, the home's
+	# streets and the hard seals — so the tiles protected are tiles the contact may actually take.
+	var standing: Array[EventScheduler.Planned] = []
+	standing.append_array(seals)
+	standing.append_array(region_plan.wall_bodies)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
-			GameState.settled_this_act(), tree, GameState.resistance_progress, doors)
+			GameState.settled_this_act(), tree, GameState.resistance_progress, doors,
+			ResistanceDirector.target_ground(_map, day, region_plan), standing)
 	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
