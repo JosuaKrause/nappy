@@ -55,6 +55,7 @@ func run(t) -> void:
 	_test_the_door_task_sits_at_a_region_door(t)
 	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
+	_test_day_twelves_park_is_forced_open_whatever_its_state(t)
 	_test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t)
 	_test_the_neighbor_leaves_for_work_until_the_raid(t)
 	_test_day_ten_sends_her_to_the_neighbor_walking_home(t)
@@ -1502,6 +1503,9 @@ func _test_the_door_task_never_borders_the_home_block(t) -> void:
 func _test_the_swing_task_sits_at_an_open_playground(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
+		var state := CityState.new()
+		state.begin_day(_city.map.block_plans, 12)
+		_city.map.repaint(state)
 		t.check(not _city.map.playgrounds.is_empty(),
 				"the test city has at least one open playground, or this test checks nothing")
 
@@ -1521,8 +1525,60 @@ func _test_the_swing_task_sits_at_an_open_playground(t) -> void:
 				on_a_swing = true
 				break
 		t.check(on_a_swing, "exactly at one open park's own swing")
+		var park := CityGenerator.swing_park(_city.map)
+		var layout: BlockLayout = _city.map.block_layouts.get(park)
+		t.check(layout != null and _city.map.world_to_tile(_city.map.swing_position(
+				layout.playground)) == _city.map.world_to_tile(at),
+				"and it is the park the city chose for day 12")
 
 		director.free())
+
+## **Day 12's park is forced open whatever its state** (PLAYTEST-119): every city has one park
+## chosen for the swing, whose arc ends requisitioned; on day 12 it is a park — calm, with its
+## playground, the only swing the task may go to — even when its arc took it days before, and on
+## the days either side it is whatever its arc says. Once she has reached the swing it is taken,
+## and it stays taken.
+func _test_day_twelves_park_is_forced_open_whatever_its_state(t) -> void:
+	var day := ResistanceSteps.swing_day()
+	t.check(day == 12, "the swing is day 12's task")
+	var forced := 0
+	for seed_value in [SEED, 181000, 283947, 299785, 307704]:
+		var map := CityGenerator.generate(seed_value)
+		var park := CityGenerator.swing_park(map)
+		t.check(park.x >= 0, "seed %d: the city chose a park for the swing" % seed_value)
+		if park.x < 0:
+			continue
+		var plan: BlockPlan = map.block_plans[park]
+		t.check(plan.starting_purpose() == GameEnums.BlockPurpose.PARK
+				and plan.steps[plan.steps.size() - 1].purpose == GameEnums.BlockPurpose.REQUISITIONED,
+				"seed %d: a park whose arc ends requisitioned" % seed_value)
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day - 1)
+		var before := state.purpose_of(map.block_plans, park)
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		if before != GameEnums.BlockPurpose.PARK:
+			forced += 1
+		t.check(state.purpose_of(map.block_plans, park) == GameEnums.BlockPurpose.PARK
+				and park in map.calm_blocks,
+				"seed %d: on day 12 it is an open park (it was %s the day before)"
+				% [seed_value, GameEnums.BlockPurpose.keys()[before]])
+		var step := _perform_on(day)
+		var pool := ResistanceSteps.target_candidates(step, map, null)
+		var layout: BlockLayout = map.block_layouts[park]
+		t.check(pool.size() == 1 and pool[0] == map.world_to_tile(map.swing_position(
+				layout.playground)), "seed %d: its swing is the task's only place" % seed_value)
+		t.check(state.take(map.block_plans, park, day)
+				and state.purpose_of(map.block_plans, park) == GameEnums.BlockPurpose.REQUISITIONED,
+				"seed %d: reaching the swing takes it" % seed_value)
+		state.begin_day(map.block_plans, day + 1)
+		t.check(state.purpose_of(map.block_plans, park) == GameEnums.BlockPurpose.REQUISITIONED,
+				"seed %d: and it stays taken" % seed_value)
+		var untaken := CityState.new()
+		untaken.begin_day(map.block_plans, day + 1)
+		t.check(not untaken.is_forced_open(park), "seed %d: open only on its own day" % seed_value)
+	t.check(forced > 0, "some city's park was requisitioned before day 12 and forced open (%d)"
+			% forced)
 
 ## Day 11: touching the mark sends her, by the red arrow, to the foot of one live mast; reaching it
 ## silences that mast now and on every later day, through the scar it leaves — planned through the
@@ -1914,9 +1970,9 @@ const NARROW_TARGET_SEEDS: Array[int] = [196838, 355218, 323542, 252271]
 ## the heat is what the scheduler reads; days 9 and 12 plan cold, each asked fresh as `--day N`
 ## boots it.
 ##
-## **A day with no open playground left has no swing at all** — every playground park taken by
-## its arc by day 12 — which is a question of whether the task has a place, not of reaching one,
-## and is skipped rather than failed; the guard below says how many days were actually checked.
+## **Day 12 owes a second park as well**: some calm area other than the swing's, clean — no field
+## the day planned reaching its ground — and reachable from home under the same flood, which is
+## where she settles the baby once the swing's park is taken.
 func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 	_with_clean_run(func() -> void:
 		var checked := 0
@@ -1937,8 +1993,6 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 						city.map.doorstep_world_position())
 				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
 				var pool := ResistanceSteps.target_candidates(step, city.map, region_plan)
-				if pool.is_empty() and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
-					continue
 				var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
 				var allow_held := ResistanceSteps.stands_on_held_ground(step)
 				var reachability := _day_reachability(city)
@@ -1955,6 +2009,10 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 						("seed %d day %d: some tile of step %d's target is legal, unobstructed " +
 						"and reachable from home (%d of %d)")
 						% [seed_value, day, step.index, reachable, pool.size()])
+				if step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
+					t.check(_a_second_clean_park_is_reached(city, grid, blocked, reached),
+							"seed %d day 12: a clean calm area besides the swing's is reachable"
+							% seed_value)
 
 				var director := ResistanceDirector.new()
 				t.add_child(director)
@@ -1969,6 +2027,28 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 				director.free()
 			city.free()
 		t.check(checked > 0, "the sweep actually checked some day (%d)" % checked))
+
+## Whether some calm area other than the day's swing park has calm ground reached under
+## `_day_reachability()`'s flood and no field of the day's catalogue on it — the rows the day rolled
+## (every one of them given a role) and the masts, which is what `_ensure_one_usable_park()` counts
+## as spoiling; the seals and the region wall are the street's, and it does not.
+func _a_second_clean_park_is_reached(city: City, grid: ReachabilityGrid, blocked: Dictionary,
+		reached: Dictionary) -> bool:
+	var swing := CityGenerator.swing_park(city.map)
+	var catalogue: Array[EventScheduler.Planned] = []
+	for plan in city.events.plans():
+		if plan.role != GameEnums.BlockerRole.NONE or plan.mast_id != "":
+			catalogue.append(plan)
+	for block in city.map.calm_blocks:
+		if block == swing:
+			continue
+		var rect := ClosurePlanner.calm_area_rect(city.map, block)
+		if EventScheduler._is_spoiled(city.map, catalogue, rect):
+			continue
+		for tile in city.map.rect_tiles(rect):
+			if Tile.is_calm(city.map.tile_at(tile)) and grid.reaches(tile, blocked, reached):
+				return true
+	return false
 
 ## The first `RandomNumberGenerator.seed` whose first `randi_range(0, pool_size - 1)` answers
 ## `wanted_index` — found by trying seeds in order rather than inverted by hand, since nothing here

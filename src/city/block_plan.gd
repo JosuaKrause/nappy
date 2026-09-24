@@ -30,6 +30,13 @@ class Step extends RefCounted:
 ## Step 0 is what the block starts as, and is always reached on day 1.
 var steps: Array[Step] = []
 
+## The day this park is the one day 12's task sends her to (`ResistanceSteps`, the swing), 0 on
+## every other block. One park per city carries it (`CityGenerator._plan_the_swing_park()`). That
+## day it is a park whatever its arc has reached (`CityState.purpose_of()`), and once she has
+## reached its swing it is taken (`CityState.take()`), which its arc ends in for exactly that
+## reason.
+var forced_open_on := 0
+
 static func of(start: GameEnums.BlockPurpose) -> BlockPlan:
 	var plan := BlockPlan.new()
 	plan.steps.append(Step.new(start, 1, GameEnums.BlockCause.SCHEDULED))

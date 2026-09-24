@@ -106,6 +106,14 @@ static func warning_step() -> Step:
 			return step
 	return null
 
+## The day of the step whose task is the swing in one park — the day that park is forced open
+## (`CityGenerator._plan_the_swing_park()`) — or 0 on a calendar without one.
+static func swing_day() -> int:
+	for step in all():
+		if step.target_kind == TargetKind.PARK_SWING:
+			return step.day
+	return 0
+
 ## The kinds whose contact is a bare point the director computes from today's city rather than a
 ## tile type or a rider — and so the kinds `narrow_target_on()` answers for.
 const NARROW_KINDS: Array[TargetKind] = [TargetKind.DOOR, TargetKind.PARK_SWING,
@@ -164,9 +172,11 @@ static func narrow_target_on(day: int) -> Step:
 ##   any other; the director places a door with `allow_held`, which skips `is_held_at()` — the half
 ##   of "nothing on the home block" that covers those streets (`CityMap.is_on_home_block`'s own doc
 ##   names `is_held_at` as the other half) — so the filter here is what keeps such a door out.
-## - **`PARK_SWING`**: the swing of each open park's playground (`CityMap.playgrounds`, which names
-##   only the parks currently open), at the point `City._dress_block()` draws the frame
-##   (`CityMap.swing_position()`).
+## - **`PARK_SWING`**: the swing of the one park the city chose for the task
+##   (`CityGenerator.swing_park()`), which is forced open on the task's day whatever its arc has
+##   reached (`CityState.purpose_of()`), at the point `City._dress_block()` draws the frame
+##   (`CityMap.swing_position()`). Empty while that park is not open — on any other day, or once
+##   she has taken it.
 ## - **`STATION_DOOR`**: the pavement tiles in front of the power station's front door
 ##   (`CityMap.power_station_door`), where she stands to reach it — the same tiles the day's
 ##   corridor grows its spur to (`RouteTree.for_day`). Empty on a city with no station, which
@@ -191,8 +201,10 @@ static func target_candidates(step: Step, map: CityMap,
 			found.append(rect.position + rect.size / 2)
 		return found
 	if step.target_kind == TargetKind.PARK_SWING:
-		for rect in map.playgrounds:
-			found.append(map.world_to_tile(map.swing_position(rect)))
+		var park := CityGenerator.swing_park(map)
+		var layout: BlockLayout = map.block_layouts.get(park)
+		if layout and layout.playground in map.playgrounds:
+			found.append(map.world_to_tile(map.swing_position(layout.playground)))
 	return found
 
 ## Explicit rather than a dictionary of field names. The first version built these with
@@ -289,10 +301,9 @@ static func _build() -> Array[Step]:
 		_perform(12, "Silence a mast", 11, "", [], true, TargetKind.MAST, false,
 				"the loudspeaker mast"),
 
-		# Day 12 · the swing on the playground of one specific park — one place, red arrow. A
-		# calm area is not reusable, so the park she is sent to is whichever one this run's
-		# playgrounds still leave open today; see `ResistanceDirector._place_at_a_swing()` for
-		# why "forced open whatever its state" is not this slice's to build.
+		# Day 12 · the swing on the playground of one specific park — one place, red arrow. The
+		# park is the one the city chose for it (`CityGenerator._plan_the_swing_park()`), forced
+		# open today whatever its arc has reached, and taken once she has reached the swing.
 		_mark(13, "Another mark", 12, "Go to the swing. Get there before they close the gate."),
 		_perform(14, "The swing", 12, "", [], true, TargetKind.PARK_SWING, false,
 				"the park's own swing"),

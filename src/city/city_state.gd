@@ -17,11 +17,16 @@ var _stage := {}
 ## Block -> the day it last moved. Day 1 for a block that has never changed, which is what
 ## the route map wants to shade "this is new".
 var _changed_on := {}
+## The park that is open today whatever its arc has reached — day 12's, the one its task sends her
+## to (`BlockPlan.forced_open_on`) — as `block -> true`, until she takes it. Derived by
+## `begin_day()` from the plans and the day, never saved: a retried day derives it again.
+var _open_today := {}
 
 ## Back to day 1 with every block at the start of its arc.
 func reset() -> void:
 	_stage.clear()
 	_changed_on.clear()
+	_open_today.clear()
 
 ## A block's arc position depends on run history — a fire only advances a block if something
 ## burned there — so `GameState`'s save has to carry it rather than recompute it from the seed and
@@ -55,10 +60,19 @@ func restore(data: Dictionary) -> void:
 ## arc — which an older build's run had already boarded up or burnt. Reading the last step keeps
 ## that save loading into the city this build generates rather than indexing off the arc; nothing a
 ## current run records can be past its own arc, since `_can_advance` never steps beyond it.
+##
+## **Day 12's park is a park that day, whatever its arc has reached** (`_open_today`): *"we can
+## just force open the park she needs to go to that day"* (PLAYTEST-119). A park whose arc
+## requisitioned it on day 8 is grass with swings again for the one day, and the day is planned
+## around it like any other park — calm, on the corridor, kept reachable — until she reaches the
+## swing. The ground a park and a requisitioned park stand on is the same walkable ground, so this
+## moves no walkable tile.
 func purpose_of(plans: Dictionary, block: Vector2i) -> GameEnums.BlockPurpose:
 	var plan: BlockPlan = plans.get(block)
 	if not plan:
 		return GameEnums.BlockPurpose.RESIDENTIAL
+	if _open_today.has(block):
+		return GameEnums.BlockPurpose.PARK
 	return plan.steps[mini(_index(block), plan.steps.size() - 1)].purpose
 
 ## The day this block last became something else. 1 if it never has.
@@ -71,11 +85,39 @@ func changed_on(block: Vector2i) -> int:
 ## Advancing is a loop rather than a single step because a run can be resumed on a later day
 ## (`--day 9`), and a block two scheduled steps behind has to arrive where it would have
 ## been rather than lag by however many days were skipped.
+##
+## It also opens the park the day's task sends her to, if today is its day — see `purpose_of()`.
 func begin_day(plans: Dictionary, day: int) -> void:
+	_open_today.clear()
 	for block: Vector2i in plans:
 		var plan: BlockPlan = plans[block]
 		while _can_advance(plan, block, day, GameEnums.BlockCause.SCHEDULED):
 			_advance(plans, block, day, GameEnums.BlockCause.SCHEDULED)
+		if plan.forced_open_on == day:
+			_open_today[block] = true
+
+## Whether `block` is the park forced open today, and not yet taken.
+func is_forced_open(block: Vector2i) -> bool:
+	return _open_today.has(block)
+
+## **The park day 12 sent her to is taken, now** — she has reached its swing (PLAYTEST-119: "*then*
+## the park starts to close"). It stops being forced open, and its arc takes its `REQUISITIONED`
+## step if that is the step it is waiting on, whatever the step's own cause or day: a step
+## scheduled for day 13 is taken a day early, and the step `CityGenerator._plan_the_swing_park()`
+## gave a park whose arc had none waits for exactly this (`BlockCause.TAKEN`). A park its arc had
+## already requisitioned simply stops being forced open. Either way it is a requisitioned park for
+## the rest of the run. Returns whether `block` was open and now is not.
+func take(plans: Dictionary, block: Vector2i, day: int) -> bool:
+	if not _open_today.has(block):
+		return false
+	_open_today.erase(block)
+	var plan: BlockPlan = plans.get(block)
+	if plan:
+		var next := _index(block) + 1
+		if next < plan.steps.size() \
+				and plan.steps[next].purpose == GameEnums.BlockPurpose.REQUISITIONED:
+			_advance(plans, block, day, GameEnums.BlockCause.TAKEN)
+	return true
 
 ## A cause fired at a block. Advances its arc if the next step was waiting for exactly that
 ## cause and the day has come; otherwise nothing happens, which is the point — a fire in a

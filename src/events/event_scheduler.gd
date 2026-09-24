@@ -193,10 +193,28 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors)
 	_ensure_the_run_is_taught(day, planned, heat)
 
-	_ensure_one_usable_park(map, planned, used_calm)
-	_ensure_the_city_is_still_walkable(map, planned, target, standing)
+	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
+	# park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second open
+	# park she can reach from the swing"). Both passes below are asked about the calm *other* than
+	# the target's: one of those areas is left clean, and a route to it is kept.
+	var target_calm := _calm_block_holding(map, target)
+	_ensure_one_usable_park(map, planned, used_calm, target_calm)
+	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm)
 	_hand_to_her_walk(planned)
 	return planned
+
+## The calm block whose calm ground holds a tile of `target`, or `(-1, -1)` when none does — day
+## 12's swing stands in its park; day 9's door and the station's door stand on streets.
+static func _calm_block_holding(map: CityMap, target: Array[Vector2i]) -> Vector2i:
+	for block in map.calm_blocks:
+		var rect := _calm_rect(map, block)
+		for tile in target:
+			if rect.has_point(tile):
+				return block
+	return NO_CALM
+
+## "No calm block", for `_calm_block_holding()` and the passes that take its answer.
+const NO_CALM := Vector2i(-1, -1)
 
 ## **A recurring row sited from her walk is rolled and placed at dawn like any other, then handed to
 ## her walk** — `poster_crew`, which pastes the walls she passes (`EventDef.sited_on_her_way`). The
@@ -2954,14 +2972,22 @@ static func _reaches_any(candidate: Planned, rects: Array[Rect2]) -> bool:
 ## can. Without that the two halves fight: the day deliberately puts something in her
 ## park, and then this rule, looking for the least disturbed calm ground, finds the block with
 ## exactly one spoiler on it and strips the very event that was the point.
+##
+## **`besides` is a calm block that does not count** — day 12's swing park, which is taken once she
+## has reached it, so the clean ground the day owes her has to be somewhere else. It is never
+## stripped here and never the one found clean.
 static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
-		used_calm: Array[Vector2i] = []) -> void:
-	if map.calm_blocks.is_empty():
+		used_calm: Array[Vector2i] = [], besides := NO_CALM) -> void:
+	var calm: Array[Vector2i] = []
+	for block in map.calm_blocks:
+		if block != besides:
+			calm.append(block)
+	if calm.is_empty():
 		return
 
 	var spoilers := {}   # calm block -> Array[Planned]
 	var clean := false
-	for block in map.calm_blocks:
+	for block in calm:
 		# The calm *ground*, not the whole block. A courtyard's calm is a four-tile court
 		# inside a residential block; protecting the block would strip every event off a
 		# street the player was never going to settle on anyway.
@@ -2997,13 +3023,13 @@ static func _ensure_one_usable_park(map: CityMap, planned: Array[Planned],
 	# ground on it at all. A winnable day outranks a fresh decision, so the least disturbed area is
 	# cleared and the rest stand.
 	var untouched: Array[Vector2i] = []
-	for block in map.calm_blocks:
+	for block in calm:
 		if not used_calm.has(block):
 			untouched.append(block)
 
 	if untouched.is_empty():
-		var least: Vector2i = map.calm_blocks[0]
-		for block in map.calm_blocks:
+		var least: Vector2i = calm[0]
+		for block in calm:
 			if spoilers[block].size() < spoilers[least].size():
 				least = block
 		untouched = [least] as Array[Vector2i]
@@ -3043,8 +3069,16 @@ static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
 ## alone seals the target off, dropping the catalogue's bodies cannot help, so the target half asks
 ## nothing of them rather than emptying the day for no route — a construction failure the
 ## resistance suite's sweep exists to catch, noted in the run log if it ever happens in play.
+##
+## **`besides` is a calm block the calm half does not count** (`build_day()`'s own
+## `_calm_block_holding()`: day 12's swing park). The route kept is then to a calm area other than
+## it, and to a clean one — no catalogue field reaching its calm ground, which
+## `_ensure_one_usable_park()` has just made sure exists — where one is reachable with every body
+## gone; otherwise to any other calm ground. Reached from home, it is reached from the swing too:
+## the swing is kept reachable from home by the target half, and walking is the same both ways.
 static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Planned],
-		target: Array[Vector2i] = [], standing: Array[Planned] = []) -> void:
+		target: Array[Vector2i] = [], standing: Array[Planned] = [],
+		besides := NO_CALM) -> void:
 	var blockers: Array[Planned] = []
 	for plan in planned:
 		if not plan.is_placed():
@@ -3068,9 +3102,48 @@ static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Plan
 	if not target.is_empty() and not _target_is_reachable(map, grid, target, fixed):
 		Telemetry.note("plan", "the day's own seals and wall cut the resistance's target off")
 		kept_target = []
-	while not blockers.is_empty() and not (_park_is_reachable(map, grid, blockers)
+	var calm := _calm_to_keep_reachable(map, planned, besides, grid)
+	while not blockers.is_empty() and not (_park_is_reachable(map, grid, blockers, calm)
 			and _target_is_reachable(map, grid, kept_target, fixed, blockers)):
 		planned.erase(blockers.pop_front())
+
+## The calm tiles `_ensure_the_city_is_still_walkable()` keeps a route to: every calm tile on an
+## ordinary day; with `besides` set, the calm ground of every *clean* area but that one which is
+## reachable under today's closures alone, falling back to all calm ground but that one's.
+static func _calm_to_keep_reachable(map: CityMap, planned: Array[Planned], besides: Vector2i,
+		grid: ReachabilityGrid) -> Array[Vector2i]:
+	if besides == NO_CALM:
+		return map.calm_tiles()
+	var reached := grid.flood([map.home_rect.position], map.closed_tiles)
+	var clean: Array[Vector2i] = []
+	var other: Array[Vector2i] = []
+	for block in map.calm_blocks:
+		if block == besides:
+			continue
+		var rect := _calm_rect(map, block)
+		var tiles: Array[Vector2i] = []
+		var reachable := false
+		for tile in map.rect_tiles(rect):
+			if Tile.is_calm(map.tile_at(tile)):
+				tiles.append(tile)
+				reachable = reachable or grid.reaches(tile, map.closed_tiles, reached)
+		other.append_array(tiles)
+		if reachable and not _is_spoiled(map, planned, rect):
+			clean.append_array(tiles)
+	return clean if not clean.is_empty() else other
+
+## Whether a field the day planned reaches `rect`'s ground — `_ensure_one_usable_park()`'s own
+## reading of a spoiled area: a playground and a scar do not count, and neither do the seals and the
+## region wall, which are planned before the catalogue and handed to it as `standing` rather than
+## being in `planned`.
+static func _is_spoiled(map: CityMap, planned: Array[Planned], rect: Rect2i) -> bool:
+	var lot := map.tile_rect_to_world(rect)
+	for plan in planned:
+		if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed() or plan.permanent:
+			continue
+		if _reaches_rect(plan, lot):
+			return true
+	return false
 
 ## Whether some tile of `target` is reached from the home with every one of `blockers` and
 ## `more_blockers` standing — `ResistanceDirector._reachable_from_home()`'s own question, asked of
@@ -3100,10 +3173,13 @@ static func _blocking_radius(plan: Planned) -> float:
 ## answers this milestone existed to unify are one function apart rather than two implementations
 ## that could drift: both are `ReachabilityGrid.flood()`/`reaches()` under a `blocked` set, and the
 ## grid does not care whether the tiles in it came from a candidate's barrier or an event's circle.
-static func _park_is_reachable(map: CityMap, grid: ReachabilityGrid, blockers: Array[Planned]) -> bool:
+##
+## `calm` is the calm ground to ask about, every calm tile when empty.
+static func _park_is_reachable(map: CityMap, grid: ReachabilityGrid, blockers: Array[Planned],
+		calm: Array[Vector2i] = []) -> bool:
 	var blocked := blocked_by(map, blockers)
 	var reached := grid.flood([map.home_rect.position], blocked)
-	for tile in map.calm_tiles():
+	for tile in calm if not calm.is_empty() else map.calm_tiles():
 		if grid.reaches(tile, blocked, reached):
 			return true
 	return false

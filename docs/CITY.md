@@ -179,6 +179,12 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
 - Exactly one big building is the **power station**, its front door on a real street at least
   `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
   See "The power station".
+- One **park with a playground is day 12's**, the park that day's task sends her to the swing of
+  (`CityGenerator._plan_the_swing_park`, `BlockPlan.forced_open_on`). A park whose arc already
+  requisitions it is preferred; in a city whose arcs take no park, the chosen one gets a
+  `REQUISITIONED` step of its own on `BlockCause.TAKEN`, and the calm that lasts to the end is
+  counted without it. Drawn from the seed's hash rather than the generator's stream, so no other
+  draw moves. A city with no park is refused. See "Block purposes".
 
 **Each day adds its own, planned with the day rather than checked of the city.** At least two calm
 areas stay reachable through the day's closures ("The invariant"), and some calm stays reachable
@@ -207,12 +213,31 @@ pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`)
 director's own refusals of the tile — walkable, not closed, not held (a door excepted), not on the
 home block, not in a walled-off alley — and the director draws among them asking reachability of
 every draw, so the tile it picks is one the day kept. Planned on the day number alone, never on
-the run, so the day is the same whether or not this run will be offered the step. **Two things it
+the run, so the day is the same whether or not this run will be offered the step. **One thing it
 does not cover:** a moving event, which has no body to seal anything with (a hard-fail mover counts
-where it starts); and a day 12 whose playground parks have all been taken by their arcs, which has
-no swing to send her to at all — a question of whether the place exists, not of reaching it.
-`tests/test_resistance.gd` plans the three days on cities whose narrow places the day's seals and
-bodies have been found to ring, and finds the place reached and the contact standing on it.
+where it starts). `tests/test_resistance.gd` plans the three days on cities whose narrow places the
+day's seals and bodies have been found to ring, and finds the place reached and the contact
+standing on it.
+
+**Day 12's place is a park that is open whatever its state, and the day owes her a second one.**
+*(PLAYTEST-119: "we can just force open the park she needs to go to that day"; PLAYTEST-122: the
+day "guarantees a second open park she can reach from the swing".)* The swing's pool is the swing
+of the one park the city chose for the day — no other park's — and that park is a park on day 12
+whatever its arc has reached (`CityState.purpose_of`), so everything above plans around it as the
+calm area it is that day. Once she has reached the swing it is taken, so the calm she settles the
+baby in has to be somewhere else, and the day plans for that too:
+
+- **`ClosurePlanner` already keeps two calm areas reachable**, so one of them is not the swing's.
+- **One other area is clean.** `EventScheduler._ensure_one_usable_park` is asked for a clean calm
+  area other than the swing's, and strips the least disturbed of the others if none is — day 12 is
+  the first day of act IV, so every area is unused and placement has already kept them clean.
+- **A route to it is kept.** `_ensure_the_city_is_still_walkable` asks its calm half of the clean
+  areas other than the swing's that today's closures leave reachable, not of any calm tile, and
+  drops bodies until one of them is reached. Reached from home, it is reached from the swing: the
+  swing is kept reachable from home, and walking is the same both ways.
+
+Which areas count as calm on day 12 is any calm purpose, not only a park: a forest or a quiet
+square settles the baby as well as a park does.
 
 ## The home
 
@@ -1545,7 +1570,8 @@ in one place instead of leaving the scheduler to rescue each day.
 | `BURNT_OUT` | no | A built block that burned and stayed burnt. |
 
 A step is taken when its **cause** fires: `SCHEDULED` (the day arrived — requisitions and
-boardings), `FIRE` (something burned there), or `MILITARY` (the army came down this street).
+boardings), `FIRE` (something burned there), `MILITARY` (the army came down this street), or
+`TAKEN` (she reached the swing in day 12's park, whose arc alone carries this cause).
 The event causes come from scars: `EventManager` funnels every scar through one place, so a
 fire cannot leave a shell without the block being given the chance to move. A cause that
 arrives at a block whose arc is not waiting for it does nothing at all, which is what keeps
@@ -1555,6 +1581,12 @@ burnt-out block.
 Causes fire during the day; the city presents the result the **next morning**.
 `CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is
 ashes tomorrow.
+
+**Day 12's park is the one block whose purpose is not its arc's for a day.** It is a park on its
+day whatever its arc has reached (`BlockPlan.forced_open_on`, `CityState.purpose_of`), and when she
+reaches its swing `CityState.take()` takes its `REQUISITIONED` step there and then, whatever the
+step's own day or cause — a requisition scheduled for day 13 comes a day early. Park and
+requisitioned park are the same walkable ground, so neither half moves a walkable tile.
 
 ### What is fixed, and what is absolute
 

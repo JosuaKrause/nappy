@@ -487,15 +487,14 @@ func _place_at_a_door(rng: RandomNumberGenerator) -> Vector2:
 	# ground was filtered out of the pool, before `allow_held` ever gets a say.
 	return _pick_reachable(candidates, rng, true)
 
-## Where day 12's task points: the swing of one specific park's playground —
-## `CityMap.playgrounds`, which already names only the parks currently open (a requisitioned
-## park has none, see that field's own doc), at the same point `City._dress_block()` draws the
-## swing frame at (`CityMap.swing_position()`). **Only among the parks the city has left open**: a
-## park whose arc has taken it has no swing to send her to, so on a day every playground park has
-## been taken this answers `Vector2.INF` and the task has nowhere to go — a question of whether a
-## swing exists, not of reaching one. The pool is `ResistanceSteps.target_candidates()`.
+## Where day 12's task points: the swing of the one park the city chose for it
+## (`CityGenerator.swing_park()`), forced open today whatever its arc has reached
+## (`CityState.purpose_of()`), at the same point `City._dress_block()` draws the swing frame at
+## (`CityMap.swing_position()`). The pool is `ResistanceSteps.target_candidates()`, one tile, which
+## the day's planning keeps reachable from home; `Vector2.INF` only on a day that park is not open,
+## which on its own day is a city `CityGenerator.validate()` refused.
 func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
-	if not _map or _map.playgrounds.is_empty():
+	if not _map:
 		return Vector2.INF
 	return _pick_reachable(ResistanceSteps.target_candidates(
 			_step_of_kind(ResistanceSteps.TargetKind.PARK_SWING), _map, null), rng)
