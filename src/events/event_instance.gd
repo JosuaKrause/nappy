@@ -3351,11 +3351,13 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
 ## across it. Anything else would be a lie about where the player can walk.
 ##
-## **The end cap is inset by half its own width, for the same reason.** A cap centred at `±half`
-## hangs half its own width past the obstruction — `barrier_end.svg` is 6px wide, so a `construction`
-## barrier obstructs 64px and used to draw 70 — which is the picture claiming ground the collision
-## does not hold. Insetting so the cap's *outer* edge lands on `±half` instead makes the drawn extent
-## equal the obstructed one, matching the segments above rather than overhanging them.
+## **The end cap is inset by half its own width, for the same reason, on either axis.** A cap
+## centred at `±half` hangs half its own width past the obstruction — `barrier_end.svg` is 6px wide,
+## so a `construction` barrier that obstructs 64px would draw 70 — which is the picture claiming
+## ground the collision does not hold. Insetting so the cap's *outer* edge lands on `±half` makes
+## the drawn extent equal the obstructed one, matching the segments rather than overhanging them.
+## A cap is an upright post on both axes, so it is drawn at its own size and its width is what it
+## covers along the run whichever way the run goes (`_cap_along`).
 ## `origin` moves the whole spread, its shadow included, to a local point other than this node's
 ## own — which is what a body left standing while its owner walks away needs (`_draw_roadblock()`,
 ## `EventDef.body_stays_behind`). Zero, the default, is every other caller: the spread is drawn
@@ -3375,12 +3377,9 @@ func _draw_spread(segment_picture: String, cap: String = "", canvas: CanvasItem 
 	if cap.is_empty():
 		return
 	var cap_size := _native_size(cap)
-	var cap_along := cap_size.y if _spread_vertical else cap_size.x
-	var cap_thickness := cap_size.x if _spread_vertical else cap_size.y
 	for side in [-1.0, 1.0]:
 		Sprites.draw_standing(canvas, _drawn(cap),
-				origin + _spread_at(_cap_offset(half, cap_along, side)),
-				_spread_extent(cap_along, cap_thickness))
+				origin + _spread_at(_cap_offset(half, _cap_along(cap_size), side)), cap_size)
 
 ## A whole-scene picture is one body, including on an east-west street. Its vertical asset is
 ## fitted to the obstruction's diameter, so its standing point moves to the far end of the
@@ -3415,6 +3414,14 @@ static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
 ## painted.
 static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 	return side * (half - cap_along * 0.5)
+
+## How much of a spread's run one end cap covers on the ground: the post's own width, on both
+## axes. **Never its picture's height on an end-on run**, though that is the extent along the
+## spread there: the height is how tall the post stands, not how much of the street it takes up,
+## and insetting by it stands each end post half its height in from its end of the barrier, so on
+## a 64px column the two 26px posts cover most of it rather than capping it.
+static func _cap_along(cap_size: Vector2) -> float:
+	return cap_size.x
 
 ## The tables, and the people at them.
 ##

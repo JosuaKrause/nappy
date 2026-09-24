@@ -71,8 +71,9 @@ def tile(name: str, scale: int) -> Image.Image:
     return t.resize((t.width * scale, t.height * scale), Image.NEAREST)
 
 
-def street(w: int, h: int, north_south: bool, scale: int) -> Image.Image:
-    """A patch of street: sidewalk, carriageway, sidewalk across its width, in world px."""
+def street(w: int, h: int, north_south: bool, scale: int, carriageway: bool = True) -> Image.Image:
+    """A patch of street: sidewalk, carriageway, sidewalk across its width, in world px; or,
+    without a carriageway, sidewalk throughout."""
     im = Image.new("RGBA", (w * scale, h * scale))
     road, walk = tile("road.png", scale), tile("sidewalk.png", scale)
     step = road.width
@@ -80,7 +81,7 @@ def street(w: int, h: int, north_south: bool, scale: int) -> Image.Image:
         for x in range(0, w * scale, step):
             across = x // scale if north_south else y // scale
             middle = (w if north_south else h) / 2
-            on_road = abs(across + 16 - middle) < STREET / 2 - SIDEWALK
+            on_road = carriageway and abs(across + 16 - middle) < STREET / 2 - SIDEWALK
             im.alpha_composite(road if on_road else walk, (x, y))
     return im
 
@@ -152,7 +153,7 @@ def causes_block(pics, after, s, mother):
 
 def roadworks_block(pics, after, s):
     """`EventInstance._draw_spread(BARRIER_SEGMENT[_VERTICAL], BARRIER_END)` for `construction`."""
-    c = street(260, 130, True, s)
+    c = street(260, 130, True, s, carriageway=False)
     half, seg = 32.0, 3  # construction: obstructs 32, 26px panels, three segments either way
     w = 2 * half / seg
     cap_w, cap_h = size(pics, "barrier_end", s)
@@ -189,7 +190,7 @@ def sheet(name, before, after, out_dir: Path):
                 block = block.resize((block.width * 2, block.height * 2), Image.NEAREST)
             blocks.append((title, block))
         font = ImageFont.load_default(size=16)
-        W = max(b[1].width for b in blocks) + 16
+        W = max(max(b[1].width, round(font.getlength(b[0]))) for b in blocks) + 16
         H = sum(b[1].height + 30 for b in blocks) + 8
         im = Image.new("RGBA", (W, H), (234, 230, 222, 255))
         d = ImageDraw.Draw(im)
