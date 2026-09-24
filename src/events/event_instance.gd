@@ -16,12 +16,12 @@ extends Node2D
 
 const CAT_CROUCHED := "events/cat_crouched"
 const CAT_RUNNING := "events/cat_running"
-## The single east-facing picture, mirrored west — see `EventCatalogue._alley_mouse()` for why the
-## prepared directional family (`mouse_{front,back}[_diagonal].svg`) stays unbound here.
+## The `"side"` entry of `MOUSE_BY_VIEW` below, east-facing per `facings.csv` — see
+## `EventCatalogue._alley_mouse()`. Also `icon_for()`'s own badge silhouette.
 const MOUSE := "events/mouse"
-## The dash's own second frame — the mouse's only picture is the side one this row actually draws;
-## its tail curls a little differently rather than crossing legs it does not have room to draw at
-## this scale, read by `_draw_simple()`'s own `texture_b` off `_gait_stepping()`.
+## The dash's own second frame, and the `"side"` entry of `MOUSE_BY_VIEW_B` — its tail curls a
+## little differently rather than crossing legs it has no room to draw at this scale, read off
+## `_gait_stepping()` the same way every other family's own `_b` table is.
 const MOUSE_B := "events/mouse_b"
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
@@ -352,9 +352,24 @@ const CHATTING_MOTHER_TALKING_BY_VIEW := {
 ## preloading a second copy of the same picture: `docs/evidence/svg-vehicles-2026-09-10/
 ## facings.csv` marks every one of them "existing canonical source" rather than a new drawing, and
 ## `docs/GRAPHICS.md` says to replace a preload only where the suffixed source is a different
-## picture from the one already live. `mouse` is the one family in this evidence set left out —
-## `EventCatalogue._alley_mouse()`'s own docstring documents, with its own reasoning, that the row
-## stays on `_draw_simple(MOUSE, ...)` rather than joining this table.
+## picture from the one already live. `mouse` joins them below.
+const MOUSE_BY_VIEW := {
+	"front": "events/mouse_front",
+	"back": "events/mouse_back",
+	"side": MOUSE,
+	"front_diagonal": "events/mouse_front_diagonal",
+	"back_diagonal": "events/mouse_back_diagonal",
+}
+## The dash's own second frame — its tail curls a little differently rather than crossing legs it
+## has no room to draw at this scale, unlike `CAT_RUNNING_BY_VIEW_B`'s quadrupeds — alternated by
+## `_gait_stepping()` the same way every other family's own `_b` table is.
+const MOUSE_BY_VIEW_B := {
+	"front": "events/mouse_front_b",
+	"back": "events/mouse_back_b",
+	"side": MOUSE_B,
+	"front_diagonal": "events/mouse_front_diagonal_b",
+	"back_diagonal": "events/mouse_back_diagonal_b",
+}
 const CAT_CROUCHED_BY_VIEW := {
 	"front": "events/cat_crouched_front",
 	"back": "events/cat_crouched_back",
@@ -3072,7 +3087,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect_views(sources, [CAT_CROUCHED_BY_VIEW, CAT_RUNNING_BY_VIEW,
 					CAT_RUNNING_BY_VIEW_B])
 		EventDef.Look.MOUSE:
-			_collect(sources, [MOUSE, MOUSE_B])
+			_collect_views(sources, [MOUSE_BY_VIEW, MOUSE_BY_VIEW_B])
 		EventDef.Look.YELLER:
 			_collect_views(sources, [YELLER_BY_VIEW, YELLER_BY_VIEW_B])
 		EventDef.Look.DOG_WALKER:
@@ -3194,7 +3209,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
 		EventDef.Look.MOUSE:
-			_draw_simple(MOUSE, canvas, MOUSE_B)
+			_draw_eight_view(MOUSE_BY_VIEW, _heading, canvas, false, MOUSE_BY_VIEW_B)
 		EventDef.Look.YELLER:
 			_draw_eight_view(YELLER_BY_VIEW, _heading, canvas, false, YELLER_BY_VIEW_B)
 		EventDef.Look.DOG_WALKER:
@@ -3346,8 +3361,8 @@ func _draw_simple(picture: String, canvas: CanvasItem = self,
 ## `side_faces_west` override set, the same as `delivery_van`, `fire_engine`, `unmarked_van` and
 ## `army_truck` above — see that const's own doc comment.
 ##
-## `_draw_simple` itself is untouched and keeps drawing every row that has no directional family at
-## all: `mouse` and `skip`.
+## `_draw_simple` itself is untouched and keeps drawing the one row that has no directional family
+## at all: `skip`.
 ##
 ## `by_view_b` is the family's own feet-passing set, read off `_gait_stepping()` when given —
 ## empty for every vehicle family, which has no stride, so the lookup falls through to `by_view`.

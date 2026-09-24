@@ -16,9 +16,8 @@ const STEP := 1.0 / 60.0
 
 ## Every family that gained a stride this round, its "a" and "b" tables paired so the
 ## completeness, distinctness and "differs from a" checks below run once over the whole set.
-## `mouse` is not here — its single texture is checked on its own further down — and neither is
-## `cafe_sitter` or `busker`, whose own idle-timer alternation is checked in its own section rather
-## than folded into the distance-driven gait checks every entry here shares.
+## Neither `cafe_sitter` nor `busker` is here: their own idle-timer alternation is checked in its
+## own section rather than folded into the distance-driven gait checks every entry here shares.
 const GAIT_FAMILY_DICTS := {
 	"person": [EventInstance.PERSON_BY_VIEW, EventInstance.PERSON_BY_VIEW_B],
 	"yeller": [EventInstance.YELLER_BY_VIEW, EventInstance.YELLER_BY_VIEW_B],
@@ -32,6 +31,7 @@ const GAIT_FAMILY_DICTS := {
 	"dog": [EventInstance.DOG_BY_VIEW, EventInstance.DOG_BY_VIEW_B],
 	"charging_dog": [EventInstance.CHARGING_DOG_BY_VIEW, EventInstance.CHARGING_DOG_BY_VIEW_B],
 	"cyclist": [EventInstance.CYCLIST_BY_VIEW, EventInstance.CYCLIST_BY_VIEW_B],
+	"mouse": [EventInstance.MOUSE_BY_VIEW, EventInstance.MOUSE_BY_VIEW_B],
 }
 
 const IDLE_FAMILY_DICTS := {
@@ -44,7 +44,6 @@ const VIEWS: Array[String] = ["front", "back", "side", "front_diagonal", "back_d
 func run(t) -> void:
 	_test_b_tables_are_complete(t)
 	_test_b_tables_differ_from_a_per_view(t)
-	_test_mouse_b_differs_from_a(t)
 	_test_moving_instance_alternates_gait_frames(t)
 	_test_waiting_robber_holds_frame_a(t)
 	_test_chatting_mother_freezes_gait_when_talking(t)
@@ -88,13 +87,6 @@ func _test_b_tables_differ_from_a_per_view(t) -> void:
 		for view in VIEWS:
 			t.check(by_view[view] != by_view_b[view],
 					"%s's %s view differs between its two idle frames" % [name, view])
-
-## `mouse` stays on its single side-on picture rather than joining the five-view families above
-## (see `EventCatalogue._alley_mouse()`'s own docstring), so its own second frame is checked here
-## on its own — `MOUSE`/`MOUSE_B`, not a dictionary entry.
-func _test_mouse_b_differs_from_a(t) -> void:
-	t.check(EventInstance.MOUSE != EventInstance.MOUSE_B,
-			"the mouse's dash frame differs from its resting one")
 
 # ------------------------------------------------------------------- the gait ---
 
