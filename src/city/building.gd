@@ -309,6 +309,15 @@ enum Condition {
 		door_world_x_range = value
 		queue_redraw()
 
+## The posters on this front's blank ground-floor cells: column -> a cell as `PosterState` holds
+## it (`kind`, `tear`, `under`, `under_tear`, `side`). Handed over whole by `PosterWalls.refresh()`,
+## which owns what is pasted where; this only draws it. A column that is not blank is never handed
+## one, so nothing here re-checks the window or door rules.
+var posters: Dictionary = {}:
+	set(value):
+		posters = value
+		queue_redraw()
+
 @export var condition := Condition.LIVED_IN:
 	set(value):
 		if condition == value:
@@ -692,6 +701,7 @@ func _draw() -> void:
 			var y_offset := TILE - texture.get_height()
 			draw_texture(texture, _cell(col, 0) + Vector2(0.0, y_offset))
 
+	_draw_posters()
 	_draw_front_overlay()
 
 	for row in roof_rows:
@@ -794,8 +804,8 @@ func _ground_floor_texture(col: int) -> StringName:
 ## Local space, one `Vector2(TILE, TILE)` rect per blank column, in
 ## the same top-left convention `_cell()` already uses for every draw call in this file. Empty for
 ## the power station (it draws its own front), her own building (the blank-wall rule's one
-## exception) and a one-row facade (not multi-story, so the rule never reaches it). Nothing calls
-## this yet — it is the ground a poster crew pastes on.
+## exception) and a one-row facade (not multi-story, so the rule never reaches it). Read by
+## `PosterWalls` — it is the ground a poster crew pastes on.
 func blank_ground_floor_cells() -> Array[Rect2]:
 	var result: Array[Rect2] = []
 	if power_station or is_home_building or wall_tiles() < 2:
@@ -808,6 +818,25 @@ func blank_ground_floor_cells() -> Array[Rect2]:
 		if _ground_floor_texture(col) == WALL_BASE:
 			result.append(Rect2(_cell(col, 0), Vector2(TILE, TILE)))
 	return result
+
+## The sheets on the blank ground-floor cells (`posters`), after the plinth and before the door and
+## fire escapes, so a fire escape's platform, whose brackets reach eight pixels into the columns
+## beside it, still stands in front of a sheet pasted there. Drawn at their own colours, never the
+## wall's tint. A burnt front has lost them with its paint. An older sheet showing under a newer
+## one is drawn first, shifted the other way — see `PosterArt.UNDER_OFFSET`.
+func _draw_posters() -> void:
+	if posters.is_empty() or condition == Condition.BURNT:
+		return
+	for col: int in posters:
+		var cell: Dictionary = posters[col]
+		var at := _cell(col, 0)
+		var side := float(cell["side"])
+		var over := Vector2.ZERO
+		if int(cell["under"]) != PosterState.NONE:
+			draw_texture(PosterArt.texture_for(int(cell["under"]), int(cell["under_tear"])),
+					at + PosterArt.UNDER_OFFSET * Vector2(side, 1.0))
+			over = PosterArt.OVER_OFFSET * Vector2(side, 1.0)
+		draw_texture(PosterArt.texture_for(int(cell["kind"]), int(cell["tear"])), at + over)
 
 ## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
 ## assumed: the portico is a fixed 32px overlay centred on the facade (`_draw_front_overlay()`),

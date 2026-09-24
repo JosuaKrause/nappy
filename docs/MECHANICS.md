@@ -174,7 +174,13 @@ pricing a crowd load against the unmultiplied number flatters one street and lib
 standing still settles nothing at all, so the only question a street has to answer is what it costs
 to walk down, which is what a route is made of.
 
-At `excitement = 100` → **crying** → day lost.
+**The bar may reach and sit at `excitement = 100` without ending the day.** The day ends crying
+only once a further mass of excitement has arrived while she is already sitting at the cap —
+`Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (10) points inside `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
+so a single contact that only just reaches 100 leaves almost nothing behind it and does not end
+the day, and a source that keeps her at the cap does. See "Baby state machine", "A push at the
+cap", for exactly what counts as that mass and what happens to it once she gets away from the
+source.
 
 **The entity halo reads this same subtraction, per source.** `ExcitementHalo` traces every live
 source's own gross points landed over the last `ExcitementHalo.WINDOW` (five seconds, the same
@@ -299,6 +305,20 @@ half-second move read as a cut.
 
 ## Baby state machine
 
+**A push at the cap.** The bar may reach and sit at `Tuning.METER_MAX` without ending the day —
+`_update_excitement()` still nets `incoming − decay` every frame the way it always has, and the
+day only ends once `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (10) points of that net have arrived
+**while she is already sitting at the cap**, summed over the last `Tuning.EXCITEMENT_OVERFLOW_WINDOW`
+(3s). That sum is the bar's own would-be overflow — the part of a positive net rate the clamp would
+otherwise have piled on top of 100 — not the raw incoming: a single contact from just under the cap
+spends nearly all of itself getting *to* 100 and leaves almost nothing over, so it no longer ends
+the day on its own, while a source that keeps emitting once she is there keeps feeding the sum. The
+moment incoming drops under decay, the bar falls back from 100 at its ordinary ground-and-motion
+rate exactly as it always has, and the sum itself never resets — it simply drains as its own
+entries age out of the three-second window, the same way the decay side of the meter already ages
+out of `ExcitementHalo.WINDOW`. Two constants, both in `src/autoload/tuning.gd`: the player's own
+starting point, not yet a decision (`docs/DECISIONS.md`, M96).
+
 ```
         ┌────────────────────────────────────────────┐
         │                                            │
@@ -307,21 +327,29 @@ half-second move read as a cut.
    └────┬────┘                     └───┬────┘        │
         │                              │              │
         │ excitement = 100             │ excitement ≥ │
-        │                              │ WAKE_THRESH  │
+        │ and a push at the cap        │ WAKE_THRESH  │
+        │ (above)                      │              │
         ▼                              └──────────────┘
    ┌─────────┐                     (sleepiness drops to 50,
    │ CRYING  │  day lost            back to AWAKE)
    └─────────┘
 ```
 
+The same edge — excitement at 100 and a push at the cap, described above — reaches `CRYING` from
+`ASLEEP` as well, checked before the wake transition below: a push while asleep ends the day
+directly rather than waking her first.
+
 While `ASLEEP`:
 
 - Sleepiness is pinned at 100.
 - Excitement still accumulates, but from a *lower* baseline — a sleeping baby is harder to
   disturb. Incoming excitement is multiplied by `SLEEPING_SENSITIVITY` (default `0.55`).
-- If excitement crosses `WAKE_THRESHOLD` (default `60`), the baby wakes: sleepiness resets
-  to `WAKE_SLEEPINESS_PENALTY` (default `50`) and the day continues.
-- If excitement reaches 100 while asleep, the baby wakes *crying* → day lost.
+- If excitement crosses `WAKE_THRESHOLD` (default `60`) without the push below having reached the
+  day-ending mass yet, the baby wakes: sleepiness resets to `WAKE_SLEEPINESS_PENALTY` (default
+  `50`) and the day continues.
+- If excitement reaches 100 and a push at the cap reaches `EXCITEMENT_OVERFLOW_TO_CRY` while
+  asleep, the baby cries → day lost — "A push at the cap" above is what a push is and how it
+  drains.
 
 This makes the walk home a real second act rather than a victory lap.
 
@@ -1028,6 +1056,34 @@ an instruction.
 weight of 1.4. The hint says nothing again for the rest of the run: it is the lesson, not a running
 commentary on the mechanic, so every later pursuit — a second dog the same day, `alley_robbery`
 from day 8 — telegraphs in silence.
+
+## Tearing a poster down
+
+**She tears a poster down by pushing against its wall**, and there is no button for it. Her
+heading has to point into the postered wall — at least thirty degrees off its line
+(`PosterWalls.PRESS_INTO`), so a diagonal counts — while her feet are at its face
+(`PosterWalls.PRESS_REACH`, a few pixels past where the pram stops her), for 0.4 seconds
+(`PosterWalls.PRESS_TO_TEAR`). Walking past, even drifting into the wall, tears nothing; a push can
+still happen by accident, which is how it is found. What is read is her steering rather than her
+velocity, since the wall stops the one and not the other. A diagonal slides her along the wall, so
+a push held along a papered wall tears a sheet every 0.4 seconds while she is in front of an
+intact one.
+
+The sheet shows one of the three tears and stays torn until a crew, or a dawn, pastes that wall
+again. **A tear costs nothing on the meter and counts for nothing**: it is a gimmick, judged by
+feel.
+
+**What it can do is bring a patrol, and whether it does is drawn from a marble bag** rather than
+rolled (`MarbleBag`, PLAYTEST-125): each tear draws one marble at random and removes it, and an
+empty bag is filled again with the same set, so over every bag the share is exact where a roll at
+the same odds runs streaks. The run's first bag is a pre-bag of one "no pursuit" marble, so the
+first tear is always safe; every bag after it holds one "pursuit" and nine "no pursuit"
+(`PosterWalls.TEAR_PRE_BAG`, `TEAR_BAG`). The bag draws from a stream of its own off the run's
+seed, and its whole state is how many tears the run has made (`PosterState.tears`), so a save, a
+lost day and a retry all draw the same marbles. A pursuit marble sends a `police_patrol` toward
+her from off screen, down the carriageway lane driving toward her, under the lead the row already
+owes (`EventDirector.send_a_patrol()`) — sited once she walks on along the street, since a heading
+into a wall gives a car no street to come down. Only poster tears use a marble bag.
 
 ## Telegraphing
 

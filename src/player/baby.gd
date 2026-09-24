@@ -55,6 +55,12 @@ var _clock := 0.0
 ## `decay_in_window()`, what `ExcitementHalo` shares this against.
 var _decay_history: Array = []
 
+## `[when, points]` entries of the bar's own would-be overflow while sitting at
+## `Tuning.METER_MAX` — see `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` for what this counts and why, and
+## `_record_overflow()` for where it is fed. Pruned the same shape `_decay_history` is, to
+## `Tuning.EXCITEMENT_OVERFLOW_WINDOW`.
+var _overflow_history: Array = []
+
 var _stroller: Stroller
 var _world: WorldContext
 
@@ -72,6 +78,7 @@ func reset() -> void:
 	last_incoming = 0.0
 	last_decay = 0.0
 	_decay_history.clear()
+	_overflow_history.clear()
 	_set_state(GameEnums.BabyState.AWAKE)
 	EventBus.sleepiness_changed.emit(sleepiness)
 	EventBus.excitement_changed.emit(excitement)
@@ -142,7 +149,14 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	# Net rate, so that decay always counts: standing still fights a loud event, and
 	# sprinting past one (decay ~0) makes it far worse than walking past it.
 	var before := excitement
-	excitement = clampf(excitement + (incoming - decay) * delta, 0.0, Tuning.METER_MAX)
+	var net := incoming - decay
+	excitement = clampf(before + net * delta, 0.0, Tuning.METER_MAX)
+	# Only while she is already sitting at the cap does a positive net mean anything beyond what
+	# the bar shows: below the cap that net is simply the bar rising, already reflected above.
+	# See `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` for what this sum decides and why it is netted
+	# rather than raw.
+	if before >= Tuning.METER_MAX and net > 0.0:
+		_record_overflow(net * delta)
 	if not is_equal_approx(before, excitement):
 		EventBus.excitement_changed.emit(excitement)
 
@@ -170,6 +184,38 @@ func decay_in_window() -> float:
 	var total := 0.0
 	for entry in _decay_history:
 		total += entry[1]
+	return total
+
+## Folds this frame's would-be overflow into the sliding window `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`
+## reads — see `_update_excitement()` for what qualifies as overflow and why it is netted rather
+## than raw. Stored the same shape `_record_decay()` uses, so the mass drains the same way: nothing
+## resets it, entries simply age out of `Tuning.EXCITEMENT_OVERFLOW_WINDOW` as `_clock` advances,
+## whether or not she is still adding to it.
+func _record_overflow(points: float) -> void:
+	_prune_overflow_history()
+	if points > 0.0:
+		_overflow_history.append([_clock, points])
+
+func _prune_overflow_history() -> void:
+	var cutoff := _clock - Tuning.EXCITEMENT_OVERFLOW_WINDOW
+	while not _overflow_history.is_empty() and _overflow_history[0][0] < cutoff:
+		_overflow_history.pop_front()
+
+## The mass of overflow still inside `window` seconds — `Tuning.EXCITEMENT_OVERFLOW_WINDOW` by
+## default, what `_update_state()` checks every frame against `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`.
+##
+## **The override is for measurement, not for play.** `_record_overflow()` only ever retains
+## `Tuning.EXCITEMENT_OVERFLOW_WINDOW` seconds of history — pruning to a *narrower* `window` here
+## is always a true subset of what is stored, so `tests/probes/m96_crying_at_the_top.gd` can sweep
+## a smaller window against the same live rig without touching `Tuning`; a `window` wider than the
+## default would read short, since the older history was never kept.
+func overflow_mass(window: float = Tuning.EXCITEMENT_OVERFLOW_WINDOW) -> float:
+	_prune_overflow_history()
+	var cutoff := _clock - window
+	var total := 0.0
+	for entry in _overflow_history:
+		if entry[0] >= cutoff:
+			total += entry[1]
 	return total
 
 ## How fast the meter falls: what she is doing, times what she is standing on.
@@ -231,8 +277,14 @@ func _update_sleepiness(delta: float, calm_gain: float) -> void:
 
 # -------------------------------------------------------------------- state ---
 
+## The bar may reach and sit at `Tuning.METER_MAX` without ending the day — only a further push
+## while she is up there does, `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` of it inside
+## `Tuning.EXCITEMENT_OVERFLOW_WINDOW` — the same check whether she is `AWAKE` or `ASLEEP`, since
+## `_update_excitement()` already applies `SLEEPING_SENSITIVITY` to what counts as incoming before
+## this ever sees it. A baby who reaches the cap asleep without that push falls through to the
+## `ASLEEP` branch below and wakes at the ordinary penalty instead of crying.
 func _update_state() -> void:
-	if excitement >= Tuning.METER_MAX:
+	if excitement >= Tuning.METER_MAX and overflow_mass() >= Tuning.EXCITEMENT_OVERFLOW_TO_CRY:
 		_set_state(GameEnums.BabyState.CRYING)
 		return
 

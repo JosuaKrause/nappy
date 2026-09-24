@@ -187,7 +187,28 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 
 	_ensure_one_usable_park(map, planned, used_calm)
 	_ensure_the_city_is_still_walkable(map, planned)
+	_hand_to_her_walk(planned)
 	return planned
+
+## **A recurring row sited from her walk is rolled and placed at dawn like any other, then handed to
+## her walk** — `poster_crew`, which pastes the walls she passes (`EventDef.sited_on_her_way`). The
+## dawn placement is what spends the day's own stream exactly as it was spent before the crew was
+## sited from her walk, so every row the roll places after it stands where it always stood; this
+## then drops the position, and `EventDirector.site_what_is_on_her_way()` sites it ahead of her.
+##
+## **Last, and only ever a removal.** Every guarantee the passes above make is about reaching
+## somewhere, and taking a placed body off the ground can only add reachable ground (the **city**
+## skill's one monotonic exception), so nothing they decided can become false here. A one-shot owed
+## to her walk arrives already unplaced from `_place_one_shots` and is left alone.
+static func _hand_to_her_walk(planned: Array[Planned]) -> void:
+	for i in planned.size():
+		var plan := planned[i]
+		if not plan.def.sited_on_her_way or plan.def.kind != GameEnums.EventKind.RECURRING \
+				or not plan.is_placed():
+			continue
+		var owed := Planned.new(plan.def, Vector2.INF)
+		owed.role = plan.role
+		planned[i] = owed
 
 # --------------------------------------------------------------- the finale ---
 
@@ -927,6 +948,10 @@ class WalkSiting extends RefCounted:
 	var waits := {}
 	## How many sitings had to widen past the band to the end of her branch, for the same probe.
 	var widened := 0
+	## The sidewalk tiles in front of a blank ground-floor cell, as a set — `PosterWalls.fronts()`,
+	## handed over by `EventManager` from the city it belongs to. What a row that `pastes_a_front`
+	## may stand on; empty, and so nowhere, for a rig with no city.
+	var fronts := {}
 
 	## `tree` is the day's corridor tree and `used_calm` is `GameState.settled_this_act()` — the two
 	## arguments `build_day` states its own placements against, taken here rather than the finished
@@ -1004,6 +1029,10 @@ class WalkSiting extends RefCounted:
 			return _waited("every face on her branch broke a placement rule")
 		if not _still_leaves_a_park_reachable(already, candidate, at):
 			return _waited("the site would close her way out")
+		# A crew faces the wall it pastes, its back to the street. `_build_placement` turned it by
+		# the dawn's own side, out of a wall it was never going to stand at.
+		if def.pastes_a_front:
+			candidate.facing = Vector2.UP
 		return candidate
 
 	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
@@ -1179,12 +1208,19 @@ class WalkSiting extends RefCounted:
 	## weighting offers a retail tile several times so the day's own roll lands there more often;
 	## this roll is over the handful of faces on one branch inside one window, where which street she
 	## is walking has already decided everything the weight was for.
+	##
+	## **A row that pastes a front is offered the fronts, not its own side.** Its ground is the
+	## `AT_THE_FRONT` lane with every rule `_open_ground_for` asks of any other row, narrowed to the
+	## tiles in `fronts` — in front of a blank ground-floor cell, which only the city's buildings
+	## know — and nothing at all where no city handed any over.
 	func _ground_as_a_set(def: EventDef) -> Dictionary:
-		var key := "set|%s|%d" % [def.placement, def.pavement_side]
+		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front else def.pavement_side
+		var key := "set|%s|%d" % [def.placement, side]
 		if not _ground.has(key):
 			var found := {}
-			for tile in EventScheduler._open_ground_for(def, _map, _ground):
-				found[tile] = true
+			for tile in EventScheduler._open_ground_for(def, _map, _ground, side):
+				if not def.pastes_a_front or fronts.has(tile):
+					found[tile] = true
 			_ground[key] = found
 		return _ground[key]
 
@@ -1598,8 +1634,10 @@ static func _is_a_corner(tile: Vector2i) -> bool:
 ## one — a yeller or a busker keeps every tile a plain sidewalk scan already found. This is an
 ## exclusion from the candidate pool rather than a repair after the fact, the same shape a barrier
 ## beside a calm area's access street is refused in rather than moved out of afterwards.
-static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) -> Array[Vector2i]:
-	var key := "%s|%d" % [def.placement, def.pavement_side]
+static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
+		side: int = -1) -> Array[Vector2i]:
+	var wanted_side := def.pavement_side if side < 0 else side
+	var key := "%s|%d" % [def.placement, wanted_side]
 	if not ground.has(key):
 		var doorstep := _the_street_she_starts_on(map)
 		var trees := _street_tree_tiles(map, ground)
@@ -1627,7 +1665,7 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 				if map.is_closed(candidate) or doorstep.has_point(candidate) \
 						or map.is_held_at(candidate) or map.is_on_home_block(candidate) \
 						or trees.has(candidate) \
-						or not _wants_this_side(def, map, candidate):
+						or not _wants_this_side(def, map, candidate, wanted_side):
 					continue
 				open.append(candidate)
 				if map.street_kind_at(true, candidate) == GameEnums.StreetKind.PEDESTRIAN \
@@ -1758,13 +1796,21 @@ static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 ## that back into things are drawn side-on and a sprite cannot face north. A frontage the lorry
 ## would have to reverse into sideways is not one it can be drawn reversing into, and half the
 ## pavements in the city are still eligible.
-static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i) -> bool:
-	if def.pavement_side == EventDef.Pavement.ANY:
+##
+## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on, and is asked only
+## by `WalkSiting` for a row that `pastes_a_front`, through `side`: the row's own `pavement_side`
+## is what the dawn roll reads. `side` is typed `int` for the cross-script enum reason the **godot**
+## skill names; `-1` means the row's own.
+static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i, side: int = -1) -> bool:
+	var wanted := def.pavement_side if side < 0 else side
+	if wanted == EventDef.Pavement.ANY:
 		return true
 	var inward := map.pavement_inward(tile)
 	if inward == Vector2i.ZERO:
 		return false
-	if def.pavement_side == EventDef.Pavement.AT_THE_KERB:
+	if wanted == EventDef.Pavement.AT_THE_FRONT:
+		return inward == Vector2i.UP and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
+	if wanted == EventDef.Pavement.AT_THE_KERB:
 		# The kerb lane is the one whose *road* side is actually road: on a two-tile pavement
 		# that is the inner of the two, and asking the tiles rather than the offset keeps it true
 		# of a crossing, a closed carriageway, or whatever a later milestone paints there.
@@ -1967,13 +2013,15 @@ static func _counts_against_the_line(plan: Planned) -> bool:
 ## that sidewalk would refuse every site the design exists to make. What replaces the guarantee is
 ## strictly stronger and is stated over the day rather than over the street:
 ## `WalkSiting._still_leaves_a_park_reachable()` refuses any site that leaves her unable to reach
-## the home, or a calm area she has not used, **outside both fields**. A row carrying this flag is
-## never placed at dawn (`_place_one_shots` plans it with no position), so nothing else in the day
-## is judged differently because of it.
+## the home, or a calm area she has not used, **outside both fields**. A one-shot carrying this
+## flag is never placed at dawn (`_place_one_shots` plans it with no position), so nothing else in
+## the day is judged differently because of it. **A recurring row carrying it is not exempt**: a
+## poster crew closes nothing, and it is placed at dawn and judged exactly as it always was before
+## its position is handed to her walk (`_hand_to_her_walk`).
 static func _a_line_has_to_avoid(def: EventDef) -> bool:
 	if def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
 		return false
-	if def.sited_on_her_way:
+	if def.sited_on_her_way and def.kind == GameEnums.EventKind.ONE_SHOT:
 		return false
 	if def.mobile and not def.paces:
 		return false

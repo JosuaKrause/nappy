@@ -57,7 +57,10 @@ func run(t) -> void:
 	_test_sleeping_baby_is_less_sensitive(t)
 	_test_wakes_up_with_penalty(t)
 	_test_full_excitement_cries(t)
-	_test_one_bump_near_the_ceiling(t)
+	_test_one_bump_no_longer_ends_the_day(t)
+	_test_a_sustained_source_at_the_top_cries(t)
+	_test_the_overflow_mass_needs_both_size_and_time(t)
+	_test_the_overflow_mass_drains_with_the_window(t)
 
 # ------------------------------------------------------------- pure numbers ---
 
@@ -382,36 +385,94 @@ func _test_full_excitement_cries(t) -> void:
 	t.close_to(_baby.excitement, frozen, "the meters stop once the baby is crying")
 	_teardown()
 
-## M96, the teaching day and the dog after it: where one contact on an otherwise empty street
-## becomes a cliff. **Measured, not designed** — a real `CrowdAgent`'s own `startle()`, the same
-## call `Crowd._bump()` makes on a genuine contact, driven by hand since a bare agent has no lane
-## to steer in.
+## M96, the day ends crying only after a push at the top. **Measured, not designed** — a real
+## `CrowdAgent.startle()`, the same call `Crowd._bump()` makes on a genuine contact, driven by hand
+## since a bare agent has no lane to steer in. *(2026-09-23, playtest 126, statement 1: "the bar can
+## reach 100 but we need also like 10 over 3s to actually end the day ... this could have the
+## benefit of removing 'undeserved' failures where you just bump into a single pedestrian in an
+## aggravated state".)*
 ##
-## **Stated as where the cliff is rather than as what happens at 90**, because the height of one
-## contact is the difference between what the jolt lands and what the ground gives back over the
-## same second and a bit, and the second of those is a balance number that moves. *(Playtest 63
-## raised the walking decay and one contact from 90 stopped ending the day — at 90 it now reaches
-## 98.8, a point and a bit short.)* What the number was ever worth knowing for is the relationship
-## below it: **a single contact may only be fatal from inside the band the pram is already
-## warning about.** A contact that killed from under `EXCITEMENT_NEARLY_CRYING` would be a death
-## with no cue in front of it, which is the one thing this suite exists to refuse.
-func _test_one_bump_near_the_ceiling(t) -> void:
-	var landed := _one_bump_from(t, 90.0) - 90.0
-	t.check(landed > 0.0,
-			"one contact still puts the meter up on an empty street (%.2f)" % landed)
-	var fatal_from := Tuning.METER_MAX - landed
-	t.check(fatal_from > Tuning.EXCITEMENT_NEARLY_CRYING,
-			"one contact ends the day only from %.1f up, which is inside the nearly-crying band "
-			% fatal_from + "(%.0f) the pram is already showing"
-			% Tuning.EXCITEMENT_NEARLY_CRYING)
-	t.check(fatal_from < Tuning.METER_MAX,
-			"and there is a height from which it does end the day, so a contact stays a cliff")
-	# The other end, walked rather than derived: from just inside that height it really does cry.
-	t.check(_one_bump_from(t, fatal_from + 1.0) >= Tuning.METER_MAX,
-			"and one contact from %.1f ends it" % (fatal_from + 1.0))
+## **From 89** — where `docs/DECISIONS.md`'s M96 measurement had one bump land exactly on
+## `METER_MAX` and end the day — a real jolt today no longer even reaches the cap (about 98 of
+## 100): an earlier change to the walking decay already closed that particular cliff, so it was
+## never this rule's own to remove. Pinned here anyway, not crying, so a future change to
+## `Tuning.EXCITEMENT_DECAY_WALKING` cannot quietly reopen it without a test noticing.
+##
+## **From 95**, close enough that the bump does reach the cap (about 100), is the actual case this
+## rule was built for: what is left over for `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` to catch is only
+## the part of the jolt that landed *after* the bar was already clamped, which a jolt this short
+## barely has any of.
+func _test_one_bump_no_longer_ends_the_day(t) -> void:
+	var from_89 := _one_bump_from(t, 89.0)
+	t.check(not from_89["crying"], "one contact from 89 does not end the day")
 
-## The meter after one whole contact, starting from `at` and walking ordinary ground.
-func _one_bump_from(t, at: float) -> float:
+	var from_95 := _one_bump_from(t, 95.0)
+	t.check(not from_95["crying"],
+			"one contact from 95 does not end the day either, though it reaches the cap (overflow %.2f)"
+			% from_95["overflow"])
+	t.check(from_95["overflow"] < Tuning.EXCITEMENT_OVERFLOW_TO_CRY,
+			"its own overflow mass (%.2f) stays under the %.1f threshold"
+			% [from_95["overflow"], Tuning.EXCITEMENT_OVERFLOW_TO_CRY])
+
+## The other half of the same rule: a source that keeps emitting once she is already at the cap
+## does end the day, because the mass it leaves behind keeps accruing rather than being spent
+## reaching 100 the way one short bump's is.
+func _test_a_sustained_source_at_the_top_cries(t) -> void:
+	_build(t)
+	_baby.excitement = Tuning.METER_MAX
+	# Comfortably net-positive while walking, so the whole window's worth clears the threshold.
+	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0
+	_walk()
+	_simulate(Tuning.EXCITEMENT_OVERFLOW_WINDOW)
+	t.check(_baby.state == GameEnums.BabyState.CRYING,
+			"a source that keeps emitting at the cap for the whole window ends the day")
+	_teardown()
+
+## The rule is a mass **and** a window, not either alone: a loud source cut off early, and a
+## source too quiet to clear the mass however long it runs, both leave the day still going.
+func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
+	_build(t)
+	_baby.excitement = Tuning.METER_MAX
+	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0  # net +10/s, well above the threshold
+	_walk()
+	_simulate(0.5)  # 0.5s of it is 5 points of mass, under the 10-point threshold
+	t.check(_baby.state != GameEnums.BabyState.CRYING,
+			"not enough time at the cap yet, however loud the source")
+	_teardown()
+
+	_build(t)
+	_baby.excitement = Tuning.METER_MAX
+	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # net +2/s: 6 points over the whole window
+	_walk()
+	_simulate(Tuning.EXCITEMENT_OVERFLOW_WINDOW)
+	t.check(_baby.state != GameEnums.BabyState.CRYING,
+			"and a source too quiet to clear the mass in the window never ends the day, however "
+			+ "long she stays")
+	_teardown()
+
+## And the drain, since nothing about leaving the source resets the mass: it ages out of
+## `EXCITEMENT_OVERFLOW_WINDOW` the same way `Baby.decay_in_window()`'s own sum does, so it survives
+## the instant the source is gone and is gone itself once the window has fully turned over.
+func _test_the_overflow_mass_drains_with_the_window(t) -> void:
+	_build(t)
+	_baby.excitement = Tuning.METER_MAX
+	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # stays under the threshold throughout
+	_walk()
+	_simulate(Tuning.EXCITEMENT_OVERFLOW_WINDOW * 0.5)
+	var mid := _baby.overflow_mass()
+	t.check(mid > 0.0, "the source has left some mass behind")
+	_world.noise = 0.0
+	_simulate(STEP)
+	t.close_to(_baby.overflow_mass(), mid,
+			"the mass does not clear the instant the source is gone", 0.1)
+	_simulate(Tuning.EXCITEMENT_OVERFLOW_WINDOW + 1.0)
+	t.close_to(_baby.overflow_mass(), 0.0,
+			"and it has fully aged out of the window well after she has left", 0.01)
+	_teardown()
+
+## The meter, whether the day ended crying, and the overflow mass left behind, after one whole
+## contact starting from `at` and walking ordinary ground.
+func _one_bump_from(t, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
@@ -425,7 +486,9 @@ func _one_bump_from(t, at: float) -> float:
 		_world.noise = agent.contribution_at(_stroller.global_position)
 		_baby._physics_process(STEP)
 		jolt -= STEP
-	var reached := _baby.excitement
+	var result := {"excitement": _baby.excitement,
+			"crying": _baby.state == GameEnums.BabyState.CRYING,
+			"overflow": _baby.overflow_mass()}
 	agent.free()
 	_teardown()
-	return reached
+	return result

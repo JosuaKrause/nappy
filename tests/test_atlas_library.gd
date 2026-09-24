@@ -25,6 +25,7 @@ func run(t) -> void:
 	t.check(not membership.is_empty(), "the membership file parses")
 	_test_the_bake_is_not_stale(t)
 	_test_every_member_has_a_region(t, membership)
+	_test_a_transfer_only_ever_stands_in_for_its_own_source(t, membership)
 	_test_regions_do_not_overlap(t)
 	_test_geometry_needs_nothing_acquired(t)
 	_test_a_page_arrives_and_leaves_with_its_references(t)
@@ -90,6 +91,97 @@ func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 			% [AtlasLibrary.region_names().size(), expected])
 	t.check(expected >= FEWEST_CREDIBLE_REGIONS,
 			"there were regions to ask about (%d)" % expected)
+
+## **A transfer PNG stands in for its own SVG and for nothing else, so a view that has no transfer
+## of its own draws its own vector rather than a neighbour's picture.** The eight-view families
+## gain diagonals and frames at different times from their transfers — a mother's diagonal can have
+## a PNG while a walker's diagonal has none — and the one way a cardinal transfer could take a
+## diagonal's place, or a frame-a transfer a frame b's, is a lookup that maps two sources to one
+## PNG. So two things are asked. `AtlasLibrary.illustrated_path_for()` is one-to-one over the whole
+## membership and keeps each source's own file name, state suffix included. And every region a
+## diagonal or a transfer could be confused over — every `_diagonal` member, and every member that
+## has a transfer — is, pixel for pixel, the raster of its own source: its own PNG where the
+## default bake finds one, its own SVG where it does not or where the bake is `--svg`. Pixels rather
+## than a size, because a swapped picture of the same canvas would keep the size and lose the view.
+func _test_a_transfer_only_ever_stands_in_for_its_own_source(t, membership: Dictionary) -> void:
+	var groups: Dictionary = membership.get("groups", {})
+	var mode_key := "members_svg" if AtlasLibrary.bake_mode() == "svg" else "members_png"
+	var png_bake := AtlasLibrary.bake_mode() == "png"
+	var claimed := {}
+	var shared: Array[String] = []
+	var renamed: Array[String] = []
+	var differing: Array[String] = []
+	var asked := 0
+	var diagonals_from_their_own_svg := 0
+	var diagonals_from_their_own_png := 0
+	for group: String in groups.keys():
+		var record: Dictionary = groups[group]
+		var members: Array = (record.get("members", []) as Array).duplicate()
+		members.append_array(record.get(mode_key, []))
+		var page: Image = null
+		for member: String in members:
+			var transfer := AtlasLibrary.illustrated_path_for(member)
+			if transfer.is_empty():
+				continue
+			if claimed.has(transfer):
+				shared.append("%s and %s" % [claimed[transfer], member])
+			claimed[transfer] = member
+			if transfer.get_file().get_basename() != member.get_file().get_basename():
+				renamed.append(member)
+			var has_transfer := FileAccess.file_exists(transfer)
+			var diagonal := member.get_file().contains("_diagonal")
+			if not diagonal and not has_transfer:
+				continue
+			var from_png := png_bake and has_transfer
+			var expected := _raster_like_the_bake(transfer if from_png else "res://" + member)
+			if page == null:
+				page = AtlasLibrary.page_image(StringName(group))
+			var name := AtlasLibrary.region_name_for(member)
+			var baked := page.get_region(AtlasLibrary.region_rect(name))
+			asked += 1
+			if diagonal:
+				if from_png:
+					diagonals_from_their_own_png += 1
+				else:
+					diagonals_from_their_own_svg += 1
+			if expected == null or baked.get_size() != expected.get_size() \
+					or baked.get_data() != expected.get_data():
+				differing.append("%s (from its own %s)" % [member, "png" if from_png else "svg"])
+	t.check(shared.is_empty(), "no two sources share one transfer path (%s)"
+			% ", ".join(shared.slice(0, 5)))
+	t.check(renamed.is_empty(), "every transfer path keeps its source's own name (%s)"
+			% ", ".join(renamed.slice(0, 5)))
+	t.check(differing.is_empty(), "every region asked about is its own source's raster (%s)"
+			% ", ".join(differing.slice(0, 5)))
+	# The guards that the sweep asked about both halves of the question: diagonals drawn from their
+	# own vector beside a transfer family, and — in the default bake — diagonals drawn from their
+	# own transfer.
+	t.check(diagonals_from_their_own_svg > 0,
+			"there were diagonals drawn from their own SVG to ask about (%d)"
+			% diagonals_from_their_own_svg)
+	if png_bake:
+		t.check(diagonals_from_their_own_png > 0,
+				"there were diagonals drawn from their own transfer to ask about (%d)"
+				% diagonals_from_their_own_png)
+	t.check(asked >= FEWEST_CREDIBLE_REGIONS / 4,
+			"there were regions to compare (%d)" % asked)
+
+## One source rasterised the way `tools/bake_atlases.gd`'s own `_rasterize()` does it — an SVG at
+## scale 1, a PNG as it is, RGBA8, `fix_alpha_edges()` — so a region and its source compare as
+## the same bytes when the page was baked from that source and as different bytes otherwise.
+static func _raster_like_the_bake(path: String) -> Image:
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if bytes.is_empty():
+		return null
+	var image := Image.new()
+	var status := image.load_svg_from_buffer(bytes, 1.0) if path.ends_with(".svg") \
+			else image.load_png_from_buffer(bytes)
+	if status != OK:
+		return null
+	if image.get_format() != Image.FORMAT_RGBA8:
+		image.convert(Image.FORMAT_RGBA8)
+	image.fix_alpha_edges()
+	return image
 
 ## A region lies inside its page, and the one-pixel border every region owns is its own: two
 ## regions grown by `PADDING` never touch. That is what makes an extruded border true for both

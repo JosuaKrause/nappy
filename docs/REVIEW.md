@@ -560,6 +560,31 @@ item below for as long as looking takes.
   than as a thing in the way: he stays on the route because his beat reaches the crossing at the
   junction, so the answer to him is to walk on while he paces away, or to cross where his beat
   ends. `tools/run.sh --seed 4242 --day 1`, layer 5 for the routes and layer 4 for the readout.
+- **Watch a crowd car and a moving event vehicle (police car, fire engine, unmarked van, riot
+  van, army truck, lorry) drive up to a light and stop.**
+  `tools/shot.sh … 8 --seed 4242 --spawn signal --zoom 3 --press snapshot_burst 3 --invincible
+  --no-save` puts one at a signal. The body rises and falls 1px over every 64px of road covered
+  and settles flat the instant it stops. **Does the 1px rise read as the car bouncing on its own
+  wheels, or is it too small to see — or too much, once you know where to look?** And **does the
+  fade below the 60px/s turn speed read as the car settling into a turn, or does the bob cut off
+  too abruptly?** Both the 1px height and the 64px stride are felt values, not derived. Record is
+  `DECISIONS.md`, M108, the audit and cars bob on their wheels.
+- **Look at the live favicon and the window/dock icon at their real, on-screen size.** The
+  enhanced stroller icon (`icon.png`, 256×256) was only compared as a still sheet at 16, 32, 64
+  and 256px, never captured live: `tools/serve-web.sh` for the browser tab's favicon, `tools/run.sh`
+  for the windowed build's title-bar and dock/taskbar icon. **Does the stroller read at a real
+  favicon's size, and does the window/dock icon look right next to other apps' icons?** Record is
+  `DECISIONS.md`, the application icon is the enhanced stroller.
+- **Walk a day from day 4 on and find a poster crew mid-paste, then push against a postered
+  wall.** A crew works a wall along her own route and is only measured (1 to 8 met per walk),
+  never photographed mid-paste — `--invincible` freezes the day clock, so the moment a crew is
+  sited on her walk cannot be timed for a burst without it. **Does a crew pasting read as the
+  city changing rather than a static prop, and does the alternating brush-raised pose read as
+  pasting from a normal walking distance?** Steer into a papered wall for under half a second,
+  then hold it: the push has to be at least 30° into the wall, within 26px of its face, for 0.4s.
+  **Do the push thresholds read as a deliberate shove, or does an accidental brush tear too
+  easily — or does a real push feel like it should have torn sooner?** Record is `DECISIONS.md`,
+  M180, seen, walled and torn.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

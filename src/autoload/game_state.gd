@@ -67,6 +67,12 @@ var scars: Array[Dictionary] = []
 ## the run has got. See docs/CITY.md, "Block purposes".
 var city_state := CityState.new()
 
+## What is pasted on the city's walls and how many sheets she has torn — see `PosterState`. A fact
+## about the run like `scars`, photographed and given back with them, so a lost day's crews and
+## tears did not happen. Not in `_SAVE_FIELDS`: it rides beside `escape_section` as its own
+## top-level save key, so a save written before there were posters still loads, with bare walls.
+var posters := PosterState.new()
+
 ## Whether the day-14 sabotage actually went through. Reaching RESISTANCE_GOAL earns the
 ## chance at the good ending; this is doing it.
 var sabotage_done := false
@@ -185,6 +191,7 @@ func start_run(seed_value: int = 0) -> void:
 	failed_resistance_steps.clear()
 	scars.clear()
 	city_state.reset()
+	posters.reset()
 	settled_in.clear()
 	sabotage_done = false
 	resistance_carrying_package = false
@@ -368,6 +375,7 @@ func _snapshot_what_the_attempt_can_spend() -> void:
 	_dawn_consumed_one_shots = consumed_one_shots.duplicate()
 	_dawn_scars = scars.duplicate()
 	_dawn_city_state = city_state.snapshot()
+	posters.photograph()
 
 ## Puts the city back where the lost day found it. A one-shot the attempt spent is owed again, the
 ## shell it left is gone, and the block it burned is back at the step it was on this morning.
@@ -380,6 +388,7 @@ func _give_back_what_the_attempt_spent() -> void:
 	consumed_one_shots = _dawn_consumed_one_shots.duplicate()
 	scars = _dawn_scars.duplicate()
 	city_state.restore(_dawn_city_state)
+	posters.give_back()
 
 ## Puts the resistance back where the lost day found it, and says so for the `nerve` entry —
 ## "" when the day touched none of it, which is most days.

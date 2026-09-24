@@ -1,0 +1,7 @@
+<!-- Car side wheels: the tyres alone, on the body and trim canvas and anchor, drawn fixed on the ground while the body and trim ride the bob. Bottom-centre ground anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="52" height="30" viewBox="0 0 52 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <circle cx="14" cy="24" r="5" fill="#26232a"/>
+  <circle cx="38" cy="24" r="5" fill="#26232a"/>
+  <circle cx="14" cy="24" r="2" fill="#4a464f"/>
+  <circle cx="38" cy="24" r="2" fill="#4a464f"/>
+</svg>
