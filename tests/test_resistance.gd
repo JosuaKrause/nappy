@@ -16,7 +16,6 @@ const RULE_SEEDS := 3
 func run(t) -> void:
 	_test_step_table(t)
 	_test_step_selection(t)
-	_test_day_ten_offers_no_mark(t)
 	_test_the_finale_needs_the_legwork(t)
 	_test_touching_completes_a_pickup(t)
 	_test_walking_away_leaves_it_untouched(t)
@@ -58,6 +57,8 @@ func run(t) -> void:
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t)
 	_test_the_neighbor_leaves_for_work_until_the_raid(t)
+	_test_day_ten_sends_her_to_the_neighbor_walking_home(t)
+	_test_the_raid_waits_at_her_building_with_the_doorstep_open(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_the_narrow_targets_are_reachable_on_their_day(t)
@@ -80,9 +81,8 @@ func _test_step_table(t) -> void:
 	for step in steps:
 		t.check(step.index == previous_index + 1, "step indices run consecutively from 1")
 		t.check(step.day >= previous_day, "steps unlock in calendar order")
-		if step.available:
-			t.check(step.placement.size() > 0 or ResistanceSteps.sits_on_a_bare_point(step),
-					"step %d knows where it goes" % step.index)
+		t.check(step.placement.size() > 0 or ResistanceSteps.sits_on_a_bare_point(step),
+				"step %d knows where it goes" % step.index)
 		if step.is_pickup:
 			t.check(not step.grants_progress, "a pickup does not grant progress")
 			t.check(step.task_event_id == "", "a pickup sits on a tile, not a rider")
@@ -92,7 +92,7 @@ func _test_step_table(t) -> void:
 			var perform := ResistanceSteps.by_index(step.index + 1)
 			t.check(perform != null and not perform.is_pickup and perform.day == step.day,
 					"step %d's mark unlocks a perform step on the same day" % step.index)
-		elif not step.needs_goal and step.available:
+		elif not step.needs_goal:
 			t.check(step.task_event_id != "" or ResistanceSteps.sits_on_a_bare_point(step),
 					"perform step %d names what it rides on or how it finds its own place"
 					% step.index)
@@ -134,16 +134,6 @@ func _test_step_selection(t) -> void:
 			"a failed mark is never offered again")
 	var later := ResistanceSteps.for_day(8, done, failed, false)
 	t.check(later != null and later.index == 5, "but the run carries on to the next task's mark")
-
-func _test_day_ten_offers_no_mark(t) -> void:
-	var none: Array[int] = []
-	t.check(ResistanceSteps.for_day(10, none, none, false) == null,
-			"day 10 (warn the neighbor) is not built and offers no mark")
-	# But the day after it still finds its own task — an unavailable day never blocks the
-	# calendar behind it.
-	var next := ResistanceSteps.for_day(11, none, none, false)
-	t.check(next != null and next.is_pickup and next.day == 11,
-			"day 11 offers the mast's own mark regardless")
 
 func _test_the_finale_needs_the_legwork(t) -> void:
 	var done: Array[int] = []
@@ -956,7 +946,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 
 		var attempts := 0
 		for step in ResistanceSteps.all():
-			if step.needs_goal or not step.available or not step.is_pickup:
+			if step.needs_goal or not step.is_pickup:
 				continue   # the finale sits at the station's door, and only a mark sits in an alley
 			for trial in 20:
 				attempts += 1
@@ -1614,6 +1604,111 @@ func _test_the_neighbor_leaves_for_work_until_the_raid(t) -> void:
 			t.check(director._happenings.morning_neighbor == null,
 					"day %d: no neighbor leaves for work" % day)
 			director.free())
+
+## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned
+## through the real day order, since the walk is stated over the day's own closures and bodies.
+func _director_on_the_neighbor(t) -> ResistanceDirector:
+	var day := ResistanceHappenings.NEIGHBOR_DAY
+	var state := CityState.new()
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures"))
+	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+	var director := _director(t)
+	director.start_day(day, _rng(day, "resistance"), 300.0)
+	var mark := director.current_step()
+	t.check(mark != null and mark.is_pickup, "day 10 offers a mark")
+	director._on_contact_completed(mark.index if mark else -1)
+	return director
+
+## Day 10: the red arrow points at the neighbor, out in the city and walking home along a real walk
+## that ends at her doorstep, about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk away. Reached
+## first, the neighbor runs and the task counts; reaching the door first, they are taken — the task
+## is failed, and from the next day the wanted notice crosses their face out.
+func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
+	_build_city(t)
+	var saved_day := GameState.day
+	_with_clean_run(func() -> void:
+		var director := _director_on_the_neighbor(t)
+		var task := director.current_step()
+		t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.NEIGHBOR,
+				"touching it sends her to the neighbor")
+		var neighbor := director._rider
+		t.check(neighbor != null and neighbor.def.id == "neighbor" and neighbor.def.mobile,
+				"who is out in the city, walking")
+		if neighbor:
+			var door := _city.map.doorstep_world_position()
+			t.check(neighbor.path[neighbor.path.size() - 1].distance_to(door) < 1.0,
+					"home, to her own door")
+			var length := 0.0
+			for i in range(1, neighbor.path.size()):
+				length += neighbor.path[i - 1].distance_to(neighbor.path[i])
+			var seconds := length / neighbor.def.speed
+			t.check(absf(seconds - Tuning.NEIGHBOR_WALK_HOME_SECONDS)
+					<= (ResistanceDirector.NEIGHBOR_WALK_BAND_TILES + 2) * Tuning.TILE_SIZE
+					/ neighbor.def.speed,
+					"a walk of about %.0fs (%.0fs)" % [Tuning.NEIGHBOR_WALK_HOME_SECONDS, seconds])
+			t.check(director.red_arrow_target() == director.contact_position(),
+					"and the red arrow points at them")
+		director._on_contact_completed(task.index if task else -1)
+		t.check(neighbor != null and neighbor.is_leaving, "warned, the neighbor runs")
+		t.check(task != null and task.index in GameState.completed_resistance_steps,
+				"and the task counts")
+		GameState.day = ResistanceHappenings.NEIGHBOR_DAY + 1
+		t.check(not GameState.neighbor_was_taken(), "a warned neighbor is not taken")
+		GameState.day = ResistanceHappenings.NEIGHBOR_DAY
+		director.free()
+
+		GameState.completed_resistance_steps = []
+		var late := _director_on_the_neighbor(t)
+		var walker := late._rider
+		t.check(walker != null, "the neighbor is walking home again on the retry")
+		if walker:
+			walker.is_parked = true
+		late._process(STEP)
+		var warning := ResistanceSteps.warning_step()
+		t.check(warning.index in GameState.failed_resistance_steps,
+				"reaching the door first, the neighbor is taken and the task is lost")
+		t.check(late.current_step() == null and late.red_arrow_target() == Vector2.INF,
+				"and nothing points anywhere any more")
+		GameState.day = ResistanceHappenings.NEIGHBOR_DAY + 1
+		t.check(GameState.neighbor_was_taken(), "from the next day the neighbor is taken")
+		late.free())
+	GameState.day = saved_day
+
+## Day 10's raid: vans at her building and a patrol, arriving only once she is out of sight of her
+## door, and never on her own sidewalk — the doorstep stays reachable along it.
+func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
+	_build_city(t)
+	var happenings := ResistanceHappenings.new()
+	happenings.setup(_city, _city.map)
+	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
+	var door := _city.map.doorstep_world_position()
+	happenings.tick(door, Callable())
+	t.check(happenings.raid.is_empty(), "nothing arrives while she is at her door")
+	happenings.tick(door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0),
+			func(_at: Vector2) -> bool: return true)
+	t.check(happenings.raid.is_empty(), "or while any of it would be on screen")
+	happenings.tick(door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Callable())
+	var vans := 0
+	var patrols := 0
+	var door_tile := _city.map.world_to_tile(door)
+	for instance in happenings.raid:
+		if instance.def.id == "night_raid":
+			vans += 1
+			t.check(not instance.def.pursues, "a van at her door does not hunt")
+			for tile in EventManager.obstructed_footprint(_city.map, instance.def,
+					instance.global_position, Vector2.RIGHT):
+				t.check(tile.y > door_tile.y + Tuning.SIDEWALK_WIDTH - 1,
+						"a van's body is off her own sidewalk (%s)" % tile)
+		elif instance.def.id == "police_patrol":
+			patrols += 1
+	t.check(vans == 2 and patrols == 1, "two vans and a patrol at her building (%d, %d)"
+			% [vans, patrols])
+	for instance in happenings.raid:
+		_city.events.retire(instance)
+	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY + 1)
+	happenings.tick(door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Callable())
+	t.check(happenings.raid.is_empty(), "and only on day 10")
 
 # ----------------------------------------------------------------- red arrow ---
 

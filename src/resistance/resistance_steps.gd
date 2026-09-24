@@ -22,7 +22,9 @@ extends RefCounted
 ##   (`CityMap.power_station_door`), a bare point — the last night's hand-over.
 ## - `MAST` sits beside the foot of one of today's live loudspeaker masts, a bare point; reaching it
 ##   silences that mast for the rest of the run.
-enum TargetKind { EVENT, SCAR, DOOR, PARK_SWING, STATION_DOOR, MAST }
+## - `NEIGHBOR` rides the neighbor (`task_event_id`), spawned out in the city walking home along a
+##   real path; the walk is the deadline — see `ResistanceDirector._send_the_neighbor_home()`.
+enum TargetKind { EVENT, SCAR, DOOR, PARK_SWING, STATION_DOOR, MAST, NEIGHBOR }
 
 class Step extends RefCounted:
 	var index := 0
@@ -52,15 +54,11 @@ class Step extends RefCounted:
 	## first. Unused by a pickup, which never draws the arrow; true for the finale, whose door is
 	## one place.
 	var is_one_place := true
-	## Fraction of the day after which the step is gone for good. 0 means no deadline. No task
-	## built this slice carries one; kept for the two days a later slice adds.
+	## Fraction of the day after which the step is gone for good. 0 means no deadline, which is
+	## every task in the calendar: day 10's deadline is the neighbor's own walk home, not a clock.
 	var deadline_fraction := 0.0
 	## Only offered once the goal is already met — the finale.
 	var needs_goal := false
-	## False for a day whose task is not yet built. `ResistanceSteps.for_day()` never returns
-	## such a step, so a day whose task is unavailable has no mark at all — see `_build()`'s own
-	## comment on day 10.
-	var available := true
 	## The chalk mark's own words, announced the instant she touches it — see
 	## `ResistanceDirector._on_contact_completed()` and `Hud._on_resistance_step_completed()`.
 	## "" for anything that is not a pickup.
@@ -85,12 +83,11 @@ static func all() -> Array[Step]:
 
 ## Only ever returns a pickup or the finale — a perform step is never offered at dawn, it is
 ## activated the instant its own mark is touched (`ResistanceDirector._on_contact_completed()`),
-## so `for_day()` has nothing to say about one. A day whose only step is `not available` (day 10)
-## answers null, which is what leaves it with no mark.
+## so `for_day()` has nothing to say about one.
 static func for_day(day: int, completed: Array[int], failed: Array[int],
 		goal_met: bool) -> Step:
 	for step in all():
-		if step.day != day or not step.available:
+		if step.day != day:
 			continue
 		if not step.is_pickup and not step.needs_goal:
 			continue
@@ -99,6 +96,14 @@ static func for_day(day: int, completed: Array[int], failed: Array[int],
 		if step.needs_goal and not goal_met:
 			continue
 		return step
+	return null
+
+## The step whose task is warning the neighbor — the one `GameState.neighbor_was_taken()` asks
+## about. Null on a calendar without one.
+static func warning_step() -> Step:
+	for step in all():
+		if step.target_kind == TargetKind.NEIGHBOR:
+			return step
 	return null
 
 ## The kinds whose contact is a bare point the director computes from today's city rather than a
@@ -142,7 +147,7 @@ static func by_index(index: int) -> Step:
 ## day's planning keeps a route to (`docs/CITY.md`, "Guarantees", the day's own half).
 static func narrow_target_on(day: int) -> Step:
 	for step in all():
-		if step.day != day or step.is_pickup or not step.available:
+		if step.day != day or step.is_pickup:
 			continue
 		if step.target_kind in NARROW_KINDS:
 			return step
@@ -220,16 +225,6 @@ static func _perform(index: int, title: String, day: int, task_event_id: String,
 	step.header = header
 	return step
 
-## A step for a day whose task is not yet built — see the comment in `_build()` for why. Never
-## returned by `for_day()`, so it places no mark and asks nothing of `ResistanceDirector`.
-static func _unavailable(index: int, title: String, day: int) -> Step:
-	var step := Step.new()
-	step.index = index
-	step.title = title
-	step.day = day
-	step.available = false
-	return step
-
 ## The last night: the power station's front door, offered only at the goal, by the red arrow.
 static func _finale(index: int, title: String, day: int, header: String) -> Step:
 	var step := Step.new()
@@ -277,10 +272,13 @@ static func _build() -> Array[Step]:
 		_perform(8, "The crossing", 9, "", [], true, TargetKind.DOOR, false,
 				"the district door"),
 
-		# Day 10 · warn the neighbor before the raid — not built yet. `_unavailable()` keeps the
-		# calendar's own shape complete without offering the mark.
-		_unavailable(9, "Another mark", 10),
-		_unavailable(10, "Warn the neighbor", 10),
+		# Day 10 · warn the neighbor before the raid — one place, red arrow, and a deadline. The
+		# regime has found the worker; the neighbor is out in the city and walks home into the
+		# vans, and the walk is the deadline. Warned, they run; not warned, they are taken.
+		_mark(9, "Another mark", 10,
+				"They are coming for your neighbor tonight. Reach them before they get home."),
+		_perform(10, "Warn the neighbor", 10, "neighbor", [GameEnums.TileType.SIDEWALK], true,
+				TargetKind.NEIGHBOR, false, "your neighbor, on the way home"),
 
 		# Day 11 · silence a loudspeaker mast — one place, red arrow. She reaches its foot, as she
 		# touches a mark, and it stays quiet for the rest of the run; its field makes the approach

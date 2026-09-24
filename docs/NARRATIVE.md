@@ -81,6 +81,12 @@ because there is nobody left in it.
 Abductions begin. Masked men, unmarked vans. Getting close is a hard fail — you and the
 baby are taken, day over, one Nerve gone.
 
+**Day 10 is the raid on her own building.** Once she has left, vans pull up across the street from
+her door with a patrol car pacing between them, and that is what she comes home to; the doorstep
+stays reachable along her own sidewalk. The neighbor who has left every morning so far is out in
+the city, walking home into it. The next morning a door down the hall is sealed, and the neighbor
+no longer leaves for work.
+
 ### Act IV — "Open" (days 12–14)
 
 Smoke, sirens, barricades. Military convoys re-shape the map as they pass. Protests grow.
@@ -119,6 +125,7 @@ that through the day before the last night:
 | 7 | The package | The delivery van's own drop. Picking it up makes the pram heavier for the rest of the day. | red |
 | 8 | The burnt shell | Wherever this run's own day-3 fire left its scar. | red |
 | 9 | The crossing | One of that day's own region doors, the first day the wall stands at all. | red |
+| 10 | Warn the neighbor | The neighbor, out in the city and walking home, by the red arrow that follows them: about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from her door when the mark is touched. Reached first, the neighbor runs; reaching the door first, they are taken, and from the next morning the wanted notice crosses their face out. | red, with a deadline |
 | 11 | Silence a mast | The foot of one live loudspeaker mast, drawn among those she can reach. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. | red |
 | 12 | The swing | The playground of one specific park. | red |
 | 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's hut — rather than round it. | any instance |

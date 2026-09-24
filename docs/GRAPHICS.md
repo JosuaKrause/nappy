@@ -407,12 +407,11 @@ glob only when it names every member of the family and no unrelated file.
 ## Posters
 
 `art/events/posters/` holds the four poster kinds M180, posters she notices, and loudspeakers
-that are somewhere, asks for. Every file below but `poster_wanted_crossed.svg` is **bound**: baked
-on the `buildings` page and drawn by `Building._draw_posters()` on blank ground-floor wall cells,
-from what `PosterWalls` says is pasted there; `PosterArt` names the regions. The crossed copy stays
-prepared and unbound: it is for a run whose day 10 task was failed, and M181, the resistance has a
-reason, and a task is one day, has not built day 10 yet, so the neighbor's slot is drawn as the
-plain placeholder face on every wanted notice.
+that are somewhere, asks for. Every file below is **bound**: baked on the `buildings` page and drawn
+by `Building._draw_posters()` on blank ground-floor wall cells, from what `PosterWalls` says is
+pasted there; `PosterArt` names the regions. A wanted notice draws `poster_wanted_crossed.svg` in
+place of `poster_wanted.svg` — intact or torn — once `GameState.neighbor_was_taken()`: day 10 is
+behind her and its warning was never given on a day she won.
 
 Each is a 32×32 canvas matching a wall tile's own grid, so a later placement can register
 straight onto a wall cell the way `wall_base.svg` already does. Every poster is a 20×22px sheet

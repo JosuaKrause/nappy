@@ -321,6 +321,16 @@ func has_joined_resistance() -> bool:
 func earned_good_ending() -> bool:
 	return resistance_progress >= Tuning.RESISTANCE_GOAL and sabotage_done
 
+## Whether the neighbor was taken in day 10's raid: the raid's day is behind her and its warning is
+## not among the steps she completed on a day she won — skipped, failed or never offered, "the same
+## sealed door, for the worse reason". Read by the wanted notice, which crosses out the neighbor's
+## face (`PosterArt.sheet()`). Derived rather than saved, so a lost day gives it back with the step.
+func neighbor_was_taken() -> bool:
+	if day <= ResistanceHappenings.NEIGHBOR_DAY:
+		return false
+	var warning := ResistanceSteps.warning_step()
+	return warning != null and warning.index not in completed_resistance_steps
+
 ## Whether the final sabotage is on offer at all.
 func sabotage_available() -> bool:
 	return resistance_progress >= Tuning.RESISTANCE_GOAL

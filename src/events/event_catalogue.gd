@@ -1923,11 +1923,14 @@ static func _alley_robbery() -> EventDef:
 ## shape on a bigger vehicle. See `EventDef.at_heat()`.
 ##
 ## **It shares the patrol-and-van threshold rather than minting a third constant, and the calendar
-## is why that is load-bearing.** The resistance's performs fall on days 5, 7, 9, 11 and 13, so on
-## day 10 — the only day this row ever appears — the most progress anybody can hold is 3: sharing
-## `HEAT_HUNTS_LEVEL` is what makes the raid hunt *only* a player who has done every task on time,
-## and a player one task behind meets the cold raid instead. A row-specific threshold would break
-## that sentence for no reason the row needs.
+## is why that is load-bearing.** The resistance's tasks before it fall on days 6 to 9, so on day
+## 10 — the only day this row ever appears — the most progress anybody can hold is four, which is
+## `HEAT_HUNTS_LEVEL`: sharing it is what makes the raid hunt *only* a player who has done every
+## task on time, and a player one task behind meets the cold raid instead. A row-specific threshold
+## would break that sentence for no reason the row needs.
+##
+## **The raid at her own building is this row as well**, spawned by `ResistanceHappenings` on the
+## far sidewalk of her street and always cold — see `ResistanceHappenings._maybe_raid()`.
 ##
 ## **The body is reachable, and `EventDef.validate()` is the check that says so.** `obstructs_radius`
 ## 44 plus her own `PLAYER_BODY_RADIUS` 14 is 58, inside the 70 of `inner_radius`, so the lethal body
