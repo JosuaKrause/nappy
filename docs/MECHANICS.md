@@ -647,10 +647,14 @@ resolves by interpenetration again however good the controller is.
 
 **The spacing correction never places a car on ground it could not have driven onto itself.**
 `CrowdAgent.nudge_back()` and `_join_the_back_of_the_queue()` are pure arithmetic with no notion
-of the map underneath them, so both check the tile the shove would land on against the same
-`_cannot_go_on` the forward-looking lookahead already trusts, and simply refuse a move that would
-cross into blocked ground — a hard seal, a region wall or a dead end's own built-over footprint —
-rather than parking a car inside it.
+of the map underneath them, so both ask the same `_cannot_go_on` the forward-looking lookahead
+already trusts about blocked ground — a hard seal, a region wall or a dead end's own built-over
+footprint — rather than parking a car inside it. A recycle's merge is refused whole, since the spot
+it rolled is still somewhere to stand. **A nudge goes as far back as the ground allows and stops a
+pixel short of the first blocked tile**, walking the tiles between rather than probing only where it
+would end, because a refused nudge is a deferred one: the pair stays inside each other, and the
+overlap is paid in one jump on whichever later frame the leader has pulled far enough ahead for the
+whole slide to be legal — a frame nobody chooses, so possibly one she is watching.
 
 **A hard seal, a region wall, and the closed streets a car cannot see through, all read the same
 way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment (a hard seal's own
@@ -788,7 +792,11 @@ first thing she sees. `Crowd.start_day()` therefore runs that resolve itself, on
 **It is the overlap resolve and nothing else**: no car is given a position, and a car that was not
 inside another one does not move at all. Spacing the morning out to a minimum headway would be a
 different thing and is not done — it would turn a random morning into platoons and make every street
-read as busier than the day asked for.
+read as busier than the day asked for. **And the index a car looks at is filled from that resolve
+before `start_day()` returns**, since the first frame's turns and recycles ask it whether the road
+is free before any frame has rebuilt it. An empty one tells each of them yes: a turn books a landing
+a queued car is standing on, and the queue's resolve shunts that car a car's length backwards
+whenever the turn arrives — seconds later, and possibly in front of her.
 
 **Events stream.** `EventScheduler` still plans the whole day across the whole city — every
 guarantee the game makes is a property of the *plan*, so nothing about one usable park, two

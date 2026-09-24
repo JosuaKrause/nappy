@@ -52,6 +52,7 @@ func run(t) -> void:
 	_test_a_car_turns_round_in_the_street_short_of_a_closure(t)
 	_test_a_car_waits_for_the_lane_its_half_turn_lands_in(t)
 	_test_a_car_with_no_road_either_way_stands_rather_than_flickering(t)
+	_test_a_car_against_a_barrier_is_not_shunted_later(t)
 	_test_a_plugged_arm_is_refused_rather_than_driven_into(t)
 	_test_the_heading_is_the_direction_it_is_actually_travelling(t)
 	_test_a_queue_keeps_its_distance_behind_a_turning_car(t)
@@ -293,6 +294,58 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 		_city.map.closed_tiles.erase(tile)
 	# Guards against a scenario that proved nothing: the stub really was short at both ends.
 	t.check(band >= 0, "the rig had a junction band to build the stub against")
+
+## **A car inside its leader with a barrier behind it goes back as far as the ground allows, on that
+## frame, and is never shunted later.**
+##
+## The queue's resolve slides the follower back by the overlap, and refuses to slide it onto ground
+## no car could be on. Refused whole, the pair stays inside each other and the overlap is paid in one
+## jump on whichever later frame the leader has pulled far enough ahead for the full slide to be
+## legal — a frame nobody chooses, so possibly one she is watching. On the morning that is the
+## probe's `behind a car already there on the first frame` row: a car placed in the stub of road
+## just past a closure, unpacked on the second frame instead of before the first.
+##
+## The rig is two cars heading away from a closed junction, the follower a little past the barrier
+## and the leader a fraction of a car's length in front of it. The first frame is the resolve; every
+## frame after it may move the follower no further than it could drive in one.
+func _test_a_car_against_a_barrier_is_not_shunted_later(t) -> void:
+	_clear_the_holds()
+	var closed := _close_the_junction_band()
+	var past_the_barrier := float((_junction.y * CityMap.period() + Tuning.STREET_WIDTH)
+			* Tuning.TILE_SIZE)
+	var follower := _place_a_car(true, 1.0)
+	var leader := _place_a_car(true, 1.0)
+	follower.position.y = past_the_barrier + 40.0
+	leader.position.y = follower.position.y + 20.0
+	for car in [follower, leader]:
+		car._speed = 0.0
+		car._scan_at = Vector2i(-9999, -9999)
+	_city.crowd.set_focus(follower.position)
+	_city.crowd.step(STEP)
+	var first := follower.position.y
+	t.check(first <= past_the_barrier + 1.0,
+			"the frame the overlap arises, the follower goes back as far as the barrier lets it "
+			+ "(%.1fpx past the barrier's edge)" % (first - past_the_barrier))
+	t.check(not _city.map.is_closed(_city.map.world_to_tile(follower.position)),
+			"and not onto it")
+	var a_frames_travel := Tuning.CAR_SPEED.y * STEP + 0.01
+	var worst := 0.0
+	var leader_went := 0.0
+	for frame in int(round(3.0 / STEP)):
+		_city.crowd.set_focus(follower.position)
+		var was := follower.position
+		_city.crowd.step(STEP)
+		worst = maxf(worst, was.distance_to(follower.position))
+		leader_went = leader.position.y - past_the_barrier
+	t.check(leader_went > Tuning.CAR_GAP_MIN,
+			"the leader drove clear of where a whole slide would have been legal (%.0fpx)"
+			% leader_went)
+	t.check(worst <= a_frames_travel,
+			"and no frame after it moves the follower further than it could drive in one (worst "
+			+ "%.1fpx, against %.1fpx)" % [worst, a_frames_travel])
+	for tile in closed:
+		_city.map.closed_tiles.erase(tile)
+	_clear_the_holds()
 
 ## Closes both lanes of the junction band ahead, which is the barrier a car has to turn round short
 ## of. Returns the tiles so the caller can open them again.
