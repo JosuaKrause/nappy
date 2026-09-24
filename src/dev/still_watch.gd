@@ -35,12 +35,12 @@ extends Node
 ## catches her then.
 ##
 ## - **`Stroller.is_detained()`** — the one gate every `EventDef.detain_seconds` row goes through,
-##   so this alone covers `chatting_mother` ("Another mother" and her pram, 5s) and all three
-##   checkpoint rows (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) for the whole of the
-##   controls-locked part of their hold. It is the single call site (`EventManager._check_detentions()`
+##   so this alone covers `chatting_mother` ("Another mother" and her pram, 5s) and both checkpoint
+##   rows that inspect her (`checkpoint_hut`, `checkpoint_post`; the boom never does) for the whole
+##   of the controls-locked part of their hold. It is the single call site (`EventManager._check_detentions()`
 ##   → `body.detain()`) every input-taking mechanic in the catalogue runs through, so nothing else in
 ##   the game needs a query of its own.
-## - **`EventManager.door_holding_her_at()`** — only a `redetains` row (the three checkpoint ones)
+## - **`EventManager.door_holding_her_at()`** — only a `redetains` row (the two checkpoint ones)
 ##   ever needs this on top of `is_detained()`, because a checkpoint's own hold is a clock on the
 ##   instance (`EventInstance.is_chatting()`, ticked in a drawn `_process()`) and the input lock is a
 ##   separate clock on `Stroller` (ticked in `_physics_process()`); see that function's own note on

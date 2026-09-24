@@ -38,6 +38,11 @@ item below for as long as looking takes.
   brief lines read as the city changing, and which would you rewrite?** They are the draft as it
   stood. Record is `DECISIONS.md`, M181, the resistance has a reason, and a task is one day,
   slice one.
+- **Try the boom at a checkpoint** (`--day 9` or later; wait at a door on the road until a car
+  raises the arm). Walk under it once walking and once running. **Does the chance read as a
+  temptation, and does the guard stepping out of the hut read as the price?** Is running away
+  from him possible but hard, and does the arm staying up while she is under it look right?
+  Record is `DECISIONS.md`, M100, the boom never inspects her.
 - **Play days 10 to 14 as a run would** (`--day 10` and on, `--invincible` to stay as long as
   looking takes). Day 10: the neighbor walking home under the red arrow, and the raid's vans and
   patrol at her building — *"we will have to see how that one feels"* (PLAYTEST-122). **Does the

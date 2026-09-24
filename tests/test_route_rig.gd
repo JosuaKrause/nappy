@@ -55,6 +55,7 @@ func run(t) -> void:
 	_test_a_mark_leg_ends_when_the_director_records_the_mark(t)
 	_test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t)
 	_test_a_real_leg_walks_her_there_and_reports_it(t)
+	_test_a_rig_run_never_walks_under_a_boom(t)
 	_teardown(t)
 
 func _rng(stream: String) -> RandomNumberGenerator:
@@ -392,10 +393,12 @@ func _test_a_plan_never_goes_through_the_boom(t) -> void:
 	gate.gate_state = RegionPlanner.GateState.new()
 	_city.events._plans.append(gate)
 	var rig := _rig(t)
-	var reach := def.detain_distance()
+	# Where her body would touch the boom's: the boom inspects nobody, so there is no trigger to
+	# measure from, and what a plan must never do is put her under it.
+	var reach := def.solid_reach() + Tuning.PLAYER_BODY_RADIUS
 	var planned := rig._plan(from, to)
 	t.check(not planned.is_empty() and not _passes_within(planned, gate.position, reach),
-			"a plan past a street door's boom goes round it rather than through its trigger")
+			"a plan past a street door's boom goes round it rather than under it")
 	# The last resort `_plan()` falls back to gives up the hazards, the clearance and the doors'
 	# reach, and still never the boom.
 	var last_resort := rig._shortest(from, to, false, {}, false)
@@ -1032,3 +1035,120 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	day.day_finished.disconnect(rig._on_day_finished)
 	rig.free()
 	day.free()
+
+# ------------------------------------------------------------- never under the boom ---
+
+## **A rig run through a street door goes through a hut, never under the boom.** *(2026-09-24, the
+## player: "The bot shouldn't route through the boom either way".)* A day with doors — its own city,
+## since this suite's day is before the wall stands — and one real leg along the carriageway from
+## one side of a street door's boom to the other, walked end to end the way the leg above is:
+## the rig's own presses, her own `_physics_process()` with the position integrated by hand, the
+## door's own hold clock and `EventManager`'s once-a-frame door checks. Integrated by hand means no
+## collision at all, so a plan under the boom — raised or lowered — would walk straight across the
+## door's line there, and `EventManager.walks_under_a_boom()` would count it. It must stay at zero
+## while she ends up on the far side, held by a hut on the way, which is what says the leg crossed.
+func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
+	const STEP := 1.0 / 30.0
+	const MAX_SECONDS := 60.0
+	var door_day := Tuning.REGION_WALL_FIRST_DAY
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	city.events.stream_radius = INF
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, door_day)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d:boom-closures" % [SEED, door_day])
+	city.start_day(state, door_day, rng)
+	var consumed: Array[String] = []
+	rng.seed = hash("%d:%d:boom-events" % [SEED, door_day])
+	city.events.start_day(door_day, rng, consumed)
+
+	var gate: EventInstance = null
+	var hut: EventInstance = null
+	for instance in city.events.instances():
+		if instance.def.lifts_for_traffic and not gate:
+			gate = instance
+	if gate:
+		var axis_of_gate := gate.facing_now()
+		for instance in city.events.instances():
+			if instance.def.id == "checkpoint_hut" and absf(
+					(instance.global_position - gate.global_position).dot(axis_of_gate)) <= 1.0:
+				hut = instance
+				break
+	t.check(gate != null and hut != null,
+			"seed %d day %d stands a street door to walk through" % [SEED, door_day])
+	if not gate or not hut:
+		city.free()
+		return
+	var axis := gate.facing_now()
+
+	var baby: Baby = _stroller.get_node("Baby")
+	_stroller.set_physics_process(false)
+	baby.set_physics_process(false)
+	baby.reset()
+	var day := DayController.new()
+	t.add_child(day)
+	day.setup(city.map, _stroller)
+	day.set_process(false)
+	day.start(600.0)
+	city.events._player = _stroller
+
+	var rig := RouteRig.new()
+	t.add_child(rig)
+	rig.set_physics_process(false)
+	rig.setup(city, _stroller, baby, null, day)
+	rig.start_day()
+	var reach := float(Tuning.TILE_SIZE) * 5.0
+	# On the carriageway either side of the boom, so the straight line — and the bare grid's
+	# shortest walk — is under it, and going through a hut is the detour the rig has to choose.
+	var from := rig._reachable_point_near(gate.global_position - axis * reach)
+	var to := rig._reachable_point_near(gate.global_position + axis * reach)
+	_stroller.reset_at(from)
+	rig._targets = ["home"]
+	rig._target_index = 0
+	rig._current_word = "home"
+	rig._done = false
+	rig._begin_leg(to)
+	t.check(not rig._waypoints.is_empty(), "the rig plans a leg through the door")
+
+	var held := false
+	var elapsed := 0.0
+	while elapsed < MAX_SECONDS and not rig._done:
+		rig._physics_process(STEP)
+		_stroller._physics_process(STEP)
+		_stroller.global_position += _stroller.velocity * STEP
+		baby._physics_process(STEP)
+		for instance in city.events.instances():
+			if instance.def.redetains:
+				instance._process(STEP)
+		city.events._watch_the_door_lines()
+		city.events._check_detentions()
+		held = held or _stroller.is_detained()
+		elapsed += STEP
+	var crossed := (_stroller.global_position - gate.global_position).dot(axis) > 0.0
+	print("[test_route_rig] through the door at %s: %s after %.1fs, held %s, %d walks under" % [
+		TelemetryLog.tile(city.map.world_to_tile(gate.global_position)),
+		"arrived" if rig._done else "still walking", elapsed, held,
+		city.events.walks_under_a_boom()])
+	t.check(crossed and held,
+			"she ends the leg on the far side of the door, held by a hut on the way "
+			+ "(far side %s, held %s) — otherwise this run never crossed a door" % [crossed, held])
+	t.check(city.events.walks_under_a_boom() == 0,
+			"and the rig never walked under the boom (%d walks under)"
+			% city.events.walks_under_a_boom())
+	# And the same check, in the same rig, sees a walk under this boom when there is one — so the
+	# zero above is the rig's route and not a check that could not have counted anything.
+	var lane := gate.global_position + Vector2(-axis.y, axis.x) * 16.0
+	_stroller.reset_at(lane - axis * 20.0)
+	city.events._watch_the_door_lines()
+	_stroller.global_position = lane + axis * 20.0
+	city.events._watch_the_door_lines()
+	t.check(city.events.walks_under_a_boom() == 1,
+			"while walking straight along the carriageway under it is counted (%d)"
+			% city.events.walks_under_a_boom())
+
+	day.day_finished.disconnect(rig._on_day_finished)
+	rig.free()
+	day.free()
+	city.free()

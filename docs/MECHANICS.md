@@ -211,11 +211,18 @@ obstacle in each half of a day. See docs/EVENTS.md for the row itself.
 
 ## A checkpoint
 
-`checkpoint_hut`, `checkpoint_gate` and `checkpoint_post` — the huts, the boom and the alley guard
-a region wall's own door stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" —
-reuse the conversation mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s):
-a toll paid at every crossing of the wall has to stay cheap to repeat, where a conversation is
-spent once.
+`checkpoint_hut` and `checkpoint_post` — the huts and the alley guard a region wall's own door
+stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" — reuse the conversation
+mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
+crossing of the wall has to stay cheap to repeat, where a conversation is spent once.
+
+**The boom between a street door's huts, `checkpoint_gate`, is not an inspection.** *(2026-09-24,
+the player: "Boom shouldn't inspect her. It should block her.")* Lowered it is a wall across the
+carriageway; raised for a car it is ground she may walk under, at the price of that car, and it does
+not come down while any of her rig is beneath it. A hut does not take her in from the carriageway
+the boom spans, so the inspection is where the guards are: at the huts, on the sidewalks. Walking
+under it is unlawful: a guard steps out of the nearer hut after her — running outpaces him, walking
+does not — and a catch ends the day. See docs/EVENTS.md, "Checkpoints".
 
 **The inspection starts as she walks up, measured from the door body's own wall** —
 `Tuning.CHECKPOINT_DETAIN_REACH` (48px) past its solid edge, rather than a radius from its middle.
@@ -228,8 +235,8 @@ nearest of a door's bodies ever captures her, so one approach is one inspection.
 her again is a latch rather than distance.** `ReleaseLatch` (`src/world/release_latch.gd`) is armed
 on the way out with the trigger's own circle and holds until she is measured outside it: standing
 where she was let out is free for as long as she likes, and leaving is what re-arms the toll. Every
-body of the door whose reach she lands in gets one, so a crossing costs one hold whichever of the
-three took her in. The escape scene's own doors reuse the same class.
+door body whose reach she lands in gets one — two doors can meet at a corner — so a crossing costs
+one hold. The escape scene's own doors reuse the same class.
 
 **She and the guard are both gone for the hold's duration**, reading as *inside* rather than as
 frozen in the street — `Stroller.hide_for_inspection()` and `EventInstance.is_its_guard_inside()`

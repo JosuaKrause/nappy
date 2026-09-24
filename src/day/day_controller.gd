@@ -166,6 +166,12 @@ const _HARD_FAIL_TEXT := {
 	# `roadblock`'s guard (`EventCatalogue`, `masked_pursuer`'s own doc), and the same tone rule
 	# the rest of this table already keeps: what is lost is named, never dwelt on.
 	"masked_pursuer": "He caught you on the stairs.",
+	# The door's own guard, after she walked under a raised boom rather than through a hut: a
+	# detention, not a death — *"She gets detained/imprisoned or whatever in that case"* — said as
+	# plainly as the rest of the table, with the reason in the first half and the baby left out of
+	# it, since the regime never puts her in narrative danger directly (docs/NARRATIVE.md, the
+	# tone rules).
+	"door_guard": "You went under the barrier. They took you in.",
 }
 
 func _end(result: GameEnums.DayResult) -> void:

@@ -1,0 +1,69 @@
+nappy rig log  2026-09-24T18:24:09  version v0.16.0-24-gb65c6106-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.6 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.2 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 1.9 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.5 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.2 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.5 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.5 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 8.9 ms, 642 x 1072
+   0.0  texture  atlas page 'father' loaded in the startup: 0.9 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 21.9 ms
+
+day 9  act 3  run seed 1234567  city seed 1234567  length 144.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 22.0 ms
+   0.0  plan     regions: 46 boundary, 34 wall, 12 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  contact  step 7 on offer at (8,65)
+   0.0  roll     chalk mark guarded: robber 86px away (band 66-176)
+   0.0  plan     closed: cordoned off h(10,3), roadworks h(9,7), cordoned off v(9,1)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 quiet_square, 4 park
+   0.0  plan     events: abduction x4, alley_mouse x4, alley_robbery x4, burnt_out_car x76, burst_water_main x13, busker x3, cafe_tables x37, car_accident x10, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x12, checkpoint_hut x24, collapsed_frontage x15, construction x37, cyclist x5, delivery_van x34, dog_walker x17, fallen_tree x2, homeless_yeller x11, ice_cream_van x4, leaf_blower x22, loose_dog x18, loudspeaker x6, market_stall x35, moving_van x21, pigeon_flock x5, playground x4, police_patrol x11, poster_crew x12, reversing_lorry x7, roadblock x120, scaffolding x12, skip x13
+   0.0  start    doorstep (33,34), facing 180°
+   0.0  contact  step 7 moved to (38,27): never seen at (8,65)
+   0.0  roll     chalk mark guarded: robber 99px away (band 66-176)
+   0.1  near     checkpoint_gate (telegraph) at (31,34), 80px, exc 0, in 0.0/s (crowd 0.0, events 0.6), sleep 0
+   0.1  near     checkpoint_hut (telegraph) at (33,34), 16px, exc 0, in 0.0/s (crowd 0.0, events 0.6), sleep 0
+   0.1  chat     checkpoint_hut at (33,34), 2.0s, baby awake, meter +25
+   1.0  frame    fps 2, worst frame 248.8ms, draws 593, objects 2403, primitives 5122, process 2181.29ms, physics 1.59ms
+   2.0  frame    fps 186, worst frame 14.0ms, draws 593, objects 2397, primitives 5110, process 12.85ms, physics 1.14ms
+   2.2  checkpoint checkpoint_hut at (33,34), 2.0s, released on the north side
+   2.2  idle     stood still 2.0s on sidewalk, exc 0 -> 25, sleep 0 -> 0
+   2.5  cross    stepped into the road at (33,31), at a zebra
+   3.0  frame    fps 215, worst frame 14.7ms, draws 625, objects 2503, primitives 5709, process 5.36ms, physics 1.41ms
+   4.0  frame    fps 158, worst frame 14.4ms, draws 602, objects 2169, primitives 4827, process 14.70ms, physics 1.51ms
+   4.6  cross    stepped into the road at (31,27), mid-block
+   5.0  frame    fps 163, worst frame 8.0ms, draws 618, objects 2131, primitives 4943, process 14.41ms, physics 1.54ms
+   6.0  path     off the corridor at (30,30), after 6.0s on it
+   6.0  frame    fps 159, worst frame 14.9ms, draws 616, objects 2460, primitives 5527, process 6.79ms, physics 1.48ms
+   6.2  crowd    a car sounded its horn at her in the road at (30,30) | exc 2, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   6.2  near     checkpoint_gate at (31,34), 119px, exc 2, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   6.7  near     checkpoint_hut at (29,34), 96px, exc 0, in 7.0/s (crowd 5.9, events 1.2), sleep 2
+   6.8  near     checkpoint_gate at (31,34), 64px, exc 1, in 13.1/s (crowd 9.4, events 4.0), sleep 2
+   6.8  near     checkpoint_hut at (33,34), 98px, exc 1, in 13.1/s (crowd 9.4, events 4.0), sleep 2
+   7.0  frame    fps 163, worst frame 14.7ms, draws 600, objects 2397, primitives 5185, process 14.88ms, physics 1.54ms
+   7.9  blocked  pressed 180° for 1.0s at (30,32) without moving
+   8.0  frame    fps 155, worst frame 8.9ms, draws 600, objects 2394, primitives 5179, process 14.66ms, physics 1.59ms
+   8.3  shot     burst started: asked for an animation burst at (30,32) | exc 11, sleep 3 | playing | asked/burst-12040147-001
+   8.5  cue      the mark over her head: soon for 2.4s (2.3s of it on the road) | a car, and she is in the road
+   8.5  near     checkpoint_hut at (29,34), 52px, exc 11, in 6.5/s (crowd 2.7, events 4.0), sleep 3
+   8.6  near     checkpoint_hut at (33,34), 97px, exc 11, in 7.8/s (crowd 3.8, events 4.0), sleep 3
+   8.7  near     checkpoint_gate at (31,34), 34px, exc 11, in 8.7/s (crowd 4.7, events 4.0), sleep 3
+   8.9  path     onto the corridor at (30,34), after 2.9s off it
+   9.0  near     checkpoint_gate at (31,34), 18px, exc 12, in 9.4/s (crowd 5.4, events 4.0), sleep 3
+   9.0  checkpoint checkpoint_gate at (31,34) walked through, heading south — not inspected, the boom up
+   9.0  near     door_guard (telegraph) at (29,35), 54px, exc 12, in 9.4/s (crowd 5.4, events 6.5), sleep 3
+   9.0  chase    door_guard came for her at (29,35) | exc 12, in 9.4/s (crowd 5.4, events 6.5), sleep 3
+   9.0  frame    fps 153, worst frame 54.6ms, draws 594, objects 2352, primitives 5073, process 15.08ms, physics 1.64ms
+  10.0  frame    fps 55, worst frame 57.2ms, draws 343, objects 1941, primitives 4374, process 54.21ms, physics 1.64ms
+  11.0  frame    fps 59, worst frame 56.2ms, draws 332, objects 1869, primitives 4095, process 55.18ms, physics 1.67ms
+  11.1  cue      the mark over her head: soon for 2.0s (2.0s of it on the road) | door_guard 53px
+  11.3  shot     burst complete: 36 frames | duration
+  11.4  shot     burst started: asked for an animation burst at (30,41) | exc 17, sleep 4 | playing | asked/burst-15136854-002
+  12.0  frame    fps 54, worst frame 56.5ms, draws 567, objects 2413, primitives 5230, process 56.20ms, physics 1.59ms
+  12.7  near     door_guard at (30,44), 29px, exc 30, in 18.0/s (crowd 0.0, events 18.0), sleep 4
+  12.8  road     8.2s on the road (4.7s of it carriageway), (31,27) -> (30,45)
+  12.8  path     77% of her street time on the corridor (9.8s on, 2.9s off, 0.0s off the streets)
+  12.8  lost     lost_hard_fail after 12.8s — You went under the barrier. They took you in. | exc 33, in 18.0/s (crowd 0.0, events 18.0), sleep 4 | near: door_guard 26px
+  12.8  shot     burst cancelled: 18 frames | day ended
+  12.8  nerve    spent a nerve on day 9 (act 3); 4 left — day 9 again
