@@ -127,10 +127,10 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 | Owner | Integration work and acceptance |
 |---|---|
-| M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
+| M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family's directional pictures to the alley mouse, read by heading as the other moving families are ([PLAYTEST-128](playtests/PLAYTEST-128.md)), and the sound arcs with their event timing. |
 
 M102, the finale, owns the impact-crater decals and the carrying-mother set and has bound what it
-needs of them behind `--start-escape`; `GRAPHICS.md` names which sources are live and which stay
+needs of them; `GRAPHICS.md` names which sources are live and which stay
 prepared, and whether the interior's event layering reads is a `REVIEW.md` question.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
@@ -140,11 +140,11 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**M102, the finale, is built and reached only through `--start-escape`.** It is the good ending's
-last scene — out of the apartment, out of the city — and its section holds the brief, the four
-answered collisions, and the one item still open: the entry from day 14's own summary, which is
-what would make it a run's ending rather than a flag's. The record of what was built is in
-`DECISIONS.md`.
+**M102, the finale, is built and is the run's ending**: a won day 14 with every task complete goes
+on to it, and `--start-escape` reaches it directly. It is the good ending's last scene — out of
+the apartment, out of the city — and its section holds the brief, the four answered collisions,
+and the one item still open: the building's badge, halo and debug layers, and the escape's
+telemetry observer. The record of what was built is in `DECISIONS.md`.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -480,24 +480,18 @@ is done and the masts already expose what the task needs.
       days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
       rig gave up a leg in half the runs (M184), so the late days are not fully measured yet. **Each late day's happening arrives differently** — waiting at home, found gone,
       closing in front of her, coming on her way — and slice two keeps that variety.
-- [ ] **Open question: should the door, swing and finale-district placements be guaranteed
-      reachable too?** `_pick_reachable()`'s `require_reachable` check (`DECISIONS.md`, M188, a
-      resistance target can always be reached) is off for `_place_at_a_door()` (day 9's door
-      task), `_place_at_a_swing()` (day 12's swing task) and day 14's own `district` pool
-      (`ResistanceSteps._finale`'s civic-district contact) — each a handful of candidate tiles (one
-      door, one park's swing, one civic-purpose tile), unlike the hundreds a mark or a contact's
-      bearing offset draws from. Checked directly against a seed 4242 fixture while building M188:
-      turning the check on for the finale, day 14's draw (`GameEnums.BlockPurpose.CIVIC`, 72
-      candidates) came back with zero reachable, because the day's own event bodies happened to
-      ring the whole district — not a bug, but `docs/CITY.md`'s winnability guarantee only
-      promises a route from home to *some* calm area, never to this one district, door or swing.
-      Two options, and nothing is decided between them: **extend the guarantee to cover these
-      three pools**, which would mean the city keeps at least one civic tile, the named door or
-      the named swing reachable every day — a stronger and more expensive promise than
-      `docs/CITY.md` makes today; or **leave `require_reachable` off for them**, which keeps
-      today's behavior — a day's own obstruction can seal one of these off, and `_begin_step()`'s
-      existing fallback (the step becomes unavailable rather than a crash) is what a run sees when
-      that happens.
+- [ ] **The finale's district, day 9's door and day 12's swing are reachable by construction**
+      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, we need to make that a guarantee by
+      construction."). `_pick_reachable()`'s `require_reachable` check (`DECISIONS.md`, M188, a
+      resistance target can always be reached) is off today for `_place_at_a_door()` (day 9),
+      `_place_at_a_swing()` (day 12) and day 14's `district` pool (`ResistanceSteps._finale`'s
+      civic-district contact), each a handful of candidate tiles; on a seed 4242 fixture, day 14's
+      72 `CIVIC` candidates came back with zero reachable because the day's own event bodies rang
+      the whole district. **By construction means the day is planned so the route exists**, the
+      way `docs/CITY.md`'s winnability guarantee keeps a route from home to a calm area — closures
+      and events are checked before they are accepted, never repaired afterwards (**city**) — not
+      a retry or a fallback once the day is built. `docs/CITY.md` states the extended guarantee,
+      and `_begin_step()`'s unavailable-step fallback stops being what a run sees on these three.
 
 ---
 
@@ -758,12 +752,12 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-- [ ] **Open question: directional guards.** `guard_{standing,lunging}_{views}` — eight-view art —
-      are authored and bound to nothing; the masked pursuer and the heated roadblock guard chase
-      her while drawn as a single side picture. Either they get heading-selected views like the
-      robber, read through the shared `_draw_eight_view()` helper every other moving family uses,
-      or the files go to the rejected-graphics archive as unbound art with no owner. Nothing is
-      decided.
+- [ ] **The masked pursuer and the heated roadblock guard face where they are heading**
+      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, hook those up."). They chase her drawn as
+      a single side picture while `guard_{standing,lunging}_{views}` — eight-view art under
+      `art/checkpoints/` — is bound to nothing; they read a heading through the shared
+      `_draw_eight_view()` helper every other moving family uses, standing while still and
+      lunging while they chase, like the robber.
 
 ---
 
@@ -835,8 +829,29 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
+- [ ] **The push at the top that ends the day crying is a little tighter**
+      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "we can make the extra push needed to end the
+      day a tiny bit more aggressive/tighter"). Today it is `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`,
+      10 points of overflow at the cap, within `Tuning.EXCITEMENT_OVERFLOW_WINDOW`, 3 seconds
+      (`DECISIONS.md`, M96, the day ends crying only after a push at the top). Playtest 126's
+      reason for the gate still holds — one bump into one aggravated walker is not a failure — so
+      one bump at the cap (8.9 points of overflow, measured by
+      `tests/probes/m96_crying_at_the_top.gd`) keeps her awake, and a sustained push ends the day
+      sooner than it does now
 
 **Drawings, as SVG:**
+
+- [ ] **The home block carries no fire escape** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "the
+      home building shouldn't have a fire escape (it has a double staircase inside)"). Every
+      building on the home block is hers (`Building.is_home_building`, playtest 124), and
+      `Building._build_front()` rolls a `RESIDENTIAL` front's escape without asking; the home
+      block's fixed visuals match the escape's interior, whose two staircases are inside
+- [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
+      least two frames** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the
+      main break) or puffs of smoke (from the car crash) or steam (from the escape) should have
+      (at least) a two frame animation to convey what they are better"). `burst_water_main`,
+      the car crash and `basement_steam` each draw one still picture today; each gets a second
+      frame or more, authored as SVG, alternated while the event is live
 
 **Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
 the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses
@@ -868,6 +883,14 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
+- [ ] **How close to a red light counts as waiting at it, for `--quit-when-still`.** The dev
+      flag's watch (`StillWatch`, `src/dev/still_watch.gd`) ignores her while
+      `facing_a_red_light()` holds: anywhere on the sidewalk inside the signalled junction's
+      `Tuning.STREET_WIDTH` (6) tile box while the main road's light is not hers (`DECISIONS.md`,
+      M189, a hold is not a stand). Put to the player on 2026-09-24 without saying what the watch
+      was ([PLAYTEST-128](playtests/PLAYTEST-128.md)); open until they say whether the box
+      should be tighter
+
 - [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
       playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
       didn't it count?" — it had.)* A touch turns the mark from chalk white to pale green
@@ -881,20 +904,17 @@ re-pitched:
       she adds something to the existing mark to indicate she has seen it.
       `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
       remains here
-- [ ] **Open question: the chalk is drawn in code, not from an asset.**
-      `ContactPoint._draw_chalk()` (in `src/resistance/`, `DECISIONS.md`'s M188) paints the mark itself with
-      `draw_arc`/`draw_line`, while `props/chalk_mark.svg` and `chalk_mark_touched.svg` sit
-      unbound — which breaks "a picture is an asset, never code". Either `ContactPoint` is rebound
-      to draw the SVG sources, which would fold the touch item above into the same picture swap,
-      or the two SVGs are rejected as superseded by the code-drawn mark. Nothing is decided
-- [ ] **Open question: the mouse's views.** The integration table above asks to "bind the mouse
-      family with the alley event"; `EventCatalogue._alley_mouse()`'s own docstring records that
-      the mouse takes no heading-selected picture at all — it draws with `_draw_simple()`,
-      mirrored east/west like `busker` or `delivery_van`, since it is small, already still, and
-      keeps no second posture even for its own telegraph. Either the table row is reworded to
-      match — binding the mouse's one side picture to `_draw_simple()` as authored — or
-      `_alley_mouse()` is changed to read a heading through `_draw_eight_view()` like the moving
-      families. Nothing is decided
+- [ ] **The chalk mark is drawn from `chalk_mark.svg`** ([PLAYTEST-128](playtests/PLAYTEST-128.md):
+      "Yes, we need to use the svg."). `ContactPoint._draw_chalk()` (in `src/resistance/`)
+      paints the mark with `draw_arc`/`draw_line` today, which breaks "a picture is an asset,
+      never code"; it draws `props/chalk_mark.svg` instead, and `chalk_mark_touched.svg` for a
+      touched mark, as the integration table above says. The mark stays visible and readable on
+      the sidewalk
+- [ ] **The alley mouse faces where it runs** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "The
+      code comment is positive, the queue is normative."). `EventCatalogue._alley_mouse()` draws
+      one mirrored side picture through `_draw_simple()`; it reads a heading through
+      `_draw_eight_view()` like the other moving families, from `art/events/mouse*.svg` (the
+      `_b` files are its second frame), and its docstring is rewritten to say so
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a
