@@ -45,14 +45,22 @@ const _PURSUER_ID := "masked_pursuer"
 const _STEAM_ID := "basement_steam"
 const _FIRE_ID := "burning_building"
 
-## One steam vent: where it stands, how often it blows, and how long until it does again. A vent
-## is not an event — what is an event is one blow, which this spawns and the instance owns to its
-## end. While a vent is between blows there is nothing in the world at all, which is the whole of
-## *"while it is off it has no body and costs nothing"*.
+## One steam vent: where it stands, how often it blows, how long until it does again, and the
+## floor grate it blows out of. A vent is not an event — what is an event is one blow, which this
+## spawns and the instance owns to its end. While a vent is between blows there is no instance, so
+## no body and no field, which is the whole of *"while it is off it has no body and costs
+## nothing"*.
+##
+## **But the grate is there the whole time.** A gate she can only see while it is shut is a gate she
+## finds by walking into its notice; a vent that lies in the corridor blowing or not is one she can
+## see from the corner and time. So the grate is floor owned by the vent rather than part of any
+## blow's picture — `EventInstance.STEAM_GRATE` — lying on the vent's own site, and the blow's
+## cloud rises out of it.
 class Vent extends RefCounted:
 	var at := Vector2.ZERO
 	var period := 0.0
 	var until_the_next_blow := 0.0
+	var grate: Sprite2D = null
 
 var _interior: InteriorScene
 var _instances: Array[EventInstance] = []
@@ -84,6 +92,16 @@ var _until_the_next_pursuer := 0.0
 const _BURNING_SIDE := "left"
 ## The shaft the masked man runs, which is the one the fire did not take.
 const _PURSUED_SIDE := "right"
+
+## Holds the `events` page for as long as this is in the tree, as `EventManager` does for a day:
+## every blow, the fire, the mouse and the masked man draw from it, and the vents' grates are
+## fetched from it the moment they are placed. In a booted escape it is a count on a page
+## `main.RESIDENT_GROUPS` already holds; the pairing is what proves the page is there.
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(EventInstance.ATLAS_GROUP)
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
 
 func setup(interior: InteriorScene, rng: RandomNumberGenerator) -> void:
 	_interior = interior
@@ -210,6 +228,7 @@ func _place_the_basement(rng: RandomNumberGenerator) -> void:
 	# corridor whose gates are in the same places every attempt, so a lost section is the same
 	# puzzle again rather than a different one. The clocks are staggered so the three of them do
 	# not open the whole corridor at once on the first pass; after that their own periods do it.
+	_take_the_grates_up()
 	_vents.clear()
 	var sites := _vent_sites(walk)
 	for i in sites.size():
@@ -217,7 +236,40 @@ func _place_the_basement(rng: RandomNumberGenerator) -> void:
 		vent.at = sites[i]
 		vent.period = Tuning.FINALE_STEAM_PERIODS[i]
 		vent.until_the_next_blow = vent.period * float(i + 1) / float(sites.size())
+		vent.grate = _lay_a_grate(vent.at)
 		_vents.append(vent)
+
+## A vent's floor grate, lying on its site for the whole section.
+##
+## **Ground, not something standing on it.** She walks over the grate between blows, so it is never
+## drawn over her: it is a child of the building itself at the ground's own `z_index` (0), after
+## the floor tiles in the tree so it lies on them, and under the walls (1) and the y-sorted layer
+## (2) she and every blow stand in. A decal in that y-sorted layer, as the basement's puddles are,
+## would be drawn over her feet whenever she stood on its northern half.
+##
+## **Centred on the vent's own point**, as a ground decal is, and that point is where each blow's
+## cloud stands — the frames' bottom-centre anchor — so the column comes up out of the slots.
+##
+## No body: the grate is where the gate is, not a second gate. What stops her is the blow's own
+## `STEAM_VENT_BODY`, which goes down at the end of its notice and comes up at the end of the blow.
+func _lay_a_grate(at: Vector2) -> Sprite2D:
+	var grate := Sprite2D.new()
+	grate.name = "SteamGrate"
+	grate.texture = EventInstance.steam_grate()
+	grate.centered = true
+	grate.z_index = 0
+	grate.position = at
+	_interior.add_child(grate)
+	return grate
+
+## The grates of the vents being replaced. A restart places the same vents on the same sites, but
+## it builds them afresh like everything else it places, so the old grates go with the old vents
+## rather than lying twice.
+func _take_the_grates_up() -> void:
+	for vent in _vents:
+		if is_instance_valid(vent.grate):
+			vent.grate.queue_free()
+		vent.grate = null
 
 ## Where each vent stands: one on each of the corridor's one-tile-wide cells, at that cell's own
 ## centre, in the order she meets them.
@@ -256,8 +308,8 @@ func _vent_sites(walk: Array[Vector2i]) -> Array[Vector2]:
 ## Every vent's own clock, one blow at a time. A blow is an ordinary `EventInstance` of the steam
 ## row: it gives its notice with no body, closes the corridor for `Tuning.FINALE_STEAM_BLOWS_FOR`,
 ## and is over — `_retire_finished()` takes it away like anything else that has run its course.
-## Nothing stands between blows, so a vent that is off is not an event that is quiet, it is an
-## event that does not exist.
+## No event stands between blows, so a vent that is off is not an event that is quiet, it is an
+## event that does not exist — only its grate is there, and a grate costs nothing and stops nobody.
 func _blow_the_vents(delta: float) -> void:
 	for vent in _vents:
 		vent.until_the_next_blow -= delta

@@ -1,0 +1,8 @@
+<!-- Basement steam, first frame: the cloud alone, rising from the mouth of `steam_pipe.svg`,
+     which stands at the vent whether it blows or not and is drawn separately under this. Same
+     32x48 canvas and bottom-centre anchor as the pipe, so the two register with no offset. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48" shape-rendering="geometricPrecision" stroke="#3b3034" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Ground anchor is the canvas bottom centre, the foot of the pipe the cloud rises from. -->
+  <path d="M8 26C3 22 8 18 12 20C9 15 13 11 17 14C16 8 22 7 24 12C29 12 30 18 26 21C31 25 25 30 21 27C19 33 12 33 10 28" fill="#d5d7cf" fill-opacity="0.72" stroke="#777d7e" stroke-width="1"/>
+  <path d="M11 22C15 24 18 21 21 23" fill="none" stroke="#f0eee3" stroke-width="1" stroke-linecap="round"/>
+</svg>
