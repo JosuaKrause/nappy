@@ -118,7 +118,9 @@ const ROUTE_KERB_TINT := Color("f2e07a")
 const TITLE_TEXT := Color("d2765a")
 const GAME_OVER := Color("b2434a")
 
-const CHALK := Color(0.92, 0.92, 0.88, 0.62)
+## The touched mark's own text colour elsewhere on the HUD (`save_indicator.gd`,
+## `day_summary.gd`) — the mark itself now turns `chalk_mark_touched.svg` rather than this
+## colour, in `ContactPoint._draw_chalk()`.
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
 ## `HomeArrow`'s own form, in red, for a one-place resistance task — a decided exception to "no

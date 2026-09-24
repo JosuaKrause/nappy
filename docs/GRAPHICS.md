@@ -57,6 +57,7 @@ Some visible graphics are code rather than image files:
 | `art/props/garbage_sack.svg`/`garbage_sacks_pile.svg` | `src/city/garbage_sacks.gd` (`GarbageSacks.placed()`, a pure function of `CityMap` and the day) rolls a sack in alleys from `Tuning.DEGRADATION_FIRST_DAY` and beside building fronts a couple of days later; `src/city/city.gd` (`_place_garbage_sacks()`) adds each as a `Prop` (`Kind.SACK`/`SACK_PILE`) with a `GroundShape` for its shadow and no body. |
 | `art/props/{tunnel_mouth,bridge_deck,road_on}.svg` | `src/city/city_edge.gd` draws the tunnel, bridge and road continuation where a street meets the map boundary. |
 | `art/props/door.svg` | `src/city/city.gd` places the home door as a `Sprite2D`. |
+| `art/props/chalk_mark.svg`/`chalk_mark_touched.svg` | `src/resistance/contact_point.gd` (`ContactPoint._draw_chalk()`) draws a resistance pickup's mark from these two 32×32 centre-anchored regions of the `decoration` atlas group — `chalk_mark.svg` untouched, `chalk_mark_touched.svg` once the step's own `is_done` — centred on the mark's own ground position the way the retired code-drawn circle and cross were centred on `Vector2.ZERO`, with the same alpha flicker as before. A perform step's contact rides on the event its task is built around and draws nothing of its own, so this pair is read only for a pickup. |
 | `art/props/signal_head{,_back,_side}.svg` | `src/city/traffic_light.gd` chooses face-on, rear or edge-on traffic-light hardware by the arm's direction; code adds the lit lamp. |
 
 ### Player, crowd and interface
@@ -237,7 +238,7 @@ arm direction; ordinary movement suffixes describe the body's facing.
 
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
-| M100 — Small, real, and nobody's (chalk and alley review) | `art/props/chalk_mark.svg` and `chalk_mark_touched.svg` are 32×32 centre-anchored decals; the touched version keeps the circle/cross and adds her small tick. `art/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison. The runtime chalk is still drawn in code — `ContactPoint._draw_chalk()` strokes a circle and two lines with `draw_arc()`/`draw_line()` — and the live alley tile is the runtime alley; M100's open chalk item, a touch that shows only a colour change, is the one that names `chalk_mark_touched.svg`. |
+| M100 — Small, real, and nobody's (alley review) | `art/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison; the live alley tile is the runtime alley. |
 | M100 — Small, real, and nobody's (mouse) | `art/events/mouse_{front,back}.svg` (18×18), `mouse_{front,back}_diagonal.svg` (24×18) and their own `_b` siblings, bottom-centre anchored. The live `alley_mouse` row draws only `mouse.svg` and `mouse_b.svg` — see "Events and seal pictures" above — and `EventCatalogue._alley_mouse()`'s own docstring records why the row picks no picture by heading, so binding these is a change to that row rather than a drawing to wire in. |
 
 ### Unbound, with nothing to bind them
