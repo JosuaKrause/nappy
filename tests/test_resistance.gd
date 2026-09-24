@@ -1535,12 +1535,19 @@ func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberG
 
 ## Every refusal `_pick_reachable()` and `_reachable_offset()` both check today — `is_held_at`
 ## excepted for the one task deliberately sited on held ground, the crossing at a region door
-## (`_place_at_a_door()`'s own `allow_held`).
+## (`_place_at_a_door()`'s own `allow_held`), and reachability skipped when `require_reachable` is
+## false, the same three narrow pools `_pick_reachable()` itself skips it for (a door, a swing, the
+## finale's own district — see that function's own doc on why). `grid`/`blocked`/`reached` are one
+## day's own `ReachabilityGrid.flood()` answer, built by the caller once per (seed, day) rather
+## than per tile — see `_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground()`'s
+## own loop — so this stays a pure predicate rather than a second place that builds the grid.
 func _stands_on_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[Rect2i],
-		allow_held: bool) -> bool:
+		allow_held: bool, grid: ReachabilityGrid, blocked: Dictionary, reached: Dictionary,
+		require_reachable := true) -> bool:
 	return map.is_walkable(tile) and not map.is_closed(tile) \
 			and (allow_held or not map.is_held_at(tile)) and not map.is_on_home_block(tile) \
-			and not map.is_in_walled_alley(tile, walled_alleys) and not map.is_obstructed(tile)
+			and not map.is_in_walled_alley(tile, walled_alleys) and not map.is_obstructed(tile) \
+			and (not require_reachable or grid.reaches(tile, blocked, reached))
 
 ## Every mark and every contact a task activates stands on walkable, unobstructed ground — swept
 ## over days 6-13 and the seeds the route rig timed, through the real day order (`City.start_day()`,
@@ -1576,7 +1583,9 @@ func _stands_on_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[
 ## 6-13" without a silent gap; `current_step() == null` there is expected and checked nothing.
 ##
 ## Named cases this sweep carries (`docs/TODO.md`, M188): day 9 seed 4242 (a mark relocated onto
-## obstructed ground) and days 7 and 8 seed 90210 (a contact's offset landing inside a building) are
+## obstructed ground, and then — once that was fixed — onto ground the day's own obstruction sealed
+## off from home), days 7 and 8 seed 90210 (a contact's offset landing inside a building), and day 7
+## seed 1234567 (a mark on good ground the day's whole obstruction seals off from home, item 3) are
 ## all within this sweep's own days and seeds, so the general loop below checks them along with
 ## everything else rather than as a separate case.
 func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> void:
@@ -1611,13 +1620,31 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 
 				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
 				var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+				# The same reachability answer `_reachable_from_home()` builds internally
+				# (`EventScheduler.blocked_by()` over every placed, obstructing or hard-fail plan,
+				# flooded from home), built independently here so the sweep is not just asking the
+				# director to grade its own homework. A region door's own bodies are excluded, the
+				# same way `_ensure_reachability()` excludes them and for the same reason — see
+				# that function's own doc.
+				var door_bodies: Array[EventScheduler.Planned] = \
+						region_plan.door_bodies if region_plan else []
+				var blockers: Array[EventScheduler.Planned] = []
+				for plan in city.events.plans():
+					if not plan.is_placed() or plan in door_bodies:
+						continue
+					if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+						blockers.append(plan)
+				var grid := ReachabilityGrid.build(city.map)
+				var blocked := EventScheduler.blocked_by(city.map, blockers)
+				var reached := grid.flood([city.map.home_rect.position], blocked)
 				var mark_step := director.current_step()
 				if mark_step != null:
 					checked += 1
 					var mark_tile := city.map.world_to_tile(director.contact_position())
-					t.check(_stands_on_legal_ground(city.map, mark_tile, walled_alleys, false),
-							("seed %d day %d: step %d's mark stands on walkable, unobstructed " +
-							"ground at %s") % [seed_value, day, mark_step.index, mark_tile])
+					t.check(_stands_on_legal_ground(city.map, mark_tile, walled_alleys, false,
+							grid, blocked, reached),
+							("seed %d day %d: step %d's mark stands on walkable, unobstructed, " +
+							"reachable ground at %s") % [seed_value, day, mark_step.index, mark_tile])
 
 					director._on_contact_completed(mark_step.index)
 					var task_step := director.current_step()
@@ -1625,11 +1652,17 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 						checked += 1
 						var task_tile := city.map.world_to_tile(director.contact_position())
 						var allow_held := task_step.target_kind == ResistanceSteps.TargetKind.DOOR
+						# The same three narrow pools `_pick_reachable()` itself does not require
+						# reachability for (see that function's own doc): a door, a swing, or the
+						# finale's own district.
+						var require_reachable := task_step.target_kind not in [
+								ResistanceSteps.TargetKind.DOOR, ResistanceSteps.TargetKind.PARK_SWING] \
+								and task_step.district < 0
 						t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
-								allow_held),
+								allow_held, grid, blocked, reached, require_reachable),
 								("seed %d day %d: step %d's contact stands on walkable, " +
-								"unobstructed ground at %s") % [seed_value, day, task_step.index,
-								task_tile])
+								"unobstructed%s ground at %s") % [seed_value, day, task_step.index,
+								", reachable" if require_reachable else "", task_tile])
 				player.free()
 				director.free()
 			city.free()
