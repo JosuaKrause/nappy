@@ -1,0 +1,35 @@
+<!-- The power station hall's high windows with the hall lit inside: power_station_clerestory.svg
+     with the working lights on, registering with it exactly - the same steel frame, glazing bars,
+     sill and cladding, only the glass changes. Dim and warm rather than a home's bright amber: a
+     turbine hall at night is lit for the men on shift, and the light through wired, dirty glass
+     is brightest at the top where the lamps hang and dullest at the grimy bottom pane. Drawn on
+     the last night until the blackout, so the hall is seen to go dark with the city. The canvas
+     is two cells tall; its top-left corner is the top-left of the higher cell. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="64" viewBox="0 0 32 64" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="64" fill="#8c9291"/>
+  <rect x="0" y="0" width="32" height="4" fill="#6c7271"/>
+  <rect x="0" y="4" width="32" height="1" fill="#a1a6a4"/>
+  <rect x="8" y="7" width="16" height="50" fill="#474e51"/>
+  <rect x="10" y="9" width="12" height="46" fill="#a38d5c"/>
+  <rect x="10" y="9" width="12" height="6" fill="#c2a86c"/>
+  <rect x="10" y="15" width="12" height="8" fill="#b19a63"/>
+  <rect x="10" y="44" width="12" height="11" fill="#86754f"/>
+  <rect x="10" y="23" width="12" height="2" fill="#474e51"/>
+  <rect x="10" y="39" width="12" height="2" fill="#474e51"/>
+  <rect x="15" y="9" width="2" height="46" fill="#474e51"/>
+  <g fill="#7f6d47">
+    <rect x="12" y="11" width="1" height="1"/><rect x="19" y="11" width="1" height="1"/>
+    <rect x="12" y="15" width="1" height="1"/><rect x="19" y="15" width="1" height="1"/>
+    <rect x="12" y="19" width="1" height="1"/><rect x="19" y="19" width="1" height="1"/>
+    <rect x="12" y="27" width="1" height="1"/><rect x="19" y="27" width="1" height="1"/>
+    <rect x="12" y="31" width="1" height="1"/><rect x="19" y="31" width="1" height="1"/>
+    <rect x="12" y="35" width="1" height="1"/><rect x="19" y="35" width="1" height="1"/>
+    <rect x="12" y="47" width="1" height="1"/><rect x="19" y="47" width="1" height="1"/>
+    <rect x="12" y="51" width="1" height="1"/><rect x="19" y="51" width="1" height="1"/>
+  </g>
+  <rect x="6" y="57" width="20" height="3" fill="#b0aca3"/>
+  <rect x="6" y="57" width="20" height="1" fill="#c9bb95"/>
+  <rect x="6" y="60" width="20" height="1" fill="#6c6964"/>
+  <rect x="3" y="0" width="1" height="64" fill="#767c7b"/>
+  <rect x="28" y="0" width="1" height="64" fill="#a1a6a4"/>
+</svg>

@@ -133,6 +133,11 @@ const POWER_STATION_YARD := &"buildings/power_station_yard"
 const POWER_STATION_WALL := &"buildings/power_station_wall"
 const POWER_STATION_BASE := &"buildings/power_station_base"
 const POWER_STATION_CLERESTORY := &"buildings/power_station_clerestory"
+## The same band with the hall lit inside, registering with it exactly: dim, since a turbine hall
+## at night is lit for the men on shift rather than for anybody outside. Drawn only on the last
+## night and only while the city has power — see `_clerestory_texture()` — so the hall is seen to go
+## out with everything else.
+const POWER_STATION_CLERESTORY_LIT := &"buildings/power_station_clerestory_lit"
 ## Where the two stacks stand on the hall's roof, as a column counted from the hall's own west end
 ## and a roof row counted from the south — back to front, so the nearer one is drawn over the
 ## farther one's foot. Taste, open to overturn.
@@ -335,12 +340,25 @@ var posters: Dictionary = {}:
 
 ## Today's day number, for the ambient-shutter roll in `_ground_floor_texture()` — read against
 ## `Tuning.degradation_for(day)`, not stored anywhere the roll itself depends on, so changing it
-## only ever needs a redraw rather than a full `_rebuild()`.
+## only ever needs a redraw rather than a full `_rebuild()` — and for whether the power station's
+## hall is lit (`_clerestory_texture()`).
 @export var day := 1:
 	set(value):
 		if day == value:
 			return
 		day = value
+		queue_redraw()
+
+## Whether the city has power. With it off every window is dark whatever `condition` and the
+## build-time roll say, and the power station's hall is dark too — the blackout's whole effect on a
+## building, set on every one of them in the same frame by `Blackout`. Only a redraw: which windows
+## *would* be lit is still `_windows`, untouched, so the power coming back (a retried day) puts
+## exactly the same lights back on.
+@export var powered := true:
+	set(value):
+		if powered == value:
+			return
+		powered = value
 		queue_redraw()
 
 ## The tile rect this building stands on, so the city can find its block again.
@@ -462,7 +480,7 @@ func roof_tiles() -> int:
 ## the same street with nobody in it, and that reads at a glance where a colour shift alone
 ## would not.
 func _lit(index: int) -> bool:
-	if condition != Condition.LIVED_IN:
+	if condition != Condition.LIVED_IN or not powered:
 		return false
 	return _windows[index] if index < _windows.size() else false
 
@@ -735,10 +753,11 @@ func _draw() -> void:
 
 ## The power station hall's own facade in place of the ordinary wall, windows and ground floor —
 ## industrial rather than a block of flats: steel cladding, a hazard-striped ground course, and a
-## clerestory band of tall, narrow, unlit windows filling the top two wall rows. Its own colours,
-## never the variant's tint. The parapet turns at either end are the ordinary edge overlays. A
-## station's lot is always eight tiles deep, so its wall is always tall enough for the base and a
-## two-row clerestory; a shorter one would simply lose the band.
+## clerestory band of tall, narrow windows filling the top two wall rows, lit or unlit by
+## `_clerestory_texture()`. Its own colours, never the variant's tint. The parapet turns at either
+## end are the ordinary edge overlays. A station's lot is always eight tiles deep, so its wall is
+## always tall enough for the base and a two-row clerestory; a shorter one would simply lose the
+## band.
 func _draw_station_facade(wall_rows: int, hall: Vector2i) -> void:
 	var has_band := wall_rows >= 3
 	for row in wall_rows:
@@ -749,11 +768,21 @@ func _draw_station_facade(wall_rows: int, hall: Vector2i) -> void:
 				tile = POWER_STATION_BASE
 			draw_texture(AtlasLibrary.region(tile), at)
 	if has_band:
+		var band := AtlasLibrary.region(_clerestory_texture())
 		for col in range(hall.x, hall.y):
-			draw_texture(AtlasLibrary.region(POWER_STATION_CLERESTORY), _cell(col, wall_rows - 1))
+			draw_texture(band, _cell(col, wall_rows - 1))
 	for row in wall_rows:
 		draw_texture(AtlasLibrary.region(WALL_EDGE_W), _cell(hall.x, row))
 		draw_texture(AtlasLibrary.region(WALL_EDGE_E), _cell(hall.y - 1, row))
+
+## The hall's high windows: dimly lit on the last night while the city still has power, unlit
+## otherwise. The last night only, because that is the night the hall is watched going out — the
+## one night she is sent to its door (`docs/NARRATIVE.md`, "What the tasks are for"); on every
+## other day the station is a building she passes, drawn as it was approved, unlit.
+func _clerestory_texture() -> StringName:
+	if powered and day == Tuning.POWER_STATION_DAY:
+		return POWER_STATION_CLERESTORY_LIT
+	return POWER_STATION_CLERESTORY
 
 ## The `[first, end)` columns the wall and roof cover: the whole facade, or for the power station
 ## everything but its yard, which is one block at one end of the lot.

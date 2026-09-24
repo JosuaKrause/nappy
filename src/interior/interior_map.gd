@@ -44,6 +44,22 @@ const PARTS: Array[String] = [
 	"stairwell_left", "stairwell_right", "lobby", "basement",
 ]
 
+## The part each slot holds, in slot order — the same order as the `_ORIGIN`s above.
+const _SLOT_PARTS: Array[String] = [
+	"hallway_third", "stairwell_left", "stairwell_right", "hallway_second", "hallway_first",
+	"lobby", "basement",
+]
+
+## Which part `tile` belongs to, or `""` for a tile in no slot. By slot rather than by looking the
+## tile up, so a wall cell or a threshold just outside a part's floor answers the same as the floor
+## beside it: every part starts at its own origin and is far narrower than the stride, and the gap
+## either side of it is dozens of tiles of nothing, so the nearest origin is the part.
+static func part_at(tile: Vector2i) -> String:
+	var slot := floori((float(tile.x) + _SLOT_STRIDE * 0.25) / float(_SLOT_STRIDE))
+	if slot < 0 or slot >= _SLOT_PARTS.size():
+		return ""
+	return _SLOT_PARTS[slot]
+
 static func build() -> InteriorMapPlan:
 	var f := InteriorMapPlan.new()
 	_build_hallway(f, "hallway_third", _HALLWAY_THIRD_ORIGIN, true)

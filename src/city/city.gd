@@ -86,6 +86,8 @@ var crowd: Crowd
 ## The lights on the spine. Held here because both the traffic and the signal heads read it, and
 ## advanced by `Crowd`, which is the thing a rig steps — see `Crowd.step()`.
 var signals: TrafficSignals
+## The last night's blackout, which puts out every window, light and mast at once. See `Blackout`.
+var blackout: Blackout
 var _daylight: CanvasModulate
 var _act := 1
 ## Today's day number, read by `_paint_ground()` for the crack level `GroundTiles` picks —
@@ -160,6 +162,10 @@ func build(city_map: CityMap) -> void:
 	crowd.name = "Crowd"
 	add_child(crowd)
 	crowd.setup(self, map)
+	blackout = Blackout.new()
+	blackout.name = "Blackout"
+	add_child(blackout)
+	blackout.setup(self, _buildings)
 	_daylight = CanvasModulate.new()
 	_daylight.name = "Daylight"
 	add_child(_daylight)
@@ -443,7 +449,7 @@ func _spawn_signal_heads() -> void:
 	for x in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		for y in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
 			var junction := Vector2i(x, y)
-			if not signals.is_signalled(junction):
+			if not signals.has_lights(junction):
 				continue
 			var centre := Vector2(x * CityMap.period() + Tuning.STREET_WIDTH * 0.5,
 					y * CityMap.period() + Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)

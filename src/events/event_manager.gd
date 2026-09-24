@@ -617,9 +617,10 @@ func silence_mast(mast_id: String) -> bool:
 			plan.live._invalidate_contribution_cache()
 	return found
 
-## Silences every mast, for the rest of the day. The masts stop because the power does, or because
-## the last night's sabotage does — either way this is the mechanism, and the good ending's reward
-## is that the walk home carries no floor under the meter. Returns how many masts were silenced.
+## Silences every mast, for the rest of the day. The masts stop because the power does: this is what
+## the last night's blackout calls (`Blackout.go_dark()`), in the same frame the windows and the
+## traffic lights go out, and it reaches a mast out of reach right now as well as a live one, since
+## it marks the plan. Returns how many masts were silenced.
 func silence_all_masts() -> int:
 	var silenced := {}
 	for plan in _plans:

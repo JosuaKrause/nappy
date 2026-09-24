@@ -52,6 +52,10 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(&"street_kit")
 
+## `_lamp()`'s answer while the power is out: no lamp at all, which is what a dead light looks like
+## and the whole of how the blackout reaches a signal head.
+const DARK := -2
+
 ## What was drawn last, so a head redraws on the two or three frames a minute its lamp changes
 ## rather than on every frame of the day. The lights are the one piece of scenery in this city
 ## that animates, and there are four at every junction on the spine.
@@ -74,11 +78,14 @@ func _process(_delta: float) -> void:
 		_lit = lit
 		queue_redraw()
 
-## 0 red, 1 amber, 2 green. Amber belongs to the arm losing its green, so an arm that is neither
-## green nor ambering is simply red — there is no separate red-amber.
+## 0 red, 1 amber, 2 green, or `DARK` with the power out. Amber belongs to the arm losing its
+## green, so an arm that is neither green nor ambering is simply red — there is no separate
+## red-amber.
 func _lamp() -> int:
 	if not signals:
 		return 0
+	if not signals.powered:
+		return DARK
 	if signals.green_for(junction, arm_is_vertical):
 		return 2
 	if signals.amber_for(junction, arm_is_vertical):
@@ -95,6 +102,10 @@ func _draw() -> void:
 	Sprites.draw_standing(self, AtlasLibrary.region(HEAD if arm_is_vertical else HEAD_SIDE),
 			Vector2.ZERO, Vector2.ZERO, _mirrored)
 	var lamp := _lamp()
+	# With the power out the head is all that is left: its three lenses are drawn dark in the
+	# picture itself, and no lamp is painted over any of them.
+	if lamp == DARK:
+		return
 	var colour := [Palette.SIGNAL_RED, Palette.SIGNAL_AMBER, Palette.SIGNAL_GREEN][lamp] as Color
 	var size := LAMP_SIZE if arm_is_vertical else LAMP_SIZE_SIDE
 	var across := 0.0 if arm_is_vertical \

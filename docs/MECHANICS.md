@@ -484,6 +484,15 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
 The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
 vocabulary. See docs/EVENTS.md.
 
+**On the main road the light is the contract, and with the power out the horn is.** The spine's
+traffic does not give way at a zebra, so what stands between her and a hard fail there is the length
+of the side street's green (`Tuning.validate_signals()`). On the last night, after the blackout, the
+lights are dead: a spine junction is negotiated the way a side street's is, and crossing the spine
+is kept by the same two things every other street's carriageway is — the paint and the horn. The
+spine's carriageway is the same 64px as every street's and the horn is stated in seconds of the
+car's own travel, so the check above is the dark spine's check too. That night's roads are harder
+on purpose; see docs/CITY.md, "Traffic signals".
+
 Belt and braces: a car in its lane has a strike box geometrically incapable of reaching over the
 kerb. A car sits half a tile off the middle of the carriageway, so its far edge is `16 + 14 = 30 px`
 out and the kerb is at `32`. `tests/test_crowd.gd` asserts it, because a box that reached the
@@ -1232,6 +1241,14 @@ whole escape, which is what the checkpoints come back to. `--start-escape` reach
 sequence directly, with a fresh run behind it, so it can be walked without playing fourteen days
 first.
 
+**Nothing about the last night is the easy half.** *([PLAYTEST-121](playtests/PLAYTEST-121.md):
+"the escape shouldn't be easy!")* The sabotage is a hand-over at the power station's door and
+changes nothing there; once she is `Tuning.BLACKOUT_DISTANCE` from the station the city's power
+goes (docs/CITY.md, "The power station"). Every mast stops with it, so the rest of the walk home
+has no loudspeaker anywhere — but it is walked under dead traffic lights, across a spine that no
+longer stops for anybody, with everything else the last day carries still out. The escape after it
+is in the dark as well.
+
 **A full clock per section, `Tuning.FINALE_LENGTH_SECONDS`, which is a day's own length.** Each
 brief starts one, so the time spent walking down three floors is not time the city has lost: at the
 service door the building's clock stops and the city's brief starts its own.
@@ -1307,10 +1324,19 @@ line a door is well under the three and a half seconds he spends standing still 
 So the side she switched to is not a side she can settle on, which is the whole point of him: the
 way down is a sequence of crossings rather than one.
 
+**The building is dark, because it is the night of the blackout.** *(The player, 2026-09-20: "it
+can be gloomy in the hallways and basement and maybe emergency (red?) lighting in the stairs".)*
+Nothing in it has power: the wall lamps and the chandeliers are drawn unlit, and the part she is in
+is multiplied by one light, her included (`InteriorScene.lighting_at()`) — a cold gloom in the
+hallways and the lobby, darker in the windowless basement, and the red of the emergency lighting in
+the two stairwells. The light changes only when she changes part, which is under a door's fade to
+black. The city she walks out into is the same night, with every window and traffic light dark
+from its first frame (docs/CITY.md, "The power station").
+
 **The night outside is light and noise, and they are separate things.** Every
 `Tuning.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
-hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS`, and the meter takes the
-hit, wherever she is standing. Between those, far more often, a distant flash lights the same
+hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS` and the hallway she is in
+is lit with it, and the meter takes the hit, wherever she is standing. Between those, far more often, a distant flash lights the same
 windows the same way and does nothing else at all — no event, no field, nothing on the meter. A
 shelled city is what she can see out of the window; what she is charged for is only what is close
 enough to hear.
