@@ -102,6 +102,39 @@ const EXCITEMENT_STIR_MARGIN := 12.0
 ## Incoming excitement multiplier while the baby is asleep.
 const SLEEPING_SENSITIVITY := 0.55
 
+## The bar may reach and sit at `METER_MAX`; the day ends crying only once a further mass of
+## excitement this many points has arrived **while she is already sitting at the cap**, within
+## `EXCITEMENT_OVERFLOW_WINDOW`. *(2026-09-23, playtest 126, statement 1: "the bar can reach 100
+## but we need also like 10 over 3s to actually end the day … those numbers are just me
+## spitballing -- we would need to test it".)* The player's own starting point, not a decision —
+## `docs/DECISIONS.md`, M96, has the measurement the other two settings below were checked
+## against.
+##
+## **What it counts, and why.** `Baby._update_excitement()` already nets `incoming − decay` every
+## frame; while the bar is below the cap that net is simply added and clamped, same as always.
+## Once she is sitting at `METER_MAX`, a further positive net is what the clamp would otherwise
+## have piled on top of 100 — the bar's own would-be overflow, in the same units the bar itself
+## already uses — and that is what this mass sums, in a sliding window the same shape
+## `Baby.decay_in_window()` already sums the decay side in. **Not the raw incoming**: charging the
+## raw arriving points would make a loud but well-recovering street cry exactly as fast as a
+## source with nothing fighting it, which is the "undeserved failure" the player asked to remove
+## in the first place. One walker's bump barely reaches the cap and leaves almost nothing for the
+## clamp to eat; a sustained source at the top keeps feeding it every frame it stays loud.
+const EXCITEMENT_OVERFLOW_TO_CRY := 10.0
+
+## The window `EXCITEMENT_OVERFLOW_TO_CRY` is summed over, in seconds — the player's own "3s".
+## Long enough that two contacts in quick succession at the top add up to one push; short enough
+## that leaving the source behind lets the mass drain out of the window at close to the pace she
+## walked away in, rather than a push from a minute ago still counting against her.
+##
+## **The bar itself is untouched by any of this.** The moment incoming drops under decay, the net
+## rate goes negative and `excitement` falls back from 100 at its ordinary ground-and-motion rate,
+## exactly as it always has — nothing here freezes the bar at the cap or holds it up. The mass is
+## a second, independent quantity read alongside it, and it drains the same way `decay_in_window()`
+## already does: no reset, just entries aging out of the window as `Baby._clock` advances, whether
+## or not she is still at the cap to add to it.
+const EXCITEMENT_OVERFLOW_WINDOW := 3.0
+
 ## **What settles a baby is being pushed.** The pram is a rocking chair with wheels on, and
 ## rocking it is the only thing that calms her.
 ##
