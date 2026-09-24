@@ -829,15 +829,6 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
-- [ ] **`--quit-when-still` is off while a signalled junction on screen is red for her**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md), statements 13 and 14: "How about just
-      deactivating the watch when the light is red and the intersection is visible. If she's
-      stuck she will be stuck when it turns green still"). `StillWatch.facing_a_red_light()`
-      (`src/dev/still_watch.gd`) holds the watch today only while she stands on the sidewalk
-      inside the junction's `Tuning.STREET_WIDTH` (6) tile box (`DECISIONS.md`, M189, a hold is
-      not a stand); her position stops mattering, and a red light at the signalled junction on
-      screen is enough. The signals run a green wave with a different offset per junction, so
-      two junctions on screen can disagree; the one nearest her decides
 
 **Drawings, as SVG:**
 
