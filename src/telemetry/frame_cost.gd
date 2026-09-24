@@ -37,22 +37,20 @@ static func line(worst_frame_seconds: float) -> String:
 ## readout. A function here rather than six format strings there, because the pair only stays
 ## honest while both are assembled from the same readings — see `tests/test_performance.gd`,
 ## which holds exactly that: every quantity the readout names is named by `line()` too. `process`
-## and `physics` also carry `mean` and `max` over the last second (`sample()`'s own window),
-## labelled rather than left to column order — the run log's own `line()` stays last-frame-only,
-## since it already writes once a second and a mean over that same second would be no different a
-## number.
+## and `physics` are labelled `worst` rather than left as a bare number: `process_ms()` and
+## `physics_ms()` are already the worst interval of the previous second, not a per-frame cost
+## (`docs/DECISIONS.md`, M138, what the readout's `process` and `physics` lines measure), and a
+## bare number reads as a per-frame mean — the misreading every phone report made before M143. The
+## run log's own `line()` carries the same reading with no label, since it already writes once a
+## second, at the interval the reading covers.
 static func readout_lines() -> Array[String]:
-	var process_last := process_ms()
-	var physics_last := physics_ms()
 	return [
 		"fps         %6d" % fps(),
 		"draws       %6d" % draw_calls(),
 		"objects     %6d" % objects(),
 		"primitives  %6d" % primitives(),
-		"process     last %5.1f  mean %5.1f  max %5.1f ms" % [
-			process_last, process_mean_ms(), process_max_ms()],
-		"physics     last %5.1f  mean %5.1f  max %5.1f ms" % [
-			physics_last, physics_mean_ms(), physics_max_ms()],
+		"process     worst %5.1f ms" % process_ms(),
+		"physics     worst %5.1f ms" % physics_ms(),
 	]
 
 static func fps() -> int:
@@ -75,92 +73,18 @@ static func objects() -> int:
 static func primitives() -> int:
 	return int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 
-## Milliseconds the last frame spent in `_process` callbacks. Godot reports it in seconds.
+## Milliseconds — off `Performance.TIME_PROCESS`, which is **not this frame's own cost**: the
+## engine keeps the longest `_process` interval of the running second, render submit (the
+## rendering server's own `sync()` and `draw()`) included, and hands it over once a second,
+## replacing the last (`docs/DECISIONS.md`, M138, what the readout's `process` and `physics`
+## lines measure). So whatever frame calls this reads the worst interval of the previous second,
+## not its own.
 static func process_ms() -> float:
 	return Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 
-## Milliseconds the last frame spent in `_physics_process` callbacks, in seconds from the engine
-## the same way. Held apart from `process_ms()` rather than summed, because the two are fixed by
-## different things: physics runs at its own tick rate and is the crowd's and the traffic's, while
-## process is the drawing decisions and everything hung off them.
+## The same reading for `_physics_process`, off `TIME_PHYSICS_PROCESS` — the worst physics tick of
+## the previous second, held over the same way. Held apart from `process_ms()` rather than summed,
+## because the two are fixed by different things: physics runs at its own tick rate and is the
+## crowd's and the traffic's, while process is the drawing decisions and everything hung off them.
 static func physics_ms() -> float:
 	return Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
-
-# ------------------------------------------------------------------ the last second's window ---
-
-## How far back `sample()`'s window reaches — one second, the interval a hitch is felt over and
-## the interval the run log's own `frame` entry already reports at.
-const SAMPLE_WINDOW_SECONDS := 1.0
-
-## Timestamps, in the caller's own clock, for the readings below — oldest first. Fed only by
-## `sample()`, so the three arrays only ever move together.
-static var _sample_times: Array[float] = []
-static var _process_samples: Array[float] = []
-static var _physics_samples: Array[float] = []
-
-## Feeds this frame's `process_ms()`/`physics_ms()` into the rolling window `process_mean_ms()`,
-## `process_max_ms()`, `physics_mean_ms()` and `physics_max_ms()` read from, and drops anything
-## more than `SAMPLE_WINDOW_SECONDS` behind `now_seconds`. Takes the time from the caller rather
-## than reading a clock here, the way `line()` takes `worst_frame_seconds` — so a test can drive
-## the window with known times instead of a real one. `main.gd` calls this once a frame while the
-## readout is on and nothing else does, since the window is a readout cost, not a gameplay one:
-## nothing here is random and nothing here reads the day, so it does not go near the telemetry
-## invariant that governs this file's neighbours.
-static func sample(now_seconds: float) -> void:
-	_sample_times.append(now_seconds)
-	_process_samples.append(process_ms())
-	_physics_samples.append(physics_ms())
-	var cutoff := now_seconds - SAMPLE_WINDOW_SECONDS
-	while not _sample_times.is_empty() and _sample_times[0] < cutoff:
-		_sample_times.pop_front()
-		_process_samples.pop_front()
-		_physics_samples.pop_front()
-
-## Clears the window. A real run never needs this — the window ages itself out one second at a
-## time — but `tests/test_performance.gd` shares this static state with every other suite in the
-## one process a run drives them all in, and calls this first so an earlier suite's real-clock
-## samples (`tests/test_main.gd` drives `main._process()`, which calls `sample()` too) cannot leak
-## into a test that hands the window its own arithmetic.
-static func reset_samples() -> void:
-	_sample_times.clear()
-	_process_samples.clear()
-	_physics_samples.clear()
-
-## The mean of the last second of `process_ms()` readings `sample()` was fed — what a still
-## actually measures, since a screenshot lands on one arbitrary frame and the mean is what that
-## frame is one sample of (see `docs/DECISIONS.md`, M124, "the phone's process time split": two
-## stills of one setting read 21.7ms and 65.1ms). Falls back to the instantaneous `process_ms()`
-## reading while the window is empty — nothing has called `sample()` yet — so the very first frame
-## reports what it has rather than a zero that would read as free.
-static func process_mean_ms() -> float:
-	return _window_mean(_process_samples, process_ms())
-
-## The worst single frame in the last second `sample()` was fed — what a stutter feels like, since
-## a mean is exactly the statistic a hitch hides in, the same argument `line()`'s own
-## `worst_frame_seconds` makes for the run log. Same empty-window fallback as `process_mean_ms()`.
-static func process_max_ms() -> float:
-	return _window_max(_process_samples, process_ms())
-
-## See `process_mean_ms()`.
-static func physics_mean_ms() -> float:
-	return _window_mean(_physics_samples, physics_ms())
-
-## See `process_max_ms()`.
-static func physics_max_ms() -> float:
-	return _window_max(_physics_samples, physics_ms())
-
-static func _window_mean(samples: Array[float], fallback: float) -> float:
-	if samples.is_empty():
-		return fallback
-	var total := 0.0
-	for value in samples:
-		total += value
-	return total / samples.size()
-
-static func _window_max(samples: Array[float], fallback: float) -> float:
-	if samples.is_empty():
-		return fallback
-	var worst := samples[0]
-	for value in samples:
-		worst = maxf(worst, value)
-	return worst
