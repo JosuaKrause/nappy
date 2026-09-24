@@ -829,15 +829,6 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
-- [ ] **The push at the top that ends the day crying is a little tighter**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "we can make the extra push needed to end the
-      day a tiny bit more aggressive/tighter"). Today it is `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`,
-      10 points of overflow at the cap, within `Tuning.EXCITEMENT_OVERFLOW_WINDOW`, 3 seconds
-      (`DECISIONS.md`, M96, the day ends crying only after a push at the top). Playtest 126's
-      reason for the gate still holds — one bump into one aggravated walker is not a failure — so
-      one bump at the cap (8.9 points of overflow, measured by
-      `tests/probes/m96_crying_at_the_top.gd`) keeps her awake, and a sustained push ends the day
-      sooner than it does now
 
 **Drawings, as SVG:**
 
