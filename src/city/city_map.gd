@@ -272,9 +272,9 @@ func is_soft_sealed(tile: Vector2i) -> bool:
 ## **Two kinds of body are deliberately not in here**, each because something else already answers
 ## for it and two answers to one question is one too many. A **mobile** row is exempt by the
 ## catalogue's own *solid things are solid* rule and moves out of the way by walking. And a
-## **door** body (`detain_seconds > 0`: a hut, the boom, an alley guard) is a crossing the day
-## means to keep open, held by `WalkerDoorHold` for a walker and by `Crowd._stop_for_gates()` for a
-## car.
+## **door** body — a hut or an alley guard (`detain_seconds > 0`) or the boom
+## (`EventDef.lifts_for_traffic`) — is a crossing the day means to keep open, held by
+## `WalkerDoorHold` for a walker and by `Crowd._stop_for_gates()` for a car.
 ##
 ## **A hard seal's own body and a region wall's are in here like anything else**, and the hold on
 ## their segment is not a second answer to the same question: the hold is what turns a *car* at the
