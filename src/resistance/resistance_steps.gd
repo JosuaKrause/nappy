@@ -250,14 +250,17 @@ static func _build() -> Array[Step]:
 		_perform(4, "The package", 7, "delivery_van", [GameEnums.TileType.SIDEWALK], true,
 				TargetKind.EVENT, true, "a van, waiting"),
 
-		# Day 8 · leave something at the burnt shell from day 3 — one place, red arrow. The
+		# Day 8 · leave something at the burnt shell from day 3 — one place, red arrow. What she
+		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
+		# it came from rather than naming an "it" nothing showed. The
 		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.scar_id` on
 		# `burning_building`); a run with no such scar falls back to an ordinary placement of
 		# the same row on a reachable sidewalk, the smallest honest stand-in — see
 		# `ResistanceDirector._begin_step()`.
-		_mark(5, "Another mark", 8, "Leave it at the burnt building. Nobody goes there but you."),
+		_mark(5, "Another mark", 8,
+				"Something was left in the stroller in the night. Take it to the burnt building."),
 		_perform(6, "The burnt shell", 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,
-				TargetKind.SCAR, false, "the burnt-out building"),
+				TargetKind.SCAR, false, "the burnt building"),
 
 		# Day 9 · cross a named region door — one place, red arrow. The districts close that
 		# morning (`Tuning.REGION_WALL_FIRST_DAY`) and this is the day she finds out whether a
@@ -283,11 +286,13 @@ static func _build() -> Array[Step]:
 				"the park's own swing"),
 
 		# Day 13 · walk into a roadblock's band — any of them. The army arrived that morning;
-		# nobody looks twice at a screaming baby.
-		_mark(13, "Another mark", 13, "Walk straight through the roadblock. Not around it."),
+		# nobody looks twice at a parent walking a baby who won't settle. A roadblock is solid, so
+		# the words ask how close she gets rather than for a way through it.
+		_mark(13, "Another mark", 13,
+				"Walk up to the roadblock. See how close they let you come."),
 		_perform(14, "The roadblock", 13, "roadblock",
 				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], false, TargetKind.EVENT,
-				false, "the one you go through, not around"),
+				false, "the roadblock"),
 
 		# The finale, offered only to a player who already did the work. Day 14 keeps the
 		# civic-district contact it has today; the power station's front door is M183's.
