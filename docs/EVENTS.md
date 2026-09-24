@@ -991,9 +991,9 @@ and nothing more, cold — **gain** it, because the top rung kills by the ladder
 pursuer is exempt from the rule that nothing else happens inside a lethal event's field — see "The
 contract is per event" below.
 
-**`night_raid`'s own threshold is a calendar fact rather than a design one.** Its performs fall on
-days 5, 7, 9, 11 and 13, so on day 10 — the only day the row ever appears — the most progress
-anybody can hold is 3, `Tuning.HEAT_HUNTS_LEVEL` exactly: the raid hunts *only* a player who has
+**`night_raid`'s own threshold is a calendar fact rather than a design one.** The tasks before it
+fall on days 6 to 9, so on day 10 — the only day the row ever appears — the most progress anybody
+can hold is four, `Tuning.HEAT_HUNTS_LEVEL` exactly: the raid hunts *only* a player who has
 done every task on time, and a player one task behind meets the cold raid, still a closed block and
 nothing more. Sharing the van's threshold rather than minting a third constant is what makes that
 sentence true.
@@ -1154,7 +1154,7 @@ One row the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resi
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `neighbor` | SCRIPTED | day 1 | The neighbor down the hall, who works at the power station (`docs/NARRATIVE.md`, "What the tasks are for"): a figure in work clothes — steel-blue coveralls, a reflective band, a dark work cap — drawn in the passer-by's own five views and feet-passing frames. **Scenery, not a cost**: intensity 0 on a formal field drawn tight round the figure, mobile and therefore bodiless, walking at `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s, half hers). On every morning before day 10, `ResistanceHappenings` walks it out of her building beside her and off along her street, away from her, until the street runs out or a closure stops it, and it leaves the ordinary way; nothing points at it. |
+| `neighbor` | SCRIPTED | day 1 | The neighbor down the hall, who works at the power station (`docs/NARRATIVE.md`, "What the tasks are for"): a figure in work clothes — steel-blue coveralls, a reflective band, a dark work cap — drawn in the passer-by's own five views and feet-passing frames. **Scenery, not a cost**: intensity 0 on a formal field drawn tight round the figure, mobile and therefore bodiless, walking at `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s, half hers). On every morning before day 10, `ResistanceHappenings` walks it out of her building beside her and off along her street, away from her, until the street runs out or a closure stops it, and it leaves the ordinary way; nothing points at it. **On day 10 it is walking home**: once her mark is touched, `ResistanceDirector._send_the_neighbor_home()` spawns `EventCatalogue.neighbor_heading_home()` — the same row, `stops_where_it_arrives` — on a sidewalk about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` (55s) of its own walk from her door and off screen from her, and hands it the walk home over the day's open ground as its path; the red arrow rides it. Reached first, it runs, away from her, at `departs_at` `EventCatalogue.NEIGHBOR_RUN_SPEED` (150px/s); reaching the door first, it stands there, the task is lost, and it is taken away with the raid once it is off screen. From day 11 it never appears. |
 
 ### The escape — the walk that is not a day
 
