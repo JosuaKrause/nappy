@@ -2,7 +2,9 @@
      road, now in profile — the blue one in the far lane facing east, its nose driven in and its
      hood sprung, the red one in the near lane facing west, its tail stove in where the blue one
      hit it — with glass and a
-     bumper on the road, coolant under them, smoke puffing up off the blue car's hood, and an onlooker on
+     bumper on the road, coolant under them, smoke puffing up off the blue car's hood (the second of its two frames:
+     the puffs one beat further up; everything else identical to
+     `car_accident_vertical.svg`), and an onlooker on
      each pavement: the event `person` figure, facing the crash (`person_front.svg` on the far
      pavement, `person_back.svg` on the near one). The cars are the crowd cars' profile. Drawn by
      `_draw_wide_scene` fitted to the 192px obstruction with its centre on the ground point. The
@@ -60,12 +62,12 @@
   <path d="M6 114.6 L15 113.4 L15.4 115 L6.4 116.2 Z" fill="#3a3436" stroke-width="0.8"/>
   <path d="M38 114 L39.6 113.2 L39.8 114.6 Z M42 116.4 L43.6 115.60000000000001 L43.8 117.0 Z M21 115.6 L22.6 114.8 L22.8 116.19999999999999 Z M44 90.6 L45.6 89.8 L45.8 91.19999999999999 Z M3 92 L4.6 91.2 L4.8 92.6 Z" fill="#bfe0ea" stroke="#5f7f8c" stroke-width="0.6"/>
   <ellipse cx="30" cy="116.2" rx="2.2" ry="1.1" fill="#9aa4ac" stroke-width="0.8"/>
-  <!-- Smoke off the blue car's sprung hood: a puff over the engine and the one before it
-       drifting up. -->
-  <path d="M33.1 57.1 C31.7 55.3 33.5 53.3 35.7 53.9 C36.5 52.3 39.9 52.1 41.1 53.7 C43.3 53.3 44.5 55.3 43.1 56.7 C42.1 58.3 35.5 58.7 33.1 57.1 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.8"/>
-  <path d="M35.1 55.9 C36.5 54.9 38.3 54.9 39.5 55.7" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
-  <path d="M39.2 63 C38 61.4 39.6 59.6 41.4 60.2 C42.2 58.6 44.8 58.8 45.4 60.6 C47 61 47 63.2 45.4 63.8 C43.6 64.8 40.6 64.6 39.2 63 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.95"/>
-  <path d="M40.8 62 C41.8 61.2 43 61.2 43.8 61.8" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
+  <!-- Smoke off the blue car's sprung hood, one beat on: the engine's puff has swelled and
+       lifted, the older one has drifted higher and thinned, and a new wisp is starting. -->
+  <path d="M28.8 53.6 C27.6 52 29.4 50.3 31.6 50.8 C32.6 49.8 35.8 49.8 37 50.8 C39.4 50.4 40.6 52.4 39.2 53.6 C37.8 55.2 31.2 55.4 28.8 53.6 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.6"/>
+  <path d="M37.6 61.1 C36.2 59.3 38 57.3 40.2 57.9 C41 56.1 44.2 56.1 45.2 57.9 C47.4 57.9 48 60.3 46.4 61.3 C44.6 62.7 39.6 62.7 37.6 61.1 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.9"/>
+  <path d="M39.8 59.9 C41.2 58.9 43.2 58.9 44.4 59.7" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
+  <path d="M41.4 64.6 C40.8 63.6 41.8 62.6 42.8 63 C43.4 62.2 44.8 62.4 45 63.4 C45.8 63.8 45.4 65 44.4 65 C43.4 65.4 42 65.4 41.4 64.6 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.95"/>
   <g transform="translate(16 154)" stroke="#3b2d32" stroke-width="0.8">
     <path d="M5 28 H8 V41 H5 Z M10 28 H13 V41 H10 Z" fill="#46506b"/>
     <path d="M5 39.5 H8 V41.5 H5 Z M10 39.5 H13 V41.5 H10 Z" fill="#221f28"/>

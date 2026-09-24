@@ -1,7 +1,8 @@
 <!-- A north-south street seen across its width: two cars locked side by side across the
      carriageway after they met — the blue one seen from behind, its right flank stove in, the
      red one seen from the front, its left flank crushed to match — with glass and a torn-off
-     bumper on the road, coolant spreading under them, smoke puffing up off the seam, and an onlooker on each
+     bumper on the road, coolant spreading under them, smoke puffing up off the seam (the second of its two frames:
+     the puffs one beat further up; everything else identical to `car_accident.svg`), and an onlooker on each
      pavement. The cars are the crowd cars' end-on projection; the onlookers are the event
      `person` figure (`person_front_diagonal.svg`, the right one mirrored), each turned towards
      the crash. Native 200x50, fitted by `_draw_wide_scene` to the 192px obstruction with its
@@ -60,11 +61,12 @@
   <path d="M100 46.2 L111 44.6 L111.4 46.2 L100.4 47.8 Z" fill="#3a3436" stroke-width="0.8"/>
   <path d="M84 46.4 L85.6 45.6 L85.8 47.0 Z M89 48.2 L90.6 47.400000000000006 L90.8 48.800000000000004 Z M95 45.6 L96.6 44.800000000000004 L96.8 46.2 Z M58 47.4 L59.6 46.6 L59.8 48.0 Z M123 47.8 L124.6 47.0 L124.8 48.4 Z" fill="#bfe0ea" stroke="#5f7f8c" stroke-width="0.6"/>
   <ellipse cx="129" cy="46.6" rx="2.2" ry="1.1" fill="#9aa4ac" stroke-width="0.8"/>
-  <!-- Smoke off the crushed fronts: a puff at the seam and the one before it drifting up. -->
-  <path d="M80.6 5.4 C79.2 3.6 81 1.6 83.2 2.2 C84 0.6 87.4 0.4 88.6 2 C90.8 1.6 92 3.6 90.6 5 C89.6 6.6 83 7 80.6 5.4 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.8"/>
-  <path d="M82.6 4.2 C84 3.2 85.8 3.2 87 4" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
-  <path d="M87.2 10 C86 8.4 87.6 6.6 89.4 7.2 C90.2 5.6 92.8 5.8 93.4 7.6 C95 8 95 10.2 93.4 10.8 C91.6 11.8 88.6 11.6 87.2 10 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.95"/>
-  <path d="M88.8 9 C89.8 8.2 91 8.2 91.8 8.8" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
+  <!-- Smoke off the crushed fronts, one beat on: the seam's puff has swelled and lifted, the
+       older one has drifted higher and thinned, and a new wisp is starting at the seam. -->
+  <path d="M75.8 4.2 C74.6 2.6 76.4 0.9 78.6 1.4 C79.6 0.4 82.8 0.4 84 1.4 C86.4 1 87.6 3 86.2 4.2 C84.8 5.8 78.2 6 75.8 4.2 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.6"/>
+  <path d="M85.6 8.6 C84.2 6.8 86 4.8 88.2 5.4 C89 3.6 92.2 3.6 93.2 5.4 C95.4 5.4 96 7.8 94.4 8.8 C92.6 10.2 87.6 10.2 85.6 8.6 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.9"/>
+  <path d="M87.8 7.4 C89.2 6.4 91.2 6.4 92.4 7.2" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
+  <path d="M89.4 11.6 C88.8 10.6 89.8 9.6 90.8 10 C91.4 9.2 92.8 9.4 93 10.4 C93.8 10.8 93.4 12 92.4 12 C91.4 12.4 90 12.4 89.4 11.6 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.95"/>
   <g transform="translate(191 6) scale(-1 1)" stroke="#3b2d32" stroke-width="0.8">
     <path d="M10 28 L14 28 L14 39 L10 39 Z M5 29 L9 30 L9 41 L5 41 Z" fill="#46506b"/>
     <path d="M10 38 L14 38 L16 40 L10 40 Z M5 40 L9 40 L12 41.5 L5 41.5 Z" fill="#221f28"/>
