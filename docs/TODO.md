@@ -500,6 +500,32 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
+## M188 — A resistance target can always be reached · found 2026-09-23
+
+Found by the route rig (M184, a rig walks the route), which walks her along a real path's edges
+to time days 6 to 13: four legs find no path at all, and the cause is in
+`src/resistance/resistance_director.gd`, not in the rig. The player's question, 2026-09-23: "is
+the rig getting stuck on badly planned out routes? events that shouldn't be there?" These keep
+M181, the resistance has a reason, and a task is one day, from being fully timed.
+
+- [ ] **A chalk mark is never placed on obstructed ground.** `_pick_reachable()` checks
+      `is_walkable`, `is_closed`, `is_held_at`, `is_on_home_block` and `is_in_walled_alley` but
+      never `CityMap.is_obstructed()`: day 9's mark on seed 4242 stands on tile (79,90), open but
+      inside a solid event body.
+- [ ] **A contact placed at a bearing lands on walkable ground.** `_reachable_offset()` draws
+      `Vector2.RIGHT.rotated(rng.randf() * TAU) * distance` with no walkability check: day 7's
+      `delivery_van` contact on seed 90210 lands on tile (76,119) and day 8's `burnt_shell`
+      contact on (9,82), both inside buildings.
+- [ ] **A mark is not sealed off by the day's obstructions.** Day 7's mark on seed 1234567 stands
+      on good ground (135,105), but the day's full obstruction set — the events' bodies and the
+      crowd's parked vehicles, 791 tiles — seals every route to that part of the city, where
+      closures alone leave it 76 tiles from home. The winnability guarantee (`docs/CITY.md`)
+      covers closures and calm-area reachability, not the union of dynamic obstruction. Whether
+      the fix is the mark's placement asking that question, or the events and vehicles not being
+      allowed to seal a region, is to be found out and put to the player before building the
+      second.
+
+---
 ## M184 — A rig walks the route · asked for 2026-09-23
 
 > "we should have a test-rig mode where she just follows the edges of a path that way we can test
