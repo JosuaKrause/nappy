@@ -36,6 +36,7 @@ func run(t) -> void:
 	_test_completed_resistance_alley_tiles_survive_a_round_trip(t)
 	_test_a_save_from_before_the_alley_tiles_still_loads(t)
 	_test_a_save_from_before_a_task_was_one_day_still_loads(t)
+	_test_the_posters_survive_a_round_trip(t)
 
 	_test_day_under_way_load_costs_one_nerve(t)
 	_test_a_day_under_way_gives_back_the_fire_it_lit(t)
@@ -117,8 +118,11 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## any field this build writes: inside the snapshot it would have made every save written before
 ## the escape existed unreadable, for the sake of one int. `_test_a_save_from_before_the_escape_
 ## still_loads()` is what holds that. `completed_resistance_alley_tiles` rides the same way, for
-## the same reason — `_test_a_save_from_before_the_alley_tiles_still_loads()` holds it.
-const _SAVED_OUTSIDE_THE_SNAPSHOT := ["escape_section", "completed_resistance_alley_tiles"]
+## the same reason — `_test_a_save_from_before_the_alley_tiles_still_loads()` holds it — and so do
+## `posters`, what is pasted on the walls (`_test_the_posters_survive_a_round_trip()`).
+const _SAVED_OUTSIDE_THE_SNAPSHOT := [
+	"escape_section", "completed_resistance_alley_tiles", "posters",
+]
 
 ## The guard the brief asks for: a field added to `GameState` later and forgotten in
 ## `GameState._SAVE_FIELDS` fails here rather than quietly not being saved. `PROPERTY_USAGE_
@@ -358,6 +362,33 @@ func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
 	t.check(not resumed.is_empty(), "a save with no alley tiles still resumes")
 	t.check(GameState.completed_resistance_alley_tiles.is_empty(),
 			"and the list is empty, rather than keeping whatever was in memory")
+	GameSave.clear()
+
+## **The walls survive the file, and a save from before there were posters loads with none up.**
+## `posters` rides at the top level for the reason `escape_section` does.
+func _test_the_posters_survive_a_round_trip(t) -> void:
+	GameState.start_run(646464)
+	GameState.posters.paste(Vector2i(5, 6), PosterArt.Kind.LEADER, false, 1)
+	GameState.posters.photograph()
+	GameState.posters.tear(Vector2i(5, 6), 1)
+	GameState.posters.tears = 1
+	GameState.posters.pasted_through = 4
+	var written := GameState.posters.to_data()
+	t.check(GameSave._write_now(false), "a run with posters writes")
+	GameState.posters.reset()
+	GameSave._read_now()
+	t.check(GameState.posters.to_data() == written,
+			"the walls, the tear count and the photograph a lost day gives back all survive")
+	var old_shape := JSON.stringify({
+		"format_version": GameSave.FORMAT_VERSION,
+		"build": "a build from before the posters",
+		"day_under_way": false,
+		"state": GameState.save_snapshot(),
+	})
+	_write_raw(old_shape)
+	GameSave._read_now()
+	t.check(GameState.posters.cells.is_empty() and GameState.posters.pasted_through == 0,
+			"a save with no posters in it loads with bare walls")
 	GameSave.clear()
 
 ## **A save from before a task was one day still loads.** `pending_resistance_brief` and

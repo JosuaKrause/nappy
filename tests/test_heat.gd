@@ -520,7 +520,7 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	t.check(not first.is_waiting(), "and a second later it is still chasing, not patrolling")
 	var age := first.age
 	var travelled := first.path_travelled()
-	var noticed_at := first._noticed_at
+	var noticed_at := first.noticed_at()
 	first.free()
 
 	var second := EventInstance.new()
@@ -590,7 +590,7 @@ func _test_every_pursues_within_row_resumes_the_notice(t) -> void:
 	t.check(not first.is_waiting(), "she is inside the trigger, so he notices her")
 	var age := first.age
 	var travelled := first.path_travelled()
-	var noticed_at := first._noticed_at
+	var noticed_at := first.noticed_at()
 	first.free()
 
 	var second := EventInstance.new()

@@ -109,8 +109,10 @@ and preserve the final evidence through `session-captures` where it is a gamepla
 SVGs under `docs/evidence/` are evidence, not assets: none of this section applies to them;
 rejected-graphics governs the archive.
 
-**A game SVG has no `.import` sidecar, except the root `icon.svg`.** `art/` has a `.gdignore`: no
-`.import` sidecars, the bake reads the files (VISUALS.md, "Where the pictures live"). Check both
+**A game SVG has no `.import` sidecar.** `art/` has a `.gdignore`: no
+`.import` sidecars, the bake reads the files (VISUALS.md, "Where the pictures live"); the
+application icon that the engine does import, root `icon.png`, is a raster, not an SVG, so it is
+outside this rule rather than an exception to it. Check both
 revisions if GitHub's image-diff viewer fails: malformed XML in the old side can break the
 comparison while the new file is valid. Link a current rendered preview rather than repeatedly
 altering valid artwork.

@@ -42,6 +42,7 @@ func run(t) -> void:
 	_test_the_fire_follows_her_walk_until_it_is_real(t)
 	_test_a_corner_is_not_a_change_of_mind(t)
 	_test_the_fire_is_the_days_only_unsited_place(t)
+	_test_the_crews_on_her_way_move_no_other_row(t)
 	_test_the_engine_parks_at_the_fire(t)
 	_test_a_site_that_shuts_her_out_is_refused(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
@@ -1939,24 +1940,60 @@ func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
 			"and a fire whose field swallows the doorstep is refused, because the way home is what "
 			+ "she would have no way round")
 
-## **One plan, and the day is otherwise exactly the day it was.** A set piece the day owes her walk
-## is budgeted like any other one-shot — one plan, tagged as its own group — and nothing else in the
-## catalogue is left for the walk to site, so no other day changes shape because of this one.
+## **One set piece, the day's crews, and the day is otherwise exactly the day it was.** A set piece
+## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.
+## The only other rows left for the walk to site are the poster crews, rolled at dawn like any
+## recurring row and handed over with no position (`EventScheduler._hand_to_her_walk`), so no other
+## row changes shape because of either.
 func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 	var owed := 0
+	var crews := 0
 	for day in range(1, 15):
 		for plan in _planned(day):
 			if not plan.def.sited_on_her_way:
 				continue
-			owed += 1
-			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.def.id == "burning_building",
-					"day %d: the only place the day leaves for her walk is day 3's fire, not '%s'"
+			t.check(not plan.is_placed(), "day %d: '%s' is planned with no position"
 					% [day, plan.def.id])
-			t.check(not plan.is_placed() and plan.set_piece_group != "",
-					"day %d: it is planned with no position and tagged as a set piece" % day)
 			t.check(plan.def.spawn_mode == EventDef.SpawnMode.MAP and not plan.def.mobile,
 					"day %d: and it is a place that stands still, not a director's moment" % day)
-	t.check(owed == 1, "exactly one plan in a fourteen-day run is owed to her walk (%d)" % owed)
+			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
+				crews += 1
+				t.check(plan.def.id == "poster_crew" and plan.def.pastes_a_front,
+						"day %d: the only recurring row left for her walk is the poster crew, not '%s'"
+						% [day, plan.def.id])
+				continue
+			owed += 1
+			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.def.id == "burning_building",
+					"day %d: the only set piece the day leaves for her walk is day 3's fire, not '%s'"
+					% [day, plan.def.id])
+			t.check(plan.set_piece_group != "", "day %d: and it is tagged as a set piece" % day)
+	t.check(owed == 1, "exactly one set piece in a fourteen-day run is owed to her walk (%d)" % owed)
+	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
+
+## **Handing the crews to her walk moves no other row.** The dawn roll still places every crew by
+## its own `pavement_side` and only then drops the position, so the day planned with the crews
+## handed over and the day planned with the flag off are the same day, row for row and place for
+## place, and differ only in where the crews stand.
+func _test_the_crews_on_her_way_move_no_other_row(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var crew := EventCatalogue.by_id("poster_crew")
+	for day in [4, 8, 12]:
+		var tree := RouteTree.for_day(map, day)
+		var handed := EventScheduler.build_day(day, _rng(day), map, [], [], [], tree)
+		crew.sited_on_her_way = false
+		var kept := EventScheduler.build_day(day, _rng(day), map, [], [], [], tree)
+		crew.sited_on_her_way = true
+		var same := handed.size() == kept.size()
+		var crews := 0
+		for i in mini(handed.size(), kept.size()):
+			same = same and handed[i].def.id == kept[i].def.id
+			if handed[i].def.id == "poster_crew":
+				crews += 1
+				same = same and not handed[i].is_placed() and kept[i].is_placed()
+			else:
+				same = same and handed[i].position == kept[i].position
+		t.check(crews > 0, "day %d: the day rolled crews (%d)" % [day, crews])
+		t.check(same, "day %d: every other row stands where the roll put it, crews or no crews" % day)
 
 ## Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
 ## spawned in in front of the player while they walk, so it happens directly in front of them
@@ -3622,6 +3659,11 @@ const _A_JUNCTION_BOXES_HALF_WIDTH := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0
 
 func _test_the_day_is_placed_by_role(t) -> void:
 	var map := CityGenerator.generate(4242)
+	# The day's poster crews are rolled and placed at dawn by exactly these rules and only then
+	# handed to her walk (`EventScheduler._hand_to_her_walk`). What this asks is how the roll
+	# places, so the crews are read where the roll put them.
+	var crew := EventCatalogue.by_id("poster_crew")
+	crew.sited_on_her_way = false
 	var walls := 0
 	var walls_across_the_street := 0
 	var friction_on_the_route := 0
@@ -3698,6 +3740,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(narrow_share > 0.40,
 			"and the corridor weight still shows through the three rules that can refuse a narrow "
 			+ "row (%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
+	crew.sited_on_her_way = true
 
 	# **The range, as a relationship rather than as two numbers.** *"It ranges from very costly to
 	# deadly"* is a claim about which of the two is further from the routes, so that is what is

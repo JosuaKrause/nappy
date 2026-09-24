@@ -1,5 +1,236 @@
 # Decisions
 
+## M180 — Posters she notices, and loudspeakers that are somewhere: seen, walled and torn · built 2026-09-23
+
+Closes the milestone's three remaining items, on top of the masts and the poster art already
+filed above. *(PLAYTEST-116 to PLAYTEST-125 record the requests; `TODO.md`'s former M180 entry
+held them in full before this closed it.)*
+
+**Four kinds of poster, on the walls.** `PosterWalls` (`src/city/poster_walls.gd`, a child of
+`City`) reads every building's blank ground-floor cells (`Building.blank_ground_floor_cells()` —
+never a window, door, fire escape column, storefront, portico, her home block or the power
+station) and pastes a share of them every dawn from day 4, more on the streets the day's routes
+use, following the progression table: rules and the leader's portrait from day 4, the curfew sheet
+from day 6, the uniform sheet from day 8, the wanted notice from day 12. A new sheet usually
+covers the old one exactly; a quarter of the time the old one shows through, offset 8px across and
+2px up so two fifths of it is visible, and never over a sheet of the same kind. `Building.
+_draw_posters()` draws them inside the building's own `_draw()`, after the plinth and before the
+door and fire escapes, under every entity. `GameState.posters` (`PosterState`) is photographed and
+given back with scars and block arcs, so a lost day's pastes are undone and the retry's dawn
+pastes the same sheets again; it is also a saved top-level key.
+
+**Posters are seen at all.** `poster_crew` carries `sited_on_her_way` and a new `pastes_a_front`;
+`EventScheduler._hand_to_her_walk` sites one crew at a time, on a stream of its own, on the
+frontage lane facing a blank wall along the day's own routes — the way day 3's fire is sited. A
+crew in view has `PosterWalls` paste its wall one sheet every 2s, the first 0.8s after she sees
+it, and the wall keeps those sheets for the rest of the run; the pasting pose alternates
+`poster_crew_back_b.svg` with the ordinary back view every 0.8s. The day's roll and the row's cost
+are unchanged. **Measured, not photographed** (`tools/test.sh probes/m180_crews_on_her_way.gd`):
+**1 to 8 crews met per walk**, over three seeds and three days.
+
+**She tears a poster down by pushing against its wall.** Her steering has to point **at least 30°
+into** the postered wall (`PosterWalls.PRESS_INTO`; a diagonal push counts), her feet **within
+26px** of the wall face (`PRESS_REACH`: the 22px the pram already stops her at, plus 4px), held
+for **0.4s** (`PRESS_TO_TEAR`). A diagonal push slides her along the wall, and **the 0.4s count
+carries across cells** while she keeps pushing — a cell-local count would make whether a diagonal
+tears depend on where she happened to start, since she crosses a 32px cell in about 0.5s. The torn
+sheet shows one of three tear masks, chosen by a hash of the run, the cell and the tear count, so
+no RNG stream is drawn from it. **The marble bag** (`src/city/marble_bag.gd`): a pre-bag holding
+one guaranteed "no pursuit" marble, then bags of one "pursuit" in ten "no pursuit", drawn without
+replacement and refilled with the same set when empty, seeded from the run seed; `PosterState.
+tears` is its whole state, so a save, a lost day and a retry all draw the same marbles. A pursuit
+marble sends a heated `police_patrol` `TOWARD_PLAYER` down the carriageway toward her — the same
+off-screen lead `owe_the_return()` uses, now one shared helper — **waiting `EventDirector.
+TEAR_PATROL_AFTER` (1s of her walking)** so she has turned from the wall, and **at most one waits
+at a time**; nothing is sent during the escape or under `--force`.
+
+**Open:** the wanted notice's neighbor slot and its crossed copy are drawn (above, the poster
+art), but every notice shows the neighbor's plain face until M181's day 10 (warn the neighbor
+before the raid) is built.
+
+**Open to overturn, chosen where the brief was silent:** the dawn share per act, the kind weights
+and the quarter-share overpaste (`PosterWalls.DAWN_SHARE_*`, `KIND_WEIGHTS`, `OVERPASTE_SHARE`);
+only south faces carry posters, since a front is a lot's only drawn face; the push thresholds
+(30°, 26px) and the diagonal push carrying its count across cells; the 1s wait before a tear's
+patrol is sent, and a second pursuit marble sending nothing while one patrol still waits.
+
+## M96 — The day ends crying only after a push at the top · built 2026-09-23
+
+*([PLAYTEST-126](playtests/PLAYTEST-126.md), statements 1, 2 and 8: "the bar can reach 100 but we
+need also like 10 over 3s to actually end the day ... removing "undeserved" failures where you
+just bump into a single predestrian in an aggravated state" · "yes, let's merge 10 over 3s".)* The
+bar still nets incoming against decay and clamps at 100; once it sits at the cap, a further
+positive net — what the clamp would otherwise pile on top — is summed over a sliding window, and
+the baby cries only when that mass reaches `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (10 points) within
+`Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3 seconds). The mass is never reset, only aged out of the
+window, and nothing holds the bar at 100: the moment incoming falls under decay it falls at the
+ordinary rate. Asleep and awake share the one gate, since `SLEEPING_SENSITIVITY` already damps
+what reaches it.
+
+**Measured with `tests/probes/m96_crying_at_the_top.gd`** against 10/3s, 5/2s and 15/3s: one bump
+from 89 now reaches 97.8 and never touches the cap — the decay has moved since the 2026-09-11
+measurement that made 89 a cliff — and from 95 it leaves 3.7 over the top; one bump at the cap
+leaves 8.9, awake at 10/3s and crying at 5/2s, which is why 5/2s was not taken; two bumps 0.3s
+apart at the cap leave 15.7 and cry under every setting, as do the loudest stationary rows
+(`night_raid`, `curfew_announce`, `abduction`) walked past or stood in. 15/3s behaved exactly as
+10/3s in every case measured. **Open to overturn, chosen by the agent:** counting the overflow
+net of decay rather than raw incoming, so a street she is recovering on does not count as fast as
+an unopposed one; the one gate for asleep and awake.
+
+## M97 — Calm areas that hold is closed · 2026-09-23
+
+*([PLAYTEST-126](playtests/PLAYTEST-126.md), statements 3 to 6.)* Its three open items are closed
+by the player: parks never touch by construction, so the item that asked for a seed showing two
+parks side by side has nothing to find; a spoiled park that stays usable "is not a concern
+anymore" and the player opens a new item if it recurs (the probe that measured it,
+`tests/probes/m97_spoilage.gd`, stays); and the number of calm areas "is fine", so the re-check
+of `MIN_CALM_BLOCKS` and `MIN_HOME_TO_PARK_TILES` is dropped. The player's "we just need to stop
+spoiling parks after a few days so the pool refreshes" is how the scheduler already works: it
+spoils the parks she has used **this act** (`GameState.settled_this_act()`), and the memory
+resets at each act boundary (days 1, 4, 8 and 12), so no park stays spoiled past its act.
+
+## The application icon is the enhanced stroller · built 2026-09-23
+
+*(The player, 2026-09-23: "can we update the icon of the game with the enhanced version?")* The
+application icon is now the root `icon.png`, 256×256, LANCZOS-downscaled from the comic-identity
+pass's `art/icon_stroller_640.png` (the outlined, shaded stroller with the sleeping Zs on the
+rounded slate plate), alpha preserved, instead of the flat root `icon.svg`. **256px** is the
+largest size either of `project.godot`'s two readers of `config/icon` — Godot's own window/dock
+icon and the web export's generated favicon, through `export_presets.cfg`'s
+`html/export_icon=true` — ever scales up to, so nothing asks the source for more detail than it
+has, and it downscales cleanly to every smaller size a favicon needs.
+
+`icon.svg` and its `.import` sidecar are removed now that nothing reads them. The **svg-art**
+skill's sentence "A game SVG has no `.import` sidecar, except the root `icon.svg`." now reads "A
+game SVG has no `.import` sidecar." outright, with a note that the imported `icon.png` is a raster
+outside the rule rather than an exception to it.
+
+**Rejected:** nothing — the swap is a straight substitution. `art/icon_stroller*.svg` and
+`art/logo.svg` keep their own comments naming `icon.svg` as design lineage rather than as the live
+icon, since they describe their own history rather than claim to be bound.
+
+## M108 — Eight-direction entity graphics · the audit and cars bob on their wheels, built 2026-09-23
+
+*(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars could bop up and down while the
+wheels stay in the same place".)* Two commits (5dcf316b, the audit; 280bb3fe, the wheel split),
+reviewed here. **The audit** compared every tracked SVG under `art/` against
+`assets/atlases/membership.json` and the region-name literals in `src/`, `scenes/` and the
+TileSet, and resolved every path `GRAPHICS.md` names against the tree; only three dead constants
+had no runtime caller. It corrected `GRAPHICS.md`'s prepared/live table — the protester's eight
+`protester_point_*` poses were live but marked prepared, and M106, the M100 vent and portico, and
+most of the M108 vehicle rows were marked "now live" without staying current — narrowed the table
+to work that still has an owner, and added an "Unbound, with nothing to bind them" table naming
+every superseded or unreachable source. The linked inventories (`svg-vehicles-2026-09-10/facings.
+csv` + README, `svg-environment-2026-09-10/sources.csv` + INVENTORY, the people matrix) had their
+binding/status columns dropped rather than refreshed, since a second copy of the binding is
+exactly how they went stale — each now says the catalogue alone records what is bound. A new
+`_test_a_transfer_only_ever_stands_in_for_its_own_source` in `tests/test_atlas_library.gd` checks
+221 regions (94 diagonals drawn from their own SVG, 26 from their own PNG) so an available
+cardinal PNG cannot stand in for a diagonal or another state's frame.
+
+**Cars bob on their wheels.** Each crowd car view's tyres moved out of `car_{view}_trim.svg` into
+a third layer, `car_{view}_wheels.svg`, on the same canvas and anchor; the six event vehicles that
+move (police car, fire engine, unmarked van, riot van, army truck, lorry) each got the same split
+across their five views — 35 new files, 35 `membership.json` lines. `src/visuals/wheel_bob.gd`
+holds one curve shared by both owners: a **1px** rise and fall over every **64px** of road
+covered. The crowd car (`CrowdAgent._body_bob()`) bobs at full height from the 60px/s turn speed
+upward and **fades below that turn speed**, so a stopped car sits still on its wheels; the event
+vehicles (`EventInstance._current_bob()`) ride the same curve over ground covered, replacing the
+2.5px walking-stride bob they used to share with people, and read zero on a tick with no movement.
+`EntityHalo` lifts its ring by the same `bob()` so the rim traces what is drawn. On the ten 34×50
+truck and van end views the tyres were always drawn under the body's edge, so there
+`EventInstance.WHEELS_BEHIND_THE_BODY` keeps them under it; everywhere else they draw over it. At
+rest, every split view differs from its old picture by at most 3/255, on no pixel by more than
+8/255.
+
+**Rejected / left as is:** the inventories' status columns were dropped rather than refreshed
+(above); the parked delivery van and ice-cream van keep their tyres in one picture, since they sit
+still; 1px and 64px are felt values, open to change after a look, not derived; the army truck is
+included though M108's item didn't name it, since it is an event vehicle that moves.
+
+## M190 — One command brings a pull request up to date with main · built 2026-09-23
+
+*(Asked for under CLAUDE.md's "a manual sequence done a second time becomes a script", after
+every PR merged in a row on 2026-09-23 needed `main` merged into the next with the same
+`docs/DECISIONS.md` conflict; the player: "yes", and "use it for subsequent prs".)*
+`tools/update-pr.sh <pr-number | branch>` fetches, finds the branch's worktree or makes a scratch
+one, records the three revisions, merges `origin/main` without committing, resolves the one
+recurring `DECISIONS.md` shape with `tools/resolve-decisions-top.sh` and aborts naming the files
+on anything else, then runs `git diff --cached --check`, lint and `check.sh`, commits a message
+naming the revisions and the resolution, and pushes, over HTTPS when SSH is refused. It never
+merges or enables auto-merge, and it ends by saying the semantic review is still the reviewer's,
+listing what main changed. `--dry-run` reports conflicts through `git merge-tree` without touching
+a worktree. It refuses a dirty worktree and a branch behind or diverged from its own remote.
+**Open to overturn, chosen by the agent:** `UPDATE_PR_CLAUDE=1` adds the Claude co-author line,
+off by default so a person running it does not sign as Claude; a diverged branch is refused as
+well as one that is behind.
+
+## M100 — Six small defects · 2026-09-23
+
+From M100's list, one commit each, no behaviour a player sees changed. The contact is placed
+before `--spawn contact` reads it (`ResistanceDirector.start_day()` moved ahead of
+`DevRig.spawn_position()` in `main`'s day start). The balance rig's camera runs in physics
+process mode like the real one, so the engine's warning is gone. `Crowd.step()` and
+`_physics_process()` share `_advance_the_world()`; `step()` now moves the agents before it rather
+than in the middle, which is neutral because the signals' clock and the pockets read nothing an
+agent's position changes. `CityMap.is_main_road(vertical, corridor)` is the one spelling of the
+question, and the seven hand-written sites go through it. A local test shard is killed after
+`SHARD_TIMEOUT_S` (600 s, about twice the slowest shard; `TEST_SHARD_TIMEOUT_S` overrides it) and
+reported by name, so the "crashed or hung" message is reachable; `--serial` and `--shard I/N` stay
+unbounded since they run far more than one shard's suites. `EventInstance.noticed_at()` is the
+save half of `resume()`, and `EventManager` reads it rather than the private field.
+
+## M189 — A still mother ends the run with a picture · built 2026-09-23
+
+*(The player, 2026-09-23: "can we have a flag for automatically taking a screenshot and
+terminating the game if the player doesn't move for a second or so?" · "also, it looks like the
+walking rig is a good way to find bugs".)* `--quit-when-still [seconds]` (default one second):
+once she has moved at all, if she then holds within `StillWatch.STILL_RADIUS` (4px, half the route
+rig's own stuck distance, sampled every frame rather than every half second) of one spot for that
+long while `DayController.is_running()` and the tree is not paused — which leaves out the brief,
+summary and death screens without a third flag — the game saves `still/quit-when-still.png` into
+the run's telemetry folder, notes a `still` line (her tile and the nearest live event or vehicle),
+prints the path and quits. `StillWatch` is its own node rather than part of `AutoScreenshot`,
+since a per-frame watch and a one-shot timed capture live differently, and it reuses
+`AutoScreenshot`'s capture through `AutoScreenshot.immediate()`. It reads her position, not the
+input or her velocity: on the route rig's day 6 wedge on seed 1234567 the HUD read a speed of 92
+in the frame she was pinned against a moving van. **Open to overturn, chosen by the agent:** the
+radius, the `still/` folder and fixed filename, and a `still` note kind rather than `shot`, whose
+doc says a person asked for the picture.
+
+## M79 — The city seen at an angle is closed · 2026-09-23
+
+*(The player, 2026-09-23: "I think we can close M79, the city at an angle. I like the current
+visuals and we really don't need to change it.")* M79 was tabled on 2026-09-06 as a question of
+sequencing, not doubt: a 2:1 isometric projection after the reference
+`docs/evidence/reference-isometric-street-2026-09-06.jpeg`, whose findings were that only the
+world-to-screen transform would change and not the lattice, that the 2.5D buildings made it
+cheap, and that what rotation destroys is the guarantee that nothing hides her. The city stays
+drawn straight on, and the item leaves the queue; this entry holds what the tabled milestone knew,
+and git history holds its full text (`git log -S "The city seen at an angle" -- docs/TODO.md`).
+
+## M184 — The rig waits before it forces, and aims beside a solid target · 2026-09-23
+
+The route rig's open half ([PLAYTEST-122](playtests/PLAYTEST-122.md): "a test-rig mode where she
+just follows the edges of a path"). **Waiting before forcing:** a stall now first stands still for
+`_STUCK_WAIT_SECONDS` (three seconds), since a crowd that would clear on its own and a wedge look
+the same to the rig, and only a stall straight after waiting tries the eight-direction maneuver;
+both spend one of a leg's three stuck episodes. Measured over the same 24 runs, it got none of the
+twelve stuck legs through (14 of 24 stuck after, against 12), so the chokepoint item stays open in
+`TODO.md` with what the first look found. The player chose to merge it as it stands and debug in
+a new pull request.
+
+**Aiming beside a solid target:** day 13's task on seed 4242 found no path because the rig aimed at
+the roadblock's own centre, inside its body (`obstructs_radius` 60px), which no plan may end on.
+`_reachable_point_near()` steps out to the nearest open tile first, well inside the 110px at which
+the director counts the task done. Reproducing the director's own random side of approach was
+rejected: the rig has no stream aligned with it and the completion check does not care which side.
+
+**The other four legs with no path are the game's**, found by instrumenting the rig against the
+running game: a mark placed inside a solid body, a mark sealed off by the day's obstructions, and
+two contacts placed inside buildings, all in `src/resistance/resistance_director.gd`; queued as
+M188, a resistance target can always be reached.
+
 ## M187 — A closure lies across the street it closes · built 2026-09-23
 
 *(Found by the street-obstructions redraw, PR 301, and queued with the player's agreement; the

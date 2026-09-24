@@ -98,10 +98,12 @@ const CAR_VIEW_BY_SECTOR: Array[String] = [
 	"back_diagonal", "back", "back_diagonal",
 ]
 ## The car's five authored views, keyed by name the way the walker's own two tables are —
-## `CAR_VIEW_BY_SECTOR` above does the sector lookup. Body is tinted per car, trim is drawn
-## untinted above it (`_draw_body()`); front/back are 30x46, side is 52x30, the diagonals are
-## 52x42. `car_end_{body,trim}.svg`, the old two-view family's foreshortened top-down picture, is
-## no longer read by either table — see `docs/GRAPHICS.md` for where it stands now.
+## `CAR_VIEW_BY_SECTOR` above does the sector lookup. Three layers per view on one canvas and one
+## anchor: the body, tinted per car; the trim, glass and lamps, untinted above it; and the wheels,
+## untinted above both, which stay on the ground while the body and trim ride `_body_bob()` — see
+## `_draw_body()`. Front/back are 30x46, side is 52x30, the diagonals are 52x42.
+## `car_end_{body,trim}.svg`, the old two-view family's foreshortened top-down picture, is read by
+## none of the three tables — see `docs/GRAPHICS.md` for where it stands now.
 const CAR_BODY_BY_VIEW := {
 	"front": "crowd/car_front_body",
 	"back": "crowd/car_back_body",
@@ -115,6 +117,13 @@ const CAR_TRIM_BY_VIEW := {
 	"side": "crowd/car_side_trim",
 	"front_diagonal": "crowd/car_front_diagonal_trim",
 	"back_diagonal": "crowd/car_back_diagonal_trim",
+}
+const CAR_WHEELS_BY_VIEW := {
+	"front": "crowd/car_front_wheels",
+	"back": "crowd/car_back_wheels",
+	"side": "crowd/car_side_wheels",
+	"front_diagonal": "crowd/car_front_diagonal_wheels",
+	"back_diagonal": "crowd/car_back_diagonal_wheels",
 }
 
 ## `WALKER_BODY_BY_VIEW`'s (and its five sibling tables') own entry as the `StringName` that
@@ -366,8 +375,9 @@ var _waited_to_turn := 0.0
 ## it is clear again, so a seal that lifts puts the car back on the road rather than leaving it
 ## marked for the rest of the day.
 var _nowhere_to_turn := false
-## The sector, flip and (walker only) gait frame currently drawn, so a redraw only happens when
-## one of them changes. The third component is always 0 for a car, which never bobs a stride.
+## The sector, flip and third term currently drawn, so a redraw only happens when one of them
+## changes. The third is the gait frame for a walker and the body's bob for a car, quantised by
+## `CAR_BOB_STEPS_PER_PX` — the two things each kind draws that move without the sector moving.
 ##
 ## **This is the quantised half of what the drawing reads, and a car has a continuous half too** —
 ## `_drawn_heading` below. See `_redraw_if_the_picture_changed()`.
@@ -565,7 +575,7 @@ func _stands_on_a_street() -> bool:
 	if _map.is_obstructed(tile):
 		return false
 	if not _map.in_bounds(tile):
-		return kind == Kind.CAR and _vertical and _corridor == _map.main_road \
+		return kind == Kind.CAR and _map.is_main_road(_vertical, _corridor) \
 				and (tile.y < 0 or tile.y >= _map.size.y)
 	# A precinct is paved end to end, so every tile of it says "street" and a car placed there
 	# would look perfectly settled right up to the moment it drove off down the paving. Asked
@@ -854,6 +864,7 @@ func _process(delta: float) -> void:
 	# that a body held at a gate or stopped behind a queue works it off too. See `_turn_round()`.
 	_turn_back_hold = maxf(0.0, _turn_back_hold - delta)
 	if kind == Kind.CAR:
+		_advance_car_bob(delta)
 		_give_way(delta)
 		# A car in a turn is following a path that was checked before it started, so none of the
 		# lane steering, lookahead or diverting below applies to it: the only thing left to decide
@@ -964,8 +975,10 @@ func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 ## **A term missing from the key is a frozen picture rather than a crash**, the same rule
 ## `EventInstance._redraw_if_the_picture_changed()` states for the catalogue's own gate — so the key
 ## has to name every time-varying thing `_draw_body()` reads and not a plausible subset. A walker's
-## drawing is the sector, the mirror and the gait frame, all three quantised and all three above. **A
-## car's drawing also reads its live heading, twice**: `_car_body_anchor()` registers the picture
+## drawing is the sector, the mirror and the gait frame, all three quantised and all three above. A
+## car's third term is its body's bob instead (`_body_bob()`), which moves on every frame it is
+## driving while nothing else about a car in a lane does. **A car's drawing also reads its live
+## heading, twice**: `_car_body_anchor()` registers the picture
 ## `26·|heading.y| + 14·|heading.x|` south of the node, and `_draw_shape_shadow()` sweeps the
 ## capsule along the same heading. Both are continuous through an arc while the sector is not, so a
 ## key made only of the quantised half leaves a car that has turned wearing the anchor and the
@@ -975,8 +988,9 @@ func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 ## rim does not go with it: `EntityHalo` re-traces the body every frame it is drawn, so the halo
 ## stands where the car should be and the car does not. That is exactly what the player saw.
 func _redraw_if_the_picture_changed() -> void:
-	var gait := _walker_gait_frame() if kind == Kind.WALKER else 0
-	var picture := Vector3i(_frame(), 1 if _flipped() else 0, gait)
+	var third := _walker_gait_frame() if kind == Kind.WALKER \
+			else roundi(_body_bob() * CAR_BOB_STEPS_PER_PX)
+	var picture := Vector3i(_frame(), 1 if _flipped() else 0, third)
 	var drawn_heading := _drawn_heading_key()
 	if picture != _picture or drawn_heading != _drawn_heading:
 		_picture = picture
@@ -1205,14 +1219,36 @@ func set_halo_strength(strength: float, colour: Color) -> void:
 				_halo = null
 		return
 	if not _halo:
-		_halo = EntityHalo.new(_draw_body, _zero_bob)
+		_halo = EntityHalo.new(_draw_body, _body_bob)
 		add_child(_halo)
 	_halo.set_glow(strength, colour)
 
-## The crowd never bobs — only an `EventInstance` rides a stride's worth of lift — so this is the
-## flat `bob()` `EntityHalo` asks every owner for.
-func _zero_bob() -> float:
-	return 0.0
+## The lift this agent's body rides right now, the `bob()` `EntityHalo` asks every owner for: a
+## walker's is zero, since its stride is two frames rather than a lift; a car's is `WheelBob.lift()`
+## over the ground it has covered, at full height from `CAR_BOB_FULL_SPEED` up and fading to
+## nothing as it slows, so a car braking to a light settles onto its wheels rather than freezing
+## mid-rise, and a stopped car sits still. `_draw()` lifts the whole drawing by it and
+## `_draw_body()` draws the wheels and the shadow back down by it, which is what lets the halo's
+## ring ride the same lift and trace the body where it is drawn.
+func _body_bob() -> float:
+	if kind != Kind.CAR:
+		return 0.0
+	return WheelBob.lift(_car_travelled, velocity().length() / CAR_BOB_FULL_SPEED)
+
+## The speed a car's bob reaches its full height at: a car in a turn and every car cruising down a
+## lane bob fully, and only a car braking below it settles.
+const CAR_BOB_FULL_SPEED := Tuning.CAR_TURN_SPEED
+
+## How finely the redraw key reads a car's bob: a quarter of a world pixel, half a screen pixel at
+## the camera's zoom. A car in a lane changes nothing else about its picture from one frame to the
+## next, so this is the step it redraws on while it is moving, and a stopped one never does.
+const CAR_BOB_STEPS_PER_PX := 4.0
+
+## Advances `_car_travelled` by the ground this car covered this tick. Called once from
+## `_process()`, never from the drawing, which a halo ring calls several times a frame — the same
+## rule `_advance_walker_gait()` states for the walker's stride.
+func _advance_car_bob(delta: float) -> void:
+	_car_travelled = wrapf(_car_travelled + velocity().length() * delta, 0.0, WheelBob.WAVELENGTH)
 
 ## This car has hit another one in a junction. It stops dead and sounds off, and then pulls away
 ## again on its own — `_cruise` is untouched, so recovery is the ordinary acceleration.
@@ -1833,7 +1869,7 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 ## precinct drives onto them instead of turning off.
 func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
 	if not _map.in_bounds(tile):
-		var leaves_by_the_spine := kind == Kind.CAR and vertical and _corridor == _map.main_road \
+		var leaves_by_the_spine := kind == Kind.CAR and _map.is_main_road(vertical, _corridor) \
 				and (tile.y < 0 or tile.y >= _map.size.y)
 		return not leaves_by_the_spine
 	if kind == Kind.CAR and not _map.is_driveable_at(vertical, tile):
@@ -2848,7 +2884,7 @@ func _has_left_the_field() -> bool:
 ## own width and nowhere else, and `CityEdge` is the tunnel and the bridge standing over it.
 ## Walkers keep the tile for the same reason — the pavements do not carry on, only the road does.
 func _room_beyond_the_map() -> float:
-	if kind != Kind.CAR or not _vertical or _corridor != _map.main_road:
+	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
 		return Tuning.TILE_SIZE
 	return Tuning.OUT_OF_SIGHT
 
@@ -2865,7 +2901,7 @@ func _room_beyond_the_map() -> float:
 ## the same question asked of the other end of the journey, with a different answer for everybody
 ## the tunnel and the bridge are not for.
 func _entry_room() -> float:
-	if kind != Kind.CAR or not _vertical or _corridor != _map.main_road:
+	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
 		return 0.0
 	return Tuning.OUT_OF_SIGHT
 
@@ -3155,6 +3191,12 @@ var _car_view := 2
 ## at any speed the way the mother's own does. Cars have no gait; only a walker reads this.
 var _walker_gait_phase := 0.0
 
+## How much ground this car has covered, wrapped to one `WheelBob.WAVELENGTH`, which is the phase
+## of the rise and fall its body rides over its wheels. Advanced by distance actually covered
+## (`_advance_car_bob()`), once per tick, the same way `_walker_gait_phase` is. A walker never
+## reads it.
+var _car_travelled := 0.0
+
 ## Radians of gait per pixel walked. `Stroller._physics_process()` advances `_walk_phase` at the
 ## identical rate, so the crowd and the player share one stride length per pixel covered — and
 ## `_stride_seconds()` reads it back to price a stride as a distance.
@@ -3259,12 +3301,26 @@ func _draw() -> void:
 	# ring, which is a different drawing than the ordinary frame this flag measures.
 	if _skip_draw:
 		return
+	# Told to `Sprites` as well as to the canvas, for the reason `EventInstance._draw()` gives: the
+	# mirror inside `draw_standing()` sets an absolute matrix, so a west-facing car not handed the
+	# lift would drop it.
+	var bob := _body_bob()
+	var lift := Transform2D(0.0, Vector2(0.0, bob))
+	Sprites.set_base_transform(lift)
+	draw_set_transform_matrix(lift)
 	_draw_body(self)
+	Sprites.set_base_transform(Transform2D.IDENTITY)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if kind == Kind.CAR:
 		_draw_mark()
 
 ## Draws this agent's own body onto `canvas`. `EntityHalo` calls this once per ring offset to
 ## trace whichever silhouette the sprite actually is; the ordinary frame draws it once at self.
+##
+## **Both callers have already lifted the canvas by `_body_bob()`**, so what stays on the ground —
+## a car's wheels and its shadow — is drawn back down by the same amount here, and the body and the
+## trim are drawn where the lift puts them. That split is the whole of the bob: the wheels never
+## move, the paint and the glass above them rise and fall about a pixel.
 ##
 ## **Reads `AtlasLibrary.region()`, which is null with an engine error the moment `crowd` is not
 ## acquired.** `Crowd.start_day()` acquires it before an agent exists to draw and `Crowd.clear()`
@@ -3276,15 +3332,19 @@ func _draw_body(canvas: CanvasItem) -> void:
 	var flip := _flipped()
 	if kind == Kind.CAR:
 		var forward := _travel_axis()
-		_draw_shape_shadow(canvas, shape, Vector2.ZERO, forward)
+		var grounded := Vector2(0.0, -_body_bob())
+		_draw_shape_shadow(canvas, shape, grounded, forward)
 		var view: String = CAR_VIEW_BY_SECTOR[frame]
 		# The same heading the shadow above and the debug view's bounding box are drawn on, so the
 		# picture cannot register against a car that is not there — see `_car_body_anchor()`.
 		var anchor := _car_body_anchor(view, forward)
 		var body := AtlasLibrary.region(_region_of(CAR_BODY_BY_VIEW[view]))
 		var trim := AtlasLibrary.region(_region_of(CAR_TRIM_BY_VIEW[view]))
+		var wheels := AtlasLibrary.region(_region_of(CAR_WHEELS_BY_VIEW[view]))
 		Sprites.draw_standing(canvas, body, anchor, Vector2.ZERO, flip, colour)
 		Sprites.draw_standing(canvas, trim, anchor, Vector2.ZERO, flip)
+		# Last, as they were when they were part of the trim: each tyre is drawn over the paint.
+		Sprites.draw_standing(canvas, wheels, anchor + grounded, Vector2.ZERO, flip)
 		return
 	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
 	var view: String = WALKER_VIEW_BY_SECTOR[frame]

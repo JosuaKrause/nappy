@@ -67,6 +67,7 @@ extends RefCounted
 ##   --web           0
 ##   --title         0
 ##   --no-title      0
+##   --quit-when-still 0?
 ## END_DEV_FLAG_TABLE
 
 ## Whether dev flags are readable at all. `main.gd` also reads this directly for the two gated
@@ -584,3 +585,25 @@ static func spikes_requested() -> bool:
 ## Buffered post-draw measurements remain available with the ordered telemetry log disabled.
 static func frame_trace_requested() -> bool:
 	return "--frame-trace" in _args()
+
+## `--quit-when-still` is present at all — `StillWatch` (`src/dev/still_watch.gd`) reads this to
+## decide whether to add itself to the tree, the same shape `route_targets().is_empty()` gates
+## `RouteRig` on. See `quit_when_still_seconds()` for the flag's own optional value.
+static func quit_when_still_requested() -> bool:
+	return "--quit-when-still" in _args()
+
+## `--quit-when-still [seconds]` — how long she must stay within a few pixels of one spot, once
+## armed, before `StillWatch` saves a picture and quits. About a second by default, the player's
+## own phrase for it (asked for 2026-09-23: "if the player doesn't move for a second or so"); the
+## optional value is read the same way `--flee`'s own delay is (`_dither`, above) — present and
+## numeric only, so `--quit-when-still --seed 4242` does not swallow the next flag as a duration.
+static func quit_when_still_seconds() -> float:
+	var args := _args()
+	var index := args.find("--quit-when-still")
+	if index == -1:
+		return _QUIT_WHEN_STILL_DEFAULT
+	if index + 1 < args.size() and args[index + 1].is_valid_float():
+		return maxf(0.1, float(args[index + 1]))
+	return _QUIT_WHEN_STILL_DEFAULT
+
+const _QUIT_WHEN_STILL_DEFAULT := 1.0

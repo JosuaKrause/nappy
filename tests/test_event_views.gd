@@ -130,6 +130,10 @@ func run(t) -> void:
 	_test_reversing_lorry_only_ever_faces_the_side_view(t)
 	_test_vehicle_views_are_grounded_at_the_canvas_bottom(t)
 	_test_burst_water_main_draws_no_body_shadow(t)
+	_test_every_moving_vehicle_has_wheels_on_its_own_canvas(t)
+	_test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t)
+	_test_a_walking_event_keeps_its_stride_bob(t)
+	_test_a_vehicle_badge_draws_its_wheels(t)
 
 func _heading_for_sector(sector: int) -> Vector2:
 	return Vector2.from_angle(deg_to_rad(sector * 45.0))
@@ -532,7 +536,14 @@ func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t) -> void:
 			var image := page.get_region(AtlasLibrary.region_rect(StringName(picture)))
 			var bounds := image.get_used_rect()
 			t.check(bounds.size.y > 0, "%s's %s view has some ink to measure" % [name, view])
-			var gap := image.get_height() - bounds.end.y
+			var ground := bounds.end.y
+			# A vehicle that rolls on wheels of its own touches the ground with those: its body
+			# rides a bob above them, so the wheels picture is the ground contact being measured.
+			var wheels := StringName(picture + "_wheels")
+			if AtlasLibrary.has_region(wheels):
+				var wheel_image := page.get_region(AtlasLibrary.region_rect(wheels))
+				ground = maxi(ground, wheel_image.get_used_rect().end.y)
+			var gap := image.get_height() - ground
 			t.check(gap <= FOOTPRINT_TOLERANCE_PX,
 					"%s's %s view grounds within %dpx of its own canvas bottom (got %dpx)"
 					% [name, view, FOOTPRINT_TOLERANCE_PX, gap])
@@ -548,3 +559,106 @@ func _test_burst_water_main_draws_no_body_shadow(t) -> void:
 			"burst_water_main opts out of the body shadow every other seal draws")
 	t.check(EventCatalogue.by_id("fallen_tree").draws_body_shadow,
 			"fallen_tree, burst_water_main's same-geometry sibling, keeps the ordinary body shadow")
+
+# ------------------------------------------------------------ the wheels ---
+
+## **Every vehicle that moves rolls on a wheels picture of its own**, one per view, baked on the
+## `events` page on exactly its body's canvas — the one size `Sprites.draw_standing()` bottom-centres
+## both by — and listed with the look's own sources, so the atlas completeness check covers it. The
+## ones drawn under their body name wheels that exist.
+func _test_every_moving_vehicle_has_wheels_on_its_own_canvas(t) -> void:
+	var looks := {
+		EventDef.Look.POLICE_CAR: EventInstance.POLICE_CAR_BY_VIEW,
+		EventDef.Look.FIRE_ENGINE: EventInstance.FIRE_ENGINE_BY_VIEW,
+		EventDef.Look.UNMARKED_VAN: EventInstance.UNMARKED_VAN_BY_VIEW,
+		EventDef.Look.RIOT_VAN: EventInstance.RIOT_VAN_BY_VIEW,
+		EventDef.Look.ARMY_TRUCK: EventInstance.ARMY_TRUCK_BY_VIEW,
+		EventDef.Look.LORRY: EventInstance.LORRY_BY_VIEW,
+	}
+	t.check(EventInstance.WHEELS_BY_LOOK.size() == looks.size(),
+			"the moving vehicles and nothing else roll on wheels of their own (%d looks)"
+			% EventInstance.WHEELS_BY_LOOK.size())
+	var named := {}
+	for look: EventDef.Look in looks.keys():
+		t.check(EventInstance.WHEELS_BY_LOOK.has(look), "look %d has wheels" % look)
+		var wheels_by_view: Dictionary = EventInstance.WHEELS_BY_LOOK.get(look, {})
+		var body_by_view: Dictionary = looks[look]
+		var sources := EventInstance.family_sources(look)
+		for view: String in body_by_view.keys():
+			var wheels := str(wheels_by_view.get(view, ""))
+			var body := str(body_by_view[view])
+			named[wheels] = true
+			t.check(AtlasLibrary.has_region(StringName(wheels)),
+					"%s's wheels (%s) are baked" % [body, wheels])
+			t.check(AtlasLibrary.native_size(StringName(wheels))
+					== AtlasLibrary.native_size(StringName(body)),
+					"%s's wheels share its canvas" % body)
+			t.check(wheels in sources, "%s is among its look's own sources" % wheels)
+	for wheels: String in EventInstance.WHEELS_BEHIND_THE_BODY:
+		t.check(named.has(wheels), "%s, drawn under its body, is one of the wheels tables' own"
+				% wheels)
+	for parked in [EventDef.Look.DELIVERY_VAN, EventDef.Look.ICE_CREAM_VAN]:
+		t.check(not EventInstance.WHEELS_BY_LOOK.has(parked),
+				"a parked van (look %d) keeps its wheels in its one picture" % parked)
+
+## **A moving vehicle's body rides about a pixel over its wheels, on a phase of ground covered, and
+## a stopped one sits still.** A police patrol driven along a straight route bobs within
+## `WheelBob.HEIGHT` and reaches it, the lift is `WheelBob.lift()` of exactly the ground it has
+## covered, and the redraw key moves with it; the tick it covers no ground its body is back down.
+func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t) -> void:
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)])
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("police_patrol"), Vector2.ZERO, route, Vector2.RIGHT)
+	var lowest := 0.0
+	var moved_ticks := 0
+	var keys := {}
+	for i in 240:
+		instance._process(STEP)
+		var bob := instance._current_bob()
+		t.check(bob <= 0.0 and bob >= -WheelBob.HEIGHT - 0.001,
+				"tick %d's bob %.3f stays between the wheels and one height above them" % [i, bob])
+		if instance._gait_moving:
+			moved_ticks += 1
+			t.check(is_equal_approx(bob, WheelBob.lift(instance._path_travelled)),
+					"tick %d's lift is the bob of the ground covered" % i)
+		keys[instance._picture_key().z] = true
+		lowest = minf(lowest, bob)
+	t.check(moved_ticks > 0, "the patrol actually drove (%d ticks)" % moved_ticks)
+	t.check(lowest < -0.9 * WheelBob.HEIGHT, "and its body reached the top of a rise (%.3f)" % lowest)
+	t.check(lowest > -WheelBob.HEIGHT - 0.001,
+			"a rise of about a pixel, not the walkers' own stride bob (%.3f)" % lowest)
+	t.check(keys.size() > 2, "the redraw key moved with the body (%d heights)" % keys.size())
+	instance._gait_moving = false
+	t.check(instance._current_bob() == 0.0, "a vehicle that covered no ground sits on its wheels")
+	instance.free()
+
+## **Only the vehicles changed.** A dog walker has no wheels, and its bob is still the stride's own
+## lift — taller than a vehicle's, since it is a step rather than a sway.
+func _test_a_walking_event_keeps_its_stride_bob(t) -> void:
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
+	var lowest := 0.0
+	for i in 120:
+		instance._process(STEP)
+		lowest = minf(lowest, instance._current_bob())
+	t.check(not EventInstance.WHEELS_BY_LOOK.has(instance.def.look), "a dog walker has no wheels")
+	t.check(lowest < -WheelBob.HEIGHT,
+			"its stride lifts it further than a vehicle's body rises (%.3f)" % lowest)
+	instance.free()
+
+## **The badge is the thing's own picture, wheels included**: `icon_for()` of a vehicle that rolls
+## is its side body, and `icon_wheels_for()` is the side view's wheels the badge draws over it on
+## the same canvas; every other look answers nothing, so its badge is one picture as it was.
+func _test_a_vehicle_badge_draws_its_wheels(t) -> void:
+	for look: EventDef.Look in EventInstance.WHEELS_BY_LOOK.keys():
+		var wheels := EventInstance.icon_wheels_for(look)
+		var body := EventInstance.icon_for(look)
+		t.check(wheels == str((EventInstance.WHEELS_BY_LOOK[look] as Dictionary)["side"]),
+				"look %d's badge draws its side view's wheels (%s)" % [look, wheels])
+		t.check(AtlasLibrary.native_size(StringName(wheels)) == AtlasLibrary.native_size(
+				StringName(body)), "and they fit the badge's own rectangle for %s" % body)
+	t.check(EventInstance.icon_wheels_for(EventDef.Look.DELIVERY_VAN).is_empty(),
+			"a parked van's badge is its one picture")
+	t.check(EventInstance.icon_wheels_for(EventDef.Look.DOG_WALKER).is_empty(),
+			"and so is everything that does not roll")

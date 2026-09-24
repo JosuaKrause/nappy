@@ -110,6 +110,9 @@ var _closures: Array[RoadClosure] = []
 var _closure_nodes: Array[Node] = []
 ## Fixed for the run — only their condition changes.
 var _buildings: Array[Building] = []
+## The posters on the fronts: which cells can carry one and what is pasted on them. Built once
+## with the buildings, pasted each dawn. See `PosterWalls`.
+var _posters: PosterWalls
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
@@ -135,6 +138,11 @@ func build(city_map: CityMap) -> void:
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
 	# or the wall draws over it.
 	_spawn_buildings()
+	# Right after the buildings, whose blank ground-floor cells are what it reads. See `PosterWalls`.
+	_posters = PosterWalls.new()
+	_posters.name = "Posters"
+	add_child(_posters)
+	_posters.setup(self, map)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61), so the shadow set is built once
 	# here rather than recomputed per day.
 	_building_shadows.set_buildings(map.building_rects)
@@ -533,6 +541,9 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
 	# once more after the day's seals are planned — see `refresh_street_trees()`.
 	refresh_street_trees()
+	# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
+	# off, and after `_dress_blocks()`, which is what says a front has burnt.
+	_posters.start_day(day, _tree)
 
 ## The same city, dressed for the escape: everything `start_day()` does except grow a day's
 ## corridor and close streets off it.
@@ -559,6 +570,7 @@ func start_finale(state: CityState, day: int) -> void:
 	_paint_ground()
 	_decals.set_placed(Litter.placed(map, day))
 	_dress_blocks(state)
+	_posters.show_only()
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
@@ -646,6 +658,10 @@ func buildings() -> Array[Building]:
 ## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
 ## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
 ## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
+## The posters on the fronts — see `PosterWalls`.
+func poster_walls() -> PosterWalls:
+	return _posters
+
 func props() -> Array[Node2D]:
 	var all: Array[Node2D] = []
 	all.append_array(_props)

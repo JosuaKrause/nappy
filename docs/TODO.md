@@ -14,50 +14,6 @@ mid-way through.
 
 ## The order
 
-### M108 — Eight-direction entity graphics
-
-The SVG-only authoring and subsequent integration requests are recorded in [PLAYTEST-53](playtests/PLAYTEST-53.md).
-Drafts rejected only internally by an assistant stay outside the repository; retain artwork
-suggested for human review or rejected by a human.
-
-This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
-approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
-before catalogue-wide conversion. See `DECISIONS.md` under Eight-direction style transfer.
-Use the reviewed N, NE, E, SE, S, SW, W, NW source coverage and existing animation/state variants.
-Preserve native scale, ground anchors, actor identity and gameplay. Follow the documented mirror
-symmetry; choose an authored projection rather than rotating an upright picture.
-
-The prepared source families and their complete facing/state matrices are in `GRAPHICS.md` and
-its linked people, vehicle/animal and environment inventories. The source-art record is in
-`DECISIONS.md` under SVG completion and selective rejection retention. Work below binds those
-pictures to their actual runtime consumers. The crowd walkers and the event people, animals and
-riders are bound, through the shared `EightDirection` selector every family below extends
-(`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
-their single side picture by the choices recorded there. Moving families use two frames per view
-(`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), with three mother
-poses in each of the pushing and carrying open/together/opposite-open/together cycles. The
-café sitters lean and the busker strums on a timer; whether a standing guard shifts is the
-player's to say, and until then he keeps one frame.
-- [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
-      could bop up and down while the wheels stay in the same place")* A moving car's body rises
-      and falls about a pixel on a phase advanced by its speed, and its wheels stay on the ground.
-      A crowd car is two layers today, `art/crowd/car_{view}_{body,trim}.svg`, the tintable
-      paint and one trim holding windows, tyres and lights together, so the wheels come out of the
-      trim into a third layer per view, `car_{view}_wheels.svg`, SVG first and on the same canvas
-      and anchor; body and the remaining trim bob together, the wheels draw fixed, and a stopped
-      car sits still. The halo traces the bobbing silhouette as it does the mother's lift
-      (`EntityHalo` asks each owner for its `bob()`; the crowd's answers zero today). Crowd cars
-      first, with the vehicle binding below; the event vehicles that move — the police car, the
-      vans, the lorry, the fire engine — the same way, and a parked one sits still
-- [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
-      only for callers actually wired. Check SVG override and illustrated fallback so an available
-      cardinal PNG cannot replace a newly selected diagonal SVG or lose its state/registration.
-      PNG generation stays with M109, convert the SVG catalogue to PNG. Use focused selector and
-      caller tests, import/boot checks and movement evidence; keep prepared families unbound until
-      their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
-      M102, the finale, owns the carrying mother and interior sequence. The protester's eight
-      pointing poses are bound (`DECISIONS.md`, M65).
-
 ### M109 — Convert the SVG catalogue to PNG
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
@@ -103,9 +59,12 @@ findings supported by the conversion and review.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
-      UI buttons, the application icon and identity/export consumers. Provide registered PNG
-      bindings for every live SVG without altering draw transforms; verify both flag states and
-      missing/mismatched fallback. The SVG override remains the comparison control during review.
+      UI buttons and identity/export consumers. The application icon is done — it is the root
+      `icon.png`, bound directly rather than through the SVG-override comparison, since nothing
+      else reads `icon.svg` any more (`DECISIONS.md`, the application icon is the enhanced
+      stroller). Provide registered PNG bindings for every remaining live SVG without altering
+      draw transforms; verify both flag states and missing/mismatched fallback. The SVG override
+      remains the comparison control during review.
 - [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
       facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
       evidence in the PR; document actual bindings and make SVG-first followed by transfer the
@@ -136,12 +95,15 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    stationary solid body now divert the crowd (`DECISIONS.md`, M110, every solid body). Whether
    diverting at every body blunts the tell a closure's own turn-away relies on — the
    recommendation the player overturned on 2026-09-12 — is a played question, in `REVIEW.md`.
-3. **M96, M97, M99 and M100**, in no order between them: the teaching day, the calm areas, the
-   corridor's density after the sealing, and the consolidated small work. Each was rewritten on
-   2026-09-09 from an older milestone after checking which of its items the code had already
-   answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised". M98, pressure in the empty acts, was the fifth of them and is built
-   (`DECISIONS.md`, M98); whether its return reads as pressure or punishment is in `REVIEW.md`.
+3. **M99 and M100**, in no order between them: the corridor's density after the sealing, and the
+   consolidated small work. M96, the teaching day, and M97, the calm areas, are both done — M96's
+   one remaining item, the cliff at 89, is closed (`DECISIONS.md`, M96, the day ends crying only
+   after a push at the top), and M97's are closed by the player's own word (`DECISIONS.md`, M97,
+   calm areas that hold is closed). Each of the four was rewritten on 2026-09-09 from an older
+   milestone after checking which of its items the code had already answered; the record of what
+   was found built is in `DECISIONS.md` under "The queue reprioritised". M98, pressure in the
+   empty acts, was the fifth of them and is built (`DECISIONS.md`, M98); whether its return reads
+   as pressure or punishment is in `REVIEW.md`.
 4. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
@@ -346,100 +308,6 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 ---
 
-## M180 — Posters she notices, and loudspeakers that are somewhere · asked for 2026-09-20
-
-> "posters need to be more obvious. the loudspeaker part was not apparent to me. since we
-> don't have sound it's not clear that this is happening. loudspeakers should be placed in the
-> city with a defined field. not sure about adding a floor. it just makes losing unfair because
-> things that worked before don't anymore for no obvious (or visible) reason."
-
-[PLAYTEST-117](playtests/PLAYTEST-117.md). **The masts are built** (`DECISIONS.md`, M180,
-the loudspeaker masts): six from day 5, on sidewalks, with a field, a lamp that says when they
-speak, and nothing city-wide left. What is open is the posters.
-
-- [ ] **Posters are seen at all.** *"I have not seen a single poster in any playthrough -- I
-      don't know what you're referring to here -- it needs to be way more obvious"*: the run
-      behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none. The crew's
-      walls, and what they leave behind, read at walking distance as the city changing: size,
-      contrast and how many, against the act's palette. A visual attempt comes back to the
-      player early rather than polished.
-
-      **Why none is seen, read from that run's log and the row itself.** A crew is placed at
-      dawn anywhere in the city (`poster_crew` has the default `MAP` spawn mode, and the day's
-      corridor only weighs four to one against every other block), so over the whole run she
-      came within a crew's 110px field once, and within none of day 4's ten. A crew leaves nothing behind: the row has no
-      `scar_id`, never finishes (`duration` 0) and paints nothing on the wall, so the city
-      does not accumulate posters. The poster itself is a 9x13px sheet of paper held at head
-      height inside a 30x44 figure, about 18x26 on screen at the camera's 2x zoom, on a worker
-      drawn in the street's own olive-grey with no second frame. And it costs nothing to
-      pass (`docs/COSTS.md`: walking through nets a gain, scenery on purpose), so the meter never
-      points at one either. Nothing can draw over it; buildings sit under the entity layer.
-
-      **The fix, in the order of what the log blames:** crews work on walls along the way she
-      walks, the way day 3's fire is sited (`DECISIONS.md`, M179, the fire is on her way), rather
-      than anywhere; a wall a crew has worked keeps its posters for the rest of the run, drawn
-      on the building face and large enough to read at walking distance, so each day's walls
-      add to the last; and the crew is seen pasting. The row's cost stays what it is: making a
-      poster crew charge the meter is a change to what the row is for, and is the player's.
-- [ ] **There are four kinds of poster, and they are on the walls** ([PLAYTEST-119](playtests/PLAYTEST-119.md)).
-      *The leader's portrait*, a nondescript face with no name; *the rules*, a pale printed
-      notice with a heavy header bar, gray lines and a red stamp, joined from day 6 by a curfew
-      sheet with a clock face; *the darker uniform sheets* under one plain geometric emblem
-      that resembles nothing real, covering a wall edge to edge in act III; and *the wanted
-      notice* in act IV, rows of faces, some crossed out in red, drawn in a different style
-      from the leader's. No sheet carries readable words (`docs/NARRATIVE.md`, tone rule 1:
-      nobody explains the politics). A poster takes up about 60 to 80% of a tile, "big enough
-      to be recognizable as posters". They are on walls from the first day poster crews appear,
-      day 4, and **some are already up that first morning**; they are **sparse at first and
-      denser towards the end of the run**, each day's walls adding to the last. The
-      progression, proposed by the orchestrator from the acts and the player's to move:
-
-      | From | New on the walls | How much |
-      | --- | --- | --- |
-      | Day 4 | The rules and the leader's portrait, some already up that morning | Sparse: a wall here and there, one or two sheets on it |
-      | Day 6 | The curfew sheet with its clock face, among the rules | A few more walls |
-      | Day 8, act III | The dark uniform sheets under the emblem, pasted over the older ones | Whole walls, edge to edge, on the streets she uses most |
-      | Day 12, act IV | The wanted notice | Dense: most walls on a main street carry something; the portrait is everywhere |
-
-      **One face on the wanted notice is the neighbor's** ([PLAYTEST-121](playtests/PLAYTEST-121.md):
-      "I like the idea with the crossed out face if 10 is failed"): the neighbor she is sent to
-      warn on day 10 (M181, the resistance has a reason, and a task is one day) is among the
-      faces from day 12, drawn to match the figure she met or missed, and **crossed out in red
-      if day 10's task was not done on the day she won**. Never explained. It is the posters'
-      one tie to the story: "other than that we can keep this mechanic separate with no story
-      tie in", so tearing stays a gimmick that counts for nothing.
-
-      A kind that has arrived stays in the mix; nothing is taken down except by her.
-
-      **The pictures are drawn and accepted** (`DECISIONS.md`, M180, the poster art): the six
-      intact sheets and three tear masks under `art/events/posters/`, prepared and not yet bound,
-      with the neighbor's slot on the wanted notice and the compositing recipe in
-      `docs/GRAPHICS.md`'s Posters section. **What is open is putting them on the walls**: only on
-      blank ground-floor wall, never over a window (M185, a ground floor is blank wall or shops),
-      one row to a wall, following the progression above. Where a sheet is pasted over an
-      older one, the offset is large enough that the older sheet plainly shows, never a sliver that
-      reads as a glitch ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 31); **most** new sheets
-      cover the old one exactly and replace it, and only some show the one beneath (statements 32
-      and 33: "if it's visibly over pasted for all of them then it will look weird"). PNGs are Codex's, later.
-- [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
-      no button, and more than walking past. *The orchestrator recommended running along the
-      wall · the player chose pushing on 2026-09-20*, because a push can happen by accident,
-      which is how it is discovered. It is a gimmick to be judged by feel and holds nothing
-      else up. Open to overturn, set by the orchestrator: her heading has to press into the
-      postered wall for about 0.4 seconds, so brushing past does not tear; a torn poster stays
-      torn until a crew pastes that wall again; tearing costs nothing on the meter and counts
-      for nothing. **A tear has a small chance of a pursuer**: a `police_patrol` sent toward
-      her from off screen under the lead its row already owes, starting at one tear in ten, and
-      never on the first tear of a run. **Whether a tear brings one is drawn from a marble bag**
-      ([PLAYTEST-125](playtests/PLAYTEST-125.md)): a bag holding a fixed set of marbles in the
-      desired proportion, one drawn at random and removed per tear, refilled with the same set
-      when empty, so every bag's share is exact ("it has the desired probability but feels
-      fair"). A first, pre-bag holds only "no pursuit" marbles, one per tear guaranteed safe.
-      The player's example is a pre-bag of three and then two pursuits in ten; which numbers
-      apply is the player's. Only poster tears use a marble bag.
-
----
-
 ## M183 — The power station and the blackout · asked for 2026-09-20
 
 > "so we need to design a power station building that is guaranteed to spawn on the map" ·
@@ -534,16 +402,27 @@ M181, the resistance has a reason, and a task is one day, from being fully timed
 [PLAYTEST-122](playtests/PLAYTEST-122.md). The rig is built (`DECISIONS.md`, M184, a rig walks
 the route): `--route mark,task,calm,home` walks her along a real path's edges, at walking pace,
 through the ordinary game, and `tests/probes/m184_route_timing.gd` times days 6 to 13 with it.
-What is open is where it gives up, which is what keeps M181's late days from being fully timed.
+What is open is where it gives up, which is what keeps M181's late days from being fully timed;
+the legs that find no path are the game's (M188, a resistance target can always be reached).
 
-- [ ] **The rig gets through chokepoints.** In 12 of the 24 measured runs one leg ends "stuck
-      fast": wedged by the crowd or a parked vehicle more times than its budget of three stuck
-      episodes per leg allows. A player walks round them; the rig should too, or wait them out.
-- [ ] **Five legs find no path at all** (day 7's mark on seed 1234567 and its task on 90210, day
-      8's task on 90210, day 9's mark on 4242, day 13's task on 4242). The implementing agent's
-      best guess for day 13 is that the roadblock closes its own street and the plan closes the
-      contact point with it; each is checked and either fixed in the rig or reported as a real
-      unreachable target.
+- [ ] **The rig gets through chokepoints.** In 14 of the 24 measured runs a leg ends "stuck
+      fast", wedged more often than its budget of three stuck episodes a leg. Waiting three
+      seconds before forcing a way out gets none of them through (`DECISIONS.md`, M184, the rig
+      waits before it forces), and day 10's calm leg on seed 90210, reached in 30.5 seconds
+      before, now sticks too, unexplained. What the first look found, on day 6's mark on seed
+      1234567, built and then taken out again: she stalls flush against a van's body, because
+      `CityMap.obstructed_tiles` marks only the tile a body's centre falls in (right for the
+      crowd, which keeps to a lane) and a van overhangs the next tile's centre by about 6px, so
+      the plan itself walks her into it. A keep-clear margin from `EventDef.solid_reach()`, the
+      way the rig already keeps clear of a hazard's `lethal_reach()`, moved the stall a few tiles
+      on; trying the unstick directions in the order that points away from the body, rather
+      than always starting up, cleared each maneuver first time; but the recovery re-plan rings
+      her own position rather than the body that caught her, so she went straight back to the
+      same pinch. The narrowest gap there measured about 2px short of her body plus the van's
+      reach: whether a player hugging the far edge gets through, or the van is sited without
+      leaving a walkable width, is to be checked before calling it the rig's fault. Whether the
+      stalls on day 8's home leg on seed 1234567 and day 12's on 4242 are the crowd rather than a
+      body is not yet checked.
 
 ---
 
@@ -562,9 +441,10 @@ carried): a task is one day, announced at its mark and done that day; the first 
 six of the eight tasks (days 6, 7, 8, 9, 12 and 13) with the red arrow for the one-place ones;
 the goal of five; the doors from day 9; the day brief's own line for each day; and the story
 in `docs/NARRATIVE.md`, "What the tasks are for". **What is open is slice two**, below, and the
-two tasks that wait on other milestones: **day 11's mast on M180**, posters she notices, and
-loudspeakers that are somewhere, and **day 14's front door on M183**, the power station and the
-blackout; until then day 14 keeps the last night's district contact.
+one task that still waits on another milestone: **day 14's front door on M183**, the power
+station and the blackout; until then day 14 keeps the last night's district contact. Day 11's
+mast waits on nothing further — M180, posters she notices, and loudspeakers that are somewhere,
+is done and the masts already expose what the task needs.
 
 **The calendar, decided by the player:**
 
@@ -584,14 +464,16 @@ blackout; until then day 14 keeps the last night's district contact.
       the red arrow points at them out in the city, and the deadline is the neighbor walking home
       into the vans (*the orchestrator's reading · taken by the player on 2026-09-21*,
       [PLAYTEST-121](playtests/PLAYTEST-121.md)). Warned, the neighbor runs; not warned, they are
-      taken, and theirs is the face crossed out on day 12's wanted notice (M180). **The raid is vans
+      taken, and theirs would be the face crossed out on day 12's wanted notice — the slot and the
+      crossed copy are drawn (`DECISIONS.md`, M180, the poster art), but this day is not built, so
+      every wanted notice shows the neighbor's plain face until it is. **The raid is vans
       in the street at her building with a patrol, and the doorstep stays reachable**
       ([PLAYTEST-122](playtests/PLAYTEST-122.md): "we will have to see how that one feels", so it
       goes to `REVIEW.md` once built). The neighbor's door is sealed the next morning either way.
 - [ ] **Day 11: silence a mast**, which stays quiet for the rest of the run: she reaches its
       foot, as a mark is touched, and its field makes the approach cost while it broadcasts
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)). Waits on M180's masts, which expose each
-      mast's stable id and foot.
+      ([PLAYTEST-122](playtests/PLAYTEST-122.md)). The masts already expose each mast's stable id
+      and foot (`DECISIONS.md`, M180, the loudspeaker masts), so this task waits on nothing else.
 - [ ] **The once-only happenings of days 10 to 13**, each leaving something permanent and each
       sited from where she is walking as the fire is (`DECISIONS.md`, M179), except the raid,
       which is at her own building and is what she comes home to: the raid, whose door is
@@ -883,84 +765,12 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-
----
-
-## M96 — The teaching day, and the dog after it · rewritten 2026-09-09
-
-Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
-longer fires while she is detained or while the tree is paused, and the run lesson's once-per-run
-flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
-queue reprioritised". The dog after the lesson is built — from day 4 it waits inside its own
-field and the day-3 charge sprinkles in on later days (`DECISIONS.md`, M96, the dog waits) — and
-what is left is one measurement.
-
-**The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
-on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
-is where act I stops being a nice neighbourhood; the options weighed when the move was first
-proposed are in `DECISIONS.md` under M49, in the item "Day 3 carries act I's whole payload".
-
-- [ ] **One contact at 89 is a cliff, measured; the rule about the last ten points is the
-      player's to give.** A bump is about 10.8 points, and a rig confirmed it on 2026-09-11
-      (`DECISIONS.md`, M96): one walker's startle against the baby at 90 and at 89 both end at 100
-      and crying; at 85 it ends at 96.8 and awake. The pram's nearly-crying cue is drawn from 80 of
-      the 100-point meter, by code rather than by eye — whether it is *read* is a played question.
-      The entry's own rule stands: the fix is a rule about the last ten points, not a density
-      change — a floor on what one contact may add near the top, a grace window after the cue, or
-      nothing, if a walker at 89 on an empty street is meant to be the risk it is. Decide, then it
-      is one constant and a test beside `tests/test_meters.gd`'s pinned measurement
-
----
-
-## M97 — Calm areas that hold · rewritten 2026-09-09
-
-Rewritten from M47. Its apartment complex — a courtyard lot four blocks across with frontages
-around the outside — is built as `_place_apartment_complexes`, and the non-adjacency rule covers
-courtyards as well as open calm at generation. The multi-block count was re-derived for the
-121-block city: `MIN_CALM_ZONES` 1 and `MAX_CALM_ZONES` 2, with the remainder single-block on
-purpose so that *which* calm area to head for stays a real question. The record is in
-`DECISIONS.md` under "The queue reprioritised". What is left is one measurement, one later tweak
-and one re-check.
-
-- [ ] **The non-adjacency rule does not cover parks yet.** *(2026-09-09: "non -adjacency rule
-      doesn't cover parks yet -- that's something we might want to tweak later.")* Later, by the
-      player's own word. What the code says, for whoever picks it up: `_has_calm_neighbour` asks the
-      one-block ring around a footprint for every purpose in `_CALM_PURPOSES` — park, forest, quiet
-      square and courtyard — and both zone placement and single-block calm placement refuse a
-      footprint that has one. So the case the player has seen is not the ring test failing on its
-      own terms, and the first task is a seed showing two parks side by side, to say whether a zone
-      absorbing its inner streets, the border forest, or something after generation is what puts
-      them there
-
-- [ ] **Spoiling a returned-to calm area is not consistently effective.** *(2026-09-03, playtest 20:
-      "the spoilage of a clam area is not always effective I went to the same park 4 times and only
-      the last time had a high enough density of events to actually prevent me from using it. the
-      previous time I could just walk at the edge of it. and the time before that didn't have any
-      spoilage at all even though it was the second visit.")* `docs/playtests/PLAYTEST-02.md` records the
-      intended shape — *"the scheduler biases a spoiling event toward a calm area the player settled
-      in on day N−1"* — a bias toward, not a guaranteed minimum, which is consistent with a roll
-      landing low enough some days to leave a walkable edge and high enough on others to deny the
-      area outright. The run attached to playtest 20 does not carry the exact four-visit sequence
-      the player describes — its own biased parks (`(1,1)` and `(4,8)`) were dense on every biased
-      day the log shows. **The zero-density visit does not reproduce on the current tree**, measured
-      2026-09-11 with `tests/probes/m97_spoilage.gd` over every calm block on eight seeds — the
-      record, with the distribution, is in `DECISIONS.md` under M97. What the probe found instead
-      is a rare tail: a biased visit whose weighted roll draws one low-reach row for a large lot and
-      leaves most of it walkable, and a bias that is mostly backstopped by the day's ordinary fill
-      landing in the used park rather than by the spoil roll itself. So this waits for a played
-      recurrence: if a second visit to the same park reads unspoiled again, the probe is the
-      instrument and the low-reach-row draw is the suspect, and the fix is a floor on the spoil
-      roll's reach for a lot that size, not a density change
-**The main road is not made a soft block.** *Asked for on 2026-09-01 as a toll on crossing the
-spine · overturned on 2026-09-09: "M47's toll already exists — it's timing the traffic lights. we
-don't need to penalize routing through it just yet — it naturally happens that only some routes
-cross it."* Waiting for a green is the crossing's price, and the route tree already puts only some
-of a day's routes across the spine; nothing prices the crossing on top of that. The record is in
-`DECISIONS.md` under "The queue reprioritised".
-
-- [ ] **Re-check `MIN_CALM_BLOCKS` (5 to 7) and `MIN_HOME_TO_PARK_TILES` at the end, not the
-      start** — now that the region walls stand from day 7, since a region that holds no calm
-      area gets no door and the count of places to go is what the wall divides
+- [ ] **Open question: directional guards.** `guard_{standing,lunging}_{views}` — eight-view art —
+      are authored and bound to nothing; the masked pursuer and the heated roadblock guard chase
+      her while drawn as a single side picture. Either they get heading-selected views like the
+      robber, read through the shared `_draw_eight_view()` helper every other moving family uses,
+      or the files go to the rejected-graphics archive as unbound art with no owner. Nothing is
+      decided.
 
 ---
 
@@ -1008,10 +818,14 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **`--spawn contact` asks for the contact before one exists.** On a dev-flagged boot
-      `DevRig.spawn_position()` runs before `ResistanceDirector.start_day()` has placed the
-      day's contact, so the flag cannot put a rig beside a chalk mark and no capture of one is
-      cheap. Found in M177; the order of the two calls in `main`'s first-day boot is the fix.
+- [ ] **Two more rigs trigger the physics-mode camera warning.** Godot prints it once per
+      process, so the balance rig's copy hid these: `_chat_stroller` in `tests/test_events.gd` and
+      `_build_pickup` in `tests/test_resistance.gd` add a `Camera2D` without setting
+      `process_callback` to `CAMERA2D_PROCESS_PHYSICS`, as `stroller.tscn`'s camera and the balance
+      rig now do.
+- [ ] **The finale planner may ask "is this the main road" by hand.** `src/finale/finale_planner.gd`
+      compares `map.main_road == lot.position.x`, a block index rather than a corridor index; check
+      whether it means the main road and, if so, route it through `CityMap.is_main_road()`.
 - [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
       own body takes her in, and nobody on screen is the one doing it — the guards stand at the
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
@@ -1028,43 +842,6 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
-- [ ] **The balance rig's camera is overridden to physics process mode, with a warning.**
-      `tests/test_balance.gd`'s `_build_rig` adds a `Camera2D` that Godot moves to physics
-      process mode because physics interpolation is on, and says so on every run. The
-      **godot** rule leaves no warning standing: set the process mode the engine wants, or
-      turn interpolation off on the rig's camera, whichever the real camera does.
-- [ ] **`Crowd.step()` and `Crowd._physics_process()` duplicate four lines in two orders.**
-      `src/crowd/crowd.gd:230-237` (`step`) and `:625-638` (`_physics_process`) both open with
-      `_signals.advance` → `_pockets.refresh` → `space_out_the_traffic` →
-      `_hold_walkers_at_doors`, but `step()` interleaves `agent._process` (all) in between with no
-      shared helper. The crowd-traffic skill already names the incident this caused once — a rig
-      that walked the agents without this prologue ran a crowd in which nobody is ever held at a
-      checkpoint, and nothing about that looked like a missing call — and the structure that
-      allowed it is unchanged, so the next line added to `_physics_process`'s pre-player section
-      is silently absent from every rig-driven suite. Fix: extract the four shared lines into
-      `_advance_the_world(delta)` and have both call it, so the only difference between them is
-      the agent stepping and the player half.
-- [ ] **Seven hand-written spellings of "is this the main road."**
-      `src/city/traffic_signals.gd:52`, `src/crowd/crowd_lanes.gd:164`,
-      `src/crowd/crowd_agent.gd:461`, `:1560`, `:2387`, `:2404` and
-      `src/routes/seal_planner.gd:373-374` all independently re-encode "the spine is the vertical
-      corridor," and `src/city/city.gd:244` asks the same question through
-      `map.street_kind_at(...) == GameEnums.StreetKind.MAIN` — a different mechanism entirely. The
-      city skill's own rule is *"Which corridor is the main road is a fact about a city, so read
-      it off the map"* — every site does, so today they agree, but if `main_road` ever becomes a
-      per-axis pair, or the spine becomes horizontal on some seeds, six of the seven sites keep
-      answering for the vertical axis with no error anywhere. Fix: `CityMap.is_main_road(vertical:
-      bool, corridor: int) -> bool`, and route every site through it.
-- [ ] **A hung test shard waits out the whole CI job with no message.** `tools/test.sh:212-230`'s
-      "A shard that printed no count did not finish... it crashed **or hung**" branch sits after
-      `wait`, so it can only ever be reached for a crash — a hung shard blocks `wait` forever and
-      the comment claims a case the code cannot reach. Fix: a `timeout` around `run_one_process`
-      would make the comment true.
-- [ ] **`EventManager` reaches into another class's private member.**
-      `src/events/event_manager.gd:321`: `plan.noticed_at = plan.live._noticed_at`.
-      `EventInstance.resume(age, travelled, noticed_at)` is the public channel in the other
-      direction; there is no getter for this one. Fix: a small public getter on `EventInstance`
-      for `_noticed_at`
 
 **Drawings, as SVG:**
 
@@ -1111,6 +888,20 @@ re-pitched:
       she adds something to the existing mark to indicate she has seen it.
       `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
       remains here
+- [ ] **Open question: the chalk is drawn in code, not from an asset.**
+      `ContactPoint._draw_chalk()` (in `src/resistance/`, M188's) paints the mark itself with
+      `draw_arc`/`draw_line`, while `props/chalk_mark.svg` and `chalk_mark_touched.svg` sit
+      unbound — which breaks "a picture is an asset, never code". Either `ContactPoint` is rebound
+      to draw the SVG sources, which would fold the touch item above into the same picture swap,
+      or the two SVGs are rejected as superseded by the code-drawn mark. Nothing is decided
+- [ ] **Open question: the mouse's views.** The integration table above asks to "bind the mouse
+      family with the alley event"; `EventCatalogue._alley_mouse()`'s own docstring records that
+      the mouse takes no heading-selected picture at all — it draws with `_draw_simple()`,
+      mirrored east/west like `busker` or `delivery_van`, since it is small, already still, and
+      keeps no second posture even for its own telegraph. Either the table row is reworded to
+      match — binding the mouse's one side picture to `_draw_simple()` as authored — or
+      `_alley_mouse()` is changed to read a heading through `_draw_eight_view()` like the moving
+      families. Nothing is decided
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a
@@ -1250,114 +1041,3 @@ asked and each answered by the player on 2026-09-09:**
 **And what the finale is not.** No fighting, no button — the tone rules stand: the danger is
 noise, the men are the same masked men as act III's abductions, and the baby is never threatened by
 anything but being woken.
-
----
-
-## M79 — The city seen at an angle · tabled 2026-09-06
-
-**Tabled, and the reason is sequencing rather than doubt.** *(2026-09-06: "let's write down the
-findings about the diagonal grid but table it for now".)* Nothing here is rejected; it is written
-down so the graphics overhaul can decide the projection with the code's constraints in front of it
-rather than after committing to art. **What would make it worth picking up**: the overhaul reaching
-the point where it chooses a projection, and somebody confirming the existing rotated presentation
-on a real phone — not a complaint about how the city looks today.
-
-The reference the player gave is `docs/evidence/reference-isometric-street-2026-09-06.jpeg`: a 2:1
-isometric street with buildings as tall volumes, pedestrians, cars and a pram. **Its HUD is not part
-of this.** *(2026-09-06: "ignore the hud in the image".)* That picture's bottom bar carries verbs —
-Feed, Soothe, Order Pizza — and this game has one verb, which is where you walk.
-
-**The instruction is a presentation change and nothing else.** *(2026-09-06: "the logical layout
-would stay the same only the presentation would rotate".)*
-
-- [ ] **Only the world-to-screen transform changes; the lattice does not.** The tile grid stays
-      cardinal `Vector2i`, so the lattice, `RouteTree`, `ClosurePlanner`, `SealPlanner`, the crowd's
-      lanes and every test are untouched. **This is the whole reason a diagonal *lattice* is not
-      what is being asked for**, and it is worth stating why that alternative is closed: `CityMap`'s
-      layout is a modulo — its own comment, *"a coordinate's position within its period tells you
-      which it is"*, over a period of `BLOCK_SIZE + STREET_WIDTH` tiles — and a 45° street has no
-      period in tile coordinates. Every segment is horizontal or vertical down to the vocabulary
-      (`closure.segment.horizontal`, logged as `h(7,4)` and `v(8,6)`), the crowd is built on
-      `travelling_vertically()` and `make_lane_key(vertical, corridor, lane, direction)`, and
-      `TrafficLight.arm_is_vertical` even picks a different sprite. A diagonal lattice is a rewrite
-      of the city that buys nothing the route decision can feel — she still chooses between streets
-
-- [ ] **The buildings are already 2.5D, which is what makes this cheap.** `Building` is *"a 2.5D
-      extruded block, assembled from 32px facade and roof tiles"* — a front wall in elevation plus a
-      roof, from `wall.svg`, `wall_edge_w/e.svg`, `roof.svg` and `roof_edge_n.svg`, and each one is
-      its own `StaticBody2D` node in `City._spawn_buildings()`. So the facade vocabulary exists and
-      is not top-down art to re-author, and per-building translucency is `modulate` on one node
-      rather than a restructure
-
-- [ ] **What rotation destroys is a guarantee, and replacing it is the actual work.** `Building`'s
-      class doc: *"nothing can ever legitimately be **behind** a building, so nothing sorts against
-      one."* The layout guarantees there is no walkable ground behind a building's mass, so occlusion
-      never has to be solved and no real y-sorting is needed. **Rotate and that is gone** — a rotated
-      lot puts its own pavement behind its own wall. So this item is: replace a layout guarantee with
-      a runtime rule, and add the y-sorting nothing does today
-
-- [ ] **Buildings in front fade or vanish, and "when necessary" is wider than the player.**
-      *(2026-09-06: "buildings in front could become translucent or disappear when it becomes
-      necessary".)* The standard answer is *"when it hides the character"*, and that is too narrow
-      here: the route decision depends on seeing the things you route around. The must-see set is the
-      player, any event carrying a mark (`EventInstance.wants_a_mark()`), anything `DangerEdge` would
-      badge if it were off screen — an occluded thing is that same question in a new form — and the
-      home arrow's target during the return. Cost is a per-frame test of a few dozen buildings
-      against a handful of points, the same order as the event scan `CLAUDE.md` already calls free.
-
-      Two calls inside it: **fade or vanish** — fade keeps a street legible as a street, vanishing is
-      unambiguous but flickers at the threshold — and **whether a fading building is itself a cue**.
-      If you learn *something is there* because a wall went translucent, the **cues** rules govern it
-      and it owes the same discipline as the rest of the danger vocabulary
-
-- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TouchControls._on_tap()` maps a
-      tap to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, and
-      `DangerEdge` and `HomeArrow` both go the other way every frame from the same transform. A real
-      transform keeps all three working; a fake one breaks every one of them. Two more that follow:
-      `main.gd`'s camera fit sets zoom from an axis-aligned bound and would be fitting a diamond, and
-      `city.gd` draws kerbs, centre lines and zebras as axis-aligned rects off `STREET_WIDTH`
-
-- [ ] **The gameplay cost is the keyboard, and it is the one real objection.** *(2026-09-06: "what
-      would be the implication on gameplay? if down the line tap becomes the default it's fine. but
-      keyboard controls become clunky in diagonal".)*
-
-      **The collision and the physics do not change at all** — the world stays cardinal and only the
-      camera turns, so pavements, lanes, bodies and every fairness contract are untouched. What
-      changes is that `Stroller` reads `Input.get_vector("move_left", "move_right", "move_up",
-      "move_down")`, a normalised vector **in world space**, so a key press stops pointing where she
-      visibly goes. There is no arrangement that avoids this, only a choice of which way it hurts:
-
-      - **Keys on world axes** (one key follows a street exactly, and on screen she sets off at 45°
-        to the key pressed). Correct for the game — a street is the thing you walk — and it is what
-        most isometric games do, but it is exactly the clunkiness named above.
-      - **Keys rotated to the screen** (up walks up the screen). Reads right for one second and then
-        walks her diagonally into buildings, since up-the-screen is a world diagonal and no street
-        goes that way. She would slide along walls constantly.
-
-      **And it inverts what two keys mean.** Today holding two gives a true diagonal along open
-      ground. Rotated, with keys on world axes, a single key follows a street and **two keys point
-      between buildings** — so the combination a player reaches for becomes the useless one.
-
-      **The pointer scheme has none of this.** `TouchControls._on_tap()` already maps a screen point
-      to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, so a
-      rotated camera is handled by the transform and costs the design nothing: a press already
-      means *go there*, in world space, whatever the camera's own angle.
-
-      **So the objection is the keyboard alone, now that there is one control scheme rather than a
-      choice between two** (M82 deleted the drag stick and the title screen's own question). A
-      fresh install has nothing to default to any more — every device gets the same pointer scheme,
-      and the keyboard sits beside it as arrows/WASD always have. **Settle whether the diagonal
-      clunkiness above is acceptable on a keyboard before this is scheduled**, because that is now
-      the whole of what standing in the way of a rotated presentation.
-
-- [ ] **Spike the transform alone on the existing square art before anybody draws anything** —
-      proving tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art,
-      because that is what de-risks the expensive half.
-
-      **The rotation it composes with is already one rotation**, which is what makes the spike
-      worth doing rather than doomed: `ScreenOrientation` carries a single transform applied to
-      every `CanvasLayer`, `main._process()` re-asks `wants_rotation()` every frame and reapplies
-      only on change, and `TouchControls` no longer turns itself. **What is not settled is a sign
-      error the world and the drawing could share**, which `tests/test_orientation.gd` says outright
-      it cannot catch — so the spike is looked at in a portrait window with `tools/shot.sh`'s
-      resolution argument, not judged from a passing suite

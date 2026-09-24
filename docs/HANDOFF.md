@@ -205,7 +205,7 @@ replacement on the page where one exists and the SVG's raster where none does;
 runtime selects a mode. The authoring sources live in `art/`, which the engine ignores.
 The existing drawing transforms and animation remain in charge.
 Read [VISUALS.md](VISUALS.md) for reference roles and where the pictures live, and
-M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
+M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
 Compare each character's directions, gait frames and state variants as one family; the
 illustrated-PNG skill describes the identity references and extraction checks that keep them aligned.
@@ -308,11 +308,13 @@ checks and worktrees can move independently of this file.
 
 - **The next work is the story's pacing, and it ends in a minor release**
   ([PLAYTEST-117](playtests/PLAYTEST-117.md): "that would be the next after this and warrants a
-  minor release"): M180, posters she notices, and loudspeakers that are somewhere; M183, the power station and the blackout, whose station is built and
+  minor release"): M183, the power station and the blackout, whose station is built and
   whose blackout and dark escape are open, its front door being day 14's task; and M181, the resistance has a reason, and a task is one day, whose slice one
   is built and whose slice two — days 10 and 11, the once-only happenings, the neighbor — is
-  open, with day 11's mast and day 14's door waiting on M180 and M183, and its late days timed
-  with M184, a rig that walks the route. All of them are decided in `TODO.md`
+  open, with day 14's door waiting on M183, and its late days timed
+  with M184, a rig that walks the route. M180, posters she notices, and loudspeakers that are
+  somewhere, is done, so day 11's mast waits on nothing further. All of them are decided in
+  `TODO.md`
   ([PLAYTEST-118](playtests/PLAYTEST-118.md), [PLAYTEST-119](playtests/PLAYTEST-119.md),
   [PLAYTEST-120](playtests/PLAYTEST-120.md), [PLAYTEST-121](playtests/PLAYTEST-121.md),
   [PLAYTEST-122](playtests/PLAYTEST-122.md)). M182, a
@@ -345,9 +347,11 @@ its measurement against the nerves left, and that waits for act III. The debug v
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow, a body or the day's routes is checked by
 eye, and every one of the three is derived from the object's own `GroundShape` — one apiece for
 everything but the car crash, which is solid in two pieces because its picture is two cars with
-gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M96 (the teaching day and
-the dog after it), M97 (calm areas that hold), M99 (the corridor's density after the sealing) and
-M100 (the small work, the polish and the open design questions, consolidated).
+gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M99 (the corridor's density
+after the sealing) and M100 (the small work, the polish and the open design questions,
+consolidated). M96 (the teaching day and the dog after it) and M97 (calm areas that hold) are
+both done (`DECISIONS.md`, M96, the day ends crying only after a push at the top; M97, calm areas
+that hold is closed).
 Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed

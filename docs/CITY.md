@@ -927,8 +927,9 @@ reason a beat answers by itself.
 branch she is walking and the engine parks across from it for the rest of the day: *"you're not
 supposed to go past it"*, *"when you see the fire the reaction should be to take a different route"*
 (PLAYTEST-119). Asking whether a line survives along that sidewalk would refuse every site the beat
-of the day is made of, so `EventScheduler._a_line_has_to_avoid` leaves a `sited_on_her_way` row out
-of the line rules altogether. **What replaces the guarantee is stated over the day rather than over
+of the day is made of, so `EventScheduler._a_line_has_to_avoid` leaves a `sited_on_her_way` one-shot
+out of the line rules altogether. (A poster crew is sited from her walk too, and is not exempt: it
+closes nothing.) **What replaces the guarantee is stated over the day rather than over
 the street**, and it is the stronger statement of the two: a site is accepted only where, from where
 she is standing and with **both fields taken as closed ground**, the home and a calm area she has not
 used are still reachable. So the street she is on can be shut, and the day always has another way
@@ -1899,6 +1900,22 @@ Top-down camera with a fake vertical extrusion:
   36px tall and rises four pixels into the row above, so every window on that row sits two
   pixels higher to keep its sill clear. The door's cell and a fire escape's are not blank wall:
   `Building.blank_ground_floor_cells()`, the cells a poster can go on, leaves them all out.
+- **Posters go on that blank wall and nowhere else, one row to a front** (`PosterWalls`). A cell
+  carries one only if the sidewalk tile in front of it is the north sidewalk of an east-west
+  street — the front is a lot's south face, the one face the city draws — so a lot facing an
+  alley or a park carries none, and neither does her home block or the power station. Nothing is
+  up before day 4, the first day poster crews appear. From then every dawn pastes a share of the
+  walls from the day's own `posters` stream, more of it on the streets the day's routes run along,
+  so some sheets are already up that first morning and each day's walls add to the last: sparse
+  in act II (the rules and the leader's portrait, the curfew sheet among them from day 6), whole
+  walls of the dark uniform sheet from day 8, and from day 12 the wanted notice and the portrait
+  nearly everywhere. A new sheet on an old one mostly covers it exactly; a quarter of the time the
+  older one shows beneath, offset enough to read as pasted over. What is on the walls is run state
+  (`GameState.posters`, a `PosterState`): it is saved, and a lost day gives it back like the rest
+  of what the attempt spent, so the retry's dawn pastes the same sheets again. A burnt front shows
+  none. Nothing takes a sheet down but her: pushing against the wall tears it (`docs/MECHANICS.md`,
+  "Tearing a poster down"), and a torn sheet stays torn until a crew or a dawn pastes that wall
+  again, when the whole wall is pasted, its torn sheets included.
 - **A building's upper-floor windows carry one of three styles, rolled once for the whole
   building**: the plain pair, a tall sash pair, or a shuttered pair that lights up like any other —
   ordinary street variety, unconnected to the day or the block's own condition. Going

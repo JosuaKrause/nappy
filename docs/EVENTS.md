@@ -764,12 +764,16 @@ outward. The measurement that established this is in `docs/DECISIONS.md` under M
 
 ### A set piece happens where she is going
 
+*(And so does a poster crew, which is not a set piece — see "The crews paste the walls she
+passes" below.)*
+
 An authored one-shot has to be **met**: one that fires on a street she never walks down is a
 fairness contract and a silhouette spent on nothing. There are two ways of guaranteeing that, and
 which one a row gets is `EventDef.sited_on_her_way`.
 
 **The fire is sited from the walk she is taking, on the path she is on.** `burning_building`, day
-3's one-shot and the only row carrying the flag, is budgeted at dawn with **no position at all**.
+3's one-shot and the only set piece carrying the flag, is budgeted at dawn with **no position at
+all**.
 Once she has been walking `EventDirector.ON_HER_WAY_AFTER` seconds and is `ON_HER_WAY_BEYOND_HOME`
 pixels clear of the doorstep — far enough in that a heading means something, and past the day's run
 lesson — `EventDirector.site_what_is_on_her_way()` puts it on a building face **on the branch of the
@@ -893,6 +897,37 @@ The three counts this splits apart are worth keeping straight, because two tests
 exempt from it in `tests/test_events.gd` and the real count is asserted in
 `tests/test_event_manager.gd`, where an instance exists. And a **retried day plans none** of a
 spent one-shot rather than one fewer, because the whole group goes with it.
+
+
+### The crews paste the walls she passes
+
+A poster crew placed anywhere in the city is a crew she never meets, and a wall she never sees
+changing. So `poster_crew` carries `EventDef.sited_on_her_way` and `EventDef.pastes_a_front`. **The
+day still rolls and places its crews at dawn** exactly as before, which is what keeps every other
+row the roll places where it was; `EventScheduler._hand_to_her_walk` then drops their positions,
+and `EventDirector.site_what_is_on_her_way()` sites them the way it sites the fire — on the branch
+of the day's route tree she is walking, beyond the streaming band and within
+`EventDirector.ON_HER_WAY_SIGHT` seconds of walking along the route, moved while unreal, fixed once
+real — with three differences. **One at a time**: the next crew waits while another is sited and
+not yet in the world, so the day's crews are spread along her walk rather than bunched in one band.
+**At a front**: its ground is the frontage lane in front of a blank ground-floor cell
+(`Pavement.AT_THE_FRONT`, narrowed to `PosterWalls.fronts()`), facing the wall, and the line rules
+still apply to it, since a crew closes nothing. **Not a set piece**: it is not spent as a one-shot
+and not lit at dusk if she never met it. Once in the world, `PosterWalls` has it paste the wall it
+stands at, a sheet every `PosterWalls.PASTE_EVERY` seconds while it is inside her view, with its
+brush raised on alternate frames (`poster_crew_back_b.svg`), and the wall keeps its sheets for the
+rest of the run. Its field and its cost are unchanged. `tools/test.sh
+probes/m180_crews_on_her_way.gd` walks the day's routes and prints how many crews were sited, met
+and how much they pasted.
+
+**A torn poster can send a patrol.** When the tear's marble says so (`docs/MECHANICS.md`, "Tearing
+a poster down"), `EventDirector.send_a_patrol()` sends a `police_patrol` at the run's heat the way
+the return leg's patrols come: `TOWARD_PLAYER` down the carriageway lane driving toward her, at
+least its `offscreen_notice` outside the view (`_toward_her_on_the_road()`), so its telegraph
+contract is the one that row already keeps. It is held apart from the day's owed queue — it takes
+no turn in it, rolls no interval and draws from no stream — so a day she tears a poster hands every
+other director-sited row what it would have had anyway. At most one is waiting at a time, it is
+sited only once she walks on along a street, and nothing is sent during the escape.
 
 ### Danger, and when it arrives
 
@@ -1063,7 +1098,7 @@ neighbourhood's own rather than a patrol's.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. |
-| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands — pasting posters at the wall it works on, on a north-south street with a real building on the far side. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. A sidewalk row only: a square has no frontage lane for a pinned body to stand in, and `poster_crew_square` below is the square's own crew. |
+| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. **Sited from her walk** (`sited_on_her_way`, `pastes_a_front`): rolled and placed at dawn like any recurring row, then handed to her walk and sited one crew at a time on the branch she is walking, in front of a blank ground-floor cell and facing it, where it pastes its wall while she can see it — see "The crews paste the walls she passes". At dawn it stands `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands, on a north-south street with a real building on the far side, and that placement is what spends the day's stream exactly as before. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. A sidewalk row only: a square has no frontage lane for a pinned body to stand in, and `poster_crew_square` below is the square's own crew. |
 | `poster_crew_square` | RECURRING | 4 | The same crew on a square, pasting onto a free-standing advertising column — every number is `poster_crew`'s, because it is the same event on the ground a row pinned against a building cannot stand on. It takes no pavement side, so `EventInstance` centres its 11px body on the tile it is given, and its picture carries the column beside the worker. The density is the sidewalk row's own, split rather than added: about one poster crew in a hundred used to land on a square, which is the square share of the ground the roll draws from, so this row carries a hundredth of that row's weight and is a rare sight by measurement. |
 | `loudspeaker` | SCRIPTED | 5 | **A mast on a street, with a field.** Six of them (`Tuning.MAST_COUNT`), sited once by `MastSites.compute()` — junction corners, commercial squares, the main road, each snapped to her own sidewalk or a square's paving — and placed fresh every day from `Tuning.MAST_FIRST_DAY` by `EventScheduler._place_masts()`, bypassing the ordinary roll: `scripted_day` stays 0, the seal pictures' own sentinel. `MastSites` also refuses a site near where a region door could ever stand (`Tuning.CHECKPOINT_EVENT_GAP` of any boundary segment's own door position — the boundary is fixed at generation, so the refusal costs no day-to-day variety); a site is skipped for the day rather than planted over them for the narrower case a day's own closures, region wall or checkpoints still catch — an alley door among them, or held ground — rare, since a closure is one street's own width against the whole city. Same field shape as `homeless_yeller` (inner 45px, outer 210px), so walking past a speaking mast on its own sidewalk costs what walking past him does — [COSTS.md](COSTS.md): both 40.0 to walk straight through. `pulse_period` 22s, `telegraph_time` 3s, repeating: `EventInstance._mast_is_telegraphing_now()` reads the mast's own `age`, which is `EventManager._broadcast_clock` rather than a clock of its own, so every mast telegraphs and speaks in the same phase. Solid at `EventCatalogue.MAST_BODY` (6px), a pole rather than a body to edge past. |
 | `curfew_announce` | SCRIPTED | 6 | What the masts carry on `Tuning.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast — placed by `_place_masts()` at every mast site alongside that day's `loudspeaker` plan, `Look.NONE` so the mast's own picture (the pole, the lamp, the arcs) is what is seen. Same field shape as the ordinary broadcast, stronger (intensity 30 against 20), brief and fading (`intensity_ramp` 0.2, `duration` 26s). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |

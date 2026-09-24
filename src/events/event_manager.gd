@@ -134,6 +134,18 @@ func _owe_the_return() -> void:
 		return
 	_director.owe_the_return(_day, GameState.resistance_progress)
 
+## A torn poster drew the pursuit marble: sends a `police_patrol` toward her from off screen, at the
+## run's own heat. See `EventDirector.send_a_patrol()` for how and when it is sited, and
+## `PosterWalls` for the bag it was drawn from. Nothing is sent during the escape.
+func send_a_patrol() -> void:
+	if _walking_the_finale:
+		return
+	_director.send_a_patrol(GameState.resistance_progress)
+
+## Whether a torn poster's patrol is on its way and not yet sited. For the tests.
+func has_a_sent_patrol() -> bool:
+	return _director.has_a_sent_patrol()
+
 ## Clears yesterday and plans today. `consumed_one_shots` is appended to in place.
 ##
 ## `focus` is where the player will be standing when the day starts, so the events already
@@ -261,6 +273,9 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 			if not _siting:
 				_siting = EventScheduler.WalkSiting.new(day, _map, tree,
 						GameState.settled_this_act(), doors)
+				# Where a crew may paste: only the city's buildings know their blank walls.
+				if _city and _city.poster_walls():
+					_siting.fronts = _city.poster_walls().fronts()
 			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
 			_siting.prepare(plan.def, _everything_but(plan))
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting)
@@ -339,7 +354,8 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# it becomes something that happened — see `EventScheduler._place_one_shots`. The list is the
 	# one `start_day` was handed, which in a played game is `GameState.consumed_one_shots` and in a
 	# rig is the rig's own.
-	if first_time and plan.def.sited_on_her_way and not plan.def.id in _consumed:
+	if first_time and plan.def.sited_on_her_way and plan.def.kind == GameEnums.EventKind.ONE_SHOT \
+			and not plan.def.id in _consumed:
 		_consumed.append(plan.def.id)
 	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
 	# is a harmless no-op assignment rather than a special case here.
@@ -400,7 +416,7 @@ func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.age = plan.live.age
 	plan.travelled = plan.live.path_travelled()
-	plan.noticed_at = plan.live._noticed_at
+	plan.noticed_at = plan.live.noticed_at()
 	_map.release_obstruction(plan.live.get_instance_id())
 	_instances.erase(plan.live)
 	plan.live.queue_free()
@@ -999,7 +1015,9 @@ func light_what_she_never_met(at: Vector2) -> bool:
 	if not _siting:
 		return false
 	for plan in _plans:
-		if not plan.def.sited_on_her_way or plan.was_live or plan.spent:
+		# The fire is the set piece a run owes; a crew she never met simply was not met.
+		if not plan.def.sited_on_her_way or plan.def.kind != GameEnums.EventKind.ONE_SHOT \
+				or plan.was_live or plan.spent:
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
 		var rng := GameState.day_rng(_day, "dusk-fire")

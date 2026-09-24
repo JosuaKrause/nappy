@@ -105,6 +105,10 @@ explain the three versions; marker removal is not reconciliation.
 `tools/resolve-decisions-top.sh` mechanically resolves `docs/DECISIONS.md`'s one recurring shape —
 both sides inserting a new `## …` section directly under `# Decisions`, from an empty base — and
 refuses anything else; running it does not exempt that merge from the semantic review below.
+`tools/update-pr.sh <pr-number | branch>` runs the whole mechanical sequence for an ordinary PR
+update — fetch, merge, that one `docs/DECISIONS.md` shape, `git diff --check`/`lint.sh`/`check.sh`,
+commit, push — and refuses, naming the files, the moment a conflict is anything else; it never
+substitutes for the semantic review below, which stays the reviewer's on every merge it produces.
 
 ## Check semantic alignment for every merge
 
