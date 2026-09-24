@@ -692,11 +692,11 @@ is still true.
 
 **Drawings, as SVG:**
 
-- [ ] **The basement vent's pipe vanishes between blows.** `steam.svg` draws the pipe and the
-      cloud as one picture, and `InteriorEvents` keeps no instance between blows, so the pipe is
-      only on screen while it steams; a vent that is there all the time, blowing or not, is what
-      a player can plan around. Found while animating the steam (`DECISIONS.md`, M100, water,
-      smoke and steam move)
+- [ ] **The basement's floor decals are drawn over her feet.** The puddle, debris and rat decals
+      sit in the building's depth-sorted layer (`InteriorScene._rebuild_overlays()`), so each is
+      drawn over her feet while she stands on its northern half; the vent's grate lies at the floor
+      tiles' own layer for exactly this reason (`DECISIONS.md`, M100, the basement vent is a floor
+      grate)
 
 **Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
 the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses
