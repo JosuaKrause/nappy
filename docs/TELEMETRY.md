@@ -203,7 +203,10 @@ grid, which is not the city's.
 **The section restart is two lines**: a `lost` line naming the result, the section, how far into
 its clock, the reason, the meter breakdown and what was nearest — the same line a lost day writes,
 with the section in it — and then a `start` line saying `restarted`, stamped `0.0` because the
-retry has a fresh clock. Getting out is a `home` line, `escaped by the tunnel, 42.1s to spare`,
+retry has a fresh clock. The automatic-snapshot schedule (`Telemetry.SHOTS_PER_DAY`, `SHOT_SPACING`
+— see "Snapshots" below) restarts with that clock, the same clean slate a day's own retry gets from
+`begin_day()`, so a retried section is not left with its whole allowance already spent by the
+attempt that was lost. Getting out is a `home` line, `escaped by the tunnel, 42.1s to spare`,
 written before the run's own `ending` line.
 
 **What a day writes and the escape does not, and why:**
@@ -315,7 +318,7 @@ name the question it answers, or it is a metric and does not belong.
 | `checkpoint` | `EventManager` | A region door's toll paid — where she was held, how long, and which side she came out on. Written on release rather than on capture, since "released on the north side" is the fact a reader wants and the teleport is what makes it true |
 | `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial, and did an unseen pickup mark have to move to stay findable — where it was, and where it went |
 | `start` | observer | Where the day began — or, in the escape, which section she entered and where, and whether it was a retry after a loss |
-| `route` | `RouteRig` | **Under `--route` only: whether the rig's own day fits its clock.** A target reached — elapsed day time and distance walked — a re-plan when the way ahead closed, a target given up on as unavailable, unreachable or physically stuck, and the day ending before a target was reached |
+| `route` | `RouteRig` | **Under `--route` only: whether the rig's own day fits its clock.** A target reached — elapsed day time and distance walked, and for a mark or a task the moment the director records it done — a re-plan when the way ahead closed or a mark moved, a target given up on as unavailable, unreachable or physically stuck (an unreachable one met mid-leg names the tile she stood on; a stuck one names that tile and what held her: an event row, a wall's tile type, a closure, a hold, or nothing solid, which is the crowd), and the day ending before a target was reached — under `--invincible`, which stands the day's clock still, that is the rig's own clock passing the day's length |
 | `spawn` | `DevRig` | **`--spawn event:<id>` refusing a row the day's plan never holds a position for** — one sited from her walk instead (`cat_dash`, `cyclist`, `loose_dog`, a taught-day `charging_dog`, day 3's `burning_building`) — with the row's id and why, alongside the same refusal on `stderr` |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? |
 | `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |

@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_every_perform_steps_header_names_the_instruction_not_the_title(t)
 	_test_a_completed_step_puts_no_text_on_screen(t)
 	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
+	_test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t)
 
 func _hud(t) -> CanvasLayer:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
@@ -321,6 +322,42 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> v
 	hud.free()
 	stroller.free()
 
+## *"The readout said 'awake' while the baby was drawn asleep,"* found once under
+## `--start-escape stairwell:right --invincible`. `main._ready_escape()` builds this HUD before the
+## building or the city — and so before the `Baby` it goes looking for even exists — so `_ready()`'s
+## one-time `get_first_node_in_group("baby")` came back empty and `hud._baby` stayed unset for the
+## whole section, leaving `hud.tscn`'s own placeholder text, "awake", on screen no matter what she
+## actually was. `_refresh_state()` now re-asks the group whenever it has no `_baby` yet, so the
+## first frame the escape's `Baby` exists is the first frame the readout can see it too — the same
+## `Baby.state` the pram's own picture (`Stroller._draw_baby_cue()`) already reads.
+func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t) -> void:
+	var hud := _hud(t)
+	t.check(hud._baby == null, "the HUD was built before any Baby exists, the escape's own order")
+	hud._refresh_state()
+	t.check(hud._state_label.text == "awake",
+			"with no Baby to read, the label is stuck on the scene's own placeholder — the defect itself")
+
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+	baby.state = GameEnums.BabyState.ASLEEP
+
+	hud._refresh_state()
+	t.check(hud._baby == baby, "the readout picks up the baby the frame it appears")
+	t.check(hud._state_label.text.begins_with("asleep"),
+			"and reads the same state the pram is drawn from, not the scene's own placeholder (got '%s')"
+			% hud._state_label.text)
+
+	hud.free()
+	stroller.free()
+
 ## Playtest 19 finding 5, verbatim: *"the first chalk mark is written in the status when it
 ## should not be"* — seen as `resistance ....   somewhere out there: a chalk mark` before
 ## anything had been found. `CLAUDE.md`'s own rule is that the first encounter comes with no
@@ -372,11 +409,9 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
 
-## The wording rule holds for every built task, not only the first: every available perform step
+## The wording rule holds for every task, not only the first: every perform step
 ## names `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which
-## stays unused by the header and is reserved for the progress dots. A day whose task is not yet
-## built (`not step.available`) has no header to check — it also has no mark, so nothing ever
-## activates it.
+## stays unused by the header and is reserved for the progress dots.
 func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> void:
 	var saved_completed := GameState.completed_resistance_steps.duplicate()
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
@@ -385,7 +420,7 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 	var hud := _hud(t)
 	hud._debug = false
 	for step in ResistanceSteps.all():
-		if step.is_pickup or step.needs_goal or not step.available:
+		if step.is_pickup or step.needs_goal:
 			continue
 		t.check(step.header != "", "perform step %d has its own header phrase" % step.index)
 		# Non-empty so the HUD's own "already touched a mark" gate is open.

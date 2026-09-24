@@ -270,6 +270,25 @@ func set_clock(seconds: float) -> void:
 	if _day_open:
 		_clock = seconds
 
+## The section's clock, put back to zero for a fresh walk — a retried section, or the second
+## section beginning after the first — with the automatic-snapshot schedule reset alongside it.
+##
+## **`set_clock(0.0)` alone is not this.** A day's own retry reopens the whole section through
+## `begin_day()`, which resets `_shots_today` and `_last_shot` as well as `_clock`; a finale
+## section has no second `begin_finale()` to call, so `TelemetryObserver.start_section()` used to
+## push the clock back with `set_clock()` and leave `_last_shot` sitting wherever the previous
+## attempt's last automatic shot fell. `snapshot()`'s spacing gate
+## (`_clock - _last_shot < SHOT_SPACING`) then stayed true — the new clock read as still inside the
+## old attempt's three-second window — until the retried walk's own clock climbed back past
+## whatever the old one had reached, holding every automatic snapshot back for exactly that long.
+## This gives a section restart the same clean slate `begin_day()` gives a day's.
+func restart_section_clock() -> void:
+	if not _day_open:
+		return
+	_clock = 0.0
+	_shots_today = 0
+	_last_shot = -INF
+
 func clock() -> float:
 	return _clock
 

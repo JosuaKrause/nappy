@@ -299,11 +299,11 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 - [ ] **Every other perform step gets its own visible answer**
       (`EventInstance.leave_for_a_completed_task()` is there for the ones that leave), decided with M181, the
-      resistance has a reason, and a task is one day, whose list of tasks is settled: the
-      van's drop, the burnt shell, the named door, the neighbor warned before the raid, the
-      loudspeaker mast, the swing and the roadblock; the power station's answer is the blackout
-      (M183, the power station and the blackout). Each is something that happens
-      where she is looking, and none is text.
+      resistance has a reason, and a task is one day. Those still without one: the van's drop,
+      the burnt shell, the named door, the roadblock's band, and the power station's door, whose
+      blackout comes only once she is 512px away. The warned neighbor runs, the silenced mast goes
+      dark and the swing's park is taken (`DECISIONS.md`, M181, slice two). Each answer is
+      something that happens where she is looking, and none is text.
 
 ---
 
@@ -328,40 +328,7 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M184 — A rig walks the route · asked for 2026-09-23
-
-> "we should have a test-rig mode where she just follows the edges of a path that way we can test
-> paths properly and do those timing checks without having to guess the right inputs"
-
-[PLAYTEST-122](playtests/PLAYTEST-122.md). The rig is built (`DECISIONS.md`, M184, a rig walks
-the route): `--route mark,task,calm,home` walks her along a real path's edges, at walking pace,
-through the ordinary game, and `tests/probes/m184_route_timing.gd` times days 6 to 13 with it.
-What is open is where it still gets stuck, which is what keeps M181's late days from being fully
-timed; the legs that found no path at all are fixed (`DECISIONS.md`, M188, a resistance target can
-always be reached).
-
-- [ ] **The rig gets through chokepoints.** In 14 of the 24 measured runs a leg ends "stuck
-      fast", wedged more often than its budget of three stuck episodes a leg. Waiting three
-      seconds before forcing a way out gets none of them through (`DECISIONS.md`, M184, the rig
-      waits before it forces), and day 10's calm leg on seed 90210, reached in 30.5 seconds
-      before, now sticks too, unexplained. What the first look found, on day 6's mark on seed
-      1234567, built and then taken out again: she stalls flush against a van's body, because
-      `CityMap.obstructed_tiles` marks only the tile a body's centre falls in (right for the
-      crowd, which keeps to a lane) and a van overhangs the next tile's centre by about 6px, so
-      the plan itself walks her into it. A keep-clear margin from `EventDef.solid_reach()`, the
-      way the rig already keeps clear of a hazard's `lethal_reach()`, moved the stall a few tiles
-      on; trying the unstick directions in the order that points away from the body, rather
-      than always starting up, cleared each maneuver first time; but the recovery re-plan rings
-      her own position rather than the body that caught her, so she went straight back to the
-      same pinch. The narrowest gap there measured about 2px short of her body plus the van's
-      reach: whether a player hugging the far edge gets through, or the van is sited without
-      leaving a walkable width, is to be checked before calling it the rig's fault. Whether the
-      stalls on day 8's home leg on seed 1234567 and day 12's on 4242 are the crowd rather than a
-      body is not yet checked.
-
----
-
-## M181 — The resistance has a reason, and a task is one day · slice one built 2026-09-23
+## M181 — The resistance has a reason, and a task is one day · slices one and two built 2026-09-24
 
 > "when doing the mark it doesn't really feel that we would need to resist against anything
 > since nothing really has visibly deterioated yet" · "we could do 1) chalk 2) it immediately
@@ -370,16 +337,11 @@ always be reached).
 > specific location" · "we should also start with doors later since tasks should come first" ·
 > "9-11 need some extra memorable content in addition to the tasks"
 
-[PLAYTEST-117](playtests/PLAYTEST-117.md) to [PLAYTEST-122](playtests/PLAYTEST-122.md). **Slice
-one is built** (`DECISIONS.md`, M181, slice one, which also holds every decision the entry
-carried): a task is one day, announced at its mark and done that day; the first mark on day 6;
-six of the eight tasks (days 6, 7, 8, 9, 12 and 13) with the red arrow for the one-place ones;
-the goal of five; the doors from day 9; the day brief's own line for each day; and the story
-in `docs/NARRATIVE.md`, "What the tasks are for". **What is open is slice two**, below, and the
-one task that still waits on another milestone: **day 14's front door on M183**, the power
-station and the blackout; until then day 14 keeps the last night's district contact. Day 11's
-mast waits on nothing further — M180, posters she notices, and loudspeakers that are somewhere,
-is done and the masts already expose what the task needs.
+[PLAYTEST-117](playtests/PLAYTEST-117.md) to [PLAYTEST-122](playtests/PLAYTEST-122.md). **Every
+task and every once-only happening is built** (`DECISIONS.md`, M181, slice one, and M181, slice
+two, which hold every decision the entry carried and the choices open to overturn). What is open
+is below: the timing the player asked for before anything is cut, and the one trace a happening
+leaves that has no picture yet.
 
 **The calendar, decided by the player:**
 
@@ -389,56 +351,31 @@ is done and the masts already expose what the task needs.
 | 7 | The package at a van's drop · arrow · built | |
 | 8 | Leave something at the burnt shell · arrow · built | |
 | 9 | Cross a named door · arrow · built | The doors arrive · built |
-| 10 | Warn the neighbor, out in the city, before the raid · arrow, deadline | The raid on her own street, at her own building. |
-| 11 | Silence a loudspeaker mast · arrow | The market is gone. |
-| 12 | The swing in one park · arrow · built | That park is taken once she has reached the swing. |
-| 13 | Walk into a roadblock's band — any of them · built | A column on the main road. |
-| 14 | The power station's front door · arrow | The blackout. |
+| 10 | Warn the neighbor, out in the city, before the raid · arrow, deadline · built | The raid on her own street, at her own building · built |
+| 11 | Silence a loudspeaker mast · arrow · built | The market is gone · built |
+| 12 | The swing in one park · arrow · built | That park is taken once she has reached the swing · built |
+| 13 | Walk into a roadblock's band — any of them · built | A column on the main road · built |
+| 14 | The power station's front door · arrow · built | The blackout · built |
 
-- [ ] **Day 10: warn the neighbor before the raid.** The neighbor lives in her own building;
-      the red arrow points at them out in the city, and the deadline is the neighbor walking home
-      into the vans (*the orchestrator's reading · taken by the player on 2026-09-21*,
-      [PLAYTEST-121](playtests/PLAYTEST-121.md)). Warned, the neighbor runs; not warned, they are
-      taken, and theirs would be the face crossed out on day 12's wanted notice — the slot and the
-      crossed copy are drawn (`DECISIONS.md`, M180, the poster art), but this day is not built, so
-      every wanted notice shows the neighbor's plain face until it is. **The raid is vans
-      in the street at her building with a patrol, and the doorstep stays reachable**
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md): "we will have to see how that one feels", so it
-      goes to `REVIEW.md` once built). The neighbor's door is sealed the next morning either way.
-- [ ] **Day 11: silence a mast**, which stays quiet for the rest of the run: she reaches its
-      foot, as a mark is touched, and its field makes the approach cost while it broadcasts
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)). The masts already expose each mast's stable id
-      and foot (`DECISIONS.md`, M180, the loudspeaker masts), so this task waits on nothing else.
-- [ ] **The once-only happenings of days 10 to 13**, each leaving something permanent and each
-      sited from where she is walking as the fire is (`DECISIONS.md`, M179), except the raid,
-      which is at her own building and is what she comes home to: the raid, whose door is
-      boarded the next morning; the market is gone; the park taken once she has reached the
-      swing; and a column on the main road. **The convoys start on day 13** with the column:
-      `military_convoy`'s `first_day` moves from 12 ([PLAYTEST-122](playtests/PLAYTEST-122.md)).
-- [ ] **Day 12's park is forced open whatever its state**, as decided
-      ([PLAYTEST-119](playtests/PLAYTEST-119.md)). Slice one sends her to a park that is already
-      open, since forcing one needs `ClosurePlanner` and the scheduler's arcs, which were outside
-      its fence; that is a narrower guarantee than the decision, not an overturn of it. **And
-      the day guarantees a second open park she can reach from the swing**, checked when the day
-      is planned ([PLAYTEST-122](playtests/PLAYTEST-122.md)).
-- [ ] **The neighbor is seen from day 1**: on days 1 to 9, a figure in work clothes leaves her
-      building each morning as she does and walks off, and nothing points at them; from day 11
-      they are gone. The same figure is who day 10's arrow finds and day 12's wanted notice draws
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)).
-- [ ] **Two marks are reworded** ([PLAYTEST-122](playtests/PLAYTEST-122.md)). Day 8: "Something
-      was left in the stroller in the night. Take it to the burnt building." Day 13: "Walk up to
-      the roadblock. See how close they let you come."
-- [ ] **Day 14's task is the station's front door, by the red arrow**, and the blackout follows
-      (M183). Waits on M183's first slice, which gives the door a point other code can ask for.
+- [ ] **The neighbor's door is sealed, on screen.** "The neighbor's door is sealed the next
+      morning either way" is built as the day 11 brief's line and the morning figure gone, with
+      no picture of a sealed door; where she would see it — her building's street door, or a
+      door inside — is not yet decided.
+
 - [ ] **The late days are timed** — the mark, the task, the happening and the walk home, day
       12's swing-then-second-park first — with M184, a rig that walks the route, before anything
-      is cut ([PLAYTEST-122](playtests/PLAYTEST-122.md)). The figures go here, into slice two's
-      brief. **Measured so far** (`--route mark,task,calm,home --invincible`, days 6 to 13 on seeds
+      is cut ([PLAYTEST-122](playtests/PLAYTEST-122.md)); the figures go here. **Measured so far** (`--route mark,task,calm,home --invincible`, days 6 to 13 on seeds
       4242, 90210 and 1234567; the table is in `DECISIONS.md`, M184): every day she walked home
       from had at least 22 seconds left, most 50 to 120; on day 12 the second open park was
       reached a tenth of a second after the swing on the one seed whose swing the rig reached;
-      days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
-      rig gave up a leg in half the runs (M184), so the late days are not fully measured yet. **Each late day's happening arrives differently** — waiting at home, found gone,
+      days 10 and 11 have their tasks now and are not yet timed, and the rig reported "task
+      unavailable" for a bare-point task and stuck on day 11's mark on seed 4242 when slice two
+      was built. The rig now gets through every chokepoint (`DECISIONS.md`, M184, the rig gets through
+      chokepoints): 23 of the 24 runs walk the whole route. **Day 9 on seed 90210 does not fit**:
+      the mark at 27.7 s, the task at 91.5 s (3537px off, through four doors), the calm area at
+      99.6 s, and the day's 144 s run out on the walk home. Open: whether that task sits too far
+      on that seed, or the rig should take a calm area on the way home rather than the one
+      nearest the task. **Each late day's happening arrives differently** — waiting at home, found gone,
       closing in front of her, coming on her way — and slice two keeps that variety.
 
 ---
@@ -697,26 +634,61 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
-      own body takes her in, and nobody on screen is the one doing it — the guards stand at the
-      huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
-      stepping to the arm, or the boom stops being a detaining body and the huts alone are the
-      toll, with the boom's picture still barring the lanes for the cars. The player's call
+- [ ] **Day 8's mark line runs off the screen at 1280×720.** The player's own wording, 79
+      characters ("Something was left in the stroller in the night. Take it to the burnt
+      building."), is wider than the HUD's teaching line, which does not wrap (`src/ui/`). Found
+      building M181, slice two
 
-- [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
-      table in `src/day/day_controller.gd` has no line for `masked_pursuer`, so the summary falls
-      back to the generic text. Found building the escape's run log (`DECISIONS.md`, M102, the
-      building shows what the city shows)
-- [ ] **A retried escape section holds its automatic snapshots back** until the new clock passes
-      the time of the last shot, because a section's clock restarts at zero. Found with the item
-      above
-- [ ] **The readout said "awake" while the baby was drawn asleep**, once, in a building capture
-      under `--start-escape stairwell:right --invincible`. Not investigated; check whether the
-      readout and the picture read the same state in the escape
+- [ ] **A door can set her down inside a building.** A door's release reflects her through the
+      crossing's line and keeps how far off the door's axis she was when it caught her, so a
+      catch from the side can land her on a building tile; the route rig works round it by
+      re-planning from the nearest open tile (`DECISIONS.md`, M184, the rig gets through
+      chokepoints). The release is `EventManager`'s, in `src/events/`
 
-- [ ] **The run log's `quiet` line still says "the sabotage went through"**, and
-      `EventBus.city_went_quiet`'s docstring still describes the sabotage, though both now fire
-      at the blackout (`DECISIONS.md`, M183, the blackout is everything at once)
+- [ ] **The boom never inspects her, and a raised one lets her pass** *(2026-09-24: "Boom shouldn't
+      inspect her. It should block her. If a car opens it for her and she walks through she would
+      probably get hit by the car, no?")*. A `checkpoint_gate` stops being a detaining body: a
+      lowered boom blocks her, and a street door's inspection happens only at its two huts (an alley
+      door's at its posts, unchanged). The gate keeps barring and lifting for the cars as it does
+      now: up once a car has waited at it `Tuning.GATE_STOP_SECONDS` (1.2 s), down the moment no car
+      is within a length of it. **A raised boom lets her through** *(2026-09-24: "I didn't say it
+      should stay solid when it's open"; asked whether a raised boom lets her through or blocks her
+      either way: "A yes")*: while a car holds the arm up she may walk under it and skip the hut's
+      inspection, and the price is that car — she is on its carriageway, the horn and the strike
+      apply as on any street, and the traffic fairness contract (**crowd-traffic**) must hold for
+      this crossing too. Every door then offers the choice: the hut's hold, or a dash past a car. A
+      lowered boom blocks her, and the gate is never a detaining body either way. **Slipping under
+      the boom sets the guards on her** *(2026-09-24: "The guards should start pursuing her in that
+      case")*. It is detected, not guessed: every frame, she has crossed a door's own cross-street
+      line (the one an inspection's release is reflected through) since the last frame without
+      `Stroller.teleport_to()` having moved her. The huts and the lowered boom are solid, and an
+      inspection's release is a teleport, so a walked crossing is a crossing under a raised boom and
+      nothing else. The chase is a pursuit under the existing pursuit contract (`Tuning`'s
+      chase-length and `PURSUIT_SHAKEN_OFF` rules, **events**: it lets go, and running outpaces it).
+      **The pursuers spawn at the huts** *(2026-09-24: "Or guards that pursue her should spawn at
+      the huts")*: they set off from that door's huts, and the guards drawn at the huts stay at
+      their posts, so the door stays manned. The run log notes each walk under a boom, and a
+      route-rig test requires none across its runs. **A catch ends the day, and one guard is
+      enough** *(2026-09-24, asked whether a catch ends the day or returns her through an
+      inspection, and whether one or two set off: "The day ends, not going through the checkpoint is
+      a clear unlawful thing here. She gets detained/imprisoned or whatever in that case. This is
+      independent of the resistance. She shouldn't do it. One guard is enough")*. The pursuer is
+      `hard_fail` at every heat level and on every day a door stands — it is not a rung of the heat
+      ladder — and the summary's hard-fail line says she was detained. One pursuer spawns, at the
+      hut nearer to her. The dash is meant to be a temptation she should refuse: the hut's hold is
+      the lawful price, the car and the guard the unlawful one. **The route rig never routes through
+      the boom, either way** *(2026-09-24: "The bot shouldn't route through the boom either way")*.
+      Found while capturing the inspection: the boom's own body took her in with nobody on screen
+      doing it, since the guards stand at the huts; a guard stepping to the arm was the other option
+      and was not taken. What changes with it: `checkpoint_gate`'s detention in
+      `event_catalogue.gd`, the release latch's "every body of the door whose reach she lands in",
+      `docs/EVENTS.md` "Checkpoints" and the row, which say the gate detains as a hut does
+      (`docs/CITY.md` says "the gate only ever stops a car, never her"), the gate's solid body
+      (solid to her only while lowered), `docs/MECHANICS.md` and `docs/CITY.md` where a door is
+      "passable only by detention", and the route rig's door handling (`src/dev/route_rig.gd`, which
+      already never routes through a boom; `DECISIONS.md`, M184, the rig gets through chokepoints,
+      lists the lines that change when the gate stops detaining). Waits for M181's slice two to
+      land, which is in `src/events/`
 
 **Drawings, as SVG:**
 

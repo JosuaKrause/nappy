@@ -140,4 +140,5 @@ enum BlockCause {
 	SCHEDULED, ## The day arrived. Requisitions and boardings work this way.
 	FIRE,      ## Something burned here.
 	MILITARY,  ## The army came down this street.
+	TAKEN,     ## She reached the swing in the park day 12 sent her to, and the park was taken.
 }

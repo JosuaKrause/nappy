@@ -48,6 +48,10 @@ Warm palette. Full sun. Lots of pedestrians, dogs, kids in the playground. The o
 are *pleasant* things — a busker, a cat, a friendly neighbour. The only genuinely
 unpleasant thing is a man yelling on a corner, and everyone walks around him.
 
+Every morning, as she comes out, a neighbor in work clothes — coveralls, a reflective band, a
+work cap — leaves the same building and walks off down the street. Nothing points at them. It is
+the neighbor down the hall, and it is every morning until day 10.
+
 On day 3 the fire meets her on her way. It is on whatever street she takes, the engine comes
 and parks across from it, and between them the street is shut for the rest of the day, so she
 turns round or goes another way. Still read as an accident.
@@ -77,10 +81,29 @@ because there is nobody left in it.
 Abductions begin. Masked men, unmarked vans. Getting close is a hard fail — you and the
 baby are taken, day over, one Nerve gone.
 
+**Day 10 is the raid on her own building.** Once she has left, vans pull up across the street from
+her door with a patrol car pacing between them, and that is what she comes home to; the doorstep
+stays reachable along her own sidewalk. The neighbor who has left every morning so far is out in
+the city, walking home into it. The next morning a door down the hall is sealed, and the neighbor
+no longer leaves for work.
+
+**Day 11 the market is gone.** Somewhere ahead of her on the way she has chosen, out of her
+sight, a street of shops is boarded up before she gets there, its market stalls gone with it, and
+it stays boarded for the rest of the run: she finds it gone rather than sees it go.
+
 ### Act IV — "Open" (days 12–14)
 
 Smoke, sirens, barricades. Military convoys re-shape the map as they pass. Protests grow.
 Whole districts close.
+
+**Day 12 the parks are being fenced off**, one at a time, and the one she is sent to is next: it is
+open that morning whatever had already happened to it, and once she has reached its swing it closes
+in front of her, its grass going to mud from the edges in, and stays taken. The day has kept
+another park open and in reach for the baby.
+
+**Day 13 the army arrives.** The convoys start that morning, and the first is a column of army
+trucks coming down the main road on her way; the barricade it stops at, out of her sight, is still
+there on the last night.
 
 **Day 14** is the last night — either the sabotage (good ending) or simply the last walk home
 (neutral ending). The sabotage is a hand-over at the power station's front door, and she is
@@ -119,9 +142,11 @@ that through the day before the last night:
 | 7 | The package | The delivery van's own drop. Picking it up makes the pram heavier for the rest of the day. | red |
 | 8 | The burnt shell | Wherever this run's own day-3 fire left its scar. | red |
 | 9 | The crossing | One of that day's own region doors, the first day the wall stands at all. | red |
+| 10 | Warn the neighbor | The neighbor, out in the city and walking home, by the red arrow that follows them: about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from her door when the mark is touched. Reached first, the neighbor runs; reaching the door first, they are taken, and from the next morning the wanted notice crosses their face out. | red, with a deadline |
+| 11 | Silence a mast | The foot of one live loudspeaker mast, drawn among those she can reach. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. | red |
 | 12 | The swing | The playground of one specific park. | red |
 | 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's hut — rather than round it. | any instance |
-| 14 | The last night | The finale, offered only once the goal is met. Sabotage. | none |
+| 14 | The last night | The power station's front door, offered only once the goal is met. Touching it is the sabotage. | red |
 
 **Two kinds of task.** One any live instance of the right thing answers — the man shouting, a
 roadblock — and gets no arrow: approaching any of them is still the cost, and whichever one she

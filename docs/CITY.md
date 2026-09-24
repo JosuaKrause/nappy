@@ -179,23 +179,28 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
 - Exactly one big building is the **power station**, its front door on a real street at least
   `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
   See "The power station".
+- One **park with a playground is day 12's**, the park that day's task sends her to the swing of
+  (`CityGenerator._plan_the_swing_park`, `BlockPlan.forced_open_on`). A park whose arc already
+  requisitions it is preferred; in a city whose arcs take no park, the chosen one gets a
+  `REQUISITIONED` step of its own on `BlockCause.TAKEN`, and the calm that lasts to the end is
+  counted without it. Drawn from the seed's hash rather than the generator's stream, so no other
+  draw moves. A city with no park is refused. See "Block purposes".
 
 **Each day adds its own, planned with the day rather than checked of the city.** At least two calm
 areas stay reachable through the day's closures ("The invariant"), and some calm stays reachable
 through the day's events (`EventScheduler._ensure_the_city_is_still_walkable`). And on the three
 days the resistance sends her to one narrow place — **day 9's region door, day 12's swing and the
-finale's district** (`ResistanceSteps.narrow_target_on`) — **a route from home to that place is
-kept open by construction**, so the day's own closures, seals and bodies never seal it off:
+power station's front door on the last night** (`ResistanceSteps.narrow_target_on`) — **a route
+from home to that place is kept open by construction**, so the day's own closures, seals and
+bodies never seal it off:
 
-- **The place is tree ground.** The finale's district is joined to the day's corridor by a spur on
-  the finale's day (`RouteTree.for_day`, the same spur the power station's door gets on its day,
-  grown to the district's corners and open ground, which no hold can take); a region door is a
-  boundary crossing the tree already uses; a swing stands in a park, a calm area the tree already
-  reaches. So no seal stands on the way to it, no closure is placed on it and no catalogue wall is
-  sited on it, by the rules each already follows for the rest of the tree.
-- **`ClosurePlanner` asks for it before accepting each closure**, beside the calm and the station's
-  door: a closure that would cut off every tile of it is refused. The second opinion, as it is for
-  the calm.
+- **The place is tree ground.** The station's front door is joined to the day's corridor by a spur
+  on the last day (`RouteTree.for_day`; see "The power station"); a region door is a boundary
+  crossing the tree already uses; a swing stands in a park, a calm area the tree already reaches.
+  So no seal stands on the way to it, no closure is placed on it and no catalogue wall is sited on
+  it, by the rules each already follows for the rest of the tree.
+- **`ClosurePlanner` asks for it before accepting each closure**, beside the calm: a closure that
+  would cut off every tile of it is refused. The second opinion, as it is for the calm.
 - **The catalogue's own bodies are the last line**, and the one mechanism that is not already a
   rule about the tree, since friction stands on the corridor. `_ensure_the_city_is_still_walkable`
   drops the widest of them until some tile of the place is reachable from home under the discs of
@@ -208,12 +213,31 @@ pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`)
 director's own refusals of the tile — walkable, not closed, not held (a door excepted), not on the
 home block, not in a walled-off alley — and the director draws among them asking reachability of
 every draw, so the tile it picks is one the day kept. Planned on the day number alone, never on
-the run, so the day is the same whether or not this run will be offered the step. **Two things it
+the run, so the day is the same whether or not this run will be offered the step. **One thing it
 does not cover:** a moving event, which has no body to seal anything with (a hard-fail mover counts
-where it starts); and a day 12 whose playground parks have all been taken by their arcs, which has
-no swing to send her to at all — a question of whether the place exists, not of reaching it.
-`tests/test_resistance.gd` plans the three days on cities whose district the day's seals and
-bodies would ring without the spur, and finds the place reached and the contact standing on it.
+where it starts). `tests/test_resistance.gd` plans the three days on cities whose narrow places the
+day's seals and bodies have been found to ring, and finds the place reached and the contact
+standing on it.
+
+**Day 12's place is a park that is open whatever its state, and the day owes her a second one.**
+*(PLAYTEST-119: "we can just force open the park she needs to go to that day"; PLAYTEST-122: the
+day "guarantees a second open park she can reach from the swing".)* The swing's pool is the swing
+of the one park the city chose for the day — no other park's — and that park is a park on day 12
+whatever its arc has reached (`CityState.purpose_of`), so everything above plans around it as the
+calm area it is that day. Once she has reached the swing it is taken, so the calm she settles the
+baby in has to be somewhere else, and the day plans for that too:
+
+- **`ClosurePlanner` already keeps two calm areas reachable**, so one of them is not the swing's.
+- **One other area is clean.** `EventScheduler._ensure_one_usable_park` is asked for a clean calm
+  area other than the swing's, and strips the least disturbed of the others if none is — day 12 is
+  the first day of act IV, so every area is unused and placement has already kept them clean.
+- **A route to it is kept.** `_ensure_the_city_is_still_walkable` asks its calm half of the clean
+  areas other than the swing's that today's closures leave reachable, not of any calm tile, and
+  drops bodies until one of them is reached. Reached from home, it is reached from the swing: the
+  swing is kept reachable from home, and walking is the same both ways.
+
+Which areas count as calm on day 12 is any calm purpose, not only a park: a forest or a quiet
+square settles the baby as well as a park does.
 
 ## The home
 
@@ -723,7 +747,9 @@ exactly what it would have been without the station. That one addition is what k
 reachable, through rules the day already follows for the rest of the tree: a boundary crossing
 the spur takes is a door rather than wall, no seal stands on it, and no closure lands on it. And
 `ClosurePlanner` asks for the door beside the calm before accepting each closure that day, so a
-closure that would cut it off is refused, not repaired — the second opinion, as it is for the calm.
+closure that would cut it off is refused, not repaired — the second opinion, as it is for the calm —
+and the scheduler's walkability pass keeps a route to it among the day's bodies, since it is the
+last night's narrow resistance target (see "Guarantees").
 Because the door is outside the home's region, every way there crosses a region door;
 `tests/test_power_station.gd` plans the day with its walls, seals and closures standing, finds the
 door reachable, and finds it out of reach again with the doors shut. On every other day the tree
@@ -816,8 +842,7 @@ today's routes run through, from the doorstep to the calm areas that are still w
 and **the player chooses which to take** — the guidance is the set of offers, not a single
 instruction. So the day's plan is a small **tree**: the doorstep at the root, one path per
 available calm area. On the power station's day it also carries one spur to the station's front
-door, the day's task — see "The power station" — and on the finale's day one to the finale's
-district, the resistance's last place (see "Guarantees").
+door, the last night's task — see "The power station" and "Guarantees".
 
 **One corridor per calm area, and overlaps are a resource rather than a problem.** Paths may share
 ground on the way out and separate later, since they end in distinct places. Where several
@@ -1545,7 +1570,8 @@ in one place instead of leaving the scheduler to rescue each day.
 | `BURNT_OUT` | no | A built block that burned and stayed burnt. |
 
 A step is taken when its **cause** fires: `SCHEDULED` (the day arrived — requisitions and
-boardings), `FIRE` (something burned there), or `MILITARY` (the army came down this street).
+boardings), `FIRE` (something burned there), `MILITARY` (the army came down this street), or
+`TAKEN` (she reached the swing in day 12's park, whose arc alone carries this cause).
 The event causes come from scars: `EventManager` funnels every scar through one place, so a
 fire cannot leave a shell without the block being given the chance to move. A cause that
 arrives at a block whose arc is not waiting for it does nothing at all, which is what keeps
@@ -1555,6 +1581,22 @@ burnt-out block.
 Causes fire during the day; the city presents the result the **next morning**.
 `CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is
 ashes tomorrow.
+
+**Day 12's park is the one block whose purpose is not its arc's for a day.** It is a park on its
+day whatever its arc has reached (`BlockPlan.forced_open_on`, `CityState.purpose_of`), and when she
+reaches its swing `CityState.take()` takes its `REQUISITIONED` step there and then, whatever the
+step's own day or cause — a requisition scheduled for day 13 comes a day early. Park and
+requisitioned park are the same walkable ground, so neither half moves a walkable tile.
+
+**Two once-only happenings take a step early, and neither waits for the next morning.**
+`CityState.advance_now()` takes the step a block's arc is waiting on today, and only if it becomes
+the purpose asked for — when moves, never what. Day 11's market is a commercial block whose arc is
+waiting to board up, boarded ahead of her and out of her sight, its buildings shuttered there and
+then (`City.present_block()`). Day 12's park is taken the instant she reaches its swing, and its
+ground goes to `SPOILED` a ring at a time from the edges in over `Tuning.PARK_CLOSING_SECONDS`
+(`City.close_ground()`), so the calm under her shrinks while she watches; mud is walkable, so she
+is never shut in. `docs/NARRATIVE.md` says what each is; `ResistanceHappenings` is where they
+live.
 
 ### What is fixed, and what is absolute
 

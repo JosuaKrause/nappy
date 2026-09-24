@@ -312,16 +312,17 @@ func watch_city(city: City) -> void:
 	_escape_section = "the city"
 
 ## A section is about to be walked, the first time or again after a loss — the escape's
-## `start_day()`. Clears what the last attempt left, puts the log's clock back to zero so a retry's
-## lines are timed from its own start the way a day's are from dawn, and writes the `start` line.
-## **A retry says so on it**, which is the section restart in the log: the `lost` line above it
-## says why, and this one says it began again.
+## `start_day()`. Clears what the last attempt left, puts the log's clock back to zero **and its
+## automatic-snapshot schedule with it** (`Telemetry.restart_section_clock()`) so a retry's lines
+## and its shots are both timed from its own start the way a day's are from dawn, and writes the
+## `start` line. **A retry says so on it**, which is the section restart in the log: the `lost`
+## line above it says why, and this one says it began again.
 ##
 ## `_tree` stays null, which is what keeps `path` silent: the escape's chains are grown by
 ## `FinalePlanner`, not a `RouteTree`, and there is no corridor to be on or off.
 func start_section(restarted: bool) -> void:
 	_forget_the_walk()
-	Telemetry.set_clock(0.0)
+	Telemetry.restart_section_clock()
 	Telemetry.note("start", "%s %s at %s, facing %s" % [
 		"restarted" if restarted else "entered", _escape_section,
 		TelemetryLog.tile(_tile_of(_player.global_position)),
@@ -1174,7 +1175,7 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 			_baby.sleepiness, _nearest()])
 
 func _on_city_went_quiet() -> void:
-	Telemetry.note("quiet", "the sabotage went through; every city-wide source is off")
+	Telemetry.note("quiet", "the blackout came; every city-wide source is off")
 
 ## Walking into somebody. Reported by `Crowd` rather than watched from here, because the contact is
 ## a decision the game makes rather than a state to be noticed — but the *rate limiting* stays here,

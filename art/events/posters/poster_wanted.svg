@@ -5,8 +5,9 @@
      one fits. The top-right face is crossed out on every copy. Same 20x22 sheet as every poster
      kind; see poster_leader.svg.
      The bottom-left slot, the group "neighbor_slot" (a 7x5 frame whose top-left corner is at
-     8,16), is the one swappable slot: a placeholder adult standing in for the neighbor from
-     M181's day 10, who is not drawn yet. This file is that slot uncrossed;
+     8,16), is the neighbor's: the same head-and-shoulders silhouette under the work cap
+     the neighbor wears in the street (art/events/neighbor_*.svg), its brim wider than the
+     head so the cap reads at this size. This file is that slot uncrossed;
      poster_wanted_crossed.svg is the same sheet with a red X over it. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
   <rect x="6" y="3" width="20" height="22" fill="#c2b9a6"/>
@@ -30,6 +31,8 @@
   <g id="neighbor_slot" transform="translate(8 16)">
     <rect width="7" height="5" fill="#d9d2c3"/>
     <ellipse cx="3.5" cy="1.9" rx="1.25" ry="1.4" fill="#4a403c"/>
+    <path d="M2.2 1.4 Q2.3 0.45 3.5 0.45 Q4.7 0.45 4.8 1.4 Z" fill="#2a262c"/>
+    <rect x="1.7" y="1.2" width="3.6" height="0.45" fill="#2a262c"/>
     <rect x="3" y="3" width="1" height="0.7" fill="#4a403c"/>
     <path d="M0.8 5C1 4.1 1.8 3.6 2.7 3.5L4.3 3.5C5.2 3.6 6 4.1 6.2 5Z" fill="#4a403c"/>
     <rect x="0.25" y="0.25" width="6.5" height="4.5" fill="none" stroke="#3b3034" stroke-width="0.5"/>

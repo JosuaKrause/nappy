@@ -1,5 +1,139 @@
 # Decisions
 
+## M181 — The resistance has a reason, and a task is one day: slice two · built 2026-09-24
+
+*([PLAYTEST-117](playtests/PLAYTEST-117.md) to [PLAYTEST-122](playtests/PLAYTEST-122.md); the
+calendar and every decision are in the TODO entry as it stood and in slice one's record.)*
+
+**Day 10, warn the neighbor.** The neighbor spawns about 55 s of their own walk from her door, off
+screen, and walks home with the red arrow on them. Reaching them first, they run; if they reach
+the door first, the task is lost and they are taken. Whether they were taken is read from the
+completed steps rather than saved, so a lost day gives it back; the day 12 wanted notice shows
+the crossed-out face when they were. **The raid** is two quiet vans on the far sidewalk and a patrol
+car pacing the street, arriving once she is 420px from her door and never on screen, with her own
+sidewalk to the door open; passing the vans with the baby asleep costs about nothing. The patrol
+car and the walking neighbor were catalogue copies that had dropped their `shape`, a script error
+every frame they were drawn; fixed.
+
+**The neighbor from day 1**: a figure in work clothes leaving her building each morning on days
+1 to 9, pointed at by nothing, gone from day 11 (art in the PR, the same figure as the notice).
+
+**Day 11, silence a mast.** Reaching its foot silences it for the rest of the run and leaves a
+scar. Day 11's `silence_mast()` and the blackout's `silence_all_masts()` share one flag on the
+mast's plan, `silenced`, so a mast silenced first stays silent through the blackout. The redraw
+gate did not include a mast's broadcast cycle or its silenced state, so a silenced mast kept its
+arcs and a live one's lamp did not cycle — a bug also on `main`, fixed here with a test.
+
+**The once-only happenings.** Day 11: a commercial block ahead of her on the route she is walking,
+out of sight, is boarded up and its market stalls taken away; with nothing on her way by 90 s, the
+nearest unseen one goes instead (7 of 40 cities have no such block, lose no market, and the run
+log says so). Day 12: once she reaches the swing the park is requisitioned, its grass turning to
+mud a ring at a time from the edges over 12 s; mud is walkable, so she is never shut in. Day 13: a
+column of three army trucks down one lane of the main road, far enough up it that their warning is
+over before their noise reaches her; the rear truck leaves a permanent barricade where it stops,
+out of her sight and only where home and a calm area stay reachable. It triggers within 480px of
+the main road after 18 s of walking, otherwise at 100 s. `military_convoy`'s `first_day` is 13;
+`COSTS.md` does not change.
+
+**Day 12's park is forced open.** Each city picks one park for the swing by the seed's hash, so no
+other generation step moves; it prefers a park already due to be requisitioned, and otherwise
+gives it a requisition only reaching the swing triggers (`BlockCause.TAKEN`). On day 12 that park
+is open whatever its state, the swing task points only there, and the day keeps a second clean
+calm area reachable. The generator refuses a city with no park, so seeds 777, 228514, 260190 and
+378975 of the 40 probe seeds now give the next seed's city.
+
+**The marks, day 14.** Days 8 and 13 say what PLAYTEST-122 agreed; day 10's and 11's lines are
+shortened to fit the on-screen line. Day 14's task is the power station's front door by the red
+arrow, and touching it sets `GameState.sabotage_done`; the blackout follows from M183. Also fixed,
+also on `main`: the red arrow stayed on a one-place task after she reached it; and the walk timer
+days 11 and 13 wait on reads her velocity, as day 3's fire does, since counting frames undercounted.
+
+**Open to overturn** (the agent's choices where the design was silent): the 55 s walk home; the
+raid's layout; the neighbor never getting a guard; a skipped day 10 counting as taken; the market
+read as a block due to be boarded plus its stalls, with the 90 s fallback; the park closing as mud
+rings over 12 s; the column's size and trigger; the swing park by the seed's hash; the "second open
+park" read as any clean calm area. Outside the brief's fence, and small: `BlockCause.TAKEN` in
+`src/game_enums.gd`, the two mast lines in `EventInstance._picture_key()`, and the generator's
+no-park refusal. **Left open and queued:** the sealed door's picture (M181); day 8's mark line
+running off the HUD (M100); the answers M182 still owes.
+
+## M184 — The rig gets through chokepoints · built 2026-09-24
+
+*(The route rig, `--route mark,task,calm,home`, is how M181's late days get timed; PLAYTEST-122.)*
+
+**Measured** with `tests/probes/m184_route_timing.gd`, days 6 to 13 on seeds 4242, 90210 and
+1234567 under `--invincible`, both sweeps on one tree: legs ending "stuck fast" 23 before, 0 after;
+runs with a stuck leg 13 of 24 before, 0 after; runs walking the whole route 11 of 24 before, 23
+after. The one that does not finish, day 9 on 90210, is not stuck: the mark at 27.7 s, the task at
+91.5 s (3537px off, through four doors), the calm area at 99.6 s, and the day's 144 s run out on the
+walk home — an open question in M181's "the late days are timed". No run was taken in by a boom;
+huts and alley posts held her 26 times.
+
+**Day 6's narrow gap on 1234567 was the rig's, not a placement bug.** The `delivery_van` at the kerb
+(22px body) leaves 26px of sidewalk to the frontage and she needs 28px: the "wall by fit"
+`docs/EVENTS.md` describes, allowed anywhere a route does not run along, and no route runs along
+that tile. A player hugging the frontage does not get through, as designed, and the way past is the
+road. Day 8's home leg on 1234567 and day 12's on 4242 no longer stall with either rig.
+
+**What the rig does now** (`src/dev/route_rig.gd`): it keeps clear of a body by its outline; a
+re-plan goes round the body that caught her and the unstick tries the direction away from it first;
+it follows a moved mark; a door's hold is not a stall. It plans against the whole day's plan
+(`EventManager.plans()`, read only) rather than what has streamed in near her, which ended the
+re-plan loops. A door body stands on a tile boundary, so both sidewalk lanes are exactly 16px off
+its axis and the crossing test's `< 16` counted neither as the way through; it is `<=`, with a test.
+It copies the game's release latch; after a door sets her down on a building tile it plans from the
+nearest open tile outside every door's reach (the game's release can do that — an open M100
+defect); an any-instance task keeps the instance it picked; under `--invincible` a run ends once the
+rig's own clock passes the day's length, and says so. The probe runs a day's three seeds side by
+side, about 13.5 minutes a sweep instead of about 30.
+
+**The rig never routes through a boom** *(2026-09-24, the player: "The bot shouldn't route through
+the boom either way")*: wherever a `checkpoint_gate` rather than a hut would take her, the ground is
+blocked in every plan, the last-resort one included, found by the plan's `GateState` rather than by
+detention so it outlives the boom's change (M100, the boom never inspects her).
+`_test_a_plan_never_goes_through_the_boom` fails with the rule off. When the gate stops detaining:
+`_door_tiles()` and `_latch_the_doors_round_her()` drop it by their `redetains` filter, the
+`gate_state != null` special case in `_door_tiles()` becomes dead code, `_gate_ground()`'s "nearer
+than any hut" test can shrink to the boom's own lanes, and `_is_planned_body()` starts giving the
+gate body clearance.
+
+**Open to overturn** (the agent's choices where the design was silent): the rig reads
+`EventManager.plans()`, documented as a readout's; `chatting_mother` is no longer avoided as a door,
+since she walks; the boom's blocked ground is its trigger plus 10px wherever it is the nearest door
+body; ending at the day's length applies only under `--invincible`.
+
+## M100 — Four escape and run-log defects · built 2026-09-24
+
+*(Found building the escape's run log, `DECISIONS.md`, M102, the building shows what the city
+shows, and M183, the blackout.)*
+
+**The masked man has his own hard-fail line.** `DayController._HARD_FAIL_TEXT` had no
+`masked_pursuer` entry, so a catch in the escape fell back to "It went wrong."; it now says "He
+caught you on the stairs." — he waits at the foot of a stairwell shaft, and the line keeps the
+table's rule that what is lost is named, never dwelt on. The wording is the agent's, open to
+overturn.
+
+**A retried section restarts its snapshot schedule.** `TelemetryObserver.start_section()` reset the
+section clock with `Telemetry.set_clock(0.0)` but left the last shot's time at the lost attempt's
+reading, so the three-second spacing gate held every automatic snapshot back until the retry's
+clock climbed past it. `Telemetry.restart_section_clock()` resets the clock, the day's shot count
+and the last shot together, as `begin_day()` does; a named method rather than teaching
+`set_clock()` a rule about going backwards.
+
+**The readout read nothing, not a different state.** `HUD` looked the baby up once, in `_ready()`,
+and in the escape the HUD is built before the building makes the baby, so the lookup came back empty
+and the status line kept the scene file's placeholder, "awake", for the whole section while the
+pram's picture read the live state. `_refresh_state()` now asks again while it holds no baby. The
+root cause is `main._ready_escape()` building the HUD before the world; fixing that order instead is
+open to overturn, and was outside the agent's fence.
+
+**The quiet line says what fires it.** The run log's `quiet` line and
+`EventBus.city_went_quiet`'s docstring said "the sabotage went through"; both fire at the
+blackout, so both now say so.
+
+Tests in `test_day_loop.gd`, `test_telemetry.gd` and `test_hud.gd`, each shown to fail before its
+fix.
+
 ## M191 — The horn watches as far as the contract needs · built 2026-09-24
 
 *(Found while measuring M183's dark junctions, not asked for by a playtest.)*

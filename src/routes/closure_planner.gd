@@ -207,8 +207,8 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ## not weaken.
 ##
 ## **It also asks for each of the day's own destinations** (`places`, from
-## `places_to_reach_today()`, empty on most days): the power station's front door on its day, and
-## the resistance's door, swing or district on theirs. Each is a set of tiles, and one tile of each
+## `places_to_reach_today()`, empty on most days): the resistance's door, swing or the power
+## station's front door on theirs. Each is a set of tiles, and one tile of each
 ## has to stay reached — a closure that would cut every one of them off is refused the same way one
 ## that would cut the calm off is, before it is accepted. The day's tree reaches every one of them
 ## (`RouteTree.for_day`) and every closure is placed off the tree, so like the calm half this is the
@@ -234,17 +234,15 @@ static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[
 	return false
 
 ## What `_invariant_holds` must still reach besides the calm: one set of tiles per destination the
-## day sends her to, of which one tile has to stay reached. The pavement in front of the power
-## station's front door on the day she is sent there; and the candidate tiles of the day's narrow
-## resistance target (`ResistanceSteps.narrow_target_on`) on days 9, 12 and the finale's — the same
-## pool `ResistanceDirector` draws the contact from (`ResistanceSteps.target_candidates`). Empty on
+## day sends her to, of which one tile has to stay reached — the candidate tiles of the day's
+## narrow resistance target (`ResistanceSteps.narrow_target_on`) on days 9, 12 and the last night,
+## whose target is the pavement in front of the power station's front door. The same pool
+## `ResistanceDirector` draws the contact from (`ResistanceSteps.target_candidates`). Empty on
 ## every other day, and a pool with no tiles in it is left out rather than failing every closure:
 ## a day with nothing to send her to asks nothing of the closures about it.
 static func places_to_reach_today(map: CityMap, day: int,
 		region_plan: RegionPlanner.RegionPlan) -> Array[Array]:
 	var places: Array[Array] = []
-	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
-		places.append(map.rect_tiles(map.power_station_door))
 	var target := ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), map,
 			region_plan)
 	if not target.is_empty():

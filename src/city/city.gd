@@ -744,6 +744,43 @@ func _dress_blocks(state: CityState) -> void:
 				state.purpose_of(map.block_plans, _block_of(building.lot)))
 		building.day = _day
 
+## **One block's buildings, shown as what the block is now**, during the day rather than at dawn —
+## day 11's market, boarded up ahead of her while she cannot see it (`ResistanceHappenings`). The
+## same `_condition_for()` the dawn dressing reads, for the buildings of `block` alone.
+func present_block(block: Vector2i, state: CityState) -> void:
+	var condition := _condition_for(state.purpose_of(map.block_plans, block))
+	for building in _buildings:
+		if _block_of(building.lot) == block:
+			building.condition = condition
+
+## **Ground taken away in front of her**: `tiles` become `SPOILED` now, in the map and on screen —
+## day 12's park, closing a ring at a time once she has reached its swing (`ResistanceHappenings`).
+## Each tile and its eight neighbors are repainted from `GroundTiles.source_for()`, the dawn paint's
+## own answer, so an edge drawn against the old ground is redrawn against the new. The swing frame
+## goes with the playground tile it stands on, and the calm-ground cache is dropped, since the tile
+## she is standing on may be one that just stopped being calm.
+func close_ground(tiles: Array[Vector2i]) -> void:
+	var redraw := {}
+	var closed := {}
+	for tile in tiles:
+		map.repaint_tile(tile, GameEnums.TileType.SPOILED)
+		closed[tile] = true
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				redraw[tile + Vector2i(dx, dy)] = true
+	for tile: Vector2i in redraw:
+		var source := GroundTiles.source_for(map, tile, _day)
+		if source >= 0:
+			_ground.set_cell(tile, source,
+					GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
+	_sleepiness_tile = Vector2i(-1, -1)
+	for prop in _props.duplicate():
+		var frame := prop as Prop
+		if frame and frame.kind == Prop.Kind.PLAYGROUND_FRAME \
+				and closed.has(map.world_to_tile(frame.position)):
+			_props.erase(frame)
+			frame.queue_free()
+
 ## Today's garbage sacks — `GarbageSacks.placed()` re-rolled from the day, unlike the trees above:
 ## the city degrades over the run, so unlike a park's planting this is not the same every morning.
 ## Each is a `Prop` with a `GroundShape` for its shadow and no body, exactly as decorative as a

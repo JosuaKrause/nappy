@@ -1419,7 +1419,11 @@ after the fire burned owes a fire again — sited from whatever walk the retry t
 player who lost walking east and retries walking west meets it on another street — and leaves no
 shell standing in the meantime. The city photograph is taken **before** the dawn arc roll, since
 `GameState.begin_day()` runs ahead of `CityState.begin_day()`, so the retry's own dawn makes that
-roll again from the same seed and the same day rather than inheriting it.
+roll again from the same seed and the same day rather than inheriting it. **The once-only
+happenings of days 10 to 13 come back the same way**, since each is kept in one of those fields: the
+block day 11 boarded up and the park day 12 took are arc steps in `CityState`, the barricade day
+13's column left is a scar, and whether day 10's neighbor was taken is read off the completed steps
+(`GameState.neighbor_was_taken()`). A retry of any of those days meets its happening again.
 - **The run cannot end by running out of days while nerves remain.** The bad ending is the only
   way to lose, and the run length becomes a promise rather than a budget.
 

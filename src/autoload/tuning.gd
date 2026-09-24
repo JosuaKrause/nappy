@@ -319,11 +319,38 @@ const DAY_LENGTH_SECONDS := 180.0
 ## Curfew (day 6+) shortens the day by this fraction.
 const CURFEW_DAY_LENGTH_MULTIPLIER := 0.8
 
-## Five of the tasks the calendar carries — `ResistanceSteps`'s own row count, which this slice
-## builds six of eight for (days 10 and 11 wait on a later slice; see that file's `_build()`) —
-## so a player who does all the legwork bar one still reaches the good ending. The day-14
+## Five of the eight tasks the calendar carries (`ResistanceSteps._build()`, days 6 to 13), so a
+## player who skips or fails three still reaches the good ending. The day-14
 ## sabotage is a must on top of it: `GameState.earned_good_ending()` asks for both.
 const RESISTANCE_GOAL := 5
+
+## How long the neighbor's walk home takes on day 10, from the moment her mark is touched: the
+## director starts them this far from her door along the walk (`ResistanceDirector.
+## _send_the_neighbor_home()`), and reaching the door is the deadline — walked home into the
+## vans. Chosen, not measured, and open to overturn once the late days are timed: at
+## `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s) it is about eighty tiles of walk, which puts
+## them several blocks out in the city on every city, while she, at twice that pace, can
+## still meet them on their way in from anywhere she found the mark. A curfew day is 144s.
+const NEIGHBOR_WALK_HOME_SECONDS := 55.0
+
+## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
+## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
+##
+## Day 11's market is sited ahead of her on her route once she has walked as long as day 3's fire
+## waits (`EventDirector.ON_HER_WAY_AFTER`); if nothing on her way has qualified by this far into
+## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
+const MARKET_GONE_BY := 90.0
+## Day 12's park closes over this long once she has reached its swing, a ring of its ground at a
+## time from the edges in: long enough to see it coming, short enough that the baby cannot be
+## settled in what is left.
+const PARK_CLOSING_SECONDS := 12.0
+## Day 13's column: this many army trucks down the main road, one behind the other this far apart.
+const COLUMN_TRUCKS := 3
+const COLUMN_SPACING := 128.0
+## The column comes once she is this close to the main road's middle, across it — about a screen's
+## half-width and a block — or at `COLUMN_BY` into the day whatever she is doing.
+const COLUMN_WITHIN := 480.0
+const COLUMN_BY := 100.0
 
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
