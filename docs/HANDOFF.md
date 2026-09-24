@@ -319,8 +319,7 @@ checks and worktrees can move independently of this file.
   finished task is shown by the world, has the other tasks' answers open and is decided with M181.
 - **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
   "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
-  the first entry of `REVIEW.md`. M174, the man shouting costs nothing to walk beside, has one
-  open item in `TODO.md`: the caret against a pulsed row and against several sources.
+  the first entry of `REVIEW.md`.
 - **M102, the finale, has one open item in `TODO.md`**: the building has no screen-edge
   badge, halo or debug layers, and the escape has no telemetry observer.
 - **M175, a row states what it costs, has its table built and one item open**: rows declaring

@@ -16,6 +16,8 @@ func run(t) -> void:
 	_test_a_stationary_thing_she_stands_in_is_unmarked(t)
 	_test_walking_toward_a_stationary_thing_earns_a_caret(t)
 	_test_the_caret_matches_the_halo_after_the_horizon(t)
+	_test_the_caret_follows_a_pulse_across_its_horizon(t)
+	_test_two_sources_share_the_decay_the_way_the_halo_does(t)
 	_test_a_cat_dashing_at_her_is_unmarked(t)
 	_test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t)
 	_test_a_telegraphing_lethal_thing_on_course_is_still_red(t)
@@ -131,6 +133,169 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t) -> void:
 			"the halo's net after the horizon matches what the caret projected at the start of " +
 			"it, within a few points of a hundred-point bar", 3.0)
 	instance.free()
+
+## The two faults `TODO.md`'s "the caret follows a pulse across its horizon" opened against:
+## `homeless_yeller`'s pulse (5s) and `busker`'s (7s) both turn over inside
+## `Tuning.EXPECTED_IMPACT_HORIZON` (5s), so freezing "as it stands now" for the whole projection
+## could read anywhere from a quarter to the full peak of the beat depending on which instant the
+## caret happens to be asked on. `EventInstance._pulse_mean_multiplier()` projects the envelope's
+## own mean over the horizon instead, from this instant's own phase.
+##
+## **One starting phase is the wrong thing to check the mean against.** A single pass's own real
+## outcome is dominated by whichever beat happens to land on its *closest approach* — walked by
+## hand across a whole period, `homeless_yeller`'s own net after the horizon ranges from about 3 to
+## about 20 points depending only on where in the beat she happens to start, because the field's
+## own falloff weights the moment closest to her far more than the moments either side of it. The
+## projected mean was never a promise about that one instant; it is a promise about what the
+## *average* pass nets, which is the only thing "if I keep doing what I'm doing" can honestly mean
+## for a rate that will not sit still. So this checks four passes, their starting phases spread
+## evenly across one whole period, against the average of what each actually landed — the
+## correlation between beat and closest approach cancels over a full period and what is left is the
+## mean the projection is actually for.
+##
+## **`homeless_yeller`'s own pulse period equals the horizon exactly**, so a cosine integrated over
+## any whole number of its own periods is zero however it is entered — every one of the four phases
+## projects the identical flat mean (`0.625` of `def.intensity`), checked directly rather than only
+## through its own later average. `busker`'s 7s pulse against the same 5s horizon does not share
+## that coincidence, so its four phases are expected to differ from each other.
+func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
+	var horizon := Tuning.EXPECTED_IMPACT_HORIZON
+	var phases := 4
+	for id: String in ["homeless_yeller", "busker"]:
+		var def: EventDef = EventCatalogue.by_id(id)
+		t.check(def != null and def.pulse_period > 0.0, "%s pulses" % id)
+		if not def:
+			continue
+		var carets: Array[float] = []
+		var reals: Array[float] = []
+		for phase_i in phases:
+			var start_age := def.pulse_period * float(phase_i) / float(phases)
+			var instance := _instance(def)
+			# Past the row's own telegraph first — `_caret_intensity_over_horizon()` already reads
+			# the live, undamped rate through the telegraph (`_test_a_cyclist_on_course_is_red_one_
+			# passing_wide_is_not` holds that promise elsewhere), but the real walk below has no
+			# such exemption: catching a still-telegraphing row for real genuinely nets 15% of it,
+			# which is a second variable this test does not want mixed into the pulse comparison.
+			_advance(instance, def.telegraph_time + start_age)
+			var player_velocity := Vector2(Tuning.WALK_SPEED, 0.0)
+			var decay := Tuning.EXCITEMENT_DECAY_WALKING
+			var lead := player_velocity.length() * horizon * 0.5
+			var player_pos := Vector2(-lead, 20.0)
+			instance.set_player_at(player_pos, player_velocity, decay, 1.0)
+			var caret_now := instance.expected_impact_at(player_pos)
+			t.check(caret_now > 0.0,
+					"%s at phase %.2fs still projects a positive net gain" % [id, start_age])
+			carets.append(caret_now)
+
+			var steps := int(round(horizon / STEP))
+			for i in steps:
+				instance._process(STEP)
+				player_pos += player_velocity * STEP
+				var contribution := instance.contribution_at(player_pos)
+				if contribution > 0.0:
+					instance.accumulate_landed(contribution * STEP)
+			var landed := instance.landed()
+			reals.append(ExcitementHalo.net_landed(landed, landed, decay * horizon))
+			instance.free()
+
+		var caret_average := 0.0
+		for caret in carets:
+			caret_average += caret
+		caret_average /= carets.size()
+		var real_average := 0.0
+		for real in reals:
+			real_average += real
+		real_average /= reals.size()
+		# The unpulsed test's own 3.0 (a single pass, no pulse to average away) plus a point for the
+		# residual bias four samples still carry — `busker`'s own average is off by about 1.8 to 2.2
+		# points at four to twelve phases, well short of converging to zero, since the falloff's own
+		# weighting is not perfectly even across a period.
+		var message := ("%s, averaged over four evenly spaced starting phases: the halo after " +
+				"the horizon roughly matches the mean-projected caret (caret avg %.2f, halo avg " +
+				"%.2f)") % [id, caret_average, real_average]
+		t.close_to(real_average, caret_average, message, 4.0)
+		if id == "homeless_yeller":
+			for caret in carets:
+				t.close_to(caret, caret_average,
+						"homeless_yeller's pulse period equals the horizon, so every starting " +
+						"phase projects the identical mean, whatever beat the caret happened to " +
+						"be asked on", 0.1)
+
+## PLAYTEST-115: "with two sources near her every caret reads low" when each nets the whole of her
+## decay against itself rather than sharing it the way the halo does. Two identical stationary
+## fields straddling her line, both worth a mark on the same pass — no pulse, no telegraph, so the
+## only thing under test is the sharing.
+##
+## **The unshared sum is the regression this replaces.** `expected_impact_at()` with neither
+## instance told the frame's total (`player_expected_total_gross` at its `-1.0` default) still nets
+## the whole projected decay against each source alone; summing the two double-counts the decay the
+## bar can only actually take once, which is exactly the "reads low" the player named.
+##
+## **The shared sum is checked directly against what the two actually land.** `expected_gross_at()`
+## gathered over both sources first, told back with `set_expected_total_gross()`, is the same
+## once-a-frame shape `ExcitementHalo._process()` runs; summing `ExcitementHalo.net_landed()`'s own
+## arithmetic across every source reproduces the total gross less the whole decay exactly (its own
+## doc proves this for the backward-looking halo), so the sum of the two shared carets is checked
+## against `total_landed − decay` after the walk rather than against each source's own halo in
+## isolation.
+func _test_two_sources_share_the_decay_the_way_the_halo_does(t) -> void:
+	var horizon := Tuning.EXPECTED_IMPACT_HORIZON
+
+	var def_a := EventDef.new()
+	def_a.id = "share_decay_a"
+	def_a.intensity = 30.0
+	def_a.inner_radius = 40.0
+	def_a.outer_radius = 200.0
+	def_a.telegraph_time = 0.0
+	var def_b := EventDef.new()
+	def_b.id = "share_decay_b"
+	def_b.intensity = 30.0
+	def_b.inner_radius = 40.0
+	def_b.outer_radius = 200.0
+	def_b.telegraph_time = 0.0
+
+	var a := _instance(def_a)
+	a.global_position = Vector2(0.0, 20.0)
+	var b := _instance(def_b)
+	b.global_position = Vector2(0.0, -20.0)
+
+	var player_velocity := Vector2(Tuning.WALK_SPEED, 0.0)
+	var decay := Tuning.EXCITEMENT_DECAY_WALKING
+	var lead := player_velocity.length() * horizon * 0.5
+	var player_pos := Vector2(-lead, 0.0)
+	a.set_player_at(player_pos, player_velocity, decay, 1.0)
+	b.set_player_at(player_pos, player_velocity, decay, 1.0)
+
+	var solo_sum := a.expected_impact_at(player_pos) + b.expected_impact_at(player_pos)
+
+	var gross_a := a.expected_gross_at(player_pos)
+	var gross_b := b.expected_gross_at(player_pos)
+	var total_gross := gross_a + gross_b
+	a.set_expected_total_gross(total_gross)
+	b.set_expected_total_gross(total_gross)
+	var shared_sum := a.expected_impact_at(player_pos) + b.expected_impact_at(player_pos)
+	t.check(shared_sum > solo_sum,
+			("sharing the decay reads higher in total than each netting the whole of it (%.1f " +
+					"solo vs %.1f shared)") % [solo_sum, shared_sum])
+
+	var steps := int(round(horizon / STEP))
+	for i in steps:
+		a._process(STEP)
+		b._process(STEP)
+		player_pos += player_velocity * STEP
+		var contribution_a := a.contribution_at(player_pos)
+		if contribution_a > 0.0:
+			a.accumulate_landed(contribution_a * STEP)
+		var contribution_b := b.contribution_at(player_pos)
+		if contribution_b > 0.0:
+			b.accumulate_landed(contribution_b * STEP)
+	var total_landed := a.landed() + b.landed()
+	var actual_net := maxf(total_landed - decay * horizon, 0.0)
+	t.close_to(actual_net, shared_sum,
+			"the two shared carets sum to roughly what the bar actually nets from both sources " +
+			"over the same horizon, within a few points of a hundred-point bar", 6.0)
+	a.free()
+	b.free()
 
 ## *(2026-09-08, the player, opening the milestone that replaced the old catalogue-wide rule:
 ## "carets shouldn't be chosen by source value but by expected impact value" — and, confirming the
