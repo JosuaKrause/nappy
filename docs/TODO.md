@@ -885,67 +885,17 @@ on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that
 is where act I stops being a nice neighbourhood; the options weighed when the move was first
 proposed are in `DECISIONS.md` under M49, in the item "Day 3 carries act I's whole payload".
 
-- [ ] **One contact at 89 is a cliff, measured; the rule about the last ten points is the
-      player's to give.** A bump is about 10.8 points, and a rig confirmed it on 2026-09-11
-      (`DECISIONS.md`, M96): one walker's startle against the baby at 90 and at 89 both end at 100
-      and crying; at 85 it ends at 96.8 and awake. The pram's nearly-crying cue is drawn from 80 of
-      the 100-point meter, by code rather than by eye — whether it is *read* is a played question.
-      The entry's own rule stands: the fix is a rule about the last ten points, not a density
-      change — a floor on what one contact may add near the top, a grace window after the cue, or
-      nothing, if a walker at 89 on an empty street is meant to be the risk it is. Decide, then it
-      is one constant and a test beside `tests/test_meters.gd`'s pinned measurement
-
----
-
-## M97 — Calm areas that hold · rewritten 2026-09-09
-
-Rewritten from M47. Its apartment complex — a courtyard lot four blocks across with frontages
-around the outside — is built as `_place_apartment_complexes`, and the non-adjacency rule covers
-courtyards as well as open calm at generation. The multi-block count was re-derived for the
-121-block city: `MIN_CALM_ZONES` 1 and `MAX_CALM_ZONES` 2, with the remainder single-block on
-purpose so that *which* calm area to head for stays a real question. The record is in
-`DECISIONS.md` under "The queue reprioritised". What is left is one measurement, one later tweak
-and one re-check.
-
-- [ ] **The non-adjacency rule does not cover parks yet.** *(2026-09-09: "non -adjacency rule
-      doesn't cover parks yet -- that's something we might want to tweak later.")* Later, by the
-      player's own word. What the code says, for whoever picks it up: `_has_calm_neighbour` asks the
-      one-block ring around a footprint for every purpose in `_CALM_PURPOSES` — park, forest, quiet
-      square and courtyard — and both zone placement and single-block calm placement refuse a
-      footprint that has one. So the case the player has seen is not the ring test failing on its
-      own terms, and the first task is a seed showing two parks side by side, to say whether a zone
-      absorbing its inner streets, the border forest, or something after generation is what puts
-      them there
-
-- [ ] **Spoiling a returned-to calm area is not consistently effective.** *(2026-09-03, playtest 20:
-      "the spoilage of a clam area is not always effective I went to the same park 4 times and only
-      the last time had a high enough density of events to actually prevent me from using it. the
-      previous time I could just walk at the edge of it. and the time before that didn't have any
-      spoilage at all even though it was the second visit.")* `docs/playtests/PLAYTEST-02.md` records the
-      intended shape — *"the scheduler biases a spoiling event toward a calm area the player settled
-      in on day N−1"* — a bias toward, not a guaranteed minimum, which is consistent with a roll
-      landing low enough some days to leave a walkable edge and high enough on others to deny the
-      area outright. The run attached to playtest 20 does not carry the exact four-visit sequence
-      the player describes — its own biased parks (`(1,1)` and `(4,8)`) were dense on every biased
-      day the log shows. **The zero-density visit does not reproduce on the current tree**, measured
-      2026-09-11 with `tests/probes/m97_spoilage.gd` over every calm block on eight seeds — the
-      record, with the distribution, is in `DECISIONS.md` under M97. What the probe found instead
-      is a rare tail: a biased visit whose weighted roll draws one low-reach row for a large lot and
-      leaves most of it walkable, and a bias that is mostly backstopped by the day's ordinary fill
-      landing in the used park rather than by the spoil roll itself. So this waits for a played
-      recurrence: if a second visit to the same park reads unspoiled again, the probe is the
-      instrument and the low-reach-row draw is the suspect, and the fix is a floor on the spoil
-      roll's reach for a lot that size, not a density change
-**The main road is not made a soft block.** *Asked for on 2026-09-01 as a toll on crossing the
-spine · overturned on 2026-09-09: "M47's toll already exists — it's timing the traffic lights. we
-don't need to penalize routing through it just yet — it naturally happens that only some routes
-cross it."* Waiting for a green is the crossing's price, and the route tree already puts only some
-of a day's routes across the spine; nothing prices the crossing on top of that. The record is in
-`DECISIONS.md` under "The queue reprioritised".
-
-- [ ] **Re-check `MIN_CALM_BLOCKS` (5 to 7) and `MIN_HOME_TO_PARK_TILES` at the end, not the
-      start** — now that the region walls stand from day 7, since a region that holds no calm
-      area gets no door and the count of places to go is what the wall divides
+- [ ] **The day ends crying only after a push at the top** ([PLAYTEST-126](playtests/PLAYTEST-126.md),
+      statements 1 and 2: "the bar can reach 100 but we need also like 10 over 3s to actually end
+      the day ... removing "undeserved" failures where you just bump into a single predestrian in
+      an aggravated state"). One contact at 89 is a cliff today: a bump is about 10.8 points, and
+      from 90 or 89 one walker's startle ends at 100 and crying, from 85 at 96.8 and awake
+      (`DECISIONS.md`, M96; pinned in `tests/test_meters.gd`). Instead the bar may sit at 100, and
+      the day ends only once a further mass of excitement has arrived at the top within a window.
+      The player's "10 over 3s" is a starting point, not a decision: the numbers are measured —
+      the single bump at 89 must not end the day, a sustained source at the top must, and the
+      pram's nearly-crying cue (from 80) and the bar at 100 must still read as the danger they
+      are — and put to the player with the measurements before they are fixed.
 
 ---
 
