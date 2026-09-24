@@ -697,11 +697,50 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
-      own body takes her in, and nobody on screen is the one doing it — the guards stand at the
-      huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
-      stepping to the arm, or the boom stops being a detaining body and the huts alone are the
-      toll, with the boom's picture still barring the lanes for the cars. The player's call
+- [ ] **The boom never inspects her, and a raised one lets her pass** *(2026-09-24: "Boom
+      shouldn't inspect her. It should block her. If a car opens it for her and she walks through
+      she would probably get hit by the car, no?")*. A `checkpoint_gate` stops being a detaining body: a lowered boom blocks her, and a
+      street door's inspection happens only at its two huts (an alley door's at its posts,
+      unchanged). The gate keeps barring and lifting for the cars as it does now: up once a car
+      has waited at it `Tuning.GATE_STOP_SECONDS` (1.2 s), down the moment no car is within a
+      length of it. **A raised boom lets her through** *(2026-09-24: "I didn't say it should stay
+      solid when it's open"; asked whether a raised boom lets her through or blocks her either
+      way: "A yes")*: while a car holds the arm up she may walk under it and skip the hut's
+      inspection, and the price is that car — she is on its carriageway, the horn and the strike
+      apply as on any street, and the traffic fairness contract (**crowd-traffic**) must hold for
+      this crossing too. Every door then offers the choice: the hut's hold, or a dash past a car.
+      A lowered boom blocks her, and the gate is never a detaining body either way. **Slipping
+      under the boom sets the guards on her** *(2026-09-24: "The guards should start pursuing her
+      in that case")*. It is detected, not guessed: every frame, she has crossed a door's own
+      cross-street line (the one an inspection's release is reflected through) since the last
+      frame without `Stroller.teleport_to()` having moved her. The huts and the lowered boom are
+      solid, and an inspection's release is a teleport, so a walked crossing is a crossing under a
+      raised boom and nothing else. The chase is a pursuit under the existing pursuit contract
+      (`Tuning`'s chase-length and `PURSUIT_SHAKEN_OFF` rules, **events**: it lets go, and running
+      outpaces it). **The pursuers spawn at the huts** *(2026-09-24: "Or guards that pursue her
+      should spawn at the huts")*: they set off from that door's huts, and the guards drawn at
+      the huts stay at their posts, so the door stays manned. The run log notes each
+      walk under a boom, and a route-rig test requires none across its runs. **A catch ends the
+      day, and one guard is enough** *(2026-09-24, asked whether a catch ends the day or returns
+      her through an inspection, and whether one or two set off: "The day ends, not going through
+      the checkpoint is a clear unlawful thing here. She gets detained/imprisoned or whatever in
+      that case. This is independent of the resistance. She shouldn't do it. One guard is
+      enough")*. The pursuer is `hard_fail` at every heat level and on every day a door stands —
+      it is not a rung of the heat ladder — and the summary's hard-fail line says she was
+      detained. One pursuer spawns, at the hut nearer to her. The dash is meant to be a
+      temptation she should refuse: the hut's hold is the lawful price, the car and the guard the
+      unlawful one. **The
+      route rig never routes through the boom, either way** *(2026-09-24: "The bot shouldn't route
+      through the boom either way")*. Found while capturing the inspection: the boom's own body
+      took her in with nobody on screen doing it, since the guards stand at the huts; a guard
+      stepping to the arm was the other option and was not taken. What changes with it:
+      `checkpoint_gate`'s detention in `event_catalogue.gd`, the release latch's "every body of
+      the door whose reach she lands in", `docs/EVENTS.md` "Checkpoints" and the row, which say
+      the gate detains as a hut does (`docs/CITY.md` says "the gate only ever stops a car, never
+      her"), the gate's solid body (solid to her only while lowered), `docs/MECHANICS.md` and
+      `docs/CITY.md` where a door is "passable only by detention", and the route rig's door
+      handling (`src/dev/route_rig.gd`). Waits for M181's slice
+      two and M184's chokepoints to land, which are in those files
 
 - [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
       table in `src/day/day_controller.gd` has no line for `masked_pursuer`, so the summary falls
