@@ -383,21 +383,20 @@ leaves that has no picture yet.
       no picture of a sealed door; where she would see it — her building's street door, or a
       door inside — is not yet decided.
 
-- [ ] **The late days are timed** — the mark, the task, the happening and the walk home, day
-      12's swing-then-second-park first — with M184, a rig that walks the route, before anything
-      is cut ([PLAYTEST-122](playtests/PLAYTEST-122.md)); the figures go here. **Measured so far** (`--route mark,task,calm,home --invincible`, days 6 to 13 on seeds
-      4242, 90210 and 1234567; the table is in `DECISIONS.md`, M184): every day she walked home
-      from had at least 22 seconds left, most 50 to 120; on day 12 the second open park was
-      reached a tenth of a second after the swing on the one seed whose swing the rig reached;
-      days 10 and 11 have their tasks now and are not yet timed, and the rig reported "task
-      unavailable" for a bare-point task and stuck on day 11's mark on seed 4242 when slice two
-      was built. The rig now gets through every chokepoint (`DECISIONS.md`, M184, the rig gets through
-      chokepoints): 23 of the 24 runs walk the whole route. **Day 9 on seed 90210 does not fit**:
-      the mark at 27.7 s, the task at 91.5 s (3537px off, through four doors), the calm area at
-      99.6 s, and the day's 144 s run out on the walk home. Open: whether that task sits too far
-      on that seed, or the rig should take a calm area on the way home rather than the one
-      nearest the task. **Each late day's happening arrives differently** — waiting at home, found gone,
-      closing in front of her, coming on her way — and slice two keeps that variety.
+- [ ] **The last three late-day runs are timed.** The player asked for the late days to be timed
+      — the mark, the task, the happening and the walk home — before anything is cut
+      ([PLAYTEST-122](playtests/PLAYTEST-122.md)); 24 of the 27 runs are (`DECISIONS.md`, M181,
+      the late days are timed, with the table), and the day-length change that follows is M192. Three
+      runs the route rig does not finish, each for a reason of the rig's or the city's rather than
+      the clock's: day 12 on seed 90210, where a door at tile (75,97) holds her three times on the
+      way to the mark and the rig gives up; day 12 on 1234567, where the calm tile chosen at the
+      moment the swing is reached reads calm but the ground she paces on reads ordinary — most
+      likely the swing's own park being taken as she reaches it, which the rig should route away
+      from to the day's second calm area, not yet confirmed; and two legs walked round rather than
+      through (day 10's mark on 1234567 stalls in the crowd, day 11's mast on 1234567 against
+      scaffolding's outline). Nothing is cut until these are measured and the player has the
+      figures. **Each late day's happening arrives differently** — waiting at home, found gone,
+      closing in front of her, coming on her way — and the table shows the variety holding
 
 ---
 
