@@ -528,8 +528,9 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       before/after evidence with identical-behavior checks. Establish repeatable full active-play
       windows before ranking modest readout, graph, telemetry or pacing costs. Keep rejected short
       trials visible. CPU callbacks do not measure physical display presentation, and unchanged
-      counters do not rule out unobserved script work. M143, readout labels and windows, separately
-      owns the engine's previous-second `process` and `physics` maxima. A pacing switch remains
+      counters do not rule out unobserved script work. The readout's `process` and `physics`
+      lines are the engine's previous-second maxima (`DECISIONS.md`, M143), not per-frame costs.
+      A pacing switch remains
       diagnostic, not a shipping decision.
 - [ ] **Profile the current phone build only after that baseline.** Divide CPU time between the
       baby's every-physics-tick crowd contribution sweep, the halo's rendered-frame contribution
@@ -548,31 +549,6 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       platform allows it. No result here is assumed to explain the older laptop hitch, which
       predates every atlas path, and the native-host evidence supports neither worker jobs nor
       larger pages.
-
----
-
-## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
-the readout's `process` and `physics` lines measure. `Performance.TIME_PROCESS` and
-`TIME_PHYSICS_PROCESS` are not per-frame times: the engine keeps the longest process interval
-and the longest physics interval of the running second and hands each over once a second,
-and the process interval runs from the start of the frame's `_process` through the rendering
-server's sync and draw. So the readout's `last` is the worst frame of the previous second,
-`mean` is the mean of a number that changes once a second, and `max` is the larger of two
-such numbers — three columns of which one is a measurement. Every phone reading so far read
-`mean` as a per-frame cost, which is why it always outran the frame the `fps` line implied.
-
-- [ ] **One column each, named for what it is.** `FrameCost.readout_lines()` prints
-      `process  worst 24.3 ms` and `physics  worst 1.7 ms` — the engine's own number, labelled
-      as the worst interval of the last second — and drops `last`, `mean` and `max`, their
-      rolling windows and `sample()`'s feeding of them, unless a window still has a reader.
-      The run log's `frame` line keeps its `process`/`physics` fields but `docs/TELEMETRY.md`
-      says at the column's explanation and at the readout's that both are the worst interval
-      of the second, that the process interval includes the render submit, and that `worst
-      frame` (the observer's own longest delta) and `process` are therefore two readings of
-      the same hitch from two sides. The test that drives `readout_lines()` follows the new
-      shape. No evidence: a still of the readout says nothing a test does not.
 
 ---
 
