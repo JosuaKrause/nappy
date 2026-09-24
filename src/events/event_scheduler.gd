@@ -158,7 +158,7 @@ const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 ## a field or a beat inside `Tuning.CHECKPOINT_EVENT_GAP` of one; see `_clear_of_the_doors()`.
 ##
 ## `target` is the day's narrow resistance target — the tiles of day 9's door, day 12's swing or the
-## finale's district the contact may stand on today, already past every refusal the director makes
+## power station's front door the contact may stand on today, already past every refusal the director makes
 ## of the tile itself — and `standing` is what obstructs the day whatever this plans: the seals and
 ## the region wall's own bodies, both planned before this runs. Both empty on every other day, and
 ## then the day is planned exactly as it would be without them. See
@@ -3006,7 +3006,7 @@ static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
 ## walk through to reach the park behind it.
 ##
 ## **On days 9, 12 and the finale's it keeps a route to the day's resistance target as well**
-## (`target`: the tiles of the door, the swing or the district the contact may stand on, already
+## (`target`: the tiles of the door, the swing or the station's door the contact may stand on, already
 ## past the director's own refusals of the tile — see `EventManager.start_day()`). The day is
 ## planned so the route exists: the target is tree ground (`RouteTree.for_day`), so no seal stands
 ## on the way, no closure lands on it and no wall is placed on it, and this is the last line under

@@ -18,7 +18,9 @@ extends RefCounted
 ##   back to `EVENT`'s own placement when the run has no such scar.
 ## - `DOOR` sits at one of today's region-wall doors, a bare point rather than a rider.
 ## - `PARK_SWING` sits at the swing of one specific park's playground, also a bare point.
-enum TargetKind { EVENT, SCAR, DOOR, PARK_SWING }
+## - `STATION_DOOR` sits on the pavement in front of the power station's front door
+##   (`CityMap.power_station_door`), a bare point — the last night's hand-over.
+enum TargetKind { EVENT, SCAR, DOOR, PARK_SWING, STATION_DOOR }
 
 class Step extends RefCounted:
 	var index := 0
@@ -34,19 +36,19 @@ class Step extends RefCounted:
 	var grants_progress := true
 	## Tile types the contact may sit on. For a pickup this is where the mark waits; for an
 	## `EVENT` or a `SCAR` fallback it is where the task's own `EventInstance` is sited. Unused
-	## by `DOOR` and `PARK_SWING`, which compute their own point from today's city.
+	## by `DOOR`, `PARK_SWING` and `STATION_DOOR`, which compute their own point from today's
+	## city.
 	var placement: Array[int] = []
-	## Placed in or around this district instead, when set. Only the finale uses this.
-	var district := -1
 	## The `EventDef` id a perform step's contact rides on, or the scar id a `SCAR` step looks
-	## up. "" for a pickup, the finale, `DOOR` and `PARK_SWING`, none of which name a row.
+	## up. "" for a pickup and for the kinds that compute a bare point, none of which name a row.
 	var task_event_id := ""
 	var target_kind := TargetKind.EVENT
 	## True for a one-place task: the red arrow points at it from the moment the mark is
 	## touched until it is done, and its contact is never subject to `_track_first_reached()`'s
 	## retargeting. False for the two tasks any live instance answers (the man shouting, a
 	## roadblock), which earn no arrow and do retarget onto whichever instance she reaches
-	## first. Unused by a pickup and by the finale, neither of which ever draws the arrow.
+	## first. Unused by a pickup, which never draws the arrow; true for the finale, whose door is
+	## one place.
 	var is_one_place := true
 	## Fraction of the day after which the step is gone for good. 0 means no deadline. No task
 	## built this slice carries one; kept for the two days a later slice adds.
@@ -97,6 +99,19 @@ static func for_day(day: int, completed: Array[int], failed: Array[int],
 		return step
 	return null
 
+## The kinds whose contact is a bare point the director computes from today's city rather than a
+## tile type or a rider — and so the kinds `narrow_target_on()` answers for.
+const NARROW_KINDS: Array[TargetKind] = [TargetKind.DOOR, TargetKind.PARK_SWING,
+		TargetKind.STATION_DOOR]
+
+## Whether `step`'s contact may stand on held ground (`CityMap.is_held_at`). A hold keeps a
+## catalogue row off ground something else has taken, and a contact is not a row: day 9's door
+## stands on a region door's own segment, which is held so no row sits in the doorway, and the
+## station's front door can face a street the day's spur turned into a region door. Nothing else
+## asks this, so every other contact keeps the hold as one more refusal.
+static func stands_on_held_ground(step: Step) -> bool:
+	return step != null and step.target_kind in [TargetKind.DOOR, TargetKind.STATION_DOOR]
+
 static func by_index(index: int) -> Step:
 	for step in all():
 		if step.index == index:
@@ -106,21 +121,22 @@ static func by_index(index: int) -> Step:
 # ------------------------------------------------------------ narrow targets ---
 
 ## The step on `day` whose contact is one narrow place the day has to keep a route to — day 9's
-## door, day 12's swing, the finale's district — or null on every other day. A pure function of
+## door, day 12's swing, the power station's front door on the last night — or null on every
+## other day. A pure function of
 ## the day, never of what the run has done: the day's corridor is a pure function of the city and
 ## the day (`RouteTree.for_day`), and it is planned around this answer, so a day plans the same
 ## whether or not this run will actually be offered the step.
 ##
 ## **Narrow is the shape of the pool, not the importance of the task.** A mark's alleys and a
 ## rider's sidewalks are hundreds of tiles across the whole city, of which the day's obstruction
-## seals off some but never plausibly all; a door, a swing and a district are a handful of tiles in
-## one place, which the day's own seals and bodies can ring entirely. These three are what the
+## seals off some but never plausibly all; a door, a swing and the station's front door are a
+## handful of tiles in one place, which the day's own seals and bodies can ring entirely. These three are what the
 ## day's planning keeps a route to (`docs/CITY.md`, "Guarantees", the day's own half).
 static func narrow_target_on(day: int) -> Step:
 	for step in all():
 		if step.day != day or step.is_pickup or not step.available:
 			continue
-		if step.district >= 0 or step.target_kind in [TargetKind.DOOR, TargetKind.PARK_SWING]:
+		if step.target_kind in NARROW_KINDS:
 			return step
 	return null
 
@@ -129,8 +145,6 @@ static func narrow_target_on(day: int) -> Step:
 ## tile of. One function for both, so the tiles the planning protects are the tiles the director
 ## picks among. `region_plan` is today's (`City.region_plan()`); only a `DOOR` reads it.
 ##
-## - **A district**: every walkable tile in or around the blocks that started as it
-##   (`CityMap.purpose_tiles`).
 ## - **`DOOR`**: the middle tile of each of today's region-wall doors, **less any door whose own
 ##   segment borders the home block**. `RegionPlanner._union_atoms()` only atomises the one street
 ##   the doorstep notch opens onto, so the block's other bordering segments can become doors like
@@ -140,13 +154,17 @@ static func narrow_target_on(day: int) -> Step:
 ## - **`PARK_SWING`**: the swing of each open park's playground (`CityMap.playgrounds`, which names
 ##   only the parks currently open), at the point `City._dress_block()` draws the frame
 ##   (`CityMap.swing_position()`).
+## - **`STATION_DOOR`**: the pavement tiles in front of the power station's front door
+##   (`CityMap.power_station_door`), where she stands to reach it — the same tiles the day's
+##   corridor grows its spur to (`RouteTree.for_day`). Empty on a city with no station, which
+##   `CityGenerator.validate()` refuses.
 static func target_candidates(step: Step, map: CityMap,
 		region_plan: RegionPlanner.RegionPlan) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	if not step or not map:
 		return found
-	if step.district >= 0:
-		return map.purpose_tiles(step.district as GameEnums.BlockPurpose)
+	if step.target_kind == TargetKind.STATION_DOOR:
+		return map.rect_tiles(map.power_station_door) if map.has_power_station() else found
 	if step.target_kind == TargetKind.DOOR:
 		if not region_plan:
 			return found
@@ -162,25 +180,6 @@ static func target_candidates(step: Step, map: CityMap,
 	if step.target_kind == TargetKind.PARK_SWING:
 		for rect in map.playgrounds:
 			found.append(map.world_to_tile(map.swing_position(rect)))
-	return found
-
-## The tiles of the finale's district that the day's corridor is joined to on the finale's day
-## (`RouteTree.for_day`) — empty on every other day. **Only the district's tiles no street segment
-## contains**: the corners of its blocks, which stand in junction boxes, and any open ground inside
-## its lots. A tile on a street segment can be held today (`CityMap.is_held_at`) — a region door the
-## spur itself turns a boundary into, a hard seal, a street bordering the home block — and the
-## director refuses held ground for a district, so a spur ending there could protect a route to a
-## tile the contact may never stand on. A junction corner or a lot's own ground is never held.
-## The home block's own lot is left out for the same reason (`CityMap.is_on_home_block`).
-static func district_tiles_to_reach(map: CityMap, day: int) -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	var step := narrow_target_on(day)
-	if not step or step.district < 0:
-		return found
-	for tile in map.purpose_tiles(step.district as GameEnums.BlockPurpose):
-		if map.is_on_home_block(tile) or StreetNetwork.segment_containing(tile) != null:
-			continue
-		found.append(tile)
 	return found
 
 ## Explicit rather than a dictionary of field names. The first version built these with
@@ -223,14 +222,15 @@ static func _unavailable(index: int, title: String, day: int) -> Step:
 	step.available = false
 	return step
 
-static func _finale(index: int, title: String, day: int, district: int) -> Step:
+## The last night: the power station's front door, offered only at the goal, by the red arrow.
+static func _finale(index: int, title: String, day: int, header: String) -> Step:
 	var step := Step.new()
 	step.index = index
 	step.title = title
 	step.day = day
-	step.district = district
+	step.target_kind = TargetKind.STATION_DOOR
 	step.needs_goal = true
-	step.is_one_place = false
+	step.header = header
 	return step
 
 static func _build() -> Array[Step]:
@@ -294,7 +294,7 @@ static func _build() -> Array[Step]:
 				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], false, TargetKind.EVENT,
 				false, "the roadblock"),
 
-		# The finale, offered only to a player who already did the work. Day 14 keeps the
-		# civic-district contact it has today; the power station's front door is M183's.
-		_finale(15, "The last night", Tuning.RUN_LENGTH_DAYS, GameEnums.BlockPurpose.CIVIC),
+		# The finale, offered only to a player who already did the work: the power station's
+		# front door, one place, by the red arrow. She hands the key over there and walks away.
+		_finale(15, "The last night", Tuning.RUN_LENGTH_DAYS, "the power station's front door"),
 	]

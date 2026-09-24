@@ -79,9 +79,8 @@ func _test_step_table(t) -> void:
 		t.check(step.index == previous_index + 1, "step indices run consecutively from 1")
 		t.check(step.day >= previous_day, "steps unlock in calendar order")
 		if step.available:
-			t.check(step.placement.size() > 0 or step.district >= 0
-					or step.target_kind in [ResistanceSteps.TargetKind.DOOR,
-							ResistanceSteps.TargetKind.PARK_SWING],
+			t.check(step.placement.size() > 0
+					or step.target_kind in ResistanceSteps.NARROW_KINDS,
 					"step %d knows where it goes" % step.index)
 		if step.is_pickup:
 			t.check(not step.grants_progress, "a pickup does not grant progress")
@@ -947,8 +946,8 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 
 		var attempts := 0
 		for step in ResistanceSteps.all():
-			if step.district >= 0 or not step.available or not step.is_pickup:
-				continue   # the finale sits in a district, and only a mark ever sits in an alley
+			if step.needs_goal or not step.available or not step.is_pickup:
+				continue   # the finale sits at the station's door, and only a mark sits in an alley
 			for trial in 20:
 				attempts += 1
 				var mark_rng := RandomNumberGenerator.new()
@@ -1284,7 +1283,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		# The real day order, `City.start_day()` first: it is what holds today's region plan, and
 		# without it the director cannot tell a region door's own bodies from the wall's
 		# (`ResistanceDirector._ensure_reachability()`), counts every door shut, and finds the
-		# finale's district — and everything else outside the home's region — out of reach.
+		# station's front door — and everything else outside the home's region — out of reach.
 		var state := CityState.new()
 		state.begin_day(_city.map.block_plans, Tuning.RUN_LENGTH_DAYS)
 		_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))
@@ -1311,8 +1310,15 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		var director := _director(t)
 		director.start_day(Tuning.RUN_LENGTH_DAYS,
 				_rng(Tuning.RUN_LENGTH_DAYS, "resistance"), 300.0)
-		t.check(director.current_step() != null, "the last night has a contact")
-		director._on_contact_completed(15)
+		var finale := director.current_step()
+		t.check(finale != null, "the last night has a contact")
+		t.check(finale != null and finale.needs_goal, "and it is the finale's own")
+		var door := _city.map.power_station_door_position()
+		t.check(director.contact_position().distance_to(door) <= Tuning.TILE_SIZE,
+				"the contact stands on the pavement in front of the power station's front door")
+		t.check(director.red_arrow_target() == director.contact_position(),
+				"and the red arrow points at it")
+		director._on_contact_completed(finale.index if finale else -1)
 
 		t.check(GameState.sabotage_done, "completing it does the sabotage")
 		t.check(quiet.size() == 1, "and the city goes quiet, once")
@@ -1675,7 +1681,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 					if task_step != null:
 						checked += 1
 						var task_tile := city.map.world_to_tile(director.contact_position())
-						var allow_held := task_step.target_kind == ResistanceSteps.TargetKind.DOOR
+						var allow_held := ResistanceSteps.stands_on_held_ground(task_step)
 						t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
 								allow_held, grid, blocked, reached),
 								("seed %d day %d: step %d's contact stands on walkable, " +
@@ -1687,15 +1693,15 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 		GameState.completed_resistance_alley_tiles = saved_tiles
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
 
-## Cities whose finale's district the day's own seals and bodies sealed off entirely before the
-## finale's day kept a route to it — every legal `CIVIC` tile out of reach from home — and cities
-## where most of it was, found by `tests/probes/m181_resistance_targets.gd`'s wide run. Chosen for
-## what they would catch rather than for luck: the guarantee is a rule about every day, and these
-## are the days the rule has work to do on.
+## Cities whose narrow targets the day's own seals and bodies could ring, found by
+## `tests/probes/m181_resistance_targets.gd`'s wide run: each had a last-night destination cut off
+## from home before the day kept a route to it. Chosen for what they would catch rather than for
+## luck: the guarantee is a rule about every day, and these are days the rule has work to do on.
 const NARROW_TARGET_SEEDS: Array[int] = [196838, 355218, 323542, 252271]
 
 ## **The day keeps a route to its narrow resistance target** (`docs/CITY.md`, "Guarantees"): day
-## 9's door, day 12's swing and the finale's district, planned through the real day order —
+## 9's door, day 12's swing and the power station's front door, planned through the real day
+## order —
 ## `City.start_day()`, `EventManager.start_day()`, then the director's own `_place()` of the day's
 ## step — and asked of an independent flood (`_day_reachability()`). Two things per day: some tile
 ## of the pool is legal, unobstructed and reachable from home, and the tile the director actually
@@ -1731,7 +1737,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 				if pool.is_empty() and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 					continue
 				var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
-				var allow_held := step.target_kind == ResistanceSteps.TargetKind.DOOR
+				var allow_held := ResistanceSteps.stands_on_held_ground(step)
 				var reachability := _day_reachability(city)
 				var grid: ReachabilityGrid = reachability[0]
 				var blocked: Dictionary = reachability[1]

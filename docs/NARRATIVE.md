@@ -117,7 +117,7 @@ that through the day before the last night:
 | 9 | The crossing | One of that day's own region doors, the first day the wall stands at all. | red |
 | 12 | The swing | The playground of one specific park. | red |
 | 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's hut — rather than round it. | any instance |
-| 14 | The last night | The finale, offered only once the goal is met. Sabotage. | none |
+| 14 | The last night | The power station's front door, offered only once the goal is met. Touching it is the sabotage. | red |
 
 **Two kinds of task.** One any live instance of the right thing answers — the man shouting, a
 roadblock — and gets no arrow: approaching any of them is still the cost, and whichever one she

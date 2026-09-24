@@ -2,7 +2,7 @@ class_name RouteTree
 extends RefCounted
 ## The day's corridor: one branch from the doorstep to every calm area still worth reaching, and
 ## a spur to the day's own narrow destination where one is not already on it — the power station's
-## front door on its day, the finale's district on the finale's (`_grow_a_spur_to`).
+## front door on its day (`_grow_a_spur_to`).
 ##
 ## The design is docs/CITY.md, "Diversions — the design" and "How the corridor is built", and
 ## docs/TODO.md, M69, "The day's route tree moves onto the grid too".
@@ -235,14 +235,11 @@ static func for_the_run(map: CityMap) -> RouteTree:
 ## used.
 ##
 ## **On `Tuning.POWER_STATION_DAY` the tree also reaches the power station's front door**, the
-## day's task — see `_grow_a_spur_to`. On every other day nothing leads her there.
-##
-## **On the finale's day it also reaches the finale's district** (`ResistanceSteps.
-## district_tiles_to_reach`), by a second spur grown after the station's, so the station's spur is
-## exactly what it would be without it. Day 9's door and day 12's swing need no spur of their own:
-## a region door is a boundary crossing the tree already uses (`RegionPlanner.plan_day`), and a
-## park with a playground is a calm area the tree already grows a branch to. Keyed on the day and
-## never on the run, so a day plans the same whether or not this run will be offered the finale.
+## last night's task — see `_grow_a_spur_to`. On every other day nothing leads her there. Day 9's
+## door and day 12's swing need no spur of their own: a region door is a boundary crossing the
+## tree already uses (`RegionPlanner.plan_day`), and a park with a playground is a calm area the
+## tree already grows a branch to. Keyed on the day and never on the run, so a day plans the same
+## whether or not this run will be offered the last night's task.
 static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
@@ -251,9 +248,6 @@ static func for_day(map: CityMap, day: int) -> RouteTree:
 			map.blocked_segments(), grid, rng)
 	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
 		tree._grow_a_spur_to(map.rect_tiles(map.power_station_door))
-	var district := ResistanceSteps.district_tiles_to_reach(map, day)
-	if not district.is_empty():
-		tree._grow_a_spur_to(district)
 	return tree
 
 ## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets a
@@ -660,8 +654,7 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 			queue.append(next)
 	return []
 
-## Joins a destination the day sends her to — the power station's front door, the finale's
-## district — to the tree, so it is tree ground like a calm area's way in, which is what every
+## Joins a destination the day sends her to — the power station's front door — to the tree, so it is tree ground like a calm area's way in, which is what every
 ## guarantee about the day is stated over. A boundary crossing the spur takes is a door rather than
 ## wall (`RegionPlanner.plan_day`), nothing seals it (`SealPlanner`) and no closure lands on it
 ## (`ClosurePlanner`), all by the rules they already follow for the rest of the tree; the station's
@@ -706,8 +699,8 @@ func _grow_a_spur_to(tiles: Array[Vector2i]) -> void:
 ## search from a destination beside it would otherwise walk straight across it to the tree on the
 ## far side, and `_adopt()` would give a home node a parent. The trunk hangs off that same home
 ## node, so its chain would run back into itself, and `_resettle_the_tails()`, which walks the tree
-## outward from the home nodes, would never finish. The station's door is blocks from the home and
-## never came near it; the finale's district can stand on the next block.
+## outward from the home nodes, would never finish. The station's door stands at least
+## `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home, so the guard costs it nothing.
 func _spur_path(sources: Array[int], avoid_spine: bool) -> Array[int]:
 	var previous := {}
 	var queue: Array[int] = []

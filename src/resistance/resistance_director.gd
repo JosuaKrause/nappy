@@ -176,7 +176,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 ## instead of two. `ResistanceSteps.TargetKind` decides how a non-pickup, non-finale step finds
 ## its own place: a fresh rider (`EVENT`), the run's own recorded scar (`SCAR`, falling back to
 ## an ordinary placement of the same row when the run has none), or a bare point this director
-## computes itself (`DOOR`, `PARK_SWING`).
+## computes itself (`ResistanceSteps.NARROW_KINDS`).
 func _begin_step(step: ResistanceSteps.Step) -> void:
 	_step = step
 	if not _step:
@@ -204,8 +204,7 @@ func _begin_step(step: ResistanceSteps.Step) -> void:
 		_rider = scar_instance
 		_contact.ride(_step, scar_instance, offset)
 		at = scar_instance.global_position + offset
-	elif _step.is_pickup or _step.district >= 0 or _step.target_kind in [
-			ResistanceSteps.TargetKind.DOOR, ResistanceSteps.TargetKind.PARK_SWING]:
+	elif _step.is_pickup or _step.target_kind in ResistanceSteps.NARROW_KINDS:
 		_contact.setup(_step, at)
 	else:
 		var task_def := EventCatalogue.by_id(_step.task_event_id)
@@ -419,14 +418,15 @@ func _nearest_legal_tile(at: Vector2, tile_radius: int) -> Vector2:
 	return Vector2.INF
 
 ## Where a step's contact — or, for an `EVENT`/`SCAR`-fallback perform step, the event it rides
-## on — is sited. A pickup and a `district`-less perform both name tile types in `placement`;
-## the finale names a `district` instead; `DOOR` and `PARK_SWING` compute their own point from
-## today's city, since neither is a matter of picking a tile type.
+## on — is sited. A pickup and an `EVENT` perform both name tile types in `placement`; `DOOR`,
+## `PARK_SWING` and `STATION_DOOR` compute their own point from today's city, since none is a
+## matter of picking a tile type.
 func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
-	if step.district >= 0:
+	if step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR:
 		# The same pool the day's planning kept a route to (`target_ground()`), so the draw is
 		# asked for reachability like every other pool and always finds some.
-		return _pick_reachable(ResistanceSteps.target_candidates(step, _map, _region_plan()), rng)
+		return _pick_reachable(ResistanceSteps.target_candidates(step, _map, _region_plan()), rng,
+				true)
 	if step.target_kind == ResistanceSteps.TargetKind.DOOR:
 		return _place_at_a_door(rng)
 	if step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
@@ -485,7 +485,8 @@ func _region_plan() -> RegionPlanner.RegionPlan:
 	return _city.region_plan() if _city else null
 
 ## The day's narrow resistance target as the day's planning protects it: the tiles of day 9's door,
-## day 12's swing or the finale's district (`ResistanceSteps.target_candidates()`) that pass every
+## day 12's swing or the power station's front door (`ResistanceSteps.target_candidates()`) that
+## pass every
 ## refusal this director makes of a tile before it draws (`is_legal_ground()`), empty on every other
 ## day. `EventManager.start_day()` hands it to `EventScheduler.build_day()`, which keeps a route from
 ## home to one of these tiles among the day's own bodies — so the tile `_pick_reachable()` then
@@ -499,7 +500,7 @@ static func target_ground(map: CityMap, day: int,
 	if not step:
 		return found
 	var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
-	var allow_held := step.target_kind == ResistanceSteps.TargetKind.DOOR
+	var allow_held := ResistanceSteps.stands_on_held_ground(step)
 	for tile in ResistanceSteps.target_candidates(step, map, region_plan):
 		if is_legal_ground(map, tile, walled, allow_held):
 			found.append(tile)
@@ -557,7 +558,7 @@ static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[R
 ## **Two kinds of pool, and the check means something different in each.** A mark's alleys and a
 ## rider's sidewalks are hundreds of tiles across the whole city; the day's obstruction seals off
 ## some of them and never plausibly all, so for them the check is a filter. Day 9's door, day 12's
-## swing and the finale's district are a handful of tiles in one place, which the day's own seals
+## swing and the station's front door are a handful of tiles in one place, which the day's own seals
 ## and bodies could ring entirely — so the day is planned to keep a route to one of them
 ## (`target_ground()`; `docs/CITY.md`, "Guarantees"), and for them the check finds the tile the
 ## planning kept rather than hoping one survived.
@@ -570,10 +571,11 @@ static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[R
 ## only ever holds `ALLEY` tiles (see `_on_contact_completed()`), so this filter is a silent no-op
 ## against every other kind of placement, none of which is ever an alley.
 ##
-## **`allow_held` skips only the `is_held_at` refusal, and only one caller passes it.** Held
-## ground means *no hazard or catalogue row may be sited here*; a contact is neither, and for a
-## step whose candidates are the held region-door segments themselves (`_place_at_a_door()`) the
-## filter would refuse the very ground the task points at. It did — see that call's own note.
+## **`allow_held` skips only the `is_held_at` refusal, and only the two door placements pass it**
+## (`ResistanceSteps.stands_on_held_ground()`). Held ground means *no hazard or catalogue row may be
+## sited here*; a contact is neither, and for a step whose candidates are the held region-door
+## segments themselves (`_place_at_a_door()`), or the station's front door on a street the spur
+## made a region door, the filter would refuse the very ground the task points at.
 ## The other refusals stand even then: a door on closed, unwalkable, obstructed or home-block-lot
 ## walled-alley ground is still a door she cannot cross today.
 ##
@@ -986,7 +988,8 @@ func pointable_objective() -> Vector2:
 
 ## Where the red arrow should point, or `Vector2.INF` when nothing warrants one: no step today,
 ## today's step is the mark rather than the task, or the task is one any instance answers (the
-## man shouting, a roadblock) — the two tasks that never earn an arrow. *(PLAYTEST-117: "a red
+## man shouting, a roadblock) — the two tasks that never earn an arrow. The last night's front
+## door is one place and has it from dawn, since the finale has no mark. *(PLAYTEST-117: "a red
 ## arrow (like the blue home arrow but red) to point to tasks where we need to go to a specific
 ## location ... unlike the yeller task where we can just go to any yeller".)*
 func red_arrow_target() -> Vector2:

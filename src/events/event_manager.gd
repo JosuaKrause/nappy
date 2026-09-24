@@ -238,7 +238,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
 		doors.append(body.position)
-	# The day's narrow resistance target — day 9's door, day 12's swing, the finale's district —
+	# The day's narrow resistance target — day 9's door, day 12's swing, the station's front door —
 	# as the tiles its contact may stand on today, and what obstructs the day whatever the
 	# catalogue does: the seals just planned and the region wall's own bodies. `build_day` keeps a
 	# route from home to one of those tiles among the day's own bodies, the way it keeps one to the
