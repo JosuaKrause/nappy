@@ -18,18 +18,22 @@ mother beside each is for size only, and the window lighting and layouts were ch
 sheet.
 
 `fronts-after-{gamescale,4x}.png` are drawn by the game's own `Building` node instead, from the
-baked atlas, by `render-fronts.tscn` (below) with `--set fronts`: two residential fronts with
-escapes a and b, a two-story residential front, an industrial, a commercial and a civic front,
-her own building, a boarded commercial block and a burnt residential one with an escape. Every
-roll — windows lit, window style, storefronts, the door's column, the escape — is the one
-`Building` makes for the lot the script placed it on; only the escape a front must carry was
-asked for, by trying lots until the roll gave it. `--zoom 2` is the camera's own zoom, `--zoom 4`
+baked atlas, by `render-fronts.tscn` (below) with `--set fronts`: a residential front with one
+escape, a two-story residential front with none, a wide (12-column) residential front with two
+escapes kept `Building.FIRE_ESCAPE_GAP_COLUMNS` (4 columns) apart, an industrial, a commercial and
+a civic front, her own building, a boarded commercial block and a burnt residential one with an
+escape. Every roll — windows lit, window style, storefronts, the door's column, the escape(s), and
+each balcony's own potted-plant roll — is the one `Building` makes for the lot the script placed it
+on; only the fire-escape outcome a front must show (one escape, two escapes, or none) was asked
+for, by trying lots until the roll gave it. `--zoom 2` is the camera's own zoom, `--zoom 4`
 enlarged.
 
 ## The fire escape
 
 `fire-escape-stack-{gamescale,4x}.png` are drawn by `Building` the same way, `--set fire-escape`:
-a five-story front with escape a and one with escape b, a four-story and two three-story fronts,
+a five-story front whose escape was searched for until its own balconies mixed the potted-plant
+picture and the plain one — "the flower pot version should be chosen at random"
+(PLAYTEST-124.md, statement 19) — a four-story and two three-story fronts each with one escape,
 and a two-story front whose own roll gave it an escape that it does not carry, since a front of
 two floors carries none. Each escape has a balcony on every floor line from the top floor's down
 to the first floor's, the flight of each hanging down to the next, and the platform alone on the

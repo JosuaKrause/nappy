@@ -26,31 +26,35 @@ const BOARDED := Building.Condition.BOARDED
 const BURNT := Building.Condition.BURNT
 
 ## One front on a sheet: a title, columns, wall rows, roof rows, lot variant (the district
-## colour), district, condition, whether it is her own building, and which fire escape the front
-## must carry: "a", "b", "any" (the first lot tried, whatever it rolled), or "dropped" — a front
-## whose own `front:` stream rolled an escape (replayed here the way `tests/test_ground_floor.gd`
-## replays it) and which carries none, because it is too short for one.
+## colour), district, condition, whether it is her own building, and which fire-escape outcome the
+## front must show: "any" (the first lot tried, whatever it rolled), "one-escape" (a lot that rolls
+## exactly one escape, whichever pots it shows), "dropped" — a front whose own `front:` stream
+## rolled an escape (replayed here the way `tests/test_ground_floor.gd` replays it) and which
+## carries none, because it is too short for one — "mixed-pots" — an escape whose own balconies
+## show both the potted-plant picture and the plain one, so the per-balcony roll
+## (`FIRE_ESCAPE_POT_SHARE`) reads on the sheet rather than one variant for the whole stack — or
+## "two-escapes" — a front wide enough (`SECOND_FIRE_ESCAPE_MIN_COLUMNS`) to roll a second escape,
+## and did, the two kept `FIRE_ESCAPE_GAP_COLUMNS` apart.
 const SETS := {
 	## The player's diagram, a five-story front, and the short cases below it.
 	"fire-escape": [
-		["five stories, escape a", 8, 5, 2, 0, R, LIVED, false, "a"],
-		["five stories, escape b", 8, 5, 2, 3, R, LIVED, false, "b"],
-		["four stories, escape b", 6, 4, 2, 5, R, LIVED, false, "b"],
-		["three stories, escape a", 6, 3, 2, 1, R, LIVED, false, "a"],
-		["three stories, escape b", 5, 3, 2, 4, R, LIVED, false, "b"],
+		["five stories, mixed pots", 8, 5, 2, 0, R, LIVED, false, "mixed-pots"],
+		["four stories", 6, 4, 2, 5, R, LIVED, false, "one-escape"],
+		["three stories, narrow", 5, 3, 2, 4, R, LIVED, false, "one-escape"],
+		["three stories, wide", 6, 3, 2, 1, R, LIVED, false, "one-escape"],
 		["two stories: rolled one, carries none", 5, 2, 2, 2, R, LIVED, false, "dropped"],
 	],
 	## Whole fronts of every kind, at the heights the city builds them.
 	"fronts": [
-		["residential, escape a", 6, 3, 2, 0, R, LIVED, false, "a"],
-		["residential, escape b", 5, 3, 2, 3, R, LIVED, false, "b"],
+		["residential, one escape", 6, 3, 2, 0, R, LIVED, false, "one-escape"],
 		["residential, two stories", 5, 2, 2, 5, R, LIVED, false, "any"],
+		["wide residential front, two escapes", 12, 5, 2, 6, R, LIVED, false, "two-escapes"],
 		["industrial", 6, 2, 2, 4, I, LIVED, false, "any"],
 		["commercial", 6, 3, 2, 1, C, LIVED, false, "any"],
 		["civic", 5, 3, 2, 5, V, LIVED, false, "any"],
 		["her own building", 5, 3, 2, 2, R, LIVED, true, "any"],
 		["boarded commercial", 6, 3, 2, 1, C, BOARDED, false, "any"],
-		["burnt residential, escape a", 5, 3, 2, 4, R, BURNT, false, "a"],
+		["burnt residential, escape", 5, 3, 2, 4, R, BURNT, false, "one-escape"],
 	],
 }
 const PER_ROW := 3
@@ -147,17 +151,26 @@ func _find_front(front: Array, ground: Vector2) -> Building:
 		building.height = int(front[2]) * TILE
 		building.position = at
 		layer.add_child(building)
-		var got := "none"
-		if building._fire_escape_col >= 0:
-			got = "b" if building._fire_escape_variant_b else "a"
-		elif _rolled_an_escape(building):
-			got = "dropped"
+		var got := _outcome_of(building)
 		if got == want or want == "any":
 			return building
 		layer.free()
 	push_error("no lot rolled the escape '%s' for %s" % [want, front[0]])
 	get_tree().quit(1)
 	return null
+
+## What this front's own roll produced, in the vocabulary `SETS`'s own last column uses: "none",
+## "dropped", "two-escapes", "mixed-pots" or "one-escape".
+static func _outcome_of(building: Building) -> String:
+	if building._fire_escape_cols.size() >= 2:
+		return "two-escapes"
+	if building._fire_escape_cols.is_empty():
+		return "dropped" if _rolled_an_escape(building) else "none"
+	var pots: Dictionary = building._fire_escape_pots.get(building._fire_escape_cols[0], {})
+	var values := pots.values()
+	if values.has(true) and values.has(false):
+		return "mixed-pots"
+	return "one-escape"
 
 static func _rolled_an_escape(building: Building) -> bool:
 	var rng := RandomNumberGenerator.new()

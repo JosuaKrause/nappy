@@ -1869,14 +1869,20 @@ Top-down camera with a fake vertical extrusion:
   its own fill opaque over the wall it sits on. An odd final column is blank wall rather than a
   window, and a facade only one wall row tall keeps its wall base so the complete store fits. Each storefront has a 26×34px entrance
   aligned to the shared ground line. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
-  of `RESIDENTIAL` facades three floors tall or more carries a fire escape up one column — both
-  drawn as overlays, after the wall, rather than replacing a texture the way a storefront does.
-  The escape is one picture per floor (`Building.fire_escape_landings()`): a balcony on every
-  floor line from the top floor's down to the first floor's, each but the lowest hanging its
-  flight down to the next, every flight facing the same way; the lowest is the platform alone,
-  so the ground floor carries only the brackets under it and nothing comes down to the
-  sidewalk. A two-story front carries none, since its escape would be that platform alone; the
-  roll that decides an escape is still made on it, so the bound moves no stream. The awning is the one piece of a front that leaves the wall plane; it stays inside the
+  of `RESIDENTIAL` facades three floors tall or more carries a fire escape up one column, drawn
+  as an overlay, after the wall, rather than replacing a texture the way a storefront does. A
+  front seven columns wide or more that already carries one may also roll a second, its own
+  seeded share, kept at least `Building.FIRE_ESCAPE_GAP_COLUMNS` (4) columns from the first —
+  centre to centre, so at least 1.5 escape widths of wall (72px) separate the two pictures' own
+  edges — and, like the first, off the corner columns. The escape is one picture per floor per
+  column (`Building.fire_escape_landings()`): a balcony on every floor line from the top floor's
+  down to the first floor's, each but the lowest hanging its flight down to the next, every
+  flight facing the same way; the lowest is the platform alone, so the ground floor carries only
+  the brackets under it and nothing comes down to the sidewalk. Each balcony independently shows
+  the potted-plant picture or the plain one, a third of them at random, rather than one variant
+  for the whole escape. A two-story front carries none, since its escape would be that platform
+  alone; the roll that decides an escape is still made on it, so the bound moves no stream. The
+  awning is the one piece of a front that leaves the wall plane; it stays inside the
   wall's own footprint rather than reaching over the pavement's walkable band.
 - **A multi-story front with no other way in has one entrance door**
   (`Building.entrance_door_col()`), since a ground floor with no windows needs a way in. A
@@ -1887,12 +1893,12 @@ Top-down camera with a fake vertical extrusion:
   gets exactly one, an overlay standing on the ground line at its column's centre: the plain
   `entrance_door.svg`, or the steel `entrance_door_industrial.svg` on an `INDUSTRIAL` block.
   Its column is rolled from a stream of its own, so no window, style, storefront, awning, shutter
-  or fire-escape roll moves because of it; it keeps off the fire escape's column and, wherever
-  the front has another to offer, off both columns beside it, which the escape's balconies reach
+  or fire-escape roll moves because of it; it keeps off every fire escape's column and, wherever
+  the front has another to offer, off both columns beside each, which the escapes' balconies reach
   into, and off the corner columns where there is still a choice. Like a storefront, the door is
   36px tall and rises four pixels into the row above, so every window on that row sits two
-  pixels higher to keep its sill clear. The door's cell and the fire escape's are not blank wall:
-  `Building.blank_ground_floor_cells()`, the cells a poster can go on, leaves both out.
+  pixels higher to keep its sill clear. The door's cell and a fire escape's are not blank wall:
+  `Building.blank_ground_floor_cells()`, the cells a poster can go on, leaves them all out.
 - **A building's upper-floor windows carry one of three styles, rolled once for the whole
   building**: the plain pair, a tall sash pair, or a shuttered pair that lights up like any other —
   ordinary street variety, unconnected to the day or the block's own condition. Going
