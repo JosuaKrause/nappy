@@ -134,6 +134,7 @@ going quietly stale.
 | `--no-telemetry` | Do not write a run log |
 | `--frame-trace` | Buffer raw post-draw callback timestamps and same-callback counters after five seconds of warmup, plus bounded atlas CPU phase spans from startup; export JSON on scene exit, including percentiles and missed-budget counts. Add `--after N` for a timed walking/input rig that quits without a screenshot. Independent of the log and debug layers; see `docs/TELEMETRY.md`, "Raw frame traces" |
 | `--web` | Preview the web export's hidden-quit shape (`QuitOption`) from a desktop debug build |
+| `--quit-when-still [seconds]` | Once she has moved at all, if she then holds within a few pixels of one spot for `seconds` (about a second by default) while the day is running — not paused, not on a brief, summary or death screen — save a screenshot into the run's own telemetry folder, note it in the run log, print the path and quit. Counts her position, not her input, so a wedge against the crowd or a parked car is "still" too; works the same under a human's own hands and under `--route` |
 
 ## Run logs
 
