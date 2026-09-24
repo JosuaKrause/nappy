@@ -208,7 +208,7 @@ static func service_exit_tile(map: CityMap) -> Vector2i:
 	var row := tiles.position.y + tiles.size.y / 2
 	var west := Vector2i(tiles.position.x - 1, row)
 	var east := Vector2i(tiles.end.x, row)
-	var wanted := east if map.main_road == lot.position.x else west
+	var wanted := east if map.is_main_road(true, lot.position.x) else west
 	if map.is_walkable(wanted):
 		return wanted
 	var fallback := west if wanted == east else east
