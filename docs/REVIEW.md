@@ -38,6 +38,16 @@ item below for as long as looking takes.
   brief lines read as the city changing, and which would you rewrite?** They are the draft as it
   stood. Record is `DECISIONS.md`, M181, the resistance has a reason, and a task is one day,
   slice one.
+- **Play days 10 to 14 as a run would** (`--day 10` and on, `--invincible` to stay as long as
+  looking takes). Day 10: the neighbor walking home under the red arrow, and the raid's vans and
+  patrol at her building — *"we will have to see how that one feels"* (PLAYTEST-122). **Does the
+  raid read as danger at her own door while the doorstep stays reachable, and is catching the
+  neighbor in time a fair deadline?** Day 11: the mast she silences, and the market boarded up
+  ahead of her, out of sight. Day 12: the park turning to mud from the edges in once she reaches
+  the swing. Day 13: the column of three trucks on the main road and the barricade it leaves.
+  **Does each happening arrive differently — at home, found gone, closing in front of her, coming
+  on her way — and does each read as the city getting worse?** Record is `DECISIONS.md`, M181,
+  slice two.
 - **Walk day 3 along a real route, twice, in different directions** (`--day 3`; the fire is
   sited on the branch of the day's routes she is walking, off screen ahead, once she has walked
   for a while and is away from the doorstep; the engine comes when she first sees it and parks

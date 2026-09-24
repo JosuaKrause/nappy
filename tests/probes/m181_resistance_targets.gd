@@ -1,6 +1,6 @@
 extends RefCounted
-## Measurement probe for M181, "the finale's district, day 9's door and day 12's swing are reachable
-## by construction": for each seed and each of the three days, how many of the day's target
+## Measurement probe for M181, "the station's front door, day 9's door and day 12's swing are
+## reachable by construction": for each seed and each of the three days, how many of the day's target
 ## candidates are legal ground, how many of those are also unobstructed and reachable from home
 ## under the day's whole obstruction, and where the director actually puts the contact. Not a suite
 ## — it prints numbers rather than asserting relationships — so it lives under `tests/probes/`,
@@ -68,7 +68,7 @@ func run(t) -> void:
 			var legal := 0
 			var open := 0
 			var reach := 0
-			var allow_held := step.target_kind == ResistanceSteps.TargetKind.DOOR
+			var allow_held := ResistanceSteps.stands_on_held_ground(step)
 			for tile in candidates:
 				var map := city.map
 				if not map.is_walkable(tile) or map.is_closed(tile) \
@@ -114,28 +114,16 @@ func _step_for(day: int) -> ResistanceSteps.Step:
 	return null
 
 func _name(step: ResistanceSteps.Step) -> String:
-	if step.district >= 0:
-		return "district"
-	if step.target_kind == ResistanceSteps.TargetKind.DOOR:
-		return "door"
-	return "swing"
+	match step.target_kind:
+		ResistanceSteps.TargetKind.DOOR:
+			return "door"
+		ResistanceSteps.TargetKind.PARK_SWING:
+			return "swing"
+		ResistanceSteps.TargetKind.STATION_DOOR:
+			return "station"
+	return "other"
 
-## The director's own candidate pools, replicated for the measurement.
+## The director's own candidate pool, asked of the one function planning and the director share.
 func _candidates(city: City, day: int) -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	var map := city.map
-	if day == 14:
-		return map.purpose_tiles(GameEnums.BlockPurpose.CIVIC)
-	if day == 9:
-		var home_border := {}
-		for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
-			home_border[segment.key()] = true
-		for segment in city.region_plan().doors:
-			if home_border.has(segment.key()):
-				continue
-			var rect := segment.tile_rect()
-			found.append(rect.position + rect.size / 2)
-		return found
-	for rect in map.playgrounds:
-		found.append(map.world_to_tile(map.swing_position(rect)))
-	return found
+	return ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), city.map,
+			city.region_plan())

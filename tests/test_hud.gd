@@ -409,11 +409,9 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
 
-## The wording rule holds for every built task, not only the first: every available perform step
+## The wording rule holds for every task, not only the first: every perform step
 ## names `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which
-## stays unused by the header and is reserved for the progress dots. A day whose task is not yet
-## built (`not step.available`) has no header to check — it also has no mark, so nothing ever
-## activates it.
+## stays unused by the header and is reserved for the progress dots.
 func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> void:
 	var saved_completed := GameState.completed_resistance_steps.duplicate()
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
@@ -422,7 +420,7 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 	var hud := _hud(t)
 	hud._debug = false
 	for step in ResistanceSteps.all():
-		if step.is_pickup or step.needs_goal or not step.available:
+		if step.is_pickup or step.needs_goal:
 			continue
 		t.check(step.header != "", "perform step %d has its own header phrase" % step.index)
 		# Non-empty so the HUD's own "already touched a mark" gate is open.

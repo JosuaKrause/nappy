@@ -20,6 +20,7 @@ func run(t) -> void:
 	_saved_seed = GameState.run_seed
 	_saved_posters = GameState.posters.to_data()
 	_test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t)
+	_test_the_wanted_notice_crosses_out_a_taken_neighbor(t)
 	_test_the_state_survives_a_round_trip_and_a_lost_day(t)
 	_test_the_walls_fill_the_way_the_run_asks(t)
 	_test_the_marble_bag_is_exact_and_reproducible(t)
@@ -44,6 +45,28 @@ func _test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t) -> void:
 			"where the mask keeps the paper the poster is untouched")
 	t.check(absf(torn.get_pixel(1, 0).a - 0.5) < 0.01,
 			"where the mask tears it away only the overlay is left (%.2f)" % torn.get_pixel(1, 0).a)
+
+## The wanted notice is the one-X copy until the neighbor has been taken — day 10 behind her and
+## its warning not among the steps she completed — and the two-X copy after, intact or torn.
+func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
+	AtlasLibrary.acquire(PosterArt.ATLAS_GROUP)
+	var saved_day := GameState.day
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var plain := AtlasLibrary.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
+	var crossed := AtlasLibrary.region(PosterArt.WANTED_CROSSED)
+	t.check(plain != null and crossed != null, "both copies of the wanted notice are baked")
+	GameState.day = ResistanceHappenings.NEIGHBOR_DAY + 2
+	GameState.completed_resistance_steps = [ResistanceSteps.warning_step().index]
+	t.check(PosterArt.sheet(PosterArt.Kind.WANTED) == plain,
+			"a warned neighbor's face is not crossed out")
+	GameState.completed_resistance_steps = []
+	t.check(PosterArt.sheet(PosterArt.Kind.WANTED) == crossed,
+			"a taken neighbor's face is crossed out")
+	t.check(PosterArt.sheet(PosterArt.Kind.LEADER) == AtlasLibrary.region(
+			PosterArt.SHEETS[PosterArt.Kind.LEADER]), "and no other kind changes")
+	GameState.day = saved_day
+	GameState.completed_resistance_steps = saved_completed
+	AtlasLibrary.release(PosterArt.ATLAS_GROUP)
 
 # ----------------------------------------------------------------- the state ---
 

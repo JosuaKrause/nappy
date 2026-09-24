@@ -14,10 +14,18 @@ extends RefCounted
 ## `ImageTexture` is fifteen 32×32 pictures made once at a loading moment, then drawn exactly like
 ## the intact sheets are.
 
-## The four kinds of poster, in the order the run brings them to the walls. `WANTED` is the one-X
-## copy: the two-X copy (`poster_wanted_crossed.svg`) waits on the neighbor of M181's day 10, which
-## no run can fail yet, so it is not drawn.
+## The four kinds of poster, in the order the run brings them to the walls. `WANTED` draws the
+## one-X copy, or the two-X copy (`WANTED_CROSSED`) once the neighbor has been taken — see
+## `sheet()`. The copy is a picture, not a kind: `PosterState` holds `WANTED` either way, so a wall
+## pasted before day 10 shows the neighbor crossed out once the raid has happened, which is what a
+## wanted notice is.
 enum Kind { LEADER, RULES, CURFEW, UNIFORM, WANTED }
+
+## The wanted notice with the neighbor's face crossed out as well, for a run whose day 10 warning was
+## never given on a day she won (`GameState.neighbor_was_taken()`).
+const WANTED_CROSSED := &"events/posters/poster_wanted_crossed"
+## Where the crossed copy's three torn pictures are kept in `_torn`, past every kind's own.
+const _CROSSED_TORN := 1000
 
 const SHEETS := {
 	Kind.LEADER: &"events/posters/poster_leader",
@@ -60,19 +68,28 @@ static func region_names() -> Array[StringName]:
 	var names: Array[StringName] = []
 	for kind: int in SHEETS:
 		names.append(SHEETS[kind])
+	names.append(WANTED_CROSSED)
 	names.append_array(TEAR_MASKS)
 	names.append_array(TEAR_OVERLAYS)
 	return names
 
-## The intact sheet for `kind`, a region on the held `buildings` page.
+## The intact sheet for `kind`, a region on the held `buildings` page — the crossed wanted notice in
+## place of the plain one once the neighbor has been taken.
 static func sheet(kind: int) -> Texture2D:
+	if _crossed(kind):
+		return AtlasLibrary.region(WANTED_CROSSED)
 	return AtlasLibrary.region(SHEETS[kind])
 
 ## `kind` torn the `tear`th way, or the intact sheet if `prepare()` could not compose it — a torn
 ## sheet drawn whole is a wrong picture, never a missing one.
 static func torn(kind: int, tear: int) -> Texture2D:
-	var composed: Texture2D = _torn.get(kind * TEARS + tear)
+	var key := _CROSSED_TORN + tear if _crossed(kind) else kind * TEARS + tear
+	var composed: Texture2D = _torn.get(key)
 	return composed if composed else sheet(kind)
+
+## Whether `kind` draws as the crossed wanted notice today.
+static func _crossed(kind: int) -> bool:
+	return kind == Kind.WANTED and GameState.neighbor_was_taken()
 
 ## Composes every torn sheet from the baked page, once for the process. Called by `City.build()`,
 ## which is a loading moment: the page image is a CPU copy of a whole page, which is nothing to
@@ -93,6 +110,14 @@ static func prepare() -> void:
 				continue
 			_torn[kind * TEARS + tear] = ImageTexture.create_from_image(
 					compose(poster, mask, overlay))
+	var crossed := _cut(page, WANTED_CROSSED)
+	for tear in TEARS:
+		var mask := _cut(page, TEAR_MASKS[tear])
+		var overlay := _cut(page, TEAR_OVERLAYS[tear])
+		if crossed == null or mask == null or overlay == null:
+			continue
+		_torn[_CROSSED_TORN + tear] = ImageTexture.create_from_image(
+				compose(crossed, mask, overlay))
 
 ## The picture for a sheet as `PosterState` holds it: intact, or torn the `tear`th way.
 static func texture_for(kind: int, tear: int) -> Texture2D:

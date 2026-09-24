@@ -299,11 +299,11 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 - [ ] **Every other perform step gets its own visible answer**
       (`EventInstance.leave_for_a_completed_task()` is there for the ones that leave), decided with M181, the
-      resistance has a reason, and a task is one day, whose list of tasks is settled: the
-      van's drop, the burnt shell, the named door, the neighbor warned before the raid, the
-      loudspeaker mast, the swing and the roadblock; the power station's answer is the blackout
-      (M183, the power station and the blackout). Each is something that happens
-      where she is looking, and none is text.
+      resistance has a reason, and a task is one day. Those still without one: the van's drop,
+      the burnt shell, the named door, the roadblock's band, and the power station's door, whose
+      blackout comes only once she is 512px away. The warned neighbor runs, the silenced mast goes
+      dark and the swing's park is taken (`DECISIONS.md`, M181, slice two). Each answer is
+      something that happens where she is looking, and none is text.
 
 ---
 
@@ -328,7 +328,7 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M181 — The resistance has a reason, and a task is one day · slice one built 2026-09-23
+## M181 — The resistance has a reason, and a task is one day · slices one and two built 2026-09-24
 
 > "when doing the mark it doesn't really feel that we would need to resist against anything
 > since nothing really has visibly deterioated yet" · "we could do 1) chalk 2) it immediately
@@ -337,16 +337,11 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 > specific location" · "we should also start with doors later since tasks should come first" ·
 > "9-11 need some extra memorable content in addition to the tasks"
 
-[PLAYTEST-117](playtests/PLAYTEST-117.md) to [PLAYTEST-122](playtests/PLAYTEST-122.md). **Slice
-one is built** (`DECISIONS.md`, M181, slice one, which also holds every decision the entry
-carried): a task is one day, announced at its mark and done that day; the first mark on day 6;
-six of the eight tasks (days 6, 7, 8, 9, 12 and 13) with the red arrow for the one-place ones;
-the goal of five; the doors from day 9; the day brief's own line for each day; and the story
-in `docs/NARRATIVE.md`, "What the tasks are for". **What is open is slice two**, below, and the
-one task that still waits on another milestone: **day 14's front door on M183**, the power
-station and the blackout; until then day 14 keeps the last night's district contact. Day 11's
-mast waits on nothing further — M180, posters she notices, and loudspeakers that are somewhere,
-is done and the masts already expose what the task needs.
+[PLAYTEST-117](playtests/PLAYTEST-117.md) to [PLAYTEST-122](playtests/PLAYTEST-122.md). **Every
+task and every once-only happening is built** (`DECISIONS.md`, M181, slice one, and M181, slice
+two, which hold every decision the entry carried and the choices open to overturn). What is open
+is below: the timing the player asked for before anything is cut, and the one trace a happening
+leaves that has no picture yet.
 
 **The calendar, decided by the player:**
 
@@ -356,56 +351,26 @@ is done and the masts already expose what the task needs.
 | 7 | The package at a van's drop · arrow · built | |
 | 8 | Leave something at the burnt shell · arrow · built | |
 | 9 | Cross a named door · arrow · built | The doors arrive · built |
-| 10 | Warn the neighbor, out in the city, before the raid · arrow, deadline | The raid on her own street, at her own building. |
-| 11 | Silence a loudspeaker mast · arrow | The market is gone. |
-| 12 | The swing in one park · arrow · built | That park is taken once she has reached the swing. |
-| 13 | Walk into a roadblock's band — any of them · built | A column on the main road. |
-| 14 | The power station's front door · arrow | The blackout. |
+| 10 | Warn the neighbor, out in the city, before the raid · arrow, deadline · built | The raid on her own street, at her own building · built |
+| 11 | Silence a loudspeaker mast · arrow · built | The market is gone · built |
+| 12 | The swing in one park · arrow · built | That park is taken once she has reached the swing · built |
+| 13 | Walk into a roadblock's band — any of them · built | A column on the main road · built |
+| 14 | The power station's front door · arrow · built | The blackout · built |
 
-- [ ] **Day 10: warn the neighbor before the raid.** The neighbor lives in her own building;
-      the red arrow points at them out in the city, and the deadline is the neighbor walking home
-      into the vans (*the orchestrator's reading · taken by the player on 2026-09-21*,
-      [PLAYTEST-121](playtests/PLAYTEST-121.md)). Warned, the neighbor runs; not warned, they are
-      taken, and theirs would be the face crossed out on day 12's wanted notice — the slot and the
-      crossed copy are drawn (`DECISIONS.md`, M180, the poster art), but this day is not built, so
-      every wanted notice shows the neighbor's plain face until it is. **The raid is vans
-      in the street at her building with a patrol, and the doorstep stays reachable**
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md): "we will have to see how that one feels", so it
-      goes to `REVIEW.md` once built). The neighbor's door is sealed the next morning either way.
-- [ ] **Day 11: silence a mast**, which stays quiet for the rest of the run: she reaches its
-      foot, as a mark is touched, and its field makes the approach cost while it broadcasts
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)). The masts already expose each mast's stable id
-      and foot (`DECISIONS.md`, M180, the loudspeaker masts), so this task waits on nothing else.
-- [ ] **The once-only happenings of days 10 to 13**, each leaving something permanent and each
-      sited from where she is walking as the fire is (`DECISIONS.md`, M179), except the raid,
-      which is at her own building and is what she comes home to: the raid, whose door is
-      boarded the next morning; the market is gone; the park taken once she has reached the
-      swing; and a column on the main road. **The convoys start on day 13** with the column:
-      `military_convoy`'s `first_day` moves from 12 ([PLAYTEST-122](playtests/PLAYTEST-122.md)).
-- [ ] **Day 12's park is forced open whatever its state**, as decided
-      ([PLAYTEST-119](playtests/PLAYTEST-119.md)). Slice one sends her to a park that is already
-      open, since forcing one needs `ClosurePlanner` and the scheduler's arcs, which were outside
-      its fence; that is a narrower guarantee than the decision, not an overturn of it. **And
-      the day guarantees a second open park she can reach from the swing**, checked when the day
-      is planned ([PLAYTEST-122](playtests/PLAYTEST-122.md)).
-- [ ] **The neighbor is seen from day 1**: on days 1 to 9, a figure in work clothes leaves her
-      building each morning as she does and walks off, and nothing points at them; from day 11
-      they are gone. The same figure is who day 10's arrow finds and day 12's wanted notice draws
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)).
-- [ ] **Two marks are reworded** ([PLAYTEST-122](playtests/PLAYTEST-122.md)). Day 8: "Something
-      was left in the stroller in the night. Take it to the burnt building." Day 13: "Walk up to
-      the roadblock. See how close they let you come."
-- [ ] **Day 14's task is the station's front door, by the red arrow**, and the blackout follows
-      (M183). Waits on M183's first slice, which gives the door a point other code can ask for.
+- [ ] **The neighbor's door is sealed, on screen.** "The neighbor's door is sealed the next
+      morning either way" is built as the day 11 brief's line and the morning figure gone, with
+      no picture of a sealed door; where she would see it — her building's street door, or a
+      door inside — is not yet decided.
+
 - [ ] **The late days are timed** — the mark, the task, the happening and the walk home, day
       12's swing-then-second-park first — with M184, a rig that walks the route, before anything
-      is cut ([PLAYTEST-122](playtests/PLAYTEST-122.md)). The figures go here, into slice two's
-      brief. **Measured so far** (`--route mark,task,calm,home --invincible`, days 6 to 13 on seeds
+      is cut ([PLAYTEST-122](playtests/PLAYTEST-122.md)); the figures go here. **Measured so far** (`--route mark,task,calm,home --invincible`, days 6 to 13 on seeds
       4242, 90210 and 1234567; the table is in `DECISIONS.md`, M184): every day she walked home
       from had at least 22 seconds left, most 50 to 120; on day 12 the second open park was
       reached a tenth of a second after the swing on the one seed whose swing the rig reached;
-      days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
-      rig now gets through every chokepoint (`DECISIONS.md`, M184, the rig gets through
+      days 10 and 11 have their tasks now and are not yet timed, and the rig reported "task
+      unavailable" for a bare-point task and stuck on day 11's mark on seed 4242 when slice two
+      was built. The rig now gets through every chokepoint (`DECISIONS.md`, M184, the rig gets through
       chokepoints): 23 of the 24 runs walk the whole route. **Day 9 on seed 90210 does not fit**:
       the mark at 27.7 s, the task at 91.5 s (3537px off, through four doors), the calm area at
       99.6 s, and the day's 144 s run out on the walk home. Open: whether that task sits too far
@@ -668,6 +633,11 @@ stopped, and the seed-retry fact is stated in `docs/CITY.md`, so neither is here
 is still true.
 
 **Defects, each a few lines once found:**
+
+- [ ] **Day 8's mark line runs off the screen at 1280×720.** The player's own wording, 79
+      characters ("Something was left in the stroller in the night. Take it to the burnt
+      building."), is wider than the HUD's teaching line, which does not wrap (`src/ui/`). Found
+      building M181, slice two
 
 - [ ] **A door can set her down inside a building.** A door's release reflects her through the
       crossing's line and keeps how far off the door's axis she was when it caught her, so a

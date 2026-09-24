@@ -28,6 +28,7 @@ const MOUSE_B := "events/mouse_b"
 ## something of its own.
 const PERSON := "events/person"
 const YELLER := "events/yeller"
+const NEIGHBOR := "events/neighbor_front"
 const BUSKER := "events/busker"
 const POSTER_CREW := "events/poster_crew"
 ## The square crew's own badge silhouette: the same man at the advertising column he pastes on,
@@ -198,6 +199,22 @@ const YELLER_BY_VIEW_B := {
 	"side": "events/yeller_side_b",
 	"front_diagonal": "events/yeller_front_diagonal_b",
 	"back_diagonal": "events/yeller_back_diagonal_b",
+}
+## The neighbor, the passer-by's own body in work clothes (`docs/GRAPHICS.md`, the neighbor): the
+## same five views and the same feet-passing frames, so the gait is the dog walker's own.
+const NEIGHBOR_BY_VIEW := {
+	"front": "events/neighbor_front",
+	"back": "events/neighbor_back",
+	"side": "events/neighbor_side",
+	"front_diagonal": "events/neighbor_front_diagonal",
+	"back_diagonal": "events/neighbor_back_diagonal",
+}
+const NEIGHBOR_BY_VIEW_B := {
+	"front": "events/neighbor_front_b",
+	"back": "events/neighbor_back_b",
+	"side": "events/neighbor_side_b",
+	"front_diagonal": "events/neighbor_front_diagonal_b",
+	"back_diagonal": "events/neighbor_back_diagonal_b",
 }
 const BUSKER_BY_VIEW := {
 	"front": "events/busker_front",
@@ -764,6 +781,7 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.MASKED_PURSUER: return GUARD_LUNGING
 		EventDef.Look.STEAM: return STEAM
 		EventDef.Look.LOUDSPEAKER_MAST: return MAST
+		EventDef.Look.NEIGHBOR: return NEIGHBOR
 		_: return ""
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
@@ -2092,10 +2110,10 @@ const LEAVING_GIVES_UP := 6.0
 ## is a third branch rather than a flag on the departure.
 ##
 ## Everything else that runs out of route drives on and is gone.
-func _be_done() -> void:
+func _be_done(may_park := true) -> void:
 	if is_finished or is_leaving or is_parked:
 		return
-	if def.stops_where_it_arrives:
+	if def.stops_where_it_arrives and may_park:
 		is_parked = true
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
 		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left
@@ -2132,10 +2150,14 @@ func _be_done() -> void:
 ## **And she is standing right next to him when it starts**, unlike everything else that leaves —
 ## so `_leaving_must_clear_sight` keeps `LEAVING_GIVES_UP` from popping him out of existence
 ## mid-screen at six seconds if she is still nearby; see `_leave()`.
+##
+## **A row that parks where its route runs out leaves anyway when asked** — the warned neighbor,
+## whose ordinary end is standing at the door (`EventDef.stops_where_it_arrives`) and who runs
+## instead: this departure is the task's answer, not the route's.
 func leave_for_a_completed_task() -> void:
-	if is_finished or is_leaving:
+	if is_finished or is_leaving or is_parked:
 		return
-	_be_done()
+	_be_done(false)
 	if not is_leaving:
 		return
 	_leaving_must_clear_sight = true
@@ -2763,6 +2785,12 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if gate_state != null and gate_state.raised else 0)
 	flags = flags * 2 + (1 if gate_runs_north_south(_heading) else 0)
 	flags = flags * 2 + (1 if flashed_off else 0)
+	# A mast's lamp and arcs (`_draw_mast()`): amber in the telegraph that opens every broadcast
+	# cycle, green with the arcs while it speaks, and neither once silenced — read off the city's
+	# broadcast clock rather than `is_telegraphing()`, which a mast passes once at creation.
+	var mast := def.look == EventDef.Look.LOUDSPEAKER_MAST
+	flags = flags * 2 + (1 if mast and silenced else 0)
+	flags = flags * 2 + (1 if mast and _mast_is_telegraphing_now() else 0)
 	var sector := EightDirection.update(_view_sector, _drawn_heading())
 	return Vector4i(
 			flags,
@@ -3150,6 +3178,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect_views(sources, [MOUSE_BY_VIEW, MOUSE_BY_VIEW_B])
 		EventDef.Look.YELLER:
 			_collect_views(sources, [YELLER_BY_VIEW, YELLER_BY_VIEW_B])
+		EventDef.Look.NEIGHBOR:
+			_collect_views(sources, [NEIGHBOR_BY_VIEW, NEIGHBOR_BY_VIEW_B])
 		EventDef.Look.DOG_WALKER:
 			_collect_views(sources, [PERSON_BY_VIEW, PERSON_BY_VIEW_B, DOG_BY_VIEW, DOG_BY_VIEW_B])
 		EventDef.Look.CAFE:
@@ -3273,6 +3303,8 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_eight_view(MOUSE_BY_VIEW, _heading, canvas, false, MOUSE_BY_VIEW_B)
 		EventDef.Look.YELLER:
 			_draw_eight_view(YELLER_BY_VIEW, _heading, canvas, false, YELLER_BY_VIEW_B)
+		EventDef.Look.NEIGHBOR:
+			_draw_eight_view(NEIGHBOR_BY_VIEW, _heading, canvas, false, NEIGHBOR_BY_VIEW_B)
 		EventDef.Look.DOG_WALKER:
 			_draw_dog_walker(canvas)
 		EventDef.Look.CAFE:

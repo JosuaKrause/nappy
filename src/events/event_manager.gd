@@ -238,7 +238,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
 		doors.append(body.position)
-	# The day's narrow resistance target — day 9's door, day 12's swing, the finale's district —
+	# The day's narrow resistance target — day 9's door, day 12's swing, the station's front door —
 	# as the tiles its contact may stand on today, and what obstructs the day whatever the
 	# catalogue does: the seals just planned and the region wall's own bodies. `build_day` keeps a
 	# route from home to one of those tiles among the day's own bodies, the way it keeps one to the
@@ -568,9 +568,10 @@ const _CAUSES := {
 }
 
 ## Adds an event outside the day's plan. Used by the resistance director to plant the
-## robbery that may be waiting where a contact is.
-func spawn_extra(def: EventDef, at: Vector2) -> EventInstance:
-	return _spawn_unplanned(def, at)
+## robbery that may be waiting where a contact is, and by the resistance's own happenings — the
+## neighbor, the raid, the column — which hand a mover the `path` it walks or drives.
+func spawn_extra(def: EventDef, at: Vector2, path := PackedVector2Array()) -> EventInstance:
+	return _spawn_unplanned(def, at, path)
 
 ## Retires one unplanned instance outside the day's own closures and events — the resistance
 ## director's own use, when a chalk mark moves and the guard standing over the old spot has to go
@@ -581,9 +582,30 @@ func retire(instance: EventInstance) -> void:
 	if instance and is_instance_valid(instance) and not instance.is_finished:
 		instance._finish()
 
+## **Takes today's plans of the rows `ids` standing inside `rect` out of the day**, placed or live —
+## what a once-only happening that empties a place owes the day's own plan: day 11's market stalls
+## at the block boarded up ahead of her, and day 12's playground once its park is taken
+## (`ResistanceHappenings`). A plan not yet in the world is spent, so it never streams in, and its
+## body's ground opens (the same release a spent plan gets); a live one is retired, the ordinary
+## departure. Only ever a removal, the one direction the city's guarantees allow after dawn.
+## Returns how many plans it took.
+func take_away_within(rect: Rect2, ids: Array[String]) -> int:
+	var taken := 0
+	for plan in _plans:
+		if plan.spent or not plan.is_placed() or not (plan.def.id in ids) \
+				or not rect.has_point(plan.position):
+			continue
+		taken += 1
+		if plan.live:
+			retire(plan.live)
+			continue
+		plan.spent = true
+		_map.release_obstruction(plan.get_instance_id())
+	return taken
+
 ## Today's own foot for a mast id, or `Vector2.INF` if today carries no mast with that id — the
-## point M181's day-11 task (silence a mast by reaching its foot, the way she touches a chalk
-## mark) needs a red arrow and a touch radius stated against. Reads the ordinary broadcast's own
+## point day 11's task (silence a mast by reaching its foot, the way she touches a chalk mark)
+## records its scar at. Reads the ordinary broadcast's own
 ## plan, which always exists for a live mast's id; the curfew announcement shares the same foot.
 func mast_foot(mast_id: String) -> Vector2:
 	for plan in _plans:
@@ -598,10 +620,10 @@ func mast_foot(mast_id: String) -> Vector2:
 ## one — a mast's ordinary broadcast and, on `Tuning.CURFEW_ANNOUNCE_DAY`, its curfew announcement
 ## too, so silencing a mast mid-announcement silences both at once.
 ##
-## **Run-long persistence (M181's day-11 task) is not built here.** The id this takes is
-## `MastSites.Site.id`, stable across days, so a caller that wants "stays quiet for the rest of the
-## run" has a name to remember past today — the natural next step is a `GameState`-held set of
-## silenced ids, read here before a mast plan is even added to `_plans`, the same way a scar is.
+## **Run-long, it is a scar.** Day 11's task silences one mast for the rest of the run: the
+## director calls this for today and records `EventScheduler.SILENCED_MAST` at the foot, which
+## `EventScheduler._place_masts()` reads on every later day. The id is `MastSites.Site.id`, stable
+## across days, and the foot is its own.
 func silence_mast(mast_id: String) -> bool:
 	var found := false
 	for plan in _plans:

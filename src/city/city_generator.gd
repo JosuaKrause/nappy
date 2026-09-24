@@ -75,6 +75,7 @@ static func _attempt(seed_value: int) -> CityMap:
 	var block_rects := _build_blocks(map, purposes, rng)
 	_place_home(map, block_rects)
 	_plan_arcs(map, purposes, rng)
+	_plan_the_swing_park(map)
 
 	# The map starts on day 1, which is every block at step 0 of its arc.
 	var state := CityState.new()
@@ -721,6 +722,57 @@ static func _plan_arcs(map: CityMap, purposes: Dictionary,
 		else:
 			_plan_built_arc(plan, purpose, rng)
 		map.block_plans[block] = plan
+
+## **The park day 12's task sends her to**, chosen once for the run: *"we can just force open the
+## park she needs to go to that day … *then* the park starts to close"* (PLAYTEST-119). Its plan
+## carries `BlockPlan.forced_open_on`, so on that day it is a park whatever its arc has reached
+## (`CityState.purpose_of()`), and its arc ends requisitioned, so that once she has reached the
+## swing it stays taken for the rest of the run (`CityState.take()`).
+##
+## **A park whose arc already requisitions it is preferred**, so the taking is a step the generator
+## had planned anyway and the calm left at the end of the run is what `_plan_arcs()` decided. Only
+## a city whose arcs take no park gives one a step of its own, `REQUISITIONED` from the task's day
+## on `BlockCause.TAKEN`, which waits for her to reach the swing and happens on no other cause;
+## `validate()` then counts that park out of the calm that lasts, as it counts every requisition.
+##
+## **Drawn from the seed without touching the generator's stream**, so every draw after this one
+## lands where it always did: the candidates in the lattice's own order, one picked by the seed's
+## hash. A city with no park at all has no swing to send her to and `validate()` refuses it.
+static func _plan_the_swing_park(map: CityMap) -> void:
+	var day := ResistanceSteps.swing_day()
+	if day <= 0:
+		return
+	var parks: Array[Vector2i] = []
+	var taken: Array[Vector2i] = []
+	for y in Tuning.CITY_BLOCKS.y:
+		for x in Tuning.CITY_BLOCKS.x:
+			var block := Vector2i(x, y)
+			var plan: BlockPlan = map.block_plans.get(block)
+			if not plan or plan.starting_purpose() != GameEnums.BlockPurpose.PARK:
+				continue
+			var layout: BlockLayout = map.block_layouts.get(block)
+			if not layout or not BlockLayout.has(layout.playground):
+				continue
+			parks.append(block)
+			for step in plan.steps:
+				if step.purpose == GameEnums.BlockPurpose.REQUISITIONED:
+					taken.append(block)
+					break
+	var pool := taken if not taken.is_empty() else parks
+	if pool.is_empty():
+		return
+	var chosen: Vector2i = pool[posmod(hash("swing park:%d" % map.seed_used), pool.size())]
+	var plan: BlockPlan = map.block_plans[chosen]
+	plan.forced_open_on = day
+	if taken.is_empty():
+		plan.then(GameEnums.BlockPurpose.REQUISITIONED, day, GameEnums.BlockCause.TAKEN)
+
+## The park `_plan_the_swing_park()` chose, or `(-1, -1)` on a city with none.
+static func swing_park(map: CityMap) -> Vector2i:
+	for block: Vector2i in map.block_plans:
+		if (map.block_plans[block] as BlockPlan).forced_open_on > 0:
+			return block
+	return Vector2i(-1, -1)
 
 ## A built block goes dark before it burns, and only a commercial one goes dark at all.
 ## The fire step is event-caused: it waits for something to actually burn there, so a block
@@ -1515,6 +1567,11 @@ static func validate(map: CityMap) -> String:
 	if lasting < Tuning.MIN_CALM_BLOCKS_AT_END:
 		return "only %d blocks stay calm for the whole run, need %d" % [
 			lasting, Tuning.MIN_CALM_BLOCKS_AT_END]
+
+	# Day 12's task is the swing in one park, forced open that day whatever its arc has reached;
+	# a city with no park has no swing to send her to.
+	if ResistanceSteps.swing_day() > 0 and swing_park(map).x < 0:
+		return "no park with a playground for day 12's swing"
 
 	# The two sweeps of the map come last, and the order is the whole reason this is affordable:
 	# `generate` calls it on every attempt and about a third of them fail, so a rejection that
