@@ -436,7 +436,8 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 	var lost: Array = []
 	finale.section_started.connect(func(section: int, restarted: bool) -> void:
 		started.append([section, restarted]))
-	finale.section_lost.connect(func(section: int) -> void: lost.append(section))
+	finale.section_lost.connect(func(section: int, _result: int) -> void:
+		lost.append(section))
 
 	finale.begin(FinaleController.Section.BUILDING)
 	t.check(started.size() == 1 and not started[0][1], "the first section starts fresh")

@@ -322,8 +322,6 @@ checks and worktrees can move independently of this file.
 - **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
   "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
   the first entry of `REVIEW.md`.
-- **M102, the finale, has one open item in `TODO.md`**: the building has no screen-edge
-  badge, halo or debug layers, and the escape has no telemetry observer.
 - **M175, a row states what it costs, has its table built and one item open**: rows declaring
   a net cost tier, whose tier names and values go to the player first
   ([PLAYTEST-114](playtests/PLAYTEST-114.md)).
