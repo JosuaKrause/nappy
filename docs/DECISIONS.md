@@ -15,7 +15,11 @@ The roadworks end posts stood 13px in from each end of an end-on run and covered
 64px column: the end-cap code in `EventInstance._draw_spread` inset each post by half its extent
 along the run, which end-on is the post's 26px height. It is now inset by its own 6px width, so
 the post stands at the barrier's end on both axes; the roadblock's caps share that code and are
-corrected with it.
+corrected with it. And end-on, the far post is drawn before the board and the near one after
+([PLAYTEST-124](playtests/PLAYTEST-124.md), statement 21: "the top construction pole is drawn
+above the barried when it should be behind"): a spread is one node, so draw order is its depth.
+Giving each cap its own depth-sorted node was rejected, since the event is one node for its
+collision, field and halo and one straight run needs nothing more.
 
 **Open to overturn, chosen by the agent:** the east-west tree falls toward the camera, as
 `events/fallen_tree_vertical` does; the crashed cars are slewed a few degrees so both show, the
