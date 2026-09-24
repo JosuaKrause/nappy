@@ -560,6 +560,12 @@ item below for as long as looking takes.
   than as a thing in the way: he stays on the route because his beat reaches the crossing at the
   junction, so the answer to him is to walk on while he paces away, or to cross where his beat
   ends. `tools/run.sh --seed 4242 --day 1`, layer 5 for the routes and layer 4 for the readout.
+- **Look at the live favicon and the window/dock icon at their real, on-screen size.** The
+  enhanced stroller icon (`icon.png`, 256×256) was only compared as a still sheet at 16, 32, 64
+  and 256px, never captured live: `tools/serve-web.sh` for the browser tab's favicon, `tools/run.sh`
+  for the windowed build's title-bar and dock/taskbar icon. **Does the stroller read at a real
+  favicon's size, and does the window/dock icon look right next to other apps' icons?** Record is
+  `DECISIONS.md`, the application icon is the enhanced stroller.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
