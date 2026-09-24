@@ -169,12 +169,12 @@ first task day names the rumor of chalk messages in alleys and nothing else — 
 pointer to one — and every other day's line is one or two sentences about what is true of the
 city that morning, the same words whichever way the day before it went.
 
-**A finished task is shown by the world and never by text.** A touched mark changes to its
-done color, which is all a mark needs; nothing is written on the HUD, and there is no counter,
-no objective marker and no log. The note for a stranger answers the same way: the moment she
-hands it to him, the man she reached stops shouting and walks away, on foot, until he is out of
-sight — the same departure any finished event takes, not a word on screen. The look-alikes she
-never reached carry on shouting exactly as before.
+**A finished task is shown by the world and never by text.** A touched mark changes to its own
+touched picture, which is all a mark needs; nothing is written on the HUD, and there is no
+counter, no objective marker and no log. The note for a stranger answers the same way: the
+moment she hands it to him, the man she reached stops shouting and walks away, on foot, until he
+is out of sight — the same departure any finished event takes, not a word on screen. The
+look-alikes she never reached carry on shouting exactly as before.
 
 A chalk mark the player has not actually noticed — stood near, on screen, long enough that
 walking past it rather than to it was a choice — has never really been placed, so it follows

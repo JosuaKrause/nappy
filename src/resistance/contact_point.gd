@@ -13,6 +13,18 @@ signal completed(step: int)
 ## How close the player must be for a touch to complete the step.
 const REACH := 36.0
 
+## The `decoration` atlas group the two pictures below are regions of — `_enter_tree()`/
+## `_exit_tree()` acquire and release it, the same pairing `ClosureMarker` uses for its own
+## `street_kit` group, rather than trusting `City`'s own hold on it: a `ContactPoint` built by a
+## test with no `City` around it (`tests/test_resistance.gd`'s bare pickups and rides) still
+## needs a region to draw, and `AtlasLibrary` reference-counts, so acquiring a group already
+## resident from boot (`main.RESIDENT_GROUPS`) still costs one page load for the whole process.
+const ATLAS_GROUP := &"decoration"
+## The two prepared pictures a pickup draws from (`docs/GRAPHICS.md`, "M100 — Small, real, and
+## nobody's").
+const MARK := &"props/chalk_mark"
+const MARK_TOUCHED := &"props/chalk_mark_touched"
+
 var step: ResistanceSteps.Step
 var is_done := false
 
@@ -23,6 +35,12 @@ var _pulse := 0.0
 ## clear an obstruction sits at a learnable spot rather than a re-rolled one.
 var _rider: EventInstance
 var _rider_offset := Vector2.ZERO
+
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(ATLAS_GROUP)
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(ATLAS_GROUP)
 
 ## A pickup: a bare chalk mark at a fixed point.
 func setup(which: ResistanceSteps.Step, at: Vector2) -> void:
@@ -73,12 +91,18 @@ func _draw() -> void:
 	# rides on, or approaching it would already answer "is this the one".
 	if _rider:
 		return
-	_draw_chalk(Palette.CHALK_DONE if is_done else Palette.CHALK)
+	_draw_chalk()
 
-## Three strokes and a circle — the sort of mark you would walk past a hundred times.
-func _draw_chalk(colour: Color) -> void:
-	var flicker := colour
-	flicker.a *= 0.75 + 0.25 * sin(_pulse * 2.0)
-	draw_arc(Vector2.ZERO, 11.0, 0.0, TAU, 20, flicker, 2.0)
-	draw_line(Vector2(-7.0, 4.0), Vector2(7.0, -5.0), flicker, 2.0)
-	draw_line(Vector2(-6.0, -5.0), Vector2(2.0, 6.0), flicker, 2.0)
+## The chalk mark itself — `chalk_mark.svg` untouched, `chalk_mark_touched.svg` once `is_done`,
+## drawn from the `decoration` atlas group exactly as prepared, centre-anchored on this node's
+## own position the way the code-drawn circle and cross used to be centred on `Vector2.ZERO`.
+## "A picture is an asset, never code": the mark no longer strokes an arc and two lines by
+## hand, and the two prepared pictures already carry the same 11px-radius circle and cross at
+## the same 32×32 scale, so nothing about its size or its reading on the pavement moves.
+func _draw_chalk() -> void:
+	var picture := MARK_TOUCHED if is_done else MARK
+	var texture := AtlasLibrary.region(picture)
+	if not texture:
+		return
+	var flicker := 0.75 + 0.25 * sin(_pulse * 2.0)
+	draw_texture(texture, -texture.get_size() * 0.5, Color(1.0, 1.0, 1.0, flicker))

@@ -16,6 +16,39 @@ off screen and two that disagree.
 **Open to overturn, chosen by the agent:** nearest is measured to the centre of the junction's
 box.
 
+## M100 — The chalk mark is its picture, and a touch changes the picture · built 2026-09-24
+
+*([PLAYTEST-128](playtests/PLAYTEST-128.md): "it's drawn in code even though a chalk_mark.svg
+exists … Yes, we need to use the svg.")* `ContactPoint._draw_chalk()` draws
+`art/props/chalk_mark.svg`, and `chalk_mark_touched.svg` once the mark is done, from the
+`decoration` atlas group, centre-anchored where the code-drawn arc and lines stood, with the same
+alpha flicker. `Palette.CHALK` is gone; `CHALK_DONE` stays for the HUD text that uses it.
+`ContactPoint` acquires and releases the `decoration` group itself, as `ClosureMarker` does for
+`street_kit`, because a bare mark in a test has no `City` holding the group for it.
+
+**This also answers M100's older item, a touch on a chalk mark shows nothing at the moment but a
+colour change** (playtest 50: "how do I know I stepped on the chalk"). Of its three options —
+nothing more, the colour made unmistakable, or a status line — playtest 53 had already asked for
+a fourth, a touched picture where she adds something to the mark, and that is what now shows at
+the moment of the touch. Whether it reads is in `REVIEW.md`.
+
+**Open to overturn, chosen by the agent:** the `decoration` group rather than `events`; keeping
+the flicker as a modulate on the picture; the centre anchor, matching the SVGs' own. Stills:
+`evidence/m100-chalk-mark-svg-2026-09-24/`.
+
+## M100 — The home block carries no fire escape · built 2026-09-24
+
+*([PLAYTEST-128](playtests/PLAYTEST-128.md): "the home building shouldn't have a fire escape (it
+has a double staircase inside)".)* `Building._build_front()` still rolls a `RESIDENTIAL` front's
+escape on every building, and drops the column when `is_home_building` is set, so no other roll on
+the `front:` stream moves on any seed. The `is_home_building` setter now rebuilds the front on a
+change, like every other roll-affecting property; in every real path the flag is already set
+before the building enters the tree, so this is a safety net rather than a fix.
+`tests/test_ground_floor.gd` sweeps 200 fixtures and five generated cities; its older check that
+the home flag changes no front roll was rewritten, since keeping the escape was exactly what this
+item changes. Seed 73124 had an escape on the home block before;
+`evidence/home-no-fire-escape-2026-09-24/home-block.png` shows it without.
+
 ## M100 — The push at the top is tightened to 9.5 over 3 seconds · built 2026-09-24
 
 *([PLAYTEST-128](playtests/PLAYTEST-128.md): "we can make the extra push needed to end the day a
