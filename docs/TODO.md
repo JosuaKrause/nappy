@@ -508,16 +508,27 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 [PLAYTEST-122](playtests/PLAYTEST-122.md). The rig is built (`DECISIONS.md`, M184, a rig walks
 the route): `--route mark,task,calm,home` walks her along a real path's edges, at walking pace,
 through the ordinary game, and `tests/probes/m184_route_timing.gd` times days 6 to 13 with it.
-What is open is where it gives up, which is what keeps M181's late days from being fully timed.
+What is open is where it gives up, which is what keeps M181's late days from being fully timed;
+the legs that find no path are the game's (M188, a resistance target can always be reached).
 
-- [ ] **The rig gets through chokepoints.** In 12 of the 24 measured runs one leg ends "stuck
-      fast": wedged by the crowd or a parked vehicle more times than its budget of three stuck
-      episodes per leg allows. A player walks round them; the rig should too, or wait them out.
-- [ ] **Five legs find no path at all** (day 7's mark on seed 1234567 and its task on 90210, day
-      8's task on 90210, day 9's mark on 4242, day 13's task on 4242). The implementing agent's
-      best guess for day 13 is that the roadblock closes its own street and the plan closes the
-      contact point with it; each is checked and either fixed in the rig or reported as a real
-      unreachable target.
+- [ ] **The rig gets through chokepoints.** In 14 of the 24 measured runs a leg ends "stuck
+      fast", wedged more often than its budget of three stuck episodes a leg. Waiting three
+      seconds before forcing a way out gets none of them through (`DECISIONS.md`, M184, the rig
+      waits before it forces), and day 10's calm leg on seed 90210, reached in 30.5 seconds
+      before, now sticks too, unexplained. What the first look found, on day 6's mark on seed
+      1234567, built and then taken out again: she stalls flush against a van's body, because
+      `CityMap.obstructed_tiles` marks only the tile a body's centre falls in (right for the
+      crowd, which keeps to a lane) and a van overhangs the next tile's centre by about 6px, so
+      the plan itself walks her into it. A keep-clear margin from `EventDef.solid_reach()`, the
+      way the rig already keeps clear of a hazard's `lethal_reach()`, moved the stall a few tiles
+      on; trying the unstick directions in the order that points away from the body, rather
+      than always starting up, cleared each maneuver first time; but the recovery re-plan rings
+      her own position rather than the body that caught her, so she went straight back to the
+      same pinch. The narrowest gap there measured about 2px short of her body plus the van's
+      reach: whether a player hugging the far edge gets through, or the van is sited without
+      leaving a walkable width, is to be checked before calling it the rig's fault. Whether the
+      stalls on day 8's home leg on seed 1234567 and day 12's on 4242 are the crowd rather than a
+      body is not yet checked.
 
 ---
 

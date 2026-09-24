@@ -59,8 +59,10 @@ extends Node
 ## obstruction and have `_maybe_replan()` catch the same thing again next check, forever. And it
 ## re-plans when she has simply stopped covering ground even though the tiles read fine — a body
 ## she has fetched up against, or standing *inside* an obstruction's own collision — which a second
-## stall in a row escalates from a fresh plan to `_begin_unstick()`, a short maneuver through the
-## eight compass points that works her physically clear before the next plan is asked for.
+## stall in a row escalates first to `_begin_wait()`, standing her still long enough for a crowd's
+## own flow to open a gap the way a person eases up rather than shoves, and only once that alone has
+## not moved her to `_begin_unstick()`, a short maneuver through the eight compass points that works
+## her physically clear of a body waiting cannot do anything about.
 ##
 ## **Quits the run once it is done**, win or lose — a rig meant to be driven from a headless process
 ## by `tests/probes/` cannot wait at a day summary screen for a button nobody is going to press;
@@ -145,7 +147,8 @@ var _stuck_reference := Vector2.INF
 ## How many `_maybe_replan()` checks in a row have found her stuck — reset to 0 the moment one
 ## does not. A first stall replans the ordinary way, since the tile grid may simply have changed;
 ## a second in a row means the grid says nothing is wrong and the ordinary replan already tried
-## and failed to move her, so `_replan()` escalates to a detour around wherever she actually is.
+## and failed to move her, so `_maybe_replan()` escalates to `_begin_wait()`; a third — still stuck
+## right after waiting — escalates again, to a physical detour around wherever she actually is.
 var _stuck_streak := 0
 
 ## Every `ROAD` tile in the map, built once — the lattice itself never changes within a run, only
@@ -185,6 +188,7 @@ func start_day() -> void:
 	_resolving = false
 	_settling = false
 	_settle_anchor = Vector2.INF
+	_waiting = false
 	_unsticking = false
 	_unstick_cycles = 0
 	_stuck_streak = 0
@@ -209,6 +213,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if _settling:
 		_check_settled()
+		return
+	if _waiting:
+		_wait(delta)
 		return
 	if _unsticking:
 		_unstick(delta)
@@ -268,7 +275,47 @@ func _nearest_live_instance(event_id: String) -> Vector2:
 		if distance < best_distance:
 			best_distance = distance
 			best = instance.global_position
-	return best
+	return _reachable_point_near(best) if best != Vector2.INF else Vector2.INF
+
+## How far outward `_reachable_point_near()` searches, in tiles, before giving up and handing back
+## `centre` unchanged — past `roadblock`'s own solid reach (`obstructs_radius` 60px, under two
+## tiles) with room to spare, so a body this catalogue actually places is always found well inside
+## the budget and only a malformed future row would ever exhaust it.
+const _NEAREST_OPEN_SEARCH_RADIUS := 6
+
+## The walkable, unobstructed ground nearest `centre`, or `centre` itself when it already qualifies
+## — every any-instance task but `roadblock` has no body at all (`homeless_yeller`'s own
+## `obstructs_radius` is 0), so this is a no-op for them and changes nothing about how they resolve.
+##
+## **A solid row's own centre is exactly the ground `_plan()` refuses.** `roadblock` carries
+## `def.solid(GroundShape.band(60.0))`, so `EventManager` rasterises its footprint into
+## `CityMap.obstructed_tiles` the same way any parked body is (`_blocked_for_phase()`'s own doc),
+## and unlike a hazard's own margin — which `_shortest()` explicitly drops for the tile a leg is
+## walking to — an obstructed tile is never exempted for either end of a plan, because a body is
+## really standing there. Handing `_begin_leg()` a target sitting inside one is a target no path
+## can ever end on, which is the day 13 "no path to 'task'" this function exists to fix (a `--route`
+## measurement found a live `roadblock` instance whose centre was its own solid band).
+##
+## **Walking to the nearest open ground next to the body reaches the row exactly as reliably as
+## the real game's own random-bearing offset does, without reproducing its RNG draw.**
+## `ResistanceDirector._reach_distance()` completes an any-instance task from `obstructs_radius +
+## Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH` of the instance's centre (110px for `roadblock`,
+## 60 + 14 + 36) — comfortably past where the solid edge itself sits (60px) — so standing on the
+## closest ground the body actually leaves open is always well inside that reach, whichever side
+## of it she approaches from.
+func _reachable_point_near(centre: Vector2) -> Vector2:
+	var centre_tile := _city.map.world_to_tile(centre)
+	if _city.map.is_open(centre_tile) and not _city.map.is_obstructed(centre_tile):
+		return centre
+	for radius in range(1, _NEAREST_OPEN_SEARCH_RADIUS + 1):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var tile := centre_tile + Vector2i(dx, dy)
+				if _city.map.is_open(tile) and not _city.map.is_obstructed(tile):
+					return _city.map.tile_to_world(tile)
+	return centre
 
 ## The nearest calm tile by walking distance, sidewalks and hazard-free ground preferred exactly as
 ## `_plan()` prefers them — see `_blocked_for_phase()`. `CityMap.calm_tiles()` is read live, so a
@@ -565,9 +612,10 @@ func _begin_leg(target_world: Vector2) -> void:
 	_replan_elapsed = 0.0
 	_stuck_reference = Vector2.INF
 	_stuck_streak = 0
+	_waiting = false
 	_unsticking = false
 	_unstick_cycles = 0
-	_leg_unstick_episodes = 0
+	_leg_stall_episodes = 0
 
 ## Elapsed day time, in simulated seconds — this rig's own `_elapsed_seconds`, not
 ## `_day.time_total - _day.time_remaining`. The two agree while the day is played straight, since
@@ -619,20 +667,27 @@ func _maybe_replan(delta: float) -> void:
 		_stuck_streak += 1
 		# A first stall replans the ordinary way, since the tile grid may simply have moved under
 		# her. A second in a row means the grid says nothing changed and the ordinary replan
-		# already tried and failed to move her — which is what standing *inside* an obstruction's
-		# own collision reads as, `is_obstructed()` true for her own tile and no route out of one
-		# tile changes that a step toward any of them is a step into the same solid body. Physically
-		# working clear of it is `_begin_unstick()`'s job, not another plan — unless this leg has
-		# already spent `_LEG_MAX_UNSTICK_EPISODES` separate encounters clearing a wedge only to be
-		# sent straight back at it, in which case the target is given up on rather than tried again.
+		# already tried and failed to move her, which a crowd she cannot yet press through and a
+		# body she has fetched up against both read as — `is_obstructed()` true for her own tile,
+		# or simply true for every neighbour that leads toward the target. The two want different
+		# answers, cheapest first: `_begin_wait()` stands her still long enough for a crowd's own
+		# flow to open a gap, the way a person eases off a crush rather than shoving through it,
+		# and only a THIRD stall in a row — still stuck right after waiting, so waiting alone was
+		# not the answer — escalates to `_begin_unstick()`'s physical maneuver, for a body no
+		# amount of waiting moves aside. One `_leg_stall_episodes` spent either way, so a
+		# chokepoint that keeps re-catching her still gives up after `_LEG_MAX_STALL_EPISODES`
+		# encounters rather than trying forever.
 		if _stuck_streak == 1:
 			_replan()
-		elif _leg_unstick_episodes >= _LEG_MAX_UNSTICK_EPISODES:
-			Telemetry.note("route", "day %d: '%s' stuck fast, skipping" % [GameState.day, _current_word])
-			_release()
-			_advance_target()
+		elif _stuck_streak == 2:
+			if _leg_stall_episodes >= _LEG_MAX_STALL_EPISODES:
+				Telemetry.note("route", "day %d: '%s' stuck fast, skipping" % [GameState.day, _current_word])
+				_release()
+				_advance_target()
+			else:
+				_leg_stall_episodes += 1
+				_begin_wait()
 		else:
-			_leg_unstick_episodes += 1
 			_begin_unstick()
 		return
 	_stuck_streak = 0
@@ -655,8 +710,8 @@ func _maybe_replan(delta: float) -> void:
 			return
 
 ## The ordinary plan from wherever she actually is, or a detour around it (`_avoid_zone()`, two
-## tiles out) once `_unstick()` has just worked her clear — see that function's own doc for why a
-## plan alone cannot answer a physical wedge, only what to do once she is out of one.
+## tiles out) once `_unstick()` has just worked her clear, or `_end_wait()` has just let a crowd
+## flow past — see those functions' own docs for why a plan alone cannot answer either on its own.
 func _replan(avoid_here: bool = false) -> void:
 	var here_tile := _city.map.world_to_tile(_player.global_position)
 	var path: Array[Vector2i] = []
@@ -674,6 +729,45 @@ func _replan(avoid_here: bool = false) -> void:
 	_waypoints[_waypoints.size() - 1] = _current_target_world
 	Telemetry.note("route", "day %d: re-planned to '%s' (%.1fs, %d waypoints)"
 			% [GameState.day, _current_word, _elapsed(), _waypoints.size()])
+
+# --------------------------------------------------------------------- waiting ---
+
+## Standing still, pressing nothing, before the second stall in a row tries to force a way
+## through — long enough for a crowd's own flow to open a gap (a lane a couple of pedestrians wide
+## clears in a couple of their own strides), short enough that a genuine physical wedge (a body she
+## is fetched up against, which waiting cannot fix) still reaches `_begin_unstick()` well inside a
+## leg's own budget. **A player facing a crowd crush eases off and lets it pass rather than
+## shoving through it immediately**; this is what that caution looks like with no meter or eyes to
+## judge the gap by, and it is cheap enough to try before ever reaching for the eight-direction
+## maneuver that `_begin_unstick()` is.
+const _STUCK_WAIT_SECONDS := 3.0
+
+var _waiting := false
+var _wait_elapsed := 0.0
+
+func _begin_wait() -> void:
+	_waiting = true
+	_wait_elapsed = 0.0
+	_release()
+
+func _wait(delta: float) -> void:
+	_wait_elapsed += delta
+	if _wait_elapsed >= _STUCK_WAIT_SECONDS:
+		_end_wait()
+
+## Resumes the leg with a fresh plan — cheap, and correct even where nothing needed it, since a
+## crowd is not a tile-level change `_plan()` would otherwise have any reason to notice. **Sets
+## `_stuck_reference` to right now, not `Vector2.INF`.** `_begin_leg()`'s own `Vector2.INF` means
+## "nothing to compare against yet"; here there is something to compare against — wherever she
+## already was throughout the wait — and comparing against that stale position would read three
+## motionless seconds as a fresh stall the instant the next check runs, which is exactly the loop
+## `_stuck_streak` staying untouched here is for: the ladder in `_maybe_replan()` already advanced
+## it to 2 on the way in, so a genuine still-stuck reading on the very next check is what reaches
+## `_begin_unstick()` rather than another wait.
+func _end_wait() -> void:
+	_waiting = false
+	_stuck_reference = _player.global_position
+	_replan()
 
 # ----------------------------------------------------------------- unsticking ---
 
@@ -705,22 +799,24 @@ const _UNSTICK_CLEAR_DISTANCE := 48.0
 const _UNSTICK_MAX_CYCLES := 3
 
 ## Separate stuck-encounters given to one leg before it is given up on — not the same count as
-## `_UNSTICK_MAX_CYCLES`, which bounds one continuous wedge. `_end_unstick(true)` clears *this*
+## `_UNSTICK_MAX_CYCLES`, which bounds one continuous wedge. Spent in `_maybe_replan()` the moment
+## a second stall in a row reaches for `_begin_wait()`, whether that encounter is settled by
+## waiting alone or has to go on to `_begin_unstick()` too — `_end_unstick(true)` clears *this*
 ## wedge and immediately `_replan(true)`s, so a chokepoint she cannot actually get past (a parked
 ## van's own lane with the carriageway detour around it also busy, on a street with no third way
 ## through) reads as "cleared" every time and sends her straight back at it — three separate
-## encounters, each up to `_UNSTICK_MAX_CYCLES` cycles, is the whole leg giving up on a spot that
-## keeps re-catching her rather than retrying it forever.
-const _LEG_MAX_UNSTICK_EPISODES := 3
+## encounters is the whole leg giving up on a spot that keeps re-catching her rather than retrying
+## it forever.
+const _LEG_MAX_STALL_EPISODES := 3
 
 var _unsticking := false
 var _unstick_index := 0
 var _unstick_elapsed := 0.0
 var _unstick_anchor := Vector2.INF
 var _unstick_cycles := 0
-## Reset in `_begin_leg()`; counts every `_begin_unstick()` this leg has needed, cleared wedge or
-## not — see `_LEG_MAX_UNSTICK_EPISODES`.
-var _leg_unstick_episodes := 0
+## Reset in `_begin_leg()`; counts every stuck-encounter this leg has needed a `_begin_wait()` for,
+## settled by waiting alone or not — see `_LEG_MAX_STALL_EPISODES`.
+var _leg_stall_episodes := 0
 
 func _begin_unstick() -> void:
 	_unsticking = true
