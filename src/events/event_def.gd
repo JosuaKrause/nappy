@@ -1184,7 +1184,7 @@ func min_toward_player_lead() -> float:
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that
 ## a moving point's own forward reach outgrows its resting radius:
 ## `EventScheduler._keeps_its_field_clear`'s clearance, the streaming rect, and
-## `EventInstance.expected_impact_at()`'s early-out. `half_length + outer_radius` for a segment (the
+## `EventInstance.expected_gross_at()`'s early-out. `half_length + outer_radius` for a segment (the
 ## along-axis reach, which is exactly the old flat `outer_radius` a row's radii were derived
 ## *against* — see the catalogue's own docstrings; every emitting segment row is stationary, so its
 ## own eccentricity is always zero and this figure never grows). Otherwise `outer_radius ·
