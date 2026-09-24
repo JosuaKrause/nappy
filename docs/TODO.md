@@ -982,10 +982,14 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **`--spawn contact` asks for the contact before one exists.** On a dev-flagged boot
-      `DevRig.spawn_position()` runs before `ResistanceDirector.start_day()` has placed the
-      day's contact, so the flag cannot put a rig beside a chalk mark and no capture of one is
-      cheap. Found in M177; the order of the two calls in `main`'s first-day boot is the fix.
+- [ ] **Two more rigs trigger the physics-mode camera warning.** Godot prints it once per
+      process, so the balance rig's copy hid these: `_chat_stroller` in `tests/test_events.gd` and
+      `_build_pickup` in `tests/test_resistance.gd` add a `Camera2D` without setting
+      `process_callback` to `CAMERA2D_PROCESS_PHYSICS`, as `stroller.tscn`'s camera and the balance
+      rig now do.
+- [ ] **The finale planner may ask "is this the main road" by hand.** `src/finale/finale_planner.gd`
+      compares `map.main_road == lot.position.x`, a block index rather than a corridor index; check
+      whether it means the main road and, if so, route it through `CityMap.is_main_road()`.
 - [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
       own body takes her in, and nobody on screen is the one doing it — the guards stand at the
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
@@ -1002,43 +1006,6 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
-- [ ] **The balance rig's camera is overridden to physics process mode, with a warning.**
-      `tests/test_balance.gd`'s `_build_rig` adds a `Camera2D` that Godot moves to physics
-      process mode because physics interpolation is on, and says so on every run. The
-      **godot** rule leaves no warning standing: set the process mode the engine wants, or
-      turn interpolation off on the rig's camera, whichever the real camera does.
-- [ ] **`Crowd.step()` and `Crowd._physics_process()` duplicate four lines in two orders.**
-      `src/crowd/crowd.gd:230-237` (`step`) and `:625-638` (`_physics_process`) both open with
-      `_signals.advance` → `_pockets.refresh` → `space_out_the_traffic` →
-      `_hold_walkers_at_doors`, but `step()` interleaves `agent._process` (all) in between with no
-      shared helper. The crowd-traffic skill already names the incident this caused once — a rig
-      that walked the agents without this prologue ran a crowd in which nobody is ever held at a
-      checkpoint, and nothing about that looked like a missing call — and the structure that
-      allowed it is unchanged, so the next line added to `_physics_process`'s pre-player section
-      is silently absent from every rig-driven suite. Fix: extract the four shared lines into
-      `_advance_the_world(delta)` and have both call it, so the only difference between them is
-      the agent stepping and the player half.
-- [ ] **Seven hand-written spellings of "is this the main road."**
-      `src/city/traffic_signals.gd:52`, `src/crowd/crowd_lanes.gd:164`,
-      `src/crowd/crowd_agent.gd:461`, `:1560`, `:2387`, `:2404` and
-      `src/routes/seal_planner.gd:373-374` all independently re-encode "the spine is the vertical
-      corridor," and `src/city/city.gd:244` asks the same question through
-      `map.street_kind_at(...) == GameEnums.StreetKind.MAIN` — a different mechanism entirely. The
-      city skill's own rule is *"Which corridor is the main road is a fact about a city, so read
-      it off the map"* — every site does, so today they agree, but if `main_road` ever becomes a
-      per-axis pair, or the spine becomes horizontal on some seeds, six of the seven sites keep
-      answering for the vertical axis with no error anywhere. Fix: `CityMap.is_main_road(vertical:
-      bool, corridor: int) -> bool`, and route every site through it.
-- [ ] **A hung test shard waits out the whole CI job with no message.** `tools/test.sh:212-230`'s
-      "A shard that printed no count did not finish... it crashed **or hung**" branch sits after
-      `wait`, so it can only ever be reached for a crash — a hung shard blocks `wait` forever and
-      the comment claims a case the code cannot reach. Fix: a `timeout` around `run_one_process`
-      would make the comment true.
-- [ ] **`EventManager` reaches into another class's private member.**
-      `src/events/event_manager.gd:321`: `plan.noticed_at = plan.live._noticed_at`.
-      `EventInstance.resume(age, travelled, noticed_at)` is the public channel in the other
-      direction; there is no getter for this one. Fix: a small public getter on `EventInstance`
-      for `_noticed_at`
 
 **Drawings, as SVG:**
 
