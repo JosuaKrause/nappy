@@ -1574,28 +1574,43 @@ Three rules underneath the table, in the order they matter:
    *(2026-09-08, the player, closing the fork this rule used to leave open: "carets shouldn't be
    chosen by source value but by expected impact value".)* What a row is declared to cost on
    paper decides nothing; what a source is actually projected to land on her, from wherever she is
-   actually standing and headed, does. `EventInstance.expected_impact_at()` and
-   `CrowdAgent.expected_impact_at()` extrapolate the thing's own current velocity **and her own**
+   actually standing and headed, does. `EventInstance.expected_gross_at()` and
+   `CrowdAgent.expected_gross_at()` extrapolate the thing's own current velocity **and her own**
    in quarter-second steps over `Tuning.EXPECTED_IMPACT_HORIZON` (5s), sample the thing's field at
    her own projected position at each step, sum the points, subtract its present rate times the
-   horizon, then net that gross figure against what her own current decay
-   (`Baby.decay_rate()`, scaled by `Baby.current_sensitivity()`) would give back over the same
-   horizon and floor it at zero — so two bodies both held still expect nothing, an approach either
-   of them is making expects its approach less what walking is already earning back, and a
-   departure expects nothing rather than a negative figure. **Amber** at
+   horizon, then scale that gross figure by `Baby.current_sensitivity()` and floor it at zero.
+   `expected_impact_at()` is that gross figure less what her own current decay (`Baby.decay_rate()`)
+   would give back over the same horizon — so two bodies both held still expect nothing, an
+   approach either of them is making expects its approach less what walking is already earning
+   back, and a departure expects nothing rather than a negative figure. **Amber** at
    `Tuning.EXPECTED_IMPACT_POINTS` (40, the same line the halo saturates red at); **doubled red**
    when a step of the *source's own* projection, her position still held fixed for this one claim,
    puts her inside the thing's lethal reach — a `hard_fail` row's `inner_radius`, a car's strike
    box — on its current course. `tests/test_danger.gd` holds the scenarios this replaces the old
    catalogue-wide rule with.
 
-   **Charged against one source at a time.** The halo's own backward-looking net shares the
-   decay it subtracts across every source that actually landed something, in proportion to what
-   each did; the caret's forward-looking one does not; sharing it would need every other live
-   source's own projection first, which would cost the instance a second channel to the world it
-   has never needed. Independent charging is exact when only one source is worth a mark at once,
-   which is the ordinary case, and reads slightly more pessimistic — never more lenient — with
-   two or more live at once.
+   **A pulsing row's own rate is the horizon's own mean, not this instant's beat.**
+   `homeless_yeller`'s pulse (5s) and `busker`'s (7s) both turn over inside the horizon (5s), so
+   holding "as it stands now" for the whole projection could read anywhere from a quarter to the
+   full peak depending on which beat the caret happens to be asked on. `EventInstance.
+   _pulse_mean_multiplier()` integrates the envelope's own `0.25..1.0` cosine in closed form from
+   this instant's own phase forward, so a caret opened at a beat's quiet trough and one opened at
+   its loud peak both project the same *whole* five seconds rather than five seconds of whichever
+   instant they happened to ask on — exactly `0.625` (the envelope's own mean) whenever the horizon
+   is a whole multiple of the period, as it is for `homeless_yeller`, and genuinely phase-dependent
+   otherwise, as it is for `busker`.
+
+   **Shared between every source worth a mark, the way the halo shares its own decay.** *(2026-09-20,
+   PLAYTEST-115: "with two sources near her every caret reads low", each netting the whole of her
+   decay against itself.)* `ExcitementHalo` sums `expected_gross_at()` over every live event and
+   crowd body once a frame — the same once-a-frame pass it already runs for the halo's own
+   `total_landed` — and hands the sum to every source through `set_expected_total_gross()` before
+   asking any of them for a caret; each source's own `expected_impact_at()` then takes its share of
+   the horizon's decay in proportion to its own gross, `ExcitementHalo.net_landed()`'s own
+   arithmetic read forward instead of back, so summing every source's own answer back up reproduces
+   the frame's total gross less the whole decay exactly rather than approximately. A caller that
+   never tells a source the frame's total — a data-level test among them — keeps the old, simpler
+   answer: the whole of the decay charged against that one source alone.
 
    **Her own motion is now part of the projection, and that overturns the rule this replaced.**
    *(2026-09-08: "I don't want a caret when walking into a car from the side" · overturned

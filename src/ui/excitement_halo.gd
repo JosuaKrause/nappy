@@ -62,9 +62,15 @@ extends Node2D
 ##   picked. `EventInstance` already gets the position from `EventManager`; `CrowdAgent` has no
 ##   other channel to the player at all, since `Crowd` visits an agent only when it is near a road,
 ##   and this node is the one place already visiting every agent in the crowd every frame
-##   regardless. Both classes read all four back for their own `expected_impact_at()` — the
+##   regardless.
+## - `expected_gross_at(world_position: Vector2) -> float` — the gross points this source projects
+##   over `Tuning.EXPECTED_IMPACT_HORIZON`, before her own decay is netted against it. Summed over
+##   every candidate below, once a frame, so every source's own `expected_impact_at()` — the
 ##   caret's own net gain, projected forward the way `landed()` and `decay_in_window()` are read
-##   back.
+##   back — can share the horizon's decay in proportion rather than each netting the whole of it
+##   against itself.
+## - `set_expected_total_gross(total: float) -> void` — that sum, told back to every candidate
+##   before anybody's caret is asked for, the forward-looking twin of `total_landed` below.
 ##
 ## `EventInstance` and `CrowdAgent` both satisfy this without sharing a base class.
 
@@ -274,6 +280,13 @@ func setup(events: EventManager, crowd: Crowd, player: Node2D, baby: Baby) -> vo
 ## `Baby.current_sensitivity()`.** `_player` is a `Node2D` by its own duck type, so the velocity
 ## read is a soft cast: a player with no `CharacterBody2D` (a data-level test's stand-in) answers
 ## zero, which is the same "held still" default `expected_impact_at()` already falls back to.
+##
+## **`expected_gross_at()` is asked of every candidate right after `set_player_at()`, the same
+## shape `total_landed` already has** — one pass to gather the frame's total before anybody's own
+## share of the decay can be known, then `set_expected_total_gross()` hands that total back to
+## every candidate before the halo's own netting loop asks a single one of them for a caret. A
+## source whose own projection is nothing (far away, or both bodies held still) answers zero and
+## costs nothing but the reach check `expected_gross_at()` already opens with.
 func _process(_delta: float) -> void:
 	if not _events or not _crowd or not _player or not _baby:
 		return
@@ -297,10 +310,14 @@ func _process(_delta: float) -> void:
 	for source in _candidates:
 		total_landed += source.landed()
 	var decay := _baby.decay_in_window()
+	var total_expected_gross := 0.0
 	for source in _candidates:
 		# Every candidate, picked or not — a source below the halo's own floor can still be worth
 		# a caret, since the two cues answer different questions over different sets.
 		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
+		total_expected_gross += source.expected_gross_at(here)
+	for source in _candidates:
+		source.set_expected_total_gross(total_expected_gross)
 		if picked_set.has(source):
 			var net := net_landed(source.landed(), total_landed, decay)
 			source.set_halo_strength(magnitude_for(net), colour_for(net))
