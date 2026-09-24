@@ -33,7 +33,12 @@ choosing an arm of a junction has to look before it commits:
 **The morning's resolve runs before the first frame is drawn.** `Crowd.start_day()` ends with the
 same front-to-back resolve the first physics frame would run, because a day starts from an idle
 frame: the engine draws the placement before the tick that would correct it, so a correction left
-to frame one is a car jumping a car's length on the street she is standing in.
+to frame one is a car jumping a car's length on the street she is standing in. **And it fills
+`TrafficIndex` from that resolve**, because the first frame's turns and recycles look before any
+frame has rebuilt it: an empty index lets a turn book a landing a queued car is standing on, and the
+shunt is paid whenever that turn lands, seconds later. **A separation that is refused rather than
+made smaller is deferred, not avoided** — a nudge that meets blocked ground goes as far as the
+ground allows, or the overlap is paid in one jump on a later frame nobody chooses.
 
 **That is not spacing the crowd in `start_day`, which stays refused**: spacing places cars at
 `Tuning.CAR_GAP_MIN` headway and turns a random morning into tight platoons, and the balance tests
