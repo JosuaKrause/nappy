@@ -251,12 +251,24 @@ var player_velocity := Vector2.ZERO
 var player_decay_rate := 0.0
 var player_sensitivity := 1.0
 
+## The sum of `expected_gross_at()` over every source `ExcitementHalo` is running this frame, told
+## once a frame through `set_expected_total_gross()` — `-1.0` (the default) means nobody has, so
+## `expected_impact_at()` nets the whole projected decay against this agent alone, exactly as it
+## always did. See `EventInstance`'s own copy for the shared arithmetic.
+var player_expected_total_gross := -1.0
+
 func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 		sensitivity: float = 1.0) -> void:
 	player_at = at
 	player_velocity = velocity
 	player_decay_rate = decay_rate
 	player_sensitivity = sensitivity
+
+## Told once a frame by `ExcitementHalo`, after every live candidate's own `expected_gross_at()`
+## has been asked at the same position — see that function's own doc for why the total has to be
+## gathered before any one source's share of the decay can be known.
+func set_expected_total_gross(total: float) -> void:
+	player_expected_total_gross = total
 
 ## This walker's own answer at a door, from `DoorAnswer` — see that enum for why it is drawn once
 ## per placement. Always `HELD` for a car, which never reads it.
@@ -1063,13 +1075,15 @@ func _current_reach() -> float:
 	var top_speed := Tuning.CAR_SPEED.y if kind == Kind.CAR else Tuning.PEDESTRIAN_SPEED.y
 	return reach * Tuning.field_scale(Tuning.field_eccentricity(top_speed))
 
-## The net points this agent is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
-## if she and it both carry on exactly as they are — `EventInstance.expected_impact_at()`'s own
-## quantity, read here off `velocity()` instead of `travel_velocity()`. See that method for the
-## full reasoning, `player_velocity`/`player_decay_rate`/`player_sensitivity` included; the reach
-## test below skips anything the pair's own closing speed cannot cross inside the horizon without
-## sampling it.
-func expected_impact_at(player_position: Vector2) -> float:
+## The gross points this agent is anticipated to land over `Tuning.EXPECTED_IMPACT_HORIZON` if she
+## and it both carry on exactly as they are, before her own decay is netted against it —
+## `EventInstance.expected_gross_at()`'s own quantity, read here off `velocity()` instead of
+## `travel_velocity()`. See that method for the full reasoning, `player_velocity`/
+## `player_sensitivity` included; the reach test below skips anything the pair's own closing speed
+## cannot cross inside the horizon without sampling it. Floored at zero, the same as the net it
+## feeds: a source she is outrunning has nothing to share with the others `ExcitementHalo` is
+## summing this frame.
+func expected_gross_at(player_position: Vector2) -> float:
 	var vel := velocity()
 	var closing := player_velocity - vel
 	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + _current_reach()
@@ -1085,8 +1099,27 @@ func expected_impact_at(player_position: Vector2) -> float:
 		var t := float(i + 1) * dt
 		landed += contribution_at(player_position + player_velocity * t - vel * t) * dt
 	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	var net := gross * player_sensitivity - player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(net, 0.0)
+	return maxf(gross * player_sensitivity, 0.0)
+
+## The net points this agent is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
+## — `expected_gross_at()` less her own decay over the same horizon.
+##
+## **Shared with every other source worth a mark when `ExcitementHalo` is driving the frame,
+## charged against this agent alone otherwise.** `player_expected_total_gross` is `-1.0` for any
+## caller that has not told this agent the frame's total — a data-level test among them — and the
+## decay nets whole against this agent exactly as it always did; `ExcitementHalo` sets it once a
+## frame to the sum of every live candidate's own `expected_gross_at()`, and this agent's own share
+## of the decay then follows `ExcitementHalo.net_landed()`'s own arithmetic, forward instead of
+## back — see `EventInstance.expected_impact_at()`'s doc for why summing that share across every
+## source it was taken from reproduces the bar's own projected rise exactly, not approximately.
+func expected_impact_at(player_position: Vector2) -> float:
+	var gross := expected_gross_at(player_position)
+	if gross <= 0.0:
+		return 0.0
+	var decay := player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	if player_expected_total_gross >= 0.0:
+		return ExcitementHalo.net_landed(gross, player_expected_total_gross, decay)
+	return maxf(gross - decay, 0.0)
 
 ## Whether this car's own strike box reaches her at some point before
 ## `Tuning.EXPECTED_IMPACT_HORIZON`, on its current course, her position held fixed — a car's
