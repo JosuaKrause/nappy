@@ -136,12 +136,15 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    stationary solid body now divert the crowd (`DECISIONS.md`, M110, every solid body). Whether
    diverting at every body blunts the tell a closure's own turn-away relies on — the
    recommendation the player overturned on 2026-09-12 — is a played question, in `REVIEW.md`.
-3. **M96, M97, M99 and M100**, in no order between them: the teaching day, the calm areas, the
-   corridor's density after the sealing, and the consolidated small work. Each was rewritten on
-   2026-09-09 from an older milestone after checking which of its items the code had already
-   answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised". M98, pressure in the empty acts, was the fifth of them and is built
-   (`DECISIONS.md`, M98); whether its return reads as pressure or punishment is in `REVIEW.md`.
+3. **M99 and M100**, in no order between them: the corridor's density after the sealing, and the
+   consolidated small work. M96, the teaching day, and M97, the calm areas, are both done — M96's
+   one remaining item, the cliff at 89, is closed (`DECISIONS.md`, M96, the day ends crying only
+   after a push at the top), and M97's are closed by the player's own word (`DECISIONS.md`, M97,
+   calm areas that hold is closed). Each of the four was rewritten on 2026-09-09 from an older
+   milestone after checking which of its items the code had already answered; the record of what
+   was found built is in `DECISIONS.md` under "The queue reprioritised". M98, pressure in the
+   empty acts, was the fifth of them and is built (`DECISIONS.md`, M98); whether its return reads
+   as pressure or punishment is in `REVIEW.md`.
 4. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
