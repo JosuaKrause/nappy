@@ -180,11 +180,13 @@ puts it back to zero, the way a day's header does at dawn.
 watched by the observer a day has, so what a day writes about the walk the escape writes too:
 
 ```
-escape  run seed 4242  length 180.0s
-   0.0  start    entered the building at (65,2), facing 0°
-  14.2  near     masked_pursuer at (70,31), 88px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
-  15.0  lost     lost_hard_fail in the building after 15.0s — ... | exc 0, ... | near: masked_pursuer 12px
-   0.0  start    restarted the building at (65,2), facing 0°
+escape  run seed 1674637177  length 180.0s
+   0.0  start    entered the building at (129,2), facing 0°
+   4.2  cue      edge badge: masked_pursuer at 670px, closing 110px/s
+   9.6  cue      edge badge gone: masked_pursuer after 5.4s, now 208px away
+  10.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
+  11.0  lost     lost_hard_fail in the building after 11.0s — It went wrong. | exc 7, ... | near: masked_pursuer 25px
+   0.0  start    restarted the building at (7,1), facing 0°
 ```
 
 `TelemetryObserver.setup_escape()` hands it the section's `DayController`

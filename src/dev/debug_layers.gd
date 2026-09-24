@@ -221,7 +221,10 @@ func _draw_shadows() -> void:
 		if prop is Prop:
 			_draw_shadow_outline((prop as Prop).shape, prop.global_position, Vector2.RIGHT)
 	_draw_shadow_outline(_player.shape, _player.global_position, Vector2.RIGHT)
-	_draw_shadow_outline(_player.pram_shape, _pram_position(), Vector2.RIGHT)
+	# In the escape she carries the baby and there is no pram, so no pram shadow is drawn
+	# (`Stroller._draw()`) and none is outlined here either.
+	if not _player.carrying:
+		_draw_shadow_outline(_player.pram_shape, _pram_position(), Vector2.RIGHT)
 
 func _draw_shadow_outline(shape: GroundShape, at: Vector2, axis: Vector2) -> void:
 	_draw_closed_polyline(shape.shadow_outline(at, axis), SHADOW_COLOUR)
