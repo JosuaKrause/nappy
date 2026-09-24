@@ -106,9 +106,17 @@ const SLEEPING_SENSITIVITY := 0.55
 ## excitement this many points has arrived **while she is already sitting at the cap**, within
 ## `EXCITEMENT_OVERFLOW_WINDOW`. *(2026-09-23, playtest 126, statement 1: "the bar can reach 100
 ## but we need also like 10 over 3s to actually end the day … those numbers are just me
-## spitballing -- we would need to test it".)* The player's own starting point, not a decision —
-## `docs/DECISIONS.md`, M96, has the measurement the other two settings below were checked
-## against.
+## spitballing -- we would need to test it".)* That gave 10 over 3s, `docs/DECISIONS.md`'s M96
+## measurement.
+##
+## **Tightened once**, on playtest 128's "we can make the extra push needed to end the day a tiny
+## bit more aggressive/tighter" (M100, `docs/TODO.md`). `tests/probes/m96_crying_at_the_top.gd`
+## swept 9.5/3s, 10/4s and 9.5/4s against one bump at the cap and the loudest stationary rows
+## (`night_raid`, `curfew_announce`, `abduction`), walked past and stood in: widening the window to
+## 4s changed no measured outcome, since every scenario's own mass already clears its threshold
+## well inside 3s once she is actually in a source's field, so only the mass moved. 9.5 still
+## leaves one bump at the cap (8.9 points of overflow, the same measurement M96 made) a real 0.6
+## points short of crying, and shortens every loud row's own time to cry over the shipped 10.
 ##
 ## **What it counts, and why.** `Baby._update_excitement()` already nets `incoming − decay` every
 ## frame; while the bar is below the cap that net is simply added and clamped, same as always.
@@ -120,12 +128,19 @@ const SLEEPING_SENSITIVITY := 0.55
 ## source with nothing fighting it, which is the "undeserved failure" the player asked to remove
 ## in the first place. One walker's bump barely reaches the cap and leaves almost nothing for the
 ## clamp to eat; a sustained source at the top keeps feeding it every frame it stays loud.
-const EXCITEMENT_OVERFLOW_TO_CRY := 10.0
+const EXCITEMENT_OVERFLOW_TO_CRY := 9.5
 
 ## The window `EXCITEMENT_OVERFLOW_TO_CRY` is summed over, in seconds — the player's own "3s".
 ## Long enough that two contacts in quick succession at the top add up to one push; short enough
 ## that leaving the source behind lets the mass drain out of the window at close to the pace she
 ## walked away in, rather than a push from a minute ago still counting against her.
+##
+## **Left at 3s** measuring playtest 128's "a tiny bit more aggressive/tighter" (M100,
+## `docs/TODO.md`): `tests/probes/m96_crying_at_the_top.gd` swept a 4s window alongside 3s against
+## one bump at the cap and the loudest stationary rows, and it changed no measured outcome — each
+## scenario's mass already clears its own threshold well inside 3s once she is actually in a
+## source's field, so the extra second of history never has anything old enough to matter yet.
+## `EXCITEMENT_OVERFLOW_TO_CRY` carries the tightening instead.
 ##
 ## **The bar itself is untouched by any of this.** The moment incoming drops under decay, the net
 ## rate goes negative and `excitement` falls back from 100 at its ordinary ground-and-motion rate,
@@ -630,6 +645,16 @@ const POWER_STATION_MIN_BLOCKS_FROM_HOME := 4
 ## day only, the corridor reaches the door (`RouteTree.for_day`) and the closures may not cut it off
 ## (`ClosurePlanner`); on every other day nothing leads her there.
 const POWER_STATION_DAY := RUN_LENGTH_DAYS
+
+## How far from the power station she has to be, once the sabotage is done, for the city to go dark
+## — measured from the nearest point of the station's lot, in px. *(The player, 2026-09-20: "just
+## wait until a certain distance away -- then everything is off at once".)* Far enough that no part
+## of the station is on screen whichever way she leaves it, so the blackout is something she sees
+## happen to the city around her rather than to the building: the view is 640×360 at the camera's
+## zoom and leads her by `Stroller.CAMERA_LOOK_AHEAD` (46px), and the stacks rise four tiles past
+## the lot's north edge, so leaving past a corner needs the diagonal of (320 + 46) by
+## (180 + 46 + 128), which is 509px. Chosen where the design was silent, open to overturn.
+const BLACKOUT_DISTANCE := 512.0
 
 ## Per-purpose chance a block is split by a through-alley.
 const ALLEY_CHANCE := {
@@ -1999,6 +2024,15 @@ func signal_main_green_seconds() -> float:
 ##
 ## Stated over the crossing she is making rather than over the light she is watching: it is the
 ## side street that is green while the main road is stopped.
+##
+## **And with the power out there is no light at all** (`TrafficSignals.powered`, the last night's
+## blackout), so the spine's own contract has to stand without one. A dark junction is negotiated
+## the way a side street's is, and the spine's traffic does not give way at its zebras lit or dark,
+## so what is left between her and a hard fail is the side street's contract: the painted
+## carriageway and the horn. The spine's carriageway is `carriageway_width()`, the same as every
+## street's, and the horn is stated in seconds of the car's own travel, so `validate_traffic()`'s
+## own check — the horn covers that width with the same doubled margin — is the dark junction's
+## check as well.
 func validate_signals() -> bool:
 	var required := required_horn_time()
 	if SIGNAL_SIDE_GREEN_SECONDS + 0.001 < required:

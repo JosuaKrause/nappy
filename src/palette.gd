@@ -31,6 +31,22 @@ const _ACT_TINT: Array[Color] = [
 static func act_tint(act: int) -> Color:
 	return _ACT_TINT[clampi(act - 1, 0, _ACT_TINT.size() - 1)]
 
+## The light inside her building on the night of the escape, which is the night of the blackout:
+## nothing in it has power. *(The player, 2026-09-20: "it can be gloomy in the hallways and
+## basement and maybe emergency (red?) lighting in the stairs".)* Multiplied over the whole part she
+## is standing in, her included, since she is standing in the same dark. See `InteriorScene.
+## lighting_at()`.
+##
+## The hallways and the lobby: what comes in through the windows from a dark city, cold and dim.
+const ESCAPE_GLOOM := Color(0.46, 0.48, 0.62)
+## The basement has no windows at all, so it is darker again.
+const ESCAPE_BASEMENT_GLOOM := Color(0.33, 0.34, 0.44)
+## The stairwells run on the emergency lighting, a battery lamp's red.
+const ESCAPE_EMERGENCY_RED := Color(0.86, 0.34, 0.32)
+## A hallway while its windows flash: the blast outside lights the corridor as well as the glass,
+## which is what keeps the flash reading as a flash in a dark hall.
+const ESCAPE_FLASH_LIGHT := Color(0.95, 0.94, 0.90)
+
 # ------------------------------------------------------------------ ground ---
 # The ground itself is tiles now (assets/ground_tileset.tres). These are the *flat* colour
 # of each surface, which is what a map has to draw when it cannot draw the art — see
@@ -118,7 +134,9 @@ const ROUTE_KERB_TINT := Color("f2e07a")
 const TITLE_TEXT := Color("d2765a")
 const GAME_OVER := Color("b2434a")
 
-const CHALK := Color(0.92, 0.92, 0.88, 0.62)
+## The touched mark's own text colour elsewhere on the HUD (`save_indicator.gd`,
+## `day_summary.gd`) — the mark itself now turns `chalk_mark_touched.svg` rather than this
+## colour, in `ContactPoint._draw_chalk()`.
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
 ## `HomeArrow`'s own form, in red, for a one-place resistance task — a decided exception to "no

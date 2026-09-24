@@ -424,9 +424,9 @@ func _nearest_legal_tile(at: Vector2, tile_radius: int) -> Vector2:
 ## today's city, since neither is a matter of picking a tile type.
 func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 	if step.district >= 0:
-		# `require_reachable` off — see `_pick_reachable()`'s own doc on the finale's `CIVIC` pool.
-		return _pick_reachable(_map.purpose_tiles(step.district as GameEnums.BlockPurpose), rng,
-				false, false)
+		# The same pool the day's planning kept a route to (`target_ground()`), so the draw is
+		# asked for reachability like every other pool and always finds some.
+		return _pick_reachable(ResistanceSteps.target_candidates(step, _map, _region_plan()), rng)
 	if step.target_kind == ResistanceSteps.TargetKind.DOOR:
 		return _place_at_a_door(rng)
 	if step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
@@ -440,56 +440,81 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 ## `City.region_plan().doors` — at its own crossing tile, chosen the same reachable-among-
 ## candidates way `_pick_reachable()` already chooses a mark's alley. `Vector2.INF` if the city
 ## opened none, which does not happen on this task's own day: `Tuning.REGION_WALL_FIRST_DAY`
-## equals the day this task is offered on.
-##
-## **Dropped before `_pick_reachable()` sees them: doors whose own segment borders the home
-## block.** `RegionPlanner._union_atoms()` only atomises the one street the doorstep notch opens
-## onto (`ClosurePlanner.home_street()`), so the block's other bordering segments are ordinary
-## boundary segments and can become doors like any other, on a city where the day's tree happens
-## to cross one. `allow_held` below skips `is_held_at()` outright, and `is_held_at()` is the half
-## of "nothing on the home block" that covers these streets (`CityMap.is_on_home_block`'s own doc
-## names `is_held_at` as the other half) — so without this filter a door on that ground would pass
-## through the held carve-out it was never meant to cover.
+## equals the day this task is offered on. The pool is `ResistanceSteps.target_candidates()`,
+## which leaves out any door on a street bordering the home block — see that function's own doc for
+## why `allow_held` below would otherwise let one through.
 func _place_at_a_door(rng: RandomNumberGenerator) -> Vector2:
-	var plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
-	if not plan or plan.doors.is_empty():
+	var candidates := ResistanceSteps.target_candidates(
+			_step_of_kind(ResistanceSteps.TargetKind.DOOR), _map, _region_plan())
+	if candidates.is_empty():
 		return Vector2.INF
-	var home_border := {}
-	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
-		home_border[segment.key()] = true
-	var candidates: Array[Vector2i] = []
-	for segment in plan.doors:
-		if home_border.has(segment.key()):
-			continue
-		var rect := segment.tile_rect()
-		candidates.append(rect.position + rect.size / 2)
 	# `allow_held` is not optional here, it is the whole placement: every remaining tile sits on
 	# a segment `EventManager.start_day()` already held for the day (held so no catalogue row may
 	# be sited on a door — see `CityMap.held_segments`), and this director runs after that. The
 	# held filter would refuse the exact ground the task names: with it applied, every door
 	# candidate read `held` and step 8 answered `Vector2.INF` in every run — "nowhere to go" — so
 	# the crossing task never appeared at all. It does not reopen the home-block exemption: that
-	# ground was filtered out above, before `allow_held` ever gets a say.
-	# `require_reachable` off — see `_pick_reachable()`'s own doc on the door pool's own size.
-	return _pick_reachable(candidates, rng, true, false)
+	# ground was filtered out of the pool, before `allow_held` ever gets a say.
+	return _pick_reachable(candidates, rng, true)
 
 ## Where day 12's task points: the swing of one specific park's playground —
 ## `CityMap.playgrounds`, which already names only the parks currently open (a requisitioned
 ## park has none, see that field's own doc), at the same point `City._dress_block()` draws the
-## swing frame at (`CityMap.swing_position()`). **Not "forced open whatever its state"**: that
-## would mean overriding a requisitioned park's own arc, which touches `EventScheduler`/
-## `ClosurePlanner` and is out of this slice's scope fence — picking only among parks the city
-## has already left open is the smallest honest stand-in, and the run's own guarantee of at
-## least one reachable calm area a day (`docs/CITY.md`, "Every day stays winnable") means there
-## is almost always one to choose from. `Vector2.INF` on the day nothing qualifies.
+## swing frame at (`CityMap.swing_position()`). **Only among the parks the city has left open**: a
+## park whose arc has taken it has no swing to send her to, so on a day every playground park has
+## been taken this answers `Vector2.INF` and the task has nowhere to go — a question of whether a
+## swing exists, not of reaching one. The pool is `ResistanceSteps.target_candidates()`.
 func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 	if not _map or _map.playgrounds.is_empty():
 		return Vector2.INF
-	var candidates: Array[Vector2i] = []
-	for rect in _map.playgrounds:
-		candidates.append(_map.world_to_tile(_map.swing_position(rect)))
-	# `require_reachable` off — see `_pick_reachable()`'s own doc on the swing pool's own size.
-	return _pick_reachable(candidates, rng, false, false)
+	return _pick_reachable(ResistanceSteps.target_candidates(
+			_step_of_kind(ResistanceSteps.TargetKind.PARK_SWING), _map, null), rng)
+
+## The calendar's one step that places its contact `kind`'s way — `DOOR` or `PARK_SWING` — so the
+## two placements above read their pool through `ResistanceSteps.target_candidates()`, the function
+## the day's planning reads it through, rather than a copy of it. Null if the calendar has none.
+static func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
+	for step in ResistanceSteps.all():
+		if step.target_kind == kind:
+			return step
+	return null
+
+## Today's region plan, or null for the bare-map rigs several tests in `tests/test_resistance.gd`
+## build with no `_city` — the same null `_walled_alleys()` reads as "nothing walled today".
+func _region_plan() -> RegionPlanner.RegionPlan:
+	return _city.region_plan() if _city else null
+
+## The day's narrow resistance target as the day's planning protects it: the tiles of day 9's door,
+## day 12's swing or the finale's district (`ResistanceSteps.target_candidates()`) that pass every
+## refusal this director makes of a tile before it draws (`is_legal_ground()`), empty on every other
+## day. `EventManager.start_day()` hands it to `EventScheduler.build_day()`, which keeps a route from
+## home to one of these tiles among the day's own bodies — so the tile `_pick_reachable()` then
+## draws, asked for reachability like every other pool, is always found. Asked once the day's holds
+## are all on the map and before any body is, which is why `is_obstructed()` is not part of it:
+## the scheduler's own discs stand in for the bodies, the same discs `_reachable_from_home()` asks.
+static func target_ground(map: CityMap, day: int,
+		region_plan: RegionPlanner.RegionPlan) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	var step := ResistanceSteps.narrow_target_on(day)
+	if not step:
+		return found
+	var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+	var allow_held := step.target_kind == ResistanceSteps.TargetKind.DOOR
+	for tile in ResistanceSteps.target_candidates(step, map, region_plan):
+		if is_legal_ground(map, tile, walled, allow_held):
+			found.append(tile)
+	return found
+
+## The refusals `_pick_reachable()` makes of a candidate tile before it draws — walkable, not
+## behind a closure, not on held ground unless `allow_held`, not on the home block's own lot, not in
+## a walled-off crossing alley. Each is its own paragraph in `_pick_reachable()`'s doc. Static and
+## shared with `target_ground()`, so the tiles the day's planning protects are exactly the ones the
+## draw may land on.
+static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[Rect2i],
+		allow_held := false) -> bool:
+	return map.is_walkable(tile) and not map.is_closed(tile) \
+			and (allow_held or not map.is_held_at(tile)) \
+			and not map.is_on_home_block(tile) and not map.is_in_walled_alley(tile, walled_alleys)
 
 ## A contact behind a closed street is a step the player cannot take today, and the
 ## resistance has steps that expire — so this would silently cost a run its good ending.
@@ -524,30 +549,18 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## placement exactly where it was and touches only the one a real body actually stands on.
 ##
 ## **Never sealed off from home by the day's whole obstruction, either — checked the same
-## after-the-draw way as `is_obstructed()`, for the same reason (M188, item 3) — but only when
-## `require_reachable` is true, which every caller but three passes by default.** A tile can be
-## open, unheld, unwalled ground and still have every route to it closed by the union of today's
-## events and parked vehicles, which none of the five pool refusals or `is_obstructed()` can see —
-## each asks about the tile itself, not the streets between it and the doorstep.
-## `docs/CITY.md`'s own guarantee ("Every day stays winnable") promises a route from home to *some*
-## calm area, never to this candidate specifically, so this check does not widen it — it only
-## keeps the resistance from pointing at ground the guarantee was never about. See
-## `_reachable_from_home()`.
+## after-the-draw way as `is_obstructed()`, for the same reason.** A tile can be open, unheld,
+## unwalled ground and still have every route to it closed by the union of today's events and
+## seals, which none of the five pool refusals or `is_obstructed()` can see — each asks about the
+## tile itself, not the streets between it and the doorstep. See `_reachable_from_home()`.
 ##
-## **`require_reachable` is false for `_place_at_a_door()`, `_place_at_a_swing()` and the finale's
-## own `district` pool — the three callers whose whole candidate list is a handful of tiles rather
-## than every `ALLEY` or every `SIDEWALK` in the city.** The day 7, seed 1234567 case this item was
-## built for is a mark: hundreds of candidate alleys, of which the day's obstruction seals off some
-## but implausibly all. A door, a swing or a civic-purpose tile is a different shape of risk —
-## checked directly against a seed 4242 fixture while building this item: with `require_reachable`
-## left on, day 14's finale (`GameEnums.BlockPurpose.CIVIC`, 72 candidate tiles) came back with
-## *zero* reachable, because the day's own event bodies happened to ring the whole district, not
-## because anything is broken. Two calm areas are guaranteed reachable; one specific district,
-## park or door is not, so requiring it here would trade a rare, already-handled "nowhere to go
-## today" (`_begin_step()`'s own fallback, unavailable rather than a crash) for the one placement —
-## the finale — a run cannot afford to lose. That trade is a design question for whoever owns
-## `docs/CITY.md`'s guarantee, not a call this fix makes on its own; left open and reported rather
-## than silently taken.
+## **Two kinds of pool, and the check means something different in each.** A mark's alleys and a
+## rider's sidewalks are hundreds of tiles across the whole city; the day's obstruction seals off
+## some of them and never plausibly all, so for them the check is a filter. Day 9's door, day 12's
+## swing and the finale's district are a handful of tiles in one place, which the day's own seals
+## and bodies could ring entirely — so the day is planned to keep a route to one of them
+## (`target_ground()`; `docs/CITY.md`, "Guarantees"), and for them the check finds the tile the
+## planning kept rather than hoping one survived.
 ##
 ## **Avoids a tile a completed step already used, unless nothing else reachable is left (M177).**
 ## Landing a fresh mark back on the very alley an earlier step's mark stood at reads as the game
@@ -568,17 +581,15 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## a tile inside the home block's own lot (its own doc says so); the streets around the block are
 ## the other half of "nothing on the home block", and normally that half is exactly what
 ## `is_held_at` catches — which `allow_held` would otherwise skip for a door candidate too.
-## `_place_at_a_door()` drops those candidates itself, before any candidate reaches this function,
-## so `allow_held` never has to carry that exemption.
+## `ResistanceSteps.target_candidates()` drops those candidates from the door pool, before any
+## candidate reaches this function, so `allow_held` never has to carry that exemption.
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
-		allow_held := false, require_reachable := true) -> Vector2:
+		allow_held := false) -> Vector2:
 	var walled_alleys := _walled_alleys()
 	var reachable: Array[Vector2i] = []
 	var unused: Array[Vector2i] = []
 	for tile in candidates:
-		if not _map.is_walkable(tile) or _map.is_closed(tile) \
-				or (not allow_held and _map.is_held_at(tile)) \
-				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
+		if not is_legal_ground(_map, tile, walled_alleys, allow_held):
 			continue
 		reachable.append(tile)
 		if tile not in GameState.completed_resistance_alley_tiles:
@@ -593,26 +604,26 @@ func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 	# times, the nearest still-legal tile in the pool standing in if every redraw lands on another
 	# one (`_nearest_legal_in_pool()`'s own doc).
 	var drawn := pool[rng.randi_range(0, pool.size() - 1)]
-	if not _map.is_obstructed(drawn) and (not require_reachable or _reachable_from_home(drawn)):
+	if not _map.is_obstructed(drawn) and _reachable_from_home(drawn):
 		return _map.tile_to_world(drawn)
 	for _attempt in PICK_REACHABLE_REDRAW_LIMIT:
 		drawn = pool[rng.randi_range(0, pool.size() - 1)]
-		if not _map.is_obstructed(drawn) and (not require_reachable or _reachable_from_home(drawn)):
+		if not _map.is_obstructed(drawn) and _reachable_from_home(drawn):
 			return _map.tile_to_world(drawn)
-	var nearest := _nearest_legal_in_pool(pool, drawn, require_reachable)
+	var nearest := _nearest_legal_in_pool(pool, drawn)
 	return _map.tile_to_world(nearest) if nearest != _NO_TILE else Vector2.INF
 
-## The pool's own nearest tile to `from` that is not `CityMap.is_obstructed()`, and — when
-## `require_reachable` is true — not sealed off from home (`_reachable_from_home()`) either — the
-## fallback once `PICK_REACHABLE_REDRAW_LIMIT` redraws all landed on one or the other, which only
-## ever happens on a pool where that is common. `_NO_TILE` if every tile in `pool` fails, which
-## `_pick_reachable` then reads the same way it reads an empty pool: nowhere to go today.
-func _nearest_legal_in_pool(pool: Array[Vector2i], from: Vector2i,
-		require_reachable: bool) -> Vector2i:
+## The pool's own nearest tile to `from` that is neither `CityMap.is_obstructed()` nor sealed off
+## from home (`_reachable_from_home()`) — the fallback once `PICK_REACHABLE_REDRAW_LIMIT` redraws
+## all landed on one or the other, which only ever happens on a pool where that is common: a narrow
+## target whose planning kept a route to only a few of its tiles. `_NO_TILE` if every tile in
+## `pool` fails, which `_pick_reachable` then reads the same way it reads an empty pool: nowhere to
+## go today.
+func _nearest_legal_in_pool(pool: Array[Vector2i], from: Vector2i) -> Vector2i:
 	var nearest := _NO_TILE
 	var nearest_distance := INF
 	for tile in pool:
-		if _map.is_obstructed(tile) or (require_reachable and not _reachable_from_home(tile)):
+		if _map.is_obstructed(tile) or not _reachable_from_home(tile):
 			continue
 		var distance: float = (tile - from).length_squared()
 		if distance < nearest_distance:
@@ -639,10 +650,12 @@ func _walled_alleys() -> Array[Rect2i]:
 ## it** — every placed plan whose `obstructs_radius > 0.0` or `hard_fail` is true contributes its
 ## own disc, on top of `_map.closed_tiles` — so this director's answer to "can she get there" is
 ## never a second implementation of the city's own, only a second question put to it: that
-## function asks whether *some* calm area is still reachable and drops the widest obstruction until
-## it is (`docs/CITY.md`, "Every day stays winnable"); this asks whether *one specific tile* is,
-## and never drops anything — a candidate that fails is redrawn, the same "reject rather than
-## repair" rule `_pick_reachable()` already keeps for `is_obstructed()`.
+## function asks whether *some* calm area, and on a narrow target's day *some* tile of the target,
+## is still reachable, and drops the widest of the catalogue's obstructions until they are
+## (`docs/CITY.md`, "Guarantees"); this asks whether *one specific tile* is, and never drops
+## anything — a candidate that fails is redrawn, the same "reject rather than repair" rule
+## `_pick_reachable()` already keeps for `is_obstructed()`. The blockers are the same list both
+## times: the catalogue's own bodies, the seals and the region wall's, never a region door's.
 ##
 ## **Without a `_city` (the bare-map rigs several tests in this file build)**, `_reach_blocked` is
 ## built from an empty blocker list — today's closures alone, which is `{}` for the same rigs since
@@ -677,10 +690,11 @@ func _ensure_reachability() -> void:
 	_reach_blocked = EventScheduler.blocked_by(_map, blockers)
 	_reach_reached = _reach_grid.flood([_map.home_rect.position], _reach_blocked)
 
-## Whether `tile` is reachable from home under the day's full obstruction, as it stands right now —
-## M188's item 3: closures alone leave a mark's own alley reachable while the day's events and
-## parked vehicles together seal every route to it, which `docs/CITY.md`'s own guarantee never
-## promised against (it promises a calm area, not this specific tile). See `_ensure_reachability()`.
+## Whether `tile` is reachable from home under the day's full obstruction, as it stands right now:
+## closures alone can leave a mark's own alley reachable while the day's events and seals together
+## seal every route to it. `docs/CITY.md`'s guarantees promise a route to a calm area and to one
+## tile of the day's narrow resistance target (`target_ground()`), never to any one alley or
+## sidewalk, so this is asked of every draw. See `_ensure_reachability()`.
 func _reachable_from_home(tile: Vector2i) -> bool:
 	_ensure_reachability()
 	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
@@ -938,11 +952,10 @@ func _on_contact_completed(step_index: int) -> void:
 		return
 
 	GameState.sabotage_done = true
-	# The reward for the whole subquest is quiet. Whatever is left of the last day is walked with
-	# every mast off — no field, no arcs — rather than under whatever each one happened to be
-	# speaking when the sabotage landed.
-	if _city and _city.events and _city.events.silence_all_masts() > 0:
-		EventBus.city_went_quiet.emit()
+	# Nothing goes off here. The hand-over takes the man on the night shift minutes, so the city
+	# goes dark once she has walked far enough from the station — every window, every light and
+	# every mast at once, the masts because they run on the same power. That is `Blackout`'s, and
+	# it watches the flag set above rather than this call.
 
 func _clear() -> void:
 	if _contact and is_instance_valid(_contact):

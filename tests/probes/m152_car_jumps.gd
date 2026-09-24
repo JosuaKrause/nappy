@@ -30,6 +30,10 @@ extends RefCounted
 ##   arcs it tried on that frame. `CrowdAgent.turn_refusals` and `turn_round_cause` are the
 ##   planner's own record and this is what reads them;
 ## - every episode of a car swaying across its lane without going anywhere;
+## - for every `spacing` jump — a car the queue's resolve moved backwards — what put it inside the
+##   car ahead on that frame: a landing, a reversal on the spot, a recycle, its own reversal, or a
+##   pair already inside each other, and whether it was the day's first frame. See
+##   `_why_it_was_shunted()`;
 ## - whether either end of the jump was inside `Tuning.VIEW_HALF_EXTENT` (320 × 180 px, the
 ##   1280×720 viewport at the play zoom of 2) around the crowd field's centre, which is where the
 ##   camera is — `CrowdField.centre` is what `CrowdAgent._out_of_view()` measures against, and
@@ -89,6 +93,7 @@ static func _jump_threshold() -> float:
 func run(t) -> void:
 	var totals := {}
 	var causes := {}
+	var shunts := {}
 	var in_view_total := 0
 	var cars_seen := 0
 	var worst := []
@@ -110,6 +115,9 @@ func run(t) -> void:
 			var day_causes: Dictionary = result["causes"]
 			for key: String in day_causes:
 				causes[key] = int(causes.get(key, 0)) + int(day_causes[key])
+			var day_shunts: Dictionary = result["shunts"]
+			for key: String in day_shunts:
+				shunts[key] = int(shunts.get(key, 0)) + int(day_shunts[key])
 			if result["worst"] != "":
 				worst.append(result["worst"])
 		city.free()
@@ -125,6 +133,7 @@ func run(t) -> void:
 		for line: String in worst:
 			print("    %s" % line)
 	_print_the_causes("why cars reversed on the spot, over every rig day", causes)
+	_print_the_causes("what put a shunted car inside the one ahead, over every rig day", shunts)
 	print("PROBE m152 in-view jumps: %d" % in_view_total)
 	print("PROBE m152 turn-rounds: %d (%d in view)"
 			% [int(totals.get("turn-rounds", 0)), int(totals.get("turn-rounds/in-view", 0))])
@@ -191,6 +200,11 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var before := {}
 	var sway := {}
 	var retreats: Array[String] = []
+	var shunts := {}
+	# id -> how the car came into the lane it is in, and id -> the frame its current turn was
+	# booked on. See `_why_it_was_shunted()`: a shunt is often paid long after its cause.
+	var entered := {}
+	var booked := {}
 	var frames := int(round(SECONDS / STEP))
 	for frame in frames:
 		# Walk to the next junction a car has a reason to turn at, stand there a while, move on.
@@ -232,6 +246,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			var from: Vector2 = was[0]
 			var moved := from.distance_to(agent.position)
 			_note_the_sway(sway, agent, was, focus, classes)
+			_note_the_lane_history(agent, was, frame, entered, booked)
 			# Counted whether or not it jumped, because what the fix has to be judged on is the
 			# *share* of landings that end in a teleport rather than the raw count of teleports —
 			# see `_land_the_turn()`, which drops an arrival that finds its booked spot taken at
@@ -245,9 +260,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			# (or u turn) they just teleport"* is what this looks like from outside. A recycle
 			# flips a direction too and is a different thing entirely, so it is excluded by the
 			# same `_cruise` reading `_classify()` uses.
-			if not bool(was[1]) and not agent.is_turning() and bool(was[5]) == agent._vertical \
-					and not is_equal_approx(float(was[4]), agent._direction) \
-					and is_equal_approx(float(was[2]), agent._cruise):
+			if _reversed_on_the_spot(was, agent):
 				classes["turn-rounds"] = int(classes.get("turn-rounds", 0)) + 1
 				var seen := _on_screen(agent.position, focus)
 				if seen:
@@ -260,6 +273,9 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			var what := _classify(was, agent)
 			if what == "turn-landed":
 				retreats.append(_why_the_landing_retreated(city, agent, from, moved))
+			if what == "spacing":
+				var shunt := _why_it_was_shunted(city, agent, was, before, entered, booked)
+				shunts[shunt] = int(shunts.get(shunt, 0)) + 1
 			classes[what] = int(classes.get(what, 0)) + 1
 			# Either end on screen counts: a car that vanishes from in front of her and a car that
 			# appears in front of her are the same defect seen from the two sides.
@@ -286,9 +302,10 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	for line: String in retreats:
 		print("    retreat: %s" % line)
 	_print_the_causes("why cars reversed on the spot", causes)
+	_print_the_causes("what put a shunted car inside the one ahead", shunts)
 
 	return {"classes": classes, "in_view": in_view, "cars": seen_ids.size(),
-			"worst": worst_line, "causes": causes}
+			"worst": worst_line, "causes": causes, "shunts": shunts}
 
 ## The places in this day's city a car actually has a reason to turn: the mouths of every shut
 ## street, closure or hard seal, which is where a lane runs into something and `_divert()` plans an
@@ -448,6 +465,76 @@ func _note_the_sway(sway: Dictionary, agent: CrowdAgent, was: Array, focus: Vect
 	record[4] = reversals
 	record[5] = minf(float(record[5]), across)
 	record[6] = maxf(float(record[6]), across)
+
+# ---------------------------------------------------------------- the shunts ---
+
+## What put a car the queue's resolve moved a jump's length backwards inside the car ahead of it,
+## read off what that car — and the shunted one — did on the same frame.
+##
+## **A `spacing` jump is never its own cause**: the resolve only moves a car that something else
+## has put inside its leader, so the row is only useful split by what that something was. A car
+## arriving from a turn, a car reversing where it stands into the lane, a recycle, or the shunted
+## car's own reversal each has its own fix, and the morning (frame 0, the first the day runs) is
+## named because everything a car looks at on it was built by `Crowd.start_day()` rather than by a
+## frame. `already there` is a pair that was inside each other before the frame began — a shunt
+## the resolve held back on an earlier frame and paid now.
+func _why_it_was_shunted(city: City, agent: CrowdAgent, was: Array, before: Dictionary,
+		entered: Dictionary, booked: Dictionary) -> String:
+	if _reversed_on_the_spot(was, agent):
+		return "its own reversal on the spot"
+	# **Named before anything about the car ahead**, because a car that reversed into a lane where
+	# it stands took no look at it, and whatever arrives in front of it later — a turn whose landing
+	# was booked before the reversal, most often — is only where the bill was paid.
+	var how := str(entered.get(agent.get_instance_id(), ""))
+	var morning := " on the first frame" if how == "first frame" else ""
+	var own := " (it reversed into this lane on the spot)" if how == "reversal" else ""
+	var key := agent.lane_key()
+	var ahead: CrowdAgent = null
+	var nearest := INF
+	for other: CrowdAgent in city.crowd.agents():
+		if other == agent or other.kind != CrowdAgent.Kind.CAR or other.lane_key() != key:
+			continue
+		var offset := other.queue_position() - agent.queue_position()
+		if offset > 0.0 and offset < nearest:
+			nearest = offset
+			ahead = other
+	if ahead == null:
+		return "nobody ahead" + own
+	var then: Array = before.get(ahead.get_instance_id(), [])
+	if then.is_empty():
+		return "behind a car new this frame" + own
+	if not is_equal_approx(float(then[2]), ahead._cruise):
+		return "behind a recycle" + own
+	if bool(then[1]) and not ahead.is_turning():
+		var when := " booked on the first frame" \
+				if int(booked.get(ahead.get_instance_id(), -1)) == 0 else ""
+		return "behind a landing" + when + own
+	if _reversed_on_the_spot(then, ahead):
+		return "behind a reversal on the spot" + own
+	return "behind a car already there" + morning + own
+
+## Keeps, per car, how it came into the lane it is in now — `first frame` for a car the morning
+## placed, `reversal`, `turn` or `recycle` — and the frame its current turn was committed on.
+func _note_the_lane_history(agent: CrowdAgent, was: Array, frame: int, entered: Dictionary,
+		booked: Dictionary) -> void:
+	var id := agent.get_instance_id()
+	if not entered.has(id):
+		entered[id] = "first frame"
+	if not is_equal_approx(float(was[2]), agent._cruise):
+		entered[id] = "recycle"
+	elif _reversed_on_the_spot(was, agent):
+		entered[id] = "reversal"
+	elif bool(was[1]) and not agent.is_turning():
+		entered[id] = "turn"
+	if not bool(was[1]) and agent.is_turning():
+		booked[id] = frame
+
+## Whether a car reversed its heading where it stood on the frame `was` was taken before — the same
+## reading the `turn-rounds` row counts by, which excludes a recycle through `_cruise`.
+static func _reversed_on_the_spot(was: Array, agent: CrowdAgent) -> bool:
+	return not bool(was[1]) and not agent.is_turning() and bool(was[5]) == agent._vertical \
+			and not is_equal_approx(float(was[4]), agent._direction) \
+			and is_equal_approx(float(was[2]), agent._cruise)
 
 # ------------------------------------------------------------- the landings ---
 

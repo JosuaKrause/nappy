@@ -1,0 +1,44 @@
+nappy rig log  2026-09-24T11:25:45  version v0.16.0-13-gc05dfda9
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.6 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.3 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.0 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.5 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.2 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.6 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.5 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 8.4 ms, 608 x 1042
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.0 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 23.1 ms
+
+day 14 act 4  run seed 4242  city seed 4242  length 144.0s  invincible
+   0.0  arc      block (7,10) commercial -> boarded_up (scheduled)
+   0.0  arc      block (7,8) commercial -> boarded_up (scheduled)
+   0.0  arc      block (10,3) commercial -> boarded_up (scheduled)
+   0.0  arc      block (2,9) commercial -> boarded_up (scheduled)
+   0.0  arc      block (1,4) courtyard -> requisitioned (scheduled)
+   0.0  arc      block (9,9) courtyard -> requisitioned (scheduled)
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 22.8 ms
+   0.0  plan     regions: 32 boundary, 19 wall, 13 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: collapsed v(0,10), fallen tree v(1,10), collapsed v(11,0), cordoned off h(0,9)
+   0.0  plan     calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square
+   0.0  plan     events: abduction x4, alley_mouse x4, alley_robbery x4, barricade x24, burnt_out_car x56, burst_water_main x7, busker x4, cafe_tables x50, car_accident x19, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x13, checkpoint_hut x26, collapsed_frontage x11, construction x39, cyclist x10, delivery_van x42, dog_walker x24, homeless_yeller x8, ice_cream_van x5, leaf_blower x14, loose_dog x19, loudspeaker x6, market_stall x33, military_convoy, moving_van x26, pigeon_flock x5, playground x2, police_patrol x12, poster_crew x10, protest x12, reversing_lorry x12, roadblock x65, scaffolding x9, skip x9
+   0.0  start    doorstep (96,42), facing 180°
+   0.0  frame    fps 2, worst frame 246.0ms, draws 594, objects 2604, primitives 5765, process 2312.52ms, physics 1.86ms
+   0.0  frame    fps 86, worst frame 18.0ms, draws 604, objects 2611, primitives 5904, process 16.32ms, physics 1.96ms
+   0.0  crowd    walked into somebody at (88,42) | exc 0, in 0.0/s (crowd 26.9, events 0.0), sleep 1
+   0.0  frame    fps 123, worst frame 19.8ms, draws 860, objects 3052, primitives 6906, process 8.47ms, physics 2.02ms
+   0.0  cross    stepped into the road at (87,42), at a zebra
+   0.0  frame    fps 109, worst frame 17.2ms, draws 622, objects 2717, primitives 6261, process 18.08ms, physics 2.23ms
+   0.0  frame    fps 109, worst frame 10.8ms, draws 619, objects 2684, primitives 6172, process 17.21ms, physics 1.97ms
+   0.0  shot     burst started: asked for an animation burst at (81,42) | exc 0, sleep 2 | playing | asked/burst-9388293-001
+   0.0  frame    fps 114, worst frame 66.8ms, draws 612, objects 2628, primitives 5963, process 8.98ms, physics 1.98ms
+   0.0  frame    fps 60, worst frame 66.4ms, draws 612, objects 2625, primitives 5957, process 66.13ms, physics 2.14ms
+   0.0  quiet    the sabotage went through; every city-wide source is off
+   0.0  cross    stepped into the road at (73,42), at a zebra
+   0.0  frame    fps 33, worst frame 65.7ms, draws 846, objects 3035, primitives 6926, process 64.45ms, physics 2.09ms
+   0.0  near     dog_walker at (71,45), 103px, exc 0, in 0.0/s (crowd 2.9, events 5.2), sleep 3
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  path     off the corridor at (71,42), after 0.0s on it
+   0.0  frame    fps 30, worst frame 77.1ms, draws 867, objects 3122, primitives 7031, process 73.77ms, physics 24.42ms
+   0.0  near     leaf_blower at (64,47), 189px, exc 0, in 0.0/s (crowd 0.0, events 2.1), sleep 4
+   0.0  near     market_stall at (66,43), 61px, exc 0, in 0.0/s (crowd 0.0, events 2.5), sleep 4

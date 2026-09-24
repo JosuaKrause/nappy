@@ -1,0 +1,31 @@
+nappy rig log  2026-09-24T09:57:35  version v0.16.0-8-g42b6d63d
+
+escape  run seed 1674637177  length 180.0s
+   0.0  texture  atlas page 'ui' loaded in the escape: 0.6 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the escape: 0.3 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the escape: 2.5 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the escape: 1.9 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the escape: 1.7 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the escape: 1.0 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the escape: 0.8 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the escape: 11.2 ms, 608 x 1042
+   0.0  texture  atlas page 'interior' loaded in the escape: 1.5 ms, 466 x 326
+   0.0  texture  atlas page 'father' loaded in the escape: 1.2 ms, 168 x 242
+   0.0  start    entered the building at (129,2), facing 0°
+   1.0  frame    fps 145, worst frame 9.8ms, draws 0, objects 0, primitives 0, process 1.39ms, physics 3.03ms
+   2.0  frame    fps 145, worst frame 10.2ms, draws 0, objects 0, primitives 0, process 0.98ms, physics 0.21ms
+   3.0  frame    fps 145, worst frame 10.3ms, draws 0, objects 0, primitives 0, process 1.94ms, physics 0.27ms
+   4.0  frame    fps 145, worst frame 9.8ms, draws 0, objects 0, primitives 0, process 1.61ms, physics 0.32ms
+   4.2  cue      edge badge: masked_pursuer at 670px, closing 110px/s
+   5.0  frame    fps 145, worst frame 9.8ms, draws 0, objects 0, primitives 0, process 2.08ms, physics 0.25ms
+   6.0  frame    fps 145, worst frame 9.3ms, draws 0, objects 0, primitives 0, process 1.72ms, physics 0.23ms
+   7.0  frame    fps 145, worst frame 10.8ms, draws 0, objects 0, primitives 0, process 2.25ms, physics 1.31ms
+   8.0  frame    fps 144, worst frame 9.9ms, draws 0, objects 0, primitives 0, process 2.02ms, physics 0.26ms
+   9.0  frame    fps 145, worst frame 8.7ms, draws 0, objects 0, primitives 0, process 2.17ms, physics 0.12ms
+   9.6  cue      edge badge gone: masked_pursuer after 5.4s, now 208px away
+  10.0  frame    fps 145, worst frame 6.9ms, draws 0, objects 0, primitives 0, process 1.91ms, physics 0.23ms
+  10.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
+  10.7  near     masked_pursuer at (130,3), 65px, exc 4, in 9.3/s (crowd 0.0, events 17.1), sleep 100
+  10.9  near     masked_pursuer at (130,3), 35px, exc 6, in 9.9/s (crowd 0.0, events 18.0), sleep 100
+  11.0  lost     lost_hard_fail in the building after 11.0s — It went wrong. | exc 7, in 9.9/s (crowd 0.0, events 18.0), sleep 100 | near: masked_pursuer 25px
+   0.0  start    restarted the building at (7,1), facing 0°

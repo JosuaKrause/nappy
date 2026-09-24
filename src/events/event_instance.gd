@@ -16,12 +16,12 @@ extends Node2D
 
 const CAT_CROUCHED := "events/cat_crouched"
 const CAT_RUNNING := "events/cat_running"
-## The single east-facing picture, mirrored west — see `EventCatalogue._alley_mouse()` for why the
-## prepared directional family (`mouse_{front,back}[_diagonal].svg`) stays unbound here.
+## The `"side"` entry of `MOUSE_BY_VIEW` below, east-facing per `facings.csv` — see
+## `EventCatalogue._alley_mouse()`. Also `icon_for()`'s own badge silhouette.
 const MOUSE := "events/mouse"
-## The dash's own second frame — the mouse's only picture is the side one this row actually draws;
-## its tail curls a little differently rather than crossing legs it does not have room to draw at
-## this scale, read by `_draw_simple()`'s own `texture_b` off `_gait_stepping()`.
+## The dash's own second frame, and the `"side"` entry of `MOUSE_BY_VIEW_B` — its tail curls a
+## little differently rather than crossing legs it has no room to draw at this scale, read off
+## `_gait_stepping()` the same way every other family's own `_b` table is.
 const MOUSE_B := "events/mouse_b"
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
@@ -364,9 +364,24 @@ const CHATTING_MOTHER_TALKING_BY_VIEW := {
 ## preloading a second copy of the same picture: `docs/evidence/svg-vehicles-2026-09-10/
 ## facings.csv` marks every one of them "existing canonical source" rather than a new drawing, and
 ## `docs/GRAPHICS.md` says to replace a preload only where the suffixed source is a different
-## picture from the one already live. `mouse` is the one family in this evidence set left out —
-## `EventCatalogue._alley_mouse()`'s own docstring documents, with its own reasoning, that the row
-## stays on `_draw_simple(MOUSE, ...)` rather than joining this table.
+## picture from the one already live. `mouse` joins them below.
+const MOUSE_BY_VIEW := {
+	"front": "events/mouse_front",
+	"back": "events/mouse_back",
+	"side": MOUSE,
+	"front_diagonal": "events/mouse_front_diagonal",
+	"back_diagonal": "events/mouse_back_diagonal",
+}
+## The dash's own second frame — its tail curls a little differently rather than crossing legs it
+## has no room to draw at this scale, unlike `CAT_RUNNING_BY_VIEW_B`'s quadrupeds — alternated by
+## `_gait_stepping()` the same way every other family's own `_b` table is.
+const MOUSE_BY_VIEW_B := {
+	"front": "events/mouse_front_b",
+	"back": "events/mouse_back_b",
+	"side": MOUSE_B,
+	"front_diagonal": "events/mouse_front_diagonal_b",
+	"back_diagonal": "events/mouse_back_diagonal_b",
+}
 const CAT_CROUCHED_BY_VIEW := {
 	"front": "events/cat_crouched_front",
 	"back": "events/cat_crouched_back",
@@ -598,8 +613,33 @@ const HUT_NORTH := "checkpoints/hut_north"
 const HUT_SOUTH := "checkpoints/hut_south"
 const HUT_EAST := "checkpoints/hut_east"
 const HUT_WEST := "checkpoints/hut_west"
+## The stationary picture beside a hut (`checkpoint_hut`) or alone (`checkpoint_post`) — a guard
+## who never turns, since neither row ever moves. The guard who does — a heated `roadblock`'s
+## escort and `masked_pursuer` — reads `GUARD_STANDING_BY_VIEW`/`GUARD_LUNGING_BY_VIEW` below
+## instead, through `_draw_eight_view()`.
 const GUARD_STANDING := "checkpoints/guard_standing"
 const GUARD_LUNGING := "checkpoints/guard_lunging"
+## Bound through `_draw_eight_view()` for the two rows whose guard actually turns as he moves.
+## East-authored, like the person/animal families: `guard_lunging_side.svg`'s own comment —
+## "East-authored oblique views mirror about the feet" — so no `side_faces_west` override. Each
+## view's own ground anchor (standing 22×44, anchor (11, 44); lunging 36×44, anchor (17, 44)) is
+## within a pixel of `Sprites.draw_standing()`'s own bottom-centre assumption, same as every other
+## family bound that way — only the stationary kit's `_draw_at_anchor()` calls need `_GUARD_ANCHOR`
+## below, since those draw through `draw_texture_rect()` directly.
+const GUARD_STANDING_BY_VIEW := {
+	"front": "checkpoints/guard_standing_front",
+	"back": "checkpoints/guard_standing_back",
+	"side": "checkpoints/guard_standing_side",
+	"front_diagonal": "checkpoints/guard_standing_front_diagonal",
+	"back_diagonal": "checkpoints/guard_standing_back_diagonal",
+}
+const GUARD_LUNGING_BY_VIEW := {
+	"front": "checkpoints/guard_lunging_front",
+	"back": "checkpoints/guard_lunging_back",
+	"side": "checkpoints/guard_lunging_side",
+	"front_diagonal": "checkpoints/guard_lunging_front_diagonal",
+	"back_diagonal": "checkpoints/guard_lunging_back_diagonal",
+}
 const BOOM_GATE_NS_LOWERED := "checkpoints/boom_gate_ns_lowered"
 const BOOM_GATE_NS_RAISED := "checkpoints/boom_gate_ns_raised"
 const BOOM_GATE_EW_LOWERED := "checkpoints/boom_gate_ew_lowered"
@@ -3107,7 +3147,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect_views(sources, [CAT_CROUCHED_BY_VIEW, CAT_RUNNING_BY_VIEW,
 					CAT_RUNNING_BY_VIEW_B])
 		EventDef.Look.MOUSE:
-			_collect(sources, [MOUSE, MOUSE_B])
+			_collect_views(sources, [MOUSE_BY_VIEW, MOUSE_BY_VIEW_B])
 		EventDef.Look.YELLER:
 			_collect_views(sources, [YELLER_BY_VIEW, YELLER_BY_VIEW_B])
 		EventDef.Look.DOG_WALKER:
@@ -3153,7 +3193,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.POSTER_CREW_SQUARE:
 			_collect_views(sources, [POSTER_CREW_SQUARE_BY_VIEW])
 		EventDef.Look.ROADBLOCK:
-			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_END, GUARD_STANDING, GUARD_LUNGING])
+			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_END])
+			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.UNMARKED_VAN:
 			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, UNMARKED_VAN_WHEELS_BY_VIEW,
 					VAN_VICTIM_BY_VIEW, VAN_VICTIM_BY_VIEW_B])
@@ -3199,7 +3240,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.IMPACT_CRATER:
 			_collect(sources, [IMPACT_CRATER])
 		EventDef.Look.MASKED_PURSUER:
-			_collect(sources, [GUARD_STANDING, GUARD_LUNGING])
+			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM, STEAM_B])
 		EventDef.Look.LOUDSPEAKER_MAST:
@@ -3229,7 +3270,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
 		EventDef.Look.MOUSE:
-			_draw_simple(MOUSE, canvas, MOUSE_B)
+			_draw_eight_view(MOUSE_BY_VIEW, _heading, canvas, false, MOUSE_BY_VIEW_B)
 		EventDef.Look.YELLER:
 			_draw_eight_view(YELLER_BY_VIEW, _heading, canvas, false, YELLER_BY_VIEW_B)
 		EventDef.Look.DOG_WALKER:
@@ -3383,8 +3424,8 @@ func _draw_simple(picture: String, canvas: CanvasItem = self,
 ## `side_faces_west` override set, the same as `delivery_van`, `fire_engine`, `unmarked_van` and
 ## `army_truck` above — see that const's own doc comment.
 ##
-## `_draw_simple` itself is untouched and keeps drawing every row that has no directional family at
-## all: `mouse` and `skip`.
+## `_draw_simple` itself is untouched and keeps drawing the one row that has no directional family
+## at all: `skip`.
 ##
 ## `by_view_b` is the family's own feet-passing set, read off `_gait_stepping()` when given —
 ## empty for every vehicle family, which has no stride, so the lookup falls through to `by_view`.
@@ -3394,13 +3435,22 @@ func _draw_simple(picture: String, canvas: CanvasItem = self,
 ## here, so the wheels picture and the shadow are drawn back down by the same amount and only the
 ## body rises and falls; the wheels go over the body or, for the pictures in
 ## `WHEELS_BEHIND_THE_BODY`, under it.
+##
+## **`draw_shadow` is false only for `_draw_roadblock()`'s guard.** Every other caller's own body
+## shadow — `def.parts()`'s default single piece, `def.shape` at local origin — is exactly the
+## shadow this row wants under the picture this function draws. A heated roadblock's guard is the
+## one exception: `def.shape` there is the barrier band's own shape, not his, and the band's real
+## shadow is already drawn separately, back at the post he left (`_draw_spread()`); the automatic
+## call here would draw a second, band-shaped shadow under his current position instead of his own
+## small one, so `_draw_roadblock()` draws that shadow itself and passes `false`.
 func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self,
-		side_faces_west := false, by_view_b: Dictionary = {}) -> void:
+		side_faces_west := false, by_view_b: Dictionary = {}, draw_shadow := true) -> void:
 	var wheels_by_view: Dictionary = WHEELS_BY_LOOK.get(def.look, {})
 	var grounded := Vector2.ZERO
 	if not wheels_by_view.is_empty():
 		grounded = Vector2(0.0, -_current_bob())
-	_draw_body_shadow(canvas, grounded)
+	if draw_shadow:
+		_draw_body_shadow(canvas, grounded)
 	var view := _select_view(heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	if view == "side" and side_faces_west:
@@ -3543,13 +3593,15 @@ func _robber_waiting_heading() -> Vector2:
 ## is which of them is moving.
 ##
 ## - **Cold, or hunting but not yet noticed** (`is_waiting()`), the man stands at the band's own
-##   centre in `guard_standing.svg`. On a cold roadblock that is the whole of what he is: a
-##   drawing, with no field, no body and no cost of his own.
+##   centre in the `guard_standing_*` family. On a cold roadblock that is the whole of what he is:
+##   a drawing, with no field, no body and no cost of his own.
 ## - **Once he sets off**, this node *is* him — `_chase()` walks it at her — and the barrier he
 ##   left is drawn back at `body_position()`, where its collision body is pinned
-##   (`EventDef.body_stays_behind`). `guard_standing.svg` while his notice runs and
-##   `guard_lunging.svg` once he is actually giving chase, the same `is_telegraphing()` switch
-##   `_draw_robber()` reads.
+##   (`EventDef.body_stays_behind`). `guard_standing_*` while his notice runs and `guard_lunging_*`
+##   once he is actually giving chase, the same `is_telegraphing()` switch `_draw_robber()` reads —
+##   each read from his own travel heading through `_draw_eight_view()`, so he turns to face where
+##   he is going rather than only mirroring east/west (PLAYTEST-128, M56: "the masked pursuer and
+##   the heated roadblock guard face where they are heading").
 ##
 ## So the street he abandoned stays visibly and physically shut behind him, and what she has to get
 ## away from is a man rather than a band of concrete.
@@ -3557,10 +3609,12 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	var band_at := body_position() - global_position
 	_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END, canvas, band_at)
 	var chasing := def.pursues and not is_waiting()
+	# His own small shadow — not the band's, which `_draw_spread()` above already drew at the post
+	# he left — so `_draw_eight_view()` below is asked not to draw one of its own; see that
+	# function's own doc comment.
 	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
-	var picture := GUARD_LUNGING if chasing and not is_telegraphing() else GUARD_STANDING
-	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, Vector2.ZERO,
-			_heading_is_west())
+	var by_view := GUARD_LUNGING_BY_VIEW if chasing and not is_telegraphing() else GUARD_STANDING_BY_VIEW
+	_draw_eight_view(by_view, _heading, canvas, false, {}, false)
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
 func _draw_fire(canvas: CanvasItem = self) -> void:
@@ -3694,16 +3748,19 @@ static func _cap_along(cap_size: Vector2) -> float:
 func _draw_crater(canvas: CanvasItem = self) -> void:
 	_draw_at_anchor(canvas, IMPACT_CRATER, _CRATER_ANCHOR)
 
-## A masked man coming up a stairwell: `guard_standing.svg` while the telegraph is running and
-## `guard_lunging.svg` once it is over and he is actually on her line — the same two postures
+## A masked man coming up a stairwell: the `guard_standing_*` family while the telegraph is running
+## and `guard_lunging_*` once it is over and he is actually on her line — the same two postures
 ## `_draw_roadblock()` swaps between when a heated roadblock's guards leave the post, on a row that
-## was never a barrier and so has no band to swap *out of*. Mirrored the ordinary way, since the
-## sources face east and he is drawn walking whichever way his path runs.
+## was never a barrier and so has no band to swap *out of*. Read from his own travel heading
+## through `_draw_eight_view()`, the same helper every other moving family uses, so he turns to
+## face where he is going on every step of the shaft rather than only mirroring east/west
+## (PLAYTEST-128, M56). No `side_faces_west` override: `guard_lunging_side.svg`'s own comment says
+## the family is east-authored, the same as every person/animal family bound before it. Its own
+## body shadow — `def.shape`, a 9px point, at local origin — is exactly what `_draw_eight_view()`
+## draws by default, so nothing here calls `_draw_shape_shadow()` separately any more.
 func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
-	_draw_shape_shadow(canvas, def.shape)
-	var picture := GUARD_STANDING if is_telegraphing() else GUARD_LUNGING
-	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, Vector2.ZERO,
-			_heading_is_west())
+	var by_view := GUARD_STANDING_BY_VIEW if is_telegraphing() else GUARD_LUNGING_BY_VIEW
+	_draw_eight_view(by_view, _heading, canvas)
 
 ## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
 ## emits, so a café drawn as furniture alone is the loudest pleasant thing in act I looking like

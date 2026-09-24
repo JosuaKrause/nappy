@@ -1,0 +1,20 @@
+nappy rig log  2026-09-24T09:56:29  version v0.16.0-8-g42b6d63d
+
+escape  run seed 1908257939  length 180.0s  invincible
+   0.0  texture  atlas page 'ui' loaded in the escape: 0.9 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the escape: 0.4 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the escape: 3.0 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the escape: 2.2 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the escape: 1.8 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the escape: 0.8 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the escape: 1.1 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the escape: 11.4 ms, 608 x 1042
+   0.0  texture  atlas page 'interior' loaded in the escape: 2.1 ms, 466 x 326
+   0.0  texture  atlas page 'father' loaded in the escape: 1.8 ms, 168 x 242
+   0.0  start    entered the building at (129,2), facing 0°
+   0.0  frame    fps 209, worst frame 22.9ms, draws 102, objects 946, primitives 1924, process 415.69ms, physics 11.13ms
+   0.0  frame    fps 449, worst frame 3.2ms, draws 102, objects 928, primitives 1888, process 3.35ms, physics 0.22ms
+   0.0  frame    fps 437, worst frame 3.0ms, draws 102, objects 928, primitives 1888, process 3.01ms, physics 0.36ms
+   0.0  frame    fps 437, worst frame 4.6ms, draws 102, objects 922, primitives 1876, process 3.12ms, physics 0.34ms
+   0.0  cue      edge badge: masked_pursuer at 670px, closing 110px/s
+   0.0  frame    fps 385, worst frame 3.7ms, draws 108, objects 933, primitives 2018, process 3.72ms, physics 0.19ms

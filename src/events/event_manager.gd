@@ -238,8 +238,19 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
 		doors.append(body.position)
+	# The day's narrow resistance target — day 9's door, day 12's swing, the finale's district —
+	# as the tiles its contact may stand on today, and what obstructs the day whatever the
+	# catalogue does: the seals just planned and the region wall's own bodies. `build_day` keeps a
+	# route from home to one of those tiles among the day's own bodies, the way it keeps one to the
+	# calm (`docs/CITY.md`, "Guarantees"). Here rather than in `build_day` because only here is every
+	# hold the director refuses already on the map — the closures, the wall and doors, the home's
+	# streets and the hard seals — so the tiles protected are tiles the contact may actually take.
+	var standing: Array[EventScheduler.Planned] = []
+	standing.append_array(seals)
+	standing.append_array(region_plan.wall_bodies)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
-			GameState.settled_this_act(), tree, GameState.resistance_progress, doors)
+			GameState.settled_this_act(), tree, GameState.resistance_progress, doors,
+			ResistanceDirector.target_ground(_map, day, region_plan), standing)
 	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -606,9 +617,10 @@ func silence_mast(mast_id: String) -> bool:
 			plan.live._invalidate_contribution_cache()
 	return found
 
-## Silences every mast, for the rest of the day. The masts stop because the power does, or because
-## the last night's sabotage does — either way this is the mechanism, and the good ending's reward
-## is that the walk home carries no floor under the meter. Returns how many masts were silenced.
+## Silences every mast, for the rest of the day. The masts stop because the power does: this is what
+## the last night's blackout calls (`Blackout.go_dark()`), in the same frame the windows and the
+## traffic lights go out, and it reaches a mast out of reach right now as well as a live one, since
+## it marks the plan. Returns how many masts were silenced.
 func silence_all_masts() -> int:
 	var silenced := {}
 	for plan in _plans:

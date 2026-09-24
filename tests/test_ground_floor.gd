@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_a_front_with_no_other_way_in_has_one_door(t)
 	_test_the_door_keeps_clear_of_the_fire_escape(t)
 	_test_a_fire_escape_climbs_every_floor_from_the_first(t)
+	_test_a_home_building_never_carries_a_fire_escape(t)
 	_test_a_two_story_front_rolls_its_escape_and_carries_none(t)
 	_test_the_ground_floor_carries_only_the_platform(t)
 	_test_the_front_rolls_replay_their_own_streams(t)
@@ -232,16 +233,35 @@ func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t) -> void:
 		building.free()
 
 ## `_build_front()`'s own seed string never mentions `is_home_building`, so two otherwise-identical
-## buildings — one flagged hers, one not — must roll the exact same storefront bag, awning,
-## ambient-shutter and fire-escape values. Checked directly rather than replaying the stream, since
-## `tests/test_city_decay.gd` already pins what the stream itself produces.
+## buildings — one flagged hers, one not — roll the exact same storefront bag, awning and
+## ambient-shutter values (checked directly, since `tests/test_city_decay.gd` already pins what the
+## stream itself produces), and the exact same fire-escape roll — whether one exists and its column
+## — replayed by hand below the way `_test_a_two_story_front_rolls_its_escape_and_carries_none`
+## replays it. What the flag changes (M100, `docs/TODO.md`: "the home block carries no fire
+## escape") is only whether the rolled column is *kept*: her own building drops it — she has a
+## stair inside instead — so its `_fire_escape_cols` stays empty and `_build_fire_escape_extras()`'s
+## own `escape:` stream never runs, while a non-home front at the same seed keeps exactly what the
+## replay below predicts.
 func _test_the_home_flag_changes_no_front_roll(t) -> void:
 	var shared_position := Vector2(1234.0, 5678.0)
 	var plain := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 128.0), 96.0, false, shared_position)
 	var home := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 128.0), 96.0, true, shared_position)
-	t.check(plain._fire_escape_cols == home._fire_escape_cols
-			and plain._fire_escape_pots == home._fire_escape_pots,
-			"the home flag changes nothing about the fire-escape roll")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("front:%d:%d:%d" % [plain.variant, int(plain.global_position.x), int(plain.global_position.y)])
+	var expected_cols: Array[int] = []
+	if plain.wall_tiles() >= 2 and rng.randf() < Building.FIRE_ESCAPE_SHARE:
+		var cols := plain.columns()
+		var first_col := rng.randi_range(1, cols - 2) if cols >= 3 else rng.randi_range(0, cols - 1)
+		if plain.wall_tiles() >= Building.FIRE_ESCAPE_MIN_WALL_ROWS:
+			expected_cols.append(first_col)
+	t.check(plain._fire_escape_cols == expected_cols,
+			"a non-home front keeps exactly the column its own roll produced (%s, expected %s)"
+			% [plain._fire_escape_cols, expected_cols])
+	t.check(home._fire_escape_cols.is_empty(),
+			"her own building never keeps a fire escape, even though its roll runs the same way (%s)"
+			% [home._fire_escape_cols])
+	t.check(home._fire_escape_pots.is_empty(),
+			"her own building never rolls the escape's own pot/second-escape stream either, since _fire_escape_cols stays empty")
 	plain.free()
 	home.free()
 
@@ -400,6 +420,34 @@ func _test_a_fire_escape_climbs_every_floor_from_the_first(t) -> void:
 	for wall_rows in [3, 4, 5, 6]:
 		t.check(int(escapes_by_rows.get(wall_rows, 0)) > 0,
 				"the sweep met a fire escape on a front of %d wall rows (%s)" % [wall_rows, escapes_by_rows])
+
+## M100 (`docs/TODO.md`, "the home block carries no fire escape"; the player, PLAYTEST-128.md: "the
+## home building shouldn't have a fire escape (it has a double staircase inside)"): across a sweep
+## of seeds wide enough to roll several escapes on a non-home front at the same position, her own
+## building never keeps one, even on a front tall and wide enough for two.
+func _test_a_home_building_never_carries_a_fire_escape(t) -> void:
+	var plain_escapes := 0
+	for i in 200:
+		var wall_rows := 3 + i % 4
+		var cols := 3 + i % 6
+		var footprint := Vector2(cols * Building.TILE, (wall_rows + 2) * Building.TILE)
+		var height := wall_rows * Building.TILE
+		var at := Vector2(i * 71.0, i * 97.0)
+		var plain := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, height, false, at)
+		var home := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, height, true, at)
+		if not plain._fire_escape_cols.is_empty():
+			plain_escapes += 1
+		t.check(home._fire_escape_cols.is_empty(),
+				"seed %d: her own building carries no fire escape (%s wall rows, %s columns)"
+				% [i, wall_rows, cols])
+		t.check(home.fire_escape_landings().is_empty(),
+				"seed %d: her own building draws no fire-escape balcony either" % i)
+		t.check(home._fire_escape_pots.is_empty(),
+				"seed %d: her own building rolls no fire-escape pot/second-escape extras either" % i)
+		plain.free()
+		home.free()
+	t.check(plain_escapes > 20,
+			"the sweep met enough fire escapes on non-home fronts to mean something (%d)" % plain_escapes)
 
 ## A two-row front still rolls `_build_front()`'s fire-escape roll where a taller one does, so the
 ## `front:` stream is consumed the same way on every front of two rows or more; the front then
@@ -627,6 +675,9 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 				continue
 			if building.is_home_building:
 				checked_home += 1
+				t.check(building._fire_escape_cols.is_empty(),
+						"seed %d: her own building never carries a fire escape, wired the real way through City._spawn_buildings()"
+						% map.seed_used)
 				if building.wall_tiles() >= 2:
 					checked_home_multistory += 1
 					var saw_a_window := false

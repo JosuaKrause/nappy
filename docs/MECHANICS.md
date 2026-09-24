@@ -176,7 +176,7 @@ to walk down, which is what a route is made of.
 
 **The bar may reach and sit at `excitement = 100` without ending the day.** The day ends crying
 only once a further mass of excitement has arrived while she is already sitting at the cap —
-`Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (10) points inside `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
+`Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points inside `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
 so a single contact that only just reaches 100 leaves almost nothing behind it and does not end
 the day, and a source that keeps her at the cap does. See "Baby state machine", "A push at the
 cap", for exactly what counts as that mass and what happens to it once she gets away from the
@@ -307,7 +307,7 @@ half-second move read as a cut.
 
 **A push at the cap.** The bar may reach and sit at `Tuning.METER_MAX` without ending the day —
 `_update_excitement()` still nets `incoming − decay` every frame the way it always has, and the
-day only ends once `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (10) points of that net have arrived
+day only ends once `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points of that net have arrived
 **while she is already sitting at the cap**, summed over the last `Tuning.EXCITEMENT_OVERFLOW_WINDOW`
 (3s). That sum is the bar's own would-be overflow — the part of a positive net rate the clamp would
 otherwise have piled on top of 100 — not the raw incoming: a single contact from just under the cap
@@ -316,8 +316,9 @@ the day on its own, while a source that keeps emitting once she is there keeps f
 moment incoming drops under decay, the bar falls back from 100 at its ordinary ground-and-motion
 rate exactly as it always has, and the sum itself never resets — it simply drains as its own
 entries age out of the three-second window, the same way the decay side of the meter already ages
-out of `ExcitementHalo.WINDOW`. Two constants, both in `src/autoload/tuning.gd`: the player's own
-starting point, not yet a decision (`docs/DECISIONS.md`, M96).
+out of `ExcitementHalo.WINDOW`. Two constants, both in `src/autoload/tuning.gd`, tightened once
+from the player's own starting point of 10 over 3s to 9.5 over 3s (`docs/DECISIONS.md`, M96 and
+M100).
 
 ```
         ┌────────────────────────────────────────────┐
@@ -483,6 +484,15 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
 The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
 vocabulary. See docs/EVENTS.md.
 
+**On the main road the light is the contract, and with the power out the horn is.** The spine's
+traffic does not give way at a zebra, so what stands between her and a hard fail there is the length
+of the side street's green (`Tuning.validate_signals()`). On the last night, after the blackout, the
+lights are dead: a spine junction is negotiated the way a side street's is, and crossing the spine
+is kept by the same two things every other street's carriageway is — the paint and the horn. The
+spine's carriageway is the same 64px as every street's and the horn is stated in seconds of the
+car's own travel, so the check above is the dark spine's check too. That night's roads are harder
+on purpose; see docs/CITY.md, "Traffic signals".
+
 Belt and braces: a car in its lane has a strike box geometrically incapable of reaching over the
 kerb. A car sits half a tile off the middle of the carriageway, so its far edge is `16 + 14 = 30 px`
 out and the kerb is at `32`. `tests/test_crowd.gd` asserts it, because a box that reached the
@@ -646,10 +656,14 @@ resolves by interpenetration again however good the controller is.
 
 **The spacing correction never places a car on ground it could not have driven onto itself.**
 `CrowdAgent.nudge_back()` and `_join_the_back_of_the_queue()` are pure arithmetic with no notion
-of the map underneath them, so both check the tile the shove would land on against the same
-`_cannot_go_on` the forward-looking lookahead already trusts, and simply refuse a move that would
-cross into blocked ground — a hard seal, a region wall or a dead end's own built-over footprint —
-rather than parking a car inside it.
+of the map underneath them, so both ask the same `_cannot_go_on` the forward-looking lookahead
+already trusts about blocked ground — a hard seal, a region wall or a dead end's own built-over
+footprint — rather than parking a car inside it. A recycle's merge is refused whole, since the spot
+it rolled is still somewhere to stand. **A nudge goes as far back as the ground allows and stops a
+pixel short of the first blocked tile**, walking the tiles between rather than probing only where it
+would end, because a refused nudge is a deferred one: the pair stays inside each other, and the
+overlap is paid in one jump on whichever later frame the leader has pulled far enough ahead for the
+whole slide to be legal — a frame nobody chooses, so possibly one she is watching.
 
 **A hard seal, a region wall, and the closed streets a car cannot see through, all read the same
 way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment (a hard seal's own
@@ -787,7 +801,11 @@ first thing she sees. `Crowd.start_day()` therefore runs that resolve itself, on
 **It is the overlap resolve and nothing else**: no car is given a position, and a car that was not
 inside another one does not move at all. Spacing the morning out to a minimum headway would be a
 different thing and is not done — it would turn a random morning into platoons and make every street
-read as busier than the day asked for.
+read as busier than the day asked for. **And the index a car looks at is filled from that resolve
+before `start_day()` returns**, since the first frame's turns and recycles ask it whether the road
+is free before any frame has rebuilt it. An empty one tells each of them yes: a turn books a landing
+a queued car is standing on, and the queue's resolve shunts that car a car's length backwards
+whenever the turn arrives — seconds later, and possibly in front of her.
 
 **Events stream.** `EventScheduler` still plans the whole day across the whole city — every
 guarantee the game makes is a property of the *plan*, so nothing about one usable park, two
@@ -1223,6 +1241,14 @@ whole escape, which is what the checkpoints come back to. `--start-escape` reach
 sequence directly, with a fresh run behind it, so it can be walked without playing fourteen days
 first.
 
+**Nothing about the last night is the easy half.** *([PLAYTEST-121](playtests/PLAYTEST-121.md):
+"the escape shouldn't be easy!")* The sabotage is a hand-over at the power station's door and
+changes nothing there; once she is `Tuning.BLACKOUT_DISTANCE` from the station the city's power
+goes (docs/CITY.md, "The power station"). Every mast stops with it, so the rest of the walk home
+has no loudspeaker anywhere — but it is walked under dead traffic lights, across a spine that no
+longer stops for anybody, with everything else the last day carries still out. The escape after it
+is in the dark as well.
+
 **A full clock per section, `Tuning.FINALE_LENGTH_SECONDS`, which is a day's own length.** Each
 brief starts one, so the time spent walking down three floors is not time the city has lost: at the
 service door the building's clock stops and the city's brief starts its own.
@@ -1262,14 +1288,24 @@ button and losing the window's focus open the same pause screen a day opens, wit
 the same held restart and the same quit; the held restart ends the escape in a fresh run,
 `GameState.escape_section` cleared, the same way it ends any other run. The touch controls, the
 orientation handling, the developer readout and the debug-mode note are all the one instance each
-boot already builds before it knows which of the two it is. What a day has that a section does not:
-the screen-edge badge, the excitement halo and the two geometry debug layers, which only the city
-section carries (a `City`'s own `EventManager` and crowd are what draws them, and the building has
-neither); a telemetry observer, since that class is built around a day's own `City`, `RouteTree` and
-corridor, none of which either section has, so the escape writes its own clock into the run log
-directly instead (`main._process_the_finale()`); and the home-guidance arrow, since escaping owes no
-return leg to point one at. The save indicator is built only for a run's own escape, never the
-flag's, since a dev-flagged boot writes nothing a symbol could ever announce.
+boot already builds before it knows which of the two it is.
+
+**The building shows what the city shows.** *(PLAYTEST-115: "The escape shouldn't behave any
+different than the rest of the game.")* The screen-edge badge, the excitement halo and the debug
+view's layers are built with whichever world a boot builds first and pointed at the next one when
+she walks out of the service door. What they read is an **event source** — anything answering
+`instances()`, which `InteriorEvents` does under the same name `EventManager` does — and a crowd
+only where there is one, so indoors the masked man coming up a stairwell raises the same badge a
+fire engine coming down a street does, and the fire she is standing beside wears the same rim a
+dog on a sidewalk does. The debug view's fields, shadows and bounding boxes (`1`–`3`) trace the
+building's events, walls and her; the readout (`4`) names the section and its clock where a day
+names its phase; and the frame graph (`6`) is fed the same way. The route lines (`5`) have nothing
+to draw in either section, since neither has a day's route tree. **The run log watches a section as
+it watches a day** — see `docs/TELEMETRY.md`, "The escape's log".
+
+What a day has that a section does not is the home-guidance arrow, since escaping owes no return
+leg to point one at. The save indicator is built only for a run's own escape, never the flag's,
+since a dev-flagged boot writes nothing a symbol could ever announce.
 
 **Section one is a route with the first turn already taken.** A fallen ceiling fills the top
 floor's hallway between her own door and the right stair door, both rows of it
@@ -1288,10 +1324,19 @@ line a door is well under the three and a half seconds he spends standing still 
 So the side she switched to is not a side she can settle on, which is the whole point of him: the
 way down is a sequence of crossings rather than one.
 
+**The building is dark, because it is the night of the blackout.** *(The player, 2026-09-20: "it
+can be gloomy in the hallways and basement and maybe emergency (red?) lighting in the stairs".)*
+Nothing in it has power: the wall lamps and the chandeliers are drawn unlit, and the part she is in
+is multiplied by one light, her included (`InteriorScene.lighting_at()`) — a cold gloom in the
+hallways and the lobby, darker in the windowless basement, and the red of the emergency lighting in
+the two stairwells. The light changes only when she changes part, which is under a door's fade to
+black. The city she walks out into is the same night, with every window and traffic light dark
+from its first frame (docs/CITY.md, "The power station").
+
 **The night outside is light and noise, and they are separate things.** Every
 `Tuning.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
-hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS`, and the meter takes the
-hit, wherever she is standing. Between those, far more often, a distant flash lights the same
+hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS` and the hallway she is in
+is lit with it, and the meter takes the hit, wherever she is standing. Between those, far more often, a distant flash lights the same
 windows the same way and does nothing else at all — no event, no field, nothing on the meter. A
 shelled city is what she can see out of the window; what she is charged for is only what is close
 enough to hear.
