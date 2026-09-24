@@ -146,6 +146,8 @@ src/
 	eight_direction.gd    the eight-sector heading selector the stroller and the crowd both draw by
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
+	still_watch.gd        --quit-when-still: once she has moved, quits and saves a picture the
+	                       moment she holds still again, reusing AutoScreenshot's own capture
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
 	dev_rig.gd            the flag-acting half: --spawn/--follow/--overview/--meters/--day-length
 	                       against the live City, testable without booting main

@@ -15,6 +15,35 @@ reported by name, so the "crashed or hung" message is reachable; `--serial` and 
 unbounded since they run far more than one shard's suites. `EventInstance.noticed_at()` is the
 save half of `resume()`, and `EventManager` reads it rather than the private field.
 
+## M189 — A still mother ends the run with a picture · built 2026-09-23
+
+*(The player, 2026-09-23: "can we have a flag for automatically taking a screenshot and
+terminating the game if the player doesn't move for a second or so?" · "also, it looks like the
+walking rig is a good way to find bugs".)* `--quit-when-still [seconds]` (default one second):
+once she has moved at all, if she then holds within `StillWatch.STILL_RADIUS` (4px, half the route
+rig's own stuck distance, sampled every frame rather than every half second) of one spot for that
+long while `DayController.is_running()` and the tree is not paused — which leaves out the brief,
+summary and death screens without a third flag — the game saves `still/quit-when-still.png` into
+the run's telemetry folder, notes a `still` line (her tile and the nearest live event or vehicle),
+prints the path and quits. `StillWatch` is its own node rather than part of `AutoScreenshot`,
+since a per-frame watch and a one-shot timed capture live differently, and it reuses
+`AutoScreenshot`'s capture through `AutoScreenshot.immediate()`. It reads her position, not the
+input or her velocity: on the route rig's day 6 wedge on seed 1234567 the HUD read a speed of 92
+in the frame she was pinned against a moving van. **Open to overturn, chosen by the agent:** the
+radius, the `still/` folder and fixed filename, and a `still` note kind rather than `shot`, whose
+doc says a person asked for the picture.
+
+## M79 — The city seen at an angle is closed · 2026-09-23
+
+*(The player, 2026-09-23: "I think we can close M79, the city at an angle. I like the current
+visuals and we really don't need to change it.")* M79 was tabled on 2026-09-06 as a question of
+sequencing, not doubt: a 2:1 isometric projection after the reference
+`docs/evidence/reference-isometric-street-2026-09-06.jpeg`, whose findings were that only the
+world-to-screen transform would change and not the lattice, that the 2.5D buildings made it
+cheap, and that what rotation destroys is the guarantee that nothing hides her. The city stays
+drawn straight on, and the item leaves the queue; this entry holds what the tabled milestone knew,
+and git history holds its full text (`git log -S "The city seen at an angle" -- docs/TODO.md`).
+
 ## M184 — The rig waits before it forces, and aims beside a solid target · 2026-09-23
 
 The route rig's open half ([PLAYTEST-122](playtests/PLAYTEST-122.md): "a test-rig mode where she
