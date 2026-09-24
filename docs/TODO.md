@@ -703,21 +703,6 @@ is still true.
       stepping to the arm, or the boom stops being a detaining body and the huts alone are the
       toll, with the boom's picture still barring the lanes for the cars. The player's call
 
-- [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
-      table in `src/day/day_controller.gd` has no line for `masked_pursuer`, so the summary falls
-      back to the generic text. Found building the escape's run log (`DECISIONS.md`, M102, the
-      building shows what the city shows)
-- [ ] **A retried escape section holds its automatic snapshots back** until the new clock passes
-      the time of the last shot, because a section's clock restarts at zero. Found with the item
-      above
-- [ ] **The readout said "awake" while the baby was drawn asleep**, once, in a building capture
-      under `--start-escape stairwell:right --invincible`. Not investigated; check whether the
-      readout and the picture read the same state in the escape
-
-- [ ] **The run log's `quiet` line still says "the sabotage went through"**, and
-      `EventBus.city_went_quiet`'s docstring still describes the sabotage, though both now fire
-      at the blackout (`DECISIONS.md`, M183, the blackout is everything at once)
-
 **Drawings, as SVG:**
 
 - [ ] **The basement vent's pipe vanishes between blows.** `steam.svg` draws the pipe and the
