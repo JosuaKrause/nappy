@@ -13,10 +13,11 @@ extends Node2D
 ##
 ## **The bounding-box layer is the one exception, and reads the physics tree itself instead of a
 ## query.** `collision_nodes_under()` walks every *enabled* `CollisionShape2D`/`CollisionPolygon2D`
-## under a `StaticBody2D` or `CharacterBody2D` anywhere in `_city`'s or `_player`'s own subtree —
+## under a `StaticBody2D` or `CharacterBody2D` anywhere in `_world`'s or `_player`'s own subtree —
 ## hers, the pram's, every building, a road closure's and the map
-## boundary's own barrier bodies, and every solid event's obstruction (a checkpoint hut or gate, a
-## region wall, a barricade) — so a body a future row grows needs nothing added here to be drawn,
+## boundary's own barrier bodies, every solid event's obstruction (a checkpoint hut or gate, a
+## region wall, a barricade), and in the escape's building every wall blocker and the fire on the
+## stairs — so a body a future row grows needs nothing added here to be drawn,
 ## and this layer cannot disagree with what she actually collides against. `_draw_bodies()` and
 ## `body_outline_count()` both read this one list, and `tests/test_debug_layers.gd` counts the same
 ## tree independently to check the two never drift apart.
@@ -32,6 +33,11 @@ extends Node2D
 ## `Tuning.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
 ## about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one.
 ## `_draw_fields()` is where the shape-per-emitter decision is made.
+##
+## **The building shows what the city shows.** Nothing here needs a day: the events are an event
+## source (anything answering `instances() -> Array[EventInstance]`, which `InteriorEvents` does as
+## well as `EventManager`), the crowd may be null, and the world is any `Node2D` whose subtree holds
+## the bodies — `City` or `InteriorScene`. Only the props are a city's, and a building has none.
 
 ## The falloff's own outline colour for a merely costly field — `Palette.MARK_COSTLY`, the same
 ## amber the caret already uses for "worth going round", so this view speaks the vocabulary the
@@ -57,16 +63,32 @@ var bodies_on := false
 ## it has queued the redraw the change owed. See `_wants_a_redraw()`.
 var _redraw_owed := false
 
-var _events: EventManager
+## The event source — see the class doc.
+var _events: Node
+## Null where there is no crowd: the escape's building.
 var _crowd: Crowd
-var _city: City
+## Whose subtree the bodies are walked from: the `City`, or the escape's `InteriorScene`.
+var _world: Node2D
 var _player: Stroller
 
-func setup(events: EventManager, crowd: Crowd, city: City, player: Stroller) -> void:
+## **Called again when the escape walks out of the service door**, with the city in place of the
+## building, so the one node and the state of its three switches carry across the section change.
+func setup(events: Node, crowd: Crowd, world: Node2D, player: Stroller) -> void:
 	_events = events
 	_crowd = crowd
-	_city = city
+	_world = world
 	_player = player
+
+## The live instances, typed — see `DangerEdge._live()` for why the duck-typed source is read
+## through one function.
+func _live() -> Array[EventInstance]:
+	return _events.instances()
+
+## The crowd's agents, or none where there is no crowd.
+func _agents() -> Array[CrowdAgent]:
+	if not _crowd:
+		return []
+	return _crowd.agents()
 
 ## Sets which layers start on — `1` fields, `2` shadows, `3` bounding boxes — from
 ## `DevFlags.layers_override()`. Pulled out from `main._add_debug_layers()` so a test can drive it
@@ -113,7 +135,7 @@ func _wants_a_redraw() -> bool:
 	return fields_on or shadows_on or bodies_on or _redraw_owed
 
 func _draw() -> void:
-	if not _events or not _crowd or not _player:
+	if not _events or not _player:
 		return
 	if fields_on:
 		_draw_fields()
@@ -133,7 +155,7 @@ func _draw() -> void:
 ## radius `_flock_contribution_at()` sums over, so drawing the flat number instead would show a
 ## field wider than what the birds actually emit.
 func _draw_fields() -> void:
-	for instance in _events.instances():
+	for instance in _live():
 		if instance.is_finished:
 			continue
 		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
@@ -153,7 +175,7 @@ func _draw_fields() -> void:
 			_draw_field_boundary(null, at, Vector2.RIGHT, velocities[i], instance.def.inner_radius,
 					colour)
 			_draw_field_boundary(null, at, Vector2.RIGHT, velocities[i], outer, colour)
-	for agent in _crowd.agents():
+	for agent in _agents():
 		var is_car := agent.kind == CrowdAgent.Kind.CAR
 		var inner := Tuning.CAR_INNER_RADIUS if is_car else Tuning.PEDESTRIAN_INNER_RADIUS
 		var outer := Tuning.CAR_OUTER_RADIUS if is_car else Tuning.PEDESTRIAN_OUTER_RADIUS
@@ -187,14 +209,15 @@ func _draw_field_boundary(shape: GroundShape, at: Vector2, axis: Vector2, veloci
 ## shadow, so this is read for its body alone today"), so none is drawn here for one either; its
 ## `shape` still appears in the bounding-box layer below.
 func _draw_shadows() -> void:
-	for instance in _events.instances():
+	for instance in _live():
 		if instance.is_finished:
 			continue
 		_draw_shadow_outline(instance.def.shape, instance.global_position, instance.solid_axis())
-	for agent in _crowd.agents():
+	for agent in _agents():
 		var axis := agent.travel_axis() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
 		_draw_shadow_outline(agent.shape, agent.global_position, axis)
-	for prop in _city.props():
+	var props: Array = (_world as City).props() if _world is City else []
+	for prop in props:
 		if prop is Prop:
 			_draw_shadow_outline((prop as Prop).shape, prop.global_position, Vector2.RIGHT)
 	_draw_shadow_outline(_player.shape, _player.global_position, Vector2.RIGHT)
@@ -219,7 +242,7 @@ func _pram_position() -> Vector2:
 ## `will_be_lethal()` tests against. **Walkers and cars have no body; nothing is invented for
 ## them.**
 func _draw_bodies() -> void:
-	for node in collision_nodes_under(_city):
+	for node in collision_nodes_under(_world):
 		_draw_collision_node(node)
 	for node in collision_nodes_under(_player):
 		_draw_collision_node(node)
@@ -232,12 +255,12 @@ func _draw_bodies() -> void:
 ## against an independent tree walk of its own, so a body this layer stops drawing is a number this
 ## count would also drop.
 func body_outline_count() -> int:
-	return collision_nodes_under(_city).size() + collision_nodes_under(_player).size() \
+	return collision_nodes_under(_world).size() + collision_nodes_under(_player).size() \
 			+ _strike_box_agents().size()
 
 func _strike_box_agents() -> Array[CrowdAgent]:
 	var found: Array[CrowdAgent] = []
-	for agent in _crowd.agents():
+	for agent in _agents():
 		if agent.kind == CrowdAgent.Kind.CAR and agent.speed() >= Tuning.CAR_STRIKE_MIN_SPEED:
 			found.append(agent)
 	return found
@@ -250,7 +273,7 @@ func _strike_box_agents() -> Array[CrowdAgent]:
 ##
 ## A thin wrapper over `_collect_collision_nodes_into()`, which walks into one array the caller
 ## already owns rather than `append_array`-ing a fresh `Array[Node]` back up through every level of
-## recursion — the whole tree under `_city` is buildings, props, event instances and crowd agents
+## recursion — the whole tree under a `City` is buildings, props, event instances and crowd agents
 ## and all of their own children, so a level-deep tree paid for one allocation per level on top of
 ## the one this function itself returns; now it pays for exactly one.
 static func collision_nodes_under(root: Node) -> Array[Node]:

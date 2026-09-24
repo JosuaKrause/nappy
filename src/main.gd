@@ -631,6 +631,12 @@ func _build_the_escape_building() -> void:
 	add_child(_interior_events)
 	_pauses_with_the_game(_interior_events)
 	_interior_events.setup(_interior, GameState.day_rng(GameState.day, "finale-interior"))
+	# The building shows what the city shows: the same badge, halo and debug view, reading
+	# `InteriorEvents` where a day reads `EventManager` — see `_event_source()`. The city's own
+	# build calls the same three again when she walks out, which points them at the street.
+	_add_danger_edge()
+	_add_excitement_halo()
+	_add_debug_layers()
 
 ## Section two's world: the city she knows with nobody in it, and the finale's own plan on it.
 ##
@@ -676,13 +682,15 @@ func _build_the_finale_city() -> void:
 	_finale.set_exits(
 			_city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL)),
 			_city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE)))
+	# Built here for a boot straight onto the street, and pointed at the street here when she has
+	# walked out of the building, which built them first — see `_add_danger_edge()`.
 	_add_danger_edge()
 	_add_excitement_halo()
 	_add_debug_layers()
 	_add_route_lines()
-	# Three of the layers above are `CanvasLayer`s built after the boot's own orientation pass, so
-	# the rotation is applied again rather than left for the next time the window changes shape —
-	# see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
+	# Some of the layers above may be `CanvasLayer`s built after the boot's own orientation pass,
+	# so the rotation is applied again rather than left for the next time the window changes shape
+	# — see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
 	_apply_orientation()
 	_plan_the_finale_city()
 
@@ -791,6 +799,7 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 	# that just reached a hundred is what lost the section.
 	_baby.reset()
 	_baby.force_sleep()
+	_observe_the_section(section, restarted)
 	if _interior:
 		_interior.clear_fade()
 	# **A genuinely resumed escape opens on the title first, the way a resumed day does** — see
@@ -856,14 +865,34 @@ var _finale_brief_open := false
 ## is exactly what `FinaleController.restart_section()` raises, so this writes the loss down and
 ## hands over rather than drawing a second kind of screen. Nothing is spent: no Nerve, no calendar,
 ## and `GameState`'s day is untouched.
-func _on_finale_section_lost(section: int) -> void:
+func _on_finale_section_lost(_section: int, result: int) -> void:
 	# Written before the restart, so the entry carries the second the section was lost at rather
 	# than the second the retry began. Without it the log shows the timestamps marching up and then
 	# starting again with nothing in between to say why.
-	Telemetry.note("lost", "escape: %s, %.1fs in" % [
-		"the building" if section == FinaleController.Section.BUILDING else "the city",
-		FinaleController.length() - _finale.time_remaining()])
+	if _observer:
+		_observer.section_lost(result)
 	_finale.restart_section()
+
+## The escape's run log, watched the way a day's is — see `TelemetryObserver`'s class doc. Built
+## the first time a section starts, because that is the first moment everything it reads exists:
+## her, the baby, the badge and the section's clock. Every start after that points it at the world
+## this section is walked in and clears the last attempt, which is also what writes the `start`
+## line a retry opens with. **Only while a run is being traced**, the same rule `_ready()` builds a
+## day's observer by: with telemetry off there is no observer at all.
+func _observe_the_section(section: int, restarted: bool) -> void:
+	if not Telemetry.is_active():
+		return
+	if not _observer:
+		_observer = TelemetryObserver.new()
+		_observer.name = "Telemetry"
+		add_child(_observer)
+		_pauses_with_the_game(_observer)
+		_observer.setup_escape(_player, _baby, _finale.clock(), _edge)
+	if section == FinaleController.Section.BUILDING:
+		_observer.watch_building(_interior, _interior_events)
+	else:
+		_observer.watch_city(_city)
+	_observer.start_section(restarted)
 
 ## Where section two starts and restarts: the service exit, on the street beside the home block.
 func _finale_start_position() -> Vector2:
@@ -879,6 +908,9 @@ func _finale_start_position() -> Vector2:
 ## a game closed in a section still has somewhere to come back to.
 func _on_finale_escaped(exit_kind: int) -> void:
 	_hud.visible = false
+	# Before `finish_day()`, whose `ending` line closes the run: the way out is part of how it ended.
+	if _observer:
+		_observer.escaped(exit_kind)
 	if _escape_from_a_run:
 		_run_over = not GameState.finish_day(GameEnums.DayResult.WON)
 	_summary.show_finale(exit_kind, FinaleController.length() - _finale.time_remaining())
@@ -1125,7 +1157,15 @@ func _engage_the_day() -> void:
 ## Built here rather than inside the HUD scene because it has to ask the world where things are
 ## every frame, and the HUD's rule is that it listens to `EventBus` and holds no reference to
 ## the world. Bending that for one indicator would cost more than the node does.
+##
+## **One badge for every world.** It reads `_event_source()`, which is the building's
+## `InteriorEvents` in the escape's first section and a `City`'s `EventManager` everywhere else, so
+## a second call — the escape walking out of the service door — points the same badge at the city
+## rather than building a second layer over the first.
 func _add_danger_edge() -> void:
+	if _edge:
+		_edge.setup(_event_source(), _player)
+		return
 	var layer := CanvasLayer.new()
 	layer.name = "DangerEdge"
 	_edge_layer = layer
@@ -1136,7 +1176,7 @@ func _add_danger_edge() -> void:
 	# `ScreenOrientation.pin_to_design_box()`.
 	ScreenOrientation.pin_to_design_box(_edge)
 	_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_edge.setup(_city.events, _player)
+	_edge.setup(_event_source(), _player)
 	layer.add_child(_edge)
 	add_child(layer)
 
@@ -1152,13 +1192,39 @@ func _add_danger_edge() -> void:
 ## any coloured light near it, and nothing the cue exists to protect is a wall.
 ## `_pauses_with_the_game()` is the same reasoning `_city` gets: while the tree is paused nothing
 ## it reads is moving either, so freezing alongside the world it draws needs no case of its own.
+##
+## Called once per world the same way `_add_danger_edge()` is: in the escape's building it reads
+## `InteriorEvents` and no crowd, and walking out of the service door points it at the city.
 func _add_excitement_halo() -> void:
+	if _halo:
+		_halo.setup(_event_source(), _crowd_now(), _player, _baby)
+		return
 	_halo = ExcitementHalo.new()
 	_halo.name = "ExcitementHalo"
 	_halo.z_index = 1
-	_halo.setup(_city.events, _city.crowd, _player, _baby)
+	_halo.setup(_event_source(), _crowd_now(), _player, _baby)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
+
+## What the badge, the halo, the debug view and the readout read the world's events from: the
+## building's `InteriorEvents` while the escape's first section is the only world there is, and a
+## `City`'s own `EventManager` once there is a city — a day's, or the escape's second section,
+## which the building never comes back after. Both answer `instances()`, which is all any of the
+## readers asks.
+func _event_source() -> Node:
+	if _city:
+		return _city.events
+	return _interior_events
+
+## The crowd, or null in the escape's building, which has nobody in it but its events.
+func _crowd_now() -> Crowd:
+	return _city.crowd if _city else null
+
+## The world whose subtree holds the bodies the debug view's bounding boxes trace.
+func _world_now() -> Node2D:
+	if _city:
+		return _city
+	return _interior
 
 ## A plain camera made current before either boot path's own player exists, so the two frames
 ## `_warm_the_halo_shader()` awaits below draw `ground` — the doorstep, in `_ready()`'s case —
@@ -1322,13 +1388,20 @@ static func _graph_starts_on(spikes_requested: bool, layers: Array[int]) -> bool
 ## box drawn under the thing it outlines would be the one cue in the game nobody could read.
 ## Every layer starts off, unless `-- --layers 1,3` (or the page's own `?layers=1,3`) says
 ## otherwise — see `_toggle_debug_layer()` for the number key that turns one on by hand.
+##
+## Called once per world, the way `_add_danger_edge()` is, so the escape's building gets the
+## same three layers and walking out of the service door points them at the city with whatever
+## `1`–`3` had switched on still on.
 func _add_debug_layers() -> void:
 	if not _debug:
+		return
+	if _debug_layers:
+		_debug_layers.setup(_event_source(), _crowd_now(), _world_now(), _player)
 		return
 	_debug_layers = DebugLayers.new()
 	_debug_layers.name = "DebugLayers"
 	_debug_layers.z_index = 3
-	_debug_layers.setup(_city.events, _city.crowd, _city, _player)
+	_debug_layers.setup(_event_source(), _crowd_now(), _world_now(), _player)
 	_debug_layers.apply_initial_state(DevFlags.layers_override())
 	add_child(_debug_layers)
 	_pauses_with_the_game(_debug_layers)
@@ -1402,8 +1475,8 @@ func _apply_orientation() -> void:
 	get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
 	_player.set_screen_rotation(deg_to_rad(90.0) if rotate else 0.0)
 	_touch_controls.rotated = rotate
-	# `_edge` (the screen-edge badge) does not exist under `--start-escape` — there are no events
-	# to warn about — see `_ready_escape()`.
+	# `_edge` (the screen-edge badge) is built with the first world either boot builds — see
+	# `_add_danger_edge()` — so it is null only for a script-only `main` a test drives by hand.
 	if _edge:
 		_edge.rotated = rotate
 	_hud.set_rotated(rotate)
@@ -1762,6 +1835,7 @@ func _process(delta: float) -> void:
 		return
 	if _finale:
 		_process_the_finale(delta)
+		_write_the_escape_readout(delta)
 		return
 	if _interior:
 		_interior.process_player(_player, delta)
@@ -1867,19 +1941,14 @@ func _process(delta: float) -> void:
 ## `EventManager` streams itself around her (`EventManager._physics_process`), so section two needs
 ## nothing here to keep its own events stocked.
 ##
-## **And the run log's clock, which nothing else pushes here.** A day's is mirrored by
-## `TelemetryObserver._process()`, and the escape has no observer — that class is built around a
-## `City`, a `RouteTree` and a day's own corridor, none of which section one has at all. So this is
-## the finale's own one line of it, and it is the same line: the clock the HUD is drawing, handed
-## to `Telemetry` so a log entry and the screen never disagree. Nothing here decides anything, and
-## nothing here rolls anything, which is the whole of what the **telemetry** rule asks.
+## The run log's clock is not pushed here: the escape has the observer a day has
+## (`_observe_the_section()`), which mirrors the section's own clock the way it mirrors a day's.
 func _process_the_finale(delta: float) -> void:
 	# Nothing of the walk is asked while its brief is up. This node runs through a pause (it has to,
 	# or Esc would not answer), so without this the door under her feet and the exit she is standing
 	# next to would both keep being tested against a section that has not begun.
 	if _finale_brief_open:
 		return
-	Telemetry.set_clock(FinaleController.length() - _finale.time_remaining())
 	if _finale.section == FinaleController.Section.BUILDING:
 		if _interior:
 			_interior.process_player(_player, delta)
@@ -1887,12 +1956,65 @@ func _process_the_finale(delta: float) -> void:
 	if _city:
 		_finale.check_exit(_player.global_position)
 
+## The debug view's readout (`4`) and frame graph (`6`) in the escape, fed and gated exactly as a
+## day's own branch of `_process()` feeds and gates them, with the section and its clock where a
+## day's phase stands and the event source (`_event_source()`) where a day's `EventManager` does —
+## so the building is read the same way the street is. Kept apart from the day's block rather than
+## folded into it because a section has no `DayController` phase, no ahead-owed queue, and in the
+## building no map and no crowd: most of the day's lines would each need a case.
+func _write_the_escape_readout(delta: float) -> void:
+	if _frame_graph:
+		_frame_graph.push(delta)
+	if not (_debug or _readout_requested) or not _layer_readout_on:
+		return
+	if _build_text == "":
+		_build_text = TitleScreen.build_text()
+	var here := _player.global_position
+	var lines: Array = [
+		"build %s" % _build_text,
+		"seed  %d   escape" % GameState.run_seed,
+		"section %s  %.1fs left" % [
+			"building" if _finale.section == FinaleController.Section.BUILDING else "city",
+			_finale.time_remaining()],
+	]
+	if _city:
+		var tile := _city.map.world_to_tile(here)
+		lines.append("tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(_city.map.tile_at(tile))])
+		lines.append("calm  %s" % ("yes" if _city.is_calm_zone(here) else "no"))
+	elif _interior:
+		var tile := _interior.world_to_tile(here)
+		lines.append("tile  %d, %d  (building)" % [tile.x, tile.y])
+	var source := _event_source()
+	lines += [
+		"",
+		"speed       %6.1f" % _player.current_speed(),
+		"run excess  %6.2f" % _player.run_excess_ratio(),
+		"",
+		"events      %6d live" % (source.instances().size() if source else 0),
+		"nearest     %s" % _nearest_event_text(),
+		"",
+	]
+	_status.text = "\n".join(lines + FrameCost.readout_lines() + [
+		"",
+		"incoming    %6.2f /s" % _baby.last_incoming,
+		"decay       %6.2f /s" % _baby.last_decay,
+		"net         %6.2f /s" % (_baby.last_incoming - _baby.last_decay),
+		"",
+		"arrows/WASD walk",
+		"shift       run",
+		"esc         pause  (r restart, q quit)",
+	])
+
 ## The closest live event and what it is currently doing — the readout that says whether a
-## telegraph actually ended when it should have.
+## telegraph actually ended when it should have. Asked of `_event_source()`, so the escape's
+## building answers it too.
 func _nearest_event_text() -> String:
 	var nearest: EventInstance = null
 	var best := INF
-	for instance in _city.events.instances():
+	var source := _event_source()
+	if not source:
+		return "none"
+	for instance: EventInstance in source.instances():
 		var distance := instance.global_position.distance_to(_player.global_position)
 		if distance < best:
 			best = distance

@@ -43,7 +43,9 @@ signal section_started(section: int, restarted: bool)
 ## "restarting should still have the day brief for both the apartment escape and the city escape
 ## even if the nerves don't go down.")* `main` records what happened and then calls
 ## `restart_section()`, which raises that section's brief again with a fresh clock behind it.
-signal section_lost(section: int)
+## `result` is the `GameEnums.DayResult` the clock ended on, passed as an `int` for the same
+## cross-script reason `section` is — the run log's `lost` line names it the way a day's does.
+signal section_lost(section: int, result: int)
 ## She has reached the tunnel mouth or the bridge deck. `exit_kind` is a `CityEdge.Kind`.
 signal escaped(exit_kind: int)
 
@@ -107,10 +109,10 @@ func start_section() -> void:
 ## `main` answers by writing the loss down and calling `restart_section()` below, which raises that
 ## section's brief. The clock stays stopped where the loss left it until that brief is dismissed:
 ## `DayController` has already put its phase at `OVER`.
-func _on_section_lost(_result: GameEnums.DayResult) -> void:
+func _on_section_lost(result: GameEnums.DayResult) -> void:
 	if is_over:
 		return
-	section_lost.emit(section)
+	section_lost.emit(section, result)
 
 ## The same section again, from its own start — what a loss leads to. `section_started` fires with
 ## `restarted` true, so `main` puts her back at the start and raises the brief without repeating
@@ -149,6 +151,13 @@ func _stop() -> void:
 
 func time_remaining() -> float:
 	return _clock.time_remaining
+
+## The section's own clock, for `TelemetryObserver` — the escape's run log is timed and gated off
+## it exactly as a day's is off the day's `DayController`, which is the whole reason the observer
+## can watch a section without knowing it is not a day. Read, never started or stopped, from
+## outside: `start_section()` and `_stop()` are the only two things that move its phase.
+func clock() -> DayController:
+	return _clock
 
 func is_running() -> bool:
 	return _clock.is_running()
