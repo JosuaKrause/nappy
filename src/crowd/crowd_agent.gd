@@ -1384,21 +1384,51 @@ func queue_position() -> float:
 ## no notion of the map underneath it, so unguarded it can shove the rearmost car of a queue back
 ## across a junction and into whatever borders it on the far side — measured as a car grazing a big
 ## building's own footprint by one tile. `_cannot_go_on` is the same predicate `_look_ahead` already
-## trusts for the *forward* direction; asked here for the backward one, a nudge that would cross
-## into blocked ground is simply refused, which leaves that one pair a little closer than
-## `Tuning.CAR_GAP_MIN` for a frame rather than parking either of them in a wall.
+## trusts for the *forward* direction, asked here for the backward one, tile by tile from the car's
+## own — **walked rather than sampled at the target**, since a nudge of a car's length is two tiles
+## and a probe at its end looks straight past a one-tile barrier between.
+##
+## **A nudge that meets blocked ground goes as far as the ground allows and stops there**, a pixel
+## short of the blocked tile, rather than being refused whole. A refusal is not a smaller correction,
+## it is a deferred one: the pair stays inside each other, and the overlap is paid in a single jump
+## on whichever later frame the leader has pulled far enough ahead for the full target to be legal.
+## That frame is chosen by nobody, so it can be in front of her, and on the morning it is the one
+## thing the resolve in `Crowd.start_day()` exists to prevent: a car placed in a stub of road with a
+## barrier behind it unpacked on the second frame instead of before the first. Going as far as the
+## ground allows leaves the same pair as close as it can legally be, on the frame the overlap arose,
+## and nothing is left over to settle later.
 func nudge_back(distance: float) -> void:
 	# **Never a car in a turn.** Sliding one back down its entry lane takes it off the arc it is
 	# following, which is the separation pass repairing a manoeuvre — and a manoeuvre that needs
 	# repairing is one that should not have been started. The room a turn lands in is checked and
 	# held before the car commits; whoever ended up too close to it is nudged instead.
-	if _turn:
+	if _turn or distance <= 0.0:
 		return
-	var target := _along() - distance * _direction
+	_set_along(_furthest_back_towards(_along() - distance * _direction))
+
+## How far back down its own lane toward `target` this car may slide without its centre crossing
+## onto a tile `_cannot_go_on` refuses — `target` itself when every tile on the way is road, a
+## pixel short of the first blocked one otherwise, and where it already stands when the tile it is
+## on is refused too, since an agent already standing somewhere it may not be is left alone rather
+## than dragged further through it.
+func _furthest_back_towards(target: float) -> float:
+	var here := _map.world_to_tile(position)
+	if _cannot_go_on(_vertical, here):
+		return _along()
 	var probe := Vector2(_cross(), target) if _vertical else Vector2(target, _cross())
-	if _cannot_go_on(_vertical, _map.world_to_tile(probe)):
-		return
-	_set_along(target)
+	var goal := _map.world_to_tile(probe)
+	var step := Vector2i(0, -signi(int(_direction))) if _vertical \
+			else Vector2i(-signi(int(_direction)), 0)
+	var tile := here
+	while tile != goal:
+		var next := tile + step
+		if _cannot_go_on(_vertical, next):
+			# The edge of the last good tile on the side the car is sliding toward.
+			var band := tile.y if _vertical else tile.x
+			var low := float(band * Tuning.TILE_SIZE)
+			return low if _direction > 0.0 else low + float(Tuning.TILE_SIZE) - 1.0
+		tile = next
+	return target
 
 ## Somebody she walked into gets out of her way.
 ##

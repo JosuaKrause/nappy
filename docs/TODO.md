@@ -539,34 +539,6 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
 
 ---
 
-## M152 — Cars teleport at their turns · the landing and the about-face fixed 2026-09-15, one shunt open
-
-> "cars are super buggy now. when they turn in the final stretch the teleport a car length
-> somewhere else. also in some case instead of routing a turn (or u turn) they just teleport."
-
-[PLAYTEST-76](playtests/PLAYTEST-76.md), [PLAYTEST-77](playtests/PLAYTEST-77.md). The
-**crowd-traffic** rule governs. Both shapes are fixed and recorded (`DECISIONS.md`, M152, a
-turn's landing stands where its arc ended; M152, the about-face is planned and the morning is
-unpacked early). The probe `tests/probes/m152_car_jumps.gd` now finds one in-view jump that is
-neither: on seed 91117 day 1 a follower is moved a car's length backwards in one frame by the
-queue's front-to-back resolve, at (2941, 2800) → (2878, 2800), in the before and the after run
-alike.
-
-- [ ] **A follower is shunted a car's length by the resolve, in view.**
-      `Crowd._resolve_the_queues()` moves a car by its whole overlap in one frame, which is
-      right for a placement nobody has seen and is the first shape the player reported when it
-      happens to a follower on camera — here the follower of a landing, since
-      `_land_the_turn()` leaves the arrival where its arc ended and the queue resolves whoever
-      is too close behind. Find what put the follower a car's length inside its leader on that
-      frame — the landing's claim, the follower's brake, or the lane key changing under it — and
-      fix that where it happens; a resolve that spreads the correction over frames is a force,
-      which the rule refuses. The probe's `spacing` class in view is the measurement, 0 after.
-      The last resort's own residual is measured and not asked about: one reversal on the spot
-      in view over seven rig days, where a stopped car outsat the wait on the landing; the PR
-      review names the shape to try if it shows in play.
-
----
-
 ## M129 — A path through the city never has to cost · one route in eight still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
