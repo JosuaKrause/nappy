@@ -1263,14 +1263,24 @@ button and losing the window's focus open the same pause screen a day opens, wit
 the same held restart and the same quit; the held restart ends the escape in a fresh run,
 `GameState.escape_section` cleared, the same way it ends any other run. The touch controls, the
 orientation handling, the developer readout and the debug-mode note are all the one instance each
-boot already builds before it knows which of the two it is. What a day has that a section does not:
-the screen-edge badge, the excitement halo and the two geometry debug layers, which only the city
-section carries (a `City`'s own `EventManager` and crowd are what draws them, and the building has
-neither); a telemetry observer, since that class is built around a day's own `City`, `RouteTree` and
-corridor, none of which either section has, so the escape writes its own clock into the run log
-directly instead (`main._process_the_finale()`); and the home-guidance arrow, since escaping owes no
-return leg to point one at. The save indicator is built only for a run's own escape, never the
-flag's, since a dev-flagged boot writes nothing a symbol could ever announce.
+boot already builds before it knows which of the two it is.
+
+**The building shows what the city shows.** *(PLAYTEST-115: "The escape shouldn't behave any
+different than the rest of the game.")* The screen-edge badge, the excitement halo and the debug
+view's layers are built with whichever world a boot builds first and pointed at the next one when
+she walks out of the service door. What they read is an **event source** — anything answering
+`instances()`, which `InteriorEvents` does under the same name `EventManager` does — and a crowd
+only where there is one, so indoors the masked man coming up a stairwell raises the same badge a
+fire engine coming down a street does, and the fire she is standing beside wears the same rim a
+dog on a sidewalk does. The debug view's fields, shadows and bounding boxes (`1`–`3`) trace the
+building's events, walls and her; the readout (`4`) names the section and its clock where a day
+names its phase; and the frame graph (`6`) is fed the same way. The route lines (`5`) have nothing
+to draw in either section, since neither has a day's route tree. **The run log watches a section as
+it watches a day** — see `docs/TELEMETRY.md`, "The escape's log".
+
+What a day has that a section does not is the home-guidance arrow, since escaping owes no return
+leg to point one at. The save indicator is built only for a run's own escape, never the flag's,
+since a dev-flagged boot writes nothing a symbol could ever announce.
 
 **Section one is a route with the first turn already taken.** A fallen ceiling fills the top
 floor's hallway between her own door and the right stair door, both rows of it
