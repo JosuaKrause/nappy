@@ -275,7 +275,47 @@ func _nearest_live_instance(event_id: String) -> Vector2:
 		if distance < best_distance:
 			best_distance = distance
 			best = instance.global_position
-	return best
+	return _reachable_point_near(best) if best != Vector2.INF else Vector2.INF
+
+## How far outward `_reachable_point_near()` searches, in tiles, before giving up and handing back
+## `centre` unchanged — past `roadblock`'s own solid reach (`obstructs_radius` 60px, under two
+## tiles) with room to spare, so a body this catalogue actually places is always found well inside
+## the budget and only a malformed future row would ever exhaust it.
+const _NEAREST_OPEN_SEARCH_RADIUS := 6
+
+## The walkable, unobstructed ground nearest `centre`, or `centre` itself when it already qualifies
+## — every any-instance task but `roadblock` has no body at all (`homeless_yeller`'s own
+## `obstructs_radius` is 0), so this is a no-op for them and changes nothing about how they resolve.
+##
+## **A solid row's own centre is exactly the ground `_plan()` refuses.** `roadblock` carries
+## `def.solid(GroundShape.band(60.0))`, so `EventManager` rasterises its footprint into
+## `CityMap.obstructed_tiles` the same way any parked body is (`_blocked_for_phase()`'s own doc),
+## and unlike a hazard's own margin — which `_shortest()` explicitly drops for the tile a leg is
+## walking to — an obstructed tile is never exempted for either end of a plan, because a body is
+## really standing there. Handing `_begin_leg()` a target sitting inside one is a target no path
+## can ever end on, which is the day 13 "no path to 'task'" this function exists to fix (a `--route`
+## measurement found a live `roadblock` instance whose centre was its own solid band).
+##
+## **Walking to the nearest open ground next to the body reaches the row exactly as reliably as
+## the real game's own random-bearing offset does, without reproducing its RNG draw.**
+## `ResistanceDirector._reach_distance()` completes an any-instance task from `obstructs_radius +
+## Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH` of the instance's centre (110px for `roadblock`,
+## 60 + 14 + 36) — comfortably past where the solid edge itself sits (60px) — so standing on the
+## closest ground the body actually leaves open is always well inside that reach, whichever side
+## of it she approaches from.
+func _reachable_point_near(centre: Vector2) -> Vector2:
+	var centre_tile := _city.map.world_to_tile(centre)
+	if _city.map.is_open(centre_tile) and not _city.map.is_obstructed(centre_tile):
+		return centre
+	for radius in range(1, _NEAREST_OPEN_SEARCH_RADIUS + 1):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var tile := centre_tile + Vector2i(dx, dy)
+				if _city.map.is_open(tile) and not _city.map.is_obstructed(tile):
+					return _city.map.tile_to_world(tile)
+	return centre
 
 ## The nearest calm tile by walking distance, sidewalks and hazard-free ground preferred exactly as
 ## `_plan()` prefers them — see `_blocked_for_phase()`. `CityMap.calm_tiles()` is read live, so a

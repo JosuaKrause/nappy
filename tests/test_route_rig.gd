@@ -29,6 +29,8 @@ func run(t) -> void:
 	_test_line_of_sight_allows_a_crossing_tile(t)
 	_test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t)
 	_test_avoid_zone_excludes_only_its_own_centre(t)
+	_test_reachable_point_near_returns_centre_when_already_open(t)
+	_test_reachable_point_near_steps_off_obstructed_ground(t)
 	_test_resolve_target_mark_is_todays_contact(t)
 	_test_resolve_target_task_is_unavailable_before_the_mark_is_touched(t)
 	_test_resolve_target_home_is_the_home_rects_centre(t)
@@ -217,6 +219,43 @@ func _test_avoid_zone_excludes_only_its_own_centre(t) -> void:
 			% zone.size())
 	t.check(zone.has(centre + Vector2i(2, 2)) and zone.has(centre + Vector2i(-2, -2)),
 			"the ring reaches its full radius")
+	rig.free()
+
+# --------------------------------------------------------- _reachable_point_near ---
+
+## The common case, and every any-instance task but `roadblock`: nothing is obstructed, so the
+## instance's own centre is handed straight back rather than searched for.
+func _test_reachable_point_near_returns_centre_when_already_open(t) -> void:
+	var rig := _rig(t)
+	var here := _city.map.doorstep_world_position()
+	t.check(rig._reachable_point_near(here) == here,
+			"open ground is returned unchanged rather than nudged to a neighbour")
+	rig.free()
+
+## The day 13 "no path to 'task'" regression: a solid row's own centre (`roadblock`'s
+## `obstructs_radius`, from `GroundShape.band(60.0)`) is exactly the ground `_plan()` refuses, so
+## `_nearest_live_instance()` must never hand `_begin_leg()` a target sitting inside one.
+## `CityMap.obstructed_tiles` is pinned directly here — `tests/probes/m110_bodies.gd` already reads
+## and rewrites it the same way — rather than spawning a real solid `EventInstance`, since the
+## claim under test is what `_reachable_point_near()` does with an obstructed centre, not how a
+## body gets recorded there.
+func _test_reachable_point_near_steps_off_obstructed_ground(t) -> void:
+	var rig := _rig(t)
+	var centre_tile := _city.map.world_to_tile(_city.map.doorstep_world_position())
+	# Two tiles clear of the doorstep itself, so obstructing it cannot also touch the home block's
+	# own exemptions.
+	var obstructed_tile := centre_tile + Vector2i(2, 0)
+	t.check(_city.map.is_open(obstructed_tile) and not _city.map.is_obstructed(obstructed_tile),
+			"the tile this test obstructs starts out open, or the test proves nothing")
+	_city.map.obstructed_tiles[obstructed_tile] = 1
+	var centre := _city.map.tile_to_world(obstructed_tile)
+	var reachable := rig._reachable_point_near(centre)
+	var reachable_tile := _city.map.world_to_tile(reachable)
+	t.check(reachable_tile != obstructed_tile,
+			"an obstructed centre is never handed back as the reachable point")
+	t.check(_city.map.is_open(reachable_tile) and not _city.map.is_obstructed(reachable_tile),
+			"the point found near an obstructed centre is itself open, unobstructed ground")
+	_city.map.obstructed_tiles.erase(obstructed_tile)
 	rig.free()
 
 # ---------------------------------------------------------- _resolve_target ---
