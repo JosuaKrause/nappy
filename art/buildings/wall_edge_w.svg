@@ -1,4 +1,8 @@
-<!-- The building's west corner: the old outline, as art. -->
+<!-- The building's west corner: the dark outline of the silhouette, and the light catching
+     the corner just inside it. Translucent inside the outline, so it reads on any tinted wall
+     and on the power station's cladding alike. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect x="0" y="0" width="2" height="32" fill="#221f28" fill-opacity="0.45"/>
+  <rect x="0" y="0" width="1" height="32" fill="#3b2d32"/>
+  <rect x="1" y="0" width="1" height="32" fill="#ffffff" fill-opacity="0.26"/>
+  <rect x="2" y="0" width="1" height="32" fill="#ffffff" fill-opacity="0.1"/>
 </svg>

@@ -64,12 +64,80 @@ animals (PR 300) and street obstructions (PR 301):
 9. **The rest of the building is redrawn to the same bar** — walls, windows, fire escapes and the
    other parts — and then the whole picture is looked at again.
 
+## Then, on the redrawn building fronts (M186, PR 303)
+
+> "Fire escapes don't reach a ground floor. They always end one floor above"
+
+10. **A fire escape ends one floor above the ground**: its lowest landing is at the first floor,
+    and no flight comes down to the sidewalk.
+
 ## Then, on her own building
 
 > "The home has windows behind the door. Let's remove them"
 
 11. **No window shows behind her front door**: the ground-floor window drawn on the home block's
     wall where the door stands is removed, so the door stands on plain wall.
+
+## Then, on the first-floor fire escape (PR 303, at 81251559)
+
+> "also, fire escape ladders. the graphics for them are good -- I like the variation with the
+> flower pot. the placement is wrong. you start at the bottom of the top floor then the same
+> texture gets placed on each floor. on the ground floor you only place the platform -- without a
+> ladder (so from a certain angle that means there is no fire ladder on the ground floor). so if
+>
+> w - wall
+> f - current fire escape texture
+> t - only the platform of the fire escape at the top end of the texture
+>
+> a building looks like this
+>
+> ```
+> wwwwwwww
+> wfwwwwfw
+> wfwwwwfw
+> wfwwwwfw
+> wtwwwwtw
+> ```
+>
+> five story building for example"
+
+12. **The fire escape graphics are good**, the potted-plant variant included.
+13. **A fire escape climbs the whole front, one piece per floor**: the current texture is placed
+    on every floor from the bottom of the top floor down, and the ground floor carries only the
+    platform at the texture's top end, with no ladder — so nothing of the escape comes down to
+    the sidewalk. In the example, a five-story front has the escape on its three middle floors,
+    the platform alone on the ground floor, and plain wall on the top floor.
+
+## Then, on which fire escape picture is stacked
+
+> "the diagonal stairs are okay -- also, don't alternate the sides -- make both stairs face the
+> same direction. always"
+
+14. **The stacked fire escape is the balcony with its diagonal flight** hanging below it, the
+    first redraw: the flight comes down from each balcony to the one below.
+15. **Every flight faces the same direction, always**: the flights do not alternate up a stack,
+    and the two variants are not mirrored.
+
+> "you need to derive a texture without stairs though"
+
+16. **The ground floor's platform is its own texture**, derived from the stair picture with the
+    stairs taken out, rather than the stair picture cut short.
+
+> "a two floor building cannot have a fire escape"
+
+17. **A two-story building has no fire escape**; the fewest floors that carry one is three.
+
+## Then, on the stacked fire escapes (PR 303, at 7da73f8a)
+
+> "okay, the fire escapes look good now -- the flower pot version should be chosen at random. a
+> wide building front could support two fire escapes but only if there is enough of a gap between
+> them (at least 1.5 full fire escape widths between them)"
+
+18. **The stacked fire escapes look good.**
+19. **The flower pot is chosen at random**, balcony by balcony, rather than standing on every
+    balcony of one variant.
+20. **A wide front may carry two fire escapes**, but only with a gap of at least one and a half
+    full fire escape widths between them.
 
 ## Then, on the closures across the street (M187, PR 306, at 35bbefe9)
 

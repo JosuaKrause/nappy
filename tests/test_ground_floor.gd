@@ -31,7 +31,13 @@ func run(t) -> void:
 	_test_the_home_flag_changes_no_front_roll(t)
 	_test_a_front_with_no_other_way_in_has_one_door(t)
 	_test_the_door_keeps_clear_of_the_fire_escape(t)
+	_test_a_fire_escape_climbs_every_floor_from_the_first(t)
+	_test_a_two_story_front_rolls_its_escape_and_carries_none(t)
+	_test_the_ground_floor_carries_only_the_platform(t)
 	_test_the_front_rolls_replay_their_own_streams(t)
+	_test_a_wide_front_may_carry_a_second_escape_with_the_gap(t)
+	_test_no_second_escape_on_a_front_too_narrow_for_one(t)
+	_test_the_flower_pot_varies_within_one_escape(t)
 	_test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
 
 # ------------------------------------------------------------------- fixtures ---
@@ -156,8 +162,8 @@ func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t) ->
 	var residential := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0)
 	var residential_cells := residential.blank_ground_floor_cells()
 	var excluded := {residential.entrance_door_col(): true}
-	if residential._fire_escape_col >= 0:
-		excluded[residential._fire_escape_col] = true
+	for escape_col in residential._fire_escape_cols:
+		excluded[escape_col] = true
 	t.check(residential.entrance_door_col() >= 0, "the residential fixture has a door")
 	t.check(residential_cells.size() == residential.columns() - excluded.size(),
 			"a residential front is blank across every column but its door's and its fire escape's (%d of %d)"
@@ -231,10 +237,10 @@ func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t) -> void:
 ## `tests/test_city_decay.gd` already pins what the stream itself produces.
 func _test_the_home_flag_changes_no_front_roll(t) -> void:
 	var shared_position := Vector2(1234.0, 5678.0)
-	var plain := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0, false, shared_position)
-	var home := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0, true, shared_position)
-	t.check(plain._fire_escape_col == home._fire_escape_col
-			and plain._fire_escape_variant_b == home._fire_escape_variant_b,
+	var plain := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 128.0), 96.0, false, shared_position)
+	var home := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 128.0), 96.0, true, shared_position)
+	t.check(plain._fire_escape_cols == home._fire_escape_cols
+			and plain._fire_escape_pots == home._fire_escape_pots,
 			"the home flag changes nothing about the fire-escape roll")
 	plain.free()
 	home.free()
@@ -256,7 +262,7 @@ static func _replayed_door_col(building: Building) -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("door:%d:%d:%d" % [building.variant, int(building.global_position.x),
 			int(building.global_position.y)])
-	return Building._door_col_from(building.columns(), building._fire_escape_col, rng)
+	return Building._door_col_from(building.columns(), building._fire_escape_cols, rng)
 
 static func _col_of(building: Building, cell: Rect2) -> int:
 	return int(roundf((cell.position.x - building._cell(0, 0).x) / Building.TILE))
@@ -295,34 +301,169 @@ func _test_a_front_with_no_other_way_in_has_one_door(t) -> void:
 	t.check(station.entrance_door_col() == -1, "the power station draws its own door, not this one")
 	station.free()
 
-## The fire escape's landings reach into both neighbouring columns at the ground floor, so the
-## door never stands on its column or beside it where the front has any other column to offer.
+## Every fire escape's landings reach into both neighbouring columns at the ground floor, so the
+## door never stands on any escape's column or beside it where the front has any other column to
+## offer — one escape or two.
 func _test_the_door_keeps_clear_of_the_fire_escape(t) -> void:
 	var with_escape := 0
+	var with_two_escapes := 0
 	for i in 400:
-		var cols := 3 + i % 6
+		var cols := 3 + i % 10
 		var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
 				Vector2(cols * Building.TILE, 128.0), 96.0, false, Vector2(i * 37.0, i * 53.0))
 		var door := building.entrance_door_col()
-		var escape := building._fire_escape_col
-		if escape >= 0:
+		var escapes: Array[int] = building._fire_escape_cols
+		if not escapes.is_empty():
 			with_escape += 1
-			t.check(door != escape, "the door is never under the fire escape (%d columns)" % cols)
-			if cols >= 4:
-				t.check(absi(door - escape) > 1,
-						"with room to spare, the door is not beside the fire escape either (%d columns, door %d, escape %d)"
-						% [cols, door, escape])
+			if escapes.size() >= 2:
+				with_two_escapes += 1
+			for escape in escapes:
+				t.check(door != escape, "the door is never under a fire escape (%d columns)" % cols)
+				if cols >= 4:
+					t.check(absi(door - escape) > 1,
+							"with room to spare, the door is not beside a fire escape either (%d columns, door %d, escape %d)"
+							% [cols, door, escape])
 		else:
 			t.check(door >= 1 and door <= cols - 2,
 					"with no fire escape to avoid, the door stays off the corner columns (%d of %d)" % [door, cols])
 		building.free()
 	t.check(with_escape > 20, "the sweep met enough fire escapes to mean something (%d)" % with_escape)
+	t.check(with_two_escapes > 0, "the sweep met a front wide enough to also test a second escape (%d)" % with_two_escapes)
+
+# ------------------------------------------------------------- the fire escape ---
+
+## What `_draw_fire_escape()` puts on a front, asked of one: a balcony on every floor line from
+## the first floor's up to the top floor's — none on the ground floor's own, so nothing stands on
+## the sidewalk — the lowest the platform alone and every other the balcony with its flight, the
+## potted-plant picture or the plain one per that balcony's own roll; and nothing on a front with
+## no escape. A wide front's second escape (if any) keeps the minimum gap from the first. Answers
+## whether the front had at least one escape, so a sweep can say it was not vacuous.
+static func _check_fire_escape(t, building: Building, label: String) -> bool:
+	var landings := building.fire_escape_landings()
+	var escapes: Array[int] = building._fire_escape_cols
+	if escapes.is_empty():
+		t.check(landings.is_empty(), "%s: a front with no fire escape draws no piece of one" % label)
+		return false
+	t.check(building.district == GameEnums.BlockPurpose.RESIDENTIAL,
+			"%s: only a residential front carries a fire escape" % label)
+	t.check(building.wall_tiles() >= Building.FIRE_ESCAPE_MIN_WALL_ROWS,
+			"%s: a front with a fire escape has three floors at least (%d)" % [label, building.wall_tiles()])
+	if landings.is_empty():
+		t.check(false, "%s: a front with a fire escape draws its balconies" % label)
+		return true
+	t.check(landings[0] == 1,
+			"%s: the lowest balcony is the first floor's, on the ground floor's top edge (row %d)"
+			% [label, landings[0]])
+	t.check(landings[-1] == building.wall_tiles() - 1,
+			"%s: the highest balcony is on the top floor's floor line, so the stack starts at the bottom of the top floor (row %d of %d)"
+			% [label, landings[-1], building.wall_tiles()])
+	for i in range(1, landings.size()):
+		t.check(landings[i] == landings[i - 1] + 1,
+				"%s: a balcony on every floor between, so each flight lands on the next (%s)" % [label, landings])
+	t.check(escapes.size() <= 2, "%s: a front never carries more than two fire escapes (%d)" % [label, escapes.size()])
+	if escapes.size() == 2:
+		t.check(absi(escapes[0] - escapes[1]) >= Building.FIRE_ESCAPE_GAP_COLUMNS,
+				"%s: two escapes on one front keep the minimum gap (%s, need %d)"
+				% [label, escapes, Building.FIRE_ESCAPE_GAP_COLUMNS])
+		t.check(building.columns() >= Building.SECOND_FIRE_ESCAPE_MIN_COLUMNS,
+				"%s: a second escape only appears on a front wide enough for one (%d columns)"
+				% [label, building.columns()])
+	for col in escapes:
+		t.check(building.columns() < 3 or (col > 0 and col < building.columns() - 1),
+				"%s: escape at column %d keeps off the corner columns (%d columns)"
+				% [label, col, building.columns()])
+		for row in landings:
+			var pot: bool = building._fire_escape_pots.get(col, {}).get(row, false)
+			var expected: StringName
+			if row == landings[0]:
+				expected = Building.FIRE_ESCAPE_PLATFORM_A if pot else Building.FIRE_ESCAPE_PLATFORM_B
+			else:
+				expected = Building.FIRE_ESCAPE_A if pot else Building.FIRE_ESCAPE_B
+			t.check(building.fire_escape_texture(col, row) == expected,
+					"%s: column %d row %d draws %s — the platform alone at the bottom, the balcony and its flight above, the pot per its own roll"
+					% [label, col, row, expected])
+	return true
+
+## Fronts of every height the class can build, two to six wall rows, across a spread of lots: an
+## escape reaches every floor of a front of three or more, and a front of two never has one.
+func _test_a_fire_escape_climbs_every_floor_from_the_first(t) -> void:
+	var escapes_by_rows := {}
+	for i in 300:
+		var wall_rows := 2 + i % 5
+		var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
+				Vector2((3 + i % 4) * Building.TILE, (wall_rows + 2) * Building.TILE), wall_rows * Building.TILE,
+				false, Vector2(i * 41.0, i * 67.0))
+		if _check_fire_escape(t, building, "fixture %d, %d wall rows" % [i, wall_rows]):
+			escapes_by_rows[wall_rows] = int(escapes_by_rows.get(wall_rows, 0)) + 1
+		building.free()
+	t.check(not escapes_by_rows.has(2), "a two-story front never carries a fire escape (%s)" % escapes_by_rows)
+	for wall_rows in [3, 4, 5, 6]:
+		t.check(int(escapes_by_rows.get(wall_rows, 0)) > 0,
+				"the sweep met a fire escape on a front of %d wall rows (%s)" % [wall_rows, escapes_by_rows])
+
+## A two-row front still rolls `_build_front()`'s fire-escape roll where a taller one does, so the
+## `front:` stream is consumed the same way on every front of two rows or more; the front then
+## carries none, and rolls no pots or second escape either, since `_build_fire_escape_extras()` only
+## ever runs once `_fire_escape_cols` already holds the first. Replayed the way
+## `_test_the_front_rolls_replay_their_own_streams` replays it.
+func _test_a_two_story_front_rolls_its_escape_and_carries_none(t) -> void:
+	var rolled := 0
+	for i in 60:
+		var at := Vector2(3000.0 + i * 96.0, 1000.0 + i * 64.0)
+		var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(160.0, 128.0), 64.0, false, at)
+		t.check(building.wall_tiles() == 2, "fixture %d is two stories (%d)" % [i, building.wall_tiles()])
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("front:%d:%d:%d" % [building.variant, int(at.x), int(at.y)])
+		if rng.randf() < Building.FIRE_ESCAPE_SHARE:
+			rolled += 1
+			rng.randi_range(1, building.columns() - 2)
+		t.check(building._fire_escape_cols.is_empty() and building.fire_escape_landings().is_empty(),
+				"fixture %d: a two-story front carries no fire escape" % i)
+		t.check(building._fire_escape_pots.is_empty(),
+				"fixture %d: a two-story front rolls no pots either, since it never had a first escape to roll extras for" % i)
+		building.free()
+	t.check(rolled > 0, "the replay met a two-story front that rolled an escape (%d)" % rolled)
+
+## The ground floor under an escape is the lower half of the platform picture and nothing else, so
+## what the platform picture puts below its brackets is what an escape puts on the sidewalk: read
+## off the baked page, the pixels the game draws. The stair picture's flight does reach that low,
+## which is what makes the platform a picture of its own rather than the stair cut short.
+func _test_the_ground_floor_carries_only_the_platform(t) -> void:
+	var page := AtlasLibrary.page_image(&"buildings")
+	t.check(page != null, "the baked buildings page reads back as an image")
+	if page == null:
+		return
+	var pairs := [[Building.FIRE_ESCAPE_PLATFORM_A, Building.FIRE_ESCAPE_A],
+			[Building.FIRE_ESCAPE_PLATFORM_B, Building.FIRE_ESCAPE_B]]
+	for pair: Array in pairs:
+		var platform := AtlasLibrary.region_rect(pair[0])
+		var stair := AtlasLibrary.region_rect(pair[1])
+		t.check(platform.size == stair.size and platform.size.y == 2 * int(Building.TILE),
+				"%s registers with %s, two floors tall (%s, %s)" % [pair[0], pair[1], platform.size, stair.size])
+		# The lower half of the ground floor: below the brackets, where the sidewalk's people stand.
+		var from_row := platform.size.y - int(Building.TILE) / 2
+		t.check(_opaque_rows(page, platform, from_row) == 0,
+				"%s puts nothing on the lower half of the ground floor" % pair[0])
+		t.check(_opaque_rows(page, stair, from_row) > 0,
+				"%s's flight does reach that low, so the platform is what keeps it off the ground floor" % pair[1])
+
+## How many of `rect`'s rows from `from_row` down hold a pixel that is not fully transparent.
+static func _opaque_rows(page: Image, rect: Rect2i, from_row: int) -> int:
+	var rows := 0
+	for y in range(from_row, rect.size.y):
+		for x in rect.size.x:
+			if page.get_pixel(rect.position.x + x, rect.position.y + y).a > 0.0:
+				rows += 1
+				break
+	return rows
 
 ## Every stream `Building` rolls, replayed from its own seed for fixed fixtures: the windows (lit and
 ## style, `_test_upper_floor_rolls_are_unchanged_for_a_fixed_seed` above), the fire escape and the
-## storefronts from `_build_front()`'s `front:` seed, and the door from `_build_entrance()`'s `door:`
-## seed. Each stream is keyed on its own prefix and read by nothing else, so the door adds a roll
-## without moving any other; a replay that still matches after the door exists is the proof.
+## storefronts from `_build_front()`'s `front:` seed, the escape's own extras (pots, second escape)
+## from `_build_fire_escape_extras()`'s `escape:` seed, and the door from `_build_entrance()`'s
+## `door:` seed. Each stream is keyed on its own prefix and read by nothing else, so the door and the
+## escape's extras each add a roll without moving any other; a replay that still matches after both
+## exist is the proof.
 func _test_the_front_rolls_replay_their_own_streams(t) -> void:
 	var escapes_seen := 0
 	for i in 40:
@@ -331,14 +472,22 @@ func _test_the_front_rolls_replay_their_own_streams(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("front:%d:%d:%d" % [building.variant, int(at.x), int(at.y)])
 		var expected_col := -1
-		var expected_b := false
 		if rng.randf() < Building.FIRE_ESCAPE_SHARE:
 			expected_col = rng.randi_range(1, building.columns() - 2)
-			expected_b = rng.randf() < 0.5
 			escapes_seen += 1
-		t.check(building._fire_escape_col == expected_col
-				and (expected_col < 0 or building._fire_escape_variant_b == expected_b),
-				"fixture %d: the fire-escape roll is `_build_front()`'s own stream" % i)
+		var expected_cols: Array = [] if expected_col < 0 else [expected_col]
+		var expected_pots := {}
+		if expected_col >= 0:
+			var escape_rng := RandomNumberGenerator.new()
+			escape_rng.seed = hash("escape:%d:%d:%d" % [building.variant, int(at.x), int(at.y)])
+			var extras: Dictionary = Building._roll_fire_escape_extras(building.columns(), expected_col,
+					building.fire_escape_landings(), escape_rng)
+			expected_cols = extras["cols"]
+			expected_pots = extras["pots"]
+		t.check(building._fire_escape_cols == expected_cols,
+				"fixture %d: the fire-escape roll (and its second escape, if any) is its own stream" % i)
+		t.check(building._fire_escape_pots == expected_pots,
+				"fixture %d: the fire-escape pot rolls are `_build_fire_escape_extras()`'s own stream" % i)
 		t.check(building._door_col == _replayed_door_col(building),
 				"fixture %d: the door's column is `_build_entrance()`'s own stream" % i)
 		building.free()
@@ -377,6 +526,63 @@ func _test_the_front_rolls_replay_their_own_streams(t) -> void:
 			"a commercial front still rolls its door's column, unused while it has storefronts")
 	shop.free()
 
+## A front wide enough for two escapes (`Building.SECOND_FIRE_ESCAPE_MIN_COLUMNS`, 7 columns) may
+## carry a second one, and every one the sweep meets keeps the minimum gap
+## (`Building.FIRE_ESCAPE_GAP_COLUMNS`, 4 columns centre to centre) and stays off the corner columns
+## — the same checks `_check_fire_escape()` already runs, asked again with a sweep built to meet the
+## case reliably.
+func _test_a_wide_front_may_carry_a_second_escape_with_the_gap(t) -> void:
+	var with_two := 0
+	for i in 500:
+		var cols := 7 + i % 8
+		var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
+				Vector2(cols * Building.TILE, 224.0), 160.0, false, Vector2(i * 71.0, i * 97.0))
+		if building._fire_escape_cols.size() == 2:
+			with_two += 1
+			var escapes: Array[int] = building._fire_escape_cols
+			t.check(absi(escapes[0] - escapes[1]) >= Building.FIRE_ESCAPE_GAP_COLUMNS,
+					"fixture %d: two escapes on a %d-column front keep the minimum gap (%s)" % [i, cols, escapes])
+			for col in escapes:
+				t.check(col > 0 and col < cols - 1,
+						"fixture %d: escape at column %d of %d keeps off the corner columns" % [i, col, cols])
+		building.free()
+	t.check(with_two > 0, "the sweep met a front that carries two fire escapes (%d)" % with_two)
+
+## Nothing under `Building.SECOND_FIRE_ESCAPE_MIN_COLUMNS` (7 columns) ever carries a second escape:
+## the interior range `[1, cols - 2]` a narrower front rolls from is not wide enough to fit two
+## columns `Building.FIRE_ESCAPE_GAP_COLUMNS` apart.
+func _test_no_second_escape_on_a_front_too_narrow_for_one(t) -> void:
+	var with_escape := 0
+	for i in 400:
+		var cols := 3 + i % (Building.SECOND_FIRE_ESCAPE_MIN_COLUMNS - 3)
+		t.check(cols < Building.SECOND_FIRE_ESCAPE_MIN_COLUMNS,
+				"fixture %d: the fixture itself stays under the width a second escape needs (%d)" % [i, cols])
+		var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
+				Vector2(cols * Building.TILE, 224.0), 160.0, false, Vector2(i * 83.0, i * 101.0))
+		if not building._fire_escape_cols.is_empty():
+			with_escape += 1
+		t.check(building._fire_escape_cols.size() <= 1,
+				"fixture %d: a %d-column front never carries two fire escapes" % [i, cols])
+		building.free()
+	t.check(with_escape > 20, "the sweep met enough narrow fronts with a fire escape to mean something (%d)" % with_escape)
+
+## The potted-plant picture is rolled balcony by balcony (`Building.FIRE_ESCAPE_POT_SHARE`), so a
+## tall enough escape mixes both pictures across its own landings rather than showing the same one
+## on every floor. Swept rather than asserted of one fixture, since which building shows the mix is
+## itself a roll.
+func _test_the_flower_pot_varies_within_one_escape(t) -> void:
+	var mixed_seen := 0
+	for i in 300:
+		var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 256.0), 192.0,
+				false, Vector2(i * 59.0, i * 131.0))
+		for col in building._fire_escape_cols:
+			var pots: Dictionary = building._fire_escape_pots.get(col, {})
+			var values := pots.values()
+			if values.has(true) and values.has(false):
+				mixed_seen += 1
+		building.free()
+	t.check(mixed_seen > 0, "the sweep met an escape whose balconies do not all show the same pot roll (%d)" % mixed_seen)
+
 # --------------------------------------------------------------------- the sweep ---
 
 ## Every accessor cell a real building offers is plain wall (`_ground_floor_texture()` says
@@ -394,8 +600,8 @@ func _check_accessor_invariant(t, building: Building, seed_used: int) -> void:
 				"seed %d: every accessor cell is plain wall, not a window or a storefront" % seed_used)
 		t.check(not entrance_cols.has(col),
 				"seed %d: no accessor cell is the civic entrance's own column" % seed_used)
-		t.check(col != building.entrance_door_col() and col != building._fire_escape_col,
-				"seed %d: no accessor cell is the door's column or the fire escape's" % seed_used)
+		t.check(col != building.entrance_door_col() and not building._fire_escape_cols.has(col),
+				"seed %d: no accessor cell is the door's column or a fire escape's" % seed_used)
 
 ## Full `City` scenes across a spread of seeds — the only path that exercises
 ## `City._spawn_buildings()`'s own wiring of `is_home_building` and `door_world_x_range` off
@@ -407,6 +613,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 	var checked_door_columns := 0
 	var checked_commercial := 0
 	var checked_doors := 0
+	var checked_escapes := 0
 	for i in SWEEP_SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 977)
 		var city: City = CITY_SCENE.instantiate()
@@ -414,6 +621,8 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 		city.build(map)
 		for building: Building in city.buildings():
 			_check_accessor_invariant(t, building, map.seed_used)
+			if _check_fire_escape(t, building, "seed %d" % map.seed_used):
+				checked_escapes += 1
 			if building.power_station:
 				continue
 			if building.is_home_building:
@@ -446,8 +655,8 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 				t.check(door == -1, "seed %d: a front with a storefront or a portico has no extra door" % map.seed_used)
 			else:
 				checked_doors += 1
-				t.check(door >= 0 and door < building.columns() and door != building._fire_escape_col,
-						"seed %d: a multi-story front with no other way in has one door, off the fire escape (district %d)"
+				t.check(door >= 0 and door < building.columns() and not building._fire_escape_cols.has(door),
+						"seed %d: a multi-story front with no other way in has one door, off every fire escape (district %d)"
 						% [map.seed_used, building.district])
 			if building.district == GameEnums.BlockPurpose.COMMERCIAL and not building._storefront_variant.is_empty():
 				checked_commercial += 1
@@ -464,3 +673,4 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 			"the sweep met at least one ground-floor column standing behind the door (%d)" % checked_door_columns)
 	t.check(checked_commercial > 0, "the sweep built a commercial storefront at least once (%d)" % checked_commercial)
 	t.check(checked_doors > 0, "the sweep built a front with an entrance door (%d)" % checked_doors)
+	t.check(checked_escapes > 0, "the sweep built a front with a fire escape (%d)" % checked_escapes)

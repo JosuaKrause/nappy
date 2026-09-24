@@ -1,5 +1,11 @@
-<!-- Parapet along the roof's north edge. -->
+<!-- Parapet along the roof's north edge: the dark outline of the silhouette, the parapet's
+     lit coping, its inner face turned toward the viewer, and the shadow it casts on the roof.
+     Translucent inside the outline so the roof's own tint shows through; on a one-row facade
+     with no roof it caps the wall the same way. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect x="0" y="0" width="32" height="2" fill="#221f28" fill-opacity="0.55"/>
-  <rect x="0" y="2" width="32" height="1" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="0" y="0" width="32" height="1" fill="#3b2d32"/>
+  <rect x="0" y="1" width="32" height="2" fill="#ffffff" fill-opacity="0.34"/>
+  <rect x="0" y="3" width="32" height="1" fill="#3b2d32" fill-opacity="0.5"/>
+  <rect x="0" y="4" width="32" height="1" fill="#221f28" fill-opacity="0.2"/>
+  <rect x="0" y="5" width="32" height="1" fill="#221f28" fill-opacity="0.08"/>
 </svg>
