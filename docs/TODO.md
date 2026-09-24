@@ -717,11 +717,13 @@ is still true.
       solid, and an inspection's release is a teleport, so a walked crossing is a crossing under a
       raised boom and nothing else. The chase is a pursuit under the existing pursuit contract
       (`Tuning`'s chase-length and `PURSUIT_SHAKEN_OFF` rules, **events**: it lets go, and running
-      outpaces it), started by the hut guards already drawn at that door. The run log notes each
+      outpaces it). **The pursuers spawn at the huts** *(2026-09-24: "Or guards that pursue her
+      should spawn at the huts")*: they set off from that door's huts, and the guards drawn at
+      the huts stay at their posts, so the door stays manned. The run log notes each
       walk under a boom, and a route-rig test requires none across its runs. **Open: what a catch
       does** — the day ends, as the heated roadblock guard's does, or she is taken back to the hut,
-      inspected and let out on the side she came from — **and whether one guard or both set off**;
-      asked 2026-09-24. **The
+      inspected and let out on the side she came from — **and whether one pursuer spawns or one at
+      each hut**; asked 2026-09-24. **The
       route rig never routes through the boom, either way** *(2026-09-24: "The bot shouldn't route
       through the boom either way")*. Found while capturing the inspection: the boom's own body
       took her in with nobody on screen doing it, since the guards stand at the huts; a guard
