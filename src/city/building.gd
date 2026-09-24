@@ -284,15 +284,23 @@ enum Condition {
 		queue_redraw()
 
 ## Whether this building is her own — the one exception to the ground floor's blank-wall-or-shops
-## rule (`_draws_window_at()`): every other multi-story building's ground floor never shows a
-## window. Set by `City._spawn_buildings()` from the building's own lot and `CityMap.home_block`,
-## so every Building on the home block counts as hers, not only whichever lot the door notch
-## happens to touch. Never rolls anything of its own, so flipping it only ever needs a redraw. The
-## door's own column(s) still draw no window — see `door_world_x_range`.
+## rule (`_draws_window_at()`) and to a `RESIDENTIAL` front's fire escape (`_build_front()`): every
+## other multi-story building's ground floor never shows a window, and a `RESIDENTIAL` front rolls
+## one fire escape in `FIRE_ESCAPE_SHARE` of the time; her own building carries neither, since she
+## has a stair inside instead (the player, PLAYTEST-128.md: "the home building shouldn't have a fire
+## escape (it has a double staircase inside)"). Set by `City._spawn_buildings()` from the building's
+## own lot and `CityMap.home_block`, so every Building on the home block counts as hers, not only
+## whichever lot the door notch happens to touch. The fire-escape roll itself still runs on every
+## front regardless of this flag — only whether the column is kept depends on it — so flipping this
+## never moves any other roll on `_build_front()`'s own stream. Flipping it after the front is
+## already built rebuilds the front (`_rebuild()`), so a fire escape rolled before the flag was set
+## does not survive it. The door's own column(s) still draw no window — see `door_world_x_range`.
 @export var is_home_building := false:
 	set(value):
+		if is_home_building == value:
+			return
 		is_home_building = value
-		queue_redraw()
+		_rebuild()
 
 ## The door's own world-space x-span, `[min, max)`, or `Vector2.INF` for a building nobody told
 ## about one — the same "no such point" sentinel `touch_controls.gd`'s `_drag_origin_focus` and
@@ -517,8 +525,12 @@ func _build_front() -> void:
 		var first_col := rng.randi_range(1, cols - 2) if cols >= 3 else rng.randi_range(0, cols - 1)
 		# Rolled on every front of two rows or more and only then dropped from the ones too short
 		# to carry it, so the stream is consumed exactly as far on every front and the bound can
-		# move without moving a roll.
-		if wall_tiles() >= FIRE_ESCAPE_MIN_WALL_ROWS:
+		# move without moving a roll. Her own building rolls this the same as any other
+		# `RESIDENTIAL` front and then drops it the same way this front already drops one that is
+		# too short to carry it — she has a stair inside instead (the player, PLAYTEST-128.md:
+		# "the home building shouldn't have a fire escape (it has a double staircase inside)") — so
+		# `is_home_building` moves nothing else on this stream either.
+		if wall_tiles() >= FIRE_ESCAPE_MIN_WALL_ROWS and not is_home_building:
 			_fire_escape_cols.append(first_col)
 	if not _fire_escape_cols.is_empty():
 		_build_fire_escape_extras(cols)
