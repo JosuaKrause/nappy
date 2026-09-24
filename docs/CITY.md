@@ -927,8 +927,9 @@ reason a beat answers by itself.
 branch she is walking and the engine parks across from it for the rest of the day: *"you're not
 supposed to go past it"*, *"when you see the fire the reaction should be to take a different route"*
 (PLAYTEST-119). Asking whether a line survives along that sidewalk would refuse every site the beat
-of the day is made of, so `EventScheduler._a_line_has_to_avoid` leaves a `sited_on_her_way` row out
-of the line rules altogether. **What replaces the guarantee is stated over the day rather than over
+of the day is made of, so `EventScheduler._a_line_has_to_avoid` leaves a `sited_on_her_way` one-shot
+out of the line rules altogether. (A poster crew is sited from her walk too, and is not exempt: it
+closes nothing.) **What replaces the guarantee is stated over the day rather than over
 the street**, and it is the stronger statement of the two: a site is accepted only where, from where
 she is standing and with **both fields taken as closed ground**, the home and a calm area she has not
 used are still reachable. So the street she is on can be shut, and the day always has another way

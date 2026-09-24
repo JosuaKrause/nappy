@@ -22,6 +22,9 @@ extends Node
 ##   of the walls from the day's own `posters` stream, so some are already up that first morning
 ##   and each day's walls add to the last. What kind goes up, and how much of a wall, follows the
 ##   progression in `docs/TODO.md`'s M180 (`KIND_FIRST_DAY`, `KIND_WEIGHTS`, `_sheets_for()`).
+## - **A crew on her way.** `poster_crew` is sited on her walk, in front of a blank cell
+##   (`EventScheduler.WalkSiting`, `fronts()`), and pastes its wall a sheet at a time while it is in
+##   her view — see `_work_the_crews()`.
 ## - **Pasting over.** A new sheet on an old one covers it exactly most of the time and shows it
 ##   beneath, offset enough to read, the rest (`OVERPASTE_SHARE`).
 
@@ -63,6 +66,12 @@ const ACT_MORNING_SHARE := 0.10
 ## look weird" (PLAYTEST-123, statement 33). Taste, open to overturn.
 const OVERPASTE_SHARE := 0.25
 
+## A crew pastes one sheet this often while it is in her view, and its first one this soon after
+## she first sees it — so the sheets go up while she watches, which is what "the crew is seen
+## pasting" asks for.
+const PASTE_EVERY := 2.0
+const FIRST_PASTE_AFTER := 0.8
+
 var _city: City
 var _map: CityMap
 ## One entry per front with a blank cell: `{"building": Building, "cols": Array[int],
@@ -74,6 +83,10 @@ var _day := 0
 ## Whether a day is being played, rather than the escape or nothing at all. Crews and tears only
 ## run inside one.
 var _day_running := false
+## Crew front tile -> its job: `{"queue": Array[Vector2i], "kind", "next_in", "pasted", "total",
+## "rng"}`. A day's, keyed by where the crew stands, so a crew streamed out and back in carries on.
+var _jobs: Dictionary = {}
+var _player: Stroller = null
 
 ## Reads every building's blank ground-floor cells. Called once by `City.build()`, whose buildings
 ## are fixed for the run.
@@ -127,6 +140,7 @@ func wall_count() -> int:
 func start_day(day: int, tree: RouteTree) -> void:
 	_day = day
 	_day_running = true
+	_jobs.clear()
 	var state := GameState.posters
 	var corridor := Corridor.of(tree) if tree else null
 	for dawn in range(maxi(state.pasted_through + 1, FIRST_DAY), day + 1):
@@ -138,6 +152,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 ## run left them, with no crew working and nothing to tear.
 func show_only() -> void:
 	_day_running = false
+	_jobs.clear()
 	refresh()
 
 ## Hands every front the cells it draws.
@@ -234,3 +249,73 @@ func _paste_one(tile: Vector2i, kind: int, rng: RandomNumberGenerator) -> void:
 	var offset := offset_roll < OVERPASTE_SHARE and not old.is_empty() \
 			and int(old["kind"]) != kind
 	state.paste(tile, kind, offset, side)
+
+# ----------------------------------------------------------------- the day ---
+
+func _physics_process(delta: float) -> void:
+	if not _day_running or _walls.is_empty():
+		return
+	if not _player:
+		_player = get_tree().get_first_node_in_group("player") as Stroller
+		if not _player:
+			return
+	_work_the_crews(delta, _player.global_position)
+
+## Every poster crew in the world pastes the wall it stands at, one sheet every `PASTE_EVERY`
+## seconds while it is inside her view, starting with the cell in front of it and working outward,
+## then any torn sheet on the same wall. One kind per crew, from its own stream: the day and where
+## it stands. A crew that has finished stands and works on, and its wall keeps what it pasted.
+func _work_the_crews(delta: float, at: Vector2) -> void:
+	for instance in _city.events.instances():
+		if not is_instance_valid(instance) or instance.def.id != "poster_crew":
+			continue
+		var tile := _map.world_to_tile(instance.global_position)
+		if not _by_tile.has(tile):
+			continue
+		var offset := (instance.global_position - at).abs()
+		if offset.x > Tuning.VIEW_HALF_EXTENT.x or offset.y > Tuning.VIEW_HALF_EXTENT.y:
+			continue
+		if not _jobs.has(tile):
+			_jobs[tile] = _job_for(tile)
+		var job: Dictionary = _jobs[tile]
+		var queue: Array = job["queue"]
+		if queue.is_empty():
+			continue
+		job["next_in"] = float(job["next_in"]) - delta
+		if float(job["next_in"]) > 0.0:
+			continue
+		job["next_in"] = PASTE_EVERY
+		var cell: Vector2i = queue.pop_front()
+		_paste_one(cell, int(job["kind"]), job["rng"])
+		job["pasted"] = int(job["pasted"]) + 1
+		_refresh_wall(_by_tile[tile].x)
+		# Where and what, because nothing else records it: the crew was sited on her walk, and
+		# whether it finished depends on how long she stayed in sight of it.
+		var what: String = PosterArt.Kind.keys()[int(job["kind"])].to_lower()
+		if int(job["pasted"]) == 1:
+			Telemetry.note("scar", "a poster crew at %s starts pasting %s sheets on the wall, %d to go"
+					% [TelemetryLog.tile(tile), what, int(job["total"])])
+		elif queue.is_empty():
+			Telemetry.note("scar", "the poster crew at %s has pasted its wall: %d %s sheets"
+					% [TelemetryLog.tile(tile), int(job["pasted"]), what])
+
+## A crew's work: which kind it carries and which cells, in the order it pastes them.
+func _job_for(tile: Vector2i) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d:%d:%d:poster-crew" % [GameState.run_seed, _day, tile.x, tile.y])
+	var at: Vector2i = _by_tile[tile]
+	var tiles: Array = _walls[at.x]["tiles"]
+	var kind := _kind_for(_day, rng)
+	var count := _sheets_for(kind, Tuning.act_for_day(_day), tiles.size(), rng)
+	var queue: Array[Vector2i] = []
+	for step in tiles.size() * 2:
+		var index := at.y + ((step + 1) >> 1) * (1 if step % 2 == 1 else -1)
+		if index < 0 or index >= tiles.size() or queue.has(tiles[index]):
+			continue
+		if queue.size() < count:
+			queue.append(tiles[index])
+	for other: Vector2i in tiles:
+		if GameState.posters.is_torn(other) and not queue.has(other):
+			queue.append(other)
+	return {"queue": queue, "kind": kind, "next_in": FIRST_PASTE_AFTER, "pasted": 0,
+			"total": queue.size(), "rng": rng}

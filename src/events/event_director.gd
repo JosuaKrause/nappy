@@ -27,11 +27,12 @@ extends RefCounted
 ##
 ## **And one thing sited here *is* a place.** `site_what_is_on_her_way()` is the second half of
 ## this class and it breaks the sentence above on purpose: a row carrying
-## `EventDef.sited_on_her_way` — day 3's burning building, the only one
-## today — is a place in every sense: a tile, a body, a field, a scar that outlives the day. What it
-## cannot be is *anywhere*, because it is the authored beat of act I and a set piece on a street she
-## never walks down is a silhouette spent on nothing. So the day budgets it and this sites it, on a
-## building face ahead of her heading, once her direction for the day is clear.
+## `EventDef.sited_on_her_way` — day 3's burning building, and the day's poster crews after it —
+## is a place in every sense: a tile, a body, a field, and what it leaves on the city outlives the
+## day. What it cannot be is *anywhere*: the fire is the authored beat of act I and a crew is the
+## walls visibly changing, and either one on a street she never walks down is a silhouette spent on
+## nothing. So the day budgets it and this sites it, on a building face ahead of her heading, once
+## her direction for the day is clear.
 ##
 ## The two jobs share this class because they share the one thing neither the scheduler nor the
 ## manager has: **the direction she is actually travelling, now**. They do not share a queue, an
@@ -62,7 +63,7 @@ var _return_pacing := false
 var _doors := PackedVector2Array()
 
 ## Today's plans that the day budgeted and left for her walk to site — `EventDef.sited_on_her_way`,
-## which is day 3's fire and nothing else today. Read off the same plan list `_owed` is, in
+## which is day 3's fire, and the poster crews from day 4. Read off the same plan list `_owed` is, in
 ## `start_day()`, and emptied as each one is put in the world.
 var _on_her_way: Array[EventScheduler.Planned] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
@@ -82,6 +83,9 @@ var _since_the_last_look := 0.0
 ## The stream the siting rolls its candidate tile out of. Derived from the day's own director stream
 ## rather than drawn from it, so which building face the fire takes cannot move a single cat.
 var _walk_rng := RandomNumberGenerator.new()
+## The same for a recurring row sited on her way — `poster_crew` — so the crews' sitings are a
+## stream of their own and never move the fire's.
+var _crew_rng := RandomNumberGenerator.new()
 
 func _init(map: CityMap) -> void:
 	_map = map
@@ -112,6 +116,7 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	# a candidate tile and a re-siting rolls another, and a day on which she turned round would
 	# otherwise hand every cat after it a different interval than a day on which she did not.
 	_walk_rng.seed = hash("%d:on-her-way" % rng.seed)
+	_crew_rng.seed = hash("%d:crews-on-her-way" % rng.seed)
 	for plan in plans:
 		# A door body is read off the same list, so "where do today's doors stand" is answered once,
 		# by the plan, rather than by a second wire from the region planner to here.
@@ -350,8 +355,11 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 	for plan in _on_her_way:
 		if plan.is_placed() and not _is_no_longer_on_her_way(plan, at, heading, elapsed):
 			continue
+		if not plan.is_placed() and _waits_its_turn(plan):
+			continue
 		var band := _siting_band()
-		var sited := _siting.ahead_of(plan.def, _walk_rng, _everything_but(plans, plan), at, heading,
+		var rng := _walk_rng if plan.def.kind == GameEnums.EventKind.ONE_SHOT else _crew_rng
+		var sited := _siting.ahead_of(plan.def, rng, _everything_but(plans, plan), at, heading,
 				band.x, band.y)
 		if not sited:
 			continue
@@ -362,6 +370,18 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 		_behind_her[plan] = 0.0
 		moved.append(plan)
 	return moved
+
+## **A recurring row is sited on her way one at a time**: the next of the day's crews waits while
+## another is sited ahead of her and not yet in the world. All of them at once would put the day's
+## crews on the one stretch of street the band covers; one at a time, each is met on its own and
+## the next is sited as the last comes into reach, so they are spread along the day's walk.
+func _waits_its_turn(plan: EventScheduler.Planned) -> bool:
+	if plan.def.kind == GameEnums.EventKind.ONE_SHOT:
+		return false
+	for other in _on_her_way:
+		if other != plan and other.def.id == plan.def.id and other.is_placed():
+			return true
+	return false
 
 ## Drops from the list anything that is already real or already spent, so the loop above only ever
 ## considers a plan that can still legally be moved.

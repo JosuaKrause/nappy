@@ -211,6 +211,17 @@ const POSTER_CREW_BY_VIEW := {
 	"front_diagonal": "events/poster_crew_front_diagonal",
 	"back_diagonal": "events/poster_crew_back_diagonal",
 }
+## The pasting frame: the back view — the crew facing the wall it pastes, which is how every crew
+## on her way stands — with the brush raised to the wall, alternated with frame a on the idle timer
+## (`POSTER_CREW_PASTE_PERIOD`) so the crew is seen pasting. The other four views have no second
+## frame and name frame a's own picture.
+const POSTER_CREW_BY_VIEW_B := {
+	"front": "events/poster_crew_front",
+	"back": "events/poster_crew_back_b",
+	"side": "events/poster_crew_side",
+	"front_diagonal": "events/poster_crew_front_diagonal",
+	"back_diagonal": "events/poster_crew_back_diagonal",
+}
 ## The square crew's five views. A 44x44 canvas where the sidewalk crew's is 30x44: the worker is
 ## that family's own figure, unmoved on the anchor, and the extra width is the advertising column
 ## he stands at. The column is a cylinder, so it is the same picture in all five and only the
@@ -2577,6 +2588,8 @@ func _picture_key() -> Vector4i:
 		idle = _idle_stepping(SITTER_IDLE_PERIOD)
 	elif def.look == EventDef.Look.BUSKER:
 		idle = _idle_stepping(BUSKER_STRUM_PERIOD)
+	elif def.look == EventDef.Look.POSTER_CREW:
+		idle = _idle_stepping(POSTER_CREW_PASTE_PERIOD)
 	var flags := 0
 	flags = flags * 2 + (1 if is_finished else 0)
 	flags = flags * 2 + (1 if is_suppressed_by_its_own_hold() else 0)
@@ -2666,6 +2679,8 @@ const GAIT_RATE := 0.09
 const SITTER_IDLE_PERIOD := 3.4
 ## A strum's own tempo. See `_idle_stepping()`.
 const BUSKER_STRUM_PERIOD := 0.5
+## A brush stroke's, for a poster crew pasting. See `POSTER_CREW_BY_VIEW_B`.
+const POSTER_CREW_PASTE_PERIOD := 0.8
 
 ## Advances `_gait_phase` by `moved` (px covered this tick, positive or exactly zero — `_process()`
 ## passes `_path_travelled`'s own delta, which is never negative) and records whether anything
@@ -3011,7 +3026,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.POLICE_CAR:
 			_collect_views(sources, [POLICE_CAR_BY_VIEW])
 		EventDef.Look.POSTER_CREW:
-			_collect_views(sources, [POSTER_CREW_BY_VIEW])
+			_collect_views(sources, [POSTER_CREW_BY_VIEW, POSTER_CREW_BY_VIEW_B])
 		EventDef.Look.POSTER_CREW_SQUARE:
 			_collect_views(sources, [POSTER_CREW_SQUARE_BY_VIEW])
 		EventDef.Look.ROADBLOCK:
@@ -3148,7 +3163,9 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			# whose diagonal views are ordinarily reachable rather than a dead branch.
 			_draw_eight_view(POLICE_CAR_BY_VIEW, _heading, canvas)
 		EventDef.Look.POSTER_CREW:
-			_draw_eight_view(POSTER_CREW_BY_VIEW, _heading, canvas)
+			var crew := POSTER_CREW_BY_VIEW_B if _idle_stepping(POSTER_CREW_PASTE_PERIOD) \
+					else POSTER_CREW_BY_VIEW
+			_draw_eight_view(crew, _heading, canvas)
 		EventDef.Look.POSTER_CREW_SQUARE:
 			# Sited with no pavement side to turn it, so `_build_placement` leaves its facing at
 			# due east and the row draws its `side` view unmirrored, every time — the same dead
