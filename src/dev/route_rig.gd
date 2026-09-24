@@ -696,14 +696,15 @@ func _planned_position(plan: EventScheduler.Planned) -> Vector2:
 
 ## The planned rows `CityMap.obstructed_tiles` records a body for
 ## (`EventManager.obstructed_footprint()`): solid, and neither `mobile` — somewhere else by the time
-## a plan gets there, the reason `_is_stationary_hazard()` gives — nor a door, which is a crossing
-## the day keeps open.
+## a plan gets there, the reason `_is_stationary_hazard()` gives — nor a door body, which is a
+## crossing the day keeps open: a hut or a post (`detain_seconds`) or the boom
+## (`EventDef.lifts_for_traffic`), whose ground `_gate_ground()` keeps off instead.
 func _is_planned_body(def: EventDef) -> bool:
 	return def.shape != null and def.obstructs_radius > 0.0 and not def.mobile \
-			and def.detain_seconds <= 0.0
+			and def.detain_seconds <= 0.0 and not def.lifts_for_traffic
 
 ## Every tile whose centre lies within a door's reach — `EventDef.detain_distance()` from a
-## `checkpoint_hut`, `checkpoint_gate` or `checkpoint_post` (the `redetains` rows), plus
+## `checkpoint_hut` or `checkpoint_post` (the `redetains` rows, the two that inspect her), plus
 ## `_ARRIVE_RADIUS` for the corner she cuts at a waypoint — except the tiles on any door body's own
 ## crossing line, the row or column through it along its facing, which is the axis the door sets her
 ## down across. Every door of the day, for the streaming reason `_body_clear_tiles()` gives: a door
@@ -711,13 +712,13 @@ func _is_planned_body(def: EventDef) -> bool:
 ##
 ## **A door takes her in whether or not she meant to cross it**, and sets her down on its far side:
 ## a plan down the next column of tiles past a door, crossing the street two tiles from it, was
-## taken in by one hut and set down on the wrong side of the wall, crossed back through the gate,
+## taken in by one hut and set down on the wrong side of the wall, crossed back through the door,
 ## and taken in again by the hut on the far sidewalk, until the leg gave up. **And the crossing
 ## line stays open** because a door is the only way through its wall: keeping out of the whole
 ## reach sent a plan across the city to a door it had not seen yet, where it met that door's reach
-## and set off for the next one. A door is a hut on each sidewalk and a gate over the road a couple
-## of tiles apart, so each body's crossing line lies inside its neighbours' reach: the lines are
-## taken out of the whole door's reach, not only out of their own body's.
+## and set off for the next one. Doors can stand close together — two meeting at a corner — so one
+## body's crossing line can lie inside another body's reach: the lines are taken out of every door
+## body's reach, not only out of their own body's.
 ##
 ## **Two exceptions, both about where she already stands.** A door body that has just let her out
 ## cannot take her again until she has walked out of its circle (`_latched_doors`), so its reach is
@@ -726,8 +727,8 @@ func _is_planned_body(def: EventDef) -> bool:
 ## out of the margin would otherwise read as blocked and the plan would give up the doors' reach
 ## altogether. `chatting_mother` detains too but walks, so she is left to the hold handling, the
 ## way `_is_stationary_hazard()` leaves a mobile hazard. **A street door's boom (`checkpoint_gate`)
-## is not a crossing here**: its reach is kept off like a hut's, it opens no line, and the ground
-## where it would be the body to take her is never planned at all (`_gate_ground()`).
+## is not a door body here**: it inspects nobody, so it has no reach and opens no line, and the
+## ground under it is never planned at all (`_gate_ground()`).
 func _door_tiles() -> Dictionary:
 	# A rig built without her, as a test of the planning geometry is, stands nowhere near a door.
 	var here := _player.global_position if _player else Vector2.INF
@@ -750,8 +751,7 @@ func _door_tiles() -> Dictionary:
 				continue
 			_latched_doors.erase(plan)
 		var reach := trigger if distance <= trigger + _ARRIVE_RADIUS else trigger + _ARRIVE_RADIUS
-		# The boom is never a way through (`_gate_ground()`), so its line opens nothing.
-		_add_door_reach(door, facing, reach, near, {} if plan.gate_state != null else lines)
+		_add_door_reach(door, facing, reach, near, lines)
 	for tile: Vector2i in lines:
 		near.erase(tile)
 	return near
@@ -773,23 +773,25 @@ func _latch_the_doors_round_her() -> void:
 		if here.distance_to(door) <= plan.def.detain_distance():
 			_latched_doors[plan] = true
 
-## Every tile where a street door's boom (`checkpoint_gate`, the plan carrying a
-## `RegionPlanner.GateState`) would be the body to take her: within its trigger plus
-## `_ARRIVE_RADIUS`, and nearer the boom than any other door body — the same "only the nearest
-## eligible instance captures her" `EventManager._check_detentions()` decides by. Always blocked,
-## in every tier of every plan (`_blocked_for_phase()`), because **the rig never goes through the
-## boom**, whatever the boom does *(2026-09-24, the player: "The bot shouldn't route through the
-## boom either way.")*: a door is crossed at a hut or an alley post. A hut stands on each sidewalk
-## a lane's width from the road, so both of its crossing lanes are always nearer the hut than the
-## boom and stay open. Worked out once a day, since doors do not move.
+## Every tile under a street door's boom (`checkpoint_gate`, the plan carrying a
+## `RegionPlanner.GateState`): within reach of her body touching the boom's — its own
+## `solid_reach()` plus `Tuning.PLAYER_BODY_RADIUS`, plus `_ARRIVE_RADIUS` for the corner she cuts
+## at a waypoint — and nearer the boom than any other door body. Always blocked, in every tier of
+## every plan (`_blocked_for_phase()`), because **the rig never goes through the boom**, raised or
+## lowered *(2026-09-24, the player: "The bot shouldn't route through the boom either way.")*: a
+## raised boom is ground she may walk under, and the walk sets a guard on her (`EventManager.
+## _watch_the_door_lines()`), so a door is crossed at a hut or an alley post. Stated over the bodies
+## rather than over a trigger, since the boom inspects nobody. A hut stands on each sidewalk a lane's
+## width from the road, so both of its crossing lanes are nearer the hut than the boom and stay
+## open. Worked out once a day, since doors do not move.
 func _gate_ground() -> Dictionary:
 	if _gate_ground_ready:
 		return _gate_ground_tiles
 	_gate_ground_ready = true
 	_gate_ground_tiles = {}
 	var doors: Array[EventScheduler.Planned] = []
-	# The boom by its `GateState` rather than by `redetains`, so the rule holds whether or not the
-	# boom takes her in: it is the ground nearer the boom than any hut that is never planned.
+	# Every door body — the huts and posts by `redetains`, the boom by its `GateState` — since the
+	# ground kept off is the ground nearer the boom than any of the others.
 	for plan: EventScheduler.Planned in _city.events.plans():
 		if plan.is_placed() and not plan.spent and (plan.def.redetains or plan.gate_state != null):
 			doors.append(plan)
@@ -797,7 +799,7 @@ func _gate_ground() -> Dictionary:
 		if gate.gate_state == null:
 			continue
 		var at := _planned_position(gate)
-		var reach := gate.def.detain_distance() + _ARRIVE_RADIUS
+		var reach := gate.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + _ARRIVE_RADIUS
 		var centre_tile := _city.map.world_to_tile(at)
 		var span := ceili(reach / Tuning.TILE_SIZE) + 1
 		for dy in range(-span, span + 1):
@@ -1140,7 +1142,7 @@ func _follow(delta: float) -> void:
 	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
 	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
 
-## Whether a door is holding her (`Stroller.is_detained()` — a `checkpoint_hut` or `checkpoint_gate`
+## Whether a door is holding her (`Stroller.is_detained()` — a `checkpoint_hut` or `checkpoint_post`
 ## she walked into, which talks to her for `Tuning.CHECKPOINT_DETAIN_SECONDS` and then sets her down
 ## on its far side), and the re-plan from wherever it set her down once it lets go. **A hold is not
 ## a stall**: she stands still because the door is doing what a door does, so the stall ladder is
@@ -1179,8 +1181,8 @@ func _held_at_a_door() -> bool:
 ## stall.
 const _DOOR_HOLDS_PER_LEG := 2
 
-## Counts a new hold against the door holding her — the nearest live door body (`detain_seconds`)
-## — and gives the leg up once one door has held her more than `_DOOR_HOLDS_PER_LEG` times.
+## Counts a new hold against the door holding her — the nearest live door body that inspects her,
+## a hut or a post (`detain_seconds`) — and gives the leg up once one door has held her more than `_DOOR_HOLDS_PER_LEG` times.
 ## Answers whether it gave up.
 func _count_the_door() -> bool:
 	var here := _player.global_position

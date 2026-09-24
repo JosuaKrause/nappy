@@ -393,10 +393,12 @@ func _test_a_plan_never_goes_through_the_boom(t) -> void:
 	gate.gate_state = RegionPlanner.GateState.new()
 	_city.events._plans.append(gate)
 	var rig := _rig(t)
-	var reach := def.detain_distance()
+	# Where her body would touch the boom's: the boom inspects nobody, so there is no trigger to
+	# measure from, and what a plan must never do is put her under it.
+	var reach := def.solid_reach() + Tuning.PLAYER_BODY_RADIUS
 	var planned := rig._plan(from, to)
 	t.check(not planned.is_empty() and not _passes_within(planned, gate.position, reach),
-			"a plan past a street door's boom goes round it rather than through its trigger")
+			"a plan past a street door's boom goes round it rather than under it")
 	# The last resort `_plan()` falls back to gives up the hazards, the clearance and the doors'
 	# reach, and still never the boom.
 	var last_resort := rig._shortest(from, to, false, {}, false)
