@@ -829,6 +829,15 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
+- [ ] **`--quit-when-still` is off while a signalled junction on screen is red for her**
+      ([PLAYTEST-128](playtests/PLAYTEST-128.md), statements 13 and 14: "How about just
+      deactivating the watch when the light is red and the intersection is visible. If she's
+      stuck she will be stuck when it turns green still"). `StillWatch.facing_a_red_light()`
+      (`src/dev/still_watch.gd`) holds the watch today only while she stands on the sidewalk
+      inside the junction's `Tuning.STREET_WIDTH` (6) tile box (`DECISIONS.md`, M189, a hold is
+      not a stand); her position stops mattering, and a red light at the signalled junction on
+      screen is enough. The signals run a green wave with a different offset per junction, so
+      two junctions on screen can disagree; the one nearest her decides
 
 **Drawings, as SVG:**
 
@@ -873,14 +882,6 @@ re-pitched:
       threaded build would need
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
-
-- [ ] **How close to a red light counts as waiting at it, for `--quit-when-still`.** The dev
-      flag's watch (`StillWatch`, `src/dev/still_watch.gd`) ignores her while
-      `facing_a_red_light()` holds: anywhere on the sidewalk inside the signalled junction's
-      `Tuning.STREET_WIDTH` (6) tile box while the main road's light is not hers (`DECISIONS.md`,
-      M189, a hold is not a stand). Put to the player on 2026-09-24 without saying what the watch
-      was ([PLAYTEST-128](playtests/PLAYTEST-128.md)); open until they say whether the box
-      should be tighter
 
 - [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
       playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
