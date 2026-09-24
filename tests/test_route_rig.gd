@@ -29,6 +29,8 @@ func run(t) -> void:
 	_test_line_of_sight_allows_a_crossing_tile(t)
 	_test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t)
 	_test_avoid_zone_excludes_only_its_own_centre(t)
+	_test_reachable_point_near_returns_centre_when_already_open(t)
+	_test_reachable_point_near_steps_off_obstructed_ground(t)
 	_test_resolve_target_mark_is_todays_contact(t)
 	_test_resolve_target_task_is_unavailable_before_the_mark_is_touched(t)
 	_test_resolve_target_home_is_the_home_rects_centre(t)
@@ -38,6 +40,7 @@ func run(t) -> void:
 	_test_pace_does_not_advance_the_target(t)
 	_test_check_settled_waits_for_asleep(t)
 	_test_on_day_finished_won_still_finishes(t)
+	_test_maybe_replan_waits_before_forcing_a_physical_maneuver(t)
 	_test_a_real_leg_walks_her_there_and_reports_it(t)
 	_teardown(t)
 
@@ -218,6 +221,43 @@ func _test_avoid_zone_excludes_only_its_own_centre(t) -> void:
 			"the ring reaches its full radius")
 	rig.free()
 
+# --------------------------------------------------------- _reachable_point_near ---
+
+## The common case, and every any-instance task but `roadblock`: nothing is obstructed, so the
+## instance's own centre is handed straight back rather than searched for.
+func _test_reachable_point_near_returns_centre_when_already_open(t) -> void:
+	var rig := _rig(t)
+	var here := _city.map.doorstep_world_position()
+	t.check(rig._reachable_point_near(here) == here,
+			"open ground is returned unchanged rather than nudged to a neighbour")
+	rig.free()
+
+## The day 13 "no path to 'task'" regression: a solid row's own centre (`roadblock`'s
+## `obstructs_radius`, from `GroundShape.band(60.0)`) is exactly the ground `_plan()` refuses, so
+## `_nearest_live_instance()` must never hand `_begin_leg()` a target sitting inside one.
+## `CityMap.obstructed_tiles` is pinned directly here — `tests/probes/m110_bodies.gd` already reads
+## and rewrites it the same way — rather than spawning a real solid `EventInstance`, since the
+## claim under test is what `_reachable_point_near()` does with an obstructed centre, not how a
+## body gets recorded there.
+func _test_reachable_point_near_steps_off_obstructed_ground(t) -> void:
+	var rig := _rig(t)
+	var centre_tile := _city.map.world_to_tile(_city.map.doorstep_world_position())
+	# Two tiles clear of the doorstep itself, so obstructing it cannot also touch the home block's
+	# own exemptions.
+	var obstructed_tile := centre_tile + Vector2i(2, 0)
+	t.check(_city.map.is_open(obstructed_tile) and not _city.map.is_obstructed(obstructed_tile),
+			"the tile this test obstructs starts out open, or the test proves nothing")
+	_city.map.obstructed_tiles[obstructed_tile] = 1
+	var centre := _city.map.tile_to_world(obstructed_tile)
+	var reachable := rig._reachable_point_near(centre)
+	var reachable_tile := _city.map.world_to_tile(reachable)
+	t.check(reachable_tile != obstructed_tile,
+			"an obstructed centre is never handed back as the reachable point")
+	t.check(_city.map.is_open(reachable_tile) and not _city.map.is_obstructed(reachable_tile),
+			"the point found near an obstructed centre is itself open, unobstructed ground")
+	_city.map.obstructed_tiles.erase(obstructed_tile)
+	rig.free()
+
 # ---------------------------------------------------------- _resolve_target ---
 
 ## `mark` is today's own contact for exactly as long as the pickup step is still on offer — day 6's
@@ -344,6 +384,60 @@ func _test_on_day_finished_won_still_finishes(t) -> void:
 	t.check(not rig._done, "not finished before the signal")
 	rig._on_day_finished(GameEnums.DayResult.WON)
 	t.check(rig._done, "WON finishes the rig rather than being ignored")
+	rig.free()
+
+# ------------------------------------------------------------ chokepoints ---
+
+## The chokepoint fix (docs/TODO.md, M184, "the rig gets through chokepoints"): a second stall in
+## a row waits for a crowd to clear rather than reaching straight for the eight-direction maneuver,
+## and only a third stall right after waiting — proof that waiting alone did not answer it — reaches
+## `_begin_unstick()`. Driven directly against `_maybe_replan()` with a real leg and a real
+## `Stroller` that this test never actually moves, which is exactly what a physical wedge reads as
+## to the tile grid: nothing wrong with the ground, and no progress since the last check.
+func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
+	var rig := RouteRig.new()
+	t.add_child(rig)
+	rig.set_physics_process(false)
+	rig._city = _city
+	rig._cache_road_tiles()
+	rig._resistance = _resistance
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+
+	var calm := rig._resolve_target("calm")
+	t.check(calm != Vector2.INF, "a calm target exists for this leg")
+	if calm == Vector2.INF:
+		rig.free()
+		return
+	rig._begin_leg(calm)
+	t.check(not rig._waypoints.is_empty(), "the leg starts with a real plan")
+
+	# The first check only records where she is — nothing to compare against yet.
+	rig._maybe_replan(RouteRig._REPLAN_INTERVAL)
+	t.check(rig._stuck_streak == 0 and not rig._waiting and not rig._unsticking,
+			"the first check has no stall to read yet")
+
+	# Second check, same position: a first stall replans the ordinary way rather than waiting or
+	# forcing anything.
+	rig._maybe_replan(RouteRig._REPLAN_INTERVAL)
+	t.check(rig._stuck_streak == 1 and not rig._waiting and not rig._unsticking,
+			"a first stall replans rather than waiting or forcing a maneuver")
+
+	# Third check, still the same position: the ordinary replan did not move her either, so a
+	# second stall in a row waits rather than reaching straight for the physical maneuver.
+	rig._maybe_replan(RouteRig._REPLAN_INTERVAL)
+	t.check(rig._waiting and not rig._unsticking and rig._leg_stall_episodes == 1,
+			"a second stall in a row waits for a crowd to clear rather than forcing a maneuver")
+
+	rig._wait(RouteRig._STUCK_WAIT_SECONDS)
+	t.check(not rig._waiting, "waiting ends once _STUCK_WAIT_SECONDS has elapsed")
+
+	# Still the same position: waiting alone did not answer it, so the very next check escalates
+	# straight to the physical maneuver — spending no second stall episode getting there.
+	rig._maybe_replan(RouteRig._REPLAN_INTERVAL)
+	t.check(rig._unsticking and rig._leg_stall_episodes == 1,
+			"still stuck right after waiting escalates to the physical maneuver, not a second wait")
+
 	rig.free()
 
 # ------------------------------------------------------------ end to end ---
