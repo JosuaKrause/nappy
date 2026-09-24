@@ -328,39 +328,6 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M184 — A rig walks the route · asked for 2026-09-23
-
-> "we should have a test-rig mode where she just follows the edges of a path that way we can test
-> paths properly and do those timing checks without having to guess the right inputs"
-
-[PLAYTEST-122](playtests/PLAYTEST-122.md). The rig is built (`DECISIONS.md`, M184, a rig walks
-the route): `--route mark,task,calm,home` walks her along a real path's edges, at walking pace,
-through the ordinary game, and `tests/probes/m184_route_timing.gd` times days 6 to 13 with it.
-What is open is where it still gets stuck, which is what keeps M181's late days from being fully
-timed; the legs that found no path at all are fixed (`DECISIONS.md`, M188, a resistance target can
-always be reached).
-
-- [ ] **The rig gets through chokepoints.** In 14 of the 24 measured runs a leg ends "stuck
-      fast", wedged more often than its budget of three stuck episodes a leg. Waiting three
-      seconds before forcing a way out gets none of them through (`DECISIONS.md`, M184, the rig
-      waits before it forces), and day 10's calm leg on seed 90210, reached in 30.5 seconds
-      before, now sticks too, unexplained. What the first look found, on day 6's mark on seed
-      1234567, built and then taken out again: she stalls flush against a van's body, because
-      `CityMap.obstructed_tiles` marks only the tile a body's centre falls in (right for the
-      crowd, which keeps to a lane) and a van overhangs the next tile's centre by about 6px, so
-      the plan itself walks her into it. A keep-clear margin from `EventDef.solid_reach()`, the
-      way the rig already keeps clear of a hazard's `lethal_reach()`, moved the stall a few tiles
-      on; trying the unstick directions in the order that points away from the body, rather
-      than always starting up, cleared each maneuver first time; but the recovery re-plan rings
-      her own position rather than the body that caught her, so she went straight back to the
-      same pinch. The narrowest gap there measured about 2px short of her body plus the van's
-      reach: whether a player hugging the far edge gets through, or the van is sited without
-      leaving a walkable width, is to be checked before calling it the rig's fault. Whether the
-      stalls on day 8's home leg on seed 1234567 and day 12's on 4242 are the crowd rather than a
-      body is not yet checked.
-
----
-
 ## M181 — The resistance has a reason, and a task is one day · slice one built 2026-09-23
 
 > "when doing the mark it doesn't really feel that we would need to resist against anything
@@ -438,7 +405,12 @@ is done and the masts already expose what the task needs.
       from had at least 22 seconds left, most 50 to 120; on day 12 the second open park was
       reached a tenth of a second after the swing on the one seed whose swing the rig reached;
       days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
-      rig gave up a leg in half the runs (M184), so the late days are not fully measured yet. **Each late day's happening arrives differently** — waiting at home, found gone,
+      rig now gets through every chokepoint (`DECISIONS.md`, M184, the rig gets through
+      chokepoints): 23 of the 24 runs walk the whole route. **Day 9 on seed 90210 does not fit**:
+      the mark at 27.7 s, the task at 91.5 s (3537px off, through four doors), the calm area at
+      99.6 s, and the day's 144 s run out on the walk home. Open: whether that task sits too far
+      on that seed, or the rig should take a calm area on the way home rather than the one
+      nearest the task. **Each late day's happening arrives differently** — waiting at home, found gone,
       closing in front of her, coming on her way — and slice two keeps that variety.
 
 ---
@@ -697,50 +669,56 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The boom never inspects her, and a raised one lets her pass** *(2026-09-24: "Boom
-      shouldn't inspect her. It should block her. If a car opens it for her and she walks through
-      she would probably get hit by the car, no?")*. A `checkpoint_gate` stops being a detaining body: a lowered boom blocks her, and a
-      street door's inspection happens only at its two huts (an alley door's at its posts,
-      unchanged). The gate keeps barring and lifting for the cars as it does now: up once a car
-      has waited at it `Tuning.GATE_STOP_SECONDS` (1.2 s), down the moment no car is within a
-      length of it. **A raised boom lets her through** *(2026-09-24: "I didn't say it should stay
-      solid when it's open"; asked whether a raised boom lets her through or blocks her either
-      way: "A yes")*: while a car holds the arm up she may walk under it and skip the hut's
+- [ ] **A door can set her down inside a building.** A door's release reflects her through the
+      crossing's line and keeps how far off the door's axis she was when it caught her, so a
+      catch from the side can land her on a building tile; the route rig works round it by
+      re-planning from the nearest open tile (`DECISIONS.md`, M184, the rig gets through
+      chokepoints). The release is `EventManager`'s, in `src/events/`
+
+- [ ] **The boom never inspects her, and a raised one lets her pass** *(2026-09-24: "Boom shouldn't
+      inspect her. It should block her. If a car opens it for her and she walks through she would
+      probably get hit by the car, no?")*. A `checkpoint_gate` stops being a detaining body: a
+      lowered boom blocks her, and a street door's inspection happens only at its two huts (an alley
+      door's at its posts, unchanged). The gate keeps barring and lifting for the cars as it does
+      now: up once a car has waited at it `Tuning.GATE_STOP_SECONDS` (1.2 s), down the moment no car
+      is within a length of it. **A raised boom lets her through** *(2026-09-24: "I didn't say it
+      should stay solid when it's open"; asked whether a raised boom lets her through or blocks her
+      either way: "A yes")*: while a car holds the arm up she may walk under it and skip the hut's
       inspection, and the price is that car — she is on its carriageway, the horn and the strike
       apply as on any street, and the traffic fairness contract (**crowd-traffic**) must hold for
-      this crossing too. Every door then offers the choice: the hut's hold, or a dash past a car.
-      A lowered boom blocks her, and the gate is never a detaining body either way. **Slipping
-      under the boom sets the guards on her** *(2026-09-24: "The guards should start pursuing her
-      in that case")*. It is detected, not guessed: every frame, she has crossed a door's own
-      cross-street line (the one an inspection's release is reflected through) since the last
-      frame without `Stroller.teleport_to()` having moved her. The huts and the lowered boom are
-      solid, and an inspection's release is a teleport, so a walked crossing is a crossing under a
-      raised boom and nothing else. The chase is a pursuit under the existing pursuit contract
-      (`Tuning`'s chase-length and `PURSUIT_SHAKEN_OFF` rules, **events**: it lets go, and running
-      outpaces it). **The pursuers spawn at the huts** *(2026-09-24: "Or guards that pursue her
-      should spawn at the huts")*: they set off from that door's huts, and the guards drawn at
-      the huts stay at their posts, so the door stays manned. The run log notes each
-      walk under a boom, and a route-rig test requires none across its runs. **A catch ends the
-      day, and one guard is enough** *(2026-09-24, asked whether a catch ends the day or returns
-      her through an inspection, and whether one or two set off: "The day ends, not going through
-      the checkpoint is a clear unlawful thing here. She gets detained/imprisoned or whatever in
-      that case. This is independent of the resistance. She shouldn't do it. One guard is
-      enough")*. The pursuer is `hard_fail` at every heat level and on every day a door stands —
-      it is not a rung of the heat ladder — and the summary's hard-fail line says she was
-      detained. One pursuer spawns, at the hut nearer to her. The dash is meant to be a
-      temptation she should refuse: the hut's hold is the lawful price, the car and the guard the
-      unlawful one. **The
-      route rig never routes through the boom, either way** *(2026-09-24: "The bot shouldn't route
-      through the boom either way")*. Found while capturing the inspection: the boom's own body
-      took her in with nobody on screen doing it, since the guards stand at the huts; a guard
-      stepping to the arm was the other option and was not taken. What changes with it:
-      `checkpoint_gate`'s detention in `event_catalogue.gd`, the release latch's "every body of
-      the door whose reach she lands in", `docs/EVENTS.md` "Checkpoints" and the row, which say
-      the gate detains as a hut does (`docs/CITY.md` says "the gate only ever stops a car, never
-      her"), the gate's solid body (solid to her only while lowered), `docs/MECHANICS.md` and
-      `docs/CITY.md` where a door is "passable only by detention", and the route rig's door
-      handling (`src/dev/route_rig.gd`). Waits for M181's slice
-      two and M184's chokepoints to land, which are in those files
+      this crossing too. Every door then offers the choice: the hut's hold, or a dash past a car. A
+      lowered boom blocks her, and the gate is never a detaining body either way. **Slipping under
+      the boom sets the guards on her** *(2026-09-24: "The guards should start pursuing her in that
+      case")*. It is detected, not guessed: every frame, she has crossed a door's own cross-street
+      line (the one an inspection's release is reflected through) since the last frame without
+      `Stroller.teleport_to()` having moved her. The huts and the lowered boom are solid, and an
+      inspection's release is a teleport, so a walked crossing is a crossing under a raised boom and
+      nothing else. The chase is a pursuit under the existing pursuit contract (`Tuning`'s
+      chase-length and `PURSUIT_SHAKEN_OFF` rules, **events**: it lets go, and running outpaces it).
+      **The pursuers spawn at the huts** *(2026-09-24: "Or guards that pursue her should spawn at
+      the huts")*: they set off from that door's huts, and the guards drawn at the huts stay at
+      their posts, so the door stays manned. The run log notes each walk under a boom, and a
+      route-rig test requires none across its runs. **A catch ends the day, and one guard is
+      enough** *(2026-09-24, asked whether a catch ends the day or returns her through an
+      inspection, and whether one or two set off: "The day ends, not going through the checkpoint is
+      a clear unlawful thing here. She gets detained/imprisoned or whatever in that case. This is
+      independent of the resistance. She shouldn't do it. One guard is enough")*. The pursuer is
+      `hard_fail` at every heat level and on every day a door stands — it is not a rung of the heat
+      ladder — and the summary's hard-fail line says she was detained. One pursuer spawns, at the
+      hut nearer to her. The dash is meant to be a temptation she should refuse: the hut's hold is
+      the lawful price, the car and the guard the unlawful one. **The route rig never routes through
+      the boom, either way** *(2026-09-24: "The bot shouldn't route through the boom either way")*.
+      Found while capturing the inspection: the boom's own body took her in with nobody on screen
+      doing it, since the guards stand at the huts; a guard stepping to the arm was the other option
+      and was not taken. What changes with it: `checkpoint_gate`'s detention in
+      `event_catalogue.gd`, the release latch's "every body of the door whose reach she lands in",
+      `docs/EVENTS.md` "Checkpoints" and the row, which say the gate detains as a hut does
+      (`docs/CITY.md` says "the gate only ever stops a car, never her"), the gate's solid body
+      (solid to her only while lowered), `docs/MECHANICS.md` and `docs/CITY.md` where a door is
+      "passable only by detention", and the route rig's door handling (`src/dev/route_rig.gd`, which
+      already never routes through a boom; `DECISIONS.md`, M184, the rig gets through chokepoints,
+      lists the lines that change when the gate stops detaining). Waits for M181's slice two to
+      land, which is in `src/events/`
 
 **Drawings, as SVG:**
 
