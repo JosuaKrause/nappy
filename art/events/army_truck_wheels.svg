@@ -1,0 +1,9 @@
+<!-- army truck side wheels: the tyres alone, on army_truck.svg's own canvas and anchor, drawn fixed on the ground while the body rides the bob. Bottom-centre ground anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="38" viewBox="0 0 60 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <circle cx="12" cy="30" r="6" fill="#26232a"/>
+  <circle cx="34" cy="30" r="6" fill="#26232a"/>
+  <circle cx="48" cy="30" r="6" fill="#26232a"/>
+  <circle cx="12" cy="30" r="2" fill="#464a3f"/>
+  <circle cx="34" cy="30" r="2" fill="#464a3f"/>
+  <circle cx="48" cy="30" r="2" fill="#464a3f"/>
+</svg>

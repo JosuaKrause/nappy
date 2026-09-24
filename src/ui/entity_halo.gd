@@ -10,7 +10,11 @@ extends Node2D
 ## Built by its owner with two callables: `draw_body(canvas: CanvasItem)` re-runs the owner's own
 ## body-drawing at whatever offset the ring asks for, and `bob() -> float` reads the owner's
 ## current vertical bob, so a walking or pacing entity's rim rides the same lift the body itself
-## does rather than sliding off it. `set_glow()` is the only thing an owner calls afterwards, once
+## does rather than sliding off it. **The ring lifts the whole traced drawing by it, the same way
+## the owner's own `_draw()` does**, so a part that stays on the ground while the body rises — a
+## vehicle's wheels, which `CrowdAgent._draw_body()` and `EventInstance._draw_eight_view()` draw
+## back down by the bob — stays on the ground in the rim too, and the rim is the outline of what is
+## actually drawn. `set_glow()` is the only thing an owner calls afterwards, once
 ## a frame, with the *target* alpha and colour `ExcitementHalo` computed for it — this node eases
 ## its own drawn alpha and colour toward that target on its own `_process()`, so a caller never has
 ## to know about the fade.

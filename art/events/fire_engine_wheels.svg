@@ -1,0 +1,7 @@
+<!-- fire engine side wheels: the tyres alone, on fire_engine.svg's own canvas and anchor, drawn fixed on the ground while the body rides the bob. Bottom-centre ground anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="36" viewBox="0 0 62 36" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <circle cx="14" cy="29" r="6" fill="#26232a"/>
+  <circle cx="46" cy="29" r="6" fill="#26232a"/>
+  <circle cx="14" cy="29" r="2" fill="#4a464f"/>
+  <circle cx="46" cy="29" r="2" fill="#4a464f"/>
+</svg>
