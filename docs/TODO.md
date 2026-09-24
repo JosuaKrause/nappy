@@ -127,7 +127,7 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 | Owner | Integration work and acceptance |
 |---|---|
-| M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family's directional pictures to the alley mouse, read by heading as the other moving families are ([PLAYTEST-128](playtests/PLAYTEST-128.md)), and the sound arcs with their event timing. |
+| M100 — Small, real, and nobody's | Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the sound arcs with their event timing. |
 
 M102, the finale, owns the impact-crater decals and the carrying-mother set and has bound what it
 needs of them; `GRAPHICS.md` names which sources are live and which stay
@@ -752,12 +752,6 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-- [ ] **The masked pursuer and the heated roadblock guard face where they are heading**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, hook those up."). They chase her drawn as
-      a single side picture while `guard_{standing,lunging}_{views}` — eight-view art under
-      `art/checkpoints/` — is bound to nothing; they read a heading through the shared
-      `_draw_eight_view()` helper every other moving family uses, standing while still and
-      lunging while they chase, like the robber.
 
 ---
 
@@ -829,23 +823,9 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
-- [ ] **The push at the top that ends the day crying is a little tighter**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "we can make the extra push needed to end the
-      day a tiny bit more aggressive/tighter"). Today it is `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`,
-      10 points of overflow at the cap, within `Tuning.EXCITEMENT_OVERFLOW_WINDOW`, 3 seconds
-      (`DECISIONS.md`, M96, the day ends crying only after a push at the top). Playtest 126's
-      reason for the gate still holds — one bump into one aggravated walker is not a failure — so
-      one bump at the cap (8.9 points of overflow, measured by
-      `tests/probes/m96_crying_at_the_top.gd`) keeps her awake, and a sustained push ends the day
-      sooner than it does now
 
 **Drawings, as SVG:**
 
-- [ ] **The home block carries no fire escape** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "the
-      home building shouldn't have a fire escape (it has a double staircase inside)"). Every
-      building on the home block is hers (`Building.is_home_building`, playtest 124), and
-      `Building._build_front()` rolls a `RESIDENTIAL` front's escape without asking; the home
-      block's fixed visuals match the escape's interior, whose two staircases are inside
 - [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
       least two frames** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the
       main break) or puffs of smoke (from the car crash) or steam (from the escape) should have
@@ -883,38 +863,6 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **How close to a red light counts as waiting at it, for `--quit-when-still`.** The dev
-      flag's watch (`StillWatch`, `src/dev/still_watch.gd`) ignores her while
-      `facing_a_red_light()` holds: anywhere on the sidewalk inside the signalled junction's
-      `Tuning.STREET_WIDTH` (6) tile box while the main road's light is not hers (`DECISIONS.md`,
-      M189, a hold is not a stand). Put to the player on 2026-09-24 without saying what the watch
-      was ([PLAYTEST-128](playtests/PLAYTEST-128.md)); open until they say whether the box
-      should be tighter
-
-- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
-      playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
-      didn't it count?" — it had.)* A touch turns the mark from chalk white to pale green
-      (`Palette.CHALK` to `CHALK_DONE`) under her feet, and the `resistance ....` dots are
-      performs only, so a pick-up moves none. The mark's own words now reach her on that day's
-      summary whether it was won or lost, in their own larger line (`DECISIONS.md`, M132), so
-      what is left open is the moment of the touch itself. The first mark is hinted at by day 6's brief
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)), and how much a touch may say is the
-      player's call: nothing more; the mark's colour made unmistakable; or a one-line status
-      change on the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review:
-      she adds something to the existing mark to indicate she has seen it.
-      `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
-      remains here
-- [ ] **The chalk mark is drawn from `chalk_mark.svg`** ([PLAYTEST-128](playtests/PLAYTEST-128.md):
-      "Yes, we need to use the svg."). `ContactPoint._draw_chalk()` (in `src/resistance/`)
-      paints the mark with `draw_arc`/`draw_line` today, which breaks "a picture is an asset,
-      never code"; it draws `props/chalk_mark.svg` instead, and `chalk_mark_touched.svg` for a
-      touched mark, as the integration table above says. The mark stays visible and readable on
-      the sidewalk
-- [ ] **The alley mouse faces where it runs** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "The
-      code comment is positive, the queue is normative."). `EventCatalogue._alley_mouse()` draws
-      one mirrored side picture through `_draw_simple()`; it reads a heading through
-      `_draw_eight_view()` like the other moving families, from `art/events/mouse*.svg` (the
-      `_b` files are its second frame), and its docstring is rewritten to say so
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a

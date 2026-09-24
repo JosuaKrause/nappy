@@ -435,7 +435,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0  # net +10/s, well above the threshold
 	_walk()
-	_simulate(0.5)  # 0.5s of it is 5 points of mass, under the 10-point threshold
+	_simulate(0.5)  # 0.5s of it is 5 points of mass, under `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`
 	t.check(_baby.state != GameEnums.BabyState.CRYING,
 			"not enough time at the cap yet, however loud the source")
 	_teardown()

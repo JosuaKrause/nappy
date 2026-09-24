@@ -123,10 +123,13 @@
         "src/city/prop.gd",
         "src/city/litter.gd",
         "src/city/city_decals.gd",
-        "src/city/city.gd"
+        "src/city/city.gd",
+        "src/resistance/contact_point.gd"
       ],
       "members": [
         "art/props/bollard.svg",
+        "art/props/chalk_mark.svg",
+        "art/props/chalk_mark_touched.svg",
         "art/props/door.svg",
         "art/props/garbage_sack.svg",
         "art/props/garbage_sacks_pile.svg",
