@@ -38,6 +38,7 @@ func run(t) -> void:
 	_test_pace_does_not_advance_the_target(t)
 	_test_check_settled_waits_for_asleep(t)
 	_test_on_day_finished_won_still_finishes(t)
+	_test_maybe_replan_waits_before_forcing_a_physical_maneuver(t)
 	_test_a_real_leg_walks_her_there_and_reports_it(t)
 	_teardown(t)
 
@@ -344,6 +345,60 @@ func _test_on_day_finished_won_still_finishes(t) -> void:
 	t.check(not rig._done, "not finished before the signal")
 	rig._on_day_finished(GameEnums.DayResult.WON)
 	t.check(rig._done, "WON finishes the rig rather than being ignored")
+	rig.free()
+
+# ------------------------------------------------------------ chokepoints ---
+
+## The chokepoint fix (docs/TODO.md, M184, "the rig gets through chokepoints"): a second stall in
+## a row waits for a crowd to clear rather than reaching straight for the eight-direction maneuver,
+## and only a third stall right after waiting — proof that waiting alone did not answer it — reaches
+## `_begin_unstick()`. Driven directly against `_maybe_replan()` with a real leg and a real
+## `Stroller` that this test never actually moves, which is exactly what a physical wedge reads as
+## to the tile grid: nothing wrong with the ground, and no progress since the last check.
+func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
+	var rig := RouteRig.new()
+	t.add_child(rig)
+	rig.set_physics_process(false)
+	rig._city = _city
+	rig._cache_road_tiles()
+	rig._resistance = _resistance
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+
+	var calm := rig._resolve_target("calm")
+	t.check(calm != Vector2.INF, "a calm target exists for this leg")
+	if calm == Vector2.INF:
+		rig.free()
+		return
+	rig._begin_leg(calm)
+	t.check(not rig._waypoints.is_empty(), "the leg starts with a real plan")
+
+	# The first check only records where she is — nothing to compare against yet.
+	rig._maybe_replan(RouteRig._REPLAN_INTERVAL)
+	t.check(rig._stuck_streak == 0 and not rig._waiting and not rig._unsticking,
+			"the first check has no stall to read yet")
+
+	# Second check, same position: a first stall replans the ordinary way rather than waiting or
+	# forcing anything.
+	rig._maybe_replan(RouteRig._REPLAN_INTERVAL)
+	t.check(rig._stuck_streak == 1 and not rig._waiting and not rig._unsticking,
+			"a first stall replans rather than waiting or forcing a maneuver")
+
+	# Third check, still the same position: the ordinary replan did not move her either, so a
+	# second stall in a row waits rather than reaching straight for the physical maneuver.
+	rig._maybe_replan(RouteRig._REPLAN_INTERVAL)
+	t.check(rig._waiting and not rig._unsticking and rig._leg_stall_episodes == 1,
+			"a second stall in a row waits for a crowd to clear rather than forcing a maneuver")
+
+	rig._wait(RouteRig._STUCK_WAIT_SECONDS)
+	t.check(not rig._waiting, "waiting ends once _STUCK_WAIT_SECONDS has elapsed")
+
+	# Still the same position: waiting alone did not answer it, so the very next check escalates
+	# straight to the physical maneuver — spending no second stall episode getting there.
+	rig._maybe_replan(RouteRig._REPLAN_INTERVAL)
+	t.check(rig._unsticking and rig._leg_stall_episodes == 1,
+			"still stuck right after waiting escalates to the physical maneuver, not a second wait")
+
 	rig.free()
 
 # ------------------------------------------------------------ end to end ---
