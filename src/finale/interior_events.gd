@@ -45,14 +45,21 @@ const _PURSUER_ID := "masked_pursuer"
 const _STEAM_ID := "basement_steam"
 const _FIRE_ID := "burning_building"
 
-## One steam vent: where it stands, how often it blows, and how long until it does again. A vent
-## is not an event — what is an event is one blow, which this spawns and the instance owns to its
-## end. While a vent is between blows there is nothing in the world at all, which is the whole of
-## *"while it is off it has no body and costs nothing"*.
+## One steam vent: where it stands, how often it blows, how long until it does again, and the pipe
+## it blows out of. A vent is not an event — what is an event is one blow, which this spawns and
+## the instance owns to its end. While a vent is between blows there is no instance, so no body
+## and no field, which is the whole of *"while it is off it has no body and costs nothing"*.
+##
+## **But the pipe is there the whole time.** A gate she can only see while it is shut is a gate she
+## finds by walking into its notice; a vent that stands in the corridor blowing or not is one she
+## can see from the corner and time. So the pipe is scenery owned by the vent rather than part of
+## any blow's picture — `EventInstance.STEAM_PIPE` — standing at the vent's own site, and the
+## blow's cloud is drawn over its mouth.
 class Vent extends RefCounted:
 	var at := Vector2.ZERO
 	var period := 0.0
 	var until_the_next_blow := 0.0
+	var pipe: Sprite2D = null
 
 var _interior: InteriorScene
 var _instances: Array[EventInstance] = []
@@ -84,6 +91,16 @@ var _until_the_next_pursuer := 0.0
 const _BURNING_SIDE := "left"
 ## The shaft the masked man runs, which is the one the fire did not take.
 const _PURSUED_SIDE := "right"
+
+## Holds the `events` page for as long as this is in the tree, as `EventManager` does for a day:
+## every blow, the fire, the mouse and the masked man draw from it, and the vents' pipes are
+## fetched from it the moment they are placed. In a booted escape it is a count on a page
+## `main.RESIDENT_GROUPS` already holds; the pairing is what proves the page is there.
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(EventInstance.ATLAS_GROUP)
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
 
 func setup(interior: InteriorScene, rng: RandomNumberGenerator) -> void:
 	_interior = interior
@@ -210,6 +227,7 @@ func _place_the_basement(rng: RandomNumberGenerator) -> void:
 	# corridor whose gates are in the same places every attempt, so a lost section is the same
 	# puzzle again rather than a different one. The clocks are staggered so the three of them do
 	# not open the whole corridor at once on the first pass; after that their own periods do it.
+	_take_the_pipes_away()
 	_vents.clear()
 	var sites := _vent_sites(walk)
 	for i in sites.size():
@@ -217,7 +235,38 @@ func _place_the_basement(rng: RandomNumberGenerator) -> void:
 		vent.at = sites[i]
 		vent.period = Tuning.FINALE_STEAM_PERIODS[i]
 		vent.until_the_next_blow = vent.period * float(i + 1) / float(sites.size())
+		vent.pipe = _stand_a_pipe(vent.at)
 		_vents.append(vent)
+
+## A vent's pipe, standing on its site in the building's y-sorted layer for the whole section.
+##
+## **Feet on the vent's own point, the way a blow's picture stands**, so the cloud drawn by each
+## blow — the same canvas and anchor, `EventInstance.STEAM_PIPE` — rises out of this mouth. The two
+## share a y, so the y-sort falls back to the order they joined the layer in, and every blow joins
+## after its pipe: the cloud is always over the pipe rather than behind it.
+##
+## No body: the pipe is where the gate is, not a second gate. What stops her is the blow's own
+## `STEAM_VENT_BODY`, which goes down at the end of its notice and comes up at the end of the blow.
+func _stand_a_pipe(at: Vector2) -> Sprite2D:
+	var pipe := Sprite2D.new()
+	pipe.name = "SteamPipe"
+	var texture := EventInstance.steam_pipe()
+	pipe.texture = texture
+	pipe.centered = false
+	if texture:
+		pipe.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
+	pipe.position = at
+	_interior.add_entity(pipe)
+	return pipe
+
+## The pipes of the vents being replaced. A restart places the same vents on the same sites, but
+## it builds them afresh like everything else it places, so the old pipes go with the old vents
+## rather than standing twice.
+func _take_the_pipes_away() -> void:
+	for vent in _vents:
+		if is_instance_valid(vent.pipe):
+			vent.pipe.queue_free()
+		vent.pipe = null
 
 ## Where each vent stands: one on each of the corridor's one-tile-wide cells, at that cell's own
 ## centre, in the order she meets them.
@@ -256,8 +305,8 @@ func _vent_sites(walk: Array[Vector2i]) -> Array[Vector2]:
 ## Every vent's own clock, one blow at a time. A blow is an ordinary `EventInstance` of the steam
 ## row: it gives its notice with no body, closes the corridor for `Tuning.FINALE_STEAM_BLOWS_FOR`,
 ## and is over — `_retire_finished()` takes it away like anything else that has run its course.
-## Nothing stands between blows, so a vent that is off is not an event that is quiet, it is an
-## event that does not exist.
+## No event stands between blows, so a vent that is off is not an event that is quiet, it is an
+## event that does not exist — only its pipe is there, and a pipe costs nothing and stops nobody.
 func _blow_the_vents(delta: float) -> void:
 	for vent in _vents:
 		vent.until_the_next_blow -= delta

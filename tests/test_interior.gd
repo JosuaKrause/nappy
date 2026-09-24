@@ -33,6 +33,7 @@ func run(t) -> void:
 	_test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t)
 	_test_a_vent_never_closes_around_her(t)
 	_test_no_pocket_between_two_vents_outlasts_the_noise(t)
+	_test_every_vent_has_its_pipe_blowing_or_not(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
 	_test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
 	_test_the_building_shows_what_the_city_shows(t)
@@ -1504,6 +1505,114 @@ func _is_shut(vent: InteriorEvents.Vent, at: float, steam: EventDef) -> bool:
 	var phase := fmod(since, vent.period)
 	return phase >= steam.telegraph_time \
 			and phase < steam.telegraph_time + Tuning.FINALE_STEAM_BLOWS_FOR
+
+## **A vent that is there all the time, blowing or not, is what a player can plan around.** Each
+## vent's pipe stands on its site from the moment the section is placed, before the first blow and
+## between every two after it, and a blow's cloud rises out of that pipe's mouth rather than
+## somewhere of its own:
+##
+## - the pipe and the two cloud frames share one canvas, since both are drawn from the same foot
+##   and the cloud carries no offset of its own;
+## - every blow stands on its vent's own point, joins the layer after its pipe — the tie the y-sort
+##   falls back on, which is what keeps the cloud over the pipe — and is never mirrored, since the
+##   pipe is not;
+## - a restart places each vent's pipe once, not a second time over the first.
+func _test_every_vent_has_its_pipe_blowing_or_not(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	const WINDOW := 12.0
+	var pipe_size := AtlasLibrary.native_size(StringName(EventInstance.STEAM_PIPE))
+	for frame: String in [EventInstance.STEAM, EventInstance.STEAM_B]:
+		t.check(AtlasLibrary.native_size(StringName(frame)) == pipe_size,
+				"%s shares the pipe's canvas (%s and %s)"
+				% [frame, AtlasLibrary.native_size(StringName(frame)), pipe_size])
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	t.check(events.vents().size() == Tuning.FINALE_STEAM_PERIODS.size(),
+			"the basement has its vents (%d)" % events.vents().size())
+	for vent: InteriorEvents.Vent in events.vents():
+		var pipe := vent.pipe
+		t.check(is_instance_valid(pipe) and pipe.is_inside_tree(),
+				"the vent at %s has a pipe standing in the building" % vent.at)
+		if not is_instance_valid(pipe):
+			continue
+		t.check(pipe.position == vent.at, "the pipe stands on its vent's own point (%s, %s)"
+				% [pipe.position, vent.at])
+		t.check(pipe.texture != null and Vector2i(pipe.texture.get_size()) == pipe_size,
+				"the pipe is drawn with its own picture")
+		t.check(pipe.offset == Vector2(-pipe_size.x * 0.5, -pipe_size.y),
+				"and stands on its foot, as a blow's picture does (offset %s)" % pipe.offset)
+
+	var far := Vector2(-10000.0, -10000.0)
+	var blowing_frames := {}
+	var quiet_frames := {}
+	var pipes_missing := 0
+	var misplaced := 0
+	var drawn_under_its_pipe := 0
+	var mirrored := 0
+	var seen := {}
+	var live := 0.0
+	while live < WINDOW:
+		events._physics_process(STEP)
+		var blowing := {}
+		for instance in events.instances():
+			if instance.def.id != "basement_steam":
+				continue
+			instance.player_at = far
+			blowing[instance.global_position] = instance
+			instance._process(STEP)
+		for vent: InteriorEvents.Vent in events.vents():
+			if not is_instance_valid(vent.pipe) or not vent.pipe.is_inside_tree():
+				pipes_missing += 1
+				continue
+			var blow: EventInstance = blowing.get(vent.at)
+			var tally: Dictionary = blowing_frames if blow else quiet_frames
+			tally[vent.at] = int(tally.get(vent.at, 0)) + 1
+			if not blow or seen.has(blow.get_instance_id()):
+				continue
+			seen[blow.get_instance_id()] = true
+			if blow.get_parent() != vent.pipe.get_parent():
+				misplaced += 1
+			elif blow.get_index() < vent.pipe.get_index():
+				drawn_under_its_pipe += 1
+			if blow._heading_is_west():
+				mirrored += 1
+		live += STEP
+	t.check(seen.size() > events.vents().size(),
+			"the vents blew over %.0fs (%d blows)" % [WINDOW, seen.size()])
+	for vent: InteriorEvents.Vent in events.vents():
+		t.check(int(blowing_frames.get(vent.at, 0)) > 0 and int(quiet_frames.get(vent.at, 0)) > 0,
+				"the vent at %s was seen both blowing (%d frames) and between blows (%d)"
+				% [vent.at, int(blowing_frames.get(vent.at, 0)), int(quiet_frames.get(vent.at, 0))])
+	t.check(pipes_missing == 0, "no vent was ever without its pipe (%d frames were)" % pipes_missing)
+	t.check(misplaced == 0, "every blow stands in the pipe's own layer (%d did not)" % misplaced)
+	t.check(drawn_under_its_pipe == 0,
+			"every blow joined the layer after its pipe, so the cloud is over it (%d did not)"
+			% drawn_under_its_pipe)
+	t.check(mirrored == 0, "no blow's cloud is mirrored off its unmirrored pipe (%d were)" % mirrored)
+
+	var old_pipes: Array[Sprite2D] = []
+	for vent: InteriorEvents.Vent in events.vents():
+		old_pipes.append(vent.pipe)
+	events.restart()
+	var standing := 0
+	for vent: InteriorEvents.Vent in events.vents():
+		if is_instance_valid(vent.pipe) and not vent.pipe.is_queued_for_deletion():
+			standing += 1
+	t.check(standing == events.vents().size(),
+			"a restart stands every vent's pipe again (%d of %d)" % [standing, events.vents().size()])
+	var left_over := 0
+	for pipe in old_pipes:
+		if is_instance_valid(pipe) and not pipe.is_queued_for_deletion():
+			left_over += 1
+	t.check(left_over == 0, "and takes the old ones away rather than standing two (%d stayed)"
+			% left_over)
+	events.free()
+	scene.free()
 
 ## *"The hallway windows that flash when an explosion goes off."* There is no burst on the street
 ## to see and no arc drawn for the noise, so the flash is the whole of the cue — driven here

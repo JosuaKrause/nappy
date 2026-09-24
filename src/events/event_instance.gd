@@ -645,14 +645,23 @@ const BOOM_GATE_NS_RAISED := "checkpoints/boom_gate_ns_raised"
 const BOOM_GATE_EW_LOWERED := "checkpoints/boom_gate_ew_lowered"
 const BOOM_GATE_EW_RAISED := "checkpoints/boom_gate_ew_raised"
 
-## The basement's own vent, and the one picture in the catalogue that is a *volume* of air rather
-## than a body: `steam.svg` is 32×48 and stands on the ground it rises from.
+## The basement vent's blow, and the one picture in the catalogue that is a *volume* of air rather
+## than a body: `steam.svg` is the cloud alone on a 32×48 canvas, anchored at the foot of the pipe
+## it rises from.
 const STEAM := "events/steam"
-## Its second frame: the same pipe, the cloud lifted and spread and a fresh puff pushing out of the
-## mouth. Alternated off `_idle_stepping(STEAM_BILLOW_PERIOD)` for the instance's whole life, which
-## is exactly one blow — between blows `InteriorEvents` keeps no instance at all.
+## Its second frame: the cloud lifted and spread and a fresh puff pushing out of the mouth.
+## Alternated off `_idle_stepping(STEAM_BILLOW_PERIOD)` for the instance's whole life, which is
+## exactly one blow — between blows `InteriorEvents` keeps no instance at all.
 const STEAM_B := "events/steam_b"
 const STEAM_BILLOW_PERIOD := 0.7
+## The vent's pipe, which is **not** the blow's: a blow is an instance that comes and goes, and a
+## vent that is there all the time, blowing or not, is what a player can plan around. So no look
+## draws it — `InteriorEvents` stands one at every vent for the whole section, through
+## `steam_pipe()`, and each blow's cloud is drawn over it. Same 32×48 canvas and foot anchor as the
+## two cloud frames, so the cloud stands on the mouth with no offset of its own. Neither is ever
+## mirrored: every blow is sited facing east (`setup()`'s default `face`), and a pipe mirrored
+## under an unmirrored cloud would put the mouth beside the steam.
+const STEAM_PIPE := "events/steam_pipe"
 
 ## The mast — a pole and horns standing on a street — and the two overlays `_draw_mast()` puts
 ## above it, never its own colour, so a lamp and a set of arcs can be tinted per state rather than
@@ -3132,6 +3141,12 @@ static func _drawn(picture: String) -> AtlasTexture:
 ## used to ask a texture for.
 static func _native_size(picture: String) -> Vector2:
 	return Vector2(AtlasLibrary.native_size(StringName(picture)))
+
+## The basement vent's pipe, for `InteriorEvents` to stand at every vent — see `STEAM_PIPE` for
+## why no instance draws it. Fetched here rather than by name there, so the region is still named
+## in this file with every other picture of the page.
+static func steam_pipe() -> AtlasTexture:
+	return _drawn(STEAM_PIPE)
 
 ## Every picture a row with this look can draw, as repository paths.
 ##
