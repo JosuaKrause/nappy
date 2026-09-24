@@ -46,6 +46,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `lethal_radius` | How close the thing that ends the day has to get, when that is **not** the field's own core. `0` — almost every row — means `inner_radius`, and `lethal_reach()` is what every caller asks. It exists for a row whose killer is not what the field is drawn around: a `roadblock`'s field is cored on the barrier and its guard catches at a man's reach — see "The heat" |
 | `body_stays_behind` | Whether this row's body is a **fixture of the street** a pursuer leaves standing rather than the pursuer's own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built, so the street stays shut behind the man who left it |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the two region-door rows that inspect her, `checkpoint_hut` and `checkpoint_post` — see "Checkpoints" |
+| `sets_off_beside_her` | Whether a pursuer starts **inside its own stand-off**, spawned beside her rather than sited or noticing her outside it. Its notice then cannot be cut short by her being close and it never backs off: it holds its ground, follows at the stand-off once she is further, and chases when the notice has run its whole length. `door_guard` is the one row — see "Checkpoints" |
 | `lifts_for_traffic` | Whether this row is a **boom**: a bar across a door's carriageway that the cars raise and lower, solid to her only while it is down, and never an inspection. `checkpoint_gate` is the one row — see "Checkpoints" |
 | `barrier_structure` | Whether this row is a piece of the region boundary — a street being held. The four that are (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`, `roadblock`) charge the meter as **one** source, the strongest at her position, rather than as their sum; everything else in the catalogue still sums — see "Checkpoints" |
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
@@ -457,6 +458,24 @@ it, since the last frame, with no `Stroller.teleport_to()` or `reset_at()` in be
 release is a teleport, so a crossing she walked is a crossing under a raised boom and nothing else;
 nothing asks where the arm is. The run log's `checkpoint` line records each one
 (`docs/TELEMETRY.md`), and `EventManager.walks_under_a_boom()` counts them for a rig.
+
+**And it sets a guard on her.** *(2026-09-24: "The guards should start pursuing her in that case" ·
+"Or guards that pursue her should spawn at the huts" · "The day ends, not going through the
+checkpoint is a clear unlawful thing here. She gets detained/imprisoned or whatever in that case.
+This is independent of the resistance. She shouldn't do it. One guard is enough".)* One `door_guard`
+steps out of the wall of the door's hut nearer to her, on the side she crossed to; the guards drawn
+at the huts stay at their posts, so the door stays manned. He is the roadblock's hunting guard
+copied — the same man in the same postures, 130px/s, the roadblock's 1.8s notice, a chase of
+`Tuning.PURSUIT_TIME` after it, and a catch at `MASKED_MAN_REACH` (28px) — under the ordinary
+pursuit contract: running outpaces him and `Tuning.PURSUIT_SHAKEN_OFF` of it makes him give up,
+walking away does not. A catch is `hard_fail` on every day a door stands and at every heat level,
+not a rung of the heat ladder, and the summary says she was taken in. **He sets off a hut's width
+from her, inside his own 106px stand-off** (`EventDef.sets_off_beside_her`): the ordinary rule
+would lunge on his first frame, so instead his notice runs its whole length while he holds his
+ground and then follows at the stand-off, and walking into him during it is caught when it ends.
+One at a time: a second walk under while he is after her sets nobody else on her.
+`tests/test_checkpoints.gd` walks the chase at the door's own geometry, since the catalogue's
+pursuer rigs walk the director's.
 
 **The boundary's structures charge as one source, never their sum.** *(2026-09-20, the player:
 "since two gates can be adjacent to each other their influence shouldn't add up" · "otherwise
@@ -1136,6 +1155,7 @@ neighbourhood's own rather than a patrol's.
 | `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains for `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s) as she comes within `Tuning.CHECKPOINT_DETAIN_REACH` (48px) of its own solid edge — 80px from its centre, inside `inner_radius` 84px — and `redetains`, so the same hut tolls her again on a later approach from either side. A small `intensity` (4.0) over a tight 84/98px band is "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges, and it is deliberately not what makes the row expensive: it is one of the three **detainers** exempt from "nothing is cheaper to walk through than around", priced by its capture instead. Low because a door is several bodies and a hold earns no decay — see "Checkpoints" and the `barrier_structure` note above. |
 | `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two huts. No field of its own — a car passing under it costs her nothing — and **never an inspection**: `lifts_for_traffic`, so it is solid to her while the arm is down and ground she may walk under while a car holds it up, and it does not come down while any of her rig is beneath it. A hut beside it does not take her in from the carriageway it spans. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current. |
 | `checkpoint_post` | SCRIPTED | 7 | The alley half of a door: one guard at each mouth of a through-alley that crosses a region boundary. Detains exactly like `checkpoint_hut`, same numbers and the same `redetains`. |
+| `door_guard` **`hard_fail`** | SCRIPTED | 9 | The guard a door sets on her when she walks across its line rather than through a hut — under a raised boom — placed by `EventManager` alone, one at a time, stepping out of the wall of the nearer hut on the side she crossed to. The roadblock's hunting guard copied: the eight-view `guard_standing_*` then `guard_lunging_*`, 130px/s, a 1.8s notice, a `Tuning.PURSUIT_TIME` chase, a 28px catch (`MASKED_MAN_REACH`), and `masked_pursuer`'s field (18 over 28–120px). `hard_fail` on every day and at every heat, not through `heat_response`. `sets_off_beside_her`, so his notice is held ground rather than an approach — see "Checkpoints". His badge is the side view, the one picture of the man no other look stands for. |
 
 ### Act III — Disappearances (days 8–11)
 

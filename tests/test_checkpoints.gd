@@ -46,6 +46,8 @@ func run(t) -> void:
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
 	_test_the_boom_never_inspects_her(t)
 	_test_the_arm_never_comes_down_on_her(t)
+	_test_walking_under_the_boom_sets_a_guard_on_her(t)
+	_test_the_guard_leaves_room_to_answer(t)
 	_test_a_walk_under_the_boom_is_seen(t)
 	_test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
 
@@ -1722,3 +1724,105 @@ func _test_a_walk_under_the_boom_is_seen(t) -> void:
 			"and being let through is not a walk under (%d, %d before)"
 			% [city.events.walks_under_a_boom(), before])
 	_free_street_door_rig(rig)
+
+## **A walk under the boom sets one guard on her, from the nearer hut.** *(2026-09-24: "Or guards
+## that pursue her should spawn at the huts" · "One guard is enough".)* A `door_guard` steps out of
+## the wall of the hut on her side of the road, on the side of the line she crossed to, while the
+## hut's own guard stays at his post; a second walk under while he is after her sets nobody else on
+## her.
+func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
+	var rig := _street_door_rig(t)
+	var city: City = rig["city"]
+	var gate: EventInstance = rig["gate"]
+	var huts: Array[EventInstance] = []
+	huts.assign(rig["huts"])
+	if not gate or huts.size() != 2:
+		_free_street_door_rig(rig)
+		return
+	var axis := gate.facing_now()
+	var across := Vector2(-axis.y, axis.x)
+	gate.gate_state.raised = true
+	var lane := gate.global_position + across * 16.0
+	_step_her_to(rig, lane - axis * 20.0)
+	t.check(city.events._guard_after_her == null, "nobody is after her before she crosses")
+	_step_her_to(rig, lane + axis * 20.0)
+	var guard := city.events._guard_after_her
+	t.check(guard != null and guard.def.id == "door_guard",
+			"walking under the boom sets a door_guard on her")
+	if guard:
+		t.check(city.events.instances().has(guard), "a live event, like anything else in the day")
+		var near_hut := huts[0] if huts[0].global_position.distance_to(lane) 				< huts[1].global_position.distance_to(lane) else huts[1]
+		t.check(guard.global_position.distance_to(near_hut.global_position)
+				<= near_hut.def.obstructs_radius + 0.5,
+				"stepping out of the wall of the hut nearer to her (%.1fpx from it)"
+				% guard.global_position.distance_to(near_hut.global_position))
+		t.check((guard.global_position - near_hut.global_position).dot(axis) > 0.0,
+				"on the side of the line she crossed to")
+		t.check(not near_hut.is_finished and not near_hut.is_its_guard_inside(),
+				"while the hut and its own guard stay where they are")
+	_step_her_to(rig, lane - axis * 20.0)
+	t.check(city.events.walks_under_a_boom() == 2 and city.events._guard_after_her == guard,
+			"walking back under it while he is after her sets nobody else on her")
+	_free_street_door_rig(rig)
+
+## **The guard's chase is the pursuit contract walked at the door's own geometry.** The catalogue's
+## pursuer rigs (`tests/test_events.gd`) walk a pursuer the director sites outside its stand-off;
+## this one sets off a hut's width from her, so its rig is here: nothing he does in his notice can
+## end the day, walking away from him loses, and running from him — from the first frame, or once
+## his notice is over — wins, and he gives up rather than tailing her.
+func _test_the_guard_leaves_room_to_answer(t) -> void:
+	var def := EventCatalogue.by_id("door_guard")
+	t.check(def != null and def.pursues and def.hard_fail and def.sets_off_beside_her,
+			"door_guard is a lethal pursuer that sets off beside her")
+	if not def:
+		return
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+	# The door's own geometry: he steps out of the hut's wall 32px along the street from its centre,
+	# and she has just crossed the line in the near lane, 48px across from the hut.
+	var guard_at := Vector2(32.0, 48.0)
+	var her_at := Vector2(1.0, 0.0)
+	t.check(guard_at.distance_to(her_at) < standoff,
+			"he starts inside his own %.0fpx stand-off, which is why the flag exists" % standoff)
+	var walked := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.WALK_SPEED, 0.0)
+	t.check(not walked["lethal_in_notice"], "nothing he does in his notice can end the day")
+	t.check(walked["caught"], "walking away along the street loses (caught at %.1fs)"
+			% walked["ended_at"])
+	var diagonal := _guard_rig(def, guard_at, her_at, Vector2(1.0, -1.0).normalized(),
+			Tuning.WALK_SPEED, 0.0)
+	t.check(diagonal["caught"], "and so does walking away from him across the road")
+	for reaction: float in [0.0, def.telegraph_time]:
+		var ran := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.RUN_SPEED, reaction)
+		t.check(not ran["caught"] and ran["gave_up"],
+				"running from %.1fs outpaces him and he gives up (%.1fs)" % [reaction, ran["ended_at"]])
+	print("[test_checkpoints] door_guard rig: walking away caught at %.2fs, across the road at "
+			% walked["ended_at"] + "%.2fs" % diagonal["ended_at"])
+	var stood := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, 0.0, 0.0)
+	t.check(stood["caught"] and stood["ended_at"] >= def.telegraph_time,
+			"standing there is caught, once his notice is over (%.1fs)" % stood["ended_at"])
+
+## Walks her from `her_at` along `heading`, walking until `reaction` seconds and at `speed`
+## (accelerating as she really does) after it, against a `door_guard` set off at `guard_at`.
+func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vector2,
+		speed: float, reaction: float) -> Dictionary:
+	var guard := EventInstance.new()
+	guard.setup(def, guard_at)
+	var her := her_at
+	var moving := minf(speed, Tuning.WALK_SPEED)
+	var elapsed := 0.0
+	var result := {"caught": false, "gave_up": false, "lethal_in_notice": false, "ended_at": INF}
+	while elapsed < 12.0 and not guard.is_finished and not guard.is_leaving:
+		var wanted := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)
+		moving = move_toward(moving, wanted, Tuning.ACCELERATION * STEP)
+		her += heading * moving * STEP
+		guard.player_at = her
+		guard.player_running = moving > Tuning.WALK_SPEED
+		guard._process(STEP)
+		elapsed += STEP
+		if guard.is_lethal_at(her):
+			result["caught"] = true
+			result["lethal_in_notice"] = elapsed < def.telegraph_time
+			break
+	result["gave_up"] = guard.gave_up
+	result["ended_at"] = elapsed
+	guard.free()
+	return result

@@ -220,8 +220,9 @@ crossing of the wall has to stay cheap to repeat, where a conversation is spent 
 the player: "Boom shouldn't inspect her. It should block her.")* Lowered it is a wall across the
 carriageway; raised for a car it is ground she may walk under, at the price of that car, and it does
 not come down while any of her rig is beneath it. A hut does not take her in from the carriageway
-the boom spans, so the inspection is where the guards are: at the huts, on the sidewalks. See
-docs/EVENTS.md, "Checkpoints".
+the boom spans, so the inspection is where the guards are: at the huts, on the sidewalks. Walking
+under it is unlawful: a guard steps out of the nearer hut after her — running outpaces him, walking
+does not — and a catch ends the day. See docs/EVENTS.md, "Checkpoints".
 
 **The inspection starts as she walks up, measured from the door body's own wall** —
 `Tuning.CHECKPOINT_DETAIN_REACH` (48px) past its solid edge, rather than a radius from its middle.

@@ -782,6 +782,9 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.STEAM: return STEAM
 		EventDef.Look.LOUDSPEAKER_MAST: return MAST
 		EventDef.Look.NEIGHBOR: return NEIGHBOR
+		# The side view rather than `GUARD_LUNGING`, which is `MASKED_PURSUER`'s badge: the same man,
+		# and the one picture of his that no other look already stands for.
+		EventDef.Look.DOOR_GUARD: return str(GUARD_LUNGING_BY_VIEW["side"])
 		_: return ""
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
@@ -1658,7 +1661,14 @@ func _chase(delta: float) -> void:
 	if is_telegraphing():
 		# **It closes to the stand-off, holds it, and lunges when she reaches it.** The lunge is
 		# fired by *her* rather than by the clock, whichever comes first — see `_lunged`.
-		if range_to_her <= standoff:
+		#
+		# **Unless it set off beside her** (`EventDef.sets_off_beside_her`): spawned inside its own
+		# stand-off, the lunge would fire on its first frame, so the notice runs its whole length
+		# and it neither lunges early nor backs off — it holds its ground while she is nearer than
+		# the stand-off and follows at it once she is further.
+		if def.sets_off_beside_her:
+			step = clampf(range_to_her - standoff, 0.0, step)
+		elif range_to_her <= standoff:
 			_lunged = true
 		else:
 			step = minf(step, range_to_her - standoff)
@@ -3302,7 +3312,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [GUARD_STANDING])
 		EventDef.Look.IMPACT_CRATER:
 			_collect(sources, [IMPACT_CRATER])
-		EventDef.Look.MASKED_PURSUER:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM, STEAM_B])
@@ -3450,7 +3460,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
 		EventDef.Look.IMPACT_CRATER:
 			_draw_crater(canvas)
-		EventDef.Look.MASKED_PURSUER:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD:
 			_draw_masked_pursuer(canvas)
 		EventDef.Look.STEAM:
 			_draw_simple(STEAM_B if _idle_stepping(STEAM_BILLOW_PERIOD) else STEAM, canvas)
@@ -3813,7 +3823,8 @@ static func _cap_along(cap_size: Vector2) -> float:
 func _draw_crater(canvas: CanvasItem = self) -> void:
 	_draw_at_anchor(canvas, IMPACT_CRATER, _CRATER_ANCHOR)
 
-## A masked man coming up a stairwell: the `guard_standing_*` family while the telegraph is running
+## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
+## its boom — the same man: the `guard_standing_*` family while the telegraph is running
 ## and `guard_lunging_*` once it is over and he is actually on her line — the same two postures
 ## `_draw_roadblock()` swaps between when a heated roadblock's guards leave the post, on a row that
 ## was never a barrier and so has no band to swap *out of*. Read from his own travel heading

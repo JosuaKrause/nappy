@@ -136,6 +136,7 @@ static func _build() -> Array[EventDef]:
 		_checkpoint_hut(),
 		_checkpoint_gate(),
 		_checkpoint_post(),
+		_door_guard(),
 
 		# Act III - vans.
 		_abduction(),
@@ -2396,7 +2397,8 @@ static func _checkpoint_hut() -> EventDef:
 ## the arm and the cars decide the arm (`Crowd._stop_for_gates()`: up once a car has waited at it
 ## `Tuning.GATE_STOP_SECONDS`, down the moment no car is within a length of it and she is not
 ## under it). The inspection is the two huts' alone, and a hut does not take her in from the
-## carriageway this boom spans, so walking under a raised arm skips the toll.
+## carriageway this boom spans, so walking under a raised arm skips the toll — the unlawful
+## crossing `EventManager` watches for and sets a `door_guard` on her for.
 ##
 ## No field of its own — a car passing under it costs her nothing whether or not she is anywhere
 ## near it — and `intensity` 0 on radii that exist only because `validate()` wants a falloff band:
@@ -2443,6 +2445,47 @@ static func _checkpoint_post() -> EventDef:
 	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
 	def.barrier_structure = true
+	return def
+
+## The guard a street door sets on her when she walks under its raised boom. *(2026-09-24, the
+## player: "The guards should start pursuing her in that case" · "Or guards that pursue her should
+## spawn at the huts" · "The day ends, not going through the checkpoint is a clear unlawful thing
+## here. She gets detained/imprisoned or whatever in that case. This is independent of the
+## resistance. She shouldn't do it. One guard is enough".)* Nothing places it but
+## `EventManager._set_a_guard_on_her()`: `SCRIPTED` on day 0 like the rest of the door's kit, so the
+## ordinary roll never reaches it, stepping out of the wall of the door's hut nearer to her on the
+## side she crossed to. The guards drawn at the huts stay at their posts, so the door stays manned.
+##
+## **The roadblock's hunting guard is the pursuer copied**, and so is the man: the same eight-view
+## `guard_standing_*`/`guard_lunging_*` pictures, `Tuning.HEAT_HUNTS_SPEED` (130px/s, between her
+## walk and her run by the pursuit contract's own margin), the roadblock's 1.8s notice, a chase of
+## `Tuning.PURSUIT_TIME` after it, and `MASKED_MAN_REACH` (28px) as the catch, which is the core of
+## his own field here since the field is the man. **`hard_fail` in its own right, not through
+## `heat_response`**: a catch is a detention on every day a door stands and at every heat level,
+## never a rung of the resistance's ladder. The field is `masked_pursuer`'s — 18 over a 28–120px
+## band, the same figure coming at her.
+##
+## **`sets_off_beside_her`, because he does.** A hut's width from her is well inside his 106px
+## stand-off, so the ordinary rule would lunge on his first frame; instead his notice is spent
+## holding his ground and then following at the stand-off, and cannot be cut short. See that field.
+static func _door_guard() -> EventDef:
+	var def := EventDef.new()
+	def.id = "door_guard"
+	def.display_name = "Guard giving chase"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.DOOR_GUARD
+	def.shape = GroundShape.point(9.0)
+	def.act_tag = 3
+	def.intensity = 18.0
+	def.inner_radius = MASKED_MAN_REACH
+	def.outer_radius = 120.0
+	def.telegraph_time = 1.8
+	def.duration = Tuning.PURSUIT_TIME
+	def.pursues = true
+	def.pursue_speed = Tuning.HEAT_HUNTS_SPEED
+	def.sets_off_beside_her = true
+	def.hard_fail = true
 	return def
 
 # ------------------------------------------------------------------ the finale ---

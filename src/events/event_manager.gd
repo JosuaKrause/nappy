@@ -76,9 +76,12 @@ var _door_entry_side: Dictionary = {}
 ## reads. `Vector2.INF` until the first look of a day, so a day's first frame compares nothing.
 var _last_seen_at := Vector2.INF
 var _last_outright_moves := 0
-## How many times today she has walked across a door's own line rather than being let through it.
+## How many times today she has walked across a door's line rather than being let through it.
 ## Read by `walks_under_a_boom()`; the run log has a line for each.
 var _walked_under := 0
+## The guard a walked crossing last set on her, or `null` — one at a time, see
+## `_set_a_guard_on_her()`.
+var _guard_after_her: EventInstance = null
 
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
 ## the frame the release teleports her, with that instance's own trigger circle, and holding until
@@ -347,6 +350,7 @@ func clear() -> void:
 	_door_release_latches.clear()
 	_last_seen_at = Vector2.INF
 	_walked_under = 0
+	_guard_after_her = null
 	_sighted.clear()
 	_broadcast_clock = 0.0
 
@@ -1392,6 +1396,10 @@ func _update_door_release_latches(body: Stroller) -> void:
 # huts' inspection. **It is detected, not guessed**: a door's huts, its posts and a lowered boom are
 # solid, and an inspection's release is a teleport, so a crossing of a door's own line that she
 # *walked* is a crossing under a raised boom and nothing else. Nothing here asks where the arm is.
+#
+# *(2026-09-24: "The guards should start pursuing her in that case".)* **And it sets a guard on
+# her**, one, from the door's hut nearer to her; a catch ends the day, since *"not going through the
+# checkpoint is a clear unlawful thing here"*. See `EventCatalogue._door_guard()`.
 
 ## How many times today she has walked across a door's line rather than being let through it —
 ## the count `tests/test_route_rig.gd` holds a rig run to zero on.
@@ -1419,20 +1427,54 @@ func _watch_the_door_lines() -> void:
 	_last_outright_moves = body.outright_moves
 	if was == Vector2.INF or put_down:
 		return
+	var crossed: EventInstance = null
 	for instance in _instances:
 		if not instance.def.redetains and not instance.def.lifts_for_traffic:
 			continue
-		var crossing := where_she_crossed(instance.global_position, instance.facing_now(),
-				instance.def.obstructs_radius, was, here)
-		if crossing == Vector2.INF:
-			continue
-		_walked_under += 1
-		Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
-			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
-			_heading_name(here - was),
-			(", the boom up" if instance.is_raised() else ", the boom down")
-			if instance.def.lifts_for_traffic else ""])
+		if where_she_crossed(instance.global_position, instance.facing_now(),
+				instance.def.obstructs_radius, was, here) != Vector2.INF:
+			crossed = instance
+			break
+	if not crossed:
 		return
+	_walked_under += 1
+	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
+		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
+		_heading_name(here - was),
+		(", the boom up" if crossed.is_raised() else ", the boom down")
+		if crossed.def.lifts_for_traffic else ""])
+	_set_a_guard_on_her(crossed, here)
+
+## One `door_guard` after her, stepping out of the wall of the hut nearer to her — of the huts on the
+## crossed body's own line — on the side of the line she has crossed to. *(2026-09-24: "Or guards
+## that pursue her should spawn at the huts" · "One guard is enough".)* The guards drawn at the huts
+## stay at their posts; this is another man out of the door.
+##
+## **One at a time.** A second walk under the same boom while he is still after her sets nobody else
+## on her; once he has caught her, given up or run out his chase, the next walk under sets the next
+## one. A crossed alley post is its own door and its own guard, so he steps out of the post.
+func _set_a_guard_on_her(crossed: EventInstance, here: Vector2) -> void:
+	if is_instance_valid(_guard_after_her) \
+			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
+		return
+	var axis := crossed.facing_now()
+	var hut: EventInstance = null
+	var nearest := INF
+	for instance in _instances:
+		if not instance.def.redetains or instance.is_finished or instance.is_leaving:
+			continue
+		if absf(instance.facing_now().dot(axis)) < 0.99 \
+				or absf((instance.global_position - crossed.global_position).dot(axis)) > 1.0:
+			continue
+		var range_to := instance.global_position.distance_to(here)
+		if range_to < nearest:
+			nearest = range_to
+			hut = instance
+	if not hut:
+		return
+	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0
+	var at := hut.global_position + axis * side * hut.def.obstructs_radius
+	_guard_after_her = _spawn_unplanned(EventCatalogue.by_id("door_guard"), at)
 
 ## Where the step from `was` to `here` crosses the line through `at` across `axis` — the door
 ## body's own cross-street line — if it crosses it within `reach` of `at` along the line, or
