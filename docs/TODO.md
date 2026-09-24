@@ -720,10 +720,16 @@ is still true.
       outpaces it). **The pursuers spawn at the huts** *(2026-09-24: "Or guards that pursue her
       should spawn at the huts")*: they set off from that door's huts, and the guards drawn at
       the huts stay at their posts, so the door stays manned. The run log notes each
-      walk under a boom, and a route-rig test requires none across its runs. **Open: what a catch
-      does** — the day ends, as the heated roadblock guard's does, or she is taken back to the hut,
-      inspected and let out on the side she came from — **and whether one pursuer spawns or one at
-      each hut**; asked 2026-09-24. **The
+      walk under a boom, and a route-rig test requires none across its runs. **A catch ends the
+      day, and one guard is enough** *(2026-09-24, asked whether a catch ends the day or returns
+      her through an inspection, and whether one or two set off: "The day ends, not going through
+      the checkpoint is a clear unlawful thing here. She gets detained/imprisoned or whatever in
+      that case. This is independent of the resistance. She shouldn't do it. One guard is
+      enough")*. The pursuer is `hard_fail` at every heat level and on every day a door stands —
+      it is not a rung of the heat ladder — and the summary's hard-fail line says she was
+      detained. One pursuer spawns, at the hut nearer to her. The dash is meant to be a
+      temptation she should refuse: the hut's hold is the lawful price, the car and the guard the
+      unlawful one. **The
       route rig never routes through the boom, either way** *(2026-09-24: "The bot shouldn't route
       through the boom either way")*. Found while capturing the inspection: the boom's own body
       took her in with nobody on screen doing it, since the guards stand at the huts; a guard
