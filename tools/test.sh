@@ -21,6 +21,9 @@
 # would, which is why the shards are built from the files on disk rather than from a list
 # somebody maintains — see `_plan_the_shards`. A local run and a CI shard plan identically,
 # because both read the same `tests/suite_costs.txt` through `_cost_of`.
+#
+# A shard that hangs is killed after TEST_SHARD_TIMEOUT_S (default 600) and reported by name
+# rather than left to block the run forever -- see `run_one_process`'s own docstring.
 set -uo pipefail
 shopt -s nullglob
 
@@ -32,6 +35,16 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # script which shard to run via --shard, which sets SHARDS itself. Override this default for a
 # machine with a different CPU or memory budget.
 SHARDS="${TEST_SHARDS:-4}"
+
+# How long the local parallel run below waits on one shard before killing it and reporting it
+# hung. `tools/test.sh --plan`'s own bin-packing, read from tests/suite_costs.txt at the default
+# four shards, currently tops out at ~313s (test_events.gd's shard); this is comfortably above
+# that and still well inside a CI shard job's own 15-minute (`.github/workflows/ci.yml`) budget,
+# so a real hang is caught and named long before anything blunter would cut the job off with no
+# message at all. Only this one path uses it -- `--serial` and `--shard I/N` run more suites in
+# one process than any single shard carries and are never bounded by a limit sized for a shard's
+# share of the work.
+SHARD_TIMEOUT_S="${TEST_SHARD_TIMEOUT_S:-600}"
 
 # Where the measured per-suite costs live and what an unmeasured suite is assumed to cost. See
 # tests/suite_costs.txt's own header for what the file is and how it is refreshed.
@@ -137,12 +150,48 @@ fi
 ## than trusting the exit code alone. `tee` rather than plain capture-then-print, so every existing
 ## caller keeps seeing output exactly where it already goes -- a live terminal for a filtered run,
 ## a redirected file for one shard of a local sharded run -- and only the returned status changes.
+##
+## **`RUN_TIMEOUT_S`, when set, bounds the wait and kills a process that outlives it** -- unset by
+## every caller except the local parallel run below, which is the one path whose own "produced no
+## count" branch further down turns a kill into a diagnosed failure rather than a silent one.
+## `--serial` and `--shard I/N` run more suites in this one process than any single shard carries
+## and must never be cut short by a limit sized for a shard's share of the work, so they leave it
+## unset and wait however long the whole run actually takes.
+##
+## Piped through a process substitution rather than a plain `| tee` so that, when a timeout is
+## set, `$!` right after backgrounding is Godot's own PID and not `tee`'s -- the watchdog has to
+## kill the engine, not the thing copying its output to a file, and a bare `| tee` in the
+## foreground gives no PID to kill at all.
 run_one_process() {
 	local scratch status
 	scratch="$(mktemp)"
-	# Everything after `--` reaches the runner as OS.get_cmdline_user_args().
-	"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" 2>&1 | tee "$scratch"
-	status="${PIPESTATUS[0]}"
+	if [[ -n "${RUN_TIMEOUT_S:-}" ]]; then
+		# Everything after `--` reaches the runner as OS.get_cmdline_user_args().
+		"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" \
+				> >(tee "$scratch") 2>&1 &
+		local godot_pid=$!
+		# TERM first, then KILL after a short grace period for a process that is not merely slow
+		# but genuinely will not respond -- SIGTERM's default disposition ends a hung process too
+		# in every case that matters here, but the escalation costs nothing when it is not needed.
+		(
+			sleep "$RUN_TIMEOUT_S"
+			kill -TERM "$godot_pid" 2>/dev/null
+			sleep 5
+			kill -KILL "$godot_pid" 2>/dev/null
+		) &
+		local watchdog_pid=$!
+		wait "$godot_pid"
+		status=$?
+		kill "$watchdog_pid" 2>/dev/null
+		wait "$watchdog_pid" 2>/dev/null
+		# Godot's own exit closes the pipe the process substitution reads, so the `tee` on the
+		# other end of it is already finishing -- this just lets it actually finish flushing
+		# before the grep below reads the file it was writing.
+		wait
+	else
+		"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" 2>&1 | tee "$scratch"
+		status="${PIPESTATUS[0]}"
+	fi
 	if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" "$scratch"; then
 		status=1
 	fi
@@ -329,9 +378,13 @@ for ((i = 0; i < SHARDS; i++)); do
 	if [[ -z "${shard_filters[i]}" ]]; then
 		continue
 	fi
-	# The filters are file names and are meant to word-split.
+	# The filters are file names and are meant to word-split. `RUN_TIMEOUT_S` is what makes the
+	# "produced no count -- it crashed or hung" branch below reachable: without it, a hung shard
+	# blocks the `wait` loop forever and that branch is dead code with a comment claiming
+	# otherwise.
 	# shellcheck disable=SC2086
-	run_one_process ${shard_filters[i]} > "$work_dir/shard-$i.log" 2>&1 &
+	RUN_TIMEOUT_S="$SHARD_TIMEOUT_S" run_one_process ${shard_filters[i]} \
+			> "$work_dir/shard-$i.log" 2>&1 &
 	pids+=("$i:$!")
 done
 

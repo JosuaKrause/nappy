@@ -575,7 +575,7 @@ func _stands_on_a_street() -> bool:
 	if _map.is_obstructed(tile):
 		return false
 	if not _map.in_bounds(tile):
-		return kind == Kind.CAR and _vertical and _corridor == _map.main_road \
+		return kind == Kind.CAR and _map.is_main_road(_vertical, _corridor) \
 				and (tile.y < 0 or tile.y >= _map.size.y)
 	# A precinct is paved end to end, so every tile of it says "street" and a car placed there
 	# would look perfectly settled right up to the moment it drove off down the paving. Asked
@@ -1869,7 +1869,7 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 ## precinct drives onto them instead of turning off.
 func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
 	if not _map.in_bounds(tile):
-		var leaves_by_the_spine := kind == Kind.CAR and vertical and _corridor == _map.main_road \
+		var leaves_by_the_spine := kind == Kind.CAR and _map.is_main_road(vertical, _corridor) \
 				and (tile.y < 0 or tile.y >= _map.size.y)
 		return not leaves_by_the_spine
 	if kind == Kind.CAR and not _map.is_driveable_at(vertical, tile):
@@ -2884,7 +2884,7 @@ func _has_left_the_field() -> bool:
 ## own width and nowhere else, and `CityEdge` is the tunnel and the bridge standing over it.
 ## Walkers keep the tile for the same reason — the pavements do not carry on, only the road does.
 func _room_beyond_the_map() -> float:
-	if kind != Kind.CAR or not _vertical or _corridor != _map.main_road:
+	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
 		return Tuning.TILE_SIZE
 	return Tuning.OUT_OF_SIGHT
 
@@ -2901,7 +2901,7 @@ func _room_beyond_the_map() -> float:
 ## the same question asked of the other end of the journey, with a different answer for everybody
 ## the tunnel and the bridge are not for.
 func _entry_room() -> float:
-	if kind != Kind.CAR or not _vertical or _corridor != _map.main_road:
+	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
 		return 0.0
 	return Tuning.OUT_OF_SIGHT
 
