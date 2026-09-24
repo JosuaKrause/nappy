@@ -764,8 +764,7 @@ func _physics_process(delta: float) -> void:
 		# neither changes here. The horn's watch is wider (`CAR_HORN_SIGHT`), because a fast
 		# car's fairness contract needs more warning than 200px of travel gives it; see
 		# `Tuning.validate_traffic()` and the crowd-traffic skill's "The traffic fairness
-		# contract". M191: measuring found the horn short on every street because both shared
-		# the strike's own reach.
+		# contract" (`DECISIONS.md`, M191, the horn watches as far as the contract needs).
 		var distance := agent.global_position.distance_to(here)
 		agent.pedestrian_ahead = here if distance <= Tuning.CAR_ZEBRA_SIGHT else Vector2.INF
 		if not on_the_road:

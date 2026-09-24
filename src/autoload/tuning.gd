@@ -1292,8 +1292,8 @@ const CAR_HORN_TIME := 1.6
 ## `CAR_ZEBRA_SIGHT`, which stays the strike's own reach and the give-way scan's. The horn's
 ## warning has to reach as far as the car's own travel at `CAR_HORN_TIME`, so this has to be at
 ## least `CAR_SPEED.y * CAR_HORN_TIME` (296px) for the fastest car in the city — below that the
-## watch clips the warning short of `CAR_HORN_TIME` rather than the car's speed doing it, which
-## is what M191 found true of every street. `validate_traffic()` checks it against the fastest
+## watch clips the warning short of `CAR_HORN_TIME` rather than the car's speed doing it.
+## `validate_traffic()` checks it against the fastest
 ## car at boot, and the crowd-traffic skill's "The traffic fairness contract" states the same
 ## thing.
 const CAR_HORN_SIGHT := 296.0
