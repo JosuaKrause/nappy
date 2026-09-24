@@ -732,8 +732,10 @@ func _gate_ground() -> Dictionary:
 	_gate_ground_ready = true
 	_gate_ground_tiles = {}
 	var doors: Array[EventScheduler.Planned] = []
+	# The boom by its `GateState` rather than by `redetains`, so the rule holds whether or not the
+	# boom takes her in: it is the ground nearer the boom than any hut that is never planned.
 	for plan: EventScheduler.Planned in _city.events.plans():
-		if plan.is_placed() and not plan.spent and plan.def.redetains:
+		if plan.is_placed() and not plan.spent and (plan.def.redetains or plan.gate_state != null):
 			doors.append(plan)
 	for gate in doors:
 		if gate.gate_state == null:
