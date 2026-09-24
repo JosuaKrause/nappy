@@ -141,6 +141,18 @@ const FALLEN_TREE_VERTICAL := "events/fallen_tree_vertical"
 const CAR_ACCIDENT_VERTICAL := "events/car_accident_vertical"
 const CAR_ACCIDENT_VERTICAL_SHADOW := "events/car_accident_vertical_shadow"
 const BURST_MAIN_VERTICAL := "events/burst_water_main_vertical"
+## The crash's and the burst main's second frames, one per street axis: the same canvas and every
+## pixel of the scene but the moving part — the crash's smoke one puff further up, the main's
+## fountain surging and splashing on the rims. `_wide_scene_texture()` picks them off
+## `_idle_stepping()`, on the two periods below, since neither scene ever moves.
+const CAR_ACCIDENT_B := "events/car_accident_b"
+const CAR_ACCIDENT_VERTICAL_B := "events/car_accident_vertical_b"
+const BURST_MAIN_B := "events/burst_water_main_b"
+const BURST_MAIN_VERTICAL_B := "events/burst_water_main_vertical_b"
+## A puff of smoke's own tempo: slow enough that the smoke reads as rising rather than flickering.
+const CAR_ACCIDENT_SMOKE_PERIOD := 1.2
+## A splash's: water under pressure surges quickly, so the fountain beats faster than the smoke.
+const BURST_MAIN_SPLASH_PERIOD := 0.5
 
 # ---------------------------------------------------------- eight-view families ---
 # Every family below shares the crowd walker's own convention (`docs/GRAPHICS.md`, "the crowd
@@ -636,6 +648,11 @@ const BOOM_GATE_EW_RAISED := "checkpoints/boom_gate_ew_raised"
 ## The basement's own vent, and the one picture in the catalogue that is a *volume* of air rather
 ## than a body: `steam.svg` is 32×48 and stands on the ground it rises from.
 const STEAM := "events/steam"
+## Its second frame: the same pipe, the cloud lifted and spread and a fresh puff pushing out of the
+## mouth. Alternated off `_idle_stepping(STEAM_BILLOW_PERIOD)` for the instance's whole life, which
+## is exactly one blow — between blows `InteriorEvents` keeps no instance at all.
+const STEAM_B := "events/steam_b"
+const STEAM_BILLOW_PERIOD := 0.7
 
 ## The mast — a pole and horns standing on a street — and the two overlays `_draw_mast()` puts
 ## above it, never its own colour, so a lamp and a set of arcs can be tinted per state rather than
@@ -795,20 +812,31 @@ static func has_a_spread(def: EventDef) -> bool:
 ## axis, so cars keep the right projection and people and barriers remain upright. Repeatable
 ## segments are close enough to square for the dimension swap itself. `EventDef.look` and
 ## `_spread_vertical` together pick the texture, with no field on the def.
-static func _wide_scene_texture(look: EventDef.Look, vertical: bool) -> String:
+##
+## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst
+## main's fountain, each alternated off `_idle_stepping()` by `_draw_body()`. The fallen tree has
+## nothing that moves and answers its one picture either way.
+static func _wide_scene_texture(look: EventDef.Look, vertical: bool, frame_b := false) -> String:
 	match look:
 		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
-		EventDef.Look.CAR_ACCIDENT: return CAR_ACCIDENT_VERTICAL if vertical else CAR_ACCIDENT
-		EventDef.Look.BURST_MAIN: return BURST_MAIN_VERTICAL if vertical else BURST_MAIN
+		EventDef.Look.CAR_ACCIDENT:
+			if frame_b:
+				return CAR_ACCIDENT_VERTICAL_B if vertical else CAR_ACCIDENT_B
+			return CAR_ACCIDENT_VERTICAL if vertical else CAR_ACCIDENT
+		EventDef.Look.BURST_MAIN:
+			if frame_b:
+				return BURST_MAIN_VERTICAL_B if vertical else BURST_MAIN_B
+			return BURST_MAIN_VERTICAL if vertical else BURST_MAIN
 		_: return ""
 
 ## A crash scene has several separate contacts with the ground, so it carries a matching shadow
 ## picture rather than painting one ellipse across the entire closed street. `""` for a scene with
-## no authored contact art, which is every one but the crash.
+## no authored contact art, which is every one but the crash. Both of the crash's frames stand on
+## the same contacts — only the smoke moves — so each axis has one shadow for its two frames.
 static func _wide_scene_shadow(picture: String) -> String:
-	if picture == CAR_ACCIDENT:
+	if picture == CAR_ACCIDENT or picture == CAR_ACCIDENT_B:
 		return CAR_ACCIDENT_SHADOW
-	if picture == CAR_ACCIDENT_VERTICAL:
+	if picture == CAR_ACCIDENT_VERTICAL or picture == CAR_ACCIDENT_VERTICAL_B:
 		return CAR_ACCIDENT_VERTICAL_SHADOW
 	return ""
 
@@ -2701,10 +2729,11 @@ func _picture_key() -> Vector4i:
 		# The flash is the mark's telegraph phase and takes it off the screen for part of every
 		# beat, so it is part of the picture rather than of the mark's size.
 		flashed_off = is_telegraphing() and fmod(age * MARK_FLASHES_PER_SECOND, 1.0) > 0.55
-	# **Only the two looks that actually read an idle timer carry one.** `_idle_stepping()` is a
+	# **Only the looks that actually read an idle timer carry one.** `_idle_stepping()` is a
 	# function of the clock alone and knows nothing about the row asking, so handing it to every
 	# instance would flip every seal's key twice a second for an animation it does not have — the
-	# gate would then be paying its whole cost and buying nothing.
+	# gate would then be paying its whole cost and buying nothing. The crash, the burst main and
+	# the steam are the three that do have one, each on its own period.
 	var idle := false
 	if def.look == EventDef.Look.CAFE:
 		idle = _idle_stepping(SITTER_IDLE_PERIOD)
@@ -2712,6 +2741,12 @@ func _picture_key() -> Vector4i:
 		idle = _idle_stepping(BUSKER_STRUM_PERIOD)
 	elif def.look == EventDef.Look.POSTER_CREW:
 		idle = _idle_stepping(POSTER_CREW_PASTE_PERIOD)
+	elif def.look == EventDef.Look.CAR_ACCIDENT:
+		idle = _idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)
+	elif def.look == EventDef.Look.BURST_MAIN:
+		idle = _idle_stepping(BURST_MAIN_SPLASH_PERIOD)
+	elif def.look == EventDef.Look.STEAM:
+		idle = _idle_stepping(STEAM_BILLOW_PERIOD)
 	var flags := 0
 	flags = flags * 2 + (1 if is_finished else 0)
 	flags = flags * 2 + (1 if is_suppressed_by_its_own_hold() else 0)
@@ -3182,9 +3217,9 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [FALLEN_TREE, FALLEN_TREE_VERTICAL])
 		EventDef.Look.CAR_ACCIDENT:
 			_collect(sources, [CAR_ACCIDENT, CAR_ACCIDENT_VERTICAL, CAR_ACCIDENT_SHADOW,
-					CAR_ACCIDENT_VERTICAL_SHADOW])
+					CAR_ACCIDENT_VERTICAL_SHADOW, CAR_ACCIDENT_B, CAR_ACCIDENT_VERTICAL_B])
 		EventDef.Look.BURST_MAIN:
-			_collect(sources, [BURST_MAIN, BURST_MAIN_VERTICAL])
+			_collect(sources, [BURST_MAIN, BURST_MAIN_VERTICAL, BURST_MAIN_B, BURST_MAIN_VERTICAL_B])
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_collect(sources, [COLLAPSED_FRONTAGE])
 		EventDef.Look.SCAFFOLDING:
@@ -3207,7 +3242,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.MASKED_PURSUER:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.STEAM:
-			_collect(sources, [STEAM])
+			_collect(sources, [STEAM, STEAM_B])
 		EventDef.Look.LOUDSPEAKER_MAST:
 			_collect(sources, [MAST, MAST_LAMP, SOUND_PULSE])
 	# A `Dictionary` while it is being built, because several arms reach the same picture twice —
@@ -3323,9 +3358,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.FALLEN_TREE:
 			_draw_wide_scene(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), canvas)
 		EventDef.Look.CAR_ACCIDENT:
-			_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical), canvas)
+			_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical,
+					_idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
 		EventDef.Look.BURST_MAIN:
-			_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical), canvas)
+			_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical,
+					_idle_stepping(BURST_MAIN_SPLASH_PERIOD)), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_draw_spread(COLLAPSED_FRONTAGE, "", canvas)
 		EventDef.Look.SCAFFOLDING:
@@ -3351,7 +3388,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.MASKED_PURSUER:
 			_draw_masked_pursuer(canvas)
 		EventDef.Look.STEAM:
-			_draw_simple(STEAM, canvas)
+			_draw_simple(STEAM_B if _idle_stepping(STEAM_BILLOW_PERIOD) else STEAM, canvas)
 		EventDef.Look.LOUDSPEAKER_MAST:
 			_draw_mast(canvas)
 		EventDef.Look.NONE:

@@ -1,0 +1,15 @@
+nappy rig log  2026-09-24T08:49:29  version v0.16.0-2-g3b4e8170
+
+escape  run seed 1265437254  length 180.0s  invincible
+   0.0  texture  atlas page 'ui' loaded in the escape: 0.7 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the escape: 0.3 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the escape: 2.3 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the escape: 1.8 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the escape: 1.4 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the escape: 0.6 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the escape: 0.6 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the escape: 10.1 ms, 810 x 820
+   0.0  texture  atlas page 'interior' loaded in the escape: 1.5 ms, 466 x 326
+   0.0  texture  atlas page 'mother' loaded in the escape: 1.2 ms, 168 x 242
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 100 | playing | asked/burst-6716427-001
+   0.0  shot     burst complete: 36 frames | frame_cap

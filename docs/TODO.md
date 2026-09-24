@@ -742,12 +742,11 @@ is still true.
 
 **Drawings, as SVG:**
 
-- [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
-      least two frames** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the
-      main break) or puffs of smoke (from the car crash) or steam (from the escape) should have
-      (at least) a two frame animation to convey what they are better"). `burst_water_main`,
-      the car crash and `basement_steam` each draw one still picture today; each gets a second
-      frame or more, authored as SVG, alternated while the event is live
+- [ ] **The basement vent's pipe vanishes between blows.** `steam.svg` draws the pipe and the
+      cloud as one picture, and `InteriorEvents` keeps no instance between blows, so the pipe is
+      only on screen while it steams; a vent that is there all the time, blowing or not, is what
+      a player can plan around. Found while animating the steam (`DECISIONS.md`, M100, water,
+      smoke and steam move)
 
 **Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
 the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses

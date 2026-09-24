@@ -2,7 +2,7 @@
      road, now in profile — the blue one in the far lane facing east, its nose driven in and its
      hood sprung, the red one in the near lane facing west, its tail stove in where the blue one
      hit it — with glass and a
-     bumper on the road, coolant under them, steam from the blue car's nose, and an onlooker on
+     bumper on the road, coolant under them, smoke puffing up off the blue car's hood, and an onlooker on
      each pavement: the event `person` figure, facing the crash (`person_front.svg` on the far
      pavement, `person_back.svg` on the near one). The cars are the crowd cars' profile. Drawn by
      `_draw_wide_scene` fitted to the 192px obstruction with its centre on the ground point. The
@@ -60,8 +60,12 @@
   <path d="M6 114.6 L15 113.4 L15.4 115 L6.4 116.2 Z" fill="#3a3436" stroke-width="0.8"/>
   <path d="M38 114 L39.6 113.2 L39.8 114.6 Z M42 116.4 L43.6 115.60000000000001 L43.8 117.0 Z M21 115.6 L22.6 114.8 L22.8 116.19999999999999 Z M44 90.6 L45.6 89.8 L45.8 91.19999999999999 Z M3 92 L4.6 91.2 L4.8 92.6 Z" fill="#bfe0ea" stroke="#5f7f8c" stroke-width="0.6"/>
   <ellipse cx="30" cy="116.2" rx="2.2" ry="1.1" fill="#9aa4ac" stroke-width="0.8"/>
-  <path d="M34 60 C32 57 35 54 38 55 C39 52 44 51.8 45.4 55 C48.4 54.8 49.6 58.4 47 60 C44 61.6 37.4 61.8 34 60 Z" fill="#e6e3dd" stroke="#8f8a84" stroke-width="0.8"/>
-  <path d="M37 58.6 C38.6 57.4 40.6 57.4 42 58.4" fill="none" stroke="#b9b4ad" stroke-width="0.7"/>
+  <!-- Smoke off the blue car's sprung hood: a puff over the engine and the one before it
+       drifting up. -->
+  <path d="M33.1 57.1 C31.7 55.3 33.5 53.3 35.7 53.9 C36.5 52.3 39.9 52.1 41.1 53.7 C43.3 53.3 44.5 55.3 43.1 56.7 C42.1 58.3 35.5 58.7 33.1 57.1 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.8"/>
+  <path d="M35.1 55.9 C36.5 54.9 38.3 54.9 39.5 55.7" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
+  <path d="M39.2 63 C38 61.4 39.6 59.6 41.4 60.2 C42.2 58.6 44.8 58.8 45.4 60.6 C47 61 47 63.2 45.4 63.8 C43.6 64.8 40.6 64.6 39.2 63 Z" fill="#c6c1ba" stroke="#5e5955" stroke-width="0.8" fill-opacity="0.95"/>
+  <path d="M40.8 62 C41.8 61.2 43 61.2 43.8 61.8" fill="none" stroke="#d6d1ca" stroke-width="0.7"/>
   <g transform="translate(16 154)" stroke="#3b2d32" stroke-width="0.8">
     <path d="M5 28 H8 V41 H5 Z M10 28 H13 V41 H10 Z" fill="#46506b"/>
     <path d="M5 39.5 H8 V41.5 H5 Z M10 39.5 H13 V41.5 H10 Z" fill="#221f28"/>
