@@ -310,7 +310,7 @@ checks and worktrees can move independently of this file.
   ([PLAYTEST-117](playtests/PLAYTEST-117.md): "that would be the next after this and warrants a
   minor release"): M181, the resistance has a reason, and a task is one day, has every task and
   happening built and 24 of 27 late-day runs timed; three runs the rig does not finish yet, and
-  the neighbor's sealed door has no picture. M192 makes a curfew day 180 s. It is decided in `TODO.md`
+  the neighbor's sealed door has no picture. M192, in `TODO.md`, is what makes a curfew day 180 s. It is decided in `TODO.md`
   ([PLAYTEST-118](playtests/PLAYTEST-118.md), [PLAYTEST-119](playtests/PLAYTEST-119.md),
   [PLAYTEST-120](playtests/PLAYTEST-120.md), [PLAYTEST-121](playtests/PLAYTEST-121.md),
   [PLAYTEST-122](playtests/PLAYTEST-122.md)). M182, a
