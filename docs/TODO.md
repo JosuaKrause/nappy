@@ -500,26 +500,6 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M190 — One command brings a pull request up to date with main · asked for 2026-09-23
-
-Asked for as a script under CLAUDE.md's "a manual sequence done a second time becomes a script":
-on 2026-09-23 every PR merged in a row (303, 306, 307, 310, 311, 313, 314) needed `main` merged
-into the next one, each time with the same `docs/DECISIONS.md` conflict resolved by
-`tools/resolve-decisions-top.sh` and the same checks run by hand. The player: "yes".
-
-- [ ] **`tools/update-pr.sh <pr-number | branch>`** fetches, finds the PR's branch and its
-      worktree (or a clean checkout of it), records the branch tip, main tip and merge base, and
-      merges `origin/main` with `--no-ff --no-commit`. It resolves the one recurring shape with
-      `tools/resolve-decisions-top.sh`, printing the three sides' top headings as the
-      **merging-main** skill asks, and stops with the merge aborted on any other conflict, naming
-      the files. Then `git diff --check`, `./tools/lint.sh` and `./tools/check.sh`; on success it
-      commits a message naming the three revisions and the resolution and pushes, falling back to
-      the HTTPS push when SSH is refused. It never merges the PR and never enables auto-merge. The
-      semantic review of the merge stays the reviewer's: the script says so in its output and
-      lists the files main changed since the base.
-
----
-
 ## M184 — A rig walks the route · asked for 2026-09-23
 
 > "we should have a test-rig mode where she just follows the edges of a path that way we can test
