@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_every_perform_steps_header_names_the_instruction_not_the_title(t)
 	_test_a_completed_step_puts_no_text_on_screen(t)
 	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
+	_test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t)
 
 func _hud(t) -> CanvasLayer:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
@@ -317,6 +318,42 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> v
 	hud._refresh_state()
 	t.check(hud._state_label.text == hud._announcement,
 			"an announcement is not the status line and is never cut")
+
+	hud.free()
+	stroller.free()
+
+## *"The readout said 'awake' while the baby was drawn asleep,"* found once under
+## `--start-escape stairwell:right --invincible`. `main._ready_escape()` builds this HUD before the
+## building or the city — and so before the `Baby` it goes looking for even exists — so `_ready()`'s
+## one-time `get_first_node_in_group("baby")` came back empty and `hud._baby` stayed unset for the
+## whole section, leaving `hud.tscn`'s own placeholder text, "awake", on screen no matter what she
+## actually was. `_refresh_state()` now re-asks the group whenever it has no `_baby` yet, so the
+## first frame the escape's `Baby` exists is the first frame the readout can see it too — the same
+## `Baby.state` the pram's own picture (`Stroller._draw_baby_cue()`) already reads.
+func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t) -> void:
+	var hud := _hud(t)
+	t.check(hud._baby == null, "the HUD was built before any Baby exists, the escape's own order")
+	hud._refresh_state()
+	t.check(hud._state_label.text == "awake",
+			"with no Baby to read, the label is stuck on the scene's own placeholder — the defect itself")
+
+	var stroller := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+	baby.state = GameEnums.BabyState.ASLEEP
+
+	hud._refresh_state()
+	t.check(hud._baby == baby, "the readout picks up the baby the frame it appears")
+	t.check(hud._state_label.text.begins_with("asleep"),
+			"and reads the same state the pram is drawn from, not the scene's own placeholder (got '%s')"
+			% hud._state_label.text)
 
 	hud.free()
 	stroller.free()

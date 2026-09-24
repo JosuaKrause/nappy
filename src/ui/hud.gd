@@ -294,7 +294,19 @@ func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 ## The status line. An announcement always uses it — "The loudspeakers cut out mid-sentence." has
 ## nowhere else to go — but the baby's state and `stall_reason()` are debug-only: the state is
 ## already visible on the pram itself.
+##
+## **Re-asks the group every call until it gets an answer**, rather than trusting the one lookup
+## `_ready()` made. In the escape `main._ready_escape()` builds this HUD before the building or
+## the city — and so before the `Baby` it goes looking for even exists — so `_ready()`'s own
+## `get_first_node_in_group("baby")` came back empty and this stayed unset for the section's whole
+## life: the label was left showing `hud.tscn`'s own placeholder text, "awake", forever, while the
+## pram's own picture (`Stroller._draw_baby_cue()`, reading the same `Baby.state`) drew whatever
+## she actually was. Found investigating *"the readout said 'awake' while the baby was drawn
+## asleep"* under `--start-escape stairwell:right --invincible`; the two were never two sources,
+## only one of them was looking at nothing.
 func _refresh_state() -> void:
+	if not _baby:
+		_baby = get_tree().get_first_node_in_group("baby") as Baby
 	if not _baby:
 		return
 	if _announcement_for > 0.0:
