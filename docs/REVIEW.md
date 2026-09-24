@@ -584,9 +584,7 @@ item below for as long as looking takes.
   and steam at play scale?** Two things the build left open: **is the crash's smoke too small to
   notice** — making it bigger means a taller picture — and **should the steam hold still during
   its notice**, so that billowing means the passage is shut, rather than billowing the whole
-  time as it does now? **And does the vent's grate read as a vent from down the corridor, in the
-  basement's dark, before it first blows?** Record is `DECISIONS.md`, M100, water, smoke and steam
-  move, and M100, the basement vent is a floor grate.
+  time as it does now? Record is `DECISIONS.md`, M100, water, smoke and steam move.
 
 - **Touch a chalk mark and watch it change.** The mark is now drawn from `chalk_mark.svg`, and
   the moment she touches it the picture becomes `chalk_mark_touched.svg`, her own addition to the

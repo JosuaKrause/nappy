@@ -31,7 +31,8 @@ with a crossbar, since upright bars in a taller frame read as a barred window; f
 between the lifted cloud and the fresh puff, since a trail joining them read as a mushroom cloud;
 the grate added from `InteriorEvents` rather than a method on `InteriorScene`, which was outside
 the fence; the blow's shadow darkening the grate, as every solid row's does. No in-game frame shows
-her standing on a grate; the test is the evidence for "under her".
+her standing on a grate; the test is the evidence for "under her". The player, shown the review
+sheet (idle and blowing, at play size and under the basement's lighting): "Vent looks great".
 
 ## M181 — The resistance has a reason, and a task is one day: slice two · built 2026-09-24
 
