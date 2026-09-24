@@ -31,6 +31,8 @@ func run(t) -> void:
 	_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t)
 	_test_a_replan_keeps_off_the_ground_round_what_caught_her(t)
 	_test_unstick_tries_the_direction_away_from_what_caught_her_first(t)
+	_test_a_door_between_two_lanes_opens_both_as_its_crossing(t)
+	_test_a_plan_never_goes_through_the_boom(t)
 	_test_reachable_point_near_returns_centre_when_already_open(t)
 	_test_reachable_point_near_steps_off_obstructed_ground(t)
 	_test_resolve_target_mark_is_todays_contact(t)
@@ -362,6 +364,91 @@ func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t) -> voi
 	rig.free()
 
 # --------------------------------------------------------- _reachable_point_near ---
+
+## **The rig never goes through a street door's boom** *(2026-09-24, the player: "The bot shouldn't
+## route through the boom either way.")*: a `checkpoint_gate` stood across a straight stretch of
+## road, and a plan from four tiles on one side of it to four tiles on the other, which the bare
+## grid walks straight down the road through it, never steps on ground where the boom — rather
+## than a hut — would be the body to take her. The gate is added to the day's plan by hand, since
+## this suite's day has no region door; it is the plan `RouteRig` reads doors from.
+func _test_a_plan_never_goes_through_the_boom(t) -> void:
+	var road := _find_straight_road(t)
+	if road == Vector2i(-1, -1):
+		return
+	var from := road + Vector2i(0, -4)
+	var to := road + Vector2i(0, 4)
+	var bare := _city.map.walk_field(from, {})
+	t.check(_city.map.distance_at(bare, to) == 8,
+			"the bare grid walks straight down the road from one side of the gate to the other")
+	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("checkpoint_gate"), true)
+	var gate := EventScheduler.Planned.new(def, _city.map.tile_to_world(road))
+	gate.facing = Vector2.DOWN
+	gate.gate_state = RegionPlanner.GateState.new()
+	_city.events._plans.append(gate)
+	var rig := _rig(t)
+	var reach := def.detain_distance()
+	var planned := rig._plan(from, to)
+	t.check(not planned.is_empty() and not _passes_within(planned, gate.position, reach),
+			"a plan past a street door's boom goes round it rather than through its trigger")
+	# The last resort `_plan()` falls back to gives up the hazards, the clearance and the doors'
+	# reach, and still never the boom.
+	var last_resort := rig._shortest(from, to, false, {}, false)
+	t.check(not last_resort.is_empty() and not _passes_within(last_resort, gate.position, reach),
+			"even the plan that gives up every preference goes round the boom")
+	_city.events._plans.erase(gate)
+	rig.free()
+
+## Whether any tile a path steps on — every tile of each straight run between two waypoints, since
+## `_simplify()` keeps only the corners — has its centre within `reach` of `point`.
+func _passes_within(path: Array[Vector2i], point: Vector2, reach: float) -> bool:
+	for k in path.size():
+		var tile := path[k]
+		var stop := path[mini(k + 1, path.size() - 1)]
+		var step := (stop - tile).sign()
+		while true:
+			if _city.map.tile_to_world(tile).distance_to(point) <= reach:
+				return true
+			if tile == stop:
+				break
+			tile += step
+	return false
+
+## A `ROAD` tile with eight more straight down its column either side — four north, four south —
+## all `ROAD` or `CROSSING`, so a plan from one end to the other has an obvious straight line.
+func _find_straight_road(t) -> Vector2i:
+	for y in range(6, _city.map.size.y - 6):
+		for x in range(3, _city.map.size.x - 3):
+			var found := true
+			for k in range(-4, 5):
+				var type := _city.map.tile_at(Vector2i(x, y + k))
+				if (type != GameEnums.TileType.ROAD and type != GameEnums.TileType.CROSSING) \
+						or not _city.map.is_open(Vector2i(x, y + k)) \
+						or _city.map.is_obstructed(Vector2i(x, y + k)):
+					found = false
+					break
+			if found:
+				return Vector2i(x, y)
+	t.check(false, "seed %d day %d has a straight stretch of north-south road" % [SEED, DAY])
+	return Vector2i(-1, -1)
+
+## A door body stands in the middle of its two-lane sidewalk
+## (`EventInstance._centred_on_the_pavement_band()`), on the line between two lanes, so each lane's
+## centre is exactly half a tile off the body's crossing axis: both lanes are the crossing, and the
+## lane beside them is door reach. Read as neither, a door left no open way through its wall, so
+## the plan gave up every door's reach and walked her into the hut from the side.
+func _test_a_door_between_two_lanes_opens_both_as_its_crossing(t) -> void:
+	var rig := _rig(t)
+	var tile := _find_tile(t, GameEnums.TileType.SIDEWALK)
+	var door := _city.map.tile_to_world(tile) + Vector2(Tuning.TILE_SIZE * 0.5, 0.0)
+	var near := {}
+	var lines := {}
+	rig._add_door_reach(door, Vector2.DOWN, 90.0, near, lines)
+	var ahead := Vector2i(0, 2)
+	t.check(lines.has(tile + ahead) and lines.has(tile + Vector2i.RIGHT + ahead),
+			"both lanes either side of a door centred between them are its crossing line")
+	t.check(near.has(tile + Vector2i.LEFT + ahead) and not near.has(tile + ahead),
+			"the lane beyond them is the door's reach, and a crossing lane is not")
+	rig.free()
 
 ## The common case, and every any-instance task but `roadblock`: nothing is obstructed, so the
 ## instance's own centre is handed straight back rather than searched for.

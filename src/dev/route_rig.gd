@@ -273,6 +273,7 @@ func start_day() -> void:
 	_task_instance = null
 	_planned_clear = {}
 	_latched_doors = {}
+	_gate_ground_ready = false
 	_held = false
 	_last_position = Vector2.INF
 	_teleported = false
@@ -465,19 +466,20 @@ func _nearest_in_field(field: PackedInt32Array) -> Vector2i:
 
 # ----------------------------------------------------------------- planning ---
 
-## Today's `closed_tiles` and `CityMap.obstructed_tiles`, which block a plan whatever else it
-## asks, plus `_road_tiles` while `sidewalk_only`; `hazards` (see `_hazard_tiles()`) and `avoid`
-## (ground the tile grid calls open but she cannot stand in the middle of or should keep off, see
-## `_plan()`) are added on top of all of that. Built fresh every call since `closed_tiles`, every live
-## obstruction's own footprint and every live hazard's own position genuinely change day to day
-## and frame to frame, and a stale copy would let a plan walk through today's own barrier, a body
-## parked since the last check, or yesterday's guard. `CityMap.obstructed_tiles` (`src/city/
-## city_map.gd`) is what `_maybe_replan()`'s own `is_obstructed()` check reads — folding it in here
-## too is what makes a replan actually route around the thing it just detected, rather than
-## recomputing the identical path onto the same obstruction and re-detecting it forever; a plan
-## that never looked at `obstructed_tiles` at all was the shape of that bug. `hazards` is taken as
-## a dictionary rather than computed here so a caller can drop the one tile it is actually trying
-## to reach from it first — see `_shortest()`.
+## Today's `closed_tiles`, `CityMap.obstructed_tiles` and the ground a street door's boom would take
+## her on (`_gate_ground()`), which block a plan whatever else it asks, plus `_road_tiles` while
+## `sidewalk_only`; `hazards` (see `_hazard_tiles()`) and `avoid` (ground the tile grid calls open
+## but she cannot stand in the middle of or should keep off, see `_plan()`) are added on top of all
+## of that. Built fresh every call since `closed_tiles`, every live obstruction's own footprint and
+## every live hazard's own position genuinely change day to day and frame to frame, and a stale copy
+## would let a plan walk through today's own barrier, a body parked since the last check, or
+## yesterday's guard. `CityMap.obstructed_tiles` (`src/city/ city_map.gd`) is what
+## `_maybe_replan()`'s own `is_obstructed()` check reads — folding it in here too is what makes a
+## replan actually route around the thing it just detected, rather than recomputing the identical
+## path onto the same obstruction and re-detecting it forever; a plan that never looked at
+## `obstructed_tiles` at all was the shape of that bug. `hazards` is taken as a dictionary rather
+## than computed here so a caller can drop the one tile it is actually trying to reach from it first
+## — see `_shortest()`.
 func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 		hazards: Dictionary = {}) -> Dictionary:
 	var blocked := {}
@@ -487,6 +489,8 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 	for tile: Vector2i in _city.map.closed_tiles:
 		blocked[tile] = true
 	for tile: Vector2i in _city.map.obstructed_tiles:
+		blocked[tile] = true
+	for tile: Vector2i in _gate_ground():
 		blocked[tile] = true
 	for tile: Vector2i in hazards:
 		blocked[tile] = true
@@ -665,7 +669,9 @@ func _is_planned_body(def: EventDef) -> bool:
 ## inside — a park beside a door — keeps only the true reach off for that door, since every step
 ## out of the margin would otherwise read as blocked and the plan would give up the doors' reach
 ## altogether. `chatting_mother` detains too but walks, so she is left to the hold handling, the
-## way `_is_stationary_hazard()` leaves a mobile hazard.
+## way `_is_stationary_hazard()` leaves a mobile hazard. **A street door's boom (`checkpoint_gate`)
+## is not a crossing here**: its reach is kept off like a hut's, it opens no line, and the ground
+## where it would be the body to take her is never planned at all (`_gate_ground()`).
 func _door_tiles() -> Dictionary:
 	# A rig built without her, as a test of the planning geometry is, stands nowhere near a door.
 	var here := _player.global_position if _player else Vector2.INF
@@ -688,7 +694,8 @@ func _door_tiles() -> Dictionary:
 				continue
 			_latched_doors.erase(plan)
 		var reach := trigger if distance <= trigger + _ARRIVE_RADIUS else trigger + _ARRIVE_RADIUS
-		_add_door_reach(door, facing, reach, near, lines)
+		# The boom is never a way through (`_gate_ground()`), so its line opens nothing.
+		_add_door_reach(door, facing, reach, near, {} if plan.gate_state != null else lines)
 	for tile: Vector2i in lines:
 		near.erase(tile)
 	return near
@@ -709,6 +716,52 @@ func _latch_the_doors_round_her() -> void:
 		var door := plan.live.global_position if plan.live != null else _planned_position(plan)
 		if here.distance_to(door) <= plan.def.detain_distance():
 			_latched_doors[plan] = true
+
+## Every tile where a street door's boom (`checkpoint_gate`, the plan carrying a
+## `RegionPlanner.GateState`) would be the body to take her: within its trigger plus
+## `_ARRIVE_RADIUS`, and nearer the boom than any other door body — the same "only the nearest
+## eligible instance captures her" `EventManager._check_detentions()` decides by. Always blocked,
+## in every tier of every plan (`_blocked_for_phase()`), because **the rig never goes through the
+## boom**, whatever the boom does *(2026-09-24, the player: "The bot shouldn't route through the
+## boom either way.")*: a door is crossed at a hut or an alley post. A hut stands on each sidewalk
+## a lane's width from the road, so both of its crossing lanes are always nearer the hut than the
+## boom and stay open. Worked out once a day, since doors do not move.
+func _gate_ground() -> Dictionary:
+	if _gate_ground_ready:
+		return _gate_ground_tiles
+	_gate_ground_ready = true
+	_gate_ground_tiles = {}
+	var doors: Array[EventScheduler.Planned] = []
+	for plan: EventScheduler.Planned in _city.events.plans():
+		if plan.is_placed() and not plan.spent and plan.def.redetains:
+			doors.append(plan)
+	for gate in doors:
+		if gate.gate_state == null:
+			continue
+		var at := _planned_position(gate)
+		var reach := gate.def.detain_distance() + _ARRIVE_RADIUS
+		var centre_tile := _city.map.world_to_tile(at)
+		var span := ceili(reach / Tuning.TILE_SIZE) + 1
+		for dy in range(-span, span + 1):
+			for dx in range(-span, span + 1):
+				var tile := centre_tile + Vector2i(dx, dy)
+				var point := _city.map.tile_to_world(tile)
+				var distance := point.distance_to(at)
+				if distance > reach:
+					continue
+				var nearest_is_gate := true
+				for other in doors:
+					if other != gate and point.distance_to(_planned_position(other)) < distance:
+						nearest_is_gate = false
+						break
+				if nearest_is_gate:
+					_gate_ground_tiles[tile] = true
+	return _gate_ground_tiles
+
+## `_gate_ground()`'s answer for the day, and whether it has been worked out yet — cleared in
+## `start_day()`.
+var _gate_ground_tiles := {}
+var _gate_ground_ready := false
 
 func _add_door_reach(door: Vector2, facing: Vector2, reach: float, near: Dictionary,
 		lines: Dictionary) -> void:
