@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_a_day_header_opens_a_day(t)
 	_test_the_escape_opens_a_section_so_its_lines_carry_a_time(t)
 	_test_the_escape_is_in_the_run_log_as_a_day_is(t)
+	_test_a_retried_section_restarts_its_snapshot_schedule(t)
 	_test_a_stuck_player_is_logged_once(t)
 	_test_a_free_walk_is_never_logged_as_blocked(t)
 	_test_idling_with_no_input_is_never_logged_as_blocked(t)
@@ -479,6 +480,45 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	city.free()
 	events.free()
 	scene.free()
+
+## *"A retried escape section holds its automatic snapshots back until the new clock passes the
+## time of the last shot, because a section's clock restarts at zero."* A day's own retry reopens
+## through `begin_day()`, which resets `_shots_today` and `_last_shot` along with the clock; a
+## finale section has no second `begin_finale()` to call, so before the fix
+## `TelemetryObserver.start_section()` pushed the clock back with `Telemetry.set_clock(0.0)` alone
+## and left `_last_shot` sitting at the previous attempt's own reading — here, 45s in, well past
+## the retried walk's fresh `0.0`, which is exactly the state `snapshot()`'s spacing gate
+## (`_clock - _last_shot < SHOT_SPACING`) reads as "a shot just happened". `start_section()` now
+## goes through `Telemetry.restart_section_clock()`, which clears the schedule the way `begin_day()`
+## does.
+func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
+	Telemetry.begin_memory_log()
+	Telemetry.begin_finale(4242, 180.0)
+	Telemetry.set_clock(45.0)
+	# The state a real run is in right before a loss: a shot already taken this attempt, with the
+	# day's whole allowance not yet spent.
+	Telemetry._last_shot = 45.0
+	Telemetry._shots_today = 1
+
+	var player := Stroller.new()
+	var baby := Baby.new()
+	var clock := DayController.new()
+	var observer := TelemetryObserver.new()
+	observer.setup_escape(player, baby, clock)
+	observer.start_section(true)
+
+	t.check(Telemetry.clock() == 0.0, "a retry's clock starts over at zero, as it always did")
+	t.check(Telemetry._last_shot == -INF,
+			"and the snapshot schedule starts over with it, not stuck at the lost attempt's clock (got %.1f)"
+			% Telemetry._last_shot)
+	t.check(Telemetry._shots_today == 0,
+			"so the retried walk has its whole allowance again, not what the lost attempt spent")
+
+	observer.free()
+	clock.free()
+	baby.free()
+	player.free()
+	Telemetry.end_run()
 
 # --------------------------------------------------------------- being stuck ---
 # *(`docs/TODO.md`, "The log says when she is stuck": a `--walk` rig that never left the
