@@ -17,6 +17,13 @@ never evidence of what was **agreed**. A decision can sit written down and unbui
 milestones, and a session that checks only `src/` will confidently tell the player their own
 decision never happened.
 
+**A code comment is positive; the queue is normative.** *(2026-09-24, playtest 128: "The code
+comment is positive, the queue is normative. The code only describes what is, not what should
+be. That's a general rule.")* A docstring saying a thing "takes no picture" or "is drawn in code"
+describes what was built, however deliberate it sounds; it is never a decision that competes with
+`TODO.md`. Where the two disagree, build what the queue says and rewrite the comment with the
+code. That disagreement is not an open question for the player.
+
 Two costs, and the second does the damage:
 
 - **The player pays to say it again.** Every re-report is time spent describing something the
