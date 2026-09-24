@@ -203,7 +203,10 @@ grid, which is not the city's.
 **The section restart is two lines**: a `lost` line naming the result, the section, how far into
 its clock, the reason, the meter breakdown and what was nearest — the same line a lost day writes,
 with the section in it — and then a `start` line saying `restarted`, stamped `0.0` because the
-retry has a fresh clock. Getting out is a `home` line, `escaped by the tunnel, 42.1s to spare`,
+retry has a fresh clock. The automatic-snapshot schedule (`Telemetry.SHOTS_PER_DAY`, `SHOT_SPACING`
+— see "Snapshots" below) restarts with that clock, the same clean slate a day's own retry gets from
+`begin_day()`, so a retried section is not left with its whole allowance already spent by the
+attempt that was lost. Getting out is a `home` line, `escaped by the tunnel, 42.1s to spare`,
 written before the run's own `ending` line.
 
 **What a day writes and the escape does not, and why:**

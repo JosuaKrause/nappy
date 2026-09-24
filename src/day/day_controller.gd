@@ -162,6 +162,10 @@ const _HARD_FAIL_TEXT := {
 	# the danger act I was missing is not sinister, it is a street.
 	"cyclist": "The bell, and then the bike. She is screaming.",
 	"reversing_lorry": "It never saw you. Nobody was looking behind it.",
+	# The escape's own catch, on the stairs rather than the street — the same figure as
+	# `roadblock`'s guard (`EventCatalogue`, `masked_pursuer`'s own doc), and the same tone rule
+	# the rest of this table already keeps: what is lost is named, never dwelt on.
+	"masked_pursuer": "He caught you on the stairs.",
 }
 
 func _end(result: GameEnums.DayResult) -> void:
