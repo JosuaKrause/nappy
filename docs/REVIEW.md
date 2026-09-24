@@ -560,6 +560,15 @@ item below for as long as looking takes.
   than as a thing in the way: he stays on the route because his beat reaches the crossing at the
   junction, so the answer to him is to walk on while he paces away, or to cross where his beat
   ends. `tools/run.sh --seed 4242 --day 1`, layer 5 for the routes and layer 4 for the readout.
+- **Watch a crowd car and a moving event vehicle (police car, fire engine, unmarked van, riot
+  van, army truck, lorry) drive up to a light and stop.**
+  `tools/shot.sh … 8 --seed 4242 --spawn signal --zoom 3 --press snapshot_burst 3 --invincible
+  --no-save` puts one at a signal. The body rises and falls 1px over every 64px of road covered
+  and settles flat the instant it stops. **Does the 1px rise read as the car bouncing on its own
+  wheels, or is it too small to see — or too much, once you know where to look?** And **does the
+  fade below the 60px/s turn speed read as the car settling into a turn, or does the bob cut off
+  too abruptly?** Both the 1px height and the 64px stride are felt values, not derived. Record is
+  `DECISIONS.md`, M108, the audit and cars bob on their wheels.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
