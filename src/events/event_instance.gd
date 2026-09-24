@@ -502,6 +502,74 @@ const RIOT_VAN_BY_VIEW := {
 	"back_diagonal": RIOT_VAN_BACK_DIAGONAL,
 }
 
+## **The vehicles that move roll on wheels that stay on the ground.** *(2026-09-11, the player:
+## "cars could bop up and down while the wheels stay in the same place".)* Each of these looks'
+## five views is drawn as its ordinary picture — the body — and a wheels picture on the same canvas
+## and anchor, which `_draw_eight_view()` draws back down by `_current_bob()` so the lift
+## `_draw()` gives the whole drawing reaches the body alone. The parked delivery and ice-cream vans
+## never move, so their pictures keep their wheels and sit still.
+const POLICE_CAR_WHEELS_BY_VIEW := {
+	"front": "events/police_car_front_wheels",
+	"back": "events/police_car_back_wheels",
+	"side": "events/police_car_wheels",
+	"front_diagonal": "events/police_car_front_diagonal_wheels",
+	"back_diagonal": "events/police_car_back_diagonal_wheels",
+}
+const FIRE_ENGINE_WHEELS_BY_VIEW := {
+	"front": "events/fire_engine_front_wheels",
+	"back": "events/fire_engine_back_wheels",
+	"side": "events/fire_engine_wheels",
+	"front_diagonal": "events/fire_engine_front_diagonal_wheels",
+	"back_diagonal": "events/fire_engine_back_diagonal_wheels",
+}
+const UNMARKED_VAN_WHEELS_BY_VIEW := {
+	"front": "events/unmarked_van_front_wheels",
+	"back": "events/unmarked_van_back_wheels",
+	"side": "events/unmarked_van_wheels",
+	"front_diagonal": "events/unmarked_van_front_diagonal_wheels",
+	"back_diagonal": "events/unmarked_van_back_diagonal_wheels",
+}
+const RIOT_VAN_WHEELS_BY_VIEW := {
+	"front": "events/riot_van_front_wheels",
+	"back": "events/riot_van_back_wheels",
+	"side": "events/riot_van_wheels",
+	"front_diagonal": "events/riot_van_front_diagonal_wheels",
+	"back_diagonal": "events/riot_van_back_diagonal_wheels",
+}
+const ARMY_TRUCK_WHEELS_BY_VIEW := {
+	"front": "events/army_truck_front_wheels",
+	"back": "events/army_truck_back_wheels",
+	"side": "events/army_truck_wheels",
+	"front_diagonal": "events/army_truck_front_diagonal_wheels",
+	"back_diagonal": "events/army_truck_back_diagonal_wheels",
+}
+const LORRY_WHEELS_BY_VIEW := {
+	"front": "events/lorry_front_wheels",
+	"back": "events/lorry_back_wheels",
+	"side": "events/lorry_wheels",
+	"front_diagonal": "events/lorry_front_diagonal_wheels",
+	"back_diagonal": "events/lorry_back_diagonal_wheels",
+}
+const WHEELS_BY_LOOK := {
+	EventDef.Look.POLICE_CAR: POLICE_CAR_WHEELS_BY_VIEW,
+	EventDef.Look.FIRE_ENGINE: FIRE_ENGINE_WHEELS_BY_VIEW,
+	EventDef.Look.UNMARKED_VAN: UNMARKED_VAN_WHEELS_BY_VIEW,
+	EventDef.Look.RIOT_VAN: RIOT_VAN_WHEELS_BY_VIEW,
+	EventDef.Look.ARMY_TRUCK: ARMY_TRUCK_WHEELS_BY_VIEW,
+	EventDef.Look.LORRY: LORRY_WHEELS_BY_VIEW,
+}
+## The wheels pictures drawn under their body rather than over it: the end views of the 34x50
+## trucks and vans, whose tyres stand out along both flanks and whose body was always drawn over
+## their inner edge. Every other wheels picture is drawn over its body, the order each tyre had
+## when it was part of the one picture — so a vehicle at rest is the same pixels either way.
+const WHEELS_BEHIND_THE_BODY: Array[String] = [
+	"events/fire_engine_front_wheels", "events/fire_engine_back_wheels",
+	"events/unmarked_van_front_wheels", "events/unmarked_van_back_wheels",
+	"events/riot_van_front_wheels", "events/riot_van_back_wheels",
+	"events/army_truck_front_wheels", "events/army_truck_back_wheels",
+	"events/lorry_front_wheels", "events/lorry_back_wheels",
+]
+
 ## The region door's own kit — see `RegionPlanner` and `docs/CITY.md`, "Regions and the wall".
 const HUT_NORTH := "checkpoints/hut_north"
 const HUT_SOUTH := "checkpoints/hut_south"
@@ -629,6 +697,14 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.STEAM: return STEAM
 		EventDef.Look.LOUDSPEAKER_MAST: return MAST
 		_: return ""
+
+## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
+## picture. A vehicle that rolls on wheels of its own (`WHEELS_BY_LOOK`) has its side view split
+## in two, and a badge showing the body alone would be a van with no wheels — so the badge draws
+## this over the same rectangle, the same order the street draws it in.
+static func icon_wheels_for(look: EventDef.Look) -> String:
+	var wheels_by_view: Dictionary = WHEELS_BY_LOOK.get(look, {})
+	return str(wheels_by_view.get("side", ""))
 
 ## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted
 ## across `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the
@@ -2649,7 +2725,13 @@ const BOB_HEIGHT := 2.5
 ##
 ## Pulled out of `_draw()` so `EntityHalo` can ride the same lift: a walking entity's ring of
 ## re-drawn bodies has to bob with it, or the outline slides off the sprite it is meant to trace.
+##
+## **A vehicle rolls rather than strides**: a look in `WHEELS_BY_LOOK` rides `WheelBob.lift()`
+## over the ground it has covered while it is covering any, about a pixel on the body alone — see
+## `_draw_eight_view()` for the wheels it leaves on the ground — and sits still the tick it stops.
 func _current_bob() -> float:
+	if WHEELS_BY_LOOK.has(def.look):
+		return WheelBob.lift(_path_travelled) if _gait_moving else 0.0
 	if def.pursues or is_leaving:
 		return -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
 	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
@@ -2990,7 +3072,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.ROADWORKS:
 			_collect(sources, [BARRIER_SEGMENT, BARRIER_SEGMENT_VERTICAL, BARRIER_END])
 		EventDef.Look.FIRE_ENGINE:
-			_collect_views(sources, [FIRE_ENGINE_BY_VIEW])
+			_collect_views(sources, [FIRE_ENGINE_BY_VIEW, FIRE_ENGINE_WHEELS_BY_VIEW])
 		EventDef.Look.BURNING_BUILDING:
 			_collect(sources, [FLAME])
 		EventDef.Look.BURNT_SHELL:
@@ -3008,14 +3090,14 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.ICE_CREAM_VAN:
 			_collect_views(sources, [ICE_CREAM_VAN_BY_VIEW])
 		EventDef.Look.LORRY:
-			_collect_views(sources, [LORRY_BY_VIEW])
+			_collect_views(sources, [LORRY_BY_VIEW, LORRY_WHEELS_BY_VIEW])
 		EventDef.Look.CHARGING_DOG:
 			_collect_views(sources, [CHARGING_DOG_BY_VIEW, CHARGING_DOG_BY_VIEW_B])
 		EventDef.Look.CHATTING_MOTHER:
 			_collect_views(sources, [CHATTING_MOTHER_WALKING_BY_VIEW,
 					CHATTING_MOTHER_WALKING_BY_VIEW_B, CHATTING_MOTHER_TALKING_BY_VIEW])
 		EventDef.Look.POLICE_CAR:
-			_collect_views(sources, [POLICE_CAR_BY_VIEW])
+			_collect_views(sources, [POLICE_CAR_BY_VIEW, POLICE_CAR_WHEELS_BY_VIEW])
 		EventDef.Look.POSTER_CREW:
 			_collect_views(sources, [POSTER_CREW_BY_VIEW])
 		EventDef.Look.POSTER_CREW_SQUARE:
@@ -3023,15 +3105,15 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.ROADBLOCK:
 			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_END, GUARD_STANDING, GUARD_LUNGING])
 		EventDef.Look.UNMARKED_VAN:
-			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, VAN_VICTIM_BY_VIEW,
-					VAN_VICTIM_BY_VIEW_B])
+			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, UNMARKED_VAN_WHEELS_BY_VIEW,
+					VAN_VICTIM_BY_VIEW, VAN_VICTIM_BY_VIEW_B])
 		EventDef.Look.ROBBER:
 			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_LUNGING_BY_VIEW,
 					ROBBER_LUNGING_BY_VIEW_B])
 		EventDef.Look.RIOT_VAN:
-			_collect_views(sources, [RIOT_VAN_BY_VIEW])
+			_collect_views(sources, [RIOT_VAN_BY_VIEW, RIOT_VAN_WHEELS_BY_VIEW])
 		EventDef.Look.ARMY_TRUCK:
-			_collect_views(sources, [ARMY_TRUCK_BY_VIEW])
+			_collect_views(sources, [ARMY_TRUCK_BY_VIEW, ARMY_TRUCK_WHEELS_BY_VIEW])
 		EventDef.Look.BARRICADE:
 			_collect(sources, [BARRICADE_PILE])
 		EventDef.Look.PROTEST:
@@ -3251,11 +3333,20 @@ func _draw_simple(picture: String, canvas: CanvasItem = self,
 ## all: `mouse` and `skip`.
 ##
 ## `by_view_b` is the family's own feet-passing set, read off `_gait_stepping()` when given —
-## empty for every vehicle family, which never got a stride this round, so the lookup falls
-## through to `by_view` exactly as before.
+## empty for every vehicle family, which has no stride, so the lookup falls through to `by_view`.
+##
+## **A look in `WHEELS_BY_LOOK` is drawn in two layers, and its wheels and its shadow stay on the
+## ground.** `_draw()` and `EntityHalo` both lift the canvas by `_current_bob()` before calling
+## here, so the wheels picture and the shadow are drawn back down by the same amount and only the
+## body rises and falls; the wheels go over the body or, for the pictures in
+## `WHEELS_BEHIND_THE_BODY`, under it.
 func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self,
 		side_faces_west := false, by_view_b: Dictionary = {}) -> void:
-	_draw_body_shadow(canvas)
+	var wheels_by_view: Dictionary = WHEELS_BY_LOOK.get(def.look, {})
+	var grounded := Vector2.ZERO
+	if not wheels_by_view.is_empty():
+		grounded = Vector2(0.0, -_current_bob())
+	_draw_body_shadow(canvas, grounded)
 	var view := _select_view(heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	if view == "side" and side_faces_west:
@@ -3263,7 +3354,13 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem 
 	var picture: String = by_view[view]
 	if not by_view_b.is_empty() and _gait_stepping():
 		picture = by_view_b[view]
+	var wheels: String = wheels_by_view.get(view, "")
+	var behind := wheels in WHEELS_BEHIND_THE_BODY
+	if not wheels.is_empty() and behind:
+		Sprites.draw_standing(canvas, _drawn(wheels), grounded, Vector2.ZERO, mirror)
 	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, Vector2.ZERO, mirror)
+	if not wheels.is_empty() and not behind:
+		Sprites.draw_standing(canvas, _drawn(wheels), grounded, Vector2.ZERO, mirror)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.

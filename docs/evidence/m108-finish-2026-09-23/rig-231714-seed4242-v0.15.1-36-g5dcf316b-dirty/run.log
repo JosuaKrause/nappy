@@ -1,0 +1,32 @@
+nappy rig log  2026-09-23T23:17:14  version v0.15.1-36-g5dcf316b-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.2 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.7 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.6 ms, 328 x 542
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 2.2 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.7 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.7 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.7 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 11.0 ms, 612 x 1016
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.8 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 29.9 ms
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 30.0 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks v(8,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
+   0.0  start    doorstep (120,71), facing 180°
+   0.0  near     leaf_blower (telegraph) at (117,71), 96px, exc 0, in 0.0/s (crowd 0.0, events 0.7), sleep 0
+   0.0  near     moving_van (telegraph) at (122,71), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.7), sleep 0
+   0.0  near     moving_van (telegraph) at (122,74), 115px, exc 0, in 0.0/s (crowd 0.0, events 0.7), sleep 0
+   0.0  frame    fps 28, worst frame 260.9ms, draws 185, objects 1288, primitives 2877, process 15.47ms, physics 2.06ms
+   0.0  frame    fps 72, worst frame 28.0ms, draws 189, objects 1280, primitives 2909, process 28.42ms, physics 1.66ms
+   0.0  frame    fps 76, worst frame 27.4ms, draws 183, objects 1271, primitives 2819, process 27.32ms, physics 1.65ms
+   0.0  shot     burst started: asked for an animation burst at (120,71) | exc 0, sleep 0 | playing | asked/burst-7184578-001
+   0.0  frame    fps 35, worst frame 79.7ms, draws 182, objects 1304, primitives 2863, process 74.64ms, physics 1.85ms
+   0.0  crowd    walked into somebody at (120,71) | exc 0, in 0.0/s (crowd 27.6, events 5.2), sleep 0
+   0.0  frame    fps 23, worst frame 68.4ms, draws 185, objects 1331, primitives 2941, process 78.23ms, physics 1.79ms
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  frame    fps 23, worst frame 68.1ms, draws 178, objects 1298, primitives 2803, process 65.06ms, physics 1.73ms
+   0.0  frame    fps 64, worst frame 28.7ms, draws 174, objects 1247, primitives 2677, process 62.67ms, physics 1.90ms

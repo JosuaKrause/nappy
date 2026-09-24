@@ -291,7 +291,13 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 		var art := Vector2(AtlasLibrary.native_size(name))
 		var fit := ICON / maxf(art.x, art.y)
 		var drawn := art * fit
-		draw_texture_rect(AtlasLibrary.region(name), Rect2(at - drawn * 0.5, drawn), false)
+		var rect := Rect2(at - drawn * 0.5, drawn)
+		draw_texture_rect(AtlasLibrary.region(name), rect, false)
+		# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
+		# rectangle and go over the body the way the street draws them.
+		var wheels := EventInstance.icon_wheels_for(instance.def.look)
+		if not wheels.is_empty():
+			draw_texture_rect(AtlasLibrary.region(StringName(wheels)), rect, false)
 
 	var label := "%d m" % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font

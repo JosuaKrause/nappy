@@ -28,6 +28,11 @@ func run(t) -> void:
 	_test_the_rim_is_re_traced_under_a_steady_glow(t)
 	_test_the_rim_and_the_picture_share_one_footprint(t)
 	_test_the_redraw_gate_carries_the_live_anchor(t)
+	_test_wheels_share_the_body_canvas(t)
+	_test_a_moving_car_bobs_and_a_stopped_car_sits_still(t)
+	_test_the_bob_is_driven_by_ground_covered(t)
+	_test_the_halo_rides_the_bob(t)
+	_test_the_redraw_gate_follows_the_bob(t)
 
 func _car(t) -> CrowdAgent:
 	var agent := CrowdAgent.new()
@@ -302,14 +307,16 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 	agent.free()
 
 ## The picture `_draw_body()` would actually put on the canvas for one view and heading: the body's
-## rect merged with the trim's, each built the way `Sprites.draw_standing()` builds it — the baked
-## region's own native size, which is the authored SVG's size in every bake, bottom-centred on
-## `_car_body_anchor()`'s answer.
+## rect merged with the trim's and the wheels', each built the way `Sprites.draw_standing()` builds
+## it — the baked region's own native size, which is the authored SVG's size in every bake,
+## bottom-centred on `_car_body_anchor()`'s answer. At rest, which is where these cars stand: the
+## three layers share one anchor until the body rides a bob.
 func _drawn_picture(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 	var anchor := agent._car_body_anchor(view, heading)
 	var drawn := Rect2()
 	var merged := false
-	for path in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view]]:
+	for path in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view],
+			CrowdAgent.CAR_WHEELS_BY_VIEW[view]]:
 		var extent := Vector2(AtlasLibrary.native_size(StringName(path)))
 		var layer := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		drawn = drawn.merge(layer) if merged else layer
@@ -318,12 +325,13 @@ func _drawn_picture(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 
 ## And what the rim traced around it covers: the same picture re-drawn at every one of
 ## `EntityHalo.trace_offsets()`'s own ring positions, which is what `_on_draw()` does per offset.
-## A crowd body never bobs (`CrowdAgent._zero_bob()`), so the ring is the plain circle.
+## A car standing still has no bob (`CrowdAgent._body_bob()` is zero at zero speed), so the ring
+## is the plain circle.
 func _traced_rim(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 	var picture := _drawn_picture(agent, view, heading)
 	var rim := Rect2()
 	var merged := false
-	for offset in EntityHalo.trace_offsets(agent._zero_bob()):
+	for offset in EntityHalo.trace_offsets(agent._body_bob()):
 		var copy := Rect2(picture.position + offset, picture.size)
 		rim = rim.merge(copy) if merged else copy
 		merged = true
@@ -446,4 +454,130 @@ func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 			"but its ground line moved %.2fpx between the two" % absf(landed - turning))
 	t.check([agent._picture, agent._drawn_heading] != mid_turn,
 			"so the gate asked for the redraw that puts the picture back under its own rim")
+	agent.free()
+
+# ------------------------------------------------------------------ the bob ---
+
+## **The wheels are the third layer of the same picture**, so they can only register where the body
+## does: every view has one, baked as a region of its own, on exactly the body's canvas — the one
+## size `Sprites.draw_standing()` bottom-centres all three layers by. A wheels picture of another
+## size would stand its tyres somewhere under the car other than where they were drawn.
+func _test_wheels_share_the_body_canvas(t) -> void:
+	t.check(CrowdAgent.CAR_WHEELS_BY_VIEW.keys().size() == CrowdAgent.CAR_BODY_BY_VIEW.keys().size(),
+			"every body view has a wheels view and nothing else does")
+	for view in CrowdAgent.CAR_BODY_BY_VIEW.keys():
+		t.check(CrowdAgent.CAR_WHEELS_BY_VIEW.has(view), "the %s view has wheels" % view)
+		var wheels := StringName(CrowdAgent.CAR_WHEELS_BY_VIEW[view])
+		var body := StringName(CrowdAgent.CAR_BODY_BY_VIEW[view])
+		var trim := StringName(CrowdAgent.CAR_TRIM_BY_VIEW[view])
+		t.check(AtlasLibrary.has_region(wheels), "the %s wheels are baked" % view)
+		t.check(wheels != body and wheels != trim,
+				"the %s wheels are a region of their own, so the tint never reaches them" % view)
+		t.check(AtlasLibrary.native_size(wheels) == AtlasLibrary.native_size(body),
+				"the %s wheels share the body's canvas (%s against %s)"
+				% [view, AtlasLibrary.native_size(wheels), AtlasLibrary.native_size(body)])
+
+## A car in a lane, driven one tick at a time at a cruising speed. Its lane is east-west, which
+## `heading()` answers exactly, so nothing but the bob can change about its picture.
+func _cruising_car(t, speed: float) -> CrowdAgent:
+	var agent := _car(t)
+	agent._vertical = false
+	agent._direction = 1.0
+	agent._speed = speed
+	agent._turn = null
+	return agent
+
+## **A moving car's body rises and falls about a pixel, and a stopped one sits still.** Driven for
+## more than one wavelength of ground, its bob spans the whole of `WheelBob.HEIGHT` and never leaves
+## it; brought to a stop at the top of a rise, it is back on its wheels at once, and ticks that
+## cover no ground move nothing.
+func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t) -> void:
+	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
+	var step := 1.0 / 60.0
+	var lowest := 0.0
+	var highest := -INF
+	var ticks := int(ceil(1.5 * WheelBob.WAVELENGTH / (Tuning.CAR_SPEED.x * step)))
+	var highest_travelled := 0.0
+	for i in ticks:
+		agent._advance_car_bob(step)
+		var bob := agent._body_bob()
+		t.check(bob <= 0.0 and bob >= -WheelBob.HEIGHT - 0.001,
+				"tick %d's bob %.3f stays between the wheels and one height above them" % [i, bob])
+		if bob < lowest:
+			lowest = bob
+			highest_travelled = agent._car_travelled
+		highest = maxf(highest, bob)
+	t.check(lowest < -0.9 * WheelBob.HEIGHT,
+			"a cruising car's body reaches the top of its rise (%.3f)" % lowest)
+	t.check(highest > -0.1 * WheelBob.HEIGHT,
+			"and comes back down onto its wheels (%.3f)" % highest)
+	# Stopped at the top of the rise: the phase stays where it was, the body does not.
+	agent._car_travelled = highest_travelled
+	agent._speed = 0.0
+	t.check(agent._body_bob() == 0.0, "a stopped car sits on its wheels (%.3f)" % agent._body_bob())
+	agent._advance_car_bob(step)
+	t.check(is_equal_approx(agent._car_travelled, highest_travelled),
+			"and a tick that covers no ground does not move its phase")
+	agent.free()
+
+## **The bob is a function of ground covered, not of time**: a slow car and a fast one that have
+## covered the same distance are at the same point of it, and the fast one gets there sooner.
+func _test_the_bob_is_driven_by_ground_covered(t) -> void:
+	var slow := _cruising_car(t, Tuning.CAR_SPEED.x)
+	var fast := _cruising_car(t, Tuning.CAR_SPEED.y)
+	var distance := WheelBob.WAVELENGTH * 0.4
+	slow._advance_car_bob(distance / Tuning.CAR_SPEED.x)
+	fast._advance_car_bob(distance / Tuning.CAR_SPEED.y)
+	t.check(is_equal_approx(slow._body_bob(), fast._body_bob()),
+			"two cars that covered %.0fpx ride the same lift (%.3f and %.3f)"
+			% [distance, slow._body_bob(), fast._body_bob()])
+	t.check(not is_zero_approx(slow._body_bob()), "and it was a lift worth comparing")
+	slow.free()
+	fast.free()
+
+## **The halo traces the bob through `bob()`**: the rim is built with the car's own `_body_bob`, and
+## the ring `EntityHalo` traces is lifted by exactly what the body is lifted by, so a rising car's
+## rim rises with it rather than sliding off it.
+func _test_the_halo_rides_the_bob(t) -> void:
+	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
+	agent._advance_car_bob(WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x)
+	agent.set_halo_strength(1.0, Color.RED)
+	t.check(agent._halo._bob == agent._body_bob,
+			"the halo reads this car's own bob rather than a flat zero")
+	var bob := agent._body_bob()
+	t.check(bob < -0.5 * WheelBob.HEIGHT, "the car is well up its rise (%.3f)" % bob)
+	var flat := EntityHalo.trace_offsets(0.0)
+	var lifted := EntityHalo.trace_offsets(agent._halo._bob.call())
+	var rides := flat.size() == lifted.size()
+	for i in flat.size():
+		rides = rides and lifted[i].is_equal_approx(flat[i] + Vector2(0.0, bob))
+	t.check(rides, "every offset of the ring is lifted by the body's own %.3fpx" % bob)
+	agent.free()
+
+## **A redraw gate is a promise about everything the drawing reads**, and a moving car's drawing now
+## reads its bob. Driven down a lane, where nothing else about its picture changes, the key's third
+## term is the quantised bob on every tick and it moves as the body does; stopped, it never moves.
+func _test_the_redraw_gate_follows_the_bob(t) -> void:
+	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
+	var step := 1.0 / 60.0
+	agent._redraw_if_the_picture_changed()
+	var keys := {}
+	var ticks := int(ceil(WheelBob.WAVELENGTH / (Tuning.CAR_SPEED.x * step)))
+	for i in ticks:
+		agent._advance_car_bob(step)
+		agent._redraw_if_the_picture_changed()
+		t.check(agent._picture.z == roundi(agent._body_bob() * CrowdAgent.CAR_BOB_STEPS_PER_PX),
+				"tick %d's key carries the bob it would draw" % i)
+		keys[agent._picture] = true
+	t.check(keys.size() > 2,
+			"a car driving one wavelength asks for a redraw at several heights (%d keys)"
+			% keys.size())
+	agent._speed = 0.0
+	agent._redraw_if_the_picture_changed()
+	var parked := agent._picture
+	for i in 30:
+		agent._advance_car_bob(step)
+		agent._redraw_if_the_picture_changed()
+	t.check(agent._picture == parked and parked.z == 0,
+			"a stopped car's key rests at zero and stays there")
 	agent.free()

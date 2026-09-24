@@ -95,11 +95,25 @@ func _authored_svg(region_name: String) -> String:
 
 ## Rasterises `entry`'s own picture from its SVG source text at `scale`, mirrored if the sector
 ## says so — `Image.flip_x()`, the same horizontal mirror `Sprites.draw_standing()` gives every
-## mirrored sector, applied to a still image instead of a canvas transform.
+## mirrored sector, applied to a still image instead of a canvas transform. A vehicle that rolls on
+## wheels of its own has them composed in at rest, under or over the body as
+## `EventInstance._draw_eight_view()` draws them.
 func _cell_image(entry: Dictionary, scale: float) -> Image:
 	var text := FileAccess.get_file_as_string(_authored_svg(entry["picture"]))
 	var image := Image.new()
 	image.load_svg_from_string(text, scale)
+	var wheels_name: String = entry["picture"] + "_wheels"
+	if FileAccess.file_exists(_authored_svg(wheels_name)):
+		var wheels := Image.new()
+		wheels.load_svg_from_string(FileAccess.get_file_as_string(_authored_svg(wheels_name)), scale)
+		image.convert(Image.FORMAT_RGBA8)
+		wheels.convert(Image.FORMAT_RGBA8)
+		var whole := Rect2i(Vector2i.ZERO, image.get_size())
+		if wheels_name in EventInstance.WHEELS_BEHIND_THE_BODY:
+			wheels.blend_rect(image, whole, Vector2i.ZERO)
+			image = wheels
+		else:
+			image.blend_rect(wheels, whole, Vector2i.ZERO)
 	if entry["mirror"]:
 		image.flip_x()
 	return image
