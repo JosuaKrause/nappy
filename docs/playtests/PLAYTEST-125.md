@@ -39,3 +39,18 @@ the lead its row already owes, starting at one tear in ten, and never on the fir
    first bag is `[nnn]` and each later one `[nnnnnnnnpp]`, so the first three tears are safe and
    the chance after that is 20%.
 4. **Only poster tears use the marble bag for now**, nothing else in the game.
+
+## Then, on the numbers
+
+Asked whether the bag should use the example's three safe tears and two pursuits in ten, or the
+queue's existing "one tear in ten, and never on the first tear of a run":
+
+> "we can do as the queue was written. the numbers I gave now were more like examples. what do
+> you think, though? 3+20% or 1+10%?"
+
+The orchestrator recommended the queue's numbers: both put the first pursuit around the sixth or
+seventh tear on average, tearing counts for nothing so its price stays light, and the bag already
+guarantees one pursuit in every ten tears.
+
+5. **The bag uses the queue's numbers**: a pre-bag of one "no pursuit" marble, then bags of one
+   "pursuit" and nine "no pursuit". The example's three and two-in-ten were only examples.
