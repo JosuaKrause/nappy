@@ -127,7 +127,7 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 | Owner | Integration work and acceptance |
 |---|---|
-| M100 — Small, real, and nobody's | Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family's directional pictures to the alley mouse, read by heading as the other moving families are ([PLAYTEST-128](playtests/PLAYTEST-128.md)), and the sound arcs with their event timing. |
+| M100 — Small, real, and nobody's | Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the sound arcs with their event timing. |
 
 M102, the finale, owns the impact-crater decals and the carrying-mother set and has bound what it
 needs of them; `GRAPHICS.md` names which sources are live and which stay
@@ -752,12 +752,6 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-- [ ] **The masked pursuer and the heated roadblock guard face where they are heading**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, hook those up."). They chase her drawn as
-      a single side picture while `guard_{standing,lunging}_{views}` — eight-view art under
-      `art/checkpoints/` — is bound to nothing; they read a heading through the shared
-      `_draw_eight_view()` helper every other moving family uses, standing while still and
-      lunging while they chase, like the robber.
 
 ---
 
@@ -869,11 +863,6 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **The alley mouse faces where it runs** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "The
-      code comment is positive, the queue is normative."). `EventCatalogue._alley_mouse()` draws
-      one mirrored side picture through `_draw_simple()`; it reads a heading through
-      `_draw_eight_view()` like the other moving families, from `art/events/mouse*.svg` (the
-      `_b` files are its second frame), and its docstring is rewritten to say so
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a

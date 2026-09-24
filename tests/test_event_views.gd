@@ -58,6 +58,9 @@ const FAMILY_DICTS := {
 	"army_truck": EventInstance.ARMY_TRUCK_BY_VIEW,
 	"police_car": EventInstance.POLICE_CAR_BY_VIEW,
 	"riot_van": EventInstance.RIOT_VAN_BY_VIEW,
+	"mouse": EventInstance.MOUSE_BY_VIEW,
+	"guard_standing": EventInstance.GUARD_STANDING_BY_VIEW,
+	"guard_lunging": EventInstance.GUARD_LUNGING_BY_VIEW,
 }
 
 ## The animal/rider families whose `"side"` entry is required to be the exact pre-existing
@@ -73,6 +76,7 @@ const ANIMAL_SIDE_REUSE := {
 	"cyclist": EventInstance.CYCLIST,
 	"pigeon": EventInstance.PIGEON,
 	"pigeon_down": EventInstance.PIGEON_DOWN,
+	"mouse": EventInstance.MOUSE,
 }
 
 ## The vehicle families' own `"side"` entry, same reuse rule as `ANIMAL_SIDE_REUSE` above —
@@ -293,6 +297,7 @@ func _test_state_pairs_stay_visually_distinct(t) -> void:
 	var pairs := [
 		["cat_crouched", "cat_running"], ["robber_waiting", "robber_lunging"],
 		["chatting_mother_walking", "chatting_mother_talking"], ["pigeon", "pigeon_down"],
+		["guard_standing", "guard_lunging"],
 	]
 	for pair in pairs:
 		var a: Dictionary = FAMILY_DICTS[pair[0]]
