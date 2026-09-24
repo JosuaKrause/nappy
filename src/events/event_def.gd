@@ -740,6 +740,22 @@ func detain_distance() -> float:
 ## only two rows that set it. `EventManager._check_detentions()` is what reads it.
 @export var redetains := false
 
+## Whether this row is a **boom** — a bar across a door's carriageway that the cars raise and lower
+## (`Crowd._stop_for_gates()`, through the `RegionPlanner.GateState` its instance carries), and
+## that is solid to her **only while it is down**. `checkpoint_gate` is the one row that sets it.
+##
+## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it
+## should stay solid when it's open".)* So it never detains: a lowered boom is a wall across the
+## road and a raised one is ground she may walk under, at the price of the car that raised it. The
+## inspection is the huts' alone, and a hut never takes her in from the carriageway its own door's
+## boom spans — that ground is the boom's.
+##
+## Read in three more places, each because a boom is a door body that does not detain:
+## `EventManager.obstructed_footprint()` keeps it out of the crowd's per-tile record the way it
+## keeps the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's
+## clear ground around it, and `EventInstance` lets its collision body follow the arm.
+@export var lifts_for_traffic := false
+
 ## Whether this row is one of the region boundary's own structures — a street being held, however
 ## many bodies it takes to hold it. **Several of them charge the meter as one source, the strongest
 ## at her position, never their sum.** *(2026-09-20, the player: "since two gates can be adjacent

@@ -2389,20 +2389,22 @@ static func _checkpoint_hut() -> EventDef:
 	def.barrier_structure = true
 	return def
 
-## The boom over the roadway between a door's two huts. No field of its own — a car passing under
-## it costs her nothing whether or not she is anywhere near it — but it detains exactly like a hut
-## now, *(2026-09-10, the player, on stepping onto the gate's own ground while the boom is up for a
-## car: "attempting to do that should just start a regular checkpoint inspection".)* The toll was
-## paid only at the hut before this; a raised bar read as a way past at the bar itself, since
-## nothing stood on the gate's own tiles to catch her. `detain_radius` and `inner_radius` are the
-## hut's own numbers, for the hut's own reasons — the same reach past the same 32px body, inside
-## the same 84px disc. `outer_radius` (120px) is its own: it still comfortably clears
-## `Tuning.required_telegraph_time()` at that `inner_radius`, and nothing about it ties to the
-## field this row never had. Drawn raised or lowered from the shared
-## `RegionPlanner.GateState` `Crowd` keeps current for the day's cars; see `docs/TODO.md`, M62,
-## "cars need to slow down to a full stop." Placed with `Planned.facing` set along the street's own
-## axis, which is both what tells the drawing a north-south road from an east-west one and what
-## `EventManager`'s detention teleport reads back from a hut or a post at the same crossing.
+## The boom over the roadway between a door's two huts. **It never inspects her** *(2026-09-24,
+## the player: "Boom shouldn't inspect her. It should block her.")*: a lowered boom is a wall
+## across the carriageway, and a raised one is ground she may walk under *(2026-09-24: "I didn't
+## say it should stay solid when it's open")* — `lifts_for_traffic`, so its collision body follows
+## the arm and the cars decide the arm (`Crowd._stop_for_gates()`: up once a car has waited at it
+## `Tuning.GATE_STOP_SECONDS`, down the moment no car is within a length of it and she is not
+## under it). The inspection is the two huts' alone, and a hut does not take her in from the
+## carriageway this boom spans, so walking under a raised arm skips the toll.
+##
+## No field of its own — a car passing under it costs her nothing whether or not she is anywhere
+## near it — and `intensity` 0 on radii that exist only because `validate()` wants a falloff band:
+## `inner_radius` 84 and `outer_radius` 120, clear of `Tuning.required_telegraph_time()` at that
+## core. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current for
+## the day's cars. Placed with `Planned.facing` set along the street's own axis, which tells the
+## drawing a north-south road from an east-west one and is the door's own line for the walk-under
+## check.
 static func _checkpoint_gate() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint_gate"
@@ -2416,9 +2418,7 @@ static func _checkpoint_gate() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.point(32.0))
-	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
-	def.redetains = true
+	def.lifts_for_traffic = true
 	def.barrier_structure = true
 	return def
 

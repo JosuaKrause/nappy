@@ -479,9 +479,10 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 	if not map or def == null or def.shape == null or def.obstructs_radius <= 0.0:
 		return nothing
 	# A moving wall pins her, so the catalogue exempts anything mobile from being solid at all; a
-	# door is a crossing the day means to keep open, answered for a walker by `WalkerDoorHold` and
-	# for a car by `Crowd._stop_for_gates()`.
-	if def.mobile or def.detain_seconds > 0.0:
+	# door is a crossing the day means to keep open, answered for a walker by `WalkerDoorHold` at a
+	# hut or a post and for a car by `Crowd._stop_for_gates()` at the boom — which detains nobody,
+	# so it is named by its own flag rather than by `detain_seconds`.
+	if def.mobile or def.detain_seconds > 0.0 or def.lifts_for_traffic:
 		return nothing
 	var placed := at
 	if def.pavement_side == EventDef.Pavement.ANY:
@@ -1192,8 +1193,15 @@ func _tell_them_where_she_is() -> void:
 ## back through the door she has just come out of.
 ##
 ## **A `redetains` row is armed again once released, and what re-arms it is her leaving** — in
-## either direction. `checkpoint_hut`, `checkpoint_gate` and `checkpoint_post` are the three, and
-## this is the whole of what makes a door a toll rather than a one-time gate. `has_chatted()` is
+## either direction. `checkpoint_hut` and `checkpoint_post` are the two, and this is the whole of
+## what makes a door a toll rather than a one-time gate. The boom between a street door's huts is
+## not a third: it never inspects her (`EventDef.lifts_for_traffic`).
+##
+## **And a hut never takes her in from the carriageway its own door's boom spans.** A hut's trigger
+## reaches a reach past its wall, which is further than the kerb, so without this a hut would reach
+## out into the road and inspect her at the boom — the boom inspecting her in all but name, and a
+## raised boom never a way past. That ground is the boom's: lowered it blocks her, raised she may
+## walk under it. See `_on_a_booms_carriageway()`. `has_chatted()` is
 ## only the gate for everything else in the catalogue, since `chatting_mother`'s own contract is one
 ## conversation for good. A redetaining instance is skipped while it is chatting and then while its
 ## own `ReleaseLatch` holds — the far side of a door is a body's width away and the trigger reaches
@@ -1230,6 +1238,8 @@ func _check_detentions() -> void:
 		var latch: ReleaseLatch = _door_release_latches.get(instance)
 		if latch and latch.holds():
 			continue
+		if instance.def.redetains and _on_a_booms_carriageway(instance, body.global_position):
+			continue
 		var range_to := instance.global_position.distance_to(body.global_position)
 		if range_to > instance.def.detain_distance() or range_to >= nearest_range:
 			continue
@@ -1254,6 +1264,26 @@ func _check_detentions() -> void:
 		nearest.def.detain_seconds,
 		"awake" if nearest.baby_awake else "asleep",
 		("+%.0f" % Tuning.CHAT_EXCITEMENT) if nearest.baby_awake else "+0 (asleep)"])
+
+## Whether `at` is on the carriageway spanned by the boom of the door `door_body` stands in — a
+## live `lifts_for_traffic` instance on the same cross-street line (its own `facing_now()` axis),
+## with `at` no further across that line from the boom's centre than the boom's own body reaches.
+## The boom is laid over exactly the carriageway, so its reach is the carriageway's half-width and
+## this is "she is in the road at this door" stated over the door's own geometry rather than over
+## the map's tiles — the same datum the huts and the boom were placed from.
+##
+## `false` for an alley door, which has no boom, so a post's trigger is untouched.
+func _on_a_booms_carriageway(door_body: EventInstance, at: Vector2) -> bool:
+	for instance in _instances:
+		if not instance.def.lifts_for_traffic:
+			continue
+		var axis := instance.facing_now()
+		if absf((door_body.global_position - instance.global_position).dot(axis)) > 1.0:
+			continue
+		var offset := at - instance.global_position
+		if (offset - axis * offset.dot(axis)).length() <= instance.def.obstructs_radius:
+			return true
+	return false
 
 ## The other half of `checkpoint_hut`/`checkpoint_post`'s own toll: the moment a redetaining
 ## instance's conversation ends, teleport her to the mirror of where she stood, reflected through
@@ -1310,10 +1340,10 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 ## Arms a `ReleaseLatch` for **every** redetaining body whose own trigger `at` is inside, not only
 ## the one that just let her out.
 ##
-## A street door is three bodies a tile apart and their reaches overlap, so the far side of the gate
-## is inside a hut's reach: latching only the releasing body means being let out of the boom and
-## taken straight into the hut beside it, which is one crossing charged twice and, to the player,
-## the door refusing to let go. **One crossing is one toll** — *"it works in both directions with
+## Doors stand close enough together that their reaches overlap — two doors meeting at a corner —
+## so the ground one hut lets her out onto can be inside another door body's reach: latching only
+## the releasing body means being let out of one and taken straight into the next, which is one
+## crossing charged twice and, to the player, the door refusing to let go. **One crossing is one toll** — *"it works in both directions with
 ## the same cost each time"* — so what she has just come out of is the whole door, and every part of
 ## it waits until she has walked out of its own circle.
 func _latch_everything_she_was_let_out_into(at: Vector2) -> void:

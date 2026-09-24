@@ -1307,10 +1307,42 @@ func _build_halo() -> void:
 	add_child(_halo)
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
-## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` — and
-## false through the notice of a `solid_once_it_starts` row, which is what that flag is for.
+## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` —
+## false through the notice of a `solid_once_it_starts` row, which is what that flag is for, and
+## false while a boom (`EventDef.lifts_for_traffic`) stands raised.
 func is_solid() -> bool:
-	return _obstruction != null
+	return _obstruction != null and not (def.lifts_for_traffic and is_raised())
+
+## Whether this boom's arm is up right now — `RegionPlanner.GateState.raised`, which only `Crowd`
+## writes. `false` with no `gate_state`, the same safe default the drawing reads: a gate that has
+## not been wired to the cars is a lowered one.
+func is_raised() -> bool:
+	return gate_state != null and gate_state.raised
+
+## A boom's body follows its arm: solid while it is down, not while it is up. *(2026-09-24, the
+## player: "I didn't say it should stay solid when it's open".)* Called once a frame from
+## `_process()`; the shapes are switched rather than the body freed and rebuilt, so nothing that
+## holds the body — the debug view's bounding-box layer — ever sees it vanish.
+##
+## **It never comes down on her, and that is `Crowd`'s half, not this one's.** The arm is the one
+## fact both halves read, and `Crowd._stop_for_gates()` does not lower it while she is under it, so
+## the body cannot go down around her: following the arm is enough. Deferred, because the switch
+## can land while the physics server is mid-query.
+func _let_the_body_follow_the_arm() -> void:
+	if not def.lifts_for_traffic or _obstruction == null:
+		return
+	var open := is_raised()
+	if open == _arm_was_open:
+		return
+	_arm_was_open = open
+	for child in _obstruction.get_children():
+		var collision := child as CollisionShape2D
+		if collision:
+			collision.set_deferred("disabled", open)
+
+## What `_let_the_body_follow_the_arm()` last set the shapes to, so a boom standing still in either
+## position costs a comparison rather than a deferred call a frame.
+var _arm_was_open := false
 
 ## The body of a `solid_once_it_starts` row, put down the frame its notice ends — **unless she is
 ## standing in it**, in which case the vent goes on emitting at full rate and stays passable until
@@ -1420,6 +1452,7 @@ func _process(delta: float) -> void:
 			_obstruction = null
 
 	_become_solid_once_it_starts()
+	_let_the_body_follow_the_arm()
 
 	if def.look == EventDef.Look.UNMARKED_VAN:
 		_update_the_take()
