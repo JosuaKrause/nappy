@@ -1,6 +1,6 @@
 <!-- A police car. Low and pale where every other vehicle in act II is a tall dark box, with the
      light bar the one detail that has to survive icon size. It patrols, so the shape reads from
-     the side at speed. -->
+     the side at speed. The tyres are police_car_wheels.svg. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="46" height="26" viewBox="0 0 46 26" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <rect x="12" y="4" width="20" height="3" fill="#3a3f4a"/>
   <rect x="13" y="4" width="8" height="3" fill="#4a7fc4"/>
@@ -10,8 +10,4 @@
   <path d="M2 13 Q22 10 44 13 L44 20 Q23 22 2 20 Z" fill="#d8dde4"/>
   <path d="M14 14 Q23 12 32 14 L32 17 Q23 19 14 17 Z" fill="#3a4a66"/>
   <path d="M2 18 Q23 20 44 18 L44 21 Q23 24 2 21 Z" fill="#221f28"/>
-  <circle cx="12" cy="21" r="5" fill="#26232a"/>
-  <circle cx="34" cy="21" r="5" fill="#26232a"/>
-  <circle cx="12" cy="21" r="2" fill="#4a464f"/>
-  <circle cx="34" cy="21" r="2" fill="#4a464f"/>
 </svg>

@@ -1,0 +1,7 @@
+<!-- police car front diagonal wheels: the tyres alone, on police_car_front_diagonal.svg's own canvas and anchor, drawn fixed on the ground while the body rides the bob. Bottom-centre ground anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="52" height="42" viewBox="0 0 52 42" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <ellipse cx="11" cy="27" rx="3" ry="4.5" fill="#26232a"/>
+  <ellipse cx="28" cy="35" rx="3" ry="4.5" fill="#26232a"/>
+  <ellipse cx="11" cy="27" rx="1" ry="1.5" fill="#4a464f"/>
+  <ellipse cx="28" cy="35" rx="1" ry="1.5" fill="#4a464f"/>
+</svg>

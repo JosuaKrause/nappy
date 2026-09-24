@@ -5,9 +5,11 @@ This folder contains the reviewed source artwork for M103, the drawings the queu
 consumer, exact use and queued work item for every source. M100, small, real, and nobody's,
 owns chalk/alley choices; M102, the finale, owns interior use; M105, the city degrades, owns
 damage/litter/sacks; M106, roofs, fronts and street trees, owns roof/facade/tree placement.
-The set contains 81 new SVGs and the revised existing industrial vent source.
-Every game source has its import sidecar. New sources remain prepared until their owning
-milestone adds the caller or resource entry.
+The set contains 81 new SVGs and the revised existing industrial vent source. Paths are
+repository paths under `art/`; the reviewed 64×64 `stair_down.svg` module is archived in
+`docs/evidence/archive/rejected-graphics/stair-down-module-superseded-2026-09-10/`, and a live
+32×32 tile has its name. This review records each source as it was reviewed; which of them the
+game reads, and the current registration of any redrawn since, is `docs/GRAPHICS.md`'s to say.
 
 The contact sheets show sources at native size and 3× using Godot's SVG parser. The stair cells
 in `interior-review.png`, `fire-escapes-review.png` and `fire-escape-wall-review.png` are preserved
@@ -35,9 +37,9 @@ alley alternative. The roof uses Palette's first building-roof tint, #c2a179, be
 near-white source is tinted in the live renderer. The fire-escape comparison uses the matching
 shaded wall tint and untinted dark windows. These are source composites, not gameplay captures.
 
-## Prepared inventory
+## Inventory
 
-- Interior floors and edges: `assets/interior/hallway_floor.svg`,
+- Interior floors and edges: `art/interior/hallway_floor.svg`,
   `hallway_floor_edge_{n,e,s,w}.svg`, `basement_floor.svg`,
   `basement_floor_edge_{n,e,s,w}.svg`, and `stairwell_floor.svg`.
 - Interior walls and access: `hallway_wall.svg`, `hallway_wall_window.svg`,
@@ -45,20 +47,20 @@ shaded wall tint and untinted dark windows. These are source composites, not gam
   `stairwell_door.svg`, `entrance_door.svg`, `emergency_exit_door.svg` and
   `lift_door_dead.svg`.
 - Interior props: `entrance_barricade.svg`, `chandelier.svg` and `puddle.svg`.
-- Event options: `assets/events/steam.svg` and `explosion_preview.svg`.
-- Ground sources: `assets/tiles/alley_draft.svg`, plus
+- Event options: `art/events/steam.svg` and `explosion_preview.svg`.
+- Ground sources: `art/tiles/alley_draft.svg`, plus
   `{road,sidewalk,alley}_cracked_{hairline,cracked,broken}_{a,b}.svg`.
-- Degradation props: `assets/props/litter_{apple,newspaper,cup,bag,can}.svg`,
+- Degradation props: `art/props/litter_{apple,newspaper,cup,bag,can}.svg`,
   `garbage_sack.svg`, `garbage_sacks_pile.svg` and `tree_pit.svg`.
 - Roof props: `industrial_vent.svg` and `industrial_vent_b.svg`;
   `roof_hvac_unit.svg`, `roof_hvac_unit_b.svg`, `roof_duct_straight.svg`,
   `roof_duct_corner.svg`, `roof_skylight.svg`, `roof_skylight_b.svg`,
   `roof_vent_stack.svg` and `roof_water_tank.svg`.
-- Frontages: `assets/buildings/storefront_{a,b,c,d}.svg`,
+- Frontages: `art/buildings/storefront_{a,b,c,d}.svg`,
   `storefront_{a,b,c,d}_awning.svg`, `storefront_{a,b,c,d}_shuttered.svg`,
   `fire_escape_{a,b}.svg`, `window_tall_{dark,lit}.svg` and
   `window_shuttered_{dark,lit}.svg`.
-- Resistance sources: `assets/props/chalk_mark.svg` and `chalk_mark_touched.svg`.
+- Resistance sources: `art/props/chalk_mark.svg` and `chalk_mark_touched.svg`.
 
 The mouse and riot-van end source belong to the separately reviewed vehicle/animal source set.
 
@@ -98,18 +100,13 @@ escapes remain transparent around the metalwork,
 so the facade and windows can show through. Window sources remain 32×32 overlays.
 
 The chalk sources preserve the code-drawn circle and crossing strokes. The touched source adds
-a small tick at the upper-right as the acknowledgement that she has seen the mark. The current
-ContactPoint drawing is unchanged.
+a small tick at the upper-right as the acknowledgement that she has seen the mark.
 
-## Verification and remaining bindings
+## Verification
 
 Every source is XML-valid and rendered through Godot Image.load_svg_from_string at 1× and 3×.
 The sheets include native-scale recognition, enlarged joins and clipping, tile repetition,
 facade state alignment, vent phases and the chalk comparison. Repository import/boot and
 documentation lint pass. No full local gameplay suite is needed for these artwork-only sources.
-
-The existing callers and resources remain unchanged: Building, City, the ground TileSet,
-ContactPoint and EventInstance. The existing industrial vent source contains frame A; the
-second frame is prepared. The optional explosion stays unbound until the finale chooses its
-presentation. The alley alternative stays beside the current alley until the played verdict
-chooses it. No runtime behavior is added to demonstrate a prepared picture.
+The review added source art only: no caller or resource entry, and no runtime behavior to
+demonstrate a picture.

@@ -1,0 +1,4 @@
+<!-- riot van back wheels: the tyres alone, on riot_van_back.svg's own canvas and anchor, drawn fixed on the ground while the body rides the bob. Bottom-centre ground anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="50" viewBox="0 0 34 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 16 L5 16 L5 24 L2 24 Z M29 16 L32 16 L32 24 L29 24 Z M2 36 L5 36 L5 45 L2 45 Z M29 36 L32 36 L32 45 L29 45 Z" fill="#26232a"/>
+</svg>
