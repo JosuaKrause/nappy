@@ -262,9 +262,9 @@ name the question it answers, or it is a metric and does not belong.
 | Kind | Written by | Answers |
 | --- | --- | --- |
 | `plan` | `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
-| `roll` | `EventScheduler`, `ResistanceDirector` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed |
+| `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag |
 | `arc` | `CityState` | Which block became something else, and what caused it |
-| `scar` | `EventManager` | Where the city stopped being recomputable |
+| `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
 | `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, day 3's fire sited or moved on the branch she is walking, or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
 | `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (`player_at`, its own age), and that is what lets a data-level rig assert it with no map or city behind it |
 | `chat` | `EventManager` | A detention conversation started — which one, where, and how long it holds her. Written whenever `detain_seconds` fires, not only for `chatting_mother`, so a redetaining door's own toll is on this line too; what it costs the meter is on the line as well, since a sleeping baby pays nothing and an awake one pays `Tuning.CHAT_EXCITEMENT` |

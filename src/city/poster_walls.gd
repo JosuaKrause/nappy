@@ -27,6 +27,9 @@ extends Node
 ##   her view — see `_work_the_crews()`.
 ## - **Pasting over.** A new sheet on an old one covers it exactly most of the time and shows it
 ##   beneath, offset enough to read, the rest (`OVERPASTE_SHARE`).
+##
+## What takes one down is her, and nothing else: **pushing against the wall** — see
+## `_push_to_tear()`. A torn sheet stays torn until a crew or a dawn pastes that wall again.
 
 ## The first day any poster is on a wall — the first day `poster_crew` is in the catalogue.
 const FIRST_DAY := 4
@@ -72,6 +75,27 @@ const OVERPASTE_SHARE := 0.25
 const PASTE_EVERY := 2.0
 const FIRST_PASTE_AFTER := 0.8
 
+## How long her heading has to press into a postered wall before the sheet tears — long enough that
+## brushing past does not tear, short enough that a push made by accident does, which is how the
+## gimmick is found. Taste, open to overturn.
+const PRESS_TO_TEAR := 0.4
+## How far into the wall her heading has to point to be a push: the sine of the angle it makes with
+## the wall's line. A half is thirty degrees, so a diagonal into the wall (forty-five) pushes, and
+## walking along the sidewalk with a drift toward the wall does not.
+const PRESS_INTO := 0.5
+## How near the wall her feet have to be for a heading into it to be a push rather than a walk
+## toward it. Facing the wall, the pram's own body stops her `PLAYER_BODY_RADIUS +
+## Stroller.PRAM_BODY_RADIUS` (22px) from the face; a few pixels past that, so a push is a push
+## whatever her facing has turned to by the time she arrives.
+const PRESS_REACH := Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS + 4.0
+
+## The marble bag a tear draws from, which says whether it brings a pursuer (PLAYTEST-125): a
+## pre-bag of one "no pursuit" marble, so the run's first tear is always safe, then bags of one
+## "pursuit" and nine "no pursuit", each refilled when empty — one tear in ten over every bag.
+## `true` is a pursuit marble. See `MarbleBag`.
+const TEAR_PRE_BAG: Array[bool] = [false]
+const TEAR_BAG: Array[bool] = [true, false, false, false, false, false, false, false, false, false]
+
 var _city: City
 var _map: CityMap
 ## One entry per front with a blank cell: `{"building": Building, "cols": Array[int],
@@ -87,6 +111,12 @@ var _day_running := false
 ## "rng"}`. A day's, keyed by where the crew stands, so a crew streamed out and back in carries on.
 var _jobs: Dictionary = {}
 var _player: Stroller = null
+## Seconds her heading has pressed into a postered sheet without a break. See `_push_to_tear()`.
+var _pressed_for := 0.0
+## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
+## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
+var _bag: MarbleBag = null
+var _bag_seed := 0
 
 ## Reads every building's blank ground-floor cells. Called once by `City.build()`, whose buildings
 ## are fixed for the run.
@@ -141,6 +171,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 	_day = day
 	_day_running = true
 	_jobs.clear()
+	_pressed_for = 0.0
 	var state := GameState.posters
 	var corridor := Corridor.of(tree) if tree else null
 	for dawn in range(maxi(state.pasted_through + 1, FIRST_DAY), day + 1):
@@ -260,6 +291,7 @@ func _physics_process(delta: float) -> void:
 		if not _player:
 			return
 	_work_the_crews(delta, _player.global_position)
+	_push_to_tear(delta, _player.global_position, _player.steering)
 
 ## Every poster crew in the world pastes the wall it stands at, one sheet every `PASTE_EVERY`
 ## seconds while it is inside her view, starting with the cell in front of it and working outward,
@@ -319,3 +351,74 @@ func _job_for(tile: Vector2i) -> Dictionary:
 			queue.append(other)
 	return {"queue": queue, "kind": kind, "next_in": FIRST_PASTE_AFTER, "pasted": 0,
 			"total": queue.size(), "rng": rng}
+
+# --------------------------------------------------------------- the tears ---
+
+## She tears a poster down by pushing against its wall: no button, and more than walking past.
+## Her heading has to point into the wall (`PRESS_INTO`, a diagonal included) while her feet are at
+## its face (`PRESS_REACH`), on the sidewalk tile in front of an intact sheet, for `PRESS_TO_TEAR`
+## seconds; the sheet she is in front of then tears. `steering` is the input she is being steered
+## by rather than her velocity, because a wall stops the second and not the first.
+##
+## A diagonal slides her along the wall, so the count carries across the cells of it while she keeps
+## pushing, runs only while she is in front of an intact sheet, and starts again after each tear:
+## a push held along a papered wall tears a sheet every `PRESS_TO_TEAR` seconds rather than one
+## per cell she crosses. Letting go, or turning out of the wall, starts it again.
+##
+## A tear costs nothing and counts for nothing; what it can do is bring a patrol — see `_tear()`.
+func _push_to_tear(delta: float, at: Vector2, steering: Vector2) -> void:
+	var tile := _map.world_to_tile(at)
+	if not _by_tile.has(tile) or not _presses_into_the_wall(tile, at, steering):
+		_pressed_for = 0.0
+		return
+	if not GameState.posters.has_intact_sheet(tile):
+		return
+	_pressed_for += delta
+	if _pressed_for < PRESS_TO_TEAR:
+		return
+	_pressed_for = 0.0
+	_tear(tile)
+
+## Whether a heading `steering` from `at`, on the front tile `tile`, pushes into its wall. Every
+## front is a south face, so into the wall is north.
+func _presses_into_the_wall(tile: Vector2i, at: Vector2, steering: Vector2) -> bool:
+	if steering.normalized().y > -PRESS_INTO:
+		return false
+	var wall := _walls[_by_tile[tile].x]
+	var face := (wall["building"] as Building).global_position.y
+	return at.y - face <= PRESS_REACH
+
+## Tears the sheet on `tile`, one of the three tears, and draws a marble for whether a patrol
+## comes. Which tear is a hash of the run, the cell and the count rather than a roll, so nothing
+## draws from any stream; the marble comes from the bag's own.
+func _tear(tile: Vector2i) -> void:
+	var state := GameState.posters
+	var kind := int(state.cells[tile]["kind"])
+	var which := posmod(hash("%d:%d:%d:%d:tear" % [GameState.run_seed, tile.x, tile.y,
+			state.tears]), PosterArt.TEARS)
+	var bag := _the_bag()
+	if not state.tear(tile, which):
+		return
+	var pursuit := bag.draw()
+	state.tears += 1
+	_refresh_wall(_by_tile[tile].x)
+	var what: String = PosterArt.Kind.keys()[kind].to_lower()
+	# Where and which, because nothing else records it: a tear depends on where she pushed.
+	Telemetry.note("scar", "she tears down the %s sheet at %s, tear %d of the run"
+			% [what, TelemetryLog.tile(tile), state.tears])
+	Telemetry.note("roll", "poster tear %d draws a %s marble, %d left in the bag"
+			% [state.tears, "pursuit" if pursuit else "no-pursuit", bag.left()])
+	if pursuit and _city and _city.events:
+		_city.events.send_a_patrol()
+
+## The run's marble bag, brought to where the run is: `PosterState.tears` marbles already drawn,
+## from the bag's own stream off the run's seed, so a save, a lost day's give-back and a retry all
+## draw the same marbles the run would have drawn.
+func _the_bag() -> MarbleBag:
+	var tears := GameState.posters.tears
+	var seed_value := hash("%d:poster-tears" % GameState.run_seed)
+	if _bag == null or _bag_seed != seed_value or _bag.drawn != tears:
+		_bag = MarbleBag.new(TEAR_PRE_BAG, TEAR_BAG, seed_value)
+		_bag_seed = seed_value
+		_bag.skip(tears)
+	return _bag

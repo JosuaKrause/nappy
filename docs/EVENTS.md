@@ -920,6 +920,15 @@ rest of the run. Its field and its cost are unchanged. `tools/test.sh
 probes/m180_crews_on_her_way.gd` walks the day's routes and prints how many crews were sited, met
 and how much they pasted.
 
+**A torn poster can send a patrol.** When the tear's marble says so (`docs/MECHANICS.md`, "Tearing
+a poster down"), `EventDirector.send_a_patrol()` sends a `police_patrol` at the run's heat the way
+the return leg's patrols come: `TOWARD_PLAYER` down the carriageway lane driving toward her, at
+least its `offscreen_notice` outside the view (`_toward_her_on_the_road()`), so its telegraph
+contract is the one that row already keeps. It is held apart from the day's owed queue — it takes
+no turn in it, rolls no interval and draws from no stream — so a day she tears a poster hands every
+other director-sited row what it would have had anyway. At most one is waiting at a time, it is
+sited only once she walks on along a street, and nothing is sent during the escape.
+
 ### Danger, and when it arrives
 
 **Expensive** and **dangerous** are different axes: expensive is the meter moving, dangerous is

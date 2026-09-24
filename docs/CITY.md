@@ -1913,7 +1913,9 @@ Top-down camera with a fake vertical extrusion:
   older one shows beneath, offset enough to read as pasted over. What is on the walls is run state
   (`GameState.posters`, a `PosterState`): it is saved, and a lost day gives it back like the rest
   of what the attempt spent, so the retry's dawn pastes the same sheets again. A burnt front shows
-  none.
+  none. Nothing takes a sheet down but her: pushing against the wall tears it (`docs/MECHANICS.md`,
+  "Tearing a poster down"), and a torn sheet stays torn until a crew or a dawn pastes that wall
+  again, when the whole wall is pasted, its torn sheets included.
 - **A building's upper-floor windows carry one of three styles, rolled once for the whole
   building**: the plain pair, a tall sash pair, or a shuttered pair that lights up like any other —
   ordinary street variety, unconnected to the day or the block's own condition. Going

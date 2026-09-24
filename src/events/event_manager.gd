@@ -134,6 +134,18 @@ func _owe_the_return() -> void:
 		return
 	_director.owe_the_return(_day, GameState.resistance_progress)
 
+## A torn poster drew the pursuit marble: sends a `police_patrol` toward her from off screen, at the
+## run's own heat. See `EventDirector.send_a_patrol()` for how and when it is sited, and
+## `PosterWalls` for the bag it was drawn from. Nothing is sent during the escape.
+func send_a_patrol() -> void:
+	if _walking_the_finale:
+		return
+	_director.send_a_patrol(GameState.resistance_progress)
+
+## Whether a torn poster's patrol is on its way and not yet sited. For the tests.
+func has_a_sent_patrol() -> bool:
+	return _director.has_a_sent_patrol()
+
 ## Clears yesterday and plans today. `consumed_one_shots` is appended to in place.
 ##
 ## `focus` is where the player will be standing when the day starts, so the events already

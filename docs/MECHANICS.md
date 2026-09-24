@@ -1029,6 +1029,34 @@ weight of 1.4. The hint says nothing again for the rest of the run: it is the le
 commentary on the mechanic, so every later pursuit — a second dog the same day, `alley_robbery`
 from day 8 — telegraphs in silence.
 
+## Tearing a poster down
+
+**She tears a poster down by pushing against its wall**, and there is no button for it. Her
+heading has to point into the postered wall — at least thirty degrees off its line
+(`PosterWalls.PRESS_INTO`), so a diagonal counts — while her feet are at its face
+(`PosterWalls.PRESS_REACH`, a few pixels past where the pram stops her), for 0.4 seconds
+(`PosterWalls.PRESS_TO_TEAR`). Walking past, even drifting into the wall, tears nothing; a push can
+still happen by accident, which is how it is found. What is read is her steering rather than her
+velocity, since the wall stops the one and not the other. A diagonal slides her along the wall, so
+a push held along a papered wall tears a sheet every 0.4 seconds while she is in front of an
+intact one.
+
+The sheet shows one of the three tears and stays torn until a crew, or a dawn, pastes that wall
+again. **A tear costs nothing on the meter and counts for nothing**: it is a gimmick, judged by
+feel.
+
+**What it can do is bring a patrol, and whether it does is drawn from a marble bag** rather than
+rolled (`MarbleBag`, PLAYTEST-125): each tear draws one marble at random and removes it, and an
+empty bag is filled again with the same set, so over every bag the share is exact where a roll at
+the same odds runs streaks. The run's first bag is a pre-bag of one "no pursuit" marble, so the
+first tear is always safe; every bag after it holds one "pursuit" and nine "no pursuit"
+(`PosterWalls.TEAR_PRE_BAG`, `TEAR_BAG`). The bag draws from a stream of its own off the run's
+seed, and its whole state is how many tears the run has made (`PosterState.tears`), so a save, a
+lost day and a retry all draw the same marbles. A pursuit marble sends a `police_patrol` toward
+her from off screen, down the carriageway lane driving toward her, under the lead the row already
+owes (`EventDirector.send_a_patrol()`) — sited once she walks on along the street, since a heading
+into a wall gives a car no street to come down. Only poster tears use a marble bag.
+
 ## Telegraphing
 
 Every event has a `telegraph_time` (default `2.5 s`, longer for big events) during which:
