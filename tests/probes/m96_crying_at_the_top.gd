@@ -22,13 +22,14 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 
-## `[mass, window]` pairs to sweep, the player's own starting point first — "10 over 3s", then two
-## settings either side of it to see how the shape moves.
-const SETTINGS := [[10.0, 3.0], [5.0, 2.0], [15.0, 3.0]]
+## `[mass, window]` pairs to sweep, the shipped setting first, then playtest 128's candidates for
+## a tighter one — "we can make the extra push needed to end the day a tiny bit more
+## aggressive/tighter" (M100, `docs/TODO.md`).
+const SETTINGS := [[10.0, 3.0], [9.5, 3.0], [10.0, 4.0], [9.5, 4.0]]
 
 ## The distinct windows the settings above actually need, so each scenario is simulated once and
 ## every setting is read back from the same run rather than re-simulated per setting.
-const WINDOWS := [3.0, 2.0]
+const WINDOWS := [3.0, 4.0]
 
 ## The loudest rows by `docs/COSTS.md`'s `walk_through_cost`, restricted to ones with no `speed` of
 ## their own — a stationary field is a straight line to walk through or a point to stand in;
@@ -69,8 +70,10 @@ func run(t) -> void:
 		print("\n-- %s (docs/COSTS.md) --" % id)
 		var walked := _walk_past_row(t, id)
 		_report("  walking past, starting at the cap", walked["peak"])
+		_report_cross("  walking past, time to cry", walked["cross"])
 		var stood := _stand_in_row(t, id, 3.0)
 		_report("  standing in it for 3s, starting at the cap", stood["peak"])
+		_report_cross("  standing in it, time to cry", stood["cross"])
 
 	var fall := _fall_from_the_top(t)
 	print("\n-- the fall --")
@@ -87,8 +90,22 @@ func _report(label: String, peak: Dictionary) -> void:
 		var mass: float = setting[0]
 		var window: float = setting[1]
 		var reached: float = peak.get(window, 0.0)
-		print("    %.0f over %.0fs: mass %.2f -> %s"
+		print("    %.1f over %.0fs: mass %.2f -> %s"
 				% [mass, window, reached, "CRIES" if reached >= mass else "awake"])
+
+## Prints one scenario's time-to-cry against every setting in `SETTINGS` — the elapsed seconds
+## from already sitting at the cap to the moment `overflow_mass(window)` first reaches `mass`,
+## the number a tighter setting is meant to shrink.
+func _report_cross(label: String, cross: Dictionary) -> void:
+	print(label)
+	for setting in SETTINGS:
+		var mass: float = setting[0]
+		var window: float = setting[1]
+		var elapsed: float = cross.get(setting, -1.0)
+		if elapsed < 0.0:
+			print("    %.1f over %.0fs: never" % [mass, window])
+		else:
+			print("    %.1f over %.0fs: %.2fs" % [mass, window, elapsed])
 
 # ------------------------------------------------------------------------ the rig ---
 
@@ -129,6 +146,26 @@ func _track_peaks(peaks: Dictionary) -> void:
 		return
 	for w in WINDOWS:
 		peaks[w] = maxf(peaks[w], _baby.overflow_mass(w))
+
+## Seconds elapsed before each `SETTINGS` pair first cries, keyed by the setting's own `[mass,
+## window]` pair (`Array` keys compare by value in GDScript, so the pair doubles as its own key).
+## `-1.0` means the setting never crossed within however long the scenario ran.
+func _new_cross() -> Dictionary:
+	var cross := {}
+	for setting in SETTINGS:
+		cross[setting] = -1.0
+	return cross
+
+func _track_cross(cross: Dictionary, elapsed: float) -> void:
+	if _baby.excitement < Tuning.METER_MAX:
+		return
+	for setting in SETTINGS:
+		if cross[setting] >= 0.0:
+			continue
+		var mass: float = setting[0]
+		var window: float = setting[1]
+		if _baby.overflow_mass(window) >= mass:
+			cross[setting] = elapsed
 
 # -------------------------------------------------------------------- one contact ---
 
@@ -207,14 +244,18 @@ func _walk_past_row(t, id: String) -> Dictionary:
 	_stroller.global_position = Vector2(-lead, lateral)
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
+	var cross := _new_cross()
 	var steps := int(ceil((lead * 2.0) / Tuning.WALK_SPEED / STEP))
+	var elapsed := 0.0
 	for _i in steps:
 		_stroller.global_position.x += Tuning.WALK_SPEED * STEP
 		instance._process(STEP)
 		_world.noise = instance.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
-	var result := {"excitement": _baby.excitement, "peak": peaks}
+		elapsed += STEP
+		_track_cross(cross, elapsed)
+	var result := {"excitement": _baby.excitement, "peak": peaks, "cross": cross}
 	instance.free()
 	_teardown()
 	return result
@@ -236,13 +277,17 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 	_stroller.global_position = Vector2.ZERO
 	_stroller.velocity = Vector2.ZERO
 	var peaks := _new_peaks()
+	var cross := _new_cross()
 	var steps := int(round(seconds / STEP))
+	var elapsed := 0.0
 	for _i in steps:
 		instance._process(STEP)
 		_world.noise = instance.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
-	var result := {"excitement": _baby.excitement, "peak": peaks}
+		elapsed += STEP
+		_track_cross(cross, elapsed)
+	var result := {"excitement": _baby.excitement, "peak": peaks, "cross": cross}
 	instance.free()
 	_teardown()
 	return result
