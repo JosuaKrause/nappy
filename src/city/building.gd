@@ -102,8 +102,14 @@ const STOREFRONT_SHUTTERED_TEXTURES: Array[StringName] = [
 	&"buildings/storefront_c_shuttered",
 	&"buildings/storefront_d_shuttered",
 ]
+## One floor of a fire escape — a balcony with its flight hanging below it to the balcony one floor
+## down — and the same balcony with the flight taken out, for the first floor's floor line. `a` has a
+## potted plant on its balcony and `b` does not; every flight faces the same way on both. See
+## `_draw_fire_escape()`.
 const FIRE_ESCAPE_A := &"buildings/fire_escape_a"
 const FIRE_ESCAPE_B := &"buildings/fire_escape_b"
+const FIRE_ESCAPE_PLATFORM_A := &"buildings/fire_escape_platform_a"
+const FIRE_ESCAPE_PLATFORM_B := &"buildings/fire_escape_platform_b"
 const CIVIC_PORTICO := &"props/civic_portico"
 ## The one way in a multi-story front with no storefront and no portico has — see
 ## `entrance_door_col()`. 32×36px, a whole wall cell wide and rising four pixels into the row above
@@ -133,9 +139,14 @@ const _STACK_CELLS: Array[Vector2i] = [Vector2i(9, 2), Vector2i(4, 1)]
 
 ## Share of a storefront cell that gets the sloped-awning variant instead of the plain one.
 const STOREFRONT_AWNING_SHARE := 0.35
-## Share of `RESIDENTIAL` buildings tall enough for one (`wall_tiles() >= 2`) that get a fire
-## escape at all.
+## Share of `RESIDENTIAL` buildings tall enough for one (`FIRE_ESCAPE_MIN_WALL_ROWS`) that get a
+## fire escape at all.
 const FIRE_ESCAPE_SHARE := 0.3
+## The fewest wall rows a front carries a fire escape on — three floors, the top one plain, one
+## flight and the ground floor's platform (`fire_escape_landings()`). *(2026-09-23, the player,
+## PLAYTEST-124.md statement 17: "a two floor building cannot have a fire escape".)* On two, the
+## escape would be the platform alone, a balcony with no way down.
+const FIRE_ESCAPE_MIN_WALL_ROWS := 3
 ## Share of a `LIVED_IN` commercial storefront that has gone shuttered by the time
 ## `Tuning.degradation_for(day)` reaches 1.0 — read against each cell's own fixed severity roll
 ## the same way `GroundTiles._cracked()` reads the ground's. A `BOARDED` block ignores this and
@@ -305,7 +316,7 @@ var _storefront_awning: Array[bool] = []
 ## in the run and stays shuttered, the same "fixed severity, the day decides how far it has been
 ## crossed" shape `GroundTiles._cracked()` uses for a crack.
 var _storefront_shutter_severity: Array[float] = []
-## The one ground-floor column a `RESIDENTIAL` building's fire escape stands against, or -1 for
+## The one column a `RESIDENTIAL` building's fire escape climbs, floor by floor, or -1 for
 ## the share that rolled none.
 var _fire_escape_col := -1
 var _fire_escape_variant_b := false
@@ -449,6 +460,11 @@ func _build_front() -> void:
 		# sit on top of `WALL_EDGE_W`/`WALL_EDGE_E`'s own parapet turn.
 		_fire_escape_col = rng.randi_range(1, cols - 2) if cols >= 3 else rng.randi_range(0, cols - 1)
 		_fire_escape_variant_b = rng.randf() < 0.5
+		# Rolled on every front of two rows or more and only then dropped from the ones too short
+		# to carry it, so the stream is consumed exactly as far on every front and the bound can
+		# move without moving a roll.
+		if wall_tiles() < FIRE_ESCAPE_MIN_WALL_ROWS:
+			_fire_escape_col = -1
 
 ## Which ground-floor column the entrance door stands in. A seed of its own, distinct from
 ## `_build_windows()`'s and `_build_front()`'s, so the door moves no window, style, storefront,
@@ -716,14 +732,47 @@ func _draw_front_overlay() -> void:
 		var door_x := _cell(door_col, 0).x + TILE * 0.5
 		Sprites.draw_standing(self, AtlasLibrary.region(_entrance_door_texture()), Vector2(door_x, 0.0))
 	if _fire_escape_col >= 0:
-		var name := FIRE_ESCAPE_B if _fire_escape_variant_b else FIRE_ESCAPE_A
-		var x := _cell(_fire_escape_col, 0).x + TILE * 0.5
-		Sprites.draw_standing(self, AtlasLibrary.region(name), Vector2(x, 0.0))
+		_draw_fire_escape()
 	if district == GameEnums.BlockPurpose.CIVIC:
 		Sprites.draw_standing(self, AtlasLibrary.region(CIVIC_PORTICO), Vector2(0.0, 0.0))
 	if power_station:
 		var x := _cell(station_door_col, 0).x + TILE * CityMap.POWER_STATION_DOOR_TILES * 0.5
 		Sprites.draw_standing(self, AtlasLibrary.region(POWER_STATION_DOOR), Vector2(x, 0.0))
+
+## The rows whose floor line carries one of this front's fire-escape balconies, lowest first, or
+## empty for a front with none. A row's floor line is its bottom edge, so row 1's balcony is the
+## first floor's, standing on the ground floor's top edge, and the last is the top floor's: "you
+## start at the bottom of the top floor then the same texture gets placed on each floor"
+## (PLAYTEST-124.md, statement 13). Every balcony but the lowest hangs a flight down through the
+## floor below it to the next balcony down; the lowest is the platform alone, so the ground floor
+## carries only the brackets under it and nothing comes down to the sidewalk.
+func fire_escape_landings() -> Array[int]:
+	var result: Array[int] = []
+	if _fire_escape_col < 0:
+		return result
+	for row in range(1, wall_tiles()):
+		result.append(row)
+	return result
+
+## The picture for the balcony on `row`'s floor line: the platform alone on the lowest, the balcony
+## and its flight on every other.
+func fire_escape_texture(row: int) -> StringName:
+	if row <= 1:
+		return FIRE_ESCAPE_PLATFORM_B if _fire_escape_variant_b else FIRE_ESCAPE_PLATFORM_A
+	return FIRE_ESCAPE_B if _fire_escape_variant_b else FIRE_ESCAPE_A
+
+## The fire escape, one picture per floor (`fire_escape_landings()`). Each picture's balcony sits
+## one row above its bottom edge and its flight hangs through the row below, so the balcony on
+## `row`'s floor line is anchored on the floor line of `row - 1`. Drawn from the top down, so each
+## balcony's railing stands in front of the foot of the flight that comes down onto it. Every
+## picture is drawn the same way round: the flights all face one direction, never alternating.
+func _draw_fire_escape() -> void:
+	var x := _cell(_fire_escape_col, 0).x + TILE * 0.5
+	var landings := fire_escape_landings()
+	for i in range(landings.size() - 1, -1, -1):
+		var row := landings[i]
+		var foot := Vector2(x, _cell(_fire_escape_col, row - 1).y + TILE)
+		Sprites.draw_standing(self, AtlasLibrary.region(fire_escape_texture(row)), foot)
 
 # ------------------------------------------------------------- roof furniture ---
 

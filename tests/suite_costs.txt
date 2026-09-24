@@ -32,7 +32,7 @@ test_events.gd 160905
 test_finale.gd 14460
 test_full_run.gd 94189
 test_generator.gd 52233
-test_ground_floor.gd 2802
+test_ground_floor.gd 3267
 test_ground_layers.gd 192
 test_halo.gd 39
 test_heat.gd 16534
