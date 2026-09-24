@@ -163,6 +163,7 @@ func _build_pickup(t, step_index: int) -> void:
 	_player = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	_player.add_child(camera)
 	t.add_child(_player)
 	_player.set_physics_process(false)
