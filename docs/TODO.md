@@ -709,7 +709,19 @@ is still true.
       inspection, and the price is that car — she is on its carriageway, the horn and the strike
       apply as on any street, and the traffic fairness contract (**crowd-traffic**) must hold for
       this crossing too. Every door then offers the choice: the hut's hold, or a dash past a car.
-      A lowered boom blocks her, and the gate is never a detaining body either way. **The
+      A lowered boom blocks her, and the gate is never a detaining body either way. **Slipping
+      under the boom sets the guards on her** *(2026-09-24: "The guards should start pursuing her
+      in that case")*. It is detected, not guessed: every frame, she has crossed a door's own
+      cross-street line (the one an inspection's release is reflected through) since the last
+      frame without `Stroller.teleport_to()` having moved her. The huts and the lowered boom are
+      solid, and an inspection's release is a teleport, so a walked crossing is a crossing under a
+      raised boom and nothing else. The chase is a pursuit under the existing pursuit contract
+      (`Tuning`'s chase-length and `PURSUIT_SHAKEN_OFF` rules, **events**: it lets go, and running
+      outpaces it), started by the hut guards already drawn at that door. The run log notes each
+      walk under a boom, and a route-rig test requires none across its runs. **Open: what a catch
+      does** — the day ends, as the heated roadblock guard's does, or she is taken back to the hut,
+      inspected and let out on the side she came from — **and whether one guard or both set off**;
+      asked 2026-09-24. **The
       route rig never routes through the boom, either way** *(2026-09-24: "The bot shouldn't route
       through the boom either way")*. Found while capturing the inspection: the boom's own body
       took her in with nobody on screen doing it, since the guards stand at the huts; a guard
