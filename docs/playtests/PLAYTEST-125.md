@@ -52,5 +52,7 @@ The orchestrator recommended the queue's numbers: both put the first pursuit aro
 seventh tear on average, tearing counts for nothing so its price stays light, and the bag already
 guarantees one pursuit in every ten tears.
 
+> "let's go with your numbers"
+
 5. **The bag uses the queue's numbers**: a pre-bag of one "no pursuit" marble, then bags of one
    "pursuit" and nine "no pursuit". The example's three and two-in-ten were only examples.
