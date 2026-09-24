@@ -568,9 +568,10 @@ const _CAUSES := {
 }
 
 ## Adds an event outside the day's plan. Used by the resistance director to plant the
-## robbery that may be waiting where a contact is.
-func spawn_extra(def: EventDef, at: Vector2) -> EventInstance:
-	return _spawn_unplanned(def, at)
+## robbery that may be waiting where a contact is, and by the resistance's own happenings — the
+## neighbor, the raid, the column — which hand a mover the `path` it walks or drives.
+func spawn_extra(def: EventDef, at: Vector2, path := PackedVector2Array()) -> EventInstance:
+	return _spawn_unplanned(def, at, path)
 
 ## Retires one unplanned instance outside the day's own closures and events — the resistance
 ## director's own use, when a chalk mark moves and the guard standing over the old spot has to go

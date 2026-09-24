@@ -89,6 +89,9 @@ enum Look {
 	                  ## `curfew_announce` are two things the same mast does, not two masts — see
 	                  ## `EventInstance._draw_mast()` for the lamp that says whether it is live and
 	                  ## the arcs that say it is speaking right now.
+	# ---- the story's own figure ----
+	NEIGHBOR,         ## The neighbor down the hall, in work clothes: steel-blue coveralls with a
+	                  ## reflective band and a dark work cap — the face on the wanted notice.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.

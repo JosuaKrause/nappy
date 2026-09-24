@@ -122,6 +122,8 @@ var _guard: EventInstance
 ## comes from the same day's stream a replay would reproduce.
 var _rng: RandomNumberGenerator
 var _player: Stroller
+## What the story puts in the street besides the task — see `ResistanceHappenings`.
+var _happenings := ResistanceHappenings.new()
 
 ## The day's own reachability answer, built lazily (`_ensure_reachability()`) the first time a
 ## placement asks it and kept for the rest of the day — cleared in `start_day()` so a new day
@@ -145,6 +147,7 @@ func setup(city: City, map: CityMap) -> void:
 	add_to_group("resistance")
 	_city = city
 	_map = map
+	_happenings.setup(city, map)
 
 ## Lets the danger edge's own screen test answer "has she seen this" for the resistance
 ## too, without the director holding a viewport of its own. See the class doc on `_sight`.
@@ -169,6 +172,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	# A fresh attempt at the day starts without the package, whether this is the first try
 	# or a retry after a nerve — see GameState.resistance_carrying_package.
 	GameState.resistance_carrying_package = false
+	_happenings.start_day(day)
 
 	var step := ResistanceSteps.for_day(day, GameState.completed_resistance_steps,
 			GameState.failed_resistance_steps, GameState.sabotage_available())

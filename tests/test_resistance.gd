@@ -57,6 +57,7 @@ func run(t) -> void:
 	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t)
+	_test_the_neighbor_leaves_for_work_until_the_raid(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_the_narrow_targets_are_reachable_on_their_day(t)
@@ -1583,6 +1584,36 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 		director.free())
 	GameState.scars = saved_scars
 	GameState.day = saved_day
+
+## On the mornings before day 10 the neighbor walks out of her building beside her and off along
+## her street, away from her, with nothing pointing at them; from day 10 on there is no morning
+## figure — on day 10 they are out in the city, and after it they are gone.
+func _test_the_neighbor_leaves_for_work_until_the_raid(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var door := _city.map.doorstep_world_position()
+		for day in [1, 5, ResistanceHappenings.NEIGHBOR_DAY - 1]:
+			var director := _director(t)
+			director.start_day(day, _rng(day, "resistance"), 300.0)
+			var neighbor := director._happenings.morning_neighbor
+			t.check(neighbor != null and neighbor.def.id == "neighbor",
+					"day %d: the neighbor leaves her building in the morning" % day)
+			if neighbor:
+				t.check(neighbor.global_position.distance_to(door) < 2.0 * Tuning.TILE_SIZE,
+						"day %d: out of her own door, beside her" % day)
+				t.check(neighbor.path.size() >= 2 and neighbor.path[neighbor.path.size() - 1]
+						.distance_to(door) > 4.0 * Tuning.TILE_SIZE,
+						"day %d: and walking off along her street" % day)
+				t.check(director.red_arrow_target() == Vector2.INF,
+						"day %d: and nothing points at them" % day)
+				_city.events.retire(neighbor)
+			director.free()
+		for day in [ResistanceHappenings.NEIGHBOR_DAY, ResistanceHappenings.NEIGHBOR_DAY + 1, 13]:
+			var director := _director(t)
+			director.start_day(day, _rng(day, "resistance"), 300.0)
+			t.check(director._happenings.morning_neighbor == null,
+					"day %d: no neighbor leaves for work" % day)
+			director.free())
 
 # ----------------------------------------------------------------- red arrow ---
 

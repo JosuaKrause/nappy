@@ -48,6 +48,10 @@ Warm palette. Full sun. Lots of pedestrians, dogs, kids in the playground. The o
 are *pleasant* things — a busker, a cat, a friendly neighbour. The only genuinely
 unpleasant thing is a man yelling on a corner, and everyone walks around him.
 
+Every morning, as she comes out, a neighbor in work clothes — coveralls, a reflective band, a
+work cap — leaves the same building and walks off down the street. Nothing points at them. It is
+the neighbor down the hall, and it is every morning until day 10.
+
 On day 3 the fire meets her on her way. It is on whatever street she takes, the engine comes
 and parks across from it, and between them the street is shut for the rest of the day, so she
 turns round or goes another way. Still read as an accident.

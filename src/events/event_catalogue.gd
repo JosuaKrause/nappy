@@ -159,6 +159,10 @@ static func _build() -> Array[EventDef]:
 		_burnt_out_car(),
 		_collapsed_frontage(),
 
+		# The story's own figure — never rolled by the ordinary scheduler, placed only by the
+		# resistance (`ResistanceHappenings`, `ResistanceDirector`). See "the neighbor" below.
+		_neighbor(),
+
 		# The finale — never rolled by the ordinary scheduler, placed only by `FinalePlanner` and
 		# `InteriorEvents`. See "the finale" below.
 		_finale_explosion(),
@@ -166,6 +170,57 @@ static func _build() -> Array[EventDef]:
 		_masked_pursuer(),
 		_basement_steam(),
 	]
+
+# -------------------------------------------------------------- the neighbor ---
+
+## The neighbor down the hall, who works at the power station: a figure in work clothes —
+## steel-blue coveralls with a reflective band and a dark work cap — and the same person day 10's
+## red arrow finds and the wanted notice's `neighbor_slot` draws. Scenery rather than a cost:
+## silent, bodiless, never rolled (`scripted_day` 0, the seal pictures' own sentinel).
+##
+## **Two walks, one figure.** On the mornings before day 10 the neighbor leaves her building as she
+## does and walks off along her street (`ResistanceHappenings`), at this row's own walking pace,
+## and leaves once the route runs out, the ordinary departure; nothing points at them. On day 10
+## the director spawns `neighbor_heading_home()`, the same figure walking home from out in the city.
+##
+## **Mobile, so bodiless** (`docs/EVENTS.md`, "Solid things are solid": a moving body pins her),
+## and slower than her own walk, so she overtakes rather than follows. The field is a formality the
+## fairness contract asks of every row: intensity 0, radii drawn tight round the figure.
+static func _neighbor() -> EventDef:
+	var def := EventDef.new()
+	def.id = "neighbor"
+	def.display_name = "Neighbor"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.NEIGHBOR
+	def.act_tag = 1
+	def.shape = GroundShape.point(9.0)
+	def.placement = [GameEnums.TileType.SIDEWALK]
+	def.intensity = 0.0
+	def.inner_radius = 20.0
+	def.outer_radius = 40.0
+	def.telegraph_time = 0.5
+	def.mobile = true
+	def.speed = NEIGHBOR_WALK_SPEED
+	return def
+
+## An unhurried walk, half hers (`Tuning.WALK_SPEED`, 92px/s): somebody going to a shift, and
+## somebody she can catch.
+const NEIGHBOR_WALK_SPEED := 46.0
+
+## How fast the neighbor goes once warned — a run, not a walk: *"Warned, the neighbor runs."*
+const NEIGHBOR_RUN_SPEED := 150.0
+
+## The day-10 neighbor: the same row walking home from out in the city along a path the director
+## gives it, who **stops at the door** (`stops_where_it_arrives`) — walked home into the vans, which
+## is the task lost — and who, warned first, runs (`departs_at`), which `EventInstance.
+## leave_for_a_completed_task()` turns away from her. A copy rather than a second row, since it is
+## the same person in the same picture.
+static func neighbor_heading_home() -> EventDef:
+	var def: EventDef = by_id("neighbor").duplicate()
+	def.stops_where_it_arrives = true
+	def.departs_at = NEIGHBOR_RUN_SPEED
+	return def
 
 ## A permanent feature of the calmest ground in the city, and free — the swing frame it draws is
 ## `map.playgrounds`' own prop (`City._dress_blocks`), not this row, so an intensity of zero
