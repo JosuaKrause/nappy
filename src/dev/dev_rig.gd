@@ -251,9 +251,13 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
 ## the day budgets and sites from her walk (`EventDef.sited_on_her_way`) — so `event:<id>` cannot
 ## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
-## **refuses**: the row and the reason are written to the run log (`Telemetry.note("spawn", …)`)
-## and raised with `push_error`, so both the log a capture is judged from and the terminal that
-## launched it show the same failure. `--follow <id>` tracks such a row once it exists.
+## **refuses by name**: the row and the reason are written to the run log
+## (`Telemetry.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is
+## judged from and the terminal that launched it show the same failure — `push_warning` rather
+## than `push_error` because a test that feeds this bad input on purpose has to reach a code path
+## that reports it by return value rather than failing the run, the same reporting weight the
+## neighbouring unrecognised-target case already carries. `--follow <id>` tracks such a row once
+## it exists.
 ##
 ## **A row that waits for her** (`pursues_within` — a `pigeon_flock`, an `alley_robbery`) is stood
 ## just *outside* its own trigger rather than inside it: the offset below is measured against
@@ -282,7 +286,7 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 				% wanted_id) + "there is nowhere to stand at dawn. Use --follow %s once it exists"
 				% wanted_id)
 		Telemetry.note("spawn", reason)
-		push_error(reason)
+		push_warning(reason)
 	else:
 		push_warning("no non-ambient events planned today")
 	return city.map.home_world_position()

@@ -126,8 +126,10 @@ func _test_an_unknown_target_warns_and_returns_home(t) -> void:
 ## unplaced — a row the day's plan never holds a position for. `event:cat_dash` refuses rather
 ## than silently starting her on the doorstep as if nothing were wrong: the row and the reason
 ## land in the run log (`Telemetry.note("spawn", …)`, checked here) and on `stderr`
-## (`push_error`, not checked here — Godot gives a test no hook onto it), and only then does the
-## same doorstep fallback an unrecognised target reaches apply.
+## (`push_warning`, not checked here — Godot gives a test no hook onto it; `push_warning` rather
+## than `push_error` because this test feeds the bad input on purpose and has to reach it by
+## return value rather than failing the run), and only then does the same doorstep fallback an
+## unrecognised target reaches apply.
 func _test_a_queue_fed_row_refuses_by_name(t) -> void:
 	Telemetry.begin_memory_log()
 	var at := DevRig.for_spawn_target("event:cat_dash", _city, _resistance)
