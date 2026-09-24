@@ -33,7 +33,12 @@ choosing an arm of a junction has to look before it commits:
 **The morning's resolve runs before the first frame is drawn.** `Crowd.start_day()` ends with the
 same front-to-back resolve the first physics frame would run, because a day starts from an idle
 frame: the engine draws the placement before the tick that would correct it, so a correction left
-to frame one is a car jumping a car's length on the street she is standing in.
+to frame one is a car jumping a car's length on the street she is standing in. **And it fills
+`TrafficIndex` from that resolve**, because the first frame's turns and recycles look before any
+frame has rebuilt it: an empty index lets a turn book a landing a queued car is standing on, and the
+shunt is paid whenever that turn lands, seconds later. **A separation that is refused rather than
+made smaller is deferred, not avoided** — a nudge that meets blocked ground goes as far as the
+ground allows, or the overlap is paid in one jump on a later frame nobody chooses.
 
 **That is not spacing the crowd in `start_day`, which stays refused**: spacing places cars at
 `Tuning.CAR_GAP_MIN` headway and turns a random morning into tight platoons, and the balance tests
@@ -256,6 +261,15 @@ telegraph: the **painted carriageway**, which is permanent and learnable and whi
 step onto, and the **horn**, which must be long enough to walk the whole width of it with the
 doubled hard-fail margin.
 
+**The horn can only be as early as the car is watching her, and `validate_traffic()` cannot see
+that.** `Crowd._physics_process` hands the strike and the horn only the cars within
+`CAR_ZEBRA_SIGHT` (200px) of her, so a car sounds its horn at `min(CAR_HORN_TIME × speed, 200px)`,
+and every car faster than `200 / CAR_HORN_TIME` (125px/s) warns later than `CAR_HORN_TIME` — under
+the contract's own `required_horn_time()` above 144px/s, which is most of `CAR_SPEED`'s range.
+A check of the horn against the carriageway that reads only `Tuning` passes whatever that radius
+is, so **a change to either the horn or the radius the crowd watches her from is checked against
+the other by hand.**
+
 **If anything else ever becomes lethal without being in the catalogue, it needs its own stated
 contract in the same place.** A hard fail with no written contract is a bug waiting to be called a
 difficulty setting.
@@ -270,6 +284,19 @@ crosses the main road while the main road is stopped. And the amber is a **clear
 than a warning — the crossing arm stays red through it and a car too close to stop is counted as
 already in the box — so lengthening it buys her nothing and lengthening the side green buys her
 everything.
+
+**A dark light hands the main road back to the side street's contract.** On the last night the
+blackout cuts the power (`TrafficSignals.powered`), so `is_signalled()` answers false on the spine
+and the box rule negotiates its junctions as it does every other street's — no crowd code knows the
+difference, and none should. The spine's traffic still does not give way at a zebra, since that is
+the street's kind rather than its light, so the clock is gone and nothing replaces the courtesy:
+**what keeps a crossing of the dark spine fair is the painted carriageway and the horn**, and the
+horn has to be long enough, at the spine's speed, to walk the spine's whole carriageway with the
+doubled margin. The spine's carriageway is `carriageway_width()` like every street's and the horn is
+seconds of the car's own travel, so `validate_traffic()` is the check, and `validate_signals()` says
+so beside the green it checks. **Anything that asks whether a spine junction has lights standing on
+it — where to put a head — asks `has_lights()`, never `is_signalled()`**, or a city built dark
+draws no heads at all.
 
 ## A rig that steps the parts is not running the whole
 

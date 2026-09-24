@@ -170,11 +170,55 @@ than opening a second directory for one run: the handover passes through a scene
 `Telemetry` is an autoload, so the log outlives it. A cold launch straight into a section — the
 flag, or a game closed in one and opened again — has no log yet and opens one.
 
-The clock itself is pushed by `main._process_the_finale()`, not by `TelemetryObserver` — the
-observer is built around a `City`, a `RouteTree` and a day's corridor, none of which the escape's
-first section has at all — and it is the same clock the HUD draws, so a log entry and the screen
-never disagree. A lost section writes a `lost` line before the section starts again, so the
-timestamps starting from a fresh clock have a reason above them.
+The clock is pushed by the same `TelemetryObserver` a day has, off the section's own clock — the
+one the HUD draws, so a log entry and the screen never disagree — and each section's `start` line
+puts it back to zero, the way a day's header does at dawn.
+
+### The escape's log
+
+*("The escape shouldn't behave any different than the rest of the game.")* Both sections are
+watched by the observer a day has, so what a day writes about the walk the escape writes too:
+
+```
+escape  run seed 1674637177  length 180.0s
+   0.0  start    entered the building at (129,2), facing 0°
+   4.2  cue      edge badge: masked_pursuer at 670px, closing 110px/s
+   9.6  cue      edge badge gone: masked_pursuer after 5.4s, now 208px away
+  10.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
+  11.0  lost     lost_hard_fail in the building after 11.0s — It went wrong. | exc 7, ... | near: masked_pursuer 25px
+   0.0  start    restarted the building at (7,1), facing 0°
+```
+
+`TelemetryObserver.setup_escape()` hands it the section's `DayController`
+(`FinaleController.clock()`) in place of a day's, and `main` says which world she is in as each
+section starts — `watch_building()` or `watch_city()` — before `start_section()`, the escape's
+`start_day()`. The events are read from an event source either way, `InteriorEvents` in the
+building and the city's `EventManager` outside it, so these read a section exactly as they read a
+day: `start`, `near`, `chase`, `cue` (the mark over her head and the screen-edge badges), `freeze` /
+`thaw`, `asleep` / `woke`, `run`, `idle`, `blocked`, `turn`, `frame` and `spike`, and in the city
+section `cross`, `road` and `calm` / `left` as well — the calm ground a chain passes through is
+where she settles the baby again. A place on a line in the building is the building's own tile
+grid, which is not the city's.
+
+**The section restart is two lines**: a `lost` line naming the result, the section, how far into
+its clock, the reason, the meter breakdown and what was nearest — the same line a lost day writes,
+with the section in it — and then a `start` line saying `restarted`, stamped `0.0` because the
+retry has a fresh clock. Getting out is a `home` line, `escaped by the tunnel, 42.1s to spare`,
+written before the run's own `ending` line.
+
+**What a day writes and the escape does not, and why:**
+
+- `path` — the escape has no route tree and so no corridor to be on or off; its two chains are
+  grown by `FinalePlanner`, not a `RouteTree`.
+- `cross`, `road`, `calm` / `left` in the building — it has no streets to cross and no calm
+  ground; the city section writes them.
+- `closure` — the finale city's walls are events (burnt-out cars, barricades) rather than road
+  closures, so she meets them as `near` lines instead.
+- `contact` — the escape has no resistance subquest and no chalk mark.
+- `crowd` — neither section has a crowd: *"no regular cars or regular people on the street"*.
+- `quiet` and `nerve` — the sabotage is already done, and nothing in the escape spends a Nerve.
+- The dawn and dusk maps — the escape draws no map, so the observer keeps no trail and no met
+  events for one.
 
 ### `--invincible`
 
@@ -270,8 +314,9 @@ name the question it answers, or it is a metric and does not belong.
 | `chat` | `EventManager` | A detention conversation started — which one, where, and how long it holds her. Written whenever `detain_seconds` fires, not only for `chatting_mother`, so a redetaining door's own toll is on this line too; what it costs the meter is on the line as well, since a sleeping baby pays nothing and an awake one pays `Tuning.CHAT_EXCITEMENT` |
 | `checkpoint` | `EventManager` | A region door's toll paid — where she was held, how long, and which side she came out on. Written on release rather than on capture, since "released on the north side" is the fact a reader wants and the teleport is what makes it true |
 | `contact` | `ResistanceDirector`, observer | Did the player ever find the difficulty dial, and did an unseen pickup mark have to move to stay findable — where it was, and where it went |
-| `start` | observer | Where the day began |
+| `start` | observer | Where the day began — or, in the escape, which section she entered and where, and whether it was a retry after a loss |
 | `route` | `RouteRig` | **Under `--route` only: whether the rig's own day fits its clock.** A target reached — elapsed day time and distance walked, and for a mark or a task the moment the director records it done — a re-plan when the way ahead closed or a mark moved, a target given up on as unavailable, unreachable or physically stuck (an unreachable one met mid-leg names the tile she stood on; a stuck one names that tile and what held her: an event row, a wall's tile type, a closure, a hold, or nothing solid, which is the crowd), and the day ending before a target was reached |
+| `spawn` | `DevRig` | **`--spawn event:<id>` refusing a row the day's plan never holds a position for** — one sited from her walk instead (`cat_dash`, `cyclist`, `loose_dog`, a taught-day `charging_dog`, day 3's `burning_building`) — with the row's id and why, alongside the same refusal on `stderr` |
 | `cross` | observer | Did the player have to cross the street, and at a zebra? |
 | `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |
 | `path` | observer | **Was she on the day's corridor?** A line each way as she crosses on or off it, and one at dusk with the share of her street time she spent on it. It is what makes *"going off the paths lets me skip events and is safer than going on the path"* a measurement rather than an argument. Time in a park or an alley is counted separately from "off it": the corridor is made of streets and the destination is not one, so folding them together would credit every won day with a long safe stretch off the paths |
@@ -290,8 +335,8 @@ name the question it answers, or it is a metric and does not belong.
 | `texture` | `AtlasLibrary`, `GroundLayers` | **When a baked page arrived, when it went, and what each cost** — two lines per page, `atlas page 'ui' loaded in the startup: 1.4 ms, 262 x 392` when it is read from disk and `atlas page 'father' released after 31.7 s: 366 x 242` when the last reference drops it. The load line names the moment it happened in — `startup`, `day brief`, `escape`, or `OUTSIDE` for a read with no loading window open, which is also an engine error — and the release line says how long the page was resident. **One line each per page, not per call**: an `acquire()` of a page already resident reads nothing and a release above the last frees nothing, so neither writes. The ground's own sheet adds a third shape, `ground composed: …`, with how many sources it covers, how many distinct pictures those are, its pixel size and what the whole build cost. Together they are what say whether a picture was there before it was drawn rather than arriving in the frame that wanted it |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
-| `quiet` | observer | The sabotage landed and the masts went off |
-| `home` / `lost` | observer, `main.gd` | The outcome, the margin, and what was around when it happened. `main.gd` writes the escape's own `lost` line — which section went, and how far into the sequence — since a lost section comes back with a fresh clock and the timestamps would otherwise start again with nothing to say why |
+| `quiet` | observer | The blackout came and the masts went off with the power — once she was far enough from the station after the sabotage, not at its door |
+| `home` / `lost` | observer | The outcome, the margin, and what was around when it happened. In the escape a `lost` line also names the section and a `home` line the way out — see "The escape's log" |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log |
@@ -339,6 +384,16 @@ primitives and light in pixels is a geometry problem, and the reverse is a fill-
 second being exactly the cost a desktop measurement cannot see on a phone's own screen. `process`
 and `physics` are the two loop times, held apart rather than summed because they are fixed by
 different things, and together they say how much of the frame never reached the renderer at all.
+**Both are already the worst interval of the previous second, not a per-frame reading** — the
+engine keeps the longest `_process` interval and the longest physics tick it saw across the
+second and hands each over once a second, replacing the last (`docs/DECISIONS.md`, M138, what the
+readout's `process` and `physics` lines measure); the `process` interval runs from the start of
+`_process` through the rendering server's own `sync()` and `draw()`, so it carries the render
+submit. `worst frame` (the observer's own longest `_process` delta over the same second) and
+`process` (the engine's own worst interval, render submit included) are therefore two readings of
+the same hitch from two sides, and read close together whenever the render submit is not where
+the second's cost fell.
+
 **The physics tick runs thirty times a second, so `physics`'s own reading is milliseconds per
 tick**, not per frame — a frame drawn at thirty or more fps carries one tick, and a slower one can
 carry two, so `physics` and `process` are not directly comparable the way two frame-rate figures
@@ -655,20 +710,13 @@ build has nothing in `project.godot` to reach:
   `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
   own `frame` entry carries, assembled from the same readings so the screen and the log cannot
   disagree. See "What a frame cost" above for what each one says.
-  **`process` and `physics` each carry three labelled columns, `last`, `mean` and `max`, rather
-  than the log's own single reading** — `last` is `process_ms()`/`physics_ms()`, the same
-  instantaneous last-frame number `line()` writes; `mean` and `max` are `FrameCost.sample()`'s
-  own rolling one-second window, fed once a frame while the readout is on. **`mean` is what a
-  still actually measures**: a screenshot lands on one arbitrary frame, and M124's own phone
-  probe found the last-frame-alone reading swing between 21.7ms and 65.1ms on the same setting a
-  few seconds apart (docs/DECISIONS.md, M124, "the phone's process time split"), so the mean over
-  the second around it is the number a single still can stand behind. **`max` is what a stutter
-  feels like**, the same argument the run log's own `worst frame` field makes for `line()` — a
-  mean is exactly the statistic a hitch hides in. Before the window has taken its first sample,
-  `mean` and `max` fall back to the same instantaneous reading as `last`, so the very first frame
-  reports what it has rather than a zero that would read as free. `line()` itself is unchanged: it
-  already writes once a second, at the interval the mean covers, so a mean over that same second
-  would be no different a number.
+  **`process` and `physics` each carry one labelled column, `worst`, over the log's own single
+  reading** — both are `process_ms()`/`physics_ms()`, the same number `line()` writes, labelled
+  here because it is already the engine's own worst interval of the previous second
+  (`docs/DECISIONS.md`, M138, what the readout's `process` and `physics` lines measure) and a bare
+  number reads as a per-frame mean, the misreading every phone report made before M143 — see "What
+  a frame cost" above for what that interval covers. `line()` itself is unchanged: it already
+  writes once a second, at the interval the reading covers, so it carries no label at all.
 - **`5` the day's routes** — one purple polyline per route the day's `RouteTree` offers, doorstep
   to calm area, over the centres of the two-tile reachability cells the tree actually grew on
   (`ReachabilityGrid`, docs/DECISIONS.md M69) rather than individual tiles — the tree keeps no

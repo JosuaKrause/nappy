@@ -1,7 +1,8 @@
 class_name RouteTree
 extends RefCounted
 ## The day's corridor: one branch from the doorstep to every calm area still worth reaching, and
-## on the power station's day a spur to its front door as well (`_grow_the_spur_to_the_door`).
+## a spur to the day's own narrow destination where one is not already on it — the power station's
+## front door on its day, the finale's district on the finale's (`_grow_a_spur_to`).
 ##
 ## The design is docs/CITY.md, "Diversions — the design" and "How the corridor is built", and
 ## docs/TODO.md, M69, "The day's route tree moves onto the grid too".
@@ -234,7 +235,14 @@ static func for_the_run(map: CityMap) -> RouteTree:
 ## used.
 ##
 ## **On `Tuning.POWER_STATION_DAY` the tree also reaches the power station's front door**, the
-## day's task — see `_grow_the_spur_to_the_door`. On every other day nothing leads her there.
+## day's task — see `_grow_a_spur_to`. On every other day nothing leads her there.
+##
+## **On the finale's day it also reaches the finale's district** (`ResistanceSteps.
+## district_tiles_to_reach`), by a second spur grown after the station's, so the station's spur is
+## exactly what it would be without it. Day 9's door and day 12's swing need no spur of their own:
+## a region door is a boundary crossing the tree already uses (`RegionPlanner.plan_day`), and a
+## park with a playground is a calm area the tree already grows a branch to. Keyed on the day and
+## never on the run, so a day plans the same whether or not this run will be offered the finale.
 static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
@@ -242,7 +250,10 @@ static func for_day(map: CityMap, day: int) -> RouteTree:
 	var tree := grow(map, ClosurePlanner.home_street(map), ClosurePlanner.calm_areas(map),
 			map.blocked_segments(), grid, rng)
 	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
-		tree._grow_the_spur_to_the_door(map.rect_tiles(map.power_station_door))
+		tree._grow_a_spur_to(map.rect_tiles(map.power_station_door))
+	var district := ResistanceSteps.district_tiles_to_reach(map, day)
+	if not district.is_empty():
+		tree._grow_a_spur_to(district)
 	return tree
 
 ## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets a
@@ -649,28 +660,29 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 			queue.append(next)
 	return []
 
-## Joins the power station's front door to the tree on the day she is sent there, so the door is
-## tree ground like a calm area's way in — which is what every guarantee about the day is stated
-## over. A boundary crossing the spur takes is a door rather than wall (`RegionPlanner.plan_day`),
-## nothing seals it (`SealPlanner`) and no closure lands on it (`ClosurePlanner`), all by the rules
-## they already follow for the rest of the tree; the door is outside the home's region, so the spur
-## always crosses at least one.
+## Joins a destination the day sends her to — the power station's front door, the finale's
+## district — to the tree, so it is tree ground like a calm area's way in, which is what every
+## guarantee about the day is stated over. A boundary crossing the spur takes is a door rather than
+## wall (`RegionPlanner.plan_day`), nothing seals it (`SealPlanner`) and no closure lands on it
+## (`ClosurePlanner`), all by the rules they already follow for the rest of the tree; the station's
+## door is outside the home's region, so its spur always crosses at least one.
 ##
 ## **Grown after the branches and the trunk, and from nothing they rolled**: a breadth-first search
-## from the door's own pavement to the nearest cell already on the tree, the trunk's own shape run
-## from the other end, adopted under the merge point's lowest colour. So the rest of the day's
-## corridor is exactly what it would have been without the station, and only the spur is added —
-## the day is not bent toward the door, the door is joined to the day. Tried without the main road
+## from the destination's own tiles to the nearest cell already on the tree, the trunk's own shape
+## run from the other end, adopted under the merge point's lowest colour. So the rest of the day's
+## corridor is exactly what it would have been without it, and only the spur is added — the day is
+## not bent toward the destination, the destination is joined to the day. Several tiles are one
+## search, so the spur joins whichever of them is nearest the tree. Tried without the main road
 ## first and with it only if nothing else joins, as the trunk is.
 ##
-## A no-op when nothing grew, or when the door cannot reach the tree at all; the first leaves the day
-## to `EventScheduler._ensure_the_city_is_still_walkable`, the second cannot happen on a city
-## `CityGenerator.validate()` accepted, since every walkable tile is reachable from the home.
-func _grow_the_spur_to_the_door(door_tiles: Array[Vector2i]) -> void:
+## A no-op when nothing grew, or when the destination cannot reach the tree at all; the first leaves
+## the day to `EventScheduler._ensure_the_city_is_still_walkable`, the second cannot happen on a
+## city `CityGenerator.validate()` accepted, since every walkable tile is reachable from the home.
+func _grow_a_spur_to(tiles: Array[Vector2i]) -> void:
 	if _colours.is_empty() or not grid:
 		return
 	var sources: Array[int] = []
-	for tile in door_tiles:
+	for tile in tiles:
 		var node := grid.node_at(tile)
 		if node >= 0 and not sources.has(node):
 			sources.append(node)
@@ -682,17 +694,26 @@ func _grow_the_spur_to_the_door(door_tiles: Array[Vector2i]) -> void:
 	if path.is_empty():
 		return
 	if path.size() == 1:
-		return   # the door's own pavement is already on the tree
+		return   # the destination's own ground is already on the tree
 	_adopt(path, _any_colour_of(path[path.size() - 1]))
 	_street_keys_built = false
 	_street_keys.clear()
 
-## The shortest way from the door's nodes to the nearest node already on the tree, door first and
-## merge point last, which is the orientation `_adopt()` expects of a probe.
+## The shortest way from the destination's nodes to the nearest node already on the tree,
+## destination first and merge point last, which is the orientation `_adopt()` expects of a probe.
+##
+## **Never through the home street.** Its nodes are not on the tree — a door is not a route — so a
+## search from a destination beside it would otherwise walk straight across it to the tree on the
+## far side, and `_adopt()` would give a home node a parent. The trunk hangs off that same home
+## node, so its chain would run back into itself, and `_resettle_the_tails()`, which walks the tree
+## outward from the home nodes, would never finish. The station's door is blocks from the home and
+## never came near it; the finale's district can stand on the next block.
 func _spur_path(sources: Array[int], avoid_spine: bool) -> Array[int]:
 	var previous := {}
 	var queue: Array[int] = []
 	for node in sources:
+		if _home.has(node):
+			continue
 		previous[node] = -1
 		queue.append(node)
 	var head := 0
@@ -705,7 +726,7 @@ func _spur_path(sources: Array[int], avoid_spine: bool) -> Array[int]:
 		var edges := _ways(node) if avoid_spine else _ways_including_the_spine(node)
 		for edge: Array in edges:
 			var next: int = edge[0]
-			if previous.has(next):
+			if previous.has(next) or _home.has(next):
 				continue
 			previous[next] = node
 			queue.append(next)

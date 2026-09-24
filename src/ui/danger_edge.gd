@@ -26,6 +26,11 @@ extends Control
 ##
 ## Not in the HUD, deliberately: the HUD listens to `EventBus` and holds no reference to the
 ## world, and this needs to ask the world where things are every frame. `main` owns it.
+##
+## **What it reads is an event source, not a day.** The one thing asked of `_events` is
+## `instances() -> Array[EventInstance]`, which `EventManager` answers in the city and
+## `InteriorEvents` answers in the building — so the masked man coming up a stairwell is
+## announced exactly the way a fire engine coming down a street is. See `setup()`.
 
 ## How far in from each screen edge the chevrons sit, as left/top/right/bottom. Asymmetric
 ## because the screen is: the clock and the run header are along the top, and the two meters and
@@ -80,7 +85,8 @@ const SCREEN_MARGIN := 130.0
 ## coordinate here.
 var rotated := false
 
-var _events: EventManager
+## The event source — see `setup()`.
+var _events: Node
 var _player: Node2D
 ## Per live instance: where it was last frame, its smoothed approach speed, how long its badge is
 ## still owed, and the generation it was last touched on. Keyed by instance id and mutated in
@@ -96,9 +102,20 @@ var _watch_generation := 0
 ## `[time_to_reach, distance, instance, approach]`.
 var _coming: Array = []
 
-func setup(events: EventManager, player: Node2D) -> void:
+## `events` is anything that answers `instances() -> Array[EventInstance]`: `EventManager` on a
+## day and in the escape's city, `InteriorEvents` in the escape's building. **Called again when the
+## escape walks out of the service door**, with the city's source in place of the building's, so
+## one badge serves both sections; an id the new source no longer carries simply drops out of
+## `_watch` on the next `_measure()`.
+func setup(events: Node, player: Node2D) -> void:
 	_events = events
 	_player = player
+
+## The live instances, typed — the event source is duck-typed (see `setup()`), so its answer is
+## read through here rather than at every loop, which is what keeps each loop variable an
+## `EventInstance` to the analyser.
+func _live() -> Array[EventInstance]:
+	return _events.instances()
 
 func _process(delta: float) -> void:
 	_measure(delta)
@@ -117,7 +134,7 @@ func _measure(delta: float) -> void:
 	var here := _player.global_position
 	_watch_generation += 1
 
-	for instance in _events.instances():
+	for instance in _live():
 		if instance.is_finished:
 			continue
 		var id := instance.get_instance_id()
@@ -160,7 +177,7 @@ func _measure(delta: float) -> void:
 			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
 			# keeping is the one that gets here first, which a slow thing standing closer is not.
 			_coming.append([gap / maxf(approach, 1.0), distance, instance, approach])
-	# Only the instances alive this frame carry state forward. An id `_events.instances()` no
+	# Only the instances alive this frame carry state forward. An id the event source no
 	# longer carries was never touched above, so its `generation` still reads an earlier one and
 	# is erased here — which is also what keeps a freshly streamed event from flashing an arrow on
 	# the frame it appears: it has no `was` but its own, the same as when `_watch` used to be
@@ -285,8 +302,8 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 	if not picture.is_empty():
 		# The size comes from the region table rather than from the texture, so the badge's own
 		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
-		# that does, and `EventManager` is holding the page for as long as there is an instance
-		# to draw a badge for.
+		# that does, and the `events` page is held for the whole process from either boot's own
+		# loading window (`main.RESIDENT_GROUPS`), so it is there in the building as in the city.
 		var name := StringName(picture)
 		var art := Vector2(AtlasLibrary.native_size(name))
 		var fit := ICON / maxf(art.x, art.y)

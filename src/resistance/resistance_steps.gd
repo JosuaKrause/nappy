@@ -103,6 +103,86 @@ static func by_index(index: int) -> Step:
 			return step
 	return null
 
+# ------------------------------------------------------------ narrow targets ---
+
+## The step on `day` whose contact is one narrow place the day has to keep a route to — day 9's
+## door, day 12's swing, the finale's district — or null on every other day. A pure function of
+## the day, never of what the run has done: the day's corridor is a pure function of the city and
+## the day (`RouteTree.for_day`), and it is planned around this answer, so a day plans the same
+## whether or not this run will actually be offered the step.
+##
+## **Narrow is the shape of the pool, not the importance of the task.** A mark's alleys and a
+## rider's sidewalks are hundreds of tiles across the whole city, of which the day's obstruction
+## seals off some but never plausibly all; a door, a swing and a district are a handful of tiles in
+## one place, which the day's own seals and bodies can ring entirely. These three are what the
+## day's planning keeps a route to (`docs/CITY.md`, "Guarantees", the day's own half).
+static func narrow_target_on(day: int) -> Step:
+	for step in all():
+		if step.day != day or step.is_pickup or not step.available:
+			continue
+		if step.district >= 0 or step.target_kind in [TargetKind.DOOR, TargetKind.PARK_SWING]:
+			return step
+	return null
+
+## Every tile `step`'s contact may stand on, before any of today's refusals — the pool
+## `ResistanceDirector._place()` draws from, and the pool the day's planning keeps one reachable
+## tile of. One function for both, so the tiles the planning protects are the tiles the director
+## picks among. `region_plan` is today's (`City.region_plan()`); only a `DOOR` reads it.
+##
+## - **A district**: every walkable tile in or around the blocks that started as it
+##   (`CityMap.purpose_tiles`).
+## - **`DOOR`**: the middle tile of each of today's region-wall doors, **less any door whose own
+##   segment borders the home block**. `RegionPlanner._union_atoms()` only atomises the one street
+##   the doorstep notch opens onto, so the block's other bordering segments can become doors like
+##   any other; the director places a door with `allow_held`, which skips `is_held_at()` — the half
+##   of "nothing on the home block" that covers those streets (`CityMap.is_on_home_block`'s own doc
+##   names `is_held_at` as the other half) — so the filter here is what keeps such a door out.
+## - **`PARK_SWING`**: the swing of each open park's playground (`CityMap.playgrounds`, which names
+##   only the parks currently open), at the point `City._dress_block()` draws the frame
+##   (`CityMap.swing_position()`).
+static func target_candidates(step: Step, map: CityMap,
+		region_plan: RegionPlanner.RegionPlan) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	if not step or not map:
+		return found
+	if step.district >= 0:
+		return map.purpose_tiles(step.district as GameEnums.BlockPurpose)
+	if step.target_kind == TargetKind.DOOR:
+		if not region_plan:
+			return found
+		var home_border := {}
+		for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			home_border[segment.key()] = true
+		for segment in region_plan.doors:
+			if home_border.has(segment.key()):
+				continue
+			var rect := segment.tile_rect()
+			found.append(rect.position + rect.size / 2)
+		return found
+	if step.target_kind == TargetKind.PARK_SWING:
+		for rect in map.playgrounds:
+			found.append(map.world_to_tile(map.swing_position(rect)))
+	return found
+
+## The tiles of the finale's district that the day's corridor is joined to on the finale's day
+## (`RouteTree.for_day`) — empty on every other day. **Only the district's tiles no street segment
+## contains**: the corners of its blocks, which stand in junction boxes, and any open ground inside
+## its lots. A tile on a street segment can be held today (`CityMap.is_held_at`) — a region door the
+## spur itself turns a boundary into, a hard seal, a street bordering the home block — and the
+## director refuses held ground for a district, so a spur ending there could protect a route to a
+## tile the contact may never stand on. A junction corner or a lot's own ground is never held.
+## The home block's own lot is left out for the same reason (`CityMap.is_on_home_block`).
+static func district_tiles_to_reach(map: CityMap, day: int) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	var step := narrow_target_on(day)
+	if not step or step.district < 0:
+		return found
+	for tile in map.purpose_tiles(step.district as GameEnums.BlockPurpose):
+		if map.is_on_home_block(tile) or StreetNetwork.segment_containing(tile) != null:
+			continue
+		found.append(tile)
+	return found
+
 ## Explicit rather than a dictionary of field names. The first version built these with
 ## `set(key, value)` from a Dictionary, and `set()` silently DROPS a value whose type does
 ## not match — so every `Array[int]` placement list came out empty and three of the six
