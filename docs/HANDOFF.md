@@ -345,9 +345,11 @@ its measurement against the nerves left, and that waits for act III. The debug v
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow, a body or the day's routes is checked by
 eye, and every one of the three is derived from the object's own `GroundShape` — one apiece for
 everything but the car crash, which is solid in two pieces because its picture is two cars with
-gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M96 (the teaching day and
-the dog after it), M97 (calm areas that hold), M99 (the corridor's density after the sealing) and
-M100 (the small work, the polish and the open design questions, consolidated).
+gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M99 (the corridor's density
+after the sealing) and M100 (the small work, the polish and the open design questions,
+consolidated). M96 (the teaching day and the dog after it) and M97 (calm areas that hold) are
+both done (`DECISIONS.md`, M96, the day ends crying only after a push at the top; M97, calm areas
+that hold is closed).
 Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
