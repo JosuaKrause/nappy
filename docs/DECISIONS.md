@@ -31,7 +31,14 @@ chosen in advance, so the director's seeded draws do not move; it covers station
 and closures, and a moving event counts where it starts; the spur follows the day number, so day
 14's corridor carries it whether or not the goal is met. **Left open:** on one or two cities only
 one or two district tiles stay reachable, which meets the guarantee; whether to protect more is
-a design call nobody has asked for. **Not built here, and still in `TODO.md` under M181:** on 9
+a design call nobody has asked for. **The corridor-weight check was re-measured.** On seed
+4242 the day-14 spur adds two junction cells to the corridor, which reshuffles day 14's placement
+draws, and `tests/test_events.gd`'s narrow-row share fell from 29 of 71 (40.85%, already under the
+test's own 1.5-point margin on `main`) to 28 of 71 (39.44%). The test's docstring prescribes a
+re-measure when its sample moves, so the floors are now 0.37 narrow and 0.32 whole, both above
+the third of the ground that is corridor, which an unweighted day would give. The narrow share
+was 1.5 to 2 points lower in every day-14 sample taken, with no mechanism found; that is what
+would make the dip worth looking at again. **Not built here, and still in `TODO.md` under M181:** on 9
 of 40 cities every playground park is taken by day 12, so the swing has nowhere to be — the
 forced-open park — and the second open park reachable from the swing.
 
