@@ -44,3 +44,12 @@ window after the nearly-crying cue, or nothing.
 6. **Spoiled parks stop being spoiled after a few days, so the pool refreshes.**
 7. **M108 is to be finished**, and what is actually missing checked first: the carrying mother
    and the building interiors are already hooked up.
+
+## Then, on the measured settings (PR 316)
+
+Shown a table of 10 over 3s, 5 over 2s and 15 over 3s against one bump from 89, 95 and 100, two
+quick bumps at the top, and the loudest rows walked past and stood in:
+
+> "yes, let's merge 10 over 3s"
+
+8. **The day ends crying at 10 points of excitement over the top within 3 seconds.**

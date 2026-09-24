@@ -871,34 +871,6 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 ---
 
-## M96 — The teaching day, and the dog after it · rewritten 2026-09-09
-
-Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
-longer fires while she is detained or while the tree is paused, and the run lesson's once-per-run
-flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
-queue reprioritised". The dog after the lesson is built — from day 4 it waits inside its own
-field and the day-3 charge sprinkles in on later days (`DECISIONS.md`, M96, the dog waits) — and
-what is left is one measurement.
-
-**The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
-on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
-is where act I stops being a nice neighbourhood; the options weighed when the move was first
-proposed are in `DECISIONS.md` under M49, in the item "Day 3 carries act I's whole payload".
-
-- [ ] **The day ends crying only after a push at the top** ([PLAYTEST-126](playtests/PLAYTEST-126.md),
-      statements 1 and 2: "the bar can reach 100 but we need also like 10 over 3s to actually end
-      the day ... removing "undeserved" failures where you just bump into a single predestrian in
-      an aggravated state"). One contact at 89 is a cliff today: a bump is about 10.8 points, and
-      from 90 or 89 one walker's startle ends at 100 and crying, from 85 at 96.8 and awake
-      (`DECISIONS.md`, M96; pinned in `tests/test_meters.gd`). Instead the bar may sit at 100, and
-      the day ends only once a further mass of excitement has arrived at the top within a window.
-      The player's "10 over 3s" is a starting point, not a decision: the numbers are measured —
-      the single bump at 89 must not end the day, a sustained source at the top must, and the
-      pram's nearly-crying cue (from 80) and the bar at 100 must still read as the danger they
-      are — and put to the player with the measurements before they are fixed.
-
----
-
 ## M99 — The corridor's density after the sealing · rewritten 2026-09-09
 
 Rewritten from M50. M64 superseded M50's gradient at both ends — off the path is *closed*, on it the
