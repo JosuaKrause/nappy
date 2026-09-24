@@ -193,7 +193,12 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 	# which the balance suites read as a street busier than the day asked for. Nothing here chooses a
 	# position. It is the front-to-back overlap resolve and only that, so a car that was not inside
 	# another one does not move at all.
-	_resolve_the_queues()
+	#
+	# **And the index is filled from it, since the first frame's looks read it before anything
+	# else has.** A car turning or recycling on that frame asks `TrafficIndex` whether the road it
+	# is about to take is free, and `clear()` has just emptied it — so without this every one of
+	# them is told yes. See `_index_the_queues()`. Like the resolve, it moves nobody.
+	_index_the_queues(_resolve_the_queues())
 
 ## Where the simulated patch of city is centred. `Crowd` moves it onto the player itself; this
 ## exists so `main` can put it on the doorstep before the player is standing there.
@@ -337,19 +342,7 @@ func _advance_the_world(delta: float) -> void:
 func space_out_the_traffic(delta: float) -> void:
 	var lanes := _resolve_the_queues()
 	_keep_room_for_the_turning(lanes)
-
-	# And the same buckets, as bare positions, for the cars that have not turned yet. Built after
-	# the resolve rather than before it, so what a turning car sees is where everybody actually
-	# ended up this frame. See `TrafficIndex`.
-	var index := {}
-	for key: String in lanes:
-		var queue: Array[CrowdAgent] = lanes[key]
-		var positions := PackedFloat32Array()
-		positions.resize(queue.size())
-		for i in queue.size():
-			positions[i] = queue[i].queue_position()
-		index[key] = positions
-	_traffic.rebuild(index)
+	_index_the_queues(lanes)
 	# And the road a car in a turn has **booked** rather than reached. A turning car is still in the
 	# queue it came from — that is where its body is, and that is who has to keep a gap behind it —
 	# so nothing above knows about the lane it is on its way into, and a second car would happily
@@ -399,6 +392,26 @@ func _resolve_the_queues() -> Dictionary:
 			queue[i].gap_ahead = gap
 			queue[i].leader_speed = queue[i + 1].speed()
 	return lanes
+
+## The resolved buckets, as bare positions, handed to `TrafficIndex` for every look a car takes
+## before it places itself — a turn's landing, a recycle's entry point, the arm it prefers.
+##
+## Built after the resolve rather than before it, so what a car sees is where everybody actually
+## ended up this frame. **Its own function because the morning calls it too**: `clear()` empties the
+## index, and a day whose first frame reads an empty one is a day whose first frame looks at an
+## empty road — every turn committed on it checks its landing against nothing, books a spot a queued
+## car is already standing on, and the queue's resolve shunts that car a car's length backwards
+## whenever the turn arrives, which can be seconds later and in front of her.
+func _index_the_queues(lanes: Dictionary) -> void:
+	var index := {}
+	for key: String in lanes:
+		var queue: Array[CrowdAgent] = lanes[key]
+		var positions := PackedFloat32Array()
+		positions.resize(queue.size())
+		for i in queue.size():
+			positions[i] = queue[i].queue_position()
+		index[key] = positions
+	_traffic.rebuild(index)
 
 ## Gives a turning car's booked landing to the lane it is joining, as a leader for whoever is behind
 ## it there.

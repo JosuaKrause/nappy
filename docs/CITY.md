@@ -180,6 +180,41 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
   `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
   See "The power station".
 
+**Each day adds its own, planned with the day rather than checked of the city.** At least two calm
+areas stay reachable through the day's closures ("The invariant"), and some calm stays reachable
+through the day's events (`EventScheduler._ensure_the_city_is_still_walkable`). And on the three
+days the resistance sends her to one narrow place — **day 9's region door, day 12's swing and the
+finale's district** (`ResistanceSteps.narrow_target_on`) — **a route from home to that place is
+kept open by construction**, so the day's own closures, seals and bodies never seal it off:
+
+- **The place is tree ground.** The finale's district is joined to the day's corridor by a spur on
+  the finale's day (`RouteTree.for_day`, the same spur the power station's door gets on its day,
+  grown to the district's corners and open ground, which no hold can take); a region door is a
+  boundary crossing the tree already uses; a swing stands in a park, a calm area the tree already
+  reaches. So no seal stands on the way to it, no closure is placed on it and no catalogue wall is
+  sited on it, by the rules each already follows for the rest of the tree.
+- **`ClosurePlanner` asks for it before accepting each closure**, beside the calm and the station's
+  door: a closure that would cut off every tile of it is refused. The second opinion, as it is for
+  the calm.
+- **The catalogue's own bodies are the last line**, and the one mechanism that is not already a
+  rule about the tree, since friction stands on the corridor. `_ensure_the_city_is_still_walkable`
+  drops the widest of them until some tile of the place is reachable from home under the discs of
+  every obstructing or hard-fail body the day has — the seals and the region wall's own included,
+  which it never drops — the same question `ResistanceDirector._reachable_from_home()` asks. Only
+  ever a removal, which is the city's one monotonic exception.
+
+**What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
+pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`) that pass the
+director's own refusals of the tile — walkable, not closed, not held (a door excepted), not on the
+home block, not in a walled-off alley — and the director draws among them asking reachability of
+every draw, so the tile it picks is one the day kept. Planned on the day number alone, never on
+the run, so the day is the same whether or not this run will be offered the step. **Two things it
+does not cover:** a moving event, which has no body to seal anything with (a hard-fail mover counts
+where it starts); and a day 12 whose playground parks have all been taken by their arcs, which has
+no swing to send her to at all — a question of whether the place exists, not of reaching it.
+`tests/test_resistance.gd` plans the three days on cities whose district the day's seals and
+bodies would ring without the spur, and finds the place reached and the contact standing on it.
+
 ## The home
 
 **It is the middle block, and that is not a preference.** Half the directions out of a boundary
@@ -486,7 +521,8 @@ question below:
   every calm area there is and nothing was protected.
 - `_spoil_the_parks_she_used` spoils the ones she has already settled in **this act**, which is
   what stops her going back to the same bench every day.
-- `_ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
+- `_ensure_the_city_is_still_walkable` drops obstructions that would seal the city, or seal off
+  the one place the resistance sends her to that day (see "Guarantees").
 
 **One thing that reads as guidance and was not designed as any:** the crowd respects closures, so
 a shut street is the street with nobody on it, and that is legible from a block away.
@@ -767,7 +803,8 @@ today's routes run through, from the doorstep to the calm areas that are still w
 and **the player chooses which to take** — the guidance is the set of offers, not a single
 instruction. So the day's plan is a small **tree**: the doorstep at the root, one path per
 available calm area. On the power station's day it also carries one spur to the station's front
-door, the day's task — see "The power station".
+door, the day's task — see "The power station" — and on the finale's day one to the finale's
+district, the resistance's last place (see "Guarantees").
 
 **One corridor per calm area, and overlaps are a resource rather than a problem.** Paths may share
 ground on the way out and separate later, since they end in distinct places. Where several

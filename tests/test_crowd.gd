@@ -53,6 +53,7 @@ func run(t) -> void:
 	_test_the_field_is_wider_than_the_screen(t)
 	_test_cars_do_not_drive_through_each_other(t)
 	_test_the_morning_is_unpacked_before_the_first_frame(t)
+	_test_the_morning_is_indexed_before_the_first_frame(t)
 	_test_a_car_can_honour_the_headway_it_keeps(t)
 	_test_a_car_looks_before_it_turns(t)
 	_test_the_traffic_index_is_emptied_every_frame(t)
@@ -763,9 +764,18 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		_step(agent, 3.0)
 		# Back to road speed, or down to turn speed if it has committed to a turn in the three
 		# seconds since — a car easing into a junction it is turning at is not a car still waiting
-		# for a pedestrian who has gone, which is the failure this is watching for.
+		# for a pedestrian who has gone, which is the failure this is watching for. **Or down to
+		# what a barrier it has come up to since allows**, for the reason the selection above gives:
+		# that is a statement about the barrier. It happens here because this rig steps the one car
+		# and never the frame around it, so `TrafficIndex` stays the morning's — every car standing
+		# where `start_day()` put it — and a turn round the barrier can find its landing taken by a
+		# car that in a running day would long since have driven on.
 		var pulling_away := Tuning.CAR_TURN_SPEED if agent.is_turning() \
 				else Tuning.CAR_SPEED.x * 0.5
+		var room := agent._room_to_stop_in()
+		if room < INF:
+			pulling_away = minf(pulling_away,
+					sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * room))
 		t.check(agent.speed() >= pulling_away * 0.99,
 				"and pulls away again once the crossing is clear (%.0fpx/s)" % agent.speed())
 	t.check(tested > 0, "at least one car had a zebra ahead of it to give way at")
@@ -1262,6 +1272,32 @@ func _test_the_morning_is_unpacked_before_the_first_frame(t) -> void:
 	t.check(worst <= a_frames_travel,
 			"the first frame of a day moves no car further than it could drive in one (worst "
 			+ "%.1fpx on day %d, against %.1fpx)" % [worst, worst_day, a_frames_travel])
+
+## **The first frame's look sees the morning's crowd.** A car that turns or recycles asks
+## `TrafficIndex` whether the road it is about to take is free, and on the day's first frame nothing
+## has rebuilt that index since `clear()` emptied it — unless `start_day()` does. Every car the
+## morning placed is then invisible to that first look: a turn committed on it books a landing a
+## queued car is standing on, and whenever the turn arrives, seconds later and possibly in front of
+## her, the queue's resolve shunts that car a car's length backwards. That is the probe's
+## `behind a landing booked on the first frame` row in `tests/probes/m152_car_jumps.gd`.
+##
+## Stated as the relationship rather than a count: every car on the road reads as standing where it
+## stands before any frame has run.
+func _test_the_morning_is_indexed_before_the_first_frame(t) -> void:
+	var cars := 0
+	var unseen := 0
+	for day in [1, 13]:
+		_city.crowd.start_day(day, _rng(day))
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.CAR:
+				continue
+			cars += 1
+			if _city.crowd.traffic().room_at(agent.lane_key(), agent.queue_position(), 1.0):
+				unseen += 1
+	t.check(cars > 0, "the rig days put cars on the road to look for (%d)" % cars)
+	t.check(unseen == 0,
+			"before the first frame, a look at the road sees every car the morning placed "
+			+ "(%d of %d unseen)" % [unseen, cars])
 
 ## **A turn is a placement, and it has to look before it commits.** *(M38: "when a car turns into an
 ## occupied lane the other car just disappears.")*

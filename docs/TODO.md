@@ -479,18 +479,6 @@ is done and the masts already expose what the task needs.
       days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
       rig gave up a leg in half the runs (M184), so the late days are not fully measured yet. **Each late day's happening arrives differently** — waiting at home, found gone,
       closing in front of her, coming on her way — and slice two keeps that variety.
-- [ ] **The finale's district, day 9's door and day 12's swing are reachable by construction**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, we need to make that a guarantee by
-      construction."). `_pick_reachable()`'s `require_reachable` check (`DECISIONS.md`, M188, a
-      resistance target can always be reached) is off today for `_place_at_a_door()` (day 9),
-      `_place_at_a_swing()` (day 12) and day 14's `district` pool (`ResistanceSteps._finale`'s
-      civic-district contact), each a handful of candidate tiles; on a seed 4242 fixture, day 14's
-      72 `CIVIC` candidates came back with zero reachable because the day's own event bodies rang
-      the whole district. **By construction means the day is planned so the route exists**, the
-      way `docs/CITY.md`'s winnability guarantee keeps a route from home to a calm area — closures
-      and events are checked before they are accepted, never repaired afterwards (**city**) — not
-      a retry or a fallback once the day is built. `docs/CITY.md` states the extended guarantee,
-      and `_begin_step()`'s unavailable-step fallback stops being what a run sees on these three.
 
 ---
 
@@ -548,34 +536,6 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       platform allows it. No result here is assumed to explain the older laptop hitch, which
       predates every atlas path, and the native-host evidence supports neither worker jobs nor
       larger pages.
-
----
-
-## M152 — Cars teleport at their turns · the landing and the about-face fixed 2026-09-15, one shunt open
-
-> "cars are super buggy now. when they turn in the final stretch the teleport a car length
-> somewhere else. also in some case instead of routing a turn (or u turn) they just teleport."
-
-[PLAYTEST-76](playtests/PLAYTEST-76.md), [PLAYTEST-77](playtests/PLAYTEST-77.md). The
-**crowd-traffic** rule governs. Both shapes are fixed and recorded (`DECISIONS.md`, M152, a
-turn's landing stands where its arc ended; M152, the about-face is planned and the morning is
-unpacked early). The probe `tests/probes/m152_car_jumps.gd` now finds one in-view jump that is
-neither: on seed 91117 day 1 a follower is moved a car's length backwards in one frame by the
-queue's front-to-back resolve, at (2941, 2800) → (2878, 2800), in the before and the after run
-alike.
-
-- [ ] **A follower is shunted a car's length by the resolve, in view.**
-      `Crowd._resolve_the_queues()` moves a car by its whole overlap in one frame, which is
-      right for a placement nobody has seen and is the first shape the player reported when it
-      happens to a follower on camera — here the follower of a landing, since
-      `_land_the_turn()` leaves the arrival where its arc ended and the queue resolves whoever
-      is too close behind. Find what put the follower a car's length inside its leader on that
-      frame — the landing's claim, the follower's brake, or the lane key changing under it — and
-      fix that where it happens; a resolve that spreads the correction over frames is a force,
-      which the rule refuses. The probe's `spacing` class in view is the measurement, 0 after.
-      The last resort's own residual is measured and not asked about: one reversal on the spot
-      in view over seven rig days, where a stopped car outsat the wait on the landing; the PR
-      review names the shape to try if it shows in play.
 
 ---
 
@@ -700,7 +660,9 @@ were last taken under local contention, so `--record-costs` on a quiet machine c
       the check total unchanged, the split named for what each half proves — or a measured
       shorter loop where a docstring can say why. `tools/test.sh --record-costs` afterwards,
       so the plan follows; the per-suite line before and after goes to `DECISIONS.md` under
-      M125. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
+      M125. `test_resistance.gd` joined them: about 160 s under load once the narrow targets'
+      reachability test landed (`DECISIONS.md`, M181, the narrow targets are reachable by
+      construction), against the 43 s `suite_costs.txt` still records. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
       CI plans them at its default.
 
 ---
