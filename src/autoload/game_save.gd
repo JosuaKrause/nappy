@@ -136,6 +136,7 @@ static func _write_now(day_under_way: bool) -> bool:
 		"day_under_way": day_under_way,
 		"escape_section": GameState.escape_section,
 		"completed_resistance_alley_tiles": alley_tiles,
+		"posters": GameState.posters.to_data(),
 		"state": GameState.save_snapshot(),
 	}))
 	file.close()
@@ -219,4 +220,10 @@ static func _read_now() -> Dictionary:
 	GameState.completed_resistance_alley_tiles.clear()
 	for raw: Dictionary in data.get("completed_resistance_alley_tiles", []):
 		GameState.completed_resistance_alley_tiles.append(Vector2i(int(raw["x"]), int(raw["y"])))
+	# And the walls, the same way again: a save from before there were posters loads with none up,
+	# and the next dawn pastes the city's from `PosterWalls.FIRST_DAY` onward.
+	GameState.posters.reset()
+	var posters: Variant = data.get("posters", {})
+	if posters is Dictionary:
+		GameState.posters.restore(posters)
 	return {"day_under_way": bool(data.get("day_under_way", false))}

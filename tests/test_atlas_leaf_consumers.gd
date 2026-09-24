@@ -60,6 +60,7 @@ func _test_every_building_region_is_baked_on_its_group(t) -> void:
 	names.append_array(Building.STOREFRONT_TEXTURES)
 	names.append_array(Building.STOREFRONT_AWNING_TEXTURES)
 	names.append_array(Building.STOREFRONT_SHUTTERED_TEXTURES)
+	names.append_array(PosterArt.region_names())
 	_check_regions(t, names, &"buildings", "Building")
 
 ## Acquired the moment a building enters the tree, shared by reference count rather than a page

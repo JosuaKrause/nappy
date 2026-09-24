@@ -308,100 +308,6 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 ---
 
-## M180 — Posters she notices, and loudspeakers that are somewhere · asked for 2026-09-20
-
-> "posters need to be more obvious. the loudspeaker part was not apparent to me. since we
-> don't have sound it's not clear that this is happening. loudspeakers should be placed in the
-> city with a defined field. not sure about adding a floor. it just makes losing unfair because
-> things that worked before don't anymore for no obvious (or visible) reason."
-
-[PLAYTEST-117](playtests/PLAYTEST-117.md). **The masts are built** (`DECISIONS.md`, M180,
-the loudspeaker masts): six from day 5, on sidewalks, with a field, a lamp that says when they
-speak, and nothing city-wide left. What is open is the posters.
-
-- [ ] **Posters are seen at all.** *"I have not seen a single poster in any playthrough -- I
-      don't know what you're referring to here -- it needs to be way more obvious"*: the run
-      behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none. The crew's
-      walls, and what they leave behind, read at walking distance as the city changing: size,
-      contrast and how many, against the act's palette. A visual attempt comes back to the
-      player early rather than polished.
-
-      **Why none is seen, read from that run's log and the row itself.** A crew is placed at
-      dawn anywhere in the city (`poster_crew` has the default `MAP` spawn mode, and the day's
-      corridor only weighs four to one against every other block), so over the whole run she
-      came within a crew's 110px field once, and within none of day 4's ten. A crew leaves nothing behind: the row has no
-      `scar_id`, never finishes (`duration` 0) and paints nothing on the wall, so the city
-      does not accumulate posters. The poster itself is a 9x13px sheet of paper held at head
-      height inside a 30x44 figure, about 18x26 on screen at the camera's 2x zoom, on a worker
-      drawn in the street's own olive-grey with no second frame. And it costs nothing to
-      pass (`docs/COSTS.md`: walking through nets a gain, scenery on purpose), so the meter never
-      points at one either. Nothing can draw over it; buildings sit under the entity layer.
-
-      **The fix, in the order of what the log blames:** crews work on walls along the way she
-      walks, the way day 3's fire is sited (`DECISIONS.md`, M179, the fire is on her way), rather
-      than anywhere; a wall a crew has worked keeps its posters for the rest of the run, drawn
-      on the building face and large enough to read at walking distance, so each day's walls
-      add to the last; and the crew is seen pasting. The row's cost stays what it is: making a
-      poster crew charge the meter is a change to what the row is for, and is the player's.
-- [ ] **There are four kinds of poster, and they are on the walls** ([PLAYTEST-119](playtests/PLAYTEST-119.md)).
-      *The leader's portrait*, a nondescript face with no name; *the rules*, a pale printed
-      notice with a heavy header bar, gray lines and a red stamp, joined from day 6 by a curfew
-      sheet with a clock face; *the darker uniform sheets* under one plain geometric emblem
-      that resembles nothing real, covering a wall edge to edge in act III; and *the wanted
-      notice* in act IV, rows of faces, some crossed out in red, drawn in a different style
-      from the leader's. No sheet carries readable words (`docs/NARRATIVE.md`, tone rule 1:
-      nobody explains the politics). A poster takes up about 60 to 80% of a tile, "big enough
-      to be recognizable as posters". They are on walls from the first day poster crews appear,
-      day 4, and **some are already up that first morning**; they are **sparse at first and
-      denser towards the end of the run**, each day's walls adding to the last. The
-      progression, proposed by the orchestrator from the acts and the player's to move:
-
-      | From | New on the walls | How much |
-      | --- | --- | --- |
-      | Day 4 | The rules and the leader's portrait, some already up that morning | Sparse: a wall here and there, one or two sheets on it |
-      | Day 6 | The curfew sheet with its clock face, among the rules | A few more walls |
-      | Day 8, act III | The dark uniform sheets under the emblem, pasted over the older ones | Whole walls, edge to edge, on the streets she uses most |
-      | Day 12, act IV | The wanted notice | Dense: most walls on a main street carry something; the portrait is everywhere |
-
-      **One face on the wanted notice is the neighbor's** ([PLAYTEST-121](playtests/PLAYTEST-121.md):
-      "I like the idea with the crossed out face if 10 is failed"): the neighbor she is sent to
-      warn on day 10 (M181, the resistance has a reason, and a task is one day) is among the
-      faces from day 12, drawn to match the figure she met or missed, and **crossed out in red
-      if day 10's task was not done on the day she won**. Never explained. It is the posters'
-      one tie to the story: "other than that we can keep this mechanic separate with no story
-      tie in", so tearing stays a gimmick that counts for nothing.
-
-      A kind that has arrived stays in the mix; nothing is taken down except by her.
-
-      **The pictures are drawn and accepted** (`DECISIONS.md`, M180, the poster art): the six
-      intact sheets and three tear masks under `art/events/posters/`, prepared and not yet bound,
-      with the neighbor's slot on the wanted notice and the compositing recipe in
-      `docs/GRAPHICS.md`'s Posters section. **What is open is putting them on the walls**: only on
-      blank ground-floor wall, never over a window (M185, a ground floor is blank wall or shops),
-      one row to a wall, following the progression above. Where a sheet is pasted over an
-      older one, the offset is large enough that the older sheet plainly shows, never a sliver that
-      reads as a glitch ([PLAYTEST-123](playtests/PLAYTEST-123.md), statement 31); **most** new sheets
-      cover the old one exactly and replace it, and only some show the one beneath (statements 32
-      and 33: "if it's visibly over pasted for all of them then it will look weird"). PNGs are Codex's, later.
-- [ ] **She tears a poster down by pushing against its wall**, a diagonal heading included;
-      no button, and more than walking past. *The orchestrator recommended running along the
-      wall · the player chose pushing on 2026-09-20*, because a push can happen by accident,
-      which is how it is discovered. It is a gimmick to be judged by feel and holds nothing
-      else up. Open to overturn, set by the orchestrator: her heading has to press into the
-      postered wall for about 0.4 seconds, so brushing past does not tear; a torn poster stays
-      torn until a crew pastes that wall again; tearing costs nothing on the meter and counts
-      for nothing. **A tear has a small chance of a pursuer**: a `police_patrol` sent toward
-      her from off screen under the lead its row already owes, starting at one tear in ten, and
-      never on the first tear of a run. **Whether a tear brings one is drawn from a marble bag**
-      ([PLAYTEST-125](playtests/PLAYTEST-125.md)): a bag holding a fixed set of marbles in the
-      desired proportion, one drawn at random and removed per tear, refilled with the same set
-      when empty, so every bag's share is exact ("it has the desired probability but feels
-      fair"). A first, pre-bag holds only "no pursuit" marbles, one per tear guaranteed safe.
-      The bag is the queue's numbers (statement 5): a pre-bag of one safe tear, then one
-      pursuit in every ten. Only poster tears use a marble bag.
-
----
-
 ## M183 — The power station and the blackout · asked for 2026-09-20
 
 > "so we need to design a power station building that is guaranteed to spawn on the map" ·
@@ -509,9 +415,10 @@ carried): a task is one day, announced at its mark and done that day; the first 
 six of the eight tasks (days 6, 7, 8, 9, 12 and 13) with the red arrow for the one-place ones;
 the goal of five; the doors from day 9; the day brief's own line for each day; and the story
 in `docs/NARRATIVE.md`, "What the tasks are for". **What is open is slice two**, below, and the
-two tasks that wait on other milestones: **day 11's mast on M180**, posters she notices, and
-loudspeakers that are somewhere, and **day 14's front door on M183**, the power station and the
-blackout; until then day 14 keeps the last night's district contact.
+one task that still waits on another milestone: **day 14's front door on M183**, the power
+station and the blackout; until then day 14 keeps the last night's district contact. Day 11's
+mast waits on nothing further — M180, posters she notices, and loudspeakers that are somewhere,
+is done and the masts already expose what the task needs.
 
 **The calendar, decided by the player:**
 
@@ -531,14 +438,16 @@ blackout; until then day 14 keeps the last night's district contact.
       the red arrow points at them out in the city, and the deadline is the neighbor walking home
       into the vans (*the orchestrator's reading · taken by the player on 2026-09-21*,
       [PLAYTEST-121](playtests/PLAYTEST-121.md)). Warned, the neighbor runs; not warned, they are
-      taken, and theirs is the face crossed out on day 12's wanted notice (M180). **The raid is vans
+      taken, and theirs would be the face crossed out on day 12's wanted notice — the slot and the
+      crossed copy are drawn (`DECISIONS.md`, M180, the poster art), but this day is not built, so
+      every wanted notice shows the neighbor's plain face until it is. **The raid is vans
       in the street at her building with a patrol, and the doorstep stays reachable**
       ([PLAYTEST-122](playtests/PLAYTEST-122.md): "we will have to see how that one feels", so it
       goes to `REVIEW.md` once built). The neighbor's door is sealed the next morning either way.
 - [ ] **Day 11: silence a mast**, which stays quiet for the rest of the run: she reaches its
       foot, as a mark is touched, and its field makes the approach cost while it broadcasts
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)). Waits on M180's masts, which expose each
-      mast's stable id and foot.
+      ([PLAYTEST-122](playtests/PLAYTEST-122.md)). The masts already expose each mast's stable id
+      and foot (`DECISIONS.md`, M180, the loudspeaker masts), so this task waits on nothing else.
 - [ ] **The once-only happenings of days 10 to 13**, each leaving something permanent and each
       sited from where she is walking as the fire is (`DECISIONS.md`, M179), except the raid,
       which is at her own building and is what she comes home to: the raid, whose door is

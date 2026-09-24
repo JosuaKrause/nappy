@@ -1,0 +1,42 @@
+nappy rig log  2026-09-24T00:43:39  version v0.15.1-42-g9b8a077c-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.7 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.3 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.1 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.6 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.3 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.5 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.5 ms, 190 x 218
+   0.0  texture  atlas page 'events' loaded in the startup: 7.9 ms, 998 x 558
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.0 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 22.2 ms
+
+day 8  act 3  run seed 4242  city seed 4242  length 144.0s  invincible
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 22.2 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 5 on offer at (153,94)
+   0.0  roll     chalk mark guarded: robber 93px away (band 66-176)
+   0.0  plan     closed: accident v(2,4), cordoned off v(4,1), cordoned off v(2,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: abduction x4, alley_mouse x4, alley_robbery x4, burnt_out_car x76, burst_water_main x16, busker x4, cafe_tables x43, car_accident x22, cat_dash x7, charging_dog x3, chatting_mother x2, collapsed_frontage x15, construction x45, cyclist x8, delivery_van x36, dog_walker x23, homeless_yeller x7, ice_cream_van x5, leaf_blower x15, loose_dog x18, loudspeaker x5, market_stall x31, moving_van x30, pigeon_flock x5, playground x2, police_patrol x10, poster_crew x12, reversing_lorry x3, roadblock x6, scaffolding x20, skip x20
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  contact  step 5 moved to (79,90): never seen at (153,94)
+   0.0  roll     chalk mark guarded: robber 67px away (band 66-176)
+   0.0  cross    stepped into the road at (80,86), mid-block
+   0.0  near     alley_robbery at (78,92), 197px, exc 0, in 0.0/s (crowd 0.0, events 0.5), sleep 0
+   0.0  contact  walked within 127px of the chalk mark at (79,90)
+   0.0  frame    fps 2, worst frame 263.1ms, draws 310, objects 2244, primitives 4792, process 2162.43ms, physics 1.18ms
+   0.0  contact  step 5 seen at (79,90) after 1.0s within 150px
+   0.0  frame    fps 75, worst frame 24.6ms, draws 319, objects 2082, primitives 4564, process 78.60ms, physics 1.08ms
+   0.0  frame    fps 114, worst frame 15.4ms, draws 433, objects 2269, primitives 4910, process 24.60ms, physics 1.31ms
+   0.0  cue      the mark over her head: soon for 0.0s (2.4s of it on the road) | alley_robbery 197px
+   0.0  near     ice_cream_van at (64,88), 238px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 2
+   0.0  frame    fps 118, worst frame 24.6ms, draws 430, objects 2236, primitives 4820, process 15.37ms, physics 1.09ms
+   0.0  frame    fps 116, worst frame 9.8ms, draws 319, objects 1967, primitives 4230, process 24.57ms, physics 1.25ms
+   0.0  shot     burst started: asked for an animation burst at (68,85) | exc 0, sleep 2 | playing | asked/burst-9243852-001
+   0.0  frame    fps 120, worst frame 66.3ms, draws 441, objects 2225, primitives 4792, process 10.44ms, physics 1.22ms
+   0.0  scar     she tears down the leader sheet at (68,84), tear 1 of the run
+   0.0  roll     poster tear 1 draws a no-pursuit marble, 0 left in the bag
+   0.0  frame    fps 55, worst frame 67.9ms, draws 439, objects 2218, primitives 4727, process 66.31ms, physics 1.14ms
+   0.0  near     cafe_tables at (66,85), 63px, exc 0, in 0.0/s (crowd 0.0, events 6.5), sleep 3
+   0.0  frame    fps 35, worst frame 62.4ms, draws 440, objects 2373, primitives 5037, process 66.30ms, physics 1.05ms
+   0.0  shot     burst complete: 36 frames | duration

@@ -5,7 +5,8 @@
       "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: every day has a city",
       "padding": "extrude",
       "consumers": [
-        "src/city/building.gd"
+        "src/city/building.gd",
+        "src/city/poster_art.gd"
       ],
       "members": [
         "art/buildings/entrance_door.svg",
@@ -47,6 +48,17 @@
         "art/buildings/window_shuttered_lit.svg",
         "art/buildings/window_tall_dark.svg",
         "art/buildings/window_tall_lit.svg",
+        "art/events/posters/poster_curfew.svg",
+        "art/events/posters/poster_leader.svg",
+        "art/events/posters/poster_rules.svg",
+        "art/events/posters/poster_tear_a_mask.svg",
+        "art/events/posters/poster_tear_a_overlay.svg",
+        "art/events/posters/poster_tear_b_mask.svg",
+        "art/events/posters/poster_tear_b_overlay.svg",
+        "art/events/posters/poster_tear_c_mask.svg",
+        "art/events/posters/poster_tear_c_overlay.svg",
+        "art/events/posters/poster_uniform.svg",
+        "art/events/posters/poster_wanted.svg",
         "art/props/civic_portico.svg",
         "art/props/industrial_vent.svg",
         "art/props/industrial_vent_b.svg",
@@ -340,6 +352,7 @@
         "art/events/police_car_wheels.svg",
         "art/events/poster_crew.svg",
         "art/events/poster_crew_back.svg",
+        "art/events/poster_crew_back_b.svg",
         "art/events/poster_crew_back_diagonal.svg",
         "art/events/poster_crew_front.svg",
         "art/events/poster_crew_front_diagonal.svg",

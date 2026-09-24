@@ -1,0 +1,28 @@
+<!-- Poster worker from the back, pasting: the second frame of poster_crew_back.svg, alternated on
+     EventInstance's idle timer while the crew faces the wall it pastes. The brush arm is raised
+     with the paste brush up at the wall and the sheet is pressed a pixel higher; everything else
+     is frame a's. Paper has no writing. Ground anchor (15,44). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M1 36 Q5 34 9 36 L9 43 L1 43Z" fill="#58524d"/>
+  <ellipse cx="5" cy="36" rx="4" ry="1.5" fill="#7a736c"/>
+  <path d="M2 35 Q5 29 8 35" fill="none" stroke="#58524d" stroke-width="0.8"/>
+  <g transform="translate(15 0)">
+  <path d="M-4 30 L0 30 L-1 42 L-5 42Z M2 30 L6 30 L7 42 L3 42Z" fill="#5c6b5c"/>
+  <path d="M-6 42 L0 42 L0 44 L-7 44Z M2 42 L8 42 L9 44 L2 44Z" fill="#221f28"/>
+  </g>
+  <path d="M20 15 L24 9 L27 10 L26 17 L20 19Z" fill="#4c5a4c"/>
+  <rect x="21" y="1" width="9" height="13" fill="#e0d8c4"/>
+  <path d="M23 3 L24 12" fill="none" stroke="#b8ae98" stroke-width="1"/>
+  <path d="M26 3 L27 9" fill="none" stroke="#f2ecdc" stroke-width="1"/>
+  <g transform="translate(15 13)">
+  <path d="M-7 0 L7 0 L7 18 L-7 18Z" fill="#5c6b5c"/>
+  <path d="M-6 12 L6 12 L6 18 L-6 18Z" fill="#4c5a4c"/>
+  </g>
+  <path d="M9 16 L5 10 L7 7 L10 9 L12 18Z" fill="#4c5a4c"/>
+  <rect x="5" y="3" width="2" height="5" fill="#8a6f52"/>
+  <rect x="4" y="1" width="4" height="3" fill="#b8a67c"/>
+  <g transform="translate(15 8)">
+  <ellipse cx="0" cy="0" rx="6" ry="6.5" fill="#3a2b26"/>
+  <path d="M-4 2 Q0 6 4 2" fill="none" stroke="#3a2b26" stroke-width="0.8"/>
+  </g>
+</svg>

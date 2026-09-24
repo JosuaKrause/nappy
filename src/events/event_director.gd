@@ -27,11 +27,12 @@ extends RefCounted
 ##
 ## **And one thing sited here *is* a place.** `site_what_is_on_her_way()` is the second half of
 ## this class and it breaks the sentence above on purpose: a row carrying
-## `EventDef.sited_on_her_way` — day 3's burning building, the only one
-## today — is a place in every sense: a tile, a body, a field, a scar that outlives the day. What it
-## cannot be is *anywhere*, because it is the authored beat of act I and a set piece on a street she
-## never walks down is a silhouette spent on nothing. So the day budgets it and this sites it, on a
-## building face ahead of her heading, once her direction for the day is clear.
+## `EventDef.sited_on_her_way` — day 3's burning building, and the day's poster crews after it —
+## is a place in every sense: a tile, a body, a field, and what it leaves on the city outlives the
+## day. What it cannot be is *anywhere*: the fire is the authored beat of act I and a crew is the
+## walls visibly changing, and either one on a street she never walks down is a silhouette spent on
+## nothing. So the day budgets it and this sites it, on a building face ahead of her heading, once
+## her direction for the day is clear.
 ##
 ## The two jobs share this class because they share the one thing neither the scheduler nor the
 ## manager has: **the direction she is actually travelling, now**. They do not share a queue, an
@@ -62,7 +63,7 @@ var _return_pacing := false
 var _doors := PackedVector2Array()
 
 ## Today's plans that the day budgeted and left for her walk to site — `EventDef.sited_on_her_way`,
-## which is day 3's fire and nothing else today. Read off the same plan list `_owed` is, in
+## which is day 3's fire, and the poster crews from day 4. Read off the same plan list `_owed` is, in
 ## `start_day()`, and emptied as each one is put in the world.
 var _on_her_way: Array[EventScheduler.Planned] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
@@ -82,6 +83,15 @@ var _since_the_last_look := 0.0
 ## The stream the siting rolls its candidate tile out of. Derived from the day's own director stream
 ## rather than drawn from it, so which building face the fire takes cannot move a single cat.
 var _walk_rng := RandomNumberGenerator.new()
+## The same for a recurring row sited on her way — `poster_crew` — so the crews' sitings are a
+## stream of their own and never move the fire's.
+var _crew_rng := RandomNumberGenerator.new()
+## A patrol a torn poster has sent — see `send_a_patrol()` — or null. Held apart from `_owed`
+## rather than put in it, so the day's own queue, its pacing and its stream are exactly what they
+## would have been had she never torn anything.
+var _sent: EventDef = null
+## Seconds of walking before `_sent` is sited.
+var _sent_in := 0.0
 
 func _init(map: CityMap) -> void:
 	_map = map
@@ -107,11 +117,13 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	_behind_her.clear()
 	_walked = 0.0
 	_since_the_last_look = 0.0
+	_sent = null
 	_siting = siting
 	# Derived from the day stream's seed rather than drawn from the stream itself: the siting rolls
 	# a candidate tile and a re-siting rolls another, and a day on which she turned round would
 	# otherwise hand every cat after it a different interval than a day on which she did not.
 	_walk_rng.seed = hash("%d:on-her-way" % rng.seed)
+	_crew_rng.seed = hash("%d:crews-on-her-way" % rng.seed)
 	for plan in plans:
 		# A door body is read off the same list, so "where do today's doors stand" is answered once,
 		# by the plan, rather than by a second wire from the region planner to here.
@@ -350,8 +362,11 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 	for plan in _on_her_way:
 		if plan.is_placed() and not _is_no_longer_on_her_way(plan, at, heading, elapsed):
 			continue
+		if not plan.is_placed() and _waits_its_turn(plan):
+			continue
 		var band := _siting_band()
-		var sited := _siting.ahead_of(plan.def, _walk_rng, _everything_but(plans, plan), at, heading,
+		var rng := _walk_rng if plan.def.kind == GameEnums.EventKind.ONE_SHOT else _crew_rng
+		var sited := _siting.ahead_of(plan.def, rng, _everything_but(plans, plan), at, heading,
 				band.x, band.y)
 		if not sited:
 			continue
@@ -362,6 +377,18 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 		_behind_her[plan] = 0.0
 		moved.append(plan)
 	return moved
+
+## **A recurring row is sited on her way one at a time**: the next of the day's crews waits while
+## another is sited ahead of her and not yet in the world. All of them at once would put the day's
+## crews on the one stretch of street the band covers; one at a time, each is met on its own and
+## the next is sited as the last comes into reach, so they are spread along the day's walk.
+func _waits_its_turn(plan: EventScheduler.Planned) -> bool:
+	if plan.def.kind == GameEnums.EventKind.ONE_SHOT:
+		return false
+	for other in _on_her_way:
+		if other != plan and other.def.id == plan.def.id and other.is_placed():
+			return true
+	return false
 
 ## Drops from the list anything that is already real or already spent, so the loop above only ever
 ## considers a plan that can still legally be moved.
@@ -455,20 +482,9 @@ func owe_the_return(day: int, heat: int) -> void:
 	var count: int = Tuning.RETURN_PATROLS_PER_ACT[act - 1]
 	if count <= 0:
 		return
-	var cold := EventCatalogue.by_id("police_patrol")
-	if not cold:
-		push_error("owe_the_return: no 'police_patrol' row in the catalogue")
+	var for_return := _patrol_toward_her(heat)
+	if not for_return:
 		return
-	# The day's own heated copy — the same call `EventScheduler.build_day()` makes for every other
-	# placement of the row today — duplicated once more rather than mutated, because `heated()`
-	# caches its answer and shares it with every ordinary `MAP` placement of the row for the rest
-	# of the run: setting `spawn_mode` on that shared copy would turn every later patrol into a
-	# director-sited one, not just this day's return-owed rows. See `EventCatalogue._hot` and
-	# `EventDef.at_heat()`'s own note on why a heated row is a derived copy in the first place.
-	var heated := EventCatalogue.heated(cold, heat)
-	var for_return := heated.duplicate() as EventDef
-	for_return.shape = heated.shape
-	for_return.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	for i in count:
 		_owed.append(for_return)
 	_return_pacing = true
@@ -479,6 +495,76 @@ func owe_the_return(day: int, heat: int) -> void:
 	# return can land its first row sooner than the ordinary pacing would have, never later.
 	_next_in = minf(_next_in, _roll_interval())
 
+## A copy of `police_patrol` at `heat`, sited `TOWARD_PLAYER` down her own carriageway — the shape
+## both the return leg's patrols and a torn poster's are sent in. Null, with an error, if the
+## catalogue has no such row.
+##
+## The day's own heated copy — the same call `EventScheduler.build_day()` makes for every other
+## placement of the row today — duplicated once more rather than mutated, because `heated()` caches
+## its answer and shares it with every ordinary `MAP` placement of the row for the rest of the run:
+## setting `spawn_mode` on that shared copy would turn every later patrol into a director-sited
+## one, not just the ones sent here. See `EventCatalogue._hot` and `EventDef.at_heat()`'s own note
+## on why a heated row is a derived copy in the first place.
+func _patrol_toward_her(heat: int) -> EventDef:
+	var cold := EventCatalogue.by_id("police_patrol")
+	if not cold:
+		push_error("no 'police_patrol' row in the catalogue")
+		return null
+	var heated := EventCatalogue.heated(cold, heat)
+	var toward := heated.duplicate() as EventDef
+	toward.shape = heated.shape
+	toward.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
+	return toward
+
+## A torn poster has drawn the pursuit marble (`PosterWalls`): a `police_patrol` is sent toward her
+## from off screen, under the lead its row already owes — the one `_toward_her_on_the_road()` gives
+## the return leg's patrols, down the carriageway lane driving toward her, at least
+## `offscreen_notice` seconds outside the view.
+##
+## **Sited once she walks, not while she pushes.** A heading into a wall has no along-street
+## component to send a car down, so the patrol waits for her to be going somewhere again —
+## `TEAR_PATROL_AFTER` seconds of walking — and waits a second more whenever there is no road beside
+## her to send it down, the way every other `due()` siting does.
+##
+## **Outside the day's own queue.** It does not join `_owed`, take a turn in it, roll an interval
+## or touch any stream, so a day on which she tears a poster hands every other director-sited
+## row the same interval it would have had. At most one is waiting: a second pursuit marble before
+## the first patrol arrives is the same patrol, already on its way. `--force` leaves it alone as it
+## leaves the return leg's.
+func send_a_patrol(heat: int) -> void:
+	if _forced or _sent:
+		return
+	_sent = _patrol_toward_her(heat)
+	_sent_in = TEAR_PATROL_AFTER
+
+## Seconds of walking between a tear that sends a patrol and the patrol being sited: enough for her
+## to have turned from the wall and have a heading along the street.
+const TEAR_PATROL_AFTER := 1.0
+
+## Whether a patrol a tear sent can be sited now, and where: `[EventDef, path]` or empty. Runs the
+## same clock `due()` does — only while she is walking — on its own countdown.
+func _site_the_sent_patrol(delta: float, at: Vector2, velocity: Vector2) -> Array:
+	if not _sent:
+		return []
+	var speed := velocity.length()
+	if speed < Tuning.AHEAD_MIN_SPEED:
+		return []
+	_sent_in -= delta
+	if _sent_in > 0.0:
+		return []
+	var path := _toward_her_on_the_road(at, velocity / speed, _sent)
+	if path.is_empty() or not EventScheduler.clear_of_the_doors(path[0], path, _doors,
+			_sent.field_reach()):
+		_sent_in = 1.0
+		return []
+	var handed := _sent
+	_sent = null
+	return [handed, path]
+
+## Whether a torn poster's patrol is waiting to be sited. For the tests.
+func has_a_sent_patrol() -> bool:
+	return _sent != null
+
 ## Advances the clock and returns the event to place plus the path to place it on, or null when
 ## nothing is due. `heading` is the direction she is actually travelling, not the way she is
 ## facing: something that crosses in front of a player standing still is not in front of
@@ -486,6 +572,9 @@ func owe_the_return(day: int, heat: int) -> void:
 ##
 ## Returns `[EventDef, PackedVector2Array]`, or an empty array.
 func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
+	var sent := _site_the_sent_patrol(delta, at, velocity)
+	if not sent.is_empty():
+		return sent
 	if _owed.is_empty():
 		return []
 	var speed := velocity.length()
@@ -677,7 +766,8 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2A
 	return PackedVector2Array([far, behind])
 
 ## The road-aware sibling of `_toward_her()`, for a `TOWARD_PLAYER` row whose `placement` names
-## `ROAD` — `owe_the_return()`'s own `police_patrol` copies, a car rather than a bike.
+## `ROAD` — `owe_the_return()`'s own `police_patrol` copies and a torn poster's (`send_a_patrol()`),
+## a car rather than a bike.
 ## `_toward_her()` straightens the line onto *her* pavement; a car has no business on a pavement
 ## at all, so this runs it down the **carriageway lane that drives toward her** instead, using
 ## `CrowdLanes` for the lane geometry the same way `Crowd` sites one.

@@ -1520,6 +1520,16 @@ static func _police_patrol() -> EventDef:
 ## there is no frontage lane on one for a crew pinned against a building to stand in;
 ## `poster_crew_square` below is the square's own crew, at the column a square has instead of a
 ## wall.
+##
+## **It works on walls along the way she walks** (`sited_on_her_way`, `pastes_a_front`). A crew
+## placed anywhere in the city was a crew she never met — the run behind PLAYTEST-116 placed ten
+## on day 4 and she came within the field of none of them. So the day still rolls and places its
+## crews at dawn, by `pavement_side`, exactly as it always did, which keeps every other row the
+## roll places where it was; `EventScheduler._hand_to_her_walk` then drops those positions, and
+## her walk sites each crew, one at a time, on her branch of the day's routes, in front of a blank
+## ground-floor cell and facing it, the way day 3's fire is sited. Once it is in the world it
+## stays, and `PosterWalls` has it paste its wall while it is in her view. Its field and its cost
+## are unchanged: making a crew charge the meter would change what the row is for.
 static func _poster_crew() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew"
@@ -1529,6 +1539,8 @@ static func _poster_crew() -> EventDef:
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
+	def.sited_on_her_way = true
+	def.pastes_a_front = true
 	def.intensity = 5.0
 	def.inner_radius = 30.0
 	def.outer_radius = 110.0

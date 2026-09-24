@@ -343,7 +343,9 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ##
 ## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
 ## whole plan is stated against the day's corridor exactly as it would have been at dawn. What
-## moves is the moment: `EventScheduler._place_one_shots` plans it with no position, and
+## moves is the moment: a one-shot is planned with no position (`EventScheduler._place_one_shots`),
+## a recurring row is rolled and placed at dawn exactly as any other and then handed to her walk
+## with that position dropped (`EventScheduler._hand_to_her_walk`), and
 ## `EventDirector.site_what_is_on_her_way()` puts it on a building face ahead of her once her
 ## direction for the day is clear, off screen and far enough that she meets it rather than watches
 ## it appear. Until it has been in the world it may be moved again, so a day she turns round is
@@ -352,7 +354,18 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## **This is not `AHEAD_OF_PLAYER`**, and the difference is the whole reason it is a second field
 ## rather than a fourth `SpawnMode`. A director-sited row has no tile at all, may not obstruct, and
 ## is never asked the corridor's questions; this one is asked all of them, just later than dawn.
+##
+## Two rows carry it: day 3's fire, a one-shot, and `poster_crew`, recurring. **Only a one-shot is
+## spent where it becomes real and lit at dusk if she never met it** — both are about the set
+## piece a run owes, and a crew is not one.
 @export var sited_on_her_way := false
+
+## Whether her walk sites this row on the sidewalk in front of a blank ground-floor cell of a
+## building's front, facing the wall, rather than on the side `pavement_side` names —
+## `poster_crew`, which pastes the wall it stands at (`PosterWalls`). Only read with
+## `sited_on_her_way`: the dawn roll still places the row by `pavement_side`, so the day's own
+## stream is spent exactly as it always was, and only the walk's siting reads this.
+@export var pastes_a_front := false
 
 ## Seconds of closing this row needs beyond the screen edge before `EventDirector` will site it —
 ## `Tuning.OFFSCREEN_NOTICE` (0.2) unless a row overrides it. Only `AHEAD_OF_PLAYER` (`pursues`) and
@@ -635,6 +648,11 @@ enum Pavement {
 	AT_THE_KERB,
 	## Against the frontage, with a building wall behind it. Where a lorry backs in.
 	AGAINST_THE_BUILDING,
+	## The frontage lane of an east-west street's north sidewalk, in front of the south face of the
+	## lot behind it — the one face of a building the city draws. Where a poster crew pastes. Never
+	## a row's own `pavement_side`: `EventScheduler.WalkSiting` asks it for a row that
+	## `pastes_a_front`.
+	AT_THE_FRONT,
 }
 
 @export var pavement_side := Pavement.ANY
@@ -982,15 +1000,17 @@ func validate() -> bool:
 				+ "nothing checks that it leaves a route to a park")
 		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
-	# `EventScheduler._place_one_shots` reads the flag, and only `EventDirector` sites what it
-	# leaves unplaced — so on any other kind it is a decision that silently did not happen. The two
+	# `EventScheduler._place_one_shots` and `_hand_to_her_walk` read the flag, and only
+	# `EventDirector` sites what they leave unplaced — so on any other kind it is a decision that
+	# silently did not happen. The two
 	# geometric halves are load-bearing rather than tidiness: the siting is a tile with the
 	# corridor's own questions asked of it, which a director-sited row never has, and a thing that
 	# moves has no one place for its scar to be recorded at.
 	if sited_on_her_way:
-		if kind != GameEnums.EventKind.ONE_SHOT:
-			push_error("event '%s' is sited from her walk and is not a one-shot: nothing but " % id
-					+ "EventScheduler._place_one_shots leaves a plan for her walk to site")
+		if kind != GameEnums.EventKind.ONE_SHOT and kind != GameEnums.EventKind.RECURRING:
+			push_error("event '%s' is sited from her walk and is neither a one-shot nor " % id
+					+ "recurring: nothing but EventScheduler._place_one_shots and "
+					+ "_hand_to_her_walk leaves a plan for her walk to site")
 			return false
 		if spawn_mode != SpawnMode.MAP:
 			push_error("event '%s' is sited from her walk and is director-sited besides: it is " % id
@@ -1000,6 +1020,10 @@ func validate() -> bool:
 			push_error("event '%s' is sited from her walk and moves: a row that may be re-sited " % id
 					+ "until it is real needs one place to stop being re-sited at")
 			return false
+	if pastes_a_front and not sited_on_her_way:
+		push_error("event '%s' pastes a front and is not sited from her walk: only the walk's " % id
+				+ "siting reads it")
+		return false
 	# A flock is several bodies wheeling inside one disc, so there is no silhouette for a body to
 	# be half of — and being walked into is the event. See `obstructs_radius` above.
 	if flock_size > 0 and obstructs_radius > 0.0:

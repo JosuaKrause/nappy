@@ -575,6 +575,16 @@ item below for as long as looking takes.
   for the windowed build's title-bar and dock/taskbar icon. **Does the stroller read at a real
   favicon's size, and does the window/dock icon look right next to other apps' icons?** Record is
   `DECISIONS.md`, the application icon is the enhanced stroller.
+- **Walk a day from day 4 on and find a poster crew mid-paste, then push against a postered
+  wall.** A crew works a wall along her own route and is only measured (1 to 8 met per walk),
+  never photographed mid-paste — `--invincible` freezes the day clock, so the moment a crew is
+  sited on her walk cannot be timed for a burst without it. **Does a crew pasting read as the
+  city changing rather than a static prop, and does the alternating brush-raised pose read as
+  pasting from a normal walking distance?** Steer into a papered wall for under half a second,
+  then hold it: the push has to be at least 30° into the wall, within 26px of its face, for 0.4s.
+  **Do the push thresholds read as a deliberate shove, or does an accidental brush tear too
+  easily — or does a real push feel like it should have torn sooner?** Record is `DECISIONS.md`,
+  M180, seen, walled and torn.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
