@@ -171,7 +171,9 @@ merging is what collides — so parallelism is planned at the file level, before
   the merge result is the gate that catches two green branches that are wrong together. Then
   retire the branch with `tools/prune-merged.sh <branch>` from the main checkout (see
   **committing**), which removes the worktree and deletes the branch only once GitHub vouches
-  for it.
+  for it. `tools/land-prs.sh <pr-number>...` is that sequence for several already-authorized PRs
+  in one call: auto-merge, wait, bring a conflicted one up to date, then fast-forward `main` and
+  prune, one PR at a time.
 - **The harness's own branches go with the same script.** Each spawn also leaves a
   `worktree-agent-*` branch pointing at the worktree's base. `tools/prune-merged.sh` deletes the
   ones whose worktree is gone, with `git branch -d`, and keeps a live agent's: that worktree has
