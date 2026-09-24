@@ -296,7 +296,7 @@ name the question it answers, or it is a metric and does not belong.
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log |
 | `shot` | `main.gd`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
-| `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detain_seconds` row), a checkpoint hold that outlives the input lock (`EventManager.door_holding_her_at()`), or standing on a signalled junction's own sidewalk facing a main road whose light is not hers (`StillWatch.facing_a_red_light()`) — a held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
+| `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detain_seconds` row), a checkpoint hold that outlives the input lock (`EventManager.door_holding_her_at()`), or the signalled junction nearest her among those visible on screen showing her red on the main road's own light (`StillWatch.facing_a_red_light()`) — wherever on screen she herself is standing, since a mother who is really stuck is still stuck once the light turns green and the watch catches her then. A held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
 
 ### Reading the meter breakdown
 
@@ -339,6 +339,16 @@ primitives and light in pixels is a geometry problem, and the reverse is a fill-
 second being exactly the cost a desktop measurement cannot see on a phone's own screen. `process`
 and `physics` are the two loop times, held apart rather than summed because they are fixed by
 different things, and together they say how much of the frame never reached the renderer at all.
+**Both are already the worst interval of the previous second, not a per-frame reading** — the
+engine keeps the longest `_process` interval and the longest physics tick it saw across the
+second and hands each over once a second, replacing the last (`docs/DECISIONS.md`, M138, what the
+readout's `process` and `physics` lines measure); the `process` interval runs from the start of
+`_process` through the rendering server's own `sync()` and `draw()`, so it carries the render
+submit. `worst frame` (the observer's own longest `_process` delta over the same second) and
+`process` (the engine's own worst interval, render submit included) are therefore two readings of
+the same hitch from two sides, and read close together whenever the render submit is not where
+the second's cost fell.
+
 **The physics tick runs thirty times a second, so `physics`'s own reading is milliseconds per
 tick**, not per frame — a frame drawn at thirty or more fps carries one tick, and a slower one can
 carry two, so `physics` and `process` are not directly comparable the way two frame-rate figures
@@ -655,20 +665,13 @@ build has nothing in `project.godot` to reach:
   `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
   own `frame` entry carries, assembled from the same readings so the screen and the log cannot
   disagree. See "What a frame cost" above for what each one says.
-  **`process` and `physics` each carry three labelled columns, `last`, `mean` and `max`, rather
-  than the log's own single reading** — `last` is `process_ms()`/`physics_ms()`, the same
-  instantaneous last-frame number `line()` writes; `mean` and `max` are `FrameCost.sample()`'s
-  own rolling one-second window, fed once a frame while the readout is on. **`mean` is what a
-  still actually measures**: a screenshot lands on one arbitrary frame, and M124's own phone
-  probe found the last-frame-alone reading swing between 21.7ms and 65.1ms on the same setting a
-  few seconds apart (docs/DECISIONS.md, M124, "the phone's process time split"), so the mean over
-  the second around it is the number a single still can stand behind. **`max` is what a stutter
-  feels like**, the same argument the run log's own `worst frame` field makes for `line()` — a
-  mean is exactly the statistic a hitch hides in. Before the window has taken its first sample,
-  `mean` and `max` fall back to the same instantaneous reading as `last`, so the very first frame
-  reports what it has rather than a zero that would read as free. `line()` itself is unchanged: it
-  already writes once a second, at the interval the mean covers, so a mean over that same second
-  would be no different a number.
+  **`process` and `physics` each carry one labelled column, `worst`, over the log's own single
+  reading** — both are `process_ms()`/`physics_ms()`, the same number `line()` writes, labelled
+  here because it is already the engine's own worst interval of the previous second
+  (`docs/DECISIONS.md`, M138, what the readout's `process` and `physics` lines measure) and a bare
+  number reads as a per-frame mean, the misreading every phone report made before M143 — see "What
+  a frame cost" above for what that interval covers. `line()` itself is unchanged: it already
+  writes once a second, at the interval the reading covers, so it carries no label at all.
 - **`5` the day's routes** — one purple polyline per route the day's `RouteTree` offers, doorstep
   to calm area, over the centres of the two-tile reachability cells the tree actually grew on
   (`ReachabilityGrid`, docs/DECISIONS.md M69) rather than individual tiles — the tree keeps no

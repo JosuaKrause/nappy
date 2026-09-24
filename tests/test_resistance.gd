@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_the_finale_needs_the_legwork(t)
 	_test_touching_completes_a_pickup(t)
 	_test_walking_away_leaves_it_untouched(t)
+	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
 	_test_a_perform_contact_rides_on_its_instance(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	_test_touching_the_mark_activates_the_same_days_task(t)
@@ -194,6 +195,18 @@ func _test_walking_away_leaves_it_untouched(t) -> void:
 	_contact._physics_process(STEP)
 	t.check(not _contact.is_done, "out of reach, nothing happens")
 	_teardown_contact()
+
+## `ContactPoint._draw_chalk()` reads `MARK` untouched and `MARK_TOUCHED` once `is_done` from the
+## baked `decoration` group instead of stroking a circle and two lines — headless never calls
+## `_draw()` (the **verify** skill), so this is the same region-table check
+## `tests/test_atlas_leaf_consumers.gd` runs for every other consumer that switched from code or a
+## loaded texture to an `AtlasLibrary` region: a name the bake never wrote would otherwise sit
+## silent until somebody looked at a screenshot.
+func _test_the_chalk_mark_pictures_are_baked_on_decoration(t) -> void:
+	for name: StringName in [ContactPoint.MARK, ContactPoint.MARK_TOUCHED]:
+		t.check(AtlasLibrary.has_region(name), "%s is a baked region" % name)
+		t.check(AtlasLibrary.group_of(name) == ContactPoint.ATLAS_GROUP,
+				"%s is on the '%s' group" % [name, ContactPoint.ATLAS_GROUP])
 
 ## The shared plumbing every task needs: a contact that rides on an `EventInstance` rather
 ## than sitting on a bare tile, and follows it if it moves.

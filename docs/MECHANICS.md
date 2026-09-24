@@ -176,7 +176,7 @@ to walk down, which is what a route is made of.
 
 **The bar may reach and sit at `excitement = 100` without ending the day.** The day ends crying
 only once a further mass of excitement has arrived while she is already sitting at the cap —
-`Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (10) points inside `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
+`Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points inside `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
 so a single contact that only just reaches 100 leaves almost nothing behind it and does not end
 the day, and a source that keeps her at the cap does. See "Baby state machine", "A push at the
 cap", for exactly what counts as that mass and what happens to it once she gets away from the
@@ -307,7 +307,7 @@ half-second move read as a cut.
 
 **A push at the cap.** The bar may reach and sit at `Tuning.METER_MAX` without ending the day —
 `_update_excitement()` still nets `incoming − decay` every frame the way it always has, and the
-day only ends once `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (10) points of that net have arrived
+day only ends once `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points of that net have arrived
 **while she is already sitting at the cap**, summed over the last `Tuning.EXCITEMENT_OVERFLOW_WINDOW`
 (3s). That sum is the bar's own would-be overflow — the part of a positive net rate the clamp would
 otherwise have piled on top of 100 — not the raw incoming: a single contact from just under the cap
@@ -316,8 +316,9 @@ the day on its own, while a source that keeps emitting once she is there keeps f
 moment incoming drops under decay, the bar falls back from 100 at its ordinary ground-and-motion
 rate exactly as it always has, and the sum itself never resets — it simply drains as its own
 entries age out of the three-second window, the same way the decay side of the meter already ages
-out of `ExcitementHalo.WINDOW`. Two constants, both in `src/autoload/tuning.gd`: the player's own
-starting point, not yet a decision (`docs/DECISIONS.md`, M96).
+out of `ExcitementHalo.WINDOW`. Two constants, both in `src/autoload/tuning.gd`, tightened once
+from the player's own starting point of 10 over 3s to 9.5 over 3s (`docs/DECISIONS.md`, M96 and
+M100).
 
 ```
         ┌────────────────────────────────────────────┐

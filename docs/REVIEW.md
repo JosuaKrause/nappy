@@ -568,6 +568,21 @@ item below for as long as looking takes.
   brush-raised pose read as pasting from a normal walking distance?** Record is `DECISIONS.md`,
   M180, seen, walled and torn.
 
+- **Touch a chalk mark and watch it change.** The mark is now drawn from `chalk_mark.svg`, and
+  the moment she touches it the picture becomes `chalk_mark_touched.svg`, her own addition to the
+  mark, instead of the chalk turning pale green (`tools/run.sh --seed 4242 --day 6 --no-save`,
+  whose brief names the rumor of chalk). **Does the touched mark say "that counted" at the moment
+  of the touch, at play scale, without a word on screen?** Record is `DECISIONS.md`, M100, the
+  chalk mark is its picture.
+
+- **Watch a masked pursuer, a hot roadblock's guard and an alley mouse turn.** Each now faces
+  where it is heading, through eight views (`tools/run.sh --start-escape stairwell:left --no-save`
+  for the pursuer on the stairs; a roadblock's guard leaves his post to chase her only once the
+  resistance is hot, from day 7 on in a run with tasks done). **Does each turn read as the same
+  figure from every side, and does a guard coming at her diagonally read as coming at her?**
+  Record is `DECISIONS.md`, M56 and M100, the guards and the alley mouse face where they are
+  heading.
+
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 

@@ -1919,7 +1919,10 @@ Top-down camera with a fake vertical extrusion:
   the brackets under it and nothing comes down to the sidewalk. Each balcony independently shows
   the potted-plant picture or the plain one, a third of them at random, rather than one variant
   for the whole escape. A two-story front carries none, since its escape would be that platform
-  alone; the roll that decides an escape is still made on it, so the bound moves no stream. The
+  alone; the roll that decides an escape is still made on it, so the bound moves no stream. **Her
+  own building carries none either** (`Building.is_home_building`), since she has a stair inside
+  instead — the roll still runs on her front exactly as it does on any other `RESIDENTIAL` front,
+  only the column it would have kept is dropped, so the bound moves no stream there either. The
   awning is the one piece of a front that leaves the wall plane; it stays inside the
   wall's own footprint rather than reaching over the pavement's walkable band.
 - **A multi-story front with no other way in has one entrance door**
