@@ -480,18 +480,6 @@ is done and the masts already expose what the task needs.
       days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
       rig gave up a leg in half the runs (M184), so the late days are not fully measured yet. **Each late day's happening arrives differently** — waiting at home, found gone,
       closing in front of her, coming on her way — and slice two keeps that variety.
-- [ ] **The finale's district, day 9's door and day 12's swing are reachable by construction**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, we need to make that a guarantee by
-      construction."). `_pick_reachable()`'s `require_reachable` check (`DECISIONS.md`, M188, a
-      resistance target can always be reached) is off today for `_place_at_a_door()` (day 9),
-      `_place_at_a_swing()` (day 12) and day 14's `district` pool (`ResistanceSteps._finale`'s
-      civic-district contact), each a handful of candidate tiles; on a seed 4242 fixture, day 14's
-      72 `CIVIC` candidates came back with zero reachable because the day's own event bodies rang
-      the whole district. **By construction means the day is planned so the route exists**, the
-      way `docs/CITY.md`'s winnability guarantee keeps a route from home to a calm area — closures
-      and events are checked before they are accepted, never repaired afterwards (**city**) — not
-      a retry or a fallback once the day is built. `docs/CITY.md` states the extended guarantee,
-      and `_begin_step()`'s unavailable-step fallback stops being what a run sees on these three.
 
 ---
 
@@ -701,7 +689,9 @@ were last taken under local contention, so `--record-costs` on a quiet machine c
       the check total unchanged, the split named for what each half proves — or a measured
       shorter loop where a docstring can say why. `tools/test.sh --record-costs` afterwards,
       so the plan follows; the per-suite line before and after goes to `DECISIONS.md` under
-      M125. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
+      M125. `test_resistance.gd` joined them: about 160 s under load once the narrow targets'
+      reachability test landed (`DECISIONS.md`, M181, the narrow targets are reachable by
+      construction), against the 43 s `suite_costs.txt` still records. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
       CI plans them at its default.
 
 ---
