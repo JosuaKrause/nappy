@@ -126,3 +126,15 @@ animals (PR 300) and street obstructions (PR 301):
 > "a two floor building cannot have a fire escape"
 
 17. **A two-story building has no fire escape**; the fewest floors that carry one is three.
+
+## Then, on the stacked fire escapes (PR 303, at 7da73f8a)
+
+> "okay, the fire escapes look good now -- the flower pot version should be chosen at random. a
+> wide building front could support two fire escapes but only if there is enough of a gap between
+> them (at least 1.5 full fire escape widths between them)"
+
+18. **The stacked fire escapes look good.**
+19. **The flower pot is chosen at random**, balcony by balcony, rather than standing on every
+    balcony of one variant.
+20. **A wide front may carry two fire escapes**, but only with a gap of at least one and a half
+    full fire escape widths between them.

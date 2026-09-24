@@ -553,6 +553,9 @@ rest of a front is not, so the standard door stands out.
       floor, the ground-floor platform must match the texture's own, and the plant variant stays.
       The ground floor's platform is a picture of its own, derived from the stair picture with
       the stairs removed (statement 16). A front of two floors carries none (statement 17).
+      Each balcony has the flower pot or not at random (statement 19), and a front wide enough
+      for two escapes with at least one and a half escape widths of wall between them may carry
+      a second one (statement 20).
 - [ ] **Then the whole front is looked at again**, the standard entrance door included: stills of
       a residential, a commercial and an industrial street at the ordinary view and zoomed out,
       before and after. The door is changed only if it still pops out.
