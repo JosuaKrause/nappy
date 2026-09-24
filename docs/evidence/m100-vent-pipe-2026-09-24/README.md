@@ -1,8 +1,14 @@
 # M100: the basement vent's pipe is there between blows (2026-09-24)
 
-`docs/TODO.md`'s M100 item "The basement vent's pipe vanishes between blows": the pipe is now its
-own picture (`art/events/steam_pipe.svg`), stood at every vent for the whole section, and the two
-steam frames draw only the cloud over its mouth.
+A pass at `docs/TODO.md`'s M100 item "The basement vent's pipe vanishes between blows": the pipe as
+its own picture, stood at every vent for the whole section, with the two steam frames drawing only
+the cloud over its mouth. The three SVGs of this pass are in `svg/`.
+
+**Verdict: rejected in review, 2026-09-24.** The pipe stands in the middle of a one-tile corridor
+that she walks through between blows, so it cannot be solid where it stands. Asked whether she
+walks through a standing pipe, over a floor grate, or past a pipe against the wall, the player
+chose *"Let's make it a vent" · "Floor grate"*. The grate that replaced it is in
+`../m100-vent-grate-2026-09-24/`.
 
 - `review-sheet.png`: the vent between blows (the pipe alone) and blowing in each of its two
   frames (the pipe with the cloud over it, stacked in the order the game draws them). It is
