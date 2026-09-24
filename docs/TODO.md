@@ -127,7 +127,7 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 | Owner | Integration work and acceptance |
 |---|---|
-| M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family's directional pictures to the alley mouse, read by heading as the other moving families are ([PLAYTEST-128](playtests/PLAYTEST-128.md)), and the sound arcs with their event timing. |
+| M100 — Small, real, and nobody's | Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family's directional pictures to the alley mouse, read by heading as the other moving families are ([PLAYTEST-128](playtests/PLAYTEST-128.md)), and the sound arcs with their event timing. |
 
 M102, the finale, owns the impact-crater decals and the carrying-mother set and has bound what it
 needs of them; `GRAPHICS.md` names which sources are live and which stay
@@ -878,25 +878,6 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
-      playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
-      didn't it count?" — it had.)* A touch turns the mark from chalk white to pale green
-      (`Palette.CHALK` to `CHALK_DONE`) under her feet, and the `resistance ....` dots are
-      performs only, so a pick-up moves none. The mark's own words now reach her on that day's
-      summary whether it was won or lost, in their own larger line (`DECISIONS.md`, M132), so
-      what is left open is the moment of the touch itself. The first mark is hinted at by day 6's brief
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)), and how much a touch may say is the
-      player's call: nothing more; the mark's colour made unmistakable; or a one-line status
-      change on the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review:
-      she adds something to the existing mark to indicate she has seen it.
-      `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
-      remains here
-- [ ] **The chalk mark is drawn from `chalk_mark.svg`** ([PLAYTEST-128](playtests/PLAYTEST-128.md):
-      "Yes, we need to use the svg."). `ContactPoint._draw_chalk()` (in `src/resistance/`)
-      paints the mark with `draw_arc`/`draw_line` today, which breaks "a picture is an asset,
-      never code"; it draws `props/chalk_mark.svg` instead, and `chalk_mark_touched.svg` for a
-      touched mark, as the integration table above says. The mark stays visible and readable on
-      the sidewalk
 - [ ] **The alley mouse faces where it runs** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "The
       code comment is positive, the queue is normative."). `EventCatalogue._alley_mouse()` draws
       one mirrored side picture through `_draw_simple()`; it reads a heading through
