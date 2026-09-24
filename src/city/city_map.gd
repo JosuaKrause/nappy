@@ -400,6 +400,16 @@ static func corridor_offset(coordinate: int) -> int:
 
 # ------------------------------------------------------------ street kinds ---
 
+## Whether `corridor` on the given axis is the spine — a fact about this city, read off the map
+## rather than re-derived. There is one main road and it runs north to south, so `vertical` has to
+## be true as well as the index matching; a phantom arterial on the other axis, weighted like the
+## real one but with no lights and no dark asphalt, is what computing this per axis instead makes.
+## Every site that used to spell "is this the main road" out by hand — the signals, the crowd's
+## lanes and its agents, the seal planner — asks this instead, so a per-axis spine or a horizontal
+## one on some seed changes one answer rather than six.
+func is_main_road(vertical: bool, corridor: int) -> bool:
+	return vertical and corridor == main_road
+
 ## What kind of street a stretch of corridor is: the axis, the corridor index, and how far along
 ## it in tiles. `ORDINARY` for anything outside the lattice, which is what every caller means by
 ## "not a street I know about".
@@ -408,7 +418,7 @@ static func corridor_offset(coordinate: int) -> int:
 ## a street rather than the whole of it. Callers that genuinely have no along coordinate — a car
 ## choosing which corridor to drive down — want `is_driveable_street` instead.
 func street_kind(vertical: bool, index: int, along_tile: int) -> GameEnums.StreetKind:
-	if vertical and index == main_road:
+	if is_main_road(vertical, index):
 		return GameEnums.StreetKind.MAIN
 	for span in precinct_spans:
 		if (span.x == 1) != vertical or span.y != index:

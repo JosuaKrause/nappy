@@ -161,7 +161,7 @@ static func arterial_index(axis_blocks: int) -> int:
 ## `street_kind`, `GroundTiles`, `TrafficSignals` and `decay_multiplier` all ask the map. This is
 ## the fourth place that has to agree with them and the easiest one to leave behind.
 static func busyness(map: CityMap, vertical: bool, index: int) -> float:
-	if vertical and index == map.main_road:
+	if map.is_main_road(vertical, index):
 		return ARTERIAL_BUSYNESS
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("busy:%d:%s:%d" % [map.seed_used, "v" if vertical else "h", index])
