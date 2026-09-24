@@ -38,6 +38,10 @@ item below for as long as looking takes.
   brief lines read as the city changing, and which would you rewrite?** They are the draft as it
   stood. Record is `DECISIONS.md`, M181, the resistance has a reason, and a task is one day,
   slice one.
+- **Play a day before and after the curfew** (`--day 5`, then `--day 6`). Days 1 to 5 are now
+  210 s and curfew days 180 s. **Does day 6 still feel shorter — "we don't have as much time" —
+  and do the early days feel roomy rather than like waiting for dusk?** Record is `DECISIONS.md`,
+  M192, a curfew day is the old full day.
 - **Play days 10 to 14 as a run would** (`--day 10` and on, `--invincible` to stay as long as
   looking takes). Day 10: the neighbor walking home under the red arrow, and the raid's vans and
   patrol at her building — *"we will have to see how that one feels"* (PLAYTEST-122). **Does the
