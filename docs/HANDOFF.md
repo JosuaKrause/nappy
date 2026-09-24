@@ -309,8 +309,8 @@ checks and worktrees can move independently of this file.
 - **The next work is the story's pacing, and it ends in a minor release**
   ([PLAYTEST-117](playtests/PLAYTEST-117.md): "that would be the next after this and warrants a
   minor release"): M181, the resistance has a reason, and a task is one day, has every task and
-  happening built; its late days are timed next with the route rig (`--route`), before anything
-  is cut, and the neighbor's sealed door has no picture yet. It is decided in `TODO.md`
+  happening built and 24 of 27 late-day runs timed; three runs the rig does not finish yet, and
+  the neighbor's sealed door has no picture. A curfew day is 180 s and a day before the curfew 210 s (M192). It is decided in `TODO.md`
   ([PLAYTEST-118](playtests/PLAYTEST-118.md), [PLAYTEST-119](playtests/PLAYTEST-119.md),
   [PLAYTEST-120](playtests/PLAYTEST-120.md), [PLAYTEST-121](playtests/PLAYTEST-121.md),
   [PLAYTEST-122](playtests/PLAYTEST-122.md)). M182, a
