@@ -724,7 +724,12 @@ is still true.
       cloud as one picture, and `InteriorEvents` keeps no instance between blows, so the pipe is
       only on screen while it steams; a vent that is there all the time, blowing or not, is what
       a player can plan around. Found while animating the steam (`DECISIONS.md`, M100, water,
-      smoke and steam move)
+      smoke and steam move) **The vent is a floor grate** *(2026-09-24, asked whether she walks
+      through a standing pipe, over a floor grate, or past a pipe against the wall: "Let's make it
+      a vent" · "Floor grate")*: a pipe cannot be solid where it stands, since the corridor is one
+      tile wide and half a pipe plus her body leaves her no room, so the vent is a grate in the
+      floor she walks over, there all the time, with the two-frame cloud rising from it while it
+      blows
 
 **Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
 the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses
