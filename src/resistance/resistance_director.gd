@@ -891,7 +891,7 @@ func _reachable_from_home(tile: Vector2i) -> bool:
 	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
 
 func _process(delta: float) -> void:
-	_happenings.tick(_player_position(), _sight)
+	_happenings.tick(delta, _player_position(), _sight)
 	if _taken_neighbor:
 		_take_the_neighbor_away()
 	if not _step or _expired or not _contact or _contact.is_done:
@@ -1151,11 +1151,10 @@ func _on_contact_completed(step_index: int) -> void:
 	# is the world answering, and it stays quiet for the rest of the run.
 	if step and step.target_kind == ResistanceSteps.TargetKind.MAST:
 		_silence_the_mast()
-	# Day 12's once-only happening — the park she was sent to starts to close once she has
-	# reached the swing — is a later slice's, on the same fork `_place_at_a_swing()` names: it
-	# needs `EventScheduler`/`ClosurePlanner`, out of this slice's scope fence. This is the hook:
-	# `step.target_kind == ResistanceSteps.TargetKind.PARK_SWING` is true exactly once, the
-	# instant she reaches the swing, and nothing downstream of it is built yet.
+	# Day 12's once-only happening: the park she was sent to starts to close the instant she has
+	# reached the swing, and stays taken — see `ResistanceHappenings.take_the_park()`.
+	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
+		_happenings.take_the_park()
 	if not (step and step.needs_goal):
 		return
 

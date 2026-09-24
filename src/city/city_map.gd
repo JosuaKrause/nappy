@@ -755,6 +755,19 @@ static func open_tile_for(purpose: GameEnums.BlockPurpose) -> GameEnums.TileType
 		_:
 			return GameEnums.TileType.SPOILED
 
+## Re-reads which blocks are calm and which playgrounds are open from `state`, after a block's
+## purpose changed during the day — day 12's park, taken once she has reached its swing. The
+## ground is not repainted here: that is `City.close_ground()`, a ring at a time.
+func recompute_calm(state: CityState) -> void:
+	_recompute_calm(state)
+
+## Sets `tile`'s ground during the day and forgets the per-type tile lists that were built from
+## the old ground. What `repaint()` does for the whole map at dawn, for the few tiles a happening
+## changes in front of her.
+func repaint_tile(tile: Vector2i, type: GameEnums.TileType) -> void:
+	set_tile(tile, type)
+	_tiles_by_type.clear()
+
 func _recompute_calm(state: CityState) -> void:
 	calm_blocks = state.calm_blocks(block_plans)
 	playgrounds.clear()

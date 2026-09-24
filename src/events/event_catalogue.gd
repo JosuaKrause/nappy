@@ -1961,13 +1961,16 @@ static func _night_raid() -> EventDef:
 
 ## Like the fire engine, but it does not leave a fire. It leaves a barricade, and the
 ## barricade is still there tomorrow.
+##
+## **From day 13, the morning the army arrives** (PLAYTEST-122: "the convoys start on day 13"),
+## with the column on the main road that day (`ResistanceHappenings`) — day 12 is the parks.
 static func _military_convoy() -> EventDef:
 	var def := EventDef.new()
 	def.id = "military_convoy"
 	def.display_name = "Convoy"
 	def.look = EventDef.Look.ARMY_TRUCK
 	def.shape = GroundShape.point(26.0)
-	def.first_day = 12
+	def.first_day = 13
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.ROAD]
 	def.intensity = 22.0

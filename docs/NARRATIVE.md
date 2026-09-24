@@ -87,10 +87,23 @@ stays reachable along her own sidewalk. The neighbor who has left every morning 
 the city, walking home into it. The next morning a door down the hall is sealed, and the neighbor
 no longer leaves for work.
 
+**Day 11 the market is gone.** Somewhere ahead of her on the way she has chosen, out of her
+sight, a street of shops is boarded up before she gets there, its market stalls gone with it, and
+it stays boarded for the rest of the run: she finds it gone rather than sees it go.
+
 ### Act IV — "Open" (days 12–14)
 
 Smoke, sirens, barricades. Military convoys re-shape the map as they pass. Protests grow.
 Whole districts close.
+
+**Day 12 the parks are being fenced off**, one at a time, and the one she is sent to is next: it is
+open that morning whatever had already happened to it, and once she has reached its swing it closes
+in front of her, its grass going to mud from the edges in, and stays taken. The day has kept
+another park open and in reach for the baby.
+
+**Day 13 the army arrives.** The convoys start that morning, and the first is a column of army
+trucks coming down the main road on her way; the barricade it stops at, out of her sight, is still
+there on the last night.
 
 **Day 14** is the last night — either the sabotage (good ending) or simply the last walk home
 (neutral ending). The sabotage is a hand-over at the power station's front door, and she is

@@ -60,6 +60,9 @@ func run(t) -> void:
 	_test_the_neighbor_leaves_for_work_until_the_raid(t)
 	_test_day_ten_sends_her_to_the_neighbor_walking_home(t)
 	_test_the_raid_waits_at_her_building_with_the_doorstep_open(t)
+	_test_the_market_is_found_gone(t)
+	_test_the_park_closes_in_front_of_her_and_stays_taken(t)
+	_test_the_column_comes_down_the_main_road(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_the_narrow_targets_are_reachable_on_their_day(t)
@@ -1747,12 +1750,12 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	happenings.setup(_city, _city.map)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
-	happenings.tick(door, Callable())
+	happenings.tick(STEP, door, Callable())
 	t.check(happenings.raid.is_empty(), "nothing arrives while she is at her door")
-	happenings.tick(door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0),
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0),
 			func(_at: Vector2) -> bool: return true)
 	t.check(happenings.raid.is_empty(), "or while any of it would be on screen")
-	happenings.tick(door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Callable())
 	var vans := 0
 	var patrols := 0
 	var door_tile := _city.map.world_to_tile(door)
@@ -1771,8 +1774,194 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	for instance in happenings.raid:
 		_city.events.retire(instance)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY + 1)
-	happenings.tick(door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Callable())
 	t.check(happenings.raid.is_empty(), "and only on day 10")
+
+## Plans `day` on the test city through the real day order with `state` as the run's own
+## `GameState.city_state`, which the happenings read, and hands back a director for it.
+func _director_on_day(t, day: int, state: CityState) -> ResistanceDirector:
+	GameState.city_state = state
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures"))
+	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+	var director := _director(t)
+	director.start_day(day, _rng(day, "resistance"), 300.0)
+	return director
+
+## Day 11: the market is found gone — a commercial block whose arc was waiting to board up is
+## boarded now, out of her sight, with the market stalls at its frontage gone from the day's plan,
+## and it stays boarded. Nothing happens before she has walked a while; with nothing on her way by
+## `Tuning.MARKET_GONE_BY`, the nearest block she cannot see goes.
+func _test_the_market_is_found_gone(t) -> void:
+	_build_city(t)
+	var saved_state := GameState.city_state
+	var saved_day := GameState.day
+	GameState.day = ResistanceHappenings.MARKET_DAY
+	_with_clean_run(func() -> void:
+		var state := CityState.new()
+		var director := _director_on_day(t, ResistanceHappenings.MARKET_DAY, state)
+		var happenings := director._happenings
+		var door := _city.map.doorstep_world_position()
+		var candidates := ResistanceHappenings.market_candidates(_city.map, state)
+		t.check(not candidates.is_empty(),
+				"the test city has a block waiting to board up, or this test checks nothing")
+		happenings.tick(STEP, door, Callable())
+		t.check(happenings.market_block.x < 0, "nothing is gone before she has walked anywhere")
+		happenings._elapsed = Tuning.MARKET_GONE_BY
+		happenings._walked = EventDirector.ON_HER_WAY_AFTER
+		happenings.tick(STEP, door, Callable())
+		var block := happenings.market_block
+		t.check(block in candidates, "by then a block waiting to board up is gone (%s)" % block)
+		if block.x >= 0:
+			var frontage := happenings._frontage_of(block)
+			t.check(ResistanceHappenings._distance_to_rect(door, frontage) >= Tuning.OUT_OF_SIGHT,
+					"out of her sight")
+			t.check(state.purpose_of(_city.map.block_plans, block)
+					== GameEnums.BlockPurpose.BOARDED_UP, "boarded up now")
+			var shuttered := 0
+			for building in _city._buildings:
+				if _city._block_of(building.lot) == block:
+					t.check(building.condition == Building.Condition.BOARDED,
+							"every building of it shuttered")
+					shuttered += 1
+			t.check(shuttered > 0, "and it has buildings to shutter")
+			for plan in _city.events.plans():
+				if plan.def.id == "market_stall" and frontage.has_point(plan.position):
+					t.check(plan.spent or (plan.live and plan.live.is_finished),
+							"no market stall of it is left in the day")
+			state.begin_day(_city.map.block_plans, ResistanceHappenings.MARKET_DAY + 1)
+			t.check(state.purpose_of(_city.map.block_plans, block)
+					== GameEnums.BlockPurpose.BOARDED_UP, "and it stays boarded")
+		happenings.tick(STEP, door, Callable())
+		t.check(happenings.market_block == block, "and the market is gone once")
+		director.free())
+	GameState.city_state = saved_state
+	GameState.day = saved_day
+
+## Day 12: reaching the swing takes the park. It stops being calm for the city at once, its
+## ground closes from the edges in over `Tuning.PARK_CLOSING_SECONDS` until no calm tile of it is
+## left and the swing frame is gone with the playground, and it is requisitioned from then on.
+func _test_the_park_closes_in_front_of_her_and_stays_taken(t) -> void:
+	_build_city(t)
+	var saved_state := GameState.city_state
+	var saved_day := GameState.day
+	var day := ResistanceSteps.swing_day()
+	GameState.day = day
+	_with_clean_run(func() -> void:
+		var state := CityState.new()
+		var director := _director_on_day(t, day, state)
+		var park := CityGenerator.swing_park(_city.map)
+		var mark := director.current_step()
+		director._on_contact_completed(mark.index if mark else -1)
+		var task := director.current_step()
+		t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING,
+				"day 12 sends her to the swing")
+		t.check(park in _city.map.calm_blocks, "whose park is calm until she reaches it")
+		director._on_contact_completed(task.index if task else -1)
+		t.check(state.purpose_of(_city.map.block_plans, park)
+				== GameEnums.BlockPurpose.REQUISITIONED, "reaching the swing takes the park")
+		t.check(not (park in _city.map.calm_blocks), "and the city stops counting it as calm")
+		var layout: BlockLayout = _city.map.block_layouts[park]
+		var happenings := director._happenings
+		t.check(happenings.is_closing(), "its ground starts to close")
+		var calm_left := func() -> int:
+			var count := 0
+			for tile in _city.map.rect_tiles(layout.open_rect):
+				if Tile.is_calm(_city.map.tile_at(tile)):
+					count += 1
+			return count
+		var before: int = calm_left.call()
+		happenings.tick(Tuning.PARK_CLOSING_SECONDS * 0.5, Vector2.INF, Callable())
+		var halfway: int = calm_left.call()
+		t.check(halfway > 0 and halfway < before,
+				"a ring at a time, from the edges in (%d of %d left half way)" % [halfway, before])
+		happenings.tick(Tuning.PARK_CLOSING_SECONDS * 0.5 + 0.1, Vector2.INF, Callable())
+		t.check(calm_left.call() == 0 and not happenings.is_closing(),
+				"until none of it is calm")
+		var frame_left := false
+		for prop in _city._props:
+			var frame := prop as Prop
+			if frame and frame.kind == Prop.Kind.PLAYGROUND_FRAME and not frame.is_queued_for_deletion() \
+					and _city.map.tile_rect_to_world(layout.open_rect).has_point(frame.position):
+				frame_left = true
+		t.check(not frame_left, "and the swing frame is gone with it")
+		state.begin_day(_city.map.block_plans, day + 1)
+		t.check(state.purpose_of(_city.map.block_plans, park)
+				== GameEnums.BlockPurpose.REQUISITIONED, "it stays taken")
+		director.free())
+	GameState.city_state = saved_state
+	GameState.day = saved_day
+
+## Day 13: the column. The convoys start that morning; the column is `Tuning.COLUMN_TRUCKS` trucks
+## in one lane of the main road, coming toward the point level with her from far enough up the road
+## that their telegraph is over before their field reaches her, and the rear one stops out of her
+## sight, on a street rather than a junction, where its barricade still leaves her a way home — the
+## trucks ahead of it leave nothing. It comes once she nears the main road, or at
+## `Tuning.COLUMN_BY` wherever she is, and once.
+func _test_the_column_comes_down_the_main_road(t) -> void:
+	var convoy := EventCatalogue.by_id("military_convoy")
+	t.check(convoy.first_day == ResistanceHappenings.COLUMN_DAY,
+			"the convoys start on day 13 (%d)" % convoy.first_day)
+	_build_city(t)
+	var saved_state := GameState.city_state
+	var saved_day := GameState.day
+	GameState.day = ResistanceHappenings.COLUMN_DAY
+	_with_clean_run(func() -> void:
+		var state := CityState.new()
+		var director := _director_on_day(t, ResistanceHappenings.COLUMN_DAY, state)
+		var happenings := director._happenings
+		var map := _city.map
+		var door := map.doorstep_world_position()
+		var spine := happenings._spine_x()
+		var far_from_it := Vector2(spine + Tuning.COLUMN_WITHIN * 2.0, door.y)
+		happenings._walked = EventDirector.ON_HER_WAY_AFTER
+		happenings.tick(STEP, far_from_it, Callable())
+		t.check(happenings.column.is_empty(), "nothing comes while she is far from the main road")
+		var her := Vector2(spine - Tuning.STREET_WIDTH * 0.5 * Tuning.TILE_SIZE + Tuning.TILE_SIZE,
+				map.size.y * Tuning.TILE_SIZE * 0.5)
+		happenings.tick(STEP, her, Callable())
+		var trucks := happenings.column
+		t.check(trucks.size() == Tuning.COLUMN_TRUCKS,
+				"near it, a column of %d trucks comes (%d)" % [Tuning.COLUMN_TRUCKS, trucks.size()])
+		var lead := Tuning.outlasting_telegraph_lead(Vector2.UP, convoy.speed + Tuning.WALK_SPEED,
+				convoy.telegraph_time, Tuning.OFFSCREEN_NOTICE, convoy.field_reach())
+		var edge := minf(her.y, map.size.y * Tuning.TILE_SIZE - her.y) - Tuning.TILE_SIZE
+		var leaving := 0
+		for i in trucks.size():
+			var truck := trucks[i]
+			t.check(truck.def.id == "military_convoy" and truck.path.size() == 2,
+					"each is the catalogue's own truck on a path")
+			t.check(CrowdLanes.corridor_at(truck.path[0].x) == map.main_road
+					and is_equal_approx(truck.path[0].x, truck.path[1].x),
+					"in one lane of the main road")
+			t.check(truck.path[0].distance_to(her) >= minf(lead, edge) - 1.0,
+					"far enough up the road (%.0fpx)" % truck.path[0].distance_to(her))
+			if truck.def.spawns_on_finish != "":
+				leaving += 1
+				var stop := truck.path[1]
+				t.check(i == trucks.size() - 1, "only the rear truck leaves anything")
+				t.check(stop.distance_to(her) >= Tuning.OUT_OF_SIGHT,
+						"and it stops out of her sight")
+				t.check(StreetNetwork.segment_containing(map.world_to_tile(stop)) != null,
+						"on a street, not a junction")
+				t.check(signf(stop.y - her.y) == signf(truck.path[1].y - truck.path[0].y),
+						"beyond her, the way it was going")
+		t.check(leaving == 1, "one barricade's worth, from the rear truck (%d)" % leaving)
+		happenings.tick(STEP, her, Callable())
+		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
+		for truck in trucks:
+			_city.events.retire(truck)
+
+		director.start_day(ResistanceHappenings.COLUMN_DAY, _rng(13, "resistance"), 300.0)
+		happenings._elapsed = Tuning.COLUMN_BY
+		happenings.tick(STEP, far_from_it, Callable())
+		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,
+				"at COLUMN_BY it comes wherever she is")
+		for truck in happenings.column:
+			_city.events.retire(truck)
+		director.free())
+	GameState.city_state = saved_state
+	GameState.day = saved_day
 
 # ----------------------------------------------------------------- red arrow ---
 

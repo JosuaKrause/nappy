@@ -111,13 +111,33 @@ func take(plans: Dictionary, block: Vector2i, day: int) -> bool:
 	if not _open_today.has(block):
 		return false
 	_open_today.erase(block)
-	var plan: BlockPlan = plans.get(block)
-	if plan:
-		var next := _index(block) + 1
-		if next < plan.steps.size() \
-				and plan.steps[next].purpose == GameEnums.BlockPurpose.REQUISITIONED:
-			_advance(plans, block, day, GameEnums.BlockCause.TAKEN)
+	advance_now(plans, block, day, GameEnums.BlockPurpose.REQUISITIONED,
+			GameEnums.BlockCause.TAKEN)
 	return true
+
+## **A once-only happening takes a step its arc already has, today** rather than on the step's own
+## day or cause — day 11's market boarded up ahead of her, day 12's park taken once she has reached
+## its swing. Only the step the arc is waiting on, and only if it becomes `purpose`: the arc is
+## still a line walked forward one step at a time, and what moves is when, never what. `cause` is
+## what the run log says did it. Returns whether the block moved.
+func advance_now(plans: Dictionary, block: Vector2i, day: int,
+		purpose: GameEnums.BlockPurpose, cause: GameEnums.BlockCause) -> bool:
+	var plan: BlockPlan = plans.get(block)
+	if not plan:
+		return false
+	var next := _index(block) + 1
+	if next >= plan.steps.size() or plan.steps[next].purpose != purpose:
+		return false
+	_advance(plans, block, day, cause)
+	return true
+
+## The purpose `block`'s arc is waiting to become next, or `-1` at the end of its arc.
+func next_purpose(plans: Dictionary, block: Vector2i) -> int:
+	var plan: BlockPlan = plans.get(block)
+	if not plan:
+		return -1
+	var next := _index(block) + 1
+	return plan.steps[next].purpose if next < plan.steps.size() else -1
 
 ## A cause fired at a block. Advances its arc if the next step was waiting for exactly that
 ## cause and the day has come; otherwise nothing happens, which is the point — a fire in a

@@ -333,6 +333,25 @@ const RESISTANCE_GOAL := 5
 ## still meet them on their way in from anywhere she found the mark. A curfew day is 144s.
 const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
+## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
+## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
+##
+## Day 11's market is sited ahead of her on her route once she has walked as long as day 3's fire
+## waits (`EventDirector.ON_HER_WAY_AFTER`); if nothing on her way has qualified by this far into
+## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
+const MARKET_GONE_BY := 90.0
+## Day 12's park closes over this long once she has reached its swing, a ring of its ground at a
+## time from the edges in: long enough to see it coming, short enough that the baby cannot be
+## settled in what is left.
+const PARK_CLOSING_SECONDS := 12.0
+## Day 13's column: this many army trucks down the main road, one behind the other this far apart.
+const COLUMN_TRUCKS := 3
+const COLUMN_SPACING := 128.0
+## The column comes once she is this close to the main road's middle, across it — about a screen's
+## half-width and a block — or at `COLUMN_BY` into the day whatever she is doing.
+const COLUMN_WITHIN := 480.0
+const COLUMN_BY := 100.0
+
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
 # *that* it answers to the resistance with `EventDef.heat_response`; these say what answering costs.

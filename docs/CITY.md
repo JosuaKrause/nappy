@@ -1588,6 +1588,16 @@ reaches its swing `CityState.take()` takes its `REQUISITIONED` step there and th
 step's own day or cause — a requisition scheduled for day 13 comes a day early. Park and
 requisitioned park are the same walkable ground, so neither half moves a walkable tile.
 
+**Two once-only happenings take a step early, and neither waits for the next morning.**
+`CityState.advance_now()` takes the step a block's arc is waiting on today, and only if it becomes
+the purpose asked for — when moves, never what. Day 11's market is a commercial block whose arc is
+waiting to board up, boarded ahead of her and out of her sight, its buildings shuttered there and
+then (`City.present_block()`). Day 12's park is taken the instant she reaches its swing, and its
+ground goes to `SPOILED` a ring at a time from the edges in over `Tuning.PARK_CLOSING_SECONDS`
+(`City.close_ground()`), so the calm under her shrinks while she watches; mud is walkable, so she
+is never shut in. `docs/NARRATIVE.md` says what each is; `ResistanceHappenings` is where they
+live.
+
 ### What is fixed, and what is absolute
 
 The `CityMap` is not immutable for the run, and the rule that replaces immutability is:

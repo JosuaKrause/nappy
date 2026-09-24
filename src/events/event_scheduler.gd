@@ -1126,6 +1126,24 @@ class WalkSiting extends RefCounted:
 				return candidate
 		return null
 
+	## Every cell of the day's route tree ahead of her along the branch she is walking, as
+	## `cell -> how far she walks down the route to reach it`, out to `limit` pixels —
+	## `_the_way_she_is_going()`, for a caller that sites something other than a catalogue row on her
+	## way: day 11's market, gone before she gets there (`ResistanceHappenings`). `cell_centre()`
+	## says where a cell is.
+	func cells_ahead(at: Vector2, heading: Vector2, limit: float) -> Dictionary:
+		return _the_way_she_is_going(at, heading, limit)
+
+	## The world centre of a route cell `cells_ahead()` names.
+	func cell_centre(cell: Vector2i) -> Vector2:
+		return _cell_centre(_map, cell)
+
+	## Whether, with `candidate`'s field taken as closed ground, she can still reach the home and a
+	## calm area from `at` — `_still_leaves_a_park_reachable()`, for a caller placing something after
+	## dawn that is not a catalogue row sited by `ahead_of()`: the barricade day 13's column leaves.
+	func leaves_her_a_way(already: Array[Planned], candidate: Planned, at: Vector2) -> bool:
+		return _still_leaves_a_park_reachable(already, candidate, at)
+
 	## Records why an attempt placed nothing and answers with the nothing. See `waits`.
 	func _waited(reason: String) -> Planned:
 		waits[reason] = int(waits.get(reason, 0)) + 1

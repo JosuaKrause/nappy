@@ -582,6 +582,27 @@ func retire(instance: EventInstance) -> void:
 	if instance and is_instance_valid(instance) and not instance.is_finished:
 		instance._finish()
 
+## **Takes today's plans of the rows `ids` standing inside `rect` out of the day**, placed or live —
+## what a once-only happening that empties a place owes the day's own plan: day 11's market stalls
+## at the block boarded up ahead of her, and day 12's playground once its park is taken
+## (`ResistanceHappenings`). A plan not yet in the world is spent, so it never streams in, and its
+## body's ground opens (the same release a spent plan gets); a live one is retired, the ordinary
+## departure. Only ever a removal, the one direction the city's guarantees allow after dawn.
+## Returns how many plans it took.
+func take_away_within(rect: Rect2, ids: Array[String]) -> int:
+	var taken := 0
+	for plan in _plans:
+		if plan.spent or not plan.is_placed() or not (plan.def.id in ids) \
+				or not rect.has_point(plan.position):
+			continue
+		taken += 1
+		if plan.live:
+			retire(plan.live)
+			continue
+		plan.spent = true
+		_map.release_obstruction(plan.get_instance_id())
+	return taken
+
 ## Today's own foot for a mast id, or `Vector2.INF` if today carries no mast with that id — the
 ## point day 11's task (silence a mast by reaching its foot, the way she touches a chalk mark)
 ## records its scar at. Reads the ordinary broadcast's own
