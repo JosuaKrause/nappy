@@ -42,37 +42,57 @@ func run(t) -> void:
 	print("\n== M184 — does day N fit its clock, mark -> task -> calm -> home ==")
 	print("%d days x %d seeds, day length %.0fs" % [DAYS.size(), SEEDS.size(), Tuning.day_length(6)])
 	var rows: Array[String] = []
+	var stuck_legs := 0
 	for day in DAYS:
-		for seed_value in SEEDS:
-			rows.append(_measure(day, seed_value))
+		for row: Dictionary in _measure_day(day):
+			rows.append(row["text"])
+			stuck_legs += int(row["stuck"])
 	print("\nday  seed       mark    task    calm  settled    home  left  outcome")
 	for row in rows:
 		print(row)
+	print("\n%d legs stuck fast, over %d runs" % [stuck_legs, rows.size()])
 	t.check(true, "m184 route timing probe ran")
 
-## One subprocess, end to end: launch, wait for it to quit or to be killed at `_TIMEOUT_SECONDS`,
-## find the telemetry log it wrote, and turn that log's own `route` lines into one printable row.
-func _measure(day: int, seed_value: int) -> String:
+## One subprocess per seed for `day`, all running at once, end to end: launch, wait for each to
+## quit or to be killed at `_TIMEOUT_SECONDS`, find the telemetry log each wrote, and turn that
+## log's own `route` lines into one printable row, with the count of its legs stuck fast. **The
+## seeds run side by side and the days one after another** because a run's log folder is named by
+## its seed and start time (`Telemetry.begin_run()`), not its day: two live runs never share a seed,
+## so `_find_log()` always finds the one run of that seed still writing.
+func _measure_day(day: int) -> Array[Dictionary]:
 	var godot := OS.get_executable_path()
 	var project := ProjectSettings.globalize_path("res://")
-	var args: PackedStringArray = ["--headless", "--path", project, "--",
-			"--day", str(day), "--seed", str(seed_value),
-			"--route", "mark,task,calm,home", "--no-save", "--no-title", "--invincible"]
 	var started_at := Time.get_unix_time_from_system()
-	var pid := OS.create_process(godot, args, false)
-	if pid <= 0:
-		return _row(day, seed_value, {}, "could not launch a subprocess")
+	var pids := {}
+	for seed_value: int in SEEDS:
+		var args: PackedStringArray = ["--headless", "--path", project, "--",
+				"--day", str(day), "--seed", str(seed_value),
+				"--route", "mark,task,calm,home", "--no-save", "--no-title", "--invincible"]
+		pids[seed_value] = OS.create_process(godot, args, false)
 	var waited := 0.0
-	while OS.is_process_running(pid) and waited < _TIMEOUT_SECONDS:
+	while waited < _TIMEOUT_SECONDS and pids.values().any(
+			func(pid: int) -> bool: return pid > 0 and OS.is_process_running(pid)):
 		OS.delay_msec(_POLL_MSEC)
 		waited += _POLL_MSEC / 1000.0
-	if OS.is_process_running(pid):
-		OS.kill(pid)
-		return _row(day, seed_value, {}, "killed after %.0fs — never quit on its own" % _TIMEOUT_SECONDS)
-	var log_path := _find_log(started_at, seed_value)
-	if log_path == "":
-		return _row(day, seed_value, {}, "no telemetry log found for this run")
-	return _row(day, seed_value, _parse_log(log_path), "")
+	var rows: Array[Dictionary] = []
+	for seed_value: int in SEEDS:
+		var pid: int = pids[seed_value]
+		var note := ""
+		var reached := {}
+		if pid <= 0:
+			note = "could not launch a subprocess"
+		elif OS.is_process_running(pid):
+			OS.kill(pid)
+			note = "killed after %.0fs — never quit on its own" % _TIMEOUT_SECONDS
+		else:
+			var log_path := _find_log(started_at, seed_value)
+			if log_path == "":
+				note = "no telemetry log found for this run"
+			else:
+				reached = _parse_log(log_path)
+		rows.append({"text": _row(day, seed_value, reached, note),
+				"stuck": reached.get("stuck_legs", 0)})
+	return rows
 
 ## The `run.log` this seed's own subprocess wrote, found by folder name and modification time
 ## rather than by capturing stdout — `rig-HHMMSS-seed<seed>-<version>` names the seed but not the
@@ -145,6 +165,7 @@ func _parse_log(path: String) -> Dictionary:
 			reached[target + "_skip"] = "unreachable"
 		elif text.contains("stuck fast"):
 			reached[target + "_skip"] = "stuck fast"
+			reached["stuck_legs"] = int(reached.get("stuck_legs", 0)) + 1
 			# "'<target>' stuck fast at (x,y) against <what>, skipping" — where she was and what
 			# held her, so the table says which chokepoint each stuck leg met.
 			held.append("%s at %s" % [target,
