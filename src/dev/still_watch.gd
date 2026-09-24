@@ -26,9 +26,13 @@ extends Node
 ##
 ## **And not while she cannot presently choose to walk somewhere.** Position-only tracking cannot
 ## tell a mother who has stopped moving from one who has had the choice taken off her, so `_held()`
-## answers that separately for three cases, all the player's own words (2026-09-23): *"in general
-## is_detained shouldn't trigger it -- same with stroller lady"* and *"yes also red light (a human
-## player would like pace back and forth with a red light to minimize excitement)"*.
+## answers that separately for three cases, the player's own words: *"in general is_detained
+## shouldn't trigger it -- same with stroller lady"* and *"yes also red light (a human player would
+## like pace back and forth with a red light to minimize excitement)"* (2026-09-23), sharpened on
+## 2026-09-24 (PLAYTEST-128, statements 13-14) to *"just deactivating the watch when the light is
+## red and the intersection is visible. If she's stuck she will be stuck when it turns green
+## still"* — a mother who is really stuck is still stuck once the light turns green, and the watch
+## catches her then.
 ##
 ## - **`Stroller.is_detained()`** — the one gate every `EventDef.detain_seconds` row goes through,
 ##   so this alone covers `chatting_mother` ("Another mother" and her pram, 5s) and all three
@@ -42,9 +46,9 @@ extends Node
 ##   separate clock on `Stroller` (ticked in `_physics_process()`); see that function's own note on
 ##   why a hold can still be running a frame after the input lock has already cleared. Read at her
 ##   own position, which is what the function already answers for the excitement meter.
-## - **`facing_a_red_light()`** — standing on the sidewalk at the corner of a signalled junction
-##   while the main road's own light has not yet turned hers. See that function for how close to the
-##   curb counts.
+## - **`facing_a_red_light()`** — the signalled junction nearest her among those visible on screen
+##   shows her red on the main road's own light, wherever on screen she herself is standing. See
+##   that function for why the nearest one decides and why her own tile no longer matters.
 ##
 ## **The hold restarts rather than resumes the instant any of these ends.** `_feed()`'s `held`
 ## argument re-anchors her at wherever she actually is on every frame it is true, so a mother
@@ -111,7 +115,26 @@ func _held() -> bool:
 		return true
 	if _city.events and _city.events.door_holding_her_at(_player.global_position):
 		return true
-	return facing_a_red_light(_city.map, _city.signals, _player.global_position)
+	return facing_a_red_light(_city.map, _city.signals, _player.global_position, _visible_world_rect())
+
+## The world-space rect the screen currently shows, computed the same way `DangerEdge.is_on_screen()`
+## and `TouchControls`'s own screen-to-world reads do: `get_viewport().get_canvas_transform()` maps a
+## world position to a screen one, so its inverse maps the screen's own corners back to world space.
+## Kept out of `facing_a_red_light()` itself, which takes the rect as a plain argument, so that
+## function stays pure and a test can hand it any rect without a viewport anywhere in reach.
+func _visible_world_rect() -> Rect2:
+	var inverse := get_viewport().get_canvas_transform().affine_inverse()
+	var screen := get_viewport().get_visible_rect()
+	var corners: Array[Vector2] = [
+		inverse * screen.position,
+		inverse * Vector2(screen.end.x, screen.position.y),
+		inverse * Vector2(screen.position.x, screen.end.y),
+		inverse * screen.end,
+	]
+	var rect := Rect2(corners[0], Vector2.ZERO)
+	for i in range(1, corners.size()):
+		rect = rect.expand(corners[i])
+	return rect
 
 ## The pure heuristic behind the flag: an anchor at wherever she last effectively stopped, armed
 ## only once she has moved away from wherever she started, and a hold that restarts every time she
@@ -151,35 +174,74 @@ func _feed(position: Vector2, delta: float, active: bool, held: bool = false) ->
 	_elapsed += delta
 	return _elapsed >= _seconds
 
-## Whether she is on the sidewalk at the corner of a signalled junction while the main road's own
-## light has not yet turned hers — the same wait a driver gets from `TrafficLight`, read for her
-## instead of for a car.
+## Whether the signalled junction nearest her among those visible on screen shows her red on the
+## main road's own light — the same wait a driver gets from `TrafficLight`, read for her instead of
+## for a car (PLAYTEST-128.md statements 13-14: "How about just deactivating the watch when the
+## light is red and the intersection is visible. If she's stuck she will be stuck when it turns
+## green still").
 ##
-## **How close to the curb counts: the whole of the junction's own sidewalk, not a tighter radius
-## around one crossing's paint.** `CityMap.junction_at()` answers a `Tuning.STREET_WIDTH` (6) tile
-## square — both corridors' full width where they overlap — as one piece of ground, *"exactly where
-## a zebra or a signalled line stands"* (`route_tree.gd`, on why routing keeps the whole box rather
-## than the crosswalk cells alone). A corner two tiles the wrong way along a 192px kerb is still the
-## same corner a real pedestrian reads as "waiting at this light" rather than "walking the street",
-## so this asks the same box rather than measuring a fresh distance to the paint.
+## **Her own tile no longer matters, and stepping onto `ROAD` or `CROSSING` no longer ends it.**
+## Earlier this held only while she stood on the junction's own sidewalk band; the player asked for
+## the watch off whenever a red light is on screen at all, wherever she stands within it — a mother
+## paced back and forth at the kerb, or genuinely stuck mid-crossing, reads the same light either
+## way, and a truly stuck mother is still stuck once it turns green, which is when the watch catches
+## her.
 ##
-## **Stepping onto `ROAD` or `CROSSING` ends it.** Once she is on the carriageway she has committed
-## to crossing rather than waiting for permission to, and a mother stood still there while it is
-## unsafe is a real thing for the flag to catch, not a false one to swallow.
+## **`view` is a world-space rect, passed in rather than read here** — see `_visible_world_rect()`,
+## the one caller, for how it is built from the camera. Keeping the viewport out of this function is
+## what lets a test hand it any rect directly.
+##
+## **Which junction, when more than one is on screen: the nearest to her, by its box centre.**
+## `TrafficSignals` runs a green wave with a different offset per junction
+## (`TrafficSignals._offset()`), so two junctions on screen can disagree, and "the intersection" in
+## the player's own sentence is singular.
+##
+## **"Visible" means the junction's `Tuning.STREET_WIDTH` (6) tile box — both corridors' full width
+## where they overlap, the same box `route_tree.gd` and `CityMap.junction_at()` already treat as one
+## piece of ground — intersects `view`.**
 ##
 ## **Which arm is asked is fixed, not read off her heading.** The only signalled junctions are on
 ## the main road (`TrafficSignals.is_signalled()`), and its own light is `arm_is_vertical` true in
 ## `TrafficLight` — see `TrafficSignals.main_arm_is_vertical()`'s own note that a second spine would
 ## change this and nothing else. Green or amber on that arm is traffic moving or clearing on the
 ## road she would be crossing, the same red-means-go reading `TrafficLight._lamp()` draws for her.
-static func facing_a_red_light(map: CityMap, signals: TrafficSignals, position: Vector2) -> bool:
-	var tile := map.world_to_tile(position)
-	if map.tile_at(tile) != GameEnums.TileType.SIDEWALK:
-		return false
-	var junction := CityMap.junction_at(tile)
-	if junction == Vector2i(-1, -1) or not signals.is_signalled(junction):
+static func facing_a_red_light(map: CityMap, signals: TrafficSignals, position: Vector2,
+		view: Rect2) -> bool:
+	var junction := _nearest_visible_signalled_junction(map, signals, position, view)
+	if junction == Vector2i(-1, -1):
 		return false
 	return signals.green_for(junction, true) or signals.amber_for(junction, true)
+
+## The signalled junction whose `Tuning.STREET_WIDTH` tile box intersects `view` and sits closest —
+## by the box's own centre — to `position`, or `(-1, -1)` when no signalled junction is visible at
+## all. The candidate range is `view`'s own tile footprint widened by one junction period on every
+## side, so a box that starts just outside the tile range `world_to_tile` rounds `view` down to is
+## never missed, clamped to `Tuning.CITY_BLOCKS` since no junction exists beyond it.
+static func _nearest_visible_signalled_junction(map: CityMap, signals: TrafficSignals,
+		position: Vector2, view: Rect2) -> Vector2i:
+	var top_left := map.world_to_tile(view.position)
+	var bottom_right := map.world_to_tile(view.end)
+	var period := CityMap.period()
+	var min_junction := Vector2i(CityMap.junction_index(top_left.x) - 1,
+			CityMap.junction_index(top_left.y) - 1)
+	var max_junction := Vector2i(CityMap.junction_index(bottom_right.x) + 1,
+			CityMap.junction_index(bottom_right.y) + 1)
+	var nearest := Vector2i(-1, -1)
+	var nearest_distance := INF
+	for jx in range(maxi(min_junction.x, 0), mini(max_junction.x, Tuning.CITY_BLOCKS.x) + 1):
+		for jy in range(maxi(min_junction.y, 0), mini(max_junction.y, Tuning.CITY_BLOCKS.y) + 1):
+			var junction := Vector2i(jx, jy)
+			if not signals.is_signalled(junction):
+				continue
+			var box := map.tile_rect_to_world(
+					Rect2i(junction * period, Vector2i.ONE * Tuning.STREET_WIDTH))
+			if not view.intersects(box):
+				continue
+			var distance := position.distance_to(box.get_center())
+			if distance < nearest_distance:
+				nearest_distance = distance
+				nearest = junction
+	return nearest
 
 ## Notes the moment, then hands off to `AutoScreenshot` for the picture and the quit.
 func _trigger() -> void:
