@@ -697,11 +697,21 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
-      own body takes her in, and nobody on screen is the one doing it — the guards stand at the
-      huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
-      stepping to the arm, or the boom stops being a detaining body and the huts alone are the
-      toll, with the boom's picture still barring the lanes for the cars. The player's call
+- [ ] **The boom blocks her and never inspects her** *(2026-09-24: "Boom shouldn't inspect her. It
+      should block her. If a car opens it for her and she walks through she would probably get
+      hit by the car, no?")*. A `checkpoint_gate` stops being a detaining body: it stays solid to
+      her whether it is raised or lowered, so a raised bar lets cars through and never her, and a
+      street door's toll is paid only at its two huts (an alley door's at its posts, unchanged).
+      From the road she steps sideways to a hut, about a tile. The gate keeps barring and lifting
+      for the cars exactly as today. Found while capturing the inspection: the boom's own body
+      took her in with nobody on screen doing it, since the guards stand at the huts; a guard
+      stepping to the arm was the other option and was not taken. What changes with it:
+      `checkpoint_gate`'s detention in `event_catalogue.gd`, the release latch's "every body of
+      the door whose reach she lands in", `docs/EVENTS.md` "Checkpoints" and the row, which say
+      the gate detains as a hut does (`docs/CITY.md` already says "the gate only ever stops a car,
+      never her"), and the route rig's door handling (`src/dev/route_rig.gd`, which counts the
+      gate as a door). Waits for M181's slice two and M184's chokepoints to land, which are in
+      those files
 
 - [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
       table in `src/day/day_controller.gd` has no line for `masked_pursuer`, so the summary falls
