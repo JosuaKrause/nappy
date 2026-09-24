@@ -127,7 +127,7 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 | Owner | Integration work and acceptance |
 |---|---|
-| M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family's directional pictures to the alley mouse, read by heading as the other moving families are ([PLAYTEST-128](playtests/PLAYTEST-128.md)), and the sound arcs with their event timing. |
+| M100 — Small, real, and nobody's | Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the sound arcs with their event timing. |
 
 M102, the finale, owns the impact-crater decals and the carrying-mother set and has bound what it
 needs of them; `GRAPHICS.md` names which sources are live and which stay
@@ -142,9 +142,8 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 
 **M102, the finale, is built and is the run's ending**: a won day 14 with every task complete goes
 on to it, and `--start-escape` reaches it directly. It is the good ending's last scene — out of
-the apartment, out of the city — and its section holds the brief, the four answered collisions,
-and the one item still open: the building's badge, halo and debug layers, and the escape's
-telemetry observer. The record of what was built is in `DECISIONS.md`.
+the apartment, out of the city. Its brief, the four collisions the player answered and the record
+of what was built are in `DECISIONS.md` under M102; what only a play can settle is in `REVIEW.md`.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -308,42 +307,25 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 
 ---
 
-## M183 — The power station and the blackout · asked for 2026-09-20
+## M191 — A car's horn is early enough at every speed · found 2026-09-24
 
-> "so we need to design a power station building that is guaranteed to spawn on the map" ·
-> "just wait until a certain distance away -- then everything is off at once" · "yes all lights
-> should go out. that actually applies also to the escape sequence"
+The **crowd-traffic** rule's fairness contract: a car on a street she may step onto warns her with
+its horn early enough to walk the whole carriageway with the doubled hard-fail margin
+(`Tuning.validate_traffic()`, 1.39 s). With the power out on day 14 the spine's traffic no longer
+stops at a light, so the main road's crossings rest on the same contract (`DECISIONS.md`, M183, the
+blackout is everything at once). Measuring it found it untrue on every street: the crowd only
+watches her for the horn and the strike within `CAR_ZEBRA_SIGHT` (200px), so a car's warning is
+capped at 200px of travel whatever its speed, and above 144px/s it is shorter than the contract —
+first horns at 198 to 199px, 1.27 s at 157px/s and 1.10 s at 181px/s, against car speeds spread
+over 130 to 185px/s.
 
-[PLAYTEST-119](playtests/PLAYTEST-119.md). **The station itself is built** (`DECISIONS.md`, M183,
-slice one, the power station): one on every seed, across a region door from home, with its own
-look and a front door that day 14's route always reaches. What is open is the blackout and the
-dark escape, and the red arrow of M181, the resistance has a reason, and a task is one day, which
-points at the door (`CityMap.power_station_door_position()`).
-
-- [ ] **The blackout is everything at once.** After she has touched the front door, once she
-      is a set distance from the station, every lit window goes dark, every traffic light goes
-      off and every loudspeaker mast stops, in one frame. *The orchestrator recommended the
-      touch of the door, rolling outward · the player chose distance and all at once on
-      2026-09-20*: a rolling blackout cannot be seen from the street, and the moment is "very
-      visible and linked to her action". The distance is the orchestrator's and open to
-      overturn: far enough that the station is off screen. **Dead traffic lights are part
-      of the challenge of coming home after the sabotage** (the player, 2026-09-20): the roads
-      are harder that night on purpose. What stays owed is the **crowd-traffic** rules'
-      fairness contract for a lethal road — a car she can see coming — and the brief says how
-      a crosswalk with no light keeps it.
-      **The station's own hall goes dark with the city**: its clerestory windows
-      (`art/buildings/power_station_clerestory.svg`) are drawn unlit today and need a dim lit
-      state for the night of day 14, so the hall is seen to go out.
-- [ ] **The escape is in the dark too.** The hallways and the basement are gloomy, and the
-      stairs have emergency lighting, "maybe … (red?)", the player's to judge on a picture.
-- [ ] **`docs/NARRATIVE.md` says what the last night is.** Its good ending has the
-      loudspeakers cutting out as the sabotage itself and the walk home after it as "the
-      easiest conditions in the game, and that is the reward". With this built the masts stop
-      because the power does — their fields, since M180, posters she notices, and loudspeakers
-      that are somewhere, leaves no city-wide floor to silence — and **neither the walk home nor
-      the escape is easy** ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be
-      easy!"). The "Good" ending, Act IV's day 14 and tone rule 3's "the reward is quiet" are
-      rewritten with the build, and `docs/MECHANICS.md`'s account of the good ending with them.
+- [ ] **The horn's watch reaches as far as the contract needs at the car's own speed** — at least
+      speed × the contract's time, 185 × 1.6 ≈ 296px for the fastest car — while the strike keeps
+      its own reach, and `Tuning.validate_traffic()` checks the watch against the fastest car's
+      speed so the contract fails at boot rather than on the street. A horn heard earlier is a
+      number she can feel, and it is the contract's own number, so the change is the contract
+      being made true rather than a new balance. `tests/probes/` measures the first-horn distance
+      and time per speed before and after.
 
 ---
 
@@ -480,18 +462,6 @@ is done and the masts already expose what the task needs.
       days 10 and 11 have no mark or task until slice two builds them, so they are timed then. The
       rig gave up a leg in half the runs (M184), so the late days are not fully measured yet. **Each late day's happening arrives differently** — waiting at home, found gone,
       closing in front of her, coming on her way — and slice two keeps that variety.
-- [ ] **The finale's district, day 9's door and day 12's swing are reachable by construction**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, we need to make that a guarantee by
-      construction."). `_pick_reachable()`'s `require_reachable` check (`DECISIONS.md`, M188, a
-      resistance target can always be reached) is off today for `_place_at_a_door()` (day 9),
-      `_place_at_a_swing()` (day 12) and day 14's `district` pool (`ResistanceSteps._finale`'s
-      civic-district contact), each a handful of candidate tiles; on a seed 4242 fixture, day 14's
-      72 `CIVIC` candidates came back with zero reachable because the day's own event bodies rang
-      the whole district. **By construction means the day is planned so the route exists**, the
-      way `docs/CITY.md`'s winnability guarantee keeps a route from home to a calm area — closures
-      and events are checked before they are accepted, never repaired afterwards (**city**) — not
-      a retry or a fallback once the day is built. `docs/CITY.md` states the extended guarantee,
-      and `_begin_step()`'s unavailable-step fallback stops being what a run sees on these three.
 
 ---
 
@@ -528,8 +498,9 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       before/after evidence with identical-behavior checks. Establish repeatable full active-play
       windows before ranking modest readout, graph, telemetry or pacing costs. Keep rejected short
       trials visible. CPU callbacks do not measure physical display presentation, and unchanged
-      counters do not rule out unobserved script work. M143, readout labels and windows, separately
-      owns the engine's previous-second `process` and `physics` maxima. A pacing switch remains
+      counters do not rule out unobserved script work. The readout's `process` and `physics`
+      lines are the engine's previous-second maxima (`DECISIONS.md`, M143), not per-frame costs.
+      A pacing switch remains
       diagnostic, not a shipping decision.
 - [ ] **Profile the current phone build only after that baseline.** Divide CPU time between the
       baby's every-physics-tick crowd contribution sweep, the halo's rendered-frame contribution
@@ -548,59 +519,6 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       platform allows it. No result here is assumed to explain the older laptop hitch, which
       predates every atlas path, and the native-host evidence supports neither worker jobs nor
       larger pages.
-
----
-
-## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
-the readout's `process` and `physics` lines measure. `Performance.TIME_PROCESS` and
-`TIME_PHYSICS_PROCESS` are not per-frame times: the engine keeps the longest process interval
-and the longest physics interval of the running second and hands each over once a second,
-and the process interval runs from the start of the frame's `_process` through the rendering
-server's sync and draw. So the readout's `last` is the worst frame of the previous second,
-`mean` is the mean of a number that changes once a second, and `max` is the larger of two
-such numbers — three columns of which one is a measurement. Every phone reading so far read
-`mean` as a per-frame cost, which is why it always outran the frame the `fps` line implied.
-
-- [ ] **One column each, named for what it is.** `FrameCost.readout_lines()` prints
-      `process  worst 24.3 ms` and `physics  worst 1.7 ms` — the engine's own number, labelled
-      as the worst interval of the last second — and drops `last`, `mean` and `max`, their
-      rolling windows and `sample()`'s feeding of them, unless a window still has a reader.
-      The run log's `frame` line keeps its `process`/`physics` fields but `docs/TELEMETRY.md`
-      says at the column's explanation and at the readout's that both are the worst interval
-      of the second, that the process interval includes the render submit, and that `worst
-      frame` (the observer's own longest delta) and `process` are therefore two readings of
-      the same hitch from two sides. The test that drives `readout_lines()` follows the new
-      shape. No evidence: a still of the readout says nothing a test does not.
-
----
-
-## M152 — Cars teleport at their turns · the landing and the about-face fixed 2026-09-15, one shunt open
-
-> "cars are super buggy now. when they turn in the final stretch the teleport a car length
-> somewhere else. also in some case instead of routing a turn (or u turn) they just teleport."
-
-[PLAYTEST-76](playtests/PLAYTEST-76.md), [PLAYTEST-77](playtests/PLAYTEST-77.md). The
-**crowd-traffic** rule governs. Both shapes are fixed and recorded (`DECISIONS.md`, M152, a
-turn's landing stands where its arc ended; M152, the about-face is planned and the morning is
-unpacked early). The probe `tests/probes/m152_car_jumps.gd` now finds one in-view jump that is
-neither: on seed 91117 day 1 a follower is moved a car's length backwards in one frame by the
-queue's front-to-back resolve, at (2941, 2800) → (2878, 2800), in the before and the after run
-alike.
-
-- [ ] **A follower is shunted a car's length by the resolve, in view.**
-      `Crowd._resolve_the_queues()` moves a car by its whole overlap in one frame, which is
-      right for a placement nobody has seen and is the first shape the player reported when it
-      happens to a follower on camera — here the follower of a landing, since
-      `_land_the_turn()` leaves the arrival where its arc ended and the queue resolves whoever
-      is too close behind. Find what put the follower a car's length inside its leader on that
-      frame — the landing's claim, the follower's brake, or the lane key changing under it — and
-      fix that where it happens; a resolve that spreads the correction over frames is a force,
-      which the rule refuses. The probe's `spacing` class in view is the measurement, 0 after.
-      The last resort's own residual is measured and not asked about: one reversal on the spot
-      in view over seven rig days, where a stopped car outsat the wait on the landing; the PR
-      review names the shape to try if it shows in play.
 
 ---
 
@@ -725,7 +643,9 @@ were last taken under local contention, so `--record-costs` on a quiet machine c
       the check total unchanged, the split named for what each half proves — or a measured
       shorter loop where a docstring can say why. `tools/test.sh --record-costs` afterwards,
       so the plan follows; the per-suite line before and after goes to `DECISIONS.md` under
-      M125. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
+      M125. `test_resistance.gd` joined them: about 160 s under load once the narrow targets'
+      reachability test landed (`DECISIONS.md`, M181, the narrow targets are reachable by
+      construction), against the 43 s `suite_costs.txt` still records. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
       CI plans them at its default.
 
 ---
@@ -752,12 +672,6 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-- [ ] **The masked pursuer and the heated roadblock guard face where they are heading**
-      ([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, hook those up."). They chase her drawn as
-      a single side picture while `guard_{standing,lunging}_{views}` — eight-view art under
-      `art/checkpoints/` — is bound to nothing; they read a heading through the shared
-      `_draw_eight_view()` helper every other moving family uses, standing while still and
-      lunging while they chase, like the robber.
 
 ---
 
@@ -805,38 +719,29 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **Two more rigs trigger the physics-mode camera warning.** Godot prints it once per
-      process, so the balance rig's copy hid these: `_chat_stroller` in `tests/test_events.gd` and
-      `_build_pickup` in `tests/test_resistance.gd` add a `Camera2D` without setting
-      `process_callback` to `CAMERA2D_PROCESS_PHYSICS`, as `stroller.tscn`'s camera and the balance
-      rig now do.
-- [ ] **The finale planner may ask "is this the main road" by hand.** `src/finale/finale_planner.gd`
-      compares `map.main_road == lot.position.x`, a block index rather than a corridor index; check
-      whether it means the main road and, if so, route it through `CityMap.is_main_road()`.
 - [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
       own body takes her in, and nobody on screen is the one doing it — the guards stand at the
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
       stepping to the arm, or the boom stops being a detaining body and the huts alone are the
       toll, with the boom's picture still barring the lanes for the cars. The player's call
-- [ ] **A rig cannot be spawned at a row the day's plan never holds, and cannot stand outside
-      a waiting one.** `--spawn event:<id>` reads `DevRig.first_event_position()`, which
-      searches the day's planned placements, so a queue-fed row (`cat_dash`, `cyclist`,
-      `loose_dog`, the day-3 `charging_dog`, anything `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`) is
-      never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
-      M121, what the captures could not catch); the flock is map-placed now and can be found
-      (`DECISIONS.md`, M131). Either the flag refuses such a row by name, or it stands her where
-      the row would first trigger; the **cli-tools** rule wants the refusal at least. And for a
-      row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
-      the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
-      just outside the trigger is the other half of this item
+
+- [ ] **Being caught by the masked man in the escape says "It went wrong."** The hard-fail line
+      table in `src/day/day_controller.gd` has no line for `masked_pursuer`, so the summary falls
+      back to the generic text. Found building the escape's run log (`DECISIONS.md`, M102, the
+      building shows what the city shows)
+- [ ] **A retried escape section holds its automatic snapshots back** until the new clock passes
+      the time of the last shot, because a section's clock restarts at zero. Found with the item
+      above
+- [ ] **The readout said "awake" while the baby was drawn asleep**, once, in a building capture
+      under `--start-escape stairwell:right --invincible`. Not investigated; check whether the
+      readout and the picture read the same state in the escape
+
+- [ ] **The run log's `quiet` line still says "the sabotage went through"**, and
+      `EventBus.city_went_quiet`'s docstring still describes the sabotage, though both now fire
+      at the blackout (`DECISIONS.md`, M183, the blackout is everything at once)
 
 **Drawings, as SVG:**
 
-- [ ] **The home block carries no fire escape** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "the
-      home building shouldn't have a fire escape (it has a double staircase inside)"). Every
-      building on the home block is hers (`Building.is_home_building`, playtest 124), and
-      `Building._build_front()` rolls a `RESIDENTIAL` front's escape without asking; the home
-      block's fixed visuals match the escape's interior, whose two staircases are inside
 - [ ] **The main break's water, the car crash's smoke and the escape's steam animate over at
       least two frames** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "splashing water (from the
       main break) or puffs of smoke (from the car crash) or steam (from the escape) should have
@@ -874,38 +779,6 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **How close to a red light counts as waiting at it, for `--quit-when-still`.** The dev
-      flag's watch (`StillWatch`, `src/dev/still_watch.gd`) ignores her while
-      `facing_a_red_light()` holds: anywhere on the sidewalk inside the signalled junction's
-      `Tuning.STREET_WIDTH` (6) tile box while the main road's light is not hers (`DECISIONS.md`,
-      M189, a hold is not a stand). Put to the player on 2026-09-24 without saying what the watch
-      was ([PLAYTEST-128](playtests/PLAYTEST-128.md)); open until they say whether the box
-      should be tighter
-
-- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
-      playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
-      didn't it count?" — it had.)* A touch turns the mark from chalk white to pale green
-      (`Palette.CHALK` to `CHALK_DONE`) under her feet, and the `resistance ....` dots are
-      performs only, so a pick-up moves none. The mark's own words now reach her on that day's
-      summary whether it was won or lost, in their own larger line (`DECISIONS.md`, M132), so
-      what is left open is the moment of the touch itself. The first mark is hinted at by day 6's brief
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)), and how much a touch may say is the
-      player's call: nothing more; the mark's colour made unmistakable; or a one-line status
-      change on the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review:
-      she adds something to the existing mark to indicate she has seen it.
-      `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
-      remains here
-- [ ] **The chalk mark is drawn from `chalk_mark.svg`** ([PLAYTEST-128](playtests/PLAYTEST-128.md):
-      "Yes, we need to use the svg."). `ContactPoint._draw_chalk()` (in `src/resistance/`)
-      paints the mark with `draw_arc`/`draw_line` today, which breaks "a picture is an asset,
-      never code"; it draws `props/chalk_mark.svg` instead, and `chalk_mark_touched.svg` for a
-      touched mark, as the integration table above says. The mark stays visible and readable on
-      the sidewalk
-- [ ] **The alley mouse faces where it runs** ([PLAYTEST-128](playtests/PLAYTEST-128.md): "The
-      code comment is positive, the queue is normative."). `EventCatalogue._alley_mouse()` draws
-      one mirrored side picture through `_draw_simple()`; it reads a heading through
-      `_draw_eight_view()` like the other moving families, from `art/events/mouse*.svg` (the
-      `_b` files are its second frame), and its docstring is rewritten to say so
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a
@@ -957,91 +830,3 @@ re-pitched:
       the agents onto it would draw the whole crowd at thirty frames a second, not merely decide
       for it at that rate, which is a larger piece of the trade than it was. Docs/evidence/
       audit-2026-09-13/AUDIT.md, finding 3.1, has the full reasoning.
-
----
-
-## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
-
-**The sequence is the run's ending**: a won day 14 with every task complete goes on to it, and
-`--start-escape` reaches it directly. It is the building with its events, the service exit onto the city,
-the two chains through three calm areas each to the tunnel and the bridge, the explosions and their
-craters, the two hint lines, the millisecond clock, the section restart and the epilogue. What it
-does, what was measured and what was chosen where the design was silent is in `DECISIONS.md` under
-M102, the finale built behind the flag, and M102, the finale is the run's ending; what only a
-play can settle is in `REVIEW.md`. **One item is open**, what the audit of a day against a
-section found and could not wire.
-
-**The brief, in the player's words:**
-
-> "for the good ending. after completing all tasks. after the last day ends the next scene is the
-> hallway in front of the apartment at night with the player holding the sleeping baby (sleep bar
-> is full) the goal is to escape. masked men are trying to capture the player, army trucks are
-> driving on the streets, explosions happen off screen (but loud enough to cause excitement)
-> leaving craters on the street. burnt cars, blockades, craters, etc. block paths through the city.
-> but before reaching the city we need to get out of the house. elevator is non-functioning so we
-> need to take the staircase down a few floors (not excessively many). the main entrance of the
-> building is barricaded so we need to go to the basement walk through the basement corridors to
-> the service entrance. we can keep the events inside the house relatively minimal. maybe some
-> mice. some masked pursuers that run up the stairs that can be avoided by going into a corridor
-> and letting them pass. there might be a fire on one staircase forcing us to use the other
-> staircase (all buildings have two egresses). maybe some steam in the basement etc. once back on
-> the street grid (emerging from the service exit on the side of the main building). no regular
-> cars or regular people on the street. there is a single path through the city that crosses three
-> parks (the player can use them to calm down or get the baby back to sleep if it wakes up) ending
-> at the tunnel or bridge (or maybe one path for each and the player can choose). this is the
-> climax of the story with lots of lethal and dangerous events. help messages show "escape the
-> apartment" and "exit the city" in the appropriate places (only in the beginning of each section
-> like normal tutorial hints). the timer shows milli second precision for dramatic effect (instead
-> of the regular second precision of the main game)"
-
-**What is still open:**
-
-- [ ] **The building shows what the city shows, and the escape is in the run log as a day is**
-      ([PLAYTEST-115](playtests/PLAYTEST-115.md): "The escape shouldn't behave any different
-      than the rest of the game"). The screen-edge badge, the excitement halo and the debug
-      view's layers are built for the city section only, because each reads a `City`'s own
-      `EventManager` and crowd, and the building's `InteriorEvents` is not shaped like one; and
-      neither section has the telemetry observer a day has, which is built around a day's
-      `City`, route tree and corridor. Each needs an adapter or an observer of its own rather
-      than wiring.
-
-**Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
-asked and each answered by the player on 2026-09-09:**
-
-1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
-   the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
-   step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
-   `sabotage_done`), and what it changes is mechanical quiet: every loudspeaker mast is
-   silenced (`EventManager.silence_all_masts()`). **Neither the walk home after it nor the escape is easy**
-   ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be easy!"): M183, the power
-   station and the blackout, takes the traffic lights with the power, so the roads are harder
-   that night on purpose. The hallway scene follows the same night, and the trucks and the
-   masked men are the regime's answer to what she did. *"No triumphalism"* still governs what is shown
-   after the tunnel.
-2. **Losing the finale restarts the section, at no Nerve cost.** *("sounds good at that point you
-   earned it.")* A day lost costs one Nerve and the day is over; the finale has no next day, and
-   the run is already won on paper. Capture, the meter reaching 100, or the clock running out each
-   put her back at the start of the section she was in — the hallway, or the service exit — with
-   Nerves untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes.
-3. **The clock is a day's clock with milliseconds on it, and zero loses.** *("the timer for the
-   sequence is the same length and running out loses (the bridge/tunnel collapses or something
-   like that). the only change is that in addition to minutes and seconds the timer also shows
-   milliseconds. this makes the timer appear faster than just the seconds alone which adds
-   additional tension.")* *Asked for one clock counting down through both sections · overturned
-   by the player on 2026-09-20 to "180s per section"
-   ([PLAYTEST-113](playtests/PLAYTEST-113.md)), because each section is its own day and a shared
-   clock could leave the city's checkpoint unwinnable.* So: each section's clock is
-   `DAY_LENGTH_SECONDS` (180s) long like any day; at zero the way out is gone — the bridge or
-   the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
-   change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
-   milliseconds ticking make the same countdown read as faster.
-4. **Two paths.** *("two paths it is.")* Two chains of the shape above, one ending at the tunnel
-   at the north end of the main road and one at the bridge at its south end, each through its own
-   three parks. They part at the service exit, or as near it as the lattice allows, and do not
-   overlap after that — *"no overlapping routes"* — so the choice is made once, at the door, and
-   is the game's verb; the home lot sits between the two ends of the main road so neither exit is
-   trivially nearer.
-
-**And what the finale is not.** No fighting, no button — the tone rules stand: the danger is
-noise, the men are the same masked men as act III's abductions, and the baby is never threatened by
-anything but being woken.

@@ -1,7 +1,7 @@
 extends RefCounted
 ## The resistance subquest: the step table, touch-completion, a task activated the same day its
 ## mark is touched, the four placement kinds a perform step may use, the seeded guard, the
-## expiring step, and the sabotage silencing the city.
+## expiring step, and the sabotage putting the city's masts out once she has walked away.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_the_finale_needs_the_legwork(t)
 	_test_touching_completes_a_pickup(t)
 	_test_walking_away_leaves_it_untouched(t)
+	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
 	_test_a_perform_contact_rides_on_its_instance(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	_test_touching_the_mark_activates_the_same_days_task(t)
@@ -57,6 +58,7 @@ func run(t) -> void:
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
+	_test_the_narrow_targets_are_reachable_on_their_day(t)
 	_test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t)
 	if _city != null:
 		_city.free()
@@ -162,6 +164,7 @@ func _build_pickup(t, step_index: int) -> void:
 	_player = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	_player.add_child(camera)
 	t.add_child(_player)
 	_player.set_physics_process(false)
@@ -193,6 +196,18 @@ func _test_walking_away_leaves_it_untouched(t) -> void:
 	_contact._physics_process(STEP)
 	t.check(not _contact.is_done, "out of reach, nothing happens")
 	_teardown_contact()
+
+## `ContactPoint._draw_chalk()` reads `MARK` untouched and `MARK_TOUCHED` once `is_done` from the
+## baked `decoration` group instead of stroking a circle and two lines — headless never calls
+## `_draw()` (the **verify** skill), so this is the same region-table check
+## `tests/test_atlas_leaf_consumers.gd` runs for every other consumer that switched from code or a
+## loaded texture to an `AtlasLibrary` region: a name the bake never wrote would otherwise sit
+## silent until somebody looked at a screenshot.
+func _test_the_chalk_mark_pictures_are_baked_on_decoration(t) -> void:
+	for name: StringName in [ContactPoint.MARK, ContactPoint.MARK_TOUCHED]:
+		t.check(AtlasLibrary.has_region(name), "%s is a baked region" % name)
+		t.check(AtlasLibrary.group_of(name) == ContactPoint.ATLAS_GROUP,
+				"%s is on the '%s' group" % [name, ContactPoint.ATLAS_GROUP])
 
 ## The shared plumbing every task needs: a contact that rides on an `EventInstance` rather
 ## than sitting on a bare tile, and follows it if it moves.
@@ -1251,10 +1266,11 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 	GameState.day = saved_day
 	GameState.nerves = saved_nerves
 
-## The whole subquest pays out in quiet. On the last walk home every mast stops, and the field
-## each one has been holding near itself since day 5 goes with it — `EventManager.
-## silence_all_masts()`, not the deleted `city_wide` floor: a mast has an edge like any other
-## row's, so what the sabotage silences is everywhere a mast actually stands, not the whole map.
+## The sabotage is what puts the city's power out, and the masts go with it. Not at the door she
+## touched: the hand-over takes minutes, so every mast is still speaking until the blackout, which
+## comes once she is far enough from the station (`Blackout`) — and then the field each one has been
+## holding near itself since day 5 goes with it, `EventManager.silence_all_masts()`: a mast has an
+## edge like any other row's, so what stops is everywhere a mast actually stands, not the whole map.
 func _test_the_sabotage_silences_the_city(t) -> void:
 	_with_clean_run(func() -> void:
 		GameState.completed_resistance_steps = _completed_through(8)
@@ -1266,6 +1282,13 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: silencing reads
 		# `Planned.mast_id`, which only a real plan carries.
 		var site := MastSites.compute(_city.map)[0]
+		# The real day order, `City.start_day()` first: it is what holds today's region plan, and
+		# without it the director cannot tell a region door's own bodies from the wall's
+		# (`ResistanceDirector._ensure_reachability()`), counts every door shut, and finds the
+		# finale's district — and everything else outside the home's region — out of reach.
+		var state := CityState.new()
+		state.begin_day(_city.map.block_plans, Tuning.RUN_LENGTH_DAYS)
+		_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))
 		_city.events.stream_radius = INF
 		_city.events.start_day(Tuning.RUN_LENGTH_DAYS,
 				_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot)
@@ -1293,10 +1316,17 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		director._on_contact_completed(15)
 
 		t.check(GameState.sabotage_done, "completing it does the sabotage")
-		t.check(quiet.size() == 1, "and the city goes quiet, once")
+		t.check(quiet.is_empty() and not mast.silenced,
+				"and the masts are still speaking at the door: they stop with the power")
+		var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
+		_city.blackout.update(Vector2(lot.get_center().x,
+				lot.end.y + Tuning.BLACKOUT_DISTANCE + 8.0))
+		t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
 		t.check(mast.silenced, "the mast is marked silenced")
 		t.close_to(mast.contribution_at(nearby), 0.0,
 				"the mast contributes nothing afterwards")
+		GameState.sabotage_done = false
+		_city.blackout.update(Vector2(lot.get_center().x, lot.end.y))
 
 		EventBus.city_went_quiet.disconnect(handler)
 		director.free())
@@ -1535,19 +1565,34 @@ func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberG
 
 ## Every refusal `_pick_reachable()` and `_reachable_offset()` both check today — `is_held_at`
 ## excepted for the one task deliberately sited on held ground, the crossing at a region door
-## (`_place_at_a_door()`'s own `allow_held`), and reachability skipped when `require_reachable` is
-## false, the same three narrow pools `_pick_reachable()` itself skips it for (a door, a swing, the
-## finale's own district — see that function's own doc on why). `grid`/`blocked`/`reached` are one
-## day's own `ReachabilityGrid.flood()` answer, built by the caller once per (seed, day) rather
-## than per tile — see `_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground()`'s
-## own loop — so this stays a pure predicate rather than a second place that builds the grid.
+## (`_place_at_a_door()`'s own `allow_held`). `grid`/`blocked`/`reached` are one day's own
+## `ReachabilityGrid.flood()` answer, built by the caller once per (seed, day) rather than per tile
+## — see `_day_reachability()` — so this stays a pure predicate rather than a second place that
+## builds the grid.
 func _stands_on_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[Rect2i],
-		allow_held: bool, grid: ReachabilityGrid, blocked: Dictionary, reached: Dictionary,
-		require_reachable := true) -> bool:
+		allow_held: bool, grid: ReachabilityGrid, blocked: Dictionary, reached: Dictionary) -> bool:
 	return map.is_walkable(tile) and not map.is_closed(tile) \
 			and (allow_held or not map.is_held_at(tile)) and not map.is_on_home_block(tile) \
 			and not map.is_in_walled_alley(tile, walled_alleys) and not map.is_obstructed(tile) \
-			and (not require_reachable or grid.reaches(tile, blocked, reached))
+			and grid.reaches(tile, blocked, reached)
+
+## The day's reachability answer as `ResistanceDirector._reachable_from_home()` builds it
+## (`EventScheduler.blocked_by()` over every placed, obstructing or hard-fail plan, flooded from
+## home), built independently here so a sweep is not just asking the director to grade its own
+## homework. A region door's own bodies are excluded, the same way `_ensure_reachability()`
+## excludes them and for the same reason — see that function's own doc. `[grid, blocked, reached]`.
+func _day_reachability(city: City) -> Array:
+	var region_plan: RegionPlanner.RegionPlan = city.region_plan()
+	var door_bodies: Array[EventScheduler.Planned] = region_plan.door_bodies if region_plan else []
+	var blockers: Array[EventScheduler.Planned] = []
+	for plan in city.events.plans():
+		if not plan.is_placed() or plan in door_bodies:
+			continue
+		if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+			blockers.append(plan)
+	var grid := ReachabilityGrid.build(city.map)
+	var blocked := EventScheduler.blocked_by(city.map, blockers)
+	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
 
 ## Every mark and every contact a task activates stands on walkable, unobstructed ground — swept
 ## over days 6-13 and the seeds the route rig timed, through the real day order (`City.start_day()`,
@@ -1620,23 +1665,10 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 
 				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
 				var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
-				# The same reachability answer `_reachable_from_home()` builds internally
-				# (`EventScheduler.blocked_by()` over every placed, obstructing or hard-fail plan,
-				# flooded from home), built independently here so the sweep is not just asking the
-				# director to grade its own homework. A region door's own bodies are excluded, the
-				# same way `_ensure_reachability()` excludes them and for the same reason — see
-				# that function's own doc.
-				var door_bodies: Array[EventScheduler.Planned] = \
-						region_plan.door_bodies if region_plan else []
-				var blockers: Array[EventScheduler.Planned] = []
-				for plan in city.events.plans():
-					if not plan.is_placed() or plan in door_bodies:
-						continue
-					if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
-						blockers.append(plan)
-				var grid := ReachabilityGrid.build(city.map)
-				var blocked := EventScheduler.blocked_by(city.map, blockers)
-				var reached := grid.flood([city.map.home_rect.position], blocked)
+				var reachability := _day_reachability(city)
+				var grid: ReachabilityGrid = reachability[0]
+				var blocked: Dictionary = reachability[1]
+				var reached: Dictionary = reachability[2]
 				var mark_step := director.current_step()
 				if mark_step != null:
 					checked += 1
@@ -1652,22 +1684,90 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 						checked += 1
 						var task_tile := city.map.world_to_tile(director.contact_position())
 						var allow_held := task_step.target_kind == ResistanceSteps.TargetKind.DOOR
-						# The same three narrow pools `_pick_reachable()` itself does not require
-						# reachability for (see that function's own doc): a door, a swing, or the
-						# finale's own district.
-						var require_reachable := task_step.target_kind not in [
-								ResistanceSteps.TargetKind.DOOR, ResistanceSteps.TargetKind.PARK_SWING] \
-								and task_step.district < 0
 						t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
-								allow_held, grid, blocked, reached, require_reachable),
+								allow_held, grid, blocked, reached),
 								("seed %d day %d: step %d's contact stands on walkable, " +
-								"unobstructed%s ground at %s") % [seed_value, day, task_step.index,
-								", reachable" if require_reachable else "", task_tile])
+								"unobstructed, reachable ground at %s") % [seed_value, day,
+								task_step.index, task_tile])
 				player.free()
 				director.free()
 			city.free()
 		GameState.completed_resistance_alley_tiles = saved_tiles
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
+
+## Cities whose finale's district the day's own seals and bodies sealed off entirely before the
+## finale's day kept a route to it — every legal `CIVIC` tile out of reach from home — and cities
+## where most of it was, found by `tests/probes/m181_resistance_targets.gd`'s wide run. Chosen for
+## what they would catch rather than for luck: the guarantee is a rule about every day, and these
+## are the days the rule has work to do on.
+const NARROW_TARGET_SEEDS: Array[int] = [196838, 355218, 323542, 252271]
+
+## **The day keeps a route to its narrow resistance target** (`docs/CITY.md`, "Guarantees"): day
+## 9's door, day 12's swing and the finale's district, planned through the real day order —
+## `City.start_day()`, `EventManager.start_day()`, then the director's own `_place()` of the day's
+## step — and asked of an independent flood (`_day_reachability()`). Two things per day: some tile
+## of the pool is legal, unobstructed and reachable from home, and the tile the director actually
+## picks is one of them.
+##
+## The finale's day plans at full heat, since the finale is only offered once the goal is met and
+## the heat is what the scheduler reads; days 9 and 12 plan cold, each asked fresh as `--day N`
+## boots it.
+##
+## **A day with no open playground left has no swing at all** — every playground park taken by
+## its arc by day 12 — which is a question of whether the task has a place, not of reaching one,
+## and is skipped rather than failed; the guard below says how many days were actually checked.
+func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
+	_with_clean_run(func() -> void:
+		var checked := 0
+		for seed_value in NARROW_TARGET_SEEDS:
+			var city: City = CITY_SCENE.instantiate()
+			t.add_child(city)
+			city.build(CityGenerator.generate(seed_value))
+			for day: int in [9, 12, Tuning.RUN_LENGTH_DAYS]:
+				var step := ResistanceSteps.narrow_target_on(day)
+				t.check(step != null, "day %d has a narrow resistance target" % day)
+				if not step:
+					continue
+				GameState.resistance_progress = Tuning.RESISTANCE_GOAL if step.needs_goal else 0
+				var state := CityState.new()
+				state.begin_day(city.map.block_plans, day)
+				city.start_day(state, day, _production_rng(seed_value, day, "closures"))
+				city.events.start_day(day, _production_rng(seed_value, day, "events"), [],
+						city.map.doorstep_world_position())
+				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
+				var pool := ResistanceSteps.target_candidates(step, city.map, region_plan)
+				if pool.is_empty() and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
+					continue
+				var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+				var allow_held := step.target_kind == ResistanceSteps.TargetKind.DOOR
+				var reachability := _day_reachability(city)
+				var grid: ReachabilityGrid = reachability[0]
+				var blocked: Dictionary = reachability[1]
+				var reached: Dictionary = reachability[2]
+				var reachable := 0
+				for tile in pool:
+					if _stands_on_legal_ground(city.map, tile, walled, allow_held, grid, blocked,
+							reached):
+						reachable += 1
+				checked += 1
+				t.check(reachable > 0,
+						("seed %d day %d: some tile of step %d's target is legal, unobstructed " +
+						"and reachable from home (%d of %d)")
+						% [seed_value, day, step.index, reachable, pool.size()])
+
+				var director := ResistanceDirector.new()
+				t.add_child(director)
+				director.set_process(false)
+				director.setup(city, city.map)
+				var at := director._place(step, _production_rng(seed_value, day, "resistance"))
+				var at_tile := city.map.world_to_tile(at) if at != Vector2.INF else Vector2i(-1, -1)
+				t.check(at != Vector2.INF and _stands_on_legal_ground(city.map, at_tile, walled,
+						allow_held, grid, blocked, reached),
+						"seed %d day %d: step %d's contact stands on reachable ground at %s"
+						% [seed_value, day, step.index, at_tile])
+				director.free()
+			city.free()
+		t.check(checked > 0, "the sweep actually checked some day (%d)" % checked))
 
 ## The first `RandomNumberGenerator.seed` whose first `randi_range(0, pool_size - 1)` answers
 ## `wanted_index` — found by trying seeds in order rather than inverted by hand, since nothing here

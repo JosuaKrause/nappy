@@ -1,5 +1,323 @@
 # Decisions
 
+## M183 — The blackout is everything at once, and the escape is dark · built 2026-09-24
+
+*([PLAYTEST-119](playtests/PLAYTEST-119.md): "just wait until a certain distance away -- then
+everything is off at once" · "yes all lights should go out. that actually applies also to the
+escape sequence"; [PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be easy!".)*
+
+**The blackout.** `Blackout` (`src/city/blackout.gd`, made by `City.build()`) watches
+`GameState.sabotage_done` and her distance from the power station's lot; once the flag stands and
+she is `Tuning.BLACKOUT_DISTANCE` (512px) away, `go_dark()` puts out every lit window, the
+station's hall (a new `power_station_clerestory_lit.svg`, lit on day 14 only), every spine traffic
+light and every loudspeaker mast, in one frame. It stays dark while the flag stands; a retried day
+clears the flag at dawn and the power with it; a city built for the escape is dark from its first
+frame. `ResistanceDirector` now only sets the flag, and the masts stop with the power. `--blackout`
+stands in for the flag so the moment can be captured on any day.
+
+**Dead lights.** With the power out `TrafficSignals.is_signalled()` answers false, so the crowd's
+own junction rule decides the spine's junctions as it decides a side street's, with no crowd code
+changed; `has_lights()` says where the dark heads still stand. Over 40 s on seed 4242 day 14 the
+lit spine averaged 38px/s with 42% of cars stopped, the dark one 50px/s with 27%, so the dark spine
+does not jam, and a test holds it to at least 80% of the lit speed. **The dark crossing's contract
+is the side street's**, the painted road and the horn — the orchestrator's reading, open to
+overturn — written into `validate_signals()`'s docstring, the **crowd-traffic** skill, `MECHANICS.md`
+and `CITY.md`. **Measuring it found the horn short on every street**, capped by the crowd's 200px
+watch; that is M191, a car's horn is early enough at every speed, in `TODO.md`, and the skill now
+says the horn can only be as early as the car is watching her.
+
+**The escape is dark.** `InteriorScene.lighting_at()` tints the part she is in: a cold gloom in the
+hallways and lobby, darker in the basement, red emergency light on both stairwells, and a hallway
+brightening while its windows flash. It uses the scene's own `modulate`, since the escape's city
+section already has a `CanvasModulate` on the same canvas; the light changes only under a door's
+fade. The wall lamp and the chandelier are drawn unlit.
+
+**The last night in the docs.** `docs/NARRATIVE.md`'s Act IV day 14, "Endings → Good" and tone rule
+3 ("a silence and a way out — never a victory, and never an easy walk"), and `MECHANICS.md`'s good
+ending, say the masts stop because the power does and neither the walk home nor the escape is easy.
+
+**Open to overturn, chosen by the agent:** the 512px distance, the smallest round number that
+keeps the station off screen whichever way she leaves; the hall lit on day 14 only; the HUD's "The
+loudspeakers cut out mid-sentence." kept, now at the blackout; the escape's colours, a first
+proposal that is in `REVIEW.md`. Evidence: `evidence/m183-blackout-2026-09-24/`.
+
+## M100 — Three small defects: two rig cameras, the finale's main road, and `--spawn` · built 2026-09-24
+
+- **Two rigs no longer trigger the physics-mode camera warning.** `_chat_stroller` in
+  `tests/test_events.gd` and `_build_pickup` in `tests/test_resistance.gd` set their `Camera2D`'s
+  `process_callback` to physics, as `stroller.tscn`'s camera and the balance rig do.
+- **The finale planner asks `CityMap.is_main_road()`.** `FinalePlanner.service_exit_tile()`
+  compared `map.main_road == lot.position.x` by hand; both are block-column indices, so the
+  answer was already right and the change routes it through the one place the question is
+  stated.
+- **`--spawn event:<id>` refuses a row the day's plan never places, by name**, in the run log (a
+  new `spawn` entry) and on stderr, then falls back to the doorstep as an unknown target does:
+  `cat_dash`, `cyclist`, `loose_dog`, day 3's `charging_dog` and `burning_building` are sited
+  from her walk. **For a row that waits** (`pursues_within` above zero), it stands her outside
+  the trigger, at the larger of its outer radius and `pursues_within` plus a tile, where the
+  ordinary offset put her inside a flock's 150px trigger. **Open to overturn, chosen by the
+  agent:** a refusal is an error line, not a quit, since the fence left out `main.gd`; the margin
+  is one tile.
+
+## M181 — The narrow targets are reachable by construction · built 2026-09-24
+
+*([PLAYTEST-128](playtests/PLAYTEST-128.md): "Yes, we need to make that a guarantee by
+construction.")* Day 9's named door, day 12's swing and day 14's district contact were placed
+with `_pick_reachable()`'s reachability check off, and the day's seals and event bodies could ring
+them. `tests/probes/m181_resistance_targets.gd`, 40 cities through the real day order: before, 13
+of 40 finale contacts stood on ground cut off from home and two cities had no reachable district
+tile at all; after, every door, swing and district contact is reachable.
+
+**How.** The day keeps a route to one tile of the day's target pool through the same layers
+that keep a calm area: on day 14 the corridor grows a spur to the district, ending on its
+junction corners or open lot ground, as it already does to the power station's door (a door is
+already a crossing the tree uses, a swing's park already on the tree); `ClosurePlanner` refuses
+a closure that cuts off every tile of the target; and the scheduler's walkability pass keeps one
+reachable with the seals and the region wall counted as standing — it only removes bodies, and on
+24 city-days it removed none. `ResistanceSteps.target_candidates()` is the one pool planning and
+the director both read; `require_reachable` is gone and the director always requires it. The
+spur search could cross the home street and send `_resettle_the_tails()` round forever, which
+hung day 14 on a city whose district touches the home block; the station spur carried the same
+latent bug, and both are fixed. `tests/test_resistance.gd` plans days 9, 12 and 14 on four cities
+whose district would otherwise be ringed, and the M188 sweep checks the door and the swing too.
+
+**M188's "zero of 72 reachable" was the rig's, not the city's.** That rig planned events without
+`City.start_day()`, so every region door's bodies counted as blockers; in the real day order 45 of
+the 72 tiles are reachable. The sabotage test now runs `City.start_day()` first.
+
+**Open to overturn, chosen by the agent:** the guarantee is one tile of the pool, not a target
+chosen in advance, so the director's seeded draws do not move; it covers stationary bodies, seals
+and closures, and a moving event counts where it starts; the spur follows the day number, so day
+14's corridor carries it whether or not the goal is met. **Left open:** on one or two cities only
+one or two district tiles stay reachable, which meets the guarantee; whether to protect more is
+a design call nobody has asked for. **The corridor-weight check was re-measured.** On seed
+4242 the day-14 spur adds two junction cells to the corridor, which reshuffles day 14's placement
+draws, and `tests/test_events.gd`'s narrow-row share fell from 29 of 71 (40.85%, already under the
+test's own 1.5-point margin on `main`) to 28 of 71 (39.44%). The test's docstring prescribes a
+re-measure when its sample moves, so the floors are now 0.37 narrow and 0.32 whole, both above
+the third of the ground that is corridor, which an unweighted day would give. The narrow share
+was 1.5 to 2 points lower in every day-14 sample taken, with no mechanism found; that is what
+would make the dip worth looking at again. **Not built here, and still in `TODO.md` under M181:** on 9
+of 40 cities every playground park is taken by day 12, so the swing has nowhere to be — the
+forced-open park — and the second open park reachable from the swing.
+
+## M152 — The morning is indexed, and a nudge goes as far as the ground allows · built 2026-09-24
+
+*([PLAYTEST-76](playtests/PLAYTEST-76.md), [PLAYTEST-77](playtests/PLAYTEST-77.md): "when they
+turn in the final stretch the teleport a car length somewhere else".)* The in-view shunt the
+probe once found on seed 91117 day 1 no longer reproduces on the current streets, so the seven
+off-camera `spacing` jumps over the seven rig days were diagnosed instead; the probe now names,
+per shunt, what put the follower inside its leader.
+
+- **Two were behind a landing booked on the day's first frame.** `Crowd.start_day()` ran the
+  morning's resolve but left `TrafficIndex` empty, so every check on frame 0 saw an empty road
+  and a turn could book a spot a queued car already stood on, paid 116 and 201 frames later.
+  `start_day()` now fills the index from its resolve (`_index_the_queues()`, shared with
+  `space_out_the_traffic()`); it moves no car.
+- **Two were pairs the morning placed inside each other past a barrier.** `nudge_back()` refused
+  a slide whose end tile was blocked, so the overlap waited until a full slide was legal and then
+  jumped 41px. It now slides as far as the ground allows, stopping a pixel short of the first
+  blocked tile and checking every tile on the way.
+- **Three, then five, are the last resort's reversal on the spot**, the residual this item called
+  measured and not asked about; the count moved because the traffic plays out differently.
+
+| over 7 rig days | before | after |
+|---|---|---|
+| `spacing` jumps | 7 (0 in view) | 5 (0 in view) |
+| behind a first-frame landing | 2 | 0 |
+| a morning pair still inside each other | 2 | 0 |
+| from reversals on the spot | 3 | 5 |
+
+`tests/test_crowd.gd` and `tests/test_turns.gd` each gained a test red on the old code;
+`_test_traffic_gives_way_at_a_crossing` accepts a car braking for a barrier it has reached, since
+that rig drives one car by hand and its index was frozen empty before. The **crowd-traffic**
+skill's morning paragraph says the index is filled from the resolve, and that a separation
+refused rather than made smaller is deferred, not avoided.
+
+**Open to overturn, chosen by the agent:** a recycled car's merge onto blocked ground is still
+refused whole; a slide stops a pixel short, as `_hold_inside_the_tile()` does. **Left open, and
+not asked about:** the reversal on the spot (`_turn_round()`) flips a stopped car where it stands
+and can land level with another; the shape on record is to treat a landing held by a stopped car
+as a plug and stand rather than reverse.
+
+## M102 — The building shows what the city shows, and the escape is in the run log · built 2026-09-24
+
+*([PLAYTEST-115](playtests/PLAYTEST-115.md): "The escape shouldn't behave any different than the
+rest of the game".)* The screen-edge badge, the excitement halo and the debug view's layers work
+in the building. They only ever asked `EventManager` for `instances()`, which `InteriorEvents`
+already answers under the same name, so each now takes any node that does, and a missing crowd;
+no adapter class was needed. `main.gd` hands them the building's events until the city exists and
+re-points them at the service door, so a layer switched on stays on; the readout (`4`) and the
+frame graph (`6`) run in both sections, the readout showing the section and its clock. The shadow
+layer no longer outlines a pram while she carries the baby.
+
+**The escape writes a run log as a day does.** The day's `TelemetryObserver` watches both
+sections through `FinaleController.clock()`: each section start writes `start entered|restarted
+the building|city at (x,y)` with the clock at zero, a lost section writes the day's `lost` line
+naming the section, and getting out writes `home escaped by the tunnel|bridge, Ns to spare`.
+**What a day writes and the escape does not:** `path` (no route tree), `cross`, `road` and
+`calm`/`left` in the building (no streets or calm ground), `closure` (the finale's walls are
+events, met as `near`), `contact`, `crowd`, `quiet` and `nerve`, and the dawn and dusk maps.
+`tests/test_interior.gd` and `tests/test_telemetry.gd` cover the halo rim, the badge, the
+bounding-box layer and the log's lines; evidence is in
+`evidence/m102-building-shows-what-the-city-shows-2026-09-24/`.
+
+**Open to overturn, chosen by the agent:** a shared method name rather than a base class; a
+restart is a `lost` line then a `start … restarted` line rather than a new header; `lost` and
+`home` are reused, so `tools/stats.sh` counts escape sections with days. **Not built:** the route
+layer (`5`) draws nothing in either section, since neither has a day route tree; drawing the two
+chains there would be a new feature nobody has asked for. Three findings went to M100's defects.
+
+## M102 — The finale's brief and the collisions the player answered · 2026-09-09
+
+Kept here since M102 has no open items left in `TODO.md`; the records of what was built are the
+M102 entries above and below.
+
+**The brief, in the player's words:**
+
+> "for the good ending. after completing all tasks. after the last day ends the next scene is the
+> hallway in front of the apartment at night with the player holding the sleeping baby (sleep bar
+> is full) the goal is to escape. masked men are trying to capture the player, army trucks are
+> driving on the streets, explosions happen off screen (but loud enough to cause excitement)
+> leaving craters on the street. burnt cars, blockades, craters, etc. block paths through the city.
+> but before reaching the city we need to get out of the house. elevator is non-functioning so we
+> need to take the staircase down a few floors (not excessively many). the main entrance of the
+> building is barricaded so we need to go to the basement walk through the basement corridors to
+> the service entrance. we can keep the events inside the house relatively minimal. maybe some
+> mice. some masked pursuers that run up the stairs that can be avoided by going into a corridor
+> and letting them pass. there might be a fire on one staircase forcing us to use the other
+> staircase (all buildings have two egresses). maybe some steam in the basement etc. once back on
+> the street grid (emerging from the service exit on the side of the main building). no regular
+> cars or regular people on the street. there is a single path through the city that crosses three
+> parks (the player can use them to calm down or get the baby back to sleep if it wakes up) ending
+> at the tunnel or bridge (or maybe one path for each and the player can choose). this is the
+> climax of the story with lots of lethal and dangerous events. help messages show "escape the
+> apartment" and "exit the city" in the appropriate places (only in the beginning of each section
+> like normal tutorial hints). the timer shows milli second precision for dramatic effect (instead
+> of the regular second precision of the main game)"
+
+**Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
+asked and each answered by the player on 2026-09-09:**
+
+1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
+   the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
+   step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
+   `sabotage_done`), and what it changes is mechanical quiet: every loudspeaker mast is
+   silenced (`EventManager.silence_all_masts()`). **Neither the walk home after it nor the escape is easy**
+   ([PLAYTEST-121](playtests/PLAYTEST-121.md): "the escape shouldn't be easy!"): M183, the power
+   station and the blackout, takes the traffic lights with the power, so the roads are harder
+   that night on purpose. The hallway scene follows the same night, and the trucks and the
+   masked men are the regime's answer to what she did. *"No triumphalism"* still governs what is shown
+   after the tunnel.
+2. **Losing the finale restarts the section, at no Nerve cost.** *("sounds good at that point you
+   earned it.")* A day lost costs one Nerve and the day is over; the finale has no next day, and
+   the run is already won on paper. Capture, the meter reaching 100, or the clock running out each
+   put her back at the start of the section she was in — the hallway, or the service exit — with
+   Nerves untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes.
+3. **The clock is a day's clock with milliseconds on it, and zero loses.** *("the timer for the
+   sequence is the same length and running out loses (the bridge/tunnel collapses or something
+   like that). the only change is that in addition to minutes and seconds the timer also shows
+   milliseconds. this makes the timer appear faster than just the seconds alone which adds
+   additional tension.")* *Asked for one clock counting down through both sections · overturned
+   by the player on 2026-09-20 to "180s per section"
+   ([PLAYTEST-113](playtests/PLAYTEST-113.md)), because each section is its own day and a shared
+   clock could leave the city's checkpoint unwinnable.* So: each section's clock is
+   `DAY_LENGTH_SECONDS` (180s) long like any day; at zero the way out is gone — the bridge or
+   the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
+   change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
+   milliseconds ticking make the same countdown read as faster.
+4. **Two paths.** *("two paths it is.")* Two chains of the shape above, one ending at the tunnel
+   at the north end of the main road and one at the bridge at its south end, each through its own
+   three parks. They part at the service exit, or as near it as the lattice allows, and do not
+   overlap after that — *"no overlapping routes"* — so the choice is made once, at the door, and
+   is the game's verb; the home lot sits between the two ends of the main road so neither exit is
+   trivially nearer.
+
+**And what the finale is not.** No fighting, no button — the tone rules stand: the danger is
+noise, the men are the same masked men as act III's abductions, and the baby is never threatened by
+anything but being woken.
+
+## M143 — The readout's `process` and `physics` lines say what they measure · built 2026-09-24
+
+*([PLAYTEST-75](playtests/PLAYTEST-75.md); follows M138, what the readout's `process` and
+`physics` lines measure.)* `FrameCost.readout_lines()` prints one column each, `process worst`
+and `physics worst`, the engine's own worst interval of the previous second, read straight off
+`Performance`. The `last`, `mean` and `max` columns, their one-second rolling window,
+`FrameCost.sample()` and its once-a-frame call in `main.gd` are gone, since the readout was their
+only reader and `mean` was the column every phone reading had mistaken for a per-frame cost.
+`docs/TELEMETRY.md` says, at the run log's `frame` line and at the readout, that both numbers are
+the worst interval of the second, that `process` includes the render submit, and that `worst
+frame` and `process` read the same hitch from two sides.
+
+## M56 and M100 — The guards and the alley mouse face where they are heading · built 2026-09-24
+
+*([PLAYTEST-128](playtests/PLAYTEST-128.md): "Directional guards (M56) … Yes, hook those up." and,
+on the mouse, "The code comment is positive, the queue is normative.")* The masked pursuer and
+the heated roadblock's guard read `GUARD_STANDING_BY_VIEW` and `GUARD_LUNGING_BY_VIEW`, the
+eight-view `guard_{standing,lunging}_*` art under `art/checkpoints/`, through `_draw_eight_view()`
+by their travel heading; the alley mouse reads `MOUSE_BY_VIEW` and its `_B` gait frames the same
+way. The masked pursuer in the escape's building turns too, since `InteriorEvents` draws through
+the same `EventInstance`. The stationary checkpoint guards keep their one picture.
+`_draw_eight_view()` takes `draw_shadow`, so the roadblock's guard keeps its own small shadow
+rather than gaining a second one. The view and stride tests cover the new families. Evidence:
+`evidence/m56-guard-turn-2026-09-24/` (a still of the masked pursuer mid-climb, since every burst
+pressed early in the escape landed before he appeared) and `evidence/m100-mouse-turn-2026-09-24/`
+(a burst).
+
+**Open to overturn, chosen by the agent:** the turning guards read the `_side.svg` drawings as
+their side view, since the unsuffixed `guard_standing.svg` and `guard_lunging.svg` are different
+drawings that stay with the stationary kit. **Not captured:** a heated roadblock guard chasing
+her, since heat takes several days' play and no flag forces it; it is in `REVIEW.md`.
+
+## M100 — The still watch is off while the light on screen is red · built 2026-09-24
+
+*([PLAYTEST-128](playtests/PLAYTEST-128.md), statements 13 and 14: "How about just deactivating
+the watch when the light is red and the intersection is visible. If she's stuck she will be stuck
+when it turns green still".)* `StillWatch.facing_a_red_light()` takes the camera's world-space
+view and holds `--quit-when-still` while the signalled junction nearest her, among those whose
+6-tile box is on screen, shows her red (its main-road arm green or amber). Where she stands no
+longer matters, on the road included. Follows M189, a hold is not a stand, whose rule held the
+watch only on the sidewalk inside that junction's own box. The green wave gives each junction its
+own offset, so two junctions on screen can disagree, and the nearest decides.
+`tests/test_still_watch.gd` covers far away, on the road, green, no junction on screen, a red one
+off screen and two that disagree.
+
+**Open to overturn, chosen by the agent:** nearest is measured to the centre of the junction's
+box.
+
+## M100 — The chalk mark is its picture, and a touch changes the picture · built 2026-09-24
+
+*([PLAYTEST-128](playtests/PLAYTEST-128.md): "it's drawn in code even though a chalk_mark.svg
+exists … Yes, we need to use the svg.")* `ContactPoint._draw_chalk()` draws
+`art/props/chalk_mark.svg`, and `chalk_mark_touched.svg` once the mark is done, from the
+`decoration` atlas group, centre-anchored where the code-drawn arc and lines stood, with the same
+alpha flicker. `Palette.CHALK` is gone; `CHALK_DONE` stays for the HUD text that uses it.
+`ContactPoint` acquires and releases the `decoration` group itself, as `ClosureMarker` does for
+`street_kit`, because a bare mark in a test has no `City` holding the group for it.
+
+**This also answers M100's older item, a touch on a chalk mark shows nothing at the moment but a
+colour change** (playtest 50: "how do I know I stepped on the chalk"). Of its three options —
+nothing more, the colour made unmistakable, or a status line — playtest 53 had already asked for
+a fourth, a touched picture where she adds something to the mark, and that is what now shows at
+the moment of the touch. Whether it reads is in `REVIEW.md`.
+
+**Open to overturn, chosen by the agent:** the `decoration` group rather than `events`; keeping
+the flicker as a modulate on the picture; the centre anchor, matching the SVGs' own. Stills:
+`evidence/m100-chalk-mark-svg-2026-09-24/`.
+
+## M100 — The home block carries no fire escape · built 2026-09-24
+
+*([PLAYTEST-128](playtests/PLAYTEST-128.md): "the home building shouldn't have a fire escape (it
+has a double staircase inside)".)* `Building._build_front()` still rolls a `RESIDENTIAL` front's
+escape on every building, and drops the column when `is_home_building` is set, so no other roll on
+the `front:` stream moves on any seed. The `is_home_building` setter now rebuilds the front on a
+change, like every other roll-affecting property; in every real path the flag is already set
+before the building enters the tree, so this is a safety net rather than a fix.
+`tests/test_ground_floor.gd` sweeps 200 fixtures and five generated cities; its older check that
+the home flag changes no front roll was rewritten, since keeping the escape was exactly what this
+item changes. Seed 73124 had an escape on the home block before;
+`evidence/home-no-fire-escape-2026-09-24/home-block.png` shows it without.
+
 ## M100 — The push at the top is tightened to 9.5 over 3 seconds · built 2026-09-24
 
 *([PLAYTEST-128](playtests/PLAYTEST-128.md): "we can make the extra push needed to end the day a

@@ -568,6 +568,29 @@ item below for as long as looking takes.
   brush-raised pose read as pasting from a normal walking distance?** Record is `DECISIONS.md`,
   M180, seen, walled and torn.
 
+- **Touch a chalk mark and watch it change.** The mark is now drawn from `chalk_mark.svg`, and
+  the moment she touches it the picture becomes `chalk_mark_touched.svg`, her own addition to the
+  mark, instead of the chalk turning pale green (`tools/run.sh --seed 4242 --day 6 --no-save`,
+  whose brief names the rumor of chalk). **Does the touched mark say "that counted" at the moment
+  of the touch, at play scale, without a word on screen?** Record is `DECISIONS.md`, M100, the
+  chalk mark is its picture.
+
+- **Watch a masked pursuer, a hot roadblock's guard and an alley mouse turn.** Each now faces
+  where it is heading, through eight views (`tools/run.sh --start-escape stairwell:left --no-save`
+  for the pursuer on the stairs; a roadblock's guard leaves his post to chase her only once the
+  resistance is hot, from day 7 on in a run with tasks done). **Does each turn read as the same
+  figure from every side, and does a guard coming at her diagonally read as coming at her?**
+  Record is `DECISIONS.md`, M56 and M100, the guards and the alley mouse face where they are
+  heading.
+
+- **Walk away from the power station on day 14 and watch the city go out, then play the dark
+  escape.** `tools/run.sh --day 14 --blackout --no-save` puts the power out on any day. **Does the
+  one-frame blackout read as something she did?** Are the dark junctions on the main road harder
+  in a way that feels fair — you judge crossings by the cars, since no light stops them now? And
+  in the escape (`--start-escape`), **do the gloom, the darker basement and the red stairwells read
+  as a building with its power out** — or does the red need a small lamp drawn on the stairwell
+  wall? Record is `DECISIONS.md`, M183, the blackout is everything at once.
+
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 

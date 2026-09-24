@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_tracing_the_arcs_does_not_change_them(t)
 	_test_a_day_header_opens_a_day(t)
 	_test_the_escape_opens_a_section_so_its_lines_carry_a_time(t)
+	_test_the_escape_is_in_the_run_log_as_a_day_is(t)
 	_test_a_stuck_player_is_logged_once(t)
 	_test_a_free_walk_is_never_logged_as_blocked(t)
 	_test_idling_with_no_input_is_never_logged_as_blocked(t)
@@ -357,7 +358,7 @@ func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 	Telemetry.set_clock(42.5)
 	Telemetry.note("plan", "finale: two chains")
 	Telemetry.set_clock(96.25)
-	Telemetry.note("lost", "escape: the building, 96.2s in")
+	Telemetry.note("lost", "lost_hard_fail in the building after 96.2s")
 
 	var lines := Telemetry.current_log().lines
 	Telemetry.end_run()
@@ -372,6 +373,112 @@ func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 			"and an entry after it carries the elapsed time (got '%s')" % lines[4])
 	t.check(lines[5].begins_with("  96.2  lost"),
 			"as does the line a lost section writes (got '%s')" % lines[5])
+
+## *"The escape shouldn't behave any different than the rest of the game."* Both sections are
+## watched by the day's own observer, handed the section's clock and told which world she is in —
+## so this drives the calls `main` makes, in its order, against the real building and a real city:
+## a section entered, a frame of every watcher, the masked man met, the section lost, the same
+## section again, then the city entered and left by the tunnel. What a day writes that a section
+## has nothing to say about — the corridor, the chalk mark — must stay silent rather than crash.
+func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
+	const STEP := 1.0 / 60.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "masked_pursuer":
+			man = instance
+	t.check(man != null, "the building has a masked man to meet")
+	if not man:
+		events.free()
+		scene.free()
+		return
+	var player := Stroller.new()
+	player.global_position = scene.start_world_position()
+	player.facing = Vector2.UP
+	var baby := Baby.new()
+	var clock := DayController.new()
+	var observer := TelemetryObserver.new()
+	observer.setup_escape(player, baby, clock)
+
+	Telemetry.begin_memory_log()
+	Telemetry.begin_finale(4242, 180.0)
+	observer.watch_building(scene, events)
+	observer.start_section(false)
+	clock.start(180.0)
+	# One frame of every watcher a day runs, in a building with no map, no corridor, no crowd and
+	# no resistance: the ones with nothing to ask have to say nothing rather than fail.
+	observer._process(STEP)
+	player.global_position = man.global_position + Vector2(man.def.outer_radius * 0.5, 0.0)
+	Telemetry.set_clock(12.5)
+	observer._watch_what_is_near(player.global_position)
+	clock.time_remaining = 180.0 - 12.5
+	clock.failure_reason = "They were on the stairs."
+	observer.section_lost(GameEnums.DayResult.LOST_HARD_FAIL)
+	player.global_position = scene.start_world_position()
+	observer.start_section(true)
+
+	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(4242))
+	player.global_position = city.map.home_world_position()
+	observer.watch_city(city)
+	observer.start_section(false)
+	clock.start(180.0)
+	observer._process(STEP)
+	Telemetry.set_clock(40.0)
+	clock.time_remaining = 140.0
+	observer.escaped(CityEdge.Kind.TUNNEL)
+
+	var lines: Array = Telemetry.current_log().lines
+	Telemetry.end_run()
+	var text := "\n".join(lines)
+	var starts: Array[String] = []
+	var lost := ""
+	var near := ""
+	var home := ""
+	for line: String in lines:
+		if line.contains("  start  "):
+			starts.append(line)
+		elif line.contains("  lost  "):
+			lost = line
+		elif line.contains("  near  ") and near == "":
+			near = line
+		elif line.contains("  home  "):
+			home = line
+	t.check(starts.size() == 3, "each section start writes a start line (%d)" % starts.size())
+	if starts.size() == 3:
+		t.check(starts[0].contains("entered the building at ("),
+				"the building is entered at one of its own tiles (got '%s')" % starts[0])
+		t.check(starts[1].begins_with("   0.0") and starts[1].contains("restarted the building"),
+				"a retry says so, timed from its own start (got '%s')" % starts[1])
+		t.check(starts[2].contains("entered the city at ("),
+				"and the city is entered the same way (got '%s')" % starts[2])
+	t.check(near.contains("masked_pursuer"),
+			"meeting the masked man is a near line, as meeting a dog is (got '%s')" % near)
+	t.check(lost.begins_with("  12.5") and lost.contains("lost_hard_fail in the building after 12.5s")
+			and lost.contains("They were on the stairs.") and lost.contains("near: masked_pursuer"),
+			"losing the section names the result, the section, the reason and what was near (got '%s')"
+			% lost)
+	t.check(lost.contains("exc ") and lost.contains("events "),
+			"with the meter breakdown a day's losing line carries (got '%s')" % lost)
+	t.check(home.contains("escaped by the tunnel, 140.0s to spare"),
+			"and getting out is a home line with the way out and the margin (got '%s')" % home)
+	t.check(not text.contains("  path  ") and not text.contains("  contact  "),
+			"no corridor and no chalk mark are written for a walk that has neither")
+
+	observer.free()
+	clock.free()
+	baby.free()
+	player.free()
+	city.free()
+	events.free()
+	scene.free()
 
 # --------------------------------------------------------------- being stuck ---
 # *(`docs/TODO.md`, "The log says when she is stuck": a `--walk` rig that never left the

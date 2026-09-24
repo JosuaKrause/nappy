@@ -150,6 +150,7 @@ func build() -> void:
 	_rebuild_stairwell_backdrops()
 	_rebuild_overlays()
 	_rebuild_collision()
+	modulate = lighting_at(_plan.start_tile)
 
 ## The bounding box of every painted cell in the whole building — every part and every gap between
 ## them, since the collision pass and the camera limits both need to cover the gaps too (she must
@@ -246,6 +247,29 @@ func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
 	sprite.position = Vector2((at.x + 0.5) * TILE, at.y * TILE)
 	_walls.add_child(sprite)
 	return sprite
+
+# ------------------------------------------------------------------- the light ---
+
+## The light in the part `tile` is in, multiplied over everything in the building — the floor, the
+## walls, the events and her — as this scene's own `modulate`. **Not a `CanvasModulate`**: the
+## building stays on the canvas under the city's own daylight for the whole of the escape's second
+## section, and a canvas takes one of those at a time.
+##
+## **The building has no power, since the escape is the night of the blackout.** The hallways, the
+## lobby and the basement are in the gloom, the basement darkest; the stairwells are on the red
+## emergency lighting. One colour per part is enough because no part is ever in view from another
+## (the 64-tile stride — see `InteriorMap`), and the colour changes only when she does, which is
+## under a door's fade to black. A hallway lifts to `Palette.ESCAPE_FLASH_LIGHT` for as long as its
+## windows are flashing, so a blast lights the corridor as well as the glass.
+func lighting_at(tile: Vector2i) -> Color:
+	var part := InteriorMap.part_at(tile)
+	if part.begins_with("stairwell"):
+		return Palette.ESCAPE_EMERGENCY_RED
+	if part == "basement":
+		return Palette.ESCAPE_BASEMENT_GLOOM
+	if part.begins_with("hallway") and windows_are_flashing():
+		return Palette.ESCAPE_FLASH_LIGHT
+	return Palette.ESCAPE_GLOOM
 
 # ------------------------------------------------------------------ the flash ---
 
@@ -616,6 +640,7 @@ func transition_at(tile: Vector2i) -> Dictionary:
 ## keep `main._process()`'s own call site uniform with every other per-frame update there; nothing
 ## here is a rate the fade `Tween` does not already own.
 func process_player(player: Node2D, _delta: float) -> void:
+	modulate = lighting_at(world_to_tile(player.global_position))
 	_door_release_latch.update(player.global_position)
 	if _transitioning or _door_release_latch.holds():
 		return
@@ -674,6 +699,8 @@ func teleport_to_door(door_id: String, player: Node2D) -> void:
 	var door := _plan.door(door_id)
 	var at := tile_to_world(door.tile)
 	_door_release_latch.arm(at, _DOOR_RELEASE_RADIUS)
+	# Under the black, so the part she arrives in is never seen in the light of the one she left.
+	modulate = lighting_at(door.tile)
 	if player is Stroller:
 		(player as Stroller).reset_at(at, Vector2.UP)
 	else:

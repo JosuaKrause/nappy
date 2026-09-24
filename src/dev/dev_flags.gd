@@ -46,6 +46,7 @@ extends RefCounted
 ##   --overview      0
 ##   --zoom          1
 ##   --start-escape  0w?
+##   --blackout      0
 ##   --ending        1
 ##   --controls      1
 ##   --layers        1
@@ -343,6 +344,14 @@ static func meters_override() -> Vector2:
 ## `--overview` frames the whole city at once.
 static func overview_requested() -> bool:
 	return "--overview" in _args()
+
+## `--blackout` stands in for the last night's sabotage, for the blackout alone: `Blackout` treats
+## the city as sabotaged, so it goes dark in one frame the moment she is `Tuning.BLACKOUT_DISTANCE`
+## from the power station — at once, from a spawn that far away — on whatever day `--day` names.
+## Nothing else reads it: no task, ending or save sees a sabotage, which is what keeps it a way to
+## photograph the moment rather than a way to reach the good ending.
+static func blackout_requested() -> bool:
+	return enabled() and "--blackout" in _args()
 
 ## `--start-escape` (or the page's own `?escape=1`) skips the title and the city and starts
 ## `main` straight in the escape scene's interior — see docs/TODO.md, "M112 — The escape scene,

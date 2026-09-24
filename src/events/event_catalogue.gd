@@ -321,12 +321,18 @@ static func _cat_dash() -> EventDef:
 ## less than an alley's length. She can only ever be walking the long axis, so the dash is always
 ## across her path and never down it. See `EventInstance._alley_crossing_path()`.
 ##
-## **The picture is `art/events/mouse.svg`, one look, mirrored — not the prepared directional
-## family (`mouse_{front,back}[_diagonal].svg`).** `_cat_dash` does not pick a picture by heading
-## either: `_draw_cat` swaps crouched for running on the telegraph alone and mirrors east/west the
-## same way `_draw_simple` does for everything else. The mouse does not even keep a second posture
-## for its own telegraph — it is already small and already still — so it draws with `_draw_simple`
-## exactly as `busker` or `delivery_van` do.
+## **The picture turns to face the crossing's own heading.** `EventInstance._draw_body()` reads
+## `MOUSE_BY_VIEW`/`MOUSE_BY_VIEW_B` through `_draw_eight_view()`, the same helper every other
+## moving family in the catalogue uses, rather than the single mirrored side picture it used to
+## draw with `_draw_simple` (PLAYTEST-128, M100: "the code comment is positive, the queue is
+## normative" — a docstring that once said this row stays out of the directional family described
+## what the code did, not what it should). `art/events/mouse_{front,back}[_diagonal].svg` supply
+## the four turned views and `mouse.svg` stays the `"side"` one; the `_b` siblings are the dash's
+## own second frame — the tail curls differently rather than crossing legs it has no room to draw
+## at this scale — alternated by `_gait_stepping()` the same way `MOUSE`/`MOUSE_B` already were.
+## The mouse still keeps no second posture for its own telegraph — it is already small and already
+## still — so only the dash itself picks a heading; `_cat_dash`'s own crouch/running swap is a
+## different axis, the posture rather than the facing.
 static func _alley_mouse() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_mouse"

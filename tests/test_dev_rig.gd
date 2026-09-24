@@ -28,6 +28,8 @@ func run(t) -> void:
 	_test_closure_target_lands_near_the_first_closure(t)
 	_test_contact_target_lands_beside_the_resistance_mark(t)
 	_test_an_unknown_target_warns_and_returns_home(t)
+	_test_a_queue_fed_row_refuses_by_name(t)
+	_test_a_waiting_row_stands_outside_its_trigger(t)
 	_test_the_pavement_offset_crosses_the_streets_own_axis(t)
 	_teardown(t)
 
@@ -119,6 +121,49 @@ func _test_an_unknown_target_warns_and_returns_home(t) -> void:
 	var at := DevRig.for_spawn_target("not-a-real-target", _city, _resistance)
 	t.check(at == _city.map.home_world_position(),
 			"an unrecognised --spawn target falls back to the doorstep rather than guessing")
+
+## `cat_dash` is `AHEAD_OF_PLAYER`, so on day 6 of seed 4242 every copy the day budgets is
+## unplaced — a row the day's plan never holds a position for. `event:cat_dash` refuses rather
+## than silently starting her on the doorstep as if nothing were wrong: the row and the reason
+## land in the run log (`Telemetry.note("spawn", …)`, checked here) and on `stderr`
+## (`push_warning`, not checked here — Godot gives a test no hook onto it; `push_warning` rather
+## than `push_error` because this test feeds the bad input on purpose and has to reach it by
+## return value rather than failing the run), and only then does the same doorstep fallback an
+## unrecognised target reaches apply.
+func _test_a_queue_fed_row_refuses_by_name(t) -> void:
+	Telemetry.begin_memory_log()
+	var at := DevRig.for_spawn_target("event:cat_dash", _city, _resistance)
+	var lines := Telemetry.current_log().lines
+	Telemetry.end_run()
+	t.check(at == _city.map.home_world_position(),
+			"a queue-fed row still leaves her somewhere to stand: the doorstep")
+	var named := false
+	for line in lines:
+		if line.contains("spawn") and line.contains("cat_dash"):
+			named = true
+	t.check(named, "the refusal names the row in the run log (got %s)" % [lines])
+
+## `pigeon_flock` waits (`pursues_within`) and on day 6 of seed 4242 has a copy placed whose
+## `outer_radius` (168px) sits *under* its own `pursues_within` (150px is under 168, but the old
+## `outer_radius * 0.6` = 100.8px offset was under both) — so the old offset stood her inside the
+## trigger. The fixed offset has to clear the larger of the two plus a tile's margin.
+func _test_a_waiting_row_stands_outside_its_trigger(t) -> void:
+	var found: EventScheduler.Planned = null
+	for plan in _city.events.plans():
+		if plan.def.id == "pigeon_flock" and plan.is_placed():
+			found = plan
+			break
+	t.check(found != null, "day %d has a placed pigeon_flock to stand outside of" % DAY)
+	if found == null:
+		return
+	var at := DevRig.for_spawn_target("event:pigeon_flock", _city, _resistance)
+	var dist := at.distance_to(found.position)
+	t.check(dist > found.def.pursues_within,
+			"stands outside the wait trigger, %.0fpx > pursues_within %.0fpx"
+					% [dist, found.def.pursues_within])
+	t.check(dist > found.def.outer_radius,
+			"and outside the field itself, %.0fpx > outer_radius %.0fpx"
+					% [dist, found.def.outer_radius])
 
 ## Moved from `tests/test_main.gd`, where `_pavement_offset` lived before this milestone — see
 ## that file's own history for the defect this pins: a fixed local-Y step left her on the same
