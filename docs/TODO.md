@@ -430,7 +430,13 @@ speak, and nothing city-wide left. What is open is the posters.
       torn until a crew pastes that wall again; tearing costs nothing on the meter and counts
       for nothing. **A tear has a small chance of a pursuer**: a `police_patrol` sent toward
       her from off screen under the lead its row already owes, starting at one tear in ten, and
-      never on the first tear of a run.
+      never on the first tear of a run. **Whether a tear brings one is drawn from a marble bag**
+      ([PLAYTEST-125](playtests/PLAYTEST-125.md)): a bag holding a fixed set of marbles in the
+      desired proportion, one drawn at random and removed per tear, refilled with the same set
+      when empty, so every bag's share is exact ("it has the desired probability but feels
+      fair"). A first, pre-bag holds only "no pursuit" marbles, one per tear guaranteed safe.
+      The player's example is a pre-bag of three and then two pursuits in ten; which numbers
+      apply is the player's. Only poster tears use a marble bag.
 
 ---
 
