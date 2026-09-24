@@ -1,5 +1,88 @@
 # Decisions
 
+## M190 — One command brings a pull request up to date with main · built 2026-09-23
+
+*(Asked for under CLAUDE.md's "a manual sequence done a second time becomes a script", after
+every PR merged in a row on 2026-09-23 needed `main` merged into the next with the same
+`docs/DECISIONS.md` conflict; the player: "yes", and "use it for subsequent prs".)*
+`tools/update-pr.sh <pr-number | branch>` fetches, finds the branch's worktree or makes a scratch
+one, records the three revisions, merges `origin/main` without committing, resolves the one
+recurring `DECISIONS.md` shape with `tools/resolve-decisions-top.sh` and aborts naming the files
+on anything else, then runs `git diff --cached --check`, lint and `check.sh`, commits a message
+naming the revisions and the resolution, and pushes, over HTTPS when SSH is refused. It never
+merges or enables auto-merge, and it ends by saying the semantic review is still the reviewer's,
+listing what main changed. `--dry-run` reports conflicts through `git merge-tree` without touching
+a worktree. It refuses a dirty worktree and a branch behind or diverged from its own remote.
+**Open to overturn, chosen by the agent:** `UPDATE_PR_CLAUDE=1` adds the Claude co-author line,
+off by default so a person running it does not sign as Claude; a diverged branch is refused as
+well as one that is behind.
+
+## M100 — Six small defects · 2026-09-23
+
+From M100's list, one commit each, no behaviour a player sees changed. The contact is placed
+before `--spawn contact` reads it (`ResistanceDirector.start_day()` moved ahead of
+`DevRig.spawn_position()` in `main`'s day start). The balance rig's camera runs in physics
+process mode like the real one, so the engine's warning is gone. `Crowd.step()` and
+`_physics_process()` share `_advance_the_world()`; `step()` now moves the agents before it rather
+than in the middle, which is neutral because the signals' clock and the pockets read nothing an
+agent's position changes. `CityMap.is_main_road(vertical, corridor)` is the one spelling of the
+question, and the seven hand-written sites go through it. A local test shard is killed after
+`SHARD_TIMEOUT_S` (600 s, about twice the slowest shard; `TEST_SHARD_TIMEOUT_S` overrides it) and
+reported by name, so the "crashed or hung" message is reachable; `--serial` and `--shard I/N` stay
+unbounded since they run far more than one shard's suites. `EventInstance.noticed_at()` is the
+save half of `resume()`, and `EventManager` reads it rather than the private field.
+
+## M189 — A still mother ends the run with a picture · built 2026-09-23
+
+*(The player, 2026-09-23: "can we have a flag for automatically taking a screenshot and
+terminating the game if the player doesn't move for a second or so?" · "also, it looks like the
+walking rig is a good way to find bugs".)* `--quit-when-still [seconds]` (default one second):
+once she has moved at all, if she then holds within `StillWatch.STILL_RADIUS` (4px, half the route
+rig's own stuck distance, sampled every frame rather than every half second) of one spot for that
+long while `DayController.is_running()` and the tree is not paused — which leaves out the brief,
+summary and death screens without a third flag — the game saves `still/quit-when-still.png` into
+the run's telemetry folder, notes a `still` line (her tile and the nearest live event or vehicle),
+prints the path and quits. `StillWatch` is its own node rather than part of `AutoScreenshot`,
+since a per-frame watch and a one-shot timed capture live differently, and it reuses
+`AutoScreenshot`'s capture through `AutoScreenshot.immediate()`. It reads her position, not the
+input or her velocity: on the route rig's day 6 wedge on seed 1234567 the HUD read a speed of 92
+in the frame she was pinned against a moving van. **Open to overturn, chosen by the agent:** the
+radius, the `still/` folder and fixed filename, and a `still` note kind rather than `shot`, whose
+doc says a person asked for the picture.
+
+## M79 — The city seen at an angle is closed · 2026-09-23
+
+*(The player, 2026-09-23: "I think we can close M79, the city at an angle. I like the current
+visuals and we really don't need to change it.")* M79 was tabled on 2026-09-06 as a question of
+sequencing, not doubt: a 2:1 isometric projection after the reference
+`docs/evidence/reference-isometric-street-2026-09-06.jpeg`, whose findings were that only the
+world-to-screen transform would change and not the lattice, that the 2.5D buildings made it
+cheap, and that what rotation destroys is the guarantee that nothing hides her. The city stays
+drawn straight on, and the item leaves the queue; this entry holds what the tabled milestone knew,
+and git history holds its full text (`git log -S "The city seen at an angle" -- docs/TODO.md`).
+
+## M184 — The rig waits before it forces, and aims beside a solid target · 2026-09-23
+
+The route rig's open half ([PLAYTEST-122](playtests/PLAYTEST-122.md): "a test-rig mode where she
+just follows the edges of a path"). **Waiting before forcing:** a stall now first stands still for
+`_STUCK_WAIT_SECONDS` (three seconds), since a crowd that would clear on its own and a wedge look
+the same to the rig, and only a stall straight after waiting tries the eight-direction maneuver;
+both spend one of a leg's three stuck episodes. Measured over the same 24 runs, it got none of the
+twelve stuck legs through (14 of 24 stuck after, against 12), so the chokepoint item stays open in
+`TODO.md` with what the first look found. The player chose to merge it as it stands and debug in
+a new pull request.
+
+**Aiming beside a solid target:** day 13's task on seed 4242 found no path because the rig aimed at
+the roadblock's own centre, inside its body (`obstructs_radius` 60px), which no plan may end on.
+`_reachable_point_near()` steps out to the nearest open tile first, well inside the 110px at which
+the director counts the task done. Reproducing the director's own random side of approach was
+rejected: the rig has no stream aligned with it and the completion check does not care which side.
+
+**The other four legs with no path are the game's**, found by instrumenting the rig against the
+running game: a mark placed inside a solid body, a mark sealed off by the day's obstructions, and
+two contacts placed inside buildings, all in `src/resistance/resistance_director.gd`; queued as
+M188, a resistance target can always be reached.
+
 ## M187 — A closure lies across the street it closes · built 2026-09-23
 
 *(Found by the street-obstructions redraw, PR 301, and queued with the player's agreement; the

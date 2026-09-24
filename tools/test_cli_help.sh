@@ -108,6 +108,8 @@ assert_exit "agent-status.sh --help" zero ./tools/agent-status.sh --help
 assert_exit "agent-status.sh -h"     zero ./tools/agent-status.sh -h
 assert_exit "resolve-decisions-top.sh --help" zero ./tools/resolve-decisions-top.sh --help
 assert_exit "resolve-decisions-top.sh -h"     zero ./tools/resolve-decisions-top.sh -h
+assert_exit "update-pr.sh --help" zero ./tools/update-pr.sh --help
+assert_exit "update-pr.sh -h"     zero ./tools/update-pr.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
@@ -134,6 +136,11 @@ assert_exit "prune-merged.sh --bogus" nonzero ./tools/prune-merged.sh --bogus fe
 assert_exit "prune-merged.sh (no branch)" nonzero ./tools/prune-merged.sh
 assert_exit "agent-status.sh --bogus" nonzero ./tools/agent-status.sh --bogus
 assert_exit "resolve-decisions-top.sh --bogus" nonzero ./tools/resolve-decisions-top.sh --bogus
+assert_exit "update-pr.sh --bogus" nonzero ./tools/update-pr.sh --bogus
+# With nothing to update there is nothing it may safely fetch or merge, so it refuses rather
+# than guessing a target.
+assert_exit "update-pr.sh (no target)" nonzero ./tools/update-pr.sh
+assert_exit "update-pr.sh (two targets)" nonzero ./tools/update-pr.sh 1 2
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and

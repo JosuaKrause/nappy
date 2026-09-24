@@ -379,7 +379,7 @@ const _FINALE_ALLEY_DEF := "collapsed_frontage"
 ## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one
 ## street the design deliberately leaves open to cross. `plan_finale` above does not ask.
 static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
-	return not segment.horizontal and segment.a.x == map.main_road
+	return map.is_main_road(not segment.horizontal, segment.a.x)
 
 ## The candidate id that is a felled street tree, and the one seal picture whose street is not a
 ## free choice: *(2026-09-11, the player: "fallen trees should only be possible on streets with

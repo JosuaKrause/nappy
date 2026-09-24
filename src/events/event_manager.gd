@@ -404,7 +404,7 @@ func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.age = plan.live.age
 	plan.travelled = plan.live.path_travelled()
-	plan.noticed_at = plan.live._noticed_at
+	plan.noticed_at = plan.live.noticed_at()
 	_map.release_obstruction(plan.live.get_instance_id())
 	_instances.erase(plan.live)
 	plan.live.queue_free()
