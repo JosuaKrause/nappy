@@ -1,7 +1,19 @@
-<!-- Tall sash window, warmly lit. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect x="6" y="3" width="20" height="27" fill="#221f28" fill-opacity="0.32"/>
-  <rect x="8" y="5" width="16" height="23" fill="#d7b66e"/>
-  <path d="M15 5V28 M8 16H24" stroke="#806349" stroke-width="1"/>
-  <rect x="5" y="28" width="22" height="2" fill="#f7e0a0" fill-opacity="0.42"/>
+<!-- A tall sash window, lit: window_tall_dark.svg with the room's light on, registering with
+     it exactly — the same sashes, frame, lintel and sill, with warm glass brighter in the upper
+     sash, the drapes lit from behind, the reflections gone pale and the light catching the
+     sill. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M7.4 29.2 H26.2 V30.6 H7.4 Z" fill="#221f28" fill-opacity="0.3" stroke="none"/>
+  <path d="M8 4.8 H24 V27.8 H8 Z" fill="#2a2630"/>
+  <path d="M8.8 5.6 H23.2 V27.6 H8.8 Z" fill="#d3ccbc" stroke-width="0.6"/>
+  <path d="M10 6.8 H15.5 V15.6 H10 Z M16.5 6.8 H22 V15.6 H16.5 Z M10 17.2 H15.5 V26.4 H10 Z M16.5 17.2 H22 V26.4 H16.5 Z" fill="#e9c27a" stroke-width="0.5"/>
+  <path d="M10.2 8.2 H15.3 V13 H10.2 Z M16.7 8.2 H21.8 V13 H16.7 Z" fill="#f6dda3" stroke="none"/>
+  <path d="M10 6.8 H11.8 C11.4 10 12 13 11.6 15.6 H10 Z M22 6.8 H20.2 C20.6 10 20 13 20.4 15.6 H22 Z M10 17.2 H11.6 C12 20 11.4 23.4 11.9 26.4 H10 Z M22 17.2 H20.4 C20 20 20.6 23.4 20.1 26.4 H22 Z" fill="#cf9a58" stroke="none"/>
+  <path d="M10 6.8 H22 V8.2 H10 Z" fill="#8a5f3a" fill-opacity="0.35" stroke="none"/>
+  <path d="M12.4 14.4 L14.6 10 M17.6 14.4 L19.8 10 M12.4 25 L14.6 20.4 M17.6 25 L19.8 20.4" fill="none" stroke="#fff4dc" stroke-width="0.6" stroke-opacity="0.55"/>
+  <path d="M6.8 2.8 H25.2 V5.6 H6.8 Z" fill="#c4bba9"/>
+  <path d="M7.5 3.6 H24.5" fill="none" stroke="#e0d9cb" stroke-width="0.7"/>
+  <path d="M14.3 2.4 H17.7 L17.2 6.4 H14.8 Z" fill="#d6cebf"/>
+  <path d="M7.4 27.6 H24.6 L25.6 28.4 V29.4 H6.4 V28.4 Z" fill="#b8af9e"/>
+  <path d="M7.2 28.2 H24.8" fill="none" stroke="#f3e0b0" stroke-width="0.7"/>
 </svg>

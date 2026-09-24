@@ -168,7 +168,10 @@ ground, and the arcs that may reach it in `CityGenerator._plan_arcs`. If it is c
 one block of a multi-block calm zone and nobody will notice on the lots that are one block.
 
 **Add a closure kind** — `RoadClosure.Kind`, a row in `RoadClosure.KINDS` (name, first day, weight),
-an SVG in `art/closures/`, and a line in `ClosureMarker.CAUSES` — unless it has nothing to leave
+two SVGs in `art/closures/` — `<cause>.svg` lying across a north-south street and
+`<cause>_vertical.svg` lying across an east-west one, drawn in the game's projection rather than
+rotated — with a line for each in `ClosureMarker.CAUSES` and `ClosureMarker.CAUSES_VERTICAL` and
+both in `assets/atlases/membership.json` — unless it has nothing to leave
 in the road, like `CORDON`, in which case the barriers are the whole of it. Nothing else: the kinds
 differ in look and timing only, because a street you cannot walk down is a street you cannot walk
 down.

@@ -1,17 +1,36 @@
-<!-- Side-on fire escape: left upper landing, right turn, left lower landing.
-     Transparent 48x64 facade overlay; drawing anchor (24,64), lower landing (7,59).
-     Both flights run parallel to the facade, with constant-depth open metal treads. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#3b3034" stroke-linejoin="round" stroke-linecap="round">
-  <!-- The wall remains visible between landings and through the open risers. -->
-  <path d="M2 12L4 10H12L10 12Z M36 35L38 33H46V35Z M2 59L4 57H12L10 59Z" fill="#747b7b" stroke-width="0.7"/>
-  <path d="M2 12H10V14H2Z M36 35H46V37H36Z M2 59H10V61H2Z" fill="#4f565b" stroke-width="0.8"/>
-  <path d="M10 13L38 36 M38 36L10 60" fill="none" stroke="#3b3034" stroke-width="2"/>
-  <path d="M10 12L38 35 M38 35L10 59" fill="none" stroke="#747b7b" stroke-width="0.7"/>
-  <!-- Horizontal tread noses, with equal short depth faces on every step. -->
-  <path d="M10 15H16L14 13H10Z M15 19H21L19 17H15Z M20 23H26L24 21H20Z M25 27H31L29 25H25Z M30 31H36L34 29H30Z M35 35H41L39 33H35Z M30 39H36L34 37H30Z M25 43H31L29 41H25Z M20 47H26L24 45H20Z M15 51H21L19 49H15Z M10 55H16L14 53H10Z" fill="#89908d" stroke-width="0.55"/>
-  <!-- Balusters rise vertically; each handrail reverses at the right-hand landing. -->
-  <path d="M3 12V4 M10 12V4 M20 22V12 M30 30V20 M38 35V27 M45 35V27 M30 43V35 M20 51V43 M10 59V51 M3 59V51" fill="none" stroke-width="1"/>
-  <path d="M3 4H10L38 27H45 M3 51H10L38 27" fill="none" stroke-width="1.6"/>
-  <path d="M3 3.7H10L38 26.7H45 M3 50.7H10L38 26.7" fill="none" stroke="#747b7b" stroke-width="0.5"/>
-  <path d="M3 14L8 18V14 M45 37L39 43V37 M3 61H11" fill="none" stroke-width="1"/>
+<!-- One floor of a fire escape in black-painted iron: a railed balcony at the floor line on knee
+     brackets, in front of that floor's window, with a potted plant standing on it, and the flight
+     hung from its east end that runs down parallel to the facade to the west, handrail and open
+     treads over a stringer, to the balcony one floor below. src/city/building.gd stacks it once
+     per floor from the top floor's floor line down, every flight the same way round, and puts
+     fire_escape_platform_a.svg, this balcony with the flight taken out, on the first floor's
+     floor line, so nothing comes down to the sidewalk. The iron casts its shadow on the wall down
+     and to the east. Transparent 48x64 facade overlay; drawing anchor (24,64), the floor line of
+     the floor below the balcony, at the column's centre. fire_escape_b.svg is the same escape
+     with no plant. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#231e22" stroke-linejoin="round" stroke-linecap="round">
+  <g fill="#221f28" fill-opacity="0.24" stroke="none">
+    <path d="M4 30.6 H47.4 V33.6 H5.6 Z"/>
+    <path d="M43.4 32.4 L45 33.6 L15.6 58.8 L14 57.6 Z"/>
+    <path d="M6.2 37.8 L12.4 31.6 H13.6 L7.4 38.6 Z M44.2 37.8 L40.2 31.6 H41.4 L45.4 38.2 Z"/>
+  </g>
+  <path d="M29.4 22.4 H34.2 L33.6 26.5 H30 Z" fill="#a95d3e" stroke-width="0.6"/>
+  <path d="M29.6 23.2 H34" fill="none" stroke="#c97c57" stroke-width="0.5"/>
+  <path d="M30.2 22.4 C29 20.6 30 19.2 31.4 20.2 C31.4 18.4 33.4 18.4 33.2 20.2 C34.6 19.4 35.4 21.2 33.8 22.4 Z" fill="#5d7a4a" stroke-width="0.5"/>
+  <path d="M4.5 30.6 V37.6 L11 30.6 M43.5 30.6 V37.6 L37 30.6" fill="none" stroke-width="1"/>
+  <path d="M42 31 L13 56" fill="none" stroke-width="2.4"/>
+  <path d="M41.6 30.9 L12.8 55.6" fill="none" stroke="#6d747c" stroke-width="0.6"/>
+  <path d="M35.6 31.6 H39.2 V32.8 H35.6 Z M32.2 34.6 H35.8 V35.8 H32.2 Z M28.8 37.5 H32.4 V38.7 H28.8 Z M25.4 40.4 H29 V41.6 H25.4 Z M22 43.4 H25.6 V44.6 H22 Z M18.6 46.3 H22.2 V47.5 H18.6 Z M15.2 49.2 H18.8 V50.4 H15.2 Z M11.8 52.1 H15.4 V53.3 H11.8 Z" fill="#737a82" stroke-width="0.5"/>
+  <path d="M36 27.8 V35 M29.2 33.6 V40.8 M22.4 39.5 V46.7 M15.6 45.4 V52.6 M13 47.6 V56.4" fill="none" stroke-width="0.8"/>
+  <path d="M42 22.6 L13 47.6" fill="none" stroke-width="1.4"/>
+  <path d="M41.8 22.1 L12.9 47" fill="none" stroke="#8d949b" stroke-width="0.45"/>
+  <path d="M2.5 26.4 H45.5 V28.4 H2.5 Z" fill="#737a82" stroke-width="0.7"/>
+  <path d="M2.5 28.4 H45.5 V30.6 H2.5 Z" fill="#454a51" stroke-width="0.7"/>
+  <path d="M3.2 27 H44.8" fill="none" stroke="#9aa1a7" stroke-width="0.45"/>
+  <path d="M6 28.8 V30.2 M10 28.8 V30.2 M14 28.8 V30.2 M18 28.8 V30.2 M22 28.8 V30.2 M26 28.8 V30.2 M30 28.8 V30.2 M34 28.8 V30.2 M38 28.8 V30.2 M42 28.8 V30.2" fill="none" stroke="#2f3338" stroke-width="0.6"/>
+  <path d="M5.5 18.2 V26.4 M8.5 18.2 V26.4 M11.5 18.2 V26.4 M14.5 18.2 V26.4 M17.5 18.2 V26.4 M20.5 18.2 V26.4 M23.5 18.2 V26.4 M26.5 18.2 V26.4 M29.5 18.2 V26.4 M32.5 18.2 V26.4 M35.5 18.2 V26.4 M38.5 18.2 V26.4 M41.5 18.2 V26.4" fill="none" stroke-width="0.6"/>
+  <path d="M2.5 25.2 H45.5" fill="none" stroke-width="0.8"/>
+  <path d="M2.5 17.6 V28.4 M45.5 17.6 V28.4" fill="none" stroke-width="1.3"/>
+  <path d="M2.2 18.2 H45.8" fill="none" stroke-width="1.5"/>
+  <path d="M2.8 17.7 H45.2" fill="none" stroke="#8d949b" stroke-width="0.45"/>
 </svg>

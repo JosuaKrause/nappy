@@ -668,6 +668,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 		var cause := ClosureMarker.new()
 		cause.piece = ClosureMarker.Piece.CAUSE
 		cause.kind = closure.kind
+		cause.across = closure.barrier_runs_across()
 		cause.position = closure.cause_centre(map)
 		_add_closure_node(cause, true)
 

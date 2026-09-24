@@ -430,7 +430,13 @@ speak, and nothing city-wide left. What is open is the posters.
       torn until a crew pastes that wall again; tearing costs nothing on the meter and counts
       for nothing. **A tear has a small chance of a pursuer**: a `police_patrol` sent toward
       her from off screen under the lead its row already owes, starting at one tear in ten, and
-      never on the first tear of a run.
+      never on the first tear of a run. **Whether a tear brings one is drawn from a marble bag**
+      ([PLAYTEST-125](playtests/PLAYTEST-125.md)): a bag holding a fixed set of marbles in the
+      desired proportion, one drawn at random and removed per tear, refilled with the same set
+      when empty, so every bag's share is exact ("it has the desired probability but feels
+      fair"). A first, pre-bag holds only "no pursuit" marbles, one per tear guaranteed safe.
+      The player's example is a pre-bag of three and then two pursuits in ten; which numbers
+      apply is the player's. Only poster tears use a marble bag.
 
 ---
 
@@ -494,41 +500,6 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M186 — The building fronts are redrawn to one bar · asked for 2026-09-23
-
-> "Only thing so far is the new standard door (industrial door and home door look fine). It pops
-> out. But that is probably because the other parts of the buildings (walls, windows, fire
-> escapes, etc) are not updated and look flat in comparison. So if say we update all those too
-> and then have another look at the overall picture."
-
-[PLAYTEST-124](playtests/PLAYTEST-124.md), statements 8 and 9. The entrance doors and the
-storefronts are drawn to the bar of the accepted art (outlines, shaded planes, material); the
-rest of a front is not, so the standard door stands out.
-
-- [ ] **Every other part of a building is redrawn to the same bar**: the wall and its plinth,
-      its edges and the roof, the six window pictures, the fire escape and the civic portico —
-      whatever `src/city/building.gd` draws a front from under `art/buildings/`, the power station
-      aside. The wall stays white where the runtime tints it, every canvas, ground line and tiling
-      seam is kept, and a window's lit and unlit pair and its three styles stay telling apart.
-- [ ] **Then the whole front is looked at again**, the standard entrance door included: stills of
-      a residential, a commercial and an industrial street at the ordinary view and zoomed out,
-      before and after. The door is changed only if it still pops out.
-
----
-
-## M187 — A closure lies across the street it closes · asked for 2026-09-23
-
-Found by the street-obstructions redraw (PR 301) and queued with the player's agreement; the
-pictures themselves are accepted ([PLAYTEST-124](playtests/PLAYTEST-124.md), statement 7).
-
-- [ ] **A closure's cause has a picture for each street axis.** The fallen tree, the crashed cars,
-      the rubble and the roadworks under `art/closures/` are one picture drawn for both axes, so on
-      an east-west street they lie along the road rather than across it.
-- [ ] **A roadworks end post seen end-on stays at the barrier's end.** The code that repeats a
-      barrier along a mouth anchors each piece at its bottom, so on an end-on run the 26px end
-      posts cover most of a 64px column.
-
----
 ## M184 — A rig walks the route · asked for 2026-09-23
 
 > "we should have a test-rig mode where she just follows the edges of a path that way we can test

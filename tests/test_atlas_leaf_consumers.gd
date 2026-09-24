@@ -91,6 +91,7 @@ func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
 		CityEdge.TUNNEL, CityEdge.BRIDGE, CityEdge.ROAD_ON,
 	]
 	names.append_array(ClosureMarker.CAUSES.values())
+	names.append_array(ClosureMarker.CAUSES_VERTICAL.values())
 	_check_regions(t, names, &"street_kit", "the street kit")
 	t.check(AtlasLibrary.group_of(CityEdge.MOUNTAIN) == &"ground",
 			"the city edge's mountain tile is on the ground page, not street_kit")

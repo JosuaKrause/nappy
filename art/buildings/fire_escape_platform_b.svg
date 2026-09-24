@@ -1,0 +1,22 @@
+<!-- fire_escape_b.svg with the flight taken out, for the first floor's floor line, the lowest
+     landing of a stacked fire escape: the same black-painted iron balcony on knee brackets with
+     nothing standing on it and nothing hung below it, so the ground floor under it carries only
+     the brackets and the shadow the iron casts on the wall down and to the east. Every path is
+     fire_escape_b.svg's own. Transparent 48x64 facade overlay; drawing anchor (24,64), the ground
+     line at the column's centre. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#231e22" stroke-linejoin="round" stroke-linecap="round">
+  <g fill="#221f28" fill-opacity="0.24" stroke="none">
+    <path d="M4 30.6 H47.4 V33.6 H5.6 Z"/>
+    <path d="M6.2 37.8 L12.4 31.6 H13.6 L7.4 38.6 Z M44.2 37.8 L40.2 31.6 H41.4 L45.4 38.2 Z"/>
+  </g>
+  <path d="M4.5 30.6 V37.6 L11 30.6 M43.5 30.6 V37.6 L37 30.6" fill="none" stroke-width="1"/>
+  <path d="M2.5 26.4 H45.5 V28.4 H2.5 Z" fill="#737a82" stroke-width="0.7"/>
+  <path d="M2.5 28.4 H45.5 V30.6 H2.5 Z" fill="#454a51" stroke-width="0.7"/>
+  <path d="M3.2 27 H44.8" fill="none" stroke="#9aa1a7" stroke-width="0.45"/>
+  <path d="M6 28.8 V30.2 M10 28.8 V30.2 M14 28.8 V30.2 M18 28.8 V30.2 M22 28.8 V30.2 M26 28.8 V30.2 M30 28.8 V30.2 M34 28.8 V30.2 M38 28.8 V30.2 M42 28.8 V30.2" fill="none" stroke="#2f3338" stroke-width="0.6"/>
+  <path d="M5.5 18.2 V26.4 M8.5 18.2 V26.4 M11.5 18.2 V26.4 M14.5 18.2 V26.4 M17.5 18.2 V26.4 M20.5 18.2 V26.4 M23.5 18.2 V26.4 M26.5 18.2 V26.4 M29.5 18.2 V26.4 M32.5 18.2 V26.4 M35.5 18.2 V26.4 M38.5 18.2 V26.4 M41.5 18.2 V26.4" fill="none" stroke-width="0.6"/>
+  <path d="M2.5 25.2 H45.5" fill="none" stroke-width="0.8"/>
+  <path d="M2.5 17.6 V28.4 M45.5 17.6 V28.4" fill="none" stroke-width="1.3"/>
+  <path d="M2.2 18.2 H45.8" fill="none" stroke-width="1.5"/>
+  <path d="M2.8 17.7 H45.2" fill="none" stroke="#8d949b" stroke-width="0.45"/>
+</svg>
