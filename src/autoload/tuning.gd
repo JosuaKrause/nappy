@@ -654,6 +654,16 @@ const POWER_STATION_MIN_BLOCKS_FROM_HOME := 4
 ## (`ClosurePlanner`); on every other day nothing leads her there.
 const POWER_STATION_DAY := RUN_LENGTH_DAYS
 
+## How far from the power station she has to be, once the sabotage is done, for the city to go dark
+## — measured from the nearest point of the station's lot, in px. *(The player, 2026-09-20: "just
+## wait until a certain distance away -- then everything is off at once".)* Far enough that no part
+## of the station is on screen whichever way she leaves it, so the blackout is something she sees
+## happen to the city around her rather than to the building: the view is 640×360 at the camera's
+## zoom and leads her by `Stroller.CAMERA_LOOK_AHEAD` (46px), and the stacks rise four tiles past
+## the lot's north edge, so leaving past a corner needs the diagonal of (320 + 46) by
+## (180 + 46 + 128), which is 509px. Chosen where the design was silent, open to overturn.
+const BLACKOUT_DISTANCE := 512.0
+
 ## Per-purpose chance a block is split by a through-alley.
 const ALLEY_CHANCE := {
 	GameEnums.BlockPurpose.RESIDENTIAL: 0.25,
@@ -2022,6 +2032,15 @@ func signal_main_green_seconds() -> float:
 ##
 ## Stated over the crossing she is making rather than over the light she is watching: it is the
 ## side street that is green while the main road is stopped.
+##
+## **And with the power out there is no light at all** (`TrafficSignals.powered`, the last night's
+## blackout), so the spine's own contract has to stand without one. A dark junction is negotiated
+## the way a side street's is, and the spine's traffic does not give way at its zebras lit or dark,
+## so what is left between her and a hard fail is the side street's contract: the painted
+## carriageway and the horn. The spine's carriageway is `carriageway_width()`, the same as every
+## street's, and the horn is stated in seconds of the car's own travel, so `validate_traffic()`'s
+## own check — the horn covers that width with the same doubled margin — is the dark junction's
+## check as well.
 func validate_signals() -> bool:
 	var required := required_horn_time()
 	if SIGNAL_SIDE_GREEN_SECONDS + 0.001 < required:

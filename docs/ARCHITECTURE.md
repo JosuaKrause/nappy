@@ -510,7 +510,12 @@ non-zero on any failure.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
 - `test_resistance.gd` — the step table, touch-completion, a task activated the same day its
   mark is touched, the four placement kinds a perform step may use, the seeded guard, the
-  expiring step, and the sabotage silencing the city.
+  expiring step, and the sabotage putting the city's masts out once she has walked away.
+- `test_blackout.gd` — the last night's blackout: nothing off without the sabotage or beside the
+  station, every window, light and mast off in one call past the distance, dark for as long as the
+  sabotage stands and lit again on a retry, the station's hall lit only on the last night, the dark
+  spine left to the box rule and still carrying its traffic, and the escape's city dark from its
+  first frame.
 - `test_full_run.gd` — three seeds played through all 14 days with the real City,
   EventManager and ResistanceDirector, with time actually advancing. This is the check
   that catches "day 12 throws", which no amount of unit coverage does.

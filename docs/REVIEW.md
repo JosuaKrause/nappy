@@ -583,6 +583,14 @@ item below for as long as looking takes.
   Record is `DECISIONS.md`, M56 and M100, the guards and the alley mouse face where they are
   heading.
 
+- **Walk away from the power station on day 14 and watch the city go out, then play the dark
+  escape.** `tools/run.sh --day 14 --blackout --no-save` puts the power out on any day. **Does the
+  one-frame blackout read as something she did?** Are the dark junctions on the main road harder
+  in a way that feels fair — you judge crossings by the cars, since no light stops them now? And
+  in the escape (`--start-escape`), **do the gloom, the darker basement and the red stairwells read
+  as a building with its power out** — or does the red need a small lamp drawn on the stairwell
+  wall? Record is `DECISIONS.md`, M183, the blackout is everything at once.
+
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 

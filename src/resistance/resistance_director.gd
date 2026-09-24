@@ -1161,11 +1161,10 @@ func _on_contact_completed(step_index: int) -> void:
 		return
 
 	GameState.sabotage_done = true
-	# The reward for the whole subquest is quiet. Whatever is left of the last day is walked with
-	# every mast off — no field, no arcs — rather than under whatever each one happened to be
-	# speaking when the sabotage landed.
-	if _city and _city.events and _city.events.silence_all_masts() > 0:
-		EventBus.city_went_quiet.emit()
+	# Nothing goes off here. The hand-over takes the man on the night shift minutes, so the city
+	# goes dark once she has walked far enough from the station — every window, every light and
+	# every mast at once, the masts because they run on the same power. That is `Blackout`'s, and
+	# it watches the flag set above rather than this call.
 
 func _clear() -> void:
 	if _contact and is_instance_valid(_contact):

@@ -37,6 +37,13 @@ enum Phase { MAIN_GREEN, MAIN_AMBER, SIDE_GREEN, SIDE_AMBER }
 ## lights stop with everything else behind the pause screen.
 var elapsed := 0.0
 
+## Whether the lights have power. The blackout (`Blackout`) turns it off, and with it every light on
+## the spine goes dark at once: `is_signalled()` answers false everywhere, so the crowd's own
+## junction rule negotiates a spine junction exactly as it negotiates a side street's, and every
+## `TrafficLight` draws its head with no lamp lit. Nothing about *where* the lights stand changes —
+## `has_lights()` is that question, and the answer is the same with the power off.
+var powered := true
+
 var _map: CityMap
 
 func _init(map: CityMap) -> void:
@@ -45,11 +52,23 @@ func _init(map: CityMap) -> void:
 func advance(delta: float) -> void:
 	elapsed += delta
 
-## Whether a junction has lights on it at all: one of the two corridors crossing there is a main
-## road. Every junction on the spine is signalled and no other one is, which is what makes the
-## lights a property of the street rather than a scattering of them.
-func is_signalled(junction: Vector2i) -> bool:
+## Whether a junction has lights standing on it at all: one of the two corridors crossing there is
+## a main road. Every junction on the spine has them and no other one does, which is what makes the
+## lights a property of the street rather than a scattering of them. A fact about the lattice, so
+## the blackout does not change it — see `is_signalled()` for the question the traffic asks.
+func has_lights(junction: Vector2i) -> bool:
 	return _map.is_main_road(true, junction.x)
+
+## Whether a light is deciding this junction right now: it has lights, and they have power.
+##
+## **A dark light decides nothing**, so a spine junction in the blackout is a junction of two
+## streets with nobody deciding it, and the crowd's own give-way rule — nearest first, then right
+## before left — takes it, exactly as it takes every side street's. The spine's traffic still does
+## not give way at a zebra (that is the street's kind, not its light), so what keeps a crossing of
+## it fair in the dark is the side street's contract, the painted carriageway and the horn; see
+## `Tuning.validate_signals()`.
+func is_signalled(junction: Vector2i) -> bool:
+	return powered and has_lights(junction)
 
 ## Which axis is the *main* arm of a junction — the one that gets the long green. Always the
 ## north-south one, because there is one main road and it runs north to south. Kept as a function
