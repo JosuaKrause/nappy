@@ -3357,7 +3357,8 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## ground the collision does not hold. Insetting so the cap's *outer* edge lands on `±half` makes
 ## the drawn extent equal the obstructed one, matching the segments rather than overhanging them.
 ## A cap is an upright post on both axes, so it is drawn at its own size and its width is what it
-## covers along the run whichever way the run goes (`_cap_along`).
+## covers along the run whichever way the run goes (`_cap_along`). End-on, the far post stands
+## behind the board and the near one in front of it (`_cap_sides`).
 ## `origin` moves the whole spread, its shadow included, to a local point other than this node's
 ## own — which is what a body left standing while its owner walks away needs (`_draw_roadblock()`,
 ## `EventDef.body_stays_behind`). Zero, the default, is every other caller: the spread is drawn
@@ -3371,15 +3372,36 @@ func _draw_spread(segment_picture: String, cap: String = "", canvas: CanvasItem 
 	var thickness := segment.x if _spread_vertical else segment.y
 	var segments := maxi(1, ceili(half * 2.0 / along_natural))
 	var width := half * 2.0 / segments
+	var cap_size := _native_size(cap) if not cap.is_empty() else Vector2.ZERO
+	if not cap.is_empty():
+		for side: float in _cap_sides(_spread_vertical, true):
+			_draw_cap(canvas, cap, cap_size, origin, half, side)
 	for i in segments:
 		Sprites.draw_standing(canvas, _drawn(segment_picture),
 				origin + _spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
-	if cap.is_empty():
-		return
-	var cap_size := _native_size(cap)
-	for side in [-1.0, 1.0]:
-		Sprites.draw_standing(canvas, _drawn(cap),
-				origin + _spread_at(_cap_offset(half, _cap_along(cap_size), side)), cap_size)
+	if not cap.is_empty():
+		for side: float in _cap_sides(_spread_vertical, false):
+			_draw_cap(canvas, cap, cap_size, origin, half, side)
+
+## One end cap of a spread, standing at its end of the run — see `_draw_spread`.
+func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vector2, half: float,
+		side: float) -> void:
+	Sprites.draw_standing(canvas, _drawn(cap),
+			origin + _spread_at(_cap_offset(half, _cap_along(cap_size), side)), cap_size)
+
+## Which end caps are drawn before the segments (`behind` true) and which after, as the `side` of
+## each (−1 the start of the run, +1 its end). The whole spread is one node, so nothing y-sorts
+## within it and draw order is the only depth there is. Broadside, both posts stand level with the
+## board and go over it. End-on, the run goes away from the camera: the start is its far end, so
+## that post stands behind the board and is drawn first, and only the near post goes over it.
+static func _cap_sides(vertical: bool, behind: bool) -> Array[float]:
+	var sides: Array[float] = []
+	if vertical:
+		sides.append(-1.0 if behind else 1.0)
+	elif not behind:
+		sides.append(-1.0)
+		sides.append(1.0)
+	return sides
 
 ## A whole-scene picture is one body, including on an east-west street. Its vertical asset is
 ## fitted to the obstruction's diameter, so its standing point moves to the far end of the

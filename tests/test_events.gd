@@ -429,6 +429,17 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 	t.check(half - offset <= cap_size.x and offset > last_segment_feet,
 			"end-on, the near post stands at the barrier's end (%.1f of %.1f), beyond the last"
 			% [offset, half] + " segment's feet (%.1f)" % last_segment_feet)
+	# The spread is one node, so draw order is its only depth. End-on, the side drawn behind the
+	# board has to be the far end, up the screen (`_spread_at` puts side −1 at negative y), and
+	# the near end is the only one drawn over it; broadside, both stand level with the board.
+	var behind := EventInstance._cap_sides(true, true)
+	var in_front := EventInstance._cap_sides(true, false)
+	t.check(behind.size() == 1 and behind[0] < 0.0 and in_front.size() == 1 and in_front[0] > 0.0,
+			"end-on, the far post is drawn behind the board (%s) and only the near one over it (%s)"
+			% [behind, in_front])
+	t.check(EventInstance._cap_sides(false, true).is_empty()
+			and EventInstance._cap_sides(false, false).size() == 2,
+			"broadside, both posts are drawn over the board")
 
 ## **A whole-scene hard seal has to use a distinct authored picture on either axis and span its
 ## obstruction at the ground point.** `EventInstance._wide_scene_texture` is the pure selector

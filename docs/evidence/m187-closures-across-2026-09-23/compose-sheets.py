@@ -20,7 +20,8 @@ before above after:
              `ClosureMarker._draw()` puts under it.
   roadworks  the `construction` barrier broadside and end-on, segments and end posts placed with
              `EventInstance._draw_spread`'s arithmetic: BEFORE insets an end-on post by half its
-             picture's height, AFTER by half its own footprint, the post's width.
+             picture's height and draws both posts over the board, AFTER insets it by half its
+             own footprint, the post's width, and draws the far post behind the board.
 
 With no SHEET named, both.
 """
@@ -161,10 +162,15 @@ def roadworks_block(pics, after, s):
         standing(c, pics["barrier_segment"], 60 - half + w * (i + 0.5), 70, w, 22, s)
     for side in (-1, 1):
         standing(c, pics["barrier_end"], 60 + side * (half - cap_w / 2), 70, cap_w, cap_h, s)
+    inset = cap_w / 2 if after else cap_h / 2
+    # `EventInstance._cap_sides`: end-on, AFTER draws the far post before the board and only the
+    # near one over it; BEFORE drew both over it.
+    behind, in_front = ((-1,), (1,)) if after else ((), (-1, 1))
+    for side in behind:
+        standing(c, pics["barrier_end"], 190, 72 + side * (half - inset), cap_w, cap_h, s)
     for i in range(seg):
         standing(c, pics["barrier_segment_vertical"], 190, 72 - half + w * (i + 0.5), 14, w, s)
-    inset = cap_w / 2 if after else cap_h / 2
-    for side in (-1, 1):
+    for side in in_front:
         standing(c, pics["barrier_end"], 190, 72 + side * (half - inset), cap_w, cap_h, s)
     # The obstruction's own extent, as two ticks either side of each run.
     d = ImageDraw.Draw(c)
