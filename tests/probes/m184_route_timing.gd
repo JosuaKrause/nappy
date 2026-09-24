@@ -159,6 +159,10 @@ func _parse_log(path: String) -> Dictionary:
 		elif text.contains("day ended"):
 			outcome = "%s before '%s' at %.1fs" % [text.get_slice("(", 1).get_slice(")", 0),
 					target, elapsed]
+		elif text.contains("ran out before reaching"):
+			# `RouteRig._out_of_day()`: under `--invincible` nothing else ends a route that does not
+			# fit its day, so this is the "no" this table exists to find.
+			outcome = "out of day before '%s'" % target
 		elif text.contains("unavailable, skipping"):
 			reached[target + "_skip"] = "unavailable"
 		elif text.contains("no path to") or text.contains("no longer reachable"):
