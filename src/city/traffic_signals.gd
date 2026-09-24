@@ -49,7 +49,7 @@ func advance(delta: float) -> void:
 ## road. Every junction on the spine is signalled and no other one is, which is what makes the
 ## lights a property of the street rather than a scattering of them.
 func is_signalled(junction: Vector2i) -> bool:
-	return junction.x == _map.main_road
+	return _map.is_main_road(true, junction.x)
 
 ## Which axis is the *main* arm of a junction — the one that gets the long green. Always the
 ## north-south one, because there is one main road and it runs north to south. Kept as a function

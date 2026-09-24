@@ -1481,6 +1481,12 @@ func _start_day() -> void:
 	# tree's own pit. `City.start_day` already emptied the pits its own closures took, so this is
 	# the second half of one refresh rather than a repair of it — see `City.refresh_street_trees`.
 	_city.refresh_street_trees()
+	# Before `start_at` is read, not merely before the player is placed: `DevRig.spawn_position()`'s
+	# own `contact` target reads `resistance.contact_position()` directly, and on the first day —
+	# the only day that target's answer decides where she starts — the mark has to already be on
+	# offer when this line runs, not merely by the time the day is shown to her.
+	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
+			DevRig.day_length(GameState.day))
 	var start_at := DevRig.spawn_position(_city, _resistance) if _first_day else doorstep
 	_city.events.stream_around(start_at)
 	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), start_at)
@@ -1489,8 +1495,6 @@ func _start_day() -> void:
 	# are — empty before `Tuning.REGION_WALL_FIRST_DAY`, which is a harmless no-op day for `Crowd`.
 	_city.crowd.set_gates(_city.region_plan().gates)
 	_city.set_act(GameState.current_act())
-	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
-			DevRig.day_length(GameState.day))
 	_player.reset_at(start_at)
 	_baby.reset()
 	_day.start(DevRig.day_length(GameState.day))
