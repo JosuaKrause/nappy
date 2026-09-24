@@ -16,7 +16,7 @@ const RULE_SEEDS := 3
 func run(t) -> void:
 	_test_step_table(t)
 	_test_step_selection(t)
-	_test_days_ten_and_eleven_offer_no_mark(t)
+	_test_day_ten_offers_no_mark(t)
 	_test_the_finale_needs_the_legwork(t)
 	_test_touching_completes_a_pickup(t)
 	_test_walking_away_leaves_it_untouched(t)
@@ -56,6 +56,7 @@ func run(t) -> void:
 	_test_the_door_task_sits_at_a_region_door(t)
 	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
+	_test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_the_narrow_targets_are_reachable_on_their_day(t)
@@ -79,8 +80,7 @@ func _test_step_table(t) -> void:
 		t.check(step.index == previous_index + 1, "step indices run consecutively from 1")
 		t.check(step.day >= previous_day, "steps unlock in calendar order")
 		if step.available:
-			t.check(step.placement.size() > 0
-					or step.target_kind in ResistanceSteps.NARROW_KINDS,
+			t.check(step.placement.size() > 0 or ResistanceSteps.sits_on_a_bare_point(step),
 					"step %d knows where it goes" % step.index)
 		if step.is_pickup:
 			t.check(not step.grants_progress, "a pickup does not grant progress")
@@ -92,8 +92,7 @@ func _test_step_table(t) -> void:
 			t.check(perform != null and not perform.is_pickup and perform.day == step.day,
 					"step %d's mark unlocks a perform step on the same day" % step.index)
 		elif not step.needs_goal and step.available:
-			t.check(step.task_event_id != "" or step.target_kind in [
-					ResistanceSteps.TargetKind.DOOR, ResistanceSteps.TargetKind.PARK_SWING],
+			t.check(step.task_event_id != "" or ResistanceSteps.sits_on_a_bare_point(step),
 					"perform step %d names what it rides on or how it finds its own place"
 					% step.index)
 			available_performs += 1
@@ -135,19 +134,21 @@ func _test_step_selection(t) -> void:
 	var later := ResistanceSteps.for_day(8, done, failed, false)
 	t.check(later != null and later.index == 5, "but the run carries on to the next task's mark")
 
-func _test_days_ten_and_eleven_offer_no_mark(t) -> void:
+func _test_day_ten_offers_no_mark(t) -> void:
 	var none: Array[int] = []
 	t.check(ResistanceSteps.for_day(10, none, none, false) == null,
-			"day 10 (warn the neighbor) waits on a later slice and offers no mark")
-	t.check(ResistanceSteps.for_day(11, none, none, false) == null,
-			"day 11 (silence a mast) waits on a later slice and offers no mark either")
-	# But the day after either one still finds its own task — an unavailable day never blocks
-	# the calendar behind it.
-	var next := ResistanceSteps.for_day(12, none, none, false)
-	t.check(next != null and next.index == 11, "day 12 offers the swing's own mark regardless")
+			"day 10 (warn the neighbor) is not built and offers no mark")
+	# But the day after it still finds its own task — an unavailable day never blocks the
+	# calendar behind it.
+	var next := ResistanceSteps.for_day(11, none, none, false)
+	t.check(next != null and next.is_pickup and next.day == 11,
+			"day 11 offers the mast's own mark regardless")
 
 func _test_the_finale_needs_the_legwork(t) -> void:
-	var done: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14]
+	var done: Array[int] = []
+	for step in ResistanceSteps.all():
+		if not step.needs_goal:
+			done.append(step.index)
 	var none: Array[int] = []
 	t.check(ResistanceSteps.for_day(Tuning.RUN_LENGTH_DAYS, done, none, false) == null,
 			"the finale is not offered to a player who has not earned it")
@@ -248,7 +249,7 @@ func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 	instance.set_process(false)
 
 	var contact := ContactPoint.new()
-	contact.ride(ResistanceSteps.by_index(14), instance, Vector2(90.0, 0.0))
+	contact.ride(_perform_on(13), instance, Vector2(90.0, 0.0))
 	t.add_child(contact)
 	contact.set_physics_process(false)
 
@@ -303,6 +304,14 @@ func _with_clean_run(action: Callable) -> void:
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
 	GameState.resistance_carrying_package = saved_package
+
+## The perform step on `day` — named by its day rather than by its index, so a task added earlier
+## in the calendar does not renumber every test after it.
+func _perform_on(day: int) -> ResistanceSteps.Step:
+	for step in ResistanceSteps.all():
+		if step.day == day and not step.is_pickup and not step.needs_goal:
+			return step
+	return null
 
 func _completed_through(last_index: int) -> Array[int]:
 	var done: Array[int] = []
@@ -1499,8 +1508,9 @@ func _test_the_swing_task_sits_at_an_open_playground(t) -> void:
 
 		var director := _director(t)
 		director.start_day(12, _rng(12, "resistance"), 300.0)
-		director._on_contact_completed(11)
-		t.check(director.current_step() != null and director.current_step().index == 12,
+		director._on_contact_completed(_perform_on(12).index - 1)
+		t.check(director.current_step() != null
+				and director.current_step().index == _perform_on(12).index,
 				"touching day 12's mark activates the swing perform")
 		t.check(director._rider == null, "the swing sits on a bare point, not a rider")
 
@@ -1514,6 +1524,65 @@ func _test_the_swing_task_sits_at_an_open_playground(t) -> void:
 		t.check(on_a_swing, "exactly at one open park's own swing")
 
 		director.free())
+
+## Day 11: touching the mark sends her, by the red arrow, to the foot of one live mast; reaching it
+## silences that mast now and on every later day, through the scar it leaves — planned through the
+## real day order, since the masts are the day's own plans.
+func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
+	_build_city(t)
+	var saved_scars := GameState.scars.duplicate(true)
+	var saved_day := GameState.day
+	GameState.scars.clear()
+	GameState.day = 11
+	_with_clean_run(func() -> void:
+		var day := 11
+		var state := CityState.new()
+		state.begin_day(_city.map.block_plans, day)
+		_city.start_day(state, day, _rng(day, "closures"))
+		_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+		var director := _director(t)
+		director.start_day(day, _rng(day, "resistance"), 300.0)
+		var mark := director.current_step()
+		t.check(mark != null and mark.is_pickup, "day 11 offers a mark")
+		director._on_contact_completed(mark.index if mark else -1)
+		var task := director.current_step()
+		t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.MAST,
+				"touching it sends her to a mast")
+		var mast_id := director._mast_id
+		var foot := _city.events.mast_foot(mast_id)
+		t.check(mast_id != "" and foot != Vector2.INF
+				and director.contact_position().distance_to(foot) <= Tuning.TILE_SIZE + 0.5,
+				"the contact stands beside the foot of a live mast")
+		t.check(director.red_arrow_target() == director.contact_position(),
+				"and the red arrow points at it")
+
+		director._on_contact_completed(task.index if task else -1)
+		var silenced_today := true
+		for plan in _city.events.plans():
+			if plan.mast_id == mast_id and not plan.silenced:
+				silenced_today = false
+		t.check(silenced_today, "reaching it silences that mast today")
+		var others_live := false
+		for plan in _city.events.plans():
+			if plan.mast_id != "" and plan.mast_id != mast_id and not plan.silenced:
+				others_live = true
+		t.check(others_live, "and only that mast")
+
+		# The next morning, planned from the run's own scars.
+		var tomorrow := EventScheduler._place_masts(day + 1, _city.map, 0,
+				PackedVector2Array(), GameState.scars)
+		var quiet_tomorrow := false
+		var live_tomorrow := false
+		for plan in tomorrow:
+			if plan.mast_id == mast_id:
+				quiet_tomorrow = plan.silenced
+			elif not plan.silenced:
+				live_tomorrow = true
+		t.check(quiet_tomorrow, "it is still silenced the next day")
+		t.check(live_tomorrow, "while the others speak")
+		director.free())
+	GameState.scars = saved_scars
+	GameState.day = saved_day
 
 # ----------------------------------------------------------------- red arrow ---
 

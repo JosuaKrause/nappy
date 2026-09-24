@@ -95,6 +95,9 @@ var _contact: ContactPoint
 ## `DOOR`/`PARK_SWING` step, all of which sit on a bare tile instead.
 var _rider: EventInstance
 var _step: ResistanceSteps.Step
+## The `MastSites.Site.id` of the mast day 11's task was sent to, "" on every other step — kept so
+## the touch silences the mast the arrow pointed at rather than whichever is nearest her then.
+var _mast_id := ""
 var _elapsed := 0.0
 var _day_length := 0.0
 var _expired := false
@@ -176,7 +179,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 ## instead of two. `ResistanceSteps.TargetKind` decides how a non-pickup, non-finale step finds
 ## its own place: a fresh rider (`EVENT`), the run's own recorded scar (`SCAR`, falling back to
 ## an ordinary placement of the same row when the run has none), or a bare point this director
-## computes itself (`ResistanceSteps.NARROW_KINDS`).
+## computes itself (`ResistanceSteps.sits_on_a_bare_point()`).
 func _begin_step(step: ResistanceSteps.Step) -> void:
 	_step = step
 	if not _step:
@@ -204,7 +207,7 @@ func _begin_step(step: ResistanceSteps.Step) -> void:
 		_rider = scar_instance
 		_contact.ride(_step, scar_instance, offset)
 		at = scar_instance.global_position + offset
-	elif _step.is_pickup or _step.target_kind in ResistanceSteps.NARROW_KINDS:
+	elif _step.is_pickup or ResistanceSteps.sits_on_a_bare_point(_step):
 		_contact.setup(_step, at)
 	else:
 		var task_def := EventCatalogue.by_id(_step.task_event_id)
@@ -431,6 +434,8 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 		return _place_at_a_door(rng)
 	if step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		return _place_at_a_swing(rng)
+	if step.target_kind == ResistanceSteps.TargetKind.MAST:
+		return _place_at_a_mast(rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
@@ -469,6 +474,65 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 		return Vector2.INF
 	return _pick_reachable(ResistanceSteps.target_candidates(
 			_step_of_kind(ResistanceSteps.TargetKind.PARK_SWING), _map, null), rng)
+
+## Where day 11's task points: beside the foot of one of today's live loudspeaker masts
+## (`EventManager.mast_foot()`'s own point, the plan's position), drawn by the day's RNG among the
+## masts she can reach. `Vector2.INF` if today stands none, which from `Tuning.MAST_FIRST_DAY` on
+## only a day whose holds took every site could do.
+##
+## **Reachable is asked of the ground beside the foot, not of the foot.** The pole is a body
+## (`EventScheduler.blocked_by()` paints its disc over the foot's own tile), and she touches it
+## from beside it the way she touches a chalk mark: `ContactPoint.REACH` (36px) is more than the
+## pole's reach and her own body together, and a neighboring tile's centre is one tile (32px) from
+## the foot. So a mast counts when one of the four tiles beside its foot is legal, unobstructed
+## ground reachable from home — the same refusals every placement in this file keeps — and the
+## contact stands on the first such tile, so it is on ground she can stand on like every other
+## contact, a tile from the pole.
+##
+## **A mast already silenced is not offered again**, which only a run whose day 11 was replayed
+## after a won attempt could meet; the draw is over the plans in the day's own order, so the same
+## day draws the same mast every time.
+func _place_at_a_mast(rng: RandomNumberGenerator) -> Vector2:
+	_mast_id = ""
+	if not _city or not _city.events:
+		return Vector2.INF
+	var walled_alleys := _walled_alleys()
+	var offered: Array[EventScheduler.Planned] = []
+	var beside: Array[Vector2i] = []
+	for plan in _city.events.plans():
+		if plan.mast_id == "" or plan.def.id != "loudspeaker" or plan.silenced \
+				or not plan.is_placed():
+			continue
+		var foot := _map.world_to_tile(plan.position)
+		if _map.is_closed(foot) or _map.is_on_home_block(foot):
+			continue
+		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var tile := foot + side
+			if is_legal_ground(_map, tile, walled_alleys) and not _map.is_obstructed(tile) \
+					and _reachable_from_home(tile):
+				offered.append(plan)
+				beside.append(tile)
+				break
+	if offered.is_empty():
+		return Vector2.INF
+	var index := rng.randi_range(0, offered.size() - 1)
+	_mast_id = offered[index].mast_id
+	return _map.tile_to_world(beside[index])
+
+## Silences the mast day 11 sent her to, for the rest of the run: today through
+## `EventManager.silence_mast()`, and every later day through the scar it leaves
+## (`EventScheduler.SILENCED_MAST`), which `EventScheduler._place_masts()` reads before a mast's plan
+## is ever made. A scar rather than a field of its own on `GameState` because it is exactly what a
+## scar is — a permanent mark on the city left by what happened on an earlier day — and so it is
+## saved, and given back with a lost day, by what already does both for the burnt shell.
+func _silence_the_mast() -> void:
+	if _mast_id == "" or not _city or not _city.events:
+		return
+	var foot := _city.events.mast_foot(_mast_id)
+	_city.events.silence_mast(_mast_id)
+	if foot != Vector2.INF:
+		GameState.add_scar(EventScheduler.SILENCED_MAST, foot)
+	Telemetry.note("contact", "mast %s is silenced for the rest of the run" % _mast_id)
 
 ## The calendar's one step that places its contact `kind`'s way — `DOOR` or `PARK_SWING` — so the
 ## two placements above read their pool through `ResistanceSteps.target_candidates()`, the function
@@ -945,6 +1009,10 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.task_event_id == "homeless_yeller" and _rider and is_instance_valid(_rider):
 		_rider.leave_for_a_completed_task()
 		Telemetry.note("contact", "he took it and is leaving")
+	# The mast she reached goes quiet where she stands: its lamp goes out and its arcs stop, which
+	# is the world answering, and it stays quiet for the rest of the run.
+	if step and step.target_kind == ResistanceSteps.TargetKind.MAST:
+		_silence_the_mast()
 	# Day 12's once-only happening — the park she was sent to starts to close once she has
 	# reached the swing — is a later slice's, on the same fork `_place_at_a_swing()` names: it
 	# needs `EventScheduler`/`ClosurePlanner`, out of this slice's scope fence. This is the hook:
@@ -965,6 +1033,7 @@ func _clear() -> void:
 		_contact.queue_free()
 	_contact = null
 	_rider = null
+	_mast_id = ""
 
 # ------------------------------------------------------------------ queries ---
 

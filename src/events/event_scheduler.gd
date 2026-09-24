@@ -185,7 +185,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 
 	planned.append_array(_place_ambient(day, map, heat))
 	planned.append_array(_place_scars(day, scars, heat))
-	planned.append_array(_place_masts(day, map, heat, doors))
+	planned.append_array(_place_masts(day, map, heat, doors, scars))
 	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
 			leave_alone, corridor, heat, doors)
@@ -740,8 +740,13 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## On `Tuning.CURFEW_ANNOUNCE_DAY` every standing site also gets a `curfew_announce` plan
 ## alongside its ordinary `loudspeaker` one — see that row's own doc for why a second, invisible
 ## plan is what "the masts carry the announcement" means rather than a second mast.
+##
+## **A mast she silenced on an earlier day stands silenced**: `scars` carries a `SILENCED_MAST`
+## entry at its foot (`ResistanceDirector._silence_the_mast()`), and its plans are made with
+## `Planned.silenced` already set — the pole and horns are there, the lamp is out and there is no
+## field, for the rest of the run.
 static func _place_masts(day: int, map: CityMap, heat: int = 0,
-		doors := PackedVector2Array()) -> Array[Planned]:
+		doors := PackedVector2Array(), scars: Array[Dictionary] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
 		return planned
@@ -755,20 +760,36 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 		if not _clear_of_the_doors(site.foot, PackedVector2Array(), doors,
 				loudspeaker.field_reach()):
 			continue
+		var quiet := _was_silenced(site.foot, day, scars)
 		var mast := Planned.new(loudspeaker, site.foot)
 		mast.mast_id = site.id
+		mast.silenced = quiet
 		planned.append(mast)
 		if curfew:
 			var announcement := Planned.new(curfew, site.foot)
 			announcement.mast_id = site.id
+			announcement.silenced = quiet
 			planned.append(announcement)
 	return planned
+
+## The scar id a mast she silenced leaves at its foot. No catalogue row answers it, so
+## `_place_scars` places nothing for it; `_place_masts` is its only reader.
+const SILENCED_MAST := "silenced_mast"
+
+## Whether a `SILENCED_MAST` scar from an earlier day stands at `foot` — within a tile, since the
+## foot a scar records and the foot a site computes are the same point read twice.
+static func _was_silenced(foot: Vector2, day: int, scars: Array[Dictionary]) -> bool:
+	for scar in scars:
+		if String(scar["id"]) == SILENCED_MAST and int(scar["since_day"]) < day \
+				and (scar["position"] as Vector2).distance_to(foot) < Tuning.TILE_SIZE:
+			return true
+	return false
 
 ## Permanent marks left by earlier days, placed again exactly where they happened.
 static func _place_scars(day: int, scars: Array[Dictionary], heat: int = 0) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	for scar in scars:
-		if int(scar["since_day"]) >= day:
+		if int(scar["since_day"]) >= day or String(scar["id"]) == SILENCED_MAST:
 			continue
 		var def := EventCatalogue.by_id(String(scar["id"]))
 		if def:

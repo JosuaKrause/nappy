@@ -582,8 +582,8 @@ func retire(instance: EventInstance) -> void:
 		instance._finish()
 
 ## Today's own foot for a mast id, or `Vector2.INF` if today carries no mast with that id — the
-## point M181's day-11 task (silence a mast by reaching its foot, the way she touches a chalk
-## mark) needs a red arrow and a touch radius stated against. Reads the ordinary broadcast's own
+## point day 11's task (silence a mast by reaching its foot, the way she touches a chalk mark)
+## records its scar at. Reads the ordinary broadcast's own
 ## plan, which always exists for a live mast's id; the curfew announcement shares the same foot.
 func mast_foot(mast_id: String) -> Vector2:
 	for plan in _plans:
@@ -598,10 +598,10 @@ func mast_foot(mast_id: String) -> Vector2:
 ## one — a mast's ordinary broadcast and, on `Tuning.CURFEW_ANNOUNCE_DAY`, its curfew announcement
 ## too, so silencing a mast mid-announcement silences both at once.
 ##
-## **Run-long persistence (M181's day-11 task) is not built here.** The id this takes is
-## `MastSites.Site.id`, stable across days, so a caller that wants "stays quiet for the rest of the
-## run" has a name to remember past today — the natural next step is a `GameState`-held set of
-## silenced ids, read here before a mast plan is even added to `_plans`, the same way a scar is.
+## **Run-long, it is a scar.** Day 11's task silences one mast for the rest of the run: the
+## director calls this for today and records `EventScheduler.SILENCED_MAST` at the foot, which
+## `EventScheduler._place_masts()` reads on every later day. The id is `MastSites.Site.id`, stable
+## across days, and the foot is its own.
 func silence_mast(mast_id: String) -> bool:
 	var found := false
 	for plan in _plans:

@@ -20,7 +20,9 @@ extends RefCounted
 ## - `PARK_SWING` sits at the swing of one specific park's playground, also a bare point.
 ## - `STATION_DOOR` sits on the pavement in front of the power station's front door
 ##   (`CityMap.power_station_door`), a bare point — the last night's hand-over.
-enum TargetKind { EVENT, SCAR, DOOR, PARK_SWING, STATION_DOOR }
+## - `MAST` sits beside the foot of one of today's live loudspeaker masts, a bare point; reaching it
+##   silences that mast for the rest of the run.
+enum TargetKind { EVENT, SCAR, DOOR, PARK_SWING, STATION_DOOR, MAST }
 
 class Step extends RefCounted:
 	var index := 0
@@ -57,7 +59,7 @@ class Step extends RefCounted:
 	var needs_goal := false
 	## False for a day whose task is not yet built. `ResistanceSteps.for_day()` never returns
 	## such a step, so a day whose task is unavailable has no mark at all — see `_build()`'s own
-	## comment on days 10 and 11.
+	## comment on day 10.
 	var available := true
 	## The chalk mark's own words, announced the instant she touches it — see
 	## `ResistanceDirector._on_contact_completed()` and `Hud._on_resistance_step_completed()`.
@@ -83,8 +85,8 @@ static func all() -> Array[Step]:
 
 ## Only ever returns a pickup or the finale — a perform step is never offered at dawn, it is
 ## activated the instant its own mark is touched (`ResistanceDirector._on_contact_completed()`),
-## so `for_day()` has nothing to say about one. A day whose only step is `not available` (10, 11
-## this slice) answers null, which is what leaves it with no mark.
+## so `for_day()` has nothing to say about one. A day whose only step is `not available` (day 10)
+## answers null, which is what leaves it with no mark.
 static func for_day(day: int, completed: Array[int], failed: Array[int],
 		goal_met: bool) -> Step:
 	for step in all():
@@ -103,6 +105,12 @@ static func for_day(day: int, completed: Array[int], failed: Array[int],
 ## tile type or a rider — and so the kinds `narrow_target_on()` answers for.
 const NARROW_KINDS: Array[TargetKind] = [TargetKind.DOOR, TargetKind.PARK_SWING,
 		TargetKind.STATION_DOOR]
+
+## Whether `step`'s contact is a bare point this director computes from today's city rather than
+## a rider — the narrow kinds and a mast's foot. A mast is not narrow: six of them stand across the
+## city, and the task takes whichever live one the day's draw lands on.
+static func sits_on_a_bare_point(step: Step) -> bool:
+	return step != null and (step.target_kind in NARROW_KINDS or step.target_kind == TargetKind.MAST)
 
 ## Whether `step`'s contact may stand on held ground (`CityMap.is_held_at`). A hold keeps a
 ## catalogue row off ground something else has taken, and a contact is not a row: day 9's door
@@ -269,32 +277,38 @@ static func _build() -> Array[Step]:
 		_perform(8, "The crossing", 9, "", [], true, TargetKind.DOOR, false,
 				"the district door"),
 
-		# Days 10 and 11 wait on a later slice: day 10 (warn the neighbor before the raid,
-		# with a deadline) needs a new figure in the event catalogue, and day 11 (silence a
-		# loudspeaker mast) waits on M180, posters she notices, and loudspeakers that are
-		# somewhere, to give the mast a body and a field to silence. `_unavailable()` keeps the
-		# calendar's own shape complete without offering either mark.
-		_unavailable(9, "Warn the neighbor", 10),
-		_unavailable(10, "Silence a mast", 11),
+		# Day 10 · warn the neighbor before the raid — not built yet. `_unavailable()` keeps the
+		# calendar's own shape complete without offering the mark.
+		_unavailable(9, "Another mark", 10),
+		_unavailable(10, "Warn the neighbor", 10),
+
+		# Day 11 · silence a loudspeaker mast — one place, red arrow. She reaches its foot, as she
+		# touches a mark, and it stays quiet for the rest of the run; its field makes the approach
+		# cost while it broadcasts, so timing it between broadcasts is the skill. The rehearsal:
+		# a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own.
+		_mark(11, "Another mark", 11,
+				"Silence the loudspeaker mast. Its wire comes down at the foot."),
+		_perform(12, "Silence a mast", 11, "", [], true, TargetKind.MAST, false,
+				"the loudspeaker mast"),
 
 		# Day 12 · the swing on the playground of one specific park — one place, red arrow. A
 		# calm area is not reusable, so the park she is sent to is whichever one this run's
 		# playgrounds still leave open today; see `ResistanceDirector._place_at_a_swing()` for
 		# why "forced open whatever its state" is not this slice's to build.
-		_mark(11, "Another mark", 12, "Go to the swing. Get there before they close the gate."),
-		_perform(12, "The swing", 12, "", [], true, TargetKind.PARK_SWING, false,
+		_mark(13, "Another mark", 12, "Go to the swing. Get there before they close the gate."),
+		_perform(14, "The swing", 12, "", [], true, TargetKind.PARK_SWING, false,
 				"the park's own swing"),
 
 		# Day 13 · walk into a roadblock's band — any of them. The army arrived that morning;
 		# nobody looks twice at a parent walking a baby who won't settle. A roadblock is solid, so
 		# the words ask how close she gets rather than for a way through it.
-		_mark(13, "Another mark", 13,
+		_mark(15, "Another mark", 13,
 				"Walk up to the roadblock. See how close they let you come."),
-		_perform(14, "The roadblock", 13, "roadblock",
+		_perform(16, "Into a roadblock's band", 13, "roadblock",
 				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], false, TargetKind.EVENT,
 				false, "the roadblock"),
 
 		# The finale, offered only to a player who already did the work: the power station's
 		# front door, one place, by the red arrow. She hands the key over there and walks away.
-		_finale(15, "The last night", Tuning.RUN_LENGTH_DAYS, "the power station's front door"),
+		_finale(17, "The last night", Tuning.RUN_LENGTH_DAYS, "the power station's front door"),
 	]

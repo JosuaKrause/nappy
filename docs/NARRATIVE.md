@@ -115,6 +115,7 @@ that through the day before the last night:
 | 7 | The package | The delivery van's own drop. Picking it up makes the pram heavier for the rest of the day. | red |
 | 8 | The burnt shell | Wherever this run's own day-3 fire left its scar. | red |
 | 9 | The crossing | One of that day's own region doors, the first day the wall stands at all. | red |
+| 11 | Silence a mast | The foot of one live loudspeaker mast, drawn among those she can reach. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. | red |
 | 12 | The swing | The playground of one specific park. | red |
 | 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's hut — rather than round it. | any instance |
 | 14 | The last night | The power station's front door, offered only once the goal is met. Touching it is the sabotage. | red |
