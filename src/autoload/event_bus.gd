@@ -41,5 +41,5 @@ signal resistance_step_completed(step: int)
 signal resistance_step_failed(step: int)
 ## A contact is on offer somewhere in the city today.
 signal resistance_contact_available(step: int)
-## The sabotage went through and the masts went quiet.
+## The blackout came and the masts went quiet with the power.
 signal city_went_quiet()
