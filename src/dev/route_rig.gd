@@ -185,6 +185,15 @@ var _stuck_streak := 0
 ## after — see `_note_what_caught_her()`. Cleared when a leg begins, since a body that pinned her on
 ## the way to the mark says nothing about the walk to the park.
 var _leg_avoid := {}
+## Every tile a body's clearance has covered since the leg began — see `_known_clear()`.
+var _leg_clear := {}
+## Every tile a door's reach has covered since the leg began — see `_known_doors()`.
+var _leg_doors := {}
+## Every door body's crossing line seen since the leg began — see `_known_doors()`.
+var _leg_door_lines := {}
+## How many times each door has held her this leg, by the door's own tile — see
+## `_held_at_a_door()`.
+var _door_holds := {}
 ## Which way is away from whatever caught her last — the sum of her slide collisions' own normals,
 ## each of which points from the thing she touched toward her. `Vector2.ZERO` when nothing solid
 ## was touching her (a crowd she was pressing into, or a hold), which leaves `_begin_unstick()` its
@@ -202,6 +211,8 @@ var _leg_step: ResistanceSteps.Step
 ## what lets `_maybe_replan()` re-plan when a body newly streamed in reaches over a waypoint, without
 ## re-planning every check onto a plan that had to give the clearance up to find a way at all.
 var _plan_kept_clear := false
+## The same for the doors' reach (`_known_doors()`).
+var _plan_kept_doors := false
 ## Whether a door was holding her at the last walking frame — see `_held_at_a_door()`.
 var _held := false
 ## Where she stood at the last physics frame, and whether she has moved further than
@@ -258,6 +269,10 @@ func start_day() -> void:
 	_stuck_streak = 0
 	_stuck_reference = Vector2.INF
 	_leg_avoid = {}
+	_leg_clear = {}
+	_leg_doors = {}
+	_leg_door_lines = {}
+	_door_holds = {}
 	_caught_away = Vector2.ZERO
 	_leg_step = null
 	_held = false
@@ -563,6 +578,66 @@ func _body_clear_tiles(margin: float = _BODY_CLEARANCE) -> Dictionary:
 			near.merge(_tiles_near_body(instance, margin))
 	return near
 
+## `_body_clear_tiles()` now, together with every tile it has answered since the leg began
+## (`_leg_clear`). **A body she has walked away from has not gone**: `EventManager` streams an
+## instance out once she is far enough from it and back in as she comes near, so a plan that only
+## knew the live ones re-planned onto a street whose body had streamed out, met it streaming back
+## in a few tiles on, re-planned back — day 9 on seed 90210 walked one block between two such
+## streets until the run was killed.
+func _known_clear() -> Dictionary:
+	_leg_clear.merge(_body_clear_tiles())
+	return _leg_clear
+
+## `_door_tiles()` now, together with every tile it has answered since the leg began
+## (`_leg_doors`), for the streaming reason `_known_clear()` gives — less every crossing line seen
+## since (`_leg_door_lines`), since a hut seen before the gate beside it streamed in keeps the gate's
+## line inside its own reach.
+func _known_doors() -> Dictionary:
+	_leg_doors.merge(_door_tiles(_leg_door_lines))
+	var known := _leg_doors.duplicate()
+	for tile: Vector2i in _leg_door_lines:
+		known.erase(tile)
+	return known
+
+## Every tile whose centre lies within a live door's reach — `EventDef.detain_distance()` from a
+## `checkpoint_hut` or `checkpoint_gate` (80px), plus `_ARRIVE_RADIUS` for the corner she cuts at a
+## waypoint — except the tiles on any door body's own crossing line, the row or column through it
+## along `EventInstance.facing_now()`, which is the axis the door sets her down across.
+##
+## **A door takes her in whether or not she meant to cross it**, and sets her down on its far side:
+## a plan down the next column of tiles past a door, crossing the street two tiles from it, was
+## taken in by one hut and set down on the wrong side of the wall, crossed back through the gate,
+## and taken in again by the hut on the far pavement, until the leg gave up. **And the crossing
+## line stays open** because a door is the only way through its wall: keeping out of the whole
+## reach sent a plan across the city to a door it had not seen yet, where it met that door's reach
+## and set off for the next one.
+func _door_tiles(lines: Dictionary = {}) -> Dictionary:
+	var near := {}
+	for instance: EventInstance in _city.events.instances():
+		if instance.is_finished or instance.def.detain_seconds <= 0.0:
+			continue
+		var door := instance.global_position
+		var axis := instance.facing_now().normalized()
+		var reach := instance.def.detain_distance() + _ARRIVE_RADIUS
+		var centre_tile := _city.map.world_to_tile(door)
+		var span := ceili(reach / Tuning.TILE_SIZE) + 1
+		for dy in range(-span, span + 1):
+			for dx in range(-span, span + 1):
+				var tile := centre_tile + Vector2i(dx, dy)
+				var offset := _city.map.tile_to_world(tile) - door
+				if offset.length() > reach:
+					continue
+				if axis != Vector2.ZERO and absf(offset.cross(axis)) < Tuning.TILE_SIZE * 0.5:
+					lines[tile] = true
+				else:
+					near[tile] = true
+	# `lines` is the caller's to keep, and filled here. A door is a hut on each pavement and a gate over the road a couple of tiles apart, so each
+	# body's crossing line lies inside its neighbours' reach: the lines are taken out of the whole
+	# door's reach, not only out of their own body's.
+	for tile: Vector2i in lines:
+		near.erase(tile)
+	return near
+
 ## The bodies `CityMap.obstructed_tiles` records too (`EventManager.obstructed_footprint()`): live
 ## and solid, and neither `mobile` — somewhere else by the time a plan gets there, the reason
 ## `_is_stationary_hazard()` gives — nor a door body, which is a crossing the day keeps open.
@@ -605,31 +680,41 @@ func _tiles_near_point(point: Vector2, margin: float) -> Dictionary:
 	return near
 
 ## The shortest walk that keeps to the sidewalk where it can (see the class doc, "Hugs the kerb"),
-## off every live hazard, clear of every body (`_body_clear_tiles()`) and off `avoid` — the ground
-## round what has already caught her this leg, `_leg_avoid`, `{}` for a first plan. Each
-## preference is given up, one at a time and weakest first, only where keeping it finds no way at
-## all: `avoid` first, since it is a detour of choice; then the body clearance, since a plan through
-## a gap her body does not fit is at least a plan the stall handling can work on; and only then the
-## hazards, so a guard that has boxed in the only way through skips the target rather than
-## reporting one unreachable that a wider margin merely made look that way. Smoothed by
-## `_simplify()` either way. Records whether the plan kept clear in `_plan_kept_clear`.
+## off every live hazard, clear of every body (`_known_clear()`), out of every door's reach
+## (`_known_doors()`, which leaves each door's own crossing line open) and off `avoid` — the ground
+## round what has already caught her this leg, `_leg_avoid`, `{}` for a first plan. Each preference
+## is given up, one at a time and weakest first, only where keeping it finds no way at all: `avoid`
+## first, since it is a detour of choice; then the doors' reach; then the body clearance, since a
+## plan through a gap her body does not fit is at least a plan the stall handling can work on; and
+## only then the hazards, so a guard that has boxed in the only way through skips the target rather
+## than reporting one unreachable that a wider margin merely made look that way. Smoothed by
+## `_simplify()` either way. Records which it kept in `_plan_kept_clear` and `_plan_kept_doors`.
 func _plan(from_tile: Vector2i, to_tile: Vector2i, avoid: Dictionary = {}) -> Array[Vector2i]:
-	var clear := _body_clear_tiles()
-	var guarded := clear.duplicate()
-	guarded.merge(avoid)
-	var attempts: Array[Dictionary] = [guarded]
+	var clear := _known_clear()
+	var doors := _known_doors()
+	var clear_and_doors := clear.duplicate()
+	clear_and_doors.merge(doors)
+	var everything := clear_and_doors.duplicate()
+	everything.merge(avoid)
+	# Each tier: what it keeps off, whether that includes the bodies' clearance, and the doors'.
+	var tiers: Array = [[everything, true, true]]
 	if not avoid.is_empty():
-		attempts.append(clear)
+		tiers.append([clear_and_doors, true, true])
+	if not doors.is_empty():
+		tiers.append([clear, true, false])
 	if not clear.is_empty():
-		attempts.append({})
-	for keep_off in attempts:
+		tiers.append([{}, false, false])
+	for tier: Array in tiers:
+		var keep_off: Dictionary = tier[0]
 		var path := _shortest(from_tile, to_tile, true, keep_off)
 		if path.is_empty():
 			path = _shortest(from_tile, to_tile, false, keep_off)
 		if not path.is_empty():
-			_plan_kept_clear = clear.is_empty() or not keep_off.is_empty()
+			_plan_kept_clear = tier[1] or clear.is_empty()
+			_plan_kept_doors = tier[2] or doors.is_empty()
 			return _simplify(path)
 	_plan_kept_clear = clear.is_empty()
+	_plan_kept_doors = doors.is_empty()
 	return _simplify(_shortest(from_tile, to_tile, false, {}, false))
 
 ## `to_tile` is dropped from the hazard set before it blocks anything — the fairness contract that
@@ -778,6 +863,10 @@ func _to_world(path: Array[Vector2i]) -> Array[Vector2]:
 
 func _begin_leg(target_world: Vector2) -> void:
 	_leg_avoid = {}
+	_leg_clear = {}
+	_leg_doors = {}
+	_leg_door_lines = {}
+	_door_holds = {}
 	_caught_away = Vector2.ZERO
 	_leg_step = null
 	if (_current_word == "mark" or _current_word == "task") and _resistance:
@@ -852,6 +941,8 @@ func _follow(delta: float) -> void:
 ## made once `_teleported` sees her land.
 func _held_at_a_door() -> bool:
 	if _player.is_detained():
+		if not _held and _count_the_door():
+			return true
 		_held = true
 		_release()
 		_stuck_reference = Vector2.INF
@@ -866,6 +957,37 @@ func _held_at_a_door() -> bool:
 		_replan()
 		return _waypoints.is_empty() or _resolving
 	return false
+
+## How many times one door may hold her in a leg before the leg is given up on. Twice is an
+## ordinary crossing and a crossing back — a plan that has to come back through the door it just
+## used — while a third is a loop: the plan through one door leading round to another whose far
+## side leads back to the first, which no count of stalls ever ended, because a hold is not a
+## stall.
+const _DOOR_HOLDS_PER_LEG := 2
+
+## Counts a new hold against the door holding her — the nearest live door body (`detain_seconds`)
+## — and gives the leg up once one door has held her more than `_DOOR_HOLDS_PER_LEG` times.
+## Answers whether it gave up.
+func _count_the_door() -> bool:
+	var here := _player.global_position
+	var door := Vector2i(-1, -1)
+	var nearest := INF
+	for instance: EventInstance in _city.events.instances():
+		if instance.is_finished or instance.def.detain_seconds <= 0.0:
+			continue
+		var distance := here.distance_to(instance.global_position)
+		if distance < nearest:
+			nearest = distance
+			door = _city.map.world_to_tile(instance.global_position)
+	var holds: int = _door_holds.get(door, 0) + 1
+	_door_holds[door] = holds
+	if holds <= _DOOR_HOLDS_PER_LEG:
+		return false
+	_held = false
+	_caught_tile = _city.map.world_to_tile(here)
+	_caught_by = "the door at %s, holding her %d times" % [TelemetryLog.tile(door), holds]
+	_give_up_stuck()
+	return true
 
 ## Checked every `_REPLAN_INTERVAL`: a remaining waypoint that has closed or is now obstructed, or
 ## — whatever the tiles say — that she has covered less than `_STUCK_DISTANCE` since the last
@@ -898,6 +1020,7 @@ func _maybe_replan(delta: float) -> void:
 		# re-plan after waiting, the maneuver — goes round that body and backs away from it.
 		_note_what_caught_her()
 		if _stuck_streak == 1:
+			Telemetry.note("route", "ZZ replan: stuck at %s by %s" % [_caught_tile, _caught_by])
 			_replan()
 		elif _stuck_streak == 2:
 			if _leg_stall_episodes >= _LEG_MAX_STALL_EPISODES:
@@ -913,11 +1036,14 @@ func _maybe_replan(delta: float) -> void:
 		return
 	# Only while the live plan kept clear: a plan that had to give the clearance up to find a way at
 	# all would be re-planned onto the same ground every check.
-	var clear := _body_clear_tiles() if _plan_kept_clear else {}
+	var clear := _known_clear().duplicate() if _plan_kept_clear else {}
+	if _plan_kept_doors:
+		clear.merge(_known_doors())
 	for i in _waypoints.size():
 		var point: Vector2 = _waypoints[i]
 		var tile := _city.map.world_to_tile(point)
 		if not _city.map.is_open(tile) or _city.map.is_obstructed(tile):
+			Telemetry.note("route", "ZZ replan: wp %d %s obstructed %s, she at %s" % [i, tile, _city.map.is_obstructed(tile), _city.map.world_to_tile(_player.global_position)])
 			_replan()
 			return
 		# The first remaining waypoint is wherever she already legally is (about to be popped this
@@ -929,6 +1055,12 @@ func _maybe_replan(delta: float) -> void:
 		# safe enough to stand on, rather than catching a hazard newly astride ground *between* the
 		# two she has not reached yet. A body's clearance is exempted for the same two ends.
 		if i > 0 and i < _waypoints.size() - 1 and (clear.has(tile) or _is_hazardous(point)):
+			Telemetry.note("route", "ZZ replan: wp %d %s clear %s door %s hazard %s, she at %s" % [i, tile, _leg_clear.has(tile), _leg_doors.has(tile), _is_hazardous(point), _city.map.world_to_tile(_player.global_position)])
+			if _leg_doors.has(tile):
+				for inst: EventInstance in _city.events.instances():
+					if inst.def.detain_seconds > 0.0 and inst.global_position.distance_to(point) < 200.0:
+						Telemetry.note("route", "ZZ   door %s at %s tile %s facing %s finished %s" % [inst.def.id, inst.global_position, _city.map.world_to_tile(inst.global_position), inst.facing_now(), inst.is_finished])
+				Telemetry.note("route", "ZZ   path %s" % [_waypoints.slice(maxi(0, i - 3), i + 4).map(func(w: Vector2) -> Vector2i: return _city.map.world_to_tile(w))])
 			_replan()
 			return
 
