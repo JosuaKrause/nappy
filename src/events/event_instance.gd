@@ -791,6 +791,9 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.STEAM: return STEAM
 		EventDef.Look.LOUDSPEAKER_MAST: return MAST
 		EventDef.Look.NEIGHBOR: return NEIGHBOR
+		# The side view rather than `GUARD_LUNGING`, which is `MASKED_PURSUER`'s badge: the same man,
+		# and the one picture of his that no other look already stands for.
+		EventDef.Look.DOOR_GUARD: return str(GUARD_LUNGING_BY_VIEW["side"])
 		_: return ""
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
@@ -1316,10 +1319,42 @@ func _build_halo() -> void:
 	add_child(_halo)
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
-## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` — and
-## false through the notice of a `solid_once_it_starts` row, which is what that flag is for.
+## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` —
+## false through the notice of a `solid_once_it_starts` row, which is what that flag is for, and
+## false while a boom (`EventDef.lifts_for_traffic`) stands raised.
 func is_solid() -> bool:
-	return _obstruction != null
+	return _obstruction != null and not (def.lifts_for_traffic and is_raised())
+
+## Whether this boom's arm is up right now — `RegionPlanner.GateState.raised`, which only `Crowd`
+## writes. `false` with no `gate_state`, the same safe default the drawing reads: a gate that has
+## not been wired to the cars is a lowered one.
+func is_raised() -> bool:
+	return gate_state != null and gate_state.raised
+
+## A boom's body follows its arm: solid while it is down, not while it is up. *(2026-09-24, the
+## player: "I didn't say it should stay solid when it's open".)* Called once a frame from
+## `_process()`; the shapes are switched rather than the body freed and rebuilt, so nothing that
+## holds the body — the debug view's bounding-box layer — ever sees it vanish.
+##
+## **It never comes down on her, and that is `Crowd`'s half, not this one's.** The arm is the one
+## fact both halves read, and `Crowd._stop_for_gates()` does not lower it while she is under it, so
+## the body cannot go down around her: following the arm is enough. Deferred, because the switch
+## can land while the physics server is mid-query.
+func _let_the_body_follow_the_arm() -> void:
+	if not def.lifts_for_traffic or _obstruction == null:
+		return
+	var open := is_raised()
+	if open == _arm_was_open:
+		return
+	_arm_was_open = open
+	for child in _obstruction.get_children():
+		var collision := child as CollisionShape2D
+		if collision:
+			collision.set_deferred("disabled", open)
+
+## What `_let_the_body_follow_the_arm()` last set the shapes to, so a boom standing still in either
+## position costs a comparison rather than a deferred call a frame.
+var _arm_was_open := false
 
 ## The body of a `solid_once_it_starts` row, put down the frame its notice ends — **unless she is
 ## standing in it**, in which case the vent goes on emitting at full rate and stays passable until
@@ -1429,6 +1464,7 @@ func _process(delta: float) -> void:
 			_obstruction = null
 
 	_become_solid_once_it_starts()
+	_let_the_body_follow_the_arm()
 
 	if def.look == EventDef.Look.UNMARKED_VAN:
 		_update_the_take()
@@ -1634,7 +1670,14 @@ func _chase(delta: float) -> void:
 	if is_telegraphing():
 		# **It closes to the stand-off, holds it, and lunges when she reaches it.** The lunge is
 		# fired by *her* rather than by the clock, whichever comes first — see `_lunged`.
-		if range_to_her <= standoff:
+		#
+		# **Unless it set off beside her** (`EventDef.sets_off_beside_her`): spawned inside its own
+		# stand-off, the lunge would fire on its first frame, so the notice runs its whole length
+		# and it neither lunges early nor backs off — it holds its ground while she is nearer than
+		# the stand-off and follows at it once she is further.
+		if def.sets_off_beside_her:
+			step = clampf(range_to_her - standoff, 0.0, step)
+		elif range_to_her <= standoff:
 			_lunged = true
 		else:
 			step = minf(step, range_to_her - standoff)
@@ -3284,7 +3327,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [GUARD_STANDING])
 		EventDef.Look.IMPACT_CRATER:
 			_collect(sources, [IMPACT_CRATER])
-		EventDef.Look.MASKED_PURSUER:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM, STEAM_B])
@@ -3432,7 +3475,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
 		EventDef.Look.IMPACT_CRATER:
 			_draw_crater(canvas)
-		EventDef.Look.MASKED_PURSUER:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD:
 			_draw_masked_pursuer(canvas)
 		EventDef.Look.STEAM:
 			_draw_simple(STEAM_B if _idle_stepping(STEAM_BILLOW_PERIOD) else STEAM, canvas)
@@ -3795,7 +3838,8 @@ static func _cap_along(cap_size: Vector2) -> float:
 func _draw_crater(canvas: CanvasItem = self) -> void:
 	_draw_at_anchor(canvas, IMPACT_CRATER, _CRATER_ANCHOR)
 
-## A masked man coming up a stairwell: the `guard_standing_*` family while the telegraph is running
+## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
+## its boom — the same man: the `guard_standing_*` family while the telegraph is running
 ## and `guard_lunging_*` once it is over and he is actually on her line — the same two postures
 ## `_draw_roadblock()` swaps between when a heated roadblock's guards leave the post, on a row that
 ## was never a barrier and so has no band to swap *out of*. Read from his own travel heading

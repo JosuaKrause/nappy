@@ -126,8 +126,10 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	_crew_rng.seed = hash("%d:crews-on-her-way" % rng.seed)
 	for plan in plans:
 		# A door body is read off the same list, so "where do today's doors stand" is answered once,
-		# by the plan, rather than by a second wire from the region planner to here.
-		if plan.def.redetains and plan.is_placed():
+		# by the plan, rather than by a second wire from the region planner to here. The huts and
+		# posts are the bodies that inspect her and the boom is the one that does not; all three
+		# keep their clear ground.
+		if (plan.def.redetains or plan.def.lifts_for_traffic) and plan.is_placed():
 			_doors.append(plan.position)
 		# A place the day budgeted and left unsited, read off the same list for the same reason.
 		if plan.def.sited_on_her_way and not plan.is_placed():

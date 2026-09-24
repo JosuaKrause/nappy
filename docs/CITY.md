@@ -1515,7 +1515,8 @@ them, at the wall's own three positions (`SealPlanner.positions_across` at `Tuni
 which comes out at three across `STREET_WIDTH`); an alley door gets a single `checkpoint_post` at
 each of its two mouths. `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` build them
 alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a hut or a post —
-see docs/EVENTS.md, "Checkpoints" — the gate only ever stops a car, never her.
+see docs/EVENTS.md, "Checkpoints" — and the gate never inspects her: lowered it is a wall across the
+carriageway, and raised for a car it is ground she may walk under.
 
 **A door keeps clear ground around itself, and nothing the day places may reach into it.**
 `Tuning.CHECKPOINT_EVENT_GAP` (176px) is measured from each door body, so it covers both sides of

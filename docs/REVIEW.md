@@ -42,6 +42,11 @@ item below for as long as looking takes.
   210 s and curfew days 180 s. **Does day 6 still feel shorter — "we don't have as much time" —
   and do the early days feel roomy rather than like waiting for dusk?** Record is `DECISIONS.md`,
   M192, a curfew day is the old full day.
+- **Try the boom at a checkpoint** (`--day 9` or later; wait at a door on the road until a car
+  raises the arm). Walk under it once walking and once running. **Does the chance read as a
+  temptation, and does the guard stepping out of the hut read as the price?** Is running away
+  from him possible but hard, and does the arm staying up while she is under it look right?
+  Record is `DECISIONS.md`, M100, the boom never inspects her.
 - **Play days 10 to 14 as a run would** (`--day 10` and on, `--invincible` to stay as long as
   looking takes). Day 10: the neighbor walking home under the red arrow, and the raid's vans and
   patrol at her building — *"we will have to see how that one feels"* (PLAYTEST-122). **Does the

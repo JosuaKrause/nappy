@@ -92,6 +92,10 @@ enum Look {
 	# ---- the story's own figure ----
 	NEIGHBOR,         ## The neighbor down the hall, in work clothes: steel-blue coveralls with a
 	                  ## reflective band and a dark work cap — the face on the wanted notice.
+	# ---- the region door's own guard, off his post ----
+	DOOR_GUARD,       ## The guard a door sets on her when she walks under its raised boom — the
+	                  ## same man in the same two postures as `MASKED_PURSUER` and a heated
+	                  ## roadblock's guard, badged by his side view.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -504,6 +508,23 @@ func departure_speed() -> float:
 ## `pursues_within_on()` below, not this field directly; see that function for how the two stay in
 ## step with what an instance sees.
 @export var pursues_within := 0.0
+
+## Whether this pursuer **sets off beside her** — spawned already inside its own stand-off
+## (`Tuning.pursuit_standoff()`), rather than sited or noticing her outside it the way every other
+## pursuer is. `door_guard` is the one row: he steps out of a hut a few strides from where she has
+## just walked under the boom.
+##
+## **Its notice cannot be the approach, so it is the ground held.** An ordinary pursuer spends its
+## telegraph closing to the stand-off, holding it, and lunging the moment she comes inside it —
+## which, from a hut's width away, is a lunge on its first frame and a catch with no notice at all.
+## So through the telegraph this one never lunges early and never backs off: it holds its ground
+## while she is nearer than the stand-off and follows at the stand-off once she is further, and the
+## chase starts when the notice has run its whole length. Walking away still loses — at the end of
+## the notice he is at the stand-off and faster than her walk — and running still wins. The price
+## is the trap a stand-off exists to avoid, and it is taken knowingly: a player who walks *into*
+## him during his notice is caught when it ends, having been shown him standing there for all of
+## it. `EventInstance._chase()` reads it.
+@export var sets_off_beside_her := false
 ## What `pursues_within_on()` answers once `day` is past `spawn_mode_switches_after_day`. Unread
 ## while that is 0.
 @export var pursues_within_after_first_day := 0.0
@@ -739,6 +760,23 @@ func detain_distance() -> float:
 ## directions with the same cost each time"* — so `checkpoint_hut` and `checkpoint_post` are the
 ## only two rows that set it. `EventManager._check_detentions()` is what reads it.
 @export var redetains := false
+
+## Whether this row is a **boom** — a bar across a door's carriageway that the cars raise and lower
+## (`Crowd._stop_for_gates()`, through the `RegionPlanner.GateState` its instance carries), and
+## that is solid to her **only while it is down**. `checkpoint_gate` is the one row that sets it.
+##
+## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it
+## should stay solid when it's open".)* So it never detains: a lowered boom is a wall across the
+## road and a raised one is ground she may walk under, at the price of the car that raised it and of
+## the guard a walked crossing sets on her (`EventManager._set_a_guard_on_her()`). The inspection is
+## the huts' alone, and a hut never takes her in from the carriageway its own door's
+## boom spans — that ground is the boom's.
+##
+## Read in three more places, each because a boom is a door body that does not detain:
+## `EventManager.obstructed_footprint()` keeps it out of the crowd's per-tile record the way it
+## keeps the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's
+## clear ground around it, and `EventInstance` lets its collision body follow the arm.
+@export var lifts_for_traffic := false
 
 ## Whether this row is one of the region boundary's own structures — a street being held, however
 ## many bodies it takes to hold it. **Several of them charge the meter as one source, the strongest
@@ -1045,6 +1083,10 @@ func validate() -> bool:
 			push_error("event '%s' stops where it arrives and spawns '%s' when it finishes: it "
 					% [id, spawns_on_finish] + "does one or the other, never both")
 			return false
+	# The same shape: a stand-off rule for something that never chases is a decision nothing reads.
+	if sets_off_beside_her and not pursues:
+		push_error("event '%s' sets off beside her but never pursues" % id)
+		return false
 	# A flag nothing can read is a decision that silently did not happen: without a trigger there is
 	# no waiting state for `quiet_until_noticed` to quieten.
 	if quiet_until_noticed and pursues_within <= 0.0:

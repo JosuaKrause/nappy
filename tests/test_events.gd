@@ -736,7 +736,9 @@ func _test_no_other_rows_field_moved(t) -> void:
 func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 	var pursuers := 0
 	for def in EventCatalogue.all():
-		if not def.pursues:
+		# A pursuer that sets off beside her is never sited by the director, so this rig's geometry
+		# is not its own; `tests/test_checkpoints.gd` walks `door_guard` at a door instead.
+		if not def.pursues or def.sets_off_beside_her:
 			continue
 		pursuers += 1
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
@@ -799,7 +801,8 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 ## one. Widening it means a wider stand-off, and a wider stand-off is a dog that visibly reverses.
 func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 	for def in EventCatalogue.all():
-		if not def.pursues:
+		# Sited beside her rather than by the director — see `_test_a_pursuer_leaves_room_to_answer`.
+		if not def.pursues or def.sets_off_beside_her:
 			continue
 		var at_once := _answer_rig(def, 0.0)
 		t.check(not at_once["caught"],
@@ -851,7 +854,8 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 ## checking they still agree.
 func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 	for def in EventCatalogue.all():
-		if not def.pursues:
+		# Sited beside her by construction, which is what its own stand-off rule answers.
+		if not def.pursues or def.sets_off_beside_her:
 			continue
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
 		var floor_lead := Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED,

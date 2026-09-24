@@ -136,6 +136,7 @@ static func _build() -> Array[EventDef]:
 		_checkpoint_hut(),
 		_checkpoint_gate(),
 		_checkpoint_post(),
+		_door_guard(),
 
 		# Act III - vans.
 		_abduction(),
@@ -2389,20 +2390,23 @@ static func _checkpoint_hut() -> EventDef:
 	def.barrier_structure = true
 	return def
 
-## The boom over the roadway between a door's two huts. No field of its own — a car passing under
-## it costs her nothing whether or not she is anywhere near it — but it detains exactly like a hut
-## now, *(2026-09-10, the player, on stepping onto the gate's own ground while the boom is up for a
-## car: "attempting to do that should just start a regular checkpoint inspection".)* The toll was
-## paid only at the hut before this; a raised bar read as a way past at the bar itself, since
-## nothing stood on the gate's own tiles to catch her. `detain_radius` and `inner_radius` are the
-## hut's own numbers, for the hut's own reasons — the same reach past the same 32px body, inside
-## the same 84px disc. `outer_radius` (120px) is its own: it still comfortably clears
-## `Tuning.required_telegraph_time()` at that `inner_radius`, and nothing about it ties to the
-## field this row never had. Drawn raised or lowered from the shared
-## `RegionPlanner.GateState` `Crowd` keeps current for the day's cars; see `docs/TODO.md`, M62,
-## "cars need to slow down to a full stop." Placed with `Planned.facing` set along the street's own
-## axis, which is both what tells the drawing a north-south road from an east-west one and what
-## `EventManager`'s detention teleport reads back from a hut or a post at the same crossing.
+## The boom over the roadway between a door's two huts. **It never inspects her** *(2026-09-24,
+## the player: "Boom shouldn't inspect her. It should block her.")*: a lowered boom is a wall
+## across the carriageway, and a raised one is ground she may walk under *(2026-09-24: "I didn't
+## say it should stay solid when it's open")* — `lifts_for_traffic`, so its collision body follows
+## the arm and the cars decide the arm (`Crowd._stop_for_gates()`: up once a car has waited at it
+## `Tuning.GATE_STOP_SECONDS`, down the moment no car is within a length of it and she is not
+## under it). The inspection is the two huts' alone, and a hut does not take her in from the
+## carriageway this boom spans, so walking under a raised arm skips the toll — the unlawful
+## crossing `EventManager` watches for and sets a `door_guard` on her for.
+##
+## No field of its own — a car passing under it costs her nothing whether or not she is anywhere
+## near it — and `intensity` 0 on radii that exist only because `validate()` wants a falloff band:
+## `inner_radius` 84 and `outer_radius` 120, clear of `Tuning.required_telegraph_time()` at that
+## core. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current for
+## the day's cars. Placed with `Planned.facing` set along the street's own axis, which tells the
+## drawing a north-south road from an east-west one and is the door's own line for the walk-under
+## check.
 static func _checkpoint_gate() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint_gate"
@@ -2416,9 +2420,7 @@ static func _checkpoint_gate() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.point(32.0))
-	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
-	def.redetains = true
+	def.lifts_for_traffic = true
 	def.barrier_structure = true
 	return def
 
@@ -2443,6 +2445,47 @@ static func _checkpoint_post() -> EventDef:
 	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
 	def.barrier_structure = true
+	return def
+
+## The guard a street door sets on her when she walks under its raised boom. *(2026-09-24, the
+## player: "The guards should start pursuing her in that case" · "Or guards that pursue her should
+## spawn at the huts" · "The day ends, not going through the checkpoint is a clear unlawful thing
+## here. She gets detained/imprisoned or whatever in that case. This is independent of the
+## resistance. She shouldn't do it. One guard is enough".)* Nothing places it but
+## `EventManager._set_a_guard_on_her()`: `SCRIPTED` on day 0 like the rest of the door's kit, so the
+## ordinary roll never reaches it, stepping out of the wall of the door's hut nearer to her on the
+## side she crossed to. The guards drawn at the huts stay at their posts, so the door stays manned.
+##
+## **The roadblock's hunting guard is the pursuer copied**, and so is the man: the same eight-view
+## `guard_standing_*`/`guard_lunging_*` pictures, `Tuning.HEAT_HUNTS_SPEED` (130px/s, between her
+## walk and her run by the pursuit contract's own margin), the roadblock's 1.8s notice, a chase of
+## `Tuning.PURSUIT_TIME` after it, and `MASKED_MAN_REACH` (28px) as the catch, which is the core of
+## his own field here since the field is the man. **`hard_fail` in its own right, not through
+## `heat_response`**: a catch is a detention on every day a door stands and at every heat level,
+## never a rung of the resistance's ladder. The field is `masked_pursuer`'s — 18 over a 28–120px
+## band, the same figure coming at her.
+##
+## **`sets_off_beside_her`, because he does.** A hut's width from her is well inside his 106px
+## stand-off, so the ordinary rule would lunge on his first frame; instead his notice is spent
+## holding his ground and then following at the stand-off, and cannot be cut short. See that field.
+static func _door_guard() -> EventDef:
+	var def := EventDef.new()
+	def.id = "door_guard"
+	def.display_name = "Guard giving chase"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.DOOR_GUARD
+	def.shape = GroundShape.point(9.0)
+	def.act_tag = 3
+	def.intensity = 18.0
+	def.inner_radius = MASKED_MAN_REACH
+	def.outer_radius = 120.0
+	def.telegraph_time = 1.8
+	def.duration = Tuning.PURSUIT_TIME
+	def.pursues = true
+	def.pursue_speed = Tuning.HEAT_HUNTS_SPEED
+	def.sets_off_beside_her = true
+	def.hard_fail = true
 	return def
 
 # ------------------------------------------------------------------ the finale ---

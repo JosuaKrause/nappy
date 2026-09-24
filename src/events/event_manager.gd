@@ -71,6 +71,18 @@ var _consumed: Array[String] = []
 ## and clears it the frame the conversation ends. See `EventDef.redetains`.
 var _door_entry_side: Dictionary = {}
 
+## Where she stood the last time `_watch_the_door_lines()` looked, and how many outright moves
+## (`Stroller.outright_moves`) she had had by then — the frame-to-frame step the walk-under check
+## reads. `Vector2.INF` until the first look of a day, so a day's first frame compares nothing.
+var _last_seen_at := Vector2.INF
+var _last_outright_moves := 0
+## How many times today she has walked across a door's line rather than being let through it.
+## Read by `walks_under_a_boom()`; the run log has a line for each.
+var _walked_under := 0
+## The guard a walked crossing last set on her, or `null` — one at a time, see
+## `_set_a_guard_on_her()`.
+var _guard_after_her: EventInstance = null
+
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
 ## the frame the release teleports her, with that instance's own trigger circle, and holding until
 ## she is measured outside it: the far side of a door is inside the door's own reach, so without
@@ -336,6 +348,9 @@ func clear() -> void:
 		_map.clear_day_obstructions()
 	_door_entry_side.clear()
 	_door_release_latches.clear()
+	_last_seen_at = Vector2.INF
+	_walked_under = 0
+	_guard_after_her = null
 	_sighted.clear()
 	_broadcast_clock = 0.0
 
@@ -479,9 +494,10 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 	if not map or def == null or def.shape == null or def.obstructs_radius <= 0.0:
 		return nothing
 	# A moving wall pins her, so the catalogue exempts anything mobile from being solid at all; a
-	# door is a crossing the day means to keep open, answered for a walker by `WalkerDoorHold` and
-	# for a car by `Crowd._stop_for_gates()`.
-	if def.mobile or def.detain_seconds > 0.0:
+	# door is a crossing the day means to keep open, answered for a walker by `WalkerDoorHold` at a
+	# hut or a post and for a car by `Crowd._stop_for_gates()` at the boom — which detains nobody,
+	# so it is named by its own flag rather than by `detain_seconds`.
+	if def.mobile or def.detain_seconds > 0.0 or def.lifts_for_traffic:
 		return nothing
 	var placed := at
 	if def.pavement_side == EventDef.Pavement.ANY:
@@ -790,6 +806,7 @@ func _physics_process(delta: float) -> void:
 		_summon_what_has_been_sighted()
 		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()
+		_watch_the_door_lines()
 		_check_detentions()
 	_check_hard_fails()
 
@@ -1192,8 +1209,15 @@ func _tell_them_where_she_is() -> void:
 ## back through the door she has just come out of.
 ##
 ## **A `redetains` row is armed again once released, and what re-arms it is her leaving** — in
-## either direction. `checkpoint_hut`, `checkpoint_gate` and `checkpoint_post` are the three, and
-## this is the whole of what makes a door a toll rather than a one-time gate. `has_chatted()` is
+## either direction. `checkpoint_hut` and `checkpoint_post` are the two, and this is the whole of
+## what makes a door a toll rather than a one-time gate. The boom between a street door's huts is
+## not a third: it never inspects her (`EventDef.lifts_for_traffic`).
+##
+## **And a hut never takes her in from the carriageway its own door's boom spans.** A hut's trigger
+## reaches a reach past its wall, which is further than the kerb, so without this a hut would reach
+## out into the road and inspect her at the boom — the boom inspecting her in all but name, and a
+## raised boom never a way past. That ground is the boom's: lowered it blocks her, raised she may
+## walk under it. See `_on_a_booms_carriageway()`. `has_chatted()` is
 ## only the gate for everything else in the catalogue, since `chatting_mother`'s own contract is one
 ## conversation for good. A redetaining instance is skipped while it is chatting and then while its
 ## own `ReleaseLatch` holds — the far side of a door is a body's width away and the trigger reaches
@@ -1230,6 +1254,8 @@ func _check_detentions() -> void:
 		var latch: ReleaseLatch = _door_release_latches.get(instance)
 		if latch and latch.holds():
 			continue
+		if instance.def.redetains and _on_a_booms_carriageway(instance, body.global_position):
+			continue
 		var range_to := instance.global_position.distance_to(body.global_position)
 		if range_to > instance.def.detain_distance() or range_to >= nearest_range:
 			continue
@@ -1254,6 +1280,26 @@ func _check_detentions() -> void:
 		nearest.def.detain_seconds,
 		"awake" if nearest.baby_awake else "asleep",
 		("+%.0f" % Tuning.CHAT_EXCITEMENT) if nearest.baby_awake else "+0 (asleep)"])
+
+## Whether `at` is on the carriageway spanned by the boom of the door `door_body` stands in — a
+## live `lifts_for_traffic` instance on the same cross-street line (its own `facing_now()` axis),
+## with `at` no further across that line from the boom's centre than the boom's own body reaches.
+## The boom is laid over exactly the carriageway, so its reach is the carriageway's half-width and
+## this is "she is in the road at this door" stated over the door's own geometry rather than over
+## the map's tiles — the same datum the huts and the boom were placed from.
+##
+## `false` for an alley door, which has no boom, so a post's trigger is untouched.
+func _on_a_booms_carriageway(door_body: EventInstance, at: Vector2) -> bool:
+	for instance in _instances:
+		if not instance.def.lifts_for_traffic:
+			continue
+		var axis := instance.facing_now()
+		if absf((door_body.global_position - instance.global_position).dot(axis)) > 1.0:
+			continue
+		var offset := at - instance.global_position
+		if (offset - axis * offset.dot(axis)).length() <= instance.def.obstructs_radius:
+			return true
+	return false
 
 ## The other half of `checkpoint_hut`/`checkpoint_post`'s own toll: the moment a redetaining
 ## instance's conversation ends, teleport her to the mirror of where she stood, reflected through
@@ -1310,10 +1356,10 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 ## Arms a `ReleaseLatch` for **every** redetaining body whose own trigger `at` is inside, not only
 ## the one that just let her out.
 ##
-## A street door is three bodies a tile apart and their reaches overlap, so the far side of the gate
-## is inside a hut's reach: latching only the releasing body means being let out of the boom and
-## taken straight into the hut beside it, which is one crossing charged twice and, to the player,
-## the door refusing to let go. **One crossing is one toll** — *"it works in both directions with
+## Doors stand close enough together that their reaches overlap — two doors meeting at a corner —
+## so the ground one hut lets her out onto can be inside another door body's reach: latching only
+## the releasing body means being let out of one and taken straight into the next, which is one
+## crossing charged twice and, to the player, the door refusing to let go. **One crossing is one toll** — *"it works in both directions with
 ## the same cost each time"* — so what she has just come out of is the whole door, and every part of
 ## it waits until she has walked out of its own circle.
 func _latch_everything_she_was_let_out_into(at: Vector2) -> void:
@@ -1343,6 +1389,109 @@ func _update_door_release_latches(body: Stroller) -> void:
 			spent.append(instance)
 	for instance in spent:
 		_door_release_latches.erase(instance)
+
+# ------------------------------------------------------------ under the boom ---
+# *(2026-09-24, the player: "If a car opens it for her and she walks through she would probably get
+# hit by the car, no?" · "A yes".)* A raised boom is ground she may walk under, and that skips the
+# huts' inspection. **It is detected, not guessed**: a door's huts, its posts and a lowered boom are
+# solid, and an inspection's release is a teleport, so a crossing of a door's own line that she
+# *walked* is a crossing under a raised boom and nothing else. Nothing here asks where the arm is.
+#
+# *(2026-09-24: "The guards should start pursuing her in that case".)* **And it sets a guard on
+# her**, one, from the door's hut nearer to her; a catch ends the day, since *"not going through the
+# checkpoint is a clear unlawful thing here"*. See `EventCatalogue._door_guard()`.
+
+## How many times today she has walked across a door's line rather than being let through it —
+## the count `tests/test_route_rig.gd` holds a rig run to zero on.
+func walks_under_a_boom() -> int:
+	return _walked_under
+
+## Once a frame: whether she has crossed a door body's own cross-street line since the last look,
+## and no `Stroller.teleport_to()` (nor `reset_at()`) moved her in between. Run before
+## `_check_detentions()`, so a release that teleports her this frame is seen by the next look as
+## the outright move it is.
+##
+## **A door's line is its bodies' line, one body's width at a time.** Each door body — a hut, a
+## post, the boom — stands on the crossing's own cross-street line (the one an inspection's release
+## is reflected through, `facing_now()`'s axis), and the crossing counts against the body whose own
+## reach across that line it happened inside, so the three bodies of a street door cover the street
+## kerb to kerb between them and a line through a door never extends past the door.
+func _watch_the_door_lines() -> void:
+	var body := _player as Stroller
+	if not body:
+		return
+	var here := body.global_position
+	var was := _last_seen_at
+	var put_down := body.outright_moves != _last_outright_moves
+	_last_seen_at = here
+	_last_outright_moves = body.outright_moves
+	if was == Vector2.INF or put_down:
+		return
+	var crossed: EventInstance = null
+	for instance in _instances:
+		if not instance.def.redetains and not instance.def.lifts_for_traffic:
+			continue
+		if where_she_crossed(instance.global_position, instance.facing_now(),
+				instance.def.obstructs_radius, was, here) != Vector2.INF:
+			crossed = instance
+			break
+	if not crossed:
+		return
+	_walked_under += 1
+	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
+		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
+		_heading_name(here - was),
+		(", the boom up" if crossed.is_raised() else ", the boom down")
+		if crossed.def.lifts_for_traffic else ""])
+	_set_a_guard_on_her(crossed, here)
+
+## One `door_guard` after her, stepping out of the wall of the hut nearer to her — of the huts on the
+## crossed body's own line — on the side of the line she has crossed to. *(2026-09-24: "Or guards
+## that pursue her should spawn at the huts" · "One guard is enough".)* The guards drawn at the huts
+## stay at their posts; this is another man out of the door.
+##
+## **One at a time.** A second walk under the same boom while he is still after her sets nobody else
+## on her; once he has caught her, given up or run out his chase, the next walk under sets the next
+## one. A crossed alley post is its own door and its own guard, so he steps out of the post.
+func _set_a_guard_on_her(crossed: EventInstance, here: Vector2) -> void:
+	if is_instance_valid(_guard_after_her) \
+			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
+		return
+	var axis := crossed.facing_now()
+	var hut: EventInstance = null
+	var nearest := INF
+	for instance in _instances:
+		if not instance.def.redetains or instance.is_finished or instance.is_leaving:
+			continue
+		if absf(instance.facing_now().dot(axis)) < 0.99 \
+				or absf((instance.global_position - crossed.global_position).dot(axis)) > 1.0:
+			continue
+		var range_to := instance.global_position.distance_to(here)
+		if range_to < nearest:
+			nearest = range_to
+			hut = instance
+	if not hut:
+		return
+	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0
+	var at := hut.global_position + axis * side * hut.def.obstructs_radius
+	_guard_after_her = _spawn_unplanned(EventCatalogue.by_id("door_guard"), at)
+
+## Where the step from `was` to `here` crosses the line through `at` across `axis` — the door
+## body's own cross-street line — if it crosses it within `reach` of `at` along the line, or
+## `Vector2.INF` if it does not. Which side she is on is read the way `_check_detentions()` reads
+## an entry side: level with the line counts as the positive side, so standing on it is on one of
+## the two rather than on both.
+static func where_she_crossed(at: Vector2, axis: Vector2, reach: float, was: Vector2,
+		here: Vector2) -> Vector2:
+	var before := (was - at).dot(axis)
+	var after := (here - at).dot(axis)
+	if (before < 0.0) == (after < 0.0):
+		return Vector2.INF
+	var crossing := was.lerp(here, before / (before - after))
+	var offset := crossing - at
+	if (offset - axis * offset.dot(axis)).length() > reach:
+		return Vector2.INF
+	return crossing
 
 ## Which compass direction `along` (a signed distance down `axis`) points at — `axis` is always
 ## `Vector2.RIGHT` (an east-west street) or `Vector2.DOWN` (north-south, since Y grows downward on

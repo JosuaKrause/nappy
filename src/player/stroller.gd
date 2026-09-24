@@ -592,6 +592,13 @@ func release_camera_focus() -> void:
 func baby_is_awake() -> bool:
 	return _baby == null or _baby.state == GameEnums.BabyState.AWAKE
 
+## How many times she has been put somewhere outright rather than walked there — `teleport_to()`
+## and `reset_at()` each count one. `EventManager`'s walk-under check reads it to tell a door's line
+## she walked across from one she was set down across: an inspection's release puts her on the far
+## side of that same line, and that is the lawful way through. A count rather than a flag, so no
+## reader has to clear it and two readers cannot disagree about whether it has been seen.
+var outright_moves := 0
+
 ## Puts her at `where` outright — the checkpoint's own teleport, released from a detention on the
 ## far side of the band she was captured in. Nothing else in this game has ever moved the player;
 ## everywhere else "where she is" is the honest sum of what she pressed and what the world did to
@@ -612,6 +619,7 @@ func baby_is_awake() -> bool:
 ## caller.
 func teleport_to(where: Vector2) -> void:
 	global_position = where
+	outright_moves += 1
 	# Stops a one-tick slide from the old place: without it, physics interpolation draws her
 	# gliding from the band she was released in rather than simply standing at the door.
 	reset_physics_interpolation()
@@ -777,6 +785,7 @@ func _update_camera(delta: float) -> void:
 ## Puts the rig back on the doorstep at the start of a day, stopped and facing the street.
 func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	global_position = where
+	outright_moves += 1
 	# Stops a one-tick slide from the old place: a day boundary (or a finale section's own
 	# restart) has no previous frame worth drawing a glide from.
 	reset_physics_interpolation()

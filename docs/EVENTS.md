@@ -45,7 +45,9 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `hard_fail` | Whether contact ends the day immediately |
 | `lethal_radius` | How close the thing that ends the day has to get, when that is **not** the field's own core. `0` — almost every row — means `inner_radius`, and `lethal_reach()` is what every caller asks. It exists for a row whose killer is not what the field is drawn around: a `roadblock`'s field is cored on the barrier and its guard catches at a man's reach — see "The heat" |
 | `body_stays_behind` | Whether this row's body is a **fixture of the street** a pursuer leaves standing rather than the pursuer's own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built, so the street stays shut behind the man who left it |
-| `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the three region-door rows — see "Checkpoints" |
+| `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the two region-door rows that inspect her, `checkpoint_hut` and `checkpoint_post` — see "Checkpoints" |
+| `sets_off_beside_her` | Whether a pursuer starts **inside its own stand-off**, spawned beside her rather than sited or noticing her outside it. Its notice then cannot be cut short by her being close and it never backs off: it holds its ground, follows at the stand-off once she is further, and chases when the notice has run its whole length. `door_guard` is the one row — see "Checkpoints" |
+| `lifts_for_traffic` | Whether this row is a **boom**: a bar across a door's carriageway that the cars raise and lower, solid to her only while it is down, and never an inspection. `checkpoint_gate` is the one row — see "Checkpoints" |
 | `barrier_structure` | Whether this row is a piece of the region boundary — a street being held. The four that are (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`, `roadblock`) charge the meter as **one** source, the strongest at her position, rather than as their sum; everything else in the catalogue still sums — see "Checkpoints" |
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
@@ -390,14 +392,14 @@ loophole for a pursuer that kept its body and carried it along.
 ### Checkpoints
 
 A region door is solid, like anything else that stands still — `checkpoint_hut`,
-`checkpoint_gate` and `checkpoint_post` at 32px each — but it is not a closure. **A door is passable
-only by detention, and the toll is the same both ways.** She walks up to a hut, a gate or a post, is
-held for `Tuning.CHECKPOINT_DETAIN_SECONDS`, and comes out the other side of the crossing, on the
-same pavement lane she went in on: `EventManager` reflects her release position through the
-crossing's own cross-street line, sets her down just clear of the body by
+`checkpoint_gate` and `checkpoint_post` at 32px each — but it is not a closure. **The lawful way
+through is an inspection at a hut or a post, and the toll is the same both ways.** She walks up to a
+hut or a post, is held for `Tuning.CHECKPOINT_DETAIN_SECONDS`, and comes out the other side of the
+crossing, on the same pavement lane she went in on: `EventManager` reflects her release position
+through the crossing's own cross-street line, sets her down just clear of the body by
 `Tuning.CHECKPOINT_RELEASE_MARGIN`, and teleports her there — see `Stroller.teleport_to()`. Walking
-round a hut into its own solid body does not open it; the only way through is the conversation. All
-three rows set `redetains`, so the same body detains her again on the next approach, from either
+round a hut into its own solid body does not open it; the lawful way through is the conversation.
+Both rows set `redetains`, so the same body detains her again on the next approach, from either
 side — unlike `chatting_mother`, who is spent after her one conversation.
 
 **She is let out inside the door's own trigger, and a latch rather than distance is what keeps her
@@ -407,10 +409,10 @@ that throws her past the door is a teleport further than the door is wide. `Rele
 (`src/world/release_latch.gd`) is the flag instead: armed on the way out with the trigger's own
 circle, it holds until she is measured outside that circle, so standing where she was let out costs
 nothing however long she stands there and the toll comes back the moment she leaves and walks in
-again. **It is armed for every body of the door whose reach she lands in**, not only the one that
-let her out: a street door's three reaches overlap, so being released from the boom used to put her
-straight into the hut beside it, and one crossing has to be one toll. The building's own doors in
-the escape scene reuse the same class.
+again. **It is armed for every redetaining body whose reach she lands in**, not only the one that
+let her out: where two doors meet at a corner, the ground one hut lets her out onto can be inside the
+other door's reach, and one crossing has to be one toll. The building's own doors in the escape
+scene reuse the same class.
 
 **The hold starts a reach past the door body's own wall, not a radius from its middle.** Her centre
 is stopped `obstructs_radius + PLAYER_BODY_RADIUS` from a body it cannot walk through, and further
@@ -418,15 +420,62 @@ when the pram's body is between her and it, so a trigger stated from the middle 
 than whatever she is pushing that day — and when the pram moved, the hut became a wall she could
 stand against and never open. `EventDef.detain_distance()` is the same reach as a distance between
 centres, which is what `validate()` checks against `inner_radius` and what the release has to
-clear. **Only the nearest eligible body captures her**: the three bodies of a street door stand a
-tile apart and each reaches a reach past its own edge, so ground inside two of them at once exists,
-and two holds beginning together would end as two releases, the second sending her back through the
-door the first had just let her out of.
+clear. **Only the nearest eligible body captures her**: each body reaches a reach past its own edge
+and doors can stand close together — two meeting at a corner — so ground inside two triggers at once
+exists, and two holds beginning together would end as two releases, the second sending her back
+through the door the first had just let her out of.
 
-The gate over the road between a door's two huts carries no field of its own — a car passing under
-it costs her nothing — but it detains exactly as a hut does, because a raised bar is a fact about
-the car queue and never a way past her. See `docs/CITY.md`, "Regions and the wall", and
-`Crowd._stop_for_gates()`.
+**The boom never inspects her; it blocks her while it is down.** *(2026-09-24, the player: "Boom
+shouldn't inspect her. It should block her." · "I didn't say it should stay solid when it's
+open".)* The gate over the road between a door's two huts carries no field of its own — a car
+passing under it costs her nothing — and no detention: it is `lifts_for_traffic`, so its collision
+body follows the arm the cars work (`Crowd._stop_for_gates()`: up once a car has waited at it
+`Tuning.GATE_STOP_SECONDS`, 1.2s, down the moment no car is within a length of it). Lowered, it is a
+wall across the carriageway; raised, it is ground she may walk under, and the price is the car that
+raised it — she is on its carriageway, and the horn and the strike apply as on any street, under the
+traffic fairness contract `Tuning.validate_traffic()` states for every carriageway.
+
+**And a hut never takes her in from the carriageway its own door's boom spans.** A hut's trigger
+reaches a reach past its wall, which is further than the kerb, so without this the hut beside the
+boom would reach out into the road and inspect her there — the boom inspecting her in all but name.
+`EventManager._on_a_booms_carriageway()` is the test, stated over the door's own geometry: on the
+boom's cross-street line and no further across it than the boom's own body reaches, which is the
+carriageway. So walking up the road to a lowered boom is walking into a wall, and walking under a
+raised one skips the toll.
+
+**The arm never comes down on her.** Its body goes down with it, so an arm lowered with her — or
+the pram she is pushing — beneath it would put a solid body around her, which no warning can be an
+answer to. `Crowd._stop_for_gates()` keeps a raised gate up for as long as any of her rig is under
+it, as it already does for a car within a length; cars go on passing under it meanwhile. It is a
+precondition rather than a repair, since the arm never moves while she is there. See
+`docs/CITY.md`, "Regions and the wall".
+
+**Walking under a raised boom is detected, not guessed.** Every physics frame
+`EventManager._watch_the_door_lines()` asks whether she has crossed a door body's own cross-street
+line — the one an inspection's release is reflected through — within that body's own reach along
+it, since the last frame, with no `Stroller.teleport_to()` or `reset_at()` in between
+(`Stroller.outright_moves` counts them). The huts, the posts and a lowered boom are solid and a
+release is a teleport, so a crossing she walked is a crossing under a raised boom and nothing else;
+nothing asks where the arm is. The run log's `checkpoint` line records each one
+(`docs/TELEMETRY.md`), and `EventManager.walks_under_a_boom()` counts them for a rig.
+
+**And it sets a guard on her.** *(2026-09-24: "The guards should start pursuing her in that case" ·
+"Or guards that pursue her should spawn at the huts" · "The day ends, not going through the
+checkpoint is a clear unlawful thing here. She gets detained/imprisoned or whatever in that case.
+This is independent of the resistance. She shouldn't do it. One guard is enough".)* One `door_guard`
+steps out of the wall of the door's hut nearer to her, on the side she crossed to; the guards drawn
+at the huts stay at their posts, so the door stays manned. He is the roadblock's hunting guard
+copied — the same man in the same postures, 130px/s, the roadblock's 1.8s notice, a chase of
+`Tuning.PURSUIT_TIME` after it, and a catch at `MASKED_MAN_REACH` (28px) — under the ordinary
+pursuit contract: running outpaces him and `Tuning.PURSUIT_SHAKEN_OFF` of it makes him give up,
+walking away does not. A catch is `hard_fail` on every day a door stands and at every heat level,
+not a rung of the heat ladder, and the summary says she was taken in. **He sets off a hut's width
+from her, inside his own 106px stand-off** (`EventDef.sets_off_beside_her`): the ordinary rule
+would lunge on his first frame, so instead his notice runs its whole length while he holds his
+ground and then follows at the stand-off, and walking into him during it is caught when it ends.
+One at a time: a second walk under while he is after her sets nobody else on her.
+`tests/test_checkpoints.gd` walks the chase at the door's own geometry, since the catalogue's
+pursuer rigs walk the director's.
 
 **The boundary's structures charge as one source, never their sum.** *(2026-09-20, the player:
 "since two gates can be adjacent to each other their influence shouldn't add up" · "otherwise
@@ -1104,8 +1153,9 @@ neighbourhood's own rather than a patrol's.
 | `curfew_announce` | SCRIPTED | 6 | What the masts carry on `Tuning.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast — placed by `_place_masts()` at every mast site alongside that day's `loudspeaker` plan, `Look.NONE` so the mast's own picture (the pole, the lamp, the arcs) is what is seen. Same field shape as the ordinary broadcast, stronger (intensity 30 against 20), brief and fading (`intensity_ramp` 0.2, `duration` 26s). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
 | `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60), drawn as one continuous barrier (`roadblock_segment.svg`/`roadblock_end.svg`) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. **A guard stands at it from the moment it is placed** (the eight-view `guard_standing_*` family, drawn at the band's own centre), cold or hot; cold he is a drawing with no field, body or cost of his own. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it **that guard** is what sets off, from where he stood, coming at 130px/s once she is within 180px and switching to `guard_lunging_*`, turned to face where he is heading, when his 1.8s notice ends. The barrier he leaves stays drawn and stays solid where it was built (`body_stays_behind`), so the street stays shut behind him; the catch is `lethal_radius` 28px measured from **him**, a man's reach rather than a barricade's, and the band itself takes nobody. |
 | `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains for `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s) as she comes within `Tuning.CHECKPOINT_DETAIN_REACH` (48px) of its own solid edge — 80px from its centre, inside `inner_radius` 84px — and `redetains`, so the same hut tolls her again on a later approach from either side. A small `intensity` (4.0) over a tight 84/98px band is "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges, and it is deliberately not what makes the row expensive: it is one of the three **detainers** exempt from "nothing is cheaper to walk through than around", priced by its capture instead. Low because a door is several bodies and a hold earns no decay — see "Checkpoints" and the `barrier_structure` note above. |
-| `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two huts. No field of its own — a car passing under it costs her nothing — but it detains exactly as a hut does, on the hut's own numbers, so a raised bar is not a way past her at the bar itself. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current. |
+| `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two huts. No field of its own — a car passing under it costs her nothing — and **never an inspection**: `lifts_for_traffic`, so it is solid to her while the arm is down and ground she may walk under while a car holds it up, and it does not come down while any of her rig is beneath it. A hut beside it does not take her in from the carriageway it spans. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current. |
 | `checkpoint_post` | SCRIPTED | 7 | The alley half of a door: one guard at each mouth of a through-alley that crosses a region boundary. Detains exactly like `checkpoint_hut`, same numbers and the same `redetains`. |
+| `door_guard` **`hard_fail`** | SCRIPTED | 9 | The guard a door sets on her when she walks across its line rather than through a hut — under a raised boom — placed by `EventManager` alone, one at a time, stepping out of the wall of the nearer hut on the side she crossed to. The roadblock's hunting guard copied: the eight-view `guard_standing_*` then `guard_lunging_*`, 130px/s, a 1.8s notice, a `Tuning.PURSUIT_TIME` chase, a 28px catch (`MASKED_MAN_REACH`), and `masked_pursuer`'s field (18 over 28–120px). `hard_fail` on every day and at every heat, not through `heat_response`. `sets_off_beside_her`, so his notice is held ground rather than an approach — see "Checkpoints". His badge is the side view, the one picture of the man no other look stands for. |
 
 ### Act III — Disappearances (days 8–11)
 

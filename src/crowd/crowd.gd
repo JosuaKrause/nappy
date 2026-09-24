@@ -110,6 +110,22 @@ var _door_holds: Array[WalkerDoorHold] = []
 func set_gates(gates: Array[RegionPlanner.GateState]) -> void:
 	_gates = gates
 
+## How near a boom's own ground point her centre may come and still have some of her rig under it:
+## the boom's body (`checkpoint_gate`'s own shape, read off the row rather than copied here) plus
+## the furthest her rig reaches from her centre, which is the pram's body on her circumference
+## ahead of her (`Tuning.PLAYER_BODY_RADIUS` + `Stroller.PRAM_BODY_RADIUS`, the reach
+## `PosterWalls.PRESS_REACH` is built from too). Stated over the pram rather than over her alone, so
+## an arm cannot come down on the pram she is pushing under it either.
+static func _under_the_boom_within() -> float:
+	return EventCatalogue.by_id("checkpoint_gate").solid_reach() \
+			+ Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
+
+## Whether she is standing under this gate's arm, so it must not come down on her. `false` before
+## the first frame has found her, or in a rig with no player — nobody to lower it onto.
+func _is_she_under(gate: RegionPlanner.GateState) -> bool:
+	return _player != null \
+			and _player.global_position.distance_to(gate.position) <= _under_the_boom_within()
+
 func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
@@ -154,12 +170,11 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 		if plan:
 			for segment in plan.doors:
 				_door_segments[segment.key()] = true
-			# Every door body that **detains** — the hut on each sidewalk, the alley door's guard,
-			# and the boom, which detains her as well since a raised bar is not a way past. Which
-			# of them a given walker can be held at is a question about that walker's own line of
-			# travel rather than about the row, and `_hold_walkers_at_doors()` answers it: on an
-			# ordinary street the boom is a carriageway away from any sidewalk lane and only the
-			# hut is ever on one.
+			# Every door body that **detains** — the hut on each sidewalk and the alley door's
+			# guard. The boom over the road detains nobody (`EventDef.lifts_for_traffic`), and it
+			# is the cars' in any case: `_stop_for_gates()` is its answer. Which hut a given walker
+			# can be held at is a question about that walker's own line of travel rather than about
+			# the row, and `_hold_walkers_at_doors()` answers it.
 			for body in plan.door_bodies:
 				if body.def.detain_seconds <= 0.0:
 					continue
@@ -557,6 +572,14 @@ func give_way_at_junctions() -> void:
 ## remains within a car's length of it — a following platoon passes without the boom slamming shut
 ## between cars — then lowers and the timer resets for whoever queues next.
 ##
+## **And it never lowers onto her.** A raised boom is ground she may walk under
+## (`EventDef.lifts_for_traffic`), and its body goes back down with the arm, so an arm that came
+## down with her beneath it would put a solid body around her — a wall she is inside rather than in
+## front of, which no warning can be an answer to. So a raised gate stays up for as long as she is
+## under it as well as for as long as a car is near; cars keep passing under it meanwhile, which is
+## the price of standing in a road. It is a precondition rather than a repair: the arm never moves
+## while she is there, so nothing is ever put down and then moved off her.
+##
 ## **Found by geometry alone, not by `_corridor`/`_along()`.** Those are `CrowdAgent`'s own private
 ## lane bookkeeping and a gate is not sited on a lane index; `heading()` and `global_position` are
 ## already public and are all the geometry a gate needs — the along/across split below is the same
@@ -585,9 +608,9 @@ func _stop_for_gates(delta: float) -> void:
 				nearest_along = along
 				nearest = agent
 		if gate.raised:
-			# Stays up for a platoon rather than slamming shut between cars; lowers the moment the
-			# road either side of it is actually clear.
-			gate.raised = anybody_within_a_length
+			# Stays up for a platoon rather than slamming shut between cars, and over her while she
+			# is under it; lowers the moment the road either side of it is actually clear.
+			gate.raised = anybody_within_a_length or _is_she_under(gate)
 			if not gate.raised:
 				gate.stopped_for = 0.0
 			continue
