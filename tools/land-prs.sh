@@ -4,8 +4,9 @@
 #
 #   1. gh pr merge <n> --squash --auto     (turns auto-merge on)
 #   2. poll gh pr view <n> --json state,mergeable until it is MERGED, or until it can no longer
-#      merge because main moved under it and a conflict appeared
-#   3. on a conflict: tools/update-pr.sh <n> (merges origin/main in, resolves the recurring
+#      merge because main moved under it -- behind (the ruleset's strict checks want an
+#      up-to-date branch) or conflicting
+#   3. then: tools/update-pr.sh <n> (merges origin/main in, resolves the recurring
 #      docs/DECISIONS.md shape, checks, pushes), then keep waiting
 #   4. once merged: git pull --ff-only on main in this checkout, then
 #      tools/prune-merged.sh <branch> to retire the worktree and branch
@@ -39,8 +40,8 @@ usage() {
 usage: tools/land-prs.sh [--help|-h] [--dry-run] [--timeout <minutes>] <pr-number> [<pr-number>...]
 
 Lands a queue of already-authorized pull requests in order, one at a time: enables auto-merge
-(gh pr merge <n> --squash --auto), waits for GitHub to merge it, runs tools/update-pr.sh <n> to
-resolve a conflict opened by an earlier merge in this same run and keeps waiting, then once
+(gh pr merge <n> --squash --auto), waits for GitHub to merge it, runs tools/update-pr.sh <n> when
+an earlier merge left it behind main or conflicting and keeps waiting, then once
 merged fast-forwards main in this checkout (git pull --ff-only) and retires the branch with
 tools/prune-merged.sh. The next PR is brought up to date only after the previous one merged.
 
@@ -223,10 +224,11 @@ for n in "${prs[@]}"; do
             stop "PR #$n: timed out after ${timeout_min}m waiting for it to merge"
         fi
 
-        pr_json="$(gh pr view "$n" --json state,mergeable,url 2>&1)" \
+        pr_json="$(gh pr view "$n" --json state,mergeable,mergeStateStatus,url 2>&1)" \
             || refuse "PR #$n: gh pr view failed: $pr_json"
         state="$(pr_field "$pr_json" state)"
         mergeable="$(pr_field "$pr_json" mergeable)"
+        merge_state="$(pr_field "$pr_json" mergeStateStatus)"
         url="$(pr_field "$pr_json" url)"
 
         [[ "$state" == MERGED ]] && { echo "PR #$n merged"; break; }
@@ -238,12 +240,14 @@ for n in "${prs[@]}"; do
 $failing"
         fi
 
-        if [[ "$mergeable" == CONFLICTING ]]; then
-            echo "PR #$n conflicts with main; running tools/update-pr.sh $n"
+        # The ruleset's strict checks mean a PR merely behind main never merges either: auto-merge
+        # waits for an up-to-date branch that nothing else will produce.
+        if [[ "$mergeable" == CONFLICTING || "$merge_state" == BEHIND ]]; then
+            echo "PR #$n is behind or conflicts with main; running tools/update-pr.sh $n"
             if ! ./tools/update-pr.sh "$n"; then
-                stop "PR #$n ($url): tools/update-pr.sh could not resolve the conflict -- see its output above"
+                stop "PR #$n ($url): tools/update-pr.sh could not bring it up to date -- see its output above"
             fi
-            echo "conflict resolved; still waiting for PR #$n to merge"
+            echo "up to date with main; still waiting for PR #$n to merge"
             continue
         fi
 
