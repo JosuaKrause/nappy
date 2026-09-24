@@ -1599,6 +1599,12 @@ func _caret_velocity() -> Vector2:
 func facing_now() -> Vector2:
 	return _heading
 
+## The age `_noticed_at` was set at, or `INF` before a `pursues_within` row has noticed her — the
+## save half of `resume()`'s own restore, so a caller that carries this across a stream-out (see
+## `EventManager._stream_out()`) reads it here rather than reaching into the private field.
+func noticed_at() -> float:
+	return _noticed_at
+
 ## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
 ## rather than starting again — an event that streams in and out must not become immortal by

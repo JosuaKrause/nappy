@@ -64,13 +64,15 @@ user://telemetry/2026-09-03/run-205437-seed2102613802-v0.0.0-49-gdb09693-dirty/
   by name still sorts them by age, because the time leads the name.
 - **`run.log` sits directly in the run's folder**, not in a subfolder of its own — it is the one
   artefact every run has, so it needs nothing to distinguish it from a sibling of its own kind.
-- **The three picture kinds each get their own subfolder**, so a directory listing separates them
-  without anybody having to read a filename to tell which is which: `maps/` for the day pictures
+- **The picture kinds each get their own subfolder**, so a directory listing separates them without
+  anybody having to read a filename to tell which is which: `maps/` for the day pictures
   (`Telemetry.write_map`, see "The city grid" below), `auto/` for the heuristic's own screenshots
-  (`Telemetry.snapshot`, see "Snapshots" below), and `asked/` for a picture a person pressed a key
-  for (`Telemetry.snapshot_now`). A subfolder is only created the first time something is actually
-  written into it, so a run that never triggers the heuristic — most of them — has no empty `auto/`
-  sitting in it.
+  (`Telemetry.snapshot`, see "Snapshots" below), `asked/` for a picture a person pressed a key for
+  (`Telemetry.snapshot_now`), and `still/` for the one picture `--quit-when-still` ever takes
+  (`StillWatch`, `src/dev/still_watch.gd`) — always named `quit-when-still.png`, since the flag
+  quits the game the instant it writes it and a run can therefore never write a second one. A
+  subfolder is only created the first time something is actually written into it, so a run that
+  never triggers the heuristic — most of them — has no empty `auto/` sitting in it.
 
 **The game never deletes anything under `user://telemetry/`.** *(2026-09-03: "no automatic cleanup
 anymore", "the folder structure allows for easily deleting old days/commits".)* The directory grows
@@ -294,6 +296,7 @@ name the question it answers, or it is a metric and does not belong.
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log |
 | `shot` | `main.gd`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
+| `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time; her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
 
 ### Reading the meter breakdown
 

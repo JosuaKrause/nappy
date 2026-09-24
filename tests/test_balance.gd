@@ -61,9 +61,12 @@ func _rng(day: int, stream: String) -> RandomNumberGenerator:
 func _build_rig(t, at: Vector2) -> void:
 	_teardown_rig()
 	_stroller = Stroller.new()
-	# The name matters: Stroller's @onready looks the camera up by path.
+	# The name matters: Stroller's @onready looks the camera up by path. Matches the real
+	# camera's own scene (`process_callback = 0` in `stroller.tscn`) rather than leaving the
+	# default idle callback for physics interpolation to override with a warning.
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	_stroller.add_child(camera)
 	t.add_child(_stroller)
 	_stroller.set_physics_process(false)

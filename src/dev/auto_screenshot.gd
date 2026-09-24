@@ -191,6 +191,19 @@ static func from_command_line() -> AutoScreenshot:
 		node._tap_at = Vector2(float(args[tap + 1]), float(args[tap + 2]))
 	return node
 
+## A capture that fires on the very next frame rather than after a timed `--after` wait — what
+## `StillWatch` (`src/dev/still_watch.gd`, `--quit-when-still`) hands off to the moment its own
+## heuristic fires, so that trigger goes through this file's one `_capture()` — the headless
+## guard, the `frame_post_draw` wait, the save, the stdout line and the quit — rather than a second
+## writer of the same picture. `_seconds_to_wait` of `0.0` means the very first `_process()` tick
+## already satisfies `_elapsed >= _seconds_to_wait`, so nothing here duplicates the wait/capture
+## branch already at the bottom of `_process()`.
+static func immediate(path: String) -> AutoScreenshot:
+	var node := AutoScreenshot.new()
+	node._path = path
+	node._seconds_to_wait = 0.0
+	return node
+
 ## What marks a `--press` argument as a raw key rather than an input action.
 const KEY_PREFIX := "key:"
 

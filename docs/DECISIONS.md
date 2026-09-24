@@ -17,6 +17,39 @@ a worktree. It refuses a dirty worktree and a branch behind or diverged from its
 off by default so a person running it does not sign as Claude; a diverged branch is refused as
 well as one that is behind.
 
+## M100 — Six small defects · 2026-09-23
+
+From M100's list, one commit each, no behaviour a player sees changed. The contact is placed
+before `--spawn contact` reads it (`ResistanceDirector.start_day()` moved ahead of
+`DevRig.spawn_position()` in `main`'s day start). The balance rig's camera runs in physics
+process mode like the real one, so the engine's warning is gone. `Crowd.step()` and
+`_physics_process()` share `_advance_the_world()`; `step()` now moves the agents before it rather
+than in the middle, which is neutral because the signals' clock and the pockets read nothing an
+agent's position changes. `CityMap.is_main_road(vertical, corridor)` is the one spelling of the
+question, and the seven hand-written sites go through it. A local test shard is killed after
+`SHARD_TIMEOUT_S` (600 s, about twice the slowest shard; `TEST_SHARD_TIMEOUT_S` overrides it) and
+reported by name, so the "crashed or hung" message is reachable; `--serial` and `--shard I/N` stay
+unbounded since they run far more than one shard's suites. `EventInstance.noticed_at()` is the
+save half of `resume()`, and `EventManager` reads it rather than the private field.
+
+## M189 — A still mother ends the run with a picture · built 2026-09-23
+
+*(The player, 2026-09-23: "can we have a flag for automatically taking a screenshot and
+terminating the game if the player doesn't move for a second or so?" · "also, it looks like the
+walking rig is a good way to find bugs".)* `--quit-when-still [seconds]` (default one second):
+once she has moved at all, if she then holds within `StillWatch.STILL_RADIUS` (4px, half the route
+rig's own stuck distance, sampled every frame rather than every half second) of one spot for that
+long while `DayController.is_running()` and the tree is not paused — which leaves out the brief,
+summary and death screens without a third flag — the game saves `still/quit-when-still.png` into
+the run's telemetry folder, notes a `still` line (her tile and the nearest live event or vehicle),
+prints the path and quits. `StillWatch` is its own node rather than part of `AutoScreenshot`,
+since a per-frame watch and a one-shot timed capture live differently, and it reuses
+`AutoScreenshot`'s capture through `AutoScreenshot.immediate()`. It reads her position, not the
+input or her velocity: on the route rig's day 6 wedge on seed 1234567 the HUD read a speed of 92
+in the frame she was pinned against a moving van. **Open to overturn, chosen by the agent:** the
+radius, the `still/` folder and fixed filename, and a `still` note kind rather than `shot`, whose
+doc says a person asked for the picture.
+
 ## M79 — The city seen at an angle is closed · 2026-09-23
 
 *(The player, 2026-09-23: "I think we can close M79, the city at an angle. I like the current
