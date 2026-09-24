@@ -1174,7 +1174,7 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 			_baby.sleepiness, _nearest()])
 
 func _on_city_went_quiet() -> void:
-	Telemetry.note("quiet", "the sabotage went through; every city-wide source is off")
+	Telemetry.note("quiet", "the blackout came; every city-wide source is off")
 
 ## Walking into somebody. Reported by `Crowd` rather than watched from here, because the contact is
 ## a decision the game makes rather than a state to be noticed — but the *rate limiting* stays here,
