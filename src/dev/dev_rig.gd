@@ -247,15 +247,19 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ## Reads the day's *plan* rather than what is live: nothing is live until the player is near it,
 ## so the whole point of this flag is to go and stand where one is going to be.
 ##
-## **Two things it cannot do, and both are properties of the plan rather than of this search.** A
-## row the director sites while she walks has no position at dawn — `cat_dash`, `cyclist`,
+## **A row the director sites while she walks has no position at dawn** — `cat_dash`, `cyclist`,
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
-## the day budgets and sites from her walk (`EventDef.sited_on_her_way`) — so `event:<id>` never
-## finds one and falls back to the doorstep with a warning that names the row and says why.
-## `--follow <id>` tracks such a row once it exists. And a row that waits for her (`pursues_within`) is
-## stood *inside* its own trigger by the offset below, so it has noticed her by the first frame: a
-## rig can photograph what a `pigeon_flock` or an `alley_robbery` does, but not the silence before
-## it.
+## the day budgets and sites from her walk (`EventDef.sited_on_her_way`) — so `event:<id>` cannot
+## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
+## **refuses**: the row and the reason are written to the run log (`Telemetry.note("spawn", …)`)
+## and raised with `push_error`, so both the log a capture is judged from and the terminal that
+## launched it show the same failure. `--follow <id>` tracks such a row once it exists.
+##
+## **A row that waits for her** (`pursues_within` — a `pigeon_flock`, an `alley_robbery`) is stood
+## just *outside* its own trigger rather than inside it: the offset below is measured against
+## whichever is larger of `outer_radius` and `pursues_within`, plus a tile's width of clearance,
+## so a rig can photograph the silence before it notices her rather than always finding it already
+## noticing.
 static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 	var waits_for_her_walk := false
 	for plan in city.events.plans():
@@ -267,17 +271,24 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 				continue
 		elif plan.def.kind == GameEnums.EventKind.AMBIENT:
 			continue
+		if plan.def.pursues_within > 0.0:
+			var clearance := maxf(plan.def.outer_radius, plan.def.pursues_within) + Tuning.TILE_SIZE
+			var stand_off := pavement_offset(city.map, plan.position, clearance, 1.0)
+			return nearest_walkable(city.map, plan.position + stand_off)
 		var offset := pavement_offset(city.map, plan.position, plan.def.outer_radius)
 		return nearest_walkable(city.map, plan.position + offset)
 	if waits_for_her_walk:
-		push_warning(("'%s' is planned today with no position: it is sited from her walk, so there "
-				% wanted_id) + "is nowhere to stand at dawn. Use --follow %s once it exists" % wanted_id)
+		var reason := (("'%s' is planned today with no position: it is sited from her walk, so "
+				% wanted_id) + "there is nowhere to stand at dawn. Use --follow %s once it exists"
+				% wanted_id)
+		Telemetry.note("spawn", reason)
+		push_error(reason)
 	else:
 		push_warning("no non-ambient events planned today")
 	return city.map.home_world_position()
 
 ## The step from a found event's position to somewhere just off it, **across the street it stands
-## on** rather than along local Y unconditionally. A fixed `Vector2(0.0, radius * 0.6)` is a step
+## on** rather than along local Y unconditionally. A fixed `Vector2(0.0, radius * scale)` is a step
 ## along the street's own length on a north-south street — which never leaves the carriageway a
 ## north-south corridor's width is measured across (`CityMap.corridor_offset(tile.x)`) — and only
 ## happens to clear the road on an east-west one, whose width runs the other way. `_spread_is_vertical`
@@ -285,9 +296,14 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 ## question `EventInstance._spread_at()` asks to lay an obstruction across the carriageway it blocks
 ## — so reusing it here is the same answer applied to the opposite side of the same obstruction,
 ## rather than a second guess about the street's orientation.
-static func pavement_offset(map: CityMap, at: Vector2, radius: float) -> Vector2:
+##
+## `scale` defaults to 0.6 — comfortably clear of an ordinary event's own `radius` without
+## wandering off toward the next thing down the street. `first_event_position()` passes `1.0` for
+## a row that waits (`pursues_within`), where `radius` already carries its own margin and the step
+## has to reach the full distance rather than a fraction of it.
+static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: float = 0.6) -> Vector2:
 	var vertical := EventInstance._spread_is_vertical(map, at)
-	return Vector2(0.0, radius * 0.6) if vertical else Vector2(radius * 0.6, 0.0)
+	return Vector2(0.0, radius * scale) if vertical else Vector2(radius * scale, 0.0)
 
 static func nearest_walkable(map: CityMap, near: Vector2) -> Vector2:
 	var start := map.world_to_tile(near)
