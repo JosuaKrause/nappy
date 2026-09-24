@@ -6,7 +6,7 @@ Godot 4.7, GDScript. 2D scene tree with y-sorting for the 2.5D look.
 
 ```
 project.godot
-icon.svg
+icon.png
 docs/                     design documentation (this folder)
 scenes/
   main.tscn               root: boots GameState, holds World + HUD

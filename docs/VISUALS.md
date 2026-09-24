@@ -54,7 +54,7 @@ What stays under `assets/` is what the engine itself reads at runtime: the gitig
 with `regions.json` beside them, `assets/atlases/membership.json`, `assets/ground_tileset.tres`,
 `assets/ground_layers.json` and `assets/shaders/`. The identity images — the wordmark, the
 stroller icon sizes and the social card — are `art/`'s too; the application icon is the
-repository root's own `icon.svg`, which the engine does load.
+repository root's own `icon.png`, which the engine does load.
 
 A region changes no picture: it reports its source's own size, so scale, offsets, mirroring,
 anchors, shadows and sorting read exactly the numbers they read from a texture of its own.
