@@ -302,8 +302,21 @@ func _spawn_home() -> void:
 	door.centered = false
 	var door_size := AtlasLibrary.native_size(DOOR_TEXTURE)
 	door.offset = Vector2(-door_size.x * 0.5, -door_size.y)
-	door.position = Vector2(stoop.get_center().x, stoop.position.y)
+	# Same centre-x `_door_world_x_range()` hands the building behind it, so the sprite and the
+	# blanked window column can never disagree about where the door actually is.
+	var x_range := _door_world_x_range()
+	door.position = Vector2((x_range.x + x_range.y) * 0.5, stoop.position.y)
 	_entities.add_child(door)
+
+## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
+## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
+## (`_spawn_buildings()` runs first — see `build()`), so it stands on `map.home_rect` and
+## `AtlasLibrary` rather than on the door node, and handed to every home-block `Building` so it can
+## blank the ground-floor column(s) standing behind the door instead of drawing a window there.
+func _door_world_x_range() -> Vector2:
+	var centre_x := map.tile_rect_to_world(map.home_rect).get_center().x
+	var half_width := AtlasLibrary.native_size(DOOR_TEXTURE).x * 0.5
+	return Vector2(centre_x - half_width, centre_x + half_width)
 
 ## `StreetTrees.planted()`'s own positions, drawn as `Prop`s once for the whole run — never
 ## rebuilt in `_dress_blocks()`, unlike a park's trees, because a street tree belongs to the
@@ -440,6 +453,7 @@ func _spawn_signal_heads() -> void:
 				_entities.add_child(light)
 
 func _spawn_buildings() -> void:
+	var door_x_range := _door_world_x_range()
 	for rect in map.building_rects:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
@@ -453,6 +467,12 @@ func _spawn_buildings() -> void:
 		# Every lot on the home block is hers — the door's own notch carves no `Building` of its
 		# own, so this is every wall standing around it.
 		building.is_home_building = _block_of(rect) == map.home_block
+		if building.is_home_building:
+			# Only the one lot the door notch's own footprint overlaps ever reads this as true —
+			# every other home-block lot's world x sits entirely outside the door's span, since
+			# `CityGenerator._subtract_all()` cuts the notch's own columns out of them — but handing
+			# it to all of them costs nothing and needs no lookup for which one that is.
+			building.door_world_x_range = door_x_range
 		_dress_the_power_station(building, rect)
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block

@@ -6,6 +6,12 @@ extends RefCounted
 ## never what the rolls are. `Building.blank_ground_floor_cells()` is the accessor a later poster
 ## slice pastes on. A multi-story front with no storefront and no portico has one entrance door
 ## (`Building.entrance_door_col()`), rolled from a stream of its own so no other roll moves.
+##
+## PLAYTEST-124's own finding is the one further exception: the ground-floor column(s) her front
+## door's own footprint overlaps draw no window either, even on her own building —
+## `Building.door_world_x_range` is the geometry fact `City._spawn_buildings()` hands the building
+## for it, and `_column_under_door()` is the overlap test. A geometry fact, not a roll, so it moves
+## no RNG stream — only which of `_draws_window_at()`'s already-computed answers gets painted where.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## A spread of cities, built in full (buildings, street trees, crowd, events) so the sweep exercises
@@ -18,6 +24,7 @@ func run(t) -> void:
 	_test_no_ground_floor_window_on_a_multistory_non_home_building(t)
 	_test_commercial_storefronts_remain_and_the_odd_column_is_blank(t)
 	_test_her_own_building_keeps_ground_floor_windows(t)
+	_test_the_door_blanks_only_the_columns_it_covers(t)
 	_test_a_one_row_facade_is_unchanged(t)
 	_test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t)
 	_test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t)
@@ -79,7 +86,27 @@ func _test_her_own_building_keeps_ground_floor_windows(t) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0, true)
 	t.check(building.is_home_building, "the fixture is flagged as her own building")
 	t.check(building.wall_tiles() >= 2, "the fixture is genuinely multi-story")
-	t.check(building._draws_window_at(0), "her own building's ground floor still draws a window")
+	t.check(building.door_world_x_range == Vector2.INF,
+			"a building nobody told about a door keeps the empty Vector2.INF sentinel")
+	for col in building.columns():
+		t.check(building._draws_window_at(0, col),
+				"her own building's ground floor still draws a window at every column (%d) with no door standing there"
+				% col)
+	building.free()
+
+## A door 26px wide against a 32px `Building.TILE` column may straddle two of them — set here dead
+## on the boundary between columns 2 and 3, so both blank and every other column keeps its window.
+func _test_the_door_blanks_only_the_columns_it_covers(t) -> void:
+	var position := Vector2(500.0, 700.0)
+	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(160.0, 96.0), 64.0, true, position)
+	var boundary := building.global_position.x + building._cell(3, 0).x
+	building.door_world_x_range = Vector2(boundary - 3.0, boundary + 3.0)
+	for col in building.columns():
+		var under_door := col == 2 or col == 3
+		t.check(building._column_under_door(col) == under_door,
+				"column %d: the overlap test agrees with which side of the boundary it is on" % col)
+		t.check(building._draws_window_at(0, col) != under_door,
+				"column %d: a window is drawn iff the door does not stand there" % col)
 	building.free()
 
 func _test_a_one_row_facade_is_unchanged(t) -> void:
@@ -484,11 +511,13 @@ func _check_accessor_invariant(t, building: Building, seed_used: int) -> void:
 				"seed %d: no accessor cell is the door's column or the fire escape's" % seed_used)
 
 ## Full `City` scenes across a spread of seeds — the only path that exercises
-## `City._spawn_buildings()`'s own wiring of `is_home_building` off `CityMap.home_block`, rather
-## than a fixture set directly.
+## `City._spawn_buildings()`'s own wiring of `is_home_building` and `door_world_x_range` off
+## `CityMap.home_block` and `map.home_rect`, rather than a fixture set directly.
 func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 	var checked_non_home := 0
 	var checked_home := 0
+	var checked_home_multistory := 0
+	var checked_door_columns := 0
 	var checked_commercial := 0
 	var checked_doors := 0
 	var checked_escapes := 0
@@ -506,8 +535,19 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 			if building.is_home_building:
 				checked_home += 1
 				if building.wall_tiles() >= 2:
-					t.check(building._draws_window_at(0),
-							"seed %d: her own building keeps its ground-floor window" % map.seed_used)
+					checked_home_multistory += 1
+					var saw_a_window := false
+					for col in building.columns():
+						var under_door := building._column_under_door(col)
+						if under_door:
+							checked_door_columns += 1
+						t.check(building._draws_window_at(0, col) != under_door,
+								"seed %d: her own building draws a ground-floor window at column %d iff the door does not stand there"
+								% [map.seed_used, col])
+						saw_a_window = saw_a_window or not under_door
+					t.check(saw_a_window,
+							"seed %d: her own building still shows a ground-floor window somewhere the door does not stand"
+							% map.seed_used)
 				continue
 			checked_non_home += 1
 			if building.wall_tiles() < 2:
@@ -534,6 +574,10 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 		city.free()
 	t.check(checked_non_home > 0, "the sweep built non-home buildings to check (%d)" % checked_non_home)
 	t.check(checked_home > 0, "the sweep built her own building at least once (%d)" % checked_home)
+	t.check(checked_home_multistory > 0,
+			"the sweep built a multi-story home building at least once (%d)" % checked_home_multistory)
+	t.check(checked_door_columns > 0,
+			"the sweep met at least one ground-floor column standing behind the door (%d)" % checked_door_columns)
 	t.check(checked_commercial > 0, "the sweep built a commercial storefront at least once (%d)" % checked_commercial)
 	t.check(checked_doors > 0, "the sweep built a front with an entrance door (%d)" % checked_doors)
 	t.check(checked_escapes > 0, "the sweep built a front with a fire escape (%d)" % checked_escapes)

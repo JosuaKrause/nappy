@@ -71,6 +71,13 @@ animals (PR 300) and street obstructions (PR 301):
 10. **A fire escape ends one floor above the ground**: its lowest landing is at the first floor,
     and no flight comes down to the sidewalk.
 
+## Then, on her own building
+
+> "The home has windows behind the door. Let's remove them"
+
+11. **No window shows behind her front door**: the ground-floor window drawn on the home block's
+    wall where the door stands is removed, so the door stands on plain wall.
+
 ## Then, on the first-floor fire escape (PR 303, at 81251559)
 
 > "also, fire escape ladders. the graphics for them are good -- I like the variation with the
