@@ -70,3 +70,10 @@ animals (PR 300) and street obstructions (PR 301):
 
 11. **No window shows behind her front door**: the ground-floor window drawn on the home block's
     wall where the door stands is removed, so the door stands on plain wall.
+
+## Then, on the closures across the street (M187, PR 306, at 35bbefe9)
+
+> "the top construction pole is drawn above the barried when it should be behind"
+
+21. **On an end-on roadworks barrier the far end post is drawn behind the barrier**, not over
+    it; only the near post stands in front.
