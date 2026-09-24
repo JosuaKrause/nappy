@@ -749,6 +749,12 @@ var player_velocity := Vector2.ZERO
 var player_decay_rate := 0.0
 var player_sensitivity := 1.0
 
+## The sum of `expected_gross_at()` over every source `ExcitementHalo` is running this frame, told
+## once a frame through `set_expected_total_gross()` — `-1.0` (the default) means nobody has, so
+## `expected_impact_at()` nets the whole projected decay against this instance alone, exactly as it
+## always did.
+var player_expected_total_gross := -1.0
+
 ## Part of `ExcitementHalo`'s duck type — see that class's doc. `EventManager` already keeps
 ## `player_at` current for the chase and the leaving check; this is the same field, told from the
 ## other direction, plus the three above `expected_impact_at()` needs and nothing else in this
@@ -759,6 +765,12 @@ func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: fl
 	player_velocity = velocity
 	player_decay_rate = decay_rate
 	player_sensitivity = sensitivity
+
+## Told once a frame by `ExcitementHalo`, after every live candidate's own `expected_gross_at()`
+## has been asked at the same position — see `expected_impact_at()`'s own doc for why the total has
+## to be gathered before any one source's share of the decay can be known.
+func set_expected_total_gross(total: float) -> void:
+	player_expected_total_gross = total
 
 ## Whether she is running right now. Written beside `player_at` and by the same pass, because the
 ## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
@@ -2072,7 +2084,12 @@ func chase_age() -> float:
 	return 0.0 if _noticed_at == INF else age - _noticed_at
 
 ## Current peak intensity at the centre, after the telegraph damping and the pulse envelope.
-func current_intensity() -> float:
+##
+## `pulse_multiplier_override` (`< 0.0` means "not given") replaces the instant's own
+## `0.25 + 0.75 × pulse(age)` reading — the only caller that ever passes one is
+## `_caret_intensity_over_horizon()`, asking for the pulse's own mean over
+## `Tuning.EXPECTED_IMPACT_HORIZON` instead of the beat this instant happens to be on.
+func current_intensity(pulse_multiplier_override := -1.0) -> float:
 	if is_finished or is_leaving:
 		# On the way out it is scenery. Emitting while it goes would mean the excitement of an
 		# event trailing after her for as long as it took the thing to get off screen.
@@ -2100,13 +2117,41 @@ func current_intensity() -> float:
 		# 0.25..1.0, so a pulsing event is never entirely silent between beats. On `age` rather
 		# than `chase_age()` on purpose: a pulse is the thing's own rhythm, which is running
 		# whether or not anybody has walked up to it.
-		var phase := TAU * age / def.pulse_period
-		value *= 0.25 + 0.75 * (0.5 - 0.5 * cos(phase))
+		if pulse_multiplier_override >= 0.0:
+			value *= pulse_multiplier_override
+		else:
+			var phase := TAU * age / def.pulse_period
+			value *= 0.25 + 0.75 * (0.5 - 0.5 * cos(phase))
 	return value * _notice_damping()
 
+## The pulse envelope's own mean over `[age, age + Tuning.EXPECTED_IMPACT_HORIZON]`, closed-form
+## rather than stepped: the projection wants one scalar to hold across its whole sampling loop, not
+## a second loop just to average a cosine.
+##
+## **Mean rather than instant, and from this instant's own phase.** `homeless_yeller`'s pulse (5s)
+## and `busker`'s (7s) both turn over inside the horizon (5s), so freezing "as it stands now" could
+## read anywhere from a quarter to the full peak depending on which beat the caret happens to be
+## asked on, while the halo afterwards reads back whatever the walk actually crossed — a caret
+## opened at a quiet trough undersold what was coming and one opened at a loud peak oversold it.
+## The mean is the one number that answers "if this keeps pulsing the way it always does, what does
+## the *whole* of the next five seconds average to" — which is what "if I keep doing what I'm doing"
+## means for a source whose rate is not the thing standing still.
+##
+## **Exactly `0.625` (the envelope's own mean) whenever the horizon is an exact multiple of the
+## period, whatever the phase** — `homeless_yeller`'s 5s pulse against the 5s horizon is exactly
+## this case, since a cosine integrated over any whole number of its own periods is exactly zero
+## however it is entered. `busker`'s 7s pulse against the same 5s horizon is the case that genuinely
+## depends on phase, which is the one the closed form below has to get right rather than the one a
+## quick sanity check would be tempted to hard-code.
+static func _pulse_mean_multiplier(age: float, horizon: float, period: float) -> float:
+	var w := TAU / period
+	var mean_cos := (sin(w * (age + horizon)) - sin(w * age)) / (w * horizon)
+	return 0.625 - 0.375 * mean_cos
+
 ## The multiplier the phase this instance is in puts on `def.intensity`, and the one place the
-## three answers live — `_caret_intensity()` divides by exactly this rather than repeating the
-## conditions, so the caret's projection and the meter can never disagree about which phase damps.
+## three answers live — `_caret_intensity_over_horizon()` divides by exactly this rather than
+## repeating the conditions, so the caret's projection and the meter can never disagree about which
+## phase damps.
 ##
 ## **The damping says *this has not started yet*, and for a waiting row that is a claim about the
 ## thing rather than about its clock.** A pursuer that waits has been standing there since she came
@@ -2129,14 +2174,21 @@ func _notice_damping() -> float:
 ## skipped, by dividing it back out of the same call rather than a second copy of the ramp and
 ## pulse logic above it.
 ##
-## Only `expected_impact_at()`'s own projection reads this. Every other caller of
+## Only `expected_gross_at()`'s own projection reads this. Every other caller of
 ## `contribution_at()` — the halo, the exclamation mark, the meter itself — wants what a source is
 ## actually doing right now, damped or not, because it is asking about the present rather than
 ## about the course this thing is on. Without this, a `cyclist` ridden straight at a standing
 ## player through its own 2s telegraph reads at `TELEGRAPH_INTENSITY_FRACTION` (15%) the whole
-## time, and `expected_impact_at()` under-counts the approach by the same fraction.
-func _caret_intensity() -> float:
-	return current_intensity() / _notice_damping()
+## time, and `expected_gross_at()` under-counts the approach by the same fraction.
+##
+## **And a pulse is projected at its own mean over the horizon, not at this instant's beat** — see
+## `_pulse_mean_multiplier()`'s own doc for why a frozen instant could read anywhere from a quarter
+## to the full peak of a row whose pulse turns over inside `Tuning.EXPECTED_IMPACT_HORIZON`.
+func _caret_intensity_over_horizon() -> float:
+	var pulse_override := -1.0
+	if def.pulse_period > 0.0:
+		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON, def.pulse_period)
+	return current_intensity(pulse_override) / _notice_damping()
 
 ## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
@@ -2169,12 +2221,13 @@ func _prune_landed_history() -> void:
 ##
 ## `intensity_override` replaces `current_intensity()` for this one call when given (`< 0.0`
 ## means "not given" — every intensity this def can carry is positive). The only caller that ever
-## passes one is `expected_impact_at()`'s own projection, asking for `_caret_intensity()` — the
-## row's live rate — in place of whatever a telegraph has this one currently damped to; every
-## other caller gets the answer it always got.
+## passes one is `expected_gross_at()`'s own projection, asking for `_caret_intensity_over_horizon()`
+## — the row's live rate, its pulse projected at the horizon's own mean rather than frozen at this
+## instant's beat — in place of whatever a telegraph has this one currently damped to; every other
+## caller gets the answer it always got.
 ##
 ## `velocity_override` replaces `travel_velocity()` for the field's own kernel, the same way, when
-## given (`Vector2.INF` means "not given"). The only caller is `expected_impact_at()` too, and for
+## given (`Vector2.INF` means "not given"). The only caller is `expected_gross_at()` too, and for
 ## the same reason: its projection translates the *sample point* by `_caret_velocity()` rather than
 ## moving the source, and the ellipse the translated point is measured against has to be oriented by
 ## that same velocity or the two disagree about which way this thing is going. A pursuer holding its
@@ -2283,12 +2336,11 @@ func is_lethal_at(world_position: Vector2) -> bool:
 		return false
 	return global_position.distance_to(world_position) <= def.lethal_reach()
 
-## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
-## **if she and it both carry on exactly as they are** — the caret's own answer to *"if I keep
-## doing what I'm doing, how much will I get"*, which is `ExcitementHalo.net_landed()`'s question
-## asked forward instead of back. Duck-typed with `CrowdAgent`'s own copy; see `ExcitementHalo`'s
-## class doc for the shared shape and `wants_a_mark()` for what a result at or above
-## `Tuning.EXPECTED_IMPACT_POINTS` does with the answer.
+## The gross points this event is anticipated to land over `Tuning.EXPECTED_IMPACT_HORIZON` **if
+## she and it both carry on exactly as they are**, before her own decay is netted against it —
+## `expected_impact_at()` is the net; this is the half of it every source projects for itself, and
+## `ExcitementHalo` reads it too, once a frame, to learn what the horizon's decay has to be shared
+## between. Duck-typed with `CrowdAgent`'s own copy.
 ##
 ## *(2026-09-20, overturning 2026-09-08's "I don't want a caret when walking into a car from the
 ## side": "caret communicates anticipated net gain. basically if I keep doing what I'm doing I
@@ -2299,39 +2351,30 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## her still expects nothing from that car, because nothing about the car's course crosses her
 ## line — the overturn is that her line is no longer flattened to a point.
 ##
-## **Net, not gross — `player_decay_rate` (`Baby.decay_rate()`) and `player_sensitivity`
-## (`Baby.current_sensitivity()`) are read the same way the backward-looking halo reads
-## `Baby.decay_in_window()` and the sensitivity baked into `landed()`.** Both default to `0.0` and
-## `1.0`, which answers exactly as this function always did — held still, nothing given back —
-## for any caller that has not told this instance her actual state, a data-level test among them.
-##
-## **The decay is charged against this source alone, not shared across every live one the way
-## `ExcitementHalo.net_landed()` shares its backward-looking figure.** Sharing it would need every
-## other candidate's own projected gross before this one's net can be known — the same
-## once-a-frame pass `ExcitementHalo` already runs for the halo, not something one instance can
-## ask for of itself without a second channel to the world it has never needed. Charging the whole
-## projected decay to each source independently is exact when only one is actually near her, which
-## is the ordinary case a caret is read in; with two or more simultaneously worth a mark, each
-## reads slightly more pessimistic than a true shared split would, never less — open to a real
-## multi-source pass later if that turns out to matter in play.
-##
-## **Projected at `_caret_velocity()` and `_caret_intensity()`, not `travel_velocity()` and
-## `current_intensity()`.** The row's *live* course and rate, because the caret is asking what
-## this thing is on its way to doing rather than what a telegraph currently has it doing: a
-## telegraphing `cyclist` is already moving at its route speed (`travel_velocity()` already
-## answers that), but reads at 15% of its own field the whole time it telegraphs — projecting the
-## damped rate would keep the sum under the line until the telegraph is nearly over, the same gap
-## a pursuer holding its stand-off would have if the caret read its own zeroed
+## **Projected at `_caret_velocity()` and `_caret_intensity_over_horizon()`, not
+## `travel_velocity()` and `current_intensity()`.** The row's *live* course and rate, because the
+## caret is asking what this thing is on its way to doing rather than what a telegraph currently
+## has it doing: a telegraphing `cyclist` is already moving at its route speed (`travel_velocity()`
+## already answers that), but reads at 15% of its own field the whole time it telegraphs —
+## projecting the damped rate would keep the sum under the line until the telegraph is nearly over,
+## the same gap a pursuer holding its stand-off would have if the caret read its own zeroed
 ## `travel_velocity()`. `current_rate` below is deliberately still the real, possibly-damped
 ## `contribution_at()` — what she is actually being charged right now — so the subtraction is the
-## live approach minus the honest present, not the live approach minus itself.
+## live approach minus the honest present, not the live approach minus itself. A pulsing row's own
+## rate is the horizon's own **mean** of the pulse rather than this instant's beat — see
+## `_caret_intensity_over_horizon()`'s own doc.
 ##
 ## **Skipped without sampling once neither body is moving, or the reach cannot close inside the
 ## horizon.** Two bodies both held still is the one case where nothing about the answer can
 ## change, and the reach the early-out compares against is now the pair's own closing speed
 ## (`player_velocity - velocity`), not the source's alone — a fast source she is outrunning no
 ## longer over-reaches its true closing distance the way comparing only its own speed would.
-func expected_impact_at(player_position: Vector2) -> float:
+##
+## **Floored at zero, and scaled by `player_sensitivity` here rather than left to the caller** —
+## `Baby.current_sensitivity()`, read the same way the backward-looking halo bakes it into
+## `landed()` — so the total `ExcitementHalo` sums across every live source is already in the units
+## the shared decay is taken out of.
+func expected_gross_at(player_position: Vector2) -> float:
 	if is_finished or is_leaving:
 		return 0.0
 	# A barrier the meter is not charging her for has no impact to project: the strongest structure
@@ -2347,7 +2390,7 @@ func expected_impact_at(player_position: Vector2) -> float:
 	if velocity.is_zero_approx() and player_velocity.is_zero_approx():
 		return 0.0
 	var current_rate := contribution_at(player_position)
-	var live_intensity := _caret_intensity()
+	var live_intensity := _caret_intensity_over_horizon()
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var landed := 0.0
@@ -2364,8 +2407,46 @@ func expected_impact_at(player_position: Vector2) -> float:
 		var sample := player_position + player_velocity * t - velocity * t
 		landed += contribution_at(sample, live_intensity, velocity) * dt
 	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	var net := gross * player_sensitivity - player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(net, 0.0)
+	return maxf(gross * player_sensitivity, 0.0)
+
+## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
+## **if she and it both carry on exactly as they are** — the caret's own answer to *"if I keep
+## doing what I'm doing, how much will I get"*, which is `ExcitementHalo.net_landed()`'s question
+## asked forward instead of back: `expected_gross_at()` less her own decay over the same horizon.
+## See `wants_a_mark()` for what a result at or above `Tuning.EXPECTED_IMPACT_POINTS` does with the
+## answer.
+##
+## **`player_decay_rate` (`Baby.decay_rate()`) defaults to `0.0`, which answers exactly as this
+## function always did — held still, nothing given back — for any caller that has not told this
+## instance her actual state, a data-level test among them.**
+##
+## **Shared between every source worth a mark when `ExcitementHalo` is driving the frame, charged
+## against this source alone otherwise.** *(2026-09-20, on the un-shared version this replaces:
+## "with two sources near her every caret reads low".)* `player_expected_total_gross` is `-1.0` —
+## "not given" — for any caller that has not told this instance the frame's total, which keeps the
+## old, pessimistic-but-independent answer for a data-level test or a single source read alone.
+## `ExcitementHalo` sums `expected_gross_at()` over every live event and crowd body once a frame,
+## the same once-a-frame pass it already runs for the halo's own `total_landed`, and hands the sum
+## back through `set_expected_total_gross()` before anything asks for a net — the *sources that
+## earn a caret* are exactly the ones whose own `expected_gross_at()` is positive, since a source
+## contributing nothing to the total also draws nothing from it, so summing over every live
+## candidate rather than only the ones already worth a mark changes nothing about the answer and
+## needs no second, smaller pass to find them.
+##
+## **`ExcitementHalo.net_landed()`'s own arithmetic, forward instead of back.** Every source's
+## share of the horizon's decay scales by the identical factor
+## `player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON / player_expected_total_gross`, so summing
+## every source's own `expected_impact_at()` back up reproduces `player_expected_total_gross` less
+## the whole decay exactly — the bar's own projected rise — rather than approximately, the same
+## exactness `net_landed()`'s own doc proves for the backward-looking halo.
+func expected_impact_at(player_position: Vector2) -> float:
+	var gross := expected_gross_at(player_position)
+	if gross <= 0.0:
+		return 0.0
+	var decay := player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	if player_expected_total_gross >= 0.0:
+		return ExcitementHalo.net_landed(gross, player_expected_total_gross, decay)
+	return maxf(gross - decay, 0.0)
 
 ## Whether this event's own current course puts her inside the radius that ends the day at some
 ## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — the same geometry

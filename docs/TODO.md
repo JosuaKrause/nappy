@@ -293,26 +293,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M174 — The man shouting costs nothing to walk beside · asked for 2026-09-20
-
-The three rows, the halo and the caret are built (`DECISIONS.md`, M174, the rows are corrected
-for the decay, and the halo and the caret say what the bar does); what a run settles is in
-`REVIEW.md`. **One item is open**, the two places the caret's promise is only roughly kept
-([PLAYTEST-115](playtests/PLAYTEST-115.md): "if I keep doing what I'm doing I very likely get
-that amount in net gain (so the halo will match roughly the caret if that happens)").
-
-- [ ] **The caret follows a pulse across its horizon, and shares the decay as the halo does.**
-      The caret projects a source's rate as it stands now for the whole of
-      `Tuning.EXPECTED_IMPACT_HORIZON` (five seconds), so against a row whose pulse turns over
-      inside that horizon — `homeless_yeller`'s is five seconds, `busker`'s seven — the halo
-      afterwards can differ from what the caret said by a multiple; the test of the promise
-      runs against an unpulsed row. And each caret nets the whole of her decay against its own
-      source, where the halo shares the decay between sources in proportion, so with two
-      sources near her every caret reads low. Project the pulse's mean over the horizon, and
-      share the projected decay between the sources that earn a caret.
-
----
-
 ## M175 — A row states what it costs, and the cost table is checked in · asked for 2026-09-20
 
 > "is there a better way than having four numbers to control what actually happens? we adjust

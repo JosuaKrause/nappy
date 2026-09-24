@@ -101,8 +101,8 @@ item below for as long as looking takes.
   as it did before the decay moved: **should a sleeping baby make him free?** Watch the halo while it happens: it is red only while the
   bar climbs because of that source, and the halos add up to the bar's own rise. Watch the
   caret before it happens: it is what she nets over the next five seconds if she and the source
-  both carry on. **Did the bar do what the caret said?** Against the man shouting it may not,
-  since his pulse turns over inside the caret's horizon (open in `TODO.md`, M174). And on day
+  both carry on. **Did the bar do what the caret said?** Against a pulsing source it is the
+  average of a pass, not any one pass, since the caret projects the pulse's mean. And on day
   1, **are there still enough things on her route to choose between**: friction placed on the
   corridor measures about a tenth lower on day 1 and a twentieth lower over five days than
   it did with these rows cheaper: `Tuning.WALL_WORTH_OF_COST` is 48 points, which keeps the dog
