@@ -28,9 +28,12 @@ extends Node
 ##
 ## An unresolved target (nothing to walk to yet, or nothing found within `_RESOLVE_TIMEOUT`) and an
 ## unreachable one (no path exists) are both logged and skipped rather than hung on forever — see
-## `_try_resolve()` and `_begin_leg()`. Days 10 and 11 have no mark this slice
-## (`ResistanceSteps._unavailable()`), so `mark` and `task` skip cleanly on them; that is the
-## measurement, not a bug in it.
+## `_try_resolve()` and `_begin_leg()`. **Day 14's `mark` and `task` are unavailable on a bare
+## `--day 14` run with nothing else played first** — the last night has no mark of its own
+## (`ResistanceSteps._finale()`) and is only offered once `GameState.sabotage_available()` holds
+## (`Tuning.RESISTANCE_GOAL`, 5 earlier tasks done), which an isolated day never carries. That is a
+## measurement fact about the calendar, not a bug in this rig: `calm` and `home` still resolve and
+## time normally, and the finale's own leg needs the goal met to be timed at all.
 ##
 ## **Hugs the kerb by keeping off the carriageway, not by hand-drawn geometry.** `_plan()` first
 ## asks for the shortest walk on a graph with every plain `ROAD` tile and every live hazard's own
@@ -336,6 +339,8 @@ func _resolve_target(word: String) -> Vector2:
 			return _task_target()
 		"calm":
 			return _nearest_calm()
+		"calm:home":
+			return _nearest_calm(true)
 		"home":
 			return _city.map.home_world_position()
 		_:
@@ -437,8 +442,18 @@ func _stands_open(tile: Vector2i, keep_clear: Dictionary) -> bool:
 ## body. `CityMap.calm_tiles()` is read live, so a park the day has already spoiled (day 12, once
 ## the swing is reached) is never offered back. Her own tile is never blocked, for the reason
 ## `_shortest()` gives: a sweep seeded on blocked ground reaches nothing at all.
-func _nearest_calm() -> Vector2:
+##
+## **`toward_home`, the `calm:home` target word** — docs/TODO.md, M181, "the late days are timed",
+## item 3: day 9 on seed 90210 does not fit its clock (`tests/probes/m184_route_timing.gd`), and one
+## of the two readings the queue names is that the plain nearest-to-her calm area can sit off the
+## way home rather than on it. With this set, the pool is scored by her walk to the tile *plus* the
+## tile's own walk home (`_nearest_in_field_toward_home()`), so the leg still settles the baby
+## without adding a detour the walk home would otherwise have to undo. **The default stays plain
+## `calm`** — nearest to her — since nothing in the calendar but this one day and seed needed the
+## other reading; `calm:home` is here for a caller (a probe, a future measurement) that wants it.
+func _nearest_calm(toward_home: bool = false) -> Vector2:
 	var here := _city.map.world_to_tile(_player.global_position)
+	var home := _city.map.world_to_tile(_city.map.home_world_position())
 	var hazards := _hazard_tiles()
 	var guarded := hazards.duplicate()
 	guarded.merge(_body_clear_tiles())
@@ -447,7 +462,14 @@ func _nearest_calm() -> Vector2:
 			_blocked_for_phase(false)]
 	for blocked in phases:
 		blocked.erase(here)
-		var best := _nearest_in_field(_city.map.walk_field(here, blocked))
+		var field := _city.map.walk_field(here, blocked)
+		var best: Vector2i
+		if toward_home:
+			var home_blocked: Dictionary = blocked.duplicate()
+			home_blocked.erase(home)
+			best = _nearest_in_field_toward_home(field, _city.map.walk_field(home, home_blocked))
+		else:
+			best = _nearest_in_field(field)
 		if best != Vector2i(-1, -1):
 			return _city.map.tile_to_world(best)
 	return Vector2.INF
@@ -464,10 +486,31 @@ func _nearest_in_field(field: PackedInt32Array) -> Vector2i:
 			best = tile
 	return best
 
+## `_nearest_in_field()`'s own pool, scored by her own walk to the tile plus that tile's walk home
+## (`home_field`, `CityMap.walk_field()` from the doorstep over the same blocked ground) rather than
+## by her own walk alone — see `_nearest_calm()`'s doc on `toward_home`. A tile either field cannot
+## reach is skipped, the same as a negative `distance_at()` already means for the plain reading.
+func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedInt32Array) -> Vector2i:
+	var best := Vector2i(-1, -1)
+	var best_total := -1
+	for tile in _city.map.calm_tiles():
+		var distance := _city.map.distance_at(field, tile)
+		if distance < 0:
+			continue
+		var home_distance := _city.map.distance_at(home_field, tile)
+		if home_distance < 0:
+			continue
+		var total := distance + home_distance
+		if best_total == -1 or total < best_total:
+			best_total = total
+			best = tile
+	return best
+
 # ----------------------------------------------------------------- planning ---
 
-## Today's `closed_tiles`, `CityMap.obstructed_tiles` and the ground a street door's boom would take
-## her on (`_gate_ground()`), which block a plan whatever else it asks, plus `_road_tiles` while
+## Today's `closed_tiles`, `CityMap.obstructed_tiles`, today's soft-sealed pavement
+## (`CityMap.soft_sealed_tiles`) and the ground a street door's boom would take her on
+## (`_gate_ground()`), which block a plan whatever else it asks, plus `_road_tiles` while
 ## `sidewalk_only`; `hazards` (see `_hazard_tiles()`) and `avoid` (ground the tile grid calls open
 ## but she cannot stand in the middle of or should keep off, see `_plan()`) are added on top of all
 ## of that. Built fresh every call since `closed_tiles`, every live obstruction's own footprint and
@@ -480,6 +523,17 @@ func _nearest_in_field(field: PackedInt32Array) -> Vector2i:
 ## `obstructed_tiles` at all was the shape of that bug. `hazards` is taken as a dictionary rather
 ## than computed here so a caller can drop the one tile it is actually trying to reach from it first
 ## — see `_shortest()`.
+##
+## **A soft seal (`skip`/`scaffolding`, `moving_van`) shuts its pavement to a walker whatever tier
+## this is, never only while `sidewalk_only`.** `CrowdAgent._cannot_go_on()` already refuses
+## `CityMap.is_soft_sealed(tile)` for `Kind.WALKER` — "a soft seal takes both pavements and leaves
+## the carriageway to the cars" — which a plan never asked before this: the ground either side of a
+## soft seal's own body reads as open, unobstructed ground (the seal shuts the whole *pavement*, not
+## only the body's own footprint), so a plan could aim her down a lane the day has already closed to
+## her rather than crossing to the carriageway where the seal means her to go. Found timing day 11's
+## mast task on seed 1234567, where it lengthens the plan by the detour onto the road, though a
+## separate, narrower stall against the same `scaffolding` body's own outline on that seed and day is
+## still open (`docs/TODO.md`, M181, "the late days are timed").
 func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 		hazards: Dictionary = {}) -> Dictionary:
 	var blocked := {}
@@ -487,6 +541,8 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 		for tile: Vector2i in _road_tiles:
 			blocked[tile] = true
 	for tile: Vector2i in _city.map.closed_tiles:
+		blocked[tile] = true
+	for tile: Vector2i in _city.map.soft_sealed_tiles:
 		blocked[tile] = true
 	for tile: Vector2i in _city.map.obstructed_tiles:
 		blocked[tile] = true
@@ -1439,7 +1495,7 @@ func _arrive() -> void:
 	var distance := _leg_start_position.distance_to(_player.global_position)
 	Telemetry.note("route", "day %d: reached '%s' at %.1fs (day time), %.0fpx walked"
 			% [_day_number, _current_word, _elapsed(), distance])
-	if _current_word == "calm":
+	if _current_word.begins_with("calm"):
 		_settling = true
 		_settle_anchor = _current_target_world
 		_settle_forward = true

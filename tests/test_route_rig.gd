@@ -40,7 +40,13 @@ func run(t) -> void:
 	_test_resolve_target_home_is_the_home_rects_centre(t)
 	_test_resolve_target_spawn_reaches_devrig(t)
 	_test_resolve_target_unknown_word_warns_and_answers_inf(t)
+	_test_task_target_resolves_for_the_neighbor_task_on_day_10(t)
+	_test_task_target_resolves_for_the_mast_task_on_day_11(t)
+	_test_task_target_resolves_for_the_swing_task_on_day_12(t)
+	_test_task_target_resolves_for_the_door_task_on_day_9(t)
+	_test_task_target_resolves_for_the_station_door_on_the_last_night(t)
 	_test_nearest_calm_excludes_ground_the_day_has_spoiled(t)
+	_test_resolve_target_calm_home_prefers_the_combined_walk(t)
 	_test_pace_does_not_advance_the_target(t)
 	_test_check_settled_waits_for_asleep(t)
 	_test_on_day_finished_won_still_finishes(t)
@@ -529,6 +535,185 @@ func _test_resolve_target_unknown_word_warns_and_answers_inf(t) -> void:
 			"an unrecognised --route word answers Vector2.INF rather than guessing")
 	rig.free()
 
+# ---------------------------------------------------- 'task' per bare-point shape ---
+
+## docs/TODO.md, M181, "the late days are timed": one `--route task` resolution test per
+## `ResistanceSteps` bare-point shape (`sits_on_a_bare_point()`'s `NARROW_KINDS` plus `MAST`) and per
+## `NEIGHBOR`, since all six are `is_one_place` and reach `_task_target()`'s `contact_position()`
+## branch rather than `_nearest_live_instance()`'s — a step this suite's own day 6 fixture (an
+## `EVENT` any-instance task) never exercises. Each builds its own day, independent of the suite's
+## shared day-6 fixture (`_city`/`_resistance`/`_stroller`), since a bare-point task's own day is
+## fixed by the calendar (`ResistanceSteps._build()`) and cannot be asked of day 6.
+
+## One day's own city, resistance director and parked `Stroller`, isolated from the suite's shared
+## day-6 fixture and from `GameState`'s own resistance fields — freed and restored by
+## `_free_target_shape_fixture()`. Built the same way `_build_day()` builds day 6's, with `day` in
+## place of the module-level `DAY` constant. `progress_at_dawn` is what `GameState.
+## resistance_progress` reads as `ResistanceDirector.start_day()` runs — 0 for every ordinary day,
+## `Tuning.RESISTANCE_GOAL` for the last night's own finale test, which needs `sabotage_available()`
+## to hold before the step is on offer at all.
+func _build_target_shape_fixture(t, day: int, progress_at_dawn: int = 0) -> Dictionary:
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	city.events.stream_radius = INF
+
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, day)
+	city.start_day(state, day, _rng_for_day(day, "closures"))
+	var consumed: Array[String] = []
+	city.events.start_day(day, _rng_for_day(day, "events"), consumed)
+
+	var saved := {
+		"completed": GameState.completed_resistance_steps.duplicate(),
+		"failed": GameState.failed_resistance_steps.duplicate(),
+		"progress": GameState.resistance_progress,
+		"package": GameState.resistance_carrying_package,
+	}
+	GameState.completed_resistance_steps = []
+	GameState.failed_resistance_steps = []
+	GameState.resistance_progress = progress_at_dawn
+	GameState.resistance_carrying_package = false
+
+	var stroller: Stroller = STROLLER_SCENE.instantiate()
+	t.add_child(stroller)
+	stroller.global_position = city.map.doorstep_world_position()
+
+	var resistance := ResistanceDirector.new()
+	t.add_child(resistance)
+	resistance.set_process(false)
+	resistance.setup(city, city.map)
+	resistance.start_day(day, _rng_for_day(day, "resistance"), Tuning.day_length(day))
+
+	return {"city": city, "resistance": resistance, "stroller": stroller, "saved": saved}
+
+## The same hashed stream `_rng()` builds for the suite's shared day, for an arbitrary `day` — see
+## `_build_target_shape_fixture()`.
+func _rng_for_day(day: int, stream: String) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d:%s" % [SEED, day, stream])
+	return rng
+
+func _free_target_shape_fixture(fixture: Dictionary) -> void:
+	var saved: Dictionary = fixture["saved"]
+	GameState.completed_resistance_steps = saved["completed"]
+	GameState.failed_resistance_steps = saved["failed"]
+	GameState.resistance_progress = saved["progress"]
+	GameState.resistance_carrying_package = saved["package"]
+	(fixture["stroller"] as Stroller).free()
+	(fixture["resistance"] as ResistanceDirector).free()
+	(fixture["city"] as City).free()
+
+## A bare-point task's own `RouteRig` for `fixture`, the same shape `_rig()` gives the suite's
+## shared day, wired to `fixture`'s own `_resistance` too, since `_task_target()` reads it.
+func _target_shape_rig(t, fixture: Dictionary) -> RouteRig:
+	var rig := RouteRig.new()
+	t.add_child(rig)
+	rig.set_physics_process(false)
+	rig._city = fixture["city"]
+	rig._cache_road_tiles()
+	rig._resistance = fixture["resistance"]
+	return rig
+
+## Touches `fixture`'s own mark (`ResistanceDirector._on_contact_completed()`, the pattern
+## `tests/test_resistance.gd` already drives a mark forward with) and answers the perform step it
+## unlocks.
+func _touch_the_mark(fixture: Dictionary) -> ResistanceSteps.Step:
+	var resistance: ResistanceDirector = fixture["resistance"]
+	var mark := resistance.current_step()
+	resistance._on_contact_completed(mark.index if mark else -1)
+	return resistance.current_step()
+
+## Day 10, warn the neighbor: `TargetKind.NEIGHBOR` rides the neighbor out in the city
+## (`ResistanceDirector._send_the_neighbor_home()`), and `_task_target()` follows it through
+## `contact_position()` exactly as it follows a `mark` that has moved.
+func _test_task_target_resolves_for_the_neighbor_task_on_day_10(t) -> void:
+	var fixture := _build_target_shape_fixture(t, 10)
+	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
+	t.check(mark != null and mark.is_pickup, "day 10 offers a mark")
+	var task := _touch_the_mark(fixture)
+	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.NEIGHBOR
+			and task.is_one_place, "touching it offers the neighbor, a one-place task")
+	var rig := _target_shape_rig(t, fixture)
+	var resolved := rig._resolve_target("task")
+	t.check(resolved != Vector2.INF
+			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
+			"'task' resolves to the neighbor's own contact position")
+	rig.free()
+	_free_target_shape_fixture(fixture)
+
+## Day 11, silence a mast: `TargetKind.MAST` sits beside a live mast's own foot
+## (`ResistanceDirector._place_at_a_mast()`), a bare point this director computes rather than a
+## rider — the "task unavailable" this suite guards now that the calendar actually offers it.
+func _test_task_target_resolves_for_the_mast_task_on_day_11(t) -> void:
+	var fixture := _build_target_shape_fixture(t, 11)
+	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
+	t.check(mark != null and mark.is_pickup, "day 11 offers a mark")
+	var task := _touch_the_mark(fixture)
+	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.MAST
+			and task.is_one_place, "touching it offers the mast, a one-place task")
+	var rig := _target_shape_rig(t, fixture)
+	var resolved := rig._resolve_target("task")
+	t.check(resolved != Vector2.INF
+			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
+			"'task' resolves to the ground beside the mast's own foot")
+	rig.free()
+	_free_target_shape_fixture(fixture)
+
+## Day 12, the swing: `TargetKind.PARK_SWING` sits at the one park the city chose for it, a bare
+## point `ResistanceSteps.target_candidates()` computes from today's city.
+func _test_task_target_resolves_for_the_swing_task_on_day_12(t) -> void:
+	var fixture := _build_target_shape_fixture(t, 12)
+	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
+	t.check(mark != null and mark.is_pickup, "day 12 offers a mark")
+	var task := _touch_the_mark(fixture)
+	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING
+			and task.is_one_place, "touching it offers the swing, a one-place task")
+	var rig := _target_shape_rig(t, fixture)
+	var resolved := rig._resolve_target("task")
+	t.check(resolved != Vector2.INF
+			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
+			"'task' resolves to the swing's own point")
+	rig.free()
+	_free_target_shape_fixture(fixture)
+
+## Day 9, the crossing: `TargetKind.DOOR` sits at one of today's region-wall doors, the other bare
+## point `target_candidates()` computes rather than a rider.
+func _test_task_target_resolves_for_the_door_task_on_day_9(t) -> void:
+	var fixture := _build_target_shape_fixture(t, 9)
+	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
+	t.check(mark != null and mark.is_pickup, "day 9 offers a mark")
+	var task := _touch_the_mark(fixture)
+	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.DOOR
+			and task.is_one_place, "touching it offers the district door, a one-place task")
+	var rig := _target_shape_rig(t, fixture)
+	var resolved := rig._resolve_target("task")
+	t.check(resolved != Vector2.INF
+			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
+			"'task' resolves to the district door's own crossing tile")
+	rig.free()
+	_free_target_shape_fixture(fixture)
+
+## The last night: `TargetKind.STATION_DOOR` is the finale, offered with no mark of its own
+## (`ResistanceSteps._finale()`) and only once `GameState.sabotage_available()` holds — set here so
+## the step is on offer at all, the same gate `docs/TODO.md`, M181, "the late days are timed" found
+## `--day 14` alone never carries. `mark` stays `Vector2.INF` on this day (the class doc's own note).
+func _test_task_target_resolves_for_the_station_door_on_the_last_night(t) -> void:
+	var fixture := _build_target_shape_fixture(t, Tuning.RUN_LENGTH_DAYS, Tuning.RESISTANCE_GOAL)
+	var task: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
+	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.STATION_DOOR
+			and task.is_one_place and not task.is_pickup,
+			"the finale is on offer directly, with no mark, once the goal is met")
+	var rig := _target_shape_rig(t, fixture)
+	t.check(rig._resolve_target("mark") == Vector2.INF,
+			"'mark' is unavailable on the last night, which has none")
+	var resolved := rig._resolve_target("task")
+	t.check(resolved != Vector2.INF
+			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
+			"'task' resolves to the power station's own front door")
+	rig.free()
+	_free_target_shape_fixture(fixture)
+
 # ------------------------------------------------------------------- calm ---
 
 ## `_nearest_calm()` reads `CityMap.calm_tiles()` live, so a tile spoiled after the fixture was
@@ -552,6 +737,46 @@ func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t) -> void:
 			"once the nearest calm tile is spoiled, 'calm' answers a different one (%s vs %s)"
 			% [first, second])
 	_city.map.set_tile(spoiled_tile, original)
+	rig.free()
+
+## `calm:home` — docs/TODO.md, M181, "the late days are timed", item 3's rig option — answers a real
+## calm tile too, and one `_nearest_in_field_toward_home()` actually scored by the combined walk
+## (hers to it, and its own walk home) rather than by her walk alone: pinned directly against two
+## synthetic fields, the same way `_test_line_of_sight_refuses_a_true_diagonal` pins geometry rather
+## than trusting a live city to happen to need the tie-break.
+func _test_resolve_target_calm_home_prefers_the_combined_walk(t) -> void:
+	var rig := _rig(t)
+	rig._resistance = _resistance
+	_stroller.global_position = _city.map.doorstep_world_position()
+	rig._player = _stroller
+	var calm_tiles := _city.map.calm_tiles()
+	t.check(calm_tiles.size() >= 1, "the fixture city has at least one calm tile")
+	if calm_tiles.size() < 1:
+		rig.free()
+		return
+	# A tile near her (distance 1) but far from home (distance 100), and — if the pool has a second
+	# calm tile — one far from her (distance 100) but near home (distance 1): `toward_home` must
+	# answer the second, where the plain, her-only reading (`_nearest_in_field`) would answer the
+	# first every time.
+	var near_her := calm_tiles[0]
+	var width: int = _city.map.size.x
+	var height: int = _city.map.size.y
+	var field := PackedInt32Array()
+	var home_field := PackedInt32Array()
+	field.resize(width * height)
+	home_field.resize(width * height)
+	field.fill(-1)
+	home_field.fill(-1)
+	field[near_her.y * width + near_her.x] = 1
+	home_field[near_her.y * width + near_her.x] = 100
+	if calm_tiles.size() >= 2:
+		var near_home: Vector2i = calm_tiles[1]
+		field[near_home.y * width + near_home.x] = 50
+		home_field[near_home.y * width + near_home.x] = 1
+		t.check(rig._nearest_in_field_toward_home(field, home_field) == near_home,
+				"the combined walk (50+1=51) beats the near-her tile's own (1+100=101)")
+	t.check(rig._nearest_in_field(field) == near_her,
+			"the plain reading still answers the tile nearest her, for the contrast")
 	rig.free()
 
 # ------------------------------------------------------------------ settling ---
