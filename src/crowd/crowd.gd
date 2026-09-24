@@ -759,15 +759,21 @@ func _physics_process(delta: float) -> void:
 			_make_way(agent, here, going)
 			shove += _bump(agent, here)
 			continue
-		agent.pedestrian_ahead = Vector2.INF
-		if agent.global_position.distance_to(here) > Tuning.CAR_ZEBRA_SIGHT:
-			continue
-		agent.pedestrian_ahead = here
+		# One query, two watches. `CAR_ZEBRA_SIGHT` is the strike's own reach and the give-way
+		# scan's (`pedestrian_ahead`) — both are about a car that has already noticed her, and
+		# neither changes here. The horn's watch is wider (`CAR_HORN_SIGHT`), because a fast
+		# car's fairness contract needs more warning than 200px of travel gives it; see
+		# `Tuning.validate_traffic()` and the crowd-traffic skill's "The traffic fairness
+		# contract". M191: measuring found the horn short on every street because both shared
+		# the strike's own reach.
+		var distance := agent.global_position.distance_to(here)
+		agent.pedestrian_ahead = here if distance <= Tuning.CAR_ZEBRA_SIGHT else Vector2.INF
 		if not on_the_road:
 			continue
-		if _strike(agent, here):
+		if distance <= Tuning.CAR_ZEBRA_SIGHT and _strike(agent, here):
 			return
-		closing = _horn(agent, here) or closing
+		if distance <= Tuning.CAR_HORN_SIGHT:
+			closing = _horn(agent, here) or closing
 
 	if shove != Vector2.ZERO:
 		_player.shove(shove.normalized() * Tuning.BUMP_SHOVE_SPEED)
@@ -922,7 +928,10 @@ func _strike(agent: CrowdAgent, here: Vector2) -> bool:
 	return true
 
 ## The horn, sounded at somebody standing in the lane this car is about to occupy. Returns
-## true while the car is closing, which is what puts the mark over the player's head.
+## true while the car is closing, which is what puts the mark over the player's head. Only ever
+## called from within `Tuning.CAR_HORN_SIGHT` of her (`_physics_process`), which is wider than
+## the strike's own `CAR_ZEBRA_SIGHT` so a fast car's own cap on this — `speed * CAR_HORN_TIME`
+## below — is never the watch clipping it short instead.
 func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 	var forward := agent.heading()
 	var offset := here - agent.global_position

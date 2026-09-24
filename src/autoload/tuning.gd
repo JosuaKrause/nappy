@@ -1288,6 +1288,15 @@ const CAR_STRIKE_MIN_SPEED := 20.0
 ## long enough to walk out of the carriageway before the car arrives, with the same doubled
 ## margin every other hard fail gets.
 const CAR_HORN_TIME := 1.6
+## How far out the crowd watches a car so it can sound this horn — separate from
+## `CAR_ZEBRA_SIGHT`, which stays the strike's own reach and the give-way scan's. The horn's
+## warning has to reach as far as the car's own travel at `CAR_HORN_TIME`, so this has to be at
+## least `CAR_SPEED.y * CAR_HORN_TIME` (296px) for the fastest car in the city — below that the
+## watch clips the warning short of `CAR_HORN_TIME` rather than the car's speed doing it, which
+## is what M191 found true of every street. `validate_traffic()` checks it against the fastest
+## car at boot, and the crowd-traffic skill's "The traffic fairness contract" states the same
+## thing.
+const CAR_HORN_SIGHT := 296.0
 ## The horn itself, as a jolt on the car that sounded it. A near miss costs something even
 ## when it is only a near miss.
 const CAR_HORN_INTENSITY := 18.0
@@ -2057,6 +2066,14 @@ func validate_traffic() -> bool:
 		push_error("Unfair traffic: CAR_HORN_TIME %.2fs < required %.2fs (carriageway %.0fpx)"
 				% [CAR_HORN_TIME, required, carriageway_width()])
 		return false
+	# The duration above is only true if the crowd watches far enough to let a car sound it —
+	# see `CAR_HORN_SIGHT`. Checked against the fastest car, since a slower one needs less reach.
+	var required_sight := required_horn_sight()
+	if CAR_HORN_SIGHT + 0.001 < required_sight:
+		push_error(("Unfair traffic: CAR_HORN_SIGHT %.0fpx < %.0fpx the fastest car needs "
+				+ "(%.0fpx/s x %.2fs CAR_HORN_TIME)")
+				% [CAR_HORN_SIGHT, required_sight, CAR_SPEED.y, CAR_HORN_TIME])
+		return false
 	# The three answers a walker may be given at a door are one draw of one number, so the two
 	# fractions have to leave something over — held is the remainder, and a remainder of nothing is
 	# a door nobody is ever held at with no error anywhere to say so.
@@ -2080,6 +2097,12 @@ func validate_traffic() -> bool:
 ## test can check the contract without tripping the error it raises.
 func required_horn_time() -> float:
 	return carriageway_width() * TELEGRAPH_HARD_FAIL_MARGIN / WALK_SPEED
+
+## Shortest reach the crowd's horn watch may fairly have: enough for the fastest car to sound
+## the whole of `CAR_HORN_TIME` before it arrives. Kept separate from `validate_traffic()` for
+## the same reason as `required_horn_time()`.
+func required_horn_sight() -> float:
+	return CAR_SPEED.y * CAR_HORN_TIME
 
 ## The return leg's own pacing is fair by construction as long as its shape holds: one entry per
 ## act, none of them negative, and an interval that is ordered and strictly shorter than
