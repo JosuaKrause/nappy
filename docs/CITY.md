@@ -734,6 +734,19 @@ guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pai
 `power_station_door` the pavement in front of the door, `power_station_door_street()` the street it
 faces and `power_station_door_position()` the point she stands on to reach it.
 
+**The station is where the city's power comes from, and the last night takes it away.** Once the
+sabotage is done (`GameState.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` (512px) from the
+station's lot — far enough that no part of it, stacks included, is on screen whichever way she
+leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
+(`Building.powered`), every traffic light on the spine (`TrafficSignals.powered`, see "Traffic
+signals") and every loudspeaker mast (`EventManager.silence_all_masts()`). *(The player,
+2026-09-20: "just wait until a certain distance away -- then everything is off at once".)* The
+station's own hall goes with them: on the last night its clerestory is dimly lit while the power
+is on and dark after, so the hall is seen to go out; on every other day it is unlit. The city stays
+dark while the flag stands, however she walks, and a retry of the day gives the flag back and the
+power with it. The city built for the escape is dark from its first frame, because it is the same
+night.
+
 ### The words for it
 
 These are the words the rest of the project uses — in docs, in identifiers and in the telemetry
@@ -1785,6 +1798,16 @@ which must not say *"at a zebra"* on a street that has none.
 - **The clock restarts with the day.** Not because a signal is a property of a day, but because two
   attempts at the same day must find the same cars at the same lights. What is learnable is the
   pattern, not where the cycle happens to be.
+- **With the power out the lights are dead, and the spine is crossed like a side street.** In the
+  blackout (see "The power station") every head stands dark with no lamp lit and
+  `TrafficSignals.is_signalled()` answers false, so the crowd's own box rule — nearest first, then
+  right before left — decides a spine junction exactly as it decides a side street's, and nothing
+  about the crowd's code changes. The spine's traffic still does not give way at its zebras, so the
+  crossing is kept by the side street's contract, the painted carriageway and the horn — see
+  docs/MECHANICS.md, "The traffic fairness contract". **The roads are harder that night on
+  purpose.** *(The player, 2026-09-20: dead traffic lights are "part of the challenge of coming home
+  after the sabotage".)* `tests/test_blackout.gd` runs the spine lit and dark on the same day and
+  holds the dark one to carrying its traffic as well as the lit one does.
 
 ## Junctions
 

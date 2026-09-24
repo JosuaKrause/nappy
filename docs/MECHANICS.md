@@ -484,6 +484,15 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
 The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
 vocabulary. See docs/EVENTS.md.
 
+**On the main road the light is the contract, and with the power out the horn is.** The spine's
+traffic does not give way at a zebra, so what stands between her and a hard fail there is the length
+of the side street's green (`Tuning.validate_signals()`). On the last night, after the blackout, the
+lights are dead: a spine junction is negotiated the way a side street's is, and crossing the spine
+is kept by the same two things every other street's carriageway is — the paint and the horn. The
+spine's carriageway is the same 64px as every street's and the horn is stated in seconds of the
+car's own travel, so the check above is the dark spine's check too. That night's roads are harder
+on purpose; see docs/CITY.md, "Traffic signals".
+
 Belt and braces: a car in its lane has a strike box geometrically incapable of reaching over the
 kerb. A car sits half a tile off the middle of the carriageway, so its far edge is `16 + 14 = 30 px`
 out and the kerb is at `32`. `tests/test_crowd.gd` asserts it, because a box that reached the

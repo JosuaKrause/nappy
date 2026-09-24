@@ -1266,10 +1266,11 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 	GameState.day = saved_day
 	GameState.nerves = saved_nerves
 
-## The whole subquest pays out in quiet. On the last walk home every mast stops, and the field
-## each one has been holding near itself since day 5 goes with it — `EventManager.
-## silence_all_masts()`, not the deleted `city_wide` floor: a mast has an edge like any other
-## row's, so what the sabotage silences is everywhere a mast actually stands, not the whole map.
+## The sabotage is what puts the city's power out, and the masts go with it. Not at the door she
+## touched: the hand-over takes minutes, so every mast is still speaking until the blackout, which
+## comes once she is far enough from the station (`Blackout`) — and then the field each one has been
+## holding near itself since day 5 goes with it, `EventManager.silence_all_masts()`: a mast has an
+## edge like any other row's, so what stops is everywhere a mast actually stands, not the whole map.
 func _test_the_sabotage_silences_the_city(t) -> void:
 	_with_clean_run(func() -> void:
 		GameState.completed_resistance_steps = _completed_through(8)
@@ -1315,10 +1316,17 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		director._on_contact_completed(15)
 
 		t.check(GameState.sabotage_done, "completing it does the sabotage")
-		t.check(quiet.size() == 1, "and the city goes quiet, once")
+		t.check(quiet.is_empty() and not mast.silenced,
+				"and the masts are still speaking at the door: they stop with the power")
+		var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
+		_city.blackout.update(Vector2(lot.get_center().x,
+				lot.end.y + Tuning.BLACKOUT_DISTANCE + 8.0))
+		t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
 		t.check(mast.silenced, "the mast is marked silenced")
 		t.close_to(mast.contribution_at(nearby), 0.0,
 				"the mast contributes nothing afterwards")
+		GameState.sabotage_done = false
+		_city.blackout.update(Vector2(lot.get_center().x, lot.end.y))
 
 		EventBus.city_went_quiet.disconnect(handler)
 		director.free())
