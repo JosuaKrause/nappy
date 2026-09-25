@@ -1287,8 +1287,11 @@ func _standing_tile() -> Vector2i:
 ## the plan chose to cross (`_plan_accepted`), which is its roomiest point (`_roomiest_point()`).
 func _to_world(path: Array[Vector2i]) -> Array[Vector2]:
 	var world: Array[Vector2] = []
-	for tile in path:
-		world.append(_roomiest_point(tile) if _plan_accepted.has(tile)
+	for k in path.size():
+		var tile := path[k]
+		# Not the tile she stands on: she is already on it, and walking to another point of it
+		# first takes her back and forth across a pinch the stall checks then never see her stuck in.
+		world.append(_roomiest_point(tile) if k > 0 and _plan_accepted.has(tile)
 				else _city.map.tile_to_world(tile))
 	return world
 
