@@ -1,0 +1,170 @@
+extends Node
+## Sends anonymous GoatCounter events for how far a run gets — see docs/TELEMETRY.md, "The page
+## counts visits", and PLAYTEST-132 ("let's get info about how far people get ... anything with
+## debug doesn't get tracked").
+##
+## **A different thing from `Telemetry`, the run log.** This never writes a file and never reads
+## one back — it only calls the page's own `window.goatcounter.count()`, the same function the
+## page's `<head>` already loads `count.js` for (`export_presets.cfg`'s `html/head_include`).
+## Off the web, or on a debug build, or behind `?debug=1`, or with `count.js` missing or blocked,
+## it is a silent no-op — see `_should_send()`.
+##
+## **It only listens**, the same discipline `TelemetryObserver` keeps for the run log: everything
+## here answers an `EventBus` signal, reads nothing gameplay decides by, and writes nothing back
+## into anything gameplay reads. The telemetry skill's own invariant — the game plays identically
+## with this off — holds for this counter exactly as it holds for the run log, and it is why every
+## signal it listens to already exists for another reason (or was added purely to be listened to,
+## with no behaviour of its own — see `EventBus`'s own doc on each one).
+##
+## Every event name starts with `nappy-` so it can never collide with an event the marketing site
+## sends through the same GoatCounter account, and every name is short, lowercase and hyphenated —
+## `nappy-day-6-lost-crying`, PLAYTEST-132's own shape for it. Counts only: no seed, no position,
+## no time and nothing that could tell one visitor from another or from their own next visit.
+##
+## The events, at least:
+## - `nappy-run-fresh` / `nappy-run-resumed-day-N` — a run begun fresh, or resumed from the save.
+## - `nappy-day-N-began` — each day begun (a retry begins it again, for the day it repeats).
+## - `nappy-day-N-won` / `nappy-day-N-lost-crying` / `nappy-day-N-lost-timeout` /
+##   `nappy-day-N-lost-hard-fail` — each day's end, using `GameEnums.DayResult`'s own names.
+## - `nappy-day-N-restarted` — a held restart, never the ordinary return to the title after an
+##   ending already reported through `nappy-ending-*` (see `EventBus.run_restarted`'s own doc).
+## - `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each task done, and each task a day
+##   ended without: a mark never reached, or a perform step reached but not finished.
+## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
+## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
+##   handover only), lost (either section, any attempt), or got out.
+## - `nappy-controls-joystick` / `nappy-controls-tap` — the "etc.": which control scheme was
+##   picked on the title screen, cheap to answer and part of "how far people get" in its own way.
+
+func _ready() -> void:
+	EventBus.run_begun.connect(_on_run_begun)
+	EventBus.day_started.connect(_on_day_started)
+	EventBus.day_ended.connect(_on_day_ended)
+	EventBus.run_restarted.connect(_on_run_restarted)
+	EventBus.run_ended.connect(_on_run_ended)
+	EventBus.resistance_contact_available.connect(_on_task_offered)
+	EventBus.resistance_step_completed.connect(_on_task_completed)
+	EventBus.resistance_step_failed.connect(_on_task_failed)
+	EventBus.escape_begun.connect(_on_escape_begun)
+	EventBus.escape_lost.connect(_on_escape_lost)
+	EventBus.escape_out.connect(_on_escape_out)
+	EventBus.controls_chosen.connect(_on_controls_chosen)
+
+# ------------------------------------------------------------------- the gate ---
+
+## Whether an event may be sent at all, right now. `_should_send()` below is the pure truth table;
+## this is the one place its four live inputs are actually read, the same split
+## `DevFlags.live_debug_requested()`/`_live_debug_requested()` already uses.
+static func should_send() -> bool:
+	return _should_send(OS.get_name() == "Web", OS.is_debug_build(), DevFlags.readout_requested(),
+			_goatcounter_present())
+
+## The gate, as a pure function of its four inputs: on the web, not a debug build, not
+## `?debug=1` (`DevFlags.readout_requested()`, the same flag that keeps `count.js` itself off the
+## page — see `export_presets.cfg`'s `html/head_include`), and `window.goatcounter.count` actually
+## present, since the script can fail to load or be blocked by the visitor's own browser.
+static func _should_send(on_web: bool, is_debug_build: bool, debug_requested: bool,
+		goatcounter_present: bool) -> bool:
+	return on_web and not is_debug_build and not debug_requested and goatcounter_present
+
+## Whether the page actually has a callable `window.goatcounter.count` — `false` off the web
+## without ever asking `JavaScriptBridge`, the same guard `DevFlags._web_query()` makes before its
+## own `JavaScriptBridge.eval()`.
+static func _goatcounter_present() -> bool:
+	if OS.get_name() != "Web":
+		return false
+	var present: Variant = JavaScriptBridge.eval(
+			"(typeof window.goatcounter !== 'undefined' " +
+			"&& typeof window.goatcounter.count === 'function')")
+	return present is bool and present
+
+## Calls `window.goatcounter.count({path, title, event: true})` for `name` — see
+## https://www.goatcounter.com/help/events and /help/js. Wrapped in the page's own `try`/`catch`
+## as well as `_goatcounter_present()`'s existence check, so a third-party script's own internals
+## throwing never becomes an engine error on this side — "a missing or failing
+## window.goatcounter must never raise or print an engine error" — and gated on `should_send()`
+## before any string is even built, so a call from a test process or a debug build costs one
+## boolean check and nothing else.
+func _send_event(name: String) -> void:
+	if not should_send():
+		return
+	var payload := JSON.stringify(name)
+	JavaScriptBridge.eval(
+			"try { window.goatcounter.count({path: %s, title: %s, event: true}); } catch (e) {}"
+			% [payload, payload])
+
+# --------------------------------------------------------------- event names ---
+# Pure functions, each testable without a web page, a save or a run behind it.
+
+static func _day_event_name(day: int, suffix: String) -> String:
+	return "nappy-day-%d-%s" % [day, suffix]
+
+## `GameEnums.DayResult`'s own key, lowercased and hyphenated — `LOST_CRYING` -> `lost-crying`,
+## `WON` -> `won` — so a day's end is always named straight off the game's own loss causes rather
+## than a second copy of them invented here.
+static func _loss_cause(result: GameEnums.DayResult) -> String:
+	return String(GameEnums.DayResult.keys()[result]).to_lower().replace("_", "-")
+
+static func _run_begun_name(day: int, resumed: bool) -> String:
+	return "nappy-run-resumed-day-%d" % day if resumed else "nappy-run-fresh"
+
+static func _controls_event_name(mode: int) -> String:
+	return "nappy-controls-joystick" if mode == ControlsMode.Mode.JOYSTICK else "nappy-controls-tap"
+
+# ------------------------------------------------------------------- signals ---
+
+func _on_run_begun(day: int, resumed: bool) -> void:
+	_send_event(_run_begun_name(day, resumed))
+
+func _on_day_started(day: int) -> void:
+	_send_event(_day_event_name(day, "began"))
+
+## Which day offered a step is on offer, kept only long enough to say whether the day it belongs
+## to ended with the step done or without it — `step index -> day`. A retry re-offers the same
+## index for the same day (`GameState._give_the_resistance_back()` restores the step lists a lost
+## attempt spent), which simply overwrites the entry with the day it already named.
+var _open_tasks := {}
+
+func _on_task_offered(step: int) -> void:
+	_open_tasks[step] = GameState.day
+
+func _on_task_completed(step: int) -> void:
+	var day: int = _open_tasks.get(step, GameState.day)
+	_open_tasks.erase(step)
+	_send_event(_day_event_name(day, "task-done"))
+
+## A timed step's own deadline passed — `ResistanceDirector`'s one expiry path. Counted the same
+## as a step a day simply ended without touching (`_on_day_ended()` below): both are "a task day
+## that ended without it", just found at two different moments.
+func _on_task_failed(step: int) -> void:
+	var day: int = _open_tasks.get(step, GameState.day)
+	_open_tasks.erase(step)
+	_send_event(_day_event_name(day, "task-skipped"))
+
+func _on_day_ended(day: int, result: GameEnums.DayResult) -> void:
+	_send_event(_day_event_name(day, _loss_cause(result)))
+	# Whatever today's step still stands open — never reached, or reached but not finished — is
+	# skipped the moment the day it belonged to ends, whether the day was won or lost.
+	for step: int in _open_tasks.keys().duplicate():
+		if int(_open_tasks[step]) != day:
+			continue
+		_open_tasks.erase(step)
+		_send_event(_day_event_name(day, "task-skipped"))
+
+func _on_run_restarted(day: int) -> void:
+	_send_event(_day_event_name(day, "restarted"))
+
+func _on_run_ended(ending: GameEnums.Ending) -> void:
+	_send_event("nappy-ending-%s" % String(GameEnums.Ending.keys()[ending]).to_lower())
+
+func _on_escape_begun() -> void:
+	_send_event("nappy-escape-begun")
+
+func _on_escape_lost() -> void:
+	_send_event("nappy-escape-lost")
+
+func _on_escape_out() -> void:
+	_send_event("nappy-escape-out")
+
+func _on_controls_chosen(mode: int) -> void:
+	_send_event(_controls_event_name(mode))
