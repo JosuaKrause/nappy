@@ -27,6 +27,10 @@ where the residents still pass; B, a front window boarded over with the same not
 > "we can add the door seal starting at the raid. and the boarded window to indicate the
 > neighbor"
 
+> "so the sealed street door shoudn't be from the beginning of that day but basically when
+> returning to find the raid the door texture should also have changed. and then the change
+> stays"
+
 ## The statements
 
 1. **The seal is seen on her building's front**, every morning from day 11 on.
@@ -34,7 +38,8 @@ where the residents still pass; B, a front window boarded over with the same not
    there would never be seen.
 4. **The escape marks no door as the neighbor's.** None of the building's inside doors needs to
    say which one was theirs.
-5. **Both drawings go in.** The sealed street door (A) appears with the raid on day 10 and stays;
+5. **Both drawings go in.** The sealed street door (A) is not there when day 10 begins: it has
+   changed when she comes home to find the raid, and it stays for the rest of the run;
    the boarded window (B) is the neighbor's flat, seen on her building's front.
 3. **No existing drawing is lost.** The repository has no sealed-door picture; the one this needs
    is drawn new, SVG first, and shown to the player before it is installed.

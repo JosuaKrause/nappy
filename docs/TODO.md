@@ -360,11 +360,14 @@ the one trace a happening leaves that has no picture yet.
 - [ ] **The seals are on her building's front** ([PLAYTEST-131](playtests/PLAYTEST-131.md): "we
       can add the door seal starting at the raid. and the boarded window to indicate the
       neighbor"). Both of draft PR #351's drawings go in. **Her street door carries the seal
-      from the raid on:** the moment day 10's raid happens at her building,
-      `art/props/door.svg` gives way to `art/buildings/home_door_sealed.svg` (the notice across
+      from the raid on:** not from day 10's start, but from the moment the raid arrives at
+      her building (`Happenings._maybe_raid()`, while she is out and none of it on screen), so
+      she comes home to the vans and the sealed door together — "when returning to find the raid
+      the door texture should also have changed. and then the change stays" —
+      `art/props/door.svg` giving way to `art/buildings/home_door_sealed.svg` (the notice across
       the upper panel, the strips cut at the gap, so she still walks out of it), and it stays
-      for the rest of the run, a saved run's included. **One front window is boarded over for
-      the neighbor** (`art/buildings/window_boarded_sealed.svg`, laid over the window cell) from
+      for the rest of the run, a saved run's included. **One front window on her own floor, the
+      third, where the escape begins, is boarded over for the neighbor** (`art/buildings/window_boarded_sealed.svg`, laid over the window cell) from
       the next morning on, day 11, which is when "the neighbor's door is sealed the next morning
       either way" says it happens; the same window on every day and every load of a run. Nothing
       inside the building shows either, and no door there is marked as the neighbor's. The
