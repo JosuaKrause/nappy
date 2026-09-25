@@ -509,26 +509,22 @@ design decision back to itself, where "you changed a number" is all it could eve
 keeps: a guard that a sweep was not vacuous, an ordering between two constants, and anything the
 skill's incident list names.
 
-**What is true today.** Ten suites have had the pass and the crowd suite is split in two by
-subject — the per-suite times before and after are in `DECISIONS.md` under M125 — and the head
-of `tests/run_tests.gd` says the budget: a suite over two minutes serial is a suite to split or
-cut, because the longest suite sets the floor every shard waits on. CI runs the suite as eight
-shards on eight runners, planned from `tests/suite_costs.txt`, the measured per-suite times
-`tools/test.sh --record-costs` refreshes (`DECISIONS.md`, M125, CI runs the shards on eight
-runners); the wall time is the longest suite plus a minute of setup, so the longest suite is
-the whole of what CI's time is made of. Two suites are still over it, and the recorded costs
-were last taken under local contention, so `--record-costs` on a quiet machine comes first.
+**What is true today.** The head of `tests/run_tests.gd` says the budget: a suite over two
+minutes on CI is a suite to split or cut, because the longest suite sets the floor every shard
+waits on. CI runs eight shards planned from `tests/suite_costs.txt`, which `tools/ci-costs.sh`
+refreshes from CI's own timings. `test_events.gd` and `test_routes.gd` are split by subject
+(`DECISIONS.md`, M125, test_events and test_routes are split by subject); the new suites' rows
+are estimates until `tools/ci-costs.sh` measures them.
 
-- [ ] **`test_events.gd` and `test_routes.gd` are the floor now.** Both run over two minutes
-      serial and both had the pass already, so what is left is a split by subject, the way the
-      crowd suite was split at its own seals boundary — every test function still called once,
-      the check total unchanged, the split named for what each half proves — or a measured
-      shorter loop where a docstring can say why. `tools/test.sh --record-costs` afterwards,
-      so the plan follows; the per-suite line before and after goes to `DECISIONS.md` under
-      M125. `test_resistance.gd` joined them: about 160 s under load once the narrow targets'
-      reachability test landed (`DECISIONS.md`, M181, the narrow targets are reachable by
-      construction), against the 43 s `suite_costs.txt` still records. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
-      CI plans them at its default.
+- [ ] **`test_resistance.gd` is the floor now**, at about 192s on CI: split it by subject the same
+      way, every test function still called once and the check total unchanged.
+- [ ] **Refresh `suite_costs.txt` from CI** once the split suites have run on `main`, and split
+      again whatever is still over two minutes; `test_events_scheduler.gd` and
+      `test_routes_closures.gd` are estimated just under and over it, and `test_full_run.gd`
+      is about 159s.
+- [ ] **A stale comment in `.github/workflows/ci.yml`** still names `test_events.gd` as the suite
+      that sets the shard floor; it changes with the next workflow edit, since this session's
+      token cannot merge one.
 
 ---
 

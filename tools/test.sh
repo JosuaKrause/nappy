@@ -12,10 +12,10 @@
 #
 # A full run is sharded -- locally across several Godot processes, in CI across matrix jobs, one
 # runner per shard. The reason is the shape of the suite rather than a preference: the work is
-# one core's worth of arithmetic per process, the suites are independent, and the two heaviest,
-# `test_crowd.gd` and `test_events.gd`, are together most of the whole on their own. Serially
-# that is minutes of one core while the rest of the machine (or fleet) idles, and minutes is long
-# enough that the gate becomes something people skip.
+# one core's worth of arithmetic per process, the suites are independent, and the whole run is
+# minutes of them even with no single suite dominating -- see tests/suite_costs.txt for the
+# current spread. Serially that is minutes of one core while the rest of the machine (or fleet)
+# idles, and minutes is long enough that the gate becomes something people skip.
 #
 # **Sharding changes nothing about what is checked.** Every suite still runs, every check still
 # runs, and the count printed at the end is the sum (locally; in CI the final `test` job stands
@@ -40,7 +40,7 @@ SHARDS="${TEST_SHARDS:-4}"
 
 # How long the local parallel run below waits on one shard before killing it and reporting it
 # hung. `tools/test.sh --plan`'s own bin-packing, read from tests/suite_costs.txt at the default
-# four shards, currently tops out at ~313s (test_events.gd's shard); this is comfortably above
+# four shards, currently tops out at ~473s; this is comfortably above
 # that and still well inside a CI shard job's own 15-minute (`.github/workflows/ci.yml`) budget,
 # so a real hang is caught and named long before anything blunter would cut the job off with no
 # message at all. Only this one path uses it -- `--serial` and `--shard I/N` run more suites in
@@ -268,7 +268,7 @@ fi
 ##
 ## **A linear scan of a file rather than an associative array, because macOS ships bash 3.2** —
 ## the last GPLv2 release, which has no `declare -A`. It does not fail on one either: it quietly
-## makes an *indexed* array, and every `${COST[test_events.gd]}` then gets its subscript evaluated
+## makes an *indexed* array, and every `${COST[test_crowd.gd]}` then gets its subscript evaluated
 ## as arithmetic. The first version of this file did exactly that, every cost came back empty, and
 ## the bin-packer below put all twenty-three suites in one shard — a "parallel" run that was
 ## serial and looked fine apart from being no faster. A few dozen lines read per suite is free
