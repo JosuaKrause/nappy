@@ -57,6 +57,7 @@ func run(t) -> void:
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_day_twelves_park_is_forced_open_whatever_its_state(t)
 	_test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t)
+	_test_the_mast_task_favors_the_near_mast(t)
 	_test_the_neighbor_leaves_for_work_until_the_raid(t)
 	_test_day_ten_sends_her_to_the_neighbor_walking_home(t)
 	_test_the_raid_waits_at_her_building_with_the_doorstep_open(t)
@@ -1641,6 +1642,62 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 		director.free())
 	GameState.scars = saved_scars
 	GameState.day = saved_day
+
+## `_weighted_mast_index()` is the draw `_place_at_a_mast()` makes among the masts already found
+## reachable, so this reaches the weighting rule directly, over two tiles at fixed, known
+## distances from her, rather than through a live day 11 — whose own reachable masts a small test
+## city can offer as few as one of (`docs/DECISIONS.md`, M181, day 11's mast in the map's corner),
+## too few to compare a near draw against a far one. No `_city` is needed for the draw itself, the
+## same bare-map rig `_test_the_guard_never_lands_inside_a_building()` uses.
+##
+## Two tiles 2 and 10 tiles from her (64px, 320px): weight is `1/d^2`, so the near tile outweighs
+## the far one 25 to 1, drawn clearly more often over many rolls and still, sometimes, not drawn.
+func _test_the_mast_task_favors_the_near_mast(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var director := ResistanceDirector.new()
+	t.add_child(director)
+	director.setup(null, map)
+	var doorstep_tile := map.world_to_tile(map.doorstep_world_position())
+	var near_tile := doorstep_tile + Vector2i(2, 0)
+	var far_tile := doorstep_tile + Vector2i(10, 0)
+	var beside: Array[Vector2i] = [near_tile, far_tile]
+	var player := _rig_player(t, map.tile_to_world(doorstep_tile))
+
+	var draws := 300
+	var near_drawn := 0
+	var far_drawn := 0
+	for i in draws:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("mast weight test %d" % i)
+		var index := director._weighted_mast_index(beside, rng)
+		if index == 0:
+			near_drawn += 1
+		elif index == 1:
+			far_drawn += 1
+	t.check(near_drawn > far_drawn * 3,
+			("the 2-tile mast is drawn clearly more often than the 10-tile one (%d vs %d of %d " +
+			"draws)") % [near_drawn, far_drawn, draws])
+	t.check(far_drawn > 0, "and the 10-tile mast can still be drawn (%d of %d draws)"
+			% [far_drawn, draws])
+
+	# The same draw with nobody in the tree falls back to the doorstep, exactly where she is
+	# standing above — so it favors the near tile exactly as strongly.
+	player.free()
+	var fallback_near := 0
+	var fallback_far := 0
+	for i in draws:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("mast weight fallback test %d" % i)
+		var index := director._weighted_mast_index(beside, rng)
+		if index == 0:
+			fallback_near += 1
+		elif index == 1:
+			fallback_far += 1
+	t.check(fallback_near > fallback_far * 3,
+			("with no player in the tree, the doorstep fallback favors the near tile just as " +
+			"clearly (%d vs %d of %d draws)") % [fallback_near, fallback_far, draws])
+
+	director.free()
 
 ## On the mornings before day 10 the neighbor walks out of her building beside her and off along
 ## her street, away from her, with nothing pointing at them; from day 10 on there is no morning

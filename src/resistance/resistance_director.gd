@@ -501,8 +501,9 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 
 ## Where day 11's task points: beside the foot of one of today's live loudspeaker masts
 ## (`EventManager.mast_foot()`'s own point, the plan's position), drawn by the day's RNG among the
-## masts she can reach. `Vector2.INF` if today stands none, which from `Tuning.MAST_FIRST_DAY` on
-## only a day whose holds took every site could do.
+## masts she can reach, weighted toward the nearer ones (`_weighted_mast_index()`). `Vector2.INF`
+## if today stands none, which from `Tuning.MAST_FIRST_DAY` on only a day whose holds took every
+## site could do.
 ##
 ## **Reachable is asked of the ground beside the foot, not of the foot.** The pole is a body
 ## (`EventScheduler.blocked_by()` paints its disc over the foot's own tile), and she touches it
@@ -539,9 +540,41 @@ func _place_at_a_mast(rng: RandomNumberGenerator) -> Vector2:
 				break
 	if offered.is_empty():
 		return Vector2.INF
-	var index := rng.randi_range(0, offered.size() - 1)
+	var index := _weighted_mast_index(beside, rng)
 	_mast_id = offered[index].mast_id
 	return _map.tile_to_world(beside[index])
+
+## The near mast's edge over the far one: index `i`'s weight is `1.0 / d^2`, `d` the straight-line
+## distance from where she is when the task is placed (`_player_position()`, or the doorstep with
+## no player in the tree, the shape every bare-director test in `tests/test_resistance.gd` builds)
+## to `beside[i]`, the tile that draw would stand her on. Straight-line rather than a walked
+## distance: `ReachabilityGrid` (`src/routes/reachability_grid.gd`) answers only whether a tile is
+## reached, never how far, so there is no cheap walking distance on hand to weight by instead. `d`
+## is floored at one tile (`Tuning.TILE_SIZE`, 32px) so a mast whose contact tile she already
+## stands beside does not carry a near-infinite weight over every other. One `rng.randf()` call —
+## the same single draw off the day's RNG `_kind_for()` in `poster_walls.gd` makes for a weighted
+## pool — so the draw is still random and still exactly reproducible for the same seed and the same
+## route: her position at the moment of the draw is itself determined by the route that got her
+## there.
+func _weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) -> int:
+	var from := _player_position()
+	if from == Vector2.INF:
+		from = _map.doorstep_world_position()
+	var weights: Array[float] = []
+	var total := 0.0
+	for tile in beside:
+		var d := maxf(from.distance_to(_map.tile_to_world(tile)), float(Tuning.TILE_SIZE))
+		var weight := 1.0 / (d * d)
+		weights.append(weight)
+		total += weight
+	var pick := rng.randf() * total
+	var chosen := 0
+	for i in weights.size():
+		chosen = i
+		pick -= weights[i]
+		if pick < 0.0:
+			break
+	return chosen
 
 ## Silences the mast day 11 sent her to, for the rest of the run: today through
 ## `EventManager.silence_mast()`, and every later day through the scar it leaves
