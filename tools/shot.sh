@@ -139,13 +139,25 @@ case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 # is what fires if that one somehow does not.
 KILL_AFTER="$(rig_kill_after_seconds --after "$SECONDS_TO_WAIT" "$@")"
 rm -f "$OUT"
+# M198: macOS still makes Godot the active app once its own startup calls
+# activateIgnoringOtherApps: -- nothing launch-side can gate that call (see lib_dev_flags.sh's own
+# doc comment above rig_focus_note). Note whoever was frontmost before Godot's own launch below so
+# a watcher can hand focus straight back the moment it happens; a no-op everywhere this cannot run
+# cleanly (see rig_focus_guard_available).
+FOCUS_NOTED="$(rig_focus_note)"
 "$GODOT" --path "$PROJECT_DIR" --resolution "$RESOLUTION" --disable-vsync \
 	-- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@" &
 GODOT_PID=$!
+FOCUS_WATCHER_PID="$(rig_focus_watch_start "$GODOT_PID" "$FOCUS_NOTED")"
+# The watcher dies with the rig on every exit path below, including a signal from outside: it is
+# stopped explicitly the moment Godot is done with, and this trap catches every other way this
+# script itself stops running first.
+trap 'rig_focus_watch_stop "$FOCUS_WATCHER_PID"' EXIT
 if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
     echo "shot.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
     exit 1
 fi
+rig_focus_watch_stop "$FOCUS_WATCHER_PID"
 # An edit -- and a capture is one -- fails loudly: Godot exiting 0 is not by itself proof the
 # picture exists (`--route` racing its own quit against `--after` is one way it would not, before
 # `reject_route_with_screenshot` above closed that specific combination off; a display fallen back
