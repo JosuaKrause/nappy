@@ -346,6 +346,10 @@ func _process(delta: float) -> void:
 ## pause screen and `R` restarts the run, and neither is in the input map — they are read as
 ## keycodes, the way a screen's own shortcuts usually are. Without `key:`, a rig can reach no screen
 ## whose shortcuts are keycodes, which is the pause screen entirely.
+##
+## **Tagged with `InputEvent.DEVICE_ID_EMULATION` so a locked-out rig still hears it.** `main.
+## _input()` marks every event handled while `_rig_locked_out`, except one carrying this exact
+## device id — see that function's own doc for why a tag on the event and not its class.
 func _tap(what: String) -> void:
 	for pressed in [true, false]:
 		var event: InputEvent
@@ -359,6 +363,7 @@ func _tap(what: String) -> void:
 			action.action = what
 			action.pressed = pressed
 			event = action
+		event.device = InputEvent.DEVICE_ID_EMULATION
 		Input.parse_input_event(event)
 
 ## `TouchControls` maps a tap through `get_viewport().get_canvas_transform()`, which is the
