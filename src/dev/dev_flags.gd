@@ -159,13 +159,13 @@ const _LIVE_DEBUG_QUERY_KEYS := [
 	"blackout",
 ]
 
-## Whether a release page's query string actually named one of `live_debug_requested()`'s own
-## parameters, as against merely being allowed to. `false` on a debug build outright: there,
-## `GameSave.uses_save()` already asks `active_args()` instead, the same way every debug-build dev
-## flag already keeps a run off the save by being a dev flag at all. `false` too on a release page
-## nobody asked `?debug=1` of, the ordinary ongoing case this must not disturb.
+## Whether the page's query string actually named one of `live_debug_requested()`'s own
+## parameters, as against merely being allowed to — on a release page carrying `?debug=1` and on a
+## debug web build alike, since a web page has no command line for `active_args()` to see and
+## `?day=` there is as much a debugging run as `--day` is on the desktop. `false` on a release page
+## nobody asked `?debug=1` of, the ordinary case this must not disturb, and off the web.
 static func web_debug_flag_used() -> bool:
-	if enabled() or not readout_requested():
+	if not live_debug_requested():
 		return false
 	return _web_debug_flag_used_in_query(_web_query())
 
