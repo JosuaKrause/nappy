@@ -339,9 +339,11 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
       `roadblock_segment_vertical.svg`, drawn SVG first in the roadblock's own materials, chosen
       by the spread's axis the way `EventInstance` picks `barrier_segment_vertical` for
       roadworks, tiling edge to edge so the stack reads as one band.
-- [ ] **The roadblock's guard stands beside the band, never over it**: while posted he is drawn
-      clear of the barrier's picture, on the side she approaches from, and when he leaves the
-      post he sets off from there.
+- [ ] **A guard stands on each side of the band, never over it** ("have one guard on each
+      side?"), and **only the one on her side gives chase**, "since the other one will be
+      blocked". He sets off from his own post, and his stand-off is measured from his 28px catch
+      reach rather than his field's 86px core, so a guard posted beside the band still runs his
+      whole warning before he lunges.
 
 ---
 

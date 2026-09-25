@@ -26,3 +26,23 @@ guard is drawn at the band's own centre (`EventInstance._draw_roadblock()`), ove
 1. **A roadblock stacked vertically draws an end-on segment**, the way the roadworks barrier does,
    so the band reads as one barrier rather than a stack of side views.
 2. **The guard stands beside the barrier, never on top of it.**
+
+## Then, where the guard sets off from
+
+Draft PR #355 stood the guard beside the band, on the side she is on. It left one question open:
+the chase is still measured from the band's centre. A guard really setting off from 23–46px
+closer to her would already be inside his 164px stand-off when he notices her, and he would lunge
+on the first frame with no warning. Offered: (a) measure his stand-off from his 28px catch reach
+instead of his 86px field core, giving 106px; (b) widen his field by the post distance; (c) he
+holds his ground through the warning. The orchestrator proposed two guards, one on each side,
+only the one on her side giving chase, together with (a).
+
+> "have one guard on each side?"
+
+> "only the guard on her side can chase since the other one will be blocked"
+
+3. **A roadblock has a guard on each side of its band.**
+4. **Only the guard on her side gives chase**, since the band blocks the other.
+5. **The chasing guard sets off from his post, and his stand-off is measured from his catch
+   reach** (option (a)), so he still warns before he lunges. Proposed with statements 3 and 4;
+   the player answered the proposal without objecting to it.
