@@ -2162,9 +2162,27 @@ func _somebody_is_playing() -> bool:
 ## into a window that has taken the focus while the operator works elsewhere — is a keyboard one,
 ## and `WINDOW_FLAG_NO_FOCUS` (`_lock_out_a_rig()`) is what stops the window from taking that focus
 ## in the first place, so a pointer event over it is already the unlikelier half of the risk.
+##
+## **A rig's own `--press` gets through by a tag on the event, not by its class.** `AutoScreenshot.
+## _tap()` sets `event.device = InputEvent.DEVICE_ID_EMULATION` (Godot's own constant, `-1`, distinct
+## from `DEVICE_ID_KEYBOARD` (`16`) and `DEVICE_ID_MOUSE` (`32`)) before handing each event to
+## `Input.parse_input_event()`, and `_is_the_rigs_own_press()` below is the one check that reads it
+## rather than marking handled. Gating on the event's class instead would open the exact hole this
+## function exists to close: `key:` presses are `InputEventKey`, the same class a real key already
+## is, and a real `InputEventAction` can reach a window too — an on-screen back button delivers one
+## — so "let every `InputEventAction` through" would let that through as well. The device tag is
+## what `Input.parse_input_event()` itself leaves untouched between the script that built the event
+## and every handler downstream, so it is the one thing on the event a rig controls and nothing
+## external does.
 func _input(event: InputEvent) -> void:
-	if _rig_locked_out:
+	if _rig_locked_out and not _is_the_rigs_own_press(event):
 		get_viewport().set_input_as_handled()
+
+## A static, pure predicate for the same reason `_debug_snapshot_action()` and `_debug_layer_key()`
+## are static — a test can ask it directly without booting a `main` (`_ready()` starts a whole run),
+## the seam `tests/test_main.gd`'s own class doc explains for every other case here.
+static func _is_the_rigs_own_press(event: InputEvent) -> bool:
+	return event.device == InputEvent.DEVICE_ID_EMULATION
 
 ## PLAYTEST-133, M195: a rig's window takes no OS focus, hears no real key or pointer press, and
 ## quits itself on a wall-clock deadline — three defences for the one thing the player named
