@@ -407,37 +407,34 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
 
 ---
 
-## M129 — A path through the city never has to cost · one route in eight still breaks
+## M129 — A path through the city never has to cost · one route in five still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
 > around … the routing should only cross the street at intersections"
 
 [PLAYTEST-69](playtests/PLAYTEST-69.md), [PLAYTEST-71](playtests/PLAYTEST-71.md),
 [PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md),
-[PLAYTEST-77](playtests/PLAYTEST-77.md). The four rules, the leaf blower's two-part field and
-the wall reading are built and recorded (`DECISIONS.md`, M129, the four rules; M129, the leaf
-blower is a wall to walk past and a busker to stay near; M129, a wall is also what cannot be
-walked past). The probe, `tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along
-261 of 296 routes. No body closes a walked sidewalk (`DECISIONS.md`, M129, no body closes the
-walked sidewalk, which also holds the rim decision and the square's poster crew). The guarantee
-is not true
-for the rest, and what stands in them is almost all one shape: a route junction taken by several
-rows together, with `leaf_blower`, `homeless_yeller`, `roadblock` and `delivery_van` in the
-cuts; the probe's own table names them per run. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
-over a crossing from one street out. The three placement rules refuse a candidate whose reach
-*together with everything already down* would close a junction, so a crossing the probe finds
-covered is one that either reached the day past the rules or is read as covered differently by
-the probe and the rule:
+[PLAYTEST-77](playtests/PLAYTEST-77.md). The four rules, the leaf blower's two-part field, the
+wall reading and the catalogue seeing the seals and the region wall are built and recorded
+(`DECISIONS.md`, M129 and its sections, the newest "the catalogue sees the seals and the wall").
+The probe, `tests/probes/m129_zero_cost_line.gd`, assembles a day the way `EventManager.start_day`
+does and finds a zero-cost line along 239 of 299 routes. What is left are paths that place rows
+without the three rules, each a design question for the player before anything is built:
 
-- [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
-      the rules run. Find every other path a row reaches the day by — the calm-ground pass
-      that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places
-      before the scheduler runs, the region walls and doors — and say, per broken route in the
-      probe, which path placed the rows in its cut and whether the probe's *covered* and the
-      rule's *open* agree on it. Then either those paths ask the same three questions, or the
-      record says why a route may pay there. The probe's "what broke the line" table is the
-      measurement; the seals and the region wall cost about four points (92.2% on the day's
-      own rows against 88.5% with them).
+- [ ] **Open: region wall and seal bodies closing a junction between them.** Neither planner asks
+      the rules, since both exist to close streets; a `roadblock` wall body beside another wall
+      body or a seal reaches a route junction, and that shape is most of what the probe still
+      blames. Whether a wall or seal may cost a route there, or should step back from the
+      junction, goes to the player.
+- [ ] **Open: a `roadblock` on a carriageway** is seen by no sidewalk rule, only by the junction
+      rule when it is near one. M199, the roadblock closes its whole street, makes the catalogue
+      roadblock a true closure, so this is settled with it.
+- [ ] **Open: the calm-ground pass** (`_spoil_the_parks_she_used`) places in a used park's rect
+      without the rules, and the probe cannot see it, since it plans one day with no used parks.
+      Whether a spent park may cost a route goes to the player.
+- [ ] **The night raid's van**, spawned by `ResistanceDirector` through `spawn_extra` near her
+      doorstep, and the other `spawn_extra` sites in `happenings.gd` are not checked against the
+      three questions. Trace each and say whether it may cost a route.
 
 ---
 
