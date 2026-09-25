@@ -40,8 +40,13 @@ const _HEIGHT_TILES := {
 const MAX_HEIGHT_FRACTION := 0.55
 ## Wall rows the door's own home-block building always gets — fixed rather than rolled
 ## (`docs/DECISIONS.md`, M185, a ground floor is blank wall or shops), so the block looks the same
-## on every seed. The ground floor is row 0, so four rows reach the third floor, where
-## `Building.neighbor_window_row()` always lands. `_home_building_height()` does not apply
+## on every seed. The ground floor is row 0, so four rows reach the third floor, where she lives
+## and where the escape begins (PLAYTEST-131) — the same floor `Building.neighbor_window_row()`
+## boards the neighbor's window on, down the hall from her own door. It sits above the top of the
+## screen at the normal camera on her doorstep, since she starts facing away down the street and
+## `Stroller._update_camera()`'s own look-ahead leads the view in whatever direction she faces —
+## but it does not have to be visible immediately (PLAYTEST-134, statement 4 revisited): turning to
+## face the building brings it into frame. `_home_building_height()` does not apply
 ## `MAX_HEIGHT_FRACTION` to this lot on purpose: four rows of six is more wall than that ratio
 ## would allow, and what actually keeps a roof showing is `Building.wall_tiles()`'s own hard clamp
 ## to `rows() - 1`, which this still goes through.
@@ -391,10 +396,13 @@ func _door_world_x_range() -> Vector2:
 
 ## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
 ## 3, ground floor is row 0 — nearest above her own door, on the one home-block `Building` the
-## door notch actually stands in front of (`_home_door_building()`). Idempotent, so
+## door notch actually stands in front of (`_home_door_building()`). Her own floor, the top one at
+## this height, down the hall from her own door. It stands above the top of the screen at the
+## normal camera on her doorstep, facing away down the street — turning to face the building
+## brings it into frame (PLAYTEST-134, statement 4 revisited). Idempotent, so
 ## `ResistanceHappenings.start_day()` calling it every day from day 11 on costs nothing once it is
-## set. That building always has a third floor (`HOME_BUILDING_WALL_ROWS`), fixed rather than
-## rolled, so there is no shorter front here for a topmost row to stand in for it.
+## set. That building always has at least four wall rows (`HOME_BUILDING_WALL_ROWS`), fixed rather
+## than rolled, so there is no shorter front here for a topmost row to stand in for it.
 func board_neighbor_window() -> void:
 	var building := _home_door_building()
 	if not building or building.neighbor_window_col >= 0:

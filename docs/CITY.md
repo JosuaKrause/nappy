@@ -282,14 +282,19 @@ fixed height (`City._home_building_height()`) — `HOME_BUILDING_WALL_ROWS` (4) 
 door's own world-space span stands in front of, `HOME_FLANKING_WALL_ROWS` (2) for the other two —
 so the block reads the same however a run's own dice landed elsewhere. Her own building's four
 wall rows are more of its lot than a rolled building's own `MAX_HEIGHT_FRACTION` cap would allow,
-which is deliberate: she lives on the third floor (row index 3, ground floor is row 0), so
-`Building.neighbor_window_row()` always has one to stand the neighbor's boarded window on. A roof
-this shallow (two rows on her own building, one on the other two) is under the three interior rows
-`Building._build_roof_furniture()` needs to place anything, so none of the three ever carries roof
-furniture — not a rule written for the home block, just what its own fixed height already means
-for that guard. Everything else about a home-block front — the ground floor's kept windows, no
-fire escape, no extra entrance door — is unchanged (see "A front is district and block purpose",
-below); this is only what decides its wall/roof colour, its window style and pattern and its
+which is deliberate: she lives on the third floor (row index 3, ground floor is row 0), where the
+escape begins (PLAYTEST-131). `Building.neighbor_window_row()` boards that same floor for the
+neighbor too, down the hall from her own door — off the top of the screen at the normal camera on
+her doorstep, since she starts facing away down the street and the camera's own look-ahead
+(`Stroller.CAMERA_LOOK_AHEAD`) leads the view in whatever direction she faces, but it does not
+have to be visible immediately (PLAYTEST-134, statement 4 revisited): turning to face the building
+brings it into frame. A roof this shallow (two rows on her own building, one on the other two) is
+under the three interior rows `Building._build_roof_furniture()` needs to place anything, so none
+of the three ever carries roof furniture — not a rule written for the home block, just what its
+own fixed height already means for that guard. Everything else about a home-block front — the
+ground floor's kept windows, no fire escape, no extra entrance door — is unchanged (see "A front
+is district and block purpose", below); this is only what decides its wall/roof colour, its
+window style and pattern and its
 height. The block's *size and shape* still come from the seed's lattice — only how it is drawn
 does not — and the crafted look this is built to hold (`docs/DECISIONS.md`, M185) still replaces
 these parts once it exists.

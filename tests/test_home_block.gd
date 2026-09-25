@@ -2,9 +2,13 @@ extends RefCounted
 ## M185's fixing half — the home block has fixed visuals: every building on it draws the same on
 ## every seed (window style, which windows are lit, height, front and roof furniture), and her own
 ## building — the one lot the door's own world-space span stands in front of — always has a third
-## floor, so `Building.neighbor_window_row()` (row index 3, the third floor) never has to fall back
-## to a shorter front's topmost row (PLAYTEST-134: "the home building shouldn't depend on the
-## seed. I thought we fixed that?").
+## floor, where she lives and the escape begins (PLAYTEST-131), so it never depends on a height
+## roll (PLAYTEST-134: "the home building shouldn't depend on the seed. I thought we fixed
+## that?"). The neighbor's boarded window (`Building.neighbor_window_row()`) boards that same
+## floor, the top one, down the hall from her own door — off the top of the screen at the normal
+## camera on her doorstep, since she starts facing away down the street and the camera leads the
+## view with her facing, but in frame once she turns to face the building (PLAYTEST-134, statement
+## 4 revisited).
 ##
 ## **The home block's own lot geometry was already seed-independent before this change** —
 ## `CityGenerator` carves it from `Tuning.BLOCK_SIZE`, `Tuning.HOME_SIZE_TILES` and the fixed

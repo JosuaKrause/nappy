@@ -1924,10 +1924,10 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 
 ## The neighbor's boarded window: absent before day 11, set on the one home-block building the
 ## door notch stands in front of from day 11's morning on — the third floor nearest the door,
-## always there since M185 fixes that building's own height at
-## `City.HOME_BUILDING_WALL_ROWS` (4) wall rows or more — the same cell every later day and on a
-## fresh load of the same seed. `SEED` (4242) is the seed PLAYTEST-134 found with only two wall
-## rows before the fix.
+## down the hall from her own door (PLAYTEST-131), always there since M185 fixes that building's
+## own height at `City.HOME_BUILDING_WALL_ROWS` (4) wall rows or more — the same cell every later
+## day and on a fresh load of the same seed. `SEED` (4242) is the seed PLAYTEST-134 found with
+## only two wall rows before the fix.
 func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	_build_city(t)
 	var happenings := ResistanceHappenings.new()

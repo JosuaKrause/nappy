@@ -328,12 +328,14 @@ enum Condition {
 
 ## The upper-floor column the neighbor's boarded window (`NEIGHBOR_WINDOW_SEALED`) draws over,
 ## from day 11 on, or -1 for every building but the one `City.board_neighbor_window()` picked: the
-## one lot the door notch stands in front of, on its third floor — row index 3, since the ground floor is
-## row 0 and the first floor the one above it, as the escape counts them — the nearest column above
-## the door itself. That lot's height is fixed rather than rolled
-## (`City.HOME_BUILDING_WALL_ROWS`), always at least four wall rows, so the third floor
-## `neighbor_window_row()` names is always there. Set once and never rolled itself, so a redraw is
-## all a change needs.
+## one lot the door notch stands in front of, on its third floor — row index 3, since the ground
+## floor is row 0 and the first floor the one above it, as the escape counts them — the nearest
+## column above the door itself. Her own floor, down the hall from her own door (PLAYTEST-131).
+## That lot's height is fixed rather than rolled (`City.HOME_BUILDING_WALL_ROWS`), always at least
+## four wall rows, so the third floor `neighbor_window_row()` names is always there — off the top
+## of the screen at the normal camera on her doorstep, facing away down the street, but in frame
+## once she turns to face the building. Set once and never rolled itself, so a redraw is all a
+## change needs.
 @export var neighbor_window_col := -1:
 	set(value):
 		neighbor_window_col = value
@@ -711,8 +713,8 @@ func column_centre_x(col: int) -> float:
 
 ## The wall row `neighbor_window_col` draws the boarded overlay on — row index 3, the third floor,
 ## since the ground floor is row 0. The one building this is ever set on always has at least four
-## wall rows (`City.HOME_BUILDING_WALL_ROWS`, fixed rather than rolled), so row 3 is always there;
-## there is no shorter front here for a topmost-row fallback to guard against.
+## wall rows (`City.HOME_BUILDING_WALL_ROWS`, fixed rather than rolled), so row 3 is always there —
+## no fallback needed, since the height that guarantees it is fixed rather than rolled.
 func neighbor_window_row() -> int:
 	return 3
 
