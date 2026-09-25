@@ -308,15 +308,10 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **The next work is the story's pacing, and it ends in a minor release**
-  ([PLAYTEST-117](playtests/PLAYTEST-117.md): "that would be the next after this and warrants a
-  minor release"): M181, the resistance has a reason, and a task is one day, has every task and
-  happening built and all 27 late-day runs timed, every one home inside 180 s; the neighbor's
-  sealed door has no picture. A curfew day is 180 s and a day before the curfew 210 s (M192). It is decided in `TODO.md`
-  ([PLAYTEST-118](playtests/PLAYTEST-118.md), [PLAYTEST-119](playtests/PLAYTEST-119.md),
-  [PLAYTEST-120](playtests/PLAYTEST-120.md), [PLAYTEST-121](playtests/PLAYTEST-121.md),
-  [PLAYTEST-122](playtests/PLAYTEST-122.md)). M182, a
-  finished task is shown by the world, has the other tasks' answers open and is decided with M181.
+- **The story's pacing is built** (M181, the resistance has a reason, and a task is one day,
+  in `DECISIONS.md`): every task and happening, the late days timed, and the seals on her
+  building's front. M182, a finished task is shown by the world, has the other tasks' answers
+  open, and M185's fixed home block, her building the same on every seed, is next.
 - **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
   "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
   the first entry of `REVIEW.md`.

@@ -328,37 +328,6 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
-## M181 — The resistance has a reason, and a task is one day · slices one and two built 2026-09-24
-
-> "when doing the mark it doesn't really feel that we would need to resist against anything
-> since nothing really has visibly deterioated yet" · "we could do 1) chalk 2) it immediately
-> shows the task 3) you have to do the task on the same day" · "add more different tasks" ·
-> "a red arrow (like the blue home arrow but red) to point to tasks where we need to go to a
-> specific location" · "we should also start with doors later since tasks should come first" ·
-> "9-11 need some extra memorable content in addition to the tasks"
-
-[PLAYTEST-117](playtests/PLAYTEST-117.md) to [PLAYTEST-122](playtests/PLAYTEST-122.md). **Every
-task and every once-only happening is built** (`DECISIONS.md`, M181, slice one, and M181, slice
-two, which hold every decision the entry carried and the choices open to overturn). The late days
-are timed (`DECISIONS.md`, M181, the last three late-day runs are timed). What is open is below:
-the one trace a happening leaves that has no picture yet.
-
-**The calendar, decided by the player:**
-
-| Day | Task | What happens once |
-| --- | --- | --- |
-| 6 | A note for the man shouting — any of them · built | |
-| 7 | The package at a van's drop · arrow · built | |
-| 8 | Leave something at the burnt shell · arrow · built | |
-| 9 | Cross a named door · arrow · built | The doors arrive · built |
-| 10 | Warn the neighbor, out in the city, before the raid · arrow, deadline · built | The raid on her own street, at her own building · built |
-| 11 | Silence a loudspeaker mast · arrow · built | The market is gone · built |
-| 12 | The swing in one park · arrow · built | That park is taken once she has reached the swing · built |
-| 13 | Walk into a roadblock's band — any of them · built | A column on the main road · built |
-| 14 | The power station's front door · arrow · built | The blackout · built |
-
----
-
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
