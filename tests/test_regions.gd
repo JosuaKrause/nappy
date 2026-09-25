@@ -42,6 +42,7 @@ func run(t) -> void:
 	_test_the_day_plan_shape(t)
 	_test_crossing_alleys_are_consistent(t)
 	_test_wall_bodies_never_cover_an_alley_mouth(t)
+	_test_wall_crossing_posts_four_guards(t)
 	_test_alley_wall_bodies_fit_their_own_mouth(t)
 	_test_winnability_holds_with_the_wall_standing(t)
 	_test_closures_and_seals_never_land_on_a_boundary(t)
@@ -458,6 +459,46 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t) -> void:
 								% [map.seed_used, day, body.position, body.def.obstructs_radius,
 								tile, distance])
 	t.check(checked > 0, "at least one wall body was checked against every alley mouth (%d)" % checked)
+
+## A wall crossing posts four guards, not six, and the catalogue `roadblock` row is untouched.
+## *(2026-09-25, PLAYTEST-135, statement 8: "maybe four? one on each sidewalk. would that cover
+## everything?")* `place_hard_on` returns three bodies at a street's width — sidewalk, road,
+## sidewalk — and the two sidewalk ones keep `EventDef.guard_sides`' own default (`[-1, 1]`, two
+## each) while the road body between them (`bodies.size() / 2`, the same middle index
+## `RegionPlanner._add_door_bodies` reads its `road_index` from) is empty.
+func _test_wall_crossing_posts_four_guards(t) -> void:
+	var catalogue_sides := EventCatalogue.by_id("roadblock").guard_sides
+	t.check(catalogue_sides.size() == 2,
+			"a catalogue roadblock still posts two guards (%d)" % catalogue_sides.size())
+	var checked := 0
+	for map in _maps:
+		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var plan := RegionPlanner.plan_day(map, day, tree)
+			for segment in plan.walls:
+				var at_a := _wall_at_a(map, segment)
+				var bodies := SealPlanner.place_hard_on(map, segment, RegionPlanner._WALL_DEF_ID, at_a)
+				checked += 1
+				t.check(bodies.size() == 3, "seed %d day %d: a wall crossing stands three bodies (%d)"
+						% [map.seed_used, day, bodies.size()])
+				var road_index := bodies.size() / 2
+				var total_guards := 0
+				for i in bodies.size():
+					var sides := bodies[i].def.guard_sides
+					total_guards += sides.size()
+					if i == road_index:
+						t.check(sides.is_empty(),
+								"seed %d day %d: the wall's road body posts no guard (%d)"
+								% [map.seed_used, day, sides.size()])
+					else:
+						t.check(sides.size() == 2,
+								"seed %d day %d: a wall's sidewalk body posts two guards (%d)"
+								% [map.seed_used, day, sides.size()])
+				t.check(total_guards == 4,
+						"seed %d day %d: a wall crossing posts four guards between its bodies (%d)"
+						% [map.seed_used, day, total_guards])
+	t.check(checked > 0, "at least one wall crossing was checked (%d)" % checked)
 
 ## A crossing alley's own wall bodies draw and collide no wider than the alley's own paving — the
 ## defect `docs/playtests/PLAYTEST-57.md`, "Roofs" reported: a barrier band drawn over the roof

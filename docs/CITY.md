@@ -1523,6 +1523,15 @@ region at its **far** end, away from the wall — which end carries it is nudged
 matching an alley's other, real bordering street's ground keeps as many alleys as possible from
 becoming crossings at all.
 
+**A boundary segment's wall stands as three `roadblock` bodies across the street — sidewalk, road,
+sidewalk — and posts four guards between them, never six.** *(2026-09-25, PLAYTEST-135, statement
+8: "maybe four? one on each sidewalk. would that cover everything?")* The two sidewalk bodies keep
+the row's own two guards, one on each side of the band; the road body between them posts none,
+since a guard stands where she can walk up to it and the tarmac between the sidewalks is not that
+ground (`EventDef.guard_sides`, `SealPlanner.place_hard_on`). Wall guards never chase — a wall
+body is never `EventCatalogue.heated()` — so this is drawing only. A crossing alley's own two mouth
+bodies still post two guards each, unchanged.
+
 **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY` every morning,
 a crossing — a boundary segment or a crossing alley — the day's `RouteTree` uses is a **door**;
 every other crossing is **wall**, placed as hard seals of the roadblock row. Before that day nothing

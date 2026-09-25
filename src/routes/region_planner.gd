@@ -661,6 +661,16 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 ## pictures"*). A point of 32px draws and collides at exactly 64px, edge to edge with the mouth's
 ## own paving and no further — measured in `tests/test_regions.gd`,
 ## `_test_alley_wall_bodies_fit_their_own_mouth`.
+##
+## **Draws two guards, one on each side, unchanged** — out of scope for M200 (`docs/TODO.md`,
+## "Open: a walled alley"): the inner one of each pair stands inside an alley walled at both ends,
+## where she cannot reach, and whether that is kept is a question for the player. `EventDef.
+## guard_sides` is already the mechanism a "one guard, street side only" answer would use, with no
+## change to `EventInstance._draw_roadblock()`: a one-element array naming the mouth's own
+## street-facing side, set here the same way `body.def.solid()` already mutates the fresh duplicate
+## `SealPlanner.alley_mouth_wall()` hands back — `body.def.guard_sides = [<street side>]`, with the
+## side worked out from `vertical`/`at_start` the way `_guard_side_toward()` already turns a
+## direction into one.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 		at_start: bool) -> EventScheduler.Planned:
 	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)

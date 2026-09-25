@@ -496,6 +496,16 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## count across the street's `STREET_WIDTH` is still derived from the radius (`positions_across`)
 ## rather than chosen by hand; at 32px it comes out at three — the same three positions the
 ## checkpoint's own door structure stands its hut/gate/hut on, see `RegionPlanner`.
+##
+## **The middle of three posts no guard.** *(2026-09-25, PLAYTEST-135, statement 8: "maybe four?
+## one on each sidewalk. would that cover everything?")* Three bodies at a street's width are
+## sidewalk, road, sidewalk — the same order `RegionPlanner._add_door_bodies` reads its own
+## `road_index` from — and a crossing's two sidewalk bodies keep the row's own default two guards
+## each (`EventDef.guard_sides`) while the road body between them draws none, so a crossing posts
+## four rather than six. The choice is carried on the placement: `_no_wall_guards` duplicates the
+## shared def once more, the same manual carry `sealed_variant` already needs for `shape` and
+## `solid_parts`, with `guard_sides` emptied — `_draw_roadblock()` never has to guess a body's
+## position back out of where it happens to stand.
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventScheduler.Planned]:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
@@ -503,11 +513,28 @@ static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: 
 	# requires the two to agree, and a point of `Tuning.TILE_SIZE` is what a body this narrow
 	# actually is here, whatever shape the row carries as a catalogue candidate.
 	def.solid(GroundShape.point(Tuning.TILE_SIZE))
+	var positions := positions_across(map.tile_rect_to_world(segment.mouth_rect(at_a)),
+			segment.horizontal, def.obstructs_radius)
+	var road_def := _no_wall_guards(def) if positions.size() == 3 else null
+	var road_index := positions.size() / 2
 	var planned: Array[EventScheduler.Planned] = []
-	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
-	for at in positions_across(world, segment.horizontal, def.obstructs_radius):
-		planned.append(EventScheduler.Planned.new(def, at))
+	for i in positions.size():
+		var body_def := road_def if (road_def and i == road_index) else def
+		planned.append(EventScheduler.Planned.new(body_def, positions[i]))
 	return planned
+
+## `def` with its posted guards removed on both sides — the region wall's own road body, standing
+## between two sidewalk bodies that keep `def`'s own `guard_sides` unchanged. A plain duplicate
+## rather than a mutation of `def` itself: the two sidewalk positions above still hand out the same
+## shared def, and giving it no guards would take theirs too.
+static func _no_wall_guards(def: EventDef) -> EventDef:
+	var variant: EventDef = def.duplicate()
+	# `shape` and `solid_parts` need the same manual carry `sealed_variant` documents — plain `var`s
+	# holding `RefCounted`s, which `Resource.duplicate()` does not copy.
+	variant.shape = def.shape
+	variant.solid_parts = def.solid_parts
+	variant.guard_sides = [] as Array[int]
+	return variant
 
 ## A soft seal: one body per pavement, at the lane nearest the kerb — which is where a kerbed row
 ## like `delivery_van` already wants to be, and where any other row's own auto-centring
