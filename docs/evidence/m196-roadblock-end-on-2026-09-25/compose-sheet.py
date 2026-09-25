@@ -79,8 +79,12 @@ def native(pics, name):
     return pics[name][0].size
 
 
-def spread(c, pics, s, seg_name, cx, cy, vertical):
-    """`EventInstance._draw_spread` for a roadblock, from the raster at scale `s`."""
+def spread(c, pics, s, seg_name, cx, cy, vertical, before=False):
+    """`EventInstance._draw_spread` for a roadblock, from the raster at scale `s`.
+
+    End-on, each segment stands its feet at the near end of its slice
+    (`EventInstance._spread_slice_feet`); `before` stands them at the middle, as it was drawn
+    before, half a segment up the screen from its own ground."""
     seg_w, seg_h = native(pics, seg_name)
     cap_w, cap_h = native(pics, "roadblock_end")
     along, thick = (seg_h, seg_w) if vertical else (seg_w, seg_h)
@@ -96,7 +100,8 @@ def spread(c, pics, s, seg_name, cx, cy, vertical):
         standing(c, pics["roadblock_end"][idx], *at(-cap_off), cap_w, cap_h, s)
     for i in range(n):
         size = (thick, width) if vertical else (width, thick)
-        standing(c, pics[seg_name][idx], *at(-HALF + width * (i + 0.5)), *size, s)
+        feet = 0.5 if before or not vertical else 1.0
+        standing(c, pics[seg_name][idx], *at(-HALF + width * (i + feet)), *size, s)
     for side in ((1,) if vertical else (-1, 1)):
         standing(c, pics["roadblock_end"][idx], *at(side * cap_off), cap_w, cap_h, s)
 
@@ -120,7 +125,7 @@ def assemble(pics, s, column_segment, with_guards=True):
     if with_guards:
         guard(c, pics, s, "guard_front", 80, 120 + gh + CLEARANCE)
     # Down a column, centred at (300, 140).
-    spread(c, pics, s, column_segment, 300, 140, True)
+    spread(c, pics, s, column_segment, 300, 140, True, before=not with_guards)
     if with_guards:
         col_w = native(pics, column_segment)[0]
         dx = col_w * 0.5 + gw * 0.5 + CLEARANCE

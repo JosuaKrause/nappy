@@ -3848,7 +3848,8 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 	return Vector2(thickness, along) if _spread_vertical else Vector2(along, thickness)
 
 ## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
-## across it. Anything else would be a lie about where the player can walk.
+## across it. Anything else would be a lie about where the player can walk. On either axis the
+## segments cover `-half` to `half` and no further (`_spread_slice_feet`).
 ##
 ## **The end cap is inset by half its own width, for the same reason, on either axis.** A cap
 ## centred at `±half` hangs half its own width past the obstruction — `barrier_end.svg` is 6px wide,
@@ -3877,10 +3878,25 @@ func _draw_spread(segment_picture: String, cap: String = "", canvas: CanvasItem 
 			_draw_cap(canvas, cap, cap_size, origin, half, side)
 	for i in segments:
 		Sprites.draw_standing(canvas, _drawn(segment_picture),
-				origin + _spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
+				origin + _spread_at(_spread_slice_feet(_spread_vertical, half, width, i)),
+				_spread_extent(width, thickness))
 	if not cap.is_empty():
 		for side: float in _cap_sides(_spread_vertical, false):
 			_draw_cap(canvas, cap, cap_size, origin, half, side)
+
+## Where slice `index` of a spread stands its feet, along the run: every slice is `width` long and
+## together they cover `-half` to `half`, the obstruction's own extent.
+##
+## **Broadside, at the middle of its slice; end-on, at the near end of it.** `Sprites.draw_standing`
+## puts the feet at the bottom of the picture, and broadside the run is across the picture, so the
+## middle is what centres a slice on its ground. End-on the run goes *up* the picture: a slice drawn
+## `width` tall with its feet at its middle would stand half a slice up the screen from its own
+## ground, and the whole column with it — overhanging the far end of the body by half a slice and
+## falling half a slice short of the near end, where she walks up to it. With the feet at the near
+## end each slice's picture covers its own slice of ground, and the column covers exactly the
+## ground its body closes.
+static func _spread_slice_feet(vertical: bool, half: float, width: float, index: int) -> float:
+	return -half + width * (index + (1.0 if vertical else 0.5))
 
 ## One end cap of a spread, standing at its end of the run — see `_draw_spread`.
 func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vector2, half: float,
