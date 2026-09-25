@@ -364,6 +364,26 @@ the one trace a happening leaves that has no picture yet.
 
 ---
 
+## M193 — The live page's ?debug=1 reaches the debug flags · asked for 2026-09-25
+
+> "on the published site behind debug=1 we'd want some of the debug flags (like day,
+> invincible, etc.) so debugging the live build is easier"
+
+[PLAYTEST-130](playtests/PLAYTEST-130.md). **Asked for no modifiers on a release (2026-09-06:
+"for release there should be no modifiers") · overturned on 2026-09-25 to the sentence above.**
+Today a release page answers `?debug=1` with the readout, `?skip=` and a positive `?seed=` only
+(`DevFlags.readout_requested()`), and nothing reads `?day=` or `?invincible=` on any web build.
+
+- [ ] **`?debug=1` on the published site opens a debugging set of URL modifiers**: at least
+      `?day=N` (start on day N) and `?invincible=1` (the meters cannot end the day), and the
+      other flags that choose where a run starts or how it is drawn rather than drive input or
+      write files. A debug web build answers the same modifiers without `?debug=1`.
+- [ ] **A run started with any of them never reads or writes the player's save**, the same rule
+      `GameSave.uses_save()` keeps for a debug build's dev flags, so a visitor who tries `?day=12`
+      does not lose their own day 3.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
