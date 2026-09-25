@@ -69,14 +69,17 @@ static func _should_send(on_web: bool, is_debug_build: bool, debug_requested: bo
 
 ## Whether the page actually has a callable `window.goatcounter.count` — `false` off the web
 ## without ever asking `JavaScriptBridge`, the same guard `DevFlags._web_query()` makes before its
-## own `JavaScriptBridge.eval()`.
+## own `JavaScriptBridge.eval()`. **`bool(...)`, never `present is bool`**: a JS boolean crosses
+## `JavaScriptBridge.eval()` as a GDScript `int` (`1`/`0`), not a `bool` — confirmed against a real
+## export, where `present is bool` silently refused every event, gate closed, no error anywhere to
+## say why. `bool()` reads true off that `int` the same as it would a native bool.
 static func _goatcounter_present() -> bool:
 	if OS.get_name() != "Web":
 		return false
 	var present: Variant = JavaScriptBridge.eval(
 			"(typeof window.goatcounter !== 'undefined' " +
 			"&& typeof window.goatcounter.count === 'function')")
-	return present is bool and present
+	return bool(present)
 
 ## Calls `window.goatcounter.count({path, title, event: true})` for `name` — see
 ## https://www.goatcounter.com/help/events and /help/js. Wrapped in the page's own `try`/`catch`
