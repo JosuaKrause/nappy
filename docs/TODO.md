@@ -464,14 +464,10 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
 wall reading and the catalogue seeing the seals and the region wall are built and recorded
 (`DECISIONS.md`, M129 and its sections, the newest "the catalogue sees the seals and the wall").
 The probe, `tests/probes/m129_zero_cost_line.gd`, assembles a day the way `EventManager.start_day`
-does and finds a zero-cost line along 239 of 299 routes. What is left are paths that place rows
-without the three rules, each a design question for the player before anything is built:
+does and finds a zero-cost line along 239 of 299 routes. A region wall or a seal may cost a route where it
+stands at a junction ([PLAYTEST-140](playtests/PLAYTEST-140.md), statement 7: "it's okay if
+the route costs something"), and it is most of what the probe still blames. What is left:
 
-- [ ] **Open: region wall and seal bodies closing a junction between them.** Neither planner asks
-      the rules, since both exist to close streets; a `roadblock` wall body beside another wall
-      body or a seal reaches a route junction, and that shape is most of what the probe still
-      blames. Whether a wall or seal may cost a route there, or should step back from the
-      junction, goes to the player.
 - [ ] **Open: a `roadblock` on a carriageway** is seen by no sidewalk rule, only by the junction
       rule when it is near one. M199, the roadblock closes its whole street, makes the catalogue
       roadblock a true closure, so this is settled with it.

@@ -42,5 +42,20 @@ note meant; both were answered in conversation and are not decisions.
 3. **The phone stutter is on Chrome on a Pixel 8 Pro, steady rather than at particular moments.**
 4. **The man shouting charges nothing and his halo never lights** in v0.18.0 — a bug: his row in
    `docs/COSTS.md` says walking beside him costs about 6.5 points a second.
-5. **After a lost day's game over, the title screen is drawn sideways.** Seen on the phone; the
-   player did not say whether the desktop does it too.
+5. **After a lost day's game over, the title screen is drawn sideways.** Seen on the phone.
+
+## Then, in the same conversation
+
+On whether it is on the desktop too:
+
+> "the bug is only on the phone I think"
+
+On the walls and seals: a region wall body beside a seal or another wall body can reach onto a
+route junction, so the day's route costs something there. Asked whether they should step back
+from the junction or whether the route may pay:
+
+> "it's okay if the route costs something"
+
+6. **The sideways title screen is on the phone only**, as far as the player has seen.
+7. **A region wall or a seal may cost a route where it stands at a junction.** Nothing moves them
+   back from it.
