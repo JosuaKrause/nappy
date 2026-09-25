@@ -133,10 +133,11 @@ var _presses: Array[Dictionary] = []
 ## Where `--tap X Y` asks for a synthetic tap, or `Vector2.INF` for none given. See `_tap_screen()`.
 var _tap_at := Vector2.INF
 
-## Returns a configured instance for a screenshot or a timed, capture-free frame trace.
-## Returns null without either request or outside a debug build. `--screenshot`, `--after`,
-## `--walk`, `--flee` and `--press` are developer furniture like every flag `DevFlags` gates, and
-## are gated here rather than moved there because this file already owns their parsing.
+## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace
+## or a trailer shot. Returns null without one of those requests or outside a debug build.
+## `--screenshot`, `--after`, `--walk`, `--flee` and `--press` are developer furniture like every
+## flag `DevFlags` gates, and are gated here rather than moved there because this file already owns
+## their parsing.
 ##
 ## **Deliberately has no override, for the same reason `DevFlags.enabled()` does not get one.**
 ## What this gate reaches is scripted input (`--walk`, `--flee`, `--press` can drive any action or
@@ -151,7 +152,11 @@ static func from_command_line() -> AutoScreenshot:
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--screenshot")
 	var has_picture := index != -1 and index + 1 < args.size()
-	var timed_trace := DevFlags.frame_trace_requested() and "--after" in args
+	# A timed, capture-free run: `--frame-trace` measuring, or `--trailer` filming through Godot's
+	# own movie writer — either way the rig drives her and quits at `--after`, and nothing here
+	# saves a picture of its own.
+	var timed_trace := (DevFlags.frame_trace_requested() or DevFlags.trailer_requested()) \
+			and "--after" in args
 	if not has_picture and not timed_trace:
 		return null
 	var node := AutoScreenshot.new()
@@ -213,24 +218,38 @@ const KEY_PREFIX := "key:"
 ## also what a plain typo in a direction word (`"suth"`) parses as, so the caller warns on empty
 ## the same way it always warned on an unrecognised word.
 ##
+## **Three more shapes, for a trailer shot's path of several legs** (`tools/trailer.sh`): a
+## duration may carry a decimal point (`1.5s`), since a whole second is 92px of street and a turn
+## wants finer placing than that; `p` stands still for its duration (`0.5p`) — she stops, sees
+## the wrong street for what it is, and turns — with nothing pressed, the same as a player letting
+## go; and an **upper-case** letter is that direction at a run (`2S`), `run` held for the step and
+## let go when a walking step follows. Every step still presses a unit vector or nothing at all.
+##
 ## A number with no letter or `@…@` after it, a letter with no digits before it, an unknown
-## letter, an `@` with no digits or no closing `@`, or a zero-or-negative duration all fail the
-## whole script rather than skipping the one bad step: a script that silently drops a step walks
-## a different route than the one asked for, which is the exact failure determinism exists to
-## rule out.
+## letter, an `@` with no digits or no closing `@`, a second decimal point, or a zero-or-negative
+## duration all fail the whole script rather than skipping the one bad step: a script that
+## silently drops a step walks a different route than the one asked for, which is the exact
+## failure determinism exists to rule out.
 static func _parse_script(word: String) -> Array[Dictionary]:
 	var steps: Array[Dictionary] = []
 	var i := 0
 	while i < word.length():
 		var digits_start := i
-		while i < word.length() and word[i].is_valid_int():
+		var points := 0
+		while i < word.length() and (word[i].is_valid_int() or word[i] == "."):
+			if word[i] == ".":
+				points += 1
 			i += 1
-		if i == digits_start or i >= word.length():
+		if i == digits_start or i >= word.length() or points > 1:
 			return []
-		var seconds := float(word.substr(digits_start, i - digits_start))
+		var number := word.substr(digits_start, i - digits_start)
+		if not number.is_valid_float():
+			return []
+		var seconds := float(number)
 		if seconds <= 0.0:
 			return []
 		var direction: Vector2
+		var runs := false
 		if word[i] == "@":
 			i += 1
 			var degrees_start := i
@@ -243,10 +262,20 @@ static func _parse_script(word: String) -> Array[Dictionary]:
 		elif _LETTERS.has(word[i]):
 			direction = _LETTERS[word[i]]
 			i += 1
+		elif word[i] != word[i].to_lower() and _LETTERS.has(word[i].to_lower()):
+			direction = _LETTERS[word[i].to_lower()]
+			runs = true
+			i += 1
+		elif word[i] == _STAND:
+			direction = Vector2.ZERO
+			i += 1
 		else:
 			return []
-		steps.append({"direction": direction, "seconds": seconds})
+		steps.append({"direction": direction, "seconds": seconds, "run": runs})
 	return steps
+
+## The step letter that stands still for its duration rather than pressing a direction.
+const _STAND := "p"
 
 ## The unit vector `degrees` clockwise from north (-y) points along — the inverse of what
 ## `TelemetryLog.compass()` reads back off a vector, and the same convention: +y is south, so 0°
@@ -259,7 +288,7 @@ static func _bearing_to_direction(degrees: float) -> Vector2:
 
 func _ready() -> void:
 	if not _script.is_empty():
-		_hold_direction(_script[0]["direction"])
+		_start_step(_script[0])
 	elif _holding != "":
 		Input.action_press(_holding)
 	if _flees:
@@ -303,7 +332,18 @@ func _advance_script() -> void:
 		_script_step_started += float(step["seconds"])
 		_script_index += 1
 		if _script_index < _script.size():
-			_hold_direction(_script[_script_index]["direction"])
+			_start_step(_script[_script_index])
+		elif bool(step.get("run", false)):
+			Input.action_release("run")
+
+## Presses one script step: its direction, and `run` held or let go to match the step — so a
+## running step followed by a walking one slows back to a walk rather than running on.
+func _start_step(step: Dictionary) -> void:
+	_hold_direction(step["direction"])
+	if bool(step.get("run", false)):
+		Input.action_press("run")
+	else:
+		Input.action_release("run")
 
 func _on_telegraphed(instance: EventInstance) -> void:
 	if _fled or _flee_at < INF or not instance.def.pursues:

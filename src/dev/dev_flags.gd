@@ -69,12 +69,17 @@ extends RefCounted
 ##   --title         0
 ##   --no-title      0
 ##   --quit-when-still 0?
+##   --trailer       0
+##   --parent        1
+##   --zoom-out      1?
+##   --caption       1
+##   --title-card    1
 ## END_DEV_FLAG_TABLE
 ##
 ## Which of the flags above mark a run as a **rig** rather than a person at the keyboard — the
 ## same set `main._somebody_is_playing()` already lists as "something else is holding the keys"
-## (`--screenshot`, `--walk`, `--flee`, `--press`, `--route`), plus `--tap`, which drives a
-## synthetic touch the same way. `is_rig()` below is the live read; `tools/lib_dev_flags.sh`'s own
+## (`--screenshot`, `--walk`, `--flee`, `--press`, `--route`, `--trailer`), plus `--tap`, which
+## drives a synthetic touch the same way. `is_rig()` below is the live read; `tools/lib_dev_flags.sh`'s own
 ## `rig_flag_present()` reads this exact block, so shot.sh/run.sh's decision to strip a window's
 ## focus, disable vsync, gate input and enforce the wall-clock limit can never name a different set
 ## of flags than the game itself locks real input out for. A plain `tools/run.sh` session — no
@@ -87,17 +92,20 @@ extends RefCounted
 ##   --press
 ##   --tap
 ##   --route
+##   --trailer
 ## END_RIG_FLAGS
 ##
-## The three numbers `rig_quit_seconds_from()` below turns into a rig's own wall-clock deadline,
-## read by the same shell helper so its external kill (`RIG_KILL_GRACE_SECONDS` past the deadline)
-## can never compute a shorter wait than the deadline the game itself is timing against. See
-## `rig_quit_seconds_from()`'s own doc for what each name means.
+## The numbers `rig_quit_seconds_from()` below turns into a rig's own wall-clock deadline, read by
+## the same shell helpers (`tools/lib_dev_flags.sh`, and `tools/trailer.sh` for `movie_slowdown`)
+## so an external kill (`RIG_KILL_GRACE_SECONDS` past the deadline) can never compute a shorter wait
+## than the deadline the game itself is timing against. See `rig_quit_seconds_from()`'s own doc for
+## what each name means.
 ##
 ## RIG_QUIT_SECONDS
 ##   margin 15.0
 ##   ceiling 240.0
 ##   kill_grace 15.0
+##   movie_slowdown 10.0
 ## END_RIG_QUIT_SECONDS
 
 ## Whether dev flags are readable at all. `main.gd` also reads this directly for the two gated
@@ -729,7 +737,7 @@ static func _invincible_from_query(query: String) -> bool:
 
 ## `--no-focus-pause` (or the page's own `?nofocuspause=1`, a debug web build only) turns off the
 ## pause `main._notification()` opens when the window loses focus — see that function's own doc.
-## **`--screenshot` implies it without being told to**: a screenshot rig's window usually opens
+## **`--screenshot` and `--trailer` imply it without being told to**: a rig's window usually opens
 ## behind whatever the operator is doing, so it never has focus to lose, or loses it the instant it
 ## opens — either way a game that pauses on that would hand the rig a picture of the pause screen
 ## rather than the day it was asked to capture. The flag by itself is what a `tools/run.sh` session
@@ -745,7 +753,7 @@ static func no_focus_pause() -> bool:
 	return _no_focus_pause_from_args(_args()) or _no_focus_pause_from_query(_web_query())
 
 static func _no_focus_pause_from_args(args: PackedStringArray) -> bool:
-	return "--no-focus-pause" in args or "--screenshot" in args
+	return "--no-focus-pause" in args or "--screenshot" in args or "--trailer" in args
 
 static func _no_focus_pause_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
@@ -810,6 +818,81 @@ static func quit_when_still_seconds() -> float:
 
 const _QUIT_WHEN_STILL_DEFAULT := 1.0
 
+# ------------------------------------------------------------------------- a trailer shot ---
+## PLAYTEST-139: "the trailer will be a set of paths in pre determined seeds with fixed events so
+## we can reproduce it easily" · "we shouldn't show something that will never be visible".
+## `tools/trailer.sh` renders every shot in `tools/trailer/shots.txt` through Godot's own movie
+## writer with these flags beside the ones that already choose a seed, a day, a spawn and a walk.
+
+## `--trailer` renders a frame a player could have seen: the release build's own HUD and none of
+## the developer furniture a debug build adds — no readout, no debug layers, no route lines, no
+## frame graph and no debug header over the meters (`main.gd` reads this for all of them). It is
+## also a rig flag (see `RIG_FLAGS`), and with `--after` it quits there the way a frame trace does
+## (`AutoScreenshot.from_command_line()`), since the movie writer records until the game quits.
+static func trailer_requested() -> bool:
+	return "--trailer" in _args()
+
+## `--parent mother|father` — which presentation the run shows, instead of the roll
+## `GameState.start_run()` makes from the seed. The raw word is checked here rather than handed on:
+## `""` for "not given", and an unknown word is refused with `push_warning` and treated the same,
+## the reasoning `_validate_skip_words()` gives — a shot of the wrong parent that said nothing
+## about it would be the one failure the shot list exists to rule out.
+static func parent_override() -> String:
+	var args := _args()
+	var index := args.find("--parent")
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	return parse_parent(args[index + 1])
+
+## The bare parsing of a `--parent` value, pulled out so a test can drive it without a command line.
+static func parse_parent(raw: String) -> String:
+	if raw in ["mother", "father"]:
+		return raw
+	push_warning("--parent: '%s' is neither mother nor father, ignoring the flag" % raw)
+	return ""
+
+## `--zoom-out <seconds> [delay]` pulls the camera back from her to the whole city over `seconds`,
+## after holding on her for `delay` (0 when absent) — the trailer's last shot, "a zoom out from her
+## doorstep to show the full buzzling city". `-1.0` for "not given"; a value that is not a
+## positive number refuses the whole flag the way `parse_zoom()` refuses a malformed `--zoom`.
+## `ZoomOutCamera` (`src/dev/zoom_out_camera.gd`) is what moves.
+static func zoom_out_seconds() -> float:
+	var args := _args()
+	var index := args.find("--zoom-out")
+	if index == -1 or index + 1 >= args.size():
+		return -1.0
+	var raw := args[index + 1]
+	if not raw.is_valid_float() or float(raw) <= 0.0:
+		push_warning("--zoom-out: '%s' is not a positive number of seconds, ignoring" % raw)
+		return -1.0
+	return float(raw)
+
+## `--zoom-out`'s optional second value: seconds held on her before the camera starts to move.
+## Read only when it is a number, the same as `--flee`'s own delay, so `--zoom-out 4 --seed 1`
+## does not swallow the next flag.
+static func zoom_out_delay() -> float:
+	var args := _args()
+	var index := args.find("--zoom-out")
+	if index == -1 or index + 2 >= args.size() or not args[index + 2].is_valid_float():
+		return 0.0
+	return maxf(0.0, float(args[index + 2]))
+
+## `--caption <text>` — one line of on-screen text for a trailer shot, or `""`. See `TrailerText`
+## (`src/dev/trailer_text.gd`) for where and how it is drawn.
+static func caption_text() -> String:
+	return _word_after("--caption")
+
+## `--title-card <text>` — the game's name, large and centred over the shot, or `""`.
+static func title_card_text() -> String:
+	return _word_after("--title-card")
+
+static func _word_after(flag: String) -> String:
+	var args := _args()
+	var index := args.find(flag)
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	return args[index + 1]
+
 # ---------------------------------------------------------------------- a rig's own lockdown ---
 ## PLAYTEST-133: "since those are godot apps that launch in my view it could be that accidentally
 ## pressed a button maybe? since it takes the focus away from what I'm doing every time" — and,
@@ -824,7 +907,9 @@ const _QUIT_WHEN_STILL_DEFAULT := 1.0
 ## comment the way the shell side reads it — there is no GDScript reader for its own file's doc
 ## comments, so this is kept in step with that block by hand, the same promise `DEV_FLAG_TABLE`'s
 ## own doc already asks of `AutoScreenshot.from_command_line()`.
-const _RIG_FLAGS := ["--screenshot", "--walk", "--flee", "--press", "--tap", "--route"]
+const _RIG_FLAGS := [
+	"--screenshot", "--walk", "--flee", "--press", "--tap", "--route", "--trailer",
+]
 
 ## Whether this run is a rig rather than a person at the keyboard — `main._somebody_is_playing()`
 ## asks the same question for telemetry's sake and must never disagree with this: both read
@@ -851,6 +936,14 @@ const RIG_QUIT_CEILING_SECONDS := 240.0
 ## machine's own boot never races it, short enough that a genuinely wedged rig does not tie up
 ## whoever is waiting on the command to return.
 const RIG_KILL_GRACE_SECONDS := 15.0
+## How many wall-clock seconds a rig's script may take per game second while Godot's movie writer
+## is recording (`--write-movie`, which `tools/trailer.sh` launches every shot with). The writer
+## runs the game frame-locked (`--fixed-fps`) and saves every frame before drawing the next, so a
+## game second costs several wall seconds — about five on the machine this was measured on, for a
+## walking shot at 1280x720 — and a deadline counted in game seconds would kill a trailer shot
+## halfway through. Generous, for a heavier frame (the whole city in view) on a slower machine;
+## the ceiling still bounds it.
+const RIG_MOVIE_SLOWDOWN := 10.0
 
 ## Pure: seconds until a rig quits itself, from the two numbers that decide it. `after` is
 ## `--after`'s own value if the flag was given (a screenshot or timed-trace rig's own wait, the
@@ -859,9 +952,11 @@ const RIG_KILL_GRACE_SECONDS := 15.0
 ## none of which stop anything by themselves without `--screenshot` or `--frame-trace` beside them)
 ## can run for at the very most — the day it is playing, since nothing else ends it sooner. Pulled
 ## out as a pure function of both so a test can drive every combination without a command line —
-## the same seam `_no_focus_pause_from_args()` already is for its own flag.
-static func rig_quit_seconds_from(after: float, day_length: float) -> float:
-	var script := after if after >= 0.0 else day_length
+## the same seam `_no_focus_pause_from_args()` already is for its own flag. `slowdown` is
+## `RIG_MOVIE_SLOWDOWN` while the movie writer records and `1.0` otherwise: it stretches the
+## script's own length, never the ceiling, so no rig of any kind outlives `RIG_QUIT_CEILING_SECONDS`.
+static func rig_quit_seconds_from(after: float, day_length: float, slowdown := 1.0) -> float:
+	var script := (after if after >= 0.0 else day_length) * slowdown
 	return clampf(script + RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_CEILING_SECONDS)
 
 ## The live answer `main.gd` times its own quit timer against: `--after`'s value if given, else
@@ -874,7 +969,8 @@ static func rig_quit_seconds() -> float:
 	var day_length := day_length_override()
 	if day_length <= 0.0:
 		day_length = Tuning.day_length(day_override())
-	return rig_quit_seconds_from(after, day_length)
+	return rig_quit_seconds_from(after, day_length,
+			RIG_MOVIE_SLOWDOWN if OS.has_feature("movie") else 1.0)
 
 ## The bare parsing of `--after`'s own value, pulled out because `rig_quit_seconds()` needs it and
 ## `AutoScreenshot` (where `--after` is otherwise read) is not a place `DevFlags` reaches into —

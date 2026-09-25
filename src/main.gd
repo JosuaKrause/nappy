@@ -52,7 +52,9 @@ const ESCAPE_ONLY_GROUPS: Array[StringName] = [&"interior"]
 ## Whether the developer readout runs at all. Read once from `DevFlags.enabled()` into a member
 ## — rather than asked of `OS.is_debug_build()` inside `_process()` — so a test can set it and
 ## check the release shape, the way `hud._debug` already does for the HUD's own gate.
-var _debug := DevFlags.enabled()
+## **False under `--trailer`** even on a debug build, since a trailer frame is the release shape by
+## definition — see `DevFlags.trailer_requested()` and `_release_shaped_hud()`.
+var _debug := DevFlags.enabled() and not DevFlags.trailer_requested()
 
 ## Read once into a member for the same reason `_debug` is: so a test can set it directly and
 ## check the release shape, rather than only being able to exercise the flag from an actual debug
@@ -307,6 +309,7 @@ func _ready() -> void:
 	# that just earned its ending.
 	if _resume.is_empty() and GameState.escape_section == FinaleController.Section.NONE:
 		GameState.start_run(DevFlags.seed_override())
+		_apply_the_parent_flag()
 		GameState.day = DevFlags.day_override()
 	# `VisitCounter`'s own "a run begun fresh, or resumed from the save" — fired once here for
 	# every path through this function, ordinary or handed over to the escape, since GameState.day
@@ -365,6 +368,7 @@ func _ready() -> void:
 	_baby = _player.get_node("Baby")
 
 	_hud = HUD.instantiate()
+	_release_shaped_hud()
 	add_child(_hud)
 	_add_danger_edge()
 	_add_excitement_halo()
@@ -451,6 +455,7 @@ func _ready() -> void:
 	if DevFlags.overview_requested():
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
 	_dev_rig.setup_follow_camera(self)
+	_add_trailer_rigs()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
@@ -525,6 +530,7 @@ func _ready_escape() -> void:
 	# that earned this walk.
 	if not _escape_from_a_run:
 		GameState.start_run(DevFlags.seed_override())
+		_apply_the_parent_flag()
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
 	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
@@ -561,6 +567,7 @@ func _ready_escape() -> void:
 	await _warm_the_halo_shader(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
+	_release_shaped_hud()
 	add_child(_hud)
 	# The one thing the escape changes about the HUD: the clock reads to the millisecond.
 	_hud.set_finale(true)
@@ -638,10 +645,48 @@ func _ready_escape() -> void:
 
 	if DevFlags.overview_requested() and _city:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
+	_add_trailer_rigs()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
 		add_child(screenshot)
+
+## `--parent mother|father` over the roll `GameState.start_run()` just made from the seed, so a
+## trailer shot shows the parent its shot list names. Called straight after each of this file's
+## two `start_run()` calls, before anything reads the choice — `_hold_every_page_a_day_draws()`
+## holds that parent's atlas page and `_make_player()` binds the rig to it.
+func _apply_the_parent_flag() -> void:
+	var parent := DevFlags.parent_override()
+	if parent != "":
+		GameState.player_is_male = parent == "father"
+
+## Under `--trailer`, the HUD a release build draws: `HUD._debug` is read once from
+## `DevFlags.enabled()` when the scene is instantiated, so it is set here, before `add_child()`
+## runs the HUD's own `_ready()`, rather than by a second flag read inside `src/ui/`.
+func _release_shaped_hud() -> void:
+	if DevFlags.trailer_requested():
+		_hud._debug = false
+
+## The trailer's two additions to a shot, either boot: `--zoom-out`'s camera move, started from
+## whichever camera is current once her own has been placed, and `--caption`/`--title-card`'s text.
+## Both add nothing unless their flag was given.
+func _add_trailer_rigs() -> void:
+	var seconds := DevFlags.zoom_out_seconds()
+	var bounds := Rect2()
+	if _city:
+		bounds = _city.camera_bounds()
+	elif _interior:
+		bounds = _interior.camera_bounds()
+	if seconds > 0.0 and bounds.has_area():
+		var zoom_out := ZoomOutCamera.new()
+		zoom_out.name = "ZoomOut"
+		add_child(zoom_out)
+		_pauses_with_the_game(zoom_out)
+		zoom_out.setup(get_viewport().get_camera_2d(), bounds, get_viewport_rect().size, seconds,
+				DevFlags.zoom_out_delay())
+	var text := TrailerText.from_flags()
+	if text:
+		add_child(text)
 
 ## All entry points bind the run's existing choice before the rig enters the tree or draws.
 func _make_player() -> Stroller:
@@ -2105,23 +2150,24 @@ func _tile_name(type: GameEnums.TileType) -> String:
 ## - **There is no window.** `check.sh` and the test suite boot the game headless; nobody could be
 ##   playing whatever else is true.
 ## - **Something else is holding the keys.** `--screenshot` exists to take a picture and quit,
-##   `--walk`, `--flee` and `--press` are rigs that supply the input themselves, and `--route`
-##   (`src/dev/route_rig.gd`) walks a whole day's worth of it on its own. A run driven by one of
-##   them can be long, busy and completely unplayed, which is exactly the case the size heuristic
-##   in `tools/telemetry.sh` could never catch.
+##   `--walk`, `--flee` and `--press` are rigs that supply the input themselves, `--route`
+##   (`src/dev/route_rig.gd`) walks a whole day's worth of it on its own, and `--trailer` films a
+##   scripted shot for `tools/trailer.sh`. A run driven by one of them can be long, busy and
+##   completely unplayed, which is exactly the case the size heuristic in `tools/telemetry.sh`
+##   could never catch.
 ##
 ## **`--seed`, `--day`, `--spawn`, `--overview` and the rest are *not* here**, and that is the line:
 ## they change what she is looking at, not who is steering. A playtest of act III started with
 ## `--day 9` is a playtest.
 ##
 ## Reads `DevFlags.active_args()` rather than the command line directly, so a release export —
-## where none of the five rig flags below can do anything anyway — never misreads an ordinary
+## where none of the six rig flags below can do anything anyway — never misreads an ordinary
 ## player for one.
 func _somebody_is_playing() -> bool:
 	if DisplayServer.get_name() == "headless":
 		return false
 	var args := DevFlags.active_args()
-	for rig in ["--screenshot", "--walk", "--flee", "--press", "--route"]:
+	for rig in ["--screenshot", "--walk", "--flee", "--press", "--route", "--trailer"]:
 		if rig in args:
 			return false
 	return true

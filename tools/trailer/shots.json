@@ -1,0 +1,14 @@
+{
+  "fps": 60,
+  "max_seconds": 30,
+  "fade": 0.25,
+  "shots": [
+    {
+      "name": "choice",
+      "seed": 25, "day": 2, "parent": "mother",
+      "in": 0.3, "length": 7.0,
+      "walk": "1.7w0.6p3e2.5s",
+      "caption": "Every walk is a choice."
+    }
+  ]
+}

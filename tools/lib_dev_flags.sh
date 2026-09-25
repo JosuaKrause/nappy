@@ -181,7 +181,7 @@ _rig_quit_table() {
         | awk 'NF==2'
 }
 
-# The value beside $1 ("margin", "ceiling" or "kill_grace") in RIG_QUIT_SECONDS.
+# The value beside $1 ("margin", "ceiling", "kill_grace" or "movie_slowdown") in RIG_QUIT_SECONDS.
 _rig_quit_constant() {
     local name="$1"
     awk -v n="$name" '$1==n {print $2; found=1} END {exit !found}' < <(_rig_quit_table)
@@ -225,6 +225,27 @@ rig_kill_after_seconds() {
             -v ceiling="$ceiling" -v grace="$grace" 'BEGIN {
         script = (after != "") ? after + 0 : day_length + 0
         deadline = script + margin
+        if (deadline < margin) deadline = margin
+        if (deadline > ceiling) deadline = ceiling
+        total = deadline + grace
+        printf "%d\n", (total == int(total)) ? total : int(total) + 1
+    }'
+}
+
+# The same kill wait for a rig recording through Godot's movie writer (`--write-movie`, which
+# tools/trailer.sh launches every shot with), given the shot's own --after in $1: the game's own
+# deadline under the writer stretches the script by `movie_slowdown` -- see
+# `DevFlags.rig_quit_seconds_from()`'s `slowdown`, which this mirrors -- and the ceiling still
+# bounds it, so this is that deadline plus the same kill grace.
+rig_kill_after_movie_seconds() {
+    local after="$1" margin ceiling grace slowdown
+    margin="$(_rig_quit_constant margin)"
+    ceiling="$(_rig_quit_constant ceiling)"
+    grace="$(_rig_quit_constant kill_grace)"
+    slowdown="$(_rig_quit_constant movie_slowdown)"
+    awk -v after="$after" -v slowdown="$slowdown" -v margin="$margin" -v ceiling="$ceiling" \
+            -v grace="$grace" 'BEGIN {
+        deadline = after * slowdown + margin
         if (deadline < margin) deadline = margin
         if (deadline > ceiling) deadline = ceiling
         total = deadline + grace
