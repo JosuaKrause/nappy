@@ -27,6 +27,8 @@ src/
 	game_state.gd         run/day/nerves/resistance       (autoload: GameState)
 	game_save.gd          persists a run to disk and reads one back; not an autoload, the same
 	                      static-namespace shape as DevFlags
+	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
+	                                                       (autoload: VisitCounter)
   player/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
@@ -376,9 +378,9 @@ designer touches one file.
 ### `EventBus`
 Global signal hub. Decouples systems that should not know about each other. Every signal is
 declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run state,
-events, bodies, resistance — read it directly for the current list and each signal's payload
-type; `event_telegraphed` and `event_activated` are deliberately untyped, since this autoload
-loads before `EventInstance`'s class does.
+events, bodies, resistance, the escape, presentation — read it directly for the current list and
+each signal's payload type; `event_telegraphed` and `event_activated` are deliberately untyped,
+since this autoload loads before `EventInstance`'s class does.
 
 ### `Telemetry`
 The run log: one plain-text file per run, written as it happens. **Inert until
@@ -399,6 +401,16 @@ quietly consume one extra value and break determinism for every other guarantee 
 ### `GameState`
 The run. Owns `run_seed`, `day`, `nerves`, `resistance_progress`, `consumed_one_shots`.
 Handles day transitions and ending selection. Serialisable for save/continue.
+
+### `VisitCounter`
+Sends anonymous GoatCounter events for how far a run gets — see docs/TELEMETRY.md, "The page
+counts visits". Only listens: every method answers an `EventBus` signal (`run_begun`, `day_ended`,
+`run_restarted`, `escape_begun`/`escape_lost`/`escape_out`, `controls_chosen`, and three signals a
+day already had — `day_started`, `run_ended`, `resistance_step_completed`/`_failed`/
+`_contact_available`), decides nothing and writes nothing back. Sends only on a released web build
+with `?debug=1` unasked and `window.goatcounter.count` actually present —
+`VisitCounter._should_send()` is the pure gate, and `tests/test_visit_counter.gd` drives its
+truth table and its event-name builders directly.
 
 ## WorldContext
 
