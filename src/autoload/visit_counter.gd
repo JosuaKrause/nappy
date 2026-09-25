@@ -176,7 +176,17 @@ var _reported_run_begun := false
 static func _resumed_for_report(resumed: bool, already_reported_this_page: bool) -> bool:
 	return resumed and not already_reported_this_page
 
+## Whether a `run_begun` is the same run coming back after a reload this page made — the day-14
+## handover into the escape reloads the scene onto the save it has just written — rather than a run
+## begun: a second `run_begun` on one page that finds a save. That sends nothing, since the run was
+## already counted; a held restart clears the save before its reload, so it finds none and counts
+## as the new, fresh run it is.
+static func _is_the_same_run_reloaded(resumed: bool, already_reported_this_page: bool) -> bool:
+	return resumed and already_reported_this_page
+
 func _on_run_begun(day: int, resumed: bool) -> void:
+	if _is_the_same_run_reloaded(resumed, _reported_run_begun):
+		return
 	var actually_resumed := _resumed_for_report(resumed, _reported_run_begun)
 	_reported_run_begun = true
 	_send_event(_run_begun_name(day, actually_resumed))

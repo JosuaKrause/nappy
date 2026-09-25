@@ -134,6 +134,12 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 ## page never actually left. `_resumed_for_report()` is the fix: a save is only a resume if this
 ## page has not already reported a run beginning once before.
 func _test_resumed_for_report_truth_table(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._is_the_same_run_reloaded(true, true),
+			"a save found by a second run_begun on one page is the same run reloaded: nothing sent")
+	t.check(not VISIT_COUNTER_SCRIPT._is_the_same_run_reloaded(false, true),
+			"no save on a second run_begun is a new run after a held restart: counted fresh")
+	t.check(not VISIT_COUNTER_SCRIPT._is_the_same_run_reloaded(true, false),
+			"the page's first run_begun that finds a save is a real resume: counted")
 	t.check(VISIT_COUNTER_SCRIPT._resumed_for_report(true, false),
 		"a genuine resume, the first time this page has ever reported, stays a resume")
 	t.check(not VISIT_COUNTER_SCRIPT._resumed_for_report(true, true),
