@@ -75,7 +75,7 @@ static var _uses_save_override: Variant = null
 ## so an agent can ask for one anyway.
 ##
 ## **A web page keeps its ordinary save too, debug build or release, unless it actually used one
-## of `DevFlags.live_debug_requested()`'s own parameters.** *(docs/TODO.md, M193, "the live page's ?debug=1
+## of `DevFlags.live_debug_requested()`'s own parameters.** *(docs/DECISIONS.md, M193, "the live page's ?debug=1
 ## reaches the debug flags": "a visitor who tries `?day=12` does not lose their own day 3".)*
 ## `DevFlags.web_debug_flag_used()` answers that — `false` for the ordinary release page everyone
 ## else gets, and for `?debug=1` alone with none of the bundle's own parameters named, since

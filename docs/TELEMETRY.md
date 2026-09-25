@@ -226,7 +226,7 @@ written before the run's own `ending` line.
 ### `--invincible`
 
 `--invincible` (or the page's own `?invincible=1`, which also reaches a release page behind
-`?debug=1` — docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug flags") is
+`?debug=1` — docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags") is
 `DevFlags`' own developer flag, gated behind `DevFlags.live_debug_requested()` rather than
 `enabled()` alone, and listed in README.md's "Dev flags" table. Under it, `DayController._ignores_loss()` is the one
 predicate all three losing results — crying, a hard fail, the clock reaching zero — consult before
@@ -683,7 +683,7 @@ build has nothing in `project.godot` to reach:
   parsed straight off the page's query string and not gated behind `enabled()`. `main._add_debug_layers()`
   and `main._add_route_lines()` build the geometry layers (`1`-`3`, `5`) under that same `_debug or
   _readout_requested` gate now too, so a release page's own `?debug=1&layers=1,3,5` has somewhere
-  to draw (docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug flags") — only the `1`/`2`/`3`
+  to draw (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags") — only the `1`/`2`/`3`
   key presses that toggle one by hand stay debug-build only, since a release page sends no such
   keypress on its own. Whenever `readout_requested()`
   holds, a fixed "DEBUG MODE ON" note (`DebugModeNote`, `src/dev/debug_mode_note.gd`) is drawn for
@@ -706,7 +706,7 @@ build has nothing in `project.godot` to reach:
   bundle M193 opens on a release page beside the readout — `?day=`, `?invincible=1`, `?layers=`,
   `?controls=`, `?escape=1`, `?meters=`, `?daylength=` and `?ending=`/`?blackout=1` — so the
   snapshot key and everything that drives input, takes a picture or writes a file are the only
-  things still unreachable from a visitor's address bar (docs/TODO.md, M193, "the live page's
+  things still unreachable from a visitor's address bar (docs/DECISIONS.md, M193, "the live page's
   ?debug=1 reaches the debug flags"). `GameSave.uses_save()` refuses the save the moment the query
   actually used one of those parameters.
   Directly beneath the seed line, a `skip` line names what `--skip`/`?skip=` turned off — `events`,

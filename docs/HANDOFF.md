@@ -73,7 +73,9 @@ committed at all.
 export cannot be opened from `file://` — the browser refuses the WASM and pack fetches — so a static
 server is the requirement rather than a convenience. It exports **debug** and serves `build/web`
 over plain HTTP, printing an address rather than opening a browser, and the debug half is
-load-bearing: a debug build is the only one where the URL modifiers answer at all.
+load-bearing: a debug build answers every URL modifier as it stands, where a release page answers
+only the ones `?debug=1` opens (`DECISIONS.md`, M193, the live page's ?debug=1 reaches the debug
+flags).
 
 A filtered run (`./tools/test.sh crowd events`) prints `PARTIAL RUN` and is not a green build.
 

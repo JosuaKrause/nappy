@@ -18,7 +18,7 @@ extends RefCounted
 ## check inside it, since the release-shaped case that matters is a single query string with or
 ## without that parameter, not a runtime `readout_requested()` a test has no web query to drive.
 ##
-## `live_debug_requested()` (docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug
+## `live_debug_requested()` (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 ## flags") opens a second, smaller bundle on top of the two above — `?day=`, `?invincible=1` and
 ## the rest named at its own doc. It is `enabled()` (a build type nothing here can fake) `or`
 ## `readout_requested()`, so its own pure half, `_live_debug_requested()`, is the truth table this

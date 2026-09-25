@@ -102,7 +102,7 @@ var _no_focus_pause := DevFlags.no_focus_pause()
 ## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
 ## test can set it directly and check the release shape. `_status.visible` and the text assembly
 ## in `_process()` read `_debug or _readout_requested`, and so now do `_add_debug_layers()` and
-## `_add_route_lines()` — see docs/TODO.md, M133, "the readout on the live page", and M193, "the
+## `_add_route_lines()` — see docs/DECISIONS.md, M133, "the readout on the live page", and M193, "the
 ## live page's ?debug=1 reaches the debug flags". The snapshot key and the layer-toggle keys keep
 ## reading `_debug` alone: a release page can ask `?layers=` for a picture already drawn a
 ## particular way, never toggle one by hand with no keyboard event the page itself sent.
@@ -1392,7 +1392,7 @@ static func _graph_starts_on(spikes_requested: bool, layers: Array[int]) -> bool
 ## — above everything else in the world, unlike the halo's own `z_index = 1`, because a bounding
 ## box drawn under the thing it outlines would be the one cue in the game nobody could read.
 ## Every layer starts off, unless `-- --layers 1,3` (or the page's own `?layers=1,3`, which also
-## reaches a release page behind `?debug=1` — docs/TODO.md, M193, "the live page's ?debug=1
+## reaches a release page behind `?debug=1` — docs/DECISIONS.md, M193, "the live page's ?debug=1
 ## reaches the debug flags") says otherwise — see `_toggle_debug_layer()` for the number key that
 ## turns one on by hand, a debug build only.
 ##

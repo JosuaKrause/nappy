@@ -89,7 +89,7 @@ extends RefCounted
 ## that drives input, takes a picture or writes a file — answers to a release page too, behind
 ## `?debug=1`.** *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site behind
 ## debug=1 we'd want some of the debug flags (like day, invincible, etc.) so debugging the live
-## build is easier", overturning the 2026-09-06 rule above for that half alone — see docs/TODO.md,
+## build is easier", overturning the 2026-09-06 rule above for that half alone — see docs/DECISIONS.md,
 ## M193, "the live page's ?debug=1 reaches the debug flags".)* `live_debug_requested()` below is
 ## that gate: `day_override()`, `invincible()`, `layers_override()`, `ControlsMode.resolve()`,
 ## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()` and
@@ -111,7 +111,7 @@ static func enabled() -> bool:
 ## `Telemetry`'s own `?telemetry=1` is not part of any of this: it stays behind `enabled()` alone
 ## (docs/TELEMETRY.md, "`--spikes` is off by default"), since a stranger's browser collecting a
 ## trace is a different question from a stranger's browser reading a day number back. See
-## docs/DECISIONS.md, M133, "the readout on the live page", and docs/TODO.md, M193, "the live
+## docs/DECISIONS.md, M133, "the readout on the live page", and docs/DECISIONS.md, M193, "the live
 ## page's ?debug=1 reaches the debug flags".
 static func readout_requested() -> bool:
 	return _readout_from_args(OS.get_cmdline_user_args()) or _readout_from_query(_web_query())
@@ -311,7 +311,7 @@ static func _seed_from_query(query: String) -> int:
 
 ## `--day N` (or the page's own `?day=N`, under `live_debug_requested()`) starts on a later day,
 ## clamped into the run the same way either source is read. **One of the two required flags M193
-## opens on a release page** (docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug
+## opens on a release page** (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 ## flags"). `?day=N` with no `?debug=1` in the same query answers the ordinary "not given" default
 ## of `1` on a release page, the way every other flag in this bundle does.
 static func day_override() -> int:
@@ -414,7 +414,7 @@ const _FORCED_INTERVAL_DEFAULT := 6.0
 ## `--meters <sleepiness> <excitement>` (or the page's own `?meters=sleepiness,excitement`, under
 ## `live_debug_requested()`), clamped into range — or `(-1, -1)` if the flag is absent or
 ## malformed. Negative is not a valid meter reading, so it costs nothing extra to reuse as the
-## "not given" sentinel. One of the M193 flags cheap to mirror on a release page (docs/TODO.md,
+## "not given" sentinel. One of the M193 flags cheap to mirror on a release page (docs/DECISIONS.md,
 ## M193, "the live page's ?debug=1 reaches the debug flags"): it only seeds `Baby`'s own starting
 ## numbers, the same as the command line already does.
 static func meters_override() -> Vector2:
@@ -457,7 +457,7 @@ static func overview_requested() -> bool:
 ## at once, from a spawn that far away — on whatever day `--day`/`?day=` names. Nothing else reads
 ## it: no task, ending or save sees a sabotage, which is what keeps it a way to photograph the
 ## moment rather than a way to reach the good ending — trivial to mirror on a release page the
-## same way `--day`/`--invincible` are (docs/TODO.md, M193, "the live page's ?debug=1 reaches the
+## same way `--day`/`--invincible` are (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the
 ## debug flags").
 static func blackout_requested() -> bool:
 	if "--blackout" in _args():
@@ -477,7 +477,7 @@ static func _blackout_from_query(query: String) -> bool:
 ## `main` straight in the escape scene's interior — see docs/TODO.md, "M112 — The escape scene,
 ## walkable". The command line stays behind `enabled()` alone, so the one way to reach a *chosen*
 ## interior part (`start_escape_at()`) is still a debug build; the bare boolean is read under
-## `live_debug_requested()` instead, one of the flags M193 opens on a release page (docs/TODO.md,
+## `live_debug_requested()` instead, one of the flags M193 opens on a release page (docs/DECISIONS.md,
 ## M193, "the live page's ?debug=1 reaches the debug flags") — a visitor's `?debug=1&escape=1`
 ## reaches the scene's third-floor default start the same way a debug build's `--start-escape`
 ## bare does, with no events, no crowd and no day clock either way.
@@ -523,7 +523,7 @@ static func start_escape_at() -> String:
 ## the day, so dusk and the timeout loss can be looked at without sitting through the whole three
 ## minutes. `-1.0` is "not given"; the fallback to `Tuning.day_length()` stays with the caller,
 ## since that also needs to know which day it is. Trivial to mirror on a release page the same way
-## as the rest of the M193 bundle (docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug
+## as the rest of the M193 bundle (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 ## flags"): both `DevRig.day_length()` and `FinaleController.length()` read it unconditionally, so
 ## a visitor's own `?daylength=` reaches an ordinary day exactly as `--day-length` already does.
 static func day_length_override() -> float:
@@ -576,7 +576,7 @@ static func parse_zoom(raw: String) -> float:
 ## `--ending bad|neutral|good` (or the page's own `?ending=`, under `live_debug_requested()`) —
 ## the raw word, or "" if none was given. Mapping it onto `GameEnums.Ending` and warning on an
 ## unknown word stays in `main.gd`, the only caller, the same for either source. Trivial to mirror
-## on a release page the same way as the rest of the M193 bundle (docs/TODO.md, M193, "the live
+## on a release page the same way as the rest of the M193 bundle (docs/DECISIONS.md, M193, "the live
 ## page's ?debug=1 reaches the debug flags"): the screen it puts up is drawn over a day already
 ## running, not a way to end or save a run.
 static func ending_override() -> String:
@@ -613,7 +613,7 @@ static func controls_override() -> String:
 ## the spike view) are the two other layers in the list, on the same terms — `main._add_frame_graph()`
 ## reads `6 in layers_override()` the same way `_add_route_lines()` reads `5`. `4` (the readout) is
 ## not part of this list: it defaults on already, and this flag exists for a clean *geometry* shot.
-## One of the flags M193 opens on a release page (docs/TODO.md, M193, "the live page's ?debug=1
+## One of the flags M193 opens on a release page (docs/DECISIONS.md, M193, "the live page's ?debug=1
 ## reaches the debug flags"): the command line stays behind `enabled()` through `_args()`, and the
 ## query read falls back to `live_debug_requested()` the same shape `ControlsMode._url_word()`
 ## gates its own query read.
@@ -675,7 +675,7 @@ static var _invincible_override: Variant = null
 ## alarms and the day gets dark.")* The record is in docs/DECISIONS.md under M100, "an invincible
 ## mode for playtesting" and "invincible freezes the clock and the meter".
 ##
-## **One of the two required flags M193 opens on a release page** (docs/TODO.md, M193, "the live
+## **One of the two required flags M193 opens on a release page** (docs/DECISIONS.md, M193, "the live
 ## page's ?debug=1 reaches the debug flags") — a visitor's own `?invincible=1` reaches this whole
 ## predicate the same way a debug build's `--invincible` already does, gated behind
 ## `live_debug_requested()` rather than `enabled()` alone.

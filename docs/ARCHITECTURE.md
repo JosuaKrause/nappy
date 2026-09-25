@@ -247,7 +247,7 @@ second section on its own, with no building built at all. `main.escape_part_for(
 with the command line taken out of it so the mapping is testable.
 
 **A named subset of that same list also answers a release page's own query string, behind
-`?debug=1`.** *(2026-09-25, docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug
+`?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
 invincible, etc.) so debugging the live build is easier".)* `DevFlags.live_debug_requested()` —
 `enabled()` or `readout_requested()` — is the gate: `?day=`, `?invincible=1`, `?layers=`,
@@ -320,7 +320,7 @@ a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode from
 the title (`--no-title`, a screenshot rig) — and `main._on_title_start()` overrides it the moment a
 player actually presses a button. `resolve()`'s command-line door stays behind `DevFlags.enabled()`;
 its query door stays behind `DevFlags.live_debug_requested()`, so a release page's own
-`?debug=1&controls=` reaches it too (docs/TODO.md, M193, "the live page's ?debug=1 reaches the
+`?debug=1&controls=` reaches it too (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the
 debug flags").
 
 `TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and the two modes

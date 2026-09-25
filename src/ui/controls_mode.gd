@@ -49,7 +49,7 @@ static func from_word(word: String) -> Mode:
 ##
 ## **Gated behind `DevFlags.live_debug_requested()`.** *(2026-09-06, the player: "for dev you need
 ## it to be controllable from the getgo -- for release there should be no modifiers"; overturned
-## 2026-09-25 for this flag among others, docs/TODO.md, M193, "the live page's ?debug=1 reaches the
+## 2026-09-25 for this flag among others, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the
 ## debug flags": "on the published site behind debug=1 we'd want some of the debug flags ... so
 ## debugging the live build is easier".)* A debug build carries the query read immediately, with or
 ## without `?debug=1`; a release page carries it only once its own `?debug=1` has asked for it.
