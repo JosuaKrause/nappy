@@ -293,8 +293,10 @@ item below for as long as looking takes.
   resets the pointer's aim.
 - **Find a crossing alley walled at its mouth on day 7 or later** (`--seed 2199579682 --day 7`,
   tile 95,88). The band is 64px wide, flush with the alley's paving, no longer over the roof
-  edges either side. Does it still read as standing on a roof? Record is `DECISIONS.md`, M100, a
-  region wall fits the alley mouth.
+  edges either side. Does it still read as standing on a roof? One guard stands at each mouth, on
+  the street side, and a wall across a street has four, one on each sidewalk either side: **does
+  the wall read as manned from every approach?** Records are `DECISIONS.md`, M100, a region wall
+  fits the alley mouth, and M200, a region wall has a guard on each sidewalk.
 - **Walk north into the top of any building.** Her body goes 6px into the roof's northern edge
   before stopping. Does that read as leaning into the top of a wall, or is it too little to
   notice? Same record.

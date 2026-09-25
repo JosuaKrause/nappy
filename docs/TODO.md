@@ -327,30 +327,6 @@ open is her house's crafted look.
 
 ---
 
-## M200 — A region wall has a guard on each sidewalk · asked for 2026-09-25
-
-> "maybe four? one on each sidewalk. would that cover everything?"
-
-[PLAYTEST-135](playtests/PLAYTEST-135.md), statement 8.
-
-A region wall across a street stands as three `roadblock` bodies placed by
-`SealPlanner.place_hard_on()` — one per sidewalk and one on the road, each a point of 32px that
-draws and collides 64px across — and every roadblock draws a guard on each side of its own band
-(`EventInstance._draw_posted_guard()` at each `_guard_post_offset()`), so a wall crossing shows
-six guards. A wall's bodies are the unheated catalogue row, never `EventCatalogue.heated()`, so
-its guards never chase: they are a drawing only.
-
-- [ ] **A wall crossing a street draws four guards**: the two sidewalk bodies keep a guard on
-      each side of the wall, and the road body draws none. The door bodies (`checkpoint_hut`,
-      `checkpoint_gate`) and the catalogue roadblock are unchanged.
-- [ ] **Open: a walled alley.** Its wall is one body at each mouth
-      (`RegionPlanner._alley_mouth_wall_body()`), each drawing two guards, and the inner one of
-      each pair stands inside an alley walled at both ends, where she cannot reach. The
-      orchestrator's pick is one guard per mouth, on the street side; the player has not
-      answered.
-
----
-
 ## M199 — The roadblock closes its whole street · asked for 2026-09-25, after the release
 
 > "close the street fully"
@@ -368,7 +344,8 @@ wall's roadblocks are not affected: they are three narrower bodies across the st
       weighted onto the day's route cells, becomes a true closure of that route, which the
       walkability pass drops first because it is the widest body.
 - [ ] **Open: where its two guards stand** on a band that fills the street — at the band's middle
-      as now, in the road, or on a sidewalk the way M200 posts the wall's. To go to the player
+      as now, in the road, or on a sidewalk the way the region wall's are (`DECISIONS.md`, M200,
+      a region wall has a guard on each sidewalk). To go to the player
       with pictures before it is built.
 
 ---

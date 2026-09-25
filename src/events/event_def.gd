@@ -841,6 +841,26 @@ func lethal_reach() -> float:
 ## chases has nothing to leave its body behind *from*.
 @export var body_stays_behind := false
 
+## Which side or sides of a `Look.ROADBLOCK` band `_draw_roadblock()` posts a standing guard on —
+## `-1`/`+1` in `_guard_post_offset()`'s own reading of `side`, the same sign `_guard_side_toward()`
+## and `_chaser_side` use. `[-1, 1]` (both) is every row's own default: the catalogue `roadblock`
+## and every wall body inherit it unless something here overrides it.
+##
+## **Two overrides today, both the region wall's own.** *(2026-09-25, PLAYTEST-135, statement 8:
+## "maybe four? one on each sidewalk. would that cover everything?")* A wall crossing stands three
+## bodies — sidewalk, road, sidewalk — and posting a guard on both sides of all three would draw
+## six; `SealPlanner.place_hard_on()` duplicates the middle one with `guard_sides` emptied, so the
+## tarmac between the two sidewalks draws none while both sidewalk bodies keep the default pair.
+## *(Same day, on a walled alley's own two mouths: "one guard in alleys on each end.")* Each mouth
+## drew two, one of them standing inside an alley walled at both ends where she can never reach —
+## `RegionPlanner._alley_mouth_wall_body()` sets this to the one-element array naming the mouth's
+## own street-facing side (`_alley_mouth_street_side()`) instead.
+##
+## **Carried on the def, set on the placement, read only at draw time.** Nothing here decides
+## *which* side is which — an empty array draws nothing at all regardless — so both overrides above
+## are a value set on a fresh duplicate at placement, with no change to `_draw_roadblock()` itself.
+@export var guard_sides: Array[int] = [-1, 1]
+
 ## Exempt from the cost rule's wall and friction placement — `EventScheduler._role_for` answers
 ## `NONE` for it before the cost check ever runs, so `_copies_of` neither pulls it off the
 ## corridor nor weights it onto one: it lands on whatever tile the roll picks, the way an

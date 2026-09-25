@@ -3775,11 +3775,13 @@ func _robber_waiting_heading() -> Vector2:
 ## both drawn for the whole of the event's life, cold or hunting, and the only thing that changes
 ## is which of them is moving.
 ##
-## - **Cold, or hunting but not yet noticed** (`is_waiting()`), **two** men stand at their posts,
-##   one on each side of the band *(2026-09-25: "have one guard on each side?")*, in the
+## - **Cold, or hunting but not yet noticed** (`is_waiting()`), one man stands at his post for
+##   every side `def.guard_sides` names *(2026-09-25: "have one guard on each side?")*, in the
 ##   `guard_standing_*` family, each clear of the barrier's picture and facing out from it
-##   (`_guard_post_offset()`). On a cold roadblock that is the whole of what they are: drawings,
-##   with no field, no body and no cost of their own.
+##   (`_guard_post_offset()`). `[-1, 1]` (both sides) is every row's own default — a cold roadblock
+##   posts two, drawings with no field, no body and no cost of their own — except the region wall's
+##   own road body, which `SealPlanner.place_hard_on()` builds with the array emptied: see
+##   `EventDef.guard_sides`, M200 ("a region wall has a guard on each sidewalk").
 ## - **Once the one on her side sets off** — the only one who does, "since the other one will be
 ##   blocked" — this node *is* him: it steps out to his post and `_chase()` walks it at her
 ##   (`_leave_the_body_behind()`). The barrier he left is drawn back at `body_position()`, where
@@ -3799,7 +3801,7 @@ func _robber_waiting_heading() -> Vector2:
 func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	var band_at := body_position() - global_position
 	_draw_spread(_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END, canvas, band_at)
-	for side: int in [-1, 1]:
+	for side: int in def.guard_sides:
 		if side != _chaser_side:
 			_draw_posted_guard(canvas, band_at, side)
 	if _chaser_side == 0:
