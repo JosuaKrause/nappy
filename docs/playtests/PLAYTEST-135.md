@@ -47,3 +47,10 @@ only the one on her side giving chase, together with (a).
    reach** (option (a)), so he notices her outside his stand-off and lunges from it rather than on the
    first frame. Proposed with statements 3 and 4;
    the player answered the proposal without objecting to it.
+
+## Then, on the draft's pictures
+
+> "all good, only the barrier doesn't actually reach the full width/height is that intentional?"
+
+6. **The barrier's picture reaches across the whole street it closes**, on both axes, as far as
+   its body does.
