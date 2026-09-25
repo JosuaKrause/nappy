@@ -940,11 +940,11 @@ func _process(delta: float) -> void:
 		return
 	# A pickup is the only step subject to the re-placement rule; a one-place perform step is
 	# never subject to it (its rider or its point is fixed for the day), and an any-instance
-	# perform step is subject to the first-reached rule instead.
+	# perform step follows her between look-alikes instead.
 	if _step.is_pickup:
 		_track_sight_and_reposition(delta)
 	elif _rider and not _step.is_one_place:
-		_track_first_reached()
+		_follow_her_between_look_alikes()
 	if _step.deadline_fraction <= 0.0 or _day_length <= 0.0:
 		return
 	if _elapsed / _day_length < _step.deadline_fraction:
@@ -952,12 +952,15 @@ func _process(delta: float) -> void:
 	_expire("expired at %.0f%% of the day" % (_step.deadline_fraction * 100.0))
 
 ## *Asked for a hidden contact among look-alikes · overturned on 2026-09-13* (`docs/NARRATIVE.md`,
-## "The contact is whichever look-alike she reaches first"): *"we cannot expect the player to do
-## an exhaustive check ... so if the solution is the yeller it's always the first yeller you come
-## close enough to hand the note."* An any-instance perform step's contact is not pinned to
+## "The any-instance contact is whichever look-alike the player hands the note to"): *"not the
+## first yeller she reaches but the first yeller she interacts with. so the task is always solved
+## by going to any yeller she notices."* An any-instance perform step's contact is not pinned to
 ## whichever instance `_begin_step()` happened to spawn — it rides onto whichever live instance
-## sharing the step's own `task_event_id` she comes within reach of first, seeded rider included.
-## A one-place step (`Step.is_one_place`) never runs this: its rider is the task.
+## sharing the step's own `task_event_id` she is nearest within reach of, seeded rider included,
+## and follows her from one look-alike to the next: coming near one and walking on is not a
+## choice, and the one she hands it to — the contact she actually touches — is the one that
+## completes the step. A one-place step (`Step.is_one_place`) never runs this: its rider is the
+## task.
 ##
 ## **The seeded rider's own guard and deadline are untouched.** `_maybe_set_a_trap()` still stands
 ## a robber near the position `_begin_step()` rolled, and `_process()`'s own deadline check still
@@ -967,10 +970,10 @@ func _process(delta: float) -> void:
 ## gap — there is no candidate left to get wrong, so there is nothing left to guard against
 ## picking one.
 ##
-## Skipped once she has already reached the seeded rider itself (`best == _rider`): its own fixed,
-## replay-stable offset from `_reachable_offset()` already has `ContactPoint`'s own distance check
-## covered, so nothing here needs to move it.
-func _track_first_reached() -> void:
+## Skipped while the nearest look-alike in reach is already the one it rides (`best == _rider`):
+## the seeded rider's own fixed, replay-stable offset from `_reachable_offset()`, or the near-side
+## offset a retarget gave, already has `ContactPoint`'s own distance check covered.
+func _follow_her_between_look_alikes() -> void:
 	if not _player or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 	if not _player or not _city or not _city.events:
@@ -990,7 +993,7 @@ func _track_first_reached() -> void:
 		return
 	_rider = best
 	_contact.ride(_step, best, _near_side_offset(best, here))
-	Telemetry.note("contact", "step %d retargeted onto the nearest look-alike reached first"
+	Telemetry.note("contact", "step %d retargeted onto the nearest look-alike in reach"
 			% _step.index)
 
 ## The distance from `instance`'s own centre at which `ContactPoint.REACH` is actually reachable —
@@ -1005,8 +1008,9 @@ func _reach_distance(instance: EventInstance) -> float:
 ## seeded rider keeps, for replay stability across an untouched day) would be the wrong question:
 ## nothing about this pairing needs to replay the same way twice, since it only ever happens once
 ## she is already standing close enough. Placing the offset toward her own current bearing instead
-## is what makes the distance check in `_track_first_reached()` exactly correct for a body with any
-## solid clearance, by the same triangle the caller already checked when it found this candidate.
+## is what makes the distance check in `_follow_her_between_look_alikes()` exactly correct for a
+## body with any solid clearance, by the same triangle the caller already checked when it found
+## this candidate.
 func _near_side_offset(instance: EventInstance, from: Vector2) -> Vector2:
 	var clearance: float = instance.def.obstructs_radius
 	if clearance <= 0.0:
@@ -1167,11 +1171,12 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.applies_package_weight:
 		GameState.resistance_carrying_package = true
 		Telemetry.note("contact", "the package is heavier now; the rest of today costs more")
-	# A finished task is shown by the world, never by text: the man shouting she actually
-	# reached — `_rider` after any retargeting in `_track_first_reached()` — stops shouting and
-	# walks off screen, the same departure any finished event takes. Named by `task_event_id`
-	# rather than "any rider with a completed step", so this call site does not start silently
-	# giving the other perform steps a world-answer their own design has not chosen yet.
+	# A finished task is shown by the world, never by text: the man shouting she actually handed
+	# it to — `_rider` after any retargeting in `_follow_her_between_look_alikes()` — stops
+	# shouting and walks off screen, the same departure any finished event takes. Named by
+	# `task_event_id` rather than "any rider with a completed step", so this call site does not
+	# start silently giving the other perform steps a world-answer their own design has not chosen
+	# yet.
 	if step and step.task_event_id == "homeless_yeller" and _rider and is_instance_valid(_rider):
 		_rider.leave_for_a_completed_task()
 		Telemetry.note("contact", "he took it and is leaving")

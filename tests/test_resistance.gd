@@ -40,6 +40,7 @@ func run(t) -> void:
 	_test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t)
 	_test_a_perform_contact_is_never_relocated(t)
 	_test_the_contact_rides_onto_the_first_look_alike_she_reaches(t)
+	_test_the_step_completes_on_the_look_alike_she_hands_it_to(t)
 	_test_a_perform_step_expires_when_its_rider_is_gone(t)
 	_test_a_timed_step_expires(t)
 	_test_completing_the_package_makes_the_pram_heavier(t)
@@ -1032,6 +1033,60 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 		director._contact.completed.connect(func(index: int) -> void: completed.append(index))
 		director._contact._physics_process(STEP)
 		t.check(completed == [2], "touching the retargeted contact completes step 2 itself")
+
+		player.free()
+		director.free())
+
+## *(2026-09-13, PLAYTEST-71: "not the first yeller she reaches but the first yeller she interacts
+## with. so the task is always solved by going to any yeller she notices.")* Coming within the
+## director's reach of one look-alike moves the contact onto him, and walking on again leaves him
+## behind: the step completes on whichever one she then hands the note to. Two look-alikes besides
+## the seeded rider, so the first one she comes near is a retarget rather than the rider the step
+## already had — a walk that only ever touched the seeded one could pass with the rule deleted.
+func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director_on_the_yeller_perform(t)
+		var perform := director.current_step()
+		t.check(perform != null and perform.index == 2, "the yeller perform is active")
+		var seeded: EventInstance = director._rider
+		var yeller := EventCatalogue.by_id("homeless_yeller")
+		var first_at := director._place(perform, _rng(6, "first look-alike"))
+		var second_at := director._place(perform, _rng(6, "second look-alike"))
+		var apart := ContactPoint.REACH * 4.0
+		t.check(first_at.distance_to(seeded.global_position) > apart
+				and second_at.distance_to(seeded.global_position) > apart
+				and first_at.distance_to(second_at) > apart,
+				"the three look-alikes stand well clear of each other, or this walk checks nothing")
+		var first := _city.events.spawn_extra(yeller, first_at)
+		var second := _city.events.spawn_extra(yeller, second_at)
+		var completed: Array[int] = []
+		director._contact.completed.connect(func(index: int) -> void: completed.append(index))
+
+		# Near the first — inside the director's reach of him, outside `ContactPoint.REACH` of the
+		# note — so she has come near him without handing it over.
+		var near := director._reach_distance(first) - 4.0
+		t.check(near > ContactPoint.REACH, "there is ground near him that is not the handover")
+		var player := _rig_player(t, first_at + Vector2(near, 0.0))
+		director._process(STEP)
+		director._contact._physics_process(STEP)
+		t.check(director._rider == first, "coming near the first look-alike moves the contact onto him")
+		t.check(completed.is_empty(), "and nothing is handed over from where she stands")
+
+		# Out again, well clear of all three.
+		player.global_position = first_at + Vector2(ResistanceDirector.NOTICE_RADIUS, 0.0)
+		director._process(STEP)
+		director._contact._physics_process(STEP)
+		t.check(completed.is_empty(), "walking on from him hands nothing over")
+
+		# And onto the second, whom she hands it to.
+		player.global_position = second_at
+		director._process(STEP)
+		director._contact._physics_process(STEP)
+		t.check(completed == [2], "the step completes on the second look-alike, the one she hands it to")
+		t.check(director._rider == second, "whose contact it is")
+		t.check(second.is_leaving and not first.is_leaving and not seeded.is_leaving,
+				"and he is the one who leaves; the one she walked past keeps shouting")
 
 		player.free()
 		director.free())

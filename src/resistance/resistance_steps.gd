@@ -48,11 +48,12 @@ class Step extends RefCounted:
 	var task_event_id := ""
 	var target_kind := TargetKind.EVENT
 	## True for a one-place task: the red arrow points at it from the moment the mark is
-	## touched until it is done, and its contact is never subject to `_track_first_reached()`'s
-	## retargeting. False for the two tasks any live instance answers (the man shouting, a
-	## roadblock), which earn no arrow and do retarget onto whichever instance she reaches
-	## first. Unused by a pickup, which never draws the arrow; true for the finale, whose door is
-	## one place.
+	## touched until it is done, and its contact is never subject to
+	## `ResistanceDirector._follow_her_between_look_alikes()`'s retargeting. False for the two
+	## tasks any live instance answers (the man shouting, a roadblock), which earn no arrow and
+	## retarget onto whichever instance she is within reach of, so the one she hands it to is the
+	## one that counts. Unused by a pickup, which never draws the arrow; true for the finale, whose
+	## door is one place.
 	var is_one_place := true
 	## Fraction of the day after which the step is gone for good. 0 means no deadline, which is
 	## every task in the calendar: day 10's deadline is the neighbor's own walk home, not a clock.
