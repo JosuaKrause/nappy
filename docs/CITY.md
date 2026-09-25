@@ -2002,9 +2002,10 @@ Top-down camera with a fake vertical extrusion:
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
   is never compared against anything on the pavement.
 - **A front is district and block purpose, read the same way a roof's furniture is.** A
-  multi-story building's ground floor never shows a window: it is shops or blank wall — the wall
-  texture and its own plinth — with the entrance, the civic portico and the fire escape exactly
-  where they already stand. **Her own building is the one exception** and keeps its ground-floor
+  multi-story building's ground floor never shows a window on a column she can stand in front of:
+  it is shops or blank wall — the wall texture and its own plinth — with the entrance, the civic
+  portico and the fire escape exactly where they already stand. A column she cannot stand in front
+  of is the exception below. **Her own building is the other exception** and keeps its ground-floor
   windows, read off `CityMap.home_block` rather than off anything drawn — except the column(s) her
   own front door's footprint overlaps (`Building.door_world_x_range`), which draw plain wall
   instead, since a window behind a door she is standing in front of never showed anything. A
@@ -2049,6 +2050,24 @@ Top-down camera with a fake vertical extrusion:
   36px tall and rises four pixels into the row above, so every window on that row sits two
   pixels higher to keep its sill clear. The door's cell and a fire escape's are not blank wall:
   `Building.blank_ground_floor_cells()`, the cells a poster can go on, leaves them all out.
+- **A column with another building directly south of it draws a window instead, never a shop,
+  the blank-wall plinth, a door, a portico or a fire escape** — the same picture its own upper
+  floors already use, since every rule above only ever describes ground she can actually stand
+  on. Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's
+  own ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never
+  from anything drawn and never from a day's own closures — a covered column stays covered for
+  the whole run, the same fixed fact `CityMap.building_rects` already is. A partly covered front
+  keeps every other column's ordinary ground floor untouched: its storefront span only lands
+  where both of its own two columns are reachable, its entrance door is re-placed onto whichever
+  reachable column the same tiering that already keeps it off a fire escape still offers (never
+  simply dropped while one is reachable), and its portico — one picture across the one or two
+  columns it straddles — is dropped whole rather than split the moment either is covered, so a
+  front left with no other way in still rolls its own door. A front with no reachable column at
+  all has no door either way. A fire escape whose own column is covered is dropped outright, the
+  same "the roll still runs, only the result is dropped" way her own building already drops one
+  (below) — no picture exists for a platform or brackets reaching a column nobody can stand in
+  front of. Her own building is never asked: `City._spawn_buildings()` computes this only for a
+  front that is not hers.
 - **Posters go on that blank wall and nowhere else, one row to a front** (`PosterWalls`). A cell
   carries one only if the sidewalk tile in front of it is the north sidewalk of an east-west
   street — the front is a lot's south face, the one face the city draws — so a lot facing an
