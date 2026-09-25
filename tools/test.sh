@@ -6,7 +6,9 @@
 #   tools/test.sh --serial        everything, in one process (what a shard failure is debugged in)
 #   tools/test.sh --plan          print the shard split and run nothing
 #   tools/test.sh --shard 3/8     run only shard 3 of 8 -- what one CI matrix leg runs
-#   tools/test.sh --record-costs  run everything, then refresh tests/suite_costs.txt from it
+#   tools/test.sh --record-costs  run everything locally, then refresh tests/suite_costs.txt from it
+#                                  (tools/ci-costs.sh refreshes the same file from recent CI runs'
+#                                  own timings instead, with no local run needed)
 #
 # A full run is sharded -- locally across several Godot processes, in CI across matrix jobs, one
 # runner per shard. The reason is the shape of the suite rather than a preference: the work is
@@ -65,7 +67,8 @@ reject an argument it does not itself recognise -- only --serial, --plan, --reco
   --serial          everything, in one process (what a shard failure is debugged in)
   --plan            print the shard split (TEST_SHARDS processes) and run nothing
   --record-costs    run everything sharded, then rewrite tests/suite_costs.txt from this run's
-                     own per-suite lines
+                     own per-suite lines (tools/ci-costs.sh rewrites the same file from recent CI
+                     runs' own lines instead, without a local run)
   --shard I/N       run only shard I of N (1-indexed), planned the same way every other shard
                      is, and let the runner's own PARTIAL RUN note say so -- one shard is never
                      a green build by itself

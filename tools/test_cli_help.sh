@@ -29,8 +29,11 @@ cd "$root" || exit 1
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
 
-# A stand-in for the Godot binary: touches a marker and exits 0, so a test can tell whether a
-# script that is supposed to reject its input before ever launching Godot actually did.
+# A stand-in for the Godot binary: touches a marker, exits 0, and -- since M195 -- also writes an
+# empty file at whatever path follows a `--screenshot` in its own argv, standing in for the PNG a
+# real `AutoScreenshot._capture()` would save; shot.sh now fails loudly when that file is missing
+# (see lib_dev_flags.sh's own doc), so a launch stub that produced no picture at all would make
+# every "does shot.sh still launch Godot" case below fail for the wrong reason.
 GODOT_MARKER="$work_dir/godot-invoked"
 GODOT_STUB="$work_dir/godot-stub.sh"
 GODOT_ARGS="$work_dir/godot-args"
@@ -38,6 +41,12 @@ GODOT_ARGS="$work_dir/godot-args"
     echo '#!/usr/bin/env bash'
     printf 'touch %q\n' "$GODOT_MARKER"
     printf 'printf "%%s\\n" "$@" > %q\n' "$GODOT_ARGS"
+    echo 'args=("$@")'
+    echo 'for i in "${!args[@]}"; do'
+    echo '    if [[ "${args[$i]}" == "--screenshot" && $((i + 1)) -lt ${#args[@]} ]]; then'
+    echo '        : > "${args[$((i + 1))]}"'
+    echo '    fi'
+    echo 'done'
     echo 'exit 0'
 } > "$GODOT_STUB"
 chmod +x "$GODOT_STUB"
@@ -82,6 +91,8 @@ assert_exit() {
 }
 
 # --------------------------------------------------------- --help / -h: exit 0, usage, no work ---
+assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
+assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
 assert_exit "lint.sh --help"       zero ./tools/lint.sh --help
@@ -114,6 +125,10 @@ assert_exit "land-prs.sh --help" zero ./tools/land-prs.sh --help
 assert_exit "land-prs.sh -h"     zero ./tools/land-prs.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
+assert_exit "ci-costs.sh --bogus"        nonzero ./tools/ci-costs.sh --bogus
+assert_exit "ci-costs.sh --runs (missing value)" nonzero ./tools/ci-costs.sh --runs
+assert_exit "ci-costs.sh --runs (not a number)"  nonzero ./tools/ci-costs.sh --runs abc
+assert_exit "ci-costs.sh (stray argument)"       nonzero ./tools/ci-costs.sh bogus-suite
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
 assert_exit "lint.sh --bogus-flag"    nonzero ./tools/lint.sh --bogus-flag
 assert_exit "pycheck.sh --bogus"      nonzero ./tools/pycheck.sh --bogus
@@ -242,6 +257,56 @@ assert_exit "shot.sh ... --overview -- (late separator)" nonzero ./tools/shot.sh
 # its validate_dev_flags() cases; this only proves the two callers actually wired it in.
 assert_exit "run.sh --seed (missing value)"  nonzero ./tools/run.sh --seed
 assert_exit "shot.sh --meters (missing values)" nonzero ./tools/shot.sh "$work_dir/shot-out2.png" 1 --meters 3
+
+# -------------------------------------------- --route + --screenshot: refused, not raced ---
+# M195: RouteRig (src/dev/route_rig.gd) quits the process itself the moment she arrives, which can
+# beat --screenshot's own --after timer, so the combination could silently write nothing rather
+# than a picture. reject_route_with_screenshot() is the shared function both scripts call before
+# ever launching Godot -- checked directly here since its own message does not say "usage" (it is
+# not a malformed flag, it is a conflict between two well-formed ones), so assert_exit's own grep
+# does not fit it.
+PROJECT_DIR="$root"
+# shellcheck source=tools/lib_dev_flags.sh
+source "$root/tools/lib_dev_flags.sh"
+checks=$(( checks + 1 ))
+if reject_route_with_screenshot --route mark --screenshot out.png; then
+    echo "FAIL reject_route_with_screenshot: --route with --screenshot was accepted" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_route_with_screenshot refuses --route with --screenshot"
+fi
+checks=$(( checks + 1 ))
+if ! reject_route_with_screenshot --route mark --seed 1; then
+    echo "FAIL reject_route_with_screenshot: a plain --route was refused" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_route_with_screenshot leaves a plain --route alone"
+fi
+checks=$(( checks + 1 ))
+if ! reject_route_with_screenshot --screenshot out.png --seed 1; then
+    echo "FAIL reject_route_with_screenshot: a plain --screenshot was refused" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   reject_route_with_screenshot leaves a plain --screenshot alone"
+fi
+
+rm -f "$GODOT_MARKER"
+out="$(./tools/shot.sh "$work_dir/shot-route.png" 1 --route mark 2>&1)"
+status=$?
+checks=$(( checks + 1 ))
+if [[ $status -eq 0 ]]; then
+    echo "FAIL shot.sh --route (implicit --screenshot): expected a non-zero exit, got 0" >&2
+    failures=$(( failures + 1 ))
+elif ! printf '%s' "$out" | grep -qi -- "--route"; then
+    echo "FAIL shot.sh --route: rejection message did not mention --route" >&2
+    printf '%s\n' "$out" | sed 's/^/    /' >&2
+    failures=$(( failures + 1 ))
+elif [[ -f "$GODOT_MARKER" ]]; then
+    echo "FAIL shot.sh --route: launched Godot despite the conflict" >&2
+    failures=$(( failures + 1 ))
+else
+    echo "ok   shot.sh --route (implicit --screenshot) is refused before any launch"
+fi
 
 # test.sh's own --shard and --record-costs get the same treatment as the rest of tools/: every
 # malformed shape is rejected -- usage, non-zero, no launch -- before the import pass that would
