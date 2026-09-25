@@ -364,6 +364,23 @@ the one trace a happening leaves that has no picture yet.
 
 ---
 
+## M195 — A rig's window takes no focus and hears no stray key · asked for 2026-09-25
+
+> "since those are godot apps that launch in my view it could be that accidentally pressed a
+> button maybe? since it takes the focus away from what I'm doing every time"
+
+[PLAYTEST-133](playtests/PLAYTEST-133.md). A windowed rig (`tools/shot.sh`, `tools/run.sh` with a
+script) opens a real Godot window that takes the focus, and any key typed into it reaches the game.
+
+- [ ] **A rig's window never takes the focus**: it opens without activating (Godot's no-focus
+      window flag, or whatever the platform needs), on the player's macOS desktop in particular.
+      The pause-on-focus-loss a rig already skips (`--no-focus-pause`) stays as it is.
+- [ ] **A scripted rig ignores real input**: while `--walk`, `--route`, `--press`, `--tap`,
+      `--flee` or a screenshot rig drives the run, no real key or pointer press reaches the
+      game. `tools/run.sh` for a person to play is untouched.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
