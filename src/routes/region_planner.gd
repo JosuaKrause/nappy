@@ -662,20 +662,35 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 ## own paving and no further — measured in `tests/test_regions.gd`,
 ## `_test_alley_wall_bodies_fit_their_own_mouth`.
 ##
-## **Draws two guards, one on each side, unchanged** — out of scope for M200 (`docs/TODO.md`,
-## "Open: a walled alley"): the inner one of each pair stands inside an alley walled at both ends,
-## where she cannot reach, and whether that is kept is a question for the player. `EventDef.
-## guard_sides` is already the mechanism a "one guard, street side only" answer would use, with no
-## change to `EventInstance._draw_roadblock()`: a one-element array naming the mouth's own
-## street-facing side, set here the same way `body.def.solid()` already mutates the fresh duplicate
-## `SealPlanner.alley_mouth_wall()` hands back — `body.def.guard_sides = [<street side>]`, with the
-## side worked out from `vertical`/`at_start` the way `_guard_side_toward()` already turns a
-## direction into one.
+## **Draws one guard, on the street side, never the one inside the alley.** *(2026-09-25, the
+## player, on a walled alley's own two guards per mouth: "one guard in alleys on each end.")* The
+## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
+## reach — so `EventDef.guard_sides` is set here to the one side that does, the same way
+## `body.def.solid()` already mutates the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
+## back — with no change to `EventInstance._draw_roadblock()`, which already draws one guard per
+## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 		at_start: bool) -> EventScheduler.Planned:
 	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
 	body.def.solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
+	body.def.guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
 	return body
+
+## Which side of a mouth body's own band is the street side, in `EventDef.guard_sides`'s own `-1`/
+## `+1` reading of `EventInstance._guard_post_offset()`'s `side` — the one this mouth's alone,
+## `-1` at the mouth `SealPlanner.alley_mouth_rect()` places at `rect.position` (`at_start`), `+1`
+## at the one it places at `rect.end - 1`.
+##
+## **One rule for both axes, because the block's own interior is always the positive direction from
+## `rect.position`.** `at_start`'s mouth sits at the low-coordinate end of whichever axis the alley
+## runs on, so moving further negative from it leaves the rect — the street — and moving positive
+## enters it — the alley's own inside. The mouth at `rect.end - 1` is the high-coordinate end, so
+## the same two directions swap which one is outside. `_guard_post_offset()`'s own sign convention
+## (`side < 0` is the negative axis direction on both its vertical and broadside branches) agrees
+## with this reading on both axes, so one formula answers a vertical alley's north/south mouths and
+## a horizontal alley's west/east ones alike.
+static func _alley_mouth_street_side(at_start: bool) -> int:
+	return -1 if at_start else 1
 
 ## The along-street axis a door's own bodies share: `RIGHT` for a segment/alley that runs
 ## east-west (`horizontal`), `DOWN` for one that runs north-south. Carried on every door body's own
