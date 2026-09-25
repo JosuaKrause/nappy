@@ -589,12 +589,31 @@ func _spawn_buildings() -> void:
 			# `CityGenerator._subtract_all()` cuts the notch's own columns out of them — but handing
 			# it to all of them costs nothing and needs no lookup for which one that is.
 			building.door_world_x_range = door_x_range
+		else:
+			# Never asked of her own building — "her own building is unchanged" (M203), and the home
+			# block's own doorstep already exempts it from the route-redundancy guarantee the same way.
+			building.covered_ground_cols = _covered_ground_cols(rect)
 		_dress_the_power_station(building, rect)
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block
 		# boundary stacking the way the eye expects.
 		_buildings_layer.add_child(building)
 		_buildings.append(building)
+
+## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
+## `rect`'s own front row — one row below its south edge, the row a passer-by would stand on — is
+## `GameEnums.TileType.BUILDING` rather than walkable ground (M203, `docs/DECISIONS.md`, "A front
+## nobody can stand at has windows on its ground floor"). `map.is_walkable()` is the fixed lattice
+## fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
+## `is_open()`'s per-day closures, so this is computed once here rather than in `start_day()`. A
+## south tile past the map's own edge reads as `BUILDING` too (`CityMap.tile_at()`'s own
+## out-of-bounds default), which only ever matters for a wall built against the map's own boundary.
+func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
+	var result: Array[bool] = []
+	var south_row := rect.position.y + rect.size.y
+	for col in rect.size.x:
+		result.append(not map.is_walkable(Vector2i(rect.position.x + col, south_row)))
+	return result
 
 ## Makes `building` the power station when `rect` is its mass: the door over the pavement
 ## `CityMap.power_station_door` names, and the transformer yard over the other block — the hall is
