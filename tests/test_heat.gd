@@ -28,8 +28,7 @@ func run(t) -> void:
 	_test_a_patrol_that_never_notices_drives_off_its_route(t)
 	_test_the_patrol_chases_once_it_notices(t)
 	_test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
-	_test_the_guard_holds_his_side_while_she_can_see_him(t)
-	_test_the_guard_is_drawn_setting_off_from_his_post(t)
+	_test_only_the_guard_on_her_side_sets_off_from_his_post(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
 	_test_a_hot_day_places_more_patrols(t)
@@ -461,70 +460,63 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 			"and the barrier standing there takes nobody")
 	guard.free()
 
-## The guard stands on the side of the band she is coming from, and only changes sides while she
-## cannot see him — never in front of her, which would be a man seen jumping through his own barrier.
-func _test_the_guard_holds_his_side_while_she_can_see_him(t) -> void:
-	var post := Vector2(400.0, 0.0)
-	var guard := EventInstance.new()
-	guard.setup(_cold_roadblock(), post)
-	t.add_child(guard)
-	guard.set_process(false)
-	var far := Tuning.OUT_OF_SIGHT + 100.0
-	var near := Tuning.OUT_OF_SIGHT - 100.0
-	guard.player_at = post + Vector2(0.0, -near)
-	guard._process(STEP)
-	t.check(guard._post_side == -1,
-			"the first time he knows where she is, he stands on her side (north)")
-	guard.player_at = post + Vector2(0.0, near)
-	guard._process(STEP)
-	t.check(guard._post_side == -1,
-			"and he holds it while she is in sight, whichever side she is on now")
-	guard.player_at = post + Vector2(0.0, far)
-	guard._process(STEP)
-	t.check(guard._post_side == 1,
-			"out of her sight he crosses to the side she is on (south)")
-	t.check(guard._guard_drawn_at() == EventInstance._guard_post_offset(false, 1),
-			"and he is drawn at that post (%s)" % guard._guard_drawn_at())
-	guard.free()
-
-## When he leaves the post he is drawn setting off from it, and his picture reaches where he actually
-## is — where his reach is measured from — before he can have come near her: while the drawing and
-## the man are apart, nothing is lethal to her. She walks straight at him from across the band, the
-## approach that puts the post nearest her.
-func _test_the_guard_is_drawn_setting_off_from_his_post(t) -> void:
+## *"have one guard on each side?"* · *"only the guard on her side can chase since the other one
+## will be blocked"* — and he sets off from his own post, beside the band, rather than from its
+## centre. That post is nearer her than the centre where his notice is measured, which is why his
+## stand-off is measured from his catch reach: she comes straight across the band, the approach
+## that puts his post nearest her, and stands still once he has noticed her. Measured from the
+## field's 86px core he would already be inside his stand-off and lunge on the first frame; from
+## his reach he notices her outside it, spends his notice closing to it, and lunges from it — the
+## `PURSUIT_REACTION` of his own approach every pursuer owes her. Both street axes, both sides.
+func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 	var hot := EventCatalogue.heated(_cold_roadblock(), Tuning.RESISTANCE_GOAL)
+	var reach := hot.lethal_reach()
+	t.check(Tuning.pursuit_standoff(hot.pursue_speed, reach)
+			< hot.pursues_within - EventInstance._guard_post_offset(false, 1).length(),
+			"a guard posted beside the band notices her from outside his own stand-off")
 	var post := Vector2(400.0, 0.0)
-	var guard := EventInstance.new()
-	guard.setup(hot, post)
-	t.add_child(guard)
-	guard.set_process(false)
-	var her := post + Vector2(0.0, hot.pursues_within - 1.0)
-	guard.player_at = her
-	guard._process(STEP)
-	t.check(guard.has_left_its_body_behind(), "she comes inside the trigger and he sets off")
-	var standing_at := post + EventInstance._guard_post_offset(false, 1)
-	var drawn_at := guard.global_position + guard._guard_drawn_at()
-	t.check(drawn_at.distance_to(standing_at) <= hot.pursue_speed * STEP + 0.01,
-			"he is drawn setting off from his post (%s, the post %s)" % [drawn_at, standing_at])
-	var frames := 0
-	var apart := 0
-	while frames < int(5.0 / STEP):
-		if guard._guard_drawn_at() == Vector2.ZERO:
-			break
-		apart += 1
-		t.check(not guard.is_lethal_at(her),
-				"nothing is lethal to her while his picture is still closing on him (frame %d)"
-				% frames)
-		her += (guard.global_position - her).normalized() * Tuning.WALK_SPEED * STEP
-		guard.player_at = her
-		guard._process(STEP)
-		frames += 1
-	t.check(guard._guard_drawn_at() == Vector2.ZERO and apart > 0,
-			"his picture reaches him (%d frames apart)" % apart)
-	t.check(apart * STEP <= EventInstance._guard_post_offset(false, 1).length()
-			/ hot.pursue_speed + STEP,
-			"at his own speed (%.2fs)" % (apart * STEP))
-	guard.free()
+	for vertical: bool in [false, true]:
+		for side: int in [-1, 1]:
+			var what := "%s, side %d" % ["end-on" if vertical else "broadside", side]
+			var guard := EventInstance.new()
+			guard.setup(hot, post)
+			guard._spread_vertical = vertical
+			t.add_child(guard)
+			guard.set_process(false)
+			var across := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
+			var her := post + across * side * (hot.pursues_within - 1.0)
+			guard.player_at = her
+			guard._process(STEP)
+			t.check(guard.has_left_its_body_behind() and guard._chaser_side == side,
+					"%s: the guard on her side sets off" % what)
+			var his_post := post + EventInstance._guard_post_offset(vertical, side)
+			t.check(guard.global_position.is_equal_approx(his_post),
+					"%s: from his own post (%s, the post %s)" % [what, guard.global_position, his_post])
+			t.check(guard.body_position().is_equal_approx(post),
+					"%s: the band stays where it was built" % what)
+			var noticed_at := guard.global_position.distance_to(her)
+			var standoff := Tuning.pursuit_standoff(hot.pursue_speed, reach)
+			t.check(noticed_at < Tuning.pursuit_standoff(hot.pursue_speed, hot.inner_radius),
+					"%s: noticed %.0fpx from his post, inside a stand-off measured from the field's"
+					% [what, noticed_at] + " core, so the reach is what leaves him a warning")
+			t.check(noticed_at > standoff,
+					"%s: and outside the %.0fpx one measured from his reach" % [what, standoff])
+			var frames := 0
+			var lethal := false
+			while guard.is_telegraphing() and frames < int(10.0 / STEP):
+				lethal = lethal or guard.is_lethal_at(her)
+				guard.player_at = her
+				guard._process(STEP)
+				frames += 1
+			t.check(not lethal and frames > 1,
+					"%s: his notice runs, nothing lethal in it, rather than a first-frame lunge (%d)"
+					% [what, frames])
+			# The frame the lunge fires he has already taken its first step.
+			var first_step := hot.pursue_speed * STEP
+			t.check(guard.global_position.distance_to(her) >= standoff - first_step - 1.0,
+					"%s: and he lunges from his stand-off (%.0fpx of %.0f)"
+					% [what, guard.global_position.distance_to(her), standoff])
+			guard.free()
 
 ## `EventInstance.resume()` restores age and distance travelled so a streamed-out event picks up
 ## where it left off rather than rewinding — checked here because a heated patrol is the first

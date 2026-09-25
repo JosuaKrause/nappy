@@ -248,10 +248,10 @@ func _test_roadblock_barrier_is_end_on_down_a_column(t) -> void:
 	t.check(upright.y > upright.x,
 			"the end-on segment is the upright projection (%s)" % upright)
 
-## The guard stands beside his barrier, never over it *(2026-09-25: "also the guards are on top of
-## the barrier?")*: on both street axes and on both sides, the whole of his standing picture is
-## outside the whole of the barrier's drawn picture, he stands on the side he was posted to, and he
-## faces out from the barrier towards where she would come from.
+## The guards stand beside their barrier, never over it *(2026-09-25: "also the guards are on top
+## of the barrier?")*, one on each side (*"have one guard on each side?"*): on both street axes,
+## each one's whole standing picture is outside the whole of the barrier's drawn picture, on his
+## own side of it, facing out from it towards where she would come from.
 func _test_roadblock_guard_stands_clear_of_the_band(t) -> void:
 	var def := EventCatalogue.by_id("roadblock")
 	var half := maxf(11.0, def.obstructs_radius)
@@ -273,12 +273,12 @@ func _test_roadblock_guard_stands_clear_of_the_band(t) -> void:
 			var heading := EventInstance._guard_post_heading(vertical, side)
 			t.check(heading.dot(feet) > 0.0,
 					"%s, side %d: facing out from it (%s)" % [axis, side, heading])
-	# Which side is the side she is on, across the band; level with its line is the south side.
+	# The one who gives chase is the one on her side, across the band; level with its line, south.
 	t.check(EventInstance._guard_side_toward(false, Vector2(30.0, -200.0)) == -1
 			and EventInstance._guard_side_toward(false, Vector2(-30.0, 200.0)) == 1
 			and EventInstance._guard_side_toward(true, Vector2(-200.0, 30.0)) == -1
 			and EventInstance._guard_side_toward(true, Vector2(200.0, -30.0)) == 1,
-			"the post is on whichever side of the band she is, across it")
+			"the chaser is the guard on whichever side of the band she is, across it")
 	t.check(EventInstance._guard_side_toward(false, Vector2(170.0, 0.0)) == 1,
 			"and level with the band's own line it is the camera-facing south")
 
