@@ -1923,15 +1923,19 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	GameState.day = saved_day
 
 ## The neighbor's boarded window: absent before day 11, set on the one home-block building the
-## door notch stands in front of from day 11's morning on — the third floor nearest the door, or
-## the topmost row a shorter height roll left it with (`Building.neighbor_window_col`'s own doc
-## calls that a fork) — the same cell every later day and on a fresh load of the same seed.
+## door notch stands in front of from day 11's morning on — the third floor nearest the door,
+## down the hall from her own door (PLAYTEST-131), always there since M185 fixes that building's
+## own height at `City.HOME_BUILDING_WALL_ROWS` (4) wall rows or more — the same cell every later
+## day and on a fresh load of the same seed. `SEED` (4242) is the seed PLAYTEST-134 found with
+## only two wall rows before the fix.
 func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	_build_city(t)
 	var happenings := ResistanceHappenings.new()
 	happenings.setup(_city, _city.map)
 	var building := _city._home_door_building()
 	t.check(building != null, "the door notch stands in front of exactly one home-block building")
+	t.check(building.wall_tiles() >= 4,
+			"seed %d: her own building has at least four wall rows (%d)" % [SEED, building.wall_tiles()])
 
 	happenings.start_day(ResistanceHappenings.MARKET_DAY - 1)
 	t.check(building.neighbor_window_col == -1, "unboarded the day before")
@@ -1939,8 +1943,8 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	happenings.start_day(ResistanceHappenings.MARKET_DAY)
 	var col := building.neighbor_window_col
 	t.check(col >= 0, "boarded from day 11's morning on")
-	t.check(building.neighbor_window_row() == mini(3, building.wall_tiles() - 1),
-			"on the third floor, or the topmost row a shorter front left it with")
+	t.check(building.neighbor_window_row() == 3,
+			"seed %d: on the third floor" % SEED)
 
 	happenings.start_day(ResistanceHappenings.MARKET_DAY + 3)
 	t.check(building.neighbor_window_col == col, "the same cell on every later day")
