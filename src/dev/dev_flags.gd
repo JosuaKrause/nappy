@@ -75,33 +75,44 @@ extends RefCounted
 ## things that are not a flag value — the snapshot key, and whether to even ask `AutoScreenshot`
 ## for a rig.
 ##
-## **Deliberately has no override of its own — the one gate everything else now funnels through,
-## including `Telemetry`'s own `?telemetry=1`.** *(2026-09-06, the player: "for dev you need it to
-## be controllable from the getgo -- for release there should be no modifiers".)* A release build
-## carries no modifiers of any kind; a debug build carries every one of them immediately, with
-## nothing further to unlock. This class gates a batch of capabilities at once — an arbitrary,
-## unbounded seed from the command line, a chosen day, a spawn point beside any event, forced
-## meters, a compressed day, a forced ending, a forced control scheme, and (through
-## `AutoScreenshot.from_command_line()`'s own copy of this same gate) scripted input and a
-## screenshot written to disk — where `?telemetry=1` reaches exactly one bounded, already-shipped
-## choice, and `readout_requested()`'s own bundle (the readout itself, `--skip`/`?skip=`, and a
-## positive-integer seed through `?seed=`) reaches only a page already carrying the DEBUG MODE
-## note. An override here would reach the rest of the list at once from any visitor's address bar
-## with no note required at all, which is the outcome this class exists to prevent. The entry
-## point stays what it already is: run a debug build.
+## **Deliberately has no override of its own — the one gate the input-driving, picture-taking and
+## file-writing half of the surface still funnels through unconditionally.** *(2026-09-06, the
+## player: "for dev you need it to be controllable from the getgo -- for release there should be
+## no modifiers".)* That still holds without exception for an arbitrary, unbounded seed from the
+## command line, `--spawn`, `--follow`, `--route`, `--force`, `--overview`, `--zoom`, `--touch`,
+## `--web`, `--title`/`--no-title`, `--no-focus-pause`, `--no-save`, `--spikes`, `--frame-trace`,
+## `--quit-when-still`, and (through `AutoScreenshot.from_command_line()`'s own copy of this gate)
+## `--screenshot`, `--after`, `--walk`, `--flee`, `--press` and `--tap` — a release build answers
+## none of it, from any address a visitor could type.
+##
+## **The smaller half — the flags that choose where a run starts or how it is drawn, never one
+## that drives input, takes a picture or writes a file — answers to a release page too, behind
+## `?debug=1`.** *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site behind
+## debug=1 we'd want some of the debug flags (like day, invincible, etc.) so debugging the live
+## build is easier", overturning the 2026-09-06 rule above for that half alone — see docs/TODO.md,
+## M193, "the live page's ?debug=1 reaches the debug flags".)* `live_debug_requested()` below is
+## that gate: `day_override()`, `invincible()`, `layers_override()`, `ControlsMode.resolve()`,
+## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()` and
+## `blackout_requested()` each read the command line under `enabled()` as they always have and,
+## failing that, the page's own query under `live_debug_requested()`.
+##
+## A debug build carries every flag on this whole page immediately, with nothing further to
+## unlock; the entry point for the larger half stays what it already is: run a debug build.
 static func enabled() -> bool:
 	return OS.is_debug_build()
 
 ## Whether the developer readout was explicitly asked for on a release build — `?debug=1` (or the
 ## command line's own `--debug`), parsed straight off the command line or the page's query string
-## and not gated behind `enabled()`. One of the two bounded release-safe query flags, beside
-## `?telemetry=1`: it
-## reaches the readout `main.gd` draws in the top-right corner, and gates the two flags whose own
-## release-safe path runs through it in turn — `--skip`/`?skip=` (`skip_words()`) and `?seed=`'s
-## own positive integer (`seed_override()`) — never the rest of the bundle `enabled()` gates: a
-## day, a spawn point, forced meters, `_debug_layers`, the snapshot key and every other dev flag
-## stay unreachable from a visitor's address bar. See docs/DECISIONS.md, M133, "the readout on the
-## live page".
+## and not gated behind `enabled()`. Reaches the readout `main.gd` draws in the top-right corner,
+## and gates every other release-safe query flag in turn: `--skip`/`?skip=` (`skip_words()`),
+## `?seed=`'s own positive integer (`seed_override()`), and, through `live_debug_requested()`
+## below, the smaller bundle M193 opens on top of those two — `?day=`, `?invincible=1`,
+## `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=` and `?ending=`/`?blackout=1`.
+## `Telemetry`'s own `?telemetry=1` is not part of any of this: it stays behind `enabled()` alone
+## (docs/TELEMETRY.md, "`--spikes` is off by default"), since a stranger's browser collecting a
+## trace is a different question from a stranger's browser reading a day number back. See
+## docs/DECISIONS.md, M133, "the readout on the live page", and docs/TODO.md, M193, "the live
+## page's ?debug=1 reaches the debug flags".
 static func readout_requested() -> bool:
 	return _readout_from_args(OS.get_cmdline_user_args()) or _readout_from_query(_web_query())
 
@@ -112,6 +123,56 @@ static func _readout_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
 		if pair.size() == 2 and pair[0] == "debug" and pair[1] == "1":
+			return true
+	return false
+
+## The gate for the smaller, release-safe bundle M193 opens beside the readout: the flags that
+## choose where a run starts or how it is drawn (`day_override()`, `invincible()`,
+## `layers_override()`, `ControlsMode.resolve()`, `start_escape()`, `meters_override()`,
+## `day_length_override()`, `ending_override()`, `blackout_requested()`) — never the input-driving,
+## picture-taking or file-writing half `enabled()` alone still gates (see `enabled()`'s own doc for
+## that list). True on a debug build with or without `?debug=1` in the page, since a debug build
+## already answers the whole of `enabled()`'s own bundle regardless of any query string; true on a
+## release page only once `readout_requested()` holds, so a release page nobody asked `?debug=1`
+## of reads exactly as before. *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site
+## behind debug=1 we'd want some of the debug flags (like day, invincible, etc.) so debugging the
+## live build is easier".)*
+static func live_debug_requested() -> bool:
+	return _live_debug_requested(enabled(), readout_requested())
+
+## The decision behind `live_debug_requested()`'s own gate, pulled out to a pure function of its
+## two inputs the same shape `ControlsMode._reads_the_url()` and `Telemetry._reads_the_url()`
+## already are, so the promise is a truth table a test can check rather than two live reads
+## nothing in a test process can fake at once.
+static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
+	return is_debug or readout
+
+## The query parameter names `live_debug_requested()`'s own bundle answers to — every one of the
+## getters named in that gate's own doc but `layers`/`controls`/`escape`, which were already
+## partly reachable before M193 and are folded in here too since a run built with any of them is
+## exactly as much a debugging run as one built with `?day=`. `GameSave.uses_save()` reads
+## `web_debug_flag_used()` below against this list so a release page's visitor who actually typed
+## one of these never touches the save the page might otherwise share with a real player — as
+## against `?debug=1` alone, which opens the bundle without yet having used any of it.
+const _LIVE_DEBUG_QUERY_KEYS := [
+	"day", "invincible", "layers", "controls", "escape", "meters", "daylength", "ending",
+	"blackout",
+]
+
+## Whether a release page's query string actually named one of `live_debug_requested()`'s own
+## parameters, as against merely being allowed to. `false` on a debug build outright: there,
+## `GameSave.uses_save()` already asks `active_args()` instead, the same way every debug-build dev
+## flag already keeps a run off the save by being a dev flag at all. `false` too on a release page
+## nobody asked `?debug=1` of, the ordinary ongoing case this must not disturb.
+static func web_debug_flag_used() -> bool:
+	if enabled() or not readout_requested():
+		return false
+	return _web_debug_flag_used_in_query(_web_query())
+
+static func _web_debug_flag_used_in_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() >= 1 and pair[0] in _LIVE_DEBUG_QUERY_KEYS:
 			return true
 	return false
 
@@ -248,13 +309,34 @@ static func _seed_from_query(query: String) -> int:
 		return 0
 	return 0
 
-## `--day N` starts on a later day, clamped into the run.
+## `--day N` (or the page's own `?day=N`, under `live_debug_requested()`) starts on a later day,
+## clamped into the run the same way either source is read. **One of the two required flags M193
+## opens on a release page** (docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug
+## flags"). `?day=N` with no `?debug=1` in the same query answers the ordinary "not given" default
+## of `1` on a release page, the way every other flag in this bundle does.
 static func day_override() -> int:
 	var args := _args()
 	var index := args.find("--day")
-	if index == -1 or index + 1 >= args.size():
-		return 1
-	return clampi(int(args[index + 1]), 1, Tuning.RUN_LENGTH_DAYS)
+	if index != -1 and index + 1 < args.size():
+		return clampi(int(args[index + 1]), 1, Tuning.RUN_LENGTH_DAYS)
+	if live_debug_requested():
+		var from_query := _day_from_query(_web_query())
+		if from_query != -1:
+			return from_query
+	return 1
+
+## The bare parsing of `?day=` against a query string, pulled out so a test can drive it without a
+## web query — the same split `_seed_from_query()` makes for `?seed=`, clamped the same way
+## `--day` itself already is rather than refused outright, since an out-of-range or non-numeric
+## day is exactly as harmless here as `--day` already makes it on the command line. `-1` is "not
+## given"; `1` is both a valid day and this flag's own default, so it cannot double as the
+## sentinel the way `0` does for `?seed=`.
+static func _day_from_query(query: String) -> int:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "day":
+			return clampi(int(pair[1]), 1, Tuning.RUN_LENGTH_DAYS)
+	return -1
 
 ## `--spawn <target>` — the raw target string, or "" if none was given. What each target means
 ## reads the live `City`, so that lookup stays in `src/dev/dev_rig.gd`'s `DevRig.spawn_position()`;
@@ -503,9 +585,9 @@ static func _layers_from_query(query: String) -> String:
 ## runs after it.
 static var _invincible_override: Variant = null
 
-## `--invincible` (or the page's own `?invincible=1`, a debug web build only) makes nothing end the
-## day: `DayController._ignores_loss()` is the one predicate every losing path consults, and this
-## is the flag it reads. **It also stands the day clock and the excitement meter still** —
+## `--invincible` (or the page's own `?invincible=1`, under `live_debug_requested()`) makes nothing
+## end the day: `DayController._ignores_loss()` is the one predicate every losing path consults, and
+## this is the flag it reads. **It also stands the day clock and the excitement meter still** —
 ## `DayController._process()` skips the countdown outright rather than letting it run to dusk, and
 ## `Baby._update_excitement()` never adds to the meter, though decay may still run it down — so a
 ## capture waiting for a moment gets quiet held time rather than a flashing alarm and a darkening
@@ -514,15 +596,18 @@ static var _invincible_override: Variant = null
 ## alarms and the day gets dark.")* The record is in docs/DECISIONS.md under M100, "an invincible
 ## mode for playtesting" and "invincible freezes the clock and the meter".
 ##
-## Gated behind `enabled()` explicitly, the same as `layers_override()` gates its own query read —
-## unlike `readout_requested()`, which stays live in a release web build by design, this reaches
-## the whole of a day's losing behaviour and must not survive outside a debug build.
+## **One of the two required flags M193 opens on a release page** (docs/TODO.md, M193, "the live
+## page's ?debug=1 reaches the debug flags") — a visitor's own `?invincible=1` reaches this whole
+## predicate the same way a debug build's `--invincible` already does, gated behind
+## `live_debug_requested()` rather than `enabled()` alone.
 static func invincible() -> bool:
 	if _invincible_override != null:
 		return bool(_invincible_override)
-	if not enabled():
+	if _invincible_from_args(_args()):
+		return true
+	if not live_debug_requested():
 		return false
-	return _invincible_from_args(_args()) or _invincible_from_query(_web_query())
+	return _invincible_from_query(_web_query())
 
 static func _invincible_from_args(args: PackedStringArray) -> bool:
 	return "--invincible" in args

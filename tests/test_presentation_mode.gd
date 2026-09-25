@@ -17,6 +17,13 @@ extends RefCounted
 ## but only for a positive integer — `DevFlags._seed_from_query()` carries its own `?debug=1`
 ## check inside it, since the release-shaped case that matters is a single query string with or
 ## without that parameter, not a runtime `readout_requested()` a test has no web query to drive.
+##
+## `live_debug_requested()` (docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug
+## flags") opens a second, smaller bundle on top of the two above — `?day=`, `?invincible=1` and
+## the rest named at its own doc. It is `enabled()` (a build type nothing here can fake) `or`
+## `readout_requested()`, so its own pure half, `_live_debug_requested()`, is the truth table this
+## suite drives directly — the same split `ControlsMode._reads_the_url()` and
+## `Telemetry._reads_the_url()` already use for the same reason.
 
 func run(t) -> void:
 	_test_the_bake_alone_decides_the_presentation(t)
@@ -31,6 +38,11 @@ func run(t) -> void:
 	_test_seed_from_query_takes_a_valid_seed_under_debug(t)
 	_test_seed_from_query_ignores_the_seed_without_debug(t)
 	_test_seed_from_query_refuses_non_positive_and_malformed_values(t)
+	_test_live_debug_requested_is_debug_or_readout(t)
+	_test_day_from_query_clamps_the_same_way_as_the_command_line(t)
+	_test_day_from_query_is_not_given_when_absent(t)
+	_test_web_debug_flag_used_names_the_bundles_own_parameters(t)
+	_test_web_debug_flag_used_ignores_debug_alone_and_the_older_bundle(t)
 	_test_the_physics_tick_is_pinned_to_thirty_with_interpolation_on(t)
 
 ## The presentation is decided before the game runs and cannot be moved from inside it. Stated as
@@ -137,6 +149,51 @@ func _test_seed_from_query_refuses_non_positive_and_malformed_values(t) -> void:
 		"anything that is not an integer is refused the same as not given")
 	t.check(DevFlags._seed_from_query("?debug=1&seed=") == 0,
 		"an explicit but empty value is refused the same as not given")
+
+## `live_debug_requested()`'s own truth table (see this file's own header for why the pure half is
+## what a test can drive).
+func _test_live_debug_requested_is_debug_or_readout(t) -> void:
+	t.check(DevFlags._live_debug_requested(true, false),
+		"a debug build opens the bundle even without ?debug=1 in the page")
+	t.check(DevFlags._live_debug_requested(false, true),
+		"a release page carrying ?debug=1 opens the bundle too")
+	t.check(DevFlags._live_debug_requested(true, true), "both together still opens it")
+	t.check(not DevFlags._live_debug_requested(false, false),
+		"a release page nobody asked ?debug=1 of opens nothing")
+
+## `?day=`'s own query parser — clamped the same way `--day` itself already is rather than
+## refused outright.
+func _test_day_from_query_clamps_the_same_way_as_the_command_line(t) -> void:
+	t.check(DevFlags._day_from_query("?day=9") == 9, "a plain day is read back")
+	t.check(DevFlags._day_from_query("?day=99") == Tuning.RUN_LENGTH_DAYS,
+		"a day past the run's own length clamps into it, the same as --day")
+	t.check(DevFlags._day_from_query("?day=0") == 1,
+		"a day below one clamps up to one, the same as --day")
+	t.check(DevFlags._day_from_query("?day=abc") == 1,
+		"a non-numeric day reads as zero and clamps to one, the same as --day")
+	t.check(DevFlags._day_from_query("?seed=1&day=5&debug=1") == 5,
+		"the day parameter is found among other URL parameters")
+
+func _test_day_from_query_is_not_given_when_absent(t) -> void:
+	t.check(DevFlags._day_from_query("") == -1, "an absent query is not given")
+	t.check(DevFlags._day_from_query("?debug=1") == -1,
+		"?debug=1 alone opens the bundle but names no day")
+
+## `web_debug_flag_used()`'s own pure half — `GameSave.uses_save()` reads this so a release
+## page's visitor who actually typed one of `live_debug_requested()`'s own parameters never
+## touches the save the page might otherwise share with a real player.
+func _test_web_debug_flag_used_names_the_bundles_own_parameters(t) -> void:
+	for key in ["day", "invincible", "layers", "controls", "escape", "meters", "daylength",
+			"ending", "blackout"]:
+		t.check(DevFlags._web_debug_flag_used_in_query("?%s=1" % key),
+			"'%s' is one of the bundle's own parameters" % key)
+
+func _test_web_debug_flag_used_ignores_debug_alone_and_the_older_bundle(t) -> void:
+	t.check(not DevFlags._web_debug_flag_used_in_query(""), "an empty query used nothing")
+	t.check(not DevFlags._web_debug_flag_used_in_query("?debug=1"),
+		"?debug=1 alone opens the bundle without having used anything in it")
+	t.check(not DevFlags._web_debug_flag_used_in_query("?seed=1234&skip=events"),
+		"the always-open seed and skip flags are not part of this bundle")
 
 ## Pins the engine's own physics rate and interpolation setting so a `project.godot` edit cannot
 ## drift the tick out from under every test that steps the game world by hand with its own `STEP`
