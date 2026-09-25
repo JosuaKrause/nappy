@@ -17,9 +17,20 @@ eight tiles off her stoop, where every day starts her.
 
 > "that would be good"
 
+Then, on the same fix:
+
+> "the focus fix you are doing will it also prevent godot windows from staying open
+> indefinitely?"
+
+It would not by itself: a window also stays open when its script never reaches its own quit, and
+when the agent that launched it is cut off. Proposed: every windowed rig carries a hard wall-clock
+limit, kept twice.
+
 ## The statements
 
 1. **A rig's window never takes the focus** from what the player is doing.
 2. **A rig hears no real input**: no key or pointer press reaches the game during a scripted run.
-3. It is its own queue item, built after the seal on her building's front (draft PR #351), whose
+3. **A rig's window never stays open indefinitely**: the game quits itself on a wall-clock
+   limit, and `tools/shot.sh` kills a process still alive past it and says so.
+4. It is its own queue item, built after the seal on her building's front (draft PR #351), whose
    agent is taking captures while this is written.

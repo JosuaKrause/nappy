@@ -364,7 +364,7 @@ the one trace a happening leaves that has no picture yet.
 
 ---
 
-## M195 — A rig's window takes no focus and hears no stray key · asked for 2026-09-25
+## M195 — A rig's window takes no focus, hears no stray key, and always closes · asked for 2026-09-25
 
 > "since those are godot apps that launch in my view it could be that accidentally pressed a
 > button maybe? since it takes the focus away from what I'm doing every time"
@@ -378,6 +378,14 @@ script) opens a real Godot window that takes the focus, and any key typed into i
 - [ ] **A scripted rig ignores real input**: while `--walk`, `--route`, `--press`, `--tap`,
       `--flee` or a screenshot rig drives the run, no real key or pointer press reaches the
       game. `tools/run.sh` for a person to play is untouched.
+- [ ] **A rig's window never stays open indefinitely** ("will it also prevent godot windows from
+      staying open indefinitely?"). A window stays open when its script never reaches its own
+      quit, or when the agent that launched it is cut off and the process runs on. Every
+      windowed rig carries a hard wall-clock limit — its own script's length plus a margin, under
+      a fixed ceiling — kept twice: the game quits itself on a real-time timer, whatever its
+      script is waiting for, and `tools/shot.sh` (and `tools/run.sh` with a rig flag) kills a
+      process still alive past it and says so on stderr rather than waiting. A person's own
+      `tools/run.sh` session has no limit.
 
 ---
 
