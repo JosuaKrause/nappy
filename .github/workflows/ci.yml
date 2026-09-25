@@ -30,12 +30,11 @@ concurrency:
 
 env:
   GODOT_VERSION: 4.7.2
-  # tests/suite_costs.txt's longest row is test_crowd.gd at about 227s -- that suite alone sets
-  # the floor no split can beat, so this is the smallest shard count that brings every other
-  # shard down near that same floor rather than leaving it carrying idle neighbours (see the
-  # shard-0/shard-6 remainder in `tools/test.sh --plan`'s own output at this count). Fewer shards
-  # each carry more of the remaining ~1300s of suites above that floor; more shards would only
-  # wait on the same 227s while paying for idle runners.
+  # tests/suite_costs.txt's longest row (test_events.gd) alone sets the floor no split can beat,
+  # so this is a shard count that brings every other shard down to or under that same floor
+  # rather than leaving it carrying idle neighbours -- `tools/test.sh --plan` at this count shows
+  # the split. Fewer shards each carry more of the suites above that floor; more shards would only
+  # wait on the same longest suite while paying for idle runners.
   SHARD_COUNT: 8
 
 jobs:
