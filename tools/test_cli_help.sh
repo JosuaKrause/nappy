@@ -91,6 +91,8 @@ assert_exit() {
 }
 
 # --------------------------------------------------------- --help / -h: exit 0, usage, no work ---
+assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
+assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
 assert_exit "lint.sh --help"       zero ./tools/lint.sh --help
@@ -123,6 +125,10 @@ assert_exit "land-prs.sh --help" zero ./tools/land-prs.sh --help
 assert_exit "land-prs.sh -h"     zero ./tools/land-prs.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
+assert_exit "ci-costs.sh --bogus"        nonzero ./tools/ci-costs.sh --bogus
+assert_exit "ci-costs.sh --runs (missing value)" nonzero ./tools/ci-costs.sh --runs
+assert_exit "ci-costs.sh --runs (not a number)"  nonzero ./tools/ci-costs.sh --runs abc
+assert_exit "ci-costs.sh (stray argument)"       nonzero ./tools/ci-costs.sh bogus-suite
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
 assert_exit "lint.sh --bogus-flag"    nonzero ./tools/lint.sh --bogus-flag
 assert_exit "pycheck.sh --bogus"      nonzero ./tools/pycheck.sh --bogus
