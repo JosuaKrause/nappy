@@ -378,6 +378,11 @@ script) opens a real Godot window that takes the focus, and any key typed into i
 - [ ] **A scripted rig ignores real input**: while `--walk`, `--route`, `--press`, `--tap`,
       `--flee` or a screenshot rig drives the run, no real key or pointer press reaches the
       game. `tools/run.sh` for a person to play is untouched.
+- [ ] **A rig finishes whether or not its window has the focus** ("right now if I click
+      somewhere else they stay open" · "and the agent is waiting forever"). Clicking away from a
+      rig's window stops it reaching its own quit, so the command never returns. Find what stops
+      it on macOS (a window losing focus or being covered: frame pacing, App Nap, the display
+      link) and make an unfocused, covered rig run to its end at its normal speed.
 - [ ] **A rig's window never stays open indefinitely** ("will it also prevent godot windows from
       staying open indefinitely?"). A window stays open when its script never reaches its own
       quit, or when the agent that launched it is cut off and the process runs on. Every

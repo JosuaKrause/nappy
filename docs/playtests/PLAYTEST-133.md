@@ -22,6 +22,8 @@ Then, on the same fix:
 > "the focus fix you are doing will it also prevent godot windows from staying open
 > indefinitely?"
 
+> "right now if I click somewhere else they stay open" · "and the agent is waiting forever"
+
 It would not by itself: a window also stays open when its script never reaches its own quit, and
 when the agent that launched it is cut off. Proposed: every windowed rig carries a hard wall-clock
 limit, kept twice.
