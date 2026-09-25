@@ -46,9 +46,11 @@ func run(t) -> void:
 	_test_task_target_resolves_for_the_door_task_on_day_9(t)
 	_test_task_target_resolves_for_the_station_door_on_the_last_night(t)
 	_test_nearest_calm_excludes_ground_the_day_has_spoiled(t)
+	_test_calm_leaves_the_park_being_taken(t)
 	_test_resolve_target_calm_home_prefers_the_combined_walk(t)
 	_test_pace_does_not_advance_the_target(t)
 	_test_check_settled_waits_for_asleep(t)
+	_test_calm_ground_gone_under_her_looks_again(t)
 	_test_on_day_finished_won_still_finishes(t)
 	_test_maybe_replan_waits_before_forcing_a_physical_maneuver(t)
 	_test_a_mark_leg_follows_the_mark_when_it_moves(t)
@@ -296,7 +298,7 @@ func _test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t) -> v
 	var to := frontage + along * 3
 	var path := rig._plan(from, to)
 	t.check(not path.is_empty(), "a plan past the van along its own pavement exists")
-	t.check(rig._plan_kept_clear, "and keeps clear of every body")
+	t.check(rig._plan_accepted.is_empty(), "and crosses none of any body's clearance")
 	var pressed := 0
 	for tile in _walked(rig._to_world(path)):
 		if clear.has(tile) and tile != from and tile != to:
@@ -399,9 +401,9 @@ func _test_a_plan_never_goes_through_the_boom(t) -> void:
 	var planned := rig._plan(from, to)
 	t.check(not planned.is_empty() and not _passes_within(planned, gate.position, reach),
 			"a plan past a street door's boom goes round it rather than under it")
-	# The last resort `_plan()` falls back to gives up the hazards, the clearance and the doors'
-	# reach, and still never the boom.
-	var last_resort := rig._shortest(from, to, false, {}, false)
+	# The last resort `_plan()` falls back to gives up the hazards and charges nothing for the
+	# clearance or the doors' reach, and still never the boom.
+	var last_resort := rig._cheapest(from, to, {}, {}, false)
 	t.check(not last_resort.is_empty() and not _passes_within(last_resort, gate.position, reach),
 			"even the plan that gives up every preference goes round the boom")
 	_city.events._plans.erase(gate)
@@ -588,7 +590,8 @@ func _build_target_shape_fixture(t, day: int, progress_at_dawn: int = 0) -> Dict
 	resistance.setup(city, city.map)
 	resistance.start_day(day, _rng_for_day(day, "resistance"), Tuning.day_length(day))
 
-	return {"city": city, "resistance": resistance, "stroller": stroller, "saved": saved}
+	return {"city": city, "resistance": resistance, "stroller": stroller, "saved": saved,
+			"state": state}
 
 ## The same hashed stream `_rng()` builds for the suite's shared day, for an arbitrary `day` — see
 ## `_build_target_shape_fixture()`.
@@ -742,6 +745,42 @@ func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t) -> void:
 	_city.map.set_tile(spoiled_tile, original)
 	rig.free()
 
+## **Day 12: once the swing is reached, `calm` is the day's other calm area, not the swing's own
+## park.** The park leaves `CityMap.calm_blocks` the moment it is taken, but its grass goes to mud a
+## ring at a time, so right then most of it still reads calm tile by tile — and she is standing in
+## it, so the nearest calm tile by walking is the one under her. Taken here the way
+## `Happenings.take_the_park()` takes it, `CityState.take()` then `CityMap.recompute_calm()`, with
+## no ring closed yet.
+func _test_calm_leaves_the_park_being_taken(t) -> void:
+	var fixture := _build_target_shape_fixture(t, 12)
+	var map: CityMap = (fixture["city"] as City).map
+	var stroller: Stroller = fixture["stroller"]
+	var rig := _target_shape_rig(t, fixture)
+	rig._player = stroller
+	t.check(rig._calm_tiles_left().size() == map.calm_tiles().size(),
+			"on an ordinary morning no calm tile is left out (%d of %d)"
+			% [rig._calm_tiles_left().size(), map.calm_tiles().size()])
+	_touch_the_mark(fixture)
+	stroller.global_position = (fixture["resistance"] as ResistanceDirector).contact_position()
+	var park := CityGenerator.swing_park(map)
+	var state: CityState = fixture["state"]
+	t.check(state.take(map.block_plans, park, 12), "the swing's park is taken")
+	map.recompute_calm(state)
+	var lot := map.lot_rect(park)
+	var still_calm := 0
+	for tile in map.calm_tiles():
+		if lot.has_point(tile):
+			still_calm += 1
+	t.check(still_calm > 0 and lot.has_point(map.world_to_tile(stroller.global_position)),
+			"she stands in the park, whose grass still reads calm tile by tile (%d tiles)" % still_calm)
+	var calm := rig._resolve_target("calm")
+	t.check(calm != Vector2.INF and not lot.has_point(map.world_to_tile(calm))
+			and Tile.is_calm(map.tile_type_at_world(calm)),
+			"'calm' answers calm ground outside the park being taken (%s, park lot %s)"
+			% [map.world_to_tile(calm) if calm != Vector2.INF else Vector2i(-1, -1), lot])
+	rig.free()
+	_free_target_shape_fixture(fixture)
+
 ## `calm:home` — docs/TODO.md, M181, "the late days are timed", item 3's rig option — answers a real
 ## calm tile too, and one `_nearest_in_field_toward_home()` actually scored by the combined walk
 ## (hers to it, and its own walk home) rather than by her walk alone: pinned directly against two
@@ -811,11 +850,17 @@ func _test_check_settled_waits_for_asleep(t) -> void:
 	var baby: Baby = _stroller.get_node("Baby")
 	baby.reset()
 	var rig := _rig(t)
-	_stroller.global_position = _city.map.doorstep_world_position()
+	var calm := _city.map.calm_tiles()
+	t.check(not calm.is_empty(), "the fixture city has calm ground to settle on")
+	if calm.is_empty():
+		rig.free()
+		return
+	_stroller.global_position = _city.map.tile_to_world(calm[0])
 	rig._player = _stroller
 	rig._baby = baby
 	rig._targets = ["mark", "task", "calm", "home"]
 	rig._target_index = 2
+	rig._current_word = "calm"
 	rig._settling = true
 	rig._settle_anchor = _stroller.global_position
 	rig._settle_forward = true
@@ -825,6 +870,37 @@ func _test_check_settled_waits_for_asleep(t) -> void:
 	rig._check_settled()
 	t.check(not rig._settling and rig._target_index == 3,
 			"settling ends and the target advances once the baby is asleep")
+	rig.free()
+
+## **Ground that goes from under her while she settles sends her to look again**, on the same
+## target: day 12's park turns to mud a ring at a time once the swing is reached, and a baby does
+## not settle on mud, so pacing on where the calm tile was never ends. Pinned with `set_tile()` on
+## the tile she paces on rather than by playing the park's closing forward.
+func _test_calm_ground_gone_under_her_looks_again(t) -> void:
+	var baby: Baby = _stroller.get_node("Baby")
+	baby.reset()
+	var rig := _rig(t)
+	var calm := _city.map.calm_tiles()
+	t.check(not calm.is_empty(), "the fixture city has calm ground to settle on")
+	if calm.is_empty():
+		rig.free()
+		return
+	var tile := calm[0]
+	_stroller.global_position = _city.map.tile_to_world(tile)
+	rig._player = _stroller
+	rig._baby = baby
+	rig._targets = ["calm", "home"]
+	rig._target_index = 0
+	rig._current_word = "calm"
+	rig._settling = true
+	rig._settle_anchor = _stroller.global_position
+	var original := _city.map.tile_at(tile)
+	_city.map.set_tile(tile, GameEnums.TileType.SPOILED)
+	rig._check_settled()
+	_city.map.set_tile(tile, original)
+	t.check(not rig._settling and rig._resolving and rig._current_word == "calm"
+			and rig._target_index == 0,
+			"once the ground she paces on is spoiled she resolves 'calm' again rather than pacing on")
 	rig.free()
 
 ## `_on_day_finished(WON)` finishes the rig rather than treating a win as a no-op — the regression
