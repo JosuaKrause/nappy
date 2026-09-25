@@ -29,6 +29,13 @@ extends StaticBody2D
 ## Fills are authored near-white and multiplied by the variant's colour; edges, plinth and
 ## windows are overlays drawn at full colour on top. That is why a corner cell needs no
 ## dedicated corner tile: it simply takes two edge overlays and the parapet turns.
+##
+## **A column with no walkable ground directly south of it draws no facade at all** —
+## `covered_ground_cols` — and whichever building stands there instead draws its own roof further
+## north to meet it, `roof_extension_rows` deep past its own lot's own north edge, so the two
+## roofs read as one continuous surface rather than a floating wall with nobody able to stand in
+## front of it (M203, `docs/DECISIONS.md`, "A front nobody can stand at is covered by the roof in
+## front of it"). See each property's own doc.
 
 const TILE := float(Tuning.TILE_SIZE)
 
@@ -329,16 +336,18 @@ enum Condition {
 ## Per-column: true where the tile directly south of this front's own ground row is another
 ## building rather than walkable ground, so nobody can ever stand in front of that column
 ## (`docs/CITY.md`, "A front is district and block purpose"; M203, `docs/DECISIONS.md`, "A front
-## nobody can stand at has windows on its ground floor"). Set by `City._spawn_buildings()`, read off
-## `CityMap.is_walkable()` — the fixed lattice fact, never `is_open()`'s per-day closures, since "no
-## purpose change may move a walkable tile" (the **city** skill) — so a covered column stays covered
-## for the whole run and never for her own building, which `_spawn_buildings()` never asks this of.
-## Sized to `columns()`, or empty for a front with nothing in front of it; `_is_covered()` reads an
-## index past the end as false, the same "nobody told this building about one" convention `_windows`'
-## own out-of-range read already uses. A geometry fact, not a roll, but the door's own column
-## depends on it (`_build_entrance()` filters covered columns out of every tier), so the setter
-## rebuilds rather than only redrawing — before `add_child()`, where `City` already sets it, that is
-## a no-op, the same way every other export setter here is.
+## nobody can stand at is covered by the roof in front of it"). Set by `City._spawn_buildings()`,
+## read off `CityMap.is_walkable()` — the fixed lattice fact, never `is_open()`'s per-day closures,
+## since "no purpose change may move a walkable tile" (the **city** skill) — so a covered column
+## stays covered for the whole run and never for her own building, which `_spawn_buildings()` never
+## asks this of. Sized to `columns()`, or empty for a front with nothing in front of it;
+## `_is_covered()` reads an index past the end as false, the same "nobody told this building about
+## one" convention `_windows`' own out-of-range read already uses. A geometry fact, not a roll, but
+## the door's own column depends on it (`_build_entrance()` filters covered columns out of every
+## tier), so the setter rebuilds rather than only redrawing — before `add_child()`, where `City`
+## already sets it, that is a no-op, the same way every other export setter here is. `_draw()`
+## skips a covered column's whole facade, wall and window alike — see `roof_extension_rows` for
+## what stands in its place.
 @export var covered_ground_cols: Array[bool] = []:
 	set(value):
 		covered_ground_cols = value
@@ -348,6 +357,28 @@ enum Condition {
 ## index the array does not reach.
 func _is_covered(col: int) -> bool:
 	return covered_ground_cols[col] if col >= 0 and col < covered_ground_cols.size() else false
+
+## Per-column: how many extra roof rows this front draws north of its own lot, continuing its own
+## roof tiles and colour up to the roof line of whichever building stands north of it and covers
+## one of its columns (M203) — so a covered front's hidden facade reads as one roof meeting
+## another, never a patch. Set by `City._assign_roof_extensions()` for every building, hers
+## included (a building providing the cover is a fact about what stands north of it, not about
+## whose front it covers — the exemption in `covered_ground_cols` is the other side of this
+## relationship). The count at column `col` is exactly the covered building's own `wall_tiles()`:
+## enough rows of roof to reach the exact world row that building's own roof already starts at, so
+## the two textures meet edge to edge with no gap and no overlap. Sized to `columns()`, or empty
+## for a front covering nothing; `_extension_rows()` reads an index past the end as 0, the same
+## convention `_is_covered()` already uses. A geometry fact, not a roll, so a redraw is all a change
+## needs — nothing here is read before `_rebuild()`'s own rolls run.
+@export var roof_extension_rows: Array[int] = []:
+	set(value):
+		roof_extension_rows = value
+		queue_redraw()
+
+## How many extra roof rows column `col` draws (`roof_extension_rows`), defaulting to 0 for an
+## index the array does not reach.
+func _extension_rows(col: int) -> int:
+	return roof_extension_rows[col] if col >= 0 and col < roof_extension_rows.size() else 0
 
 ## The upper-floor column the neighbor's boarded window (`NEIGHBOR_WINDOW_SEALED`) draws over,
 ## from day 11 on, or -1 for every building but the one `City.board_neighbor_window()` picked: the
@@ -743,18 +774,13 @@ func _entrance_door_texture() -> StringName:
 ## `col` defaults to 0 for every caller that does not care, since it only matters where
 ## `is_home_building` and the door might actually overlap. Reads no RNG of its own —
 ## `_build_windows()` still rolls exactly the same `_windows` array and `_window_style` it always
-## has, so which upper windows are lit and the window style are unaffected by this rule. **A covered
-## ground-floor column (`_is_covered()`, M203) is the one other exception to the blank-wall-or-shops
-## default**: `_windows` already rolled a value for row 0 the same way it rolls every other row, so
-## exposing it here is the whole change — no new roll, only which of the roll's own answers gets
-## painted. `City._spawn_buildings()` never sets `covered_ground_cols` on her own building, so this
-## never actually reaches it; the check is unconditional here only because nothing about that fact
-## belongs in this file rather than in `City`.
+## has, so which upper windows are lit and the window style are unaffected by this rule. **Never
+## asked at all for a covered column (`_is_covered()`, M203)**: `_draw()`'s own wall loop skips one
+## outright, facade and all, before this is ever called there — see the class doc's own section on
+## the roof extension that stands in its place.
 func _draws_window_at(row: int, col: int = 0) -> bool:
 	if row == 0 and is_home_building and _column_under_door(col):
 		return false
-	if row == 0 and _is_covered(col):
-		return true
 	return row > 0 or is_home_building or wall_tiles() < 2
 
 ## Whether ground-floor column `col`'s own world-space footprint overlaps `door_world_x_range`.
@@ -794,6 +820,11 @@ func _draw() -> void:
 		_draw_station_facade(wall_rows, hall)
 	for row in (0 if power_station else wall_rows):
 		for col in range(hall.x, hall.y):
+			# A covered column's whole facade is skipped — wall, window and every edge — since nobody
+			# can ever stand in front of it; the roof loop below draws the front that covers it up to
+			# that front's own roof line instead (M203).
+			if _is_covered(col):
+				continue
 			var at := _cell(col, row)
 			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
 			if _draws_window_at(row, col):
@@ -828,17 +859,35 @@ func _draw() -> void:
 	_draw_posters()
 	_draw_front_overlay()
 
-	for row in roof_rows:
+	# A covered column's own extension (M203, `roof_extension_rows`) makes this roof taller than
+	# `roof_rows` there, continuing this same fill and colour north to meet the covered front's own
+	# roof — so the row bound, and where `ROOF_EDGE_N` caps it, are read per column rather than once
+	# for the whole building. A step between an extended column and a shorter neighbour (whether that
+	# neighbour is uncovered, at 0, or extended by a different amount) gets its own side parapet,
+	# `ROOF_EDGE_W`/`ROOF_EDGE_E` again, on the taller column's own face, the same picture the whole
+	# building's true west/east edge already uses — so a partly covered front reads as one roof with
+	# a step in it, not a taller patch dropped beside a shorter one.
+	var max_rows := roof_rows
+	for col in range(hall.x, hall.y):
+		max_rows = maxi(max_rows, roof_rows + _extension_rows(col))
+	for row in max_rows:
 		for col in range(hall.x, hall.y):
+			var col_rows := roof_rows + _extension_rows(col)
+			if row >= col_rows:
+				continue
 			var at := _cell(col, wall_rows + row)
 			draw_texture(AtlasLibrary.region(ROOF), at, roof_colour)
 			if row == 0:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_S), at)
-			if row == roof_rows - 1:
+			if row == col_rows - 1:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
 			if col == hall.x:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_W), at)
 			if col == hall.y - 1:
+				draw_texture(AtlasLibrary.region(ROOF_EDGE_E), at)
+			if col > hall.x and row >= roof_rows + _extension_rows(col - 1):
+				draw_texture(AtlasLibrary.region(ROOF_EDGE_W), at)
+			if col < hall.y - 1 and row >= roof_rows + _extension_rows(col + 1):
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_E), at)
 
 	_draw_roof_furniture(wall_rows)

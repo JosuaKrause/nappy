@@ -570,6 +570,7 @@ func _spawn_signal_heads() -> void:
 
 func _spawn_buildings() -> void:
 	var door_x_range := _door_world_x_range()
+	var buildings: Array[Building] = []
 	for rect in map.building_rects:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
@@ -589,11 +590,21 @@ func _spawn_buildings() -> void:
 			# `CityGenerator._subtract_all()` cuts the notch's own columns out of them — but handing
 			# it to all of them costs nothing and needs no lookup for which one that is.
 			building.door_world_x_range = door_x_range
-		else:
-			# Never asked of her own building — "her own building is unchanged" (M203), and the home
-			# block's own doorstep already exempts it from the route-redundancy guarantee the same way.
-			building.covered_ground_cols = _covered_ground_cols(rect)
+		# Dressed here, before coverage and the roof extension below are computed, since
+		# `_assign_roof_extensions()` needs to know which buildings are the power station to keep an
+		# extension off its yard (no roof stands there to extend).
 		_dress_the_power_station(building, rect)
+		buildings.append(building)
+	# Coverage and the roof extension it needs both read every lot's own `wall_tiles()`, fixed by
+	# the exports above alone, so both run before any of them enters the tree — see
+	# `_covered_ground_cols()` and `_assign_roof_extensions()`. Never asked of her own building
+	# (`covered_ground_cols` stays empty) — "her own building is unchanged" (M203), and the home
+	# block's own doorstep already exempts it from the route-redundancy guarantee the same way.
+	for i in buildings.size():
+		if not buildings[i].is_home_building:
+			buildings[i].covered_ground_cols = _covered_ground_cols(map.building_rects[i])
+	_assign_roof_extensions(buildings)
+	for building in buildings:
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block
 		# boundary stacking the way the eye expects.
@@ -603,8 +614,8 @@ func _spawn_buildings() -> void:
 ## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
 ## `rect`'s own front row — one row below its south edge, the row a passer-by would stand on — is
 ## `GameEnums.TileType.BUILDING` rather than walkable ground (M203, `docs/DECISIONS.md`, "A front
-## nobody can stand at has windows on its ground floor"). `map.is_walkable()` is the fixed lattice
-## fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
+## nobody can stand at is covered by the roof in front of it"). `map.is_walkable()` is the fixed
+## lattice fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
 ## `is_open()`'s per-day closures, so this is computed once here rather than in `start_day()`. A
 ## south tile past the map's own edge reads as `BUILDING` too (`CityMap.tile_at()`'s own
 ## out-of-bounds default), which only ever matters for a wall built against the map's own boundary.
@@ -614,6 +625,53 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 	for col in rect.size.x:
 		result.append(not map.is_walkable(Vector2i(rect.position.x + col, south_row)))
 	return result
+
+## `Building.roof_extension_rows` for every building in `buildings` (parallel to
+## `map.building_rects`, M203): wherever a building's own `covered_ground_cols` marks a column
+## covered, the tile directly south of it belongs to some other lot's rect — the one whose roof
+## now has to reach up to meet the covered building's own roof — found by a tile lookup over every
+## rect rather than a spatial search, since the whole set is small and built once per run. The
+## extension at that column is exactly the covered building's own `wall_tiles()`: precisely enough
+## rows to reach the world row its roof already starts at, edge to edge. A power station's yard
+## columns (`_hall_cols()`, read after `_dress_the_power_station()` above has set `power_station`)
+## are skipped since no roof stands there to extend — the yard is fenced ground, not a building
+## mass; the rare column a yard would have covered is simply left blank, roof and facade alike.
+func _assign_roof_extensions(buildings: Array[Building]) -> void:
+	var tile_to_index := {}
+	for i in map.building_rects.size():
+		var rect: Rect2i = map.building_rects[i]
+		for x in rect.size.x:
+			for y in rect.size.y:
+				tile_to_index[Vector2i(rect.position.x + x, rect.position.y + y)] = i
+	var extensions: Array[Array] = []
+	for building in buildings:
+		var zeros: Array[int] = []
+		zeros.resize(building.columns())
+		zeros.fill(0)
+		extensions.append(zeros)
+	for i in buildings.size():
+		var back := buildings[i]
+		if back.covered_ground_cols.is_empty():
+			continue
+		var rect: Rect2i = map.building_rects[i]
+		for col in back.covered_ground_cols.size():
+			if not back.covered_ground_cols[col]:
+				continue
+			var south := Vector2i(rect.position.x + col, rect.position.y + rect.size.y)
+			var front_index: int = tile_to_index.get(south, -1)
+			if front_index < 0:
+				continue
+			var front := buildings[front_index]
+			var front_rect: Rect2i = map.building_rects[front_index]
+			var local_col := south.x - front_rect.position.x
+			if front.power_station:
+				var hall := front._hall_cols()
+				if local_col < hall.x or local_col >= hall.y:
+					continue
+			var front_extension: Array[int] = extensions[front_index]
+			front_extension[local_col] = back.wall_tiles()
+	for i in buildings.size():
+		buildings[i].roof_extension_rows = extensions[i]
 
 ## Makes `building` the power station when `rect` is its mass: the door over the pavement
 ## `CityMap.power_station_door` names, and the transformer yard over the other block — the hall is
