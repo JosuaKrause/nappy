@@ -99,6 +99,26 @@ game actually reads. This table is the semantics — what each flag *means* — 
 appears somewhere below, so an entry added to one and not the other fails the build rather than
 going quietly stale.
 
+### A rig's window and its wall-clock limit
+
+A run carrying `--screenshot`, `--walk`, `--flee`, `--press`, `--tap` or `--route` — a rig, rather
+than a person at the keyboard — gets three things neither a flagless `tools/run.sh` session nor one
+carrying only flags like `--seed`/`--day` gets:
+
+- **Its window never takes the OS focus**, so it never interrupts whatever else is on screen.
+- **It hears no real key or pointer press** — only the script driving it can move her or open a
+  screen — so a stray press into the wrong window can never reach it.
+- **It always closes.** The game quits itself once its own script's length (an `--after` value, or
+  the day's own length when nothing bounds it more tightly) plus a margin passes, capped at a fixed
+  ceiling regardless; `tools/shot.sh`, and `tools/run.sh` when a rig flag is present, additionally
+  kill the process from outside if it is somehow still alive a further grace period past that —
+  loudly, on stderr, with a non-zero exit. The three numbers (`src/dev/dev_flags.gd`'s own
+  `RIG_QUIT_SECONDS`): a 15s margin, a 240s ceiling, and a 15s kill grace on top.
+
+`--route` cannot be combined with `--screenshot`: `RouteRig` quits the process itself the moment she
+arrives, which can beat `--after`'s own timer, so the combination is refused before Godot ever
+launches rather than risking a picture that is silently never written.
+
 | Flag | Effect |
 | --- | --- |
 | `--seed N` | Regenerate a specific city (also reachable, for a positive integer only, as a release web build's own `?debug=1&seed=N`) |

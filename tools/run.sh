@@ -55,6 +55,10 @@ if [[ $# -gt 0 ]] && ! validate_dev_flags "$@"; then
     exit 1
 fi
 
+if ! reject_route_with_screenshot "$@"; then
+    exit 1
+fi
+
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT" >&2
     echo "install Godot 4.7, or point GODOT at your binary:" >&2
@@ -175,4 +179,22 @@ if [[ -n "$missing" || -n "$unimported" || -n "$atlases_stale" ]]; then
 fi
 
 # `--` separates Godot's own arguments from the game's.
-exec "$GODOT" --path "$PROJECT_DIR" -- "$@"
+#
+# M195: a rig flag (the same set `DevFlags.is_rig()` reads, see `rig_flag_present()` in
+# lib_dev_flags.sh) gets the same lockdown tools/shot.sh always carries -- `--disable-vsync`, since
+# an unfocused or covered window otherwise throttles the whole main loop to about once a second on
+# this Mac (docs/DECISIONS.md, M195), and the external kill that backstops the in-game wall-clock
+# timer for "always closes". A person's own flagless (or `--seed`/`--day`/etc.-only) session is
+# unchanged: the same `exec` it always was, vsync on, no supervision, no limit.
+if rig_flag_present "$@"; then
+    KILL_AFTER="$(rig_kill_after_seconds "$@")"
+    "$GODOT" --path "$PROJECT_DIR" --disable-vsync -- "$@" &
+    GODOT_PID=$!
+    if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
+        echo "run.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
+        exit 1
+    fi
+    wait "$GODOT_PID"
+else
+    exec "$GODOT" --path "$PROJECT_DIR" -- "$@"
+fi

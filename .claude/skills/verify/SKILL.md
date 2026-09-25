@@ -12,25 +12,33 @@ description: How to verify a change in this project — the verification command
 earn: run one only when the thing being checked *is what the screen looks like*, and take the
 smallest number of them that answers the question.
 
-**Why, and it is not tidiness — a windowed run can hang forever.** The window has to reach its own
-quit to end, and **a window that loses focus stops getting there**, so the process sits open with
-nothing to do and the command never returns. It is not an edge case: *(2026-09-05: "if you run in a
-windowed mode and the window loses focus the test gets stalled since the window will never close.
-when I'm doing something else the window will lose focus 100%".)* Anybody working while a run is
-open takes focus away from it by definition, so the stall is the normal outcome rather than the
-unlucky one — and it burns the wall-clock of whoever is waiting, not yours.
+**Why, beyond tidiness — a windowed run used to be able to hang forever, and working beside one is
+still not free.** *(2026-09-05: "if you run in a windowed mode and the window loses focus the test
+gets stalled since the window will never close. when I'm doing something else the window will lose
+focus 100%".)* A rig's own window now carries three defences against exactly that (docs/DECISIONS.md,
+M195, "a rig's window takes no focus, hears no stray key, and always closes"): it never takes the OS
+focus in the first place (`DisplayServer.WINDOW_FLAG_NO_FOCUS`), it runs at full speed while covered
+or unfocused rather than the whole main loop throttling to about once a second the way an ordinary
+window's does on macOS (`--disable-vsync`, both scripts' own launch), and it always closes — the
+game's own wall-clock timer, backstopped by `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s)
+outside kill. None of that makes a windowed run *free*, only bounded: it is still slower than a
+headless check by however long Godot takes to boot a window and draw a frame, and a run left to its
+outside kill still costs the whole of that wait before it says so.
 
 So: **never reach for a windowed run to check something a headless one can answer.** A rig that
 prints numbers, an assertion in a suite, or a `check.sh` boot beats a screenshot for anything that
 is not a picture. When a picture genuinely is the question, take it once with everything you need
 already in the flags rather than iterating live.
 
-**A rig never pauses on focus, unlike the game itself.** The game opens the pause screen on
+**A rig never pauses on focus, unlike the game itself, and now never hears a real key or pointer
+press at all while it drives a run.** The game opens the pause screen on
 `NOTIFICATION_APPLICATION_FOCUS_OUT`, the same notification a window loses the moment it opens
 behind whatever the operator is doing — so left alone, every windowed run in this section would
 capture a picture of the pause screen rather than the day it was sent to look at. `--screenshot`
 carries `--no-focus-pause` on its own, so `shot.sh` needs nothing extra; a `run.sh` session with no
-screenshot passes `--no-focus-pause` itself.
+screenshot passes `--no-focus-pause` itself. A stray key typed into the operator's own foreground
+window can no longer reach the rig either way, on top of that — see README.md's "Dev flags" section,
+"A rig's window and its wall-clock limit".
 
 **And a screenshot cannot be taken at all without a display**, which is worth knowing before
 planning a verification around one. `shot.sh` runs Godot *without* `--headless` on purpose, so a

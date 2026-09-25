@@ -98,6 +98,25 @@ var _escape_title_is_resume_gate := false
 ## the getter again on every focus change.
 var _no_focus_pause := DevFlags.no_focus_pause()
 
+## Whether `_lock_out_a_rig()` found `DevFlags.is_rig()` true for this run — read once for the same
+## reason `_no_focus_pause` is, so a test can set it directly. `_input()` reads this member rather
+## than asking `DevFlags` again on every event.
+var _rig_locked_out := false
+## The `Time.get_ticks_msec()` reading a rig quits itself at, or `0` for "no deadline" — a person's
+## own `tools/run.sh` session, or a test that never calls `_lock_out_a_rig()` at all. `0` is safe
+## as the sentinel because `Time.get_ticks_msec()` only grows from the process's own start, so it
+## can never legitimately equal the deadline of a rig that armed one.
+##
+## **Real OS time, not accumulated frame `delta`, and that is load-bearing.** The stall a covered,
+## unfocused window can fall into (`--disable-vsync` in `tools/shot.sh`/`tools/run.sh` is the fix —
+## see docs/DECISIONS.md, M195) collapses how *often* `_process()` runs without necessarily
+## collapsing what each call reports as its own `delta`, so a deadline kept by summing `delta` can
+## lag the wall clock by exactly the amount the stall itself hides. Reading `Time.get_ticks_msec()`
+## fresh every `_process()` call instead means the very next call to actually happen — however late
+## it is — reads the true time and quits right then, rather than trusting a running total that the
+## same stall could already have thrown off.
+var _rig_quit_deadline_msec := 0
+
 ## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
 ## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
 ## test can set it directly and check the release shape. `_status.visible` and the text assembly
@@ -246,6 +265,10 @@ func _ready() -> void:
 	# `get_tree().paused` while the player walks, the crowd drives and the resistance deadline
 	# runs out behind a screen saying the day is over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# As early as this scene's own script can act — see `_lock_out_a_rig()`'s own doc for why
+	# nothing earlier is reachable from GDScript at all — and ahead of the escape's own boot branch
+	# just below, so either path gets it from this one call.
+	_lock_out_a_rig()
 	# Before either boot path — this is the one thing `?debug=1` adds on top of the readout, and
 	# it has to reach the escape scene's own boot too. Gates itself on `_readout_requested` rather
 	# than being gated at the call site, the same shape `_add_debug_layers()` gates itself on
@@ -1831,6 +1854,17 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 func _process(delta: float) -> void:
+	# M195, always closes: the outer half of the guarantee `_lock_out_a_rig()` starts — see
+	# `_rig_quit_deadline_msec`'s own doc for why this reads `Time.get_ticks_msec()` fresh rather
+	# than trusting `delta` to have summed correctly. Ahead of every other line in this function on
+	# purpose: whatever screen is up when the deadline passes, a rig still quits from here.
+	# `tools/shot.sh` (and a rig-flagged `tools/run.sh`) is the outside backstop for the case this
+	# line itself never runs again.
+	if _rig_quit_deadline_msec != 0 and Time.get_ticks_msec() >= _rig_quit_deadline_msec:
+		printerr("[Main] a rig's own wall-clock limit (%.1fs) passed with the run still going; quitting"
+				% DevFlags.rig_quit_seconds())
+		get_tree().quit(1)
+		return
 	_dev_rig.update_follow_camera(_city)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
@@ -2083,6 +2117,65 @@ func _somebody_is_playing() -> bool:
 ## and a day already decided, so a second screen stacked over either reads as answering a question
 ## nobody asked, the same reason focus loss never opens over any `_summary` at all. `_finale` is
 ## null on an ordinary day, so this guard never reaches a day's own summary.
+##
+## **Runs in the `_input` phase, ahead of this one.** Godot finishes calling every node's `_input()`
+## before it starts the `_unhandled_input` phase at all, so marking a real event handled here keeps
+## it from ever reaching this function's own guards below, the pause and title screens' `KEY_R`/
+## `KEY_Q` (read as raw keycodes rather than actions, so `InputMap` cannot gate them — see
+## `_erase_real_input_for_a_rig()`'s own doc for what does), and `_debug_snapshot_action()`/
+## `_debug_layer_key()` just above. **Does not reach `TouchControls`' own `_input()`** — a sibling
+## handler in the same phase, which nothing can pre-empt, since `set_input_as_handled()` only
+## silences the phases *after* `_input`. A real mouse drag against the on-screen joystick is
+## outside this fix's reach; the realistic threat the playtest actually named — a stray key typed
+## into a window that has taken the focus while the operator works elsewhere — is a keyboard one,
+## and `WINDOW_FLAG_NO_FOCUS` (`_lock_out_a_rig()`) is what stops the window from taking that focus
+## in the first place, so a pointer event over it is already the unlikelier half of the risk.
+func _input(event: InputEvent) -> void:
+	if _rig_locked_out:
+		get_viewport().set_input_as_handled()
+
+## PLAYTEST-133, M195: a rig's window takes no OS focus, hears no real key or pointer press, and
+## quits itself on a wall-clock deadline — three defences for the one thing the player named
+## ("it takes the focus away from what I'm doing every time" · "if I click somewhere else they
+## stay open"). Called once, first thing in `_ready()`, ahead of the escape's own boot branch so
+## either path gets all three; a no-op the instant `DevFlags.is_rig()` is false, which is every
+## plain `tools/run.sh` session a person is actually playing.
+##
+## **The window flag is applied as early as this scene's own script can run, not "before the
+## window shows."** Godot creates the OS window as part of engine start-up, well before any scene
+## script exists to ask it anything — there is no earlier hook this file can reach without an
+## autoload, which is outside this milestone's own scope fence — so this is the earliest a rig's
+## own boot can still strip it.
+##
+## **Two defences, not one, because a real key reaches the game two different ways.** `_input()`
+## above closes the event-dispatch half (the pause action, the title's Space, the pause/title
+## screens' raw `KEY_R`/`KEY_Q`, this file's own debug snapshot and layer keys). Erasing every
+## action's own `InputMap` bindings closes the *polled* half instead — `Stroller._physics_process()`
+## reads `Input.get_vector()` every tick, never an event, so a real WASD press would still move her
+## even with every event marked handled. `Input.action_press()`/`action_release()` (what
+## `AutoScreenshot`'s own `_walk`/`_flee`/`_press` drive her through) do not go through `InputMap`
+## matching at all, so erasing these bindings leaves the rig's own synthetic presses working exactly
+## as before while a real key with nothing left to map it to can no longer move, run or pause
+## anything.
+func _lock_out_a_rig() -> void:
+	if not DevFlags.is_rig():
+		return
+	_rig_locked_out = true
+	if DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
+	_erase_real_input_for_a_rig()
+	_rig_quit_deadline_msec = Time.get_ticks_msec() + int(DevFlags.rig_quit_seconds() * 1000.0)
+
+## Every action `project.godot`'s own `[input]` table defines — read live off `InputMap` rather
+## than spelled out by hand, so a binding added there is covered without a second list to keep in
+## step — but Godot's own built-in `ui_*` actions (`ui_accept`, `ui_cancel` and the rest), which
+## nothing in this game reads and which stripping would cost the engine's own debugging shortcuts
+## for nothing this milestone asked for.
+func _erase_real_input_for_a_rig() -> void:
+	for action in InputMap.get_actions():
+		if not String(action).begins_with("ui_"):
+			InputMap.action_erase_events(action)
+
 func _unhandled_input(event: InputEvent) -> void:
 	var snapshot_action := _debug_snapshot_action(event) if _debug else &""
 	if snapshot_action == &"snapshot_burst":
