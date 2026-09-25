@@ -350,6 +350,24 @@ wall's roadblocks are not affected: they are three narrower bodies across the st
 
 ---
 
+## M201 — A CI job does not download the evidence · asked for 2026-09-25
+
+> "one shard took significantly longer than the rest -- maybe we need to balance that again"
+
+[PLAYTEST-137](playtests/PLAYTEST-137.md). Every job in `.github/workflows/ci.yml` checks out the
+whole tree, about 949 MB, of which about 910 MB is `docs/evidence/`, and the shallow fetch alone
+has taken from about 35s to 670s per job. The slow shard was that fetch, not its tests.
+
+- [ ] **Each CI job fetches only the files it reads**: `actions/checkout` with a partial clone
+      (`filter: blob:none`) and a sparse checkout that leaves out `docs/evidence/` — or whatever
+      the measurement supports — for the shards and for every other job that does not read the
+      evidence. Find what does read it first (tests that write or read review sheets, the doc
+      lint's link check, `tools/cost-table.sh --check`) and keep exactly what those need. The
+      deploy workflow gets the same treatment only if its build does not read the evidence.
+      Measured by checkout time per job before and after, over more than one run.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
