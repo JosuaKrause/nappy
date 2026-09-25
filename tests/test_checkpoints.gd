@@ -50,6 +50,10 @@ func run(t) -> void:
 	_test_the_guard_leaves_room_to_answer(t)
 	_test_a_walk_under_the_boom_is_seen(t)
 	_test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
+	_test_a_huts_hold_ends_the_door_guards_chase(t)
+	_test_a_hold_at_the_guards_own_hut_ends_it_too(t)
+	_test_a_hold_does_not_end_the_roadblock_guard(t)
+	_test_a_chase_with_no_hold_still_catches(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -1826,3 +1830,145 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 	result["ended_at"] = elapsed
 	guard.free()
 	return result
+
+# ---------------------------------------------------------- a hold ends the chase ---
+# *(2026-09-24, the player, on whether a checkpoint hut's hold should end the door guard's chase:
+# "we can try b. if she voluntarily goes to a hut the whole pursuit has been accomplished".)*
+# `EventManager._end_the_guard_for_a_hold()` is the code; the design is `docs/EVENTS.md`,
+# "Checkpoints".
+
+## A `_door_rig()` (two huts and a gate on an east-west street) with a `door_guard` already after
+## her, standing where `EventManager._set_a_guard_on_her()` would have put him — a hut's width east
+## of the northern hut, `doors[0]` — the shape every test below starts from.
+func _guard_after_her_rig(t) -> Dictionary:
+	var rig := _door_rig(t)
+	var doors: Array[EventInstance] = []
+	doors.assign(rig["doors"])
+	var manager: EventManager = rig["manager"]
+	var near_hut := doors[0]
+	var axis := near_hut.facing_now()
+	var guard := _door_instance(t, "door_guard", near_hut.global_position + axis * 40.0, axis)
+	manager._instances.append(guard)
+	manager._guard_after_her = guard
+	rig["doors"] = doors
+	rig["guard"] = guard
+	return rig
+
+func _free_guard_after_her_rig(rig: Dictionary) -> void:
+	(rig["guard"] as EventInstance).free()
+	_free_door_rig(rig)
+
+## **The moment a hut starts holding her, a `door_guard` chasing her gives up — no catch can land
+## during the hold or after it.** She walks up to the far hut, never the one he stepped out of, and
+## his chase ends exactly as it does when she outruns him.
+func _test_a_huts_hold_ends_the_door_guards_chase(t) -> void:
+	var rig := _guard_after_her_rig(t)
+	var manager: EventManager = rig["manager"]
+	var stroller: Stroller = rig["stroller"]
+	var doors: Array[EventInstance] = rig["doors"]
+	var guard: EventInstance = rig["guard"]
+	var far_hut := doors[2]
+
+	stroller.global_position = guard.global_position + Vector2(2000.0, 0.0)
+	manager._tell_them_where_she_is()
+	guard._process(STEP)
+	t.check(not guard.gave_up and not guard.is_leaving, "he is after her before she reaches a hut")
+
+	var axis := far_hut.facing_now()
+	stroller.global_position = far_hut.global_position + axis * 40.0 + Vector2(0.0, 16.0)
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(far_hut.is_chatting(), "walking up to the far hut starts its own inspection")
+	t.check(guard.gave_up and (guard.is_finished or guard.is_leaving),
+			"and the door_guard gives up exactly as he does when she outruns him")
+	t.check(not guard.is_lethal_at(stroller.global_position),
+			"a give-up is the state a catch cannot land from, during the hold or after it")
+
+	_free_guard_after_her_rig(rig)
+
+## **His own hut counts too.** "Any hut counts, the one he came out of included" — walking back into
+## the hut he stepped out of is still a voluntary inspection, so it ends his chase the same way.
+func _test_a_hold_at_the_guards_own_hut_ends_it_too(t) -> void:
+	var rig := _guard_after_her_rig(t)
+	var manager: EventManager = rig["manager"]
+	var stroller: Stroller = rig["stroller"]
+	var doors: Array[EventInstance] = rig["doors"]
+	var guard: EventInstance = rig["guard"]
+	var own_hut := doors[0]
+
+	stroller.global_position = guard.global_position + Vector2(2000.0, 0.0)
+	manager._tell_them_where_she_is()
+	guard._process(STEP)
+	t.check(not guard.gave_up, "he is after her before the hold starts")
+
+	var axis := own_hut.facing_now()
+	stroller.global_position = own_hut.global_position - axis * 40.0 + Vector2(0.0, 16.0)
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(own_hut.is_chatting(), "walking back into his own hut still starts a hold")
+	t.check(guard.gave_up and (guard.is_finished or guard.is_leaving),
+			"and gives him up too, the same as any other hut")
+
+	_free_guard_after_her_rig(rig)
+
+## **The roadblock's hunting guard is never `_guard_after_her`, so a hold never reaches it** — it
+## keeps chasing through a hut's hold exactly as it does today. (The escape's `masked_pursuer`
+## follows a fixed path rather than `EventInstance._chase()` and never carries `def.pursues`, so it
+## has no give-up state to reach in the first place.)
+func _test_a_hold_does_not_end_the_roadblock_guard(t) -> void:
+	var rig := _guard_after_her_rig(t)
+	var manager: EventManager = rig["manager"]
+	var stroller: Stroller = rig["stroller"]
+	var doors: Array[EventInstance] = rig["doors"]
+	var far_hut := doors[2]
+
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL)
+	t.check(hot.pursues and hot.hard_fail, "the heated roadblock hunts like any other pursuer")
+	var axis := far_hut.facing_now()
+	var road_guard := EventInstance.new()
+	road_guard.setup(hot, far_hut.global_position + axis * 200.0, PackedVector2Array(), axis)
+	t.add_child(road_guard)
+	road_guard.set_process(false)
+	manager._instances.append(road_guard)
+
+	stroller.global_position = road_guard.global_position + Vector2(0.0, 2000.0)
+	manager._tell_them_where_she_is()
+	road_guard._process(STEP)
+	t.check(not road_guard.gave_up and not road_guard.is_leaving, "he is hunting her already")
+
+	stroller.global_position = far_hut.global_position + axis * 40.0 + Vector2(0.0, 16.0)
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(far_hut.is_chatting(), "the hold starts as it does for the door_guard")
+	t.check(not road_guard.gave_up and not road_guard.is_leaving,
+			"but the roadblock's own hunting guard is untouched — he is not _guard_after_her")
+
+	road_guard.free()
+	_free_guard_after_her_rig(rig)
+
+## **No hold, no give-up: he still catches her exactly as before.** Regression for
+## `_end_the_guard_for_a_hold()` — it fires only from a hold that has actually started, so a chase
+## nowhere near a hut catches her as it always did, `_check_detentions()` running every frame beside
+## it and finding nothing to hold her for.
+func _test_a_chase_with_no_hold_still_catches(t) -> void:
+	var rig := _guard_after_her_rig(t)
+	var manager: EventManager = rig["manager"]
+	var stroller: Stroller = rig["stroller"]
+	var guard: EventInstance = rig["guard"]
+
+	# Far from every hut's own `detain_distance()`, so `_check_detentions()` never starts a hold
+	# while his notice runs out.
+	guard.global_position = Vector2(9000.0, 9000.0)
+	stroller.global_position = guard.global_position + Vector2(250.0, 0.0)
+	var caught := false
+	for i in int(round(6.0 / STEP)):
+		manager._tell_them_where_she_is()
+		guard._process(STEP)
+		manager._check_detentions()
+		if guard.is_lethal_at(stroller.global_position):
+			caught = true
+			break
+	t.check(caught and not guard.gave_up,
+			"standing near him with no hold anywhere near catches her exactly as before")
+
+	_free_guard_after_her_rig(rig)

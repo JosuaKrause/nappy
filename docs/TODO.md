@@ -655,12 +655,6 @@ is still true.
       re-planning from the nearest open tile (`DECISIONS.md`, M184, the rig gets through
       chokepoints). The release is `EventManager`'s, in `src/events/`
 
-- [ ] **Held at another hut while chased, she can be caught during the hold.** The door guard who
-      chases her after a walk under a boom (`DECISIONS.md`, M100, the boom never inspects her)
-      keeps coming while another door's hut holds her for its inspection, and a catch then ends
-      the day while she cannot move. Asked 2026-09-24, not yet answered: keep it (she walked into
-      a checkpoint while wanted) or let a hold end the chase.
-
 - [ ] **Pressing into a lowered boom off its centre line slides her round it to the hut.** The
       boom's body is a 32px circle across a carriageway, so pushing into it off-centre slides her
       round its edge into the notch beside the hut, where the hut inspects her. A body shaped to

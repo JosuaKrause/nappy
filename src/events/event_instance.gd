@@ -1502,9 +1502,10 @@ func is_chatting() -> bool:
 
 ## Whether the guard this instance draws is inside with her for its own hold right now — he is the
 ## one taking her in, so he is not also standing in the street, see
-## `Stroller.hide_for_inspection()`. `def.redetains` is the flag only the three region-door rows
-## carry, so `chatting_mother` — same mechanism, no `redetains` — keeps her ordinary talking
-## posture for the whole of her own conversation instead.
+## `Stroller.hide_for_inspection()`. `def.redetains` is the flag only `checkpoint_hut` and
+## `checkpoint_post` carry — the boom, `checkpoint_gate`, blocks rather than inspects — so
+## `chatting_mother` — same mechanism, no `redetains` — keeps her ordinary talking posture for the
+## whole of her own conversation instead.
 func is_its_guard_inside() -> bool:
 	return def.redetains and is_chatting()
 
@@ -1686,6 +1687,22 @@ func _chase(delta: float) -> void:
 	# Ground covered, not ground gained: backing off is still moving, and the bob is driven by
 	# distance so that a thing holding its ground still reads as alive.
 	_path_travelled += moved.length()
+
+## Ends this chase from outside `_chase()`'s own loop, in the one state `_chase()` reaches when she
+## has outrun it: `gave_up` set, `_be_done()` called — the same departure, the same drawing and the
+## same `TelemetryObserver._watch_the_chase()` "gave up" line as an ordinary shake-off, because it is
+## that give-up and not a second kind. See `EventManager._end_the_guard_for_a_hold()` —
+## *(2026-09-24, the player: "if she voluntarily goes to a hut the whole pursuit has been
+## accomplished")* — a checkpoint hut's hold has just done what the chase was for, whatever
+## `_chase()` itself was doing when it happened, a telegraph still running included.
+##
+## `_be_done()`'s own guard makes a second call, or one on anything already finished or leaving, a
+## no-op rather than a double departure.
+func give_up_the_chase() -> void:
+	if is_finished or is_leaving:
+		return
+	gave_up = true
+	_be_done()
 
 ## `_chase()`'s own notice check, folded out for anything that waits on `pursues_within` without
 ## also `pursues` — a row that runs its own path once noticed rather than turning to chase her.

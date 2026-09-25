@@ -477,6 +477,16 @@ One at a time: a second walk under while he is after her sets nobody else on her
 `tests/test_checkpoints.gd` walks the chase at the door's own geometry, since the catalogue's
 pursuer rigs walk the director's.
 
+**And a hut's hold ends his chase.** *(2026-09-24, the player, on whether the chase should survive a
+voluntary trip through a checkpoint: "we can try b. if she voluntarily goes to a hut the whole
+pursuit has been accomplished".)* The moment any checkpoint hut or alley post starts holding her for
+its inspection — the one he stepped out of included — `EventManager._end_the_guard_for_a_hold()`
+ends his chase through `EventInstance.give_up_the_chase()`, the same state, the same drawing and the
+same telemetry line as running him out of `Tuning.PURSUIT_SHAKEN_OFF`; no catch can land during the
+hold or after it. A guard still in his own 1.8s notice when the hold starts gives up too — nothing
+asks whether it has finished. The roadblock's hunting guard and the escape's masked pursuer are
+never the one guard this reaches, so a hold does not touch either.
+
 **The boundary's structures charge as one source, never their sum.** *(2026-09-20, the player:
 "since two gates can be adjacent to each other their influence shouldn't add up" · "otherwise
 going into a hut at a corner with two huts double counts the influence".)* `EventDef.
