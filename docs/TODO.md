@@ -318,13 +318,18 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 ([PLAYTEST-124](playtests/PLAYTEST-124.md)). What is open is her house.
 
 - [ ] **The home block has fixed visuals** ([PLAYTEST-124](playtests/PLAYTEST-124.md),
-      statement 6): its buildings look the same on every seed — window style, which windows are
+      statement 6; [PLAYTEST-134](playtests/PLAYTEST-134.md): "the home building shouldn't
+      depend on the seed. I thought we fixed that?"): its buildings look the same on every seed — window style, which windows are
       lit, heights, front and roof furniture — rather than being rolled like any other block, so
       it can be crafted into a convincing house that matches the interiors of the escape (M102,
       the finale: out of the apartment, out of the city, whose stairwell, hallways and basement are
       in `art/interior/`). The block's size and shape still come from the seed's lattice; what is
       fixed is how it is drawn. The crafted look is drawn SVG first and goes to the player as
-      pictures before it is installed, beside the escape's interiors.
+      pictures before it is installed, beside the escape's interiors. **The fixing comes first and the crafting
+      second**: the block is taken off the dice with the parts that exist today, her own
+      building at least three floors high since she lives on the third, where the neighbor's
+      boarded window goes (M181); the crafted look replaces those parts once the player has
+      seen it.
 
 ---
 
