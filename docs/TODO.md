@@ -339,9 +339,9 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 [PLAYTEST-117](playtests/PLAYTEST-117.md) to [PLAYTEST-122](playtests/PLAYTEST-122.md). **Every
 task and every once-only happening is built** (`DECISIONS.md`, M181, slice one, and M181, slice
-two, which hold every decision the entry carried and the choices open to overturn). What is open
-is below: the timing the player asked for before anything is cut, and the one trace a happening
-leaves that has no picture yet.
+two, which hold every decision the entry carried and the choices open to overturn). The late days
+are timed (`DECISIONS.md`, M181, the last three late-day runs are timed). What is open is below:
+the one trace a happening leaves that has no picture yet.
 
 **The calendar, decided by the player:**
 
@@ -361,21 +361,6 @@ leaves that has no picture yet.
       morning either way" is built as the day 11 brief's line and the morning figure gone, with
       no picture of a sealed door; where she would see it — her building's street door, or a
       door inside — is not yet decided.
-
-- [ ] **The last three late-day runs are timed.** The player asked for the late days to be timed
-      — the mark, the task, the happening and the walk home — before anything is cut
-      ([PLAYTEST-122](playtests/PLAYTEST-122.md)); 24 of the 27 runs are (`DECISIONS.md`, M181,
-      the late days are timed, with the table), and the day-length change that follows is M192. Three
-      runs the route rig does not finish, each for a reason of the rig's or the city's rather than
-      the clock's: day 12 on seed 90210, where a door at tile (75,97) holds her three times on the
-      way to the mark and the rig gives up; day 12 on 1234567, where the calm tile chosen at the
-      moment the swing is reached reads calm but the ground she paces on reads ordinary — most
-      likely the swing's own park being taken as she reaches it, which the rig should route away
-      from to the day's second calm area, not yet confirmed; and two legs walked round rather than
-      through (day 10's mark on 1234567 stalls in the crowd, day 11's mast on 1234567 against
-      scaffolding's outline). Nothing is cut until these are measured and the player has the
-      figures. **Each late day's happening arrives differently** — waiting at home, found gone,
-      closing in front of her, coming on her way — and the table shows the variety holding
 
 ---
 
