@@ -328,11 +328,11 @@ enum Condition {
 
 ## The upper-floor column the neighbor's boarded window (`NEIGHBOR_WINDOW_SEALED`) draws over,
 ## from day 11 on, or -1 for every building but the one `City.board_neighbor_window()` picked: the
-## one lot the door notch stands in front of, on its third floor — row index 2, ground floor is
-## row 0 — the nearest column above the door itself. **A fork**: a front whose own height roll
-## gave it fewer than three wall rows has no third floor, so `neighbor_window_row()` stands it on
-## the topmost row instead, which is a front's own second floor rather than its third wherever
-## that roll lands short. Set once and never rolled itself, so a redraw is all a change needs.
+## one lot the door notch stands in front of, on its third floor — row index 3, since the ground floor is
+## row 0 and the first floor the one above it, as the escape counts them — the nearest column above
+## the door itself. A front with fewer than four wall rows has no third floor, so
+## `neighbor_window_row()` stands it on the topmost row instead; M185 gives her building a fixed
+## height with one. Set once and never rolled itself, so a redraw is all a change needs.
 @export var neighbor_window_col := -1:
 	set(value):
 		neighbor_window_col = value
@@ -708,11 +708,11 @@ func _column_under_door(col: int) -> bool:
 func column_centre_x(col: int) -> float:
 	return global_position.x + _cell(col, 0).x + TILE * 0.5
 
-## The wall row `neighbor_window_col` draws the boarded overlay on — row index 2, the third floor,
+## The wall row `neighbor_window_col` draws the boarded overlay on — row index 3, the third floor,
 ## ground floor is row 0 — or this front's own topmost wall row where a short height roll left it
 ## with fewer than three. See `neighbor_window_col`'s own doc for why that is a fork.
 func neighbor_window_row() -> int:
-	return mini(2, wall_tiles() - 1)
+	return mini(3, wall_tiles() - 1)
 
 func _draw() -> void:
 	var cols := columns()

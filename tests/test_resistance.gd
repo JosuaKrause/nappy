@@ -1939,7 +1939,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	happenings.start_day(ResistanceHappenings.MARKET_DAY)
 	var col := building.neighbor_window_col
 	t.check(col >= 0, "boarded from day 11's morning on")
-	t.check(building.neighbor_window_row() == mini(2, building.wall_tiles() - 1),
+	t.check(building.neighbor_window_row() == mini(3, building.wall_tiles() - 1),
 			"on the third floor, or the topmost row a shorter front left it with")
 
 	happenings.start_day(ResistanceHappenings.MARKET_DAY + 3)

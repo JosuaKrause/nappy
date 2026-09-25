@@ -377,12 +377,11 @@ func _door_world_x_range() -> Vector2:
 	return Vector2(centre_x - half_width, centre_x + half_width)
 
 ## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
-## 2, ground floor is row 0 — nearest above her own door, on the one home-block `Building` the
+## 3, ground floor is row 0 — nearest above her own door, on the one home-block `Building` the
 ## door notch actually stands in front of (`_home_door_building()`). Idempotent, so
 ## `ResistanceHappenings.start_day()` calling it every day from day 11 on costs nothing once it is
-## set. A front with fewer than three wall rows has no third floor to put it on; that front's own
-## topmost row stands in for it instead, and `Building.neighbor_window_col`'s own doc says so is a
-## fork, open to the player rather than decided silently.
+## set. A front with fewer than four wall rows has no third floor to put it on; that front's own
+## topmost row stands in for it instead, until M185 fixes her building's height.
 func board_neighbor_window() -> void:
 	var building := _home_door_building()
 	if not building or building.neighbor_window_col >= 0:
