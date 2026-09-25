@@ -275,3 +275,147 @@ wait_or_kill() {
     rm -f "$marker"
     return 0
 }
+
+# --------------------------------------------------------- macOS: launched without activating ---
+# M198: whether `rig_run_backgrounded` below is available at all -- Darwin, and $GODOT resolving
+# to a real .app bundle's own binary. A stub (like tools/test_cli_help.sh's own $GODOT override)
+# does not match "*/Contents/MacOS/*", so its tests keep exercising the direct launch in
+# shot.sh/run.sh unchanged; neither does a Linux checkout, or any Godot binary run from outside a
+# .app. This name promises less than it used to: see `rig_run_backgrounded`'s own doc comment for
+# what "backgrounded" does and does not deliver on this Mac.
+rig_can_launch_in_background() {
+    [[ "$(uname -s 2>/dev/null)" == "Darwin" ]] || return 1
+    [[ "$GODOT" == */Contents/MacOS/* ]] || return 1
+    [[ -x "$GODOT" ]] || return 1
+    command -v open >/dev/null 2>&1 || return 1
+    command -v pgrep >/dev/null 2>&1 || return 1
+    return 0
+}
+
+# Launches Godot for a rig through `open -g -n -W` rather than as this script's own direct child,
+# waits for it with the same kill-after-N-seconds contract `wait_or_kill` above carries, and relays
+# its stdout/stderr live. Args: the whole-run kill deadline in seconds (`rig_kill_after_seconds`'s
+# own output), then every argument Godot itself is to see -- engine flags and the game's own, in
+# the same order a direct launch would give them; this function adds nothing of its own to that
+# list. Returns 1 if the outside kill fired, the same contract `wait_or_kill`'s own return value
+# carries; the caller's own file check is still what decides whether a picture exists, exactly as
+# for a direct launch.
+#
+# **This does not make the milestone's own test pass.** M198 asks that a rig's window never
+# becomes the active app; measured on this Mac with `lsappinfo front` sampled every 0.2-0.25s
+# across many captures, `open -g -n -W` delays Godot becoming frontmost by roughly the time its
+# window takes to appear (well under a second) but does not prevent it once the window is up --
+# indistinguishable, from that point on, from a direct launch's own front time, for any capture
+# that keeps the engine actually doing something (`--walk`, `--flee`, an ordinary `run.sh` session
+# -- the two idle-standing trials that looked like a full fix were not reproduced once a moving rig
+# was sampled the same way). `strings` on `/Applications/Godot.app/Contents/MacOS/Godot` finds
+# `activateIgnoringOtherApps:` and `setActivationPolicy:` in the binary: Godot's own AppKit startup
+# activates itself once its window is ready, an explicit runtime call the process makes on its own
+# rather than something LaunchServices mediates, so `-g` -- which only tells LaunchServices not to
+# switch to the app *at launch* -- has nothing to intercept once that call fires. `-j` (launch
+# hidden) was tried too and made it worse (frontmost for the entire run, no delay at all). No
+# command-line flag, project setting, or GDScript-reachable API was found that gates either call,
+# so nothing inside the engine as scripted here can stop it either. **What this function still
+# buys:** the brief delay before activation, which matters for a very short `--after`; the
+# orphan-safe kill and live relay below, useful on their own regardless of the activation question;
+# and a seam to build a real fix on if one is ever found (an Info.plist change to a private copy of
+# Godot.app, or an engine-side activation-policy hook, neither in scope here). **Open to overturn**
+# if a live session shows the player's own focus staying put regardless -- this measurement's
+# environment is not necessarily identical to an interactive desktop session.
+#
+# **Why `open`'s own exit status is never read as Godot's.** Killing the real Godot process while
+# `open -W` was still waiting on it left `open` itself reporting exit 0 -- proven by force-killing
+# the real process mid-run and comparing against a direct launch's `wait`, which correctly reported
+# 137. So `open`'s own pid is only ever used for the one thing it is good for -- letting `wait`
+# block without spinning -- and its exit code is discarded; `WAIT_OR_KILL_STATUS` is not set by this
+# function, and a caller that cares whether the run failed for a reason other than the outside kill
+# firing has to keep reading that off the file it asked Godot to write, same as it already did.
+#
+# **Finding the real process.** LaunchServices reparents the launched app under launchd, not this
+# shell, so it is not something `wait` can block on or `kill` reliably reach by any pid this
+# function was handed -- it is found the way a person would look for it instead, by the one
+# argument that names this worktree and no other: `--path "$PROJECT_DIR"`, distinct from every
+# other worktree's own absolute path, including the ones other agents' captures are running from at
+# the same time. **Not verified live, open to overturn:** two rigs launched from the same worktree
+# at once would collide on that match; nothing here currently runs more than one at a time.
+#
+# **The same reparenting cuts the other way too, and is why the watchdog below carries its own
+# trap.** Measured by running a rig-flagged `run.sh` under an outside `timeout` that tears the
+# script down early: a direct launch's Godot child dies in the same sweep (a real child shares this
+# shell's own process group, which the kernel signals as a whole), but `open`'s launchd-reparented
+# Godot did not -- it kept running, orphaned, until killed by hand. That is a worse version of the
+# exact bug M195 exists to stop, so the watchdog subshell below is `trap`-armed against the same
+# signal sweep and `disown`ed, so it keeps sleeping toward its own deadline and still reaches the
+# real pid by number no matter what happened to `run.sh`, `open`, or this function's own call
+# frame in the meantime -- the one thing that still cannot survive is a `SIGKILL` sent to the whole
+# process group, which no trap catches; nothing here claims to defend against that.
+rig_run_backgrounded() {
+    local kill_after="$1"
+    shift
+    local app="${GODOT%/Contents/MacOS/*}"
+
+    local stdout_file stderr_file
+    stdout_file="$(mktemp)"
+    stderr_file="$(mktemp)"
+
+    open -g -n -W -a "$app" --stdout "$stdout_file" --stderr "$stderr_file" --args "$@" &
+    local open_pid=$!
+
+    # Relayed live rather than dumped after the fact -- a rig-flagged run.sh session can run for
+    # minutes, and its output is exactly what a person watching it wants as it happens.
+    tail -n +1 -f "$stdout_file" &
+    local tail_out_pid=$!
+    tail -n +1 -f "$stderr_file" >&2 &
+    local tail_err_pid=$!
+
+    local real_pid="" tries=0
+    while (( tries < 100 )); do
+        real_pid="$(pgrep -f -- "--path $PROJECT_DIR " | head -n1 || true)"
+        [[ -n "$real_pid" ]] && break
+        kill -0 "$open_pid" 2>/dev/null || break
+        sleep 0.1
+        tries=$(( tries + 1 ))
+    done
+
+    # `trap '' TERM HUP` (a fresh subshell, so this does not touch the caller's own traps): the
+    # real Godot process is reparented under launchd, not this shell, and measured to survive a
+    # SIGTERM sent to this whole process group -- see rig_run_backgrounded's own doc comment above
+    # this function for the trial that found it still running after the script that launched it
+    # was torn down by an outside `timeout`. Without this trap the watchdog below dies in the same
+    # sweep, and nothing is left to kill the orphan except Godot's own in-game wall-clock timer;
+    # with it, the watchdog keeps sleeping toward its own deadline and still reaches for the real
+    # pid by number, which works regardless of what process group or session it is in by then.
+    local marker
+    marker="$(mktemp -u)"
+    (
+        trap '' TERM HUP
+        sleep "$kill_after"
+        if [[ -n "$real_pid" ]] && kill -0 "$real_pid" 2>/dev/null; then
+            kill -9 "$real_pid" 2>/dev/null
+            : > "$marker"
+        fi
+    ) &
+    local watchdog=$!
+    disown "$watchdog" 2>/dev/null || true
+
+    wait "$open_pid" 2>/dev/null
+    kill "$watchdog" 2>/dev/null
+    wait "$watchdog" 2>/dev/null
+
+    # A moment for the tails to catch up with whatever Godot last flushed before they are stopped.
+    sleep 0.2
+    kill "$tail_out_pid" "$tail_err_pid" 2>/dev/null
+    wait "$tail_out_pid" "$tail_err_pid" 2>/dev/null
+    rm -f "$stdout_file" "$stderr_file"
+
+    if [[ -f "$marker" ]]; then
+        rm -f "$marker"
+        return 1
+    fi
+    rm -f "$marker"
+    if [[ -z "$real_pid" ]]; then
+        echo "rig_run_backgrounded: never found Godot's own process (open -a may have failed)" >&2
+        return 1
+    fi
+    return 0
+}

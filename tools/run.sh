@@ -188,13 +188,29 @@ fi
 # unchanged: the same `exec` it always was, vsync on, no supervision, no limit.
 if rig_flag_present "$@"; then
     KILL_AFTER="$(rig_kill_after_seconds "$@")"
-    "$GODOT" --path "$PROJECT_DIR" --disable-vsync -- "$@" &
-    GODOT_PID=$!
-    if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
-        echo "run.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
-        exit 1
+    if rig_can_launch_in_background; then
+        # M198: on macOS, launched through `open -g -n -W` instead of as this script's own direct
+        # child -- see rig_run_backgrounded's own doc comment in lib_dev_flags.sh for the
+        # mechanism, what it actually delivers (a delay before Godot activates, not the
+        # milestone's full "never") and the measurement behind both. A stub $GODOT
+        # (tools/test_cli_help.sh's own tests) or a non-macOS checkout falls to the direct launch
+        # below unchanged. `open`'s own exit status is not Godot's (see that same doc comment for
+        # the measurement), so unlike the direct launch below, this path cannot propagate Godot's
+        # own exit code as run.sh's -- a rig that quits itself non-zero without needing the
+        # outside kill still leaves run.sh exiting 0.
+        if ! rig_run_backgrounded "$KILL_AFTER" --path "$PROJECT_DIR" --disable-vsync -- "$@"; then
+            echo "run.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
+            exit 1
+        fi
+    else
+        "$GODOT" --path "$PROJECT_DIR" --disable-vsync -- "$@" &
+        GODOT_PID=$!
+        if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
+            echo "run.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
+            exit 1
+        fi
+        wait "$GODOT_PID"
     fi
-    wait "$GODOT_PID"
 else
     exec "$GODOT" --path "$PROJECT_DIR" -- "$@"
 fi

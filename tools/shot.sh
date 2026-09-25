@@ -139,24 +139,42 @@ case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 # is what fires if that one somehow does not.
 KILL_AFTER="$(rig_kill_after_seconds --after "$SECONDS_TO_WAIT" "$@")"
 rm -f "$OUT"
-"$GODOT" --path "$PROJECT_DIR" --resolution "$RESOLUTION" --disable-vsync \
-	-- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@" &
-GODOT_PID=$!
-if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
-    echo "shot.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
-    exit 1
-fi
-# An edit -- and a capture is one -- fails loudly: Godot exiting 0 is not by itself proof the
+# An edit -- and a capture is one -- fails loudly: Godot exiting cleanly is not by itself proof the
 # picture exists (`--route` racing its own quit against `--after` is one way it would not, before
 # `reject_route_with_screenshot` above closed that specific combination off; a display fallen back
 # to headless mid-run, per `AutoScreenshot.can_photograph()`, is another). Checked here rather than
 # left to whoever opens $OUT next.
-if [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]]; then
-    echo "shot.sh: Godot exited $WAIT_OR_KILL_STATUS -- no picture written" >&2
-    exit "$WAIT_OR_KILL_STATUS"
-fi
-if [[ ! -f "$OUT" ]]; then
-    echo "shot.sh: Godot exited 0 but $OUT was never written" >&2
-    exit 1
+if rig_can_launch_in_background; then
+    # M198: on macOS, launched through `open -g -n -W` instead of as this script's own direct
+    # child -- see rig_run_backgrounded's own doc comment in lib_dev_flags.sh for the mechanism,
+    # what it actually delivers (a delay before Godot activates, not the milestone's full "never")
+    # and the measurement behind both. A stub $GODOT (tools/test_cli_help.sh's own tests) or a
+    # non-macOS checkout falls to the direct launch below unchanged.
+    if ! rig_run_backgrounded "$KILL_AFTER" \
+            --path "$PROJECT_DIR" --resolution "$RESOLUTION" --disable-vsync \
+            -- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@"; then
+        echo "shot.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
+        exit 1
+    fi
+    if [[ ! -f "$OUT" ]]; then
+        echo "shot.sh: Godot exited but $OUT was never written -- no picture written" >&2
+        exit 1
+    fi
+else
+    "$GODOT" --path "$PROJECT_DIR" --resolution "$RESOLUTION" --disable-vsync \
+        -- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@" &
+    GODOT_PID=$!
+    if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
+        echo "shot.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
+        exit 1
+    fi
+    if [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]]; then
+        echo "shot.sh: Godot exited $WAIT_OR_KILL_STATUS -- no picture written" >&2
+        exit "$WAIT_OR_KILL_STATUS"
+    fi
+    if [[ ! -f "$OUT" ]]; then
+        echo "shot.sh: Godot exited 0 but $OUT was never written" >&2
+        exit 1
+    fi
 fi
 echo "wrote $OUT"
