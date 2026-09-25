@@ -19,6 +19,14 @@ would ever show? (a) was the orchestrator's pick.
 
 > "so no need to indicate which door would be the neighbor's"
 
+## Then, choosing between the two drawings
+
+Draft PR #351 drew both: A, her street door with a regime seal notice and its paper strips cut
+where the residents still pass; B, a front window boarded over with the same notice.
+
+> "we can add the door seal starting at the raid. and the boarded window to indicate the
+> neighbor"
+
 ## The statements
 
 1. **The seal is seen on her building's front**, every morning from day 11 on.
@@ -26,5 +34,7 @@ would ever show? (a) was the orchestrator's pick.
    there would never be seen.
 4. **The escape marks no door as the neighbor's.** None of the building's inside doors needs to
    say which one was theirs.
+5. **Both drawings go in.** The sealed street door (A) appears with the raid on day 10 and stays;
+   the boarded window (B) is the neighbor's flat, seen on her building's front.
 3. **No existing drawing is lost.** The repository has no sealed-door picture; the one this needs
    is drawn new, SVG first, and shown to the player before it is installed.

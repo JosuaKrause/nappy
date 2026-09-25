@@ -357,19 +357,21 @@ the one trace a happening leaves that has no picture yet.
 | 13 | Walk into a roadblock's band — any of them · built | A column on the main road · built |
 | 14 | The power station's front door · arrow · built | The blackout · built |
 
-- [ ] **The neighbor's door is sealed, on screen, on her building's front**
-      ([PLAYTEST-131](playtests/PLAYTEST-131.md)). "The neighbor's door is sealed the next
-      morning either way" is built as the day 11 brief's line and the morning figure gone. From
-      day 11 on, her home block's front shows the seal where she walks out every morning; nothing
-      inside the building shows it, since the escape draws only the back of a door, and no door
-      there is marked as the neighbor's. She still
-      leaves through that street door, so it cannot read as shut. Two ways are drawn, SVG first,
-      and go to the player as pictures before either is installed: the street door with an
-      official seal notice pasted across it and its tape cut where the residents still pass,
-      or the neighbor's window on the front boarded over with the same notice. Both are drawn and
-      waiting on the player's pick in draft PR #351. **On day 11 on seed 4242 the rig starts
-      her at tile (85,90) rather than her doorstep at (80,84)**, while days 1 and 12 start on it;
-      found drawing the seal and not yet explained, and the seal is meant to be seen that morning.
+- [ ] **The seals are on her building's front** ([PLAYTEST-131](playtests/PLAYTEST-131.md): "we
+      can add the door seal starting at the raid. and the boarded window to indicate the
+      neighbor"). Both of draft PR #351's drawings go in. **Her street door carries the seal
+      from the raid on:** the moment day 10's raid happens at her building,
+      `art/props/door.svg` gives way to `art/buildings/home_door_sealed.svg` (the notice across
+      the upper panel, the strips cut at the gap, so she still walks out of it), and it stays
+      for the rest of the run, a saved run's included. **One front window is boarded over for
+      the neighbor** (`art/buildings/window_boarded_sealed.svg`, laid over the window cell) from
+      the next morning on, day 11, which is when "the neighbor's door is sealed the next morning
+      either way" says it happens; the same window on every day and every load of a run. Nothing
+      inside the building shows either, and no door there is marked as the neighbor's. The
+      notice's stamp is a red ring with a solid centre, not the posters' ring and band, which
+      on a door reads as "no entry". **On day 11 on seed 4242 the rig starts her at tile
+      (85,90) rather than her doorstep at (80,84)**, while days 1 and 12 start on it; found
+      drawing the seal and not yet explained, and that morning is the window's first.
 
 ---
 
