@@ -282,7 +282,8 @@ static func _replayed_door_col(building: Building) -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("door:%d:%d:%d" % [building.variant, int(building.global_position.x),
 			int(building.global_position.y)])
-	return Building._door_col_from(building.columns(), building._fire_escape_cols, rng)
+	return Building._door_col_from(building.columns(), building._fire_escape_cols,
+			building.covered_ground_cols, rng)
 
 static func _col_of(building: Building, cell: Rect2) -> int:
 	return int(roundf((cell.position.x - building._cell(0, 0).x) / Building.TILE))
