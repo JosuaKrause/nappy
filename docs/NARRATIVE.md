@@ -121,8 +121,8 @@ escape, which is the run's ending".
 The subquest must *cost the core resource*. Joining the resistance means deliberately
 choosing the worst routes for your baby: alleys, crowds, closed districts, a stranger's
 own field. The player trades the thing they have spent the whole game protecting, and every
-task is one verb — **get to a guarded place and touch it**, the same day the mark that names it
-is touched.
+task is one verb — **get to a dangerous place and touch it**, the same day the mark that names it
+is touched: a guarded place, or one that sets a robber on her the moment she has.
 
 ### Structure
 
@@ -162,6 +162,18 @@ the resistance*, narrowed to a task with exactly one place to be.
   notices them. Seeded from the run and the day, so the distance that was safe on day 9 of
   this run is safe on day 9 every time you replay it — the pattern is learnable, which is
   the difference between risk and a coin flip.
+- **A task that rides on something in the street sends a robber after her.** The man shouting,
+  the van, the burnt shell and a roadblock are not guarded where they wait. The moment she hands
+  the task over, a robber is sent after her from off screen — `Tuning.TRAP_ARRIVAL_DISTANCE`
+  (615px) away, outside the view on every bearing, and far enough that the screen-edge badge
+  speaks for him for at least the pursuit's least notice before he is in view — awake and running
+  at her from the first frame. Running shakes him off; walking does not. Whichever look-alike she
+  chose, the price is the same, and it is paid on the way out rather than guarded at one spot she
+  could avoid by choosing another. *(2026-09-13: "maybe spawn the robber in pursuing mode
+  offscreen when she interacts with the yeller so it runs towards her from offscreen.")* A task
+  that sits on a bare point — the district door, a mast's foot, the swing, the last night's front
+  door — keeps a robber waiting near it, as a mark does; the neighbor's has neither, since they
+  are walking home and there is no one spot to guard.
 - **The any-instance contact is whichever look-alike the player hands the note to.** It does
   not wait at the one instance the day happened to seed; it rides onto whichever live
   look-alike — a `homeless_yeller` or a `roadblock` — the player is within reach of, and follows

@@ -335,6 +335,31 @@ const RESISTANCE_GOAL := 5
 ## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
 const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
+## How far from her the robber a handed-over task sets on her starts (`ResistanceDirector.
+## _set_the_trap_on_her()`, `EventCatalogue._robber_giving_chase()`): the trap of a perform step
+## comes to her rather than waiting at the contact, awake from its first frame and off screen.
+##
+## **Two terms, each one sentence of the telegraph contract.**
+##
+## - **Off screen from every bearing: `OUT_OF_SIGHT` (420px).** The visible world is 640x360 at
+##   zoom 2, so its far corner is `sqrt(320² + 180²)` ≈ 367px from her; `Stroller.CAMERA_LOOK_AHEAD`
+##   (46px) leads the camera in the way she faces and pushes the corner on that side to
+##   `sqrt(366² + 180²)` ≈ 408px, and `OUT_OF_SIGHT` is the first round number outside that. A
+##   robber started any nearer could be drawn appearing out of nothing on the one bearing the
+##   camera happens to lead toward.
+## - **Then at least `PURSUIT_MIN_NOTICE` (1.5s) of him closing while only the badge speaks for
+##   him: 130 × 1.5 = 195px**, at his own `pursue_speed` (130px/s) with her standing still, the
+##   measure the screen-edge badge itself is stated over (`DangerEdge`, "its own approach, with the
+##   player held still"). So the least notice the pursuit contract owes her is paid before he is
+##   even on screen, and everything he does in view is on top of it.
+##
+## 420 + 195 = 615. It also clears the badge's own hysteresis from every bearing
+## (`DangerEdge.SCREEN_MARGIN`, 130 screen px — 65px of world past each edge, so the grown view's
+## far corner on the led side is `sqrt(431² + 245²)` ≈ 496px), so the badge is raised on his
+## first closing frames rather than after a stretch of him coming unannounced. `tests/test_resistance.gd` holds the relationship to the two terms
+## rather than the value, and walks the encounter from here.
+const TRAP_ARRIVAL_DISTANCE := 615.0
+
 ## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
 ## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
 ##

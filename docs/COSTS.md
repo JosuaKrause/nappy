@@ -71,6 +71,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | burnt_out_car        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | collapsed_frontage   |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | neighbor             |  friction |       0.0 |              — |           — |         20.0 |         40.0 |           2.0 |            — |            — |      46.0 |              -5.2 |
+| robber_giving_chase  |      wall |      16.0 |              — |           — |         30.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.8 |
 | finale_explosion     |      wall |      24.0 |              — |           — |        300.0 |        520.0 |           2.0 |            — |            — |         — |             165.2 |
 | impact_crater        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
@@ -127,6 +128,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | burnt_out_car        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | collapsed_frontage   |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | neighbor             |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| robber_giving_chase  |      10.0 |      10.0 |       9.8 |       8.9 |       7.3 |       2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | finale_explosion     |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      13.0 |      -6.0 |
 | impact_crater        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | masked_pursuer       |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -183,6 +185,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | burnt_out_car        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | collapsed_frontage   |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | neighbor             |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| robber_giving_chase  |       2.8 |       2.8 |       2.7 |       2.2 |       1.3 |      -1.6 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | finale_explosion     |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       4.5 |      -6.0 |
 | impact_crater        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | masked_pursuer       |       3.9 |       3.9 |       3.3 |       1.3 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -239,6 +242,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | burnt_out_car        |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | collapsed_frontage   |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | neighbor             |      -3.5 |      -3.0 |       0.0 |       0.0 |       0.0 |
+| robber_giving_chase  |         — |         — |         — |         — |         — |
 | finale_explosion     |     -58.9 |     -58.8 |     -59.0 |     -59.3 |     -59.8 |
 | impact_crater        |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | masked_pursuer       |         — |         — |         — |         — |         — |
@@ -295,6 +299,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | burnt_out_car        |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | collapsed_frontage   |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | neighbor             |      -3.5 |      -3.0 |       0.0 |       0.0 |       0.0 |
+| robber_giving_chase  |         — |         — |         — |         — |         — |
 | finale_explosion     |     -62.3 |     -62.2 |     -62.3 |     -62.3 |     -62.4 |
 | impact_crater        |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | masked_pursuer       |         — |         — |         — |         — |         — |

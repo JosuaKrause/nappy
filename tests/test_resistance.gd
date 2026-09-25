@@ -41,6 +41,10 @@ func run(t) -> void:
 	_test_a_perform_contact_is_never_relocated(t)
 	_test_the_contact_rides_onto_the_first_look_alike_she_reaches(t)
 	_test_the_step_completes_on_the_look_alike_she_hands_it_to(t)
+	_test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t)
+	_test_the_handover_sets_a_robber_on_her_from_off_screen(t)
+	_test_the_robber_after_her_is_announced_before_he_can_catch_her(t)
+	_test_the_robber_after_her_is_never_the_schedulers(t)
 	_test_a_perform_step_expires_when_its_rider_is_gone(t)
 	_test_a_timed_step_expires(t)
 	_test_completing_the_package_makes_the_pram_heavier(t)
@@ -1090,6 +1094,233 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 
 		player.free()
 		director.free())
+
+## A task that rides on a row is not guarded where it waits: activating the yeller perform stands
+## no robber anywhere — the chalk mark's own guard is the only one on the street — and no robber is
+## sent after her until she hands it over.
+func _test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
+		var mark_guard: EventInstance = director._guard
+		t.check(mark_guard != null, "the chalk mark is still guarded")
+		var robbers_before := _robbers_on_the_street()
+		director._on_contact_completed(1)
+		t.check(director.current_step() != null and director.current_step().index == 2
+				and ResistanceDirector.sets_a_trap_on_her(director.current_step()),
+				"the yeller perform is active, and it is a task whose trap comes to her")
+		t.check(_robbers_on_the_street() == robbers_before,
+				"activating it stands no robber at the task (%d before, %d after)"
+				% [robbers_before, _robbers_on_the_street()])
+		t.check(director._guard == mark_guard, "the only guard is still the mark's own")
+		t.check(director._trap == null, "and nobody is sent after her before the handover")
+		director.free())
+
+## Every robber standing or running in the test city: the alley robber and the one sent after her.
+func _robbers_on_the_street() -> int:
+	var count := 0
+	for instance in _city.events.instances():
+		if instance.def.id in ["alley_robbery", "robber_giving_chase"] and not instance.is_finished:
+			count += 1
+	return count
+
+## *(PLAYTEST-71: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
+## yeller so it runs towards her from offscreen"; "we need a version of the robber that is not
+## frozen when spawned".)* Handing the note over sets one `robber_giving_chase` on her:
+## `Tuning.TRAP_ARRIVAL_DISTANCE` from her, on legal ground, outside the view, never waiting, and
+## coming at her from the first frame he is stepped — and, on this city's seed, with a clear run at
+## her, so he actually arrives rather than standing against a wall. The same handover replays to
+## the same place.
+func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
+	# An array rather than a `Vector2`, because a lambda captures a local by value and the first
+	# attempt's start has to reach the second.
+	var starts: Array[Vector2] = []
+	# The mark's own alley is recorded as used when it is touched, and a used alley is avoided on
+	# the next draw — so each attempt starts from the same record, or the replay is a different day.
+	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+	for attempt in 2:
+		_build_city(t)
+		GameState.completed_resistance_alley_tiles = saved_tiles.duplicate()
+		_with_clean_run(func() -> void:
+			var director := _director_on_the_yeller_perform(t)
+			var rider: EventInstance = director._rider
+			var her := director.contact_position()
+			director.set_sight(func(at: Vector2) -> bool:
+				return at.distance_to(her) <= Tuning.OUT_OF_SIGHT)
+			var player := _rig_player(t, her)
+			director._contact._physics_process(STEP)
+			t.check(director._contact.is_done, "she hands the note over")
+			var robber: EventInstance = director._trap
+			t.check(robber != null and robber.def.id == "robber_giving_chase",
+					"and a robber is sent after her the moment she does")
+			if robber:
+				var start := robber.global_position
+				t.close_to(start.distance_to(her), Tuning.TRAP_ARRIVAL_DISTANCE,
+						"from TRAP_ARRIVAL_DISTANCE away", 0.5)
+				t.check(start.distance_to(her) > Tuning.OUT_OF_SIGHT,
+						"which is off screen from every bearing")
+				t.check(ResistanceDirector.is_legal_ground(_city.map,
+						_city.map.world_to_tile(start), director._walled_alleys()),
+						"on walkable ground nothing refuses")
+				t.check(director._a_clear_run(start, her),
+						"with a straight run at her that stays on walkable ground")
+				t.check(not robber.is_waiting(), "never waiting, even before his first frame")
+				robber.player_at = her
+				robber._process(STEP)
+				t.check(start.distance_to(her) - robber.global_position.distance_to(her)
+						> robber.def.pursue_speed * STEP * 0.9,
+						"and coming at her at his own speed from his first frame")
+				# Standing where she handed it over, she is caught: he arrives, and doing
+				# nothing about him still loses.
+				var caught := false
+				var elapsed := 0.0
+				while elapsed < robber.def.telegraph_time + robber.def.duration \
+						and not robber.is_finished and not caught:
+					robber.player_at = her
+					robber._process(STEP)
+					elapsed += STEP
+					caught = robber.is_lethal_at(her)
+				t.check(caught, "and reaches her where she stands (%.1fs)" % elapsed)
+				if not starts.is_empty():
+					t.close_to(start.distance_to(starts[0]), 0.0,
+							"the same handover sends him from the same place", 0.01)
+				starts.append(start)
+			t.check(rider.is_leaving, "the man she handed it to leaves, as before")
+			player.free()
+			director.free())
+	GameState.completed_resistance_alley_tiles = saved_tiles
+
+## **He is announced before he can end her day, and she gets the notice the pursuit contract owes.**
+## A bare robber at `Tuning.TRAP_ARRIVAL_DISTANCE` on the bearings that matter — along each axis of
+## the view and at its corner — with the real `DangerEdge` measuring him under a camera at the
+## game's own zoom 2 over the 1280x720 box, centred on her (the look-ahead is left out: it moves the
+## view by 46px and the start is past it). Walked, not asserted from the numbers:
+##
+## - **standing where she handed it over**, the badge is up before he is on screen, and he is on
+##   screen at least `Tuning.PURSUIT_MIN_NOTICE` after it — the distance's own derivation — and she
+##   is caught, since doing nothing has to lose;
+## - **walking into him**, the worst case for time, she still has `PURSUIT_MIN_NOTICE` between the
+##   badge and the catch, and his lunge leaves her the whole stand-off (`Tuning.pursuit_standoff()`,
+##   `PURSUIT_REACTION` of his own speed outside his catch);
+## - **walking away** still loses, which is what his notice is derived for;
+## - **running** the moment the badge shows ends it.
+func _test_the_robber_after_her_is_announced_before_he_can_catch_her(t) -> void:
+	var def := EventCatalogue.by_id("robber_giving_chase")
+	t.check(Tuning.TRAP_ARRIVAL_DISTANCE >= Tuning.OUT_OF_SIGHT
+			+ def.pursue_speed * Tuning.PURSUIT_MIN_NOTICE,
+			"he starts off screen from every bearing and the least notice further out again")
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.lethal_reach())
+	var view := Tuning.VIEW_HALF_EXTENT
+	for bearing: Vector2 in [Vector2.RIGHT, Vector2.DOWN, Vector2(1.0, 1.0).normalized(),
+			view.normalized()]:
+		var stood := _walk_the_trap(t, def, bearing, 0.0)
+		t.check(stood["announced_at"] < stood["on_screen_at"],
+				"bearing %v: the badge is up before he is on screen" % bearing)
+		t.check(stood["on_screen_at"] - stood["announced_at"] >= Tuning.PURSUIT_MIN_NOTICE,
+				"bearing %v: and it speaks for him alone for %.1fs, at least the %.1fs owed"
+				% [bearing, stood["on_screen_at"] - stood["announced_at"],
+				Tuning.PURSUIT_MIN_NOTICE])
+		t.check(stood["caught_at"] < INF, "bearing %v: standing still is caught" % bearing)
+
+		var into := _walk_the_trap(t, def, bearing, Tuning.WALK_SPEED)
+		t.check(into["caught_at"] < INF and into["announced_at"] < into["caught_at"],
+				"bearing %v: walking into him, the badge still comes first" % bearing)
+		t.check(into["caught_at"] - into["announced_at"] >= Tuning.PURSUIT_MIN_NOTICE,
+				"bearing %v: with %.1fs of notice, at least the %.1fs owed"
+				% [bearing, into["caught_at"] - into["announced_at"], Tuning.PURSUIT_MIN_NOTICE])
+		t.close_to(into["at_the_lunge"], standoff,
+				"bearing %v: and his lunge leaves her the whole stand-off" % bearing, 8.0)
+
+		var away := _walk_the_trap(t, def, bearing, -Tuning.WALK_SPEED)
+		t.check(away["caught_at"] < INF,
+				"bearing %v: walking away from him is not enough (%s)"
+				% [bearing, "caught" if away["caught_at"] < INF else "he gave up first"])
+
+		var ran := _walk_the_trap(t, def, bearing, -Tuning.RUN_SPEED)
+		t.check(ran["caught_at"] == INF and ran["gave_up"],
+				"bearing %v: running from him ends it" % bearing)
+
+## A duck-typed event source for `DangerEdge.setup()`: the one question it asks of one.
+class _Robbers extends Node:
+	var live: Array[EventInstance] = []
+
+	func instances() -> Array[EventInstance]:
+		return live
+
+## Walks her at `speed` along `bearing` — positive toward him, negative away — against a bare
+## `robber_giving_chase` started `Tuning.TRAP_ARRIVAL_DISTANCE` out along it, with `DangerEdge`
+## measuring under a camera centred on her. Running is any speed past a walk, and a run is only
+## started once the badge is up, the moment a player could first answer it.
+func _walk_the_trap(t, def: EventDef, bearing: Vector2, speed: float) -> Dictionary:
+	var viewport: Viewport = t.get_viewport()
+	var saved_canvas := viewport.canvas_transform
+	var her_node := Node2D.new()
+	t.add_child(her_node)
+	var source := _Robbers.new()
+	var robber := EventInstance.new()
+	robber.setup(def, bearing * Tuning.TRAP_ARRIVAL_DISTANCE)
+	source.live.append(robber)
+	var edge := DangerEdge.new()
+	t.add_child(edge)
+	edge.size = ScreenOrientation.DESIGN_SIZE
+	edge.setup(source, her_node)
+	var result := {"announced_at": INF, "on_screen_at": INF, "caught_at": INF,
+			"at_the_lunge": INF, "gave_up": false}
+	var her := Vector2.ZERO
+	var elapsed := 0.0
+	var was_telegraphing := true
+	while elapsed < def.telegraph_time + def.duration + 1.0:
+		var running := absf(speed) > Tuning.WALK_SPEED
+		if not running or result["announced_at"] < INF:
+			her += bearing * speed * STEP
+		her_node.global_position = her
+		robber.player_at = her
+		robber.player_running = running and result["announced_at"] < INF
+		robber._process(STEP)
+		elapsed += STEP
+		viewport.canvas_transform = Transform2D(0.0, Vector2(2.0, 2.0), 0.0,
+				ScreenOrientation.DESIGN_SIZE * 0.5 - her * 2.0)
+		edge._process(STEP)
+		if result["announced_at"] == INF and not edge._coming.is_empty():
+			result["announced_at"] = elapsed
+		var offset := robber.global_position - her
+		if result["on_screen_at"] == INF and absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x \
+				and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y:
+			result["on_screen_at"] = elapsed
+		if was_telegraphing and not robber.is_telegraphing():
+			result["at_the_lunge"] = offset.length()
+			was_telegraphing = false
+		if robber.is_lethal_at(her):
+			result["caught_at"] = elapsed
+			break
+		if robber.gave_up or robber.is_finished or robber.is_leaving:
+			result["gave_up"] = robber.gave_up
+			break
+	viewport.canvas_transform = saved_canvas
+	edge.free()
+	source.free()
+	robber.free()
+	her_node.free()
+	return result
+
+## Spawned only by the director: no day of the run, at any heat, offers the row to the scheduler's
+## roll, its stream or its budget — `EventCatalogue.available_on()` is the pool all three draw from —
+## and a day the scheduler actually plans, on the first day a task can be handed over, carries none.
+func _test_the_robber_after_her_is_never_the_schedulers(t) -> void:
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		for heat in EventCatalogue.heat_levels():
+			for def in EventCatalogue.available_on(day, heat):
+				t.check(def.id != "robber_giving_chase",
+						"day %d at heat %d does not offer the robber sent after her" % [day, heat])
+	var map := CityGenerator.generate(SEED)
+	var consumed: Array[String] = []
+	var plans := EventScheduler.build_day(ResistanceDirector.TRAP_FIRST_DAY,
+			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map, consumed)
+	t.check(not plans.is_empty(), "the day planned something to look through (%d)" % plans.size())
+	for plan in plans:
+		t.check(plan.def.id != "robber_giving_chase",
+				"day %d's own plan places no robber sent after her" % ResistanceDirector.TRAP_FIRST_DAY)
 
 func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
 	_with_clean_run(func() -> void:
