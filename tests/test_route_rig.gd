@@ -29,10 +29,12 @@ func run(t) -> void:
 	_test_line_of_sight_allows_a_crossing_tile(t)
 	_test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t)
 	_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t)
+	_test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t)
 	_test_a_replan_keeps_off_the_ground_round_what_caught_her(t)
 	_test_unstick_tries_the_direction_away_from_what_caught_her_first(t)
 	_test_a_door_between_two_lanes_opens_both_as_its_crossing(t)
 	_test_a_plan_never_goes_through_the_boom(t)
+	_test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t)
 	_test_reachable_point_near_returns_centre_when_already_open(t)
 	_test_reachable_point_near_steps_off_obstructed_ground(t)
 	_test_resolve_target_mark_is_todays_contact(t)
@@ -309,6 +311,44 @@ func _test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t) -> v
 	_city.map.release_obstruction(van.get_instance_id())
 	rig.free()
 
+## **A tile of a body's clearance the plan chose to cross is walked at its roomiest point, not its
+## centre.** The carriageway's first lane beside a kerbed `delivery_van` has its centre 10px from the
+## van's side, under her 14px radius, and room past it on the far side: a plan down that lane keeps
+## the tile as a waypoint of its own (`_simplify()`) and moves it off the van (`_to_world()`), which
+## is how she gets through a gap that fits her only off the tile centres, as between two vans at the
+## kerb either side of a road.
+func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t) -> void:
+	var rig := _rig(t)
+	var kerb := _find_kerb_site(t, rig)
+	if kerb == Vector2i(-1, -1):
+		rig.free()
+		return
+	var inward := _city.map.pavement_inward(kerb)
+	var along := Vector2i(inward.y, inward.x)
+	var van := _city.events.spawn_extra(EventCatalogue.by_id("delivery_van"),
+			_city.map.tile_to_world(kerb))
+	var lane := kerb - inward
+	var surface := func(point: Vector2) -> float:
+		return van.global_position.distance_to(point) - van.def.shape.reach()
+	var centre := _city.map.tile_to_world(lane)
+	t.check(surface.call(centre) < Tuning.PLAYER_BODY_RADIUS,
+			"the lane's centre is nearer the van's side than her radius (%.1fpx)" % surface.call(centre))
+	var path: Array[Vector2i] = []
+	for k in range(-3, 4):
+		path.append(lane + along * k)
+	rig._plan_accepted = {lane: true}
+	var simplified := rig._simplify(path)
+	t.check(simplified.has(lane), "the crossed clearance tile stays a waypoint of its own")
+	var world := rig._to_world(simplified)
+	var moved: Vector2 = world[simplified.find(lane)]
+	t.check(_city.map.world_to_tile(moved) == lane
+			and surface.call(moved) >= Tuning.PLAYER_BODY_RADIUS,
+			"and is walked at a point of its tile clear of the van by her radius (%.1fpx)"
+			% surface.call(moved))
+	_city.events.retire(van)
+	_city.map.release_obstruction(van.get_instance_id())
+	rig.free()
+
 ## Every tile a walk down `waypoints` passes through, in order — `_simplify()` keeps only the ends
 ## of a straight run, and every run is along one row or column (`_line_of_sight()` refuses a
 ## diagonal), so the tiles between two waypoints are a straight line of them.
@@ -408,6 +448,71 @@ func _test_a_plan_never_goes_through_the_boom(t) -> void:
 			"even the plan that gives up every preference goes round the boom")
 	_city.events._plans.erase(gate)
 	rig.free()
+
+## **A door that has just let her out is not planned back through.** A hut's crossing line runs
+## through its body, and a latched hut does not take her in (`EventManager`'s release latch, which
+## `RouteRig._latched_doors` copies), so a plan down the line walks her into the hut and holds her
+## pressed against it. With the hut latched the plan goes round its body; with it not latched the
+## same plan goes down its line, which is the crossing — so the first answer is the latch's and not
+## a hut the plan could never have walked through. A hut added to the day's plan by hand, on the
+## line between two sidewalk lanes where a door's huts stand, since this suite's day has no wall.
+func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t) -> void:
+	var lane := _find_sidewalk_column(t)
+	if lane == Vector2i(-1, -1):
+		return
+	var def := EventCatalogue.by_id("checkpoint_hut")
+	var hut := EventScheduler.Planned.new(def,
+			_city.map.tile_to_world(lane) + Vector2(Tuning.TILE_SIZE * 0.5, 0.0))
+	hut.facing = Vector2.DOWN
+	_city.events._plans.append(hut)
+	var rig := _rig(t)
+	rig._player = _stroller
+	var body := def.solid_reach() + Tuning.PLAYER_BODY_RADIUS
+	_stroller.global_position = _city.map.tile_to_world(lane + Vector2i(0, -8))
+	var crossing := rig._plan(lane + Vector2i(0, -3), lane + Vector2i(0, 3))
+	t.check(_passes_within(crossing, hut.position, body),
+			"a plan through a door that can take her goes down its crossing line")
+	_stroller.global_position = _city.map.tile_to_world(lane + Vector2i(0, -2))
+	rig._latched_doors = {hut: true}
+	var planned := rig._plan(lane + Vector2i(0, -2), lane + Vector2i(0, 3))
+	t.check(not planned.is_empty() and not _passes_within(planned, hut.position, body),
+			"a plan past a door that has just let her out goes round its body")
+	# And the maneuver that works her free of a stall beside the door tries the way into its
+	# circle last, even when that is the way away from what caught her.
+	_stroller.global_position = hut.position + Vector2(0.0, -def.detain_distance() - 20.0)
+	rig._caught_away = Vector2.DOWN
+	rig._begin_unstick()
+	t.check(rig._unstick_order[0] != Vector2.DOWN
+			and rig._unstick_order[rig._unstick_order.size() - 1].dot(Vector2.DOWN) > 0.0,
+			"the unstick tries stepping into a door's circle last (%s first)" % rig._unstick_order[0])
+	rig._unsticking = false
+	_city.events._plans.erase(hut)
+	rig.free()
+
+## A sidewalk tile on a north-south pavement's first lane — the second lane east of it, the road
+## beyond, and a building west — with three open tiles of each of those three columns north and
+## south of it.
+func _find_sidewalk_column(t) -> Vector2i:
+	for y in range(8, _city.map.size.y - 8):
+		for x in range(3, _city.map.size.x - 4):
+			var found := true
+			for k in range(-3, 4):
+				var here := Vector2i(x, y + k)
+				if _city.map.tile_at(here) != GameEnums.TileType.SIDEWALK \
+						or _city.map.tile_at(here + Vector2i.RIGHT) != GameEnums.TileType.SIDEWALK \
+						or _city.map.tile_at(here + Vector2i(2, 0)) != GameEnums.TileType.ROAD \
+						or _city.map.is_walkable(here + Vector2i.LEFT):
+					found = false
+					break
+				for tile: Vector2i in [here, here + Vector2i.RIGHT, here + Vector2i(2, 0)]:
+					if not _city.map.is_open(tile) or _city.map.is_obstructed(tile):
+						found = false
+				if not found:
+					break
+			if found:
+				return Vector2i(x, y)
+	t.check(false, "seed %d day %d has a straight stretch of north-south pavement" % [SEED, DAY])
+	return Vector2i(-1, -1)
 
 ## Whether any tile a path steps on — every tile of each straight run between two waypoints, since
 ## `_simplify()` keeps only the corners — has its centre within `reach` of `point`.

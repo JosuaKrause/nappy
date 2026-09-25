@@ -700,6 +700,14 @@ var _planned_clear := {}
 func _planned_body_tiles(plan: EventScheduler.Planned) -> Dictionary:
 	if _planned_clear.has(plan):
 		return _planned_clear[plan]
+	var parts := _planned_parts(plan)
+	var tiles := _tiles_near_pieces(parts[0], parts[1], parts[2], _BODY_CLEARANCE)
+	_planned_clear[plan] = tiles
+	return tiles
+
+## A placed plan's solid pieces as its instance will stand — `[centres, shapes, axis]`, the
+## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` it will have.
+func _planned_parts(plan: EventScheduler.Planned) -> Array:
 	var at := _planned_position(plan)
 	var vertical := EventInstance._spread_is_vertical(_city.map, at)
 	var centres := PackedVector2Array()
@@ -708,10 +716,7 @@ func _planned_body_tiles(plan: EventScheduler.Planned) -> Dictionary:
 		var offset := piece.offset_for(vertical)
 		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
 		shapes.append(piece.shape)
-	var axis := EventManager._body_axis(_city.map, plan.def, at, plan.facing)
-	var tiles := _tiles_near_pieces(centres, shapes, axis, _BODY_CLEARANCE)
-	_planned_clear[plan] = tiles
-	return tiles
+	return [centres, shapes, EventManager._body_axis(_city.map, plan.def, at, plan.facing)]
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
@@ -953,7 +958,12 @@ func _tiles_near_point(point: Vector2, margin: float) -> Dictionary:
 ## reporting one unreachable that a wider margin merely made look that way. Smoothed by
 ## `_simplify()`. `_plan_accepted` records the tiles of the clearance and the doors' reach it chose
 ## to cross.
+##
+## **A target on ground no plan may end on is aimed beside** (`_standable_near()`): the neighbor day
+## 10 sends her after walks along pavement a van has sealed, and a mark or a task is reached from
+## `ContactPoint.REACH` (36px), more than a tile, so the tile beside it reaches it as well.
 func _plan(from_tile: Vector2i, to_tile: Vector2i, avoid: Dictionary = {}) -> Array[Vector2i]:
+	to_tile = _standable_near(to_tile)
 	var clear := _body_clear_tiles()
 	var doors := _door_tiles()
 	var costs := {}
@@ -980,6 +990,34 @@ func _plan(from_tile: Vector2i, to_tile: Vector2i, avoid: Dictionary = {}) -> Ar
 					_plan_accepted[tile] = true
 			return _simplify(path)
 	return []
+
+## `tile`, or where every plan blocks it outright (`_blocked_for_phase()`'s own ground) the nearest
+## walkable tile beside it that is not, a ring at a time out to two tiles; `tile` unchanged where
+## none is.
+func _standable_near(tile: Vector2i) -> Vector2i:
+	if not _hard_blocked(tile):
+		return tile
+	for radius in range(1, 3):
+		var best := Vector2i(-1, -1)
+		var best_distance := INF
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var near := tile + Vector2i(dx, dy)
+				var distance := Vector2(dx, dy).length()
+				if _city.map.is_walkable(near) and not _hard_blocked(near) and distance < best_distance:
+					best = near
+					best_distance = distance
+		if best != Vector2i(-1, -1):
+			return best
+	return tile
+
+## Whether `tile` is ground `_blocked_for_phase()` blocks in every plan.
+func _hard_blocked(tile: Vector2i) -> bool:
+	var map := _city.map
+	return not map.is_open(tile) or map.is_soft_sealed(tile) or map.is_obstructed(tile) \
+			or _gate_ground().has(tile) or _latched_door_bodies().has(tile)
 
 ## What `_cheapest()` charges for stepping onto a tile `_plan()` would rather keep off, in tiles of
 ## ordinary walking on top of the step itself. **A door's reach costs most**, since walking into it
@@ -1159,7 +1197,9 @@ func _simplify(path: Array[Vector2i]) -> Array[Vector2i]:
 	var anchor := 0
 	var probe := 2
 	while probe < path.size():
-		if _line_of_sight(path[anchor], path[probe]):
+		# A tile of a body's clearance the plan chose to cross stays a waypoint of its own, so
+		# `_to_world()` can move it to the roomiest point of the tile.
+		if not _plan_accepted.has(path[probe - 1]) and _line_of_sight(path[anchor], path[probe]):
 			probe += 1
 		else:
 			simplified.append(path[probe - 1])
@@ -1244,11 +1284,87 @@ func _standing_tile() -> Vector2i:
 			return best
 	return best
 
+## The waypoints of `path` in world space: each tile's centre, except a tile of a body's clearance
+## the plan chose to cross (`_plan_accepted`), which is its roomiest point (`_roomiest_point()`).
 func _to_world(path: Array[Vector2i]) -> Array[Vector2]:
 	var world: Array[Vector2] = []
 	for tile in path:
-		world.append(_city.map.tile_to_world(tile))
+		world.append(_roomiest_point(tile) if _plan_accepted.has(tile)
+				else _city.map.tile_to_world(tile))
 	return world
+
+## How far off a tile's centre `_roomiest_point()` looks, in each axis — short of half a tile, so
+## the point stays on the tile the plan chose — and the step it looks in.
+const _NUDGE_REACH := 15.0
+const _NUDGE_STEP := 2.5
+
+## The point of `tile` farthest from every standing body's surface and every wall beside it, or
+## its centre where nothing is near. **A plan walks tile centres, and a gap can fit her only off
+## them**: two vans at the kerb either side of a two-lane road leave 48px between their sides, 10px
+## either side of her 28px body if she walks the line between the lanes, and 8px short of her
+## radius on either lane's centre, so walking a lane she scrapes one van and stalls against it.
+## Asked only of a tile the plan crosses in a body's clearance; everywhere else a tile's centre is
+## already at least `_BODY_CLEARANCE` from every body.
+func _roomiest_point(tile: Vector2i) -> Vector2:
+	var centre := _city.map.tile_to_world(tile)
+	var pieces := _body_pieces_near(centre, Tuning.TILE_SIZE * 3.0)
+	if pieces.is_empty():
+		return centre
+	var walls: Array[Vector2i] = []
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var near := tile + Vector2i(dx, dy)
+			if near != tile and not _city.map.is_open(near):
+				walls.append(near)
+	var best := centre
+	var best_room := _room_at(centre, pieces, walls)
+	var steps := roundi(_NUDGE_REACH / _NUDGE_STEP)
+	for sy in range(-steps, steps + 1):
+		for sx in range(-steps, steps + 1):
+			var point := centre + Vector2(sx, sy) * _NUDGE_STEP
+			var room := _room_at(point, pieces, walls)
+			if room > best_room + 0.01:
+				best = point
+				best_room = room
+	return best
+
+## How far `point` is from the nearest of `pieces`' surfaces and `walls`' squares.
+func _room_at(point: Vector2, pieces: Array, walls: Array[Vector2i]) -> float:
+	var room := INF
+	for piece: Array in pieces:
+		var shape: GroundShape = piece[1]
+		var local := (point - (piece[0] as Vector2)).rotated(-float(piece[2]))
+		room = minf(room, shape.distance_to_spine(local) - shape.radius)
+	for wall in walls:
+		room = minf(room, _tile_nearest_distance(wall, point))
+	return room
+
+## Every solid piece of a standing body within `radius` of `point`, as `[centre, shape, angle]` —
+## the live instances `_body_clear_tiles()` keeps clear of, and the placed plans not yet built,
+## measured the same way.
+func _body_pieces_near(point: Vector2, radius: float) -> Array:
+	var pieces: Array = []
+	for instance: EventInstance in _city.events.instances():
+		if _is_standing_body(instance):
+			_add_pieces_near(pieces, instance.solid_part_centres(), instance.solid_part_shapes(),
+					instance.solid_axis(), point, radius)
+	for plan: EventScheduler.Planned in _city.events.plans():
+		if plan.live != null or not plan.is_placed() or plan.spent or not _is_planned_body(plan.def):
+			continue
+		if _planned_position(plan).distance_to(point) > radius + plan.def.shape.reach() * 2.0:
+			continue
+		var parts := _planned_parts(plan)
+		_add_pieces_near(pieces, parts[0], parts[1], parts[2], point, radius)
+	return pieces
+
+func _add_pieces_near(pieces: Array, centres: PackedVector2Array, shapes: Array[GroundShape],
+		axis: Vector2, point: Vector2, radius: float) -> void:
+	for k in centres.size():
+		var shape := shapes[k]
+		if centres[k].distance_to(point) - shape.reach() > radius:
+			continue
+		var angle := axis.angle() if shape.half_length > 0.0 else 0.0
+		pieces.append([centres[k], shape, angle])
 
 func _begin_leg(target_world: Vector2) -> void:
 	_leg_avoid = {}
