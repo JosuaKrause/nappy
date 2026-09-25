@@ -188,12 +188,23 @@ fi
 # unchanged: the same `exec` it always was, vsync on, no supervision, no limit.
 if rig_flag_present "$@"; then
     KILL_AFTER="$(rig_kill_after_seconds "$@")"
+    # M198: same as tools/shot.sh -- note whoever was frontmost before Godot's own launch below,
+    # so a watcher can hand focus straight back the moment macOS makes Godot the active app; see
+    # lib_dev_flags.sh's own doc comment above rig_focus_note for why launch-side alone cannot
+    # stop the jump, and rig_focus_guard_available for where this is a no-op.
+    FOCUS_NOTED="$(rig_focus_note)"
     "$GODOT" --path "$PROJECT_DIR" --disable-vsync -- "$@" &
     GODOT_PID=$!
+    FOCUS_WATCHER_PID="$(rig_focus_watch_start "$GODOT_PID" "$FOCUS_NOTED")"
+    # Dies with the rig on every exit path: stopped explicitly once Godot is done with, and this
+    # trap catches every other way this script itself stops running first (a kill from outside
+    # included).
+    trap 'rig_focus_watch_stop "$FOCUS_WATCHER_PID"' EXIT
     if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
         echo "run.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
         exit 1
     fi
+    rig_focus_watch_stop "$FOCUS_WATCHER_PID"
     wait "$GODOT_PID"
 else
     exec "$GODOT" --path "$PROJECT_DIR" -- "$@"

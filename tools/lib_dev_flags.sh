@@ -275,3 +275,102 @@ wait_or_kill() {
     rm -f "$marker"
     return 0
 }
+
+# ----------------------------------------------------- macOS: a rig hands focus straight back ---
+# M198 (PLAYTEST-133, statements 6 and 7): M195's `DisplayServer.WINDOW_FLAG_NO_FOCUS` keeps keys
+# out of a rig's window, but macOS still makes the app itself frontmost once Godot's own AppKit
+# startup calls `activateIgnoringOtherApps:` -- an explicit runtime call the process makes on its
+# own once its window is ready, not something a launch flag mediates. A background launch (`open
+# -g`, measured on the closed PR #357) only delays that call, it does not gate it, and nothing
+# reachable from this repo does either -- see #357's own measurement (`lsappinfo front` frontmost
+# for 34 of 38 samples of a walking rig) before trying to revive that path.
+#
+# So this does not try to stop the jump; it undoes it. `rig_focus_note()` (called *before* Godot
+# launches) prints whichever app was frontmost then, and `rig_focus_watch_start` arms a background
+# watcher that polls `lsappinfo front` and reactivates that app the moment the rig's own Godot
+# (matched by pid, never by name, so another agent's own Godot capture is never mistaken for this
+# one) becomes frontmost -- for as long as the rig runs. Only a switch *to* this rig's Godot is
+# undone: if the player moves to a third app on purpose, this leaves them there, since the watcher
+# only ever acts when the frontmost pid is the one it was told to watch.
+#
+# **No `osascript` and no Apple Events** -- `open -a`/`-b` is a LaunchServices activation request,
+# the one mechanism the player agreed to; nothing here sends an event into another app or scripts
+# it. `rig_focus_guard_available` gates the whole thing off anywhere it cannot work cleanly: off
+# Darwin, and off a checkout with no `lsappinfo` or `open` on PATH (both are stock in every macOS
+# install actually able to run Godot windowed, so this is a defensive floor, not a real fork). A
+# non-macOS platform and a person's own flagless `run.sh` session are untouched either way -- this
+# is only ever reached from inside a rig's own launch, on macOS.
+
+# Whether this Mac can run the watcher below at all.
+rig_focus_guard_available() {
+    [[ "$(uname -s 2>/dev/null)" == "Darwin" ]] || return 1
+    command -v lsappinfo >/dev/null 2>&1 || return 1
+    command -v open >/dev/null 2>&1 || return 1
+    return 0
+}
+
+# Prints the `.app` bundle path of whichever app is frontmost right now, or prints nothing at all
+# when there is nothing sensible to note: no frontmost ASN (`lsappinfo front` empty, or the info
+# lookup on it failed), or the frontmost app is already the same `.app` bundle `$GODOT` launches --
+# this rig's own Godot has not launched yet at the point this is called, so a bundle-path match
+# here can only mean a Godot window some *other* agent is already running, and handing focus back
+# to a Godot window is not what "back" means. Called once, before Godot launches.
+rig_focus_note() {
+    rig_focus_guard_available || return 0
+    local asn path
+    asn="$(lsappinfo front 2>/dev/null)"
+    [[ -n "$asn" ]] || return 0
+    path="$(lsappinfo info -only bundlePath "$asn" 2>/dev/null \
+        | sed -n 's/^"LSBundlePath"="\(.*\)"$/\1/p')"
+    [[ -n "$path" ]] || return 0
+    local godot_app="${GODOT%/Contents/MacOS/*}"
+    [[ "$path" == "$godot_app" ]] && return 0
+    printf '%s\n' "$path"
+}
+
+# How often the watcher below polls `lsappinfo front` while the rig runs -- each poll is two
+# short-lived `lsappinfo` calls, so this trades flicker length against how many of those a capture
+# spends. 0.1s is the fast end of the brief's suggested 0.1-0.2s range; see this PR's own report
+# for the sample counts measured against it.
+RIG_FOCUS_POLL_SECONDS="0.1"
+
+# The watcher loop itself -- not called directly, only from rig_focus_watch_start's own background
+# job below. Exits on its own once $1 (the rig's Godot pid) is no longer alive, which is what lets
+# the watcher "die with the rig" even on a path that skips rig_focus_watch_stop.
+_rig_focus_watch_loop() {
+    local godot_pid="$1" noted_app="$2"
+    while kill -0 "$godot_pid" 2>/dev/null; do
+        local asn pid
+        asn="$(lsappinfo front 2>/dev/null)"
+        if [[ -n "$asn" ]]; then
+            pid="$(lsappinfo info -only pid "$asn" 2>/dev/null | sed -n 's/^"pid"=//p')"
+            if [[ "$pid" == "$godot_pid" ]]; then
+                open -a "$noted_app" >/dev/null 2>&1 || true
+            fi
+        fi
+        sleep "$RIG_FOCUS_POLL_SECONDS"
+    done
+}
+
+# Starts the watcher above as a background job watching pid $1 for as long as it lives, ready to
+# reactivate $2 (a `.app` bundle path, `rig_focus_note`'s own output) whenever it becomes
+# frontmost. Prints the watcher's own pid so the caller can stop it early with
+# rig_focus_watch_stop, or prints nothing and starts nothing at all when $2 is empty (nothing was
+# noted, see rig_focus_note) or the guard is unavailable -- so a caller that always calls this and
+# always passes the result to rig_focus_watch_stop needs no platform check of its own.
+rig_focus_watch_start() {
+    local godot_pid="$1" noted_app="$2"
+    [[ -n "$noted_app" ]] || return 0
+    rig_focus_guard_available || return 0
+    ( _rig_focus_watch_loop "$godot_pid" "$noted_app" ) &
+    printf '%s\n' "$!"
+}
+
+# Stops a watcher started above. Safe to call with an empty argument (nothing was started) and
+# safe to call more than once.
+rig_focus_watch_stop() {
+    local watcher_pid="$1"
+    [[ -n "$watcher_pid" ]] || return 0
+    kill "$watcher_pid" 2>/dev/null || true
+    wait "$watcher_pid" 2>/dev/null || true
+}
