@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_uses_save_is_false_under_the_headless_runner(t)
 	_test_debug_run_uses_save_policy(t)
 	_test_no_save_query_parsing(t)
+	_test_web_debug_flag_used_query_parsing(t)
 	_test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t)
 
 	_test_round_trip_field_list_matches_the_property_list(t)
@@ -92,6 +93,24 @@ func _test_no_save_query_parsing(t) -> void:
 	t.check(DevFlags._no_save_from_query("?nosave=1"), "?nosave=1 turns it off")
 	t.check(DevFlags._no_save_from_query("?seed=1&nosave=1&day=2"),
 			"the parameter is found among other URL parameters")
+
+## M193, "the live page's ?debug=1 reaches the debug flags": `uses_save()`'s release branch is
+## `not DevFlags.web_debug_flag_used()` rather than an unconditional `true` now, so a visitor who
+## tries `?day=12` never touches the save the page might otherwise share with a real player —
+## `_web_debug_flag_used_in_query()` is the pure half of that predicate a test can drive without a
+## live page. The `?debug=1`-alone and empty-query cases pin that opening the bundle is not the
+## same as having used anything in it, which is the property that keeps an ordinary release page's
+## own save exactly as it always was.
+func _test_web_debug_flag_used_query_parsing(t) -> void:
+	t.check(not DevFlags._web_debug_flag_used_in_query(""), "an absent query used nothing")
+	t.check(not DevFlags._web_debug_flag_used_in_query("?debug=1"),
+		"?debug=1 alone opens the bundle without having used anything in it")
+	t.check(DevFlags._web_debug_flag_used_in_query("?debug=1&day=12"),
+		"?day=12 is a use of the bundle's own day parameter")
+	t.check(DevFlags._web_debug_flag_used_in_query("?debug=1&invincible=1"),
+		"and so is ?invincible=1")
+	t.check(not DevFlags._web_debug_flag_used_in_query("?debug=1&seed=1234"),
+		"?seed=, the older M133 bundle, is not part of this one")
 
 ## The gated entry points `main.gd` actually calls (`write()`/`try_resume()`, as opposed to the
 ## `_write_now()`/`_read_now()` this whole suite otherwise uses to reach past the gate) refuse

@@ -73,13 +73,20 @@ static var _uses_save_override: Variant = null
 ## answers "no" — the first because it asked to, the second because nothing here can tell a bare
 ## `tools/run.sh` apart from the player's own desktop build otherwise, and the flag exists exactly
 ## so an agent can ask for one anyway.
+##
+## **A release page keeps its ordinary save too, unless it actually used one of `DevFlags.
+## live_debug_requested()`'s own parameters.** *(docs/TODO.md, M193, "the live page's ?debug=1
+## reaches the debug flags": "a visitor who tries `?day=12` does not lose their own day 3".)*
+## `DevFlags.web_debug_flag_used()` answers that — `false` for the ordinary release page everyone
+## else gets, and for `?debug=1` alone with none of the bundle's own parameters named, since
+## neither one is a run built any differently from the one every other visitor gets.
 static func uses_save() -> bool:
 	if _uses_save_override != null:
 		return bool(_uses_save_override)
 	if DisplayServer.get_name() == "headless":
 		return false
 	if not DevFlags.enabled():
-		return true
+		return not DevFlags.web_debug_flag_used()
 	return _debug_run_uses_save(DevFlags.active_args(), DevFlags.no_save())
 
 ## The one piece of `uses_save()`'s policy that does not depend on the live environment — pulled
