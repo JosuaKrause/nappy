@@ -357,10 +357,15 @@ the one trace a happening leaves that has no picture yet.
 | 13 | Walk into a roadblock's band — any of them · built | A column on the main road · built |
 | 14 | The power station's front door · arrow · built | The blackout · built |
 
-- [ ] **The neighbor's door is sealed, on screen.** "The neighbor's door is sealed the next
-      morning either way" is built as the day 11 brief's line and the morning figure gone, with
-      no picture of a sealed door; where she would see it — her building's street door, or a
-      door inside — is not yet decided.
+- [ ] **The neighbor's door is sealed, on screen, on her building's front**
+      ([PLAYTEST-131](playtests/PLAYTEST-131.md)). "The neighbor's door is sealed the next
+      morning either way" is built as the day 11 brief's line and the morning figure gone. From
+      day 11 on, her home block's front shows the seal where she walks out every morning; nothing
+      inside the building shows it, since the escape draws only the back of a door. She still
+      leaves through that street door, so it cannot read as shut. Two ways are drawn, SVG first,
+      and go to the player as pictures before either is installed: the street door with an
+      official seal notice pasted across it and its tape cut where the residents still pass,
+      or the neighbor's window on the front boarded over with the same notice.
 
 ---
 
