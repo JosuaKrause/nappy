@@ -102,7 +102,7 @@ going quietly stale.
 ### A rig's window and its wall-clock limit
 
 A run carrying `--screenshot`, `--walk`, `--flee`, `--press`, `--tap` or `--route` — a rig, rather
-than a person at the keyboard — gets three things neither a flagless `tools/run.sh` session nor one
+than a person at the keyboard — gets four things neither a flagless `tools/run.sh` session nor one
 carrying only flags like `--seed`/`--day` gets:
 
 - **Its window never takes the OS focus**, so it never interrupts whatever else is on screen.
@@ -114,6 +114,14 @@ carrying only flags like `--seed`/`--day` gets:
   kill the process from outside if it is somehow still alive a further grace period past that —
   loudly, on stderr, with a non-zero exit. The three numbers (`src/dev/dev_flags.gd`'s own
   `RIG_QUIT_SECONDS`): a 15s margin, a 240s ceiling, and a 15s kill grace on top.
+- **On macOS it hands focus straight back.** The window flag above keeps keys out, but macOS still
+  makes Godot itself the active app once its own startup calls `activateIgnoringOtherApps:`, which
+  nothing launch-side can gate. `tools/shot.sh` and a rig-flagged `tools/run.sh` note whichever app
+  was frontmost right before Godot launches and, for as long as the rig runs, a background watcher
+  reactivates that app the instant Godot becomes frontmost — so a capture costs a flicker rather
+  than the player's own focus. Only a switch *to* this rig's own Godot is undone: moving to a third
+  app on purpose is left alone. See `tools/lib_dev_flags.sh`'s own `rig_focus_note` and
+  `rig_focus_watch_start` for the mechanism.
 
 `--route` cannot be combined with `--screenshot`: `RouteRig` quits the process itself the moment she
 arrives, which can beat `--after`'s own timer, so the combination is refused before Godot ever

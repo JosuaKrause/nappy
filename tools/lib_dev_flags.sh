@@ -358,11 +358,21 @@ _rig_focus_watch_loop() {
 # rig_focus_watch_stop, or prints nothing and starts nothing at all when $2 is empty (nothing was
 # noted, see rig_focus_note) or the guard is unavailable -- so a caller that always calls this and
 # always passes the result to rig_focus_watch_stop needs no platform check of its own.
+#
+# **The watcher's own stdout and stderr are redirected to /dev/null, not inherited.** A caller
+# always invokes this through `x="$(rig_focus_watch_start ...)"` to capture the printed pid, and
+# bash does not consider that command substitution finished -- however long ago its own subshell
+# printed the pid and exited -- until every process holding its write end of the capture pipe has
+# closed it. Left inheriting that pipe, the watcher (which lives for the whole rig, not an instant)
+# would hold it open for as long as it runs, so `x="$(...)"` would block until the rig's own Godot
+# exits -- which is exactly what `wait_or_kill`'s external kill exists to catch, so the caller
+# would never even reach the call that arms it. Found by a live `--after`-ignoring stub: the
+# outside kill never fired, because the script was still stuck assigning `FOCUS_WATCHER_PID`.
 rig_focus_watch_start() {
     local godot_pid="$1" noted_app="$2"
     [[ -n "$noted_app" ]] || return 0
     rig_focus_guard_available || return 0
-    ( _rig_focus_watch_loop "$godot_pid" "$noted_app" ) &
+    ( _rig_focus_watch_loop "$godot_pid" "$noted_app" ) >/dev/null 2>&1 &
     printf '%s\n' "$!"
 }
 
