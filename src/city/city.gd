@@ -126,6 +126,21 @@ var _street_tree_pits := {}
 
 ## Region name of the door's own picture in the "decoration" `AtlasLibrary` group.
 const DOOR_TEXTURE := &"props/door"
+## Region name of her street door once day 10's raid has sealed it — `art/buildings/
+## home_door_sealed.svg`, the same 26×34 canvas and feet anchor as `DOOR_TEXTURE` (`docs/
+## GRAPHICS.md`), so swapping `_home_door`'s texture needs no change to its offset or position.
+const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
+## `GameState.scars` id for the sealed street door, recorded at the doorstep by
+## `ResistanceHappenings._maybe_raid()` once the raid actually arrives. No `since_day` comparison
+## is needed the way `EventScheduler.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
+## `_sync_home_door()` both run after `GameState.begin_day()`'s dawn photograph, so the scar's mere
+## presence already answers "sealed as of this dawn" for every day after the one it was added on,
+## and the moment it happens on its own day is `seal_home_door()`'s, called live.
+const SEALED_DOOR_SCAR := "sealed_door"
+## The street door sprite `_spawn_home()` built, kept so `seal_home_door()` can swap its texture
+## live, the moment day 10's raid actually arrives, instead of waiting for a day that never
+## rebuilds it — `build()` runs once for the whole run (see the class doc).
+var _home_door: Sprite2D
 
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
@@ -306,21 +321,50 @@ func total_excitement_at(world_position: Vector2) -> float:
 ## passes in front of it the way she passes in front of any other wall.
 func _spawn_home() -> void:
 	var stoop := map.tile_rect_to_world(map.home_rect)
-	var door := Sprite2D.new()
-	door.texture = AtlasLibrary.region(DOOR_TEXTURE)
+	_home_door = Sprite2D.new()
+	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
+	# the raid — `_door_texture_for_today()` reads `GameState.scars`, already loaded by the time
+	# `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
+	# moment the raid actually arrives.
+	_home_door.texture = AtlasLibrary.region(_door_texture_for_today())
 	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
 	# the notch and the art is offset upward from there. Putting the node at the sprite's
 	# top instead makes y-sort compare the wrong edge, and the player walks in front of a
 	# door she is standing north of. (Buildings cannot occlude it: they are a layer of their own,
 	# underneath the entities.)
-	door.centered = false
+	_home_door.centered = false
+	# Both door pictures share one canvas (`SEALED_DOOR_TEXTURE`'s own doc), so this size and
+	# offset stay correct whichever one is showing, today or after a live swap.
 	var door_size := AtlasLibrary.native_size(DOOR_TEXTURE)
-	door.offset = Vector2(-door_size.x * 0.5, -door_size.y)
+	_home_door.offset = Vector2(-door_size.x * 0.5, -door_size.y)
 	# Same centre-x `_door_world_x_range()` hands the building behind it, so the sprite and the
 	# blanked window column can never disagree about where the door actually is.
 	var x_range := _door_world_x_range()
-	door.position = Vector2((x_range.x + x_range.y) * 0.5, stoop.position.y)
-	_entities.add_child(door)
+	_home_door.position = Vector2((x_range.x + x_range.y) * 0.5, stoop.position.y)
+	_entities.add_child(_home_door)
+
+## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
+func _door_texture_for_today() -> StringName:
+	for scar in GameState.scars:
+		if String(scar["id"]) == SEALED_DOOR_SCAR:
+			return SEALED_DOOR_TEXTURE
+	return DOOR_TEXTURE
+
+## Puts the street door where `GameState.scars` says it belongs, for the dawn `start_day()`
+## already runs every day: sealed from day 11 on and after a save/load, ordinary again the dawn a
+## lost day 10 gives its own scar back (`GameState._give_back_what_the_attempt_spent()`), since
+## `_spawn_home()` itself only ever runs once, at boot, for the whole run.
+func _sync_home_door() -> void:
+	if _home_door:
+		_home_door.texture = AtlasLibrary.region(_door_texture_for_today())
+
+## Swaps her street door to the sealed picture, live, the moment day 10's raid actually arrives
+## (`ResistanceHappenings._maybe_raid()`, while she is out of sight of it) — the one day
+## `_sync_home_door()`'s own dawn read is too early for, since the raid has not happened yet when
+## it runs.
+func seal_home_door() -> void:
+	if _home_door:
+		_home_door.texture = AtlasLibrary.region(SEALED_DOOR_TEXTURE)
 
 ## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
 ## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
@@ -331,6 +375,50 @@ func _door_world_x_range() -> Vector2:
 	var centre_x := map.tile_rect_to_world(map.home_rect).get_center().x
 	var half_width := AtlasLibrary.native_size(DOOR_TEXTURE).x * 0.5
 	return Vector2(centre_x - half_width, centre_x + half_width)
+
+## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
+## 3, ground floor is row 0 — nearest above her own door, on the one home-block `Building` the
+## door notch actually stands in front of (`_home_door_building()`). Idempotent, so
+## `ResistanceHappenings.start_day()` calling it every day from day 11 on costs nothing once it is
+## set. A front with fewer than four wall rows has no third floor to put it on; that front's own
+## topmost row stands in for it instead, until M185 fixes her building's height.
+func board_neighbor_window() -> void:
+	var building := _home_door_building()
+	if not building or building.neighbor_window_col >= 0:
+		return
+	var door_centre_x := (_door_world_x_range().x + _door_world_x_range().y) * 0.5
+	var best_col := 0
+	var best_distance := INF
+	for col in building.columns():
+		var distance := absf(building.column_centre_x(col) - door_centre_x)
+		if distance < best_distance:
+			best_distance = distance
+			best_col = col
+	building.neighbor_window_col = best_col
+	var row := building.neighbor_window_row()
+	if building.wall_tiles() < 3:
+		Telemetry.note("contact",
+				("the neighbor's window is boarded at column %d, row %d — the front's own topmost "
+				+ "row, %d wall row(s) short of a third floor")
+				% [best_col, row, 3 - building.wall_tiles()])
+	else:
+		Telemetry.note("contact",
+				"the neighbor's window is boarded at column %d, row %d (the third floor)"
+				% [best_col, row])
+
+## The one home-block `Building` the door's own world-space span actually stands in front of —
+## every lot on the home block carries `is_home_building`, but the door notch's columns are cut
+## out of every other one (`_spawn_buildings()`'s own doc), so only this lot's world footprint
+## overlaps `_door_world_x_range()`.
+func _home_door_building() -> Building:
+	var x_range := _door_world_x_range()
+	for building in _buildings:
+		if not building.is_home_building:
+			continue
+		var world := map.tile_rect_to_world(building.lot)
+		if world.position.x < x_range.y and world.end.x > x_range.x:
+			return building
+	return null
 
 ## `StreetTrees.planted()`'s own positions, drawn as `Prop`s once for the whole run — never
 ## rebuilt in `_dress_blocks()`, unlike a park's trees, because a street tree belongs to the
@@ -538,6 +626,9 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
+	# After `GameState.begin_day()`'s own dawn photograph (`main.gd` calls this after that), so a
+	# lost day 10's scar is already given back by the time this reads `GameState.scars`.
+	_sync_home_door()
 	_paint_ground()
 	_decals.set_placed(Litter.placed(map, day))
 	_dress_blocks(state)

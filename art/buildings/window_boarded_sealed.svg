@@ -1,0 +1,27 @@
+<!-- The neighbor's window on her home block's front after the raid: three rough planks nailed
+     across the opening onto the brick either side, and the regime's seal notice pasted across
+     them. An overlay on a window cell, not a window: the same 32x32 cell and registration as
+     window_dark.svg, transparent everywhere else, drawn over whichever window picture the cell
+     already has, so the building's own lintel and sill stay and one drawing serves the plain,
+     tall sash and shuttered styles alike. The planks span y 8.2 to 23.6, overhanging every
+     style's frame onto the brick: the whole plain casement's glass, clear of its lintel and
+     sill, and on a tall sash a sliver of dark glass still shows above and below them. The notice is the posters' own paper: pale sheet, dark
+     header bar, gray print lines and the red stamp as home_door_sealed.svg draws it (a ring with
+     a solid centre), no letters. `City.board_neighbor_window()` sets `Building.
+     neighbor_window_col` to the cell this draws over, from day 11 on for the rest of the run. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Three planks, each a little askew, their shadow on the glass and brick below them. -->
+  <path d="M6.4 13.4 L25.6 12.6 L25.6 13.6 L6.4 14.4 Z M6.4 18.8 L25.6 19.4 L25.6 20.4 L6.4 19.8 Z M6.2 23.6 L25.8 23.2 L25.8 24.2 L6.2 24.4 Z" fill="#221f28" fill-opacity="0.35" stroke="none"/>
+  <path d="M5.8 9 L25.8 8.2 L25.9 12.4 L5.9 13.2 Z" fill="#a38c6a"/>
+  <path d="M6.2 14.2 L25.6 14.8 L25.5 18.8 L6.1 18.2 Z" fill="#94805f"/>
+  <path d="M5.9 19.4 L25.8 19 L25.8 23.2 L5.9 23.6 Z" fill="#a08966"/>
+  <path d="M6.8 10.6 L24.8 9.9 M7 16.3 L24.6 16.8 M6.8 21.2 L24.8 20.9" fill="none" stroke="#6f5f4a" stroke-width="0.4" stroke-opacity="0.8"/>
+  <path d="M6.3 9.4 L25.4 8.6 M6.6 14.6 L25.2 15.2 M6.3 19.8 L25.4 19.4" fill="none" stroke="#c9b691" stroke-width="0.5" stroke-opacity="0.8"/>
+  <path d="M7.4 11.1 h0.1 M24.4 10.4 h0.1 M7.6 16.3 h0.1 M24.2 16.9 h0.1 M7.4 21.5 h0.1 M24.4 21.1 h0.1" fill="none" stroke="#2a2630" stroke-width="1.1"/>
+  <!-- The notice, pasted across the planks. -->
+  <path d="M12 10.6 H20 V21.4 H12 Z" fill="#ebe4d2" stroke="#3b3034" stroke-width="0.8" stroke-linejoin="miter"/>
+  <path d="M13.1 11.7 H18.9 V13 H13.1 Z" fill="#2c2a30" stroke="none"/>
+  <path d="M13.1 14.5 H17.8 M13.1 16.2 H16.4 M13.1 17.9 H15" fill="none" stroke="#8f8a80" stroke-width="0.7" stroke-linecap="butt"/>
+  <circle cx="17.4" cy="18.9" r="1.6" fill="none" stroke="#a33b34" stroke-width="0.7"/>
+  <circle cx="17.4" cy="18.9" r="0.7" fill="#a33b34" stroke="none"/>
+</svg>
