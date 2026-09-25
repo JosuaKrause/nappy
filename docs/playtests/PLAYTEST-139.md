@@ -48,3 +48,13 @@ sound and framing.
 9. **Some on-screen text** is allowed.
 10. **The game's own resolution**, and **the game's audio is recorded**, so the trailer has sound
     as soon as the game does.
+
+## Then, on the route rig
+
+> "the automated walking rig -- can we add an option to record there, too? so I can create videos
+> of those runs and review them"
+
+> "for you a number is enough to judge them but I want to also be able to see some runs myself"
+
+11. **A `--route` rig run can be recorded as a video** the same way, for the player to review;
+    nothing it produces is checked in. Queued as M208, built with the trailer's recording.
