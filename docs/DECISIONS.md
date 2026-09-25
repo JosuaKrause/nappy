@@ -1,5 +1,61 @@
 # Decisions
 
+## M202 — A rig's own presses reach the game · built 2026-09-25
+
+*(Found building M137, the trap comes to her: a `--press snapshot_burst` capture recorded
+nothing.)*
+
+**Why they were lost.** M195's lockout has `Main._input()` mark every event handled while
+`_rig_locked_out`, and `--press` is itself a rig flag, so the lockout was on for every run that
+pressed anything and swallowed the rig's own presses with the real ones.
+
+**What is built.** `AutoScreenshot._tap()` sets `event.device = InputEvent.DEVICE_ID_EMULATION`
+(the engine's reserved `-1`) on every event it injects, action form and `key:<name>` form alike,
+and `Main._input()` lets through only what `_is_the_rigs_own_press()` recognises by that tag;
+`Input.parse_input_event()` carries the device through both input phases. Rejected: letting a
+whole event class through, since a `key:` press is an `InputEventKey` like a real key and a real
+`InputEventAction` can reach a window too. `--tap`'s touch event was never lost, because every
+node's `_input()` runs before any handled mark stops the next phase. `tests/test_rig_press.gd`
+holds both halves: a real key or pointer press is swallowed while locked out, and the rig's own
+presses of both forms reach the unhandled phase. One windowed `--press snapshot_burst 2` wrote a
+36-frame burst.
+
+## M129 — A path through the city never has to cost · the catalogue sees the seals and the wall, built 2026-09-25
+
+**What is built.** `SealPlanner.plan_day` and `RegionPlanner.plan_day` run before
+`EventScheduler.build_day`, so their bodies were never in `already`, the set the three candidate
+rules (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`,
+`_leaves_a_pacing_beats_opening`) check a catalogue row against. `build_day`'s `standing` argument
+(the seals and the region wall, passed by `EventManager.start_day`) now reaches those rules through
+a per-candidate context of `already` plus `standing`; `_room_around`'s spacing still reads
+`already` alone, so density stays a question about the catalogue's own rows. `tests/test_seals.gd`,
+`_test_the_catalogue_sees_a_seal_at_a_route_junction`, plans days as `start_day` does and asks every
+catalogue row the junction question against the whole day: 8 failures against the old scheduler
+(`cafe_tables`, `ice_cream_van`, `busker`, `market_stall`, `leaf_blower` beside a seal or the wall),
+none with it.
+
+**Two probe bugs, and most of the headline was theirs.** The probe passed no `doors` and no
+`standing` to `build_day`, so `_clear_of_the_doors` was never exercised in the measurement, and it
+missed one of `_a_line_has_to_avoid()`'s five exemptions, a pursuer, so it blamed `alley_robbery`
+and `charging_dog`. Six seeds, one day per act:
+
+| scheduler | probe `doors` | probe `standing` | zero-cost-line routes |
+|---|---|---|---|
+| before | empty | empty | 208/299 (69.6%) |
+| before | real | empty | 236/299 (78.9%) |
+| before | empty | real | 214/299 (71.6%) |
+| before | real | real | 236/299 (78.9%) |
+| after | real | real | 239/299 (79.9%) |
+
+So the doors wiring accounts for 28 of the 31 routes, and the scheduler change for the last 3.
+
+**Paths checked and left alone:** `_ensure_one_usable_park` and `_ensure_the_city_is_still_
+walkable` only remove, the city rule's one monotonic exception, so they cannot close a junction;
+masts are exempt from the guarantee; `WalkSiting` already receives the day's full plans; scars
+reproduce an earlier day's placement and cost a route by design. What stays open — the wall and
+seals against each other, a carriageway roadblock, the calm-ground pass and the resistance's
+`spawn_extra` sites — is in `TODO.md` under M129.
+
 ## M200 — A region wall has a guard on each sidewalk · built 2026-09-25
 
 *([PLAYTEST-135](playtests/PLAYTEST-135.md): "maybe four? one on each sidewalk. would that cover
