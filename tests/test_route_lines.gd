@@ -16,6 +16,7 @@ const DAYS := [1, 5, 9, 14]
 func run(t) -> void:
 	_test_parse_layers_accepts_five_and_still_rejects_four(t)
 	_test_no_route_lines_node_exists_outside_a_debug_build(t)
+	_test_the_readout_flag_alone_builds_the_node_off(t)
 	_test_a_debug_build_builds_the_node_off_by_default(t)
 	_test_key_five_resolves_to_the_route_lines_layer(t)
 	_test_key_five_toggles_visibility(t)
@@ -42,6 +43,23 @@ func _test_no_route_lines_node_exists_outside_a_debug_build(t) -> void:
 	main._add_route_lines()
 	t.check(main._route_lines == null,
 			"a release build never builds the route-lines node, not merely leaves it invisible")
+	main._city.free()
+	main.free()
+
+## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone builds the node —
+## the same shape `test_debug_layers.gd`'s own readout-flag-alone case pins — since a release
+## page's own `?debug=1&layers=5` needs somewhere to draw into, still off until `?layers=` names it.
+func _test_the_readout_flag_alone_builds_the_node_off(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._debug = false
+	main._readout_requested = true
+	main._city = City.new()
+	main._add_route_lines()
+	t.check(main._route_lines != null,
+			"?debug=1 builds the route-lines node so a release page's own ?layers=5 has somewhere "
+			+ "to draw")
+	t.check(not main._route_lines.visible, "and it starts off, since ?layers= itself named none")
+	main._route_lines.free()
 	main._city.free()
 	main.free()
 

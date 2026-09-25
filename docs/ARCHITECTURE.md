@@ -235,25 +235,37 @@ windowed, saves the viewport after N frames and quits.
 ### Dev flags and release builds
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
-`--overview`, `--day-length`, `--ending`, `--controls`, `--layers` and `--start-escape` (also
-reachable as `?escape=1`). `--start-escape` takes an optional value — `stairwell:left`,
+`--overview`, `--day-length`, `--ending`, `--controls`, `--layers`, `--blackout` and
+`--start-escape` on the command line, gated behind `OS.is_debug_build()` (`DevFlags.enabled()`) —
+`false` for an exported release template, so none of this furniture, nor the snapshot key
+`main.gd` reads directly, is reachable from a public build's command line, which a visitor has no
+way to set regardless. `--start-escape` takes an optional value — `stairwell:left`,
 `stairwell:right`, `lobby`, `basement` or `floor:2`/`floor:1` — that teleports straight to that
 part of the escape scene's one building-wide map instead of starting at her own door on the third
 floor, or `city`, which is the one value that is not a part of the building: it boots the escape's
 second section on its own, with no building built at all. `main.escape_part_for()` maps the word,
 with the command line taken out of it so the mapping is testable.
-`src/dev/auto_screenshot.gd`
-parses `--screenshot` and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`,
-`--tap`) itself, and gates its own entry point the same way rather than moving that parsing out.
-Both read `OS.is_debug_build()`,
-which is `false` for an exported release template, so none of this furniture — nor the snapshot
-key `main.gd` reads directly — can be reached from a public build regardless of what is on the
-command line. `--no-telemetry` is not part of this: it is a documented player-facing opt-out (see
-docs/TELEMETRY.md), not developer furniture, and stays live in every build. `main.gd`'s own
-right-hand readout (seed, frame rate, the meter's incoming/decay/net arithmetic) is gated the same
-way, into a member (`_debug`) rather than asked of the OS inside `_process()` every frame, so the
-string is never assembled outside a debug build rather than merely hidden behind an invisible
-label.
+
+**A named subset of that same list also answers a release page's own query string, behind
+`?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
+flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
+invincible, etc.) so debugging the live build is easier".)* `DevFlags.live_debug_requested()` —
+`enabled()` or `readout_requested()` — is the gate: `?day=`, `?invincible=1`, `?layers=`,
+`?controls=`, `?escape=1`, `?meters=`, `?daylength=` and `?ending=`/`?blackout=1` each read it.
+`--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
+drives input, takes a picture or writes a file stay behind `enabled()` alone, with no release-page
+door at all. `GameSave.uses_save()` refuses the player's own save the moment a release page's
+query actually used one of the flags above (`DevFlags.web_debug_flag_used()`), the same way it
+already refuses a debug build's own argv.
+
+`src/dev/auto_screenshot.gd` parses `--screenshot` and the flags nested under it (`--after`,
+`--walk`, `--flee`, `--press`, `--tap`) itself, and gates its own entry point behind `enabled()`
+the same way rather than moving that parsing out — none of it has a release-page door. `--no-telemetry`
+is not part of this: it is a documented player-facing opt-out (see docs/TELEMETRY.md), not
+developer furniture, and stays live in every build. `main.gd`'s own right-hand readout (seed, frame
+rate, the meter's incoming/decay/net arithmetic) is gated on `_debug or _readout_requested` rather
+than asked of the OS inside `_process()` every frame, so the string is never assembled unless one
+of the two holds, rather than merely hidden behind an invisible label.
 
 ### The debug view
 
@@ -265,8 +277,9 @@ node rather than a fourth case on that class, draws a fourth: the day's own `Rou
 purple polyline per route. Each of those four, plus the readout, is a numbered layer (`1`-`5`, `4`
 is the readout) `main._unhandled_input()` toggles on raw keycodes rather than an input-map action,
 so `project.godot` carries no binding a release build could ever reach. `DevFlags.layers_override()`
-(`--layers 1,3` or the page's own `?layers=1,3,5`) sets which of the four non-readout layers start
-on; the readout defaults on regardless, so an unflagged debug run looks exactly as it always has.
+(`--layers 1,3` or the page's own `?layers=1,3,5`, also open to a release page behind `?debug=1`)
+sets which of the four non-readout layers start on; the readout defaults on regardless, so an
+unflagged debug run looks exactly as it always has.
 See docs/TELEMETRY.md, "The debug view", for the key mapping and what each layer draws.
 
 ### Quitting on the web
@@ -305,7 +318,10 @@ a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode from
 `ControlsMode.resolve()` (the command line's `--controls joystick|tap`, then the page's own
 `?controls=`, then `TAP`) before the title screen exists at all — the answer a rig gets if it skips
 the title (`--no-title`, a screenshot rig) — and `main._on_title_start()` overrides it the moment a
-player actually presses a button. Both `resolve()`'s own doors stay behind `DevFlags.enabled()`.
+player actually presses a button. `resolve()`'s command-line door stays behind `DevFlags.enabled()`;
+its query door stays behind `DevFlags.live_debug_requested()`, so a release page's own
+`?debug=1&controls=` reaches it too (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the
+debug flags").
 
 `TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and the two modes
 disagree about where a heading is measured from. `Mode.TAP` sets a direction toward its own world
