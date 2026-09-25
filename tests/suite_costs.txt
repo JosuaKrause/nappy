@@ -45,12 +45,13 @@ test_event_strides.gd 26
 test_event_views.gd 61
 test_events_catalogue.gd 17188
 test_events_chat.gd 120
+test_events_costs.gd 69857
 test_events_emission.gd 814
 test_events_fire.gd 27192
 test_events_placement.gd 39428
 test_events_pursuit.gd 13814
 test_events_scenery.gd 17484
-test_events_scheduler.gd 124272
+test_events_scheduler.gd 110175
 test_events_solid.gd 38446
 test_finale.gd 48671
 test_frame_graph.gd 12
