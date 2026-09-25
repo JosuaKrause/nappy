@@ -30,7 +30,7 @@ concurrency:
 
 env:
   GODOT_VERSION: 4.7.2
-  # tests/suite_costs.txt's longest row (test_events.gd) alone sets the floor no split can beat,
+  # tests/suite_costs.txt's longest row alone sets the floor no split can beat,
   # so this is a shard count that brings every other shard down to or under that same floor
   # rather than leaving it carrying idle neighbours -- `tools/test.sh --plan` at this count shows
   # the split. Fewer shards each carry more of the suites above that floor; more shards would only
