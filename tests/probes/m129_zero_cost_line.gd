@@ -83,6 +83,13 @@ extends RefCounted
 ##   pass and cross back without ever standing in its field, so it is left out of every reading
 ##   rather than read at its dawn position or over its whole route (PLAYTEST-71, *"the player can
 ##   cross the street, wait, then come back without ever getting excited by it"*).
+## - **A pursuer (`EventDef.pursues`) is never a block.** It follows her rather than sitting on a
+##   tile and pays the telegraph contract instead of the placement rules'
+##   (`EventScheduler._a_line_has_to_avoid()`'s own doc: *"a pursuer follows her rather than
+##   sitting on a tile, and pays the telegraph contract instead"*), so `alley_robbery` and
+##   `charging_dog` are left out here the same way a door is — no placement rule ever refuses
+##   ground on their account, so a line reading their dawn position as something to route around
+##   was blaming rows the rules were never asked about.
 ## - **A region door is never a block.** It costs by design (PLAYTEST-71, *"it costs by design"*),
 ##   so `checkpoint_hut` and `checkpoint_gate` are left out of every reading; the region wall's own
 ##   body is not a door and still counts.
@@ -340,8 +347,19 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	var no_one_shots: Array[String] = []
 	var no_scars: Array[Dictionary] = []
 	var no_calm: Array[Vector2i] = []
+	# `EventManager.start_day`'s own `doors` and `standing`: where today's door structure stands
+	# (kept clear of by `_clear_of_the_doors`) and what the seals and the region wall's own bodies
+	# already stand as, so `build_day`'s placement rules see the same ground the real day plans
+	# against rather than an empty city under them. Missing this was itself a probe/rule
+	# disagreement — see `DECISIONS.md`, M129, "which placements the three rules never see".
+	var doors := PackedVector2Array()
+	for body in region_plan.door_bodies:
+		doors.append(body.position)
+	var standing: Array[EventScheduler.Planned] = []
+	standing.append_array(seals)
+	standing.append_array(region_plan.wall_bodies)
 	var plans := EventScheduler.build_day(day, _rng(map, day, "events"), map, no_one_shots,
-			no_scars, no_calm, tree, 0)
+			no_scars, no_calm, tree, 0, doors, [], standing)
 	# Which pass placed a row is not on the plan, so it is recorded as the lists are joined — the
 	# one place that still knows. See `Source`.
 	_sources.clear()
@@ -373,15 +391,17 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc; `scenery` rows
 ## (`pigeon_flock`) are exempt the way `EventScheduler._role_for` exempts them from the
 ## wall/friction cost test; a region door (`checkpoint_hut`, `checkpoint_gate`) costs by design;
-## and a mobile row that does not pace is passed by crossing, waiting and crossing back, never by
-## routing around it.
+## a pursuer (`alley_robbery`, `charging_dog`, `door_guard`) follows her rather than sitting on a
+## tile; and a mobile row that does not pace is passed by crossing, waiting and crossing back,
+## never by routing around it.
 func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 	var rows: Array = []
 	for plan: EventScheduler.Planned in plans:
 		if not plan.is_placed() or plan.mast_id != "":
 			continue
 		var def := plan.def
-		if def.scenery or def.id.begins_with("checkpoint") or (def.mobile and not def.paces):
+		if def.scenery or def.pursues or def.id.begins_with("checkpoint") \
+				or (def.mobile and not def.paces):
 			continue
 		var emits := def.intensity > 0.0
 		var radius := EventScheduler._line_reach_of(def)

@@ -41,6 +41,7 @@ func run(t) -> void:
 	_test_squeezing_past_a_crash_costs_more_than_half_the_meter(t)
 	_test_no_seal_body_stands_in_a_street_tree(t)
 	_test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t)
+	_test_the_catalogue_sees_a_seal_at_a_route_junction(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -695,3 +696,108 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 						"seed %d day %d: street %s has %d empty pits, want exactly the one the tree fell from"
 						% [map.seed_used, day, key, empty])
 	t.check(found > 0, "some day across the sweep felled a tree across a street (%d)" % found)
+
+# --------------------------------------------------------------------------- M129 ---
+
+## **A catalogue row's placement sees a seal or the region wall already reaching a route
+## junction.** Before this, `EventScheduler.build_day`'s own three candidate-loop rules
+## (`_leaves_the_route_junctions_open` among them) only ever asked a new candidate about *other
+## catalogue rows*: `SealPlanner.plan_day` and `RegionPlanner.plan_day` both run before
+## `build_day`, so their bodies were never in the `already` array the rules check against, and a
+## seal or the wall reaching a crossing from one street out (`docs/DECISIONS.md`, M129, "the four
+## rules": *"the seals `SealPlanner` places before the scheduler runs reach crossings the rules
+## never see, the same question one step out"*) was invisible to the very rule written to keep a
+## route junction open. `build_day`'s `standing` argument threads the day's seals and the region
+## wall's own bodies into the three rules — not into `_room_around`'s spacing, which stays asked
+## of the catalogue's own rows alone — see `EventScheduler._best_of`'s own doc.
+##
+## **What this proves.** Once `build_day` is handed `standing` the way `EventManager.start_day`
+## already does, every row **it places** leaves every route junction it reaches still open beside
+## the day's seals and the region wall, asked the exact question
+## `_leaves_the_route_junctions_open` asks at placement time, over the day's whole final set
+## rather than only each row's own insertion moment: sound because nothing after insertion ever
+## *adds* obstruction at a junction (`_ensure_the_city_is_still_walkable`/
+## `_ensure_one_usable_park` only ever remove, the **city** skill's one monotonic exception), so a
+## junction the rule kept open at every insertion is open in the finished set too, however the
+## finished set is re-asked.
+##
+## **Checked over `rows` — `build_day`'s own output — and not over `standing` itself.** A seal or
+## a wall body is never asked this question at its own placement, on either side of this branch:
+## `SealPlanner.plan_day` and `RegionPlanner.plan_day` do not call `_best_of` for their own
+## bodies at all — a seal and the region wall are structure, placed to close a street by design
+## (`SealPlanner`'s own class doc: *"the corridor … is the day's only free way through;
+## everything else in the lattice is closed"*; `RegionPlanner`'s: *"there is no case where the
+## wall makes a route worse"*, stated over reachability) — and this branch does not change that.
+## Two boundary walls meeting at the same junction, or a seal standing where a wall's mouth also
+## reaches, can still close a junction between them, which is a fact about the wall's and the
+## seals' own placement rather than about the catalogue's — found by widening exactly this test's
+## own assertion to cover `standing` as well as `rows`: every failure it turned up was a
+## `roadblock` wall body reaching a junction alongside another wall or a seal, never a catalogue
+## row. That combination is `tests/probes/m129_zero_cost_line.gd`'s own to measure and
+## `docs/TODO.md`'s to carry forward, not this test's to assert against.
+##
+## **What it does not prove**: whether a zero-cost line exists end to end — that is the probe's
+## own question, over the sidewalk and the pacing rules too, not only the junction one, and over
+## whether a walk actually connects rather than whether each junction locally does.
+func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
+	var checked := 0
+	for map in _maps:
+		for day in [1, 5, 9, 13]:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var region_plan := RegionPlanner.plan_day(map, day, tree)
+			var closure_rng := RandomNumberGenerator.new()
+			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree, region_plan)
+			map.close_streets(closures)
+			map.clear_day_holds()
+			for closure in closures:
+				map.hold_segment(closure.segment.key())
+			for segment in region_plan.walls:
+				map.hold_segment(segment.key())
+			for segment in region_plan.doors:
+				map.hold_segment(segment.key())
+			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+				map.hold_segment(segment.key())
+			var boundary := {}
+			for segment in region_plan.walls:
+				boundary[segment.key()] = true
+			for segment in region_plan.doors:
+				boundary[segment.key()] = true
+			for rect in region_plan.alley_walls:
+				boundary[rect.position] = true
+			for rect in region_plan.alley_doors:
+				boundary[rect.position] = true
+			var seals := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day), boundary,
+					map.held_segments)
+			var standing: Array[EventScheduler.Planned] = []
+			standing.append_array(seals)
+			standing.append_array(region_plan.wall_bodies)
+
+			var no_one_shots: Array[String] = []
+			var no_scars: Array[Dictionary] = []
+			var no_calm: Array[Vector2i] = []
+			var no_target: Array[Vector2i] = []
+			var events_rng := RandomNumberGenerator.new()
+			events_rng.seed = hash("events:%d:%d" % [map.seed_used, day])
+			var rows := EventScheduler.build_day(day, events_rng, map, no_one_shots, no_scars,
+					no_calm, tree, 0, PackedVector2Array(), no_target, standing)
+
+			var corridor := Corridor.of(tree)
+			var ground := {}
+			# The background every row is checked against: the day's own final set beside the
+			# seals and the wall — everything `standing` stands for plus everything `build_day`
+			# placed with it in view.
+			var everything: Array[EventScheduler.Planned] = rows.duplicate()
+			everything.append_array(standing)
+			for row: EventScheduler.Planned in rows:
+				if not row.is_placed() or not EventScheduler._counts_against_the_line(row):
+					continue
+				checked += 1
+				t.check(EventScheduler._leaves_the_route_junctions_open(row, map, corridor, ground,
+						everything),
+						("seed %d day %d: '%s' at %s leaves a route junction closed beside the " +
+						"day's own seals and the region wall")
+						% [map.seed_used, day, row.def.id, map.world_to_tile(row.position)])
+	t.check(checked > 0, "there were catalogue rows counting against the line to check (%d)"
+			% checked)
