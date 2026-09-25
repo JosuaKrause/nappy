@@ -82,6 +82,12 @@ if [[ $# -gt 0 ]] && ! validate_dev_flags "$@"; then
     exit 1
 fi
 
+# shot.sh always takes a screenshot itself, so the trailing "--screenshot" here stands for the one
+# this script adds below -- the literal word never appears in "$@", the caller's own forwarded flags.
+if ! reject_route_with_screenshot "$@" --screenshot; then
+    exit 1
+fi
+
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT" >&2
     echo "install Godot 4.7, or point GODOT at your binary:" >&2
@@ -120,6 +126,37 @@ fi
 # Relative paths would resolve against the project dir inside Godot, not the caller's cwd.
 case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 
-"$GODOT" --path "$PROJECT_DIR" --resolution "$RESOLUTION" \
-	-- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@"
+# M195: every shot.sh run is a rig by definition, so both halves of the lockdown apply
+# unconditionally, no flag needed. `--disable-vsync` is Godot's own engine flag (before the `--`),
+# not a game one: an unfocused or covered window throttles the whole main loop -- not only drawing
+# -- to about once a second on this Mac, which is what let `--after` run for minutes without
+# firing; disabling vsync keeps the loop running at its own pace regardless of focus or occlusion.
+# See docs/DECISIONS.md, M195, "a rig's window takes no focus, hears no stray key, and always
+# closes" for the reproduction this fixes.
+#
+# The external kill below is the outer half of the "always closes" guarantee -- the game's own
+# wall-clock timer (`DevFlags.rig_quit_seconds()`, `main._process()`) is the inner half, and this
+# is what fires if that one somehow does not.
+KILL_AFTER="$(rig_kill_after_seconds --after "$SECONDS_TO_WAIT" "$@")"
+rm -f "$OUT"
+"$GODOT" --path "$PROJECT_DIR" --resolution "$RESOLUTION" --disable-vsync \
+	-- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@" &
+GODOT_PID=$!
+if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
+    echo "shot.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
+    exit 1
+fi
+# An edit -- and a capture is one -- fails loudly: Godot exiting 0 is not by itself proof the
+# picture exists (`--route` racing its own quit against `--after` is one way it would not, before
+# `reject_route_with_screenshot` above closed that specific combination off; a display fallen back
+# to headless mid-run, per `AutoScreenshot.can_photograph()`, is another). Checked here rather than
+# left to whoever opens $OUT next.
+if [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]]; then
+    echo "shot.sh: Godot exited $WAIT_OR_KILL_STATUS -- no picture written" >&2
+    exit "$WAIT_OR_KILL_STATUS"
+fi
+if [[ ! -f "$OUT" ]]; then
+    echo "shot.sh: Godot exited 0 but $OUT was never written" >&2
+    exit 1
+fi
 echo "wrote $OUT"
