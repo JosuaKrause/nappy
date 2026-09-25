@@ -70,6 +70,35 @@ extends RefCounted
 ##   --no-title      0
 ##   --quit-when-still 0?
 ## END_DEV_FLAG_TABLE
+##
+## Which of the flags above mark a run as a **rig** rather than a person at the keyboard — the
+## same set `main._somebody_is_playing()` already lists as "something else is holding the keys"
+## (`--screenshot`, `--walk`, `--flee`, `--press`, `--route`), plus `--tap`, which drives a
+## synthetic touch the same way. `is_rig()` below is the live read; `tools/lib_dev_flags.sh`'s own
+## `rig_flag_present()` reads this exact block, so shot.sh/run.sh's decision to strip a window's
+## focus, disable vsync, gate input and enforce the wall-clock limit can never name a different set
+## of flags than the game itself locks real input out for. A plain `tools/run.sh` session — no
+## flag on this list — is a person's, and is untouched by any of it.
+##
+## RIG_FLAGS
+##   --screenshot
+##   --walk
+##   --flee
+##   --press
+##   --tap
+##   --route
+## END_RIG_FLAGS
+##
+## The three numbers `rig_quit_seconds_from()` below turns into a rig's own wall-clock deadline,
+## read by the same shell helper so its external kill (`RIG_KILL_GRACE_SECONDS` past the deadline)
+## can never compute a shorter wait than the deadline the game itself is timing against. See
+## `rig_quit_seconds_from()`'s own doc for what each name means.
+##
+## RIG_QUIT_SECONDS
+##   margin 15.0
+##   ceiling 240.0
+##   kill_grace 15.0
+## END_RIG_QUIT_SECONDS
 
 ## Whether dev flags are readable at all. `main.gd` also reads this directly for the two gated
 ## things that are not a flag value — the snapshot key, and whether to even ask `AutoScreenshot`
@@ -780,3 +809,80 @@ static func quit_when_still_seconds() -> float:
 	return _QUIT_WHEN_STILL_DEFAULT
 
 const _QUIT_WHEN_STILL_DEFAULT := 1.0
+
+# ---------------------------------------------------------------------- a rig's own lockdown ---
+## PLAYTEST-133: "since those are godot apps that launch in my view it could be that accidentally
+## pressed a button maybe? since it takes the focus away from what I'm doing every time" — and,
+## on the same fix, "will it also prevent godot windows from staying open indefinitely?" `main.gd`
+## reads `is_rig()` once, at boot, to strip its own window's focus, gate out real input and start
+## the wall-clock quit timer below; `tools/shot.sh` and `tools/run.sh` read the identical
+## `RIG_FLAGS` list (see the marker block above `enabled()`) to decide the same three things on
+## the shell side — whether to launch with `--disable-vsync`, whether to wrap the launch in an
+## external kill, and what deadline to give it.
+
+## The exact `RIG_FLAGS` list above, spelled out for GDScript rather than parsed from the doc
+## comment the way the shell side reads it — there is no GDScript reader for its own file's doc
+## comments, so this is kept in step with that block by hand, the same promise `DEV_FLAG_TABLE`'s
+## own doc already asks of `AutoScreenshot.from_command_line()`.
+const _RIG_FLAGS := ["--screenshot", "--walk", "--flee", "--press", "--tap", "--route"]
+
+## Whether this run is a rig rather than a person at the keyboard — `main._somebody_is_playing()`
+## asks the same question for telemetry's sake and must never disagree with this: both read
+## `active_args()`/`_args()` against the identical set of flags (this file's one list, above).
+static func is_rig() -> bool:
+	return _is_rig_from_args(_args())
+
+static func _is_rig_from_args(args: PackedStringArray) -> bool:
+	for flag in _RIG_FLAGS:
+		if flag in args:
+			return true
+	return false
+
+## The margin added to a rig's own known script length, and the hard ceiling neither that length
+## nor the margin may push the deadline past — a full day (`Tuning.DAY_LENGTH_SECONDS`, 210s) plus
+## this margin is 225s, so 240s leaves headroom without extending a short rig's own wait
+## needlessly. Read by `tools/lib_dev_flags.sh` out of the `RIG_QUIT_SECONDS` marker block above,
+## rather than copied there by hand.
+const RIG_QUIT_MARGIN_SECONDS := 15.0
+const RIG_QUIT_CEILING_SECONDS := 240.0
+## How long `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) own external kill waits past the
+## deadline it computes with the same formula, before it decides the in-game timer itself did not
+## fire and kills the process from outside — generous enough that a slow atlas rebuild or a slow
+## machine's own boot never races it, short enough that a genuinely wedged rig does not tie up
+## whoever is waiting on the command to return.
+const RIG_KILL_GRACE_SECONDS := 15.0
+
+## Pure: seconds until a rig quits itself, from the two numbers that decide it. `after` is
+## `--after`'s own value if the flag was given (a screenshot or timed-trace rig's own wait, the
+## common case — see `AutoScreenshot._seconds_to_wait`) or `-1.0` for "not given"; `day_length` is
+## what a rig with no such bound (`--route`, or `--walk`/`--flee`/`--press`/`--tap` on their own,
+## none of which stop anything by themselves without `--screenshot` or `--frame-trace` beside them)
+## can run for at the very most — the day it is playing, since nothing else ends it sooner. Pulled
+## out as a pure function of both so a test can drive every combination without a command line —
+## the same seam `_no_focus_pause_from_args()` already is for its own flag.
+static func rig_quit_seconds_from(after: float, day_length: float) -> float:
+	var script := after if after >= 0.0 else day_length
+	return clampf(script + RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_CEILING_SECONDS)
+
+## The live answer `main.gd` times its own quit timer against: `--after`'s value if given, else
+## whatever day this rig is playing's own length (`--day-length`'s override, or the ordinary
+## `Tuning.day_length(day)` for `--day`'s own day — 210s for every day but the curfew ones, 180s
+## for those, see `Tuning.day_length()`'s own doc). Not asked when `is_rig()` is false — a plain
+## `tools/run.sh` session has no deadline at all.
+static func rig_quit_seconds() -> float:
+	var after := _rig_after_value()
+	var day_length := day_length_override()
+	if day_length <= 0.0:
+		day_length = Tuning.day_length(day_override())
+	return rig_quit_seconds_from(after, day_length)
+
+## The bare parsing of `--after`'s own value, pulled out because `rig_quit_seconds()` needs it and
+## `AutoScreenshot` (where `--after` is otherwise read) is not a place `DevFlags` reaches into —
+## `-1.0` for "not given or not a number", the same sentinel `rig_quit_seconds_from()` reads as
+## "fall back to the day's own length".
+static func _rig_after_value() -> float:
+	var args := _args()
+	var index := args.find("--after")
+	if index != -1 and index + 1 < args.size() and args[index + 1].is_valid_float():
+		return float(args[index + 1])
+	return -1.0

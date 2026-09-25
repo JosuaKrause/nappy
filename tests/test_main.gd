@@ -847,3 +847,38 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	GameState.restore_snapshot(baseline)
 	GameState.escape_section = FinaleController.Section.NONE
 	t.get_tree().paused = saved_paused
+
+# ------------------------------------------------------------------ a rig's own lockdown ---
+## M195: `DevFlags.is_rig()` reads the real command line, so a test drives its own pure inner
+## function directly — the same seam `_no_focus_pause_from_args()` above already is for its flag.
+## This is also the exact set `main._input()`'s own gate (`_rig_locked_out`) and
+## `_lock_out_a_rig()`'s window-flag/`InputMap`-erasure both key off, so a case proven here holds
+## for all three without a live window to check them against.
+func _test_is_rig_from_args(t) -> void:
+	t.check(not DevFlags._is_rig_from_args(PackedStringArray()),
+			"no flags at all is a person, not a rig")
+	t.check(not DevFlags._is_rig_from_args(PackedStringArray(["--seed", "1", "--day", "9"])),
+			"flags that only choose what she is looking at do not make it a rig")
+	for flag in ["--screenshot", "--walk", "--flee", "--press", "--tap", "--route"]:
+		t.check(DevFlags._is_rig_from_args(PackedStringArray([flag, "x"])),
+				"%s alone marks the run a rig" % flag)
+	t.check(DevFlags._is_rig_from_args(PackedStringArray(["--seed", "1", "--walk", "north"])),
+			"a rig flag among others still counts")
+
+## `rig_quit_seconds_from(after, day_length)` — the pure formula both `main._process()`'s own
+## timer and `tools/lib_dev_flags.sh`'s `rig_kill_after_seconds()` are built on (that one mirrors
+## this exact arithmetic against the same `RIG_QUIT_SECONDS` marker block this file's constants
+## come from — see `tests/test_cli_help.sh` for the shell side).
+func _test_rig_quit_seconds_from(t) -> void:
+	var margin := DevFlags.RIG_QUIT_MARGIN_SECONDS
+	var ceiling := DevFlags.RIG_QUIT_CEILING_SECONDS
+	t.check(is_equal_approx(DevFlags.rig_quit_seconds_from(25.0, 210.0), 25.0 + margin),
+			"an --after value is the script length the margin is added to")
+	t.check(is_equal_approx(DevFlags.rig_quit_seconds_from(-1.0, 210.0), 210.0 + margin),
+			"no --after falls back to the day's own length")
+	t.check(is_equal_approx(DevFlags.rig_quit_seconds_from(-1.0, 5.0), margin),
+			"a very short day still gets at least the margin, never less")
+	t.check(is_equal_approx(DevFlags.rig_quit_seconds_from(5000.0, 210.0), ceiling),
+			"an outsized --after is clamped to the fixed ceiling rather than honoured outright")
+	t.check(ceiling > 210.0 + margin,
+			"the ceiling comfortably fits a whole ordinary day plus its own margin")
