@@ -1722,9 +1722,10 @@ static func _curfew_announce() -> EventDef:
 ##
 ## **Drawn as one continuous barrier, not a row of blocks.** *(2026-09-10, playtest 55: "the
 ## barrier itself also doesn't read as a continuous element. is it using the texture of the other
-## orientation and concatenating that one?")* `EventInstance._draw_roadblock()` now reads
-## `_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END)`, the same rail-with-caps construction
-## `roadworks` already reads as one thing rather than a stack of blocks.
+## orientation and concatenating that one?")* `EventInstance._draw_roadblock()` repeats one segment
+## capped by `ROADBLOCK_END` through `_draw_spread()` — the broadside `ROADBLOCK_SEGMENT`, or the
+## end-on `ROADBLOCK_SEGMENT_VERTICAL` down a north-south column — the same rail-with-caps
+## construction `roadworks` already reads as one thing rather than a stack of blocks.
 ## `art/events/checkpoint_block.svg` stays bound as the badge's own icon
 ## (`EventInstance.icon_for()`) — a badge is read small, and the concrete-block silhouette is still
 ## the clearest single frame of "a street being held"; only the drawn body changed.
@@ -1736,15 +1737,24 @@ static func _curfew_announce() -> EventDef:
 ## rounding (`GroundShape.BAND_RADIUS`) and clamped there — a field cannot start inside the capsule
 ## that is already solid. That clamp is no longer where `inner_radius` ends up; see below.
 ##
-## **`heat_response = HUNTS`, the lethal rung `abduction` and `night_raid` already climb**, and a
-## **guard stands at the barrier from the moment it is placed**. *(2026-09-19: "the guard needs to
-## be at the barrier from the beginning, standing. only then does it make sense for it to start
-## pursuing.")* Cold he is a drawing and nothing else — no field, no body and no cost of his own,
-## all of which belong to the band. Once a heated copy notices her, **he** is what sets off, from
-## exactly where he was standing: the instance becomes the man, and `body_stays_behind` pins the
-## barrier's body and picture at the post for the rest of the event's life. Nothing appears,
-## nothing disappears, and the street he abandoned stays shut behind him — which is the point of
-## leaving a barrier rather than dissolving one.
+## **`heat_response = HUNTS`, the lethal rung `abduction` and `night_raid` already climb**, and
+## **two guards stand at the barrier from the moment it is placed**, one on each side of the band
+## and clear of its picture. *(2026-09-19: "the guard needs to be at the barrier from the
+## beginning, standing. only then does it make sense for it to start pursuing."; 2026-09-25: "have
+## one guard on each side?")* Cold they are drawings and nothing else — no field, no body and no
+## cost of their own, all of which belong to the band. Once a heated copy notices her, **the guard
+## on her side** is what sets off, from his own post — "only the guard on her side can chase since
+## the other one will be blocked" — while the other stays standing at his: the instance becomes the
+## man, and `body_stays_behind` pins the barrier's body and picture where it was built for the rest
+## of the event's life. Nothing appears, nothing disappears, and the street he abandoned stays shut
+## behind him — which is the point of leaving a barrier rather than dissolving one.
+##
+## **His notice is measured from the band's centre and his stand-off from his reach.** The notice
+## stays on the band because it may not reach past the field, which is cored there. His post is
+## nearer her than the centre, so a stand-off measured from the field's core would already have
+## him inside it the frame he notices her; `EventInstance._chase()` measures every stand-off from
+## `lethal_reach()`, the number `Tuning.validate_pursuit()` states the contract over, which for this
+## row is his 28px catch.
 ##
 ## **The catch is a man's reach, not a barrier's.** `lethal_radius` is 28px, read off
 ## `masked_pursuer` — the same row, the same fiction, the same distance at which a masked man in
