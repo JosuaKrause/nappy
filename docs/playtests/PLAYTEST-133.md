@@ -36,3 +36,15 @@ limit, kept twice.
    limit, and `tools/shot.sh` kills a process still alive past it and says so.
 4. It is its own queue item, built after the seal on her building's front (draft PR #351), whose
    agent is taking captures while this is written.
+
+## Then, after the fix landed (#353)
+
+> "are all agents using the non-focus rig now? I still lose focus and even accidentally closed one
+> window"
+
+One agent's branch predated the fix, but the other's had it and the player still lost focus: the
+window's no-focus flag stops the window taking keys, while macOS still brings the Godot app to the
+front when it launches, which the fix's own record left unverified.
+
+6. **A rig is launched in the background**, so macOS never makes it the active app and the
+   player's focus stays where it is.

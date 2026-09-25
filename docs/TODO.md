@@ -327,6 +327,23 @@ open is her house's crafted look.
 
 ---
 
+## M198 — A rig's window never becomes the active app · asked for 2026-09-25
+
+> "are all agents using the non-focus rig now? I still lose focus and even accidentally closed one
+> window"
+
+[PLAYTEST-133](playtests/PLAYTEST-133.md), statement 6. A rig's window takes no key focus
+(`DECISIONS.md`, M195, a rig's window takes no focus, hears no stray key, and always closes), but
+macOS still activates the Godot app when it launches.
+
+- [ ] **`tools/shot.sh` and a rig's `tools/run.sh` launch Godot without activating it** on macOS
+      (launch services' background launch, `open -g -n -W` with its output routed back, or
+      whatever the measurement supports), keeping their exit status, their time limit and their
+      output. Verified on this Mac by the player's own focus staying put, since no other app may
+      be scripted to check it.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
