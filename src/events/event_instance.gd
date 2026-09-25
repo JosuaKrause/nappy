@@ -97,6 +97,7 @@ const BARRIER_END := "events/barrier_end"
 const RUBBLE := "events/rubble"
 const CHECKPOINT_BLOCK := "events/checkpoint_block"
 const ROADBLOCK_SEGMENT := "events/roadblock_segment"
+const ROADBLOCK_SEGMENT_VERTICAL := "events/roadblock_segment_vertical"
 const ROADBLOCK_END := "events/roadblock_end"
 ## A hunting roadblock's own shadow once it draws as a guard rather than as the band: person-scale,
 ## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 60px
@@ -1156,6 +1157,13 @@ static func _spread_is_vertical(map: CityMap, at: Vector2) -> bool:
 ## panel for a north-south street or vertical alley.
 static func _roadwork_segment_texture(spread_vertical: bool) -> String:
 	return BARRIER_SEGMENT_VERTICAL if spread_vertical else BARRIER_SEGMENT
+
+## The roadblock's barrier follows the same projection rule as the roadworks one above: the
+## end-on picture for a band stacked down a north-south column (an east-west street or a
+## horizontal alley), the broadside one otherwise. Stacking the broadside picture down a column
+## repeats a side view per segment rather than drawing one barrier running away from the camera.
+static func _roadblock_segment_texture(spread_vertical: bool) -> String:
+	return ROADBLOCK_SEGMENT_VERTICAL if spread_vertical else ROADBLOCK_SEGMENT
 
 ## The `Rect2i` (from `CityMap.alley_rects`) that `at` falls inside, in **world** space, or an
 ## empty `Rect2` when it is not inside any of them — a data-level rig with no map, or a placement
@@ -3298,7 +3306,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.POSTER_CREW_SQUARE:
 			_collect_views(sources, [POSTER_CREW_SQUARE_BY_VIEW])
 		EventDef.Look.ROADBLOCK:
-			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_END])
+			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_SEGMENT_VERTICAL, ROADBLOCK_END])
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.UNMARKED_VAN:
 			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, UNMARKED_VAN_WHEELS_BY_VIEW,
@@ -3714,7 +3722,7 @@ func _robber_waiting_heading() -> Vector2:
 ## away from is a man rather than a band of concrete.
 func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	var band_at := body_position() - global_position
-	_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END, canvas, band_at)
+	_draw_spread(_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END, canvas, band_at)
 	var chasing := def.pursues and not is_waiting()
 	# His own small shadow — not the band's, which `_draw_spread()` above already drew at the post
 	# he left — so `_draw_eight_view()` below is asked not to draw one of its own; see that

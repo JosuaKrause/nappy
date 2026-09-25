@@ -115,6 +115,7 @@ func run(t) -> void:
 	_test_select_view_zero_heading_holds(t)
 	_test_cafe_sitters_face_their_own_tables(t)
 	_test_roadwork_barrier_has_an_upright_vertical_source(t)
+	_test_roadblock_barrier_is_end_on_down_a_column(t)
 	_test_roadwork_barrier_follows_alley_axis(t)
 	_test_family_dictionaries_are_complete(t)
 	_test_animal_side_view_reuses_the_canonical_source(t)
@@ -228,6 +229,23 @@ func _test_roadwork_barrier_has_an_upright_vertical_source(t) -> void:
 			"the across panel is the broad projection")
 	t.check(upright.y > upright.x,
 			"the vertical panel is the upright projection")
+
+## A roadblock stacked down a north-south column draws its own end-on picture rather than the
+## broadside one repeated per segment *(2026-09-25: "the barrier is still the sideway view for
+## each segment in vertical")*. It is picked by the spread's axis the way the roadworks barrier's
+## is, and it is the roadblock's own picture, not the roadworks one's.
+func _test_roadblock_barrier_is_end_on_down_a_column(t) -> void:
+	var broadside := EventInstance.ROADBLOCK_SEGMENT
+	var end_on := EventInstance.ROADBLOCK_SEGMENT_VERTICAL
+	t.check(EventInstance._roadblock_segment_texture(false) == broadside,
+			"a roadblock across a north-south street draws the broadside segment")
+	t.check(EventInstance._roadblock_segment_texture(true) == end_on,
+			"a roadblock stacked down an east-west street draws the end-on segment")
+	t.check(end_on != EventInstance._roadwork_segment_texture(true),
+			"and it is the roadblock's own end-on picture, not the roadworks barrier's")
+	var upright := EventInstance._native_size(end_on)
+	t.check(upright.y > upright.x,
+			"the end-on segment is the upright projection (%s)" % upright)
 
 ## Alley mouths have no corridor band for `_spread_is_vertical()` to read. Their own rectangle
 ## supplies the axis instead: a horizontal alley is sealed by a vertical spread across its short

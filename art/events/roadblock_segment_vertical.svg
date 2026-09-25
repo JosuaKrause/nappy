@@ -1,0 +1,36 @@
+<!-- One stretch of the held-street barrier (`roadblock_segment.svg`) seen end-on, for an
+     east-west street, where the band runs away from the camera down a north-south column
+     (`EventInstance._roadblock_segment_texture`). The same poured concrete and the same
+     cream-and-red hazard panel as the broadside picture, in its colours and in its order turned
+     on its side: the plinth's dark foot line down both outer edges, the lit concrete cap down the
+     left, a band of body grey, the panel, and the body grey again down the right where the
+     barrier turns away.
+     It tiles: every plane runs the full height with no end line, and the stripes repeat every
+     15px (twice per segment), so `_draw_spread`'s stretched copies meet on the same phase and the
+     stack reads as one continuous barrier rather than a pile of blocks. The red stripe slants the
+     way the roadworks barrier's end-on stripe does (`barrier_segment_vertical.svg`).
+     Everything is clipped inside the column. Feet-anchored at the bottom centre;
+     `roadblock_end.svg` posts cap the two ends. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="30" viewBox="0 0 20 30" shape-rendering="geometricPrecision">
+  <defs>
+    <clipPath id="rb-vert-panel">
+      <rect x="6.6" y="0" width="6.8" height="30"/>
+    </clipPath>
+  </defs>
+  <!-- The plinth's foot, down both outer edges: the broadside picture's dark base line. -->
+  <rect x="0.6" y="0" width="1.6" height="30" fill="#221f28" fill-opacity="0.72" stroke="none"/>
+  <rect x="17.8" y="0" width="1.6" height="30" fill="#221f28" fill-opacity="0.72" stroke="none"/>
+  <!-- The concrete: body grey across the whole width, the lit cap down the left. -->
+  <rect x="2.2" y="0" width="15.6" height="30" fill="#85857f" stroke="none"/>
+  <rect x="2.2" y="0" width="3.2" height="30" fill="#a5a59d" stroke="none"/>
+  <rect x="16.4" y="0" width="1.4" height="30" fill="#221f28" fill-opacity="0.2" stroke="none"/>
+  <!-- The hazard panel, end-on: cream with red stripes slanting across it. -->
+  <rect x="6.6" y="0" width="6.8" height="30" fill="#e0d8c4" stroke="none"/>
+  <g clip-path="url(#rb-vert-panel)" stroke="none" fill="#c4503c">
+    <polygon points="6.6,-15 6.6,-7.5 13.4,-4 13.4,-11.5"/>
+    <polygon points="6.6,0 6.6,7.5 13.4,11 13.4,3.5"/>
+    <polygon points="6.6,15 6.6,22.5 13.4,26 13.4,18.5"/>
+    <polygon points="6.6,30 6.6,37.5 13.4,41 13.4,33.5"/>
+  </g>
+  <rect x="12.4" y="0" width="1" height="30" fill="#3b2020" fill-opacity="0.22" stroke="none"/>
+</svg>
