@@ -350,6 +350,30 @@ wall's roadblocks are not affected: they are three narrower bodies across the st
 
 ---
 
+## M204 — A trailer, rendered from the game by a script · asked for 2026-09-25
+
+> "the trailer will be a set of paths in pre determined seeds with fixed events so we can
+> reproduce it easily" · "I think 30s should be max."
+
+[PLAYTEST-139](playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
+
+- [ ] **A checked-in shot list and a `tools/trailer.sh` that renders it.** Each shot names its
+      seed, day, parent (mother or father), spawned events, the path she walks, its length and any
+      caption. The script renders each shot frame-locked (Godot's movie writer at a fixed frame
+      rate, the game's own resolution, with its audio), joins them with ffmpeg, adds the fades and
+      captions, deletes the frames, and leaves the video in a gitignored folder. Nothing it
+      produces is committed. Rendering a shot twice gives the same frames, and a check says so.
+- [ ] **What the rig needs to film it**: a path of several legs (the wrong street, the turn
+      back, the other), the parent chosen by a flag rather than by the run's roll, and a camera
+      that zooms out from her doorstep to the whole city for the last shot.
+- [ ] **The cut, under 30s**: the choice in action; early dangers up to the charging dog; the
+      title; three 1s segments through black — army trucks beside the mother, the father walking
+      to a gatehouse, the mother running with the baby in her arms from pursuing guards; the
+      zoom out. Nothing a player never sees. Captions drafted and shown to the player with the
+      first render; the player renders the final video.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
