@@ -84,3 +84,13 @@ On the draft's new pictures, and whether #355 can merge:
 
 9. **The end-on segment, the two posted guards and the barrier reaching its body's ground are
    approved as drawn.**
+
+## Then, on the walled alley
+
+A region wall across an alley is one roadblock body at each mouth, each drawing two guards, and the
+inner one of each pair stands inside an alley walled at both ends, where she cannot reach.
+Offered: one guard per mouth, on the street side (the orchestrator's pick).
+
+> "one guard in alleys on each end"
+
+10. **A walled alley has one guard at each end**, on the street side of its mouth.
