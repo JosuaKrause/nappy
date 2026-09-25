@@ -357,6 +357,14 @@ the one trace a happening leaves that has no picture yet.
 | 13 | Walk into a roadblock's band — any of them · built | A column on the main road · built |
 | 14 | The power station's front door · arrow · built | The blackout · built |
 
+- [ ] **Day 11's mast is drawn near her** ([PLAYTEST-130](playtests/PLAYTEST-130.md): "we
+      need to tip the randomness to have the mast closeby"). The draw stays random among the
+      masts she can reach, but a nearer mast is more likely than a farther one, measured from
+      where she is when the task is placed. Uniform, it put the mast in the map's corner behind
+      a gap between two moving vans on seed 1234567 (home at 156.0 s) and far from a late mark on
+      seed 4242 (home at 176.8 s of 180 s). Built when day 11's three timing runs are re-measured
+      with it.
+
 - [ ] **The neighbor's door is sealed, on screen.** "The neighbor's door is sealed the next
       morning either way" is built as the day 11 brief's line and the morning figure gone, with
       no picture of a sealed door; where she would see it — her building's street door, or a
