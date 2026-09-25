@@ -1,0 +1,107 @@
+nappy rig log  2026-09-25T16:53:22  version v0.18.0-2-gd6053094-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.8 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.5 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.8 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 2.1 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.7 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.9 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.8 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 11.4 ms, 642 x 1074
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.5 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 27.9 ms
+
+day 6  act 2  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 26.9 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, west along her street
+   0.0  contact  step 1 on offer at (122,146)
+   0.0  roll     chalk mark guarded: robber 163px away (band 66-176)
+   0.0  plan     closed: roadworks h(3,8), cordoned off v(10,10)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burnt_out_car x44, burst_water_main x16, busker x5, cafe_tables x74, car_accident x16, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x17, construction x53, curfew_announce x5, cyclist x7, delivery_van x33, dog_walker x11, homeless_yeller x9, ice_cream_van x5, leaf_blower x20, loose_dog x12, loudspeaker x5, market_stall x38, moving_van x30, pigeon_flock x5, playground x2, police_patrol x11, poster_crew x9, reversing_lorry x5, scaffolding x11, skip x11
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  contact  step 1 moved to (79,90): never seen at (122,146)
+   0.0  roll     chalk mark guarded: robber 142px away (band 66-176)
+   0.0  near     construction (telegraph) at (85,80), 197px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.0  frame    fps 2, worst frame 254.1ms, draws 301, objects 1924, primitives 4318, process 2752.86ms, physics 68.02ms
+   0.0  frame    fps 50, worst frame 23.3ms, draws 362, objects 2271, primitives 4909, process 14.69ms, physics 3.49ms
+   0.0  path     onto the corridor at (75,85), after 0.0s off it
+   0.0  near     neighbor at (75,84), 39px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   0.0  path     off the corridor at (75,86), after 0.0s on it
+   0.0  cross    stepped into the road at (75,86), at a zebra
+   0.0  near     ice_cream_van at (74,93), 237px, exc 0, in 0.0/s (crowd 1.9, events 0.2), sleep 1
+   0.0  frame    fps 87, worst frame 19.3ms, draws 294, objects 1934, primitives 4231, process 21.92ms, physics 3.72ms
+   0.0  path     onto the corridor at (75,88), after 0.0s off it
+   0.0  near     alley_robbery at (78,94), 199px, exc 0, in 0.0/s (crowd 2.0, events 8.4), sleep 1
+   0.0  contact  walked within 129px of the chalk mark at (79,90)
+   0.0  frame    fps 87, worst frame 22.0ms, draws 310, objects 1747, primitives 4034, process 19.30ms, physics 3.63ms
+   0.0  path     off the corridor at (76,89), after 0.0s on it
+   0.0  contact  step 1 seen at (79,90) after 1.0s within 150px
+   0.0  frame    fps 82, worst frame 15.9ms, draws 315, objects 1725, primitives 4068, process 21.93ms, physics 3.77ms
+   0.0  contact  step 1 completed
+   0.0  contact  step 2 on offer at (36,56)
+   0.0  route    day 6: reached 'mark' at 4.9s (day time), 184px walked
+   0.0  path     onto the corridor at (78,90), after 0.0s off it
+   0.0  path     off the corridor at (78,89), after 0.0s on it
+   0.0  frame    fps 83, worst frame 55.8ms, draws 325, objects 2048, primitives 4783, process 12.75ms, physics 44.48ms
+   0.0  route    day 6: 'task' moved to (84,98), re-planning
+   0.0  route    day 6: re-planned to 'task' (6.4s, 13 waypoints)
+   0.0  frame    fps 89, worst frame 39.8ms, draws 309, objects 1955, primitives 4444, process 18.21ms, physics 33.51ms
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | alley_robbery 199px
+   0.0  path     onto the corridor at (84,89), after 0.0s off it
+   0.0  route    day 6: 'task' moved to (84,97), re-planning
+   0.0  route    day 6: re-planned to 'task' (7.8s, 8 waypoints)
+   0.0  near     homeless_yeller at (84,96), 206px, exc 0, in 0.0/s (crowd 0.0, events 3.5), sleep 2
+   0.0  frame    fps 98, worst frame 44.6ms, draws 509, objects 2250, primitives 5030, process 17.91ms, physics 30.18ms
+   0.0  near     delivery_van at (88,95), 149px, exc 0, in 0.0/s (crowd 4.2, events 8.3), sleep 3
+   0.0  crowd    walked into somebody at (84,93) | exc 0, in 0.0/s (crowd 22.2, events 8.3), sleep 3
+   0.0  near     homeless_yeller at (84,96), 111px, exc 0, in 0.0/s (crowd 19.0, events 7.8), sleep 3
+   0.0  frame    fps 91, worst frame 22.1ms, draws 512, objects 2327, primitives 5208, process 12.85ms, physics 33.40ms
+   0.0  near     alley_robbery at (78,94), 200px, exc 0, in 0.0/s (crowd 0.0, events 6.8), sleep 3
+   0.0  near     homeless_yeller at (84,97), 60px, exc 0, in 0.0/s (crowd 1.4, events 5.0), sleep 3
+   0.0  contact  step 2 retargeted onto the nearest look-alike in reach
+   0.0  frame    fps 86, worst frame 20.0ms, draws 512, objects 2295, primitives 5131, process 20.67ms, physics 6.28ms
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | alley_robbery 200px
+   0.0  route    day 6: reached 'task' at 10.0s (day time), 286px walked
+   0.0  near     loudspeaker at (82,103), 210px, exc 0, in 0.0/s (crowd 0.0, events 5.3), sleep 3
+   0.0  near     loudspeaker at (82,103), 208px, exc 0, in 0.0/s (crowd 0.0, events 7.7), sleep 3
+   0.0  near     curfew_announce at (82,103), 208px, exc 0, in 0.0/s (crowd 0.0, events 12.8), sleep 3
+   0.0  contact  step 2 completed
+   0.0  contact  he took it and is leaving
+   0.0  roll     task handed over: a robber sent after her from (84,116), 615px off (a clear run at her)
+   0.0  route    day 6: reached 'task' at 10.7s (day time), 25px walked
+   0.0  chase    robber_giving_chase came for her at (84,116) | exc 0, in 0.0/s (crowd 0.0, events 8.5), sleep 3
+   0.0  route    day 6: reached 'task' at 10.8s (day time), 1px walked
+   0.0  cue      edge badge: robber_giving_chase at 593px, closing 85px/s
+   0.0  frame    fps 88, worst frame 79.0ms, draws 520, objects 2357, primitives 5423, process 19.96ms, physics 5.89ms
+   0.0  near     homeless_yeller at (84,99), 32px, exc 0, in 0.0/s (crowd 0.0, events 21.5), sleep 3
+   0.0  route    day 6: re-planned to 'calm' (11.3s, 29 waypoints)
+   0.0  cross    stepped into the road at (84,100), at a zebra
+   0.0  near     loudspeaker at (82,103), 114px, exc 0, in 0.0/s (crowd 4.5, events 32.0), sleep 4
+   0.0  near     homeless_yeller at (84,100), 18px, exc 0, in 0.0/s (crowd 4.5, events 32.0), sleep 4
+   0.0  route    day 6: re-planned to 'calm' (11.8s, 29 waypoints)
+   0.0  frame    fps 75, worst frame 49.2ms, draws 507, objects 2526, primitives 5635, process 76.46ms, physics 48.55ms
+   0.0  shot     burst started: asked for an animation burst at (84,99) | exc 0, sleep 4 | playing | asked/burst-17232808-001
+   0.0  frame    fps 79, worst frame 91.6ms, draws 509, objects 2394, primitives 5425, process 14.21ms, physics 36.60ms
+   0.0  near     alley_robbery at (78,94), 199px, exc 0, in 0.0/s (crowd 0.0, events 30.3), sleep 4
+   0.0  cue      edge badge gone: robber_giving_chase after 0.0s, now 206px away
+   0.0  frame    fps 32, worst frame 88.0ms, draws 510, objects 2373, primitives 5296, process 85.96ms, physics 4.17ms
+   0.0  near     robber_giving_chase (telegraph) at (83,103), 195px, exc 0, in 0.0/s (crowd 0.0, events 27.5), sleep 4
+   0.0  near     ice_cream_van at (74,93), 239px, exc 0, in 0.0/s (crowd 0.0, events 24.5), sleep 4
+   0.0  frame    fps 15, worst frame 79.3ms, draws 504, objects 2433, primitives 5368, process 85.48ms, physics 4.08ms
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (75,99) | exc 0, sleep 5 | playing | asked/burst-20439605-002
+   0.0  cross    stepped into the road at (75,100), at a zebra
+   0.0  near     robber_giving_chase at (78,100), 96px, exc 0, in 0.0/s (crowd 0.3, events 20.0), sleep 5
+   0.0  cue      the mark over her head: soon for 0.0s (0.2s of it on the road) | alley_robbery 199px
+   0.0  near     robber_giving_chase at (77,100), 52px, exc 0, in 0.0/s (crowd 4.7, events 16.0), sleep 5
+   0.0  frame    fps 27, worst frame 86.7ms, draws 497, objects 2302, primitives 4983, process 84.39ms, physics 4.30ms
+   0.0  near     robber_giving_chase at (76,101), 28px, exc 0, in 0.0/s (crowd 3.2, events 16.0), sleep 5
+   0.0  path     off the corridor at (75,102), after 0.0s on it
+   0.0  near     robber_giving_chase at (75,102), 14px, exc 0, in 0.0/s (crowd 0.0, events 16.0), sleep 5
+   0.0  path     onto the corridor at (75,104), after 0.0s off it
+   0.0  frame    fps 18, worst frame 81.7ms, draws 295, objects 1777, primitives 3882, process 76.78ms, physics 4.09ms
+   0.0  ahead    loose_dog comes at her from 0px in front of her at (75,106)
+   0.0  cue      edge badge: loose_dog at 664px, closing 115px/s
+   0.0  frame    fps 21, worst frame 86.2ms, draws 511, objects 2336, primitives 5169, process 83.84ms, physics 4.19ms
+   0.0  shot     burst complete: 36 frames | duration
