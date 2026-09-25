@@ -366,7 +366,10 @@ the one trace a happening leaves that has no picture yet.
       leaves through that street door, so it cannot read as shut. Two ways are drawn, SVG first,
       and go to the player as pictures before either is installed: the street door with an
       official seal notice pasted across it and its tape cut where the residents still pass,
-      or the neighbor's window on the front boarded over with the same notice.
+      or the neighbor's window on the front boarded over with the same notice. Both are drawn and
+      waiting on the player's pick in draft PR #351. **On day 11 on seed 4242 the rig starts
+      her at tile (85,90) rather than her doorstep at (80,84)**, while days 1 and 12 start on it;
+      found drawing the seal and not yet explained, and the seal is meant to be seen that morning.
 
 ---
 
