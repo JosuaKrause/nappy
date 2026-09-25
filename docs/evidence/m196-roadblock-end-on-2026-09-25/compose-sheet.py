@@ -1,4 +1,4 @@
-"""The roadblock's end-on segment beside its broadside one, and the guard at his post.
+"""The roadblock's end-on segment beside its broadside one, and its guards at their posts.
 
 Usage: uv run --with pillow python docs/evidence/m196-roadblock-end-on-2026-09-25/compose-sheet.py OUT.png
 
@@ -12,10 +12,11 @@ OUT.png with:
     illustrated mother for scale;
   * the band assembled the way `EventInstance._draw_spread` draws it for a roadblock (60px each
     side of its centre, the segment count, stretch and end posts copied from that function), at
-    game scale and from the 4x raster: broadside with a guard at each of its north and south posts, and
-    down a north-south column as it was drawn before (the broadside picture stacked) and as it is
-    now (the end-on picture), with a guard at each of its west and east posts. The guard's feet stand at
-    `EventInstance._guard_post_offset()`'s arithmetic, copied here.
+    game scale and from the 4x raster: broadside with a guard at each of its north and south
+    posts, and down a north-south column as it was drawn before (the broadside picture stacked,
+    one guard at the centre) and as it is now (the end-on picture), with a guard at each of its
+    west and east posts. The guards' feet stand at `EventInstance._guard_post_offset()`'s
+    arithmetic, copied here.
 
 The ground is the illustrated road tile.
 """
