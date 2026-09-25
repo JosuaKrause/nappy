@@ -17,10 +17,14 @@ would ever show? (a) was the orchestrator's pick.
 
 > "during the escape only the back of the door is shown anyway"
 
+> "so no need to indicate which door would be the neighbor's"
+
 ## The statements
 
 1. **The seal is seen on her building's front**, every morning from day 11 on.
 2. **Nothing inside the building shows it**: the escape draws only the back of a door, so a seal
    there would never be seen.
+4. **The escape marks no door as the neighbor's.** None of the building's inside doors needs to
+   say which one was theirs.
 3. **No existing drawing is lost.** The repository has no sealed-door picture; the one this needs
    is drawn new, SVG first, and shown to the player before it is installed.

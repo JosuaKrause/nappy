@@ -361,7 +361,8 @@ the one trace a happening leaves that has no picture yet.
       ([PLAYTEST-131](playtests/PLAYTEST-131.md)). "The neighbor's door is sealed the next
       morning either way" is built as the day 11 brief's line and the morning figure gone. From
       day 11 on, her home block's front shows the seal where she walks out every morning; nothing
-      inside the building shows it, since the escape draws only the back of a door. She still
+      inside the building shows it, since the escape draws only the back of a door, and no door
+      there is marked as the neighbor's. She still
       leaves through that street door, so it cannot read as shut. Two ways are drawn, SVG first,
       and go to the player as pictures before either is installed: the street door with an
       official seal notice pasted across it and its tape cut where the residents still pass,
