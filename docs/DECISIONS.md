@@ -1,5 +1,48 @@
 # Decisions
 
+## M137 — The contact is whoever she hands the note to, and the trap comes to her · built 2026-09-25
+
+*([PLAYTEST-71](playtests/PLAYTEST-71.md): "not the first yeller she reaches but the first yeller
+she interacts with" · "maybe spawn the robber in pursuing mode offscreen when she interacts with
+the yeller so it runs towards her from offscreen" · "we need a version of the robber that is not
+frozen when spawned".)*
+
+**The contact.** The code already re-pointed the step onto whichever look-alike she was near;
+`docs/NARRATIVE.md` now says she hands the note to him rather than reaches him first, and the
+director's function is `_follow_her_between_look_alikes`, since the old name described the
+overturned rule. `tests/test_resistance.gd` walks near one look-alike, away, and hands the note to
+a second: the step completes on the second, he leaves, the first keeps shouting.
+
+**The trap.** A perform step whose contact rides on a row (the man shouting, the van, the burnt
+shell, a roadblock) gets no robber at dawn. At the handover, `ResistanceDirector.
+_set_the_trap_on_her()`, gated on `TRAP_FIRST_DAY`, spawns `robber_giving_chase`: the alley
+robber's numbers copied from `_alley_robbery()` (body, a field of 16 over 30–200px, 130px/s, a
+30px catch, `hard_fail`, the walk-off), with no trigger distance, so he is never waiting and his
+clocks start the frame he spawns. It is `SCRIPTED` with `scripted_day` 0, the marker the scheduler
+already reads, so no day rolls it; `EventDef.validate()` refuses any map-placed pursuer with no
+trigger unless it is that. His picture is the alley robber's sprites under a look of its own,
+`ROBBER_GIVING_CHASE`, as `door_guard` reuses the roadblock guard; his catch reads "They were
+waiting for you.", the alley robber's line without the alley. He spawns on the guard's ground
+rules, off screen by the sight check, preferring a bearing with a straight walkable line to her.
+
+**`Tuning.TRAP_ARRIVAL_DISTANCE` is 615px**: `OUT_OF_SIGHT` (420, past the screen's far corner,
+which the camera's 46px look-ahead pushes to about 408px) plus 130 × `PURSUIT_MIN_NOTICE` (1.5s,
+195px), and past the screen-edge badge's own margin, so the badge speaks for him within frames of
+the spawn. The test asserts the relationship, not the number: on four bearings the badge shows
+before he is on screen and alone for at least 1.5s, walking into him leaves 1.5s between badge and
+catch, and running ends the chase.
+
+**Choices made where the spec was silent, open to overturn** (put to the player the same day, not
+yet answered): his warning lasts about 12.9s, (615 − 30)/38 − 3 + 0.5 by the day-3 dog's formula,
+because a chase is capped at `PURSUIT_TIME` (3s) and anything shorter lets her walk away from
+615px — walking away he closes, holds at his stand-off until the warning ends, and catches her;
+standing still he arrives in about 4s; running 0.35s shakes him. The dog's 4.5s would let any walk
+within about 55° of straight away escape. The neighbor's step, never guarded, gets no trap; the
+district door, the mast, the swing and the last night keep their waiting guard; a chalk mark's
+robber still waits by the mark, since which side she comes from is a route decision a chasing
+robber would remove. `test_events_pursuit.gd`'s chase rig now watches a walker as long as a row's
+own warning lasts rather than a fixed 12s.
+
 ## M125 — test_events and test_routes are split by subject · built 2026-09-25
 
 *([PLAYTEST-67](playtests/PLAYTEST-67.md): "Also the tests are slow again, too." ·

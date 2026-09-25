@@ -21,6 +21,12 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Hand a note to the man shouting on day 6 or later** (a run with the earlier tasks done, not
+  `--invincible`, since the subject is a cost). A robber comes at her from off screen, announced by
+  the screen-edge badge first. **Does he read as the price of the errand rather than bad luck, is
+  the badge warning enough to run, and does his long warning — he trails her for up to about 13s
+  before he catches — read as pursuit or as a bug?** Record is `DECISIONS.md`, M137, the trap
+  comes to her.
 - **Keep working while an agent takes a capture** (any `tools/shot.sh` or rig-flagged
   `tools/run.sh`, on this Mac). The rig's window should flash up and hand focus straight back to
   whatever app was in front. **Does your focus stay put, and is the flicker short enough to
