@@ -56,5 +56,7 @@ sound and framing.
 
 > "for you a number is enough to judge them but I want to also be able to see some runs myself"
 
+> "no videos should be checked in of course"
+
 11. **A `--route` rig run can be recorded as a video** the same way, for the player to review;
     nothing it produces is checked in. Queued as M208, built with the trailer's recording.
