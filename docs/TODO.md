@@ -522,9 +522,6 @@ are estimates until `tools/ci-costs.sh` measures them.
       again whatever is still over two minutes; `test_events_scheduler.gd` and
       `test_routes_closures.gd` are estimated just under and over it, and `test_full_run.gd`
       is about 159s.
-- [ ] **A stale comment in `.github/workflows/ci.yml`** still names `test_events.gd` as the suite
-      that sets the shard floor; it changes with the next workflow edit, since this session's
-      token cannot merge one.
 
 ---
 
