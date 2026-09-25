@@ -42,7 +42,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # `filter: blob:none` is a partial clone: commits and trees come down up front, blob
+      # content only for a path the sparse checkout below actually selects. That checkout excludes
+      # docs/evidence/ (about 910 of the tree's 949 MB) and re-includes only the SVGs under it,
+      # since tools/lint.sh's well-formedness check is the only thing this job reads there --
+      # see M201 in docs/TODO.md, a CI job does not download the evidence.
       - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/evidence/
+            /docs/evidence/**/*.svg
 
       - name: Lint the docs
         run: ./tools/lint.sh
@@ -170,7 +182,16 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
+      # Same partial clone as `gates` above, minus the SVG re-include: no suite `tools/test.sh`
+      # runs reads a file under docs/evidence/ -- it only appears in doc comments naming where a
+      # probe (never run in CI; see the verify skill) writes its own output. M201 in docs/TODO.md.
       - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/evidence/
 
       - name: Cache Godot
         id: godot-cache
