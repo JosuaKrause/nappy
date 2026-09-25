@@ -24,6 +24,7 @@ Tuning="*res://src/autoload/tuning.gd"
 EventBus="*res://src/autoload/event_bus.gd"
 Telemetry="*res://src/autoload/telemetry.gd"
 GameState="*res://src/autoload/game_state.gd"
+VisitCounter="*res://src/autoload/visit_counter.gd"
 
 [display]
 
