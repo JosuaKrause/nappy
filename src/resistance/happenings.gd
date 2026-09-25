@@ -32,7 +32,9 @@ const RAID_VAN_OFFSET_TILES := 3
 ## How far along her street the raid's patrol car paces either way from her door, in tiles.
 const RAID_PATROL_REACH_TILES := 7
 
-## The day the market is gone, and the day the column comes down the main road. Day 12's park is
+## The day the market is gone, and the day the neighbor's window is boarded on her own building's
+## front (`City.board_neighbor_window()`) — the same morning, since both are "the next morning"
+## for day 10's raid. The day the column comes down the main road. Day 12's park is
 ## `ResistanceSteps.swing_day()`'s, the day its task sends her to the swing.
 const MARKET_DAY := 11
 const COLUMN_DAY := 13
@@ -102,6 +104,11 @@ func start_day(day: int) -> void:
 		morning_neighbor = _send_the_neighbor_to_work()
 	if day == NEIGHBOR_DAY:
 		_plan_the_raid()
+	# The neighbor's boarded window, from this morning on for the rest of the run
+	# (`City.board_neighbor_window()` is idempotent, so calling it again on a later day costs
+	# nothing once it is set).
+	if day >= MARKET_DAY and _city:
+		_city.board_neighbor_window()
 
 ## Once a frame, from the director: brings in whatever the day is waiting to bring in. `her` is her
 ## position, `Vector2.INF` with no player, and `velocity` hers; `sight` is the danger edge's own
@@ -175,6 +182,12 @@ func _maybe_raid(her: Vector2, sight: Callable) -> void:
 		patrol.solid_parts = row.solid_parts
 		patrol.paces = true
 		raid.append(_city.events.spawn_extra(patrol, _raid_beat[0], _raid_beat))
+	# What she comes home to besides the raid itself: her own street door, sealed, out of her
+	# sight the same as the vans (PLAYTEST-131: "when returning to find the raid the door
+	# texture should also have changed. and then the change stays"). Live today; the scar is
+	# what every later day and a reloaded save read it from (`City._sync_home_door()`).
+	_city.seal_home_door()
+	GameState.add_scar(City.SEALED_DOOR_SCAR, door)
 	Telemetry.note("contact", "the raid is at her building: %d vans and a patrol" % _raid_vans.size())
 
 # ---------------------------------------------------------- day 11: the market ---

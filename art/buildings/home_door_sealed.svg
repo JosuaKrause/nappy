@@ -1,0 +1,42 @@
+<!-- Her building's street door after the raid: art/props/door.svg, the same 26x34 canvas and the
+     same feet anchor (bottom centre, on the ground plane), with the regime's seal on it. A notice
+     on the regime's own paper (the posters' pale sheet, dark header bar, gray print lines and
+     red stamp, no letters) is pasted across the upper panel, and two paper seal strips,
+     each with a red stamp, run across the gap on the lock side from the leaf onto the frame.
+     Both strips are cut along that gap and the leaf's halves sit a pixel lower than the frame's:
+     the door has been opened since it was sealed, so the residents still pass. The knob stays
+     clear, and nothing crosses the whole door, so it never reads as shut. The stamp is the
+     posters' red ring with a solid centre instead of their diagonal band: a ring and a slash on
+     a door is the sign for no entry. `City.seal_home_door()` swaps her street door sprite to this
+     picture the moment day 10's raid actually arrives, and it stays for the rest of the run. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="34" viewBox="0 0 26 34"
+     shape-rendering="crispEdges">
+  <rect x="0" y="0" width="26" height="34" fill="#8d5c48"/>
+  <rect x="3" y="3" width="20" height="31" fill="#5c3a30"/>
+  <rect x="6" y="8" width="14" height="10" fill="#4a2e26"/>
+  <circle cx="18" cy="24" r="1.6" fill="#c9a86a"/>
+  <!-- The gap between leaf and frame on the lock side, where the strips are cut. -->
+  <rect x="22" y="3" width="1" height="31" fill="#3a241e"/>
+  <!-- The notice: the regime's sheet, header bar, print lines and stamp. -->
+  <rect x="5" y="6" width="14" height="15" fill="#ebe4d2"/>
+  <rect x="7" y="8" width="10" height="2" fill="#2c2a30"/>
+  <rect x="7" y="11" width="8" height="1" fill="#8f8a80"/>
+  <rect x="7" y="13" width="6" height="1" fill="#8f8a80"/>
+  <rect x="7" y="15" width="4" height="1" fill="#8f8a80"/>
+  <path d="M13 15h3v1h-3z M12 16h1v3h-1z M16 16h1v3h-1z M13 19h3v1h-3z M14 17h1v1h-1z" fill="#a33b34"/>
+  <rect x="5.5" y="6.5" width="13" height="14" fill="none" stroke="#3b3034" stroke-width="1"/>
+  <!-- Upper seal strip: the frame's half at y 3, the leaf's half dropped to y 4. -->
+  <rect x="16" y="4" width="6" height="2" fill="#ebe4d2"/>
+  <rect x="23" y="3" width="3" height="2" fill="#ebe4d2"/>
+  <rect x="20" y="4" width="2" height="2" fill="#a33b34"/>
+  <rect x="23" y="3" width="1" height="2" fill="#a33b34"/>
+  <rect x="16" y="6" width="6" height="1" fill="#2a1a16" fill-opacity="0.45"/>
+  <rect x="23" y="5" width="3" height="1" fill="#4a2e26" fill-opacity="0.6"/>
+  <!-- Lower seal strip, the same, below the knob. -->
+  <rect x="15" y="28" width="7" height="2" fill="#ebe4d2"/>
+  <rect x="23" y="27" width="3" height="2" fill="#ebe4d2"/>
+  <rect x="20" y="28" width="2" height="2" fill="#a33b34"/>
+  <rect x="23" y="27" width="1" height="2" fill="#a33b34"/>
+  <rect x="15" y="30" width="7" height="1" fill="#2a1a16" fill-opacity="0.45"/>
+  <rect x="23" y="29" width="3" height="1" fill="#4a2e26" fill-opacity="0.6"/>
+</svg>
