@@ -21,6 +21,8 @@ func run(t) -> void:
 	_test_task_skipped_only_for_a_step_still_open_on_its_own_day(t)
 	_test_resumed_for_report_truth_table(t)
 	_test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t)
+	_test_pending_events_queue_until_present_and_flush_in_order(t)
+	_test_send_event_never_queues_when_it_may_never_send(t)
 
 ## `_should_send()` — on the web, released, unasked-for and with a live
 ## `window.goatcounter.count` are all four required; missing any one of them refuses.
@@ -155,4 +157,35 @@ func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t) -
 	# object, not main.gd, is what downgrades it.
 	t.check(not VISIT_COUNTER_SCRIPT._resumed_for_report(true, counter._reported_run_begun),
 		"once this page has reported, a second 'resumed' argument is not trusted as a new resume")
+	counter.free()
+
+## Review finding: `count.js` loads asynchronously, so an event asked for before it has finished
+## loading — the earliest events of a cold, first-ever visit, above all — must not be dropped
+## silently the way a debug build's events are. `_flush_pending()` takes `present` as a parameter
+## rather than asking `_goatcounter_present()` itself (which is hard-wired false off the web), so
+## the queueing logic is testable here without a real page.
+func _test_pending_events_queue_until_present_and_flush_in_order(t) -> void:
+	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	var seeded: Array[String] = ["nappy-run-fresh", "nappy-day-1-began"]
+	counter._pending = seeded
+	counter._flush_pending(false)
+	t.check(counter._pending == seeded,
+		"count.js not yet present leaves the queue exactly as it was")
+	counter._flush_pending(true)
+	t.check(counter._pending.is_empty(),
+		"count.js present drains the whole queue, in the order the events were asked for")
+	# Flushing an empty queue, present or not, costs nothing and breaks nothing.
+	counter._flush_pending(true)
+	t.check(counter._pending.is_empty(), "flushing an already-empty queue is a no-op")
+	counter.free()
+
+## The other half of the fix: a reason that can never change — off the web, a debug build, or
+## `?debug=1` — must never populate the queue at all, the same "still send nothing under debug"
+## the gate itself already promised. This process is never on the web, so `_send_event()` refuses
+## before `_pending` is ever touched.
+func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
+	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter._send_event("nappy-run-fresh")
+	t.check(counter._pending.is_empty(),
+		"off the web, an event is refused outright rather than queued forever unsent")
 	counter.free()

@@ -6,8 +6,10 @@ extends Node
 ## **A different thing from `Telemetry`, the run log.** This never writes a file and never reads
 ## one back — it only calls the page's own `window.goatcounter.count()`, the same function the
 ## page's `<head>` already loads `count.js` for (`export_presets.cfg`'s `html/head_include`).
-## Off the web, or on a debug build, or behind `?debug=1`, or with `count.js` missing or blocked,
-## it is a silent no-op — see `_should_send()`.
+## Off the web, on a debug build, or behind `?debug=1`, it is a silent no-op — see
+## `_may_ever_send()`. `count.js` loading asynchronously is not one of those: an event asked for
+## before it has finished loading is queued and sent the moment it appears — see `_pending` — and
+## only a `count.js` genuinely never loading (missing or blocked) leaves that queue unsent.
 ##
 ## **It only listens**, the same discipline `TelemetryObserver` keeps for the run log: everything
 ## here answers an `EventBus` signal, reads nothing gameplay decides by, and writes nothing back
@@ -65,7 +67,17 @@ static func should_send() -> bool:
 ## present, since the script can fail to load or be blocked by the visitor's own browser.
 static func _should_send(on_web: bool, is_debug_build: bool, debug_requested: bool,
 		goatcounter_present: bool) -> bool:
-	return on_web and not is_debug_build and not debug_requested and goatcounter_present
+	return _may_ever_send(on_web, is_debug_build, debug_requested) and goatcounter_present
+
+## The three of the gate's four inputs that can never change their answer for the rest of this
+## page's life once asked — the build is not going to stop being a debug build, and `?debug=1`
+## does not disappear from a page nobody reloads. `_goatcounter_present()` is the one input that
+## legitimately answers differently a moment later, because `count.js` loads asynchronously
+## (`export_presets.cfg`'s own `counter.async = true`) — so `_send_event()` below asks this once,
+## up front, to decide *whether an event is ever worth queuing at all* before it asks the
+## time-varying half.
+static func _may_ever_send(on_web: bool, is_debug_build: bool, debug_requested: bool) -> bool:
+	return on_web and not is_debug_build and not debug_requested
 
 ## Whether the page actually has a callable `window.goatcounter.count` — `false` off the web
 ## without ever asking `JavaScriptBridge`, the same guard `DevFlags._web_query()` makes before its
@@ -81,16 +93,47 @@ static func _goatcounter_present() -> bool:
 			"&& typeof window.goatcounter.count === 'function')")
 	return bool(present)
 
+## Events asked for while `count.js` had not yet finished loading — see `_may_ever_send()`'s own
+## doc for why that is the one live input worth waiting on. Flushed the cheap way, from
+## `_send_event()` itself the next time anything is asked for, rather than a timer or a per-frame
+## poll: nothing here may cost anything while the game is otherwise between events. A cold,
+## first-ever visit is the case this exists for — `count.js` is a real network fetch, and the
+## earliest events of a run (`run_begun`, day 1's `day_started`) can race ahead of it; a later
+## visit, with the script already cached, never queues anything at all.
+##
+## **Never populated for a reason that cannot change.** `_send_event()` checks `_may_ever_send()`
+## before this queue is ever touched, so a debug build or a page carrying `?debug=1` holds nothing
+## here and costs nothing beyond the one boolean check every other refusal already costs.
+var _pending: Array[String] = []
+
+func _send_event(name: String) -> void:
+	if not _may_ever_send(OS.get_name() == "Web", OS.is_debug_build(), DevFlags.readout_requested()):
+		return
+	var present := _goatcounter_present()
+	_flush_pending(present)
+	if present:
+		_dispatch(name)
+	else:
+		_pending.append(name)
+
+## Sends whatever is queued, in the order it was asked for, when `present` holds; leaves the
+## queue exactly as it was otherwise. `present` is a parameter rather than a fresh
+## `_goatcounter_present()` read taken in here, the same split `_should_send()` already makes for
+## its own live half, so a test can drive both outcomes directly without a page to ask.
+func _flush_pending(present: bool) -> void:
+	if not present or _pending.is_empty():
+		return
+	var queued := _pending
+	_pending = []
+	for queued_name in queued:
+		_dispatch(queued_name)
+
 ## Calls `window.goatcounter.count({path, title, event: true})` for `name` — see
 ## https://www.goatcounter.com/help/events and /help/js. Wrapped in the page's own `try`/`catch`
-## as well as `_goatcounter_present()`'s existence check, so a third-party script's own internals
-## throwing never becomes an engine error on this side — "a missing or failing
-## window.goatcounter must never raise or print an engine error" — and gated on `should_send()`
-## before any string is even built, so a call from a test process or a debug build costs one
-## boolean check and nothing else.
-func _send_event(name: String) -> void:
-	if not should_send():
-		return
+## as well as the caller's own `_goatcounter_present()` check, so a third-party script's own
+## internals throwing never becomes an engine error on this side — "a missing or failing
+## window.goatcounter must never raise or print an engine error".
+func _dispatch(name: String) -> void:
 	var payload := JSON.stringify(name)
 	JavaScriptBridge.eval(
 			"try { window.goatcounter.count({path: %s, title: %s, event: true}); } catch (e) {}"
