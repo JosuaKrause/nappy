@@ -103,6 +103,9 @@ const ROADBLOCK_END := "events/roadblock_end"
 ## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 60px
 ## capsule, which is still what the collision body and the cold picture are built from.
 const _GUARD_SHADOW_RADIUS := 9.0
+## The gap between a posted roadblock guard's picture and the barrier's, so the two never touch —
+## see `_guard_post_offset()`.
+const _GUARD_POST_CLEARANCE := 2.0
 const BARRICADE_PILE := "events/barricade_pile"
 const CAFE_TABLE := "events/cafe_table"
 const CAFE_SITTER := "events/cafe_sitter"
@@ -1238,6 +1241,75 @@ func _ready() -> void:
 ## or `Vector2.INF` while the two are still the same place. See `EventDef.body_stays_behind`.
 var _body_left_at := Vector2.INF
 
+## Which side of a roadblock's band its guard is posted on, across the band: `+1` south of a
+## broadside band or east of an end-on column, `-1` north or west, and `0` before anything has told
+## this instance where she is (drawn as `+1`). See `_hold_the_post()`.
+var _post_side := 0
+## Where a roadblock's guard is drawn relative to this node once he has left the post: the post's
+## own offset the frame he sets off, closing on zero at his own `pursue_speed` — see
+## `_draw_roadblock()`. Zero once he has reached himself, and for every other row.
+var _setting_off_from := Vector2.ZERO
+
+## **The guard stands on the side of the band she is coming from, and only changes sides while she
+## cannot see him.** Re-decided every frame she is further from the barrier than
+## `Tuning.OUT_OF_SIGHT` (420px) and the first frame anything tells this instance where she is, and
+## held otherwise: the band closes the street, so reaching its other side means going round a
+## block, and a man who crossed over while she watched would be a man seen jumping through his own
+## barrier. On her side, the man she walks towards is standing in front of the barrier she has to
+## route around, and when he sets off he comes at her without walking through it. A tie — she is
+## level with the band's own line — goes to `+1`, the camera-facing south of a broadside band.
+func _hold_the_post() -> void:
+	if def.look != EventDef.Look.ROADBLOCK or has_left_its_body_behind():
+		return
+	if player_at == Vector2.INF:
+		return
+	var toward := player_at - global_position
+	if _post_side != 0 and toward.length() <= Tuning.OUT_OF_SIGHT:
+		return
+	var side := _guard_side_toward(_spread_vertical, toward)
+	if side != _post_side:
+		_post_side = side
+		queue_redraw()
+
+## `+1` or `-1`: which side of a band laid along `vertical`'s axis the offset `toward` falls on,
+## across it. Level with the band's own line counts as `+1`.
+static func _guard_side_toward(vertical: bool, toward: Vector2) -> int:
+	var across := toward.x if vertical else toward.y
+	return -1 if across < 0.0 else 1
+
+## **Where a posted roadblock guard's feet stand relative to the band's centre: beside it, never
+## over it.** *(2026-09-25: "also the guards are on top of the barrier?")* The whole of his standing
+## picture is kept clear of the whole of the barrier's, `_GUARD_POST_CLEARANCE` apart, on `side`:
+##
+## - **End-on** (`vertical`), the column is as wide as `roadblock_segment_vertical.svg`, so he stands
+##   level with the band's centre, half the column's width and half his own out to the east or west.
+## - **Broadside**, the barrier stands as tall as `roadblock_segment.svg` on the band's line, so to
+##   the north his feet stand that far behind it and to the south his own height in front of it —
+##   his head clear of the barrier's foot rather than over it.
+##
+## Measured off the pictures themselves, so a redrawn barrier or guard moves the post with it.
+static func _guard_post_offset(vertical: bool, side: int) -> Vector2:
+	var guard := _native_size(GUARD_STANDING_BY_VIEW["front"])
+	if vertical:
+		var column := _native_size(ROADBLOCK_SEGMENT_VERTICAL)
+		return Vector2(signf(side) * (column.x * 0.5 + guard.x * 0.5 + _GUARD_POST_CLEARANCE), 0.0)
+	if side < 0:
+		return Vector2(0.0, -(_native_size(ROADBLOCK_SEGMENT).y + _GUARD_POST_CLEARANCE))
+	return Vector2(0.0, guard.y + _GUARD_POST_CLEARANCE)
+
+## Which way the posted guard faces: straight out from the barrier on his own side, towards where
+## she would come from — so the turn to face her the frame he notices her is still a turn.
+static func _guard_post_heading(vertical: bool, side: int) -> Vector2:
+	var outward := Vector2.RIGHT if vertical else Vector2.DOWN
+	return outward * (-1.0 if side < 0 else 1.0)
+
+## Where the guard is drawn relative to this node right now: his post while he holds it, then
+## `_setting_off_from` closing on zero once he has set off.
+func _guard_drawn_at() -> Vector2:
+	if has_left_its_body_behind():
+		return _setting_off_from
+	return _guard_post_offset(_spread_vertical, _post_side)
+
 ## Whether the barrier has been left behind — read by `_draw_roadblock()` to know whether to draw
 ## the band under its own feet or back at the post, and by `tests/test_heat.gd`.
 func has_left_its_body_behind() -> bool:
@@ -1262,6 +1334,8 @@ func body_position() -> Vector2:
 func _leave_the_body_behind() -> void:
 	if _body_left_at == Vector2.INF:
 		_body_left_at = global_position
+		if def.look == EventDef.Look.ROADBLOCK:
+			_setting_off_from = _guard_post_offset(_spread_vertical, _post_side)
 	_keep_the_body_where_it_was_left()
 
 func _keep_the_body_where_it_was_left() -> void:
@@ -1432,6 +1506,7 @@ func _process(delta: float) -> void:
 		return
 
 	_fly_the_flock(delta)
+	_hold_the_post()
 	if def.pursues:
 		# **A pursuer that has a route runs it until it notices her.** No field says so — see
 		# `EventDef.at_heat()`'s own note on `PRESSES` — it is read off the two flags a mobile
@@ -1486,6 +1561,9 @@ func _process(delta: float) -> void:
 		# `_redraw_if_the_picture_changed()` alone cannot see this: the picture is the same picture
 		# at a different offset, and its hash is over states rather than over positions.
 		_keep_the_body_where_it_was_left()
+		# A roadblock's guard is drawn setting off from his post beside the band and closes on
+		# where he actually is at his own speed — see `_draw_roadblock()`.
+		_setting_off_from = _setting_off_from.move_toward(Vector2.ZERO, def.pursue_speed * delta)
 		queue_redraw()
 	_redraw_if_the_picture_changed()
 
@@ -2797,6 +2875,8 @@ func _picture_never_settles() -> bool:
 func _drawn_heading() -> Vector2:
 	if def.look == EventDef.Look.ROBBER and is_waiting():
 		return _robber_waiting_heading()
+	if def.look == EventDef.Look.ROADBLOCK and not has_left_its_body_behind():
+		return _guard_post_heading(_spread_vertical, _post_side)
 	return _heading
 
 ## Which pose `_draw_protest()` is standing its rank in: 0 for anything that is not a protest, 1
@@ -2862,6 +2942,7 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if gate_state != null and gate_state.raised else 0)
 	flags = flags * 2 + (1 if gate_runs_north_south(_heading) else 0)
 	flags = flags * 2 + (1 if flashed_off else 0)
+	flags = flags * 2 + (1 if _post_side < 0 else 0)
 	# A mast's lamp and arcs (`_draw_mast()`): amber in the telegraph that opens every broadcast
 	# cycle, green with the arcs while it speaks, and neither once silenced — read off the city's
 	# broadcast clock rather than `is_telegraphing()`, which a mast passes once at creation.
@@ -3558,12 +3639,16 @@ func _draw_simple(picture: String, canvas: CanvasItem = self,
 ## shadow is already drawn separately, back at the post he left (`_draw_spread()`); the automatic
 ## call here would draw a second, band-shaped shadow under his current position instead of his own
 ## small one, so `_draw_roadblock()` draws that shadow itself and passes `false`.
+##
+## `at` is where the feet stand in local space: the node's own origin for every caller but
+## `_draw_roadblock()`, whose guard stands beside his band rather than on its centre.
 func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self,
-		side_faces_west := false, by_view_b: Dictionary = {}, draw_shadow := true) -> void:
+		side_faces_west := false, by_view_b: Dictionary = {}, draw_shadow := true,
+		at := Vector2.ZERO) -> void:
 	var wheels_by_view: Dictionary = WHEELS_BY_LOOK.get(def.look, {})
-	var grounded := Vector2.ZERO
+	var grounded := at
 	if not wheels_by_view.is_empty():
-		grounded = Vector2(0.0, -_current_bob())
+		grounded = at + Vector2(0.0, -_current_bob())
 	if draw_shadow:
 		_draw_body_shadow(canvas, grounded)
 	var view := _select_view(heading)
@@ -3577,7 +3662,7 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem 
 	var behind := wheels in WHEELS_BEHIND_THE_BODY
 	if not wheels.is_empty() and behind:
 		Sprites.draw_standing(canvas, _drawn(wheels), grounded, Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _drawn(picture), at, Vector2.ZERO, mirror)
 	if not wheels.is_empty() and not behind:
 		Sprites.draw_standing(canvas, _drawn(wheels), grounded, Vector2.ZERO, mirror)
 
@@ -3707,12 +3792,18 @@ func _robber_waiting_heading() -> Vector2:
 ## both drawn for the whole of the event's life, cold or hunting, and the only thing that changes
 ## is which of them is moving.
 ##
-## - **Cold, or hunting but not yet noticed** (`is_waiting()`), the man stands at the band's own
-##   centre in the `guard_standing_*` family. On a cold roadblock that is the whole of what he is:
-##   a drawing, with no field, no body and no cost of his own.
+## - **Cold, or hunting but not yet noticed** (`is_waiting()`), the man stands at his post beside
+##   the band in the `guard_standing_*` family, clear of the barrier's picture on the side she is
+##   coming from and facing out from it (`_guard_post_offset()`, `_hold_the_post()`). On a cold
+##   roadblock that is the whole of what he is: a drawing, with no field, no body and no cost of his
+##   own.
 ## - **Once he sets off**, this node *is* him — `_chase()` walks it at her — and the barrier he
 ##   left is drawn back at `body_position()`, where its collision body is pinned
-##   (`EventDef.body_stays_behind`). `guard_standing_*` while his notice runs and `guard_lunging_*`
+##   (`EventDef.body_stays_behind`). **He is drawn setting off from his post**: the picture starts
+##   there and closes on the node at his own `pursue_speed` (`_setting_off_from`), so he is drawn
+##   where he is — where his reach is measured from — within a few tenths of a second, before he
+##   can have closed on her. The node itself sets off from the band's centre, where his notice and
+##   his stand-off are measured. `guard_standing_*` while his notice runs and `guard_lunging_*`
 ##   once he is actually giving chase, the same `is_telegraphing()` switch `_draw_robber()` reads —
 ##   each read from his own travel heading through `_draw_eight_view()`, so he turns to face where
 ##   he is going rather than only mirroring east/west (PLAYTEST-128, M56: "the masked pursuer and
@@ -3727,9 +3818,10 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	# His own small shadow — not the band's, which `_draw_spread()` above already drew at the post
 	# he left — so `_draw_eight_view()` below is asked not to draw one of its own; see that
 	# function's own doc comment.
-	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
+	var guard_at := _guard_drawn_at()
+	_draw_shadow(canvas, guard_at, _GUARD_SHADOW_RADIUS)
 	var by_view := GUARD_LUNGING_BY_VIEW if chasing and not is_telegraphing() else GUARD_STANDING_BY_VIEW
-	_draw_eight_view(by_view, _heading, canvas, false, {}, false)
+	_draw_eight_view(by_view, _drawn_heading(), canvas, false, {}, false, guard_at)
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
 func _draw_fire(canvas: CanvasItem = self) -> void:
