@@ -240,6 +240,7 @@ arm direction; ordinary movement suffixes describe the body's facing.
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
 | M100 — Small, real, and nobody's (alley review) | `art/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison; the live alley tile is the runtime alley. |
+| M181 — The resistance has a reason, and a task is one day (the neighbor's seal on her building's front) | Two alternatives waiting on the player's pick, shown in context in the [seal review sheets](evidence/m181-neighbor-seal-2026-09-25/). `art/buildings/home_door_sealed.svg` is `art/props/door.svg` with the seal on it — the same 26×34 canvas and feet anchor (bottom centre, on the ground plane) — a regime notice pasted across the upper panel and two paper seal strips across the lock-side gap, cut there so the door still opens. `art/buildings/window_boarded_sealed.svg` is a 32×32 overlay on a window cell, in the windows' own registration and transparent elsewhere: three planks and the same notice, drawn over whichever window picture the cell already has so the building's lintel and sill stay. Neither is on an atlas page. |
 
 ### Unbound, with nothing to bind them
 
