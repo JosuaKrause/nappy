@@ -287,13 +287,12 @@ func _ready() -> void:
 		GameState.day = DevFlags.day_override()
 	# `VisitCounter`'s own "a run begun fresh, or resumed from the save" — fired once here for
 	# every path through this function, ordinary or handed over to the escape, since GameState.day
-	# is already settled for both by this line. `resumed` reads the save alone, not
-	# `GameState.escape_section`'s own carry-over: a won day 14 reloading straight into the escape
-	# in the same sitting is not a resume, and `_escape_section_came_from_the_file()` is what tells
-	# that apart from a game actually closed and reopened inside one.
-	EventBus.run_begun.emit(GameState.day, not _resume.is_empty()
-			and not _escape_section_came_from_the_file(
-					escape_section_before_resume, GameState.escape_section))
+	# is already settled for both by this line. `resumed` says only whether `GameSave.try_resume()`
+	# found a file; it cannot also tell a file a real previous visit left from one a
+	# `reload_current_scene()` earlier in this same page's life just wrote — a won day 14 handing
+	# over to the escape is exactly that case. `VisitCounter` is where that distinction is made,
+	# since only it can know whether *this page* has already reported a run beginning once before.
+	EventBus.run_begun.emit(GameState.day, not _resume.is_empty())
 	if GameState.escape_section != FinaleController.Section.NONE:
 		# The run's ending, played rather than announced: the escape is this run's last screen, so
 		# the ordinary boot below — a city, a day, a resistance director — is not what follows day

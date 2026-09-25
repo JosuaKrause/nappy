@@ -116,8 +116,27 @@ static func _controls_event_name(mode: int) -> String:
 
 # ------------------------------------------------------------------- signals ---
 
+## Whether this autoload — which, like every autoload, survives `get_tree().reload_current_scene()`
+## and so lives for as long as this browser tab keeps its WASM instance, across a held restart or
+## a day-14 handover into the escape alike — has already answered `run_begun` once. `main.gd`'s own
+## `resumed` argument only asks "did a save exist when `GameSave.try_resume()` ran"; it cannot also
+## know whether *this page* already ran once before asking, because that is not something
+## `GameState` or a save file could ever record — a save a `reload_current_scene()` wrote a moment
+## ago and a save a real previous visit left both answer `GameSave.try_resume()` the same way.
+## "A resume means a save that existed when the page loaded, never one this page session wrote" is
+## answered here instead, the one place a flag can live for exactly a page's own lifetime.
+var _reported_run_begun := false
+
+## The decision behind `_on_run_begun()`'s own gate, pulled out to a pure function of its two
+## inputs so a test can drive the truth table directly, the same split every other live check in
+## this file makes for its own pure half.
+static func _resumed_for_report(resumed: bool, already_reported_this_page: bool) -> bool:
+	return resumed and not already_reported_this_page
+
 func _on_run_begun(day: int, resumed: bool) -> void:
-	_send_event(_run_begun_name(day, resumed))
+	var actually_resumed := _resumed_for_report(resumed, _reported_run_begun)
+	_reported_run_begun = true
+	_send_event(_run_begun_name(day, actually_resumed))
 
 func _on_day_started(day: int) -> void:
 	_send_event(_day_event_name(day, "began"))

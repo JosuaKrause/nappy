@@ -19,6 +19,8 @@ func run(t) -> void:
 	_test_controls_event_name(t)
 	_test_listening_touches_no_gameplay_state(t)
 	_test_task_skipped_only_for_a_step_still_open_on_its_own_day(t)
+	_test_resumed_for_report_truth_table(t)
+	_test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t)
 
 ## `_should_send()` — on the web, released, unasked-for and with a live
 ## `window.goatcounter.count` are all four required; missing any one of them refuses.
@@ -122,4 +124,35 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT)
 	t.check(not counter._open_tasks.has(6),
 		"the day it belonged to ending, won or lost, closes it out as skipped")
+	counter.free()
+
+## Review finding: a genuinely fresh visit that hands over to the escape at day 14 re-enters
+## `main._ready()` through `reload_current_scene()`, and `GameSave.try_resume()` there finds the
+## save that same reload just wrote — `resumed` (from `EventBus.run_begun`) reads `true`, but the
+## page never actually left. `_resumed_for_report()` is the fix: a save is only a resume if this
+## page has not already reported a run beginning once before.
+func _test_resumed_for_report_truth_table(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._resumed_for_report(true, false),
+		"a genuine resume, the first time this page has ever reported, stays a resume")
+	t.check(not VISIT_COUNTER_SCRIPT._resumed_for_report(true, true),
+		"a save found after this page already reported once is this page's own write, not a resume")
+	t.check(not VISIT_COUNTER_SCRIPT._resumed_for_report(false, false),
+		"no save at all is never a resume")
+	t.check(not VISIT_COUNTER_SCRIPT._resumed_for_report(false, true),
+		"no save and already reported stays not-a-resume")
+
+## The stateful half: `_reported_run_begun` starts false, flips true on the first `run_begun`, and
+## a second one on the same instance — the day-14 handover's own `reload_current_scene()`, or any
+## other reload within one page's life — is downgraded to fresh even though `main.gd` still passed
+## `resumed = true`, because the save it found is this page's own.
+func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t) -> void:
+	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	t.check(not counter._reported_run_begun, "a fresh instance has not reported anything yet")
+	counter._on_run_begun(1, true)
+	t.check(counter._reported_run_begun, "the first call marks the page as having reported")
+	# Same instance, a later boot within this page's own life (a day-14 handover, say) — main.gd
+	# still passes `resumed = true` because a save now genuinely exists, and the fix is that this
+	# object, not main.gd, is what downgrades it.
+	t.check(not VISIT_COUNTER_SCRIPT._resumed_for_report(true, counter._reported_run_begun),
+		"once this page has reported, a second 'resumed' argument is not trusted as a new resume")
 	counter.free()
