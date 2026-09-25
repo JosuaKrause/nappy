@@ -983,7 +983,6 @@ func _plan(from_tile: Vector2i, to_tile: Vector2i, avoid: Dictionary = {}) -> Ar
 	tiers.append([{}, soft_avoid, false])
 	for tier: Array in tiers:
 		var path := _cheapest(from_tile, to_tile, tier[0], tier[1], tier[2])
-		_dbg("  tier keep_off=%d hazards=%s -> %d" % [(tier[0] as Dictionary).size(), tier[2], path.size()]) # DBG
 		if not path.is_empty():
 			for tile in path:
 				if clear.has(tile) or doors.has(tile):
@@ -1395,9 +1394,6 @@ func _begin_leg(target_world: Vector2) -> void:
 	_unsticking = false
 	_unstick_cycles = 0
 	_leg_stall_episodes = 0
-	_dbg_path("leg '%s' -> %s" % [_current_word, TelemetryLog.tile(target_tile)]) # DBG
-	if not _targets.is_empty() and _current_word == _targets[0]: # DBG
-		_dbg_map() # DBG
 
 ## Elapsed day time, in simulated seconds — this rig's own `_elapsed_seconds`, not
 ## `_day.time_total - _day.time_remaining`. The two agree while the day is played straight, since
@@ -1448,8 +1444,6 @@ func _follow(delta: float) -> void:
 ## rather than giving up every door's reach because every step out of this one read as blocked.
 func _held_at_a_door() -> bool:
 	if _player.is_detained():
-		if not _held:
-			_dbg("held at %s" % TelemetryLog.tile(_city.map.world_to_tile(_player.global_position))) # DBG
 		if not _held and _count_the_door():
 			return true
 		_held = true
@@ -1464,7 +1458,6 @@ func _held_at_a_door() -> bool:
 		_held = false
 		_teleported = false
 		_latch_the_doors_round_her()
-		_dbg("released at %s latched %d" % [TelemetryLog.tile(_city.map.world_to_tile(_player.global_position)), _latched_doors.size()]) # DBG
 		_replan()
 		return _waypoints.is_empty() or _resolving
 	return false
@@ -1515,7 +1508,6 @@ func _maybe_replan(delta: float) -> void:
 	_stuck_reference = here
 	if stuck:
 		_stuck_streak += 1
-		_dbg("stuck streak %d at %s" % [_stuck_streak, TelemetryLog.tile(_city.map.world_to_tile(here))]) # DBG
 		# A first stall replans the ordinary way, since the tile grid may simply have moved under
 		# her. A second in a row means the grid says nothing changed and the ordinary replan
 		# already tried and failed to move her, which a crowd she cannot yet press through and a
@@ -1653,7 +1645,6 @@ func _replan() -> void:
 		return
 	_waypoints = _to_world(path)
 	_waypoints[_waypoints.size() - 1] = _current_target_world
-	_dbg_path("replan '%s'" % _current_word) # DBG
 	Telemetry.note("route", "day %d: re-planned to '%s' (%.1fs, %d waypoints)"
 			% [_day_number, _current_word, _elapsed(), _waypoints.size()])
 
@@ -1837,9 +1828,6 @@ func _arrive() -> void:
 ## already ticking every frame it is not walking a leg, and a poll costs nothing a signal
 ## connection would not have, without a second lifetime to manage.
 func _check_settled() -> void:
-	if OS.get_environment("ROUTE_DEBUG") != "" and Engine.get_physics_frames() % 60 == 0: # DBG
-		var at := _player.global_position # DBG
-		_dbg("settle: anchor %s type %s, her %s type %s mult %.2f sleep %.1f state %s" % [TelemetryLog.tile(_city.map.world_to_tile(_settle_anchor)), TelemetryLog.tile_type(_city.map.tile_at(_city.map.world_to_tile(_settle_anchor))), TelemetryLog.tile(_city.map.world_to_tile(at)), TelemetryLog.tile_type(_city.map.tile_at(_city.map.world_to_tile(at))), _city.sleepiness_multiplier(at), _baby.sleepiness, _baby.state]) # DBG
 	if _baby.state == GameEnums.BabyState.ASLEEP:
 		_settling = false
 		_settle_anchor = Vector2.INF
@@ -1930,70 +1918,6 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 		Telemetry.note("route", "day %d: day ended (%s) before reaching '%s', %.1fs (day time)"
 				% [_day_number, GameEnums.DayResult.keys()[result], _current_word, _elapsed()])
 	get_tree().quit()
-
-# DEBUG-M181 begin
-func _dbg(text: String) -> void:
-	if OS.get_environment("ROUTE_DEBUG") != "":
-		print("[RD %.1f] %s" % [_elapsed_seconds, text])
-
-func _dbg_path(label: String, path: Array[Vector2] = []) -> void:
-	if OS.get_environment("ROUTE_DEBUG") == "":
-		return
-	var here := _city.map.world_to_tile(_player.global_position)
-	var tiles: Array[String] = []
-	for p in (path if not path.is_empty() else _waypoints):
-		tiles.append(TelemetryLog.tile(_city.map.world_to_tile(p)))
-	_dbg("%s from %s accepted=%d latched=%d avoid=%d: %s" % [label,
-			TelemetryLog.tile(here), _plan_accepted.size(), _latched_doors.size(),
-			_leg_avoid.size(), " ".join(tiles)])
-
-func _dbg_map() -> void:
-	var rect := OS.get_environment("ROUTE_DEBUG_RECT")
-	if rect == "":
-		return
-	var r := rect.split(",")
-	var clear := _body_clear_tiles()
-	var doors := _door_tiles()
-	var gate := _gate_ground()
-	var hazards := _hazard_tiles()
-	var legend := {GameEnums.TileType.BUILDING: "#", GameEnums.TileType.SIDEWALK: ".",
-			GameEnums.TileType.ROAD: "=", GameEnums.TileType.CROSSING: "z",
-			GameEnums.TileType.PARK: "p", GameEnums.TileType.SQUARE: "s", GameEnums.TileType.ALLEY: "a",
-			GameEnums.TileType.PLAYGROUND: "g", GameEnums.TileType.HOME: "H",
-			GameEnums.TileType.FOREST: "f", GameEnums.TileType.QUIET_SQUARE: "q",
-			GameEnums.TileType.COURTYARD: "c", GameEnums.TileType.SPOILED: "x"}
-	var header := "     "
-	for x in range(int(r[0]), int(r[2]) + 1):
-		header += str(x % 10)
-	print(header)
-	for y in range(int(r[1]), int(r[3]) + 1):
-		var line := "%4d " % y
-		for x in range(int(r[0]), int(r[2]) + 1):
-			var tile := Vector2i(x, y)
-			var ch: String = legend.get(_city.map.tile_at(tile), "?")
-			if _city.map.is_closed(tile):
-				ch = "C"
-			elif _city.map.is_obstructed(tile):
-				ch = "O"
-			elif _city.map.is_soft_sealed(tile):
-				ch = "S"
-			elif gate.has(tile):
-				ch = "G"
-			elif hazards.has(tile):
-				ch = "!"
-			elif doors.has(tile):
-				ch = "D"
-			elif clear.has(tile):
-				ch = "o"
-			line += ch
-		print(line)
-	for plan: EventScheduler.Planned in _city.events.plans():
-		if plan.is_placed() and not plan.spent:
-			var at := _planned_position(plan)
-			var t := _city.map.world_to_tile(at)
-			if t.x >= int(r[0]) and t.x <= int(r[2]) and t.y >= int(r[1]) and t.y <= int(r[3]):
-				print("  plan %s at %s (%.0f,%.0f) facing %s" % [plan.def.id, TelemetryLog.tile(t), at.x, at.y, plan.facing])
-# DEBUG-M181 end
 
 func _release() -> void:
 	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
