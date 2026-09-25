@@ -328,6 +328,23 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 
 ---
 
+## M196 — The roadblock is end-on on a vertical street, and its guard stands beside it · asked for 2026-09-25
+
+> "the barrier is still the sideway view for each segment in vertical" · "also the guards are on
+> top of the barrier?"
+
+[PLAYTEST-135](playtests/PLAYTEST-135.md).
+
+- [ ] **A roadblock stacked down a north-south run draws an end-on segment**: a new
+      `roadblock_segment_vertical.svg`, drawn SVG first in the roadblock's own materials, chosen
+      by the spread's axis the way `EventInstance` picks `barrier_segment_vertical` for
+      roadworks, tiling edge to edge so the stack reads as one band.
+- [ ] **The roadblock's guard stands beside the band, never over it**: while posted he is drawn
+      clear of the barrier's picture, on the side she approaches from, and when he leaves the
+      post he sets off from there.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
