@@ -85,7 +85,8 @@ test_return_patrols.gd 2093
 test_route_lines.gd 18989
 test_route_rig.gd 40793
 test_route_tree.gd 21728
-test_routes_closures.gd 151617
+test_routes_closures.gd 133600
+test_routes_fallen_trees.gd 78752
 test_routes_kerb_tint.gd 1819
 test_routes_lattice.gd 5609
 test_save.gd 966
