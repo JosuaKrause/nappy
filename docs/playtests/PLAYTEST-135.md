@@ -44,5 +44,6 @@ only the one on her side giving chase, together with (a).
 3. **A roadblock has a guard on each side of its band.**
 4. **Only the guard on her side gives chase**, since the band blocks the other.
 5. **The chasing guard sets off from his post, and his stand-off is measured from his catch
-   reach** (option (a)), so he still warns before he lunges. Proposed with statements 3 and 4;
+   reach** (option (a)), so he notices her outside his stand-off and lunges from it rather than on the
+   first frame. Proposed with statements 3 and 4;
    the player answered the proposal without objecting to it.

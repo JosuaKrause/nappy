@@ -342,8 +342,9 @@ the storefronts redrawn, and her home block keeping its ground-floor windows
 - [ ] **A guard stands on each side of the band, never over it** ("have one guard on each
       side?"), and **only the one on her side gives chase**, "since the other one will be
       blocked". He sets off from his own post, and his stand-off is measured from his 28px catch
-      reach rather than his field's 86px core, so a guard posted beside the band still runs his
-      whole warning before he lunges.
+      reach rather than his field's 86px core (106px rather than 164px), so a guard posted beside
+      the band still notices her outside his stand-off and lunges from it, as every pursuer does,
+      rather than on the first frame.
 
 ---
 
