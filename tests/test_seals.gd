@@ -721,6 +721,13 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 ## junction the rule kept open at every insertion is open in the finished set too, however the
 ## finished set is re-asked.
 ##
+## **Checked against `main`'s own scheduler, not only asserted here.** With `standing` accepted by
+## `build_day` but not yet threaded into the three rules — the placement code this branch changes,
+## reverted, `standing`'s own reachability use elsewhere left alone — this assertion fails, on
+## catalogue rows only (`cafe_tables`, `ice_cream_van`, `busker`, `market_stall`, `leaf_blower`),
+## never on a seal or a wall body: the gap this test guards is real and this test catches it. With
+## the fix, zero failures.
+##
 ## **Checked over `rows` — `build_day`'s own output — and not over `standing` itself.** A seal or
 ## a wall body is never asked this question at its own placement, on either side of this branch:
 ## `SealPlanner.plan_day` and `RegionPlanner.plan_day` do not call `_best_of` for their own

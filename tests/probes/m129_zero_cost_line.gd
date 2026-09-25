@@ -348,10 +348,17 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	var no_scars: Array[Dictionary] = []
 	var no_calm: Array[Vector2i] = []
 	# `EventManager.start_day`'s own `doors` and `standing`: where today's door structure stands
-	# (kept clear of by `_clear_of_the_doors`) and what the seals and the region wall's own bodies
-	# already stand as, so `build_day`'s placement rules see the same ground the real day plans
-	# against rather than an empty city under them. Missing this was itself a probe/rule
-	# disagreement — see `DECISIONS.md`, M129, "which placements the three rules never see".
+	# (kept clear of by `_clear_of_the_doors`, a pre-existing rule this probe simply never
+	# exercised before) and what the seals and the region wall's own bodies already stand as
+	# (`standing`, newly threaded into the three placement rules — `EventScheduler._best_of`'s own
+	# doc). Missing both was itself a probe/rule disagreement — see `DECISIONS.md`, M129, "which
+	# placements the three rules never see" — and each moves the headline on its own: isolated
+	# against `main`'s own scheduler (`standing` accepted but not yet asked of the three rules),
+	# `doors` alone accounts for most of the gain this measurement shows and `standing` alone for
+	# a small remainder; the `standing`-in-the-three-rules fix this branch adds is a further, on
+	# its own smaller, gain on top of both — see `tests/test_seals.gd`,
+	# `_test_the_catalogue_sees_a_seal_at_a_route_junction`; the PR description carries the full
+	# isolation table.
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
 		doors.append(body.position)
