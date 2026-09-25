@@ -12,9 +12,9 @@ OUT.png with:
     illustrated mother for scale;
   * the band assembled the way `EventInstance._draw_spread` draws it for a roadblock (60px each
     side of its centre, the segment count, stretch and end posts copied from that function), at
-    game scale and from the 4x raster: broadside with the guard at his north and south posts, and
+    game scale and from the 4x raster: broadside with a guard at each of its north and south posts, and
     down a north-south column as it was drawn before (the broadside picture stacked) and as it is
-    now (the end-on picture), with the guard at his west and east posts. The guard's feet stand at
+    now (the end-on picture), with a guard at each of its west and east posts. The guard's feet stand at
     `EventInstance._guard_post_offset()`'s arithmetic, copied here.
 
 The ground is the illustrated road tile.
@@ -164,7 +164,7 @@ def main():
     for title, seg in (("AFTER", "roadblock_segment_vertical"), ("BEFORE", "roadblock_segment")):
         a = assemble(pics, 1, seg, with_guards=title == "AFTER")
         blocks.append((f"{title}: broadside band (left) and north-south column (right), game scale"
-                       + (", guard at each of his posts" if title == "AFTER"
+                       + (", a guard at each post" if title == "AFTER"
                           else ", guard at the band's centre"),
                        a.resize((a.width * 2, a.height * 2), Image.NEAREST)))
     blocks.append(("AFTER: the same, 4x raster", assemble(pics, 4, "roadblock_segment_vertical")))
