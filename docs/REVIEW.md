@@ -348,10 +348,14 @@ item below for as long as looking takes.
   meets a full door from inside the door's own street, read as wrong? Record is `DECISIONS.md`,
   M110, walkers are held at a door.
 - **Find a roadblock on day 7 or later** (a 120px barrier across a road, drawn as one continuous
-  barrier with end posts). Does it read as one barrier rather than blocks? A guard stands at the
-  middle of every one from the start, and at a roadblock that does not hunt he is a drawing only:
-  **does he read as a manned checkpoint, or as a threat she should be routing around?** Record is
-  `DECISIONS.md`, M168, the roadblock's guard, and M56, the roadblock hunts.
+  barrier with end posts; down a north-south column it is drawn end-on). Does it read as one
+  barrier rather than blocks, and does the column read as a wall rather than a pole? A guard
+  stands on each side of the band from the start, and at a roadblock that does not hunt they are
+  a drawing only: **do they read as a manned checkpoint, or as a threat she should be routing
+  around?** At a hot one only the guard on her side leaves his post: **does the one who stays
+  read as blocked by the band, and does the chaser's short approach before his lunge read as a
+  warning?** Record is `DECISIONS.md`, M168, the roadblock's guard, M56, the roadblock hunts, and
+  M196, the roadblock is end-on and has a guard on each side.
 - **Find the burning building on day 3** (`--day 3`; it is on a pavement against a building). The
   engine arrives along the fire's street only once the fire is on screen. Does the engine read as
   *summoned by the sight*, and does a day where she never finds the fire feel different? Record

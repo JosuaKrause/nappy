@@ -54,3 +54,33 @@ only the one on her side giving chase, together with (a).
 
 6. **The barrier's picture reaches across the whole street it closes**, on both axes, as far as
    its body does.
+
+## Then, before the release
+
+The draft's picture fix showed the gap honestly: the catalogue roadblock's body is 120px long on
+a 192px street and centred on a road-lane tile 16px off the street's middle, which leaves 20px on
+one side and 52px on the other, wider than the 28px pram, so she can walk round every catalogue
+roadblock on one sidewalk. Offered: close the street fully as its own item after this release
+(the orchestrator's pick), or keep the gap as a feature.
+
+> "close the street fully"
+
+7. **A catalogue roadblock closes its whole street**, as its own item after this release.
+
+A region wall across a street stands as three roadblock bodies (sidewalk, road, sidewalk, 64px
+each), and with a guard on each side of every band it draws six guards. Offered: one pair of
+guards per wall crossing (the orchestrator's pick), or leave six.
+
+> "maybe four? one on each sidewalk. would that cover everything?"
+
+8. **A region wall across a street has four guards, one on each sidewalk on each side of the
+   wall.** Asked with a question — whether four covers everything — answered in conversation the
+   same day: a wall's guards never chase, so they are a drawing only, and four puts a guard on
+   whichever sidewalk she walks up to, from either side; the road lane between them has none.
+
+On the draft's new pictures, and whether #355 can merge:
+
+> "lgtm"
+
+9. **The end-on segment, the two posted guards and the barrier reaching its body's ground are
+   approved as drawn.**
