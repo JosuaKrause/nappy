@@ -82,7 +82,7 @@ jobs:
     steps:
       # Same partial clone and sparse checkout as ci.yml's `shards` job: the boot check and the
       # Web export read nothing under docs/evidence/ (docs/ carries a .gdignore, so the import
-      # pass never sees it either). M201 in docs/TODO.md, a CI job does not download the evidence.
+      # pass never sees it either). docs/DECISIONS.md, M201, a CI job does not download the evidence.
       - uses: actions/checkout@v4
         with:
           filter: blob:none

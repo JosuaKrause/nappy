@@ -46,7 +46,7 @@ jobs:
       # content only for a path the sparse checkout below actually selects. That checkout excludes
       # docs/evidence/ (about 910 of the tree's 949 MB) and re-includes only the SVGs under it,
       # since tools/lint.sh's well-formedness check is the only thing this job reads there --
-      # see M201 in docs/TODO.md, a CI job does not download the evidence.
+      # see docs/DECISIONS.md, M201, a CI job does not download the evidence.
       - uses: actions/checkout@v4
         with:
           filter: blob:none
@@ -184,7 +184,7 @@ jobs:
     steps:
       # Same partial clone as `gates` above, minus the SVG re-include: no suite `tools/test.sh`
       # runs reads a file under docs/evidence/ -- it only appears in doc comments naming where a
-      # probe (never run in CI; see the verify skill) writes its own output. M201 in docs/TODO.md.
+      # probe (never run in CI; see the verify skill) writes its own output. docs/DECISIONS.md, M201.
       - uses: actions/checkout@v4
         with:
           filter: blob:none
