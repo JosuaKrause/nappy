@@ -350,6 +350,20 @@ wall's roadblocks are not affected: they are three narrower bodies across the st
 
 ---
 
+## M202 — A rig's own presses reach the game · found 2026-09-25
+
+Found building M137, the trap comes to her: since M195, a rig's window takes no focus, hears no
+stray key, and always closes, `Main._input()` marks every input event handled while
+`_rig_locked_out` is set, and that includes the events the rig itself injects for `--press`. So
+`--press snapshot_burst <seconds>` records no burst and `--press pause` pauses nothing, while the
+**verify** skill tells every agent to take motion evidence exactly that way.
+
+- [ ] **A rig still refuses a real key or pointer press, and hears its own `--press`**, both the
+      action form and the `key:<name>` form. Mark the injected events rather than letting a whole
+      class of event through, so a real key never passes, and cover both halves with a test.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
