@@ -3,10 +3,12 @@ extends Node2D
 ##
 ## The right-hand overlay is a developer readout, not part of the game's UI. It runs whenever
 ## `_debug` (`DevFlags.enabled()`) or `_readout_requested` (`DevFlags.readout_requested()`, the
-## page's own `?debug=1`) holds — see `_readout_requested`'s own doc — and otherwise the string is
-## never assembled, not merely hidden behind an invisible label. Every other piece of developer
-## furniture (`_debug_layers`, `_route_lines`, the snapshot key, every dev flag) stays gated behind
-## `_debug` alone.
+## page's own `?debug=1`) holds — see `_readout_requested`'s own doc. `_debug_layers` and
+## `_route_lines` are built under that same `_debug or _readout_requested` gate now too, so a
+## release page's own `?debug=1&layers=1,3,5` can ask for a picture — but every other piece of
+## developer furniture (the snapshot key, every other dev flag) stays gated behind `_debug` alone,
+## except the smaller M193 bundle (`DevFlags.live_debug_requested()`) named at `_readout_requested`'s
+## own doc.
 
 const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
@@ -99,9 +101,11 @@ var _no_focus_pause := DevFlags.no_focus_pause()
 ## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
 ## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
 ## test can set it directly and check the release shape. `_status.visible` and the text assembly
-## in `_process()` read `_debug or _readout_requested`; `_add_debug_layers()`, the snapshot key and
-## the layer-toggle keys all keep reading `_debug` alone, so this flag reaches the readout and
-## nothing else — see docs/TODO.md, M133, "the readout on the live page".
+## in `_process()` read `_debug or _readout_requested`, and so now do `_add_debug_layers()` and
+## `_add_route_lines()` — see docs/TODO.md, M133, "the readout on the live page", and M193, "the
+## live page's ?debug=1 reaches the debug flags". The snapshot key and the layer-toggle keys keep
+## reading `_debug` alone: a release page can ask `?layers=` for a picture already drawn a
+## particular way, never toggle one by hand with no keyboard event the page itself sent.
 var _readout_requested := DevFlags.readout_requested()
 ## `DevFlags.skip_words()`, read once for the same reason `_readout_requested` is: so a test can
 ## set it directly, and so the readout's own `skip` line below is not re-splitting `--skip`'s
@@ -138,12 +142,12 @@ var _edge_layer: CanvasLayer
 ## What is currently charging the meter, drawn under the world rather than over it — see
 ## `_add_excitement_halo()`.
 var _halo: ExcitementHalo
-## The fields, shadows and bounding-box overlays — `null` outside a debug build, so "is a layer
-## node in the tree" is a release-build test's own question rather than one this class has to
-## remember to ask of `_debug` separately. See `_add_debug_layers()`.
+## The fields, shadows and bounding-box overlays — `null` unless `_debug or _readout_requested`
+## holds, so "is a layer node in the tree" is a release-page test's own question rather than one
+## this class has to remember to ask of either flag separately. See `_add_debug_layers()`.
 var _debug_layers: DebugLayers
-## The day's planned routes, drawn as purple polylines — `null` outside a debug build, the same
-## shape `_debug_layers` uses. See `_add_route_lines()`.
+## The day's planned routes, drawn as purple polylines — `null` on the same "absent, not merely
+## hidden" terms `_debug_layers` uses. See `_add_route_lines()`.
 var _route_lines: RouteLines
 ## Set by `_add_debug_mode_note()`, or left `null` when `_readout_requested` is `false` — a test's
 ## own way to check the release shape without a live tree search for the node.
@@ -1380,20 +1384,23 @@ static func _graph_starts_on(spikes_requested: bool, layers: Array[int]) -> bool
 	return spikes_requested or 6 in layers
 
 ## The fields, shadows and bounding-box overlays — see `DebugLayers`. **Absent from the tree
-## outside a debug build**, not merely built and left invisible: `_debug_layers` stays `null`, so
-## nothing here is queried, nothing is drawn and a release build pays for none of it.
+## unless `_debug or _readout_requested` holds**, not merely built and left invisible:
+## `_debug_layers` stays `null`, so nothing here is queried, nothing is drawn and an ordinary
+## release page pays for none of it.
 ##
 ## `z_index = 3` puts it above `Entities` (2, the y-sorted layer everything on the ground lives on)
 ## — above everything else in the world, unlike the halo's own `z_index = 1`, because a bounding
 ## box drawn under the thing it outlines would be the one cue in the game nobody could read.
-## Every layer starts off, unless `-- --layers 1,3` (or the page's own `?layers=1,3`) says
-## otherwise — see `_toggle_debug_layer()` for the number key that turns one on by hand.
+## Every layer starts off, unless `-- --layers 1,3` (or the page's own `?layers=1,3`, which also
+## reaches a release page behind `?debug=1` — docs/TODO.md, M193, "the live page's ?debug=1
+## reaches the debug flags") says otherwise — see `_toggle_debug_layer()` for the number key that
+## turns one on by hand, a debug build only.
 ##
 ## Called once per world, the way `_add_danger_edge()` is, so the escape's building gets the
 ## same three layers and walking out of the service door points them at the city with whatever
 ## `1`–`3` had switched on still on.
 func _add_debug_layers() -> void:
-	if not _debug:
+	if not (_debug or _readout_requested):
 		return
 	if _debug_layers:
 		_debug_layers.setup(_event_source(), _crowd_now(), _world_now(), _player)
@@ -1407,17 +1414,18 @@ func _add_debug_layers() -> void:
 	_pauses_with_the_game(_debug_layers)
 	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes")
 
-## The day's planned routes — see `RouteLines`. **Absent from the tree outside a debug build**, the
-## same "null, not merely invisible" shape `_add_debug_layers()` uses. A sibling of `_debug_layers`
-## rather than a fourth case on it: that class queries the live geometry every frame it is asked to
-## draw, and this one draws a fixed plan that only changes once a day, at `_start_day()`'s own call
-## to `refresh()` — so it earns no `_process()` and no place inside a class built around one.
+## The day's planned routes — see `RouteLines`. **Absent from the tree unless `_debug or
+## _readout_requested` holds**, the same "null, not merely invisible" shape `_add_debug_layers()`
+## uses. A sibling of `_debug_layers` rather than a fourth case on it: that class queries the live
+## geometry every frame it is asked to draw, and this one draws a fixed plan that only changes once
+## a day, at `_start_day()`'s own call to `refresh()` — so it earns no `_process()` and no place
+## inside a class built around one.
 ##
 ## Parented under `Main` directly rather than under `_debug_layers` — the two are independent
 ## layers with independent lifetimes, and nesting one inside the other would make "toggle routes
 ## off" and "toggle every geometry layer off" the same tree edit for no reason.
 func _add_route_lines() -> void:
-	if not _debug:
+	if not (_debug or _readout_requested):
 		return
 	_route_lines = RouteLines.new()
 	_route_lines.name = "RouteLines"

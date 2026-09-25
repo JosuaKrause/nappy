@@ -225,9 +225,10 @@ written before the run's own `ending` line.
 
 ### `--invincible`
 
-`--invincible` (or the page's own `?invincible=1`, a debug web build only) is `DevFlags`' own
-developer flag — gated behind `DevFlags.enabled()` (`OS.is_debug_build()`) like every other one,
-listed in README.md's "Dev flags" table. Under it, `DayController._ignores_loss()` is the one
+`--invincible` (or the page's own `?invincible=1`, which also reaches a release page behind
+`?debug=1` — docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug flags") is
+`DevFlags`' own developer flag, gated behind `DevFlags.live_debug_requested()` rather than
+`enabled()` alone, and listed in README.md's "Dev flags" table. Under it, `DayController._ignores_loss()` is the one
 predicate all three losing results — crying, a hard fail, the clock reaching zero — consult before
 ending the day, so none of them do; a won day still ends normally. **It also stands the day clock
 and the excitement meter still**, rather than letting the day run its noisy, darkening course with
@@ -679,18 +680,21 @@ build has nothing in `project.godot` to reach:
   `main.gd` and toggleable like the other three in a debug build: off, the string is not
   assembled, not merely hidden behind an invisible label. **A release build carries it too when
   the page's own `?debug=1` (or the command line's `--debug`) holds** — `DevFlags.readout_requested()`,
-  parsed straight off the page's query string and not gated behind `enabled()`, one of the two
-  bounded release-safe query flags beside `?telemetry=1` — and nothing else: the three geometry
-  layers above, the snapshot key and every other dev flag stay behind `_debug` alone, so this flag
-  reaches only the readout. Whenever it holds, a fixed "DEBUG MODE ON" note (`DebugModeNote`,
-  `src/dev/debug_mode_note.gd`) is drawn for the whole session and answers to nothing that would
-  take it off again — not the `4` key, not a press, not the title screen hiding `_status` around
-  it — so a page reached with the flag on is never mistaken for the ordinary release page everyone
-  else gets. The note carries the build stamp after its words and the readout's first line
-  repeats it — `TitleScreen.build_text()`, `git describe`'s form and the commit, `v0.10.3
-  (875609a5)` on a release — read from `git` on a working tree and from the two settings
-  `tools/export-web.sh` bakes into an export, `application/config/version` and
-  `application/config/source_commit`, so a screenshot of either says which code it is of.
+  parsed straight off the page's query string and not gated behind `enabled()`. `main._add_debug_layers()`
+  and `main._add_route_lines()` build the geometry layers (`1`-`3`, `5`) under that same `_debug or
+  _readout_requested` gate now too, so a release page's own `?debug=1&layers=1,3,5` has somewhere
+  to draw (docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug flags") — only the `1`/`2`/`3`
+  key presses that toggle one by hand stay debug-build only, since a release page sends no such
+  keypress on its own. Whenever `readout_requested()`
+  holds, a fixed "DEBUG MODE ON" note (`DebugModeNote`, `src/dev/debug_mode_note.gd`) is drawn for
+  the whole session and answers to nothing that would take it off again — not the `4` key, not a
+  press, not the title screen hiding `_status` around it — so a page reached with the flag on is
+  never mistaken for the ordinary release page everyone else gets. The note carries the build
+  stamp after its words and the readout's first line repeats it — `TitleScreen.build_text()`,
+  `git describe`'s form and the commit, `v0.10.3 (875609a5)` on a release — read from `git` on a
+  working tree and from the two settings `tools/export-web.sh` bakes into an export,
+  `application/config/version` and `application/config/source_commit`, so a screenshot of either
+  says which code it is of.
   The same gate lets the page choose what the seed line itself reads: `?seed=N`
   (`DevFlags.seed_override()`) regenerates the city from a positive integer the way the command
   line's own `--seed` does, refusing `0`, a negative number, an empty value or anything else that
@@ -698,6 +702,13 @@ build has nothing in `project.godot` to reach:
   only while `readout_requested()` already holds, so a release page nobody asked `?debug=1` of
   never takes a seed either. The command line's `--seed` takes precedence over the query form
   when both are present.
+  **`readout_requested()` also gates `DevFlags.live_debug_requested()`**, the second, smaller
+  bundle M193 opens on a release page beside the readout — `?day=`, `?invincible=1`, `?layers=`,
+  `?controls=`, `?escape=1`, `?meters=`, `?daylength=` and `?ending=`/`?blackout=1` — so the
+  snapshot key and everything that drives input, takes a picture or writes a file are the only
+  things still unreachable from a visitor's address bar (docs/TODO.md, M193, "the live page's
+  ?debug=1 reaches the debug flags"). `GameSave.uses_save()` refuses the save the moment the query
+  actually used one of those parameters.
   Directly beneath the seed line, a `skip` line names what `--skip`/`?skip=` turned off — `events`,
   `crowd`, `shadows`, `motion`, comma-separated, any order (`DevFlags.skip_words()`) — turning the
   desktop's own per-frame draw probes (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d)

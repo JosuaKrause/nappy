@@ -44,16 +44,19 @@ static func from_word(word: String) -> Mode:
 ## The page's own `?controls=joystick` or `?controls=tap`, read through
 ## `JavaScriptBridge.eval("window.location.search")` — the one place in the project that asks the
 ## browser's own address bar anything. "" outside a Web export, where the address bar does not
-## exist to ask, "" for a page with no such parameter, and "" in a release build regardless of the
-## query string.
+## exist to ask, "" for a page with no such parameter, and "" on a release page nobody asked
+## `?debug=1` of.
 ##
-## **Gated behind `DevFlags.enabled()`.** *(2026-09-06, the player: "for dev you need it to be
-## controllable from the getgo -- for release there should be no modifiers".)* A release build
-## carries no modifiers of any kind; a debug build carries every one of them immediately. Through
-## `_reads_the_url()` below, so the promise is a truth table a test can check rather than a build
-## type nothing can fake.
+## **Gated behind `DevFlags.live_debug_requested()`.** *(2026-09-06, the player: "for dev you need
+## it to be controllable from the getgo -- for release there should be no modifiers"; overturned
+## 2026-09-25 for this flag among others, docs/TODO.md, M193, "the live page's ?debug=1 reaches the
+## debug flags": "on the published site behind debug=1 we'd want some of the debug flags ... so
+## debugging the live build is easier".)* A debug build carries the query read immediately, with or
+## without `?debug=1`; a release page carries it only once its own `?debug=1` has asked for it.
+## Through `_reads_the_url()` below, so the promise is a truth table a test can check rather than
+## two live reads nothing in a test process can fake at once.
 static func _url_word() -> String:
-	if not _reads_the_url(DevFlags.enabled(), OS.get_name() == "Web"):
+	if not _reads_the_url(DevFlags.live_debug_requested(), OS.get_name() == "Web"):
 		return ""
 	var search: Variant = JavaScriptBridge.eval("window.location.search")
 	if typeof(search) != TYPE_STRING:
@@ -61,14 +64,14 @@ static func _url_word() -> String:
 	return _word_from_query(search)
 
 ## The decision behind `_url_word()`'s own gate, pulled out to a pure function of its two inputs
-## rather than welded into the `if` as `DevFlags.enabled() or OS.get_name() != "Web"` — a build type
-## and a platform are exactly the two things a test cannot fake, so the untestable half of "a
-## release build carries no modifiers" would otherwise be the promise itself. With the predicate
-## exposed, a test drives the whole table directly: debug and web is the one case the flag exists
-## for; release and web — the deployed page — is the case the promise is actually about; neither
-## debug-not-web nor release-not-web ever had a `window.location.search` to ask in the first place.
-static func _reads_the_url(is_debug: bool, on_web: bool) -> bool:
-	return is_debug and on_web
+## rather than welded into the `if` as `DevFlags.live_debug_requested() or OS.get_name() != "Web"`
+## — a build type and a live page query are exactly the two things a test cannot fake at once, so
+## the untestable half of the gate would otherwise be the promise itself. With the predicate
+## exposed, a test drives the whole table directly: `flags_open` and web is the one case the flag
+## exists for; neither `flags_open`-not-web nor closed-not-web ever had a `window.location.search`
+## to ask in the first place.
+static func _reads_the_url(flags_open: bool, on_web: bool) -> bool:
+	return flags_open and on_web
 
 ## `"?controls=joystick&seed=4"` (or without the leading `?`) to `"joystick"`, or `""` for a query
 ## with no `controls` key. Pulled out from `_url_word()` so a test can ask the parsing question

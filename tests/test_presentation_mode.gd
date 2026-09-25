@@ -43,6 +43,14 @@ func run(t) -> void:
 	_test_day_from_query_is_not_given_when_absent(t)
 	_test_web_debug_flag_used_names_the_bundles_own_parameters(t)
 	_test_web_debug_flag_used_ignores_debug_alone_and_the_older_bundle(t)
+	_test_layers_from_query_is_unchanged_by_m193(t)
+	_test_controls_reads_the_url_is_the_live_debug_gate_and_web(t)
+	_test_controls_word_from_query_is_unchanged_by_m193(t)
+	_test_escape_from_query(t)
+	_test_meters_from_query(t)
+	_test_day_length_from_query(t)
+	_test_ending_from_query(t)
+	_test_blackout_from_query(t)
 	_test_the_physics_tick_is_pinned_to_thirty_with_interpolation_on(t)
 
 ## The presentation is decided before the game runs and cannot be moved from inside it. Stated as
@@ -194,6 +202,74 @@ func _test_web_debug_flag_used_ignores_debug_alone_and_the_older_bundle(t) -> vo
 		"?debug=1 alone opens the bundle without having used anything in it")
 	t.check(not DevFlags._web_debug_flag_used_in_query("?seed=1234&skip=events"),
 		"the always-open seed and skip flags are not part of this bundle")
+
+## `?layers=`'s own query parser is untouched by M193 — only its outer gate
+## (`layers_override()`) moved from `enabled()` alone to `live_debug_requested()`, which
+## `_test_live_debug_requested_is_debug_or_readout()` above already pins.
+func _test_layers_from_query_is_unchanged_by_m193(t) -> void:
+	t.check(DevFlags._layers_from_query("?layers=1,3") == "1,3",
+		"the layers parameter is read out of the query the same as before M193")
+	t.check(DevFlags._layers_from_query("") == "", "an absent parameter is still an empty value")
+
+## `ControlsMode._reads_the_url()`'s own truth table, moved from `is_debug and on_web` to
+## `flags_open and on_web` under M193 — `flags_open` is `DevFlags.live_debug_requested()`.
+func _test_controls_reads_the_url_is_the_live_debug_gate_and_web(t) -> void:
+	t.check(ControlsMode._reads_the_url(true, true), "the bundle open and on the web reads it")
+	t.check(not ControlsMode._reads_the_url(true, false),
+		"the bundle open off the web has no address bar to ask")
+	t.check(not ControlsMode._reads_the_url(false, true),
+		"on the web with the bundle closed reads nothing")
+	t.check(not ControlsMode._reads_the_url(false, false), "neither open nor on the web")
+
+func _test_controls_word_from_query_is_unchanged_by_m193(t) -> void:
+	t.check(ControlsMode._word_from_query("?controls=joystick") == "joystick",
+		"the controls parameter is read out of the query the same as before M193")
+	t.check(ControlsMode._word_from_query("?seed=4&controls=tap") == "tap",
+		"found among other URL parameters")
+	t.check(ControlsMode._word_from_query("") == "", "an absent parameter is still empty")
+
+## `?escape=1` — the bare boolean M193 opens; `start_escape_at()`'s own optional target word stays
+## command-line only (see that function's own doc).
+func _test_escape_from_query(t) -> void:
+	t.check(DevFlags._escape_from_query("?escape=1"), "?escape=1 starts the escape scene")
+	t.check(not DevFlags._escape_from_query("?escape=0"), "escape=0 starts nothing")
+	t.check(not DevFlags._escape_from_query(""), "an absent parameter starts nothing")
+	t.check(DevFlags._escape_from_query("?debug=1&escape=1"),
+		"found among other URL parameters")
+
+func _test_meters_from_query(t) -> void:
+	t.check(DevFlags._meters_from_query("?meters=10,90") == Vector2(10.0, 90.0),
+		"both numbers are read back")
+	t.check(DevFlags._meters_from_query("?meters=%d,%d" % [Tuning.METER_MAX + 50, -5])
+			== Vector2(Tuning.METER_MAX, 0.0),
+		"each number clamps into range the same as --meters already does")
+	t.check(DevFlags._meters_from_query("") == Vector2(-1.0, -1.0), "an absent value is not given")
+	t.check(DevFlags._meters_from_query("?meters=10") == Vector2(-1.0, -1.0),
+		"one number refuses the whole value rather than guessing the other")
+	t.check(DevFlags._meters_from_query("?meters=a,b") == Vector2(-1.0, -1.0),
+		"non-numeric words refuse the whole value")
+
+func _test_day_length_from_query(t) -> void:
+	t.check(DevFlags._day_length_from_query("?daylength=45") == 45.0,
+		"a plain length is read back")
+	t.check(DevFlags._day_length_from_query("?daylength=0.1") == 1.0,
+		"a length under one second clamps up to one, the same as --day-length")
+	t.check(DevFlags._day_length_from_query("") == -1.0, "an absent value is not given")
+	t.check(DevFlags._day_length_from_query("?daylength=abc") == -1.0,
+		"a non-numeric value refuses the flag rather than a garbage length")
+	t.check(DevFlags._day_length_from_query("?daylength=-4") == -1.0,
+		"a non-positive value refuses the flag")
+
+func _test_ending_from_query(t) -> void:
+	t.check(DevFlags._ending_from_query("?ending=bad") == "bad", "the raw word is read back")
+	t.check(DevFlags._ending_from_query("") == "", "an absent value is the empty word")
+	t.check(DevFlags._ending_from_query("?debug=1&ending=good") == "good",
+		"found among other URL parameters")
+
+func _test_blackout_from_query(t) -> void:
+	t.check(DevFlags._blackout_from_query("?blackout=1"), "?blackout=1 forces the blackout")
+	t.check(not DevFlags._blackout_from_query("?blackout=0"), "blackout=0 forces nothing")
+	t.check(not DevFlags._blackout_from_query(""), "an absent parameter forces nothing")
 
 ## Pins the engine's own physics rate and interpolation setting so a `project.godot` edit cannot
 ## drift the tick out from under every test that steps the game world by hand with its own `STEP`

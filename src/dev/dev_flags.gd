@@ -411,46 +411,87 @@ static func forced_interval() -> float:
 
 const _FORCED_INTERVAL_DEFAULT := 6.0
 
-## `--meters <sleepiness> <excitement>`, clamped into range — or `(-1, -1)` if the flag is
-## absent, malformed, or unreadable outside a debug build. Negative is not a valid meter reading,
-## so it costs nothing extra to reuse as the "not given" sentinel.
+## `--meters <sleepiness> <excitement>` (or the page's own `?meters=sleepiness,excitement`, under
+## `live_debug_requested()`), clamped into range — or `(-1, -1)` if the flag is absent or
+## malformed. Negative is not a valid meter reading, so it costs nothing extra to reuse as the
+## "not given" sentinel. One of the M193 flags cheap to mirror on a release page (docs/TODO.md,
+## M193, "the live page's ?debug=1 reaches the debug flags"): it only seeds `Baby`'s own starting
+## numbers, the same as the command line already does.
 static func meters_override() -> Vector2:
 	var args := _args()
 	var index := args.find("--meters")
-	if index == -1 or index + 2 >= args.size():
+	if index != -1 and index + 2 < args.size():
+		return Vector2(
+				clampf(float(args[index + 1]), 0.0, Tuning.METER_MAX),
+				clampf(float(args[index + 2]), 0.0, Tuning.METER_MAX))
+	if live_debug_requested():
+		return _meters_from_query(_web_query())
+	return Vector2(-1.0, -1.0)
+
+## The bare parsing of `?meters=` against a query string, pulled out so a test can drive it
+## without a web query. `sleepiness,excitement`, both clamped the same way the command line's own
+## two arguments already are; anything that is not exactly two comma-separated numbers refuses the
+## whole value with `push_warning`, the reasoning `_validate_skip_words()` gives for an unknown
+## `--skip` word.
+static func _meters_from_query(query: String) -> Vector2:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() != 2 or pair[0] != "meters":
+			continue
+		var words := pair[1].split(",")
+		if words.size() == 2 and words[0].is_valid_float() and words[1].is_valid_float():
+			return Vector2(
+					clampf(float(words[0]), 0.0, Tuning.METER_MAX),
+					clampf(float(words[1]), 0.0, Tuning.METER_MAX))
+		push_warning("?meters: '%s' is not two comma-separated numbers, ignoring" % pair[1])
 		return Vector2(-1.0, -1.0)
-	return Vector2(
-			clampf(float(args[index + 1]), 0.0, Tuning.METER_MAX),
-			clampf(float(args[index + 2]), 0.0, Tuning.METER_MAX))
+	return Vector2(-1.0, -1.0)
 
 ## `--overview` frames the whole city at once.
 static func overview_requested() -> bool:
 	return "--overview" in _args()
 
-## `--blackout` stands in for the last night's sabotage, for the blackout alone: `Blackout` treats
-## the city as sabotaged, so it goes dark in one frame the moment she is `Tuning.BLACKOUT_DISTANCE`
-## from the power station — at once, from a spawn that far away — on whatever day `--day` names.
-## Nothing else reads it: no task, ending or save sees a sabotage, which is what keeps it a way to
-## photograph the moment rather than a way to reach the good ending.
+## `--blackout` (or the page's own `?blackout=1`, under `live_debug_requested()`) stands in for
+## the last night's sabotage, for the blackout alone: `Blackout` treats the city as sabotaged, so
+## it goes dark in one frame the moment she is `Tuning.BLACKOUT_DISTANCE` from the power station —
+## at once, from a spawn that far away — on whatever day `--day`/`?day=` names. Nothing else reads
+## it: no task, ending or save sees a sabotage, which is what keeps it a way to photograph the
+## moment rather than a way to reach the good ending — trivial to mirror on a release page the
+## same way `--day`/`--invincible` are (docs/TODO.md, M193, "the live page's ?debug=1 reaches the
+## debug flags").
 static func blackout_requested() -> bool:
-	return enabled() and "--blackout" in _args()
+	if "--blackout" in _args():
+		return true
+	if not live_debug_requested():
+		return false
+	return _blackout_from_query(_web_query())
+
+static func _blackout_from_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "blackout" and pair[1] == "1":
+			return true
+	return false
 
 ## `--start-escape` (or the page's own `?escape=1`) skips the title and the city and starts
 ## `main` straight in the escape scene's interior — see docs/TODO.md, "M112 — The escape scene,
-## walkable". Gated the same as every other flag here: `false` outside a debug build, so the one
-## way into a scene with no events, no crowd and no day clock is a debug build, never a URL a
-## release build's own visitor could type.
-##
-## The query form is cheap to answer alongside the command-line one — `_web_query()` already
-## exists for `layers_override()` — and a release web build's own gate is `enabled()`, read here
-## the same way `layers_override()` reads it explicitly rather than through `_args()`, since a
-## bare `_web_query()` carries no gate of its own.
+## walkable". The command line stays behind `enabled()` alone, so the one way to reach a *chosen*
+## interior part (`start_escape_at()`) is still a debug build; the bare boolean is read under
+## `live_debug_requested()` instead, one of the flags M193 opens on a release page (docs/TODO.md,
+## M193, "the live page's ?debug=1 reaches the debug flags") — a visitor's `?debug=1&escape=1`
+## reaches the scene's third-floor default start the same way a debug build's `--start-escape`
+## bare does, with no events, no crowd and no day clock either way.
 static func start_escape() -> bool:
 	if "--start-escape" in _args():
 		return true
-	if not enabled():
+	if not live_debug_requested():
 		return false
-	for parameter in _web_query().trim_prefix("?").split("&"):
+	return _escape_from_query(_web_query())
+
+## The bare parsing of `?escape=1` against a query string, pulled out so a test can drive it
+## without a web query.
+static func _escape_from_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
 		if pair.size() == 2 and pair[0] == "escape" and pair[1] == "1":
 			return true
@@ -478,15 +519,37 @@ static func start_escape_at() -> String:
 	var word: String = args[index + 1]
 	return "" if word.begins_with("--") else word
 
-## `--day-length N` compresses the day, so dusk and the timeout loss can be looked at without
-## sitting through the whole three minutes. `-1.0` is "not given"; the fallback to
-## `Tuning.day_length()` stays with the caller, since that also needs to know which day it is.
+## `--day-length N` (or the page's own `?daylength=N`, under `live_debug_requested()`) compresses
+## the day, so dusk and the timeout loss can be looked at without sitting through the whole three
+## minutes. `-1.0` is "not given"; the fallback to `Tuning.day_length()` stays with the caller,
+## since that also needs to know which day it is. Trivial to mirror on a release page the same way
+## as the rest of the M193 bundle (docs/TODO.md, M193, "the live page's ?debug=1 reaches the debug
+## flags"): both `DevRig.day_length()` and `FinaleController.length()` read it unconditionally, so
+## a visitor's own `?daylength=` reaches an ordinary day exactly as `--day-length` already does.
 static func day_length_override() -> float:
 	var args := _args()
 	var index := args.find("--day-length")
-	if index == -1 or index + 1 >= args.size():
+	if index != -1 and index + 1 < args.size():
+		return maxf(1.0, float(args[index + 1]))
+	if live_debug_requested():
+		var from_query := _day_length_from_query(_web_query())
+		if from_query > 0.0:
+			return from_query
+	return -1.0
+
+## The bare parsing of `?daylength=` against a query string, pulled out so a test can drive it
+## without a web query. Anything that is not a positive number refuses the whole value with
+## `push_warning`, the same as `parse_zoom()` refuses a malformed `--zoom`.
+static func _day_length_from_query(query: String) -> float:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() != 2 or pair[0] != "daylength":
+			continue
+		if pair[1].is_valid_float() and float(pair[1]) > 0.0:
+			return maxf(1.0, float(pair[1]))
+		push_warning("?daylength: '%s' is not a positive number, ignoring" % pair[1])
 		return -1.0
-	return maxf(1.0, float(args[index + 1]))
+	return -1.0
 
 ## `--zoom <factor>` — the gameplay camera's zoom relative to its normal one, so `0.5` shows twice
 ## as much of the world each way with everything else — lighting, entities, HUD — exactly as a
@@ -510,14 +573,29 @@ static func parse_zoom(raw: String) -> float:
 		return 1.0
 	return float(raw)
 
-## `--ending bad|neutral|good` — the raw word, or "" if none was given. Mapping it onto
-## `GameEnums.Ending` and warning on an unknown word stays in `main.gd`, the only caller.
+## `--ending bad|neutral|good` (or the page's own `?ending=`, under `live_debug_requested()`) —
+## the raw word, or "" if none was given. Mapping it onto `GameEnums.Ending` and warning on an
+## unknown word stays in `main.gd`, the only caller, the same for either source. Trivial to mirror
+## on a release page the same way as the rest of the M193 bundle (docs/TODO.md, M193, "the live
+## page's ?debug=1 reaches the debug flags"): the screen it puts up is drawn over a day already
+## running, not a way to end or save a run.
 static func ending_override() -> String:
 	var args := _args()
 	var index := args.find("--ending")
-	if index == -1 or index + 1 >= args.size():
-		return ""
-	return args[index + 1]
+	if index != -1 and index + 1 < args.size():
+		return args[index + 1]
+	if live_debug_requested():
+		return _ending_from_query(_web_query())
+	return ""
+
+## The bare parsing of `?ending=` against a query string, pulled out so a test can drive it
+## without a web query.
+static func _ending_from_query(query: String) -> String:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "ending":
+			return pair[1]
+	return ""
 
 ## `--controls joystick|tap` — the raw word, or "" if none was given. Mapping it onto
 ## `ControlsMode.Mode` stays in `ControlsMode.resolve()`, the only caller, alongside the page's own
@@ -529,22 +607,23 @@ static func controls_override() -> String:
 		return ""
 	return args[index + 1]
 
-## `--layers 1,3` (or the page's own `?layers=1,3`) sets which of `DebugLayers`' three geometry
-## layers start on, so a rig screenshot of a particular disagreement is reproducible without a
-## keypress; `5` (`RouteLines`, the day's routes) and `6` (`FrameGraph`, the spike view) are the two
-## other layers in the list, on the same terms — `main._add_frame_graph()` reads `6 in
-## layers_override()` the same way `_add_route_lines()` reads `5`. `4` (the readout) is not part of
-## this list: it defaults on already, and this flag exists for a clean *geometry* shot. Gated
-## behind `enabled()` explicitly, the same as `ControlsMode._url_word()` gates its own query read,
-## since `_web_query()` itself carries no gate — `readout_requested()` above is the caller that
-## wants it to stay live in a release web build.
+## `--layers 1,3` (or the page's own `?layers=1,3`, under `live_debug_requested()`) sets which of
+## `DebugLayers`' three geometry layers start on, so a rig screenshot of a particular disagreement
+## is reproducible without a keypress; `5` (`RouteLines`, the day's routes) and `6` (`FrameGraph`,
+## the spike view) are the two other layers in the list, on the same terms — `main._add_frame_graph()`
+## reads `6 in layers_override()` the same way `_add_route_lines()` reads `5`. `4` (the readout) is
+## not part of this list: it defaults on already, and this flag exists for a clean *geometry* shot.
+## One of the flags M193 opens on a release page (docs/TODO.md, M193, "the live page's ?debug=1
+## reaches the debug flags"): the command line stays behind `enabled()` through `_args()`, and the
+## query read falls back to `live_debug_requested()` the same shape `ControlsMode._url_word()`
+## gates its own query read.
 static func layers_override() -> Array[int]:
-	if not enabled():
-		return []
 	var args := _args()
 	var index := args.find("--layers")
 	if index != -1 and index + 1 < args.size():
 		return parse_layers(args[index + 1])
+	if not live_debug_requested():
+		return []
 	return parse_layers(_layers_from_query(_web_query()))
 
 ## The bare parsing of a `--layers`/`?layers=` value into layer indices, pulled out so a test can
