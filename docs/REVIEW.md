@@ -21,6 +21,10 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Keep working while an agent takes a capture** (any `tools/shot.sh` or rig-flagged
+  `tools/run.sh`, on this Mac). The rig's window should flash up and hand focus straight back to
+  whatever app was in front. **Does your focus stay put, and is the flicker short enough to
+  ignore?** Record is `DECISIONS.md`, M198, a rig hands focus straight back.
 - **Walk under a lowered boom, then into a checkpoint hut with the guard behind her**
   (any day with a region door; walk across a lowered boom's line, then into the nearer hut —
   not with `--spawn event:checkpoint_gate`, which stands her on a hut's own tile and has her
