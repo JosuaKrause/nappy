@@ -285,6 +285,15 @@ func _ready() -> void:
 	if _resume.is_empty() and GameState.escape_section == FinaleController.Section.NONE:
 		GameState.start_run(DevFlags.seed_override())
 		GameState.day = DevFlags.day_override()
+	# `VisitCounter`'s own "a run begun fresh, or resumed from the save" — fired once here for
+	# every path through this function, ordinary or handed over to the escape, since GameState.day
+	# is already settled for both by this line. `resumed` reads the save alone, not
+	# `GameState.escape_section`'s own carry-over: a won day 14 reloading straight into the escape
+	# in the same sitting is not a resume, and `_escape_section_came_from_the_file()` is what tells
+	# that apart from a game actually closed and reopened inside one.
+	EventBus.run_begun.emit(GameState.day, not _resume.is_empty()
+			and not _escape_section_came_from_the_file(
+					escape_section_before_resume, GameState.escape_section))
 	if GameState.escape_section != FinaleController.Section.NONE:
 		# The run's ending, played rather than announced: the escape is this run's last screen, so
 		# the ordinary boot below — a city, a day, a resistance director — is not what follows day
@@ -575,6 +584,10 @@ func _ready_escape() -> void:
 	_finale.section_started.connect(_on_finale_section_started)
 	_finale.section_lost.connect(_on_finale_section_lost)
 	_finale.escaped.connect(_on_finale_escaped)
+	# `VisitCounter`'s own "the escape: begun" — the fresh handover from a won day 14 only, never a
+	# resume of one already under way, which is not the sequence beginning.
+	if _escape_from_a_run and not _escape_resumed_from_disk:
+		EventBus.escape_begun.emit()
 
 	# **Which section to build is the run's own record where there is one.** `_escape_start_part()`
 	# alone used to decide this, which is right for the flag's own boot (there is no
@@ -875,6 +888,9 @@ func _on_finale_section_lost(_section: int, result: int) -> void:
 	# starting again with nothing in between to say why.
 	if _observer:
 		_observer.section_lost(result)
+	# `VisitCounter`'s own "the escape: … or lost" — no section named, see `EventBus.escape_lost`'s
+	# own doc for why.
+	EventBus.escape_lost.emit()
 	_finale.restart_section()
 
 ## The escape's run log, watched the way a day's is — see `TelemetryObserver`'s class doc. Built
@@ -915,6 +931,9 @@ func _on_finale_escaped(exit_kind: int) -> void:
 	# Before `finish_day()`, whose `ending` line closes the run: the way out is part of how it ended.
 	if _observer:
 		_observer.escaped(exit_kind)
+	# `VisitCounter`'s own "the escape: … got out" — `EventBus.run_ended` fires beside this, a
+	# moment later, from `GameState.finish_day()` below.
+	EventBus.escape_out.emit()
 	if _escape_from_a_run:
 		_run_over = not GameState.finish_day(GameEnums.DayResult.WON)
 	_summary.show_finale(exit_kind, FinaleController.length() - _finale.time_remaining())
@@ -1093,6 +1112,10 @@ func _open_the_title() -> void:
 ## `_resume_gate_open` branch — see that function's own doc for why the same signal reaches two
 ## different places depending on which screen raised it.
 func _on_title_start(mode: ControlsMode.Mode) -> void:
+	# `VisitCounter`'s own cheap "etc." — which control scheme was picked. `mode` as `int`: a
+	# cross-script enum is not the same type as itself as a signal parameter (see the **godot**
+	# skill), the same reason `FinaleController`'s own signals pass theirs that way.
+	EventBus.controls_chosen.emit(mode)
 	_touch_controls.set_mode(mode)
 	_in_the_title = false
 	_title.close()
@@ -1693,6 +1716,10 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# before `end_day()` stops the clock, so it is timestamped where it happened.
 	if _observer:
 		_observer.day_finished(result)
+	# `VisitCounter`'s own "each day's end, won or lost and to what" — `finished_day` rather
+	# than `GameState.day`, since a won final day hands over to the escape before the calendar
+	# would otherwise move past it. Fires whether or not a run log is being kept.
+	EventBus.day_ended.emit(finished_day, result)
 	# The same picture again, now that the day has been walked: the marks she reached carry a pip
 	# and the rest do not, and the trail she actually left is drawn against the corridor the day
 	# planned for her — which is the one thing the dawn map cannot say. `_observer` is only in the
@@ -1805,6 +1832,12 @@ func _on_summary_continued() -> void:
 ## `TitleScreen._unhandled_input()`'s for what it guards against. *(2026-09-07: "tapping on the
 ## game over screen often goes directly back to the game skipping the title screen".)*
 func _restart_run() -> void:
+	# `VisitCounter`'s own "a held restart, and on which day" — only for a run abandoned mid-play.
+	# `_on_summary_continued()` also reaches this function from the ending screen's own continue,
+	# once `GameState.ending` is already set; that run already reported itself through
+	# `EventBus.run_ended` and is not a held restart of anything.
+	if GameState.ending == GameEnums.Ending.NONE:
+		EventBus.run_restarted.emit(GameState.day)
 	Telemetry.end_run()
 	# The held restart clears the save — the pause screen's and the day summary's own button both
 	# reach this one function, so nothing new has to be drawn for it. A no-op when a finished run
