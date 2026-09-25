@@ -24,6 +24,48 @@ it is counted (PLAYTEST-132: "anything with debug doesn't get tracked"). `count.
 and a phone on the same Wi-Fi count nothing. `--no-telemetry` does not reach it: it is the page
 counting a load, not the game recording a run, and nothing the game itself does is sent.
 
+**The game counts how far a run gets, as the same kind of anonymous GoatCounter hit.**
+`VisitCounter` (`src/autoload/visit_counter.gd`) is an autoload that only listens — every method
+answers an `EventBus` signal, decides nothing, and changes nothing about play, the same "telemetry
+must not touch gameplay" invariant the run log keeps. It calls the page's own
+`window.goatcounter.count({path, title, event: true})` (see
+[GoatCounter's own docs](https://www.goatcounter.com/help/events)), one call per event, each name
+starting `nappy-` so it can never collide with an event the marketing site sends through the same
+account, and short, lowercase and hyphenated — `nappy-day-6-lost-crying`, PLAYTEST-132's own shape
+for it. Counts only: no seed, no position, no time, nothing that could tell one visitor from
+another or from their own next visit.
+
+The events:
+
+- `nappy-run-fresh` / `nappy-run-resumed-day-N` — a run begun fresh, or resumed from the save, and
+  on which day.
+- `nappy-day-N-began` — each day begun. A nerve-bought retry begins it again for the day it repeats.
+- `nappy-day-N-won` / `nappy-day-N-lost-crying` / `nappy-day-N-lost-timeout` /
+  `nappy-day-N-lost-hard-fail` — each day's end, named straight off `GameEnums.DayResult`'s own
+  keys rather than a second copy of the game's loss causes.
+- `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
+  return to the title after an ending already reported through `nappy-ending-*`.
+- `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each task done, and each task a day ended
+  without: a chalk mark never reached, or a perform step reached but not finished, both counted the
+  moment the day they belong to ends.
+- `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
+- `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: the fresh handover
+  from a won day 14, either section lost on any attempt, or the tunnel or the bridge reached.
+- `nappy-controls-joystick` / `nappy-controls-tap` — which control scheme was picked on the title
+  screen, cheap to answer and its own small piece of "how far people get".
+
+**The gate is stricter than the page load's own.** An event is sent only when every one of four
+things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
+(`OS.is_debug_build()`), the page was not asked for `?debug=1`
+(`DevFlags.readout_requested()`), and `window.goatcounter.count` actually exists as a callable —
+`count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
+keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
+independent switch. One pure function, `VisitCounter._should_send()`, decides the gate from those
+four booleans, the same shape `DevFlags._live_debug_requested()` already uses, and
+`tests/test_visit_counter.gd` drives its truth table directly. A missing or failing
+`window.goatcounter` never raises or prints an engine error: the existence check comes first, and
+the call itself sits inside the page's own `try`/`catch`.
+
 ## Where the logs are
 
 ```sh
