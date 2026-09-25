@@ -315,16 +315,15 @@ comes across), and the man shouting, handed the note, goes quiet and walks off s
 The rule itself is built (`DECISIONS.md`, M185, a ground floor is blank wall or shops): shops or
 blank wall on every multi-story ground floor, one entrance door on a front with no other way in,
 the storefronts redrawn, and her home block keeping its ground-floor windows
-([PLAYTEST-124](playtests/PLAYTEST-124.md)). What is open is her house.
+([PLAYTEST-124](playtests/PLAYTEST-124.md)); her home block is the same on every seed. What is
+open is her house's crafted look.
 
-- [ ] **The home block has fixed visuals** ([PLAYTEST-124](playtests/PLAYTEST-124.md),
-      statement 6): its buildings look the same on every seed — window style, which windows are
-      lit, heights, front and roof furniture — rather than being rolled like any other block, so
-      it can be crafted into a convincing house that matches the interiors of the escape (M102,
-      the finale: out of the apartment, out of the city, whose stairwell, hallways and basement are
-      in `art/interior/`). The block's size and shape still come from the seed's lattice; what is
-      fixed is how it is drawn. The crafted look is drawn SVG first and goes to the player as
-      pictures before it is installed, beside the escape's interiors.
+- [ ] **Her house is crafted** ([PLAYTEST-124](playtests/PLAYTEST-124.md), statement 6: "craft a
+      convincing house that also matches with the interiors of the escape"). The home block is
+      the same on every seed, drawn from today's parts (`DECISIONS.md`, M185, her home block does
+      not depend on the seed); what is open is replacing those parts with a crafted look that
+      matches the escape's interiors in `art/interior/` (M102, the finale). It is drawn SVG first
+      and goes to the player as pictures, beside the escape's interiors, before it is installed.
 
 ---
 

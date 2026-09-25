@@ -38,6 +38,24 @@ const _HEIGHT_TILES := {
 }
 ## A building never takes more than this share of its lot depth, so a roof remains.
 const MAX_HEIGHT_FRACTION := 0.55
+## Wall rows the door's own home-block building always gets — fixed rather than rolled
+## (`docs/DECISIONS.md`, M185, a ground floor is blank wall or shops), so the block looks the same
+## on every seed. The ground floor is row 0, so four rows reach the third floor, where she lives
+## and where the escape begins (PLAYTEST-131) — the same floor `Building.neighbor_window_row()`
+## boards the neighbor's window on, down the hall from her own door. It sits above the top of the
+## screen at the normal camera on her doorstep, since she starts facing away down the street and
+## `Stroller._update_camera()`'s own look-ahead leads the view in whatever direction she faces —
+## but it does not have to be visible immediately (PLAYTEST-134, statement 4 revisited): turning to
+## face the building brings it into frame. `_home_building_height()` does not apply
+## `MAX_HEIGHT_FRACTION` to this lot on purpose: four rows of six is more wall than that ratio
+## would allow, and what actually keeps a roof showing is `Building.wall_tiles()`'s own hard clamp
+## to `rows() - 1`, which this still goes through.
+const HOME_BUILDING_WALL_ROWS := 4
+## Wall rows every other home-block building (the two lots flanking the door notch) gets, fixed
+## the same way. Each lot is only `Tuning.HOME_SIZE_TILES.y` (2) deep, so `Building.wall_tiles()`'s
+## own cap (`rows() - 1`) always clamps this down to one row regardless of the value here — the
+## constant only has to be something that cap can act on.
+const HOME_FLANKING_WALL_ROWS := 2
 const BOUNDARY_THICKNESS := 64.0
 ## How deep the ring of frontages outside the map is, in tiles. A block, so the far side of a
 ## boundary street is the same depth of building as both sides of every other street.
@@ -378,10 +396,13 @@ func _door_world_x_range() -> Vector2:
 
 ## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
 ## 3, ground floor is row 0 — nearest above her own door, on the one home-block `Building` the
-## door notch actually stands in front of (`_home_door_building()`). Idempotent, so
+## door notch actually stands in front of (`_home_door_building()`). Her own floor, the top one at
+## this height, down the hall from her own door. It stands above the top of the screen at the
+## normal camera on her doorstep, facing away down the street — turning to face the building
+## brings it into frame (PLAYTEST-134, statement 4 revisited). Idempotent, so
 ## `ResistanceHappenings.start_day()` calling it every day from day 11 on costs nothing once it is
-## set. A front with fewer than four wall rows has no third floor to put it on; that front's own
-## topmost row stands in for it instead, until M185 fixes her building's height.
+## set. That building always has at least four wall rows (`HOME_BUILDING_WALL_ROWS`), fixed rather
+## than rolled, so there is no shorter front here for a topmost row to stand in for it.
 func board_neighbor_window() -> void:
 	var building := _home_door_building()
 	if not building or building.neighbor_window_col >= 0:
@@ -395,16 +416,9 @@ func board_neighbor_window() -> void:
 			best_distance = distance
 			best_col = col
 	building.neighbor_window_col = best_col
-	var row := building.neighbor_window_row()
-	if building.wall_tiles() < 3:
-		Telemetry.note("contact",
-				("the neighbor's window is boarded at column %d, row %d — the front's own topmost "
-				+ "row, %d wall row(s) short of a third floor")
-				% [best_col, row, 3 - building.wall_tiles()])
-	else:
-		Telemetry.note("contact",
-				"the neighbor's window is boarded at column %d, row %d (the third floor)"
-				% [best_col, row])
+	Telemetry.note("contact",
+			"the neighbor's window is boarded at column %d, row %d (the third floor)"
+			% [best_col, building.neighbor_window_row()])
 
 ## The one home-block `Building` the door's own world-space span actually stands in front of —
 ## every lot on the home block carries `is_home_building`, but the door notch's columns are cut
@@ -598,10 +612,19 @@ func _dress_the_power_station(building: Building, rect: Rect2i) -> void:
 func _block_of(rect: Rect2i) -> Vector2i:
 	return (rect.position - Vector2i.ONE * Tuning.STREET_WIDTH) / CityMap.period()
 
+## A home-block building's own fixed choice, keyed on nothing but the lot's own tile position —
+## never `map.seed_used` — so its wall/roof colour and `Building._build_windows()`'s own window
+## style and lit-window pattern (keyed on `variant` and the building's world position, itself fixed
+## since `CityMap.home_block` and every constant the lattice is built from are the same on every
+## seed) no longer depend on the seed either. A non-home building keeps the per-seed roll.
 func _variant_for(rect: Rect2i) -> int:
+	if _block_of(rect) == map.home_block:
+		return absi(hash("home:%d:%d" % [rect.position.x, rect.position.y]))
 	return absi(hash("%d:%d:%d" % [map.seed_used, rect.position.x, rect.position.y]))
 
 func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
+	if _block_of(rect) == map.home_block:
+		return _home_building_height(rect, lot_depth_tiles)
 	var range_tiles: Vector2i = _HEIGHT_TILES[map.starting_purpose(_block_of(rect))]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("h:%d:%d:%d" % [map.seed_used, rect.position.x, rect.position.y])
@@ -611,6 +634,26 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 	# wall, which is the one case where there is no roof to protect.
 	var cap := maxi(1, mini(lot_depth_tiles - 1,
 			floori(lot_depth_tiles * MAX_HEIGHT_FRACTION)))
+	return mini(tiles, cap) * float(Tuning.TILE_SIZE)
+
+## `HOME_BUILDING_WALL_ROWS` for the one lot the door's own world-space span stands in front of,
+## `HOME_FLANKING_WALL_ROWS` for the other home-block lots — fixed, never rolled, so
+## `_height_for()`'s home branch moves no RNG stream at all. `is_door_building` repeats
+## `_home_door_building()`'s own overlap test on the rect directly, because `_spawn_buildings()`
+## sets every building's height before `_spawn_home()` builds the door sprite it would otherwise
+## read (see `build()`'s own ordering note) — `_door_world_x_range()` itself only needs
+## `map.home_rect`, already fixed by the generator by the time this runs. The lot depth this is
+## measured against (`lot_depth_tiles`) is `CityGenerator`'s own carve of the home block, six tiles
+## for the door building on every seed tested — comfortably clear of the four wall rows plus at
+## least one roof row this asks for; a seed where it were not would have to be reported as a fork
+## rather than silently losing the roof, which is why this clamps to `rows() - 1` rather than
+## reaching for `MAX_HEIGHT_FRACTION` as well.
+func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
+	var world := map.tile_rect_to_world(rect)
+	var door_x_range := _door_world_x_range()
+	var is_door_building := world.position.x < door_x_range.y and world.end.x > door_x_range.x
+	var tiles := HOME_BUILDING_WALL_ROWS if is_door_building else HOME_FLANKING_WALL_ROWS
+	var cap := maxi(1, lot_depth_tiles - 1)
 	return mini(tiles, cap) * float(Tuning.TILE_SIZE)
 
 ## The city today. Repaints the ground from the block purposes `state` currently holds,
