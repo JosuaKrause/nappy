@@ -537,18 +537,26 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 
 # ------------------------------------------------------- the city remembers ---
 
-## Puts something on the calm block she settled in yesterday.
+## Puts something on a calm area she has already settled in this act **that the city could not
+## shut today**.
 ##
 ## Not because repetition is boring, but because **the game's only verb stops being a decision on
 ## day two**: a player who finds a good park on day 1 has no question left to answer, and route
 ## planning is the whole game. It is the same problem as a calm area being a lap rather than a
 ## route, one scale up: that one is about the destination, this is about *which* destination.
 ##
-## Three things keep it from being a punishment for playing well, and all three are load-bearing:
+## **A used area is shut before this runs, where it can be.** *(PLAYTEST-140: "a spent park should
+## not be accesible and no route should go through it".)* `ClosurePlanner.calm_to_shut()` decides it
+## at the repaint, checked before it is accepted like a closed street, and a shut area is not in
+## `map.calm_blocks` at all — so nothing here is placed in it: its fence is the whole of what it
+## shows, and a spoiler behind a fence would be noise on the pavement beside it for a park nobody
+## can enter. What reaches this pass is an area whose shutting was **refused** for the day — the
+## last areas the calm count keeps open, or one the city would be cut in two without — and a used
+## area that stays open is spoiled, as every used area once was:
 ##
-## - **It spoils with events, not by taking the ground away.** The park is still there, still
-##   calm ground, still walkable. Things are standing in it, and she can see that from
-##   the street and decide. An event that could seal or end the day is never chosen for this.
+## - **It spoils with events, not by taking the ground away.** An area the city could not shut is
+##   still there, still calm ground, still walkable. Things are standing in it, and she can see that
+##   from the street and decide. An event that could seal or end the day is never chosen for this.
 ## - **`_ensure_one_usable_park` is told to protect a different one**, so the day it creates is
 ##   still winnable and the alternative is still real rather than nominal.
 ## - **They are ordinary events, placed like any other.** They compete for no budget of their own
@@ -580,13 +588,17 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## the guarantee that it is a fresh decision, and `MIN_CALM_BLOCKS` is sized so that the two do not
 ## have to fight — an act's worth of days plus one in reserve.
 ##
-## Silent for anywhere she did not settle, or that is no longer calm.
+## Silent for anywhere she did not settle, that is no longer calm, or that is shut today — the last
+## because a shut area is left out of `map.calm_blocks`, and said again here so the reason is next
+## to the loop.
 static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
 		planned: Array[Planned], used: Array[Vector2i], heat: int = 0) -> void:
 	var spoilable := map.calm_blocks.size() - 1
 	for block in used:
 		if spoilable <= 0:
 			return
+		if block in map.shut_calm:
+			continue
 		if block.x >= 0 and block in map.calm_blocks:
 			spoilable -= 1
 			_spoil_one_park(day, rng, map, planned, block, heat)

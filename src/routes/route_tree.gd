@@ -60,8 +60,8 @@ extends RefCounted
 ## one, for the picture and for `Corridor`'s tile-level questions.
 ##
 ## **The growth walks a smaller graph than the grid.** *(2026-09-14, the player: "why not just
-## remove the street tiles and main street blocks from the graph entirely?")* Two kinds of cell are
-## out of it, and a junction box is out of neither:
+## remove the street tiles and main street blocks from the graph entirely?")* Three kinds of cell are
+## out of it, and a junction box is out of none of them:
 ##
 ## - **a carriageway between two junctions**, so a route crosses a street only where crossing is
 ##   legal. *(2026-09-13, PLAYTEST-69: "the routing should only cross the street at intersections.
@@ -72,6 +72,8 @@ extends RefCounted
 ##   should never go alongside the main road — main road by itself can be considered a blocker —
 ##   paths can only cross the main road".)* Crossing it at a junction is untouched, and
 ##   `SealPlanner` refuses the spine as a candidate outright for its own reasons — see its doc.
+## - **the ground of a calm area shut today** (`CityMap.shut_calm`: one she has already used this
+##   act), so no route goes through it; and, not being in `CityMap.calm_blocks`, it grows no branch.
 ##
 ## `_is_off_the_growths_graph` is the whole of it and `_ways` is where it is applied. **It filters
 ## this class's own view and nothing else**: `ReachabilityGrid` is untouched, so every guarantee
@@ -444,8 +446,9 @@ func _carries(node: int, colour: int) -> bool:
 
 # ------------------------------------- the main road, and the kerbs (M129) ---
 
-## **The graph the growth actually walks**, which is the grid's with two kinds of cell taken out of
-## it: a carriageway between two junctions, and the main road anywhere but at a junction.
+## **The graph the growth actually walks**, which is the grid's with three kinds of cell taken out
+## of it: a carriageway between two junctions, the main road anywhere but at a junction, and a shut
+## calm area's ground.
 ## *(2026-09-14, the player: "why not just remove the street tiles and main street blocks from the
 ## graph entirely?")* Every probe that plans a route calls this rather than the grid directly —
 ## `_walk_home`, `_shortest_home` and `_grow_the_trunk`'s own search. `node_depths()` does not,
@@ -528,6 +531,12 @@ func _ways_including_the_spine(node: int) -> Array:
 func _is_off_the_growths_graph(tile: Vector2i, refuse_the_spine: bool) -> bool:
 	if not _map:
 		return false
+	# **A shut calm area is not a route, the trunk's fallback included.** *(PLAYTEST-140: "no route
+	# should go through it".)* Its ground is closed (`CityMap.shut_calm`), and unlike the spine it is
+	# never the only way anywhere: `ClosurePlanner.calm_to_shut()` refuses to shut an area whose
+	# shutting would cut any ground off.
+	if _map.is_shut(tile):
+		return true
 	if CityMap.junction_at(tile) != Vector2i(-1, -1):
 		return false
 	if refuse_the_spine and _map.main_road >= 0 \

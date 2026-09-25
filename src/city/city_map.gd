@@ -157,7 +157,37 @@ var seed_used := 0
 ## purpose, and neither of those may move a walkable tile. A closure is the one thing that
 ## changes where the player may walk, which is why it is a set that is cleared every morning
 ## rather than an edit to `tiles`. See `RoadClosure` and docs/CITY.md, "Road closures".
+##
+## **The ground of a shut calm area is in here too** (`shut_calm`), from the moment `repaint()`
+## decides it: a park she has already used is closed the way a street is, so everything that asks
+## "is this tile open today" gets the same answer about both without learning a second record.
 var closed_tiles := {}
+
+## The calm areas shut today, as the blocks that anchor them — the ones she has already used this
+## act (`set_spent_calm()`) that `ClosurePlanner.calm_to_shut()` found could be shut without
+## breaking a guarantee. *(PLAYTEST-140: "a spent park should not be accesible and no route should
+## go through it".)* Decided by `repaint()`, before anything grows the day's route tree, and
+## **left out of `calm_blocks`**: a park she cannot get into is not somewhere today can be won, so
+## every pass stated over the calm — the tree's branches, the closure invariant, the scheduler's
+## clean park — passes over it without being told. Its ground is in `closed_tiles`, and
+## `ClosurePlanner.plan_day` hands `City` the barriers that stand at its entrances (`ParkClosure`).
+var shut_calm: Array[Vector2i] = []
+## Every walkable tile of today's shut calm ground, as a set — `is_shut()`.
+var _shut_tiles := {}
+## What `set_spent_calm()` handed over, waiting for the next `repaint()` to read it.
+var _spent_for_the_next_repaint: Array[Vector2i] = []
+
+## The calm areas she has used this act (`GameState.settled_this_act()`), for the **next**
+## `repaint()` to shut where it can. `Main._start_day()` hands them over just before
+## `City.start_day()` repaints the city, and the repaint reads them once and forgets them: the
+## escape's own repaint (`City.start_finale()`) comes with no handover and shuts nothing, and a
+## rig that never calls this plans the day exactly as a city with no used parks. See `shut_calm`.
+func set_spent_calm(blocks: Array[Vector2i]) -> void:
+	_spent_for_the_next_repaint = blocks.duplicate()
+
+## Whether a tile is ground of a calm area shut today. See `shut_calm`.
+func is_shut(tile: Vector2i) -> bool:
+	return _shut_tiles.has(tile)
 
 ## Street segments a catalogue row may never be offered as ground today, keyed by
 ## `StreetNetwork.Segment.key()`. Filled by `EventManager.start_day`, before `EventScheduler.
@@ -619,19 +649,28 @@ func anchor_of(block: Vector2i) -> Vector2i:
 ## Built once for every closure of the day together, not one at a time: whether a bypass survives
 ## can depend on ground a *different* closure also touches, so the barrier tiles of the whole set
 ## have to be down before any of them is judged.
+##
+## **Today's shut calm ground stays closed through it** (`shut_calm`), and counts as barrier for the
+## flood like a street's mouths do. A `ParkClosure` among `closures` is the drawing of that ground's
+## fence, not a street, so it adds nothing here: its ground is already in.
 func close_streets(closures: Array[RoadClosure]) -> void:
 	closed_tiles.clear()
 	day_record_version += 1
-	if closures.is_empty():
-		return
-	var barrier_tiles := {}
+	closed_tiles.merge(_shut_tiles)
+	var streets: Array[RoadClosure] = []
 	for closure in closures:
+		if not closure is ParkClosure:
+			streets.append(closure)
+	if streets.is_empty():
+		return
+	var barrier_tiles := _shut_tiles.duplicate()
+	for closure in streets:
 		for at_a in [true, false]:
 			for tile in rect_tiles(closure.segment.mouth_rect(at_a)):
 				barrier_tiles[tile] = true
 	var grid := ReachabilityGrid.build(self)
 	var reached := grid.flood([world_to_tile(doorstep_world_position())], barrier_tiles)
-	for closure in closures:
+	for closure in streets:
 		for tile in closure.tiles(self):
 			if not grid.reaches(tile, barrier_tiles, reached):
 				closed_tiles[tile] = true
@@ -706,6 +745,11 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## boundaries, the carves and the building footprints all are — this only ever swaps the *ground*
 ## inside a block's open rect, so no repaint can disconnect the city or make a wall appear where a
 ## route used to be. What changes is what a place is worth walking to.
+##
+## **And which of the calm areas she has used are shut today** (`shut_calm`), last, from whatever
+## `set_spent_calm()` handed over: `ClosurePlanner.calm_to_shut()` decides it against the ground
+## just painted, so the route tree, the region plan and the closures that follow all plan around
+## it. A shut area's ground is left exactly as its purpose paints it — it is closed, not changed.
 func repaint(state: CityState) -> void:
 	# Two passes, and the split is what makes a four-block calm zone possible: one lot's ground
 	# now covers blocks that are not its own, so a single pass that cleared each lot immediately
@@ -723,7 +767,33 @@ func repaint(state: CityState) -> void:
 	# Yesterday's closures are gone before today's are planned; the planner needs to see the
 	# whole lattice to decide what it can afford to take out of it.
 	closed_tiles.clear()
+	shut_calm.clear()
+	_shut_tiles.clear()
 	_recompute_calm(state)
+	_shut_the_spent_calm(state)
+
+## Decides today's `shut_calm` from what `set_spent_calm()` handed over, and forgets the handover.
+## The park day 12 sends her to is never shut on its day (`CityState.is_forced_open()`): the day's
+## own task is in it.
+func _shut_the_spent_calm(state: CityState) -> void:
+	var spent := _spent_for_the_next_repaint
+	_spent_for_the_next_repaint = []
+	if spent.is_empty():
+		return
+	var protected: Array[Vector2i] = []
+	for block in calm_blocks:
+		if state.is_forced_open(block):
+			protected.append(block)
+	shut_calm = ClosurePlanner.calm_to_shut(self, spent, protected)
+	if shut_calm.is_empty():
+		return
+	for block in shut_calm:
+		for tile in rect_tiles(ClosurePlanner.calm_area_rect(self, block)):
+			if is_walkable(tile):
+				_shut_tiles[tile] = true
+	_recompute_calm(state)
+	closed_tiles.merge(_shut_tiles)
+	day_record_version += 1
 
 func _repaint_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	var layout: BlockLayout = block_layouts.get(block)
@@ -768,8 +838,11 @@ func repaint_tile(tile: Vector2i, type: GameEnums.TileType) -> void:
 	set_tile(tile, type)
 	_tiles_by_type.clear()
 
+## A shut calm area (`shut_calm`) is left out of the calm, and so is its playground.
 func _recompute_calm(state: CityState) -> void:
 	calm_blocks = state.calm_blocks(block_plans)
+	for block in shut_calm:
+		calm_blocks.erase(block)
 	playgrounds.clear()
 	for block in calm_blocks:
 		if state.purpose_of(block_plans, block) != GameEnums.BlockPurpose.PARK:

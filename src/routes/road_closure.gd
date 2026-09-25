@@ -17,7 +17,11 @@ extends RefCounted
 ## What has closed the street. The kinds differ in what they look like and when they start
 ## happening; none of them differ mechanically, because a street you cannot walk down is a
 ## street you cannot walk down.
-enum Kind { ROADWORKS, FALLEN_TREE, CRASH, CORDON, RUBBLE }
+##
+## `PARK` is the one kind that closes no street: it is the fence of a calm area she has already
+## used, shut today (`ParkClosure`). Like `CORDON` it leaves nothing lying anywhere, so the barriers
+## are the whole of it, and it is never rolled for a street (`kinds_on()`).
+enum Kind { ROADWORKS, FALLEN_TREE, CRASH, CORDON, RUBBLE, PARK }
 
 ## Name, the first day it can happen, and how likely it is against the others available.
 ##
@@ -29,6 +33,7 @@ const KINDS := {
 	Kind.CRASH: {"name": "Accident", "first_day": 1, "weight": 0.8},
 	Kind.CORDON: {"name": "Cordoned off", "first_day": 4, "weight": 1.4},
 	Kind.RUBBLE: {"name": "Collapsed", "first_day": 12, "weight": 1.6},
+	Kind.PARK: {"name": "Park closed", "first_day": 1, "weight": 0.0},
 }
 
 var kind := Kind.ROADWORKS
@@ -41,11 +46,14 @@ func _init(closure_kind: Kind, closed_street: StreetNetwork.Segment) -> void:
 static func display_name(closure_kind: Kind) -> String:
 	return String(KINDS[closure_kind]["name"])
 
-## The kinds that can happen on a given day. `Array[int]` rather than `Array[Kind]` because
-## an enum is not a legal array element type — the values are `Kind` all the same.
+## The kinds that can close a **street** on a given day. `Array[int]` rather than `Array[Kind]`
+## because an enum is not a legal array element type — the values are `Kind` all the same. `PARK`
+## is never one: it is what a shut calm area's fence is, and nothing rolls it.
 static func kinds_on(day: int) -> Array[int]:
 	var found: Array[int] = []
 	for closure_kind: int in KINDS:
+		if closure_kind == Kind.PARK:
+			continue
 		if day >= int(KINDS[closure_kind]["first_day"]):
 			found.append(closure_kind)
 	return found

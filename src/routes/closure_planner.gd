@@ -53,8 +53,22 @@ class CalmArea extends RefCounted:
 ## plan_day` is a pure function of the map, the day and the tree. Its walls and doors are refused
 ## as closure candidates: a closure on a region boundary would be two things standing in the same
 ## spot, one placed by this pass and one by the region's own wall or door.
+##
+## **The fences of today's shut calm areas come back with the streets** (`CityMap.shut_calm`, one
+## `ParkClosure` per fenced run of an area's edge), after them and outside the day's quota: they are
+## what `City` stands barriers at, the same way it stands them at a closed street's two mouths. The
+## shut ground itself was decided at the repaint and is already closed on the map, so every
+## candidate below is judged with it closed.
 static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null) -> Array[RoadClosure]:
+	var chosen := _close_streets(map, day, rng, tree, region_plan)
+	for block in map.shut_calm:
+		for fence in ParkClosure.fence(map, block):
+			chosen.append(fence)
+	return chosen
+
+static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
+		tree: RouteTree, region_plan: RegionPlanner.RegionPlan) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	# Whatever this day does or does not close, it owns the answer to which pits are empty — so a
 	# day that closes nothing says so, rather than leaving yesterday's fallen tree missing from the
@@ -190,6 +204,99 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 		visited[neighbour] = true
 		queue.append(neighbour)
 
+# ------------------------------------------------------------ spent calm ---
+
+## Which of the calm areas she has used this act (`spent`, most recent first) are shut today: she
+## cannot get into one, and no route of the day goes through it. *(PLAYTEST-140: "a spent park
+## should not be accesible and no route should go through it".)* Called by `CityMap.repaint()`,
+## before anything grows the day's tree, so the tree, the region plan and the street closures are
+## all planned around what this shuts.
+##
+## **Checked before it is accepted, one area at a time, the way a street closure is** — never shut
+## everything and then reopen until the day is legal. An area is refused for the day, and stays
+## open, when shutting it would:
+##
+## - **leave fewer than `Tuning.MIN_CALM_AREAS_REACHABLE` calm areas open** — the count every
+##   closure is held to, and what leaves `EventScheduler._ensure_one_usable_park` a park to keep
+##   clean;
+## - **cut anything off** — any tile the doorstep reaches with nothing shut that it no longer
+##   reaches with this area and every area already accepted shut. That is stronger than the calm
+##   count, and it is the one question that covers every guarantee at once: the other calm areas,
+##   day 9's door and the power station's door, and every street a route could need, since a park
+##   that is the only way between two parts of the city is a park whose shutting cuts one of them
+##   off.
+##
+## `protected` is never shut: day 12's park, whose swing is the day's task. An area that is not calm
+## today (requisitioned since, or never calm) is not in `map.calm_blocks` and is passed over. A
+## refused area is still one she has used, so `EventScheduler._spoil_the_parks_she_used` spoils it
+## instead, which is what a used park got before it could be shut at all.
+static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
+		protected: Array[Vector2i] = []) -> Array[Vector2i]:
+	var shut: Array[Vector2i] = []
+	var candidates: Array[Vector2i] = []
+	for block in spent:
+		if block in map.calm_blocks and not block in protected and not block in candidates:
+			candidates.append(block)
+	if candidates.is_empty():
+		return shut
+	var home := _home_tile(map)
+	var before := map.walk_field(home)
+	var blocked := {}
+	for block in candidates:
+		if map.calm_blocks.size() - shut.size() - 1 < Tuning.MIN_CALM_AREAS_REACHABLE:
+			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would "
+					% TelemetryLog.tile(block) + "leave fewer than %d open"
+					% Tuning.MIN_CALM_AREAS_REACHABLE)
+			continue
+		var trial := blocked.duplicate()
+		for tile in map.rect_tiles(calm_area_rect(map, block)):
+			if map.is_walkable(tile):
+				trial[tile] = true
+		var after := map.walk_field(home, trial)
+		var cut := _tiles_cut_off(map, before, after, trial)
+		if cut > 0:
+			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would cut "
+					% TelemetryLog.tile(block) + "%d tiles off from the doorstep" % cut)
+			continue
+		if _open_calm_reached(map, after, shut, block) < Tuning.MIN_CALM_AREAS_REACHABLE:
+			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would "
+					% TelemetryLog.tile(block) + "leave fewer than %d reachable"
+					% Tuning.MIN_CALM_AREAS_REACHABLE)
+			continue
+		shut.append(block)
+		blocked = trial
+		Telemetry.note("plan", "the calm area she used at %s is shut today"
+				% TelemetryLog.tile(block))
+	return shut
+
+## How many tiles `before` reached that `after` does not, leaving out the shut ground itself
+## (`shut`). Both are `CityMap.walk_field()` sweeps from the doorstep, flat and indexed alike.
+static func _tiles_cut_off(map: CityMap, before: PackedInt32Array, after: PackedInt32Array,
+		shut: Dictionary) -> int:
+	var cut := 0
+	var width := map.size.x
+	for index in before.size():
+		if before[index] < 0 or after[index] >= 0:
+			continue
+		if shut.has(Vector2i(index % width, index / width)):
+			continue
+		cut += 1
+	return cut
+
+## How many calm areas neither shut already (`shut`) nor about to be (`besides`) still have a calm
+## tile `field` reaches.
+static func _open_calm_reached(map: CityMap, field: PackedInt32Array, shut: Array[Vector2i],
+		besides: Vector2i) -> int:
+	var reached := 0
+	for block in map.calm_blocks:
+		if block == besides or block in shut:
+			continue
+		for tile in map.rect_tiles(calm_area_rect(map, block)):
+			if Tile.is_calm(map.tile_at(tile)) and map.reaches(field, tile):
+				reached += 1
+				break
+	return reached
+
 # ---------------------------------------------------------------- invariant ---
 
 ## The day-level guarantee, in one place: enough calm areas can still be walked to.
@@ -213,9 +320,14 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ## that would cut the calm off is, before it is accepted. The day's tree reaches every one of them
 ## (`RouteTree.for_day`) and every closure is placed off the tree, so like the calm half this is the
 ## second opinion rather than the thing that keeps it.
+##
+## **With today's shut calm ground closed as well** (`CityMap.shut_calm`, in `map.closed_tiles` from
+## the repaint on): a street closure that leaves two areas reachable only through a park that is
+## shut has left them unreachable.
 static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[CalmArea],
 		today_closed: Dictionary, places: Array[Array] = []) -> bool:
 	var blocked := _barrier_tiles(map, today_closed)
+	blocked.merge(map.closed_tiles)
 	var reached := grid.flood([_home_tile(map)], blocked)
 	for place: Array in places:
 		var place_reached := false

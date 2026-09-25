@@ -1588,6 +1588,10 @@ func _start_day() -> void:
 	# The city becomes today's city before anything is placed in it: the scheduler has to
 	# see the parks that are still parks, not yesterday's.
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
+	# The calm areas she has used this act, handed to the repaint `_city.start_day()` opens with, so
+	# the ones that can be shut are shut before the day's route tree is grown around them. See
+	# `CityMap.set_spent_calm()`.
+	_city.map.set_spent_calm(GameState.settled_this_act())
 	_city.start_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
 	# The tree `_city.start_day()` just grew is today's whole plan, so the picture only has to be
