@@ -48,3 +48,17 @@ front when it launches, which the fix's own record left unverified.
 
 6. **A rig is launched in the background**, so macOS never makes it the active app and the
    player's focus stays where it is.
+
+## Then, after a background launch was measured (#357)
+
+Launching through `open -g -n -W` only delays the jump: Godot's own macOS startup calls
+`activateIgnoringOtherApps:` once its window is ready, which a background launch cannot
+intercept, and nothing reachable from the repository gates it. Sampled with `lsappinfo front`, a
+walking rig was the frontmost app for 34 of 38 samples. Offered: (a) hand focus straight back
+with `open -a` to whichever app was frontmost, a flicker of under a second (the orchestrator's
+pick); (b) accept the jumps; (c) fewer windowed captures. #357 closes unmerged either way.
+
+> "let's try (a) for now"
+
+7. **A rig hands focus straight back** to the app that was frontmost when it launched, the moment
+   macOS gives it to Godot, so a capture costs the player a flicker rather than their focus.

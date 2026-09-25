@@ -327,20 +327,25 @@ open is her house's crafted look.
 
 ---
 
-## M198 — A rig's window never becomes the active app · asked for 2026-09-25
+## M198 — A rig hands focus straight back · asked for 2026-09-25
 
 > "are all agents using the non-focus rig now? I still lose focus and even accidentally closed one
-> window"
+> window" · "let's try (a) for now"
 
-[PLAYTEST-133](playtests/PLAYTEST-133.md), statement 6. A rig's window takes no key focus
+[PLAYTEST-133](playtests/PLAYTEST-133.md), statements 6 and 7. A rig's window takes no key focus
 (`DECISIONS.md`, M195, a rig's window takes no focus, hears no stray key, and always closes), but
-macOS still activates the Godot app when it launches.
+macOS still makes Godot the active app: its own startup calls `activateIgnoringOtherApps:` once
+the window is ready, and a background launch (`open -g`, measured on #357) only delays that.
 
-- [ ] **`tools/shot.sh` and a rig's `tools/run.sh` launch Godot without activating it** on macOS
-      (launch services' background launch, `open -g -n -W` with its output routed back, or
-      whatever the measurement supports), keeping their exit status, their time limit and their
-      output. Verified on this Mac by the player's own focus staying put, since no other app may
-      be scripted to check it.
+- [ ] **`tools/shot.sh` and a rig's `tools/run.sh` hand focus back** on macOS: note the
+      frontmost app before Godot launches (`lsappinfo front`), and the moment Godot becomes
+      frontmost, reactivate that app with `open -a` (or `open -b` by bundle id), for as long as
+      the rig runs. Godot is launched directly, as today, so its output, exit status, time limit
+      and kill are untouched. Never take focus from an app the player moved to on purpose: only
+      a switch *to Godot* is undone. No `osascript` or anything else that scripts another app;
+      a person's own `run.sh` without rig flags and every other platform are unchanged.
+      Verified by `lsappinfo front` samples through a capture, and then by the player's own
+      focus staying put.
 
 ---
 
