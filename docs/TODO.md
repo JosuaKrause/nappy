@@ -364,6 +364,24 @@ the one trace a happening leaves that has no picture yet.
 
 ---
 
+## M194 — The published page counts how far people get · asked for 2026-09-25
+
+> "let's get info about how far people get, whether they start from a save, whether they
+> restart, how they die, what tasks they did, etc. anything with debug doesn't get tracked"
+
+[PLAYTEST-132](playtests/PLAYTEST-132.md). The page load is counted (`docs/TELEMETRY.md`, "The
+page counts visits"); what is open is the game's own events.
+
+- [ ] **The game sends anonymous GoatCounter events** through the page's own
+      `window.goatcounter.count()`: a run begun fresh or resumed from the save, each day begun
+      and how it ended (won, or lost and to what), a held restart and on which day, each task
+      done or skipped, and the ending reached, the escape's included. Counts only: nothing
+      links one event to another visitor's or to the same visitor's next one.
+- [ ] **Anything with debug sends nothing**: a debug build, and a published page carrying
+      `?debug=1`, where the page load is not counted either.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded

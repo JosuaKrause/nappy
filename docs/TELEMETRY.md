@@ -8,6 +8,22 @@ what actually happens to a person playing, and nobody should have to have an opi
 
 ---
 
+## The page counts visits
+
+**The published page counts its loads with GoatCounter, and that is separate from the run log.**
+The export's `<head>` (`html/head_include` in `export_presets.cfg`) loads GoatCounter's
+`count.js`, which sends one hit per page load to `josuakrause.goatcounter.com`: a path made of the
+page's host and path alone (so this game's loads stay apart from the rest of that site), the page
+title, the referrer, the screen width and the query string in a field of its own, from which GoatCounter
+reads campaign parameters such as `ref` and `utm_source`. Its server sees the browser's
+user agent and derives a country from the address, as any request does. It sets no cookie and
+stores nothing on the device, which is why the page shows no consent banner, and a visitor is never followed across
+days or sites. **A page carrying `?debug=1` never loads `count.js`**, so neither its load nor anything played on
+it is counted (PLAYTEST-132: "anything with debug doesn't get tracked"). `count.js` ignores
+`localhost` and private network addresses, so `tools/serve-web.sh`
+and a phone on the same Wi-Fi count nothing. `--no-telemetry` does not reach it: it is the page
+counting a load, not the game recording a run, and nothing the game itself does is sent.
+
 ## Where the logs are
 
 ```sh
