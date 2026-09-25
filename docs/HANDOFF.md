@@ -311,7 +311,8 @@ checks and worktrees can move independently of this file.
 - **The story's pacing is built** (M181, the resistance has a reason, and a task is one day,
   in `DECISIONS.md`): every task and happening, the late days timed, and the seals on her
   building's front. M182, a finished task is shown by the world, has the other tasks' answers
-  open, and M185's fixed home block, her building the same on every seed, is next.
+  open, and M185's crafted house, drawn to match the escape's interiors, is the home block's next
+  step.
 - **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
   "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
   the first entry of `REVIEW.md`.

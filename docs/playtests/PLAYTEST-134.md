@@ -36,3 +36,6 @@ longer her floor; (c) accept it, seen only zoomed out. (a) was the orchestrator'
    shows it from her doorstep. *Asked for on her own floor, the third (PLAYTEST-131, "agree with
    putting the boarded window on her floor") · overturned on 2026-09-25 to the second floor,
    because the third is off-screen at the normal camera.*
+
+Statement 4 is overturned the same day: the window goes back on the top floor, hers, the third
+([PLAYTEST-136](PLAYTEST-136.md)).
