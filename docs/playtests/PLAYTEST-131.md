@@ -31,6 +31,11 @@ where the residents still pass; B, a front window boarded over with the same not
 > returning to find the raid the door texture should also have changed. and then the change
 > stays"
 
+Asked whether the boarded window goes on her own floor (the third, where the escape begins, since
+the neighbor lives down the hall) rather than beside the street door:
+
+> "also, agree with putting the boarded window on her floor"
+
 ## The statements
 
 1. **The seal is seen on her building's front**, every morning from day 11 on.
@@ -40,6 +45,6 @@ where the residents still pass; B, a front window boarded over with the same not
    say which one was theirs.
 5. **Both drawings go in.** The sealed street door (A) is not there when day 10 begins: it has
    changed when she comes home to find the raid, and it stays for the rest of the run;
-   the boarded window (B) is the neighbor's flat, seen on her building's front.
+   the boarded window (B) is the neighbor's flat, on her own floor of the front.
 3. **No existing drawing is lost.** The repository has no sealed-door picture; the one this needs
    is drawn new, SVG first, and shown to the player before it is installed.
