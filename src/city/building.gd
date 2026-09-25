@@ -330,9 +330,10 @@ enum Condition {
 ## from day 11 on, or -1 for every building but the one `City.board_neighbor_window()` picked: the
 ## one lot the door notch stands in front of, on its third floor — row index 3, since the ground floor is
 ## row 0 and the first floor the one above it, as the escape counts them — the nearest column above
-## the door itself. A front with fewer than four wall rows has no third floor, so
-## `neighbor_window_row()` stands it on the topmost row instead; M185 gives her building a fixed
-## height with one. Set once and never rolled itself, so a redraw is all a change needs.
+## the door itself. That lot's height is fixed rather than rolled
+## (`City.HOME_BUILDING_WALL_ROWS`), always at least four wall rows, so the third floor
+## `neighbor_window_row()` names is always there. Set once and never rolled itself, so a redraw is
+## all a change needs.
 @export var neighbor_window_col := -1:
 	set(value):
 		neighbor_window_col = value
@@ -709,10 +710,11 @@ func column_centre_x(col: int) -> float:
 	return global_position.x + _cell(col, 0).x + TILE * 0.5
 
 ## The wall row `neighbor_window_col` draws the boarded overlay on — row index 3, the third floor,
-## ground floor is row 0 — or this front's own topmost wall row where a short height roll left it
-## with fewer than three. See `neighbor_window_col`'s own doc for why that is a fork.
+## since the ground floor is row 0. The one building this is ever set on always has at least four
+## wall rows (`City.HOME_BUILDING_WALL_ROWS`, fixed rather than rolled), so row 3 is always there;
+## there is no shorter front here for a topmost-row fallback to guard against.
 func neighbor_window_row() -> int:
-	return mini(3, wall_tiles() - 1)
+	return 3
 
 func _draw() -> void:
 	var cols := columns()

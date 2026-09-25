@@ -271,6 +271,29 @@ opposite direction from the open crowd difficulty question. It wants measurement
 forty-second walk down a lane centre against the midline, and the mean wait at an arterial kerb —
 rather than an assumption.
 
+**Her home block's own three lots — the door's own and the two flanking the notch — are the same
+rects on every seed.** The notch is centred on the south edge of a fixed-size lot
+(`Tuning.HOME_SIZE_TILES`) inside a block whose own size (`Tuning.BLOCK_SIZE`) never rolls, so
+nothing about where the home sits or how big its lots are depends on the seed to begin with —
+only what a seed's own lattice puts around it does. `City` reaches past every per-seed roll on
+these three buildings as a result: a fixed wall/roof colour and window pattern
+(`City._variant_for()`, a hash of the lot's own position rather than of `map.seed_used`) and a
+fixed height (`City._home_building_height()`) — `HOME_BUILDING_WALL_ROWS` (4) for the one lot the
+door's own world-space span stands in front of, `HOME_FLANKING_WALL_ROWS` (2) for the other two —
+so the block reads the same however a run's own dice landed elsewhere. Her own building's four
+wall rows are more of its lot than a rolled building's own `MAX_HEIGHT_FRACTION` cap would allow,
+which is deliberate: she lives on the third floor (row index 3, ground floor is row 0), so
+`Building.neighbor_window_row()` always has one to stand the neighbor's boarded window on. A roof
+this shallow (two rows on her own building, one on the other two) is under the three interior rows
+`Building._build_roof_furniture()` needs to place anything, so none of the three ever carries roof
+furniture — not a rule written for the home block, just what its own fixed height already means
+for that guard. Everything else about a home-block front — the ground floor's kept windows, no
+fire escape, no extra entrance door — is unchanged (see "A front is district and block purpose",
+below); this is only what decides its wall/roof colour, its window style and pattern and its
+height. The block's *size and shape* still come from the seed's lattice — only how it is drawn
+does not — and the crafted look this is built to hold (`docs/DECISIONS.md`, M185) still replaces
+these parts once it exists.
+
 ## Calm zones
 
 A calm **area** is one place to go, and it is either a single block or a **zone**: several blocks
@@ -1940,9 +1963,12 @@ Top-down camera with a fake vertical extrusion:
   way into it rather than stop a tile short. The south edge is untouched.
 - **Building heights are whole tiles**, because a tiled facade cannot honour a continuous height
   without stretching a tile. Quantising also makes the "a roof always shows" rule exact instead of
-  approximate: the wall takes at most `floor(depth * 0.55)`
+  approximate: a rolled building's wall takes at most `floor(depth * 0.55)`
   rows and never the last one. A one-tile sliver is the single exception — it is all wall,
-  capped by a parapet, because a roof there would have to overhang the lot behind it.
+  capped by a parapet, because a roof there would have to overhang the lot behind it. The home
+  block's own fixed heights ("The home", above) do not go through that 55% ratio — her own
+  building's four wall rows are deliberately more of its lot than a rolled building would keep —
+  but still never take the last row, the one hard part of the rule.
 - Buildings are assembled from 32px tiles: a wall fill, a roof fill, edge overlays and
   windows. The fills are authored near-white and multiplied by the variant's colour, so the
   six roof colours still cost one asset each rather than six. Edges are overlays drawn on
