@@ -171,6 +171,11 @@ scan the telemetry folder and convert every finished burst missing its sibling M
 choose one. The MP4 sits beside that folder and all original frames remain available. P still
 takes a single screenshot.
 
+The published page also counts anonymous GoatCounter events for how far a run gets — a day begun
+and how it ended, a task done or skipped, the ending reached — never a seed, a position or
+anything that could tell visitors apart, and nothing at all on a debug build or behind `?debug=1`.
+See [docs/TELEMETRY.md](docs/TELEMETRY.md), "The page counts visits".
+
 ## Verifying a build
 
 `.godot/` is gitignored, so a fresh clone needs an import pass before `class_name` types

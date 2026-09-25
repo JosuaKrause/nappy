@@ -119,6 +119,10 @@ const CIVIC_PORTICO := &"props/civic_portico"
 ## plain one.
 const ENTRANCE_DOOR := &"buildings/entrance_door"
 const ENTRANCE_DOOR_INDUSTRIAL := &"buildings/entrance_door_industrial"
+## The neighbor's boarded window, from day 11 on: a 32×32 overlay, the same cell and registration
+## as `WINDOW_DARK`, drawn over whichever window picture `neighbor_window_col` already has so the
+## front's own lintel and sill stay. `City.board_neighbor_window()` is the only setter.
+const NEIGHBOR_WINDOW_SEALED := &"buildings/window_boarded_sealed"
 
 # ------------------------------------------------------------- power station ---
 # The power station is a big building drawn as two parts: a hall over its door block and the
@@ -320,6 +324,18 @@ enum Condition {
 @export var door_world_x_range := Vector2.INF:
 	set(value):
 		door_world_x_range = value
+		queue_redraw()
+
+## The upper-floor column the neighbor's boarded window (`NEIGHBOR_WINDOW_SEALED`) draws over,
+## from day 11 on, or -1 for every building but the one `City.board_neighbor_window()` picked: the
+## one lot the door notch stands in front of, on its third floor — row index 3, since the ground floor is
+## row 0 and the first floor the one above it, as the escape counts them — the nearest column above
+## the door itself. A front with fewer than four wall rows has no third floor, so
+## `neighbor_window_row()` stands it on the topmost row instead; M185 gives her building a fixed
+## height with one. Set once and never rolled itself, so a redraw is all a change needs.
+@export var neighbor_window_col := -1:
+	set(value):
+		neighbor_window_col = value
 		queue_redraw()
 
 ## The posters on this front's blank ground-floor cells: column -> a cell as `PosterState` holds
@@ -686,6 +702,18 @@ func _column_under_door(col: int) -> bool:
 	var min_x := global_position.x + _cell(col, 0).x
 	return min_x < door_world_x_range.y and min_x + TILE > door_world_x_range.x
 
+## Column `col`'s own world-space horizontal centre — `City.board_neighbor_window()`'s own way of
+## finding the column nearest the door without reaching into `_cell()`, which stays private to
+## this file.
+func column_centre_x(col: int) -> float:
+	return global_position.x + _cell(col, 0).x + TILE * 0.5
+
+## The wall row `neighbor_window_col` draws the boarded overlay on — row index 3, the third floor,
+## ground floor is row 0 — or this front's own topmost wall row where a short height roll left it
+## with fewer than three. See `neighbor_window_col`'s own doc for why that is a fork.
+func neighbor_window_row() -> int:
+	return mini(3, wall_tiles() - 1)
+
 func _draw() -> void:
 	var cols := columns()
 	var wall_rows := wall_tiles()
@@ -712,6 +740,8 @@ func _draw() -> void:
 					# window two pixels so its sill remains visible, the whole row alike.
 					window_at.y -= 2.0
 				draw_texture(AtlasLibrary.region(_window_texture(index)), window_at)
+				if col == neighbor_window_col and row == neighbor_window_row():
+					draw_texture(AtlasLibrary.region(NEIGHBOR_WINDOW_SEALED), window_at)
 			if col == hall.x:
 				draw_texture(AtlasLibrary.region(WALL_EDGE_W), at)
 			if col == hall.y - 1:

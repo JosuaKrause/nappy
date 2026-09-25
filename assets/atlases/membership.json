@@ -6,6 +6,7 @@
       "padding": "extrude",
       "consumers": [
         "src/city/building.gd",
+        "src/city/city.gd",
         "src/city/poster_art.gd"
       ],
       "members": [
@@ -15,6 +16,7 @@
         "art/buildings/fire_escape_b.svg",
         "art/buildings/fire_escape_platform_a.svg",
         "art/buildings/fire_escape_platform_b.svg",
+        "art/buildings/home_door_sealed.svg",
         "art/buildings/power_station_base.svg",
         "art/buildings/power_station_clerestory.svg",
         "art/buildings/power_station_clerestory_lit.svg",
@@ -43,6 +45,7 @@
         "art/buildings/wall_base.svg",
         "art/buildings/wall_edge_e.svg",
         "art/buildings/wall_edge_w.svg",
+        "art/buildings/window_boarded_sealed.svg",
         "art/buildings/window_dark.svg",
         "art/buildings/window_lit.svg",
         "art/buildings/window_shuttered_dark.svg",

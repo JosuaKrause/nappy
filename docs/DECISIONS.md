@@ -1,5 +1,109 @@
 # Decisions
 
+## M195 — A rig's window takes no focus, hears no stray key, and always closes · built 2026-09-25
+
+*([PLAYTEST-133](playtests/PLAYTEST-133.md): "since it takes the focus away from what I'm doing
+every time" · "right now if I click somewhere else they stay open" · "and the agent is waiting
+forever" · "will it also prevent godot windows from staying open indefinitely?")*
+
+**Why a covered rig stalled.** On macOS an unfocused or covered window throttles Godot's whole main
+loop, not only its drawing, to about one iteration a second while vsync is on, so a
+`--screenshot --after 25` run went on for minutes without firing. It is the engine's frame pacing,
+not the game's own pause on focus loss, which a rig already skips. Measured by covering a rig's
+window twice (both stalled) and then with Godot's `--disable-vsync` (both finished at 25 s).
+`tools/shot.sh` and a rig's `tools/run.sh` now launch with `--disable-vsync`. Of eleven later
+attempts, two early runs still failed without a cover and without a cause caught; the time limit
+below ended both with an error. A stall the player sees again is what makes this worth
+reopening.
+
+**What is built.** `DevFlags.is_rig()` holds for `--screenshot`, `--walk`, `--flee`, `--press`,
+`--tap` and `--route`. Under it `main.gd` sets the window's no-focus flag first thing, marks every
+real input event handled in `_input()`, and strips the key and pointer bindings from every non-`ui_`
+input action, so the rig's own presses still work and a stray key moves nothing. The game quits
+itself, non-zero, once the OS clock passes `--after` (or the day's length) plus 15 s, never more
+than 240 s; `tools/shot.sh` and a rig's `tools/run.sh` kill the process 15 s after that and say so.
+`tools/shot.sh` reports a picture only when Godot exited cleanly and the file exists, and both
+scripts refuse `--route` with `--screenshot`, since the route quits on arrival before `--after` can
+fire.
+
+**Not verified live, open to overturn:** whether the app still becomes frontmost in the menu bar
+(the window flag stops key focus; macOS may still activate the process), and a real keystroke
+into a rig, which could not be sent without scripting another app. The 15 s margin, 240 s ceiling
+and 15 s kill grace were chosen so a 210 s day fits. `--tap` counts as a rig here but not in
+`main._somebody_is_playing()`, which is unchanged.
+
+## M181 — The seals are on her building's front · built 2026-09-25
+
+*([PLAYTEST-131](playtests/PLAYTEST-131.md): "we can add the door seal starting at the raid. and
+the boarded window to indicate the neighbor" · "when returning to find the raid the door texture
+should also have changed. and then the change stays" · "agree with putting the boarded window on
+her floor".)*
+
+**Where it is seen.** On her building's front and nowhere inside: the escape shows only a door's
+back, so no door there is marked as the neighbor's. No sealed-door picture existed; both were drawn
+new, SVG first, and shown as composed sheets before either went in.
+
+**What is built.** `City.seal_home_door()` swaps her street door (`props/door`) for
+`buildings/home_door_sealed` the moment `ResistanceHappenings._maybe_raid()` spawns day 10's raid,
+while she is out and none of it is on screen, so she comes home to the vans and the sealed door
+together. It is kept as a scar (`City.SEALED_DOOR_SCAR`), so it stands on every later day and in a
+reloaded run, and a lost day 10 gives it back with its other marks; `_sync_home_door()` reads it
+every dawn. From day 11's morning `City.board_neighbor_window()` lays `window_boarded_sealed` over
+one window of her own building, the column nearest above her door on wall row 3, her third floor:
+the escape counts floors from the lobby up, so the ground floor is row 0. The notice's stamp is a
+red ring with a solid centre rather than the posters' ring and band, which on a door reads as "no
+entry". Four checks in `tests/test_resistance.gd`.
+
+**A front too short for a third floor** boards its topmost row instead. On seed 4242 her building
+rolls two wall rows, which is what PLAYTEST-134 answered: her building will not depend on the seed
+(M185), and it gets a height with a third floor.
+
+**Two findings from the captures.** An earlier report that the rig started her off her doorstep on
+day 11 came from the drawing agent's own picture matching, not the game: every run log starts her at
+(80,84). And `tools/shot.sh` prints "wrote" whether or not a picture was written, while `--route`
+quits on arrival before `--after` can fire; both are M195's.
+
+## M194 — The published page counts visits and how far people get · built 2026-09-25
+
+*([PLAYTEST-132](playtests/PLAYTEST-132.md): "can we use the same for
+https://nappy.josuakrause.com/" · "let's get info about how far people get, whether they start from
+a save, whether they restart, how they die, what tasks they did, etc. anything with debug doesn't
+get tracked".)*
+
+**Why GoatCounter.** The player's website carried a Google Analytics tag that sent nothing: its
+snippet defined `gtag(...args)` and pushed an array, and gtag.js acts only on the `arguments`
+object (a clean headless Chrome sent a `g/collect` hit with Google's own line and none with the
+site's). Asked for a cookie-free counter, the player chose GoatCounter over Cloudflare Web
+Analytics because only GoatCounter counts custom events, and set up one site,
+`josuakrause.goatcounter.com`, for the website and the game together. The game's paths start with
+its host, so the two stay apart there.
+
+**What is built.** `export_presets.cfg`'s `html/head_include` loads `count.js` unless the query
+carries `?debug=1`, with a path of host and path alone. `VisitCounter`
+(`src/autoload/visit_counter.gd`) listens on `EventBus` and decides nothing; it calls the page's
+`window.goatcounter.count()` for the events `docs/TELEMETRY.md` lists under "The page counts
+visits": a run fresh or resumed, each day begun and how it ended, a held restart, each task done or
+skipped, the ending, the escape begun, lost or got out, and the control scheme chosen. Seven
+`EventBus` signals were added for it, emitted from `main.gd` with no change to play. Nothing is
+sent from a debug build, on `?debug=1`, or off the web.
+
+**Three defects found and fixed before merging**, each with a test in `tests/test_visit_counter.gd`:
+a JavaScript boolean crosses `JavaScriptBridge.eval()` as an int, so a strict `is bool` check
+refused every event without a word; an event asked for before the async `count.js` has loaded was
+dropped, and is now held and sent with the next event; and the day-14 handover's reload onto the
+save it had just written counted as a resume, then as a second fresh run, and now sends nothing.
+
+**Choices open to overturn:** a loss is named from `GameEnums.DayResult` (`lost-crying`,
+`lost-timeout`, `lost-hard-fail`); a task counts as skipped when its day ends without it done;
+`nappy-escape-begun` fires on the handover from a won day 14 only, not on a reload mid-escape; the
+escape and the controls are three and two flat events, with no per-section breakdown.
+
+**Verified** with `./tools/check.sh`, `./tools/lint.sh` and the suites that touch `main.gd`,
+`GameState` and the resistance; and on a release export served locally with `count.js` pointed at a
+local endpoint (never the real counter): a cleared browser's first load sent `nappy-run-fresh`,
+`nappy-controls-tap` and `nappy-day-1-began`, a second load sent `nappy-run-resumed-day-1`, and
+`?debug=1` sent nothing. The escape handover was checked by test, not played.
+
 ## M193 — The live page's ?debug=1 reaches the debug flags · built 2026-09-25
 
 *([PLAYTEST-130](playtests/PLAYTEST-130.md): "on the published site behind debug=1 we'd want some
