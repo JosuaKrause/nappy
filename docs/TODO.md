@@ -350,6 +350,25 @@ wall's roadblocks are not affected: they are three narrower bodies across the st
 
 ---
 
+## M203 — A front nobody can stand at has windows on its ground floor · asked for 2026-09-25
+
+> "the building in the back has a visible ground floor. this is confusing since you can't
+> actually walk in front of that building. we should just do a regular row of windows there"
+
+[PLAYTEST-138](playtests/PLAYTEST-138.md), statement 2. A multi-story front's ground floor is
+shops or blank wall with one entrance door (`DECISIONS.md`, M185, a ground floor is blank wall or
+shops), wherever the front stands.
+
+- [ ] **Where the ground in front of a front is another building, not walkable ground, its ground
+      floor is a regular row of windows** drawn the way the floors above it are: no storefront,
+      no blank-wall plinth, no entrance door, no portico, no fire-escape platform reaching it.
+      Decided per column, so a front that is only partly covered keeps its ground floor where
+      she can stand. The entrance door, and anything else a front must have, moves to a column
+      she can reach, or the front has none when no column is reachable. Her own building is
+      unchanged. Before and after pictures go to the player.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
@@ -387,7 +406,8 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       lines are the engine's previous-second maxima (`DECISIONS.md`, M143), not per-frame costs.
       A pacing switch remains
       diagnostic, not a shipping decision.
-- [ ] **Profile the current phone build only after that baseline.** Divide CPU time between the
+- [ ] **Profile the current phone build only after that baseline.** The player reports the
+      released v0.18.0 "a bit stuttery" on a phone ([PLAYTEST-138](playtests/PLAYTEST-138.md)). Divide CPU time between the
       baby's every-physics-tick crowd contribution sweep, the halo's rendered-frame contribution
       sweep, event streaming/director work, crowd movement/traffic and debug presentation. Do not
       use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
