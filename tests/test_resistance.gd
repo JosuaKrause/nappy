@@ -61,6 +61,10 @@ func run(t) -> void:
 	_test_the_neighbor_leaves_for_work_until_the_raid(t)
 	_test_day_ten_sends_her_to_the_neighbor_walking_home(t)
 	_test_the_raid_waits_at_her_building_with_the_doorstep_open(t)
+	_test_the_raid_seals_her_street_door(t)
+	_test_the_sealed_door_stands_after_a_reload(t)
+	_test_a_lost_day_ten_restores_the_ordinary_door(t)
+	_test_the_neighbor_window_is_boarded_from_day_eleven(t)
 	_test_the_market_is_found_gone(t)
 	_test_the_park_closes_in_front_of_her_and_stays_taken(t)
 	_test_the_column_comes_down_the_main_road(t)
@@ -1804,6 +1808,8 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 ## Day 10's raid: vans at her building and a patrol, arriving only once she is out of sight of her
 ## door, and never on her own sidewalk — the doorstep stays reachable along it.
 func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
+	var saved_scars := GameState.scars.duplicate(true)
+	GameState.scars.clear()
 	_build_city(t)
 	var happenings := ResistanceHappenings.new()
 	happenings.setup(_city, _city.map)
@@ -1838,6 +1844,114 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
 			Callable())
 	t.check(happenings.raid.is_empty(), "and only on day 10")
+	GameState.scars = saved_scars
+
+## Her street door: ordinary at day 10's start, sealed live the moment the raid actually arrives
+## (PLAYTEST-131), and the scar it leaves is what every later day and a reloaded save read it
+## from (`City._sync_home_door()`, `_test_the_sealed_door_stands_after_a_reload()` below).
+func _test_the_raid_seals_her_street_door(t) -> void:
+	var saved_scars := GameState.scars.duplicate(true)
+	var saved_day := GameState.day
+	GameState.scars.clear()
+	GameState.day = ResistanceHappenings.NEIGHBOR_DAY
+	# After `GameState.scars` is cleared: `_build_city()`'s own `City.build()` reads it once, at
+	# boot, exactly as a resumed run's own boot does (`_door_texture_for_today()`'s own doc).
+	_build_city(t)
+	var happenings := ResistanceHappenings.new()
+	happenings.setup(_city, _city.map)
+	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
+	var door := _city.map.doorstep_world_position()
+	t.check(_city._home_door.texture == AtlasLibrary.region(City.DOOR_TEXTURE),
+			"the door is ordinary at day 10's start")
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
+			Callable())
+	t.check(_city._home_door.texture == AtlasLibrary.region(City.SEALED_DOOR_TEXTURE),
+			"and sealed the moment the raid arrives, out of her sight")
+	var sealed := false
+	for scar in GameState.scars:
+		if String(scar["id"]) == City.SEALED_DOOR_SCAR:
+			sealed = true
+	t.check(sealed, "which leaves a scar for every later day to read")
+	for instance in happenings.raid:
+		_city.events.retire(instance)
+	GameState.scars = saved_scars
+	GameState.day = saved_day
+
+## Sealed on day 11 and after a save/load: `City.build()` reads `GameState.scars` once, at boot,
+## which is what a resumed or reloaded run's own boot does — see `main.gd`'s two `_city.build()`
+## call sites, both after `GameState` has already loaded.
+func _test_the_sealed_door_stands_after_a_reload(t) -> void:
+	var saved_scars := GameState.scars.duplicate(true)
+	GameState.scars = [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}]
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	t.check(city._home_door.texture == AtlasLibrary.region(City.SEALED_DOOR_TEXTURE),
+			"a boot whose scars already carry the seal starts the door sealed")
+	city.free()
+	GameState.scars = saved_scars
+
+## A lost day 10 gives the scar back (`GameState._give_back_what_the_attempt_spent()`) and the
+## next dawn's own `_sync_home_door()` puts the ordinary door back, exactly the restore every
+## other scar already gets.
+func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
+	var saved_scars := GameState.scars.duplicate(true)
+	var saved_day := GameState.day
+	GameState.scars.clear()
+	GameState.day = ResistanceHappenings.NEIGHBOR_DAY
+	_build_city(t)
+	var happenings := ResistanceHappenings.new()
+	happenings.setup(_city, _city.map)
+	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
+	var door := _city.map.doorstep_world_position()
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
+			Callable())
+	t.check(_city._home_door.texture == AtlasLibrary.region(City.SEALED_DOOR_TEXTURE),
+			"sealed once the raid arrives")
+	for instance in happenings.raid:
+		_city.events.retire(instance)
+	# The loss: the attempt's own scar is given back, the same way
+	# `GameState._give_back_what_the_attempt_spent()` restores every scar a lost day left.
+	GameState.scars.clear()
+	var state := CityState.new()
+	state.begin_day(_city.map.block_plans, ResistanceHappenings.NEIGHBOR_DAY)
+	_city.start_day(state, ResistanceHappenings.NEIGHBOR_DAY,
+			_rng(ResistanceHappenings.NEIGHBOR_DAY, "closures"))
+	t.check(_city._home_door.texture == AtlasLibrary.region(City.DOOR_TEXTURE),
+			"a lost day 10 restores the ordinary door")
+	GameState.scars = saved_scars
+	GameState.day = saved_day
+
+## The neighbor's boarded window: absent before day 11, set on the one home-block building the
+## door notch stands in front of from day 11's morning on — the third floor nearest the door, or
+## the topmost row a shorter height roll left it with (`Building.neighbor_window_col`'s own doc
+## calls that a fork) — the same cell every later day and on a fresh load of the same seed.
+func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
+	_build_city(t)
+	var happenings := ResistanceHappenings.new()
+	happenings.setup(_city, _city.map)
+	var building := _city._home_door_building()
+	t.check(building != null, "the door notch stands in front of exactly one home-block building")
+
+	happenings.start_day(ResistanceHappenings.MARKET_DAY - 1)
+	t.check(building.neighbor_window_col == -1, "unboarded the day before")
+
+	happenings.start_day(ResistanceHappenings.MARKET_DAY)
+	var col := building.neighbor_window_col
+	t.check(col >= 0, "boarded from day 11's morning on")
+	t.check(building.neighbor_window_row() == mini(2, building.wall_tiles() - 1),
+			"on the third floor, or the topmost row a shorter front left it with")
+
+	happenings.start_day(ResistanceHappenings.MARKET_DAY + 3)
+	t.check(building.neighbor_window_col == col, "the same cell on every later day")
+
+	var reloaded: City = CITY_SCENE.instantiate()
+	t.add_child(reloaded)
+	reloaded.build(CityGenerator.generate(SEED))
+	reloaded.board_neighbor_window()
+	var reloaded_building := reloaded._home_door_building()
+	t.check(reloaded_building.neighbor_window_col == col, "and the same cell on a fresh load")
+	reloaded.free()
 
 ## Plans `day` on the test city through the real day order with `state` as the run's own
 ## `GameState.city_state`, which the happenings read, and hands back a director for it.
