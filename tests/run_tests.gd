@@ -54,7 +54,7 @@ func _ready() -> void:
 		suite.run(self)
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
-		# spread runs from `test_quit_option.gd` at 3ms to `test_events.gd` at about 259_000.
+		# spread runs from `test_quit_option.gd` at 3ms to `test_resistance.gd` at about 192_000.
 		#
 		# **Both columns are sized for the worst case rather than the common one**, since a
 		# single overflowing row pushes only its own line and the misalignment reads as a
