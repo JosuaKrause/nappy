@@ -115,6 +115,9 @@ func run(t) -> void:
 	_test_select_view_zero_heading_holds(t)
 	_test_cafe_sitters_face_their_own_tables(t)
 	_test_roadwork_barrier_has_an_upright_vertical_source(t)
+	_test_roadblock_barrier_is_end_on_down_a_column(t)
+	_test_roadblock_guard_stands_clear_of_the_band(t)
+	_test_a_spread_covers_the_ground_its_body_closes(t)
 	_test_roadwork_barrier_follows_alley_axis(t)
 	_test_family_dictionaries_are_complete(t)
 	_test_animal_side_view_reuses_the_canonical_source(t)
@@ -228,6 +231,122 @@ func _test_roadwork_barrier_has_an_upright_vertical_source(t) -> void:
 			"the across panel is the broad projection")
 	t.check(upright.y > upright.x,
 			"the vertical panel is the upright projection")
+
+## A roadblock stacked down a north-south column draws its own end-on picture rather than the
+## broadside one repeated per segment *(2026-09-25: "the barrier is still the sideway view for
+## each segment in vertical")*. It is picked by the spread's axis the way the roadworks barrier's
+## is, and it is the roadblock's own picture, not the roadworks one's.
+func _test_roadblock_barrier_is_end_on_down_a_column(t) -> void:
+	var broadside := EventInstance.ROADBLOCK_SEGMENT
+	var end_on := EventInstance.ROADBLOCK_SEGMENT_VERTICAL
+	t.check(EventInstance._roadblock_segment_texture(false) == broadside,
+			"a roadblock across a north-south street draws the broadside segment")
+	t.check(EventInstance._roadblock_segment_texture(true) == end_on,
+			"a roadblock stacked down an east-west street draws the end-on segment")
+	t.check(end_on != EventInstance._roadwork_segment_texture(true),
+			"and it is the roadblock's own end-on picture, not the roadworks barrier's")
+	var upright := EventInstance._native_size(end_on)
+	t.check(upright.y > upright.x,
+			"the end-on segment is the upright projection (%s)" % upright)
+
+## The guards stand beside their barrier, never over it *(2026-09-25: "also the guards are on top
+## of the barrier?")*, one on each side (*"have one guard on each side?"*): on both street axes,
+## each one's whole standing picture is outside the whole of the barrier's drawn picture, on his
+## own side of it, facing out from it towards where she would come from.
+func _test_roadblock_guard_stands_clear_of_the_band(t) -> void:
+	var def := EventCatalogue.by_id("roadblock")
+	var half := maxf(11.0, def.obstructs_radius)
+	var guard_size := EventInstance._native_size(EventInstance.GUARD_STANDING_BY_VIEW["front"])
+	for vertical: bool in [false, true]:
+		var axis := "end-on" if vertical else "broadside"
+		var band := _roadblock_band_rect(vertical, half)
+		t.check(band.size.x > 0.0 and band.size.y > 0.0,
+				"%s, the barrier has a picture to stand clear of (%s)" % [axis, band])
+		for side: int in [-1, 1]:
+			var feet := EventInstance._guard_post_offset(vertical, side)
+			var guard := Rect2(feet - Vector2(guard_size.x * 0.5, guard_size.y), guard_size)
+			t.check(not guard.intersects(band),
+					"%s, side %d: the guard's picture %s is clear of the barrier's %s"
+					% [axis, side, guard, band])
+			var across := feet.x if vertical else feet.y
+			t.check(signf(across) == signf(side),
+					"%s, side %d: he stands on that side of the band (%s)" % [axis, side, feet])
+			var heading := EventInstance._guard_post_heading(vertical, side)
+			t.check(heading.dot(feet) > 0.0,
+					"%s, side %d: facing out from it (%s)" % [axis, side, heading])
+	# The one who gives chase is the one on her side, across the band; level with its line, south.
+	t.check(EventInstance._guard_side_toward(false, Vector2(30.0, -200.0)) == -1
+			and EventInstance._guard_side_toward(false, Vector2(-30.0, 200.0)) == 1
+			and EventInstance._guard_side_toward(true, Vector2(-200.0, 30.0)) == -1
+			and EventInstance._guard_side_toward(true, Vector2(200.0, -30.0)) == 1,
+			"the chaser is the guard on whichever side of the band she is, across it")
+	t.check(EventInstance._guard_side_toward(false, Vector2(170.0, 0.0)) == 1,
+			"and level with the band's own line it is the camera-facing south")
+
+## **The barrier's picture covers the ground its body closes, on both axes, and no more.**
+## *(2026-09-25: "only the barrier doesn't actually reach the full width/height is that
+## intentional?")* Along the run, the repeated segments reach from one end of the body to the
+## other — the body's own reach along its spine, `obstructs_radius` — broadside across the picture
+## and end-on up it, where a segment standing on its middle would put the whole column half a
+## segment up the screen from its own ground. Asked of the roadblock and of the roadworks barrier,
+## the two rows that draw a capped band through `_draw_spread()`.
+func _test_a_spread_covers_the_ground_its_body_closes(t) -> void:
+	for id: String in ["roadblock", "construction"]:
+		var def := EventCatalogue.by_id(id)
+		var half := maxf(11.0, def.obstructs_radius)
+		for vertical: bool in [false, true]:
+			var what := "%s %s" % [id, "end-on" if vertical else "broadside"]
+			var picture := EventInstance._roadblock_segment_texture(vertical) if id == "roadblock" \
+					else EventInstance._roadwork_segment_texture(vertical)
+			var span := Rect2()
+			var first := true
+			for rect in _spread_segment_rects(picture, vertical, half):
+				span = rect if first else span.merge(rect)
+				first = false
+			var from := span.position.y if vertical else span.position.x
+			var to := span.end.y if vertical else span.end.x
+			t.check(is_equal_approx(from, -def.obstructs_radius)
+					and is_equal_approx(to, def.obstructs_radius),
+					"%s: the segments run %.1f..%.1f along the run, the body's own %.0f..%.0f"
+					% [what, from, to, -def.obstructs_radius, def.obstructs_radius])
+
+## The union of every rect `EventInstance._draw_spread()` draws a roadblock's band into, segments
+## and end posts, in the band's own local space — the same slice and cap arithmetic that function
+## uses, through the same `_spread_slice_feet()`, `_cap_offset()` and `_cap_along()` it calls.
+func _roadblock_band_rect(vertical: bool, half: float) -> Rect2:
+	return _spread_rect(EventInstance._roadblock_segment_texture(vertical),
+			EventInstance.ROADBLOCK_END, vertical, half)
+
+## The union of every rect `EventInstance._draw_spread()` draws `segment_picture` into, capped by
+## `cap_picture` at both ends unless it is empty, over a run of `-half` to `half`.
+func _spread_rect(segment_picture: String, cap_picture: String, vertical: bool,
+		half: float) -> Rect2:
+	var rects := _spread_segment_rects(segment_picture, vertical, half)
+	if not cap_picture.is_empty():
+		var cap := EventInstance._native_size(cap_picture)
+		for side: float in [-1.0, 1.0]:
+			var along := EventInstance._cap_offset(half, EventInstance._cap_along(cap), side)
+			var feet := Vector2(0.0, along) if vertical else Vector2(along, 0.0)
+			rects.append(Rect2(feet - Vector2(cap.x * 0.5, cap.y), cap))
+	var union := rects[0]
+	for rect in rects:
+		union = union.merge(rect)
+	return union
+
+## The rect each repeated segment of a spread is drawn into, the way `_draw_spread()` draws them.
+func _spread_segment_rects(segment_picture: String, vertical: bool, half: float) -> Array[Rect2]:
+	var segment := EventInstance._native_size(segment_picture)
+	var along_natural := segment.y if vertical else segment.x
+	var thickness := segment.x if vertical else segment.y
+	var segments := maxi(1, ceili(half * 2.0 / along_natural))
+	var width := half * 2.0 / segments
+	var rects: Array[Rect2] = []
+	for i in segments:
+		var along := EventInstance._spread_slice_feet(vertical, half, width, i)
+		var feet := Vector2(0.0, along) if vertical else Vector2(along, 0.0)
+		var size := Vector2(thickness, width) if vertical else Vector2(width, thickness)
+		rects.append(Rect2(feet - Vector2(size.x * 0.5, size.y), size))
+	return rects
 
 ## Alley mouths have no corridor band for `_spread_is_vertical()` to read. Their own rectangle
 ## supplies the axis instead: a horizontal alley is sealed by a vertical spread across its short

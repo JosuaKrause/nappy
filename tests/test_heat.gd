@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_a_patrol_that_never_notices_drives_off_its_route(t)
 	_test_the_patrol_chases_once_it_notices(t)
 	_test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
+	_test_only_the_guard_on_her_side_sets_off_from_his_post(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
 	_test_a_hot_day_places_more_patrols(t)
@@ -458,6 +459,64 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 			and not guard.is_lethal_at(post + Vector2(0.0, hot.obstructs_radius)),
 			"and the barrier standing there takes nobody")
 	guard.free()
+
+## *"have one guard on each side?"* · *"only the guard on her side can chase since the other one
+## will be blocked"* — and he sets off from his own post, beside the band, rather than from its
+## centre. That post is nearer her than the centre where his notice is measured, which is why his
+## stand-off is measured from his catch reach: she comes straight across the band, the approach
+## that puts his post nearest her, and stands still once he has noticed her. Measured from the
+## field's 86px core he would already be inside his stand-off and lunge on the first frame; from
+## his reach he notices her outside it, spends his notice closing to it, and lunges from it — the
+## `PURSUIT_REACTION` of his own approach every pursuer owes her. Both street axes, both sides.
+func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
+	var hot := EventCatalogue.heated(_cold_roadblock(), Tuning.RESISTANCE_GOAL)
+	var reach := hot.lethal_reach()
+	t.check(Tuning.pursuit_standoff(hot.pursue_speed, reach)
+			< hot.pursues_within - EventInstance._guard_post_offset(false, 1).length(),
+			"a guard posted beside the band notices her from outside his own stand-off")
+	var post := Vector2(400.0, 0.0)
+	for vertical: bool in [false, true]:
+		for side: int in [-1, 1]:
+			var what := "%s, side %d" % ["end-on" if vertical else "broadside", side]
+			var guard := EventInstance.new()
+			guard.setup(hot, post)
+			guard._spread_vertical = vertical
+			t.add_child(guard)
+			guard.set_process(false)
+			var across := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
+			var her := post + across * side * (hot.pursues_within - 1.0)
+			guard.player_at = her
+			guard._process(STEP)
+			t.check(guard.has_left_its_body_behind() and guard._chaser_side == side,
+					"%s: the guard on her side sets off" % what)
+			var his_post := post + EventInstance._guard_post_offset(vertical, side)
+			t.check(guard.global_position.is_equal_approx(his_post),
+					"%s: from his own post (%s, the post %s)" % [what, guard.global_position, his_post])
+			t.check(guard.body_position().is_equal_approx(post),
+					"%s: the band stays where it was built" % what)
+			var noticed_at := guard.global_position.distance_to(her)
+			var standoff := Tuning.pursuit_standoff(hot.pursue_speed, reach)
+			t.check(noticed_at < Tuning.pursuit_standoff(hot.pursue_speed, hot.inner_radius),
+					"%s: noticed %.0fpx from his post, inside a stand-off measured from the field's"
+					% [what, noticed_at] + " core, so the reach is what leaves him a warning")
+			t.check(noticed_at > standoff,
+					"%s: and outside the %.0fpx one measured from his reach" % [what, standoff])
+			var frames := 0
+			var lethal := false
+			while guard.is_telegraphing() and frames < int(10.0 / STEP):
+				lethal = lethal or guard.is_lethal_at(her)
+				guard.player_at = her
+				guard._process(STEP)
+				frames += 1
+			t.check(not lethal and frames > 1,
+					"%s: his notice runs, nothing lethal in it, rather than a first-frame lunge (%d)"
+					% [what, frames])
+			# The frame the lunge fires he has already taken its first step.
+			var first_step := hot.pursue_speed * STEP
+			t.check(guard.global_position.distance_to(her) >= standoff - first_step - 1.0,
+					"%s: and he lunges from his stand-off (%.0fpx of %.0f)"
+					% [what, guard.global_position.distance_to(her), standoff])
+			guard.free()
 
 ## `EventInstance.resume()` restores age and distance travelled so a streamed-out event picks up
 ## where it left off rather than rewinding — checked here because a heated patrol is the first

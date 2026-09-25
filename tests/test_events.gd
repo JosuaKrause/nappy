@@ -419,17 +419,19 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 	t.check(not is_equal_approx(offset, half),
 			"and it is not simply centred at ±half any more (%.1f)" % offset)
 	# End-on, the extent along the run is the post's picture height; what it covers of the run is
-	# still its width. The near post's feet stand within that width of the barrier's near end, past
-	# the last segment's own feet, rather than half a post's height in toward the middle.
+	# still its width. The near post's feet stand within that width of the barrier's near end —
+	# inside the last segment's own slice of ground, which ends at the end of the body — rather
+	# than half a post's height in toward the middle.
 	var segment := EventInstance._native_size(EventInstance.BARRIER_SEGMENT_VERTICAL)
 	var segments := maxi(1, ceili(half * 2.0 / segment.y))
-	var last_segment_feet := half - half / segments
+	var width := half * 2.0 / segments
+	var last_slice_starts := EventInstance._spread_slice_feet(true, half, width, segments - 1) - width
 	t.check(cap_size.y > cap_size.x * 2.0,
 			"the post is an upright picture (%s), so its height and width are different questions"
 			% cap_size)
-	t.check(half - offset <= cap_size.x and offset > last_segment_feet,
-			"end-on, the near post stands at the barrier's end (%.1f of %.1f), beyond the last"
-			% [offset, half] + " segment's feet (%.1f)" % last_segment_feet)
+	t.check(half - offset <= cap_size.x and offset > last_slice_starts,
+			"end-on, the near post stands at the barrier's end (%.1f of %.1f), inside the last"
+			% [offset, half] + " segment's slice (from %.1f)" % last_slice_starts)
 	# The spread is one node, so draw order is its only depth. End-on, the side drawn behind the
 	# board has to be the far end, up the screen (`_spread_at` puts side −1 at negative y), and
 	# the near end is the only one drawn over it; broadside, both stand level with the board.
