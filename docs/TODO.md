@@ -350,6 +350,50 @@ wall's roadblocks are not affected: they are three narrower bodies across the st
 
 ---
 
+## M205 — The man shouting charges the meter again · found 2026-09-25
+
+> "the yeller has no effect on the meter and its halo doesn't even turn on"
+
+[PLAYTEST-140](playtests/PLAYTEST-140.md), statement 4. In v0.18.0 on a phone, walking beside
+`homeless_yeller` charges nothing and his halo never lights, though `docs/COSTS.md` says about 6.5
+points a second beside him.
+
+- [ ] **Reproduce it, find the cause, fix it**, with a test that fails before the fix: a rig
+      standing beside him on a released-build seed, the meter and the halo both read. Say when
+      it broke and what else the same cause silences.
+
+---
+
+## M206 — The title screen after a game over is the right way up · found 2026-09-25
+
+> "also there is a bug when you lose with game over the title screen is sideways"
+
+[PLAYTEST-140](playtests/PLAYTEST-140.md), statement 5. Seen on the phone.
+
+- [ ] **Reproduce it, fix it, and pin it with a test**: after a lost day's game over, the title
+      screen is drawn in the screen's own orientation. Check the desktop and the touch layout.
+
+---
+
+## M207 — A warning comes shortly before its danger · asked for 2026-09-25
+
+> "12.9s is a *long* warning to the point where nothing really happens anymore. I feel the same
+> with the biker. it gets warned too early so most of the time you're already gone when anything
+> happens."
+
+[PLAYTEST-140](playtests/PLAYTEST-140.md), statement 2. The telegraph contract sets the floor, the
+reaction time a warning must leave her; the player's complaint is the other end.
+
+- [ ] **The cyclist is warned shortly before he arrives**, not so early that she has usually
+      passed: its lead (spawned `EventDef.toward_player_lead()` down her line, telegraphing 2.97s
+      at 165px/s) comes down to the contract's floor plus a small margin. The robber that comes
+      after a handover is fixed on M137's own PR.
+- [ ] **A table of every warned row's lead**: how long from the first warning to the moment the
+      danger can reach her, walking toward it, standing and walking away, against the contract's
+      floor, so the player can name the next one.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
@@ -392,7 +436,9 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       sweep, event streaming/director work, crowd movement/traffic and debug presentation. Do not
       use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
       measured. Measure the conservative contribution rejection on that device, including its
-      effect on the baby and halo callers, before considering caching or lower tick rates.
+      effect on the baby and halo callers, before considering caching or lower tick rates. The player's phone is
+      Chrome on a Pixel 8 Pro, where the stutter is steady rather than at particular moments
+      ([PLAYTEST-140](playtests/PLAYTEST-140.md)).
 - [ ] **Measure what the baked pages cost, on the run log's own lines.** A page writes one
       `texture` line when it is read — `atlas page '<group>' loaded in the <moment>: <ms> ms,
       <W> x <H>`, the moment being `startup`, `day brief`, `escape` or `OUTSIDE` — and one when
@@ -429,9 +475,11 @@ without the three rules, each a design question for the player before anything i
 - [ ] **Open: a `roadblock` on a carriageway** is seen by no sidewalk rule, only by the junction
       rule when it is near one. M199, the roadblock closes its whole street, makes the catalogue
       roadblock a true closure, so this is settled with it.
-- [ ] **Open: the calm-ground pass** (`_spoil_the_parks_she_used`) places in a used park's rect
-      without the rules, and the probe cannot see it, since it plans one day with no used parks.
-      Whether a spent park may cost a route goes to the player.
+- [ ] **A spent park is closed** ([PLAYTEST-140](playtests/PLAYTEST-140.md), statement 1: "a
+      spent park should not be accesible and no route should go through it"). The calm-ground
+      pass (`_spoil_the_parks_she_used`) places in a used park's rect without the rules; instead
+      the park is shut the way a closure shuts ground, checked before it is accepted, and the
+      day's route tree plans around it. Its picture still reads as spent.
 - [ ] **The night raid's van**, spawned by `ResistanceDirector` through `spawn_extra` near her
       doorstep, and the other `spawn_extra` sites in `happenings.gd` are not checked against the
       three questions. Trace each and say whether it may cost a route.
