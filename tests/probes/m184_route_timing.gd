@@ -19,7 +19,7 @@ extends RefCounted
 ## screen `RouteRig` never gets past — `main.gd` pauses everything behind it), and is given no
 ## `--day-length`: the whole question is whether the *real* clock is enough, so compressing it
 ## would answer a different one. `_TIMEOUT_SECONDS` is a safety net well past every day 6-14's own
-## length (`Tuning.day_length()`, 144.0s for all nine), not a budget this probe is trying to fit.
+## length (`Tuning.day_length()`), not a budget this probe is trying to fit.
 ##
 ## **Carries `--invincible`.** The question this table answers is "does the route fit the day's
 ## clock", not "does she survive the ordinary risk of the streets she walks" — the second is a

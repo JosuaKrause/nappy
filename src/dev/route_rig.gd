@@ -35,12 +35,12 @@ extends Node
 ## measurement fact about the calendar, not a bug in this rig: `calm` and `home` still resolve and
 ## time normally, and the finale's own leg needs the goal met to be timed at all.
 ##
-## **Hugs the kerb by keeping off the carriageway, not by hand-drawn geometry.** `_plan()` first
-## asks for the shortest walk on a graph with every plain `ROAD` tile and every live hazard's own
-## kill reach removed (`_hazard_tiles()`) — so a route always prefers the pavement, crosses only at
-## a `CROSSING` (a zebra) it passes on the way, and keeps off a guard's own reach the way a player
-## backs off once the meter spikes — and only falls back to the unrestricted graph, carriageway and
-## hazard ground both included, when nothing safer can reach the target at all (the day 13
+## **Hugs the kerb by pricing the carriageway, not by hand-drawn geometry.** `_plan()` asks for the
+## cheapest walk with every live hazard's own kill reach removed (`_hazard_tiles()`), keeping off a
+## guard's own reach the way a player backs off once the meter spikes, and with a plain `ROAD` tile
+## costing `_ROAD_STEP_COST` tiles more than a step of sidewalk — so a route keeps to the pavement,
+## crosses at a `CROSSING` (a zebra) a few tiles along rather than straight over, and takes the
+## carriageway only where the pavement is a long way round or no way at all (the day 13
 ## roadblock's own band is `ROAD`/`CROSSING` ground, so its own last step always does; see
 ## `_HAZARD_MARGIN`'s own doc for why a guarded mark's own contact point never needs this). A
 ## hazard the plan cannot get around at all — an unlikely last resort, not the ordinary case — is
@@ -73,9 +73,9 @@ extends Node
 ## (22px) covers only its own kerb tile, yet leaves the frontage tile beside it a 26px gap to the
 ## wall for her 28px body, so a plan that read only the record walked her flush into the van.
 ## `_body_clear_tiles()` adds every tile whose centre lies within `Tuning.PLAYER_BODY_RADIUS` of a
-## stationary body's own surface, measured against the body's real shape, and every plan keeps off
-## those first (see `_plan()` for the order it gives each preference up in). **Every body and every
-## door the day has sited counts, not only the ones streamed in near her** — see
+## stationary body's own surface, measured against the body's real shape, and every plan crosses
+## those only where going round is dearer (see `_plan()` for the price of each). **Every body and
+## every door the day has sited counts, not only the ones streamed in near her** — see
 ## `_body_clear_tiles()` and `_door_tiles()`.
 ##
 ## **Routes around the body that caught her, and backs away from it.** A stall reads her own slide
@@ -207,13 +207,6 @@ var _caught_tile := Vector2i.ZERO
 ## The resistance step on offer when a `mark` or `task` leg began, so the leg can end when the
 ## director records it completed — see `_step_completed()`. `null` on every other leg.
 var _leg_step: ResistanceSteps.Step
-## Whether the live plan was made keeping clear of every body (`_body_clear_tiles()`), which is
-## what lets `_maybe_replan()` re-plan when a body the director sites from her walk reaches over a
-## waypoint, without re-planning every check onto a plan that had to give the clearance up to find
-## a way at all.
-var _plan_kept_clear := false
-## The same for the doors' reach (`_door_tiles()`).
-var _plan_kept_doors := false
 ## Whether a door was holding her at the last walking frame — see `_held_at_a_door()`.
 var _held := false
 ## Where she stood at the last physics frame, and whether she has moved further than
@@ -276,6 +269,9 @@ func start_day() -> void:
 	_task_instance = null
 	_planned_clear = {}
 	_latched_doors = {}
+	_plan_accepted = {}
+	_walkable = PackedByteArray()
+	_steps = PackedInt32Array()
 	_gate_ground_ready = false
 	_held = false
 	_last_position = Vector2.INF
@@ -307,6 +303,13 @@ func _physics_process(delta: float) -> void:
 	if _settling:
 		_check_settled()
 		return
+	# A door that takes her while she waits or works herself free is a crossing like any other: the
+	# hold is counted and the far side planned from (`_held_at_a_door()`), rather than the maneuver
+	# reading the jump as having come free and planning on as if nothing had happened.
+	if (_waiting or _unsticking) and _player.is_detained():
+		_waiting = false
+		_unsticking = false
+		_unstick_cycles = 0
 	if _waiting:
 		_wait(delta)
 		return
@@ -399,7 +402,7 @@ const _NEAREST_OPEN_SEARCH_RADIUS := 6
 ## **A solid row's own centre is exactly the ground `_plan()` refuses.** `roadblock` carries
 ## `def.solid(GroundShape.band(60.0))`, so `EventManager` rasterises its footprint into
 ## `CityMap.obstructed_tiles` the same way any parked body is (`_blocked_for_phase()`'s own doc),
-## and unlike a hazard's own margin — which `_shortest()` explicitly drops for the tile a leg is
+## and unlike a hazard's own margin — which `_cheapest()` explicitly drops for the tile a leg is
 ## walking to — an obstructed tile is never exempted for either end of a plan, because a body is
 ## really standing there. Handing `_begin_leg()` a target sitting inside one is a target no path
 ## can ever end on, which is the day 13 "no path to 'task'" this function exists to fix (a `--route`
@@ -439,9 +442,9 @@ func _stands_open(tile: Vector2i, keep_clear: Dictionary) -> bool:
 ## The nearest calm tile by walking distance, sidewalks, hazard-free ground and ground clear of
 ## every body preferred exactly as `_plan()` prefers them — see `_blocked_for_phase()` and
 ## `_body_clear_tiles()`, the second of which also keeps the calm tile itself off ground beside a
-## body. `CityMap.calm_tiles()` is read live, so a park the day has already spoiled (day 12, once
-## the swing is reached) is never offered back. Her own tile is never blocked, for the reason
-## `_shortest()` gives: a sweep seeded on blocked ground reaches nothing at all.
+## body. The pool is `_calm_tiles_left()`, read live, so ground the day has spoiled or is taking
+## (day 12's park, once the swing is reached) is never offered. Her own tile is never blocked, for
+## the reason `_cheapest()` gives: a sweep seeded on blocked ground reaches nothing at all.
 ##
 ## **`toward_home`, the `calm:home` target word** — docs/TODO.md, M181, "the late days are timed",
 ## item 3: day 9 on seed 90210 does not fit its clock (`tests/probes/m184_route_timing.gd`), and one
@@ -474,10 +477,36 @@ func _nearest_calm(toward_home: bool = false) -> Vector2:
 			return _city.map.tile_to_world(best)
 	return Vector2.INF
 
+## `CityMap.calm_tiles()` less the ground of any lot the day has stopped counting as calm, which is
+## the ground of a lot being taken while she watches. Day 12's park, once she has reached its swing,
+## leaves `CityMap.calm_blocks` that instant (`Happenings.take_the_park()`), but its grass turns to
+## mud a ring at a time over `Tuning.PARK_CLOSING_SECONDS`, and until a ring goes its tiles still
+## read calm one by one: a calm area chosen from the tiles alone is the swing's own park, whose
+## ground goes to mud under her pacing seconds later, and a baby does not settle on mud. So the
+## calm leg goes to the day's second calm area, which the day keeps reachable for exactly this. On
+## every other day no lot's calm ground outlives its purpose, so this is the tiles unchanged.
+func _calm_tiles_left() -> Array[Vector2i]:
+	var map := _city.map
+	var calm := {}
+	for block: Vector2i in map.calm_blocks:
+		calm[block] = true
+	var going := {}
+	for block: Vector2i in map.block_plans:
+		if calm.has(block):
+			continue
+		for tile in map.rect_tiles(map.lot_rect(block)):
+			if Tile.is_calm(map.tile_at(tile)):
+				going[tile] = true
+	var left: Array[Vector2i] = []
+	for tile in map.calm_tiles():
+		if not going.has(tile):
+			left.append(tile)
+	return left
+
 func _nearest_in_field(field: PackedInt32Array) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var best_distance := -1
-	for tile in _city.map.calm_tiles():
+	for tile in _calm_tiles_left():
 		var distance := _city.map.distance_at(field, tile)
 		if distance < 0:
 			continue
@@ -493,7 +522,7 @@ func _nearest_in_field(field: PackedInt32Array) -> Vector2i:
 func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedInt32Array) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var best_total := -1
-	for tile in _city.map.calm_tiles():
+	for tile in _calm_tiles_left():
 		var distance := _city.map.distance_at(field, tile)
 		if distance < 0:
 			continue
@@ -509,8 +538,9 @@ func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedIn
 # ----------------------------------------------------------------- planning ---
 
 ## Today's `closed_tiles`, `CityMap.obstructed_tiles`, today's soft-sealed pavement
-## (`CityMap.soft_sealed_tiles`) and the ground a street door's boom would take her on
-## (`_gate_ground()`), which block a plan whatever else it asks, plus `_road_tiles` while
+## (`CityMap.soft_sealed_tiles`), the ground a street door's boom would take her on
+## (`_gate_ground()`) and the ground under a door body that has just let her out
+## (`_latched_door_bodies()`), which block a plan whatever else it asks, plus `_road_tiles` while
 ## `sidewalk_only`; `hazards` (see `_hazard_tiles()`) and `avoid` (ground the tile grid calls open
 ## but she cannot stand in the middle of or should keep off, see `_plan()`) are added on top of all
 ## of that. Built fresh every call since `closed_tiles`, every live obstruction's own footprint and
@@ -522,18 +552,15 @@ func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedIn
 ## path onto the same obstruction and re-detecting it forever; a plan that never looked at
 ## `obstructed_tiles` at all was the shape of that bug. `hazards` is taken as a dictionary rather
 ## than computed here so a caller can drop the one tile it is actually trying to reach from it first
-## — see `_shortest()`.
+## — see `_cheapest()`.
 ##
-## **A soft seal (`skip`/`scaffolding`, `moving_van`) shuts its pavement to a walker whatever tier
-## this is, never only while `sidewalk_only`.** `CrowdAgent._cannot_go_on()` already refuses
+## **A soft seal (`skip`/`scaffolding`, `moving_van`) shuts its pavement to a walker in every plan,
+## not only while `sidewalk_only`.** `CrowdAgent._cannot_go_on()` refuses
 ## `CityMap.is_soft_sealed(tile)` for `Kind.WALKER` — "a soft seal takes both pavements and leaves
-## the carriageway to the cars" — which a plan never asked before this: the ground either side of a
-## soft seal's own body reads as open, unobstructed ground (the seal shuts the whole *pavement*, not
-## only the body's own footprint), so a plan could aim her down a lane the day has already closed to
-## her rather than crossing to the carriageway where the seal means her to go. Found timing day 11's
-## mast task on seed 1234567, where it lengthens the plan by the detour onto the road, though a
-## separate, narrower stall against the same `scaffolding` body's own outline on that seed and day is
-## still open (`docs/TODO.md`, M181, "the late days are timed").
+## the carriageway to the cars" — and the ground either side of a soft seal's own body reads as
+## open, unobstructed ground (the seal shuts the whole *pavement*, not only the body's own
+## footprint), so a plan that did not ask would aim her down a lane the day has closed to her
+## rather than crossing to the carriageway where the seal means her to go.
 func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 		hazards: Dictionary = {}) -> Dictionary:
 	var blocked := {}
@@ -547,6 +574,8 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 	for tile: Vector2i in _city.map.obstructed_tiles:
 		blocked[tile] = true
 	for tile: Vector2i in _gate_ground():
+		blocked[tile] = true
+	for tile: Vector2i in _latched_door_bodies():
 		blocked[tile] = true
 	for tile: Vector2i in hazards:
 		blocked[tile] = true
@@ -671,6 +700,14 @@ var _planned_clear := {}
 func _planned_body_tiles(plan: EventScheduler.Planned) -> Dictionary:
 	if _planned_clear.has(plan):
 		return _planned_clear[plan]
+	var parts := _planned_parts(plan)
+	var tiles := _tiles_near_pieces(parts[0], parts[1], parts[2], _BODY_CLEARANCE)
+	_planned_clear[plan] = tiles
+	return tiles
+
+## A placed plan's solid pieces as its instance will stand — `[centres, shapes, axis]`, the
+## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` it will have.
+func _planned_parts(plan: EventScheduler.Planned) -> Array:
 	var at := _planned_position(plan)
 	var vertical := EventInstance._spread_is_vertical(_city.map, at)
 	var centres := PackedVector2Array()
@@ -679,10 +716,7 @@ func _planned_body_tiles(plan: EventScheduler.Planned) -> Dictionary:
 		var offset := piece.offset_for(vertical)
 		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
 		shapes.append(piece.shape)
-	var axis := EventManager._body_axis(_city.map, plan.def, at, plan.facing)
-	var tiles := _tiles_near_pieces(centres, shapes, axis, _BODY_CLEARANCE)
-	_planned_clear[plan] = tiles
-	return tiles
+	return [centres, shapes, EventManager._body_axis(_city.map, plan.def, at, plan.facing)]
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
@@ -773,11 +807,26 @@ func _latch_the_doors_round_her() -> void:
 		if here.distance_to(door) <= plan.def.detain_distance():
 			_latched_doors[plan] = true
 
+## The ground under every door body that has just let her out (`_latched_doors`): the tiles whose
+## centre lies within the body's `solid_reach()` plus `Tuning.PLAYER_BODY_RADIUS` of it. Blocked in
+## every plan (`_blocked_for_phase()`), because **a latched door does not take her in, and its
+## crossing line runs through its body**: a plan back across the door she has just come out of
+## walks her down the line into the hut, where she stands pressed against it — the latch holds
+## until she has walked out of its circle, which pressing against it never does. So a plan back
+## across goes by another of the door's bodies, or out of the circle and back once the latch has
+## let go.
+func _latched_door_bodies() -> Dictionary:
+	var under := {}
+	for plan: EventScheduler.Planned in _latched_doors:
+		var door := plan.live.global_position if plan.live != null else _planned_position(plan)
+		under.merge(_tiles_near_point(door, plan.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS))
+	return under
+
 ## Every tile under a street door's boom (`checkpoint_gate`, the plan carrying a
 ## `RegionPlanner.GateState`): within reach of her body touching the boom's — its own
 ## `solid_reach()` plus `Tuning.PLAYER_BODY_RADIUS`, plus `_ARRIVE_RADIUS` for the corner she cuts
-## at a waypoint — and nearer the boom than any other door body. Always blocked, in every tier of
-## every plan (`_blocked_for_phase()`), because **the rig never goes through the boom**, raised or
+## at a waypoint — and nearer the boom than any other door body. Always blocked, in every plan
+## (`_blocked_for_phase()`), because **the rig never goes through the boom**, raised or
 ## lowered *(2026-09-24, the player: "The bot shouldn't route through the boom either way.")*: a
 ## raised boom is ground she may walk under, and the walk sets a guard on her (`EventManager.
 ## _watch_the_door_lines()`), so a door is crossed at a hut or an alley post. Stated over the bodies
@@ -887,71 +936,139 @@ func _tiles_near_point(point: Vector2, margin: float) -> Dictionary:
 				near[tile] = true
 	return near
 
-## The shortest walk that keeps to the sidewalk where it can (see the class doc, "Hugs the kerb"),
-## off every live hazard, clear of every body (`_body_clear_tiles()`), out of every door's reach
-## (`_door_tiles()`, which leaves each door's own crossing line open) and off `avoid` — the ground
-## round what has already caught her this leg, `_leg_avoid`, `{}` for a first plan. Each preference
-## is given up, one at a time and weakest first, only where keeping it finds no way at all: `avoid`
-## first, since it is a detour of choice; then the doors' reach; then the body clearance, since a
-## plan through a gap her body does not fit is at least a plan the stall handling can work on; and
-## only then the hazards, so a guard that has boxed in the only way through skips the target rather
-## than reporting one unreachable that a wider margin merely made look that way. Smoothed by
-## `_simplify()` either way. Records which it kept in `_plan_kept_clear` and `_plan_kept_doors`.
+## The cheapest walk (`_cheapest()`) from `from_tile` to `to_tile`: along the sidewalk and across
+## at a zebra where it can (see the class doc, "Hugs the kerb"), off every live hazard, clear of
+## every body (`_body_clear_tiles()`), out of every door's reach (`_door_tiles()`, which leaves each
+## door's own crossing line open) and off `avoid` — the ground round what has already caught her
+## this leg, `_leg_avoid`, `{}` for a first plan.
+##
+## **Each preference is a price per tile, not a rule for the whole leg**: a plain `ROAD` tile costs
+## `_ROAD_STEP_COST` tiles of walking on top of the step, a tile of a body's clearance
+## `_CLEARANCE_STEP_COST` and a tile of a door's reach `_DOOR_STEP_COST`, so a plan crosses one only
+## where going round it is longer still, and only that one. A preference given up for a whole leg
+## is given up everywhere on it: for one pinch — the only way into a mark's alley passing a body's
+## side — the plan runs her down the outline of every body on the way, a roadblock's beside a door
+## included, where she stalls; the doors' reach given up the same way walks her into doors she never
+## meant to cross; and a sidewalk kept at any price sends her hundreds of tiles round a door's wall
+## rather than down a stretch of carriageway.
+##
+## Tried in order: `avoid` kept off outright, since a re-plan goes round what caught her; then
+## `avoid` priced at `_AVOID_STEP_COST`, where nothing else gets past it; and only then with the
+## hazards ignored, so a guard that has boxed in the only way through skips the target rather than
+## reporting one unreachable that a wider margin merely made look that way. Smoothed by
+## `_simplify()`. `_plan_accepted` records the tiles of the clearance and the doors' reach it chose
+## to cross.
+##
+## **A target on ground no plan may end on is aimed beside** (`_standable_near()`): the neighbor day
+## 10 sends her after walks along pavement a van has sealed, and a mark or a task is reached from
+## `ContactPoint.REACH` (36px), more than a tile, so the tile beside it reaches it as well.
 func _plan(from_tile: Vector2i, to_tile: Vector2i, avoid: Dictionary = {}) -> Array[Vector2i]:
+	to_tile = _standable_near(to_tile)
 	var clear := _body_clear_tiles()
 	var doors := _door_tiles()
-	var clear_and_doors := clear.duplicate()
-	clear_and_doors.merge(doors)
-	var everything := clear_and_doors.duplicate()
-	everything.merge(avoid)
-	# Each tier: what it keeps off, whether that includes the bodies' clearance, and the doors'.
-	var tiers: Array = [[everything, true, true]]
+	var costs := {}
+	for tile: Vector2i in clear:
+		costs[tile] = _CLEARANCE_STEP_COST
+	for tile: Vector2i in doors:
+		costs[tile] = _DOOR_STEP_COST
+	var soft_avoid := costs.duplicate()
+	for tile: Vector2i in avoid:
+		soft_avoid[tile] = maxi(soft_avoid.get(tile, 0), _AVOID_STEP_COST)
+	_plan_accepted = {}
+	# Each tier: what it keeps off outright, what it charges for, and whether it keeps off hazards.
+	var tiers: Array = []
 	if not avoid.is_empty():
-		tiers.append([clear_and_doors, true, true])
-	if not doors.is_empty():
-		tiers.append([clear, true, false])
-	if not clear.is_empty():
-		tiers.append([{}, false, false])
+		tiers.append([avoid, costs, true])
+	tiers.append([{}, soft_avoid, true])
+	tiers.append([{}, soft_avoid, false])
 	for tier: Array in tiers:
-		var keep_off: Dictionary = tier[0]
-		var path := _shortest(from_tile, to_tile, true, keep_off)
-		if path.is_empty():
-			path = _shortest(from_tile, to_tile, false, keep_off)
+		var path := _cheapest(from_tile, to_tile, tier[0], tier[1], tier[2])
 		if not path.is_empty():
-			_plan_kept_clear = tier[1] or clear.is_empty()
-			_plan_kept_doors = tier[2] or doors.is_empty()
+			for tile in path:
+				if clear.has(tile) or doors.has(tile):
+					_plan_accepted[tile] = true
 			return _simplify(path)
-	_plan_kept_clear = clear.is_empty()
-	_plan_kept_doors = doors.is_empty()
-	return _simplify(_shortest(from_tile, to_tile, false, {}, false))
+	return []
 
-## `to_tile` is dropped from the hazard set before it blocks anything — the fairness contract that
-## guards a mark (`docs/DECISIONS.md`, "The guard robber is placed inside a building": the least a
-## guarded mark's own contact point is ever placed from its guard is `alley_robbery.inner_radius +
-## ContactPoint.REACH`, 66px) already keeps the exact point she is walking to outside the true kill
-## radius; `_HAZARD_MARGIN`'s own slack can still read the target's own tile as blocked without
-## this, which would report a guarded mark unreachable rather than merely guarded. `from_tile` is
-## dropped from the **whole** blocked set, hazard and obstruction and closure alike, because
-## `CityMap.walk_field_from()` reads a
-## blocked seed as nothing to sweep from at all, so anything that merely brushes wherever she
-## already legally is (a hazard's own margin close by but outside the true kill radius, since she
-## is walking and not dead; a fresh obstruction that has just closed in around her) would report
-## *every* tile unreached rather than a detour away from it — the shape of bug that turned a walk
-## past a stationary guard, at a safe distance a margin's own slack still read as blocked, into a
-## replan every check for the rest of the run rather than a route that ever got past it. The
-## ground *around* either tile keeps its ordinary rules — only the one tile she is actually
-## standing on, or the one she is actually trying to reach, is ever exempted. `keep_off` (the body
-## clearance and the ground round what caught her, see `_plan()`) gives `to_tile` up the way the
-## hazards do: a mark beside a parked van is still a mark, and `ContactPoint.REACH` (36px) completes
-## it before she is near enough to press against the van.
-func _shortest(from_tile: Vector2i, to_tile: Vector2i, sidewalk_only: bool,
-		keep_off: Dictionary = {}, avoid_hazards: bool = true) -> Array[Vector2i]:
+## `tile`, or where every plan blocks it outright (`_blocked_for_phase()`'s own ground) the nearest
+## walkable tile beside it that is not, a ring at a time out to two tiles; `tile` unchanged where
+## none is.
+func _standable_near(tile: Vector2i) -> Vector2i:
+	if not _hard_blocked(tile):
+		return tile
+	for radius in range(1, 3):
+		var best := Vector2i(-1, -1)
+		var best_distance := INF
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var near := tile + Vector2i(dx, dy)
+				var distance := Vector2(dx, dy).length()
+				if _city.map.is_walkable(near) and not _hard_blocked(near) and distance < best_distance:
+					best = near
+					best_distance = distance
+		if best != Vector2i(-1, -1):
+			return best
+	return tile
+
+## Whether `tile` is ground `_blocked_for_phase()` blocks in every plan.
+func _hard_blocked(tile: Vector2i) -> bool:
+	var map := _city.map
+	return not map.is_open(tile) or map.is_soft_sealed(tile) or map.is_obstructed(tile) \
+			or _gate_ground().has(tile) or _latched_door_bodies().has(tile)
+
+## What `_cheapest()` charges for stepping onto a tile `_plan()` would rather keep off, in tiles of
+## ordinary walking on top of the step itself. **A door's reach costs most**, since walking into it
+## is a crossing she did not mean to make: a hold, a far side to plan from and a way back. **A
+## body's clearance next**, since a step there presses her against the body, and it has to cost more
+## than going round the body on the carriageway — past a kerbed van, the far lane and the steps out
+## to it and back are about five tiles of road. **The carriageway least**, and enough that a street
+## is crossed at a zebra up to `_ROAD_STEP_COST` tiles along rather than straight over its two lanes.
+## `_AVOID_STEP_COST`, the ground round what already caught her, sits between the road and the
+## clearance: a detour of choice, but one the stall ladder has already paid for once.
+const _DOOR_STEP_COST := 128
+const _CLEARANCE_STEP_COST := 64
+const _AVOID_STEP_COST := 16
+const _ROAD_STEP_COST := 8
+
+## The tiles of the clearance and the doors' reach the live plan chose to cross (`_plan()`).
+## `_maybe_replan()` re-plans when a body the director sites from her walk, or a door's reach,
+## comes to lie over a waypoint, but not over these: a plan that had to cross them would only be
+## made again onto the same ground, every check.
+var _plan_accepted := {}
+
+## The cheapest walk from `from_tile` to `to_tile` over `_blocked_for_phase()`'s ground, the live
+## hazards (while `avoid_hazards`) and `keep_off` kept off outright, and `costs` — `tile -> extra`
+## tiles of walking — plus `_ROAD_STEP_COST` on every plain `ROAD` tile charged for. Empty when
+## nothing reaches it.
+##
+## `to_tile` is dropped from the hazards, `keep_off` and `costs` before they count — the fairness
+## contract that guards a mark (`docs/DECISIONS.md`, "The guard robber is placed inside a
+## building": the least a guarded mark's own contact point is ever placed from its guard is
+## `alley_robbery.inner_radius + ContactPoint.REACH`, 66px) already keeps the exact point she is
+## walking to outside the true kill radius; `_HAZARD_MARGIN`'s own slack can still read the
+## target's own tile as blocked without this, which would report a guarded mark unreachable rather
+## than merely guarded, and a mark beside a parked van is still a mark, since
+## `ContactPoint.REACH` (36px) completes it before she is near enough to press against the van.
+## `from_tile` is dropped from the **whole** blocked set, hazard and obstruction and closure alike,
+## because a sweep reads a blocked seed as nothing to sweep from at all, so anything that merely
+## brushes wherever she already legally is (a hazard's own margin close by but outside the true
+## kill radius, since she is walking and not dead; a fresh obstruction that has just closed in
+## around her) would report *every* tile unreached rather than a detour away from it, and the leg
+## would re-plan every check for the rest of the run rather than ever getting past it. The ground
+## *around* either tile keeps its ordinary rules — only the one tile she is actually standing on,
+## or the one she is actually trying to reach, is ever exempted.
+func _cheapest(from_tile: Vector2i, to_tile: Vector2i, keep_off: Dictionary = {},
+		costs: Dictionary = {}, avoid_hazards: bool = true) -> Array[Vector2i]:
 	var hazards := _hazard_tiles() if avoid_hazards else {}
 	hazards.merge(keep_off)
 	hazards.erase(to_tile)
-	var blocked := _blocked_for_phase(sidewalk_only, {}, hazards)
+	var blocked := _blocked_for_phase(false, {}, hazards)
 	blocked.erase(from_tile)
-	var field := _city.map.walk_field(from_tile, blocked)
+	var extra := costs.duplicate()
+	extra.erase(to_tile)
+	var field := _weighted_field(from_tile, blocked, extra)
 	if _city.map.distance_at(field, to_tile) < 0:
 		return []
 	var reversed: Array[Vector2i] = [to_tile]
@@ -959,11 +1076,104 @@ func _shortest(from_tile: Vector2i, to_tile: Vector2i, sidewalk_only: bool,
 	while current != from_tile:
 		var next := _smaller_neighbour(field, current)
 		if next == current:
-			return [] # unreachable by construction of the check above; refuse rather than loop
+			return []
 		reversed.append(next)
 		current = next
 	reversed.reverse()
 	return reversed
+
+## `CityMap.walk_field()` with a cost per step: `_base_steps()`, plus `extra[tile]` for stepping
+## onto a tile it names. The same flat grid and the same `UNREACHED`/`BLOCKED` values, so
+## `distance_at()` and `_smaller_neighbour()` read it unchanged — the smallest neighbour of any
+## reached tile is a cheapest way back toward `from`, since no neighbour can be cheaper than the
+## tile's own cost less the step onto it. A bucket queue rather than a heap: every step costs at
+## least 1 and at most the dearest road tile inside a door's reach, so a ring of one more bucket
+## than that holds every distance still to be settled. The four neighbour steps are written out,
+## as `walk_field()`'s are, for its reason.
+func _weighted_field(from: Vector2i, blocked: Dictionary, extra: Dictionary) -> PackedInt32Array:
+	var map := _city.map
+	var width := map.size.x
+	var cells := width * map.size.y
+	var field := PackedInt32Array()
+	field.resize(cells)
+	field.fill(CityMap.UNREACHED)
+	for tile: Vector2i in blocked:
+		if map.in_bounds(tile):
+			field[tile.y * width + tile.x] = CityMap.BLOCKED
+	var walkable := _walkable_cells()
+	if not map.in_bounds(from) or walkable[from.y * width + from.x] == 0:
+		return field
+	var step := _base_steps().duplicate()
+	for tile: Vector2i in extra:
+		if map.in_bounds(tile):
+			step[tile.y * width + tile.x] += int(extra[tile])
+	var ring := _DOOR_STEP_COST + _ROAD_STEP_COST + 2
+	var buckets: Array[Array] = []
+	for slot in ring:
+		buckets.append([])
+	var start := from.y * width + from.x
+	field[start] = 0
+	buckets[0].append(start)
+	var pending := 1
+	var distance := 0
+	while pending > 0:
+		var slot := distance % ring
+		var bucket: Array = buckets[slot]
+		buckets[slot] = []
+		pending -= bucket.size()
+		for index: int in bucket:
+			if field[index] != distance:
+				continue
+			var x := index % width
+			if x > 0:
+				pending += _relax(field, buckets, walkable, step, index - 1, distance, ring)
+			if x < width - 1:
+				pending += _relax(field, buckets, walkable, step, index + 1, distance, ring)
+			if index >= width:
+				pending += _relax(field, buckets, walkable, step, index - width, distance, ring)
+			if index + width < cells:
+				pending += _relax(field, buckets, walkable, step, index + width, distance, ring)
+		distance += 1
+	return field
+
+## One step of `_weighted_field()` onto `to`: answers 1 when it queued `to` at a new cost, else 0.
+func _relax(field: PackedInt32Array, buckets: Array[Array], walkable: PackedByteArray,
+		step: PackedInt32Array, to: int, distance: int, ring: int) -> int:
+	if walkable[to] == 0:
+		return 0
+	var known := field[to]
+	if known == CityMap.BLOCKED:
+		return 0
+	var reach := distance + step[to]
+	if known != CityMap.UNREACHED and reach >= known:
+		return 0
+	field[to] = reach
+	buckets[reach % ring].append(to)
+	return 1
+
+## Which cells are walkable ground at all, by `CityMap.is_walkable()`, and what a step onto each
+## costs before anything the day has put there — 1, and `_ROAD_STEP_COST` more on a plain `ROAD`
+## tile — as flat grids worked out once a day. Cleared in `start_day()`.
+var _walkable := PackedByteArray()
+var _steps := PackedInt32Array()
+
+func _walkable_cells() -> PackedByteArray:
+	if _walkable.is_empty():
+		var map := _city.map
+		_walkable.resize(map.size.x * map.size.y)
+		for y in map.size.y:
+			for x in map.size.x:
+				_walkable[y * map.size.x + x] = 1 if map.is_walkable(Vector2i(x, y)) else 0
+	return _walkable
+
+func _base_steps() -> PackedInt32Array:
+	if _steps.is_empty():
+		var map := _city.map
+		_steps.resize(map.size.x * map.size.y)
+		_steps.fill(1)
+		for tile: Vector2i in _road_tiles:
+			_steps[tile.y * map.size.x + tile.x] = 1 + _ROAD_STEP_COST
+	return _steps
 
 func _smaller_neighbour(field: PackedInt32Array, tile: Vector2i) -> Vector2i:
 	var best := tile
@@ -986,7 +1196,9 @@ func _simplify(path: Array[Vector2i]) -> Array[Vector2i]:
 	var anchor := 0
 	var probe := 2
 	while probe < path.size():
-		if _line_of_sight(path[anchor], path[probe]):
+		# A tile of a body's clearance the plan chose to cross stays a waypoint of its own, so
+		# `_to_world()` can move it to the roomiest point of the tile.
+		if not _plan_accepted.has(path[probe - 1]) and _line_of_sight(path[anchor], path[probe]):
 			probe += 1
 		else:
 			simplified.append(path[probe - 1])
@@ -1071,11 +1283,90 @@ func _standing_tile() -> Vector2i:
 			return best
 	return best
 
+## The waypoints of `path` in world space: each tile's centre, except a tile of a body's clearance
+## the plan chose to cross (`_plan_accepted`), which is its roomiest point (`_roomiest_point()`).
 func _to_world(path: Array[Vector2i]) -> Array[Vector2]:
 	var world: Array[Vector2] = []
-	for tile in path:
-		world.append(_city.map.tile_to_world(tile))
+	for k in path.size():
+		var tile := path[k]
+		# Not the tile she stands on: she is already on it, and walking to another point of it
+		# first takes her back and forth across a pinch the stall checks then never see her stuck in.
+		world.append(_roomiest_point(tile) if k > 0 and _plan_accepted.has(tile)
+				else _city.map.tile_to_world(tile))
 	return world
+
+## How far off a tile's centre `_roomiest_point()` looks, in each axis — short of half a tile, so
+## the point stays on the tile the plan chose — and the step it looks in.
+const _NUDGE_REACH := 15.0
+const _NUDGE_STEP := 2.5
+
+## The point of `tile` farthest from every standing body's surface and every wall beside it, or
+## its centre where nothing is near. **A plan walks tile centres, and a gap can fit her only off
+## them**: two vans at the kerb either side of a two-lane road leave 48px between their sides, 10px
+## either side of her 28px body if she walks the line between the lanes, and 8px short of her
+## radius on either lane's centre, so walking a lane she scrapes one van and stalls against it.
+## Asked only of a tile the plan crosses in a body's clearance; everywhere else a tile's centre is
+## already at least `_BODY_CLEARANCE` from every body.
+func _roomiest_point(tile: Vector2i) -> Vector2:
+	var centre := _city.map.tile_to_world(tile)
+	var pieces := _body_pieces_near(centre, Tuning.TILE_SIZE * 3.0)
+	if pieces.is_empty():
+		return centre
+	var walls: Array[Vector2i] = []
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var near := tile + Vector2i(dx, dy)
+			if near != tile and not _city.map.is_open(near):
+				walls.append(near)
+	var best := centre
+	var best_room := _room_at(centre, pieces, walls)
+	var steps := roundi(_NUDGE_REACH / _NUDGE_STEP)
+	for sy in range(-steps, steps + 1):
+		for sx in range(-steps, steps + 1):
+			var point := centre + Vector2(sx, sy) * _NUDGE_STEP
+			var room := _room_at(point, pieces, walls)
+			if room > best_room + 0.01:
+				best = point
+				best_room = room
+	return best
+
+## How far `point` is from the nearest of `pieces`' surfaces and `walls`' squares.
+func _room_at(point: Vector2, pieces: Array, walls: Array[Vector2i]) -> float:
+	var room := INF
+	for piece: Array in pieces:
+		var shape: GroundShape = piece[1]
+		var local := (point - (piece[0] as Vector2)).rotated(-float(piece[2]))
+		room = minf(room, shape.distance_to_spine(local) - shape.radius)
+	for wall in walls:
+		room = minf(room, _tile_nearest_distance(wall, point))
+	return room
+
+## Every solid piece of a standing body within `radius` of `point`, as `[centre, shape, angle]` —
+## the live instances `_body_clear_tiles()` keeps clear of, and the placed plans not yet built,
+## measured the same way.
+func _body_pieces_near(point: Vector2, radius: float) -> Array:
+	var pieces: Array = []
+	for instance: EventInstance in _city.events.instances():
+		if _is_standing_body(instance):
+			_add_pieces_near(pieces, instance.solid_part_centres(), instance.solid_part_shapes(),
+					instance.solid_axis(), point, radius)
+	for plan: EventScheduler.Planned in _city.events.plans():
+		if plan.live != null or not plan.is_placed() or plan.spent or not _is_planned_body(plan.def):
+			continue
+		if _planned_position(plan).distance_to(point) > radius + plan.def.shape.reach() * 2.0:
+			continue
+		var parts := _planned_parts(plan)
+		_add_pieces_near(pieces, parts[0], parts[1], parts[2], point, radius)
+	return pieces
+
+func _add_pieces_near(pieces: Array, centres: PackedVector2Array, shapes: Array[GroundShape],
+		axis: Vector2, point: Vector2, radius: float) -> void:
+	for k in centres.size():
+		var shape := shapes[k]
+		if centres[k].distance_to(point) - shape.reach() > radius:
+			continue
+		var angle := axis.angle() if shape.half_length > 0.0 else 0.0
+		pieces.append([centres[k], shape, angle])
 
 func _begin_leg(target_world: Vector2) -> void:
 	_leg_avoid = {}
@@ -1249,11 +1540,12 @@ func _maybe_replan(delta: float) -> void:
 	_stuck_streak = 0
 	if _retarget_if_moved():
 		return
-	# Only while the live plan kept clear: a plan that had to give the clearance up to find a way at
-	# all would be re-planned onto the same ground every check.
-	var clear := _body_clear_tiles() if _plan_kept_clear else {}
-	if _plan_kept_doors:
-		clear.merge(_door_tiles())
+	# Not over the ground the live plan chose to cross: it would be re-planned onto the same ground
+	# every check.
+	var clear := _body_clear_tiles()
+	clear.merge(_door_tiles())
+	for tile: Vector2i in _plan_accepted:
+		clear.erase(tile)
 	for i in _waypoints.size():
 		var point: Vector2 = _waypoints[i]
 		var tile := _city.map.world_to_tile(point)
@@ -1261,7 +1553,7 @@ func _maybe_replan(delta: float) -> void:
 			_replan()
 			return
 		# The first remaining waypoint is wherever she already legally is (about to be popped this
-		# same `_follow()` call), and the last is the exact target — `_shortest()` exempts both of
+		# same `_follow()` call), and the last is the exact target — `_cheapest()` exempts both of
 		# those tiles from hazard blocking, for the reason its own doc gives (a guard's margin can
 		# brush a spot she is already standing on safely, or the exact contact point a mark's own
 		# fairness contract keeps just inside the margin). Checking either against the raw,
@@ -1449,7 +1741,9 @@ var _leg_stall_episodes := 0
 ## The eight compass points, sorted so the one pointing most directly away from what caught her
 ## (`_caught_away`) is tried first, or in `_UNSTICK_DIRECTIONS`' own order when nothing solid was
 ## touching her. Pressing into the body first spends a whole `_UNSTICK_TRY_SECONDS` on the one
-## direction that cannot work.
+## direction that cannot work. **A direction that would carry her into a door's circle is tried
+## last** (`_into_a_door()`): the door would take her across, and a stall beside a door is usually
+## just past it, where the plan she stalled on is carrying her away from it.
 func _begin_unstick() -> void:
 	_unsticking = true
 	_unstick_order = _UNSTICK_DIRECTIONS.duplicate()
@@ -1457,9 +1751,29 @@ func _begin_unstick() -> void:
 		var away := _caught_away
 		_unstick_order.sort_custom(func(a: Vector2, b: Vector2) -> bool:
 			return a.dot(away) > b.dot(away))
+	var clear_of_doors: Array[Vector2] = []
+	var into_doors: Array[Vector2] = []
+	for direction in _unstick_order:
+		if _into_a_door(_player.global_position + direction * _UNSTICK_CLEAR_DISTANCE):
+			into_doors.append(direction)
+		else:
+			clear_of_doors.append(direction)
+	clear_of_doors.append_array(into_doors)
+	_unstick_order = clear_of_doors
 	_unstick_index = 0
 	_unstick_elapsed = 0.0
 	_unstick_anchor = _player.global_position
+
+## Whether `point` lies inside the circle a door body takes her in from
+## (`EventDef.detain_distance()` of a hut or a post, the `redetains` rows).
+func _into_a_door(point: Vector2) -> bool:
+	for plan: EventScheduler.Planned in _city.events.plans():
+		if not plan.is_placed() or plan.spent or not plan.def.redetains:
+			continue
+		var door := plan.live.global_position if plan.live != null else _planned_position(plan)
+		if point.distance_to(door) <= plan.def.detain_distance():
+			return true
+	return false
 
 ## Holds each of `_UNSTICK_DIRECTIONS` in turn until she has actually moved `_UNSTICK_CLEAR_DISTANCE`
 ## from where the maneuver began, or every direction has had its turn without one working.
@@ -1524,6 +1838,15 @@ func _check_settled() -> void:
 		Telemetry.note("route", "day %d: baby settled at 'calm', %.1fs (day time)"
 				% [_day_number, _elapsed()])
 		_advance_target()
+		return
+	if not Tile.is_calm(_city.map.tile_type_at_world(_settle_anchor)):
+		# The ground she is pacing on has gone — see `_calm_tiles_left()` — so she looks again.
+		_settling = false
+		_settle_anchor = Vector2.INF
+		Telemetry.note("route", "day %d: the calm ground at %s is gone, looking again, %.1fs"
+				% [_day_number, TelemetryLog.tile(_current_target_tile), _elapsed()]
+				+ " (day time)")
+		_begin_resolving(_current_word)
 		return
 	_pace()
 
