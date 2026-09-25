@@ -1265,6 +1265,7 @@ func _check_detentions() -> void:
 		return
 	nearest.start_chat()
 	if nearest.def.redetains:
+		_end_the_guard_for_a_hold()
 		var axis := nearest.facing_now()
 		var offset := body.global_position - nearest.global_position
 		# **Never `signf()`, which answers zero in the doorway.** Walking *across* a crossing —
@@ -1475,6 +1476,21 @@ func _set_a_guard_on_her(crossed: EventInstance, here: Vector2) -> void:
 	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0
 	var at := hut.global_position + axis * side * hut.def.obstructs_radius
 	_guard_after_her = _spawn_unplanned(EventCatalogue.by_id("door_guard"), at)
+
+## *(2026-09-24, the player, answering whether a hold should end the chase: "we can try b. if she
+## voluntarily goes to a hut the whole pursuit has been accomplished".)* Called from
+## `_check_detentions()` the moment any `redetains` row — a checkpoint hut or an alley post, the one
+## `_guard_after_her` stepped out of included — starts a hold: he gives up exactly as
+## `EventInstance._chase()` has him give up when she outruns it, same state, same drawing, same
+## telemetry, through `EventInstance.give_up_the_chase()`. A guard still in his own notice when the
+## hold starts gives up too, since nothing here asks whether it is over — the smallest reading of
+## "the whole pursuit has been accomplished" once she is inside a hut of her own accord. The
+## roadblock's hunting guard and the escape's masked pursuer are never `_guard_after_her`, so a hold
+## never reaches them.
+func _end_the_guard_for_a_hold() -> void:
+	if is_instance_valid(_guard_after_her) \
+			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
+		_guard_after_her.give_up_the_chase()
 
 ## Where the step from `was` to `here` crosses the line through `at` across `axis` — the door
 ## body's own cross-street line — if it crosses it within `reach` of `at` along the line, or
