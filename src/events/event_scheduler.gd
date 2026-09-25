@@ -186,11 +186,12 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	planned.append_array(_place_ambient(day, map, heat))
 	planned.append_array(_place_scars(day, scars, heat))
 	planned.append_array(_place_masts(day, map, heat, doors, scars))
-	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors)
+	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors,
+			standing)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
-			leave_alone, corridor, heat, doors)
+			leave_alone, corridor, heat, doors, standing)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat)
-	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors)
+	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors, standing)
 	_ensure_the_run_is_taught(day, planned, heat)
 
 	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
@@ -831,17 +832,18 @@ static func _place_ambient(day: int, map: CityMap, heat: int = 0) -> Array[Plann
 
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array()) -> void:
+		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array(),
+		standing: Array[Planned] = []) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, heat):
 		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor,
-				NO_SITE, doors)
+				NO_SITE, doors, standing)
 		if placement:
 			planned.append(placement)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed: Array[String], planned: Array[Planned], ground := {},
 		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0,
-		doors := PackedVector2Array()) -> void:
+		doors := PackedVector2Array(), standing: Array[Planned] = []) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
@@ -882,7 +884,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 					% [def.id, roll, threshold])
 			continue
 		var sited := _place_a_set_piece(day, def, rng, map, planned, ground, leave_alone, corridor,
-				doors)
+				doors, standing)
 		if sited.is_empty():
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
@@ -923,7 +925,8 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## exists to answer.
 static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
-		corridor: Corridor, doors := PackedVector2Array()) -> Array[Planned]:
+		corridor: Corridor, doors := PackedVector2Array(),
+		standing: Array[Planned] = []) -> Array[Planned]:
 	var made: Array[Planned] = []
 	var sites := corridor.sites() if corridor else ([] as Array[Vector3i])
 	for site in sites:
@@ -932,13 +935,13 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 		var beside: Array[Planned] = already.duplicate()
 		beside.append_array(made)
 		var placement := _place_one(def, day, rng, map, beside, ground, leave_alone, corridor, site,
-				doors)
+				doors, standing)
 		if placement:
 			placement.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(placement)
 	if made.is_empty():
 		var anywhere := _place_one(def, day, rng, map, already, ground, leave_alone, corridor,
-				NO_SITE, doors)
+				NO_SITE, doors, standing)
 		if anywhere:
 			# **The fallback carries the group too, and it is a group of one.** Every other
 			# one-shot placement is tagged, and `EventManager._stream_in` spends the rest of a
@@ -1414,7 +1417,8 @@ class WalkSiting extends RefCounted:
 ## on, and every other event is where it was yesterday.
 static func _fill_with_recurring(day: int, base: int, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array()) -> void:
+		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array(),
+		standing: Array[Planned] = []) -> void:
 	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat)
 	if eligible.is_empty():
 		return
@@ -1435,7 +1439,7 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 		var rng := _stream(base, FILL_SALT + attempt)
 		var def := _pick_weighted(affordable, rng)
 		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor,
-				NO_SITE, doors)
+				NO_SITE, doors, standing)
 		if not placement:
 			continue
 		planned.append(placement)
@@ -1470,7 +1474,7 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, site := NO_SITE,
-		doors := PackedVector2Array()) -> Planned:
+		doors := PackedVector2Array(), standing: Array[Planned] = []) -> Planned:
 	var role := _role_for(def, day)
 	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is budgeted here and sited by `EventDirector`
 	# while the player walks. Costing it here rather than giving the director its own allowance is
@@ -1492,7 +1496,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	if def.id == _MOUSE_ID:
 		open_candidates = _prefer_beside_a_sack_pile(open_candidates, map, day)
 	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
-			doors)
+			doors, standing)
 
 ## The acceptance half of a placement: roll `Tuning.EVENT_PLACEMENT_TRIES` candidates out of
 ## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
@@ -1502,12 +1506,36 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 ## questions of a narrower pool — `WalkSiting.ahead_of()` offers only the building faces on the
 ## branch of the day's route tree she is walking — and a second copy of this list of rules is a
 ## second copy that would agree with it right up to the first time one of them gained a rule.
+##
+## **`standing` is what the seals and the region wall's own bodies stand as, asked only by the
+## three questions below and never by the spacing.** `SealPlanner.plan_day` and `RegionPlanner.
+## plan_day` both run before `build_day`, so their bodies are never in `already` — the day's own
+## catalogue accumulator — and the three placement rules were therefore refusing a *second*
+## catalogue row that would close a crossing, a sidewalk or a pacing beat's opening only against
+## *other catalogue rows*, blind to a seal or a wall already reaching in from one street out or
+## the far pavement (`docs/DECISIONS.md`, M129, "the four rules": *"the seals `SealPlanner`
+## places before the scheduler runs reach crossings the rules never see, the same question one
+## step out"*). This does not change what a seal or the wall stands as — neither is in
+## `standing` for any reason but these three checks — so a street already sealed by design is
+## unmoved; what changes is that the catalogue now declines to stack a second body onto ground a
+## seal or the wall has already spent. `_room_around`'s own spacing stays asked of `already`
+## alone: density is a question about today's catalogue rows, not about the day's fixed
+## furniture. **`WalkSiting.ahead_of()`/`off_her_path()` do not pass one** — the director hands
+## them the whole of `_plans`, seals and the wall included, as their own `already`
+## (`EventManager.start_day`), so they already ask every question `standing` exists to add here.
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
-		corridor: Corridor, doors: PackedVector2Array) -> Planned:
+		corridor: Corridor, doors: PackedVector2Array,
+		standing: Array[Planned] = []) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
+	# Built once per call rather than per try: neither `already` nor `standing` changes across the
+	# tries below, only which tile and which candidate is asked about.
+	var reach_context: Array[Planned] = already
+	if not standing.is_empty():
+		reach_context = already.duplicate()
+		reach_context.append_array(standing)
 	for _try in Tuning.EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
@@ -1536,19 +1564,21 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 			continue
 		# And before the spacing for the same reason: a crossing a route has no way around is
 		# ground the row may not have, not a preference that bends. See
-		# `_leaves_the_route_junctions_open`.
-		if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, already):
+		# `_leaves_the_route_junctions_open`. Asked over `reach_context` rather than `already` —
+		# see this function's own doc — so a seal or the region wall already reaching this
+		# crossing is not invisible to it.
+		if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, reach_context):
 			continue
 		# And the same for the stretch between two junctions, asked of the sidewalk the tree is
 		# actually walked along rather than of the street: the far side of a street answers a van,
 		# and nothing answers a van on the side the route is drawn down. See
 		# `_leaves_the_routes_sidewalk_open`.
-		if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, ground, already):
+		if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, ground, reach_context):
 			continue
 		# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
 		# one route street are asked together whether a walk along it survives, so nothing stands in
 		# the one end the yeller is away from. See `_leaves_a_pacing_beats_opening`.
-		if not _leaves_a_pacing_beats_opening(candidate, map, corridor, already):
+		if not _leaves_a_pacing_beats_opening(candidate, map, corridor, reach_context):
 			continue
 		var room := _room_around(candidate, already)
 		if room == INF:
