@@ -394,6 +394,67 @@ reaction time a warning must leave her; the player's complaint is the other end.
 
 ---
 
+## M210 — The brief between two days is the coming day's · asked for 2026-09-26
+
+> "the day brief is inconsistent it say she fell asleep but really it's the day brief for the next
+> day. also the day number is the previous day. we should make it strictly the next day -- the
+> title, day number, and brief should be for what's coming. also the nerves should show."
+
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statements 1 and 2.
+
+- [ ] **Title, day number and text all describe the coming day.** Nothing on the brief says she
+      fell asleep; the number is the day about to start. Find every screen that shows a brief
+      (the first day's included) and pin the number with a test.
+- [ ] **The brief shows the nerves** she carries into the coming day, drawn the way the HUD
+      draws them.
+
+---
+
+## M211 — The pause screen's held restart restarts the day · found 2026-09-26
+
+> "the pause screen is currently bugged where you cannot restart from it. it just goes back to
+> the current game when pressing the button."
+
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 3.
+
+- [ ] **Reproduce it, fix it, and pin it with a test that fails before the fix**: a completed
+      hold on the pause screen's restart starts the day again rather than unpausing it. Say
+      which press reached the continue path.
+
+---
+
+## M212 — The held restart fills and restarts on a phone, first time · found 2026-09-26
+
+> "also the restart button doesn't visible fill up on mobile when pressing. and sometimes it just
+> doesn't work at all which is frustrating. you have to hold long multiple times until it
+> actually restarts"
+
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 4. Seen on a phone; which screen (pause,
+day summary or both) was not said, so both are checked.
+
+- [ ] **The disc's radial fill shows while a touch is held**, on the pause screen and the day
+      summary.
+- [ ] **One completed hold always restarts.** Find what cancels or ignores a hold on touch —
+      a second touch, a drag off the disc, a release event reaching another control — and pin it
+      with a test that drives `InputEventScreenTouch`.
+
+---
+
+## M213 — The chalk mark's robber stands at the far end of its alley · asked for 2026-09-26
+
+> "the rubber in the alley with the mark is too close to the mark. It's impossible to get the
+> mark on most days. Let's always place the river at the other end of the alley"
+
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 5. "rubber" and "river" are dictation for
+*robber*. M137's PR #362 touches the resistance director, so this waits for it or rides on it.
+
+- [ ] **The robber guarding a chalk mark always spawns at the alley's other end from the mark**,
+      and a test states the distance from the mark to him over many seeds.
+- [ ] **The mark is reachable**: a rig walks in from the mark's end, reads it and leaves without
+      waking him, on seeds where it cannot today.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
