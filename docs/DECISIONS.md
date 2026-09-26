@@ -88,7 +88,8 @@ standing, and walking away, against `EventDef.minimum_telegraph()`. Its first pr
 floor in seconds walking toward / standing / walking away: `door_guard` +2.35 / +0.50 / +2.35;
 `military_convoy` −0.21 / −0.21 / +11.24; `charging_dog` on day 3 −0.33 / +0.48 / +5.18;
 `loose_dog` +0.10 / +1.62 / never; the cyclist at 60px +0.09 / +1.20 / never. The rest of that
-printing is not kept; the probe run at da950c20, the turned-down build, prints it again. Several rows measured under their own floor that way: `cat_dash` across her
+printing is not kept; the probe run at da950c20, the turned-down build, prints it again (after the
+squash that commit is reachable only as `git fetch origin pull/372/head`). Several rows measured under their own floor that way: `cat_dash` across her
 line (to no warning at all horizontally), `charging_dog` from day 4, `alley_robbery`,
 `masked_pursuer` and `pigeon_flock` walking toward it, `military_convoy` and `police_patrol`'s
 return leg by a fraction of a second. Whether each is a contract breach or the probe standing her in
