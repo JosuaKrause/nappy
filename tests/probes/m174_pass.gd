@@ -37,26 +37,24 @@ extends RefCounted
 ## with real movement (how far he has paced, which way he is facing) so it is walked rather than
 ## integrated.
 ##
-## ## The telegraph belongs to the pass, for a row that arrives inside it
+## ## A row that comes at her is met the moment it is created
 ##
-## **A row she walks up to and a row that is sited in front of her are met at two different points
-## of their own lives, and pricing both from the end of the telegraph prices one of them wrongly.**
-## A `MAP` row was placed at dawn: by the time she reaches it its telegraph is hours over, which is
-## what the warm-up below reproduces. A `TOWARD_PLAYER` row is created by `EventDirector` the
-## moment it is owed, `def.toward_player_lead()` px down her own line, and it covers that ground
-## *while it telegraphs* — at `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) of its intensity, since
-## the damping means "this has not started yet". Started after the telegraph, the simulation gave
-## `loose_dog` a pass it has never once charged anybody.
+## **A row she walks up to and a row that comes at her are met at two different points of their own
+## lives, and each is priced at its own.** A `MAP` row was placed at dawn: by the time she reaches
+## it its telegraph is hours over, which is what the warm-up below reproduces. A `TOWARD_PLAYER`
+## row on foot is warned of before it exists — its screen-edge badge runs for its `telegraph_time`
+## with nothing in the world (`PendingWarning`) — and is created just off screen with that telegraph
+## already spent, `Tuning.offscreen_lead()` down her own line, coming at her at its own intensity.
 ##
-## So a `TOWARD_PLAYER` row is spawned here the way the director spawns it: at age zero with the
-## telegraph running, `min_toward_player_lead()` away — the closest the director could ever site it,
-## since a figure in `docs/COSTS.md` may not depend on which way a particular walk was going — and
-## closing at its own speed plus `Tuning.WALK_SPEED` because she is walking into it.
+## So a `TOWARD_PLAYER` row is spawned here the way `EventManager.spawn_warned()` creates it: its
+## telegraph spent, `Tuning.min_offscreen_lead()` away at its own speed plus `Tuning.WALK_SPEED` —
+## the closest it is ever created, since a figure in `docs/COSTS.md` may not depend on which way a
+## particular walk was going — and closing at both speeds because she is walking into it.
 ##
 ## **Such a row has no free pulse phase and is measured once rather than averaged.** Its pulse
-## starts at the instant it is created, so how far through the beat it is when it reaches her is
-## fixed by the flight, not by when she happened to arrive. Averaging eight phases onto it would be
-## averaging over something the game does not vary.
+## starts where its warning started, so how far through the beat it is when it reaches her is fixed
+## by the warning and the flight, not by when she happened to arrive. Averaging eight phases onto it
+## would be averaging over something the game does not vary.
 
 const STEP := 1.0 / 60.0
 ## Same offsets for every row, "0 where possible" plus the width a sidewalk band and a crossed
@@ -138,8 +136,8 @@ static func pass_net_averaged(def: EventDef, offset: float, decay: float, sensit
 		total += _pass_net(def, offset, decay, sensitivity, phase_delay)
 	return total / PHASE_SAMPLES
 
-## Whether the pass is met with the row's telegraph still running — a row `EventDirector` sites
-## down her own line the moment it is owed, rather than one the day put on a tile at dawn. Stated
+## Whether the pass is met the moment the row is created — a row `EventDirector` sites down her
+## own line, warned of before it exists, rather than one the day put on a tile at dawn. Stated
 ## over `spawn_mode` rather than over a list of ids, so a new row that comes at her is priced
 ## honestly without anybody remembering to add it here.
 ##
@@ -158,7 +156,9 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	instance.setup(def, path[0], path)
 
 	# Past the telegraph, plus the requested phase offset -- moved for real, nobody watching. A row
-	# sited in front of her skips this entirely: the telegraph is the meeting, not a warm-up to it.
+	# that comes at her is created with its telegraph already spent and meets her from there.
+	if toward_her:
+		instance.resume(def.telegraph_time, 0.0)
 	var warm := 0.0 if toward_her else def.telegraph_time + 0.05 + phase_delay
 	var warm_steps := int(ceil(warm / STEP))
 	for _i in warm_steps:
@@ -169,9 +169,10 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	var heading_x := signf(instance._heading.x)
 	if is_zero_approx(heading_x):
 		heading_x = 1.0
-	# Where the director puts it, for a row the director sites; otherwise the fixed window that
-	# clears every radius in the catalogue.
-	var lead := def.min_toward_player_lead() if toward_her else LEAD
+	# Where a row that comes at her is created, closest; otherwise the fixed window that clears
+	# every radius in the catalogue.
+	var lead := Tuning.min_offscreen_lead(def.speed + Tuning.WALK_SPEED, def.offscreen_notice) \
+			if toward_her else LEAD
 	var her_pos := instance.position + Vector2(heading_x * lead, offset)
 	var her_velocity := Vector2(-heading_x * Tuning.WALK_SPEED, 0.0)
 

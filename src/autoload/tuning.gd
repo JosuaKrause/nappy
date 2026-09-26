@@ -1343,7 +1343,7 @@ const CAR_WARNING_HOLD := 1.4
 ## The mark over her head is the one cue in the game that gives an **instruction**, and its second
 ## level says *it is bad now and you are in it: one step left*. That is a claim about a moment, so it
 ## needs a clock rather than a radius: raised anywhere inside a lethal event's **outer** radius it
-## covers about three times the area that can end the day for a cyclist (a 60px outer radius against
+## covers about seven times the area that can end the day for a cyclist (a 90px outer radius against
 ## a 33px lethal reach), and stays up while the bike rides away.
 ##
 ## Read it as the step: at `WALK_SPEED` it is 64px, which is two tiles, which is the width of the
@@ -1539,47 +1539,6 @@ func offscreen_lead(heading: Vector2, closing_speed: float, notice: float = OFFS
 ## floor that does not depend on a heading nothing at validation time has chosen yet.
 func min_offscreen_lead(closing_speed: float, notice: float = OFFSCREEN_NOTICE) -> float:
 	return min_offscreen_boundary() + closing_speed * notice
-
-## Where a `hard_fail` row travelling toward her has to be sited so its own telegraph is over
-## *before* it reaches her, not merely so it starts off screen.
-##
-## **A declared `hard_fail` that arrives while still `is_telegraphing()` is not lethal at all** —
-## `EventInstance.is_lethal_at()` refuses the whole time, so a row sited close enough rides straight
-## through her, "declared" lethal and never once able to fire. *(2026-09-07: "also a biker hit
-## should be lethal.")* `cyclist` (`telegraph_time` 3.3s) sited at the old flat 200px and closing at
-## 257px/s arrived in 0.78s — nowhere near outlasting a 3.3s telegraph.
-##
-## So the siting is whichever is further: `offscreen_lead()` (the ordinary offscreen margin every
-## `TOWARD_PLAYER` row gets), or the distance that takes `telegraph_time + notice` to close at
-## `closing_speed` — the same margin restated over the telegraph instead of the view boundary, so
-## the approach outlasts it by a real amount rather than by a coin flip of frame timing. At `cyclist`'s
-## current 2.1s telegraph the telegraph term still dominates: `(2.1 + 0.2) * 257` = 591px, against an
-## `offscreen_lead()` of at most 371px on the widest axis.
-##
-## **`arrival_margin` is what "before it arrives" means for this row, and it is not the same
-## distance for a lethal row and a loud one.** A `hard_fail` row arrives when it touches her, so
-## zero is right: the telegraph has to be over a notice before contact and no sooner. A row whose
-## whole content is the noise it makes arrives when its *field* touches her — everything inside
-## `EventDef.field_reach()` is already the encounter — so a telegraph that ends at contact has
-## spent the approach damping the thing it was warning about. Pass the reach, and the row goes loud
-## before she is in it.
-func outlasting_telegraph_lead(heading: Vector2, closing_speed: float,
-		telegraph_time: float, notice: float = OFFSCREEN_NOTICE,
-		arrival_margin: float = 0.0) -> float:
-	return maxf(offscreen_lead(heading, closing_speed, notice),
-			(telegraph_time + notice) * closing_speed + arrival_margin)
-
-## The least `outlasting_telegraph_lead()` can be for a row with this telegraph closing at this
-## speed, whichever way she is heading — `min_offscreen_lead()` against the same telegraph term.
-## The same per-row floor `min_offscreen_lead()` is, for the same reason: a measurement or a
-## validation that has no heading to ask about needs the worst case the director could ever site
-## the row in rather than the case one particular walk happens to produce. Where the telegraph term
-## is the larger of the two the answer does not depend on the heading at all, and this is then the
-## exact siting rather than a floor under it.
-func min_outlasting_telegraph_lead(closing_speed: float, telegraph_time: float,
-		notice: float = OFFSCREEN_NOTICE, arrival_margin: float = 0.0) -> float:
-	return maxf(min_offscreen_lead(closing_speed, notice),
-			(telegraph_time + notice) * closing_speed + arrival_margin)
 
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".

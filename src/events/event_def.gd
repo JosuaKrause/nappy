@@ -1246,39 +1246,6 @@ func ahead_of_player_lead() -> float:
 func warns_before_it_exists() -> bool:
 	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
 
-## How far down her own line `EventDirector._toward_her()` sites this `TOWARD_PLAYER` row, along
-## `heading`. **The one place that answer lives**, because two things that are not the director ask
-## it: `EventDef.validate()` needs the floor under it, and the pass measurement behind
-## `docs/COSTS.md` has to spawn the row where the game spawns it or it is pricing a meeting that
-## never happens.
-##
-## `closing_speed` is the row's own `speed` plus `WALK_SPEED`, since she is usually walking into it.
-##
-## **Every such row is sited so that its telegraph is over before it arrives, and what "arrives"
-## means is the only thing that differs between them.** A row that arrives inside its own telegraph
-## has spent its entire encounter on the warning: `EventInstance.is_lethal_at()` refuses the whole
-## telegraph, so a lethal one rides through her unable to fire, and `_notice_damping()` holds a loud
-## one at `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15), so a loud one is past her before it is ever
-## at its own intensity. Same defect, one at the kill and one at the meter.
-##
-## So `Tuning.outlasting_telegraph_lead()` gets the row's own arrival distance as its margin: zero
-## for `hard_fail`, where arriving is touching her, and `field_reach()` for anything else, where
-## arriving is its field reaching her. A lethal row's siting is unchanged by that reading — it was
-## always zero — and a loud one now goes loud a notice before she is inside it rather than a notice
-## before it is on top of her.
-func toward_player_lead(heading: Vector2) -> float:
-	return Tuning.outlasting_telegraph_lead(heading, speed + Tuning.WALK_SPEED, telegraph_time,
-			offscreen_notice, 0.0 if hard_fail else field_reach())
-
-## `toward_player_lead()` with no heading to ask about: the least it can be on any heading, which is
-## the closest the director could ever site this row and so the cheapest version of the meeting.
-## What `tests/probes/m174_pass.gd` measures the pass against, for the same reason
-## `Tuning.min_offscreen_lead()` exists — a figure in `docs/COSTS.md` may not depend on which way a
-## particular walk happened to be going.
-func min_toward_player_lead() -> float:
-	return Tuning.min_outlasting_telegraph_lead(speed + Tuning.WALK_SPEED, telegraph_time,
-			offscreen_notice, 0.0 if hard_fail else field_reach())
-
 ## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that
 ## a moving point's own forward reach outgrows its resting radius:

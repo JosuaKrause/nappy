@@ -178,14 +178,15 @@ func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
 ## whole encounter.** *(2026-09-20: "unleashed dog still has too little influence -- needs to be
 ## more intense"; "but keep things in relation to each other".)* `EventInstance.is_lethal_at()`
 ## refuses the whole telegraph and `_notice_damping()` holds the field at
-## `Tuning.TELEGRAPH_INTENSITY_FRACTION` for it, so a row sited too close rides past her unable to
-## do the one thing it is for — the kill for a `hard_fail` row, the noise for a loud one.
+## `Tuning.TELEGRAPH_INTENSITY_FRACTION` for it, so a row still telegraphing as it reaches her rides
+## past unable to do the one thing it is for — the kill for a `hard_fail` row, the noise for a loud
+## one.
 ##
-## Two claims, and the first is the general one. **The siting outlasts the telegraph by the row's
-## own arrival distance**: nothing for a lethal row, where arriving is touching her, and
-## `field_reach()` for anything else, where arriving is its field reaching her. Stated over
-## `min_toward_player_lead()`, the closest the director could ever put it, so a heading that gives
-## it more room cannot rescue a row that fails here.
+## Two claims, and the first is the general one. **Every row that comes at her is warned before it
+## exists** (`EventDef.warns_before_it_exists()`): its telegraph is the screen-edge warning, run with
+## nothing in the world, so it is created with the telegraph over and meets her at its own
+## intensity from the first frame. Asked of the rows rather than of a list, so a new one is covered
+## by construction.
 ##
 ## **And the loose dog stays above the dog walker**, which is the relation the player asked to be
 ## kept: a dog running loose at 132px/s costs more to be passed by than a leashed one costs to walk
@@ -197,14 +198,9 @@ func _test_a_row_that_comes_at_her_is_done_telegraphing_when_it_arrives(t) -> vo
 		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER:
 			continue
 		checked += 1
-		var closing := def.speed + Tuning.WALK_SPEED
-		var arrival: float = 0.0 if def.hard_fail else def.field_reach()
-		var gap_at_the_end := def.min_toward_player_lead() - def.telegraph_time * closing
-		t.check(gap_at_the_end >= arrival,
-				("'%s' is sited %.0fpx out and has closed to %.0fpx by the end of its %.1fs "
-				+ "telegraph, which has to clear the %.0fpx at which it arrives")
-				% [def.id, def.min_toward_player_lead(), gap_at_the_end, def.telegraph_time,
-				arrival])
+		t.check(def.warns_before_it_exists(),
+				"'%s' comes at her and is warned of before it exists, so it arrives with its "
+				% def.id + "telegraph over")
 	t.check(checked > 0, "there were rows that come at her to ask (%d)" % checked)
 
 	var dog := EventCatalogue.by_id("loose_dog")

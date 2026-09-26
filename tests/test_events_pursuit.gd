@@ -308,11 +308,10 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 ## **A row declared lethal has to actually get the chance to be lethal.** *(2026-09-07: "also a
 ## biker hit should be lethal.")* `cyclist` carries `hard_fail = true`, but
 ## `EventInstance.is_lethal_at()` returns false for the whole of `is_telegraphing()` — so a
-## `TOWARD_PLAYER` row sited close enough to reach her before its own telegraph ends rides straight
-## through, declared lethal and never once able to fire. `EventDirector._toward_her()` sites a
-## `hard_fail` row at `Tuning.outlasting_telegraph_lead()` rather than the plain offscreen margin
-## precisely so this cannot happen; this checks the contract directly, at the instance level, rather
-## than trusting the siting alone.
+## `TOWARD_PLAYER` row that reached her before its own telegraph ended would ride straight through,
+## declared lethal and never once able to fire. Such a row's telegraph is its warning, run before it
+## exists (`PendingWarning`), and it is created with that telegraph spent; this walks the warning and
+## the arrival together, at the instance level, rather than trusting the construction.
 ##
 ## Walks every `hard_fail` `TOWARD_PLAYER` row in the catalogue rather than naming `cyclist`, so a
 ## second row of the same shape is covered by construction rather than by remembering to add it.
@@ -322,32 +321,46 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.hard_fail:
 			continue
 		checked += 1
-		var closing := def.speed + Tuning.WALK_SPEED
-		var lead := Tuning.outlasting_telegraph_lead(Vector2.RIGHT, closing, def.telegraph_time,
-				def.offscreen_notice)
-		# The same construction `_toward_her` uses: sited `lead` ahead along the heading, routed the
-		# same distance behind so it is still going somewhere when it reaches her.
-		var path := PackedVector2Array([Vector2(lead, 0.0), Vector2(-lead, 0.0)])
-		var instance := EventInstance.new()
-		instance.setup(def, path[0], path)
+		var arrived: Array[EventInstance] = []
+		var warning := _warned_down_her_line(def, Vector2.ZERO, Vector2.RIGHT, arrived)
 		var her := Vector2.ZERO
 		var was_lethal := false
 		var elapsed := 0.0
-		# Generous over the time they would meet at, so a regression that undershoots the lead only
-		# a little still gets caught rather than timing the loop out first.
-		var limit := lead / closing * 1.5
-		while elapsed < limit and not instance.is_finished:
+		while elapsed < def.telegraph_time + 5.0:
 			her.x += Tuning.WALK_SPEED * STEP
-			instance._process(STEP)
-			if instance.is_lethal_at(her):
+			elapsed += STEP
+			if arrived.is_empty():
+				warning.tick(STEP, her)
+				continue
+			arrived[0]._process(STEP)
+			if arrived[0].is_lethal_at(her):
 				was_lethal = true
 				break
-			elapsed += STEP
 		t.check(was_lethal,
-				"'%s' is declared hard_fail but the approach never once outlasts its own %.1fs "
-				% [def.id, def.telegraph_time] + "telegraph before it reaches her")
-		instance.free()
+				"'%s' is declared hard_fail and its warning is over by the time it reaches her"
+				% def.id)
+		for instance in arrived:
+			instance.free()
 	t.check(checked > 0, "there is at least one hard_fail TOWARD_PLAYER row to check ('cyclist')")
+
+## A warning for `def` coming down her line from `direction`, on open ground, put up with her at
+## `her` — the construction `EventManager._warn_down_her_line()` makes, with creation done the way
+## `EventManager.spawn_warned()` does it: its telegraph spent. What it creates is appended to
+## `arrived`, for the caller to tick and free.
+static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector2,
+		arrived: Array[EventInstance]) -> PendingWarning:
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.down_her_line(null, def, at, direction)
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var path := PendingWarning.route_down_her_line(null, place, at, direction)
+		var instance := EventInstance.new()
+		instance.setup(def, path[0], path)
+		instance.resume(def.telegraph_time, 0.0)
+		arrived.append(instance)
+		return true
+	var warning := PendingWarning.new(def, where, arrive)
+	warning.follow(her)
+	return warning
 
 ## How far over the contract's floor the cyclist's warning may run, walking into him, and still be
 ## *shortly* before he arrives. Half a second is about three strides — enough for frame timing and the
