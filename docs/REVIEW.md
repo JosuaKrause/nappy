@@ -30,12 +30,6 @@ item below for as long as looking takes.
   released page, or a debug build). **Does the disc fill visibly while your finger is down, and
   does one completed hold start a new game every time**, even with a second finger resting on
   the screen? Record is `DECISIONS.md`, M211 and M212, the held restart starts a new game.
-- **Meet the cyclist head-on, then name the next warning that comes too early.** His warning now
-  comes about 2s before he can reach her, down from about 3s. **Does it come shortly before he
-  arrives, as asked, and is it still enough?** Then pick from the rows warned longest before they
-  can reach her (`DECISIONS.md`, M207, a warning comes shortly before its danger): `door_guard`
-  about 2.4s over its floor walking toward it, and, walking away, `military_convoy` about 11s and
-  `charging_dog` about 5s over. **Name the one to shorten next**, or none.
 - **Keep working while an agent takes a capture** (any `tools/shot.sh` or rig-flagged
   `tools/run.sh`, on this Mac). The rig's window should flash up and hand focus straight back to
   whatever app was in front. **Does your focus stay put, and is the flicker short enough to

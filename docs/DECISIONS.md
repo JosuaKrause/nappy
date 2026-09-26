@@ -1,44 +1,43 @@
 # Decisions
 
-## M207 — A warning comes shortly before its danger · built 2026-09-26
+## M207 — The cyclist's shorter warning through a smaller field · tried and turned down 2026-09-26
 
 *([PLAYTEST-140](playtests/PLAYTEST-140.md): "12.9s is a *long* warning to the point where nothing
 really happens anymore. I feel the same with the biker. it gets warned too early so most of the
-time you're already gone when anything happens.")*
+time you're already gone when anything happens." · turned down in
+[PLAYTEST-145](playtests/PLAYTEST-145.md): "I don't like that the warning is tied to the size of
+the field or the speed.")*
 
-**The cyclist.** His field and his telegraph came down together: `outer_radius` 90px to 60px,
-`telegraph_time` 2.97s to 2.1s. They are one number under the `hard_fail` margin
-(`Tuning.required_telegraph_time()`): the field sets the floor a `hard_fail` row's telegraph may
-not go under, so a smaller field is how the telegraph shortens without losing its lethality. The
-analytic floor at 60px is 1.95s. Measured from the screen-edge badge, walking into him, she is
-warned 2.03s ahead, about a tenth of a second over it. `_test_the_cyclist_is_warned_shortly_before_he_arrives`
-(`tests/test_events_pursuit.gd`) holds the lead at or above the floor and at most 0.5s over it, on
-both axes. The robber sent after a handover gets his shorter warning on M137, the trap comes to
-her, not here.
+**What was tried.** A `hard_fail` row that travels toward her is sited so its telegraph is over
+before it arrives, since `EventInstance.is_lethal_at()` refuses the whole telegraph, and the
+shortest telegraph the fairness contract allows (`Tuning.required_telegraph_time()`) is the time
+to walk across its field's forward reach, doubled. So the cyclist's warning was shortened by
+shrinking his field: `outer_radius` 90px to 60px and `telegraph_time` 2.97s to 2.1s, a floor of
+1.95s. Measured from the screen-edge badge, walking into him, she was warned 2.03s ahead. The
+smaller field made him cheaper to pass, 16.0 to 12.1 over a full pass, which the player refused
+([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 16: the cyclist must not become cheaper), so
+his `intensity` went from 18.0 to 21.5 to restore the 16.0. That reshaped his cost with distance:
+dearer close in (0 to 25px awake, 12.0 to 15.5; a close pass while she sleeps went from about free
+to 0.7 to 1.2) and free past about 60px, where it had cost 2.2 at 75px.
 
-**The table of every warned row's lead** is `tests/probes/m207_warning_lead.gd`
-(`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it). For each row it
-measures the seconds from the first warning she can see, the badge or the thing in view, to the
-earliest moment it can reach her, walking toward it, standing, and walking away, against
-`EventDef.minimum_telegraph()`. Its first printing, over the floor in seconds walking toward /
-standing / walking away: `door_guard` +2.35 / +0.50 / +2.35; `military_convoy` −0.21 / −0.21 /
-+11.24; `charging_dog` on day 3 −0.33 / +0.48 / +5.18; `loose_dog` +0.10 / +1.62 / never; the
-cyclist +0.09 / +1.20 / never. The full table is in PR #372. Several rows other than the
-cyclist measure under their own floor that way: `cat_dash` across her line (to no warning at all
-horizontally), `charging_dog` from day 4, `alley_robbery`, `masked_pursuer` walking toward it,
-`pigeon_flock` walking toward it, `military_convoy` and `police_patrol`'s return leg by a fraction
-of a second. Those are warnings too short, not too early; whether each is a contract breach or the
-probe standing her in the wrong place is M224, a warning shorter than its own floor.
+**Why it was turned down.** The player does not want a warning tied to the size of a thing's field
+or to its speed. The warning is to go up by itself, and the thing is to spawn where it points when
+its time comes, the waiting place following her on the thing's own ground. That design is M207 in
+`TODO.md`, built on the same PR, #372.
 
-**A side effect the player did not ask for**: the smaller field first made him cheaper to pass, 16.0
-to 12.1 over a full pass — flagged on PLAYTEST-144, statement 16 ("13 is not okay") — and corrected
-back to 16.0 by raising `intensity` alone, 18.0 to 21.5; `walk_through_cost()` is linear in
-`intensity` at fixed radii, so the warning geometry (`outer_radius`, `telegraph_time`) is untouched
-(`docs/COSTS.md`).
-
-**Choices open to overturn**: both numbers moved rather than the telegraph alone; the test's
-tolerance above the floor is 0.5s, looser than the measured 0.09s so it does not restate it. No
-burst was taken, since `--spawn event:cyclist` refuses a row sited from her walk.
+**The table of every warned row's lead**, `tests/probes/m207_warning_lead.gd`
+(`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it), measured under the
+siting that was turned down. For each row it measures the seconds from the first warning she can
+see, the badge or the thing in view, to the earliest moment it can reach her, walking toward it,
+standing, and walking away, against `EventDef.minimum_telegraph()`. Its first printing, over the
+floor in seconds walking toward / standing / walking away: `door_guard` +2.35 / +0.50 / +2.35;
+`military_convoy` −0.21 / −0.21 / +11.24; `charging_dog` on day 3 −0.33 / +0.48 / +5.18;
+`loose_dog` +0.10 / +1.62 / never; the cyclist at 60px +0.09 / +1.20 / never. The full table is in
+PR #372's description. Several rows measured under their own floor that way: `cat_dash` across her
+line (to no warning at all horizontally), `charging_dog` from day 4, `alley_robbery`,
+`masked_pursuer` and `pigeon_flock` walking toward it, `military_convoy` and `police_patrol`'s
+return leg by a fraction of a second. Whether each is a contract breach or the probe standing her in
+the wrong place is M224, a warning shorter than its own floor.
 
 ## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
 

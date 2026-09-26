@@ -327,6 +327,13 @@ additional work".
   3. **PR #368, M225, the counter's asks**, taken over from the stopped cloud session. The brief
      is written and waits for M223. Then review, merge, and cut a release so traffic reaches the
      new GoatCounter site.
+- **Picked up by the player alongside those: PR #372, M207, a warning comes by itself.**
+  PLAYTEST-145: the screen-edge warning goes up first, the thing spawns where it points when its
+  time comes, and the waiting place follows her on the thing's own ground ("add the new info to the
+  PR so it becomes the new guidance *and* its implementation"). M207 is back in `TODO.md` with the
+  design and one open question for the player: how short a warning may be under the fairness
+  contract. An implementation agent works in `.claude/worktrees/cyclist-warning`
+  (`.claude/briefs/feature-cyclist-warning.md`).
 - **STOPPED, not to be continued yet.** Each of these is committed and pushed at a safe point,
   and none gets an agent, a review or a merge until the player picks it up again. They are listed
   only so their state is known:
@@ -336,8 +343,6 @@ additional work".
     redrawn fence pieces ("the fence still doesn't look right"). Ask the player what looks wrong
     before anything is drawn again. The PR description and its decision record also still need
     rewriting to the player's routing answer.
-  - **#372, M207, the cyclist's warning**: not ready; its record must name how raising the
-    cyclist's intensity reshaped his cost with distance (dearer close in, free past about 60px).
   - **#362, M137, the trap comes to her**: built (a chasing guard after the van; the robber after
     the man shouting starts off screen; the burnt shell and roadblock keep a waiting guard, open
     to the player), needs its decision record, description and review.
