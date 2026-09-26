@@ -26,7 +26,7 @@
 #     formatted or not; -I stays its own flag, never folded together with -i, a quoted "gcc -I"
 #     pattern or an -e argument (-eImport, -e -I) is not the flag, and a later -a/--text cancels it
 #   - an exclusion-only pathspec (:!*.json, :/!*.json, :(exclude)*.md) denies, and a redirect after a text pathspec
-#     (2>/dev/null, 2>&1, > file) is not a pathspec entry
+#     (2>/dev/null, 2>&1, > file) is not a pathspec entry, while a quoted or escaped '>' is
 #   - a Monitor script is guarded like a Bash command
 #   - a 100 KB command is checked in under half the hook's 10-second timeout, and a command over
 #     128 KB holding both words is denied at once without the slow reading
@@ -577,6 +577,19 @@ assert_guard "a -- with only a redirect after it -> deny" deny \
     'git grep -n -i foo -- 2>/dev/null'
 assert_guard "a redirect, then a non-text entry -> deny" deny \
     "git grep -n -i foo -- '*.md' 2>/dev/null docs/"
+
+# A quoted or escaped > or < is a literal argument, not a redirect, so the word after it is a
+# pathspec entry.
+assert_guard "a quoted '>' before a non-text entry -> deny" deny \
+    "git grep -i foo -- '*.md' '>' docs/"
+assert_guard "a quoted '<' before a non-text entry -> deny" deny \
+    "git grep -i foo -- '*.md' '<' '*.png'"
+assert_guard "a double-quoted \"2>\" before a non-text entry -> deny" deny \
+    "git grep -i foo -- '*.md' \"2>\" docs/"
+assert_guard "an escaped \\> before a non-text entry -> deny" deny \
+    "git grep -i foo -- '*.md' \\> docs/"
+assert_guard "an unquoted > after a text pathspec is still a redirect -> allow" allow \
+    "git grep -i foo -- '*.md' > /tmp/out.txt"
 
 # The reviewer's minor shapes.
 assert_guard "\$'git' grep (ANSI-C quoting) -> deny" deny \

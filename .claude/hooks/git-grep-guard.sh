@@ -31,8 +31,9 @@
 #      quote still stands alone: `f"git grep ..."`, `cmd="git grep ..."; $cmd`, `bash <<<"git
 #      grep ..."`, `os.system(r'git grep ...')`;
 #   3. quotes and backslash escapes honoured, a quoted string staying inside its word, so a quoted
-#      argument with a space stays one word (`git -C "/a b" grep`, `-c "x=bold red"`) and a quoted
-#      pattern such as `"gcc -I"` is not read as the `-I` flag.
+#      argument with a space stays one word (`git -C "/a b" grep`, `-c "x=bold red"`), a quoted
+#      pattern such as `"gcc -I"` is not read as the `-I` flag, and a quoted `'>'` or `'<'` is a
+#      pathspec entry rather than a redirect.
 #   In the first two readings a comma right after a quote mark splits words, which is how a Python
 #   list (`["git", "grep", ...]`) reads; a comma anywhere else does not, so prose such as "git,
 #   grep" is not an invocation. In the third reading every unquoted comma splits.
@@ -88,17 +89,24 @@ def plain_words:
    | split(" ")[] | select(length > 0)];
 
 # Reading 3 honours quotes and backslash escapes: a quoted string stays inside its word, and a
-# newline inside one becomes a space.
-def flush: if .cur != "" then .out += [.cur] | .cur = "" else . end;
+# newline inside one becomes a space. A word that had any quoting and looks like a redirect (`'>'`,
+# `"2>"`, `\<`) is a literal argument to bash, so it gets a leading \u0001 that no redirect, option
+# or text glob starts with.
+def flush:
+  if .cur != "" then
+    .out += [if .quoted and (.cur[0:3] | test("^[0-9]{0,2}[<>]")) then "\u0001" + .cur else .cur end]
+    | .cur = ""
+  else . end
+  | .quoted = false;
 def quoted_words:
-  reduce (explode[] | [.] | implode) as $c ({q: 0, esc: false, cur: "", out: []};
+  reduce (explode[] | [.] | implode) as $c ({q: 0, esc: false, quoted: false, cur: "", out: []};
     if .esc then .cur += $c | .esc = false
     elif .q == 1 then (if $c == "'" then .q = 0 else .cur += $c end)
     elif .q == 2 then
       (if $c == "\\" then .esc = true elif $c == "\"" then .q = 0 else .cur += $c end)
-    elif $c == "\\" then .esc = true
-    elif $c == "'" then .q = 1
-    elif $c == "\"" then .q = 2
+    elif $c == "\\" then .esc = true | .quoted = true
+    elif $c == "'" then .q = 1 | .quoted = true
+    elif $c == "\"" then .q = 2 | .quoted = true
     elif $c == " " or $c == "\t" or $c == "," or $c == "[" or $c == "]" then flush
     elif $c == ";" or $c == "&" or $c == "|" or $c == "(" or $c == ")" or $c == "`" or $c == "\n"
     then flush | .out += [$c]
