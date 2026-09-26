@@ -45,8 +45,12 @@ relocated anything, search the repo for its old name before finishing — hooks,
 and settings included:
 
 ```sh
-git grep -n "<old name>" -- ':!docs/DECISIONS.md' ':!docs/playtests/'
+rg -n --hidden "<old name>" --glob '!.git' --glob '!docs/DECISIONS.md' --glob '!docs/playtests/**'
 ```
+
+`--hidden` is what reaches `.claude/` and `.codex/`; `rg` skips binary files and gitignored paths
+(the agent worktrees among them) on its own. Not `git grep`: without `-I` it runs the pattern over
+every image and video under `docs/evidence/`, which grows past gigabytes, and the Bash hook denies it.
 
 ### 2b. The drift guard
 
