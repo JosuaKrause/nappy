@@ -541,6 +541,38 @@ else
     echo "skip decisions.sh's search cases: rg is not on PATH"
 fi
 
+# ------------------------------------------------------- lint.sh's checks of the queue's layout ---
+# On the same scratch tree: an entry, its review items and an old entry's decision share names on
+# purpose and pass; a second use of a pair of words, a checkbox in a queue file, and a link in
+# TODO.md to an entry folder that is not there are each a hit.
+cp "$root/tools/lint.sh" "$names_repo/tools/"
+lint_in_names_repo() {
+    (cd "$names_repo" && ./tools/lint.sh "$@" >/dev/null 2>&1)
+}
+lint_in_names_repo docs/todo/2026-09-27-busy-otter/README.md docs/review/2026-09-27-busy-otter.md \
+    docs/review/2026-09-27-busy-otter-2.md docs/decisions/2026-09-26-M210.md
+status=$?
+check_that "lint.sh passes an entry, its review items and an old entry's decision sharing a name" '[[ $status -eq 0 ]]'
+printf '# Playtest busy-otter — A second thing\n' > "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
+lint_in_names_repo docs/playtests/2026-09-28-busy-otter.md
+status=$?
+rm "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
+check_that "lint.sh rejects a pair of words used again for another thing" '[[ $status -ne 0 ]]'
+printf -- '- [ ] **Do it**\n' > "$names_repo/docs/todo/2026-09-27-busy-otter/do-it.md"
+lint_in_names_repo docs/todo/2026-09-27-busy-otter/do-it.md
+status=$?
+rm "$names_repo/docs/todo/2026-09-27-busy-otter/do-it.md"
+check_that "lint.sh rejects a checkbox in an item file" '[[ $status -ne 0 ]]'
+printf '# TODO\n\n- [busy-otter](todo/2026-09-27-busy-otter/)\n- [M210](todo/2026-09-26-M210/)\n' \
+    > "$names_repo/docs/TODO.md"
+lint_in_names_repo docs/TODO.md
+status=$?
+check_that "lint.sh passes TODO.md's links to entry folders that exist" '[[ $status -eq 0 ]]'
+printf -- '- [gone](todo/2026-09-01-quiet-heron/)\n' >> "$names_repo/docs/TODO.md"
+lint_in_names_repo docs/TODO.md
+status=$?
+check_that "lint.sh rejects a link in TODO.md to an entry folder that does not exist" '[[ $status -ne 0 ]]'
+
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
 # undocumented the way audit-pck.sh, export-web.sh, release.sh, serve-web.sh and stats.sh used to
