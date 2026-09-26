@@ -27,6 +27,9 @@ item below for as long as looking takes.
   the badge warning enough to run, and does a 2s warning with a 6s chase read as pursuit?**
   Walking away he catches her in about 7.5s; standing still, in about 2s. Record is `DECISIONS.md`, M137, the trap
   comes to her.
+- **On the phone, lose a day and look at the title** (the released page). **Is it the right way
+  up?** If not: after every lost run or only sometimes, and does anything else turn with it?
+  Record is M206 in `TODO.md`, the title screen after a game over is the right way up.
 - **Keep working while an agent takes a capture** (any `tools/shot.sh` or rig-flagged
   `tools/run.sh`, on this Mac). The rig's window should flash up and hand focus straight back to
   whatever app was in front. **Does your focus stay put, and is the flicker short enough to

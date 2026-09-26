@@ -370,8 +370,16 @@ points a second beside him.
 
 [PLAYTEST-140](playtests/PLAYTEST-140.md), statement 5. Seen on the phone.
 
-- [ ] **Reproduce it, fix it, and pin it with a test**: after a lost day's game over, the title
-      screen is drawn in the screen's own orientation. Check the desktop and the touch layout.
+Not reproduced off the phone. PR #378 re-applies the orientation as the title opens and closes a
+startup race, and rules out the two suspects: on the web export, touch detection is the browser's
+fixed `'ontouchstart' in window` and the window size is re-read from the canvas every frame, so the
+per-frame orientation poll (`main._process()`, running through pauses) cannot stay wrong for more
+than a frame. The player: "the only way to test this is to release it".
+
+- [ ] **The released page decides it**: after a lost day's game over on the phone, the title is
+      the right way up (`REVIEW.md`). If it is still sideways, the next pass reproduces it in a
+      debug web build in Chrome's phone emulation (`tools/export-web.sh debug`, as M205 did), and
+      asks whether it happens after every lost run and whether anything besides the title turns.
 
 ---
 
@@ -410,16 +418,18 @@ reaction time a warning must leave her; the player's complaint is the other end.
 
 ---
 
-## M211 — The pause screen's held restart restarts the day · found 2026-09-26
+## M211 — The pause screen's held restart starts a new game · found 2026-09-26
 
 > "the pause screen is currently bugged where you cannot restart from it. it just goes back to
 > the current game when pressing the button."
 
-[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 3.
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 3. What a completed hold does is the
+player's word in [PLAYTEST-143](playtests/PLAYTEST-143.md), statement 12: "restart button
+restarts the game from scratch".
 
 - [ ] **Reproduce it, fix it, and pin it with a test that fails before the fix**: a completed
-      hold on the pause screen's restart starts the day again rather than unpausing it. Say
-      which press reached the continue path.
+      hold on the pause screen's restart starts a new game from scratch rather than
+      unpausing it. Say which press reached the continue path.
 
 ---
 
@@ -452,6 +462,133 @@ day summary or both) was not said, so both are checked.
       and a test states the distance from the mark to him over many seeds.
 - [ ] **The mark is reachable**: a rig walks in from the mark's end, reads it and leaves without
       waking him, on seeds where it cannot today.
+
+---
+
+## M215 — The power station's chimneys stand in front of her · found 2026-09-26
+
+> "the chimneys of the power plant render behind the player. they should be in front."
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statement 1. Buildings are drawn as one layer beneath
+every entity (`city.gd`'s class doc: "nothing can ever legitimately stand behind one"). The power
+station's stacks (`POWER_STATION_STACK`, drawn by `Building._draw_power_station()`) rise far above
+the ordinary roof line, so she can walk where a stack should hide her.
+
+- [ ] **A stack is drawn in front of her when she stands behind it**, by the same depth order as
+      the entities, and behind her when she stands in front of it. A test or a still shows both.
+
+---
+
+## M216 — The small courtyard building's roofs go around the corner · found 2026-09-26
+
+> "the small courtyard building needs the roofs to go around the corner (like I described with the
+> other building types earlier) currently it doesn't read correctly."
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statement 2. The earlier description is PLAYTEST-138's
+"extend the roof from the bottom building above to the roof of the top building", which M203, a
+front nobody can stand at has windows on its ground floor (PR #365), builds. A courtyard block is
+cut into up to four separate rectangles around its hole (`_cut_courtyards()` and `_subtract()` in
+`city_generator.gd`). Each is its own `Building` with its own parapet, so at the courtyard's inner
+corners two roofs meet edge to edge instead of turning as one roof. This follows #365, since both
+change how one building's roof meets the next.
+
+- [ ] **The roof of a courtyard block reads as one roof that turns the corner**, at its outer and
+      inner corners, with no parapet drawn where two of its rectangles meet. Stills of a small
+      courtyard building before and after go in the PR.
+
+---
+
+## M217 — Nerves are stars on every screen · asked for 2026-09-26
+
+> "why are nerves sometimes stars and sometimes numbers? it should be consistent throughout
+> (stars)"
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statement 3. Today the day summary's "Nerves left:"
+repeats `*`, while the day brief and the finale brief (`show_day_brief()` and
+`show_finale_brief()` in `day_summary.gd`) and the pause screen (`_show_where_the_run_stands()`)
+say "%d nerves left". It goes on one branch with M210, the brief between two days is the coming
+day's, which already asks the brief to show the nerves "drawn the way the HUD draws them". Both
+wait for M211 and M212's branch, which owns `day_summary.gd` and `pause_screen.gd`.
+
+- [ ] **Every screen that shows the nerves draws them as stars**, drawn the same way everywhere;
+      no screen shows them as a number.
+
+---
+
+## M218 — The burning building burns · found 2026-09-26
+
+> "the fire of the burning building is on the street -- the building itself is not burning"
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statement 4. The row's body stands on the sidewalk
+against a wall (`EventCatalogue._burning_building()`: `placement` SIDEWALK, `pavement_side`
+AGAINST_THE_BUILDING). `EventInstance._draw_fire()` draws its flames at that ground spot, and the
+facade behind them is drawn unharmed. The danger's footprint and its fairness contracts stay as
+they are. This is about what is drawn.
+
+- [ ] **The flames and smoke are drawn on the facade of the building the row stands against**,
+      so the building reads as burning. Any fire left on the sidewalk reads as falling from it.
+      Stills in the PR.
+
+---
+
+## M219 — On a pedestrian street a blocked walker turns round · found 2026-09-26
+
+> "on the pedestrian street people don't turn around when their path is blocked so they accumulate
+> on obstacles"
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statement 5. On a precinct `CrowdAgent._footway_is_shut()`
+never answers true (its doc: "A precinct is never shut this way … It is stepped round across all
+six lanes instead"). So `_turn_round()` is never reached there. When stepping round a body gives
+up, the walker slows to a stop at the obstacle, and the ones behind it queue up.
+
+- [ ] **A walker on a pedestrian street whose way past an obstacle is blocked turns round**, as on
+      an ordinary street. A test builds a precinct blocked across its width and counts walkers
+      standing at the obstacle after a while.
+
+---
+
+## M220 — "The same face is on most of them." starts its own line · asked for 2026-09-26
+
+> "\"The same face is on most of them.\" should go on its own line completely"
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statement 6. Day 7's brief in `_DAY_BRIEF`
+(`day_summary.gd`) is one sentence pair, and the label's autowrap picks the break. It rides on
+M210 and M217's branch.
+
+- [ ] **The day 7 brief breaks the line before "The same face is on most of them."**, on the
+      brief between two days and on the day summary alike.
+
+---
+
+## M221 — A failed day leaves no chalk mark behind · found 2026-09-26
+
+> "chalk marks don't get properly reset on failed days accumulating more and more chalk marks in
+> the same alley"
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statement 7. `ResistanceDirector._begin_step()` adds a
+new `ContactPoint` each time a step is placed. `start_day()` calls `_clear()`, which frees the old
+contact. The robber (`_guard`) is only set to null there and never retired, and nothing yet shows
+which node the extra marks are. This follows M137 (PR #362), M205 and M213, which all change the
+resistance director.
+
+- [ ] **Reproduce it, fix it, and pin it with a test that fails before the fix**: after any number
+      of failed attempts at a day, its alley holds exactly one chalk mark and no leftover robber.
+      Say which node was left behind.
+
+---
+
+## M222 — The red arrow for the van ends on the van · found 2026-09-26
+
+> "the red arrow for the van does not end on the van"
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statement 8. The task arrow points at the contact's
+position (`ResistanceDirector.red_arrow_target()`). On a task performed at an event, the contact
+rides the event at an offset (`_reachable_offset()`: its `obstructs_radius` plus her body plus the
+contact's reach), so it stands beside day 7's delivery van, not on it. The offset keeps the touch
+point where she can reach it, and that stays. The arrow is what moves.
+
+- [ ] **The arrow's tip ends on the van's body** (on the event the task is performed at) while
+      the touch point stays where she can reach it. A still in the PR.
 
 ---
 
