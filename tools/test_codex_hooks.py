@@ -272,13 +272,21 @@ class CodexHooksTest(unittest.TestCase):
                 assert output is not None
                 self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
-    def test_git_grep_guard_upper_case_i_is_not_the_dash_capital_i_flag(self) -> None:
-        # Normalising case for the git/grep keywords must not also fold -I (skip binary files)
-        # together with -i (ignore case) -- that would make this exact upper-cased incident shape
-        # allow, the one false allow the redesign cannot reintroduce.
-        output = self.call_raw(command='GIT GREP -n -i "pattern" origin/main -- docs/')
-        assert output is not None
-        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+    def test_git_grep_guard_denies_a_quoted_argument_and_a_python_list(self) -> None:
+        # A quote mark used only to protect a `-C` path or to wrap a Python list element (not a
+        # substitution, not an alias) reads as an ordinary shell/Python argument -- these must not
+        # slip through just because the adapter, not the guard itself, is what's under test here.
+        for command in (
+            'git -C "/Users/krause/workspace/nappy-claude" grep -n -i "foo" origin/main -- docs/',
+            '"git" grep -n -i foo origin/main -- docs/',
+            'g"i"t grep -n -i foo origin/main -- docs/',
+            'python3 -c \'import subprocess; subprocess.run(["git", "grep", "-n", "-i", "foo", '
+            '"origin/main", "--", "docs/"])\'',
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(

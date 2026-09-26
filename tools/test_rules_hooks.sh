@@ -26,6 +26,9 @@
 #     (/usr/bin/git grep), upper case (GIT GREP, real on this Mac's case-insensitive disk) and a
 #     mid-word backslash escape (g\it grep) -- normalised away before tokenising -- while -I stays
 #     its own flag, never folded together with -i by that same normalisation
+#   - and a quoted -C/-c/--git-dir argument, a quoted git or grep, and a Python argument list
+#     (subprocess.run(["git", "grep", ...])) all still deny, now that quote marks are deleted the
+#     same way backslashes are and `,`/`[`/`]` split words like whitespace does
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -420,9 +423,8 @@ assert_guard "a backslash escape mid-word -> deny" deny \
 
 # The same normalisation must not fold -I (skip binary files) and -i (ignore case) together --
 # doing so would make a real, unbounded git grep -i ... docs/ (no -I) indistinguishable from a
-# guarded one, the one false allow this file cannot reintroduce.
-assert_guard "upper-case GIT GREP with only -i (no -I) still denies" deny \
-    'GIT GREP -n -i "foo" origin/main -- docs/'
+# guarded one, the one false allow this file cannot reintroduce. (The upper-case-with-only--i case
+# is already covered above, "upper case, real on this Mac's own case-insensitive disk -> deny".)
 assert_guard "a full path with a real -I still allows" allow \
     '/usr/bin/git grep -I -n -i "foo" origin/main -- docs/'
 assert_guard "upper case GIT GREP with a real -I still allows" allow \
@@ -441,6 +443,37 @@ assert_guard "a git-grep mention still allows after normalisation" allow \
 # places git and grep as adjacent bare words, the latter cannot be seen at the text layer at all.
 assert_guard "\$(echo git) grep stays the named, accepted exception -> allow" allow \
     '$(echo git) grep -n -i "foo" origin/main -- docs/'
+
+# A third, adversarial review of the normalise-before-match fix above found that a quote mark,
+# still its own token at that point, sat between git/grep and the flags or the bare word either one
+# needed to be adjacent to -- denying nothing, with no obfuscation, for a quoted -C/-c/--git-dir
+# argument, a quoted git or grep, or a Python argument list. Quotes are now deleted in the same
+# normalise pass as backslashes, and `,`/`[`/`]` split words like whitespace, so each of these
+# shapes (the exact ones the review used, all unbounded and unguarded) denies again.
+assert_guard "a quoted -C path, the shape an agent writes with \"\$root\" -> deny" deny \
+    'git -C "/Users/krause/workspace/nappy-claude" grep -n -i "foo" origin/main -- docs/'
+assert_guard "a single-quoted -C path -> deny" deny \
+    "git -C '/tmp/x' grep -n -i foo origin/main -- docs/"
+assert_guard "a quoted -c key=value -> deny" deny \
+    'git -c "core.quotepath=off" grep -n -i foo origin/main -- docs/'
+assert_guard "a quoted --git-dir=... -> deny" deny \
+    'git --git-dir="/x/.git" grep -n -i foo origin/main -- docs/'
+assert_guard "a double-quoted git -> deny" deny \
+    '"git" grep -n -i foo origin/main -- docs/'
+assert_guard "a single-quoted git -> deny" deny \
+    "'git' grep -n -i foo origin/main -- docs/"
+assert_guard "a double-quoted grep -> deny" deny \
+    'git "grep" -n -i foo origin/main -- docs/'
+assert_guard "a quote mark mid-word (g\"i\"t) -> deny" deny \
+    'g"i"t grep -n -i foo origin/main -- docs/'
+assert_guard "a Python argument list (subprocess.run([\"git\", \"grep\", ...])) -> deny" deny \
+    'python3 -c '"'"'import subprocess; subprocess.run(["git", "grep", "-n", "-i", "foo", "origin/main", "--", "docs/"])'"'"''
+
+# Still accepted, not fixed: a quoted search pattern that happens to contain " -I" reads as the
+# flag, since this file does not track which characters are inside a quoted argument. Rare, and
+# named in the header rather than chased with the quote-tracking this design deliberately avoids.
+assert_guard "a quoted pattern containing -I is read as the flag -- accepted, documented gap" allow \
+    'git grep -n -i "gcc -I" origin/main -- docs/'
 
 echo
 echo "$checks checks, $failures failures"

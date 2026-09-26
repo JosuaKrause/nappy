@@ -50,6 +50,18 @@
 # substituted word lands as `echo`'s own argument), and the latter cannot be seen at the text layer
 # at all.
 #
+# A quote mark was still its own token, and a real one sits between `git` and `grep` as often as
+# not: a quoted `-C`/`-c`/`--git-dir` argument (`git -C "$root" grep ...`, what an agent writes),
+# a quoted `git` or `grep` (`"git" grep`, `git "grep"`, `g"i"t grep`), and a Python argument list
+# (`subprocess.run(["git", "grep", ...])`) all put a stray quote token where the option-skip loop
+# or the `grep` check expects an adjacent flag or the bare word, and all denied with no obfuscation
+# at all before this fix. `"` and `'` are now deleted in the same normalise pass as the backslashes
+# -- bash's own quote removal, so `g"i"t` spells `git` exactly as bash runs it -- and `,`, `[` and
+# `]` join the tokenizer's whitespace branch, so a Python list's `"git", "grep"` still splits into
+# two words once its quotes are gone. **Accepted, not fixed:** a quoted search pattern that happens
+# to contain ` -I` reads as the flag (`git grep -i "gcc -I" -- docs/` allows) -- rare, and fixing it
+# needs the quote-tracking this file deliberately does not do.
+#
 # Reads the hook JSON on stdin. Denies via hookSpecificOutput.permissionDecision (PreToolUse "deny"
 # JSON, see the pull request description for the doc citation confirming this shape and that
 # PreToolUse fires for a sub-agent's own tool calls too -- a sub-agent is what ran the command
@@ -75,16 +87,27 @@ bs_nl='\\'$'\n'
 command="${command//$bs_nl/}"
 bs='\\'
 command="${command//$bs/}"
+# Then every quote mark, the same way bash's own quote removal drops them once they have done their
+# job: `g"i"t` spells `git`, `"git" grep` spells `git grep`, and a quoted `-C`/`-c`/`--git-dir`
+# argument (`git -C "$root" grep ...`) collapses back to the plain, unquoted shape the option-skip
+# loop below already expects (two tokens: the flag, then its argument). Neither character is a glob
+# metacharacter, so each is a literal pattern with no escaping needed.
+dq='"'
+command="${command//$dq/}"
+sq="'"
+command="${command//$sq/}"
 
 # ---------------------------------------------------------------------------- tokenizer --------
-# Splits $1 into one token per output line, on whitespace alone: quotes, `$`, `<`, `(` and every
-# other character are ordinary text, glued to whatever they are adjacent to, *except* `; & | ( ) `
-# ' "`, each of which is its own one-character token -- which is only there to stop a quote mark
-# from gluing onto an adjacent word (`"git` would otherwise never equal the word `git`), not to
-# track whether anything is "inside" one: this scan does not know or care what is quoted, is inside
-# a heredoc body, or is arguments to some other command, on purpose. A newline is also its own
-# token, so a run of dash-flags and a pathspec are never credited to a `git grep` match that a
-# different statement's `;`/`&`/`|`/newline actually separates it from.
+# Splits $1 into one token per output line, on whitespace -- plus `,`, `[` and `]`, which split a
+# word exactly like whitespace does but (like whitespace) leave no token of their own behind, so a
+# Python argument list (`["git", "grep", ...]`, quotes already gone by the time this runs) still
+# reads as the separate words `git` and `grep` -- and on `; & | ( ) \``, each of which *is* its own
+# one-character token, since those carry real meaning this file depends on (a statement boundary, a
+# subshell, a pipe, a background job, a command substitution): this scan does not know or care what
+# is quoted (quote marks are deleted before this ever runs -- see normalise above), is inside a
+# heredoc body, or is arguments to some other command, on purpose. A newline is also its own token,
+# so a run of dash-flags and a pathspec are never credited to a `git grep` match that a different
+# statement's `;`/`&`/`|`/newline actually separates it from.
 #
 # Tokens are printed NUL-separated (a token may legitimately contain other bytes) and read back
 # with `read -d ''`, which is bash-3.2-safe.
@@ -93,7 +116,7 @@ tokenize() {
 	while ((i < n)); do
 		c="${s:i:1}"
 		case "$c" in
-		' ' | $'\t')
+		' ' | $'\t' | ',' | '[' | ']')
 			if [ "$have" = 1 ]; then printf '%s\0' "$cur"; cur=""; have=0; fi
 			i=$((i + 1))
 			;;
@@ -102,7 +125,7 @@ tokenize() {
 			printf '%s\0' $'\n'
 			i=$((i + 1))
 			;;
-		';' | '&' | '|' | '(' | ')' | '`' | "'" | '"')
+		';' | '&' | '|' | '(' | ')' | '`')
 			if [ "$have" = 1 ]; then printf '%s\0' "$cur"; cur=""; have=0; fi
 			printf '%s\0' "$c"
 			i=$((i + 1))
@@ -221,18 +244,13 @@ while [ "$i" -lt "$n" ]; do
 				text_only=1
 				t=$((dashdash + 1))
 				while [ "$t" -lt "$k" ]; do
-					# A bare quote mark around a pathspec (`'*.md'`) is its own token now
-					# (see the tokenizer's header) and never itself a glob -- skip it
-					# rather than let it fail the all-must-match check below.
-					case "${toks[$t]}" in
-					"'" | '"') ;;
-					*)
-						if ! is_text_glob "${toks[$t]}"; then
-							text_only=0
-							break
-						fi
-						;;
-					esac
+					# Quotes are already gone (see normalise above), so a quoted pathspec like
+					# -- '*.md' reaches here as the plain token *.md, no special-casing needed
+					# for the quote marks themselves.
+					if ! is_text_glob "${toks[$t]}"; then
+						text_only=0
+						break
+					fi
 					t=$((t + 1))
 				done
 			fi
