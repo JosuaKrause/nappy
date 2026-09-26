@@ -18,7 +18,7 @@ day"; "are the special/unique things actually getting encountered?")*
   dog is `instant-charging-dog` and never also `dog-outlasted`.
 - `nappy-day-N-mark-seen`, `-mark-read`, `-mark-missed` for the chalk mark, told apart from a
   task by the step's own `is_pickup`; `task-done` and `task-skipped` now count only tasks.
-- `poster-torn`, `chat` and `checkpoint`, once per attempt at a day.
+- `poster-torn`, `chat` and `checkpoint`, once per attempt at a day (every time since M225).
 
 Every new `EventBus` signal only emits; nothing in gameplay listens to it. The baby adds running
 and the alley to the meter in the same order as before, so the record kept for the counter moves

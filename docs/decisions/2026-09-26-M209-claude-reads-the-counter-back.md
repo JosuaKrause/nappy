@@ -23,3 +23,5 @@ fixed `--check`, `/me` included (token `claude`, permissions `65`, sites `[-1]`)
 **Choices left open to overturn**: `--raw` ignores `--prefix`; `began`'s own line shows no share;
 a 429 is retried up to five times with backoff and a 401 or 403 is not; `--check` prints
 permissions as the API returns them.
+
+**Superseded in part** by [M225](2026-09-26-M225.md): the game's events now go to `nappy.goatcounter.com`, which `tools/goatcounter.py` reads by default, and the header says the counts are attempts, not visitors.
