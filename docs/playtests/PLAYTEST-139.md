@@ -60,3 +60,15 @@ sound and framing.
 
 11. **A `--route` rig run can be recorded as a video** the same way, for the player to review;
     nothing it produces is checked in. Queued as M214, built with the trailer's recording.
+
+## Then, on the first render (PR #370), 2026-09-26
+
+The player watched the first full render, 23.1s over seven shots, with drafted captions ("Every
+walk is a choice.", "Not every street is safe.", "One family. A whole city.") and the title card
+"Nappy". The trucks shot shows no truck, and in the chase shot she does not visibly run.
+
+> "Okay, the trailer needs some work. I will give more details later. Let's merge that in for now,
+> though"
+
+12. **The rendering and recording tools land as they are**, and the cut stays open for the
+    player's notes. → M204.

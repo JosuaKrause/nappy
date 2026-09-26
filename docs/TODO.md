@@ -357,21 +357,19 @@ wall's roadblocks are not affected: they are three narrower bodies across the st
 
 [PLAYTEST-139](playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
 
-- [ ] **A checked-in shot list and a `tools/trailer.sh` that renders it.** Each shot names its
-      seed, day, parent (mother or father), spawned events, the path she walks, its length and any
-      caption. The script renders each shot frame-locked (Godot's movie writer at a fixed frame
-      rate, the game's own resolution, with its audio), joins them with ffmpeg, adds the fades and
-      captions, deletes the frames, and leaves the video in a gitignored folder. Nothing it
-      produces is committed. Rendering a shot twice gives the same frames, and a check says so.
-- [ ] **What the rig needs to film it**: a path of several legs (the wrong street, the turn
-      back, the other), the parent chosen by a flag rather than by the run's roll, and a camera
-      that zooms out from her doorstep to the whole city for the last shot.
+The rendering and recording tools are built (`DECISIONS.md`, M204 and M214, the trailer and its
+recording tools). "the trailer needs some work. I will give more details later"
+([PLAYTEST-139](playtests/PLAYTEST-139.md), statement 12).
+
 - [ ] **The cut, under 30s**: the choice in action; early dangers up to the charging dog; the
       title; three 1s segments through black — army trucks beside the mother, the father walking
       to a gatehouse, the mother running with the baby in her arms from pursuing guards; the
       zoom out. Nothing a player never sees. Captions drafted and shown to the player with the
       first render; the player renders the final video.
 
+      In the first render the trucks shot shows no truck (`--spawn arterial` on day 13 rendered
+      differently each time) and in the chase shot she does not visibly run; the captions and the
+      title card are drafts. The player's notes on the cut come next.
 ---
 
 ## M205 — The man shouting charges the meter again · found 2026-09-25
