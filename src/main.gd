@@ -1655,10 +1655,9 @@ func _start_day() -> void:
 			GameState.current_act())
 	_city.start_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
-	# The repaint just above may have carried an existing fence into today or chosen the run's one
-	# new one — read back so tomorrow's `set_fenced_park_state()` hands over the same answer.
-	GameState.fenced_park = _city.map.fenced_park
-	GameState.fenced_park_act = _city.map.fenced_park_act
+	# Remember the first choice for the run. Today's physical fence disappears after its act,
+	# but that must not erase the history and allow tomorrow to choose another one.
+	GameState.remember_fenced_park(_city.map.fenced_park, _city.map.fenced_park_act)
 	# The tree `_city.start_day()` just grew is today's whole plan, so the picture only has to be
 	# rebuilt here — once a day — rather than read fresh every frame the way `_debug_layers` reads
 	# the live geometry state. See `RouteLines.refresh()`.

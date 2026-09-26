@@ -22,6 +22,7 @@ func run(t) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 37))
 	_test_a_used_area_is_taken_off_the_tree_and_stays_open(t)
+	_test_the_one_fence_is_remembered_after_its_act(t)
 	_test_the_fenced_park_closes_every_entrance(t)
 	_test_the_fence_turns_each_corner_on_one_post(t)
 	_test_the_guarantees_hold_with_the_fenced_park(t)
@@ -47,7 +48,16 @@ func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 	map.set_spent_calm(used)
 	map.set_fenced_park_state(fenced, fenced_act, Tuning.act_for_day(day))
 	map.repaint(state)
-	return [map.fenced_park, map.fenced_park_act]
+	# Exercise Main's actual read-back policy without leaving this fixture's run in the autoload.
+	var saved_block := GameState.fenced_park
+	var saved_act := GameState.fenced_park_act
+	GameState.fenced_park = fenced
+	GameState.fenced_park_act = fenced_act
+	GameState.remember_fenced_park(map.fenced_park, map.fenced_park_act)
+	var remembered := [GameState.fenced_park, GameState.fenced_park_act]
+	GameState.fenced_park = saved_block
+	GameState.fenced_park_act = saved_act
+	return remembered
 
 ## The calm areas today's repaint leaves calm with nothing handed over.
 func _calm_on(map: CityMap, day: int) -> Array[Vector2i]:
@@ -106,6 +116,36 @@ func _force_a_fence(map: CityMap, day: int, used: Array[Vector2i]) -> void:
 	_repaint(map, day, used, Vector2i(-1, -1), 0)
 
 # ------------------------------------------------------------------ the rule ---
+
+## The physical fence lasts one act; the fact this run chose one lasts across the boundary.
+## Used areas in the later act still come off the route tree without another physical fence.
+func _test_the_one_fence_is_remembered_after_its_act(t) -> void:
+	var map := _maps[0]
+	var fenced := Vector2i(-1, -1)
+	var fenced_act := 0
+	var first := Vector2i(-1, -1)
+	for day in range(8, 15):
+		var used := _used_by(map, day)
+		var remembered := _repaint(map, day, used, fenced, fenced_act)
+		fenced = remembered[0]
+		fenced_act = remembered[1]
+		if day == 9:
+			first = map.fenced_park
+			t.check(first.x >= 0 and fenced_act == 3, "the fixture chooses its fence in act III")
+		if day >= 9:
+			t.check(fenced == first and fenced_act == 3,
+					"day %d remembers the original fence after Main's read-back" % day)
+		if day >= 12:
+			t.check(map.fenced_park == Vector2i(-1, -1) and map._fenced_tiles.is_empty(),
+					"day %d has no physical fence after the chosen act" % day)
+		elif day >= 9:
+			t.check(map.fenced_park == first, "the original fence stands for the rest of act III")
+		if day == 13:
+			t.check(not map.shut_calm.is_empty(), "act IV still excludes used areas from its routes")
+	# A run with no earlier choice is still allowed its first fence in act IV.
+	var used := _used_by(map, 13)
+	_repaint(map, 13, used)
+	t.check(map.fenced_park.x >= 0, "act IV can choose the run's first fence")
 
 ## The whole point, over the sweep: every area taken off the tree is one she used, its ground stays
 ## walkable and calm — open unless it is `fenced_park`, closed only if it is — and the day's tree

@@ -192,9 +192,8 @@ var _spent_for_the_next_repaint: Array[Vector2i] = []
 ## chosen in, or the first area today's `shut_calm` accepts if none has been chosen yet and today
 ## is act III or later. See docs/CITY.md, "Shutting a spent park".
 var fenced_park := Vector2i(-1, -1)
-## The act `fenced_park` was chosen in, mirroring `GameState.fenced_park_act` — `Main._start_day()`
-## reads this back the same way it reads `fenced_park` back, so the choice survives to later days
-## of the same act and is never made twice in a run.
+## The act today's active `fenced_park` was chosen in, or 0 when none stands today.
+## `GameState` remembers the first choice even after these daily fields return to none.
 var fenced_park_act := 0
 ## What `set_fenced_park_state()` handed over: what `GameState` already remembers, and today's own
 ## act, both waiting for the next `repaint()` to read them.
@@ -213,8 +212,8 @@ func set_spent_calm(blocks: Array[Vector2i]) -> void:
 ## What `GameState` remembers about the one park barriers ever stand around this run — the block
 ## (`Vector2i(-1, -1)` for none yet) and the act it was fenced in — plus today's own act, all for
 ## the next `repaint()` to read. `Main._start_day()` hands this over the same way it hands over
-## `set_spent_calm()`, and reads `fenced_park`/`fenced_park_act` back once `repaint()` returns to
-## give `GameState` its own answer for tomorrow.
+## `set_spent_calm()`, and remembers the first `fenced_park`/`fenced_park_act` choice after repaint.
+## A choice from an earlier act prevents a new fence but does not stand physically today.
 func set_fenced_park_state(existing_block: Vector2i, existing_act: int, today_act: int) -> void:
 	_fenced_park_state = existing_block
 	_fenced_park_state_act = existing_act
@@ -831,7 +830,8 @@ func repaint(state: CityState) -> void:
 func _shut_the_spent_calm(state: CityState) -> void:
 	var spent := _spent_for_the_next_repaint
 	_spent_for_the_next_repaint = []
-	var already_fenced := _fenced_park_state.x >= 0 \
+	var has_fenced_this_run := _fenced_park_state.x >= 0
+	var already_fenced := has_fenced_this_run \
 			and _fenced_park_state_act == _act_for_the_next_repaint
 	if already_fenced:
 		fenced_park = _fenced_park_state
@@ -847,7 +847,7 @@ func _shut_the_spent_calm(state: CityState) -> void:
 	shut_calm = ClosurePlanner.calm_to_shut(self, spent, protected)
 	if already_fenced:
 		shut_calm.append(fenced_park)
-	elif _act_for_the_next_repaint >= 3 and not shut_calm.is_empty():
+	elif not has_fenced_this_run and _act_for_the_next_repaint >= 3 and not shut_calm.is_empty():
 		fenced_park = shut_calm[0]
 		fenced_park_act = _act_for_the_next_repaint
 	if shut_calm.is_empty():

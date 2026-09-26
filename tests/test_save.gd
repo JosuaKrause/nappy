@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_completed_resistance_alley_tiles_survive_a_round_trip(t)
 	_test_a_save_from_before_the_alley_tiles_still_loads(t)
 	_test_the_fenced_park_survives_a_round_trip(t)
+	_test_an_expired_fence_survives_a_round_trip(t)
 	_test_a_save_from_before_the_fenced_park_still_loads(t)
 	_test_a_save_from_before_a_task_was_one_day_still_loads(t)
 	_test_the_posters_survive_a_round_trip(t)
@@ -365,6 +366,31 @@ func _test_completed_resistance_alley_tiles_survive_a_round_trip(t) -> void:
 	t.check(not GameSave._read_now().is_empty(), "and the file resumes")
 	t.check(GameState.completed_resistance_alley_tiles == [Vector2i(4, 9), Vector2i(-2, 15)],
 			"onto the tiles it was closed with, Vector2i values and all")
+	GameSave.clear()
+
+## Expiring the physical fence cannot reopen the once-per-run choice, including after a reload.
+func _test_an_expired_fence_survives_a_round_trip(t) -> void:
+	GameState.start_run(14040)
+	GameState.fenced_park = Vector2i(6, 8)
+	GameState.fenced_park_act = 3
+	GameState.day = 12
+	GameState.remember_fenced_park(Vector2i(-1, -1), 0)
+	t.check(GameSave._write_now(false), "the act-boundary run writes a save")
+	GameState.start_run(1)
+	t.check(not GameSave._read_now().is_empty(), "the act-boundary save resumes")
+	t.check(GameState.fenced_park == Vector2i(6, 8) and GameState.fenced_park_act == 3,
+			"reloading after expiry remembers the original fence")
+	var map := CityGenerator.generate(GameState.run_seed)
+	var state := CityState.new()
+	state.begin_day(map.block_plans, 13)
+	map.repaint(state)
+	var used: Array[Vector2i] = [map.calm_blocks[0]]
+	map.set_spent_calm(used)
+	map.set_fenced_park_state(GameState.fenced_park, GameState.fenced_park_act, 4)
+	map.repaint(state)
+	t.check(not map.shut_calm.is_empty(), "the resumed act has an accepted used area")
+	t.check(map.fenced_park == Vector2i(-1, -1),
+			"the resumed run cannot select a second fence in act IV")
 	GameSave.clear()
 
 ## **A save written before this field existed still loads**, the same reasoning
