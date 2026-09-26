@@ -339,26 +339,31 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ## _set_the_trap_on_her()`, `EventCatalogue._robber_giving_chase()`): the trap of a perform step
 ## comes to her rather than waiting at the contact, awake from its first frame and off screen.
 ##
-## **Two terms, each one sentence of the telegraph contract.**
+## **It is the furthest start a walker still loses from.** Walking directly away, the gap closes at
+## his `pursue_speed` less `WALK_SPEED` (130 − 92 = 38px/s), and he has his notice plus his chase —
+## `telegraph_time` 2.0s and `duration` 6.0s on his row — to close it to his 30px catch. With half a
+## second of that kept as margin: 30 + 38 × (2.0 + 6.0 − 0.5) = **315px**. Any further and a player
+## who simply walks away outlasts him, which is the one answer a pursuit may not accept.
 ##
-## - **Off screen from every bearing: `OUT_OF_SIGHT` (420px).** The visible world is 640x360 at
-##   zoom 2, so its far corner is `sqrt(320² + 180²)` ≈ 367px from her; `Stroller.CAMERA_LOOK_AHEAD`
-##   (46px) leads the camera in the way she faces and pushes the corner on that side to
-##   `sqrt(366² + 180²)` ≈ 408px, and `OUT_OF_SIGHT` is the first round number outside that. A
-##   robber started any nearer could be drawn appearing out of nothing on the one bearing the
-##   camera happens to lead toward.
-## - **Then at least `PURSUIT_MIN_NOTICE` (1.5s) of him closing while only the badge speaks for
-##   him: 130 × 1.5 = 195px**, at his own `pursue_speed` (130px/s) with her standing still, the
-##   measure the screen-edge badge itself is stated over (`DangerEdge`, "its own approach, with the
-##   player held still"). So the least notice the pursuit contract owes her is paid before he is
-##   even on screen, and everything he does in view is on top of it.
+## **Two floors it has to clear, and both are held by `tests/test_resistance.gd`:**
 ##
-## 420 + 195 = 615. It also clears the badge's own hysteresis from every bearing
-## (`DangerEdge.SCREEN_MARGIN`, 130 screen px — 65px of world past each edge, so the grown view's
-## far corner on the led side is `sqrt(431² + 245²)` ≈ 496px), so the badge is raised on his
-## first closing frames rather than after a stretch of him coming unannounced. `tests/test_resistance.gd` holds the relationship to the two terms
-## rather than the value, and walks the encounter from here.
-const TRAP_ARRIVAL_DISTANCE := 615.0
+## - **The screen-edge badge is up before he is on screen.** `DangerEdge` raises one only for a
+##   thing `SCREEN_MARGIN` (130 screen px, 65px of world at zoom 2) outside the view, and only once
+##   its smoothed measure of his approach has risen, about 0.1s. So he has to start past the view's
+##   half-extent, plus the camera's lead toward him (`Stroller.CAMERA_LOOK_AHEAD`, 46px sideways and
+##   32px vertically), plus that margin, plus the 22px the gap closes while the badge rises:
+##   180 + 32 + 65 + 22 = 299px vertically, 320 + 46 + 65 + 22 = 453px sideways
+##   (`ResistanceDirector.badge_line()`). 315 clears the first and not the second, so the director
+##   starts him within about 18° of straight above or below her; where no such start has a clear run
+##   at her, he comes along her own street from the side at about 466px instead, and walking away
+##   outlasts him there (`ResistanceDirector._draw_arrival_position()`).
+## - **Standing still, he lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after he appears.** His
+##   lunge fires at his stand-off, `pursuit_standoff(130, 30)` = 108px, so the start has to be at
+##   least 108 + 130 × 1.5 = 303px.
+##
+## Not `OUT_OF_SIGHT` (420px) plus a notice: from that far a walker escapes unless the chase ran
+## past the 6.0s `Tuning.validate_pursuit()` allows any pursuer.
+const TRAP_ARRIVAL_DISTANCE := 315.0
 
 ## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
 ## way. Chosen, not measured, and open to overturn once the late days are timed (M184).

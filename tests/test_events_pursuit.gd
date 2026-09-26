@@ -115,10 +115,7 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	var result := {"caught": false, "gave_up": false, "lethal_while_telegraphing": false,
 			"at_the_lunge": INF, "ended_at": INF}
 	var was_telegraphing := true
-	# At least 12s, and longer for a row whose warning alone outlasts that (`robber_giving_chase`'s
-	# runs about 12.9s), so a walker is still watched until the catch rather than cut off before it.
-	var limit := maxf(12.0, def.telegraph_time + def.duration + 1.0)
-	while elapsed < limit and not instance.is_finished and not result["caught"]:
+	while elapsed < 12.0 and not instance.is_finished and not result["caught"]:
 		her.x += player_speed * STEP
 		instance.player_at = her
 		# The break-off is a fact about *her* since playtest 14, so a rig that only moves her is

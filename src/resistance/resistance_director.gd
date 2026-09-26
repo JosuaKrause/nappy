@@ -343,8 +343,9 @@ static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 ## **The trap comes to her.** *(2026-09-13, the player: "maybe spawn the robber in pursuing mode
 ## offscreen when she interacts with the yeller so it runs towards her from offscreen".)* The moment
 ## a task that rides on a row is handed over, a `robber_giving_chase` — the alley robber, awake from
-## his first frame — is spawned `Tuning.TRAP_ARRIVAL_DISTANCE` (615px) from her, outside the view,
-## and comes at her. So whichever look-alike she chose, the errand costs the same: the price is
+## his first frame — is spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) above or
+## below her, always far enough past the edge of the view that the screen-edge badge is up before he
+## is in it (`_draw_arrival_position()`), and comes at her. So whichever look-alike she chose, the errand costs the same: the price is
 ## paid on the way out, from wherever she did it, rather than guarded at one seeded spot she could
 ## avoid by picking another. The screen-edge badge announces him while he is off screen, the same
 ## way it announces any pursuer (`DangerEdge._is_worth_an_arrow()`).
@@ -363,50 +364,125 @@ func _set_the_trap_on_her() -> void:
 		her = contact_position()
 	if her == Vector2.INF:
 		return
-	var arrival := _draw_arrival_position(_rng, her)
+	var arrival := _draw_arrival_position(_rng, her, def)
 	var at: Vector2 = arrival[0]
 	if at == Vector2.INF:
 		Telemetry.note("roll", ("task handed over unguarded: no walkable ground %.0fpx from her "
 				+ "in %d draws") % [Tuning.TRAP_ARRIVAL_DISTANCE, TRAP_DRAW_LIMIT + 4])
 		return
 	_trap = _city.events.spawn_extra(def, at)
+	var run := "no clear run at her"
+	if arrival[1]:
+		run = "a clear run at her along her street, beside her" if arrival[2] \
+				else "a clear run at her"
 	Telemetry.note("roll", "task handed over: a robber sent after her from %s, %.0fpx off (%s)"
-			% [TelemetryLog.tile(_map.world_to_tile(at)), her.distance_to(at),
-			"a clear run at her" if arrival[1] else "no clear run at her"])
+			% [TelemetryLog.tile(_map.world_to_tile(at)), her.distance_to(at), run])
 
-## Where the robber a handed-over task sets on her starts: exactly `Tuning.TRAP_ARRIVAL_DISTANCE`
-## from `her`, on ground `_draw_guard_position()`'s own refusals leave alone (walkable, not behind a
-## closure, not held, not the home block, not a walled-off alley) and off screen by `_sight` as well
-## as by the distance. Returns `[position, clear]` — `Vector2.INF` when no bearing qualifies.
+## Where the robber a handed-over task sets on her starts, past `badge_line()` so the screen-edge
+## badge is up before he is on screen, on ground `_draw_guard_position()`'s own refusals leave alone
+## (walkable, not behind a closure, not held, not the home block, not a walled-off alley) and off
+## screen by `_sight` as well. Returns `[position, clear, beside]` — `Vector2.INF` when no start
+## qualifies; `clear` when the straight line from there to her is walkable; `beside` when he starts
+## to her side rather than above or below her.
 ##
-## **A bearing with a clear run at her is preferred**, `clear` true: every point of the straight
-## line from there to her walkable. He chases in a straight line (`EventInstance._chase()`),
-## sliding along whatever wall is in the way, so a start behind a building is a man stuck against
-## its back wall while the badge says he is coming. On a city of straight streets that line is
-## nearly always her own street, so the four bearings along the axes are tried first, in an order
-## the day's RNG picks, and then `TRAP_DRAW_LIMIT` bearings from the whole circle; the first legal
-## one of all of them stands in if none has a clear run.
-func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2) -> Array:
+## **Above or below her, `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) out, by preference.** That is past
+## the badge line vertically within `arrival_cone()` (about 18°) of straight up or down, and never
+## sideways, where the view is wider — so those bearings are drawn inside the two cones rather than
+## from the whole circle. Straight up and straight down first, in an order the day's RNG picks,
+## then `TRAP_DRAW_LIMIT` bearings from the cones.
+##
+## **A clear run at her is what decides it**, since he chases in a straight line
+## (`EventInstance._chase()`), sliding along whatever wall is in the way: a start behind a building
+## is a man stuck against its back wall while the badge says he is coming. On about one handover in
+## five there is no clear run from above or below — she is on a street that runs sideways, with no
+## crossing street near enough — and **then he comes along her own street**, straight left or right
+## at `beside_distance()` (about 466px), past the badge line sideways. From there walking directly
+## away outlasts his notice and chase, which is the price of a start the wider view needs;
+## standing still or walking into him is still caught. Only when neither has a clear run does the
+## first legal start of all of them stand in, and then he may never reach her.
+func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef) -> Array:
 	var walled_alleys := _walled_alleys()
-	var bearings: Array[float] = []
-	var quarter := rng.randi_range(0, 3)
-	for i in 4:
-		bearings.append(float((quarter + i) % 4) * PI / 2.0)
+	var cone := arrival_cone(def)
+	var up := PI / 2.0 if rng.randf() < 0.5 else -PI / 2.0
+	var starts: Array[Vector2] = [Vector2.RIGHT.rotated(up) * Tuning.TRAP_ARRIVAL_DISTANCE,
+			Vector2.RIGHT.rotated(-up) * Tuning.TRAP_ARRIVAL_DISTANCE]
 	for _attempt in TRAP_DRAW_LIMIT:
-		bearings.append(rng.randf() * TAU)
+		var side := PI / 2.0 if rng.randf() < 0.5 else -PI / 2.0
+		starts.append(Vector2.RIGHT.rotated(side + rng.randf_range(-cone, cone))
+				* Tuning.TRAP_ARRIVAL_DISTANCE)
+	var along := 1.0 if rng.randf() < 0.5 else -1.0
+	var beside := beside_distance(def)
+	starts.append(Vector2(along * beside, 0.0))
+	starts.append(Vector2(-along * beside, 0.0))
 	var fallback := Vector2.INF
-	for angle in bearings:
-		var candidate := her + Vector2.RIGHT.rotated(angle) * Tuning.TRAP_ARRIVAL_DISTANCE
+	for offset in starts:
+		if not is_past_the_badge_line(offset, def):
+			continue
+		var candidate := her + offset
 		var tile := _map.world_to_tile(candidate)
 		if not is_legal_ground(_map, tile, walled_alleys):
 			continue
 		if _sight.is_valid() and _sight.call(candidate):
 			continue
 		if _a_clear_run(candidate, her):
-			return [candidate, true]
+			return [candidate, true, is_zero_approx(offset.y)]
 		if fallback == Vector2.INF:
 			fallback = candidate
-	return [fallback, false]
+	return [fallback, false, false]
+
+## How far from her, along each axis, a pursuer `def` started `distance` out has to be for
+## `DangerEdge` to raise its badge before he is on screen, whatever the camera is doing. Per axis,
+## in world px:
+##
+## - `Tuning.VIEW_HALF_EXTENT` (320 × 180), half the view;
+## - plus the most the camera leads toward him — `Stroller.CAMERA_LOOK_AHEAD` (46px) sideways,
+##   46 × `Stroller.OBLIQUE_Y` (32px) vertically, when she faces him;
+## - plus `DangerEdge.SCREEN_MARGIN` (130 screen px, 65px of world at zoom 2), how far outside the
+##   view a thing has to be before a badge is raised for it;
+## - plus the ground the gap closes by while the badge rises (`badge_rise_time()`), at his speed and
+##   hers together, since she may be walking into him.
+##
+## For `robber_giving_chase` at 315px, about 452 sideways and 299 vertically.
+static func badge_line(def: EventDef, distance: float) -> Vector2:
+	var world_per_screen_px := Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
+	var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD, Stroller.CAMERA_LOOK_AHEAD * Stroller.OBLIQUE_Y)
+	var rising := (def.pursue_speed + Tuning.WALK_SPEED) \
+			* badge_rise_time(def.pursue_speed, distance, def.outer_radius)
+	return Tuning.VIEW_HALF_EXTENT + lead + Vector2.ONE \
+			* (DangerEdge.SCREEN_MARGIN * world_per_screen_px + rising)
+
+## How long `DangerEdge` takes to raise a badge for something closing at `speed` from `distance`
+## out, with a field of `outer`: the approach it measures is smoothed (`DangerEdge.SMOOTHING`, 6/s,
+## from zero), and it announces once that reaches `DangerEdge.announces()`'s own threshold at that
+## range — `CLOSING_SPEED`, or the gap to the field over `LEAD_TIME`. Plus two frames at 30 frames a
+## second, the slowest a phone runs it: the first, which has no earlier position to measure an
+## approach from, and one of rounding. About 0.1s for the robber at 315px, 0.15s at 466px.
+static func badge_rise_time(speed: float, distance: float, outer: float) -> float:
+	var needed := maxf(DangerEdge.CLOSING_SPEED, maxf(0.0, distance - outer) / DangerEdge.LEAD_TIME)
+	if needed >= speed:
+		return INF
+	return 2.0 / 30.0 + log(speed / (speed - needed)) / DangerEdge.SMOOTHING
+
+## Whether a start at `offset` from her is outside the view grown by `badge_line()` — past it on
+## either axis is outside the box.
+static func is_past_the_badge_line(offset: Vector2, def: EventDef) -> bool:
+	var line := badge_line(def, offset.length())
+	return absf(offset.x) >= line.x or absf(offset.y) >= line.y
+
+## The half-angle, in radians, of the cone about straight up or straight down inside which a start
+## `Tuning.TRAP_ARRIVAL_DISTANCE` out is past `badge_line()` vertically — zero if it never is.
+static func arrival_cone(def: EventDef) -> float:
+	var line := badge_line(def, Tuning.TRAP_ARRIVAL_DISTANCE)
+	return acos(minf(1.0, line.y / Tuning.TRAP_ARRIVAL_DISTANCE))
+
+## How far to her side he starts when he comes along her own street: the least distance past
+## `badge_line()` sideways. The line moves out with the start, since a further start takes the badge
+## longer to rise for, so it is walked out to where it stops moving and rounded up.
+static func beside_distance(def: EventDef) -> float:
+	var distance := badge_line(def, 0.0).x
+	for _step in 6:
+		distance = badge_line(def, distance).x
+	return ceilf(distance)
 
 ## Whether every point on the straight line from `from` to `to` is walkable, sampled at a quarter
 ## tile — the question `EventInstance._walkable_step()` asks of each step a chaser takes.

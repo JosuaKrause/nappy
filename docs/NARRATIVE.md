@@ -164,10 +164,12 @@ the resistance*, narrowed to a task with exactly one place to be.
   the difference between risk and a coin flip.
 - **A task that rides on something in the street sends a robber after her.** The man shouting,
   the van, the burnt shell and a roadblock are not guarded where they wait. The moment she hands
-  the task over, a robber is sent after her from off screen — `Tuning.TRAP_ARRIVAL_DISTANCE`
-  (615px) away, outside the view on every bearing, and far enough that the screen-edge badge
-  speaks for him for at least the pursuit's least notice before he is in view — awake and running
-  at her from the first frame. Running shakes him off; walking does not. Whichever look-alike she
+  the task over, a robber is sent after her from off screen — usually from above or below her,
+  `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) away, far enough past the edge of the view that the
+  screen-edge badge announces him before he is in it — awake and running at her from the first
+  frame. The warning is short: standing still, he reaches her about two seconds after the badge
+  rises. Running shakes him off; walking away does not, except where he has to come along her own
+  street from the side, which is further off. Whichever look-alike she
   chose, the price is the same, and it is paid on the way out rather than guarded at one spot she
   could avoid by choosing another. *(2026-09-13: "maybe spawn the robber in pursuing mode
   offscreen when she interacts with the yeller so it runs towards her from offscreen.")* A task

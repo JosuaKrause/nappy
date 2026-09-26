@@ -392,8 +392,8 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ##
 ## **A further siting needs a longer `telegraph_time` to spend it in**, or a player who only walks
 ## can outlast the row's own budget before it ever gets to catch her — `duration` stays at
-## `Tuning.PURSUIT_TIME` (`tests/test_events.gd` holds every pursuer to that exact ceiling), so the
-## room has to come from the telegraph instead. See that field on the same row for the arithmetic.
+## `Tuning.PURSUIT_TIME` (`tests/test_events_costs.gd` holds every pursuer but `robber_giving_chase`
+## to that exact ceiling), so the room has to come from the telegraph instead. See that field on the same row for the arithmetic.
 ## `cyclist` is left at the default: its own notice is bought back a different way, in
 ## `outer_radius` and `telegraph_time` — see the reasoning on that row.
 @export var offscreen_notice := Tuning.OFFSCREEN_NOTICE

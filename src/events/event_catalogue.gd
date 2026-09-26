@@ -1938,7 +1938,7 @@ static func _alley_robbery() -> EventDef:
 ## from off screen the moment she hands a task over.** *(2026-09-13, the player: "maybe spawn the
 ## robber in pursuing mode offscreen when she interacts with the yeller so it runs towards her from
 ## offscreen"; "we need a version of the robber that is not frozen when spawned".)* Nothing places
-## it but `ResistanceDirector._set_the_trap_on_her()`, `Tuning.TRAP_ARRIVAL_DISTANCE` (615px) from
+## it but `ResistanceDirector._set_the_trap_on_her()`, `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) from
 ## her on walkable ground outside the view: `SCRIPTED` on day 0, the day nobody plays, so the roll,
 ## the stream and the budget never reach it — `EventDef.validate()` refuses a pursuer with no
 ## trigger on any other terms.
@@ -1947,18 +1947,23 @@ static func _alley_robbery() -> EventDef:
 ## (16 over 30–200px), his 130px/s, his 30px catch, his `hard_fail` and the way he walks off once
 ## he has lost her. What differs is the whole of the request — **no trigger** (`pursues_within` 0),
 ## so he is never `is_waiting()` and his notice and chase are clocked from the frame he exists —
-## and the length of the notice, which the further start pays for.
+## and the split of his time between notice and chase.
 ##
-## **`telegraph_time` is derived from the start, the way `charging_dog`'s is**: walking away must
-## still lose inside the row's own budget, and `duration` is held at `Tuning.PURSUIT_TIME`, so the
-## notice has to cover the rest. Walking directly away the instant he appears, the gap closes at
-## `pursue_speed` − `WALK_SPEED` (38px/s), and closing 615 − 30 = 585px of it takes about 15.4s;
-## less the 3s chase, plus half a second of margin, is about 12.9s. He does not stand through it —
-## a pursuer closes to its stand-off through its notice and lunges when she reaches it, and a
-## player who stands still is lunged at about four seconds after he appears — so the long notice
-## only ever shows to somebody walking away, as a man gaining on her and then keeping pace at his
-## stand-off until it runs out. Running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) any time after the
-## least notice ends it, as it ends every chase.
+## **A short notice and a long chase.** *(PLAYTEST-140, statement 2: a warning comes shortly before
+## its danger, "not so early that nothing happens by the time it does".)* `telegraph_time` is
+## `Tuning.PURSUIT_MIN_NOTICE` (1.5s), the least `Tuning.validate_pursuit()` accepts, plus half a
+## second of margin, so he may end her day 2.0s after he appears. Walking away still has to lose, so the
+## time that walking away needs is put into `duration` instead: `Tuning.PURSUIT_TIME` × 2 = 6.0s, the
+## longest chase `validate_pursuit()` allows, and `Tuning.TRAP_ARRIVAL_DISTANCE` is the furthest start
+## a walker loses from inside the 8.0s the two make. Running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s)
+## any time after the least notice ends him as it ends every chase, so the longer chase costs a
+## runner nothing; it is the cap on walking away and on standing still. He is the one pursuer whose
+## chase is longer than `Tuning.PURSUIT_TIME`, and `tests/test_events_costs.gd` names him as such.
+##
+## What that leaves her: standing still, he lunges from his stand-off about 1.6s after he appears
+## and reaches her about 0.6s later; walking into him, the lunge comes sooner and still at his
+## stand-off; walking directly away, he closes at 38px/s and catches her about 7.5s after he
+## appeared, half a second inside his chase.
 ##
 ## **His own look, `ROBBER_GIVING_CHASE`, drawing the alley robber's own pictures**, the way
 ## `door_guard` draws a roadblock's guard: he never waits, so it is only ever the lunge, and the
@@ -1976,13 +1981,12 @@ static func _robber_giving_chase() -> EventDef:
 	def.intensity = alley.intensity
 	def.inner_radius = alley.inner_radius
 	def.outer_radius = alley.outer_radius
-	def.duration = alley.duration
+	def.telegraph_time = Tuning.PURSUIT_MIN_NOTICE + 0.5
+	def.duration = Tuning.PURSUIT_TIME * 2.0
 	def.pursues = true
 	def.pursue_speed = alley.pursue_speed
 	def.departs_at = alley.departs_at
 	def.hard_fail = alley.hard_fail
-	def.telegraph_time = (Tuning.TRAP_ARRIVAL_DISTANCE - def.lethal_reach()) \
-			/ (def.pursue_speed - Tuning.WALK_SPEED) - def.duration + 0.5
 	return def
 
 ## A building goes in the night. Enormous, static, and it closes the block.
