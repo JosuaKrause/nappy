@@ -1,0 +1,19 @@
+<!-- DRAFT park-fence open far (north) end of a west column. Anchor (0,0) is the end post's ground point; the column's side pieces take over at y=2. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="26" viewBox="-9 -24 18 26" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <clipPath id="end_n_w-c"><path d="M-7 2 L-1.4 2 L-1.4 -19.6 Q-1.4 -21 -2.8 -21 L-5.6 -21 Q-7 -21 -7 -19.6 Z M1.4 2 L6.6 2 L6.6 -19.6 Q6.6 -21 5.2 -21 L2.8 -21 Q1.4 -21 1.4 -19.6 Z"/></clipPath>
+  </defs>
+  <path d="M0 -22.4 L0 -0.6" fill="none" stroke="#2a2226" stroke-width="3"/>
+  <path d="M0 -21.9 L0 -0.8" fill="none" stroke="#8a8378" stroke-width="1.4"/>
+  <path d="M-3.4 -1 L3.4 -1" fill="none" stroke="#2a2226" stroke-width="1.8"/>
+  <path d="M-7 2 L-1.4 2 L-1.4 -19.6 Q-1.4 -21 -2.8 -21 L-5.6 -21 Q-7 -21 -7 -19.6 Z M1.4 2 L6.6 2 L6.6 -19.6 Q6.6 -21 5.2 -21 L2.8 -21 Q1.4 -21 1.4 -19.6 Z" fill="#ece6d6" stroke="none"/>
+  <g clip-path="url(#end_n_w-c)" stroke="none">
+    <path d="M-10 -80 L10 -70 L10 -64.5 L-10 -74.5 Z M-10 -69 L10 -59 L10 -53.5 L-10 -63.5 Z M-10 -58 L10 -48 L10 -42.5 L-10 -52.5 Z M-10 -47 L10 -37 L10 -31.5 L-10 -41.5 Z M-10 -36 L10 -26 L10 -20.5 L-10 -30.5 Z M-10 -25 L10 -15 L10 -9.5 L-10 -19.5 Z M-10 -14 L10 -4 L10 1.5 L-10 -8.5 Z M-10 -3 L10 7 L10 12.5 L-10 2.5 Z M-10 8 L10 18 L10 23.5 L-10 13.5 Z M-10 19 L10 29 L10 34.5 L-10 24.5 Z M-10 30 L10 40 L10 45.5 L-10 35.5 Z M-10 41 L10 51 L10 56.5 L-10 46.5 Z M-10 52 L10 62 L10 67.5 L-10 57.5 Z M-10 63 L10 73 L10 78.5 L-10 68.5 Z" fill="#e0862a"/>
+    <path d="M-2.6 -40 L-1.4 -40 L-1.4 40 L-2.6 40 Z M5.4 -40 L6.6 -40 L6.6 40 L5.4 40 Z" fill="#3b2410" fill-opacity="0.26"/>
+  </g>
+  <g clip-path="url(#end_n_w-c)" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="0.8">
+    <path d="M-6.1 -40 L-6.1 40"/>
+    <path d="M2.3 -40 L2.3 40"/>
+  </g>
+  <path d="M-7 2 L-7 -19.6 Q-7 -21 -5.6 -21 L-2.8 -21 Q-1.4 -21 -1.4 -19.6 L-1.4 2 M1.4 2 L1.4 -19.6 Q1.4 -21 2.8 -21 L5.2 -21 Q6.6 -21 6.6 -19.6 L6.6 2" fill="none" stroke-width="1.1"/>
+</svg>

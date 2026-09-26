@@ -59,3 +59,20 @@ from the junction or whether the route may pay:
 6. **The sideways title screen is on the phone only**, as far as the player has seen.
 7. **A region wall or a seal may cost a route where it stands at a junction.** Nothing moves them
    back from it.
+
+## Then, on the first pictures of a spent park (PR #374), 2026-09-26
+
+The pictures showed a used calm area fenced all round with a street closure's barrier panels and
+"closed" signs, which PR #374 did to every calm area she had used in the act. The design came from
+the queue entry's wording ("the park is shut the way a closure shuts ground"), not from the player.
+
+> "where do you get this from? I never asked for this. a park that was used should be shut down,
+> yes, but by placing events in it how it was before. where does this barrier thing come from?
+> doing it for one park, sure, more towards the later stages of the game once but not for regular"
+
+> "yes, the corners look wrong, too"
+
+8. **A used park is shut by the events placed in it, as before**, not by barriers, and no route of
+   the day goes through it. Statement 1 is read this way.
+9. **The barrier fence is for one park, once, late in the game**, not for every used park.
+10. **The fence's corners look wrong**: the rails overshoot each other at every corner.
