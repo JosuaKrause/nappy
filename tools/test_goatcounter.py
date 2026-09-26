@@ -294,21 +294,102 @@ class RawModeTests(unittest.TestCase):
         )
 
 
-class CheckModeTests(unittest.TestCase):
-    def test_summarize_me_extracts_name_permissions_and_sites_never_a_key(self) -> None:
-        me = {"token": {"name": "read-only", "permissions": 3, "sites": [1]}, "user": {"email": "someone@example.com"}}
-        summary = goatcounter.summarize_me(me)
-        self.assertEqual(summary, {"ok": True, "name": "read-only", "permissions": 3, "sites": [1]})
-        self.assertNotIn("email", summary)
+class CheckKeyTests(unittest.TestCase):
+    """Offline tests for check_key's three required shapes: stats OK + /me 200, stats OK + /me 404,
+    and stats 401 (the real failure) -- plus format_check never printing a key.
+    """
 
-    def test_summarize_me_tolerates_a_missing_token_block(self) -> None:
-        self.assertEqual(goatcounter.summarize_me({}), {"ok": True, "name": None, "permissions": None, "sites": None})
+    def stats_ok(self, calls: list[tuple[str, str, datetime, datetime]] | None = None) -> Any:
+        def stats_fetch(site: str, token: str, start: datetime, end: datetime) -> dict[str, Any]:
+            if calls is not None:
+                calls.append((site, token, start, end))
+            return {"total": 5, "total_events": 5, "total_utc": 5, "stats": []}
 
-    def test_format_me_never_prints_a_key(self) -> None:
-        summary = {"ok": True, "name": "read-only", "permissions": 3, "sites": [1]}
-        text = goatcounter.format_me(summary, site="https://example.goatcounter.com/api/v0/")
-        self.assertIn("read-only", text)
-        self.assertIn("valid", text)
+        return stats_fetch
+
+    def test_stats_ok_and_me_200_reports_name_permissions_and_sites(self) -> None:
+        def me_fetch(_site: str, _token: str) -> dict[str, Any]:
+            return {"token": {"name": "read-only", "permissions": 3, "sites": [1]}, "user": {"email": "x@example.com"}}
+
+        result = goatcounter.check_key("s", "secret", stats_fetch=self.stats_ok(), me_fetch=me_fetch)
+        self.assertEqual(
+            result,
+            {
+                "ok": True,
+                "reads_statistics": True,
+                "permissions_available": True,
+                "name": "read-only",
+                "permissions": 3,
+                "sites": [1],
+            },
+        )
+        self.assertNotIn("email", str(result))
+        self.assertNotIn("secret", str(result))
+
+    def test_stats_ok_and_me_404_still_succeeds_without_permissions(self) -> None:
+        def me_fetch(_site: str, _token: str) -> dict[str, Any]:
+            raise goatcounter.GoatCounterHTTPError(404, "GoatCounter returned HTTP 404 for .../me")
+
+        result = goatcounter.check_key("s", "secret", stats_fetch=self.stats_ok(), me_fetch=me_fetch)
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["reads_statistics"])
+        self.assertFalse(result["permissions_available"])
+        self.assertIn("statistics-only key", result["note"])
+
+    def test_stats_ok_and_me_403_is_the_same_as_404(self) -> None:
+        def me_fetch(_site: str, _token: str) -> dict[str, Any]:
+            raise goatcounter.GoatCounterHTTPError(403, "GoatCounter returned HTTP 403 for .../me")
+
+        result = goatcounter.check_key("s", "secret", stats_fetch=self.stats_ok(), me_fetch=me_fetch)
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["permissions_available"])
+
+    def test_stats_401_is_the_real_failure_and_me_is_never_called(self) -> None:
+        def stats_fetch(_site: str, _token: str, _start: datetime, _end: datetime) -> dict[str, Any]:
+            raise goatcounter.GoatCounterHTTPError(401, "GoatCounter rejected the API key (HTTP 401)")
+
+        def never_me(_site: str, _token: str) -> None:
+            raise AssertionError("check_key must not call /me when /stats/total already failed")
+
+        with self.assertRaises(goatcounter.GoatCounterError):
+            goatcounter.check_key("s", "secret", stats_fetch=stats_fetch, me_fetch=never_me)
+
+    def test_stats_call_uses_the_last_hour_rounded(self) -> None:
+        calls: list[tuple[str, str, datetime, datetime]] = []
+        now = datetime(2026, 9, 26, 14, 37, tzinfo=UTC)
+        goatcounter.check_key(
+            "s", "secret", now=now, stats_fetch=self.stats_ok(calls), me_fetch=lambda _s, _t: {"token": {}}
+        )
+        self.assertEqual(len(calls), 1)
+        _site, _token, start, end = calls[0]
+        self.assertEqual(end, datetime(2026, 9, 26, 14, 0, tzinfo=UTC))
+        self.assertEqual(start, datetime(2026, 9, 26, 13, 0, tzinfo=UTC))
+
+    def test_format_check_never_prints_a_key_and_names_the_reason_when_unavailable(self) -> None:
+        available = goatcounter.format_check(
+            {
+                "ok": True,
+                "reads_statistics": True,
+                "permissions_available": True,
+                "name": "ro",
+                "permissions": 3,
+                "sites": [1],
+            },
+            site="https://example.goatcounter.com/api/v0/",
+        )
+        self.assertIn("ro", available)
+        self.assertIn("reads statistics", available)
+        unavailable = goatcounter.format_check(
+            {
+                "ok": True,
+                "reads_statistics": True,
+                "permissions_available": False,
+                "note": "permission list is not available to a statistics-only key, which is the recommended kind",
+            },
+            site="s",
+        )
+        self.assertIn("statistics-only key", unavailable)
+        self.assertNotIn("secret", unavailable)
 
 
 class MainTests(unittest.TestCase):
@@ -420,6 +501,10 @@ class MainTests(unittest.TestCase):
     def test_check_calls_me_not_hits_and_never_prints_the_token(self) -> None:
         stdout = io.StringIO()
 
+        def stats_fetch(_site: str, token: str, _start: datetime, _end: datetime) -> dict[str, Any]:
+            self.assertEqual(token, "secret")
+            return {"total": 1}
+
         def fetch_me(_site: str, token: str) -> dict[str, Any]:
             self.assertEqual(token, "secret")
             return {"token": {"name": "read-only", "permissions": 3, "sites": [1]}}
@@ -429,23 +514,52 @@ class MainTests(unittest.TestCase):
 
         with (
             mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+            mock.patch.object(goatcounter, "fetch_stats_total", side_effect=stats_fetch),
             mock.patch.object(goatcounter, "fetch_me", side_effect=fetch_me),
             mock.patch.object(goatcounter, "make_fetcher", side_effect=never_hits),
             redirect_stdout(stdout),
         ):
             code = goatcounter.main(["--check"])
         self.assertEqual(code, 0)
+        self.assertIn("reads statistics", stdout.getvalue())
         self.assertIn("read-only", stdout.getvalue())
         self.assertNotIn("secret", stdout.getvalue())
 
-    def test_check_reports_a_rejected_key_with_a_nonzero_exit(self) -> None:
+    def test_check_reports_a_statistics_only_key_as_working_without_permissions(self) -> None:
+        stdout = io.StringIO()
+
+        def stats_fetch(_site: str, _token: str, _start: datetime, _end: datetime) -> dict[str, Any]:
+            return {"total": 1}
+
         def fetch_me(_site: str, _token: str) -> dict[str, Any]:
-            raise goatcounter.GoatCounterError("GoatCounter rejected the API key (HTTP 401) -- check GOATCOUNTER_TOKEN")
+            raise goatcounter.GoatCounterHTTPError(404, "GoatCounter returned HTTP 404 for .../me")
+
+        with (
+            mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+            mock.patch.object(goatcounter, "fetch_stats_total", side_effect=stats_fetch),
+            mock.patch.object(goatcounter, "fetch_me", side_effect=fetch_me),
+            redirect_stdout(stdout),
+        ):
+            code = goatcounter.main(["--check"])
+        self.assertEqual(code, 0)
+        self.assertIn("reads statistics", stdout.getvalue())
+        self.assertIn("statistics-only key", stdout.getvalue())
+        self.assertNotIn("secret", stdout.getvalue())
+
+    def test_check_reports_a_rejected_key_with_a_nonzero_exit_and_never_calls_me(self) -> None:
+        def stats_fetch(_site: str, _token: str, _start: datetime, _end: datetime) -> dict[str, Any]:
+            raise goatcounter.GoatCounterHTTPError(
+                401, "GoatCounter rejected the API key (HTTP 401) -- check GOATCOUNTER_TOKEN"
+            )
+
+        def never_me(_site: str, _token: str) -> None:
+            raise AssertionError("--check must not call /me when /stats/total already failed")
 
         stderr = io.StringIO()
         with (
             mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "bad"}, clear=True),
-            mock.patch.object(goatcounter, "fetch_me", side_effect=fetch_me),
+            mock.patch.object(goatcounter, "fetch_stats_total", side_effect=stats_fetch),
+            mock.patch.object(goatcounter, "fetch_me", side_effect=never_me),
             redirect_stderr(stderr),
         ):
             code = goatcounter.main(["--check"])

@@ -33,9 +33,14 @@ names, since the catalogue keeps growing: a name is either run-level (`run-*`, `
 `escape-*`, `controls-*`), a day event (`day-<N>-<rest>`), or -- if it matches neither shape --
 printed anyway, at the end, rather than silently dropped. `--raw` skips the grouping and the
 `--prefix` filter and prints every path GoatCounter has for the range, events and page loads
-alike -- what an assistant would otherwise reach for a hand-written request to answer. `--check`
-calls `GET /api/v0/me` and reports only whether the key works and what it can do, never the key
-itself.
+alike -- what an assistant would otherwise reach for a hand-written request to answer.
+
+`--check` proves the key works with `GET /api/v0/stats/total` for the last hour, which needs only
+the "Read statistics" permission -- the one every read-only key has, and the recommended kind for
+this tool. It then tries `GET /api/v0/me` for the token's own name and permissions, which a
+statistics-only key is *not* allowed to see: on a 403 or 404 there it says so and still succeeds,
+since the key demonstrably works; only a failure of the statistics call itself (401/403, or a
+network error) is the real "this key does not work". Never prints the key.
 
 **GoatCounter's API is reached only through this script.** An assistant that needs something this
 cannot yet answer adds a flag here rather than writing a one-off `curl` or web request against the
@@ -81,6 +86,18 @@ Fetcher = Callable[[dict[str, Any]], dict[str, Any]]
 
 class GoatCounterError(RuntimeError):
     """An actionable failure reading GoatCounter or its own input."""
+
+
+class GoatCounterHTTPError(GoatCounterError):
+    """A GoatCounter HTTP error, carrying the status code for a caller that needs to tell them apart
+
+    (`--check` treats a 403/404 from `GET /api/v0/me` as "not available to this key", not a failure,
+    while the same status from `GET /api/v0/stats/total` is the real "key does not work").
+    """
+
+    def __init__(self, status: int, message: str) -> None:
+        super().__init__(message)
+        self.status = status
 
 
 # ---------------------------------------------------------------------------------- environment ---
@@ -182,13 +199,13 @@ def _get(opener: urllib.request.OpenerDirector, url: str, token: str, *, timeout
                 body = response.read()
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403):
-                raise GoatCounterError(
-                    f"GoatCounter rejected the API key (HTTP {exc.code}) -- check GOATCOUNTER_TOKEN"
+                raise GoatCounterHTTPError(
+                    exc.code, f"GoatCounter rejected the API key (HTTP {exc.code}) -- check GOATCOUNTER_TOKEN"
                 ) from exc
             if exc.code == 429 and attempt <= MAX_RETRIES:
                 time.sleep(RETRY_BACKOFF_SECONDS * attempt)
                 continue
-            raise GoatCounterError(f"GoatCounter returned HTTP {exc.code} for {url}") from exc
+            raise GoatCounterHTTPError(exc.code, f"GoatCounter returned HTTP {exc.code} for {url}") from exc
         except urllib.error.URLError as exc:
             raise GoatCounterError(f"could not reach GoatCounter: {exc.reason}") from exc
         except OSError as exc:
@@ -236,17 +253,65 @@ def fetch_hits(fetch: Fetcher, start: datetime, end: datetime, *, limit: int = P
 
 
 def fetch_me(site: str, token: str) -> dict[str, Any]:
-    """`GET /api/v0/me` -- who this key is and what it can do, for `--check`."""
+    """`GET /api/v0/me` -- the token's own name and permissions, which a statistics-only key (the
+    recommended kind) is not allowed to see; see `check_key`, which calls this second and tolerates
+    a 403/404 here.
+    """
     opener = _build_opener()
     return _get(opener, site.rstrip("/") + "/me", token)
 
 
-def summarize_me(me: dict[str, Any]) -> dict[str, Any]:
-    """`fetch_me`'s response, reduced to what `--check` reports -- never the key itself."""
+def fetch_stats_total(site: str, token: str, start: datetime, end: datetime) -> dict[str, Any]:
+    """`GET /api/v0/stats/total` -- needs only "Read statistics", the one permission every
+    read-only key has, so `check_key` uses it as the actual proof that the key works.
+    """
+    opener = _build_opener()
+    query = urllib.parse.urlencode({"start": rfc3339(start), "end": rfc3339(end)})
+    return _get(opener, f"{site.rstrip('/')}/stats/total?{query}", token)
+
+
+def check_key(
+    site: str,
+    token: str,
+    *,
+    now: datetime | None = None,
+    stats_fetch: Callable[[str, str, datetime, datetime], dict[str, Any]] | None = None,
+    me_fetch: Callable[[str, str], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Prove `token` works and say what it can do, without ever handling or printing the key itself.
+
+    `GET /api/v0/stats/total` for the last hour is the proof -- it needs only "Read statistics",
+    the one permission every read-only key has, so a failure there (401/403, or a network error)
+    is the real "this key does not work" and is left to raise. `GET /api/v0/me` is tried next for
+    the token's own name and permissions; a statistics-only key is not allowed to see those, so a
+    403 or 404 there is expected and does not fail the check -- only reduces what it can report.
+
+    `stats_fetch`/`me_fetch` default to the real network calls; a test passes fakes instead. The
+    defaults are looked up here rather than bound at definition time, so a test that patches
+    `fetch_stats_total`/`fetch_me` on the module (as it would any other network call) is honoured
+    even when a caller does not pass them explicitly.
+    """
+    stats_fetch = stats_fetch or fetch_stats_total
+    me_fetch = me_fetch or fetch_me
+    end = round_to_hour(now or datetime.now(UTC))
+    start = end - timedelta(hours=1)
+    stats_fetch(site, token, start, end)
+
+    try:
+        me = me_fetch(site, token)
+    except GoatCounterHTTPError as exc:
+        if exc.status in (403, 404):
+            note = "permission list is not available to a statistics-only key, which is the recommended kind"
+        else:
+            note = f"permission list could not be checked: {exc}"
+        return {"ok": True, "reads_statistics": True, "permissions_available": False, "note": note}
+
     token_info = me.get("token")
     token_info = token_info if isinstance(token_info, dict) else {}
     return {
         "ok": True,
+        "reads_statistics": True,
+        "permissions_available": True,
         "name": token_info.get("name"),
         "permissions": token_info.get("permissions"),
         "sites": token_info.get("sites"),
@@ -350,12 +415,14 @@ def format_text(grouped: dict[str, Any], *, site: str, start: datetime, end: dat
     return "\n".join(lines)
 
 
-def format_me(summary: dict[str, Any], *, site: str) -> str:
-    name = summary.get("name") or "(unnamed)"
-    return (
-        f"GoatCounter key for {site} is valid -- token {name!r}, "
-        f"permissions {summary.get('permissions')!r}, sites {summary.get('sites')!r}."
-    )
+def format_check(result: dict[str, Any], *, site: str) -> str:
+    lines = [f"GoatCounter key for {site} reads statistics -- it works."]
+    if result.get("permissions_available"):
+        name = result.get("name") or "(unnamed)"
+        lines.append(f"Token {name!r} -- permissions {result.get('permissions')!r}, sites {result.get('sites')!r}.")
+    else:
+        lines.append(f"Its {result.get('note')}.")
+    return "\n".join(lines)
 
 
 def format_raw(hits: list[dict[str, Any]], *, site: str, start: datetime, end: datetime) -> str:
@@ -405,7 +472,10 @@ def build_parser() -> argparse.ArgumentParser:
     mode.add_argument(
         "--check",
         action="store_true",
-        help="call GET /api/v0/me and report only whether the key works and its permissions -- never the key",
+        help=(
+            "prove the key reads statistics (GET /api/v0/stats/total) and report its permissions "
+            "if GET /api/v0/me allows it -- never the key"
+        ),
     )
     return parser
 
@@ -446,15 +516,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.check:
         try:
-            me = fetch_me(site, token)
+            result = check_key(site, token)
         except GoatCounterError as exc:
             print(f"goatcounter: {exc}", file=sys.stderr)
             return 1
-        summary = summarize_me(me)
         if args.json:
-            print(json.dumps(summary, indent=2, sort_keys=True))
+            print(json.dumps(result, indent=2, sort_keys=True))
         else:
-            print(format_me(summary, site=site))
+            print(format_check(result, site=site))
         return 0
 
     try:

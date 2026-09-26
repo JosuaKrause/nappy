@@ -8,7 +8,7 @@
 #   tools/goatcounter.sh --start 2026-09-01 --end 2026-09-15
 #   tools/goatcounter.sh --json
 #   tools/goatcounter.sh --raw                        # every path and count, unfiltered
-#   tools/goatcounter.sh --check                      # is the key valid, and for what
+#   tools/goatcounter.sh --check                      # does the key read statistics, and what else
 #
 # Needs GOATCOUNTER_TOKEN (a read-only API key from the GoatCounter site's own Settings -> API
 # page), either exported in the environment or in a .env file at the repository root
@@ -29,9 +29,12 @@ Prints the nappy- GoatCounter event counts as a per-day funnel for a date range,
 key from GOATCOUNTER_TOKEN (never accepted as a flag). Default range is the last 30 days; --days,
 --start and --end (YYYY-MM-DD or RFC3339) narrow it. --json prints the result as JSON instead of
 plain text. --raw prints every path and its count for the range, unfiltered by --prefix -- events
-and page loads alike. --check calls GET /api/v0/me and reports only whether the key works and its
-permissions, never the key. GoatCounter's API is reached only through this script; a question it
-cannot yet answer gets a new flag here rather than a one-off curl or web request.
+and page loads alike. --check proves the key works with GET /api/v0/stats/total (needs only "Read
+statistics", the one permission every read-only key has) and reports its permissions too if
+GET /api/v0/me allows it -- a statistics-only key, the recommended kind, cannot see those and that
+alone does not fail the check; never prints the key. GoatCounter's API is reached only through this
+script; a question it cannot yet answer gets a new flag here rather than a one-off curl or web
+request.
 
   tools/goatcounter.sh
   tools/goatcounter.sh --days 7
