@@ -19,14 +19,17 @@
 #     denies any git followed by grep as a word of its own with neither -I nor a text-only
 #     pathspec: behind a wrapper (timeout, sudo, env, find | xargs), inside a heredoc or quoted
 #     code an interpreter runs (bash <<EOF, bash -c, python3 -c, an f-string, VAR="..."; $VAR,
-#     bash <<<"..."), and as a mere mention; git log --grep=... and prose "git, grep" allow
+#     bash <<<"..."), and as a mere mention; git log --grep=..., git log -S grep, the bare word
+#     git-grep and prose "git, grep" allow
 #   - the same denies survive a line continuation, a full path, upper case, a backslash or quote
 #     mark inside the word, a quoted -C/-c/--git-dir argument (a space in it included), $'git',
-#     $(which git), a redirect or a newline between git and grep, and a Python list, black-
-#     formatted or not; -I stays its own flag, never folded together with -i, a quoted "gcc -I"
-#     pattern or an -e argument (-eImport, -e -I) is not the flag, and a later -a/--text cancels it
-#   - an exclusion-only pathspec (:!*.json, :/!*.json, :(exclude)*.md) denies, and a redirect after a text pathspec
-#     (2>/dev/null, 2>&1, > file) is not a pathspec entry, while a quoted or escaped '>' is
+#     $(which git), git${IFS}grep, g$'i't, a path to git's own git-grep program, a redirect or a
+#     newline between git and grep, and a Python list, black-formatted or not; -I stays its own
+#     flag, never folded together with -i, a quoted "gcc -I" pattern or an -e argument (-eImport,
+#     -e -I) is not the flag, and a later -a/--text cancels it
+#   - an exclusion-only pathspec (:!*.json, :/!*.json, :(exclude)*.md) denies, and a redirect
+#     after a text pathspec (2>/dev/null, 2>&1, > file) is not a pathspec entry, while a quoted or
+#     escaped '>' is
 #   - a Monitor script is guarded like a Bash command
 #   - a 100 KB command is checked in under half the hook's 10-second timeout, and a command over
 #     128 KB holding both words is denied at once without the slow reading
@@ -300,7 +303,7 @@ assert_guard "rg on the checkout, own search -> allow" allow \
     'rg -n -i "wrap.*corner|goes around" docs/'
 assert_guard "unrelated git command -> allow" allow \
     'git status'
-assert_guard "git log --grep=foo -- the one mention still allowed, an option not a subcommand" allow \
+assert_guard "git log --grep=foo -> allow, grep glued onto a dash is an option, not the word" allow \
     'git log --grep=foo'
 assert_guard "git shortlog --grep=foo -> allow, same reason" allow \
     'git shortlog --grep=foo'
@@ -590,6 +593,22 @@ assert_guard "an escaped \\> before a non-text entry -> deny" deny \
     "git grep -i foo -- '*.md' \\> docs/"
 assert_guard "an unquoted > after a text pathspec is still a redirect -> allow" allow \
     "git grep -i foo -- '*.md' > /tmp/out.txt"
+
+# IFS as a word break, $'...' inside a word, and git's own git-grep program by path.
+assert_guard "git\${IFS}grep -> deny" deny \
+    'git${IFS}grep -n -i foo -- docs/'
+assert_guard "git\$IFS grep -> deny" deny \
+    'git$IFS grep -n -i foo -- docs/'
+assert_guard "g\$'i't, ANSI-C quoting inside the word -> deny" deny \
+    "g\$'i't grep -n -i foo -- docs/"
+assert_guard "\"\$(git --exec-path)/git-grep\" -> deny" deny \
+    '"$(git --exec-path)/git-grep" -n -i foo -- docs/'
+assert_guard "a literal path to libexec git-grep -> deny" deny \
+    '/Library/Developer/CommandLineTools/usr/libexec/git-core/git-grep -n -i foo -- docs/'
+assert_guard "\"\$(git --exec-path)/git-grep\" -I -> allow" allow \
+    '"$(git --exec-path)/git-grep" -I -n -i foo -- docs/'
+assert_guard "git -C x log piped to grep -> allow" allow \
+    'git -C x log --oneline | grep foo'
 
 # The reviewer's minor shapes.
 assert_guard "\$'git' grep (ANSI-C quoting) -> deny" deny \

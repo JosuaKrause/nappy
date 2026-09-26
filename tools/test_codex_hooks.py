@@ -238,7 +238,7 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
     def test_git_grep_guard_allows_git_log_grep_option(self) -> None:
-        # The one mention still allowed: --grep is an option glued to a dash, never its own word.
+        # --grep is an option glued to a dash, never its own word, so this is no git grep.
         text = self.call(tool="Bash", command="git log --grep=foo")
         self.assertIn("committing", text)
 

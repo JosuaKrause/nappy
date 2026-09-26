@@ -52,11 +52,14 @@ Codex's) and reads the whole command text, quoted strings and heredoc bodies inc
 word of its own, with neither `-I` (skip binary files) nor a `--` pathspec made only of
 known-text-extension globs, is denied: behind a wrapper (`timeout`, `sudo`, `find | xargs`), inside a
 heredoc or a quoted string an interpreter runs (`bash <<EOF`, `bash -c`, `python3 -c`, an f-string),
-and as a plain mention (`echo "git grep"`, a commit message) alike. Without `-I`, a search over this
-repo's binary-heavy `docs/` grows past a few gigabytes instead of finishing, and telling a mention
-from an invocation is the parsing that keeps having holes. `git log --grep=...` passes, since that
-`grep` is glued onto a dash. The denial names the way out: write `git-grep` for a mention; for a
-search, add `-I`, restrict the pathspec (`-- '*.md' '*.gd' '*.sh'`), or use `rg` on the checkout.
+and as a plain mention (`echo "git grep"`, a commit message, `rg "git grep"`) alike. A later `-a` or
+`--text` cancels `-I`, as it does in git, and an exclusion (`:!*.json`) is never text-only. Without
+`-I`, a search over this repo's binary-heavy `docs/` grows past a few gigabytes instead of finishing,
+and telling a mention from an invocation is the parsing that keeps having holes. What passes is
+whatever never puts `grep` as its own word right after `git` and its options: `git log --grep=...`,
+`git log -S grep`, `git ... | grep`, the bare word `git-grep`. The denial names the way out: write
+`git-grep` for a mention; for a search, add `-I`, restrict the pathspec (`-- '*.md' '*.gd'
+'*.sh'`), or use `rg` on the checkout.
 
 ## A manual sequence done a second time becomes a script
 
