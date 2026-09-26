@@ -1,3 +1,5 @@
+priority: later
+
 ## M220 — "The same face is on most of them." starts its own line · asked for 2026-09-26
 
 > "\"The same face is on most of them.\" should go on its own line completely"

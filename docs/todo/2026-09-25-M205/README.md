@@ -1,3 +1,5 @@
+priority: later
+
 ## M205 — The man shouting charges the meter again · found 2026-09-25
 
 > "the yeller has no effect on the meter and its halo doesn't even turn on"

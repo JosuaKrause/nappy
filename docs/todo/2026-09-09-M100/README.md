@@ -1,3 +1,5 @@
+priority: next
+
 ## M100 — Small, real, and nobody's · consolidated 2026-09-09
 
 The small items, the polish list and the open design questions, consolidated into one milestone on

@@ -1,3 +1,5 @@
+priority: later
+
 ## M226 — The pursuing dog keeps its day-3 timing, and the other warnings fit it · asked for 2026-09-26
 
 > "I meant the pursuing dog *not* the loose dog. the loose dog can stay as short as it wants since

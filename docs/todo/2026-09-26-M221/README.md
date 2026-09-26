@@ -1,3 +1,5 @@
+priority: later
+
 ## M221 — A failed day leaves no chalk mark behind · found 2026-09-26
 
 > "chalk marks don't get properly reset on failed days accumulating more and more chalk marks in

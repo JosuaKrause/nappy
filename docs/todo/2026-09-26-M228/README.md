@@ -1,3 +1,6 @@
+priority: later
+after: 2026-09-26-M223
+
 ## M228 — Editing a hook loads the rule that keeps the Codex adapter current · asked for 2026-09-26
 
 > "okay, yes this is important to keep up to date" · "good"

@@ -1,3 +1,5 @@
+priority: later
+
 ## M222 — The red arrow for the van ends on the van · found 2026-09-26
 
 > "the red arrow for the van does not end on the van"

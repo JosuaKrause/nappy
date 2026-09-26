@@ -1,3 +1,5 @@
+priority: later
+
 ## M224 — A warning shorter than its own floor · found 2026-09-26
 
 Found by M207's lead table (`tests/probes/m207_warning_lead.gd`, `DECISIONS.md`, M207, a warning

@@ -1,3 +1,5 @@
+priority: later
+
 ## M227 — Codex works as a sub-agent of a Claude Code session, in a worktree · asked for 2026-09-26
 
 > "let's add a todo to make it possible to use codex as subagent, too" · "from within claude" ·
