@@ -82,6 +82,38 @@ class CodexHooksTest(unittest.TestCase):
         assert isinstance(context, str)
         return context
 
+    def call_raw(
+        self,
+        kind: str = "PreToolUse",
+        tool: str = "Bash",
+        command: str = "",
+        root: Path | None = None,
+        **extra: Any,
+    ) -> dict[str, Any] | None:
+        # Like call(), but for a response shaped as a permissionDecision rather than
+        # additionalContext -- call()'s own assertions require the latter.
+        root = root or self.root
+        event: dict[str, Any] = {
+            "hook_event_name": kind,
+            "session_id": "session",
+            "cwd": str(root),
+            "tool_name": tool,
+            "tool_input": {"command": command},
+        }
+        event.update(extra)
+        result = subprocess.run(
+            [sys.executable, str(root / "tools/codex-hooks.py")],
+            input=json.dumps(event),
+            text=True,
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        if not result.stdout.strip():
+            return None
+        output: dict[str, Any] = json.loads(result.stdout)
+        return output
+
     def write(self, name: str, content: str = "- [x] Finished\n") -> None:
         target = self.root / name
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -170,6 +202,91 @@ class CodexHooksTest(unittest.TestCase):
         patch += "*** Delete File: docs/REMOVED.md\n"
         self.assertEqual(self.call(kind="PostToolUse", command=patch), "")
         self.assertEqual(self.call(kind="PostToolUse", tool="Bash", command="pwd"), "")
+
+    def test_git_grep_guard_denies_an_unbounded_git_grep(self) -> None:
+        output = self.call_raw(command='git grep -n -i "foo\\|bar" origin/main -- docs/')
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["hookEventName"], "PreToolUse")
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("-I", specific["permissionDecisionReason"])
+
+    def test_git_grep_guard_allows_a_guarded_git_grep_and_still_reminds(self) -> None:
+        # -I keeps it bounded (see git-grep-guard.sh's own header); the call is not denied,
+        # so the ordinary shell-reminder still fires underneath it.
+        text = self.call(tool="Bash", command="git grep -n -I -i foo origin/main -- docs/")
+        self.assertIn("committing", text)
+
+    def test_git_grep_guard_denies_a_git_grep_mention_in_a_commit_message(self) -> None:
+        # This design prefers a false deny to a false allow and matches on the raw command text,
+        # so a mention denies too -- confirming the adapter forwards that, not only a real
+        # invocation's deny.
+        output = self.call_raw(command='git commit -m "explains why git grep needs a guard"')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_denies_a_wrapped_invocation(self) -> None:
+        # Confirms the adapter forwards a deny for the wrapper-command shape too (timeout, sudo,
+        # env, ... -- see git-grep-guard.sh's own header for the full list this closes).
+        output = self.call_raw(command='timeout 5 git grep -n -i "foo" origin/main -- docs/')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_denies_quoted_code_run_by_a_nested_interpreter(self) -> None:
+        output = self.call_raw(command='bash -c "git grep -n -i pattern origin/main -- docs/"')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_allows_git_log_grep_option(self) -> None:
+        # The one mention still allowed: --grep is an option glued to a dash, never its own word.
+        text = self.call(tool="Bash", command="git log --grep=foo")
+        self.assertIn("committing", text)
+
+    def test_git_grep_guard_denies_across_an_unquoted_newline(self) -> None:
+        # The adapter forwards the guard's output verbatim, so a fix in the guard itself needs no
+        # adapter change -- this only confirms that path stays wired up: an unquoted newline
+        # separates commands like `;`, and the incident command was exactly this shape (a `git
+        # fetch` on the line before the crashing `git grep`).
+        output = self.call_raw(command='git fetch -q origin main\ngit grep -n -i "foo" origin/main -- docs/')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_denies_past_an_unknown_global_option(self) -> None:
+        # Fail-safe: an unrecognised global git option before `grep` (here, -c name=value) must
+        # not stop the scan.
+        output = self.call_raw(command='git -c pager.grep=false grep -n -i "foo" origin/main -- docs/')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_denies_a_full_path_and_upper_case_invocation(self) -> None:
+        # The adapter forwards the guard's output verbatim, so this only confirms the
+        # normalise-before-tokenise fix (backslash-newline pairs and stray backslashes deleted,
+        # git/grep compared by last path component case-insensitively) is wired through this path
+        # too -- neither shape is an exact-string "git"/"grep" match without it.
+        for command in (
+            "/usr/bin/git grep -n -i pattern origin/main -- docs/",
+            'GIT GREP -n -i "pattern" origin/main -- docs/',
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_denies_a_quoted_argument_and_a_python_list(self) -> None:
+        # A quote mark used only to protect a `-C` path or to wrap a Python list element (not a
+        # substitution, not an alias) reads as an ordinary shell/Python argument -- these must not
+        # slip through just because the adapter, not the guard itself, is what's under test here.
+        for command in (
+            'git -C "/Users/krause/workspace/nappy-claude" grep -n -i "foo" origin/main -- docs/',
+            '"git" grep -n -i foo origin/main -- docs/',
+            'g"i"t grep -n -i foo origin/main -- docs/',
+            'python3 -c \'import subprocess; subprocess.run(["git", "grep", "-n", "-i", "foo", '
+            '"origin/main", "--", "docs/"])\'',
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(

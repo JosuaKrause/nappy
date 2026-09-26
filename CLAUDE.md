@@ -14,7 +14,8 @@ directory. The system, developer and user instructions take precedence over repo
 
 Codex finds the skills through `.agents/skills`, a link to `.claude/skills`, and runs the same
 hook scripts through `.codex/hooks.json` and the adapter `tools/codex-hooks.py`: it loads the rules
-for every path a patch touches, rename destinations included, lints each edited doc, and reloads
+for every path a patch touches, rename destinations included, lints each edited doc, denies an
+unbounded `git grep` on Codex's own Bash calls the same way Claude Code's does, and reloads
 the startup rules on session start, resume, compaction and subagent start. The hooks need Python
 3.9+, Bash and jq, and run only once the repository is trusted and the hooks are reviewed through
 `/hooks`; restart Codex if new hooks or skills do not appear. Where a rule says `Read`, Codex uses

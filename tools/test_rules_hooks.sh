@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Exercises .claude/hooks/project-rules.sh, session-rules.sh and lint-docs.sh directly, feeding
-# them the same synthetic hook JSON on stdin the harness would, under a private TMPDIR so no run
-# of this script ever touches a real session's markers.
+# Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh and git-grep-guard.sh
+# directly, feeding them the same synthetic hook JSON on stdin the harness would, under a private
+# TMPDIR so no run of this script ever touches a real session's markers.
 #
 #   tools/test_rules_hooks.sh
 #
@@ -15,6 +15,20 @@
 #     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd) injects its skill
 #   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
+#   - git-grep-guard.sh matches on the raw command text (quotes and heredoc bodies included) and
+#     denies any git followed later by grep as its own word, with neither -I nor a text-only
+#     pathspec in between -- a wrapper (timeout, sudo, env, find | xargs), a heredoc fed to an
+#     interpreter (bash <<EOF, ssh <<EOF), quoted code run by a nested interpreter (bash -c,
+#     python3 -c), and a mere mention (echo, a commit message, a heredoc to cat) all deny now;
+#     git log/shortlog --grep=... is the one mention still allowed, since that grep is glued to a
+#     dash and never its own word
+#   - the same denies survive a line continuation (git \<newline>grep), a full path
+#     (/usr/bin/git grep), upper case (GIT GREP, real on this Mac's case-insensitive disk) and a
+#     mid-word backslash escape (g\it grep) -- normalised away before tokenising -- while -I stays
+#     its own flag, never folded together with -i by that same normalisation
+#   - and a quoted -C/-c/--git-dir argument, a quoted git or grep, and a Python argument list
+#     (subprocess.run(["git", "grep", ...])) all still deny, now that quote marks are deleted the
+#     same way backslashes are and `,`/`[`/`]` split words like whitespace does
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -30,9 +44,10 @@ usage() {
     cat <<'EOF'
 usage: tools/test_rules_hooks.sh [--help|-h]
 
-Exercises .claude/hooks/project-rules.sh, session-rules.sh and lint-docs.sh with synthetic hook
-JSON on stdin, under a private TMPDIR, and asserts the per-agent marker keying, the
-compaction/resume reset, every path added to the skill mapping, and the lint-docs.sh governed set.
+Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh and git-grep-guard.sh
+with synthetic hook JSON on stdin, under a private TMPDIR, and asserts the per-agent marker
+keying, the compaction/resume reset, every path added to the skill mapping, the lint-docs.sh
+governed set, and every git-grep-guard.sh raw-text deny/allow shape.
 Takes no arguments besides --help/-h.
 
   tools/test_rules_hooks.sh
@@ -226,6 +241,239 @@ if [ -z "$evidence_output" ]; then
 else
     fail "lint-docs.sh flagged a doc under docs/evidence/: $evidence_output"
 fi
+
+# ---------------------------------------------------------------- git-grep-guard.sh -------------
+# Prints "deny" or "allow" for one synthetic Bash command through git-grep-guard.sh.
+guard_decision() {
+    local cmd="$1" raw
+    raw=$(jq -n --arg c "$cmd" '{tool_name:"Bash", tool_input:{command:$c}}' \
+        | "$root/.claude/hooks/git-grep-guard.sh")
+    if [ -z "$raw" ]; then
+        printf 'allow'
+    else
+        printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'
+    fi
+}
+
+# $1 label  $2 expected ("deny" or "allow")  $3 command
+assert_guard() {
+    checks=$((checks + 1))
+    local got
+    got="$(guard_decision "$3")"
+    if [ "$got" = "$2" ]; then
+        echo "ok   $1"
+    else
+        fail "$1: expected $2, got $got for: $3"
+    fi
+}
+
+assert_guard "no -I, no text pathspec, one tree -> deny" deny \
+    'git grep -n -i "wrap.*corner\|goes around" origin/main -- docs/'
+assert_guard "no -I, working tree only -> deny" deny \
+    'git grep -n -i "wrap.*corner\|goes around" -- docs/'
+assert_guard "no -- pathspec at all -> deny" deny \
+    'git grep -n -i "foo" origin/main'
+assert_guard "git -C <dir> grep, no -I -> deny" deny \
+    'git -C /tmp/other grep -n -i "foo" origin/main -- docs/'
+assert_guard "git --no-pager grep, no -I -> deny" deny \
+    'git --no-pager grep -n -i "foo" origin/main -- docs/'
+assert_guard "after && -> deny" deny \
+    'echo hi && git grep -i "foo" origin/main -- docs/'
+assert_guard "inside \$(...) -> deny" deny \
+    'x=$(git grep -c "foo" origin/main -- docs/); echo "$x"'
+assert_guard "for loop body -> deny" deny \
+    'for b in origin/main origin/other; do git grep -n -i "foo" $b -- docs/; done'
+assert_guard "multiple trees, no -I -> deny" deny \
+    'git grep -n -i "foo" origin/main origin/other -- docs/'
+
+assert_guard "-I present -> allow" allow \
+    'git grep -n -I -i "wrap.*corner\|goes around" origin/main -- docs/'
+assert_guard "bundled -Ii -> allow" allow \
+    'git grep -Ii "foo" origin/main -- docs/'
+assert_guard "text-only pathspec -> allow" allow \
+    "git grep -n -i 'wrap.*corner' origin/main -- 'docs/*.md'"
+assert_guard "three quoted text-only globs -> allow" allow \
+    "git grep -I -- '*.md' '*.gd' '*.sh'"
+assert_guard "rg on the checkout, own search -> allow" allow \
+    'rg -n -i "wrap.*corner|goes around" docs/'
+assert_guard "unrelated git command -> allow" allow \
+    'git status'
+assert_guard "git log --grep=foo -- the one mention still allowed, an option not a subcommand" allow \
+    'git log --grep=foo'
+assert_guard "git shortlog --grep=foo -> allow, same reason" allow \
+    'git shortlog --grep=foo'
+assert_guard "git log piped to an unrelated plain grep -> allow" allow \
+    'git log --oneline | grep foo'
+assert_guard "a hyphenated mention (git-grep) never tokenizes as the two words -> allow" allow \
+    'echo "see git-grep for details"'
+assert_guard "wrapped and guarded still allows" allow \
+    'sudo git grep -n -I -i "foo" origin/main -- docs/'
+
+# This design prefers a false deny to a false allow: it matches on the raw command text, quotes
+# and heredoc bodies included, rather than trying to tell a mention from a real invocation, a
+# wrapper from a bare command, or a heredoc's body from a command. So a mention now denies too.
+assert_guard "echo mentions the words -> deny, was allow before the adversarial review" deny \
+    'echo "git grep is dangerous, be careful"'
+assert_guard "commit message mentions the words -> deny, was allow before the adversarial review" deny \
+    'git commit -m "explains why git grep needs a guard now"'
+assert_guard "rg quoting the phrase -> deny, was allow before the adversarial review" deny \
+    'rg "git grep"'
+
+# An unquoted newline separates commands exactly like `;` -- a review of the pull request that
+# added this file found both of these passed silently, and the second is the incident command
+# itself, split onto its own line rather than piped from a single command.
+assert_guard "git grep on its own line after an unrelated command -> deny" deny \
+    'cd /x
+git grep -n -i "wrap.*corner" -- docs/'
+assert_guard "incident command's own shape: git fetch, then git grep on the next line -> deny" deny \
+    'git fetch -q origin main
+git grep -n -i "wrap.*corner" origin/main -- docs/'
+assert_guard "guarded git grep on its own line -> allow" allow \
+    'cd /x
+git grep -n -I -i "wrap.*corner" origin/main -- docs/'
+
+# This design does not try to tell a heredoc body from a command: it never scans for a `<<WORD`
+# terminator at all, so a body is matched exactly like anything else on the raw command text --
+# which is also what closes the "a heredoc fed to an interpreter" gap below.
+assert_guard "heredoc body mentions the words, no real invocation follows -> deny, was allow before" deny \
+    'cat <<EOF
+please run git grep sometime
+EOF'
+assert_guard "heredoc body mentions the words, an unsafe invocation follows -> deny" deny \
+    'cat <<EOF
+mentions git grep here
+EOF
+git grep -n -i "foo" origin/main -- docs/'
+assert_guard "heredoc with a quoted delimiter, unsafe body -> deny, was allow before" deny \
+    "cat <<'EOF'
+git grep -n -i foo origin/main -- docs/
+EOF
+git status"
+assert_guard "heredoc with <<- and a tab-indented delimiter, unsafe body -> deny, was allow before" deny \
+    'cat <<-EOF
+	git grep -n -i foo origin/main -- docs/
+	EOF
+git status'
+
+# An adversarial review of this pull request found three more classes of false negative, all
+# closed the same way: matching raw text does not care that a wrapper, a nested interpreter or a
+# heredoc's own destination sits between the shell and the invocation.
+assert_guard "wrapper: timeout -> deny" deny \
+    'timeout 5 git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: sudo -> deny" deny \
+    'sudo git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: env -> deny" deny \
+    'env git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: nice -> deny" deny \
+    'nice git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: nohup -> deny" deny \
+    'nohup git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: command -> deny" deny \
+    'command git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: watch -> deny" deny \
+    'watch git grep -n -i "foo" origin/main -- docs/'
+assert_guard "find piped to xargs -> deny" deny \
+    'find docs | xargs -I{} git grep -n -i "foo" {} -- docs/'
+assert_guard "a heredoc fed to bash, unsafe invocation inside -> deny" deny \
+    'bash <<EOF
+git grep -n -i "foo" origin/main -- docs/
+EOF'
+assert_guard "a heredoc fed to ssh, unsafe invocation inside -> deny" deny \
+    'ssh host <<EOF
+git grep -n -i "foo" origin/main -- docs/
+EOF'
+assert_guard "nested interpreter: bash -c \"git grep ...\" -> deny" deny \
+    'bash -c "git grep -n -i pattern origin/main -- docs/"'
+assert_guard "nested interpreter: sh -c \"git grep ...\" -> deny" deny \
+    'sh -c "git grep -n -i pattern origin/main -- docs/"'
+assert_guard "nested interpreter: python3 -c os.system(...) -> deny" deny \
+    "python3 -c \"os.system('git grep -n -i pattern origin/main -- docs/')\""
+assert_guard "nested interpreter: perl -e system(...) -> deny" deny \
+    'perl -e "system(\"git grep -n -i pattern origin/main -- docs/\")"'
+
+# An unknown global git option before `grep` must not stop the scan (fail-safe: skip any
+# `-`-prefixed token, not only a recognised few), whether or not it is one of the handful that
+# take a separate argument token.
+assert_guard "-c name=value global option before grep -> deny" deny \
+    'git -c pager.grep=false grep -n -i "foo" origin/main -- docs/'
+assert_guard "--git-dir=... global option before grep -> deny" deny \
+    'git --git-dir=/tmp/x.git grep -n -i "foo" origin/main -- docs/'
+assert_guard "--work-tree with a separate argument before grep -> deny" deny \
+    'git --work-tree /tmp/wt grep -n -i "foo" origin/main -- docs/'
+assert_guard "-P (global --no-pager short form) before grep -> deny" deny \
+    'git -P grep -n -i "foo" origin/main -- docs/'
+assert_guard "--literal-pathspecs before grep -> deny" deny \
+    'git --literal-pathspecs grep -n -i "foo" origin/main -- docs/'
+assert_guard "unknown global option, but guarded with -I -> allow" allow \
+    'git -c pager.grep=false grep -n -I -i "foo" origin/main -- docs/'
+
+# A later, adversarial review of the raw-text redesign above found four bypasses that need no
+# obfuscation at all: a line continuation, a full path, upper case (real on this Mac's own
+# case-insensitive, case-preserving disk) and a mid-word backslash escape. Command text is
+# normalised (backslash-newline pairs and remaining backslashes deleted, `git`/`grep` compared by
+# last path component, case-insensitively) before tokenising to close all four.
+assert_guard "line continuation splits git from grep across a backslash-newline -> deny" deny \
+    "$(printf 'git \\\ngrep -n -i "foo" origin/main -- docs/')"
+assert_guard "a full path bypasses the exact-string match -> deny" deny \
+    '/usr/bin/git grep -n -i "foo" origin/main -- docs/'
+assert_guard "upper case, real on this Mac's case-insensitive disk -> deny" deny \
+    'GIT GREP -n -i "foo" origin/main -- docs/'
+assert_guard "a backslash escape mid-word -> deny" deny \
+    'g\it grep -n -i "foo" origin/main -- docs/'
+
+# The same normalisation must not fold -I (skip binary files) and -i (ignore case) together --
+# doing so would make a real, unbounded git grep -i ... docs/ (no -I) indistinguishable from a
+# guarded one, the one false allow this file cannot reintroduce. (The upper-case-with-only--i case
+# is already covered above, "upper case, real on this Mac's own case-insensitive disk -> deny".)
+assert_guard "a full path with a real -I still allows" allow \
+    '/usr/bin/git grep -I -n -i "foo" origin/main -- docs/'
+assert_guard "upper case GIT GREP with a real -I still allows" allow \
+    'GIT GREP -I -n -i "foo" origin/main -- docs/'
+
+# Nothing ordinary regresses: the same three allow-shapes the brief named, re-checked against the
+# normalised path.
+assert_guard "git log --grep=foo still allows after normalisation" allow \
+    'git log --grep=foo'
+assert_guard "git grep -I ... -- '*.md' still allows after normalisation" allow \
+    "git grep -I pattern -- '*.md'"
+assert_guard "a git-grep mention still allows after normalisation" allow \
+    'echo "see git-grep for details"'
+
+# $(echo git) grep and a shell alias stay the two named, accepted exceptions -- the former never
+# places git and grep as adjacent bare words, the latter cannot be seen at the text layer at all.
+assert_guard "\$(echo git) grep stays the named, accepted exception -> allow" allow \
+    '$(echo git) grep -n -i "foo" origin/main -- docs/'
+
+# A third, adversarial review of the normalise-before-match fix above found that a quote mark,
+# still its own token at that point, sat between git/grep and the flags or the bare word either one
+# needed to be adjacent to -- denying nothing, with no obfuscation, for a quoted -C/-c/--git-dir
+# argument, a quoted git or grep, or a Python argument list. Quotes are now deleted in the same
+# normalise pass as backslashes, and `,`/`[`/`]` split words like whitespace, so each of these
+# shapes (the exact ones the review used, all unbounded and unguarded) denies again.
+assert_guard "a quoted -C path, the shape an agent writes with \"\$root\" -> deny" deny \
+    'git -C "/Users/krause/workspace/nappy-claude" grep -n -i "foo" origin/main -- docs/'
+assert_guard "a single-quoted -C path -> deny" deny \
+    "git -C '/tmp/x' grep -n -i foo origin/main -- docs/"
+assert_guard "a quoted -c key=value -> deny" deny \
+    'git -c "core.quotepath=off" grep -n -i foo origin/main -- docs/'
+assert_guard "a quoted --git-dir=... -> deny" deny \
+    'git --git-dir="/x/.git" grep -n -i foo origin/main -- docs/'
+assert_guard "a double-quoted git -> deny" deny \
+    '"git" grep -n -i foo origin/main -- docs/'
+assert_guard "a single-quoted git -> deny" deny \
+    "'git' grep -n -i foo origin/main -- docs/"
+assert_guard "a double-quoted grep -> deny" deny \
+    'git "grep" -n -i foo origin/main -- docs/'
+assert_guard "a quote mark mid-word (g\"i\"t) -> deny" deny \
+    'g"i"t grep -n -i foo origin/main -- docs/'
+assert_guard "a Python argument list (subprocess.run([\"git\", \"grep\", ...])) -> deny" deny \
+    'python3 -c '"'"'import subprocess; subprocess.run(["git", "grep", "-n", "-i", "foo", "origin/main", "--", "docs/"])'"'"''
+
+# Still accepted, not fixed: a quoted search pattern that happens to contain " -I" reads as the
+# flag, since this file does not track which characters are inside a quoted argument. Rare, and
+# named in the header rather than chased with the quote-tracking this design deliberately avoids.
+assert_guard "a quoted pattern containing -I is read as the flag -- accepted, documented gap" allow \
+    'git grep -n -i "gcc -I" origin/main -- docs/'
 
 echo
 echo "$checks checks, $failures failures"
