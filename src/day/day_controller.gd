@@ -155,6 +155,9 @@ func _ignores_loss(result: GameEnums.DayResult) -> bool:
 const _HARD_FAIL_TEXT := {
 	"abduction": "The van door opened. Nobody saw where you went.",
 	"alley_robbery": "They were waiting in the alley.",
+	# The same man, sent after her by a handed-over task rather than met in an alley, so the line
+	# is the alley robber's with the alley taken out of it.
+	"robber_giving_chase": "They were waiting for you.",
 	"firefight": "You walked into the middle of it.",
 	# Not an event, and the only hard fail the player can walk into rather than be caught by.
 	"car_strike": "It never slowed down. You were in the road.",

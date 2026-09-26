@@ -798,6 +798,10 @@ static func icon_for(look: EventDef.Look) -> String:
 		# The side view rather than `GUARD_LUNGING`, which is `MASKED_PURSUER`'s badge: the same man,
 		# and the one picture of his that no other look already stands for.
 		EventDef.Look.DOOR_GUARD: return str(GUARD_LUNGING_BY_VIEW["side"])
+		# The same reasoning for the same man: `ROBBER`'s badge is the lunge seen from the front,
+		# so the robber a handed-over task sets on her is badged by the one view of it no other
+		# look already stands for.
+		EventDef.Look.ROBBER_GIVING_CHASE: return str(ROBBER_LUNGING_BY_VIEW["side"])
 		_: return ""
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
@@ -3375,7 +3379,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.UNMARKED_VAN:
 			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, UNMARKED_VAN_WHEELS_BY_VIEW,
 					VAN_VICTIM_BY_VIEW, VAN_VICTIM_BY_VIEW_B])
-		EventDef.Look.ROBBER:
+		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
 			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_LUNGING_BY_VIEW,
 					ROBBER_LUNGING_BY_VIEW_B])
 		EventDef.Look.RIOT_VAN:
@@ -3519,7 +3523,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_roadblock(canvas)
 		EventDef.Look.UNMARKED_VAN:
 			_draw_abduction(canvas)
-		EventDef.Look.ROBBER:
+		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
 			_draw_robber(canvas)
 		EventDef.Look.RIOT_VAN:
 			# West-authored, like `unmarked_van` and `army_truck` — see `RIOT_VAN_BY_VIEW`'s own doc

@@ -96,6 +96,10 @@ enum Look {
 	DOOR_GUARD,       ## The guard a door sets on her when she walks under its raised boom — the
 	                  ## same man in the same two postures as `MASKED_PURSUER` and a heated
 	                  ## roadblock's guard, badged by his side view.
+	# ---- the resistance's own robber, sent after her ----
+	ROBBER_GIVING_CHASE, ## The man a handed-over task sets on her — the alley robber himself, only
+	                     ## ever drawn coming (he never waits), badged by his side view, since
+	                     ## `ROBBER`'s badge is already the front of the lunge.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -388,8 +392,8 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ##
 ## **A further siting needs a longer `telegraph_time` to spend it in**, or a player who only walks
 ## can outlast the row's own budget before it ever gets to catch her — `duration` stays at
-## `Tuning.PURSUIT_TIME` (`tests/test_events.gd` holds every pursuer to that exact ceiling), so the
-## room has to come from the telegraph instead. See that field on the same row for the arithmetic.
+## `Tuning.PURSUIT_TIME` (`tests/test_events_costs.gd` holds every pursuer but `robber_giving_chase`
+## to that exact ceiling), so the room has to come from the telegraph instead. See that field on the same row for the arithmetic.
 ## `cyclist` is left at the default: its own notice is bought back a different way, in
 ## `outer_radius` and `telegraph_time` — see the reasoning on that row.
 @export var offscreen_notice := Tuning.OFFSCREEN_NOTICE
@@ -1102,6 +1106,26 @@ func validate() -> bool:
 		if spawns_on_finish != "":
 			push_error("event '%s' stops where it arrives and spawns '%s' when it finishes: it "
 					% [id, spawns_on_finish] + "does one or the other, never both")
+			return false
+	# **A pursuer awake from its first frame is never the scheduler's to place.** With no trigger
+	# (`pursues_within` 0) its telegraph and its chase are clocked from the moment it exists, so a
+	# `MAP` row the day planned would spend both wherever the stream put it in the world — up to
+	# `Tuning.EVENT_STREAM_RADIUS` away, off screen, before she could ever meet it. Only a row
+	# something sets on her at a moment of its own may have that shape, and the catalogue's own
+	# sentinel for such a row is `SCRIPTED` on day 0, the day nobody plays: `available_on()` then
+	# never offers it to the roll, the stream or the budget. `door_guard` (set on her by a door)
+	# and `robber_giving_chase` (set on her by a handed-over task) are the two. Asked of both days a
+	# row can answer — `spawn_mode_on()`'s switch — so `charging_dog`, trigger-less only while the
+	# director sites it and waiting once it is placed, is the shape this allows rather than refuses.
+	if pursues and not (kind == GameEnums.EventKind.SCRIPTED and scripted_day == 0):
+		var awake_on_the_map := spawn_mode == SpawnMode.MAP and pursues_within <= 0.0
+		if spawn_mode_switches_after_day > 0 and spawn_mode_after_first_day == SpawnMode.MAP \
+				and pursues_within_after_first_day <= 0.0:
+			awake_on_the_map = true
+		if awake_on_the_map:
+			push_error(("event '%s' is placed on the map and pursues from the moment it exists: " % id)
+					+ "its notice and its chase would run out wherever the stream put it — only a "
+					+ "row nothing but a director sets on her (SCRIPTED, day 0) may have no trigger")
 			return false
 	# The same shape: a stand-off rule for something that never chases is a decision nothing reads.
 	if sets_off_beside_her and not pursues:

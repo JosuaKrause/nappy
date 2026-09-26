@@ -165,7 +165,13 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 					"'%s' has to be lethal, or running from it is just an expensive walk" % def.id)
 			t.check((Tuning.RUN_SPEED - def.pursue_speed) * def.duration >= def.inner_radius,
 					"'%s' can be outrun by more than the radius that ends the day" % def.id)
-			t.check(def.duration <= Tuning.PURSUIT_TIME,
+			# `robber_giving_chase` is the one row allowed the longer chase `Tuning.validate_pursuit()`
+			# accepts, `PURSUIT_TIME` × 2: he starts off screen with a short notice, and walking away
+			# has to lose inside notice plus chase — see his row. Running still ends him in
+			# `Tuning.PURSUIT_SHAKEN_OFF`, so the longer chase is not a longer run.
+			var ceiling := Tuning.PURSUIT_TIME * 2.0 if def.id == "robber_giving_chase" \
+					else Tuning.PURSUIT_TIME
+			t.check(def.duration <= ceiling,
 					"'%s' gives up before the run costs more than the day it saves" % def.id)
 			continue
 		t.check(_cost_to_run_through(def) > _cost_to_walk_through(def),

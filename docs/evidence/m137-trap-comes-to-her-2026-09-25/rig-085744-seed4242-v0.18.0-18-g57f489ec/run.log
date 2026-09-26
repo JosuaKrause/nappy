@@ -1,0 +1,92 @@
+nappy rig log  2026-09-26T08:57:44  version v0.18.0-18-g57f489ec
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.1 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.6 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 3.4 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 2.5 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 2.9 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 1.1 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 1.0 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 14.2 ms, 642 x 1074
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.9 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 34.1 ms
+
+day 6  act 2  run seed 4242  city seed 4242  length 180.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 34.5 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, west along her street
+   0.0  contact  step 1 on offer at (122,146)
+   0.0  roll     chalk mark guarded: robber 163px away (band 66-176)
+   0.0  plan     closed: roadworks h(3,8), cordoned off v(10,10)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burnt_out_car x44, burst_water_main x16, busker x5, cafe_tables x74, car_accident x16, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x17, construction x53, curfew_announce x5, cyclist x7, delivery_van x33, dog_walker x11, homeless_yeller x9, ice_cream_van x5, leaf_blower x20, loose_dog x12, loudspeaker x5, market_stall x38, moving_van x30, pigeon_flock x5, playground x2, police_patrol x11, poster_crew x9, reversing_lorry x5, scaffolding x11, skip x11
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  contact  step 1 moved to (79,90): never seen at (122,146)
+   0.0  roll     chalk mark guarded: robber 142px away (band 66-176)
+   0.5  near     construction (telegraph) at (85,80), 197px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   1.0  frame    fps 1, worst frame 267.9ms, draws 366, objects 2233, primitives 4886, process 22.80ms, physics 2.16ms
+   1.8  run      ran 0.4s, exc 0 -> 0, nearest when it started: neighbor 81px (out of range)
+   2.0  frame    fps 58, worst frame 27.6ms, draws 366, objects 2233, primitives 4886, process 25.47ms, physics 4.96ms
+   2.4  path     onto the corridor at (75,85), after 2.4s off it
+   2.8  path     off the corridor at (75,86), after 0.3s on it
+   2.8  cross    stepped into the road at (75,86), at a zebra
+   2.8  near     ice_cream_van at (74,93), 237px, exc 0, in 3.9/s (crowd 3.9, events 0.2), sleep 1
+   3.0  frame    fps 84, worst frame 25.3ms, draws 366, objects 2233, primitives 4886, process 25.23ms, physics 4.85ms
+   3.5  path     onto the corridor at (75,88), after 0.7s off it
+   3.6  run      ran 0.4s, exc 0 -> 2, nearest when it started: neighbor 104px (out of range)
+   3.9  near     alley_robbery at (78,94), 199px, exc 2, in 10.8/s (crowd 2.2, events 8.6), sleep 1
+   4.0  contact  walked within 129px of the chalk mark at (79,90)
+   4.0  frame    fps 69, worst frame 26.0ms, draws 366, objects 2233, primitives 4886, process 15.65ms, physics 5.87ms
+   4.1  path     off the corridor at (76,89), after 0.7s on it
+   4.5  contact  step 1 seen at (79,90) after 1.0s within 150px
+   5.0  frame    fps 70, worst frame 19.1ms, draws 366, objects 2233, primitives 4886, process 25.94ms, physics 5.42ms
+   5.2  contact  step 1 completed
+   5.2  contact  step 2 on offer at (36,56)
+   5.2  route    day 6: reached 'mark' at 4.9s (day time), 184px walked
+   5.2  path     onto the corridor at (78,90), after 1.0s off it
+   5.5  path     off the corridor at (78,89), after 0.4s on it
+   6.0  frame    fps 66, worst frame 78.6ms, draws 366, objects 2233, primitives 4886, process 27.86ms, physics 65.21ms
+   6.6  route    day 6: 'task' moved to (84,98), re-planning
+   6.6  route    day 6: re-planned to 'task' (6.4s, 13 waypoints)
+   7.0  frame    fps 77, worst frame 55.7ms, draws 366, objects 2233, primitives 4886, process 14.03ms, physics 8.89ms
+   7.1  run      ran 0.4s, exc 25 -> 25, nearest when it started: alley_robbery 193px
+   7.1  cue      the mark over her head: soon for 3.3s (0.0s of it on the road) | alley_robbery 199px
+   7.6  path     onto the corridor at (84,89), after 2.1s off it
+   8.0  frame    fps 74, worst frame 21.9ms, draws 366, objects 2233, primitives 4886, process 24.76ms, physics 44.40ms
+   8.1  route    day 6: 'task' moved to (84,96), re-planning
+   8.1  route    day 6: re-planned to 'task' (7.8s, 7 waypoints)
+   8.1  near     homeless_yeller at (84,96), 207px, exc 20, in 3.1/s (crowd 0.0, events 3.2), sleep 2
+   9.0  near     delivery_van at (88,95), 149px, exc 22, in 11.7/s (crowd 4.2, events 7.4), sleep 3
+   9.0  crowd    walked into somebody at (84,93) | exc 22, in 11.6/s (crowd 22.2, events 7.4), sleep 3
+   9.1  frame    fps 75, worst frame 61.4ms, draws 366, objects 2233, primitives 4886, process 29.77ms, physics 48.68ms
+   9.2  near     homeless_yeller at (84,97), 113px, exc 25, in 23.0/s (crowd 15.9, events 6.9), sleep 3
+   9.4  near     alley_robbery at (78,94), 200px, exc 27, in 6.2/s (crowd 0.0, events 6.1), sleep 3
+  10.0  near     homeless_yeller at (84,97), 62px, exc 28, in 6.6/s (crowd 1.6, events 4.9), sleep 3
+  10.1  frame    fps 82, worst frame 26.2ms, draws 366, objects 2233, primitives 4886, process 12.58ms, physics 9.14ms
+  10.2  contact  step 2 retargeted onto the nearest look-alike in reach
+  10.2  route    day 6: reached 'task' at 10.0s (day time), 283px walked
+  10.2  cue      the mark over her head: soon for 0.8s (0.0s of it on the road) | alley_robbery 200px
+  10.3  near     loudspeaker at (82,103), 209px, exc 28, in 5.9/s (crowd 0.0, events 6.0), sleep 3
+  10.5  contact  step 2 completed
+  10.5  contact  he took it and is leaving
+  10.5  roll     task handed over: a robber sent after her from (84,107), 315px off (a clear run at her)
+  10.5  route    day 6: reached 'task' at 10.3s (day time), 18px walked
+  10.5  near     curfew_announce at (82,103), 210px, exc 28, in 10.0/s (crowd 0.0, events 3.6), sleep 3
+  10.5  chase    robber_giving_chase came for her at (84,107) | exc 28, in 10.0/s (crowd 0.0, events 3.6), sleep 3
+  10.6  cue      edge badge: robber_giving_chase at 306px, closing 30px/s
+  10.6  route    day 6: reached 'task' at 10.3s (day time), 1px walked
+  11.0  near     homeless_yeller at (84,99), 34px, exc 31, in 16.9/s (crowd 0.0, events 16.9), sleep 3
+  11.1  frame    fps 78, worst frame 82.8ms, draws 366, objects 2233, primitives 4886, process 24.31ms, physics 46.28ms
+  11.1  near     robber_giving_chase (telegraph) at (84,104), 198px, exc 31, in 19.0/s (crowd 0.0, events 19.0), sleep 3
+  11.1  cue      edge badge gone: robber_giving_chase after 0.6s, now 194px away
+  11.3  freeze   sleep stopped filling | exc 35, in 26.7/s (crowd 0.0, events 26.8), sleep 3 | near: homeless_yeller 24px
+  11.5  near     robber_giving_chase (telegraph) at (84,102), 108px, exc 41, in 31.5/s (crowd 0.0, events 31.5), sleep 3
+  11.6  cue      the mark over her head: soon for 0.5s (0.0s of it on the road) | robber_giving_chase 194px
+  11.9  near     loudspeaker at (82,103), 114px, exc 55, in 47.3/s (crowd 0.0, events 47.3), sleep 3
+  12.0  near     robber_giving_chase at (83,101), 59px, exc 61, in 47.7/s (crowd 0.0, events 47.7), sleep 3
+  12.1  frame    fps 70, worst frame 17.8ms, draws 366, objects 2233, primitives 4886, process 25.56ms, physics 72.17ms
+  12.1  near     alley_robbery at (78,94), 200px, exc 67, in 47.7/s (crowd 0.0, events 47.7), sleep 3
+  12.5  near     robber_giving_chase at (82,99), 32px, exc 80, in 49.6/s (crowd 0.0, events 49.5), sleep 3
+  12.6  path     51% of her street time on the corridor (6.4s on, 6.0s off, 0.0s off the streets)
+  12.6  lost     lost_hard_fail after 12.6s — They were waiting for you. | exc 88, in 49.6/s (crowd 0.0, events 49.6), sleep 3 | near: robber_giving_chase 29px
+  12.6  nerve    spent a nerve on day 6 (act 2); 4 left — day 6 again — and the day's resistance work with it
+  12.6  route    day 6: day ended (LOST_HARD_FAIL) before reaching 'calm', 12.3s (day time)

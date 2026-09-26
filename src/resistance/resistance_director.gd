@@ -1,7 +1,8 @@
 class_name ResistanceDirector
 extends Node
 ## Places the day's resistance contact, and enforces the two things that make the subquest
-## cost something: every mark is guarded, and a timed step expires.
+## cost something: every contact is paid for in danger — a mark is guarded, and a task that rides
+## on a row sets a robber on her the moment it is handed over — and a timed step expires.
 ##
 ## Deterministic from the run seed and the day, like everything else, so an alley that was
 ## safe on day 9 of this run is safe on day 9 of this run every time you replay it. The
@@ -20,8 +21,8 @@ extends Node
 ## which exceeds the screen's own half-diagonal, so the jump is never on screen to be drawn
 ## sliding in the first place.
 
-## The day the first chalk mark can appear, and so the first day anything is guarded — nothing
-## is offered before it.
+## The day the first chalk mark can appear, and so the first day anything is guarded or any
+## robber is set on her — nothing is offered before it.
 const TRAP_FIRST_DAY := 6
 
 ## A mark is "seen" once she has actually noticed it — see `SEEN_DISTANCE` and
@@ -120,6 +121,10 @@ var _seen_dwell := 0.0
 ## The `alley_robbery` standing by the current mark, from `TRAP_FIRST_DAY`. Tracked so a
 ## move can retire it and `_maybe_set_a_trap` a fresh one near wherever the mark goes.
 var _guard: EventInstance
+## The `robber_giving_chase` today's handed-over task set on her (`_set_the_trap_on_her()`), or
+## null before a task is handed over. Nothing here steers him — he chases on his own — so this is
+## kept only so what was set can be read back.
+var _trap: EventInstance
 ## The RNG `start_day()` was handed, kept rather than re-drawn so a guard spawned later —
 ## when the mark moves, or when the mark's own touch activates today's perform step — still
 ## comes from the same day's stream a replay would reproduce.
@@ -167,6 +172,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_seen = false
 	_seen_dwell = 0.0
 	_guard = null
+	_trap = null
 	_taken_neighbor = null
 	# Rebuilt lazily on the first placement that asks — see `_ensure_reachability()` — rather than
 	# here, so a rig that never places anything today never pays for a grid it never needed.
@@ -250,8 +256,10 @@ func _begin_step(step: ResistanceSteps.Step) -> void:
 		_step.index, TelemetryLog.tile(_map.world_to_tile(at))])
 
 	# A guard stands where a contact waits. The neighbor does not wait — they are walking home — so
-	# a robber at the spot they set out from would guard nothing.
-	if not neighbor:
+	# a robber at the spot they set out from would guard nothing. And a task that rides on a row is
+	# not guarded where it waits at all: its trap comes to her once she has handed it over
+	# (`sets_a_trap_on_her()`), from wherever she did.
+	if not neighbor and not sets_a_trap_on_her(_step):
 		_maybe_set_a_trap(_day, _rng, at)
 
 ## The live instance standing at the run's own recorded scar for `scar_id`, or null when the run
@@ -280,11 +288,14 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 			return instance
 	return null
 
-## The guard. From `TRAP_FIRST_DAY` no contact is ever placed without one — a robber drawn
+## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor a task that sits
+## on a bare point (a door, a mast's foot, a swing, the last night's front door) — a robber drawn
 ## from the band `alley_robbery`'s own numbers fix, so *always guarded* stays survivable
-## instead of a guaranteed lost day. See docs/DECISIONS.md, "the guard, worked out from the
-## numbers rather than chosen": below the band touching the mark is death, always; above it
-## he is scenery; between them which side she approaches from decides whether he wakes.
+## instead of a guaranteed lost day. A task that rides on a row gets `_set_the_trap_on_her()`
+## instead, and the neighbor neither: see `_begin_step()`. See docs/DECISIONS.md, "the guard,
+## worked out from the numbers rather than chosen": below the band touching the mark is death,
+## always; above it he is scenery; between them which side she approaches from decides whether he
+## wakes.
 ##
 ## `away_from` is set only when this guard is replacing one whose mark just moved — see
 ## `_move_the_mark()`. A moved mark sits up to `NOTICE_RADIUS` (400px) from her, and a
@@ -317,6 +328,171 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 	Telemetry.note("roll", "chalk mark guarded: robber %.0fpx away (band %.0f-%.0f)"
 			% [at.distance_to(guard_at), min_distance, max_distance])
 	_guard = _city.events.spawn_extra(robbery, guard_at)
+
+## Whether `step`'s trap comes to her rather than waiting at its contact: a perform step whose
+## contact rides on a row (`task_event_id` — the man shouting, the van, the burnt shell, a
+## roadblock), which is where *"spawn the robber in pursuing mode offscreen when she interacts with
+## the yeller"* was said. **Not the neighbor**, whose task has never been guarded — they are
+## walking home, and a guard at the spot they set out from would guard nothing — and never a chalk
+## mark, a bare-point task or the last night, whose robber still waits at the contact
+## (`_maybe_set_a_trap()`).
+static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
+	return step != null and not step.is_pickup and step.task_event_id != "" \
+			and step.target_kind != ResistanceSteps.TargetKind.NEIGHBOR
+
+## **The trap comes to her.** *(2026-09-13, the player: "maybe spawn the robber in pursuing mode
+## offscreen when she interacts with the yeller so it runs towards her from offscreen".)* The moment
+## a task that rides on a row is handed over, a `robber_giving_chase` — the alley robber, awake from
+## his first frame — is spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) above or
+## below her, always far enough past the edge of the view that the screen-edge badge is up before he
+## is in it (`_draw_arrival_position()`), and comes at her. So whichever look-alike she chose, the errand costs the same: the price is
+## paid on the way out, from wherever she did it, rather than guarded at one seeded spot she could
+## avoid by picking another. The screen-edge badge announces him while he is off screen, the same
+## way it announces any pursuer (`DangerEdge._is_worth_an_arrow()`).
+##
+## From `TRAP_FIRST_DAY`, like the guard. Where she is, or the contact she has just touched when
+## no player is in the tree (a bare director in a rig): she is within `ContactPoint.REACH` of it.
+## Nothing is spawned when `_draw_arrival_position()` finds no ground, which the run log says.
+func _set_the_trap_on_her() -> void:
+	if _day < TRAP_FIRST_DAY or not _city or not _city.events:
+		return
+	var def := EventCatalogue.by_id("robber_giving_chase")
+	if not def:
+		return
+	var her := _player_position()
+	if her == Vector2.INF:
+		her = contact_position()
+	if her == Vector2.INF:
+		return
+	var arrival := _draw_arrival_position(_rng, her, def)
+	var at: Vector2 = arrival[0]
+	if at == Vector2.INF:
+		Telemetry.note("roll", ("task handed over unguarded: no walkable ground %.0fpx from her "
+				+ "in %d draws") % [Tuning.TRAP_ARRIVAL_DISTANCE, TRAP_DRAW_LIMIT + 4])
+		return
+	_trap = _city.events.spawn_extra(def, at)
+	var run := "no clear run at her"
+	if arrival[1]:
+		run = "a clear run at her along her street, beside her" if arrival[2] \
+				else "a clear run at her"
+	Telemetry.note("roll", "task handed over: a robber sent after her from %s, %.0fpx off (%s)"
+			% [TelemetryLog.tile(_map.world_to_tile(at)), her.distance_to(at), run])
+
+## Where the robber a handed-over task sets on her starts, past `badge_line()` so the screen-edge
+## badge is up before he is on screen, on ground `_draw_guard_position()`'s own refusals leave alone
+## (walkable, not behind a closure, not held, not the home block, not a walled-off alley) and off
+## screen by `_sight` as well. Returns `[position, clear, beside]` — `Vector2.INF` when no start
+## qualifies; `clear` when the straight line from there to her is walkable; `beside` when he starts
+## to her side rather than above or below her.
+##
+## **Above or below her, `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) out, by preference.** That is past
+## the badge line vertically within `arrival_cone()` (about 18°) of straight up or down, and never
+## sideways, where the view is wider — so those bearings are drawn inside the two cones rather than
+## from the whole circle. Straight up and straight down first, in an order the day's RNG picks,
+## then `TRAP_DRAW_LIMIT` bearings from the cones.
+##
+## **A clear run at her is what decides it**, since he chases in a straight line
+## (`EventInstance._chase()`), sliding along whatever wall is in the way: a start behind a building
+## is a man stuck against its back wall while the badge says he is coming. On about one handover in
+## five there is no clear run from above or below — she is on a street that runs sideways, with no
+## crossing street near enough — and **then he comes along her own street**, straight left or right
+## at `beside_distance()` (about 466px), past the badge line sideways. From there walking directly
+## away outlasts his notice and chase, which is the price of a start the wider view needs;
+## standing still or walking into him is still caught. Only when neither has a clear run does the
+## first legal start of all of them stand in, and then he may never reach her.
+func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef) -> Array:
+	var walled_alleys := _walled_alleys()
+	var cone := arrival_cone(def)
+	var up := PI / 2.0 if rng.randf() < 0.5 else -PI / 2.0
+	var starts: Array[Vector2] = [Vector2.RIGHT.rotated(up) * Tuning.TRAP_ARRIVAL_DISTANCE,
+			Vector2.RIGHT.rotated(-up) * Tuning.TRAP_ARRIVAL_DISTANCE]
+	for _attempt in TRAP_DRAW_LIMIT:
+		var side := PI / 2.0 if rng.randf() < 0.5 else -PI / 2.0
+		starts.append(Vector2.RIGHT.rotated(side + rng.randf_range(-cone, cone))
+				* Tuning.TRAP_ARRIVAL_DISTANCE)
+	var along := 1.0 if rng.randf() < 0.5 else -1.0
+	var beside := beside_distance(def)
+	starts.append(Vector2(along * beside, 0.0))
+	starts.append(Vector2(-along * beside, 0.0))
+	var fallback := Vector2.INF
+	for offset in starts:
+		if not is_past_the_badge_line(offset, def):
+			continue
+		var candidate := her + offset
+		var tile := _map.world_to_tile(candidate)
+		if not is_legal_ground(_map, tile, walled_alleys):
+			continue
+		if _sight.is_valid() and _sight.call(candidate):
+			continue
+		if _a_clear_run(candidate, her):
+			return [candidate, true, is_zero_approx(offset.y)]
+		if fallback == Vector2.INF:
+			fallback = candidate
+	return [fallback, false, false]
+
+## How far from her, along each axis, a pursuer `def` started `distance` out has to be for
+## `DangerEdge` to raise its badge before he is on screen, whatever the camera is doing. Per axis,
+## in world px:
+##
+## - `Tuning.VIEW_HALF_EXTENT` (320 × 180), half the view;
+## - plus the most the camera leads toward him — `Stroller.CAMERA_LOOK_AHEAD` (46px) sideways,
+##   46 × `Stroller.OBLIQUE_Y` (32px) vertically, when she faces him;
+## - plus `DangerEdge.SCREEN_MARGIN` (130 screen px, 65px of world at zoom 2), how far outside the
+##   view a thing has to be before a badge is raised for it;
+## - plus the ground the gap closes by while the badge rises (`badge_rise_time()`), at his speed and
+##   hers together, since she may be walking into him.
+##
+## For `robber_giving_chase` at 315px, about 452 sideways and 299 vertically.
+static func badge_line(def: EventDef, distance: float) -> Vector2:
+	var world_per_screen_px := Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
+	var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD, Stroller.CAMERA_LOOK_AHEAD * Stroller.OBLIQUE_Y)
+	var rising := (def.pursue_speed + Tuning.WALK_SPEED) \
+			* badge_rise_time(def.pursue_speed, distance, def.outer_radius)
+	return Tuning.VIEW_HALF_EXTENT + lead + Vector2.ONE \
+			* (DangerEdge.SCREEN_MARGIN * world_per_screen_px + rising)
+
+## How long `DangerEdge` takes to raise a badge for something closing at `speed` from `distance`
+## out, with a field of `outer`: the approach it measures is smoothed (`DangerEdge.SMOOTHING`, 6/s,
+## from zero), and it announces once that reaches `DangerEdge.announces()`'s own threshold at that
+## range — `CLOSING_SPEED`, or the gap to the field over `LEAD_TIME`. Plus two frames at 30 frames a
+## second, the slowest a phone runs it: the first, which has no earlier position to measure an
+## approach from, and one of rounding. About 0.1s for the robber at 315px, 0.15s at 466px.
+static func badge_rise_time(speed: float, distance: float, outer: float) -> float:
+	var needed := maxf(DangerEdge.CLOSING_SPEED, maxf(0.0, distance - outer) / DangerEdge.LEAD_TIME)
+	if needed >= speed:
+		return INF
+	return 2.0 / 30.0 + log(speed / (speed - needed)) / DangerEdge.SMOOTHING
+
+## Whether a start at `offset` from her is outside the view grown by `badge_line()` — past it on
+## either axis is outside the box.
+static func is_past_the_badge_line(offset: Vector2, def: EventDef) -> bool:
+	var line := badge_line(def, offset.length())
+	return absf(offset.x) >= line.x or absf(offset.y) >= line.y
+
+## The half-angle, in radians, of the cone about straight up or straight down inside which a start
+## `Tuning.TRAP_ARRIVAL_DISTANCE` out is past `badge_line()` vertically — zero if it never is.
+static func arrival_cone(def: EventDef) -> float:
+	var line := badge_line(def, Tuning.TRAP_ARRIVAL_DISTANCE)
+	return acos(minf(1.0, line.y / Tuning.TRAP_ARRIVAL_DISTANCE))
+
+## How far to her side he starts when he comes along her own street: the least distance past
+## `badge_line()` sideways. The line moves out with the start, since a further start takes the badge
+## longer to rise for, so it is walked out to where it stops moving and rounded up.
+static func beside_distance(def: EventDef) -> float:
+	var distance := badge_line(def, 0.0).x
+	for _step in 6:
+		distance = badge_line(def, distance).x
+	return ceilf(distance)
+
+## Whether every point on the straight line from `from` to `to` is walkable, sampled at a quarter
+## tile — the question `EventInstance._walkable_step()` asks of each step a chaser takes.
+func _a_clear_run(from: Vector2, to: Vector2) -> bool:
+	var steps := ceili(from.distance_to(to) / (Tuning.TILE_SIZE * 0.25))
+	for i in steps + 1:
+		var point := from.lerp(to, float(i) / float(maxi(steps, 1)))
+		if not _map.is_walkable(_map.world_to_tile(point)):
+			return false
+	return true
 
 ## A bearing and a distance from `at`, redrawn until the point is walkable ground the day's
 ## catalogue and the home-block exemption both leave alone — rejected rather than repaired, the
@@ -940,11 +1116,11 @@ func _process(delta: float) -> void:
 		return
 	# A pickup is the only step subject to the re-placement rule; a one-place perform step is
 	# never subject to it (its rider or its point is fixed for the day), and an any-instance
-	# perform step is subject to the first-reached rule instead.
+	# perform step follows her between look-alikes instead.
 	if _step.is_pickup:
 		_track_sight_and_reposition(delta)
 	elif _rider and not _step.is_one_place:
-		_track_first_reached()
+		_follow_her_between_look_alikes()
 	if _step.deadline_fraction <= 0.0 or _day_length <= 0.0:
 		return
 	if _elapsed / _day_length < _step.deadline_fraction:
@@ -952,25 +1128,25 @@ func _process(delta: float) -> void:
 	_expire("expired at %.0f%% of the day" % (_step.deadline_fraction * 100.0))
 
 ## *Asked for a hidden contact among look-alikes · overturned on 2026-09-13* (`docs/NARRATIVE.md`,
-## "The contact is whichever look-alike she reaches first"): *"we cannot expect the player to do
-## an exhaustive check ... so if the solution is the yeller it's always the first yeller you come
-## close enough to hand the note."* An any-instance perform step's contact is not pinned to
+## "The any-instance contact is whichever look-alike the player hands the note to"): *"not the
+## first yeller she reaches but the first yeller she interacts with. so the task is always solved
+## by going to any yeller she notices."* An any-instance perform step's contact is not pinned to
 ## whichever instance `_begin_step()` happened to spawn — it rides onto whichever live instance
-## sharing the step's own `task_event_id` she comes within reach of first, seeded rider included.
-## A one-place step (`Step.is_one_place`) never runs this: its rider is the task.
+## sharing the step's own `task_event_id` she is nearest within reach of, seeded rider included,
+## and follows her from one look-alike to the next: coming near one and walking on is not a
+## choice, and the one she hands it to — the contact she actually touches — is the one that
+## completes the step. A one-place step (`Step.is_one_place`) never runs this: its rider is the
+## task.
 ##
-## **The seeded rider's own guard and deadline are untouched.** `_maybe_set_a_trap()` still stands
-## a robber near the position `_begin_step()` rolled, and `_process()`'s own deadline check still
-## reads `_elapsed` against `_day_length` — neither reads `_rider`'s identity, so retargeting onto
-## a different look-alike changes nothing about either rule. What it does mean: a look-alike she
-## reaches before the seeded one is never guarded by that trap, which is the point rather than a
-## gap — there is no candidate left to get wrong, so there is nothing left to guard against
-## picking one.
+## **Nothing guards the seeded rider, so nothing is lost by leaving it.** Such a task's trap comes
+## to her at the handover from wherever it happens (`sets_a_trap_on_her()`), and `_process()`'s
+## own deadline check reads `_elapsed` against `_day_length` — neither reads `_rider`'s identity,
+## so retargeting onto a different look-alike changes nothing about either rule.
 ##
-## Skipped once she has already reached the seeded rider itself (`best == _rider`): its own fixed,
-## replay-stable offset from `_reachable_offset()` already has `ContactPoint`'s own distance check
-## covered, so nothing here needs to move it.
-func _track_first_reached() -> void:
+## Skipped while the nearest look-alike in reach is already the one it rides (`best == _rider`):
+## the seeded rider's own fixed, replay-stable offset from `_reachable_offset()`, or the near-side
+## offset a retarget gave, already has `ContactPoint`'s own distance check covered.
+func _follow_her_between_look_alikes() -> void:
 	if not _player or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 	if not _player or not _city or not _city.events:
@@ -990,7 +1166,7 @@ func _track_first_reached() -> void:
 		return
 	_rider = best
 	_contact.ride(_step, best, _near_side_offset(best, here))
-	Telemetry.note("contact", "step %d retargeted onto the nearest look-alike reached first"
+	Telemetry.note("contact", "step %d retargeted onto the nearest look-alike in reach"
 			% _step.index)
 
 ## The distance from `instance`'s own centre at which `ContactPoint.REACH` is actually reachable —
@@ -1005,8 +1181,9 @@ func _reach_distance(instance: EventInstance) -> float:
 ## seeded rider keeps, for replay stability across an untouched day) would be the wrong question:
 ## nothing about this pairing needs to replay the same way twice, since it only ever happens once
 ## she is already standing close enough. Placing the offset toward her own current bearing instead
-## is what makes the distance check in `_track_first_reached()` exactly correct for a body with any
-## solid clearance, by the same triangle the caller already checked when it found this candidate.
+## is what makes the distance check in `_follow_her_between_look_alikes()` exactly correct for a
+## body with any solid clearance, by the same triangle the caller already checked when it found
+## this candidate.
 func _near_side_offset(instance: EventInstance, from: Vector2) -> Vector2:
 	var clearance: float = instance.def.obstructs_radius
 	if clearance <= 0.0:
@@ -1167,11 +1344,12 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.applies_package_weight:
 		GameState.resistance_carrying_package = true
 		Telemetry.note("contact", "the package is heavier now; the rest of today costs more")
-	# A finished task is shown by the world, never by text: the man shouting she actually
-	# reached — `_rider` after any retargeting in `_track_first_reached()` — stops shouting and
-	# walks off screen, the same departure any finished event takes. Named by `task_event_id`
-	# rather than "any rider with a completed step", so this call site does not start silently
-	# giving the other perform steps a world-answer their own design has not chosen yet.
+	# A finished task is shown by the world, never by text: the man shouting she actually handed
+	# it to — `_rider` after any retargeting in `_follow_her_between_look_alikes()` — stops
+	# shouting and walks off screen, the same departure any finished event takes. Named by
+	# `task_event_id` rather than "any rider with a completed step", so this call site does not
+	# start silently giving the other perform steps a world-answer their own design has not chosen
+	# yet.
 	if step and step.task_event_id == "homeless_yeller" and _rider and is_instance_valid(_rider):
 		_rider.leave_for_a_completed_task()
 		Telemetry.note("contact", "he took it and is leaving")
@@ -1188,6 +1366,9 @@ func _on_contact_completed(step_index: int) -> void:
 	# reached the swing, and stays taken — see `ResistanceHappenings.take_the_park()`.
 	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		_happenings.take_the_park()
+	# And the price of a task that rode on a row: a robber comes for her from off screen.
+	if step and sets_a_trap_on_her(step):
+		_set_the_trap_on_her()
 	if not (step and step.needs_goal):
 		return
 

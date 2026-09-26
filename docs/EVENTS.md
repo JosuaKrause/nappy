@@ -238,12 +238,13 @@ walking toward it, well clear of the 0.8-0.9s that failed.
 
 **A further siting needs a longer `telegraph_time` to spend it in**, or a player who only walks can
 outlast the row's own budget before it ever catches her. `duration` stays at `Tuning.PURSUIT_TIME`
-— `tests/test_events.gd` holds every pursuer to that exact ceiling, tighter than
+— `tests/test_events_costs.gd` holds every pursuer but one to that exact ceiling, tighter than
 `validate_pursuit`'s own — so `charging_dog`'s `telegraph_time` rises to 4.5s instead: closing the
 whole worst-case gap at the rate walking away still loses by (`pursue_speed` − `WALK_SPEED` =
-38px/s) takes about 7.0s, inside the 7.5s `telegraph_time` + `duration` gives it. `cyclist` stays
-at the default notice; its own notice moved a different way, in its `outer_radius` and
-`telegraph_time` — see the next paragraph.
+38px/s) takes about 7.0s, inside the 7.5s `telegraph_time` + `duration` gives it.
+`robber_giving_chase` is the one: the same arithmetic spent the other way, a short notice and the
+6.0s chase `validate_pursuit` allows, since his warning has to be short — see his row. `cyclist` stays at the default notice; its own notice moved a
+different way, in its `outer_radius` and `telegraph_time` — see the next paragraph.
 
 **The margin applies to what travels toward her, not to a crossing.** `cat_dash` keeps
 `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()`: a crossing row's whole content is a
@@ -1222,6 +1223,15 @@ One row the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resi
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `neighbor` | SCRIPTED | day 1 | The neighbor down the hall, who works at the power station (`docs/NARRATIVE.md`, "What the tasks are for"): a figure in work clothes — steel-blue coveralls, a reflective band, a dark work cap — drawn in the passer-by's own five views and feet-passing frames. **Scenery, not a cost**: intensity 0 on a formal field drawn tight round the figure, mobile and therefore bodiless, walking at `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s, half hers). On every morning before day 10, `ResistanceHappenings` walks it out of her building beside her and off along her street, away from her, until the street runs out or a closure stops it, and it leaves the ordinary way; nothing points at it. **On day 10 it is walking home**: once her mark is touched, `ResistanceDirector._send_the_neighbor_home()` spawns `EventCatalogue.neighbor_heading_home()` — the same row, `stops_where_it_arrives` — on a sidewalk about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` (55s) of its own walk from her door and off screen from her, and hands it the walk home over the day's open ground as its path; the red arrow rides it. Reached first, it runs, away from her, at `departs_at` `EventCatalogue.NEIGHBOR_RUN_SPEED` (150px/s); reaching the door first, it stands there, the task is lost, and it is taken away with the raid once it is off screen. From day 11 it never appears. |
+
+### The resistance's robber — the trap that comes to her
+
+One row the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resistance sets it on
+her.
+
+| id | kind | from | Behaviour |
+| --- | --- | --- | --- |
+| `robber_giving_chase` **`hard_fail`** | SCRIPTED | day 6 | **The trap of a task that rides on a row, coming to her rather than waiting at it.** The moment she hands over the man shouting's note, the van's package, the burnt shell's drawing or a roadblock's approach, `ResistanceDirector._set_the_trap_on_her()` spawns him off screen and he comes at her. **The alley robber, read off his row rather than copied**: the same body, 16 over a 30–200px field, 130px/s, the 30px catch, `hard_fail`, the walk-off at 100px/s. **No trigger**, so he is never waiting: his notice and his chase run from the frame he exists. **A short notice and a long chase**: 2.0s of notice, `Tuning.PURSUIT_MIN_NOTICE` and half a second, then a 6.0s chase, `Tuning.PURSUIT_TIME` × 2, the longest `validate_pursuit` allows and the one pursuer given it — walking away has to lose inside the two, and the notice may not be long. **Where he starts**: `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) above or below her, the furthest start a walker still loses from (30 + 38 × 7.5), and past the line where the screen-edge badge can rise before he is on screen, which on the narrow vertical axis is 299px and holds within about 18° of straight up or down; on walkable ground a guard may stand on, with a straight walkable run at her, since he chases in a straight line. Where no start above or below has one — about one handover in five, on a street that runs sideways — he comes along her own street from about 466px to her side, and there walking directly away outlasts him. What that leaves her: standing still, he is on screen under a second after the badge rises, lunges from his stand-off about 1.6s after he appears and reaches her about 0.6s later; walking into him he still lunges from his stand-off, and turning to run within `Tuning.PURSUIT_REACTION` of the badge gets her away; walking directly away he catches her about 7.5s after he appears; running for `PURSUIT_SHAKEN_OFF` shakes him off. His own look, `ROBBER_GIVING_CHASE`, draws the alley robber's own pictures (only ever the lunge) and is badged by the lunge's side view, the one picture of him `ROBBER` does not already stand for — `door_guard`'s arrangement. `EventDef.validate()` refuses a pursuer with no trigger that the scheduler could place, so this shape exists only as a row nothing but a director spawns. |
 
 ### The escape — the walk that is not a day
 

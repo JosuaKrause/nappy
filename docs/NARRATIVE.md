@@ -121,8 +121,8 @@ escape, which is the run's ending".
 The subquest must *cost the core resource*. Joining the resistance means deliberately
 choosing the worst routes for your baby: alleys, crowds, closed districts, a stranger's
 own field. The player trades the thing they have spent the whole game protecting, and every
-task is one verb — **get to a guarded place and touch it**, the same day the mark that names it
-is touched.
+task is one verb — **get to a dangerous place and touch it**, the same day the mark that names it
+is touched: a guarded place, or one that sets a robber on her the moment she has.
 
 ### Structure
 
@@ -138,7 +138,7 @@ that through the day before the last night:
 
 | Day | Task | Reached by | Arrow |
 | --- | --- | --- | --- |
-| 6 | A note for a stranger | Touch whichever `homeless_yeller` she reaches first — several are live at once and look alike, so there is no wrong one to single out first. | any instance |
+| 6 | A note for a stranger | Hand it to whichever `homeless_yeller` she walks up to — several are live at once and look alike, and coming near one and walking on commits her to nothing, so there is no wrong one to single out first. | any instance |
 | 7 | The package | The delivery van's own drop. Picking it up makes the pram heavier for the rest of the day. | red |
 | 8 | The burnt shell | Wherever this run's own day-3 fire left its scar. | red |
 | 9 | The crossing | One of that day's own region doors, the first day the wall stands at all. | red |
@@ -162,13 +162,28 @@ the resistance*, narrowed to a task with exactly one place to be.
   notices them. Seeded from the run and the day, so the distance that was safe on day 9 of
   this run is safe on day 9 every time you replay it — the pattern is learnable, which is
   the difference between risk and a coin flip.
+- **A task that rides on something in the street sends a robber after her.** The man shouting,
+  the van, the burnt shell and a roadblock are not guarded where they wait. The moment she hands
+  the task over, a robber is sent after her from off screen — usually from above or below her,
+  `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) away, far enough past the edge of the view that the
+  screen-edge badge announces him before he is in it — awake and running at her from the first
+  frame. The warning is short: standing still, he reaches her about two seconds after the badge
+  rises. Running shakes him off; walking away does not, except where he has to come along her own
+  street from the side, which is further off. Whichever look-alike she
+  chose, the price is the same, and it is paid on the way out rather than guarded at one spot she
+  could avoid by choosing another. *(2026-09-13: "maybe spawn the robber in pursuing mode
+  offscreen when she interacts with the yeller so it runs towards her from offscreen.")* A task
+  that sits on a bare point — the district door, a mast's foot, the swing, the last night's front
+  door — keeps a robber waiting near it, as a mark does; the neighbor's has neither, since they
+  are walking home and there is no one spot to guard.
 - **The any-instance contact is whichever look-alike the player hands the note to.** It does
   not wait at the one instance the day happened to seed; it rides onto whichever live
   look-alike — a `homeless_yeller` or a `roadblock` — the player is within reach of, and follows
   them from one to the next until they touch one. There is no exhaustive check to run and no
   wrong candidate to cost the player anything: approaching the field of any of them is still the
-  cost, but any one they have noticed and walk up to is the right one. *(2026-09-13: "the task is
-  always solved by going to any yeller she notices.")*
+  cost, but any one they have noticed and walk up to is the right one, and one they came near and
+  walked on from was never chosen. *(2026-09-13: "not the first yeller she reaches but the first
+  yeller she interacts with. so the task is always solved by going to any yeller she notices.")*
 - **Only a day the player wins counts.** *"a task is only complete if it is done on the day that won"* —
   a mark touched, the task it unlocked, a contact lost to its deadline, a package picked up or the
   last night's sabotage are all given back when the day is lost, and the retry starts at the mark
@@ -240,7 +255,7 @@ act.
 
 | Task | What it accomplishes | If she skips it |
 | --- | --- | --- |
-| The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she reaches is him — which one exactly is decided by how she plays. | Somebody else answers. |
+| The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she hands it to is him — which one exactly is decided by how she plays. | Somebody else answers. |
 | The package at the van's drop | From the group to the neighbor. The driver is a sympathizer; the package is tools and a lamp. She carries it home, which is where the neighbor lives. | Somebody else risks the building. |
 | The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A cordoned ruin is where nobody goes, so it is the dead drop. Whether the fire was an accident is never answered. | The drawing goes out another way. |
 | Cross a named door | The districts closed that morning and the station is across one. She finds out whether a stroller gets through. | Somebody else finds out. |

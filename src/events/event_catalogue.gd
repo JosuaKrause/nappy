@@ -164,6 +164,10 @@ static func _build() -> Array[EventDef]:
 		# resistance (`ResistanceHappenings`, `ResistanceDirector`). See "the neighbor" below.
 		_neighbor(),
 
+		# The robber a handed-over task sets on her — never rolled by the ordinary scheduler,
+		# spawned only by `ResistanceDirector` at the handover. See `_robber_giving_chase()`.
+		_robber_giving_chase(),
+
 		# The finale — never rolled by the ordinary scheduler, placed only by `FinalePlanner` and
 		# `InteriorEvents`. See "the finale" below.
 		_finale_explosion(),
@@ -1928,6 +1932,61 @@ static func _alley_robbery() -> EventDef:
 	def.weight = 1.5
 	def.max_per_day = 4
 	def.cost = 2
+	return def
+
+## **The robber a task sets on her: the alley robber, awake from his first frame, coming at her
+## from off screen the moment she hands a task over.** *(2026-09-13, the player: "maybe spawn the
+## robber in pursuing mode offscreen when she interacts with the yeller so it runs towards her from
+## offscreen"; "we need a version of the robber that is not frozen when spawned".)* Nothing places
+## it but `ResistanceDirector._set_the_trap_on_her()`, `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) from
+## her on walkable ground outside the view: `SCRIPTED` on day 0, the day nobody plays, so the roll,
+## the stream and the budget never reach it — `EventDef.validate()` refuses a pursuer with no
+## trigger on any other terms.
+##
+## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
+## (16 over 30–200px), his 130px/s, his 30px catch, his `hard_fail` and the way he walks off once
+## he has lost her. What differs is the whole of the request — **no trigger** (`pursues_within` 0),
+## so he is never `is_waiting()` and his notice and chase are clocked from the frame he exists —
+## and the split of his time between notice and chase.
+##
+## **A short notice and a long chase.** *(PLAYTEST-140, statement 2: a warning comes shortly before
+## its danger, "not so early that nothing happens by the time it does".)* `telegraph_time` is
+## `Tuning.PURSUIT_MIN_NOTICE` (1.5s), the least `Tuning.validate_pursuit()` accepts, plus half a
+## second of margin, so he may end her day 2.0s after he appears. Walking away still has to lose, so the
+## time that walking away needs is put into `duration` instead: `Tuning.PURSUIT_TIME` × 2 = 6.0s, the
+## longest chase `validate_pursuit()` allows, and `Tuning.TRAP_ARRIVAL_DISTANCE` is the furthest start
+## a walker loses from inside the 8.0s the two make. Running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s)
+## any time after the least notice ends him as it ends every chase, so the longer chase costs a
+## runner nothing; it is the cap on walking away and on standing still. He is the one pursuer whose
+## chase is longer than `Tuning.PURSUIT_TIME`, and `tests/test_events_costs.gd` names him as such.
+##
+## What that leaves her: standing still, he lunges from his stand-off about 1.6s after he appears
+## and reaches her about 0.6s later; walking into him, the lunge comes sooner and still at his
+## stand-off; walking directly away, he closes at 38px/s and catches her about 7.5s after he
+## appeared, half a second inside his chase.
+##
+## **His own look, `ROBBER_GIVING_CHASE`, drawing the alley robber's own pictures**, the way
+## `door_guard` draws a roadblock's guard: he never waits, so it is only ever the lunge, and the
+## badge is the one view of it `ROBBER` does not already stand for.
+static func _robber_giving_chase() -> EventDef:
+	var alley := _alley_robbery()
+	var def := EventDef.new()
+	def.id = "robber_giving_chase"
+	def.display_name = "Robber giving chase"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.ROBBER_GIVING_CHASE
+	def.shape = alley.shape
+	def.act_tag = 2
+	def.intensity = alley.intensity
+	def.inner_radius = alley.inner_radius
+	def.outer_radius = alley.outer_radius
+	def.telegraph_time = Tuning.PURSUIT_MIN_NOTICE + 0.5
+	def.duration = Tuning.PURSUIT_TIME * 2.0
+	def.pursues = true
+	def.pursue_speed = alley.pursue_speed
+	def.departs_at = alley.departs_at
+	def.hard_fail = alley.hard_fail
 	return def
 
 ## A building goes in the night. Enormous, static, and it closes the block.
