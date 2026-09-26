@@ -744,7 +744,7 @@ def generate(output: Path, seed: int, selection: str) -> None:
         "archive_contents": archive_files,
         "comparison_order": _comparison_order(pairs),
         "files": audio_metadata,
-        "generator": "tools/synthesize-sfx.py",
+        "generator": "recipe/synthesize-sfx.py",
         "generator_sha256": hashlib.sha256(generator_data).hexdigest(),
         "method": (
             "Handwritten procedural synthesis using standard-library oscillators, seeded noise, envelopes and filters."
@@ -758,7 +758,8 @@ def generate(output: Path, seed: int, selection: str) -> None:
         ),
         "reproducibility": {
             "guarantee": (
-                "Two rebuilds are checked byte-for-byte with the tracked generator and locked Python 3.14 environment."
+                "A scratch rebuild from the frozen generator is checked byte-for-byte against the "
+                "generated package in the locked Python 3.14 environment."
             ),
             "limit": (
                 "No blanket cross-platform bit-identical promise is made because platform math "

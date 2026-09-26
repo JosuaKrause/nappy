@@ -90,9 +90,23 @@ class CliHelpTests(unittest.TestCase):
             root = Path(temporary)
             first = root / "first"
             second = root / "second"
-            for output in (first, second):
-                result = self.run_tool("synthesize-sfx.py", "--output", str(output), "--seed", "260926", cwd=root)
-                self.assertEqual(result.returncode, 0, result.stderr)
+            result = self.run_tool("synthesize-sfx.py", "--output", str(first), "--seed", "260926", cwd=root)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(first / "recipe/synthesize-sfx.py"),
+                    "--output",
+                    str(second),
+                    "--seed",
+                    "260926",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=15,
+                cwd=root,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
 
             first_files = {
                 path.relative_to(first).as_posix(): path.read_bytes() for path in first.rglob("*") if path.is_file()
@@ -105,6 +119,10 @@ class CliHelpTests(unittest.TestCase):
             manifest: dict[str, Any] = json.loads(first_files["manifest.json"])
             self.assertEqual(set(manifest["files"]), set(SOUND_FILES))
             self.assertEqual(manifest["selection"], "grounded-revision")
+            self.assertEqual(manifest["generator"], "recipe/synthesize-sfx.py")
+            self.assertEqual(
+                manifest["generator_sha256"], hashlib.sha256(first_files["recipe/synthesize-sfx.py"]).hexdigest()
+            )
             audition_rms_db: list[float] = []
             for filename in SOUND_FILES:
                 with self.subTest(wav=filename):

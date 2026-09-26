@@ -107,13 +107,13 @@
       "sha256": "4461e713b8852c5bbe34c8b12cb1149395db7ac9718e3a8bf2c0e7271d532396"
     }
   },
-  "generator": "tools/synthesize-sfx.py",
+  "generator": "recipe/synthesize-sfx.py",
   "generator_sha256": "357e2fbbd9c992b2dbd3ff185a65bd6857854e2a2230430e8dc99fce865f147b",
   "method": "Handwritten procedural synthesis using standard-library oscillators, seeded noise, envelopes and filters.",
   "mix_peak_ceiling": 0.7,
   "mix_target_rms_dbfs": -22.5,
   "reproducibility": {
-    "guarantee": "Two rebuilds are checked byte-for-byte with the tracked generator and locked Python 3.14 environment.",
+    "guarantee": "A scratch rebuild from the frozen generator is checked byte-for-byte against the generated package in the locked Python 3.14 environment.",
     "limit": "No blanket cross-platform bit-identical promise is made because platform math implementations may differ."
   },
   "sample_format": {
