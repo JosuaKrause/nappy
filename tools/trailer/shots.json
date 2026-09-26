@@ -7,7 +7,7 @@
       "name": "choice",
       "seed": 25, "day": 2, "parent": "mother",
       "in": 0.3, "length": 7.0,
-      "walk": "1.7w0.6p3e2.5s",
+      "walk": "1.2s1.3w0.6p2.3e2.4s",
       "caption": "Every walk is a choice."
     }
   ]

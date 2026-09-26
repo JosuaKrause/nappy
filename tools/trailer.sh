@@ -27,7 +27,10 @@
 # is itself one of is_rig()'s conditions, so the game's M195 lockdown applies without any dev flag
 # of its own, and the same focus guard tools/shot.sh uses hands focus straight back. Every shot also
 # carries `--player-view`, so the frame is the release build's own HUD with the debug readout off
-# rather than a rig's. A shot is killed from outside if it outlives the movie writer's own deadline
+# rather than a rig's, and `--no-focus-pause`, since a window that never has real OS focus in the
+# first place would otherwise open the pause screen on its own first frame and every frame shows
+# that instead of the day it was sent to render. A shot is killed from outside if it outlives the
+# movie writer's own deadline
 # (see rig_kill_after_movie_seconds in tools/lib_dev_flags.sh).
 set -euo pipefail
 
@@ -142,7 +145,7 @@ shot_game_flags() {
     caption="$(shot_field "$name" caption)"
     title="$(shot_field "$name" title)"
     after="$(shot_render_seconds "$name")"
-    printf '%s\n' --player-view --no-save \
+    printf '%s\n' --player-view --no-save --no-focus-pause \
         --seed "$(shot_field "$name" seed)" --day "$(shot_field "$name" day 1)" \
         --parent "$(shot_field "$name" parent)" --after "$after"
     [[ -n "$walk" ]] && printf '%s\n' --walk "$walk"

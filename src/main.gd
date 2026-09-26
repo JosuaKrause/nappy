@@ -278,6 +278,16 @@ func _ready() -> void:
 	# nothing earlier is reachable from GDScript at all — and ahead of the escape's own boot branch
 	# just below, so either path gets it from this one call.
 	_lock_out_a_rig()
+	# A recording's own real wall clock runs several times slower than its game clock (saving one
+	# frame costs far longer than the 1/60s it represents) — see `_rig_quit_game_seconds`'s own doc.
+	# Physics interpolation blends a rendered frame between two physics ticks by how far the
+	# frame's own real presentation time sits between them, so under that mismatch the blend never
+	# advances: every recorded frame reads as the same tick, and her camera, the crowd and the
+	# clock all read as frozen even though the simulation underneath is running correctly (confirmed
+	# against the run log while building this). Off only for a recording — real play keeps the
+	# smoothing `--fixed-fps` never runs under.
+	if DevFlags.recording():
+		get_tree().physics_interpolation = false
 	# Before either boot path — this is the one thing `?debug=1` adds on top of the readout, and
 	# it has to reach the escape scene's own boot too. Gates itself on `_readout_requested` rather
 	# than being gated at the call site, the same shape `_add_debug_layers()` gates itself on
