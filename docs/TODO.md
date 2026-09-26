@@ -394,6 +394,73 @@ reaction time a warning must leave her; the player's complaint is the other end.
 
 ---
 
+## M208 — The counter says what ended a day and what she actually met · asked for 2026-09-26
+
+> "the goatcounter telemetry should state what ended a day. like instant_car (for impacts /
+> immediately day ending) or noise_yeller or noise_barrier (or whatever name makes sense for
+> ending via normal meter filling up). also we should record special events, like seen_fire (for
+> the smoke day)."
+
+> "Also, we need to record like dog tutorial, read mark day x, separate from task completion that
+> day, etc basically are the special/unique things actually getting encountered?"
+
+[PLAYTEST-141](playtests/PLAYTEST-141.md), statements 1–3. Every event goes through `VisitCounter`
+(`src/autoload/visit_counter.gd`), which sends a GoatCounter event only from the released web page
+and never from a debug build or `?debug=1`. The published build has no run log, so every
+`Telemetry.note` and every `TelemetryObserver` check is off there: each moment below needs an
+`EventBus` signal that nothing in gameplay listens to, emitted where the moment happens. A
+signal emits and reads; it rolls nothing and changes nothing, so the telemetry skill's
+determinism test holds.
+
+Names keep the counter's shape — `nappy-` first, lowercase, hyphens — so the player's
+`instant_car` is `nappy-day-N-instant-car`. A catalogue id inside a name is hyphenated
+(`homeless_yeller` → `homeless-yeller`). Each is sent once per attempt at a day, the same as
+`nappy-day-N-began`, so a nerve-bought retry counts again and the count reads against `began`.
+
+- [ ] **What ended a day**, sent beside the existing `nappy-day-N-lost-*` so the counts already
+      collected keep their meaning:
+      - `nappy-day-N-instant-<what>` for a hard fail: `car` for a car on the carriageway
+        (`hard_fail_triggered("car_strike")`), otherwise the row that struck her —
+        `cyclist`, `reversing-lorry`, `charging-dog`, `abduction`, `alley-robbery` (the chalk
+        mark's guard), `firefight`, `door-guard`, `roadblock`, `night-raid`.
+      - `nappy-day-N-noise-<what>` for crying: whichever source landed the most on her over the
+        halo's window (`landed()`, the last 5 seconds) at the moment she cried — a row's id
+        (`homeless-yeller`, `construction`, `leaf-blower`, ...), `crowd` for walkers, `traffic`
+        for cars, or `self` for her own running and standing in an alley when that outweighs
+        every named source. Running and the alley are added to the meter with no source today,
+        so the baby keeps a record of their share over the same window, read by nothing else.
+      - A lost clock already says everything: `nappy-day-N-lost-timeout`, unchanged.
+- [ ] **The special events a day is built around**:
+      - `nappy-day-3-seen-fire` — the first frame the burning building is on screen, the moment
+        the fire engine is sent for.
+      - `nappy-day-3-fire-unmet` — a won day 3 on which the fire was never met and was lit off
+        her path at dusk.
+      - `nappy-day-14-blackout` — the city goes dark after the sabotage, whether or not a mast
+        was silenced.
+      - `nappy-escape-city` — the building is behind her and the city section begins.
+- [ ] **The one-off moments, each apart from the task it belongs to**:
+      - The dog: `nappy-day-N-dog-chased` when `charging_dog` starts chasing her (day 3 is the
+        lesson; later days are the sprinkled ones), then `nappy-day-N-dog-shaken` when she ran
+        it off, or `nappy-day-N-dog-outlasted` when its chase ran out. Caught is
+        `nappy-day-N-instant-charging-dog`.
+      - The chalk mark, from day 6: `nappy-day-N-mark-seen` when the resistance director counts
+        it seen (within 150px and on screen for a second), `nappy-day-N-mark-read` when she
+        touches it, `nappy-day-N-mark-missed` when the day ends with it untouched. The step the
+        mark gives her keeps `nappy-day-N-task-done` / `nappy-day-N-task-skipped`, which from now
+        on count only the task and never the mark.
+      - `nappy-day-N-poster-torn` — the first poster she tears in an attempt.
+      - `nappy-day-N-chat` — the first time in an attempt a mother stops her for a conversation.
+      - `nappy-day-N-checkpoint` — the first time in an attempt a checkpoint stops her.
+- [ ] **`docs/TELEMETRY.md`, "The page counts visits"**, lists every event.
+
+Considered and left out: the curfew announcement on day 6 (a mast's plan streams in whether or not
+she is near enough to hear it, so no moment says she heard it), the HUD's tips (each is shown
+every time its day begins), and opening the pause screen (not a one-off). GoatCounter counts an
+event against the account's monthly total the same as a page view, which is why the repeatable
+moments are counted once per attempt.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
