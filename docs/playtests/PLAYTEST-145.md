@@ -101,3 +101,13 @@ since it is not lethal", the player answered:
 18. **`loose_dog` might need no warning at all, since it is low stakes.** Said as a possibility,
     not a decision; it collides with the cues rule (a badge for "something lethal or faster than a
     walk", and the dog outruns her) and with the fairness contract every event is held to. → M226.
+
+Told that no warning would collide with the cues rule and the fairness contract, and that the
+orchestrator recommended keeping a short one:
+
+> "that doesn't make it an exemption. it makes it something that is not telegraphing that it
+> comes. only things that need telegraphing need to follow the cues rule and placement"
+
+19. **A thing that does not telegraph its coming is not an exemption from the cues rule or from
+    warning-first placement; those rules govern only the things that need telegraphing.** Whether
+    `loose_dog` is such a thing went back to the player. → M226.
