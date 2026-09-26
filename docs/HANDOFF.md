@@ -341,7 +341,11 @@ additional work".
   - **#362, M137, the trap comes to her**: built (a chasing guard after the van; the robber after
     the man shouting starts off screen; the burnt shell and roadblock keep a waiting guard, open
     to the player), needs its decision record, description and review.
-  - **#379, M205, the man shouting**: pushed, not reported or reviewed.
+  - **#379, M205, the man shouting** (draft): handing over the note now needs a 2.5s stand inside
+    his inner field (the orchestrator's proposal, marked so), costing about 20 points awake. His
+    zero charge on an ordinary day did not reproduce in any test or full boot; the PR names two
+    suspects (the halo's cap of eight sources at a busy crosswalk, and his own warning window).
+    Not reviewed.
   - **#365, M203 and M216, roofs**: pushed; its agent had not reported at the stop. The roof
     pictures go to the player.
 - **Merge permission**: the player said "if you reviewed all PRs and they are ready you can
