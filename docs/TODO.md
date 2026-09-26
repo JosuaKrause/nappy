@@ -609,8 +609,9 @@ The M-numbers also need coordination between sessions: merging-main carries renu
 for them, and two branches claimed M208 on 2026-09-26.
 
 The order is the player's: the `git grep` hook first ("merge the hook before the new system -- that
-has even higher priority"), then this, before any new task ("prioritize the new system. and once
-each agent is done convert theirs to the new system"). Work in flight is converted to the new
+has even higher priority"), then this ("prioritize the new system. and once each agent is done
+convert theirs to the new system"), before any new task is picked up ("The file layout change
+needs to land before picking up new tasks"). Work in flight is converted to the new
 layout as each agent finishes. Until this lands, entries are filed the old way.
 
 - [ ] **A queue entry is a folder, and each of its items is a file**:
@@ -630,8 +631,8 @@ layout as each agent finishes. Until this lands, entries are filed the old way.
       PR edits is the same conflict again. A command lists and searches the folder by date and
       title, and `DECISIONS.md` says where the records are.
 - [ ] **A new playtest is a file under the same kind of name**, `docs/playtests/<date>-<adjective>-<animal>.md`,
-      and so is anything else numbered in sequence. Existing playtest files keep their numbers
-      and are never rewritten.
+      as the other things numbered in sequence (milestones and their decisions) are. Existing
+      playtest files keep their numbers and are never rewritten.
 
 **Proposed, not asked for** (the orchestrator's, open to overturn; the player saw and accepted the
 split of the old records and the duplicate lint, but not these): a command that makes names; no
@@ -647,8 +648,9 @@ the folder; the date the migration runs; a checkbox-free item with no marker; nu
       duplicate name across the folders.
 - [ ] **A review item is a file**, `docs/review/<the entry's name>.md` (a second item from one
       entry takes a suffix, which is the orchestrator's proposal), its steps written as prose rather
-      than numbered, deleted by the playtest that covers it. `docs/REVIEW.md` keeps only its header,
-      how a run is set up, and its list of what no person has tested yet.
+      than numbered, deleted by the playtest that covers it. `docs/REVIEW.md` keeps only its header
+      and how a run is set up; its list of what no person has tested yet becomes files too ("Even
+      the review file").
 - [ ] **`docs/HANDOFF.md` is written only at the end of a session**, by session-cleanup, and no
       longer by each PR. committing's "a PR carries every document its own changes make false"
       says so for HANDOFF.

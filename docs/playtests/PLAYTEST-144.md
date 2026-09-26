@@ -43,7 +43,7 @@ Then, in the same conversation:
 
 > "merge the hook before the new system -- that has even higher priority"
 
-The first was answered by the table quoted above. The other two set the order: the `git grep` hook
+The first was answered by the table quoted below. The other two set the order: the `git grep` hook
 first, then M223, and each agent's work converted to the new layout as it finishes.
 
 5. **A new queue entry is named by two random words, an adjective and an animal, after the date it
@@ -105,8 +105,8 @@ Asked, among others: how the restart disc's fill should show under a thumb; whet
 between two days may drop "She fell asleep after m:ss"; whether the chalk mark's robber may stand
 out of waking range at the far end of a long alley; whether the burning building's sidewalk body
 stays; whether the counter's asks get queue entries. The player, in one message ("Robert" and
-"river" are dictation for *robber*, "teller" for *yeller*, as the player said after: "*robber not
-river", "*robber not Robert"):
+"river" are dictation for *robber*, as the player said after: "*robber not river", "*robber not
+Robert"; "teller" is read as *yeller*):
 
 > "373 this is already implemented for mouse. Just make it appear everywhere. Where does the
 > decision to add a river after handing to the teller come from? You can keep the she feel asleep
@@ -116,7 +116,8 @@ river", "*robber not Robert"):
 > before picking up new tasks. After that the telemetry changes are next. Split every file where
 > appropriate. Even the review file. We overhaul all items that are currently relevant."
 
-9. **The held restart's fill shows on touch as it does for the mouse.** → M212, on PR #373.
+9. **The held restart's fill shows everywhere as it does for the mouse**, on a phone included.
+   → M212, on PR #373.
 10. **The brief between two days keeps "She fell asleep after m:ss"** for the day that ended, and
     the rest of it is the coming day's; or it becomes two screens. → M210.
 11. **The chalk mark's robber stands at the far end even where he then never wakes.** → M213.
@@ -147,5 +148,7 @@ edge stays blank (M203); 25, the day-6 handover ends the man shouting's charge a
     fine only if he starts off screen. → M137.
 16. **The cyclist must not become cheaper to pass** for the shorter warning. → M207.
 17. **The roof cases are judged on pictures.** → M203.
-18. **Every other listed addition is reaffirmed**: 1–8, 10, 12, 14–16, 19–24, 26 and 27, and 9,
-    17, 18 and 25 wait on the explanations asked for.
+18. **Every other listed addition is reaffirmed**: 1–8, 10, 12, 14, 19–24, 26 and 27. 9 and 25
+    wait on the explanations asked for, and 15–18, the roof cases, on the pictures. Of 11, the
+    answer names the van and the man shouting; the burnt shell and the roadblock go back to their
+    waiting guard as the smallest reading, open to the player.
