@@ -30,6 +30,17 @@
             "statusMessage": "Loading the rules for this file"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/git-grep-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking for an unbounded git grep"
+          }
+        ]
       }
     ],
     "PostToolUse": [
