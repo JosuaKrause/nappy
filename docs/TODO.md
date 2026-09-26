@@ -14,15 +14,6 @@ mid-way through.
 
 ## The order
 
-### Copper lark — Compare original sound styles
-
-[Player's words](playtests/2026-09-26-copper-lark.md). Create a standalone A/B listening set of
-original sound effects, comparing grounded and stylized treatments. All audio is generated here
-from scratch, without precreated assets. Proposed sample selection: footsteps, stroller wheels,
-car horn and loudspeaker crackle. Keep editable source recipes and reproducible output, and let
-the player judge the samples before game integration. The game's visual warnings remain
-sufficient with audio off.
-
 ### M109 — Convert the SVG catalogue to PNG
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in

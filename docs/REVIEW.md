@@ -1,5 +1,14 @@
 # Review
 
+## Copper lark — Original sound styles
+
+Download the listening ZIP from the sound experiment's PR, unzip it and open `index.html`, or
+play `docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2/comparison.wav`. For each subject,
+grounded is first and stylized second: footsteps, stroller wheels, car horn, loudspeaker crackle.
+Do the sounds suggest those objects, which treatment fits the game, and is any texture harsh or
+annoying? The page offers independent buttons and stops a previous sound when another begins.
+These are auditions only; choosing a direction does not install sound in the game.
+
 **What waits on a human.** Everything here is built, measured by a rig, and unfelt: a person has
 to play it, look at it, or decide about it. *(2026-09-11: "keep a document with items that need
 human review / test runs. That way you can keep working without having to stop. And test runs

@@ -1,5 +1,36 @@
 # Decisions
 
+## Copper lark — Original sound synthesis auditions · built 2026-09-26
+
+[Player's words](playtests/2026-09-26-copper-lark.md): create sounds here from scratch, with no
+precreated assets; compare grounded and stylized versions; write the approach down like graphics
+so it is reproducible; keep the experiment on its own branch.
+
+The experiment generates footsteps, stroller wheels, a car horn and loudspeaker crackle in both
+styles from handwritten Python oscillators, seeded noise, envelopes and filters. These four
+subjects were the assistant's selection, not a request for particular game triggers. There is no
+runtime audio installation. Human breathing and voices were discussed as a separate, more
+difficult synthesis experiment, not implemented or promised as realistic.
+
+`tools/synthesize-sfx.py` writes eight 48 kHz mono PCM16 WAVs, a comparison, a labeled offline
+listening page, a provenance manifest and a portable ZIP carrying the exact generator. The
+sound-effects skill records source recipes, seeds, processing, commands, hashes, preservation of
+submitted passes and the distinction between technical checks and listening approval; the edit
+hook loads it for audio and sound-generator paths.
+
+The first shared pass used equal peak levels. The second keeps the same designs but targets
+-22.5 dBFS RMS with a 0.70 peak ceiling to reduce loudness bias in the comparison; the measured
+RMS spread was under 0.15 dB. This is energy matching, not proof of equal perceived loudness.
+Both passes are preserved under `docs/evidence/copper-lark-sound-lab-2026-09-26/` and its
+`-pass-2` sibling. The second pass is the current listening proposal.
+
+Verification covered Python formatting/types/tests, help and rejected-argument paths with no
+output, two-directory byte-for-byte rebuilds, WAV format/non-silence/headroom/boundaries,
+page/ZIP references, hook dispatch, skill validation and document lint. Reproducibility is
+measured in the pinned environment, not asserted across all floating-point implementations.
+No agent listening approval is claimed; recognition, comfort and preferred style await the
+player in `REVIEW.md`. The game's visual-only warning contract remains unchanged.
+
 ## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
 
 *([PLAYTEST-142](playtests/PLAYTEST-142.md): "the pause screen is currently bugged where you cannot
