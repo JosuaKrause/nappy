@@ -346,8 +346,12 @@ additional work".
     zero charge on an ordinary day did not reproduce in any test or full boot; the PR names two
     suspects (the halo's cap of eight sources at a busy crosswalk, and his own warning window).
     Not reviewed.
-  - **#365, M203 and M216, roofs**: pushed; its agent had not reported at the stop. The roof
-    pictures go to the player.
+  - **#365, M203 and M216, roofs**: built and green (a courtyard block's roof turns its corners;
+    roof furniture rolls on an extended roof too). No pictures yet: every rig walk to a courtyard
+    hit a parked vehicle or a closure on the way, and `tests/probes/m216_evidence.gd` computes
+    seeds and walks for the stills. A front facing the map's edge happens only on a cul-de-sac's
+    dead-end wall, never on a real block front; that goes to the player before the special case is
+    kept or dropped. The PR description predates M216.
 - **Merge permission**: the player said "if you reviewed all PRs and they are ready you can
   merge" in the session that stopped; a new session confirms it before using it. A release needs
   its own go-ahead, which the player gave for after M225.
