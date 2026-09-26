@@ -121,10 +121,10 @@ REVIEW = (
 - **Look at the other thing.**
 
 """
-    + q.REVIEW_LIST_HEADINGS[1]
+    + q.REVIEW_UNTESTED
     + """
 
-- **An old question.**
+- **An old question** nobody has felt.
 """
 )
 
@@ -278,18 +278,21 @@ class ReviewTests(unittest.TestCase):
     def test_every_bullet_is_a_file_and_the_header_is_rewritten(self) -> None:
         report = q.Report()
         tree = q.review_tree(REVIEW, undated, True, report)
-        self.assertEqual(tree[q.REVIEW], q.NEW_REVIEW)
+        self.assertEqual(
+            tree[q.REVIEW], q.NEW_REVIEW + "\n" + q.REVIEW_UNTESTED + "\n\n- **An old question** nobody has felt.\n"
+        )
         items = sorted(p for p in tree if p.startswith("docs/review/"))
-        self.assertEqual(len(items), 3)
-        self.assertEqual(report.review_items, 3)
+        self.assertEqual(len(items), 2)
+        self.assertEqual((report.review_items, report.review_lines_kept), (2, 3))
         walk = next(tree[p] for p in items if "walk-the-thing" in p)
         self.assertEqual(
             walk, "**Walk the thing** ([PLAYTEST-9](../playtests/PLAYTEST-9.md)) and\njudge it.\n\nSecond paragraph.\n"
         )
 
-    def test_a_stray_paragraph_is_refused(self) -> None:
+    def test_a_stray_paragraph_among_the_next_run_is_refused(self) -> None:
+        stray = REVIEW.replace("- **Look at the other thing.**", "A stray paragraph.")
         with self.assertRaises(q.QueueFormatError):
-            q.review_tree(REVIEW + "\nA stray paragraph.\n", undated, True, q.Report())
+            q.review_tree(stray, undated, True, q.Report())
 
 
 class MigrateTests(unittest.TestCase):
