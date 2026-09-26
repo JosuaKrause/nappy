@@ -27,9 +27,9 @@ isolated worktree only if one was actually created. The post-edit lint hook does
 with a reviewable PR.
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
-what was tried and rejected, or what a number used to be, that is
-[docs/DECISIONS.md](docs/DECISIONS.md), fetched on demand. Nothing outside that file describes a
-past state.
+what was tried and rejected, or what a number used to be, that is the records under
+`docs/decisions/`, one file each, fetched on demand with `tools/decisions.sh <noun>`
+([docs/DECISIONS.md](docs/DECISIONS.md) says how). Nothing outside them describes a past state.
 
 Read [docs/HANDOFF.md](docs/HANDOFF.md) for where to pick up, then [docs/TODO.md](docs/TODO.md).
 
@@ -68,7 +68,7 @@ is the moment somebody is about to touch the file.
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify** |
-| `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **playtest-feedback** |
+| `docs/playtests/*.md`, `docs/TODO.md`, `docs/todo/**`, `docs/review/**` | **playtest-feedback** |
 | `art/illustrated/**` | **illustrated-png** |
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
 | `docs/evidence/archive/session-captures/**` | **session-captures** |
@@ -135,7 +135,7 @@ fails, not only that one was edited.
 
 **Every document states what is true now and only what is true now.** No "used to be", no "since
 M33", no "this was wrong for twelve milestones", no caveats about what a sentence meant before.
-History goes to `docs/DECISIONS.md`.
+History goes to a record under `docs/decisions/`.
 
 Keep the *reason* a thing is the way it is — that is current, and it is most of what makes this
 project reviewable. Move the *incident* that taught it.
@@ -150,16 +150,17 @@ in it is wrong about nothing.**
 unless recording that measurement is the document's job. Say what the command is, not what it
 prints.
 
-**No quest logs outside `DECISIONS.md`.** *(2026-09-01: "there should be no quest logs outside of
-decisions.md — that information is rarely relevant when working on the codebase. it only ever comes
-in to play when planning things out, so we don't attempt approaches again that we already ruled
-out.")* A ticked box, a "Done:" paragraph, a branch name or a status word in a heading is a quest
-log wherever it stands: `TODO.md` holds open work only, `HANDOFF.md` holds the pick-up state only,
-`REVIEW.md` holds what waits on a person only, and what was done — with its measurement and its rejected options — is retrievable on demand from
-`DECISIONS.md` and nowhere else.
+**No quest logs outside the decision records.** *(2026-09-01: "there should be no quest logs outside
+of decisions.md — that information is rarely relevant when working on the codebase. it only ever
+comes in to play when planning things out, so we don't attempt approaches again that we already
+ruled out.")* A ticked box, a "Done:" paragraph, a branch name or a status word in a heading is a
+quest log wherever it stands: `TODO.md` and the entries under `docs/todo/` hold open work only,
+`HANDOFF.md` holds the pick-up state only, `REVIEW.md` and the items under `docs/review/` hold what
+waits on a person only, and what was done — with its measurement and its rejected options — is
+retrievable on demand from the records under `docs/decisions/` and nowhere else.
 
-The playtest files are the exception and are never rewritten. `docs/playtests/PLAYTEST-NN.md` are primary
-sources: a player's own words on a date.
+The playtest files under `docs/playtests/` are the exception and are never rewritten. They are
+primary sources: a player's own words on a date.
 
 ---
 
@@ -177,10 +178,11 @@ follow; it is a claim with the evidence withheld.
   settled fact.
 - If a name was invented for the conversation rather than found in the repo, say so. Half the
   confusion is a label that sounds official and is not.
-- **A milestone or a `TODO.md` item is named by its number *and* a short title**, every time:
-  "M98, pressure in the empty acts", never "M98" alone. *(2026-09-09: "whenever you're talking
-  about milestones and todos give a short title in addition to the number.")* A number is a
-  lookup the player has to perform; the title is the thing they were asked about.
+- **A queue entry is named by its two words, or an entry from before names by its number, *and* a
+  short title**, every time: "busy-badger, stars for nerves" or "M98, pressure in the empty acts",
+  never "busy-badger" or "M98" alone. *(2026-09-09: "whenever you're talking about milestones and
+  todos give a short title in addition to the number.")* A name or a number is a lookup the player
+  has to perform; the title is the thing they were asked about.
 - **A question carries all the context needed to answer it** — what was asked, what it collides
   with, what each answer costs, and which you would pick — in the message that asks it, not in an
   earlier one. *(2026-09-09: "also provide all necessary context when asking a question.")* The
@@ -247,7 +249,8 @@ repo (eg claude.md) *not* storing it as memory".)* It never means an assistant's
 
 ## Things deliberately not done
 
-Each was a decision. Do not "fix" one without a reason; the reasoning is in `docs/DECISIONS.md`.
+Each was a decision. Do not "fix" one without a reason; the reasoning is in the records under
+`docs/decisions/`.
 
 - **The engine and city non-choices live in the city and events skills**: closures and events are
   checked before they are accepted, never repaired afterwards, with its one monotonic exception;

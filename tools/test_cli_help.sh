@@ -117,12 +117,14 @@ assert_exit "prune-merged.sh --help" zero ./tools/prune-merged.sh --help
 assert_exit "prune-merged.sh -h"     zero ./tools/prune-merged.sh -h
 assert_exit "agent-status.sh --help" zero ./tools/agent-status.sh --help
 assert_exit "agent-status.sh -h"     zero ./tools/agent-status.sh -h
-assert_exit "resolve-decisions-top.sh --help" zero ./tools/resolve-decisions-top.sh --help
-assert_exit "resolve-decisions-top.sh -h"     zero ./tools/resolve-decisions-top.sh -h
 assert_exit "update-pr.sh --help" zero ./tools/update-pr.sh --help
 assert_exit "update-pr.sh -h"     zero ./tools/update-pr.sh -h
 assert_exit "land-prs.sh --help" zero ./tools/land-prs.sh --help
 assert_exit "land-prs.sh -h"     zero ./tools/land-prs.sh -h
+assert_exit "new-name.sh --help" zero ./tools/new-name.sh --help
+assert_exit "new-name.sh -h"     zero ./tools/new-name.sh -h
+assert_exit "decisions.sh --help" zero ./tools/decisions.sh --help
+assert_exit "decisions.sh -h"     zero ./tools/decisions.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "ci-costs.sh --bogus"        nonzero ./tools/ci-costs.sh --bogus
@@ -152,7 +154,6 @@ assert_exit "prune-merged.sh --bogus" nonzero ./tools/prune-merged.sh --bogus fe
 # With no branch named there is nothing it may safely touch, so it refuses rather than sweeping.
 assert_exit "prune-merged.sh (no branch)" nonzero ./tools/prune-merged.sh
 assert_exit "agent-status.sh --bogus" nonzero ./tools/agent-status.sh --bogus
-assert_exit "resolve-decisions-top.sh --bogus" nonzero ./tools/resolve-decisions-top.sh --bogus
 assert_exit "update-pr.sh --bogus" nonzero ./tools/update-pr.sh --bogus
 # With nothing to update there is nothing it may safely fetch or merge, so it refuses rather
 # than guessing a target.
@@ -165,6 +166,13 @@ assert_exit "land-prs.sh (no PR)"        nonzero ./tools/land-prs.sh
 assert_exit "land-prs.sh (bad PR number)" nonzero ./tools/land-prs.sh abc
 assert_exit "land-prs.sh --timeout (missing value)" nonzero ./tools/land-prs.sh --timeout
 assert_exit "land-prs.sh --timeout (not a number)"  nonzero ./tools/land-prs.sh --timeout foo 1
+assert_exit "new-name.sh --bogus" nonzero ./tools/new-name.sh --bogus todo "x"
+# A name with no kind or no title would write an empty or an unfindable thing, so it writes none.
+assert_exit "new-name.sh (no title)" nonzero ./tools/new-name.sh todo
+assert_exit "new-name.sh (unknown kind)" nonzero ./tools/new-name.sh entry "x"
+assert_exit "new-name.sh --entry on a todo" nonzero ./tools/new-name.sh todo --entry M1 "x"
+assert_exit "decisions.sh --bogus" nonzero ./tools/decisions.sh --bogus
+assert_exit "decisions.sh --in (unknown folder)" nonzero ./tools/decisions.sh --in archive M129
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and
@@ -322,140 +330,6 @@ if [[ -e "$work_dir/shot-out.png" || -e "$work_dir/shot-out2.png" ]]; then
     failures=$(( failures + 1 ))
 fi
 
-# --------------------------------- resolve-decisions-top.sh: the one-hunk merge conflict shape ---
-# assert_exit's Godot-stub harness has nothing to say about a merge conflict, so this builds a
-# throwaway repo under $work_dir and drives an actual `git merge --no-ff --no-commit` to get the
-# real diff3/zdiff3 markers the script parses. One case resolves the shape it targets; three
-# refuse it (non-empty base, more than one hunk, a hunk that is not directly under # Decisions)
-# and must leave the conflicted file byte-for-byte as the merge left it.
-decisions_repo="$work_dir/decisions-repo"
-setup_decisions_repo() {
-    rm -rf "$decisions_repo"
-    mkdir -p "$decisions_repo/docs" "$decisions_repo/tools"
-    cp "$root/tools/resolve-decisions-top.sh" "$decisions_repo/tools/"
-    git init -q -b main "$decisions_repo"
-    git -C "$decisions_repo" config user.email test@example.com
-    git -C "$decisions_repo" config user.name test
-    git -C "$decisions_repo" config merge.conflictstyle zdiff3
-}
-# $1 base content  $2 branch content  $3 main content -- leaves feature checked out mid-merge,
-# docs/DECISIONS.md conflicted.
-decisions_conflict() {
-    printf '%s' "$1" > "$decisions_repo/docs/DECISIONS.md"
-    git -C "$decisions_repo" add docs/DECISIONS.md
-    git -C "$decisions_repo" commit -q -m base
-    git -C "$decisions_repo" checkout -q -b feature
-    printf '%s' "$2" > "$decisions_repo/docs/DECISIONS.md"
-    git -C "$decisions_repo" commit -q -am branch
-    git -C "$decisions_repo" checkout -q main
-    printf '%s' "$3" > "$decisions_repo/docs/DECISIONS.md"
-    git -C "$decisions_repo" commit -q -am main
-    git -C "$decisions_repo" checkout -q feature
-    git -C "$decisions_repo" merge --no-ff --no-commit main >/dev/null 2>&1
-}
-
-setup_decisions_repo
-decisions_conflict \
-    $'# Decisions\n' \
-    $'# Decisions\n\n## Branch section\n\nBranch body.\n' \
-    $'# Decisions\n\n## Main section\n\nMain body.\n'
-checks=$(( checks + 1 ))
-out="$(cd "$decisions_repo" && ./tools/resolve-decisions-top.sh 2>&1)"
-status=$?
-result="$(cat "$decisions_repo/docs/DECISIONS.md")"
-expected=$'# Decisions\n\n## Branch section\n\nBranch body.\n\n## Main section\n\nMain body.'
-unmerged="$(git -C "$decisions_repo" diff --name-only --diff-filter=U)"
-staged="$(git -C "$decisions_repo" diff --cached --name-only)"
-unstaged="$(git -C "$decisions_repo" diff --name-only)"
-if [[ $status -ne 0 ]]; then
-    echo "FAIL resolve-decisions-top.sh two-sided insertion: expected exit 0, got $status" >&2
-    printf '%s\n' "$out" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-elif [[ "$result" != "$expected" ]]; then
-    echo "FAIL resolve-decisions-top.sh two-sided insertion: unexpected result" >&2
-    printf '%s\n' "$result" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-elif [[ -n "$unmerged" || -n "$unstaged" || "$staged" != "docs/DECISIONS.md" ]]; then
-    echo "FAIL resolve-decisions-top.sh two-sided insertion: file not cleanly staged" \
-        "(unmerged=[$unmerged] staged=[$staged] unstaged=[$unstaged])" >&2
-    failures=$(( failures + 1 ))
-else
-    echo "ok   resolve-decisions-top.sh resolves the two-sided insertion, ours above theirs, and stages it"
-fi
-
-setup_decisions_repo
-decisions_conflict \
-    $'# Decisions\n\n## Old section\n\nOld body.\n' \
-    $'# Decisions\n\n## Old section\n\nBranch body.\n' \
-    $'# Decisions\n\n## Old section\n\nMain body.\n'
-before="$(cat "$decisions_repo/docs/DECISIONS.md")"
-checks=$(( checks + 1 ))
-out="$(cd "$decisions_repo" && ./tools/resolve-decisions-top.sh 2>&1)"
-status=$?
-after="$(cat "$decisions_repo/docs/DECISIONS.md")"
-if [[ $status -eq 0 ]]; then
-    echo "FAIL resolve-decisions-top.sh non-empty base: expected a non-zero exit, got 0" >&2
-    failures=$(( failures + 1 ))
-elif [[ "$after" != "$before" ]]; then
-    echo "FAIL resolve-decisions-top.sh non-empty base: the conflicted file changed despite refusal" >&2
-    failures=$(( failures + 1 ))
-elif ! printf '%s' "$out" | grep -qi "not empty"; then
-    echo "FAIL resolve-decisions-top.sh non-empty base: refusal message did not name the base" >&2
-    printf '%s\n' "$out" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-else
-    echo "ok   resolve-decisions-top.sh refuses a non-empty base and leaves the file untouched"
-fi
-
-setup_decisions_repo
-decisions_conflict \
-    $'# Decisions\n\n## Section A\n\nbody a\n\n## Section B\n\nbody b\n' \
-    $'# Decisions\n\n## Section A\n\nbody a branch\n\n## Section B\n\nbody b branch\n' \
-    $'# Decisions\n\n## Section A\n\nbody a main\n\n## Section B\n\nbody b main\n'
-before="$(cat "$decisions_repo/docs/DECISIONS.md")"
-checks=$(( checks + 1 ))
-out="$(cd "$decisions_repo" && ./tools/resolve-decisions-top.sh 2>&1)"
-status=$?
-after="$(cat "$decisions_repo/docs/DECISIONS.md")"
-if [[ $status -eq 0 ]]; then
-    echo "FAIL resolve-decisions-top.sh two hunks: expected a non-zero exit, got 0" >&2
-    failures=$(( failures + 1 ))
-elif [[ "$after" != "$before" ]]; then
-    echo "FAIL resolve-decisions-top.sh two hunks: the conflicted file changed despite refusal" >&2
-    failures=$(( failures + 1 ))
-elif ! printf '%s' "$out" | grep -qi "one hunk"; then
-    echo "FAIL resolve-decisions-top.sh two hunks: refusal message did not name the hunk count" >&2
-    printf '%s\n' "$out" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-else
-    echo "ok   resolve-decisions-top.sh refuses more than one hunk and leaves the file untouched"
-fi
-
-setup_decisions_repo
-decisions_conflict \
-    $'# Decisions\n\n## Existing\n\nExisting body.\n' \
-    $'# Decisions\n\n## Existing\n\nExisting body.\n\n## Branch new\n\nbranch body\n' \
-    $'# Decisions\n\n## Existing\n\nExisting body.\n\n## Main new\n\nmain body\n'
-before="$(cat "$decisions_repo/docs/DECISIONS.md")"
-checks=$(( checks + 1 ))
-out="$(cd "$decisions_repo" && ./tools/resolve-decisions-top.sh 2>&1)"
-status=$?
-after="$(cat "$decisions_repo/docs/DECISIONS.md")"
-if [[ $status -eq 0 ]]; then
-    echo "FAIL resolve-decisions-top.sh hunk elsewhere: expected a non-zero exit, got 0" >&2
-    failures=$(( failures + 1 ))
-elif [[ "$after" != "$before" ]]; then
-    echo "FAIL resolve-decisions-top.sh hunk elsewhere: the conflicted file changed despite refusal" >&2
-    failures=$(( failures + 1 ))
-elif ! printf '%s' "$out" | grep -qi "directly under"; then
-    echo "FAIL resolve-decisions-top.sh hunk elsewhere: refusal message did not name the location" >&2
-    printf '%s\n' "$out" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-else
-    echo "ok   resolve-decisions-top.sh refuses a hunk that is not directly under # Decisions"
-fi
-rm -rf "$decisions_repo"
-
 # ---------------------------- README.md's Dev flags table stays in step with DEV_FLAG_TABLE ---
 # The table in src/dev/dev_flags.gd is the accept-list run.sh and shot.sh validate against and
 # is shape only (see lib_dev_flags.sh); README.md's "Dev flags" section is the semantics -- what
@@ -474,6 +348,93 @@ while read -r flag; do
         failures=$(( failures + 1 ))
     fi
 done < <(dev_flag_names)
+
+# ------------------------------------------------- new-name.sh and decisions.sh, on a scratch tree ---
+# Both work on the repository they sit in, so they are copied into a throwaway tree with a docs/
+# of its own: new-name.sh must write what it names and never reuse a pair of words, and
+# decisions.sh must find a record by its title and by its text.
+names_repo="$work_dir/names-repo"
+mkdir -p "$names_repo/tools/names" "$names_repo/docs/todo/2026-09-26-M210" "$names_repo/docs/decisions" \
+    "$names_repo/docs/review" "$names_repo/docs/playtests"
+cp "$root/tools/new-name.sh" "$root/tools/decisions.sh" "$names_repo/tools/"
+printf 'busy\n' > "$names_repo/tools/names/adjectives.txt"
+printf 'badger\notter\n' > "$names_repo/tools/names/animals.txt"
+printf '## M210 — The brief is the coming day\x27s · asked for 2026-09-26\n' \
+    > "$names_repo/docs/todo/2026-09-26-M210/README.md"
+printf '# Playtest busy-badger — Taken\n' > "$names_repo/docs/playtests/2026-09-01-busy-badger.md"
+
+check_that() {
+    checks=$(( checks + 1 ))
+    if eval "$2"; then
+        echo "ok   $1"
+    else
+        echo "FAIL $1" >&2
+        failures=$(( failures + 1 ))
+    fi
+}
+
+made="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-27 todo "Stars for nerves" 2>/dev/null)"
+check_that "new-name.sh takes the one pair not already used, in any folder, whatever its date" \
+    '[[ "$made" == 2026-09-27-busy-otter ]]'
+check_that "new-name.sh writes the entry's context file with its heading and date" \
+    'grep -qx "# busy-otter — Stars for nerves · filed 2026-09-27" "$names_repo/docs/todo/2026-09-27-busy-otter/README.md"'
+out="$(cd "$names_repo" && ./tools/new-name.sh playtest "No words left" 2>&1)"
+status=$?
+check_that "new-name.sh refuses when every pair is taken, and writes nothing" \
+    '[[ $status -ne 0 && $(ls "$names_repo/docs/playtests" | wc -l | tr -d " ") -eq 1 ]]'
+first="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look at it" 2>/dev/null)"
+second="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look again" 2>/dev/null)"
+check_that "new-name.sh names a review item after its entry, and a second one with -2" \
+    '[[ "$first" == 2026-09-27-busy-otter && "$second" == 2026-09-27-busy-otter-2 ]]'
+closed="$(cd "$names_repo" && ./tools/new-name.sh decision --entry M210 "Built" 2>/dev/null)"
+check_that "new-name.sh names an old entry's decision by its folder" \
+    '[[ "$closed" == 2026-09-26-M210 && -s "$names_repo/docs/decisions/2026-09-26-M210.md" ]]'
+if command -v rg >/dev/null 2>&1; then
+    printf 'The brief says what is coming, spent or not.\n' >> "$names_repo/docs/decisions/2026-09-26-M210.md"
+    found="$(cd "$names_repo" && ./tools/decisions.sh M210)"
+    check_that "decisions.sh finds a record by the milestone in its title" \
+        '[[ "$found" == "docs/decisions/2026-09-26-M210.md  M210 — Built · "* ]]'
+    found="$(cd "$names_repo" && ./tools/decisions.sh --in all spent coming)"
+    check_that "decisions.sh finds a record by words only in its text, under its own line" \
+        '[[ "$found" == $'"'"'-- in the text:\ndocs/decisions/2026-09-26-M210.md'"'"'* ]]'
+    (cd "$names_repo" && ./tools/decisions.sh nothing-says-this >/dev/null 2>&1)
+    status=$?
+    check_that "decisions.sh exits non-zero when nothing matches" '[[ $status -ne 0 ]]'
+else
+    echo "skip decisions.sh's search cases: rg is not on PATH"
+fi
+
+# ------------------------------------------------------- lint.sh's checks of the queue's layout ---
+# On the same scratch tree: an entry, its review items and an old entry's decision share names on
+# purpose and pass; a second use of a pair of words, a checkbox in a queue file, and a link in
+# TODO.md to an entry folder that is not there are each a hit.
+cp "$root/tools/lint.sh" "$names_repo/tools/"
+lint_in_names_repo() {
+    (cd "$names_repo" && ./tools/lint.sh "$@" >/dev/null 2>&1)
+}
+lint_in_names_repo docs/todo/2026-09-27-busy-otter/README.md docs/review/2026-09-27-busy-otter.md \
+    docs/review/2026-09-27-busy-otter-2.md docs/decisions/2026-09-26-M210.md
+status=$?
+check_that "lint.sh passes an entry, its review items and an old entry's decision sharing a name" '[[ $status -eq 0 ]]'
+printf '# Playtest busy-otter — A second thing\n' > "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
+lint_in_names_repo docs/playtests/2026-09-28-busy-otter.md
+status=$?
+rm "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
+check_that "lint.sh rejects a pair of words used again for another thing" '[[ $status -ne 0 ]]'
+printf -- '- [ ] **Do it**\n' > "$names_repo/docs/todo/2026-09-27-busy-otter/do-it.md"
+lint_in_names_repo docs/todo/2026-09-27-busy-otter/do-it.md
+status=$?
+rm "$names_repo/docs/todo/2026-09-27-busy-otter/do-it.md"
+check_that "lint.sh rejects a checkbox in an item file" '[[ $status -ne 0 ]]'
+printf '# TODO\n\n- [busy-otter](todo/2026-09-27-busy-otter/)\n- [M210](todo/2026-09-26-M210/)\n' \
+    > "$names_repo/docs/TODO.md"
+lint_in_names_repo docs/TODO.md
+status=$?
+check_that "lint.sh passes TODO.md's links to entry folders that exist" '[[ $status -eq 0 ]]'
+printf -- '- [gone](todo/2026-09-01-quiet-heron/)\n' >> "$names_repo/docs/TODO.md"
+lint_in_names_repo docs/TODO.md
+status=$?
+check_that "lint.sh rejects a link in TODO.md to an entry folder that does not exist" '[[ $status -ne 0 ]]'
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is

@@ -1,6 +1,6 @@
 ---
 name: committing
-description: The git workflow for this repo — one branch per work item, one commit per TODO item, what a commit message must explain, and when to merge and delete. Load this BEFORE committing, branching, merging or writing a commit message.
+description: The git workflow for this repo — one branch per work item, one commit per queue item, what a commit message must explain, what a PR files in the queue and the records, and when to merge and delete. Load this BEFORE committing, branching, merging or writing a commit message.
 ---
 
 # Git workflow
@@ -48,7 +48,7 @@ WIP ones and the merges of `main` among them — are scratch that never lands.
 It says what the PR carries as it now stands, the verification with its outcomes, and every
 choice left open to overturn; a description written when the PR opened and not since is a
 commit message about a different diff. Nothing may live only in a branch commit message: the
-reasoning a later reader needs is in `DECISIONS.md`, and the description summarises it.
+reasoning a later reader needs is in the decision record, and the description summarises it.
 
 ## A pull request is self-contained
 
@@ -68,13 +68,19 @@ probe found goes on that PR, whatever number the queue gave it; a new PR is for 
 
 **A pull request carries every document its own changes make false.** Not a follow-up, not a
 cleanup pass afterwards, not a note for the next session: the doc edit is part of the change and
-lands in the same PR. That covers `docs/TODO.md` and `docs/HANDOFF.md` — the two that go stale
-fastest, because one holds the queue the PR just shortened and the other describes the tree the PR
-just moved — and it covers every other governed doc the change touches: `CITY`, `EVENTS`,
-`MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`, `README`, `CLAUDE.md`, the skills, and the
-docstrings on anything edited. **A PR that finishes a milestone also files that milestone's history
-in `docs/DECISIONS.md` and removes its section from `TODO.md`**, because `TODO.md` holds open work
-only and the entry stops being open the moment the PR merges.
+lands in the same PR. That covers the queue — the entry's folder under `docs/todo/`, which goes
+stale fastest because it holds the work the PR just did — and every other governed doc the change
+touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`, `README`,
+`CLAUDE.md`, the skills, and the docstrings on anything edited. **A PR that finishes an item deletes
+the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
+`tools/new-name.sh decision --entry <name> "<title>"`, which takes `-2` and on when the entry
+already has one); **when that was the entry's last item, the entry's folder goes in the same PR**,
+and its link in `TODO.md`'s order with it, because the queue holds open work only and the entry
+stops being open the moment the PR merges.
+
+**`docs/HANDOFF.md` is not a PR's.** *(2026-09-26: "handoff only at the end of a session".)* It is
+written once, at the end of a session, by the **session-cleanup** pass, which reads the tree as it
+then stands; a PR that edited it would meet every other open PR in the same file.
 
 **Why:** a PR is reviewed once, against a tree where the reason for each doc edit is visible in the
 same diff. Deferred, the reason is gone and only somebody who already knows what changed can tell
@@ -83,42 +89,43 @@ their own doc debt is how three files come to carry three different answers to o
 the pass that untangles it is a milestone rather than a review comment.
 
 **The test is the same one the docs rule uses:** if `main` at the squashed commit would hand a fresh
-reader a sentence that is no longer true, the PR is not finished. Read `HANDOFF.md` and the
-milestone's own `TODO.md` entry before proposing, not after.
+reader a sentence that is no longer true, the PR is not finished — `HANDOFF.md` excepted, which the
+session's end rewrites. Read the entry's own folder before proposing, not after.
 
 **And every doc the change owes is in the PR before it merges. This is a hard requirement.**
 *(2026-09-09: "why do you keep updating handoffs and todos *after* a PR has landed? the updates
 *must* go in the PR … that's a hard requirement" — and, on the shape of it: "the requirement is not
 for docs to be updated before the PR opens. it's for the docs to be updated *before* it
-**merges**".)* `HANDOFF.md`, `TODO.md`, `DECISIONS.md` and every other doc the change touches are
-committed on the branch by the time the merge button is pressed. Pushing them onto an open PR is
+**merges**".)* The entry's files, the decision record, the review item and every other doc the
+change touches are committed on the branch by the time the merge button is pressed. Pushing them onto an open PR is
 fine; filing them in the next PR, or in a cleanup afterwards, is not — once the squashed commit
 exists, `main` has handed every reader a false sentence until something else lands. Before merging,
 re-read the branch's own diff against the list above and ask what it left stale. The end-of-session
 cleanup pass is for drift no single PR caused, not for finishing a PR's own doc work.
 
-**A work item never merges while its `TODO.md` item is unresolved.** *(2026-09-09: "a workitem may
-never merge if it's corresponding TODO item hasn't been resolved".)* Resolved means the entry is
-gone from `TODO.md` and its record — what was built, the measurement, the rejected options — is
-filed in `DECISIONS.md`, both on the branch. A PR whose own item still sits open in the queue is
-not finished, however green its checks are; if the item is only partly built, the PR either
-finishes it or its entry is rewritten on the branch to hold exactly what is still open, with the
-built half filed in `DECISIONS.md`.
+**A work item never merges while its queue item is unresolved.** *(2026-09-09: "a workitem may
+never merge if it's corresponding TODO item hasn't been resolved".)* Resolved means the item's
+file is gone from its entry's folder and its record — what was built, the measurement, the
+rejected options — is filed under `docs/decisions/`, both on the branch. A PR whose own item still
+sits open in the queue is not finished, however green its checks are; if the item is only partly
+built, the PR either finishes it or rewrites the item's file on the branch to hold exactly what is
+still open, with the built half filed as a decision.
 
 **And no handoff mentions it any more, since the work is done.** *(2026-09-09: "and there may be no
 mention of it in any handoff still … since the work is done".)* `HANDOFF.md` holds the pick-up
 state and nothing else, so a merged item has no line there — not a "built and unwalked" bullet, not
-a distrust entry written for it, not its number. What a player should go and look at is a
-`TODO.md` item, a `DECISIONS.md` record, or an entry in `docs/REVIEW.md`, never a sentence in the
-handoff about work that is finished. Before merging, grep `HANDOFF.md` for the item's number and
-its nouns.
+a distrust entry written for it, not its name. What a player should go and look at is a queue
+item, a decision record, or a review item under `docs/review/`, never a sentence in the handoff
+about work that is finished; the session's end writes the handoff with that in mind.
 
-**And work that only a person can judge adds its entry to `docs/REVIEW.md` in the same PR.**
-*(2026-09-11: "keep a document with items that need human review / test runs. That way you can
-keep working without having to stop. And test runs can capture multiple items at once.")* The
-entry says what to do, where to look, and the question a run answers; the record of what was
-built stays in `DECISIONS.md`. It is the list a playtest is asked against, so an item missing
-from it is an item no run will ever be asked to look at.
+**And work that only a person can judge adds its review item in the same PR**: a file
+`docs/review/<entry name>.md`, made with `tools/new-name.sh review --entry <name> "<title>"`, which
+takes `-2` and on for a second item from the same entry. *(2026-09-11: "keep a document with items
+that need human review / test runs. That way you can keep working without having to stop. And test
+runs can capture multiple items at once.")* The item says what to do, where to look, and the
+question a run answers, its steps written as prose rather than numbered; the record of what was
+built stays in the decision. The review items are the list a playtest is asked against, so an item
+missing from them is an item no run will ever be asked to look at.
 
 The **session-cleanup** skill still runs at the end of a session — it catches drift that no single
 change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a
@@ -182,10 +189,10 @@ findings live.
 
 **Before merging main into an existing PR or branch, read
 [merging-main](../merging-main/SKILL.md).** It requires showing theirs, ours and base for each
-conflict, reviewing semantic alignment for every merge (clean or conflicted), and renumbering
-the branch's colliding identities in every numbered namespace, including milestones, TODOs and
-playtests, without combining unrelated records. Side-selection shortcuts
-such as `--ours` and `--theirs` do not satisfy that review.
+conflict, reviewing semantic alignment for every merge (clean or conflicted), keeping
+independently authored records distinct, and converting a branch still on the old single-file
+queue with `tools/convert-queue-edits.py`. Side-selection shortcuts such as `--ours` and
+`--theirs` do not satisfy that review.
 
 **One branch per work item** (which may span several milestone numbers), named
 `feature/<thing>`; `main` receives it as one squashed commit.
@@ -229,7 +236,7 @@ only.
 
 ## Commits
 
-**One commit per `TODO.md` item, inside that one branch.** A milestone is a list of things that were
+**One commit per queue item, inside that one branch.** A milestone is a list of things that were
 decided separately and are each true or false on their own, so each one gets a commit a reviewer
 can read by itself on the pull request. The commits are for the review and for the branch while it
 is open: `main` receives the squash, so nothing on `main` is reverted or bisected finer than a pull
@@ -269,7 +276,7 @@ the part that is **not recoverable from the diff**, which is the whole test for 
 belongs in a commit message.
 
 **And it is never the only place that sentence is written.** A branch commit message does not
-reach `main`; what it says that matters later is also in `DECISIONS.md`, and in the PR
+reach `main`; what it says that matters later is also in the decision record, and in the PR
 description that becomes the squashed commit.
 
 A message that restates the diff is worth nothing; the diff is right there.
@@ -280,8 +287,9 @@ Run the verification loop — see the **verify** skill, which owns it: `./tools/
 suites your change touches, and a screenshot if you touched anything visual. The full suite is CI's
 on the pull request, not a local gate.
 
-Run `./tools/lint.sh` too if the commit touches a governed doc (`CLAUDE.md`, a skill, `README.md`
-or a top-level `docs/*.md` besides `DECISIONS.md`). A hit is a stop:
+Run `./tools/lint.sh` too if the commit touches a governed doc (`CLAUDE.md`, a skill, `README.md`,
+a top-level `docs/*.md` besides `DECISIONS.md`, a queue file under `docs/todo/` or a review item),
+or files anything under a new name. A hit is a stop:
 fix the sentence or commit nothing. And `./tools/pycheck.sh` if it touches `tools/*.py`,
 `pyproject.toml` or `uv.lock` — see the **python-tooling** skill.
 

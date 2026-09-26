@@ -24,15 +24,17 @@ case "$path" in
 	*) exit 0 ;;
 esac
 
-# History and primary sources are exempt — they are allowed to say what was true then.
+# History is exempt — it is allowed to say what was true then.
 case "$path" in
-	"$root"/docs/DECISIONS.md|"$root"/docs/playtests/PLAYTEST-*.md|"$root"/docs/evidence/README.md)
+	"$root"/docs/DECISIONS.md|"$root"/docs/evidence/README.md)
 		exit 0
 		;;
 esac
 
-# The governed set: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md, docs/*.md --
-# exactly the set tools/lint.sh scans by default (see its own file-collecting loop). A bash
+# The governed set: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md, docs/*.md, the
+# queue's files (docs/todo/<entry>/*.md) and the review items (docs/review/*.md) -- the set
+# tools/lint.sh scans by default (see its own file-collecting loop) -- plus a record under
+# docs/decisions/ and a playtest, which lint.sh checks for a name used twice and nothing else. A bash
 # `case` pattern's `*` matches "/" same as any other character (a bracket-expression prefix like
 # `[!/]*` does not fix this -- the `[!/]` restricts only the one character before the `*`, and
 # the `*` itself still matches anything), so a bare `docs/*.md` also matched
@@ -48,7 +50,17 @@ case "$path" in
 	"$root"/docs/*.md)
 		rel="${path#"$root"/docs/}"
 		case "$rel" in
-			*/*) ;;              # a subdirectory of docs/ -- not governed
+			todo/*/*/*) ;;       # deeper than an entry's own files -- not governed
+			todo/*/*|review/*|decisions/*|playtests/*)
+				# The queue and the review list are governed like any doc. A record and a playtest
+				# are history and primary sources, which tools/lint.sh spares the sentence rules,
+				# but a name they take is still checked against every other name.
+				case "$rel" in
+					review/*/*|decisions/*/*|playtests/*/*) ;;
+					*) governed=1 ;;
+				esac
+				;;
+			*/*) ;;              # any other subdirectory of docs/ -- not governed
 			*)   governed=1 ;;
 		esac
 		;;

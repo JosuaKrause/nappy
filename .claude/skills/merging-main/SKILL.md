@@ -1,6 +1,6 @@
 ---
 name: merging-main
-description: Merge main into an existing PR or branch with explicit theirs/ours/base conflict review, mandatory semantic reconciliation for every merge, and collision-safe renumbering of all independently numbered records.
+description: Merge main into an existing PR or branch with explicit theirs/ours/base conflict review, mandatory semantic reconciliation for every merge, independently authored records kept distinct, and the conversion of a branch still on the old single-file queue.
 ---
 
 # Merge main into a branch
@@ -14,8 +14,8 @@ permission in this session). Keep design and final semantic review in the orches
 Inspect `git status`, the current branch and worktrees. Preserve unrelated local work; do not
 reset it, silently stash it or mix it into the merge. If needed, use an explicitly created clean
 worktree. Fetch main from the intended remote, then record the branch tip, fetched main tip and
-merge base(s) before any renumbering or merging. Keep those exact revisions as provenance. If a
-preparation commit renumbers branch records, also record the prepared branch tip: that is the
+merge base(s) before any renaming or merging. Keep those exact revisions as provenance. If a
+preparation commit renames branch records, also record the prepared branch tip: that is the
 merge's actual first parent and stage-2 input; retain the original tip for identity comparisons.
 
 Read the changes on **both** sides since the common ancestor, including their docs and tests.
@@ -37,38 +37,27 @@ where available; do not choose an arbitrary base and call it authoritative.
 
 ## Preserve the identity of records before merging
 
-Compare additions on both sides by their **content and provenance**, not just filenames, heading
-numbers or similar words. Distinct records must remain distinct. This applies to **anything
-independently numbered across PRs**: milestones, TODO items, playtests, findings, design entries,
-and other numbered identities. Do not limit the collision audit to a known filename pattern. A
-clean textual merge can silently concatenate unrelated findings under one heading or reuse an
-identifier.
+Compare additions on both sides by their **content and provenance**, not just filenames, headings
+or similar words. Distinct records must remain distinct: a clean textual merge can still
+concatenate unrelated findings under one heading. Do not combine items to clear a conflict,
+deduplicate them by name, or mark one complete because the other is.
 
-When main and the branch independently introduce the same number within an identity namespace:
+**Old numbers are never reused, and new names need no renumbering.** A queue entry, its items,
+its decision, a review item and a playtest are each a file of their own, named
+`<date>-<adjective>-<animal>` by `tools/new-name.sh` (the playtest-feedback skill), so two branches
+never edit the same record's file, and all but never draw the same pair of words; when two do,
+`tools/lint.sh` rejects the second use and that branch draws a new name. The milestone numbers and
+`PLAYTEST-NN` files that already exist keep their numbers, and no new thing takes a number.
 
-1. Keep main's record and number intact. Allocate an unused number for the branch's record from
-   the union of identifiers on both tips, including other branch additions. Reserve the whole
-   mapping first so one rename cannot collide with another.
-2. Show the mapping with a short description of each record's original subject. Rename the branch
-   file or item and its identifying title; preserve its content, provenance and distinct ownership.
-   For playtests, preserve the player's words, date, finding order and evidence.
-   Renumbering identity is not permission to rewrite a primary source or combine two sessions.
-3. Search all tracked text for links and references to the old identity before moving it. Update
-   the references that mean the branch's record, including TODO, HANDOFF, DECISIONS, design docs,
-   skills, tests and relevant PR text. Leave references to main's different record pointing to
-   main. A global replacement of the shared number is wrong.
-4. Audit every independently numbered namespace, including TODO/milestone identifiers and
-   nested finding IDs: keep unrelated items separate, renumber the branch's colliding identity
-   and reconcile its references. Do not combine items to clear a conflict, deduplicate them by
-   number, or mark one complete because the other is. A filename, anchor, test name or code
-   reference can carry the identity too. For persisted or externally consumed identifiers, inspect
-   consumers and migration requirements; a bare textual rename does not establish compatibility.
-
-Prefer a separate, reviewable branch commit for the identity changes before merging. If the
-collision is discovered during the merge, preserve both original versions from the recorded tips
-and resolve them into two distinct records. In either case, compare each result to its original:
-only identifying labels and correctly attributed cross-references may change in a playtest.
-Ambiguous references need historical/context inspection; do not guess which session they mean.
+**One case still collides: a branch from before the queue was files** that filed a new entry
+`M<n>` or a new `PLAYTEST-NN.md` the old way, when `main` has a different record under the same
+number. Keep `main`'s record and number intact; give the branch's record a name from
+`tools/new-name.sh` instead of the next number, preserve its content, provenance and the player's
+words, and update every reference that means the branch's record — never a global replacement of
+the shared number, which also rewrites references to `main`'s record. A playtest's identity
+changes only in its identifying label; its text is a primary source. Ambiguous references need
+historical inspection; do not guess which session they mean. A persisted or externally consumed
+identifier needs its consumers checked, not only a textual rename.
 
 ## Show every conflict in three ways
 
@@ -102,13 +91,20 @@ A justified result can match one side, but only after the other side's intent an
 examined and the semantic decision is explicit. Use `diff3` conflict display if helpful, but still
 explain the three versions; marker removal is not reconciliation.
 
-`tools/resolve-decisions-top.sh` mechanically resolves `docs/DECISIONS.md`'s one recurring shape —
-both sides inserting a new `## …` section directly under `# Decisions`, from an empty base — and
-refuses anything else; running it does not exempt that merge from the semantic review below.
+**A branch still on the old single-file queue** — its `docs/DECISIONS.md`, `docs/TODO.md` or
+`docs/REVIEW.md` edited where `main` has them as files — is converted, never hand-merged:
+`tools/convert-queue-edits.py`, run mid-merge, reads what the branch did to the three old files
+since the merge base and applies it as file operations on `main`'s side (a record added becomes a
+decision file, a closed entry or item deletes its folder or file, a review bullet becomes a review
+file, an edit inside an entry becomes the same edit to its file), stages them, and resolves the
+three files to `main`'s text. It refuses, naming every path, and changes nothing on an edit it
+cannot map; show that path three ways as below. Converting does not exempt the merge from the
+semantic review below.
+
 `tools/update-pr.sh <pr-number | branch>` runs the whole mechanical sequence for an ordinary PR
-update — fetch, merge, that one `docs/DECISIONS.md` shape, `git diff --check`/`lint.sh`/`check.sh`,
-commit, push — and refuses, naming the files, the moment a conflict is anything else; it never
-substitutes for the semantic review below, which stays the reviewer's on every merge it produces.
+update — fetch, merge, `git diff --check`/`lint.sh`/`check.sh`, commit, push — and refuses, naming
+the files, the moment the merge conflicts; it never substitutes for the semantic review below,
+which stays the reviewer's on every merge it produces.
 
 ## Check semantic alignment for every merge
 
@@ -142,8 +138,8 @@ diffs against both parents. **`git diff --check` is the confirmation, not the ey
 diff3/zdiff3 conflict writes a fourth `|||||||` marker that survives a hand-resolution deleting
 the other three.
 
-Recheck every renumbered record against its original and search for stale references; inspect
-the PR description too. Preserve `.import` sidecars and source assets.
+Recheck every renamed record against its original and search for stale references; inspect the
+PR description too. Preserve `.import` sidecars and source assets.
 
 Run `./tools/check.sh` in the actual merged checkout, focused tests for the affected interactions,
 `./tools/lint.sh` and `git diff --check`. Add a focused regression test when a resolved semantic
@@ -151,6 +147,7 @@ conflict exposes an uncovered behavior. Follow `verify` for visual gates; the fu
 unless one of verify's two local-run cases applies. A clean merge or green CI is evidence,
 not a substitute for the semantic review.
 
-Commit the reviewed merge and update the authorized PR. Report the three-way resolutions,
-renumbering map, semantic checks, verification and any unresolved decisions. Put historical
-reasoning and mappings in DECISIONS; keep HANDOFF and TODO limited to their current responsibilities.
+Commit the reviewed merge and update the authorized PR. Report the three-way resolutions, any
+renaming map, the conversion's plan, semantic checks, verification and any unresolved decisions.
+Put historical reasoning and mappings in the branch's decision record; keep the queue limited to
+open work, and leave `HANDOFF.md` to the end of the session.

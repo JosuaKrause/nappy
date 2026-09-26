@@ -48,7 +48,7 @@ telemetry stays out of the files that decide things, which is what makes the rul
 2. A row in the table in `docs/TELEMETRY.md`.
 3. **A kind reused from that table**, not a synonym for one.
 
-**It has to answer a question that is open in `docs/TODO.md` or a playtest doc.** If it does not, it
+**It has to answer a question that is open in the queue or a playtest doc.** If it does not, it
 is a metric and does not belong.
 
 ## What the log is for

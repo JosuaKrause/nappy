@@ -12,7 +12,7 @@ to new directional/state variants, UI and identity assets as well as standing ga
 
 SVG is the editable source for game graphics. Author vectors directly with patches; use the existing
 family as the style reference. Read `docs/GRAPHICS.md` for the asset's actual binding and the
-owning milestone in `docs/TODO.md` before designing. Follow `playtest-feedback` for player requests and
+owning queue entry under `docs/todo/` before designing. Follow `playtest-feedback` for player requests and
 `verify` for runtime checks; this skill adds the visual work those checks cannot judge.
 
 ## Establish the picture's contract
@@ -121,7 +121,7 @@ Update `docs/GRAPHICS.md` with file paths, registration and actual current use. 
 stays unbound in the catalogue until code or a resource uses it. In graphics-dependent milestones,
 name the files and intended states to reuse without closing outstanding gameplay decisions. The
 rejected-graphics skill governs what a draft's disposition keeps or discards, and a human's review
-outcome goes in `docs/DECISIONS.md`; preserve the player's words in the playtest record. PR image
+outcome goes in a decision record under `docs/decisions/`; preserve the player's words in the playtest record. PR image
 links use a commit containing the image, as `committing` requires.
 
 Run import/boot and XML/doc lint. Add focused tests only for behavior a picture cannot verify,

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The manual sequence that landed a queue of already-authorized pull requests by hand, twice in
-# one session -- see docs/TODO.md, one command lands a queue of pull requests in order:
+# one session. It lands a queue of pull requests in order:
 #
 #   1. gh pr merge <n> --squash --auto     (turns auto-merge on) -- or, when the PR's own
 #      mergeStateStatus already reads CLEAN (checks green, no conflict), gh pr merge <n> --squash
@@ -11,8 +11,8 @@
 #      and left it CONFLICTING -- the ruleset's checks are not strict
 #      (strict_required_status_checks_policy is false), so a PR that is merely behind main needs
 #      nothing and merges once its own green run lands
-#   3. only when conflicting: tools/update-pr.sh <n> (merges origin/main in, resolves the
-#      recurring docs/DECISIONS.md shape, checks, pushes), then keep waiting
+#   3. only when conflicting: tools/update-pr.sh <n> (merges origin/main in when that merge is
+#      clean, checks, pushes), then keep waiting
 #   4. once merged: git pull --ff-only on main in this checkout, then
 #      tools/prune-merged.sh <branch> to retire the worktree and branch
 #
