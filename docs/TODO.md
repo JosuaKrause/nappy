@@ -81,9 +81,11 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-**First, before any new task** ([PLAYTEST-144](playtests/PLAYTEST-144.md)): the `git grep`
-hook (PR #377), then **M223**, one file per queue entry and per decision, then **M225**, the
-counter counts every attempt, a key player, and a torn poster's chase.
+**First, before any new task** ([PLAYTEST-144](playtests/PLAYTEST-144.md)): **M223**, one file
+per queue entry and per decision, then every open PR converted to it, then **M225**, the counter
+counts every attempt, a key player, and a torn poster's chase *(2026-09-26: "then the new planning
+rules. then we need to update all open PRs to follow the new planning rules" · "then the counter
+args" · "then we can do regular work again")*.
 
 0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
    left open**, on the same footing as the round before it: **M125**, the test suite

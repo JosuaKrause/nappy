@@ -16,22 +16,51 @@ the evidence images included: over `docs/` it passed 2.7 GB in 2s and kept growi
 same search finished at about 850 MB, and with a text-only pathspec (`-- 'docs/*.md'`) at 16 MB.
 BSD `grep -r` stays flat at a few MB and needs no guard. The full table is in PR #377.
 
-**What is built.** `.claude/hooks/git-grep-guard.sh`, a `PreToolUse` hook on `Bash` in
-`.claude/settings.json` and, through `tools/codex-hooks.py`, in Codex. It denies a `git grep`
-(including `git -C <dir> grep` and `git --no-pager grep`, in a loop, after `&&`, `;` or `|`, or in
-`$(…)`) that has neither `-I` nor a pathspec restricted to a known list of text extensions. The
-reason tells the model the rewrite. It matches on the raw command text, quotes and heredoc bodies
-included, so a mention (`echo "git grep"`, a commit message), a wrapper (`timeout`, `sudo`,
-`find | xargs`), a heredoc fed to an interpreter or quoted code run by one (`bash -c`, `python3 -c`)
-all deny too — `git log`/`shortlog --grep=…` is the one mention still allowed, since that `grep` is
-glued to a dash rather than its own word. Claude Code's hooks documentation says settings hooks
-fire for a sub-agent's tool calls
-too, which is what ran the command. A hook added to `settings.json` runs only once the player has
-approved it through `/hooks`.
+**What is built.** `.claude/hooks/git-grep-guard.sh`, a `PreToolUse` hook on `Bash` and `Monitor`
+(which runs a shell command too) in `.claude/settings.json` and, through `tools/codex-hooks.py`, on
+Codex's shell tools (`exec_command`, `shell`, `shell_command`; the adapter reads `command` or
+`cmd`). It denies a `git grep` (including `git -C <dir> grep`, `git --no-pager grep`, a full path to
+git, in a loop, after `&&`, `;` or `|`, or in `$(…)`) that has neither an effective `-I` nor a
+pathspec restricted to a known list of text extensions. `-I` is read the way git reads it: the last
+of `-I` and `-a`/`--text`/`--no-text` wins, and an `-e`/`-f` argument is never a flag. An exclusion
+pathspec, in any magic spelling (`:!`, `:^`, `:/!`, `:(exclude)`), is never text-only. The reason
+tells the model the rewrite.
+
+It reads the raw command text three ways and denies if any reading matches: quotes deleted, quotes
+replaced by spaces, and quotes honoured. So a wrapper (`timeout`, `sudo`, `find | xargs`), a heredoc
+fed to an interpreter, quoted code run by one (`bash -c`, `python3 -c`, an f-string) and a mention
+all deny. What still passes is a `grep` that is not its own word after `git`: `git log --grep=…`,
+`git log -S grep`, `git … | grep`, the bare word `git-grep`, and "git, grep" in prose. A command
+over 128 KB holding both words is denied before the slow quote-honouring reading, and the hook's
+timeout is 10s, the same as the other hooks. Claude Code's hooks documentation says settings hooks
+fire for a sub-agent's tool calls too, which is what ran the command. A hook added to
+`settings.json` runs only once the player has approved it through `/hooks`.
+
+**A mention denies, against the brief.** The orchestrator's brief said not to deny a command that
+only mentions the words (`echo "git grep"`, a commit message, `rg "git grep"`). The build denies
+them, because every reading that let a mention through also let through a real call hidden in
+quoted code or a heredoc, and a missed call costs a machine while a false deny costs a rewrite.
+Open to overturn.
+
+**Tried and rejected on the way**, each found by a review: a tokenizer with a closed list of
+boundary words (a newline or an unknown wrapper ended a command early); a quote-opaque parse that
+skipped heredoc bodies (the call inside `bash <<EOF` passed); a single quote-deleting reading (it
+glued the character before a quote onto the next word, so `f"git grep …"` and `cmd="git grep …"`
+passed); and a bash tokenizer, which ran past the 5s timeout at about 20 KB.
+
+**Accepted holes**, listed in the hook's header: a shell or git alias, a `git` or `grep` assembled by
+an expansion (`$(echo gi)t grep`), a command kept in a
+file the command runs (`bash x.sh`), and an attributes file or `--attr-source` that marks binaries
+as text.
 
 **Choices open to overturn**: a revision-less `git grep` gets no exemption, since the working tree
 without `-I` grew fastest of all; several trees on one line get no rule of their own, since the
-branches share blobs; the extension list is explicit, so `-- '*.png'` is denied.
+branches share blobs; the extension list is explicit, so `-- '*.png'` is denied; any long pathspec
+magic (`:(glob)*.md`) and a text pathspec that also carries an exclusion are false denies.
+
+**The review found two places the hook did not reach**, `Monitor` and Codex's `cmd` field, which is
+why a change to a hook now updates the adapter and its tests in the same PR *(2026-09-26: "okay,
+yes this is important to keep up to date")*; the rule is in `CLAUDE.md` and python-tooling.
 
 ## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
 
