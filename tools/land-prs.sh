@@ -7,6 +7,9 @@
 #      directly, since GitHub refuses to enable auto-merge on a PR that could merge right now
 #      ("Pull request is in clean status (enablePullRequestAutoMerge)") -- the same direct merge is
 #      the fallback if auto-merge is attempted anyway and fails with that error
+#      -- unless the PR edits the old single-file queue that main has as files: then it stops
+#      before merging, naming the files, since GitHub can merge such an edit cleanly into the new
+#      short files; it is converted with tools/convert-queue-edits.py (tools/lib_old_queue.sh)
 #   2. poll gh pr view <n> --json state,mergeable until it is MERGED, or until main moved under it
 #      and left it CONFLICTING -- the ruleset's checks are not strict
 #      (strict_required_status_checks_policy is false), so a PR that is merely behind main needs
@@ -52,7 +55,9 @@ refuses to enable auto-merge on a PR that could merge right now, otherwise by en
 (gh pr merge <n> --squash --auto) and falling back to the direct merge if that still fails with
 GitHub's "clean status" error -- waits for GitHub to merge it, and stops if an earlier merge left
 it conflicting with main, turning its auto-merge off, since a resolved conflict has to be reviewed
-before it lands (resolve it with tools/update-pr.sh <n>) -- a PR that is merely behind main needs
+before it lands (resolve it with tools/update-pr.sh <n>), and stops before merging a PR that edits
+the old single-file docs/DECISIONS.md, TODO.md or REVIEW.md main has as files (convert it with
+tools/convert-queue-edits.py; --dry-run reports it) -- a PR that is merely behind main needs
 nothing, since the ruleset's checks are not strict -- then once merged
 fast-forwards main in this checkout (git pull --ff-only) and retires the branch with
 tools/prune-merged.sh. After the batch, it names main's own CI run on the last merge as the check
@@ -179,6 +184,23 @@ if [[ "$dry_run" -eq 0 ]]; then
         || refuse "the main checkout has uncommitted changes -- commit or stash them before landing PRs"
 fi
 
+# shellcheck source=tools/lib_old_queue.sh
+source "$root/tools/lib_old_queue.sh"
+
+# The old queue files PR $1 edited that main has as files (tools/lib_old_queue.sh), or nothing.
+# Fetches main and the PR's head into a ref of its own, removed again afterwards.
+pr_old_queue_edits() {
+    local n="$1" ref="refs/land-prs/pr-$1" out=""
+    if git fetch --quiet origin main "+refs/pull/$n/head:$ref" 2>/dev/null; then
+        out="$(old_queue_edits "$ref" "refs/remotes/origin/main")"
+        git update-ref -d "$ref"
+    else
+        echo "PR #$n: could not fetch its head to check for old-format queue edits" >&2
+        return 1
+    fi
+    printf '%s' "$out"
+}
+
 # ---- PR info as one gh call, decoded with jq ------------------------------------------------
 pr_field() { jq -r ".$2" <<<"$1"; }
 
@@ -206,6 +228,9 @@ if [[ "$dry_run" -eq 1 ]]; then
         echo "  state:      $(pr_field "$pr_json" state)"
         echo "  mergeable:  $(pr_field "$pr_json" mergeable) ($(pr_field "$pr_json" mergeStateStatus))"
         echo "  url:        $(pr_field "$pr_json" url)"
+        if old="$(pr_old_queue_edits "$n")" && [[ -n "$old" ]]; then
+            echo "  queue:      would stop -- $(old_queue_message "PR #$n" "$old")"
+        fi
         failing="$(red_checks "$n")"
         if [[ -n "$failing" ]]; then
             echo "  checks:     failing --"
@@ -245,6 +270,10 @@ for n in "${prs[@]}"; do
     fi
 
     if [[ "$state" != MERGED ]]; then
+        old="$(pr_old_queue_edits "$n")" || stop "PR #$n ($url): could not check it for old-format queue edits"
+        if [[ -n "$old" ]]; then
+            stop_with_auto_merge_off "$n" "$(old_queue_message "PR #$n ($url)" "$old")"
+        fi
         if [[ "$merge_state" == CLEAN ]]; then
             # Already mergeable right now (checks green, no conflict) -- GitHub's own
             # enablePullRequestAutoMerge refuses a PR in this state ("Pull request is in clean

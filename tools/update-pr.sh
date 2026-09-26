@@ -10,7 +10,11 @@
 # anywhere, adds a scratch worktree under $TMPDIR for the run and removes it again when done — a
 # branch that already lives in a worktree is never given a second one. Records the branch tip,
 # origin/main's tip and their merge base before merging, merges with `--no-ff --no-commit` so even
-# a clean merge waits for the commit step below. Any unresolved file aborts the merge
+# a clean merge waits for the commit step below. A branch whose merge base still has the old
+# single-file queue, and that edited docs/DECISIONS.md, docs/TODO.md or docs/REVIEW.md, is refused
+# before anything is merged, naming the files and pointing at tools/convert-queue-edits.py
+# (tools/lib_old_queue.sh), since git can merge such an edit cleanly into the new short files.
+# Any unresolved file aborts the merge
 # (`git merge --abort`) and names it; nothing is left half-merged. The queue, the records and the
 # review list are one file per thing, so two pull requests adding to them no longer meet in one
 # file; a branch still on the old single files is converted with tools/convert-queue-edits.py. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
@@ -53,7 +57,9 @@ the merge base, since that review is the merger's.
                merge, 1 naming the files it would conflict in.
 
 Refuses, with a reason on stderr and a non-zero exit, and does no work when: the worktree it
-would operate in is dirty; the branch's local tip is behind its own remote; the merge conflicts;
+would operate in is dirty; the branch's local tip is behind its own remote; the branch edited the
+old single-file docs/DECISIONS.md, TODO.md or REVIEW.md that main has as files (convert it with
+tools/convert-queue-edits.py; --dry-run refuses it too); the merge conflicts;
 or git diff --check, ./tools/lint.sh or
 ./tools/check.sh fails (the merge is aborted first).
 
@@ -158,6 +164,16 @@ merge_base="$(git merge-base "$branch_tip" "$main_tip")" \
 echo "branch:     $branch (${branch_tip:0:8})"
 echo "main:       $remote/main (${main_tip:0:8})"
 echo "merge base: ${merge_base:0:8}"
+
+# A branch cut before the queue became files, that edited the old files, is converted rather than
+# merged: git can merge such an edit into the new short files without a conflict.
+# shellcheck source=tools/lib_old_queue.sh
+source "$root/tools/lib_old_queue.sh"
+old_edits="$(old_queue_edits "$branch_tip" "$main_tip")"
+if [[ -n "$old_edits" ]]; then
+    echo "refusing: $(old_queue_message "$branch" "$old_edits")" >&2
+    exit 1
+fi
 
 print_review_reminder() {
     echo

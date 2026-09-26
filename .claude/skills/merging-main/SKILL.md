@@ -104,7 +104,8 @@ semantic review below.
 
 `tools/update-pr.sh <pr-number | branch>` runs the whole mechanical sequence for an ordinary PR
 update — fetch, merge, `git diff --check`/`lint.sh`/`check.sh`, commit, push — and refuses, naming
-the files, the moment the merge conflicts; it never substitutes for the semantic review below,
+the files, the moment the merge conflicts or the branch turns out to edit the old single-file
+queue; it never substitutes for the semantic review below,
 which stays the merger's own on every merge it produces (a merge that needed resolving is then
 also reviewed under **pr-review**).
 

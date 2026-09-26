@@ -436,6 +436,48 @@ lint_in_names_repo docs/TODO.md
 status=$?
 check_that "lint.sh rejects a link in TODO.md to an entry folder that does not exist" '[[ $status -ne 0 ]]'
 
+# ------------------------------------ update-pr.sh stops a branch still on the old single queue ---
+# A throwaway origin whose base has the old single-file queue, a main that has it as files, and two
+# branches cut from the base: one edited docs/REVIEW.md the old way (which git merges cleanly into
+# the new file), one touched nothing of the queue. update-pr.sh must refuse the first before
+# merging, naming the file and the converter, and let the second through; land-prs.sh runs the
+# same check (tools/lib_old_queue.sh), which is asserted directly since it needs GitHub.
+guard_origin="$work_dir/guard-origin.git"
+guard_repo="$work_dir/guard-repo"
+git init -q --bare -b main "$guard_origin"
+git init -q -b main "$guard_repo"
+guard_git() { git -C "$guard_repo" -c user.name=t -c user.email=t@example.com "$@"; }
+mkdir -p "$guard_repo/tools" "$guard_repo/docs"
+cp "$root/tools/update-pr.sh" "$root/tools/lib_old_queue.sh" "$guard_repo/tools/"
+printf '# Decisions\n\n## M1 — Old record\n\nText.\n' > "$guard_repo/docs/DECISIONS.md"
+printf '# TODO\n\n## The order\n' > "$guard_repo/docs/TODO.md"
+printf '# Review\n\nWhat waits.\n\n- **Look at it.**\n' > "$guard_repo/docs/REVIEW.md"
+printf 'code\n' > "$guard_repo/code.txt"
+guard_git add -A && guard_git commit -q -m base
+guard_git remote add origin "$guard_origin"
+guard_git checkout -q -b pr-old
+printf '# Review\n\n## A section the old way\n\nTry this.\n\nWhat waits.\n\n- **Look at it.**\n' \
+    > "$guard_repo/docs/REVIEW.md"
+guard_git commit -q -am "old-format review edit"
+guard_git checkout -q -b pr-code main
+printf 'more code\n' >> "$guard_repo/code.txt"
+guard_git commit -q -am "code only"
+guard_git checkout -q main
+printf '# Decisions\n\n**Every decision is a file of its own.**\n' > "$guard_repo/docs/DECISIONS.md"
+guard_git commit -q -am "the queue is files"
+guard_git push -q origin main pr-old pr-code 2>/dev/null
+out="$(cd "$guard_repo" && ./tools/update-pr.sh --dry-run pr-old 2>&1)"
+status=$?
+check_that "update-pr.sh refuses a branch that edited the old queue, naming the file and the converter" \
+    '[[ $status -ne 0 && "$out" == *"docs/REVIEW.md"* && "$out" == *"tools/convert-queue-edits.py"* ]]'
+(cd "$guard_repo" && ./tools/update-pr.sh --dry-run pr-code >/dev/null 2>&1)
+status=$?
+check_that "update-pr.sh lets a branch that left the queue alone through" '[[ $status -eq 0 ]]'
+found="$(cd "$guard_repo" && source tools/lib_old_queue.sh && old_queue_edits pr-old pr-code)"
+check_that "the check says nothing while main still has the old queue" '[[ -z "$found" ]]'
+found="$(cd "$guard_repo" && source tools/lib_old_queue.sh && old_queue_edits pr-old main)"
+check_that "the check land-prs.sh runs names the old queue file a branch edited" '[[ "$found" == docs/REVIEW.md ]]'
+
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
 # undocumented the way audit-pck.sh, export-web.sh, release.sh, serve-web.sh and stats.sh used to
