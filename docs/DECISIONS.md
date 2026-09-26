@@ -78,7 +78,14 @@ time and its on-screen chase, in place of the flat 2.9s ("the 2.9 is not importa
 whose place is on screen (held because no ground was found, or the column clamped at the map's
 end) keeps its badge up, pointing at an empty spot in view, past its time until she walks on; the
 implementer's proposal, not built, is no badge and a clock held at the full `telegraph_time` while
-the place is in view. What is still open is M207 in `TODO.md`.
+the place is in view.
+
+**What telegraphs at all is M226's.** The last question M207 left, whether patrols and planned
+convoys are warned first, is answered by the player's rule that a thing telegraphs only if it goes
+fast, can end the day and comes toward her (PLAYTEST-145, statements 19–24): none of them can end
+the day, so none telegraphs, and that is not an exemption. The fire engine and the day-13 column,
+which this build warns first, stop telegraphing under the same rule; M226 builds that, with the
+pursuing dog's gold timing.
 
 **The table of every warned row's lead**, `tests/probes/m207_warning_lead.gd`
 (`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it). Its first printing

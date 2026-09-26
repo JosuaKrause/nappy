@@ -668,30 +668,6 @@ silently.
 
 ---
 
-## M207 — A warning comes shortly before its danger, and comes by itself · asked for 2026-09-25
-
-> "12.9s is a *long* warning to the point where nothing really happens anymore. I feel the same
-> with the biker. it gets warned too early so most of the time you're already gone when anything
-> happens."
-
-[PLAYTEST-140](playtests/PLAYTEST-140.md). How it is done is
-[PLAYTEST-145](playtests/PLAYTEST-145.md): the warning goes up by itself, the thing spawns just off
-screen where it points when its time comes, the waiting place follows her on the thing's own
-ground, for every event that arrives from off screen, and a warning is at least 2.9s ("2.9s is a
-fair time to react and *think* about what to do"). What is built on PR #372 is in `DECISIONS.md`,
-M207. `loose_dog`'s short warning is fine ("the loose dog can stay as short as it wants since it is
-not lethal and relatively low impact"), and the pursuing dog is M226, whose gold timing replaces
-the 2.9s ("the 2.9 is not important"). One thing is open, waiting on the player:
-
-- [ ] **Three kinds of offscreen arrival are not warned first, each against a stated rule.**
-      `police_patrol`'s return leg and the torn-poster patrol have no badge at all, since the cues
-      rule gives one only to "something lethal or faster than a walk" and a patrol is neither; the
-      `MAP`-placed `military_convoy` and the finale's trucks are planned places, and the events rule
-      says "Do not move a guarantee out of `build_day` and into the streaming." Warning them first
-      needs the player to overturn one rule or the other for them.
-
----
-
 ## M224 — A warning shorter than its own floor · found 2026-09-26
 
 Found by M207's lead table (`tests/probes/m207_warning_lead.gd`, `DECISIONS.md`, M207, a warning
@@ -738,10 +714,9 @@ nothing."
 - [ ] **`charging_dog` is warned first and keeps exactly that timing**, on day 3 and wherever else
       it arrives from off screen, with walking still losing the chase. A test fails if the day-3
       timing moves.
-- [ ] **The other offscreen warnings are fitted to the gold timing** — the cyclist, the fire truck,
-      the day-13 column and any other thing that arrives from off screen — in place of the flat
-      2.9s minimum (`Tuning.OFFSCREEN_WARNING_MIN`), which the player called "not important".
-      `loose_dog` is outside it.
+- [ ] **The other warnings are fitted to the gold timing** — the cyclist and every other thing that
+      still telegraphs under the rule below — in place of the flat 2.9s minimum
+      (`Tuning.OFFSCREEN_WARNING_MIN`), which the player called "not important".
 - [ ] **`loose_dog` and `cat_dash` do not telegraph** *("it might not need a warning at all" ·
       "since it's low stakes" · "that doesn't make it an exemption. it makes it something that is
       not telegraphing that it comes. only things that need telegraphing need to follow the cues
@@ -763,7 +738,10 @@ nothing."
       the day** (`hard_fail`) *("okay that sounds good -- I was thinking fire truck counts, too, but
       you convinced me"; statement 24, the orchestrator's proposal agreed to)*, so the fire truck
       and the day-13 column, which PR #372 warns first, stop telegraphing and simply drive up the
-      road; the cyclist and the pursuers keep it.
+      road; the cyclist and the lethal pursuers (`charging_dog`, `alley_robbery`, `door_guard`,
+      `masked_pursuer`) keep it, while `alley_mouse` and `pigeon_flock`, pursuers that cannot end
+      the day, stop, and so do `police_patrol`, the map-placed `military_convoy` and the finale's
+      trucks, none of which can end the day.
 
 Replaces the orchestrator's proposal on PR #372 of a 2.9s badge before the dog's 4.5s approach,
 which would have lengthened the day-3 timing the player calls correct.

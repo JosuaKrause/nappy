@@ -151,4 +151,4 @@ against also counting a big hit to the meter:
 
 24. **Dangerous means it can end the day** (`hard_fail`): the orchestrator's proposal, agreed to by
     the player, who had first thought the fire truck counted. So the fire truck and the day-13
-    column do not telegraph; the cyclist and the pursuers do. → M226.
+    column do not telegraph; the cyclist and the pursuers that can end the day do. → M226.
