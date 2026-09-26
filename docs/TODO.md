@@ -371,6 +371,111 @@ building in front of it and its own roof.
 
 ---
 
+## M205 — The man shouting charges the meter again · found 2026-09-25
+
+> "the yeller has no effect on the meter and its halo doesn't even turn on"
+
+[PLAYTEST-140](playtests/PLAYTEST-140.md), statement 4. In v0.18.0 on a phone, walking beside
+`homeless_yeller` charges nothing and his halo never lights, though `docs/COSTS.md` says about 6.5
+points a second beside him.
+
+- [ ] **Reproduce it, find the cause, fix it**, with a test that fails before the fix: a rig
+      standing beside him on a released-build seed, the meter and the halo both read. Say when
+      it broke and what else the same cause silences.
+
+---
+
+## M206 — The title screen after a game over is the right way up · found 2026-09-25
+
+> "also there is a bug when you lose with game over the title screen is sideways"
+
+[PLAYTEST-140](playtests/PLAYTEST-140.md), statement 5. Seen on the phone.
+
+- [ ] **Reproduce it, fix it, and pin it with a test**: after a lost day's game over, the title
+      screen is drawn in the screen's own orientation. Check the desktop and the touch layout.
+
+---
+
+## M207 — A warning comes shortly before its danger · asked for 2026-09-25
+
+> "12.9s is a *long* warning to the point where nothing really happens anymore. I feel the same
+> with the biker. it gets warned too early so most of the time you're already gone when anything
+> happens."
+
+[PLAYTEST-140](playtests/PLAYTEST-140.md), statement 2. The telegraph contract sets the floor, the
+reaction time a warning must leave her; the player's complaint is the other end.
+
+- [ ] **The cyclist is warned shortly before he arrives**, not so early that she has usually
+      passed: its lead (spawned `EventDef.toward_player_lead()` down her line, telegraphing 2.97s
+      at 165px/s) comes down to the contract's floor plus a small margin. The robber that comes
+      after a handover is fixed on M137's own PR.
+- [ ] **A table of every warned row's lead**: how long from the first warning to the moment the
+      danger can reach her, walking toward it, standing and walking away, against the contract's
+      floor, so the player can name the next one.
+
+---
+
+## M210 — The brief between two days is the coming day's · asked for 2026-09-26
+
+> "the day brief is inconsistent it say she fell asleep but really it's the day brief for the next
+> day. also the day number is the previous day. we should make it strictly the next day -- the
+> title, day number, and brief should be for what's coming. also the nerves should show."
+
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statements 1 and 2.
+
+- [ ] **Title, day number and text all describe the coming day.** Nothing on the brief says she
+      fell asleep; the number is the day about to start. Find every screen that shows a brief
+      (the first day's included) and pin the number with a test.
+- [ ] **The brief shows the nerves** she carries into the coming day, drawn the way the HUD
+      draws them.
+
+---
+
+## M211 — The pause screen's held restart restarts the day · found 2026-09-26
+
+> "the pause screen is currently bugged where you cannot restart from it. it just goes back to
+> the current game when pressing the button."
+
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 3.
+
+- [ ] **Reproduce it, fix it, and pin it with a test that fails before the fix**: a completed
+      hold on the pause screen's restart starts the day again rather than unpausing it. Say
+      which press reached the continue path.
+
+---
+
+## M212 — The held restart fills and restarts on a phone, first time · found 2026-09-26
+
+> "also the restart button doesn't visible fill up on mobile when pressing. and sometimes it just
+> doesn't work at all which is frustrating. you have to hold long multiple times until it
+> actually restarts"
+
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 4. Seen on a phone; which screen (pause,
+day summary or both) was not said, so both are checked.
+
+- [ ] **The disc's radial fill shows while a touch is held**, on the pause screen and the day
+      summary.
+- [ ] **One completed hold always restarts.** Find what cancels or ignores a hold on touch —
+      a second touch, a drag off the disc, a release event reaching another control — and pin it
+      with a test that drives `InputEventScreenTouch`.
+
+---
+
+## M213 — The chalk mark's robber stands at the far end of its alley · asked for 2026-09-26
+
+> "the rubber in the alley with the mark is too close to the mark. It's impossible to get the
+> mark on most days. Let's always place the river at the other end of the alley"
+
+[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 5. "rubber" and "river" are dictation for
+*robber*. M137's PR #362 touches the resistance director, so this waits for it or rides on it.
+
+- [ ] **The robber guarding a chalk mark always spawns at the alley's other end from the mark**,
+      and a test states the distance from the mark to him over many seeds.
+- [ ] **The mark is reachable**: a rig walks in from the mark's end, reads it and leaves without
+      waking him, on seeds where it cannot today.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
@@ -414,7 +519,9 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       sweep, event streaming/director work, crowd movement/traffic and debug presentation. Do not
       use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
       measured. Measure the conservative contribution rejection on that device, including its
-      effect on the baby and halo callers, before considering caching or lower tick rates.
+      effect on the baby and halo callers, before considering caching or lower tick rates. The player's phone is
+      Chrome on a Pixel 8 Pro, where the stutter is steady rather than at particular moments
+      ([PLAYTEST-140](playtests/PLAYTEST-140.md)).
 - [ ] **Measure what the baked pages cost, on the run log's own lines.** A page writes one
       `texture` line when it is read — `atlas page '<group>' loaded in the <moment>: <ms> ms,
       <W> x <H>`, the moment being `startup`, `day brief`, `escape` or `OUTSIDE` — and one when
@@ -440,20 +547,18 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
 wall reading and the catalogue seeing the seals and the region wall are built and recorded
 (`DECISIONS.md`, M129 and its sections, the newest "the catalogue sees the seals and the wall").
 The probe, `tests/probes/m129_zero_cost_line.gd`, assembles a day the way `EventManager.start_day`
-does and finds a zero-cost line along 239 of 299 routes. What is left are paths that place rows
-without the three rules, each a design question for the player before anything is built:
+does and finds a zero-cost line along 239 of 299 routes. A region wall or a seal may cost a route where it
+stands at a junction ([PLAYTEST-140](playtests/PLAYTEST-140.md), statement 7: "it's okay if
+the route costs something"), and it is most of what the probe still blames. What is left:
 
-- [ ] **Open: region wall and seal bodies closing a junction between them.** Neither planner asks
-      the rules, since both exist to close streets; a `roadblock` wall body beside another wall
-      body or a seal reaches a route junction, and that shape is most of what the probe still
-      blames. Whether a wall or seal may cost a route there, or should step back from the
-      junction, goes to the player.
 - [ ] **Open: a `roadblock` on a carriageway** is seen by no sidewalk rule, only by the junction
       rule when it is near one. M199, the roadblock closes its whole street, makes the catalogue
       roadblock a true closure, so this is settled with it.
-- [ ] **Open: the calm-ground pass** (`_spoil_the_parks_she_used`) places in a used park's rect
-      without the rules, and the probe cannot see it, since it plans one day with no used parks.
-      Whether a spent park may cost a route goes to the player.
+- [ ] **A spent park is closed** ([PLAYTEST-140](playtests/PLAYTEST-140.md), statement 1: "a
+      spent park should not be accesible and no route should go through it"). The calm-ground
+      pass (`_spoil_the_parks_she_used`) places in a used park's rect without the rules; instead
+      the park is shut the way a closure shuts ground, checked before it is accepted, and the
+      day's route tree plans around it. Its picture still reads as spent.
 - [ ] **The night raid's van**, spawned by `ResistanceDirector` through `spawn_extra` near her
       doorstep, and the other `spawn_extra` sites in `happenings.gd` are not checked against the
       three questions. Trace each and say whether it may cost a route.
@@ -531,26 +636,19 @@ design decision back to itself, where "you changed a number" is all it could eve
 keeps: a guard that a sweep was not vacuous, an ordering between two constants, and anything the
 skill's incident list names.
 
-**What is true today.** Ten suites have had the pass and the crowd suite is split in two by
-subject — the per-suite times before and after are in `DECISIONS.md` under M125 — and the head
-of `tests/run_tests.gd` says the budget: a suite over two minutes serial is a suite to split or
-cut, because the longest suite sets the floor every shard waits on. CI runs the suite as eight
-shards on eight runners, planned from `tests/suite_costs.txt`, the measured per-suite times
-`tools/test.sh --record-costs` refreshes (`DECISIONS.md`, M125, CI runs the shards on eight
-runners); the wall time is the longest suite plus a minute of setup, so the longest suite is
-the whole of what CI's time is made of. Two suites are still over it, and the recorded costs
-were last taken under local contention, so `--record-costs` on a quiet machine comes first.
+**What is true today.** The head of `tests/run_tests.gd` says the budget: a suite over two
+minutes on CI is a suite to split or cut, because the longest suite sets the floor every shard
+waits on. CI runs eight shards planned from `tests/suite_costs.txt`, which `tools/ci-costs.sh`
+refreshes from CI's own timings. `test_events.gd` and `test_routes.gd` are split by subject
+(`DECISIONS.md`, M125, test_events and test_routes are split by subject); the new suites' rows
+are estimates until `tools/ci-costs.sh` measures them.
 
-- [ ] **`test_events.gd` and `test_routes.gd` are the floor now.** Both run over two minutes
-      serial and both had the pass already, so what is left is a split by subject, the way the
-      crowd suite was split at its own seals boundary — every test function still called once,
-      the check total unchanged, the split named for what each half proves — or a measured
-      shorter loop where a docstring can say why. `tools/test.sh --record-costs` afterwards,
-      so the plan follows; the per-suite line before and after goes to `DECISIONS.md` under
-      M125. `test_resistance.gd` joined them: about 160 s under load once the narrow targets'
-      reachability test landed (`DECISIONS.md`, M181, the narrow targets are reachable by
-      construction), against the 43 s `suite_costs.txt` still records. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
-      CI plans them at its default.
+- [ ] **`test_resistance.gd` is the floor now**, at about 192s on CI: split it by subject the same
+      way, every test function still called once and the check total unchanged.
+- [ ] **Refresh `suite_costs.txt` from CI** once the split suites have run on `main`, and split
+      again whatever is still over two minutes; `test_events_scheduler.gd` and
+      `test_routes_closures.gd` are estimated just under and over it, and `test_full_run.gd`
+      is about 159s.
 
 ---
 
