@@ -4,7 +4,8 @@
 limit before acting on them, then handed to this one with the instruction to take the GoatCounter
 part only. The same two messages also report the day brief naming the wrong day, the pause
 screen's restart, the held restart on a phone and the robber's place in the chalk mark's alley;
-those findings belong to the other session and are recorded where it records them.
+the other session never recorded them, so they are written down here too, under "The rest of the
+same messages".
 
 ## What the player said
 
@@ -54,3 +55,29 @@ And on how the key is used:
    own machine.
 6. **GoatCounter's API is reached only through the repository's script**, never by a request
    written by hand.
+
+## The rest of the same messages
+
+In the first message, after the counter:
+
+> "another thing, the day brief is inconsistent it say she fell asleep but really it's the day
+> brief for the next day. also the day number is the previous day. we should make it strictly the
+> next day -- the title, day number, and brief should be for what's coming. also the nerves should
+> show. next, the pause screen is currently bugged where you cannot restart from it. it just goes
+> back to the current game when pressing the button. also the restart button doesn't visible fill
+> up on mobile when pressing. and sometimes it just doesn't work at all which is frustrating. you
+> have to hold long multiple times until it actually restarts"
+
+In the second, after the counter ("rubber" and "river" are dictation for *robber*):
+
+> "Next, the rubber in the alley with the mark is too close to the mark. It's impossible to get
+> the mark on most days. Let's always place the river at the other end of the alley"
+
+7. **The screen between days is strictly about the coming day**: its title, its day number and
+   its brief all name the day about to begin, never the day just ended — it says she fell asleep
+   while showing the next day's brief, with the previous day's number. **The nerves show on it.**
+8. **The pause screen's restart does not restart**: pressing it returns to the current game.
+9. **The held restart does not visibly fill on a phone while held, and sometimes does nothing**:
+   it takes several long holds before it restarts.
+10. **The robber guarding the chalk mark stands too close to it**, so the mark cannot be reached on
+    most days. **He always stands at the other end of the mark's alley.**

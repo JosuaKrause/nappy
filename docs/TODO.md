@@ -394,6 +394,63 @@ reaction time a warning must leave her; the player's complaint is the other end.
 
 ---
 
+## M210 — The screen between days is about the coming day · asked for 2026-09-26
+
+> "the day brief is inconsistent it say she fell asleep but really it's the day brief for the next
+> day. also the day number is the previous day. we should make it strictly the next day -- the
+> title, day number, and brief should be for what's coming. also the nerves should show."
+
+[PLAYTEST-141](playtests/PLAYTEST-141.md), statement 7. The end-of-day summary
+(`src/ui/day_summary.gd`, `show_day()`) shows `_DAY_BRIEF` for the next day under the ended day's
+title and number.
+
+- [ ] **The title, the day number and the brief all name the day about to begin**, on the summary
+      after a won day and after a lost one, and on a resumed run's gate.
+- [ ] **The nerves show on it.**
+
+---
+
+## M211 — The pause screen's restart restarts · found 2026-09-26
+
+> "the pause screen is currently bugged where you cannot restart from it. it just goes back to the
+> current game when pressing the button."
+
+[PLAYTEST-141](playtests/PLAYTEST-141.md), statement 8.
+
+- [ ] **Reproduce it, fix it, and pin it with a test**: the held restart on the pause screen
+      restarts the run (`main._restart_run`) rather than closing the pause screen.
+
+---
+
+## M212 — The held restart fills visibly on a phone and always works · found 2026-09-26
+
+> "the restart button doesn't visible fill up on mobile when pressing. and sometimes it just
+> doesn't work at all which is frustrating. you have to hold long multiple times until it actually
+> restarts"
+
+[PLAYTEST-141](playtests/PLAYTEST-141.md), statement 9. Seen on a phone; the pause screen and the
+day summary both carry the held restart.
+
+- [ ] **Reproduce both on touch input, fix them, and pin them with a test**: the button fills
+      while held, and one full hold always restarts.
+
+---
+
+## M213 — The chalk mark's robber stands at the other end of its alley · asked for 2026-09-26
+
+> "the rubber in the alley with the mark is too close to the mark. It's impossible to get the mark
+> on most days. Let's always place the river at the other end of the alley"
+
+[PLAYTEST-141](playtests/PLAYTEST-141.md), statement 10 ("rubber" and "river" are dictation for
+*robber*). The guard is placed by `ResistanceDirector._maybe_set_a_trap()` from day 6. M137, the
+trap comes to her (its draft pull request is open), also changes where robbers
+stand; read its entry and PR before designing, and put any overlap to the player.
+
+- [ ] **The guard always stands at the far end of the mark's alley from the mark**, so the mark
+      can be reached on every day, with the **events** rule's fairness contracts still met.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
