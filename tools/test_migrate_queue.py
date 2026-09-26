@@ -278,12 +278,11 @@ class ReviewTests(unittest.TestCase):
     def test_every_bullet_is_a_file_and_the_header_is_rewritten(self) -> None:
         report = q.Report()
         tree = q.review_tree(REVIEW, undated, True, report)
-        self.assertEqual(
-            tree[q.REVIEW], q.NEW_REVIEW + "\n" + q.REVIEW_UNTESTED + "\n\n- **An old question** nobody has felt.\n"
-        )
+        self.assertEqual(tree[q.REVIEW], q.NEW_REVIEW)
         items = sorted(p for p in tree if p.startswith("docs/review/"))
-        self.assertEqual(len(items), 2)
-        self.assertEqual((report.review_items, report.review_lines_kept), (2, 3))
+        self.assertEqual(len(items), 3)
+        self.assertEqual(report.review_items, 3)
+        self.assertIn("nobody has felt", "".join(tree[p] for p in items))
         walk = next(tree[p] for p in items if "walk-the-thing" in p)
         self.assertEqual(
             walk, "**Walk the thing** ([PLAYTEST-9](../playtests/PLAYTEST-9.md)) and\njudge it.\n\nSecond paragraph.\n"

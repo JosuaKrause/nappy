@@ -157,8 +157,7 @@ and names what to do, where to look, and the question a run answers — not what
 is the record's under [decisions/](decisions/). A playtest closes the items it covered: the
 finding goes in the playtest's file, the item's file is deleted in the same commit, and what the
 player asked for goes to the queue. Nothing here is a task; a task is an item under
-[todo/](todo/). What no person has tested yet, the list at the end of this file, stays a list
-here.
+[todo/](todo/). What a rig has measured and no person has felt yet is an item like any other.
 
 ## Next run, in one sitting
 
@@ -196,7 +195,6 @@ class Report:
     todo_undated: int = 0
     review_items: int = 0
     review_lines_dropped: list[str] = field(default_factory=list)
-    review_lines_kept: int = 0
     notes: list[str] = field(default_factory=list)
 
     def lines(self) -> list[str]:
@@ -213,9 +211,9 @@ class Report:
             " their heading line",
             f"TODO.md: {self.todo_entries} entries -> folders in {TODO_DIR}/, {self.todo_items} items -> files"
             f" ({self.todo_items_midway} mid-way); {self.todo_undated} headings carry no date",
-            f"REVIEW.md: {self.review_items} items of the next run -> files in {REVIEW_DIR}/;"
-            f" {len(self.review_lines_dropped)} blank lines between them dropped; the untested list,"
-            f" {self.review_lines_kept} lines, kept in REVIEW.md as written",
+            f"REVIEW.md: {self.review_items} items, the next run's and the untested list's, -> files in"
+            f" {REVIEW_DIR}/; {len(self.review_lines_dropped)} lines dropped (the untested list's heading"
+            " and the blank lines between items)",
         ]
         out.extend(f"note: {n}" for n in self.notes)
         return out
@@ -702,8 +700,8 @@ class Bullet:
     lines: list[str]
 
 
-def parse_review(text: str, strict: bool, report: Report) -> tuple[list[Bullet], list[str]]:
-    """The next run's items, and the untested list's lines, which stay in REVIEW.md as written."""
+def parse_review(text: str, strict: bool, report: Report) -> list[Bullet]:
+    """Every item of both lists: the next run's and what no person has tested yet."""
     lines = text.split("\n")
     if lines and lines[-1] == "":
         lines = lines[:-1]
@@ -720,24 +718,21 @@ def parse_review(text: str, strict: bool, report: Report) -> tuple[list[Bullet],
             f"{REVIEW}: the text above the first item is not OLD_REVIEW_HEADER in tools/lib_queue.py;"
             " it changed on main -- carry the change into NEW_REVIEW first"
         )
-    untested_at = lines.index(REVIEW_UNTESTED) if REVIEW_UNTESTED in lines else len(lines)
-    if strict and untested_at == len(lines):
+    if strict and REVIEW_UNTESTED not in lines:
         raise QueueFormatError(f"{REVIEW}: no {REVIEW_UNTESTED!r} heading")
-    kept = lines[untested_at:]
-    report.review_lines_kept = len(kept)
     bullets: list[Bullet] = []
     index = first
-    while index < untested_at:
+    while index < len(lines):
         line = lines[index]
         if line.startswith("- "):
             end = index + 1
-            while end < untested_at:
+            while end < len(lines):
                 nxt = lines[end]
                 if nxt.strip() == "":
                     look = end
-                    while look < untested_at and lines[look].strip() == "":
+                    while look < len(lines) and lines[look].strip() == "":
                         look += 1
-                    if look < untested_at and lines[look].startswith("  "):
+                    if look < len(lines) and lines[look].startswith("  "):
                         end = look
                         continue
                     break
@@ -747,12 +742,12 @@ def parse_review(text: str, strict: bool, report: Report) -> tuple[list[Bullet],
             bullets.append(Bullet(index, lines[index:end]))
             index = end
             continue
-        if line.strip() == "":
+        if line.strip() == "" or line == REVIEW_UNTESTED:
             report.review_lines_dropped.append(line)
             index += 1
             continue
-        raise QueueFormatError(f"{REVIEW}: line {index + 1} is neither an item nor a blank line: {line!r}")
-    return bullets, kept
+        raise QueueFormatError(f"{REVIEW}: line {index + 1} is neither an item nor a known heading: {line!r}")
+    return bullets
 
 
 def bullet_text(bullet: Bullet) -> list[str]:
@@ -768,8 +763,8 @@ def bullet_text(bullet: Bullet) -> list[str]:
 
 
 def review_tree(text: str, dates: DateLookup, strict: bool, report: Report) -> dict[str, str]:
-    bullets, kept = parse_review(text, strict, report)
-    tree: dict[str, str] = {REVIEW: join([*NEW_REVIEW.rstrip("\n").split("\n"), "", *kept])}
+    bullets = parse_review(text, strict, report)
+    tree: dict[str, str] = {REVIEW: NEW_REVIEW}
     taken: set[str] = set()
     for bullet in reversed(bullets):
         date = dates(REVIEW, bullet.start + 1)

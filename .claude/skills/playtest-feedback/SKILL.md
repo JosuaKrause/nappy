@@ -75,8 +75,7 @@ the repo cold could build the thing that was asked for** from what is on disk.
 **A playtest also closes what it covered under `docs/review/`.** Those files are the things
 waiting on a person; when a run has looked at one, the verdict is in the playtest file and the
 item's file is deleted in the same commit, whether the verdict was *fine* or a new finding. An item
-that stays after its run has been played is asked for twice. The list at the end of
-`docs/REVIEW.md`, of what no person has tested yet, is edited the same way.
+that stays after its run has been played is asked for twice.
 
 ## Never silently overturn a decision the player took
 

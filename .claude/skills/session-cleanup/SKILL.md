@@ -99,8 +99,7 @@ permission in this session), and so does retiring a merged branch.
 
 ### 6a. Leave the review list true
 
-The items under `docs/review/` and the untested list in `docs/REVIEW.md` hold what waits on a
-person: **committing** says when a PR adds a review item and **playtest-feedback** when a
+The items under `docs/review/` hold what waits on a person: **committing** says when a PR adds a review item and **playtest-feedback** when a
 playtest deletes one; close every item a playtest this session covered, and check both happened
 for this session's work.
 
