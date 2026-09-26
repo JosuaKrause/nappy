@@ -111,3 +111,21 @@ orchestrator recommended keeping a short one:
 19. **A thing that does not telegraph its coming is not an exemption from the cues rule or from
     warning-first placement; those rules govern only the things that need telegraphing.** Whether
     `loose_dog` is such a thing went back to the player. → M226.
+
+Asked whether `loose_dog` is decided as a thing that does not telegraph, and what makes a thing need
+telegraphing (the orchestrator's recommendation: anything that can end the day, plus anything the
+player names):
+
+> "loose dog, cat don't need telegraphing"
+
+20. **`loose_dog` and `cat_dash` do not telegraph**: no warning, so neither the cues rule's badge nor
+    warning-first placement applies to them. What makes other things need telegraphing was not
+    answered beyond these two. → M226.
+
+And, while that was being filed:
+
+> "telegraphing is for things that go fast *and* are dangerous"
+
+21. **A thing telegraphs its coming only if it is both fast and dangerous.** The cues rule gives a
+    badge to "something lethal or faster than a walk"; this makes it *and*. What counts as
+    dangerous went back to the player. → M226.

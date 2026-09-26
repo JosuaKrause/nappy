@@ -706,6 +706,7 @@ rules call a broken contract "a bug, not a difficulty setting".
 - [ ] **For each row under its floor, say whether it is a real breach or the probe's placement**
       (the probe stands her by rule rather than on a real route), with the frame or the
       measurement that shows it. A real breach gets fixed and a test that fails before the fix.
+      `cat_dash` is left out: it does not telegraph (M226).
 
 ---
 
@@ -741,12 +742,23 @@ nothing."
       the day-13 column and any other thing that arrives from off screen — in place of the flat
       2.9s minimum (`Tuning.OFFSCREEN_WARNING_MIN`), which the player called "not important".
       `loose_dog` is outside it.
-- [ ] **Open, for the player: does `loose_dog` get a warning at all?** *"it might not need a
-      warning at all" · "since it's low stakes"* ([PLAYTEST-145](playtests/PLAYTEST-145.md),
-      statement 18). It runs at 132px/s against her 92, so the cues rule gives it a badge ("something
-      lethal or faster than a walk"), and the fairness contract holds every event to a warning.
-      Without one, meeting it costs up to its full startle (`intensity` 39) with nothing her walk
-      can do about it. The orchestrator's recommendation, not asked for: keep a short warning.
+- [ ] **`loose_dog` and `cat_dash` do not telegraph** *("it might not need a warning at all" ·
+      "since it's low stakes" · "that doesn't make it an exemption. it makes it something that is
+      not telegraphing that it comes. only things that need telegraphing need to follow the cues
+      rule and placement" · "loose dog, cat don't need telegraphing";
+      [PLAYTEST-145](playtests/PLAYTEST-145.md), statements 18–20)*. Neither gets a badge or a
+      warning, and neither is placed by warning first; the cues rule and the fairness contract are
+      stated as governing the things that need telegraphing, which is how these two fall outside
+      them rather than being exempted. `Tuning.OFFSCREEN_WARNING_MIN_EXEMPT` goes with it. Where
+      each now comes from (the dog down her sidewalk, the cat across her line) is the build's to
+      propose, with a picture.
+- [ ] **Telegraphing is for things that go fast *and* are dangerous** *("telegraphing is for things
+      that go fast *and* are dangerous"; statement 21)*. The cues rule's badge for "something
+      lethal or faster than a walk" becomes fast and dangerous, and the fairness contract, the
+      badge and warning-first placement are stated for those things only. Every row the change
+      moves out of telegraphing is listed with what it does instead. Open, for the player: **what
+      counts as dangerous** — the orchestrator's reading, not confirmed, is a thing that can end
+      the day (`hard_fail`).
 
 Replaces the orchestrator's proposal on PR #372 of a 2.9s badge before the dog's 4.5s approach,
 which would have lengthened the day-3 timing the player calls correct.
