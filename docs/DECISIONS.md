@@ -1,5 +1,35 @@
 # Decisions
 
+## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
+
+*([PLAYTEST-142](playtests/PLAYTEST-142.md): "the pause screen is currently bugged where you cannot
+restart from it. it just goes back to the current game when pressing the button" · "the restart
+button doesn't visible fill up on mobile when pressing. and sometimes it just doesn't work at all" ·
+[PLAYTEST-143](playtests/PLAYTEST-143.md): "restart button restarts the game from scratch".)*
+
+**What reached the continue path (M211).** A real touch goes through the engine's
+emulate-mouse-from-touch pass, which dispatches an emulated mouse press before the touch press
+itself. `PauseScreen._unhandled_input()`'s "any press carries on" branch read that mouse press as
+continue, because unlike `_handle_restart_touch()`'s mouse branch and the day summary's own catch-all
+it was not gated on `not _touch`. The screen closed and cancelled the hold before the touch's
+release could complete it. The branch is now gated like the others. The existing touch tests used
+`Viewport.push_input()`, which skips that emulation, so they never saw it.
+`tests/test_held_restart.gd` drives touches through `Input.parse_input_event()` and
+`flush_buffered_events()` instead.
+
+**What cancelled a hold on a phone (M212).** A second finger anywhere on the screen while the disc
+was held: `ModeButton.begin_hold()` refused the second index, but the refused press still fell
+through to "carry on", whose close cancelled the hold, on both the pause screen and the day
+summary. `ModeButton.is_held()` now guards each screen's `_handle_restart_touch()`. Ruled out, and
+said so in the test's class doc: a drag off the disc (a release ends a hold by touch index alone),
+a release reaching another control, and a fill drawn only on hover (`_draw()` reads
+`hold_progress` alone). The fill is pinned by reading `hold_progress` partway through a real hold
+on both screens. Each fix's test fails with the fix reverted.
+
+**Not verified on a device.** No capture shows the disc filling under a held finger: `--tap` sends
+press and release in one frame and `--press` carries no screen position, so a sustained synthetic
+touch needs a new dev capability. It waits on a phone (`REVIEW.md`).
+
 ## M129 — A region wall or a seal may cost a route at a junction · decided 2026-09-25
 
 *([PLAYTEST-140](playtests/PLAYTEST-140.md): "it's okay if the route costs something".)*
