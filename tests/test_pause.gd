@@ -348,6 +348,7 @@ func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
 	t.check(started_modes == [ControlsMode.Mode.JOYSTICK],
 			"a real touch pushed through the viewport on the joystick button's own rect reaches "
 			+ "the screen (this fails if mouse_filter regresses to STOP)")
+	t.check(by_keys == [false], "a real touch on a button is never reported as a key")
 
 	title.close()
 	title.queue_free()
