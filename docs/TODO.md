@@ -467,8 +467,7 @@ change how one building's roof meets the next.
 repeats `*`, while the day brief and the finale brief (`show_day_brief()` and
 `show_finale_brief()` in `day_summary.gd`) and the pause screen (`_show_where_the_run_stands()`)
 say "%d nerves left". It goes on one branch with M210, the brief between two days is the coming
-day's, which already asks the brief to show the nerves "drawn the way the HUD draws them". Both
-wait for M211 and M212's branch, which owns `day_summary.gd` and `pause_screen.gd`.
+day's, which already asks the brief to show the nerves "drawn the way the HUD draws them".
 
 - [ ] **Every screen that shows the nerves draws them as stars**, drawn the same way everywhere;
       no screen shows them as a number.
