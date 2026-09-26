@@ -156,10 +156,18 @@ func _owe_the_return() -> void:
 ## A torn poster drew the pursuit marble: sends a `police_patrol` toward her from off screen, at the
 ## run's own heat. See `EventDirector.send_a_patrol()` for how and when it is sited, and
 ## `PosterWalls` for the bag it was drawn from. Nothing is sent during the escape.
+##
+## `EventBus.poster_pursuit_sent` fires only when this marble actually sends one — never for a
+## marble drawn while a patrol is already on its way, which the director folds into that patrol —
+## so the counter's `poster-pursuit` is one per patrol a tear sent.
 func send_a_patrol() -> void:
 	if _walking_the_finale:
 		return
+	var already_on_its_way := _director.has_a_sent_patrol()
 	_director.send_a_patrol(GameState.resistance_progress)
+	if not already_on_its_way and _director.has_a_sent_patrol():
+		# `VisitCounter`'s own "poster-pursuit" — see docs/TELEMETRY.md, "The page counts visits".
+		EventBus.poster_pursuit_sent.emit()
 
 ## Whether a torn poster's patrol is on its way and not yet sited. For the tests.
 func has_a_sent_patrol() -> bool:

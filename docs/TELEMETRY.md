@@ -99,6 +99,9 @@ The events:
 - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn
   (`PosterWalls._tear()`), every mother who stops her to chat, and every time a checkpoint holds
   her (`EventManager._check_detentions()`, once per catch).
+- `nappy-day-N-poster-pursuit` — a tear whose marble sends a patrol after her, beside that tear's
+  own `poster-torn` (`EventManager.send_a_patrol()`). A marble drawn while a patrol is already on
+  its way is that same patrol and sends nothing more, and nothing is sent during the escape.
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
   return to the title after an ending already reported through `nappy-ending-*`.
 - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
@@ -111,7 +114,7 @@ The events:
 
 Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,
-`resistance_mark_seen`, `player_detained`, `poster_torn` — is listen-only: it rolls no RNG and
+`resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
 existing `escape_*` signals already use.
 

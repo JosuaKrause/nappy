@@ -135,6 +135,7 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_pursuit_began("charging_dog")
 	counter._on_pursuit_ended("charging_dog", true)
 	counter._on_poster_torn()
+	counter._on_poster_pursuit_sent()
 	counter._on_player_detained("chatting_mother")
 	counter._on_day_ended(1, GameEnums.DayResult.WON)
 	counter._on_run_restarted(1)
@@ -216,6 +217,9 @@ func _test_every_tear_and_every_hold_is_sent(t) -> void:
 	t.check(counter.sent.count(torn) == 3,
 		"two tears in one attempt and one in the retry are three poster-torn events")
 	t.check(counter.sent.count(held) == 2, "a checkpoint that holds her twice is two events")
+	counter._on_poster_pursuit_sent()
+	t.check(counter.sent.back() == "nappy-day-%d-poster-pursuit" % day,
+		"a tear that sends a patrol sends its own poster-pursuit")
 	counter.free()
 
 ## Review finding: a genuinely fresh visit that hands over to the escape at day 14 re-enters

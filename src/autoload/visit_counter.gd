@@ -49,6 +49,7 @@ extends Node
 ##   ended without: a mark never gives one of these any more, see `mark-*` above.
 ## - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn,
 ##   every mother who stops her to chat and every checkpoint hold.
+## - `nappy-day-N-poster-pursuit` — a tear that sends a patrol after her, beside its `poster-torn`.
 ## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
 ##   handover only), lost (either section, any attempt), or got out.
@@ -73,6 +74,7 @@ func _ready() -> void:
 	EventBus.pursuit_began.connect(_on_pursuit_began)
 	EventBus.pursuit_ended.connect(_on_pursuit_ended)
 	EventBus.poster_torn.connect(_on_poster_torn)
+	EventBus.poster_pursuit_sent.connect(_on_poster_pursuit_sent)
 	EventBus.player_detained.connect(_on_player_detained)
 	EventBus.escape_begun.connect(_on_escape_begun)
 	EventBus.escape_city_entered.connect(_on_escape_city_entered)
@@ -299,6 +301,11 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 ## counted (PLAYTEST-143: "we need a telemetry item for ripping posters").
 func _on_poster_torn() -> void:
 	_send_event(_day_event_name(GameState.day, "poster-torn"))
+
+## A tear whose marble sends a patrol, beside that tear's own `poster-torn` (PLAYTEST-143: "we
+## need a telemetry item for ripping posters and pursuit triggered by poster ripping").
+func _on_poster_pursuit_sent() -> void:
+	_send_event(_day_event_name(GameState.day, "poster-pursuit"))
 
 ## Every hold: `EventManager._check_detentions()` emits once per catch, a mother only ever chats
 ## once, and a checkpoint that holds her again is a second stop she paid for.

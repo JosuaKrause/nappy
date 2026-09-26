@@ -267,6 +267,11 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 	GameState.posters.reset()
 	var tears := PosterWalls.TEAR_PRE_BAG.size() + 2 * PosterWalls.TEAR_BAG.size()
 	var sent: Array[bool] = []
+	var signalled := {"torn": 0, "pursuit": 0}
+	var on_torn := func() -> void: signalled["torn"] += 1
+	var on_pursuit := func() -> void: signalled["pursuit"] += 1
+	EventBus.poster_torn.connect(on_torn)
+	EventBus.poster_pursuit_sent.connect(on_pursuit)
 	GameState.posters.photograph()
 	for i in tears:
 		var cell: Vector2i = tiles[i]
@@ -281,6 +286,12 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 	t.check(not sent[0], "the run's first tear sends nobody")
 	t.check(sent.count(true) == 2, "two whole bags of tears send exactly two patrols (%d)"
 			% sent.count(true))
+	EventBus.poster_torn.disconnect(on_torn)
+	EventBus.poster_pursuit_sent.disconnect(on_pursuit)
+	t.check(signalled["torn"] == tears, "every tear tells the counter (%d of %d)"
+			% [signalled["torn"], tears])
+	t.check(signalled["pursuit"] == sent.count(true),
+			"and every patrol a tear sent tells it too, once each (%d)" % signalled["pursuit"])
 	var first_marbles := sent.duplicate()
 	GameState.posters.give_back()
 	sent.clear()
@@ -293,6 +304,15 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 		hold.call(Vector2.UP, spot, PosterWalls.PRESS_TO_TEAR + 0.05)
 		sent.append(city.events.has_a_sent_patrol())
 	t.check(sent == first_marbles, "a lost day gives the tears back and the retry draws the same marbles")
+	city.events._director._sent = null
+	var folded := [0]
+	var on_folded := func() -> void: folded[0] += 1
+	EventBus.poster_pursuit_sent.connect(on_folded)
+	city.events.send_a_patrol()
+	city.events.send_a_patrol()
+	EventBus.poster_pursuit_sent.disconnect(on_folded)
+	t.check(folded[0] == 1,
+			"a second marble while the patrol is on its way is the same patrol, told to the counter once")
 	city.events._director._sent = null
 	city.free()
 
