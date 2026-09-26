@@ -19,6 +19,14 @@ the live body and picture's footprint still need comparison with the debug layer
 artwork, the player's perpendicular burnt-car correction and the rendered evidence are in
 `DECISIONS.md`, "SVG artwork and upcoming milestone assets".
 
+**The prepared drawings this entry binds are integration checks within it, not separate
+implementations of the same feature**: compare `alley_draft.svg` in context before deciding whether
+it replaces the live alley, and bind the sound arcs (`art/events/sound_pulse.svg`, the sound-lines
+item) with their event timing. Reuse the available assets; their placement, timing and gameplay
+decisions remain open. Source canvases, anchors and review sheets belong to `GRAPHICS.md`, and
+runtime use is verified in the caller. The visual review is recorded in `DECISIONS.md`, "SVG
+artwork and upcoming milestone assets".
+
 **Whether the `INDUSTRIAL` and `CIVIC` districts read differently at a glance is a question in
 `REVIEW.md`**: their roof furniture and fronts are placed per district (`DECISIONS.md`, M106), and
 in the rig pictures the two are told apart by their roofs alone.
