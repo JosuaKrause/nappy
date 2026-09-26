@@ -1271,10 +1271,11 @@ static func _cyclist() -> EventDef:
 	# His warning, run before he exists: the screen-edge badge goes up with nothing in the world
 	# and he is created just off screen when it is over (`PendingWarning`). hard_fail and faster
 	# than a walk, so the fairness floor is the forward reach, doubled: `outer_radius ·
-	# Tuning.field_scale(e)` at 165px/s (e = 0.33) is 134px, * 2 / 92 = 2.92s, held against the
-	# badge-to-reach time `EventDef.warning_time()` measures, which adds his own approach from where
-	# he is created to this.
-	def.telegraph_time = 2.1
+	# Tuning.field_scale(e)` at 165px/s (e = 0.33) is 134px, * 2 / 92 = 2.92s. What is held against
+	# it is the badge-to-reach time, `EventDef.warning_time()`: this, plus 0.77s for him to close
+	# from where he is created closest (`Tuning.min_offscreen_lead()`, 231px) to his 33px reach at
+	# 257px/s with her walking into him — 2.92s, the smallest hundredth that clears the floor.
+	def.telegraph_time = 2.15
 	def.mobile = true
 	def.speed = 165.0
 	def.hard_fail = true

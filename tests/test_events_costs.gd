@@ -322,9 +322,9 @@ func _test_danger_arrives_before_act_three(t) -> void:
 	# whole catalogue; this names the new ones so a rebalance cannot quietly break act I only.
 	for id in early:
 		var def := EventCatalogue.by_id(id)
-		t.check(def.telegraph_time >= def.minimum_telegraph(),
-				"'%s' telegraphs for %.2fs against a required %.2fs"
-				% [id, def.telegraph_time, def.minimum_telegraph()])
+		t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
+				"'%s' warns for %.2fs before it can reach her against a required %.2fs"
+				% [id, def.warning_time(), def.minimum_telegraph()])
 
 ## The caps have to leave room for the density, or the budget is decoration. Stated over the
 ## day-1 pool because that is where it was actually wrong: three dog walkers and three cafés

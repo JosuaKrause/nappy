@@ -1202,7 +1202,7 @@ func validate() -> bool:
 		# rule says nothing about it and `validate_pursuit` is the contract instead. What its
 		# telegraph has to buy is the moment of *noticing*, which is checked there.
 		return true
-	return Tuning.validate_event(id, telegraph_time, inner_radius, outer_radius, hard_fail,
+	return Tuning.validate_event(id, warning_time(), inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)
 
 ## Shortest telegraph this geometry may fairly have.
@@ -1235,6 +1235,27 @@ func ahead_of_player_lead() -> float:
 	if still_while_telegraphing:
 		time_to_middle += telegraph_time
 	return maxf(Tuning.AHEAD_LEAD_DISTANCE, time_to_middle * Tuning.WALK_SPEED)
+
+## Seconds from the moment this row becomes visible to the earliest it can reach her, on the worst
+## heading the game can give it — what the fairness contract holds against `minimum_telegraph()`.
+##
+## **For a row in the world while it telegraphs, that is `telegraph_time`**: it is seen when it
+## appears, and nothing it does inside the telegraph can end the day or charge her at full strength.
+##
+## **For a row warned of before it exists** (`warns_before_it_exists()`) **it is its badge to its
+## reach**: the whole `telegraph_time`, run with nothing in the world, plus the time the thing then
+## takes to reach her from where it is created. Created closest on the vertical axis —
+## `Tuning.min_offscreen_lead()` at its own speed plus a walk and its own `offscreen_notice` — and
+## reaching her with her walking into it: at its lethal reach for a `hard_fail` row, which is when
+## it can end the day, and at its field's forward reach for any other, which is when it charges
+## her. A field that already covers her where it is created adds nothing.
+func warning_time() -> float:
+	if not warns_before_it_exists():
+		return telegraph_time
+	var closing := speed + Tuning.WALK_SPEED
+	var reach := lethal_reach() if hard_fail else field_reach()
+	var created_at := Tuning.min_offscreen_lead(closing, offscreen_notice)
+	return telegraph_time + maxf(0.0, created_at - reach) / closing
 
 ## Whether the director warns of this row before it exists rather than creating it: a
 ## `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`), whose screen-edge badge goes up with

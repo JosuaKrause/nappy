@@ -2189,13 +2189,18 @@ func degradation_for(day: int) -> float:
 ## The fairness contract from docs/EVENTS.md: a player who starts walking away the instant
 ## an event becomes visible must clear its outer radius before it reaches full intensity.
 ##
+## `warning` is the seconds from that instant to the earliest it can reach her —
+## `EventDef.warning_time()`: the telegraph for a row that is in the world while it telegraphs, and
+## the badge-to-reach time for one warned of before it exists, whose badge is the instant it becomes
+## visible. Held against `required_telegraph_time()`.
+##
 ## Returns true if the geometry is fair; pushes an error and returns false if it is not.
-func validate_event(id: String, telegraph_time: float, inner_radius: float,
+func validate_event(id: String, warning: float, inner_radius: float,
 		outer_radius: float, hard_fail: bool, speed: float = 0.0) -> bool:
 	var required := required_telegraph_time(inner_radius, outer_radius, hard_fail, speed)
-	if telegraph_time + 0.001 < required:
-		push_error("Unfair event '%s': telegraph_time %.2fs < required %.2fs "
-				% [id, telegraph_time, required]
+	if warning + 0.001 < required:
+		push_error("Unfair event '%s': warned %.2fs before it can reach her < required %.2fs "
+				% [id, warning, required]
 				+ "(inner %.0f, outer %.0f, hard_fail %s)"
 				% [inner_radius, outer_radius, hard_fail])
 		return false
