@@ -38,3 +38,10 @@ The picture is rejected. Each corner needs a visible upright pole joining both p
 runs, and signs need coherent mounting on the structure. The overall picture must read as a
 standing fence at gameplay scale; coordinate consistency or passing tests do not establish that.
 The assistant assigns a fresh Astra visual critique before another drawing pass.
+
+## Verdict on the shared-pole revision
+
+> "read your restart note. I like the graphics now -- the audio is still not good. a step needs to be way more subtle and wheel sound is even quieter"
+
+The player approves the current fence graphics. The audio feedback belongs to the separate
+Copper lark sound experiment.
