@@ -310,8 +310,7 @@ checks and worktrees can move independently of this file. The player's order, fr
 [PLAYTEST-144](playtests/PLAYTEST-144.md): the `git grep` hook, then M223, then M225 and a
 release; nothing else is picked up before those. At the end of the session the player tabled
 everything else: "let's table work that is not immediately important. we can let the agents
-finish what they have but we can pick up the prs later", and, on the park fence, "do not schedule
-additional work".
+finish what they have but we can pick up the prs later".
 
 - **HIGH PRIORITY: these three, in this order, and nothing else until they are done.** Each
   step waits for the one before it:
@@ -327,23 +326,13 @@ additional work".
   3. **PR #368, M225, the counter's asks**, taken over from the stopped cloud session. The brief
      is written and waits for M223. Then review, merge, and cut a release so traffic reaches the
      new GoatCounter site.
-- **Picked up by the player alongside those: PR #372, M207, a warning comes by itself.**
-  PLAYTEST-145: the screen-edge warning goes up first, the thing spawns where it points when its
-  time comes, and the waiting place follows her on the thing's own ground ("add the new info to the
-  PR so it becomes the new guidance *and* its implementation"). M207 is back in `TODO.md` with the
-  design built, and `TODO.md`'s M207 holds the four questions still open for the player (what the
-  2.9s minimum counts to, `loose_dog` under it, `charging_dog` warned first, the patrols and planned
-  convoys). Once answered: amend `.claude/briefs/feature-cyclist-warning.md`, build in
-  `.claude/worktrees/cyclist-warning`, file the record, review under **pr-review**.
 - **STOPPED, not to be continued yet.** Each of these is committed and pushed at a safe point,
   and none gets an agent, a review or a merge until the player picks it up again. They are listed
   only so their state is known:
   - **#370, M204 and M214, the trailer's tools**: reviewed ready and CI green at its head; the
     first to merge. M204 stays queued for the player's notes on the cut.
-  - **#374, M129, a spent park is closed**: the player rejected three fence attempts and the
-    redrawn fence pieces ("the fence still doesn't look right"). Ask the player what looks wrong
-    before anything is drawn again. The PR description and its decision record also still need
-    rewriting to the player's routing answer.
+  - **#372, M207, the cyclist's warning**: not ready; its record must name how raising the
+    cyclist's intensity reshaped his cost with distance (dearer close in, free past about 60px).
   - **#362, M137, the trap comes to her**: built (a chasing guard after the van; the robber after
     the man shouting starts off screen; the burnt shell and roadblock keep a waiting guard, open
     to the player), needs its decision record, description and review.
@@ -390,15 +379,17 @@ way (`DECISIONS.md`, M108, the crowd car), and a street about-face crosses the k
 
 ## What to distrust
 
-**What nobody has played is listed in [REVIEW.md](REVIEW.md), not here.** Every item there is
-something a rig has measured and a person has not felt, with what to look at and the question a
-run answers; a playtest closes the items it covered. Read it before asking for a playtest, and
+**What nobody has played is listed in [REVIEW.md](REVIEW.md) and the items under
+[review/](review/), not here.** Every item there is something a rig has measured and a person has
+not felt, with what to look at and the question a run answers; a playtest closes the items it
+covered. Read it before asking for a playtest, and
 add to it before merging work that only a person can judge.
 
 ## The rule that matters most before starting anything
 
-**The first tool call of a design task is a search for the words, not a plan.** Grep `TODO.md` and
-the playtest files for the noun. Three separate things in one session turned out to be already
+**The first tool call of a design task is a search for the words, not a plan.**
+`tools/decisions.sh --in all <noun>` searches the queue's entries, the records, the review items and
+the playtest files. Three separate things in one session turned out to be already
 written down and never built — the interact key (filed in playtest 02), the alley roulette, and M40
 itself. The code is evidence of what was built; it is never evidence of what was agreed.
 
