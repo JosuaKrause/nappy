@@ -709,6 +709,45 @@ today, so the answer to the player's question is no.
 
 ---
 
+## M227 — Codex works as a sub-agent of a Claude Code session, in a worktree · asked for 2026-09-26
+
+> "let's add a todo to make it possible to use codex as subagent, too" · "from within claude" ·
+> "codex subagents should work in worktrees like your subagents" · "not in random tmp folders" ·
+> "there might be a claude plugin for using codex? not sure"
+
+[2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statements 8–10. Codex is installed
+here (`codex`, the CLI) and runs non-interactively as `codex exec`; `CLAUDE.md` and the skills are
+already shared, and its hooks run through `tools/codex-hooks.py` once the player has approved them
+in Codex's `/hooks`, per checkout path.
+
+- [ ] **Find out whether a Claude Code plugin or MCP server for Codex exists**, and what it gives
+      over calling `codex exec` from the shell (background runs, a report back, a resume).
+- [ ] **A Claude Code session can start a Codex sub-agent** on a brief from `.claude/briefs/`, the
+      way `orchestrating` starts a Claude one, and gets its report back.
+- [ ] **It works in a git worktree under `.claude/worktrees/`**, never in a scratch folder
+      elsewhere. Codex trusts hooks per `hooks.json` path, so a new worktree's hooks need the
+      player's approval before they run; say how that is handled. The worktree is the fence, not
+      Codex's sandbox: a `codex exec -s read-only` run still wrote a file through its patch tool.
+- [ ] **`orchestrating` says when to reach for Codex** and how its scope fence, verification and
+      brief file carry over.
+
+---
+
+## M228 — Editing a hook loads the rule that keeps the Codex adapter current · asked for 2026-09-26
+
+> "okay, yes this is important to keep up to date" · "good"
+
+[2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statements 6–7. PR #377 writes the
+rule down: a change to a hook script or to the hooks in `.claude/settings.json` updates
+`tools/codex-hooks.py` and its tests in the same PR. Built after M223, which rewrites
+`.claude/hooks/project-rules.sh`.
+
+- [ ] **`project-rules.sh` maps `.claude/hooks/**`, `.claude/settings.json` and `.codex/**` to the
+      skill that carries the rule** (python-tooling), with a row in `CLAUDE.md`'s path table and a
+      test in `tools/test_rules_hooks.sh`; `tools/codex-hooks.py` loads it for the same paths.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
@@ -790,6 +829,29 @@ the route costs something"), and it is most of what the probe still blames. What
 - [ ] **The night raid's van**, spawned by `ResistanceDirector` through `spawn_extra` near her
       doorstep, and the other `spawn_extra` sites in `happenings.gd` are not checked against the
       three questions. Trace each and say whether it may cost a route.
+- [ ] **A fence carried into the next days keeps two calm areas on the route tree**
+      ([2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statements 2–5: "plan the
+      fix but we need to focus on other tasks right now"; built after M223, the open PRs'
+      conversion and M225). PR #374's post-merge review
+      (https://github.com/JosuaKrause/nappy/pull/374#pullrequestreview-5327317363) found that on
+      days 10–11 `ClosurePlanner.calm_to_shut()` runs after `CityMap.repaint()` has reset
+      `fenced_park`, so it counts the fenced area as open and its ground as walkable, and the tree
+      can keep one calm area against `MIN_CALM_AREAS_REACHABLE` (2); seed 14965, day 10, is one.
+      The plan: the carried fence is known (excluded, its ground blocked) before `calm_to_shut()`
+      judges anything, with a regression carrying a day-9 fence into days 10–11 across seeds
+      14040+37·i that fails before the fix; M24's sentence in `EVENTS.md` restored word for word
+      ("Nothing lethal or mobile is ever chosen for this, and nothing whose body would close the
+      lot", which that PR rewrote without *mobile*), and `CITY.md`'s spoiler bullet and the word
+      "spoiling" restored; the rejected broad post (`art/closures/barrier_post.svg`, reached only
+      through a dead `ClosureMarker.POST` path) leaving the atlas for the rejected-graphics
+      archive; and the stale lines the review names in `CITY.md`, `ParkClosure`'s class doc, the
+      zero-cost probe's doc and the evidence README fixed. Branch `fix/spent-park-followup` holds
+      only an unrun start of that regression in `tests/test_spent_park.gd`. With it,
+      `CITY.md` states that a day's path ends in an available calm area ("a path should end in an
+      available calm zone"), which is why the tree refuses a branch ending at a used area; the
+      night escape's repaint dropping a fence chosen on day 13 or 14 stays ("night escape doesn't
+      need a fence in a park"); M129's queue title and record stop saying the park "is closed",
+      and the "Amber otter" records in `DECISIONS.md` are renamed after M129.
 
 ---
 
