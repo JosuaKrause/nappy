@@ -679,9 +679,9 @@ silently.
 screen where it points when its time comes, the waiting place follows her on the thing's own
 ground, for every event that arrives from off screen, and a warning is at least 2.9s ("2.9s is a
 fair time to react and *think* about what to do"). What is built on PR #372 is in `DECISIONS.md`,
-M207. `loose_dog` stays under the 2.9s ("the loose dog can stay as short as it wants since it is not
-lethal and relatively low impact"), and the pursuing dog is M226, whose gold timing replaces the
-2.9s ("the 2.9 is not important"). One thing is open, waiting on the player:
+M207. `loose_dog`'s short warning is fine ("the loose dog can stay as short as it wants since it is
+not lethal and relatively low impact"), and the pursuing dog is M226, whose gold timing replaces
+the 2.9s ("the 2.9 is not important"). One thing is open, waiting on the player:
 
 - [ ] **Three kinds of offscreen arrival are not warned first, each against a stated rule.**
       `police_patrol`'s return leg and the torn-poster patrol have no badge at all, since the cues
@@ -741,6 +741,12 @@ nothing."
       the day-13 column and any other thing that arrives from off screen — in place of the flat
       2.9s minimum (`Tuning.OFFSCREEN_WARNING_MIN`), which the player called "not important".
       `loose_dog` is outside it.
+- [ ] **Open, for the player: does `loose_dog` get a warning at all?** *"it might not need a
+      warning at all" · "since it's low stakes"* ([PLAYTEST-145](playtests/PLAYTEST-145.md),
+      statement 18). It runs at 132px/s against her 92, so the cues rule gives it a badge ("something
+      lethal or faster than a walk"), and the fairness contract holds every event to a warning.
+      Without one, meeting it costs up to its full startle (`intensity` 39) with nothing her walk
+      can do about it. The orchestrator's recommendation, not asked for: keep a short warning.
 
 Replaces the orchestrator's proposal on PR #372 of a 2.9s badge before the dog's 4.5s approach,
 which would have lengthened the day-3 timing the player calls correct.

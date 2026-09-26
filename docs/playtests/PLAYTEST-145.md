@@ -82,3 +82,22 @@ Then, asked which reading of "other timings should be adjusted to fit that" was 
 16. **The gold timing is the tutorial's pursuing dog, broken down into its warning time and its
     on-screen pursuing time**, both seen as correct; the other offscreen warnings are fitted to that
     breakdown. → M226.
+
+Then, told that statement 11 had been built as `loose_dog` being exempt from the 2.9s minimum
+(an exemption list an earlier agent had added before the player answered), and that it keeps the
+minimum its field sets instead:
+
+> "where did I say that?" · "this is talking about the pursuing dog -- where do I say that the
+> loose dog is exempted?"
+
+Read back as "the loose dog does not need the pursuing dog's timing; its short warning is fine,
+since it is not lethal", the player answered:
+
+> "it might not need a warning at all" · "since it's low stakes"
+
+17. **The player did not exempt `loose_dog` from a minimum.** Statement 11 says its warning may be
+    short because it is not lethal and costs little; the exemption was an earlier agent's
+    mechanism, filed as though the player had approved it. → M207, M226.
+18. **`loose_dog` might need no warning at all, since it is low stakes.** Said as a possibility,
+    not a decision; it collides with the cues rule (a badge for "something lethal or faster than a
+    walk", and the dog outruns her) and with the fairness contract every event is held to. → M226.
