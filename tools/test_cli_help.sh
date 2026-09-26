@@ -117,8 +117,6 @@ assert_exit "prune-merged.sh --help" zero ./tools/prune-merged.sh --help
 assert_exit "prune-merged.sh -h"     zero ./tools/prune-merged.sh -h
 assert_exit "agent-status.sh --help" zero ./tools/agent-status.sh --help
 assert_exit "agent-status.sh -h"     zero ./tools/agent-status.sh -h
-assert_exit "resolve-decisions-top.sh --help" zero ./tools/resolve-decisions-top.sh --help
-assert_exit "resolve-decisions-top.sh -h"     zero ./tools/resolve-decisions-top.sh -h
 assert_exit "update-pr.sh --help" zero ./tools/update-pr.sh --help
 assert_exit "update-pr.sh -h"     zero ./tools/update-pr.sh -h
 assert_exit "land-prs.sh --help" zero ./tools/land-prs.sh --help
@@ -156,7 +154,6 @@ assert_exit "prune-merged.sh --bogus" nonzero ./tools/prune-merged.sh --bogus fe
 # With no branch named there is nothing it may safely touch, so it refuses rather than sweeping.
 assert_exit "prune-merged.sh (no branch)" nonzero ./tools/prune-merged.sh
 assert_exit "agent-status.sh --bogus" nonzero ./tools/agent-status.sh --bogus
-assert_exit "resolve-decisions-top.sh --bogus" nonzero ./tools/resolve-decisions-top.sh --bogus
 assert_exit "update-pr.sh --bogus" nonzero ./tools/update-pr.sh --bogus
 # With nothing to update there is nothing it may safely fetch or merge, so it refuses rather
 # than guessing a target.
@@ -332,140 +329,6 @@ if [[ -e "$work_dir/shot-out.png" || -e "$work_dir/shot-out2.png" ]]; then
     echo "FAIL: a rejected shot.sh run wrote its output file anyway" >&2
     failures=$(( failures + 1 ))
 fi
-
-# --------------------------------- resolve-decisions-top.sh: the one-hunk merge conflict shape ---
-# assert_exit's Godot-stub harness has nothing to say about a merge conflict, so this builds a
-# throwaway repo under $work_dir and drives an actual `git merge --no-ff --no-commit` to get the
-# real diff3/zdiff3 markers the script parses. One case resolves the shape it targets; three
-# refuse it (non-empty base, more than one hunk, a hunk that is not directly under # Decisions)
-# and must leave the conflicted file byte-for-byte as the merge left it.
-decisions_repo="$work_dir/decisions-repo"
-setup_decisions_repo() {
-    rm -rf "$decisions_repo"
-    mkdir -p "$decisions_repo/docs" "$decisions_repo/tools"
-    cp "$root/tools/resolve-decisions-top.sh" "$decisions_repo/tools/"
-    git init -q -b main "$decisions_repo"
-    git -C "$decisions_repo" config user.email test@example.com
-    git -C "$decisions_repo" config user.name test
-    git -C "$decisions_repo" config merge.conflictstyle zdiff3
-}
-# $1 base content  $2 branch content  $3 main content -- leaves feature checked out mid-merge,
-# docs/DECISIONS.md conflicted.
-decisions_conflict() {
-    printf '%s' "$1" > "$decisions_repo/docs/DECISIONS.md"
-    git -C "$decisions_repo" add docs/DECISIONS.md
-    git -C "$decisions_repo" commit -q -m base
-    git -C "$decisions_repo" checkout -q -b feature
-    printf '%s' "$2" > "$decisions_repo/docs/DECISIONS.md"
-    git -C "$decisions_repo" commit -q -am branch
-    git -C "$decisions_repo" checkout -q main
-    printf '%s' "$3" > "$decisions_repo/docs/DECISIONS.md"
-    git -C "$decisions_repo" commit -q -am main
-    git -C "$decisions_repo" checkout -q feature
-    git -C "$decisions_repo" merge --no-ff --no-commit main >/dev/null 2>&1
-}
-
-setup_decisions_repo
-decisions_conflict \
-    $'# Decisions\n' \
-    $'# Decisions\n\n## Branch section\n\nBranch body.\n' \
-    $'# Decisions\n\n## Main section\n\nMain body.\n'
-checks=$(( checks + 1 ))
-out="$(cd "$decisions_repo" && ./tools/resolve-decisions-top.sh 2>&1)"
-status=$?
-result="$(cat "$decisions_repo/docs/DECISIONS.md")"
-expected=$'# Decisions\n\n## Branch section\n\nBranch body.\n\n## Main section\n\nMain body.'
-unmerged="$(git -C "$decisions_repo" diff --name-only --diff-filter=U)"
-staged="$(git -C "$decisions_repo" diff --cached --name-only)"
-unstaged="$(git -C "$decisions_repo" diff --name-only)"
-if [[ $status -ne 0 ]]; then
-    echo "FAIL resolve-decisions-top.sh two-sided insertion: expected exit 0, got $status" >&2
-    printf '%s\n' "$out" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-elif [[ "$result" != "$expected" ]]; then
-    echo "FAIL resolve-decisions-top.sh two-sided insertion: unexpected result" >&2
-    printf '%s\n' "$result" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-elif [[ -n "$unmerged" || -n "$unstaged" || "$staged" != "docs/DECISIONS.md" ]]; then
-    echo "FAIL resolve-decisions-top.sh two-sided insertion: file not cleanly staged" \
-        "(unmerged=[$unmerged] staged=[$staged] unstaged=[$unstaged])" >&2
-    failures=$(( failures + 1 ))
-else
-    echo "ok   resolve-decisions-top.sh resolves the two-sided insertion, ours above theirs, and stages it"
-fi
-
-setup_decisions_repo
-decisions_conflict \
-    $'# Decisions\n\n## Old section\n\nOld body.\n' \
-    $'# Decisions\n\n## Old section\n\nBranch body.\n' \
-    $'# Decisions\n\n## Old section\n\nMain body.\n'
-before="$(cat "$decisions_repo/docs/DECISIONS.md")"
-checks=$(( checks + 1 ))
-out="$(cd "$decisions_repo" && ./tools/resolve-decisions-top.sh 2>&1)"
-status=$?
-after="$(cat "$decisions_repo/docs/DECISIONS.md")"
-if [[ $status -eq 0 ]]; then
-    echo "FAIL resolve-decisions-top.sh non-empty base: expected a non-zero exit, got 0" >&2
-    failures=$(( failures + 1 ))
-elif [[ "$after" != "$before" ]]; then
-    echo "FAIL resolve-decisions-top.sh non-empty base: the conflicted file changed despite refusal" >&2
-    failures=$(( failures + 1 ))
-elif ! printf '%s' "$out" | grep -qi "not empty"; then
-    echo "FAIL resolve-decisions-top.sh non-empty base: refusal message did not name the base" >&2
-    printf '%s\n' "$out" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-else
-    echo "ok   resolve-decisions-top.sh refuses a non-empty base and leaves the file untouched"
-fi
-
-setup_decisions_repo
-decisions_conflict \
-    $'# Decisions\n\n## Section A\n\nbody a\n\n## Section B\n\nbody b\n' \
-    $'# Decisions\n\n## Section A\n\nbody a branch\n\n## Section B\n\nbody b branch\n' \
-    $'# Decisions\n\n## Section A\n\nbody a main\n\n## Section B\n\nbody b main\n'
-before="$(cat "$decisions_repo/docs/DECISIONS.md")"
-checks=$(( checks + 1 ))
-out="$(cd "$decisions_repo" && ./tools/resolve-decisions-top.sh 2>&1)"
-status=$?
-after="$(cat "$decisions_repo/docs/DECISIONS.md")"
-if [[ $status -eq 0 ]]; then
-    echo "FAIL resolve-decisions-top.sh two hunks: expected a non-zero exit, got 0" >&2
-    failures=$(( failures + 1 ))
-elif [[ "$after" != "$before" ]]; then
-    echo "FAIL resolve-decisions-top.sh two hunks: the conflicted file changed despite refusal" >&2
-    failures=$(( failures + 1 ))
-elif ! printf '%s' "$out" | grep -qi "one hunk"; then
-    echo "FAIL resolve-decisions-top.sh two hunks: refusal message did not name the hunk count" >&2
-    printf '%s\n' "$out" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-else
-    echo "ok   resolve-decisions-top.sh refuses more than one hunk and leaves the file untouched"
-fi
-
-setup_decisions_repo
-decisions_conflict \
-    $'# Decisions\n\n## Existing\n\nExisting body.\n' \
-    $'# Decisions\n\n## Existing\n\nExisting body.\n\n## Branch new\n\nbranch body\n' \
-    $'# Decisions\n\n## Existing\n\nExisting body.\n\n## Main new\n\nmain body\n'
-before="$(cat "$decisions_repo/docs/DECISIONS.md")"
-checks=$(( checks + 1 ))
-out="$(cd "$decisions_repo" && ./tools/resolve-decisions-top.sh 2>&1)"
-status=$?
-after="$(cat "$decisions_repo/docs/DECISIONS.md")"
-if [[ $status -eq 0 ]]; then
-    echo "FAIL resolve-decisions-top.sh hunk elsewhere: expected a non-zero exit, got 0" >&2
-    failures=$(( failures + 1 ))
-elif [[ "$after" != "$before" ]]; then
-    echo "FAIL resolve-decisions-top.sh hunk elsewhere: the conflicted file changed despite refusal" >&2
-    failures=$(( failures + 1 ))
-elif ! printf '%s' "$out" | grep -qi "directly under"; then
-    echo "FAIL resolve-decisions-top.sh hunk elsewhere: refusal message did not name the location" >&2
-    printf '%s\n' "$out" | sed 's/^/    /' >&2
-    failures=$(( failures + 1 ))
-else
-    echo "ok   resolve-decisions-top.sh refuses a hunk that is not directly under # Decisions"
-fi
-rm -rf "$decisions_repo"
 
 # ---------------------------- README.md's Dev flags table stays in step with DEV_FLAG_TABLE ---
 # The table in src/dev/dev_flags.gd is the accept-list run.sh and shot.sh validate against and

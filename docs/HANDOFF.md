@@ -364,15 +364,17 @@ way (`DECISIONS.md`, M108, the crowd car), and a street about-face crosses the k
 
 ## What to distrust
 
-**What nobody has played is listed in [REVIEW.md](REVIEW.md), not here.** Every item there is
-something a rig has measured and a person has not felt, with what to look at and the question a
-run answers; a playtest closes the items it covered. Read it before asking for a playtest, and
+**What nobody has played is listed in [REVIEW.md](REVIEW.md) and the items under
+[review/](review/), not here.** Every item there is something a rig has measured and a person has
+not felt, with what to look at and the question a run answers; a playtest closes the items it
+covered. Read it before asking for a playtest, and
 add to it before merging work that only a person can judge.
 
 ## The rule that matters most before starting anything
 
-**The first tool call of a design task is a search for the words, not a plan.** Grep `TODO.md` and
-the playtest files for the noun. Three separate things in one session turned out to be already
+**The first tool call of a design task is a search for the words, not a plan.**
+`tools/decisions.sh --in all <noun>` searches the queue's entries, the records, the review items and
+the playtest files. Three separate things in one session turned out to be already
 written down and never built — the interact key (filed in playtest 02), the alley roulette, and M40
 itself. The code is evidence of what was built; it is never evidence of what was agreed.
 

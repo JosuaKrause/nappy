@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # The manual sequence that updated a PR branch with main seven times in a row on 2026-09-23
-# (#303, #306, #307, #310, #311, #313, #314), each time resolving the same docs/DECISIONS.md
-# conflict shape with tools/resolve-decisions-top.sh and running the same checks by hand — see
-# docs/TODO.md, M190, one command brings a pull request up to date with main.
+# (#303, #306, #307, #310, #311, #313, #314), each time running the same checks by hand — see
+# `tools/decisions.sh M190`, one command brings a pull request up to date with main.
 #
 #   tools/update-pr.sh <pr-number | branch>            # merge main in, verify, commit, push
 #   tools/update-pr.sh --dry-run <pr-number | branch>   # fetch and report only; no worktree touched
@@ -11,11 +10,10 @@
 # anywhere, adds a scratch worktree under $TMPDIR for the run and removes it again when done — a
 # branch that already lives in a worktree is never given a second one. Records the branch tip,
 # origin/main's tip and their merge base before merging, merges with `--no-ff --no-commit` so even
-# a clean merge waits for the commit step below, and resolves docs/DECISIONS.md's one recurring
-# shape (both sides inserting a `## ...` section directly under `# Decisions`) with
-# tools/resolve-decisions-top.sh, which prints the three sides' headings itself. Any other
-# unresolved file aborts the merge (`git merge --abort`) and names it; nothing is left
-# half-merged. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
+# a clean merge waits for the commit step below. Any unresolved file aborts the merge
+# (`git merge --abort`) and names it; nothing is left half-merged. The queue, the records and the
+# review list are one file per thing, so two pull requests adding to them no longer meet in one
+# file; a branch still on the old single files is converted with tools/convert-queue-edits.py. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
 # `./tools/check.sh` (every one of the three has to pass), commits a message naming the three
 # revisions and the resolution, and pushes to the branch's own remote — over SSH first, falling
 # back to HTTPS through gh's own credential helper when SSH is refused.
@@ -26,8 +24,8 @@
 # origin/main changed since the merge base, so there is something concrete to review.
 #
 # Refuses, and does no work, when: the worktree it would operate in is dirty; the branch's local
-# tip is behind its own remote (another session pushed since this checkout last fetched it); any
-# conflict remains after docs/DECISIONS.md's shape is resolved; or any of the three checks fails
+# tip is behind its own remote (another session pushed since this checkout last fetched it); the
+# merge conflicts anywhere; or any of the three checks fails
 # (the merge is aborted first, so a failed check leaves nothing staged). Every refusal prints its
 # reason and exits non-zero.
 #
@@ -43,9 +41,8 @@ usage() {
 usage: tools/update-pr.sh [--help|-h] [--dry-run] <pr-number | branch>
 
 Merges origin/main into a pull request's branch: fetches, finds the branch's worktree (or adds a
-scratch one under $TMPDIR), merges with --no-ff --no-commit, resolves docs/DECISIONS.md's one
-recurring conflict shape with tools/resolve-decisions-top.sh, and aborts naming the files on any
-other conflict. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
+scratch one under $TMPDIR), merges with --no-ff --no-commit, and aborts naming the files on any
+conflict. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
 `./tools/check.sh`, commits a message naming the branch tip, main tip, merge base and the
 resolution, and pushes (HTTPS fallback if SSH is refused). Never merges the pull request itself
 and never enables auto-merge; says so in its own output, alongside the files main changed since
@@ -56,8 +53,8 @@ the merge base, since that review is the reviewer's.
                merge, 1 naming the files it would conflict in.
 
 Refuses, with a reason on stderr and a non-zero exit, and does no work when: the worktree it
-would operate in is dirty; the branch's local tip is behind its own remote; a conflict remains
-after docs/DECISIONS.md's shape is resolved; or git diff --check, ./tools/lint.sh or
+would operate in is dirty; the branch's local tip is behind its own remote; the merge conflicts;
+or git diff --check, ./tools/lint.sh or
 ./tools/check.sh fails (the merge is aborted first).
 
 UPDATE_PR_CLAUDE=1 appends "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
@@ -231,21 +228,14 @@ if git merge-base --is-ancestor "$main_tip" "$branch_tip"; then
 fi
 
 # ---- the merge itself ----------------------------------------------------------------------
-decisions_resolved=0
 if ! git -C "$target_dir" merge --no-ff --no-commit "$remote/main" >/tmp/update-pr-merge.$$ 2>&1; then
     cat /tmp/update-pr-merge.$$ >&2
     rm -f /tmp/update-pr-merge.$$
 
     unresolved="$(git -C "$target_dir" diff --name-only --diff-filter=U)"
-    if printf '%s\n' "$unresolved" | grep -qx "docs/DECISIONS.md"; then
-        if (cd "$target_dir" && ./tools/resolve-decisions-top.sh); then
-            decisions_resolved=1
-        fi
-    fi
-    unresolved="$(git -C "$target_dir" diff --name-only --diff-filter=U)"
     if [[ -n "$unresolved" ]]; then
         git -C "$target_dir" merge --abort
-        echo "refusing: merge aborted -- unresolved after docs/DECISIONS.md's shape was tried:" >&2
+        echo "refusing: merge aborted -- unresolved:" >&2
         printf '%s\n' "$unresolved" | sed 's/^/  /' >&2
         exit 1
     fi
@@ -269,18 +259,10 @@ run_check "git diff --cached --check" git diff --cached --check
 run_check "./tools/lint.sh" ./tools/lint.sh
 run_check "./tools/check.sh" ./tools/check.sh
 
-# ---- commit, naming the three revisions and the resolution -----------------------------------
-commit_msg="Merge $remote/main (${main_tip:0:8}) into $branch (was ${branch_tip:0:8}, base ${merge_base:0:8})."
-if [[ "$decisions_resolved" -eq 1 ]]; then
-    commit_msg="$commit_msg
-
-Resolved docs/DECISIONS.md's top-of-file conflict with tools/resolve-decisions-top.sh (this
-branch's section kept above main's, per the merging-main skill's recurring shape)."
-else
-    commit_msg="$commit_msg
+# ---- commit, naming the three revisions -----------------------------------
+commit_msg="Merge $remote/main (${main_tip:0:8}) into $branch (was ${branch_tip:0:8}, base ${merge_base:0:8}).
 
 No conflicts; merged cleanly."
-fi
 if [[ -n "${UPDATE_PR_CLAUDE:-}" ]]; then
     commit_msg="$commit_msg
 

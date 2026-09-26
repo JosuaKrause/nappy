@@ -7,8 +7,9 @@ description: How to handle playtest feedback and design decisions — write it d
 
 ## The first tool call of a design task is a search, not a plan
 
-**Search `docs/TODO.md` and the playtest files for the thing being asked** — not for a milestone
-number, for the *words*. `grep` the noun. A request that has been made before is already written
+**Search the queue, the records and the playtest files for the thing being asked** — not for a
+milestone number, for the *words*. `tools/decisions.sh --in all <noun>` searches the entries under
+`docs/todo/`, the records under `docs/decisions/`, the review items and the playtests at once. A request that has been made before is already written
 down in the player's own sentence, usually with the measurement, the constraints and the three
 things to get right sitting under it.
 
@@ -37,9 +38,30 @@ reader loses the half with the measurement in it.
 
 ## Write it down with all of its detail, before doing anything about it
 
-**Every piece of playtest feedback goes into `docs/playtests/PLAYTEST-NN.md` in full — the player's own words,
-and every specific they gave — before a line of code is written.** Then it becomes a `docs/TODO.md`
-item, and only then does it get implemented.
+**Every piece of playtest feedback goes into a playtest file under `docs/playtests/` in full — the
+player's own words, and every specific they gave — before a line of code is written.** Then it
+becomes a queue entry, and only then does it get implemented.
+
+**A new playtest, a new queue entry, a new decision and a new review item are named, never
+numbered.** *(2026-09-26: "that numbering should be for everything that currently has a strict
+sequential number".)* `tools/new-name.sh <kind> "<title>"` draws `<date>-<adjective>-<animal>`,
+writes the file or the entry's folder with its heading and date, and prints the name, which is
+spoken and linked by its two words ("busy-badger"); sorting a folder puts the newest last.
+The playtests that already have a number keep it, and so do the entries and records that
+already have one.
+
+- **A playtest** is `docs/playtests/<name>.md`.
+- **A queue entry** is a folder, `docs/todo/<name>/`, linked from `TODO.md`'s order. Its
+  `README.md` holds the player's words, the playtest links and the context. **Each item is a file
+  of its own** beside it, under a short descriptive name (`stack-in-front.md`), written in full
+  prose with no checkbox *(2026-09-26: "that way completing a task is just deleting the file and no
+  awkward - [ ] is necessary. the item can be written in full")*; an item somebody is mid-way
+  through says so in its text. Finishing an item deletes its file.
+- **A decision** is `docs/decisions/<entry name>.md`, written by the PR that builds the work
+  (**committing**); when an entry's last item goes, its folder goes in the same commit.
+- **A review item** is `docs/review/<entry name>.md` (`tools/new-name.sh review --entry <name>`,
+  which takes `-2` and on for a second item from one entry): what to do, where to look, and the
+  question a run answers, its steps written as prose rather than numbered.
 
 The failure mode is specific and it is not laziness: **a finding arrives as a complaint plus a
 design**, the complaint is the part that is easy to restate, and the design is the part that took
@@ -50,10 +72,11 @@ decision somebody can overturn. Nothing else is.
 The test of whether it was written down is not "did I mention it" — it is whether **somebody opening
 the repo cold could build the thing that was asked for** from what is on disk.
 
-**A playtest also closes what it covered in `docs/REVIEW.md`.** That file is the list of things
+**A playtest also closes what it covered under `docs/review/`.** Those files are the things
 waiting on a person; when a run has looked at one, the verdict is in the playtest file and the
-item leaves the list in the same commit, whether the verdict was *fine* or a new finding. An item
-that stays after its run has been played is asked for twice.
+item's file is deleted in the same commit, whether the verdict was *fine* or a new finding. An item
+that stays after its run has been played is asked for twice. The list at the end of
+`docs/REVIEW.md`, of what no person has tested yet, is edited the same way.
 
 ## Never silently overturn a decision the player took
 

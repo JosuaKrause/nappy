@@ -55,11 +55,12 @@ The three cases where the orchestrating session implements directly, and they ar
   The tell is the phrase *"while I'm in here"*. The cost is not the diff — it is that the
   orchestrator's context fills with implementation detail that an agent would have held instead,
   and the next design decision is taken with less room to take it in.
-- **It is the queue or the archive.** `TODO.md`, `HANDOFF.md`, `DECISIONS.md` and the playtests are
-  the orchestrator's, always — see "What the orchestrator keeps".
+- **It is the queue or the archive.** `TODO.md` and the entries under `docs/todo/`, the review
+  items, `HANDOFF.md`, the records under `docs/decisions/` and the playtests are the
+  orchestrator's, always — see "What the orchestrator keeps".
 
 **Everything else is an agent's**, and a milestone that is not ready for one is a milestone whose
-`TODO.md` entry is not finished yet. That is the same test the **playtest-feedback** rules already impose:
+queue entry is not finished yet. That is the same test the **playtest-feedback** rules already impose:
 *somebody opening the repo cold could build the thing that was asked for.* Writing the brief until
 an agent can take it is not overhead on top of the work — it **is** the orchestrating half of it.
 
@@ -91,8 +92,9 @@ that died mid-task is replaced in its own worktree" for the replacement case.
 
 Every agent prompt contains, explicitly:
 
-- **A read-first list, in order**: `CLAUDE.md`, the milestone's `TODO.md` section, the
-  `DECISIONS.md` sections that carry its design, and the specific docs and source files it will
+- **A read-first list, in order**: `CLAUDE.md`, the entry's folder under `docs/todo/` (its
+  `README.md` and every item file), the records under `docs/decisions/` that carry its design (by
+  path; `tools/decisions.sh` finds them), and the specific docs and source files it will
   touch. The agent starts cold; everything it needs must be named, not assumed.
 - **The branch name** (`feature/<thing>`), and the committing rules restated: one commit per item,
   messages that explain why, docs move in the same commit as the code.
@@ -103,7 +105,8 @@ Every agent prompt contains, explicitly:
   session can see that and pick it up, rather than the state living only as uncommitted edits in
   a worktree that somebody has to find and diff by hand.
 - **A scope fence**: the files it may touch, and the files it must not — always including
-  `docs/TODO.md`, `docs/HANDOFF.md`, `docs/DECISIONS.md` and the playtests (queue maintenance and
+  `docs/TODO.md`, `docs/todo/`, `docs/review/`, `docs/decisions/`, `docs/HANDOFF.md` and the
+  playtests (queue maintenance and
   archiving belong to the orchestrator), plus anything another live agent owns. Two agents editing
   one file is a merge conflict scheduled in advance; when a shared file is unavoidable, tell each
   agent exactly which lines are theirs.
@@ -145,9 +148,11 @@ Every agent prompt contains, explicitly:
   choice made where the design was silent; every fork left open. The report is the merge review's
   input — an outcome it does not mention is an outcome that did not happen.
 - **Do not merge, do not delete the branch.** After the report, the orchestrator commits the
-  `TODO.md` → `DECISIONS.md` move on the PR branch (the agent's silent choices recorded as open to
-  overturn, not narrated as settled), merges only under **committing**'s permission rule, and
-  retires the branch with `tools/prune-merged.sh`.
+  queue's move on the PR branch — the finished items' files deleted, the entry's folder too when
+  its last item went, the decision record written under the entry's name and any review item
+  filed (**committing** says how), the agent's silent choices recorded as open to overturn, not
+  narrated as settled — merges only under **committing**'s permission rule, and retires the branch
+  with `tools/prune-merged.sh`.
 
 ## Running agents in parallel
 
@@ -184,10 +189,12 @@ merging is what collides — so parallelism is planned at the file level, before
 - **An agent branches from `main`, never from an open docs branch.** When a milestone's entry
   is still in an unmerged docs pull request, wait for it to merge before spawning rather than
   telling the agent to branch from the docs branch. That pull request reaches `main` as one
-  squashed commit, so the agent's branch keeps the docs commits as ancestors `main` never had,
-  and every docs file they touched conflicts when `main` is merged back — add/add for a new
-  playtest file, content conflicts for `TODO.md` and `HANDOFF.md` — on files the agent never
-  edited. The resolution is always `main`'s text, and it is still a three-way review each time.
+  squashed commit, so the agent's branch keeps the docs commits as ancestors `main` never had.
+  When `main` is merged back, every file those commits added meets `main`'s squashed copy: an
+  identical one merges silently, one amended since conflicts on a file the agent never edited, and
+  an item file the branch has since deleted comes back from `main`'s side without any conflict,
+  reopening finished work. Each is still a three-way review, and the last is found only by
+  looking.
 - **Spawn from the main checkout, never from a worktree that has just been removed.** The
   harness resolves `HEAD` in the shell's current directory before it creates an agent's
   worktree, so a shell still standing in a deleted worktree fails every spawn; `cd` back to
@@ -200,12 +207,12 @@ merging is what collides — so parallelism is planned at the file level, before
 
 ## What the orchestrator keeps
 
-- **The queue and the archive.** Agents never edit the queue or the archive; two writers on `TODO.md` is
-  how a queue lies.
+- **The queue and the archive.** Agents never edit the queue or the archive; two writers on one
+  entry is how a queue lies.
 - **The queue as it stands on `origin/main`, not as it stood when the session started.** More
   than one session works this repository at once, and a design entry can be rewritten and merged
   while a brief is being written from the older text. Before briefing a milestone, `git fetch` and
-  read its `TODO.md` entry on `origin/main`; a brief built from a stale entry produces work that
+  read its entry's folder on `origin/main`; a brief built from a stale entry produces work that
   contradicts a decision the player has already recorded, and the contradiction is only found at
   review. If `main` has moved, merge it into the branch before the next agent commit rather than
   after the last one.
