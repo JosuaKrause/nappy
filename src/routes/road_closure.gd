@@ -95,9 +95,8 @@ func barrier_width() -> float:
 	return Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 
 ## How far up the screen an end-on line's panels are drawn above the ground they cover. None for a
-## street, whose line meets no other. `ParkClosure` lifts its end-on runs to the broadside rails'
-## height, which is where a rail running away from the camera is seen, so the column meets the
-## rails of the runs it turns onto at their own height rather than at their feet.
+## street, whose line meets no other. The park's renderer positions its two rails separately
+## at their authored elevations rather than shifting this street panel.
 func end_on_rise() -> float:
 	return 0.0
 

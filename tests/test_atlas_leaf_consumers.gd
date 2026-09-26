@@ -89,6 +89,7 @@ func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
 	var names: Array = [
 		ClosureMarker.FENCE_ACROSS, ClosureMarker.FENCE_ALONG, ClosureMarker.SIGN,
 		ClosureMarker.POST,
+		ParkFenceMarker.RAIL_ALONG, ParkFenceMarker.JOINT,
 		TrafficLight.HEAD, TrafficLight.HEAD_BACK, TrafficLight.HEAD_SIDE,
 		CityEdge.TUNNEL, CityEdge.BRIDGE, CityEdge.ROAD_ON,
 	]
@@ -114,6 +115,11 @@ func _test_street_kit_consumers_share_one_reference_count(t) -> void:
 	t.add_child(edge)
 	t.check(AtlasLibrary.reference_count(&"street_kit") == 3,
 			"the city edge is a third reference on the same group")
+	var park := ParkFenceMarker.new()
+	t.add_child(park)
+	t.check(AtlasLibrary.reference_count(&"street_kit") == 4,
+			"the park fence shares the street kit through its inherited lifecycle")
+	park.free()
 	marker.free()
 	light.free()
 	edge.free()

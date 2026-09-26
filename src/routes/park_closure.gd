@@ -8,7 +8,7 @@ extends RoadClosure
 ##
 ## **It is a `RoadClosure` so that it is drawn, and stands in her way, exactly as a closed street's
 ## barriers do.** `ClosurePlanner.plan_day` hands these to `City` beside the day's street closures,
-## and `City._spawn_closure()` stands the same line of barrier panels — the same pictures, the
+## and `City._spawn_closure()` stands a line of `ParkFenceMarker` panels, with the
 ## `closed` sign on the middle one and one static body behind the line — at every point
 ## `mouth_centres()` answers, lying the way `barrier_runs_across()` says. The kind is `PARK`, which
 ## like `CORDON` leaves nothing lying anywhere. So the one fenced park reads the way a shut street
@@ -30,11 +30,10 @@ extends RoadClosure
 ## **Where two runs meet at a corner of the area they turn on one shared post.** A run covers its
 ## own tiles of the edge, corner tiles included, on every side; where the next side's run also
 ## reaches the same corner tile, each line stops exactly at the corner of the two fence lines
-## (half a barrier's depth in from both edges) and one `barrier_post.svg` stands there. The
-## broadside run's rails end at the post's middle and the end-on run's column covers the ground
-## from that corner to the next, so its far end meets the post's foot and its near end runs in
-## behind the next broadside run's end post: one fence turning the corner, with no gap between the
-## two lines, no rail past the other and nothing overhanging the post. A run that ends anywhere
+## (half a barrier's depth in from both edges) and one `park_post.svg` stands there. Both
+## broadside rails meet the end-on rails at their own elevation above that same ground point.
+## End-on, the upper rail hides most of the lower; the two never become parallel ground lines.
+## A run that ends anywhere
 ## else — against a wall, or at an archway's jamb — runs to the end of its own ground and ends on a
 ## post of its own, inset so the post stays on that ground. See `fence()` and `posts()`.
 ##
@@ -72,8 +71,8 @@ class Edge extends StreetNetwork.Segment:
 	func mouth_rect(_at_a: bool) -> Rect2i:
 		return run
 
-## Half the width of `barrier_post.svg`'s post body (8px, and its outline): how far a post at a
-## run's open end stands in from that end, so the post stays on the run's own ground.
+## Clearance from an open end to its post's center, keeping the foot and outline on the
+## run's own ground. The renderer ends the rails at the post without shortening collision.
 const POST_HALF := 4.6
 
 ## The calm area this fence belongs to, as the tile rect of its calm ground.
@@ -136,11 +135,6 @@ static func fence(map: CityMap, block: Vector2i) -> Array[ParkClosure]:
 ## end-on column's nearest panel, whose feet share the south run's y, is drawn behind that run's
 ## rails and its corner post rather than over them.
 const SIDES: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
-
-## How far above its feet `barrier_across.svg`'s lower rail runs (its foot edge is at 16.6 of 24):
-## an end-on run is drawn this far up the screen (`end_on_rise()`), so its far end meets the north
-## run's rails where they end on the corner post and its near end runs in behind the south run's.
-const RAIL_RISE := 7.4
 
 static func _any_covers(strips: Array[Rect2i], tile: Vector2i) -> bool:
 	for strip in strips:
@@ -218,9 +212,6 @@ func posts(_map: CityMap) -> Array[Vector2]:
 	if horizontal or not joined_end:
 		found.append(_point(to_along if joined_end else to_along - POST_HALF))
 	return found
-
-func end_on_rise() -> float:
-	return RAIL_RISE
 
 ## The point `along` pixels down this run's axis, on its fence line.
 func _point(along: float) -> Vector2:

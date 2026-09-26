@@ -1,5 +1,26 @@
 # M129 — a spent park is closed
 
+## Upright projection review material
+
+`upright-*` captures the `ParkFenceMarker` rendering attempt: the side rails share one ground
+line, their elevation moves them in screen Y, and the supports stay upright. These are review
+artifacts, not approved references.
+
+- `upright-corners-1x.png` contains separate NW, NE, SW and SE 320×240 views at play zoom 2,
+  in that reading order. Their montage is not a single small park.
+- `upright-corners-3x.png` enlarges those same pixels three times with nearest-neighbor sampling.
+- `upright-overview-fitted.png` shows the entire fenced area at fitted zoom 0.8654.
+- `upright-archway-{1x,3x}.png` shows the one-tile entrance at block (9, 8). Its terminal panel
+  and post share exactly the same ground Y, so the post does not cover the closed sign.
+- `upright-capture.log` identifies the fixture and camera scales.
+
+The real-City fixture uses seed 14040, day 9, with block (5, 1) handed over as used and no
+previously fenced park, act III. The normal closure planner chooses it: world rectangle
+(2432, 640), size 704×704. The archway is a separate rendering fixture passed through
+`ParkClosure.fence()` and `City._spawn_closure()`, not evidence that a day chooses two fences.
+The bounded scratch scene carries `--no-save --no-telemetry`; it has no player, HUD, crowd,
+event manager or day outcome. Its separate stdout log is not a telemetry run folder.
+
 Superseded once already: the first pictures here showed every used calm area fenced off, which the
 player turned down (`docs/playtests/PLAYTEST-140.md`, "Then, on the first pictures of a spent park"):
 

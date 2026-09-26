@@ -511,12 +511,42 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 		city.free()
 		return
 	var bodies: Array[Rect2] = []
+	var park_pictures := 0
 	for node in city._closure_nodes:
+		if node is ClosureMarker:
+			var marker := node as ClosureMarker
+			if marker.kind == RoadClosure.Kind.PARK:
+				park_pictures += 1
+				t.check(marker is ParkFenceMarker,
+						"the real city draws park pieces with the connected fence renderer")
+			else:
+				t.check(not marker is ParkFenceMarker,
+						"street closures retain their own barrier renderer")
 		var body := node as StaticBody2D
 		if not body:
 			continue
 		var shape := (body.get_child(0) as CollisionShape2D).shape as RectangleShape2D
 		bodies.append(Rect2(body.position - shape.size * 0.5, shape.size))
+	t.check(park_pictures > 0, "the fenced park has runtime pictures to check")
+	# A short end-on entrance puts its sign and end post on the same ground point.
+	# Exact equality matters: a subpixel y difference can reverse their draw order.
+	var short_run := ParkClosure.new(Vector2i.ZERO, Rect2i(117, 121, 4, 4),
+			Rect2i(120, 122, 1, 1), Vector2i.RIGHT)
+	city._spawn_closure(short_run)
+	var shared_sign_posts := 0
+	for node in city._closure_nodes:
+		var marker := node as ParkFenceMarker
+		if not marker or marker.across or marker.piece != ClosureMarker.Piece.SIGN:
+			continue
+		for other in city._closure_nodes:
+			var post := other as ParkFenceMarker
+			if not post or post.piece != ClosureMarker.Piece.POST:
+				continue
+			if marker.position.distance_to(post.position) < 0.01:
+				shared_sign_posts += 1
+				t.check(marker.position == post.position and post.get_index() < marker.get_index(),
+						"a shared archway post sorts behind its sign, without subpixel drift")
+	t.check(shared_sign_posts > 0, "the scene includes a short end-on sign and terminal post")
 	var block := city.map.fenced_park
 	var rect := ClosurePlanner.calm_area_rect(city.map, block)
 	var entrances := 0

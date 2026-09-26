@@ -507,9 +507,10 @@ walks there without a route pointing the way.
   first used area `calm_to_shut()` accepts on a day in act III or later, closed the way a street is
   for the rest of that act and never chosen again. *(PLAYTEST-140, statement 9: "doing it for one
   park, sure, more towards the later stages of the game once but not for regular".)* `ParkClosure`
-  stands the same barrier panels and `closed` sign a street closure's mouths get, at every entrance to
+  stands amber-and-white barrier rails and the street closure's `closed` sign at every entrance to
   the fenced area's own ground; nothing is spoiled inside it, since its fence is the whole of what it
-  shows.
+  shows. `ParkFenceMarker` draws both rails above one ground line: side runs show their narrow top
+  surfaces, upright posts keep their height, and the corner joins meet at the rails' elevations.
 - **At least one calm area is always usable.** `_ensure_one_usable_park` is the last line under it,
   for the day she has settled in every calm area there is. The player has to find out which.
 
@@ -1279,12 +1280,13 @@ rules would be an event.
 
 **A sixth kind, `PARK`, closes no street.** It is the fence `ParkClosure` stands at `CityMap.
 fenced_park`'s entrances — the one used area a run ever physically closes (see "Shutting a spent
-park") — drawn with the same barrier panels and `closed` sign a street closure's mouths get, plus
-one `barrier_post.svg` at each corner and at each end that turns no corner. **Where two sides'
+park") — drawn with broadside barrier panels, dedicated end-on rails and the street closure's
+`closed` sign, plus one upright `park_post.svg` at each corner and unjoined end. **Where two sides'
 runs meet at a corner they turn on that one post**: each line stops exactly at the corner of the
-two fence lines, so neither stops short of the other nor runs past it, and a west or east run's
-end-on column is drawn at the broadside rails' height, so it leaves the far corner post under the
-north rails and runs in behind the south ones. Like `CORDON`, it leaves nothing lying in the road, so it never appears in
+two fence lines, so neither stops short of the other nor runs past it. The upper and lower rails
+meet at their own elevations; end-on, the upper rail hides most of the lower one. An unjoined
+run's rails end at its inset posts while collision covers the full entrance. Like `CORDON`, it
+leaves nothing lying in the road, so it never appears in
 `kinds_on()`'s roll for a street.
 
 **`FALLEN_TREE` only happens where a tree stood, and the tree that fell is the one that is
