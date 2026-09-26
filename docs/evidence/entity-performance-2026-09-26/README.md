@@ -9,7 +9,15 @@ or evidence that the mobile stutter has one established cause. No shipping sourc
 
 Godot 4.7.2 stable official, engine hash `ed1daf0bf001b61586d9930840f2f1394092c079`, Apple M2,
 macOS, OpenGL compatibility renderer, 1280×720 viewport. Gameplay source is branch base
-`a3382663`; the probe/evidence commit holds the diagnostic files. Day 1, seed 4242, arterial
+`a3382663`. Measurements are captured while uncommitted diagnostic instrumentation evolves;
+that gameplay checkpoint does not identify the probe bytes. The committed probe is the hardened
+reproduction version, not the byte-identical generator of every archived stream. Each log
+preserves its actual launch command and each scene file its observation columns. The accepted
+headless trial uses the 13-second backup timer and a 12-column observer. The accepted rendered
+profile uses the 20-second backup timer and the 12-column late-process observer; the disabled
+companion adds held input and velocity columns. Final receiver metadata also explicitly records
+the requested profiling mode and function cap; these are supplied to analysis from the launch
+contract for earlier streams that predate those fields. Day 1, seed 4242, arterial
 spawn, walking north. Physics is 30 Hz; the diagnostic frame cap is 120 FPS and VSync is disabled.
 The debug readout is on, graph and telemetry are off. The raw frame trace and scene observer
 are on. No invincibility, population changes or gameplay bypasses are used. Saves are disabled.
