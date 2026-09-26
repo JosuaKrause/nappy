@@ -1,14 +1,5 @@
 # Review
 
-## Copper lark — Subtle steps and quieter wheels
-
-Run `tools/sound-lab.sh` (the newest pass, pass-4) and open the page it serves, or play the
-`comparison.wav` it writes to `build/sound-lab/pass-4/` directly. The order is pass-3 footsteps,
-new subtle footsteps, pass-3 wheels, new quieter wheels. Keep device volume fixed across the
-comparison: the lower levels are part of the proposal. Are the steps subtle enough, and do the
-wheels sit quietly below them? Do both still suggest their intended subjects? This remains a
-standalone grounded audition.
-
 **What waits on a human.** Everything here is built, measured by a rig, and unfelt: a person has
 to play it, look at it, or decide about it. *(2026-09-11: "keep a document with items that need
 human review / test runs. That way you can keep working without having to stop. And test runs
@@ -654,6 +645,15 @@ item below for as long as looking takes.
   wall? Record is `DECISIONS.md`, M183, the blackout is everything at once. A car now honks up
   to 296px out at its own speed rather than at 200px at most (`DECISIONS.md`, M191, the horn
   watches as far as the contract needs): **is the earlier horn a warning you can act on, or noise?**
+
+- **Run `tools/sound-lab.sh` and listen to pass 4** (it serves the listening page on localhost
+  and prints the URL; `--no-serve` only builds, `--lan` prints an address a phone on the same
+  network can open). The comparison plays pass-3 footsteps, then new subtler footsteps, then
+  pass-3 wheels, then new quieter wheels; keep device volume fixed across it, since the lower
+  levels are the proposal. **Are the steps subtle enough, and do the wheels sit quietly below
+  them? Do both still suggest their intended subjects?** This remains a standalone grounded
+  audition with no runtime integration. Record is `DECISIONS.md`, "Copper lark — A pass is a
+  command, and no audio is in the tree", the measured findings.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
