@@ -40,6 +40,8 @@ class CodexHooksTest(unittest.TestCase):
         shutil.copytree(SOURCE / ".claude/hooks", root / ".claude/hooks")
         for name in ("codex-hooks.py", "lint.sh"):
             shutil.copy2(SOURCE / "tools" / name, root / "tools" / name)
+        # lint.sh reads the name word lists to check a playtest's or a record's name against the rest.
+        shutil.copytree(SOURCE / "tools/names", root / "tools/names")
         for skill in (SOURCE / ".claude/skills").glob("*/SKILL.md"):
             target = root / ".claude/skills" / skill.parent.name / "SKILL.md"
             target.parent.mkdir(parents=True)

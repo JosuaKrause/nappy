@@ -15,6 +15,9 @@
 #     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd) injects its skill
 #   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
+#   - docs/todo/**, docs/review/**, docs/TODO.md and every playtest bring playtest-feedback
+#   - lint-docs.sh lints an edited file of the queue, the review items, the records and the
+#     playtests (the last two for the duplicate-name check only)
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -181,6 +184,24 @@ assert_eq "src/visuals/atlas_library.gd -> godot + orchestrating, not illustrate
 assert_eq "art/illustrated/**.png -> illustrated-png" \
     "illustrated-png," "$(project_rules_skills illustrated-session "" "art/illustrated/svg-transfer/x/y.png")"
 
+# The queue, the review items and the playtests all bring playtest-feedback: an entry's context
+# file and an item file, a review item, a new playtest named by date and two words, and an old
+# numbered one.
+assert_eq "docs/todo/<entry>/README.md -> playtest-feedback" \
+    "playtest-feedback," "$(project_rules_skills todo-readme-session "" "docs/todo/2026-09-26-M210/README.md")"
+assert_eq "docs/todo/<entry>/<item>.md -> playtest-feedback" \
+    "playtest-feedback," "$(project_rules_skills todo-item-session "" "docs/todo/2026-09-27-busy-otter/stack-in-front.md")"
+assert_eq "docs/review/<name>.md -> playtest-feedback" \
+    "playtest-feedback," "$(project_rules_skills review-session "" "docs/review/2026-09-27-busy-otter.md")"
+assert_eq "docs/playtests/<date>-<words>.md -> playtest-feedback" \
+    "playtest-feedback," "$(project_rules_skills new-playtest-session "" "docs/playtests/2026-09-27-quiet-heron.md")"
+assert_eq "docs/playtests/PLAYTEST-NN.md -> playtest-feedback" \
+    "playtest-feedback," "$(project_rules_skills old-playtest-session "" "docs/playtests/PLAYTEST-144.md")"
+assert_eq "docs/TODO.md -> playtest-feedback" \
+    "playtest-feedback," "$(project_rules_skills todo-session "" "docs/TODO.md")"
+assert_eq "docs/decisions/<name>.md -> nothing (a record is written under committing, not a playtest)" \
+    "" "$(project_rules_skills decisions-session "" "docs/decisions/2026-09-27-busy-otter.md")"
+
 # Control: an unrelated src/city/*.gd file gets city but not crowd-traffic, proving the new
 # crowd-traffic mapping is scoped to the three named files and not all of src/city/.
 assert_eq "src/city/some_other_file.gd -> city only, not crowd-traffic" \
@@ -199,6 +220,30 @@ if printf '%s' "$todo_trace" | grep -q '^+ governed=1$'; then
     echo "ok   docs/TODO.md is still in lint-docs.sh's governed set"
 else
     fail "docs/TODO.md is no longer governed by lint-docs.sh"
+fi
+
+# The queue's files and the review items are governed; so, for the duplicate-name check alone,
+# are a record and a playtest (lint.sh spares them the sentence rules). A file nested deeper than
+# an entry's own is not. None of these need exist: the decision is made before the file is read.
+governed_trace() {
+    printf '{"tool_input":{"file_path":"%s"}}' "$root/$1" \
+        | bash -x "$root/.claude/hooks/lint-docs.sh" 2>&1 >/dev/null | grep -c '^+ governed=1$'
+}
+for governed_path in docs/todo/2026-09-26-M210/README.md docs/todo/2026-09-26-M210/an-item.md \
+    docs/review/2026-09-27-busy-otter.md docs/decisions/2026-09-27-busy-otter.md \
+    docs/playtests/2026-09-27-quiet-heron.md docs/playtests/PLAYTEST-144.md; do
+    checks=$((checks + 1))
+    if [ "$(governed_trace "$governed_path")" -ge 1 ]; then
+        echo "ok   lint-docs.sh lints $governed_path"
+    else
+        fail "lint-docs.sh no longer lints $governed_path"
+    fi
+done
+checks=$((checks + 1))
+if [ "$(governed_trace docs/todo/2026-09-26-M210/nested/x.md)" -ge 1 ]; then
+    fail "lint-docs.sh lints a file nested below an entry's own"
+else
+    echo "ok   lint-docs.sh ignores a file nested below an entry's own"
 fi
 
 # A path under docs/evidence/ need not exist for this half: the governed check runs, and fails to
