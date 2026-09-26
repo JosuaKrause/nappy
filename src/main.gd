@@ -1155,6 +1155,19 @@ func _show_an_ending_for_a_rig() -> bool:
 ## rather than through `_set_readout_visible()`, which no longer reaches it. **The ring itself is
 ## untouched**: only a `6` toggle-off clears it (`_toggle_debug_layer()`), so a graph that was
 ## recording keeps what it already has across the trip through this screen.
+##
+## **Re-asks `_apply_orientation()` right here, not only trusts the one `_ready()` already made.**
+## PLAYTEST-140, statement 5: after a lost run's game over, the phone's title came up sideways.
+## `_ready()`'s own call (used by every path that reaches this one) runs *before* `_start_day()` —
+## which this file's own boot log measures in the hundreds of milliseconds, planning a day's
+## closures and every event on it — so a window whose real shape settles anywhere in that gap (a
+## phone browser's own chrome hiding or showing on the very tap that just dismissed the ending
+## screen and asked for this restart) is never re-read before the title is the thing on screen.
+## `_process()`'s own per-frame poll would still catch it eventually, but only once a frame has
+## actually rendered past this point — the title the player is looking at right now should not
+## have to wait a frame to be the right way up. Idempotent and cheap (see `_apply_orientation()`'s
+## own doc), so asking again here costs nothing on the ordinary boot, where the answer never
+## changes between the two calls.
 func _open_the_title() -> void:
 	_in_the_title = true
 	# Guarded the same shape `_on_title_start()`'s own final line already is, and for the same
@@ -1164,6 +1177,7 @@ func _open_the_title() -> void:
 	# already in the tree.
 	if is_inside_tree():
 		get_tree().paused = true
+	_apply_orientation()
 	_city.process_mode = Node.PROCESS_MODE_ALWAYS
 	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_player.stand_aside()
@@ -1584,10 +1598,52 @@ func _add_touch_controls() -> void:
 ## arrive at all if a phone is turned back to a shape that already reads as landscape without the
 ## browser ever resizing the canvas, latching the wrong `content_scale_size` until a reload. Asking
 ## the same question every frame instead means the decision cannot go stale between calls.
+##
+## **Guarded against a real boot-time race.** `_ready()` sets `process_mode = PROCESS_MODE_ALWAYS`
+## on this node before its own `await _warm_the_halo_shader()` — two awaited frames in which the
+## engine still calls `_process()` on an ALWAYS node, and `_process()` asks this same question
+## every frame (see above). `_player`, `_touch_controls` and `_hud` are not built until after that
+## await returns, so a frame drawn during it would otherwise call this on all three while they are
+## still null. Never true once `_ready()` has finished building them — see `_ready_escape()` and
+## `_build_the_finale_city()`'s own later calls, both made once their own player already exists —
+## and true by construction for `tests/test_orientation.gd`'s script-only `main`, which never runs
+## `_ready()` at all.
+##
+## Reads the window through `Engine.get_main_loop()` rather than `get_window()`, the same
+## substitution `_tree_is_paused()` makes and for the same reason: `get_window()` needs `main`
+## itself inside a tree, which is true for the running game but not for the script-only `main`
+## `tests/test_main.gd` drives straight through `_open_the_title()` — see that test's own
+## `_test_opening_the_title_reasserts_the_orientation_it_finds_stale`. There is exactly one
+## `SceneTree` for the whole process either way, so asking the engine for its root window answers
+## the same question a parented `main`'s own `get_window()` would.
+##
+## **Neither of this function's two inputs can go persistently stale on the Web export, checked
+## against the engine's own source for the exported version (Godot 4.7).** `_touch_available`
+## (`TouchInput.available()` → `DisplayServer.is_touchscreen_available()`) compiles on Web to
+## `platform/web/js/libs/library_godot_display.js`'s `godot_js_display_touchscreen_is_available:
+## function () { return 'ontouchstart' in window; }` — a static browser capability check, not one
+## learned from an actual touch event, and never cached anywhere in this project (no autoload, no
+## `static var`, nothing on `GameState`): every `main` recomputes it fresh from the same real
+## device fact. And `window.size` (`DisplayServerWeb::window_get_size()`, reading the canvas
+## element's own `width`/`height`) is resynced against the browser's real viewport every single
+## rendered frame before Godot's own per-frame processing ever runs —
+## `platform/web/web_main.cpp`'s `main_loop_callback()`, registered as the page's
+## `requestAnimationFrame` callback, calls `DisplayServerWeb::check_size_force_redraw()`
+## unconditionally as its first line, ahead of `os->main_loop_iterate()`. So whatever a lost run's
+## restart leaves `window.size` and `_touch_available` reading, `_process()`'s own poll (right
+## above, and `_apply_orientation()` here) is asking the *current* frame's real answer, not a
+## leftover one — a review of PR #378 raised both as a candidate cause for PLAYTEST-140's sideways
+## title, and this is the paper trail for why the answer is no, not a shrug.
 func _apply_orientation() -> void:
-	var rotate := ScreenOrientation.wants_rotation(get_window().size, _touch_available)
+	if not _player or not _touch_controls or not _hud:
+		return
+	var loop := Engine.get_main_loop()
+	if not loop is SceneTree:
+		return
+	var window := (loop as SceneTree).root
+	var rotate := ScreenOrientation.wants_rotation(window.size, _touch_available)
 	_rotated = rotate
-	get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
+	window.content_scale_size = ScreenOrientation.content_scale_size(rotate)
 	_player.set_screen_rotation(deg_to_rad(90.0) if rotate else 0.0)
 	_touch_controls.rotated = rotate
 	# `_edge` (the screen-edge badge) is built with the first world either boot builds — see
