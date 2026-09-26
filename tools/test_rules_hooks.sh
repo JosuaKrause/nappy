@@ -16,8 +16,10 @@
 #   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
 #   - git-grep-guard.sh denies a git grep with neither -I nor a text-only pathspec, however it is
-#     spelled (git -C <dir> grep, git --no-pager grep) or wherever it sits (a for loop, after
-#     &&/;/|, inside $(...)), and passes a guarded one, an rg call and a mere mention of the words
+#     spelled (git -C <dir> grep, git --no-pager grep, an unrecognised global option such as
+#     -c name=value or --git-dir=...) or wherever it sits (a for loop, after &&/;/|, an unquoted
+#     newline, inside $(...)), skips a heredoc body rather than scanning it as a command, and
+#     passes a guarded one, an rg call and a mere mention of the words
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -291,6 +293,57 @@ assert_guard "rg quoting the phrase -> allow" allow \
     'rg "git grep"'
 assert_guard "unrelated git command -> allow" allow \
     'git status'
+
+# An unquoted newline separates commands exactly like `;` -- a review of the pull request that
+# added this file found both of these passed silently, and the second is the incident command
+# itself, split onto its own line rather than piped from a single command.
+assert_guard "git grep on its own line after an unrelated command -> deny" deny \
+    'cd /x
+git grep -n -i "wrap.*corner" -- docs/'
+assert_guard "incident command's own shape: git fetch, then git grep on the next line -> deny" deny \
+    'git fetch -q origin main
+git grep -n -i "wrap.*corner" origin/main -- docs/'
+assert_guard "guarded git grep on its own line -> allow" allow \
+    'cd /x
+git grep -n -I -i "wrap.*corner" origin/main -- docs/'
+
+# A heredoc body is never executed, so a mention inside one is not a command and must not be
+# scanned -- and must not be mistaken for ending the real command that follows it either.
+assert_guard "heredoc body mentions the words, no real invocation follows -> allow" allow \
+    'cat <<EOF
+please run git grep sometime
+EOF'
+assert_guard "heredoc body mentions the words, an unsafe invocation follows -> deny" deny \
+    'cat <<EOF
+mentions git grep here
+EOF
+git grep -n -i "foo" origin/main -- docs/'
+assert_guard "heredoc with a quoted delimiter still skips its body -> allow" allow \
+    "cat <<'EOF'
+git grep -n -i foo origin/main -- docs/
+EOF
+git status"
+assert_guard "heredoc with <<- and a tab-indented delimiter still skips its body -> allow" allow \
+    'cat <<-EOF
+	git grep -n -i foo origin/main -- docs/
+	EOF
+git status'
+
+# An unknown global git option before `grep` must not stop the scan (fail-safe: skip any
+# `-`-prefixed token, not only a recognised few), whether or not it is one of the handful that
+# take a separate argument token.
+assert_guard "-c name=value global option before grep -> deny" deny \
+    'git -c pager.grep=false grep -n -i "foo" origin/main -- docs/'
+assert_guard "--git-dir=... global option before grep -> deny" deny \
+    'git --git-dir=/tmp/x.git grep -n -i "foo" origin/main -- docs/'
+assert_guard "--work-tree with a separate argument before grep -> deny" deny \
+    'git --work-tree /tmp/wt grep -n -i "foo" origin/main -- docs/'
+assert_guard "-P (global --no-pager short form) before grep -> deny" deny \
+    'git -P grep -n -i "foo" origin/main -- docs/'
+assert_guard "--literal-pathspecs before grep -> deny" deny \
+    'git --literal-pathspecs grep -n -i "foo" origin/main -- docs/'
+assert_guard "unknown global option, but guarded with -I -> allow" allow \
+    'git -c pager.grep=false grep -n -I -i "foo" origin/main -- docs/'
 
 echo
 echo "$checks checks, $failures failures"

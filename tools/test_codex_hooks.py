@@ -223,6 +223,22 @@ class CodexHooksTest(unittest.TestCase):
         text = self.call(tool="Bash", command='git commit -m "explains why git grep needs a guard"')
         self.assertIn("committing", text)
 
+    def test_git_grep_guard_denies_across_an_unquoted_newline(self) -> None:
+        # The adapter forwards the guard's output verbatim, so a fix in the guard itself needs no
+        # adapter change -- this only confirms that path stays wired up: an unquoted newline
+        # separates commands like `;`, and the incident command was exactly this shape (a `git
+        # fetch` on the line before the crashing `git grep`).
+        output = self.call_raw(command='git fetch -q origin main\ngit grep -n -i "foo" origin/main -- docs/')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_denies_past_an_unknown_global_option(self) -> None:
+        # Fail-safe: an unrecognised global git option before `grep` (here, -c name=value) must
+        # not stop the scan.
+        output = self.call_raw(command='git -c pager.grep=false grep -n -i "foo" origin/main -- docs/')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(
             command="*** Update File: ../outside/src/events/a.gd\n*** Update File: /tmp/outside/src/city/b.gd\n"
