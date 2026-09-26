@@ -537,12 +537,26 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 
 # ------------------------------------------------------- the city remembers ---
 
-## Puts something on the calm block she settled in yesterday.
+## Puts something on a calm area she has already settled in this act.
 ##
 ## Not because repetition is boring, but because **the game's only verb stops being a decision on
 ## day two**: a player who finds a good park on day 1 has no question left to answer, and route
 ## planning is the whole game. It is the same problem as a calm area being a lap rather than a
 ## route, one scale up: that one is about the destination, this is about *which* destination.
+##
+## **And the day's route tree plans around the same area** (`ClosurePlanner.calm_to_shut()`, checked
+## before it is accepted the way a street closure is): the tree neither grows a branch to a used area
+## it can spare nor routes through it, so a spoiler standing here is never somewhere the tree was
+## going to send her regardless. *(PLAYTEST-140, statement 8: "a used park is shut by the events
+## placed in it, as before... and no route of the day goes through it".)*
+##
+## **One used area, at most once a run, is fenced instead** — `CityMap.fenced_park`, the first used
+## area whose exclusion the guarantees allow on a day in act III or later (`Tuning.ACT_START_DAYS`),
+## fenced for the rest of that act and never chosen again. *(PLAYTEST-140: "doing it for one park,
+## sure, more towards the later stages of the game once but not for regular".)* It is never in
+## `map.calm_blocks`, so it is skipped here by the same test that skips anywhere no longer calm —
+## its fence is the whole of what it shows, and a spoiler behind it would be noise on the pavement
+## beside a park nobody can enter.
 ##
 ## Three things keep it from being a punishment for playing well, and all three are load-bearing:
 ##
@@ -580,7 +594,10 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## the guarantee that it is a fresh decision, and `MIN_CALM_BLOCKS` is sized so that the two do not
 ## have to fight — an act's worth of days plus one in reserve.
 ##
-## Silent for anywhere she did not settle, or that is no longer calm.
+## Silent for anywhere she did not settle, that is no longer calm, or that is `CityMap.fenced_park`
+## today — the last because it is left out of `map.calm_blocks`, and said again here so the reason
+## is next to the loop. A merely-`shut_calm` area is not skipped: it is still calm ground, and this
+## is exactly what stands in it.
 static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
 		planned: Array[Planned], used: Array[Vector2i], heat: int = 0) -> void:
 	var spoilable := map.calm_blocks.size() - 1

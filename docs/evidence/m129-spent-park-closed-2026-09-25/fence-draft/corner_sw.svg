@@ -1,0 +1,31 @@
+<!-- DRAFT park-fence corner corner_sw. Anchor (0,0) is the ground point of the corner of the two fence lines; the broadside arm meets the first barrier_across panel at x=16, the end-on arm meets the first side piece at y=-28.2. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="25" height="31" viewBox="-9 -29 25 31" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <clipPath id="corner_sw-h"><path d="M16 -7.4 L-7 -7.4 L-1.4 -12.6 L16 -12.6 Z M16 -15.4 L1.4 -15.4 L6.6 -21 L16 -21 Z"/></clipPath>
+    <clipPath id="corner_sw-v"><path d="M-7 -7.4 L-7 -28.2 L-1.4 -28.2 L-1.4 -12.6 Z M1.4 -15.4 L1.4 -28.2 L6.6 -28.2 L6.6 -21 Z"/></clipPath>
+  </defs>
+  <path d="M0 -22.4 L0 -0.6" fill="none" stroke="#2a2226" stroke-width="3"/>
+  <path d="M0 -21.9 L0 -0.8" fill="none" stroke="#8a8378" stroke-width="1.4"/>
+  <path d="M-3.4 -1 L3.4 -1" fill="none" stroke="#2a2226" stroke-width="1.8"/>
+  <path d="M16 -7.4 L-4.4 -7.4 Q-7 -7.4 -7 -10 L-7 -28.2 L-1.4 -28.2 L-1.4 -12.6 L16 -12.6 Z M16 -15.4 L3 -15.4 Q1.4 -15.4 1.4 -17 L1.4 -28.2 L6.6 -28.2 L6.6 -21 L16 -21 Z" fill="#ece6d6" stroke="none"/>
+  <g clip-path="url(#corner_sw-h)" stroke="none">
+    <path d="M-51.5 -24 L-46 -24 L-34 0 L-39.5 0 Z M-40.5 -24 L-35 -24 L-23 0 L-28.5 0 Z M-29.5 -24 L-24 -24 L-12 0 L-17.5 0 Z M-18.5 -24 L-13 -24 L-1 0 L-6.5 0 Z M-7.5 -24 L-2 -24 L10 0 L4.5 0 Z M3.5 -24 L9 -24 L21 0 L15.5 0 Z M14.5 -24 L20 -24 L32 0 L26.5 0 Z M25.5 -24 L31 -24 L43 0 L37.5 0 Z M36.5 -24 L42 -24 L54 0 L48.5 0 Z M47.5 -24 L53 -24 L65 0 L59.5 0 Z" fill="#e0862a"/>
+    <path d="M-40 -9 L40 -9 L40 -7.4 L-40 -7.4 Z M-40 -17 L40 -17 L40 -15.4 L-40 -15.4 Z" fill="#3b2410" fill-opacity="0.26"/>
+  </g>
+  <g clip-path="url(#corner_sw-h)" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="0.8">
+    <path d="M-40 -11.5 L40 -11.5"/>
+    <path d="M-40 -19.9 L40 -19.9"/>
+  </g>
+  <g clip-path="url(#corner_sw-v)" stroke="none">
+    <path d="M-10 -77.2 L10 -67.2 L10 -61.7 L-10 -71.7 Z M-10 -66.2 L10 -56.2 L10 -50.7 L-10 -60.7 Z M-10 -55.2 L10 -45.2 L10 -39.7 L-10 -49.7 Z M-10 -44.2 L10 -34.2 L10 -28.7 L-10 -38.7 Z M-10 -33.2 L10 -23.2 L10 -17.7 L-10 -27.7 Z M-10 -22.2 L10 -12.2 L10 -6.7 L-10 -16.7 Z M-10 -11.2 L10 -1.2 L10 4.3 L-10 -5.7 Z M-10 -0.2 L10 9.8 L10 15.3 L-10 5.3 Z M-10 10.8 L10 20.8 L10 26.3 L-10 16.3 Z M-10 21.8 L10 31.8 L10 37.3 L-10 27.3 Z M-10 32.8 L10 42.8 L10 48.3 L-10 38.3 Z" fill="#e0862a"/>
+    <path d="M-2.6 -60 L-1.4 -60 L-1.4 60 L-2.6 60 Z M5.4 -60 L6.6 -60 L6.6 60 L5.4 60 Z" fill="#3b2410" fill-opacity="0.26"/>
+  </g>
+  <g clip-path="url(#corner_sw-v)" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="0.8">
+    <path d="M-6.1 -60 L-6.1 60"/>
+    <path d="M2.3 -60 L2.3 60"/>
+  </g>
+  <path d="M16 -7.4 L-4.4 -7.4 Q-7 -7.4 -7 -10 L-7 -28.2" fill="none" stroke-width="1.1"/>
+  <path d="M16 -12.6 L-1.4 -12.6 L-1.4 -28.2" fill="none" stroke-width="1.1"/>
+  <path d="M16 -15.4 L3 -15.4 Q1.4 -15.4 1.4 -17 L1.4 -28.2" fill="none" stroke-width="1.1"/>
+  <path d="M16 -21 L6.6 -21 L6.6 -28.2" fill="none" stroke-width="1.1"/>
+</svg>

@@ -13,6 +13,7 @@ enum Piece {
 	FENCE,   ## One panel of barrier.
 	SIGN,    ## The panel in the middle, with the sign on it.
 	CAUSE,   ## What closed the street, lying in the middle of it.
+	POST,    ## The post a run of barrier ends on, or turns a corner on (`RoadClosure.posts()`).
 }
 
 ## Every picture below is a region name on the `street_kit` atlas group — `_enter_tree()`/
@@ -24,6 +25,7 @@ enum Piece {
 const FENCE_ACROSS := &"closures/barrier_across"
 const FENCE_ALONG := &"closures/barrier_along"
 const SIGN := &"closures/sign_closed"
+const POST := &"closures/barrier_post"
 
 ## What each kind leaves in the road, drawn lying left to right across the screen, which is
 ## across a north-south street. `CORDON` has nothing: an order is not an object, and the
@@ -55,6 +57,9 @@ const CAUSES_VERTICAL := {
 @export var across := true
 ## Width of one fence panel, so a line of them covers the street exactly.
 @export var span := 22.0
+## How far up the screen an end-on panel's picture is drawn above its feet
+## (`RoadClosure.end_on_rise()`). Its feet, and so its y-sort, stay on the ground it covers.
+@export var rise := 0.0
 
 ## Acquires the `street_kit` group before anything here can be drawn — see `Building.
 ## _enter_tree()`'s own doc for why this is paired with `_exit_tree()` rather than folded into
@@ -70,6 +75,8 @@ func _draw() -> void:
 	match piece:
 		Piece.CAUSE:
 			_draw_cause()
+		Piece.POST:
+			Sprites.draw_standing(self, AtlasLibrary.region(POST), Vector2.ZERO)
 		_:
 			_draw_panel()
 			if piece == Piece.SIGN:
@@ -124,4 +131,4 @@ func _draw_panel() -> void:
 		return
 	# Along the street the panels are stacked down the screen, so their height is the span they
 	# cover while their narrow width keeps the barrier's upright projection.
-	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2(size.x, span))
+	Sprites.draw_standing(self, texture, Vector2(0.0, -rise), Vector2(size.x, span))

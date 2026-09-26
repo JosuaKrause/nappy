@@ -347,7 +347,7 @@ the geometry is untouched — a block is a lap and a zone is a route.
 
 The rest of the calm stays single-block on purpose. Which calm area to head for is a real question
 only when they are different from each other: a small quiet square two streets away against a big
-park across the city is the decision that spoiling yesterday's park exists to make matter, and a
+park across the city is the decision that shutting yesterday's park exists to make matter, and a
 city of nothing but zones would flatten it again.
 
 ### Where calm ground may go
@@ -465,7 +465,9 @@ each is stated where its decision is taken:
 | the day | at least `MIN_CALM_AREAS_REACHABLE` calm areas are still reachable after the closures |
 | the city | **no single street cuts off all the calm** — the winnability sentence edge-disjointness stands in for, asserted directly |
 
-The count of *areas* is two, because one of them may be the one the day has just spoiled.
+The count of *areas* is two because one may be spoiled with events while its ground remains
+walkable. A physically fenced area is removed from `calm_blocks` before this count; it cannot
+satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
 
 `tests/test_generator.gd` checks it directly by closing each street segment in turn and
 confirming a park is still reachable — with one exemption. **The street outside the home is
@@ -473,18 +475,46 @@ a genuine single point of failure**: the home is a notch in a block with one exi
 sealing that segment seals the player in, however well connected the rest of the city is.
 That is a constraint on where Act IV may place a barricade, not a flaw in the layout.
 
-## Spoiling calm zones
+## Shutting a spent park
 
-A park that is always safe would collapse the game into one memorised loop, so the day **spoils**
-the calm areas she has already settled in this act — `EventScheduler._spoil_the_parks_she_used`.
-Three things about it here; the mechanism and its measurements are in `docs/EVENTS.md`, "The city
-remembers where she went".
+A park that is always safe would collapse the game into one memorised loop, so a calm area she has
+already settled in this act is **spoiled with events**, not by taking the ground away — the park is
+still there, still calm ground, still walkable, and things are standing in it that she can see from
+the street and decide about. *(PLAYTEST-140, statement 8: "a used park is shut by the events placed
+in it, as before".)* `EventScheduler._spoil_the_parks_she_used` is the mechanism; its measurements
+are in `docs/EVENTS.md`, "The city remembers where she went".
+
+**And the day's route tree plans around every one of them.** `ClosurePlanner.calm_to_shut()`, called
+from `CityMap.repaint()` before the day's route tree is grown, decides which used areas the tree
+neither grows a branch to nor routes through — `CityMap.shut_calm` records which, `CityMap.is_shut()`
+which tiles — so the tree, the region plan and the street closures all plan around them. *(PLAYTEST-
+140, statement 8: "no route of the day goes through it".)* This costs the area nothing physical: it
+stays exactly as open as any other calm ground, in `CityMap.calm_blocks`, reachable by anyone who
+walks there without a route pointing the way.
 
 - **It is the ones she used, not a roll over the map.** A calm area she has never settled in is
-  left alone by a rule of its own: nothing is *placed* near unvisited calm in the first place.
-- **A spoiler is a crowd of ordinary events covering the ground**, not one event standing in it.
-  Calm ground is denied by out-emitting the decay on it, which a single source does over a fraction
-  of a lot. Outside what the spoilers deny, the lot keeps its calm multipliers.
+  left alone by a rule of its own: nothing is *placed* near unvisited calm in the first place, and
+  nothing takes it off the tree either.
+- **Checked one area at a time before it is accepted, the way a street closure is** — never exclude
+  everything and then reinclude until the day is legal. An area stays fully on the tree's table when
+  excluding it would leave fewer than `MIN_CALM_AREAS_REACHABLE` calm areas on it, or would cut any
+  tile off from the doorstep — so the park that is the only way between two parts of the city is
+  never taken off.
+- **The day 12 swing is never taken off the tree or fenced on its day**, whatever she has settled in:
+  the day's own task is in it, and `CityState.is_forced_open()` is what `CityMap.repaint()` reads to
+  protect it.
+- **One used area, at most once a run, is fenced instead of spoiled** — `CityMap.fenced_park`, the
+  first used area `calm_to_shut()` accepts on a day in act III or later, closed the way a street is
+  for the rest of that act and never chosen again. *(PLAYTEST-140, statement 9: "doing it for one
+  park, sure, more towards the later stages of the game once but not for regular".)* `ParkClosure`
+  stands amber-and-white barrier rails and the street closure's `closed` sign at every entrance to
+  the fenced area's own ground; nothing is spoiled inside it, since its fence is the whole of what it
+  shows. `ParkFenceMarker` draws both rails above one ground line: side runs show their narrow top
+  surfaces mounted inward of visible upright poles, and corners share one pole with rail collars.
+  Each run's closed sign is mounted on a support at its exact midpoint.
+  `GameState` retains the first fenced block and its act for the whole run, including saves;
+  `CityMap` exposes a physical fence only during that act. An expired fence spends the run's
+  allowance even when no barrier stands today.
 - **At least one calm area is always usable.** `_ensure_one_usable_park` is the last line under it,
   for the day she has settled in every calm area there is. The player has to find out which.
 
@@ -565,14 +595,19 @@ question below:
 
 **Each day — what is protected:**
 
+- `ClosurePlanner.calm_to_shut()` takes the calm areas she has already settled in this act off the
+  day's route tree, at the repaint and before anything grows it, wherever that leaves at least
+  `MIN_CALM_AREAS_REACHABLE` calm areas fully on it and cuts nothing off the doorstep — see "Shutting
+  a spent park" above.
 - `ClosurePlanner` shuts 1 street a day in act I, rising to 4, and accepts a candidate **only if
   at least two distinct calm areas are still reachable after it**.
 - `EventScheduler._calm_to_leave_alone` refuses the ground: **nothing is placed near a calm area
   she has not used this act**, so those stay clean rather than being cleaned up afterwards.
 - `EventScheduler._ensure_one_usable_park` is the last line under it, for the day she has used
   every calm area there is and nothing was protected.
-- `_spoil_the_parks_she_used` spoils the ones she has already settled in **this act**, which is
-  what stops her going back to the same bench every day.
+- `_spoil_the_parks_she_used` spoils every area she has already settled in **this act** — what stops
+  her going back to the same bench every day — except the currently active `CityMap.fenced_park`,
+  the run's single physical fence, which stands for the remainder of its chosen act.
 - `_ensure_the_city_is_still_walkable` drops obstructions that would seal the city, or seal off
   the one place the resistance sends her to that day (see "Guarantees").
 
@@ -636,13 +671,14 @@ placement rule has to serve, and it gives each kind a different job:
 
 **The main road is the challenge to overcome, and it is what makes a run have an arc — emergent by
 construction, and nothing enforces it.** As calm areas on her side are used up they are spoiled,
-which closes off parts of that side, and eventually the only calm left is across the spine. She is
-never *held* on one side and never steered at the road — she may cross whenever she wants, and
-crossing on day 1 is playing correctly rather than early.
+which makes them worth leaving behind even though the ground is still hers to walk on, and
+eventually the only calm still worth having is across the spine. She is never *held* on one side and
+never steered at the road — she may cross whenever she wants, and crossing on day 1 is playing
+correctly rather than early.
 
-**That is a constraint on what may be built.** The arc falls out of exhaustion plus spoiling, both
-of which already exist. Nothing may be added that withholds the far side, gates it behind a day
-number, or nudges her toward a crossing — a player who crosses on day 1 is playing correctly.
+**That is a constraint on what may be built.** The arc falls out of exhaustion plus spoiling a used
+park, both of which already exist. Nothing may be added that withholds the far side, gates it behind
+a day number, or nudges her toward a crossing — a player who crosses on day 1 is playing correctly.
 
 **Sealing off a section of the map is allowed, and it is the point.** A combination of hard and
 soft blockers may make an entire section inaccessible. That is fine — *"the purpose is to guide the
@@ -1217,9 +1253,9 @@ about the city rather than about each area: **no one street cuts off all the cal
 (`tests/test_routes.gd`). The second route to any given area is an offer the day makes when the map
 allows one.
 
-**The count of areas is two**, because one of them may be the one the day has spoiled this morning;
-one reachable area is the unwinnable day this invariant exists to prevent, and going below two
-would be a separate decision.
+**The count of areas is two**, because one of the reachable areas may be spoiled with events.
+A physically fenced area is excluded before this count. One reachable area is the unwinnable day
+this invariant exists to prevent, and going below two would be a separate decision.
 
 Both ends of the journey are exempt from being charged for their own doorway:
 
@@ -1245,6 +1281,17 @@ The escalation is the point: act I closes a street by accident, act II by order,
 bringing the building down. Mechanically they are identical — a street you cannot walk down
 is a street you cannot walk down — and that is deliberate, because a closure that also had
 rules would be an event.
+
+**A sixth kind, `PARK`, closes no street.** It is the fence `ParkClosure` stands at `CityMap.
+fenced_park`'s entrances — the one used area a run ever physically closes (see "Shutting a spent
+park") — drawn with broadside barrier panels, dedicated end-on rails and the street closure's
+`closed` sign, plus one upright `park_post.svg` at each corner and unjoined end. **Where two sides'
+runs meet at a corner they turn on that one post**: each line stops exactly at the corner of the
+two fence lines, so neither stops short of the other nor runs past it. The upper and lower rails
+meet at their own elevations; end-on, the upper rail hides most of the lower one. An unjoined
+run's rails end at its inset posts while collision covers the full entrance. Like `CORDON`, it
+leaves nothing lying in the road, so it never appears in
+`kinds_on()`'s roll for a street.
 
 **`FALLEN_TREE` only happens where a tree stood, and the tree that fell is the one that is
 missing.** *(2026-09-11, the player: "fallen trees should only be possible on streets with trees
@@ -1601,7 +1648,7 @@ in one place instead of leaving the scheduler to rescue each day.
 
 | Purpose | Calm? | What it is |
 | --- | --- | --- |
-| `PARK` | yes | Grass, trees, a playground. Contested calm: a day may spoil it with events once she has settled there, though never with its own free swings. |
+| `PARK` | yes | Grass, trees, a playground. Contested calm: a day spoils it with events once she has settled there — fenced instead, at most once a run and only in act III or later — though never with its own free swings. |
 | `FOREST` | yes | Denser trees, darker floor, no playground. The quietest ground there is. |
 | `QUIET_SQUARE` | yes | Paved and empty. Calm without being green. |
 | `COURTYARD` | yes | A court cut inside a residential block, reached by an archway. Hidden calm. |
