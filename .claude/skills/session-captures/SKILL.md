@@ -27,3 +27,10 @@ fabricating a frame.
 Motion is a burst. What it writes and how `tools/clip.sh` converts it is in `docs/TELEMETRY.md`,
 "Animation bursts". Judge speed from `burst.json`'s frame times, never the 12fps target; capture
 and encode overhead is not an animation defect.
+
+**A short clip is committed only when a pull request needs it to show motion; a recording of a
+whole run never is.** *(2026-09-25: "no videos should be checked in of course" · "short clips like
+that are fine if they're needed to convey something in a PR".)* A burst's MP4 belongs in an
+evidence folder when a still cannot show what the PR changed — a turn, a gait, a pursuer arriving.
+A review video of a rig run and the trailer are made and watched locally and stay out of the
+repository.
