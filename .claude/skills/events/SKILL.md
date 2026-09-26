@@ -75,9 +75,12 @@ because nothing checks a route around a thing with no tile.
 `minimum_telegraph()`, which for such a row is the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s, the
 player's time to react and think), never a figure worked out from its field or speed — the fire
 engine and day 13's column included, whose place follows her so a walk out of their field is not
-one she can take during the badge. The one exemption is `loose_dog`
-(`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`), which keeps its field's minimum: *"the loose dog can stay
-as short as it wants since it is not lethal and relatively low impact"* (PLAYTEST-145).
+one she can take during the badge. `loose_dog` is held to its field's minimum instead, through
+`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`, a list an earlier build added rather than something the
+player asked for; the player's own words are that its warning may be short, since it is *"not
+lethal and relatively low impact"* (PLAYTEST-145, statement 11), and whether it needs a warning at
+all is open under M226, the pursuing dog keeps its day-3 timing and the other warnings fit it
+(PLAYTEST-145, statements 17-18).
 
 ## Everything from off screen is warned first, and spawns where it points
 

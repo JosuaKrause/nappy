@@ -1451,9 +1451,11 @@ margin; fitting them to the pursuing dog's day-3 timing is M226, the pursuing do
 timing and the other warnings fit it, in `TODO.md`.
 The cyclist's `telegraph_time` is the smallest hundredth that clears it: 2.13s of badge, then 0.77s
 from 231px out to his 33px reach at 257px/s of closing, 2.90s in all. `loose_dog` is held to its
-field's minimum instead (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`): 2.40s from its badge to its field,
-against the 2.07s its field asks, since it is neither lethal nor dear. *(2026-09-26, the player:
-"the loose dog can stay as short as it wants since it is not lethal and relatively low impact.")*
+field's minimum instead, through `Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`, a list an earlier build
+added: 2.40s from its badge to its field, against the 2.07s its field asks. The player's own words
+are that its warning may be short, since it is *"not lethal and relatively low impact"*
+(PLAYTEST-145, statement 11); whether it needs a warning at all is open under M226, the pursuing
+dog keeps its day-3 timing and the other warnings fit it (PLAYTEST-145, statements 17-18).
 
 **`AMBIENT` events are exempt**, and have to be: they are permanent features of a fixed
 map, so there is no moment at which they appear and nothing to warn about. The player

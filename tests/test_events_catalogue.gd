@@ -127,8 +127,9 @@ func _test_catalogue_is_fair(t) -> void:
 ## own (`cyclist`, the fire engine) and day 13's column, the copy of `military_convoy` that
 ## `EventManager.as_warned()` makes of it — and asked as a relation: widening its field and speeding
 ## it up leaves its `minimum_telegraph()` where it was, at `Tuning.OFFSCREEN_WARNING_MIN`. `loose_dog`
-## is the one row exempt (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`: "the loose dog can stay as short as
-## it wants"), and keeps its field's minimum.
+## is held to its field's minimum instead, through `Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`, a list an
+## earlier build added; whether it keeps that, or needs no warning at all, is open under M226, the
+## pursuing dog keeps its day-3 timing and the other warnings fit it.
 func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 	var warned: Array[EventDef] = []
 	for def in EventCatalogue.all():

@@ -1829,9 +1829,12 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## is not a walk she can take during the badge; every other row keeps the minimum its field sets.
 const OFFSCREEN_WARNING_MIN := 2.9
 ## Rows warned of before they exist that are held to their field's minimum
-## (`required_telegraph_time()`) instead of `OFFSCREEN_WARNING_MIN`. `loose_dog` warns 2.40s from
-## its badge to its reach (a 2.25s `telegraph_time`), under the flat minimum, and may: *"the loose
-## dog can stay as short as it wants since it is not lethal and relatively low impact."*
+## (`required_telegraph_time()`) instead of `OFFSCREEN_WARNING_MIN`. A placeholder list an earlier
+## build added, not something the player asked for: it holds `loose_dog` (2.40s from its badge to
+## its reach, a 2.25s `telegraph_time`, under the flat minimum) until M226, the pursuing dog keeps
+## its day-3 timing and the other warnings fit it, decides what its warning is. The player's own
+## words are that its warning may be short, since it is "not lethal and relatively low impact"
+## (PLAYTEST-145, statement 11), and whether it needs one at all is open (statements 17-18).
 const OFFSCREEN_WARNING_MIN_EXEMPT: Array[String] = ["loose_dog"]
 
 ## A pursuer's telegraph is the **approach**, the way a fire engine's is — a dog that has to bark

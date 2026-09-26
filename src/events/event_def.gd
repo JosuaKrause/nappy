@@ -1224,9 +1224,10 @@ func validate() -> bool:
 ## that the warning is tied to the size of the field or the speed" · "all offscreen events should
 ## work like that".)* Its place follows her until it exists, so walking during the badge does not
 ## take her out of its field, and a floor worked out from the walk out of that field would buy
-## nothing. `loose_dog` is the one exemption (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`) and keeps its
-## field's minimum. Every other row is owed the time to walk out of its own field,
-## `Tuning.required_telegraph_time()`.
+## nothing. `loose_dog` is held to its field's minimum through
+## `Tuning.OFFSCREEN_WARNING_MIN_EXEMPT` until M226, the pursuing dog keeps its day-3 timing and
+## the other warnings fit it, decides what its warning is. Every other row is owed the time to walk
+## out of its own field, `Tuning.required_telegraph_time()`.
 ##
 ## A pursuer's is a different quantity and is stated in `Tuning.PURSUIT_MIN_NOTICE`: the ordinary
 ## rule buys the time to walk out of a *field*, and there is no walking out of something that
