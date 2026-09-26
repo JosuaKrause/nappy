@@ -303,11 +303,19 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
-## Where the last session stopped, 2026-09-20
+## Where the last session stopped, 2026-09-26
 
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
+- **The GoatCounter counter's new events and the read-back tool are in one open pull request**,
+  titled "M208/M209: the counter says what ended a day and what she met, and Claude reads it
+  back", ready for review and waiting on CI and on the player's permission to merge. Its records
+  are already in `DECISIONS.md` (M208 and M209). If CI is red, fix it on that branch.
+- **GoatCounter is read only through `tools/goatcounter.sh`** (see the using-tools skill); the key
+  is `GOATCOUNTER_TOKEN`, from the environment or a git-ignored `.env` at the root. A session
+  carrying it can run `tools/goatcounter.sh --check` to confirm the fixed key check against the
+  live account, which has not been done yet.
 - **The story's pacing is built** (M181, the resistance has a reason, and a task is one day,
   in `DECISIONS.md`): every task and happening, the late days timed, and the seals on her
   building's front. M182, a finished task is shown by the world, has the other tasks' answers
