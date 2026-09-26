@@ -31,6 +31,14 @@ extends Control
 ## `instances() -> Array[EventInstance]`, which `EventManager` answers in the city and
 ## `InteriorEvents` answers in the building — so the masked man coming up a stairwell is
 ## announced exactly the way a fire engine coming down a street is. See `setup()`.
+##
+## **And a warning can be up before its thing exists.** A source that also answers
+## `pending_warnings() -> Array[PendingWarning]` — `EventManager` does — has things on their way
+## that are not in the world yet: a cyclist, a loose dog, the fire engine, day 13's column. Each
+## gets its badge from the moment its warning goes up, pointing at the place it will come from, for
+## as long as the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself
+## with a reasonable position and when the time is right the object is spawned in at that location
+## just offscreen.")* Nothing about it is measured: the warning is the claim that it is coming.
 
 ## How far in from each screen edge the chevrons sit, as left/top/right/bottom. Asymmetric
 ## because the screen is: the clock and the run header are along the top, and the two meters and
@@ -99,7 +107,7 @@ var _watch := {}
 ## purely to remember who was seen.
 var _watch_generation := 0
 ## What `_draw` should put on the edge this frame, soonest arrival first:
-## `[time_to_reach, distance, instance, approach]`.
+## `[time_to_reach, distance, def, world position, approach]`.
 var _coming: Array = []
 
 ## `events` is anything that answers `instances() -> Array[EventInstance]`: `EventManager` on a
@@ -116,6 +124,13 @@ func setup(events: Node, player: Node2D) -> void:
 ## `EventInstance` to the analyser.
 func _live() -> Array[EventInstance]:
 	return _events.instances()
+
+## The warnings that are up for something not in the world yet, or none for a source that has no
+## such thing (`InteriorEvents`).
+func _warnings() -> Array[PendingWarning]:
+	if not _events.has_method("pending_warnings"):
+		return []
+	return _events.pending_warnings()
 
 func _process(delta: float) -> void:
 	_measure(delta)
@@ -143,7 +158,15 @@ func _measure(delta: float) -> void:
 		if _watch.has(id):
 			state = _watch[id]
 		else:
-			state = {"was": at, "approach": 0.0, "hold": 0.0}
+			# **A thing that arrives under its own warning keeps the badge it already had.** It is
+			# created just off screen by its notice, inside `SCREEN_MARGIN`, where a fresh thing
+			# would not raise one; and it starts with no measured approach. Without this its badge
+			# would go down the frame it exists and stay down until it came into view — the one
+			# stretch of its approach the warning was for. So it starts closing at its own speed,
+			# already raised, and the margin waits until it has been seen once.
+			var warned := instance.came_under_a_warning
+			state = {"was": at, "approach": instance.def.speed if warned else 0.0,
+					"hold": HOLD if warned else 0.0, "seen": not warned}
 			_watch[id] = state
 		# The event's own approach: how much closer *it* got to where she is standing now. Both
 		# distances are measured to the same point, so her own walking cancels out of it.
@@ -158,8 +181,11 @@ func _measure(delta: float) -> void:
 		# without it a thing hovering on the boundary trades places with its own badge every
 		# frame. It has to be well outside the view to raise one, and keeps it until it is
 		# properly in view.
+		if is_on_screen(at):
+			state["seen"] = true
+		var margin: float = SCREEN_MARGIN if state["seen"] else 0.0
 		if _is_worth_an_arrow(instance) and announces(approach, gap) \
-				and not is_on_screen(at, SCREEN_MARGIN):
+				and not is_on_screen(at, margin):
 			hold = HOLD
 		else:
 			hold = maxf(0.0, hold - delta)
@@ -176,7 +202,15 @@ func _measure(delta: float) -> void:
 			# Sorted by *when it arrives* rather than by how near it is, because that is what
 			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
 			# keeping is the one that gets here first, which a slow thing standing closer is not.
-			_coming.append([gap / maxf(approach, 1.0), distance, instance, approach])
+			_coming.append([gap / maxf(approach, 1.0), distance, instance.def, at, approach])
+	# A warning with nothing in the world yet is announced for the whole of its warning, on screen
+	# or off: it points at where the thing will come from, and there is nothing there to see yet.
+	# Sorted by when the thing will exist, which is the soonest it can arrive.
+	for warning in _warnings():
+		if warning.place == Vector2.INF or not _is_worth_an_arrow_for(warning.def):
+			continue
+		_coming.append([maxf(warning.left, 0.0), warning.place.distance_to(here), warning.def,
+				warning.place, warning.def.speed])
 	# Only the instances alive this frame carry state forward. An id the event source no
 	# longer carries was never touched above, so its `generation` still reads an earlier one and
 	# is erased here — which is also what keeps a freshly streamed event from flashing an arrow on
@@ -219,12 +253,10 @@ func is_on_screen(world_position: Vector2, margin: float = 0.0) -> bool:
 func announcing() -> Array[Dictionary]:
 	var badges: Array[Dictionary] = []
 	for i in mini(MOST_AT_ONCE, _coming.size()):
-		if not is_instance_valid(_coming[i][2]):
-			continue
 		badges.append({
-			"id": (_coming[i][2] as EventInstance).def.id,
+			"id": (_coming[i][2] as EventDef).id,
 			"distance": float(_coming[i][1]),
-			"approach": float(_coming[i][3]),
+			"approach": float(_coming[i][4]),
 		})
 	return badges
 
@@ -233,9 +265,8 @@ func _draw() -> void:
 		return
 	var transform := get_viewport().get_canvas_transform()
 	for i in mini(MOST_AT_ONCE, _coming.size()):
-		if not is_instance_valid(_coming[i][2]):
-			continue
-		_draw_arrow(_coming[i][2] as EventInstance, float(_coming[i][1]), transform)
+		_draw_arrow(_coming[i][2] as EventDef, _coming[i][3] as Vector2, float(_coming[i][1]),
+				transform)
 
 ## Whether something off-screen deserves an arrow.
 ##
@@ -244,10 +275,15 @@ func _draw() -> void:
 ## This is the same line the telegraph contract draws when it decides whether the escape
 ## distance is the falloff band or the whole radius.
 func _is_worth_an_arrow(instance: EventInstance) -> bool:
+	return _is_worth_an_arrow_for(instance.def)
+
+## `_is_worth_an_arrow()` asked of a row rather than of a live instance, which is all it reads —
+## and all a warning with nothing in the world yet has to ask it about.
+func _is_worth_an_arrow_for(def: EventDef) -> bool:
 	# If there is no silhouette to put in the badge there is nothing to *say*, and an arrow that
 	# only says "something" is an anxiety rather than a warning. Nothing lethal or fast is
 	# currently in that position, and this is here so that adding one is a decision.
-	if _icon_for(instance.def.look).is_empty():
+	if _icon_for(def.look).is_empty():
 		return false
 	# An `AHEAD_OF_PLAYER` crossing is sited across her line by the director, a fixed lead ahead of
 	# her, and its entire content is *the moment it happens to you* — three seconds of cat is not
@@ -266,16 +302,16 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 	# **`TOWARD_PLAYER` is the opposite case and falls through on purpose.** It is a road, not an
 	# ambush — she is meant to see it coming and choose a side or a turn before it arrives — so the
 	# badge is exactly the warning the row is designed around rather than a spoiler of it.
-	if instance.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and not instance.def.pursues:
+	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and not def.pursues:
 		return false
-	if instance.def.hard_fail:
+	if def.hard_fail:
 		return true
-	return instance.def.mobile and instance.def.speed > Tuning.WALK_SPEED
+	return def.mobile and def.speed > Tuning.WALK_SPEED
 
-func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2D) -> void:
+func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
+		transform: Transform2D) -> void:
 	var centre := size * 0.5
-	var at_design := ScreenOrientation.to_design_space(
-			transform * instance.global_position, rotated)
+	var at_design := ScreenOrientation.to_design_space(transform * world_position, rotated)
 	var offset: Vector2 = at_design - centre
 	if offset.length() < 1.0:
 		return
@@ -286,7 +322,7 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 
 	# The same two colours the caret over the entity uses, meaning the same two things.
 	# A badge and a caret that disagreed about what red meant would be two vocabularies.
-	var colour := Palette.MARK_LETHAL if instance.def.hard_fail else Palette.MARK_COSTLY
+	var colour := Palette.MARK_LETHAL if def.hard_fail else Palette.MARK_COSTLY
 	# A disc under the whole thing, so the icon and the number read over a pale pavement and a
 	# dark carriageway alike. The one place in the game a filled circle is still allowed —
 	# it is a badge on the screen, not a field drawn in the world.
@@ -298,7 +334,7 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
 	# fire engine into something unrecognisable, which defeats the whole cue.
-	var picture := _icon_for(instance.def.look)
+	var picture := _icon_for(def.look)
 	if not picture.is_empty():
 		# The size comes from the region table rather than from the texture, so the badge's own
 		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
@@ -312,7 +348,7 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 		draw_texture_rect(AtlasLibrary.region(name), rect, false)
 		# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
 		# rectangle and go over the body the way the street draws them.
-		var wheels := EventInstance.icon_wheels_for(instance.def.look)
+		var wheels := EventInstance.icon_wheels_for(def.look)
 		if not wheels.is_empty():
 			draw_texture_rect(AtlasLibrary.region(StringName(wheels)), rect, false)
 

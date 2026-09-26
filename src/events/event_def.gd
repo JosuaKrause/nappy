@@ -1236,6 +1236,16 @@ func ahead_of_player_lead() -> float:
 		time_to_middle += telegraph_time
 	return maxf(Tuning.AHEAD_LEAD_DISTANCE, time_to_middle * Tuning.WALK_SPEED)
 
+## Whether the director warns of this row before it exists rather than creating it: a
+## `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`), whose screen-edge badge goes up with
+## nothing in the world and whose instance is created where it points once `telegraph_time` is
+## over — see `PendingWarning`. A road-going `TOWARD_PLAYER` copy (`police_patrol`'s return leg) is
+## created at once instead: nothing announces it at the edge of the screen, since it is slower than
+## a walk and never lethal. The fire engine and the day-13 column are warned first too, by the
+## callers that summon them rather than by anything on the row.
+func warns_before_it_exists() -> bool:
+	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
+
 ## How far down her own line `EventDirector._toward_her()` sites this `TOWARD_PLAYER` row, along
 ## `heading`. **The one place that answer lives**, because two things that are not the director ask
 ## it: `EventDef.validate()` needs the floor under it, and the pass measurement behind

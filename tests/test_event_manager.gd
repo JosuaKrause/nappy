@@ -679,10 +679,10 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 		if seen_at >= 0.0:
 			print("      fire %s: sited %.1fs in, %.0fpx ahead, first seen %.1fs later"
 					% [leg, sited_at, plan.position.distance_to(sited_from), seen_at - sited_at])
-			# The engine is what the sight of it summons, and it is summoned on that same frame.
+			# The engine is what the sight of it summons, and its warning goes up on that same frame.
 			var engine := false
-			for instance in _city.events.instances():
-				engine = engine or instance.def.id == "fire_truck"
+			for warning in _city.events.pending_warnings():
+				engine = engine or warning.def.id == "fire_truck"
 			t.check(engine, "walking %s: and seeing it calls the engine in" % leg)
 		rig.free()
 	_city.events.stream_radius = INF
@@ -784,25 +784,42 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 				% [maxf(plan.def.outer_radius - range_to_it, 0.0) / Tuning.WALK_SPEED,
 				plan.def.telegraph_time]) + "telegraph buys her")
 	var engines := 0
+	var engine_in_the_world := false
 	for instance in _city.events.instances():
-		if instance.def.id != "fire_truck":
+		engine_in_the_world = engine_in_the_world or instance.def.id == "fire_truck"
+	t.check(not engine_in_the_world,
+			"and the engine it calls in is not in the world yet: its warning comes first")
+	for warning in _city.events.pending_warnings():
+		if warning.def.id != "fire_truck":
 			continue
 		engines += 1
-		t.close_to(instance.contribution_at(rig.global_position), 0.0,
-				"and the engine it calls in is outside its own forward reach of her when it is "
-				+ "created, from the worst position the sighting allows", 0.001)
+		t.check(PendingWarning.is_off_screen(warning.place - rig.global_position,
+				warning.closing_speed(), warning.def.offscreen_notice),
+				"and its badge points just off screen, where it will come from")
 		# **It is aimed at where the fire actually is**, which is the half a runtime siting could
 		# break: the route is built from the live instance's position when it is first seen, and a
 		# plan stops being movable at its first stream-in, so the two can never be a fire that moved
 		# after the engine was sent to where it used to be. The end of the route is the near kerb
 		# across from the frontage it is burning against — `EventManager._summon_the_sighted_row()`.
-		t.check(instance.path.size() == 2, "and it is given a route down the fire's own street")
-		if instance.path.size() == 2:
-			var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.position))
-			var kerb: Vector2 = plan.position - Vector2(inward) \
-					* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
-			t.close_to(instance.path[1].distance_to(kerb), 0.0,
-					"ending at the near kerb across from where the fire is actually burning", 1.0)
+		var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.position))
+		var kerb: Vector2 = plan.position - Vector2(inward) \
+				* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+		var before := _city.events.instances().size()
+		_city.events._run_the_warnings(warning.left + WALK_STEP, rig.global_position)
+		var arrived: EventInstance = null
+		for instance in _city.events.instances():
+			if instance.def.id == "fire_truck":
+				arrived = instance
+		t.check(arrived != null and _city.events.instances().size() == before + 1,
+				"and it is created once its warning is over")
+		if arrived:
+			t.check(arrived.path.size() == 2, "and it is given a route down the fire's own street")
+			t.close_to(arrived.path[0].distance_to(warning.place), 0.0,
+					"starting where its badge pointed", 1.0)
+			if arrived.path.size() == 2:
+				t.close_to(arrived.path[1].distance_to(kerb), 0.0,
+						"ending at the near kerb across from where the fire is actually burning",
+						1.0)
 	t.check(engines == 1, "seeing the fire calls in exactly one engine (%d)" % engines)
 
 	# **The whole of what the pair owes, measured where she is standing when she meets it.** Both
