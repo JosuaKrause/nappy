@@ -116,6 +116,14 @@ var _rig_locked_out := false
 ## it is — reads the true time and quits right then, rather than trusting a running total that the
 ## same stall could already have thrown off.
 var _rig_quit_deadline_msec := 0
+## **Under Godot's movie writer (`DevFlags.recording()`), the same deadline in game seconds
+## instead**, or `0.0` for none. A recording runs frame-locked and saves every frame before drawing
+## the next, so its wall clock runs several times slower than its game clock, and a wall-clock
+## deadline would end a legitimate recording partway; `delta` is exact there by construction, the
+## one case the doc above does not have to distrust it. What stops a recording that has stopped
+## running at all is the recording script's own outside kill (`tools/lib_dev_flags.sh`,
+## `rig_kill_after_movie_seconds`).
+var _rig_quit_game_seconds := 0.0
 
 ## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
 ## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
@@ -185,8 +193,9 @@ var _frame_graph: FrameGraph
 ## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
 ## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
 ## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
-## unflagged debug run reads exactly as it did before this milestone.
-var _layer_readout_on := true
+## unflagged debug run reads exactly as it did before this milestone — and `false` under
+## `--player-view` unless `--debug` asks for it, since that frame is the one a player sees.
+var _layer_readout_on := not DevFlags.player_view_requested() or DevFlags.readout_requested()
 ## Whether the frame-time graph (`_frame_graph`) is showing — its own debug layer, key `6` in
 ## `_debug_layer_key()`/`_toggle_debug_layer()`, independent of `_layer_readout_on`'s own `4`:
 ## *(2026-09-15, the player: "spike view should be independent of debug layer 4 it should be its
@@ -269,6 +278,16 @@ func _ready() -> void:
 	# nothing earlier is reachable from GDScript at all — and ahead of the escape's own boot branch
 	# just below, so either path gets it from this one call.
 	_lock_out_a_rig()
+	# A recording's own real wall clock runs several times slower than its game clock (saving one
+	# frame costs far longer than the 1/60s it represents) — see `_rig_quit_game_seconds`'s own doc.
+	# Physics interpolation blends a rendered frame between two physics ticks by how far the
+	# frame's own real presentation time sits between them, so under that mismatch the blend never
+	# advances: every recorded frame reads as the same tick, and her camera, the crowd and the
+	# clock all read as frozen even though the simulation underneath is running correctly (confirmed
+	# against the run log while building this). Off only for a recording — real play keeps the
+	# smoothing `--fixed-fps` never runs under.
+	if DevFlags.recording():
+		get_tree().physics_interpolation = false
 	# Before either boot path — this is the one thing `?debug=1` adds on top of the readout, and
 	# it has to reach the escape scene's own boot too. Gates itself on `_readout_requested` rather
 	# than being gated at the call site, the same shape `_add_debug_layers()` gates itself on
@@ -307,6 +326,7 @@ func _ready() -> void:
 	# that just earned its ending.
 	if _resume.is_empty() and GameState.escape_section == FinaleController.Section.NONE:
 		GameState.start_run(DevFlags.seed_override())
+		_apply_the_parent_flag()
 		GameState.day = DevFlags.day_override()
 	# `VisitCounter`'s own "a run begun fresh, or resumed from the save" — fired once here for
 	# every path through this function, ordinary or handed over to the escape, since GameState.day
@@ -365,6 +385,7 @@ func _ready() -> void:
 	_baby = _player.get_node("Baby")
 
 	_hud = HUD.instantiate()
+	_release_shaped_hud()
 	add_child(_hud)
 	_add_danger_edge()
 	_add_excitement_halo()
@@ -451,6 +472,7 @@ func _ready() -> void:
 	if DevFlags.overview_requested():
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
 	_dev_rig.setup_follow_camera(self)
+	_add_trailer_rigs()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
@@ -525,6 +547,7 @@ func _ready_escape() -> void:
 	# that earned this walk.
 	if not _escape_from_a_run:
 		GameState.start_run(DevFlags.seed_override())
+		_apply_the_parent_flag()
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
 	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
@@ -561,6 +584,7 @@ func _ready_escape() -> void:
 	await _warm_the_halo_shader(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
+	_release_shaped_hud()
 	add_child(_hud)
 	# The one thing the escape changes about the HUD: the clock reads to the millisecond.
 	_hud.set_finale(true)
@@ -638,10 +662,48 @@ func _ready_escape() -> void:
 
 	if DevFlags.overview_requested() and _city:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
+	_add_trailer_rigs()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
 		add_child(screenshot)
+
+## `--parent mother|father` over the roll `GameState.start_run()` just made from the seed, so a
+## trailer shot shows the parent its shot list names. Called straight after each of this file's
+## two `start_run()` calls, before anything reads the choice — `_hold_every_page_a_day_draws()`
+## holds that parent's atlas page and `_make_player()` binds the rig to it.
+func _apply_the_parent_flag() -> void:
+	var parent := DevFlags.parent_override()
+	if parent != "":
+		GameState.player_is_male = parent == "father"
+
+## Under `--player-view`, the HUD a release build draws: `HUD._debug` is read once from
+## `DevFlags.enabled()` when the scene is instantiated, so it is set here, before `add_child()`
+## runs the HUD's own `_ready()`, rather than by a second flag read inside `src/ui/`.
+func _release_shaped_hud() -> void:
+	if DevFlags.player_view_requested():
+		_hud._debug = false
+
+## The trailer's two additions to a shot, either boot: `--zoom-out`'s camera move, started from
+## whichever camera is current once her own has been placed, and `--caption`/`--title-card`'s text.
+## Both add nothing unless their flag was given.
+func _add_trailer_rigs() -> void:
+	var seconds := DevFlags.zoom_out_seconds()
+	var bounds := Rect2()
+	if _city:
+		bounds = _city.camera_bounds()
+	elif _interior:
+		bounds = _interior.camera_bounds()
+	if seconds > 0.0 and bounds.has_area():
+		var zoom_out := ZoomOutCamera.new()
+		zoom_out.name = "ZoomOut"
+		add_child(zoom_out)
+		_pauses_with_the_game(zoom_out)
+		zoom_out.setup(get_viewport().get_camera_2d(), bounds, get_viewport_rect().size, seconds,
+				DevFlags.zoom_out_delay())
+	var text := TrailerText.from_flags()
+	if text:
+		add_child(text)
 
 ## All entry points bind the run's existing choice before the rig enters the tree or draws.
 func _make_player() -> Stroller:
@@ -1953,6 +2015,13 @@ func _process(delta: float) -> void:
 				% DevFlags.rig_quit_seconds())
 		get_tree().quit(1)
 		return
+	if _rig_quit_game_seconds > 0.0:
+		_rig_quit_game_seconds -= delta
+		if _rig_quit_game_seconds <= 0.0:
+			printerr("[Main] a recorded rig's own limit (%.1f game seconds) passed with the run still "
+					% DevFlags.rig_quit_seconds() + "going; quitting")
+			get_tree().quit(1)
+			return
 	_dev_rig.update_follow_camera(_city)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
@@ -2165,6 +2234,8 @@ func _tile_name(type: GameEnums.TileType) -> String:
 ##   (`src/dev/route_rig.gd`) walks a whole day's worth of it on its own. A run driven by one of
 ##   them can be long, busy and completely unplayed, which is exactly the case the size heuristic
 ##   in `tools/telemetry.sh` could never catch.
+## - **Godot's movie writer is recording it** (`DevFlags.recording()`), frame-locked and several
+##   times slower than real time, which nobody could play.
 ##
 ## **`--seed`, `--day`, `--spawn`, `--overview` and the rest are *not* here**, and that is the line:
 ## they change what she is looking at, not who is steering. A playtest of act III started with
@@ -2174,7 +2245,7 @@ func _tile_name(type: GameEnums.TileType) -> String:
 ## where none of the five rig flags below can do anything anyway — never misreads an ordinary
 ## player for one.
 func _somebody_is_playing() -> bool:
-	if DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless" or DevFlags.recording():
 		return false
 	var args := DevFlags.active_args()
 	for rig in ["--screenshot", "--walk", "--flee", "--press", "--route"]:
@@ -2270,7 +2341,10 @@ func _lock_out_a_rig() -> void:
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	_erase_real_input_for_a_rig()
-	_rig_quit_deadline_msec = Time.get_ticks_msec() + int(DevFlags.rig_quit_seconds() * 1000.0)
+	if DevFlags.recording():
+		_rig_quit_game_seconds = DevFlags.rig_quit_seconds()
+	else:
+		_rig_quit_deadline_msec = Time.get_ticks_msec() + int(DevFlags.rig_quit_seconds() * 1000.0)
 
 ## Every action `project.godot`'s own `[input]` table defines — read live off `InputMap` rather
 ## than spelled out by hand, so a binding added there is covered without a second list to keep in

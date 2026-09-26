@@ -137,16 +137,19 @@ somewhere.
   notch wall for the whole run — and its log looks exactly like a run. If a `--walk` rig is meant
   to meet something, check it actually travelled before reading anything else off the run.
 - **`--walk 1s5e` and `--walk 3@45@2e`** walk a script of timed steps instead, left to right: one
-  second south then five east, or three seconds at a bearing of 45° then two east (whole seconds
-  only). **A bearing is what a player's route actually looks like** — a press sets an arbitrary
-  unit vector, so most headings are diagonal and a four-letter script can only reproduce the axes. Degrees run clockwise
+  second south then five east, or three seconds at a bearing of 45° then two east. **A bearing is
+  what a player's route actually looks like** — a press sets an arbitrary unit vector, so most
+  headings are diagonal and a four-letter script can only reproduce the axes. Degrees run clockwise
   from north, and the pair of `@`s is a delimiter rather than decoration: a bearing's digits would
   otherwise run into the next step's. Every step presses both `move_*` axes at fractional strength
   through the same call the touch scheme uses, so the vector stays unit length and the rig walks at
   `Tuning.WALK_SPEED` (92px/s) — **a step must never press a vector shorter than one**, which is
   the rule `tests/test_touch.gd` holds for every input path. A malformed step fails the whole
   script rather than being skipped, because a script that silently drops one walks a different
-  route than the one asked for.
+  route than the one asked for. Three more shapes, for a trailer shot's path of several legs
+  (`tools/trailer.sh`): a duration may carry a decimal point (`1.5s`); `p` stands still for its
+  duration (`0.5p`), pressing nothing, the same as a player letting go; and an uppercase letter is
+  that direction at a run (`2S`) rather than a walk.
 - **`--flee [delay]`** turns round and runs when something starts chasing her. A rig that can only
   hold a direction can only ever demonstrate the *wrong* answer to a pursuit; the delay is the axis
   worth measuring — what the right answer costs when it is given late.

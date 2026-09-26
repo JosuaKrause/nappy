@@ -102,6 +102,10 @@ assert_exit "serve-web.sh --help"  zero ./tools/serve-web.sh --help
 assert_exit "release.sh --help"    zero ./tools/release.sh --help
 assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
+assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help
+assert_exit "trailer.sh -h"        zero ./tools/trailer.sh -h
+assert_exit "record.sh --help"     zero ./tools/record.sh --help
+assert_exit "record.sh -h"         zero ./tools/record.sh -h
 assert_exit "stats.sh --help"      zero ./tools/stats.sh --help
 assert_exit "telemetry.sh --help"  zero ./tools/telemetry.sh --help
 assert_exit "test.sh --help"       zero ./tools/test.sh --help
@@ -137,6 +141,13 @@ assert_exit "serve-web.sh --bogus"    nonzero ./tools/serve-web.sh --bogus
 assert_exit "release.sh --bogus"      nonzero ./tools/release.sh --bogus
 assert_exit "run.sh --bogus"          nonzero ./tools/run.sh --bogus
 assert_exit "shot.sh --bogus"         nonzero ./tools/shot.sh "$work_dir/shot-out.png" 1 --bogus
+assert_exit "trailer.sh --bogus"      nonzero ./tools/trailer.sh --bogus
+assert_exit "trailer.sh --shot (missing name)" nonzero ./tools/trailer.sh --shot
+assert_exit "trailer.sh --list --shot (combined)" nonzero ./tools/trailer.sh --list --shot choice
+assert_exit "record.sh --bogus"       nonzero ./tools/record.sh --bogus
+assert_exit "record.sh (no flags)"    nonzero ./tools/record.sh
+assert_exit "record.sh --this-is-not-a-dev-flag" nonzero ./tools/record.sh --this-is-not-a-dev-flag
+assert_exit "record.sh --out (missing name)" nonzero ./tools/record.sh --out
 assert_exit "stats.sh --bogus"        nonzero ./tools/stats.sh --bogus
 assert_exit "telemetry.sh --bogus"    nonzero ./tools/telemetry.sh --bogus
 assert_exit "clip.sh --bogus"         nonzero ./tools/clip.sh --bogus
@@ -474,6 +485,32 @@ while read -r flag; do
         failures=$(( failures + 1 ))
     fi
 done < <(dev_flag_names)
+
+# --------------------- tools/trailer.sh's kill deadline follows the shot's length, not the day's ---
+# rig_kill_after_movie_seconds only reads --after/--day-length out of the argv it is given --
+# passing it a bare number (tools/trailer.sh once did: `rig_kill_after_movie_seconds "$after"`)
+# silently falls back to the day's own length times RIG_MOVIE_SLOWDOWN, killing a hung Godot after
+# about 38 minutes instead of about 4 for a short shot. Checked two ways: the function itself
+# answers differently for a short --after than for none at all, and trailer.sh's own call site is
+# grepped for the exact --after shape rather than a bare value, which is the one thing that would
+# have caught this regression at the source instead of only in the function's own unit shape.
+checks=$(( checks + 1 ))
+short_kill="$(rig_kill_after_movie_seconds --after 5)"
+long_kill="$(rig_kill_after_movie_seconds)"
+if [[ "$short_kill" -lt "$long_kill" ]]; then
+    echo "ok   rig_kill_after_movie_seconds follows --after ($short_kill < $long_kill)"
+else
+    echo "FAIL rig_kill_after_movie_seconds did not shorten for a short --after ($short_kill vs $long_kill)" >&2
+    failures=$(( failures + 1 ))
+fi
+
+checks=$(( checks + 1 ))
+if grep -qE 'rig_kill_after_movie_seconds +--after +"\$after"' "$root/tools/trailer.sh"; then
+    echo "ok   trailer.sh calls rig_kill_after_movie_seconds with --after, not a bare value"
+else
+    echo "FAIL trailer.sh's call to rig_kill_after_movie_seconds does not pass --after \"\$after\" -- a hung Godot would be killed after the day's own length instead of the shot's" >&2
+    failures=$(( failures + 1 ))
+fi
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
