@@ -232,23 +232,38 @@ rig_kill_after_seconds() {
     }'
 }
 
-# The same kill wait for a rig recording through Godot's movie writer (`--write-movie`, which
-# tools/trailer.sh launches every shot with), given the shot's own --after in $1: the game's own
-# deadline under the writer stretches the script by `movie_slowdown` -- see
-# `DevFlags.rig_quit_seconds_from()`'s `slowdown`, which this mirrors -- and the ceiling still
-# bounds it, so this is that deadline plus the same kill grace.
+# The same kill wait for a rig Godot's movie writer is recording (`--write-movie`, which
+# tools/record.sh and tools/trailer.sh launch with), given the dev flags being forwarded. Under the
+# writer the game counts its own deadline -- the same script-plus-margin-under-a-ceiling one -- in
+# game seconds rather than wall seconds (`main._process()`), so this stretches that deadline by
+# `movie_slowdown` (`DevFlags.RIG_MOVIE_SLOWDOWN`, the wall seconds a recorded game second may
+# take) and adds the same kill grace.
 rig_kill_after_movie_seconds() {
-    local after="$1" margin ceiling grace slowdown
+    local margin ceiling grace slowdown day_length after=""
     margin="$(_rig_quit_constant margin)"
     ceiling="$(_rig_quit_constant ceiling)"
     grace="$(_rig_quit_constant kill_grace)"
     slowdown="$(_rig_quit_constant movie_slowdown)"
-    awk -v after="$after" -v slowdown="$slowdown" -v margin="$margin" -v ceiling="$ceiling" \
-            -v grace="$grace" 'BEGIN {
-        deadline = after * slowdown + margin
+    day_length=""
+    local -a args=("$@")
+    local n=${#args[@]} i=0
+    while (( i < n )); do
+        case "${args[$i]}" in
+            --after) after="${args[$((i + 1))]:-}" ;;
+            --day-length) day_length="${args[$((i + 1))]:-}" ;;
+        esac
+        i=$(( i + 1 ))
+    done
+    if [[ -z "$day_length" ]]; then
+        day_length="$(_tuning_day_length_seconds)"
+    fi
+    awk -v after="$after" -v day_length="$day_length" -v margin="$margin" \
+            -v ceiling="$ceiling" -v grace="$grace" -v slowdown="$slowdown" 'BEGIN {
+        script = (after != "") ? after + 0 : day_length + 0
+        deadline = script + margin
         if (deadline < margin) deadline = margin
         if (deadline > ceiling) deadline = ceiling
-        total = deadline + grace
+        total = deadline * slowdown + grace
         printf "%d\n", (total == int(total)) ? total : int(total) + 1
     }'
 }

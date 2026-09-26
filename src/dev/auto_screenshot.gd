@@ -134,7 +134,7 @@ var _presses: Array[Dictionary] = []
 var _tap_at := Vector2.INF
 
 ## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace
-## or a trailer shot. Returns null without one of those requests or outside a debug build.
+## or a recording. Returns null without one of those requests or outside a debug build.
 ## `--screenshot`, `--after`, `--walk`, `--flee` and `--press` are developer furniture like every
 ## flag `DevFlags` gates, and are gated here rather than moved there because this file already owns
 ## their parsing.
@@ -152,10 +152,10 @@ static func from_command_line() -> AutoScreenshot:
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--screenshot")
 	var has_picture := index != -1 and index + 1 < args.size()
-	# A timed, capture-free run: `--frame-trace` measuring, or `--trailer` filming through Godot's
-	# own movie writer — either way the rig drives her and quits at `--after`, and nothing here
-	# saves a picture of its own.
-	var timed_trace := (DevFlags.frame_trace_requested() or DevFlags.trailer_requested()) \
+	# A timed, capture-free run: `--frame-trace` measuring, or Godot's own movie writer recording
+	# (`tools/record.sh`, `tools/trailer.sh`) — either way the rig drives her and quits at
+	# `--after`, and nothing here saves a picture of its own.
+	var timed_trace := (DevFlags.frame_trace_requested() or DevFlags.recording()) \
 			and "--after" in args
 	if not has_picture and not timed_trace:
 		return null
