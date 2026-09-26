@@ -81,6 +81,10 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
+**First, before any new task** ([PLAYTEST-144](playtests/PLAYTEST-144.md)): the `git grep`
+hook (PR #377), then **M223**, one file per queue entry and per decision, then **M225**, the
+counter counts every attempt, a key player, and a torn poster's chase.
+
 0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
    left open**, on the same footing as the round before it: **M125**, the test suite
    is slow again — ten suites pruned and the
@@ -360,7 +364,25 @@ points a second beside him.
 
 - [ ] **Reproduce it, find the cause, fix it**, with a test that fails before the fix: a rig
       standing beside him on a released-build seed, the meter and the halo both read. Say when
-      it broke and what else the same cause silences.
+      it broke and what else the same cause silences. The man shouting charges nothing on an
+      ordinary day, not only on the day of the note ([PLAYTEST-144](playtests/PLAYTEST-144.md),
+      statement 21), and has no halo in the released page on the phone and in desktop Chrome
+      alike, where the halo draws on others near her (statements 23, 24 and 27;
+      `docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/yeller-no-halo-no-charge.png` and
+      `desktop-chrome-halo-on-a-car-yeller-none.png`).
+
+[PLAYTEST-144](playtests/PLAYTEST-144.md), statement 22: "Giving the note has to cost, too. Those
+tasks are extra challenges that revolve around proper excitement management. While a normal route
+provides an almost free optional path. Tasks are deliberately dangerous."
+
+- [ ] **Handing over a task's note costs excitement.** A task is deliberately dangerous, and the
+      ordinary route is the almost free path. Today she hands the note over at 36px, inside his
+      45px full-strength zone, and he leaves at once, so the handover lands about 3.3 points where
+      an ordinary man shouting's full charge is 62.5. Say what it costs before and after the change.
+
+      **Proposed, not asked for:** she has to stand inside his charge for a moment before the note
+      changes hands. The plainer alternative is that he keeps shouting for a while after the
+      handover before he leaves.
 
 ---
 
@@ -377,9 +399,19 @@ per-frame orientation poll (`main._process()`, running through pauses) cannot st
 than a frame. The player: "the only way to test this is to release it".
 
 - [ ] **The released page decides it**: after a lost day's game over on the phone, the title is
-      the right way up (`REVIEW.md`). If it is still sideways, the next pass reproduces it in a
-      debug web build in Chrome's phone emulation (`tools/export-web.sh debug`, as M205 did), and
-      asks whether it happens after every lost run and whether anything besides the title turns.
+      the right way up, and so is the screen after a held restart from the day summary
+      (`REVIEW.md`). If either is still wrong, the next pass asks the player whether it happens
+      every time, how long it lasts and whether anything besides the title turns, before
+      reproducing it, on the released page rather than a locally exported debug build: the
+      released page draws the halo in desktop Chrome where the agent's local builds reported
+      none ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 27, and the orchestrator's
+      reading of why).
+
+The player's phone, v0.18.0 ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 26, and
+`docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/after-the-restart.png`), captioned "This is
+the screen when resetting": the still shows the city upright with no title after a held restart
+from the day summary, where the player's other stills show the game turned for the phone. It is
+one still, so how long that lasted is not known.
 
 ---
 
@@ -410,9 +442,12 @@ reaction time a warning must leave her; the player's complaint is the other end.
 
 [PLAYTEST-142](playtests/PLAYTEST-142.md), statements 1 and 2.
 
-- [ ] **Title, day number and text all describe the coming day.** Nothing on the brief says she
-      fell asleep; the number is the day about to start. Find every screen that shows a brief
-      (the first day's included) and pin the number with a test.
+- [ ] **Title, day number and text all describe the coming day**, below one line for the day that
+      ended: "She fell asleep after m:ss" stays (M154, [PLAYTEST-144](playtests/PLAYTEST-144.md),
+      statement 10: "You can keep the she feel asleep after xx:xx and then do the rest about the next
+      day. Or we will have to split it into two screens"). If one screen cannot carry both, it
+      becomes two: the day that ended, then the brief. The number is the day about to start. Find
+      every screen that shows a brief (the first day's included) and pin the number with a test.
 - [ ] **The brief shows the nerves** she carries into the coming day, drawn the way the HUD
       draws them.
 
@@ -429,7 +464,9 @@ reaction time a warning must leave her; the player's complaint is the other end.
 - [ ] **The robber guarding a chalk mark always spawns at the alley's other end from the mark**,
       and a test states the distance from the mark to him over many seeds.
 - [ ] **The mark is reachable**: a rig walks in from the mark's end, reads it and leaves without
-      waking him, on seeds where it cannot today.
+      waking him, on seeds where it cannot today. He may stand where he never wakes: "It's fine if
+      the Robert doesn't get triggered every time" ([PLAYTEST-144](playtests/PLAYTEST-144.md),
+      statement 11).
 
 ---
 
@@ -489,12 +526,14 @@ day's, which already asks the brief to show the nerves "drawn the way the HUD dr
 [PLAYTEST-143](playtests/PLAYTEST-143.md), statement 4. The row's body stands on the sidewalk
 against a wall (`EventCatalogue._burning_building()`: `placement` SIDEWALK, `pavement_side`
 AGAINST_THE_BUILDING). `EventInstance._draw_fire()` draws its flames at that ground spot, and the
-facade behind them is drawn unharmed. The danger's footprint and its fairness contracts stay as
-they are. This is about what is drawn.
+facade behind them is drawn unharmed. "The fire goes on the building. The challenge is the fire
+truck not the fire" ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 12).
 
-- [ ] **The flames and smoke are drawn on the facade of the building the row stands against**,
-      so the building reads as burning. Any fire left on the sidewalk reads as falling from it.
-      Stills in the PR.
+- [ ] **The flames and smoke are drawn on the facade of the building the row stands against**, so
+      the building reads as burning. Stills in the PR.
+- [ ] **The fire is no obstacle on the sidewalk**: no solid body and no danger of its own there;
+      the fire truck that comes for it is the danger. Say what the row's field and cost become,
+      and regenerate `docs/COSTS.md`.
 
 ---
 
@@ -556,6 +595,117 @@ point where she can reach it, and that stays. The arrow is what moves.
 
 - [ ] **The arrow's tip ends on the van's body** (on the event the task is performed at) while
       the touch point stays where she can reach it. A still in the PR.
+
+---
+
+## M223 — One file per queue entry and per decision, named by date and two words · asked for 2026-09-26
+
+> "we can do one file per queue entry/decision and handoff only at the end of a session" · "would
+> it be possible to use random words eg Mgray-busy-badger to create random but memorable tasks?" ·
+> "that numbering should be for everything that currently has a strict sequential number"
+
+[PLAYTEST-144](playtests/PLAYTEST-144.md), statements 1, 2, 4, 5, 6, 7 and 8. Of the repo's 590 merges since
+2026-09-01, 136 conflicted: 86 in `docs/DECISIONS.md` (every PR inserts its record at the same
+spot under `# Decisions`), 57 in `docs/TODO.md` (neighbouring entries share their `---` lines),
+23 in `docs/HANDOFF.md` and 12 in `docs/REVIEW.md`, against 6 in the most conflicted code file.
+The M-numbers also need coordination between sessions: merging-main carries renumbering rules
+for them, and two branches claimed M208 on 2026-09-26.
+
+The order is the player's: the `git grep` hook first ("merge the hook before the new system -- that
+has even higher priority"), then this ("prioritize the new system. and once each agent is done
+convert theirs to the new system"), before any new task is picked up ("The file layout change
+needs to land before picking up new tasks"). Work in flight is converted to the new
+layout as each agent finishes. Until this lands, entries are filed the old way.
+
+- [ ] **A queue entry is a folder, and each of its items is a file**:
+      `docs/todo/<date filed>-<adjective>-<animal>/`, named and linked by its two words
+      ("busy-badger"). Sorting the folder puts the newest last. One file holds the player's words
+      and the entry's context. Each item is a file of its own beside it, written in full prose with
+      no checkbox, and completing the item deletes its file ("completing a task is just deleting
+      the file"). An existing entry moves into a folder under its date and keeps its M-number
+      (`docs/todo/2026-09-26-M210/`); nothing existing is renamed. An entry whose heading carries
+      no date (M56, M129) takes the date of the commit that first wrote its heading line. A `[~]` (mid-way) item
+      says so in its prose. `docs/TODO.md` keeps only what
+      is not an entry: its header and "The order", which names entries by their folders.
+- [ ] **A decision is a file**, `docs/decisions/<same name>.md`, written when an entry's last
+      item is done; the entry's folder goes in the same commit.
+      The existing `DECISIONS.md` is split along its `## ` headings, by a script that asserts every
+      heading was written out and every line survived. No index is checked in, since an index every
+      PR edits is the same conflict again. A command lists and searches the folder by date and
+      title, and `DECISIONS.md` says where the records are.
+- [ ] **A new playtest is a file under the same kind of name**, `docs/playtests/<date>-<adjective>-<animal>.md`,
+      as the other things numbered in sequence (milestones and their decisions) are. Existing
+      playtest files keep their numbers and are never rewritten.
+
+**Proposed, not asked for** (the orchestrator's, open to overturn; the player saw and accepted the
+split of the old records and the duplicate lint, but not these): a command that makes names; no
+checked-in index, with a command that lists and searches the records instead; an entry with no
+date in its heading takes the date of the commit that first wrote its heading line; a `[~]`
+(mid-way) item says so in its prose; a review item's steps written as prose. The plainer
+alternative to each: a name picked by hand with the lint catching a duplicate; `ls` and `rg` on
+the folder; the date the migration runs; a checkbox-free item with no marker; numbered steps.
+
+- [ ] **A command makes the name**: it picks an unused adjective and animal (checked against every
+      folder that takes these names), writes the file with its heading and date, and prints the
+      name. It follows cli-tools, and gets a row in using-tools' catalogue. The lint rejects a
+      duplicate name across the folders.
+- [ ] **A review item is a file**, `docs/review/<the entry's name>.md` (a second item from one
+      entry takes a suffix, which is the orchestrator's proposal), its steps written as prose rather
+      than numbered, deleted by the playtest that covers it. `docs/REVIEW.md` keeps only its header
+      and how a run is set up; its list of what no person has tested yet becomes files too ("Even
+      the review file").
+- [ ] **`docs/HANDOFF.md` is written only at the end of a session**, by session-cleanup, and no
+      longer by each PR. committing's "a PR carries every document its own changes make false"
+      says so for HANDOFF.
+- [ ] **Every rule that assumes one file or a number says the new thing**: `CLAUDE.md` (a
+      milestone named "by its number *and* a short title" becomes its two words and a title; "No
+      quest logs outside `DECISIONS.md`"; the
+      path table's `docs/TODO.md` and `PLAYTEST-*.md`), the path-rules hook
+      (`.claude/hooks/project-rules.sh`: `docs/todo/**` and the new playtest names bring
+      playtest-feedback), and the committing, merging-main (the renumbering rules shrink to the old
+      numbers), orchestrating, playtest-feedback, session-cleanup and session-captures skills
+      (`<mNNN|playtest-NN>-<slug>-<date>` evidence folders), plus `tools/lint.sh`,
+      `tools/resolve-decisions-top.sh` (retired once nothing inserts at the top) and
+      `tools/codex-hooks.py`.
+
+**Order and scope** ([PLAYTEST-144](playtests/PLAYTEST-144.md), statements 13 and 14): M223 lands
+before any new task is picked up, and M225, the counter's asks, comes next. "Split every file
+where appropriate. Even the review file": `REVIEW.md`'s list of what no person has tested yet
+becomes files too, and any other document that is a list of independent items is split the same
+way where that is appropriate. "We overhaul all items that are currently relevant": once split,
+every queue entry and review item still relevant is rewritten in full in the new layout, checked
+against the player's own words; one that no longer applies is put to the player, never dropped
+silently.
+
+- [ ] **The overhaul**: every open entry and review item re-read against its playtest, rewritten
+      in full, and the ones that no longer apply listed for the player.
+- [ ] **The graphics-recipes table in `docs/evidence/README.md` goes** once every row's information
+      is confirmed to be in its own evidence folder ([PLAYTEST-144](playtests/PLAYTEST-144.md),
+      statement 29: "if the information is still there and the table in readme is redundant we can
+      remove"). Moving a row whose information is only in the table into its folder first is the
+      orchestrator's reading.
+
+---
+
+## M225 — The counter counts every attempt, a key player, and a torn poster's chase · asked for 2026-09-26
+
+> "no, even current run wouldn't work if the player dies multiple times on the same day" · "we need
+> a telemetry item for ripping posters and pursuit triggered by poster ripping" · "is telemetry
+> currently correctly identifying when a player plays with keys?" · "use this for nappy stats. for
+> the site visit stat use the old account" · "After that the telemetry changes are next"
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statements 9–11; [PLAYTEST-144](playtests/PLAYTEST-144.md),
+statements 13 and 28. PR #368 (a cloud session's, PLAYTEST-141) builds the counter; these asks are
+on it as review comments of 2026-09-26 and not yet built. The orchestrating session takes #368 over
+from the stopped cloud session ("yes, take over from the cloud session") and builds these on it,
+after M223. Keys: a run begun with a key is reported as tap
+today, so the answer to the player's question is no.
+
+- [ ] **Every game event counts every time**: events go to `nappy.goatcounter.com` (sessions off),
+      the page visit stays on `josuakrause.goatcounter.com`, and `tools/goatcounter.py` reads the
+      new site with the `.env` key.
+- [ ] **A key player is counted as one**, from the input that began the run.
+- [ ] **A torn poster that sends a patrol sends its own event**, beside the tear's own.
 
 ---
 
