@@ -50,3 +50,5 @@ and the audio later left the tree; see "A pass is a command".) The skill now
 requires each review pass's recipe to stay independently executable and asks listeners to judge
 subject recognition and implied weight before style refinement. Final Python/CLI, hook, skill,
 determinism, audio-integrity and archive checks passed.
+
+**Superseded in part** by [a pass is a command, and no audio is in the tree](2026-09-26-copper-lark-a-pass-is-a-command-and-no-audio-is-in-the-tree.md): the generator no longer writes a ZIP or a copy of itself, no audition files are committed, and only the current pass rebuilds, with `tools/sound-lab.sh`.

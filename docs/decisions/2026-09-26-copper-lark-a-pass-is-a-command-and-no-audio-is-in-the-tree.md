@@ -9,7 +9,7 @@ not worth let's remove them" · "yes 384 will get squashed so no scrubbing neces
 GitHub serves a committed `index.html` as text, so every audition meant downloading and unzipping a
 kit. `tools/sound-lab.sh` builds the current pass from the committed generator into git-ignored
 `build/sound-lab/` and serves the listening page on localhost (`--lan` for a phone on the same
-network), the way `tools/trailer.sh` builds the trailer. The evidence folders with their WAVs,
+network), the way PR #370's `tools/trailer.sh` builds the trailer. The evidence folders with their WAVs,
 zips, pages, manifests and generator copies are deleted, and the PR lands squashed, so none of it
 reaches `main`'s history.
 
