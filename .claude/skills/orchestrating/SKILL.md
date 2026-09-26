@@ -145,7 +145,7 @@ Every agent prompt contains, explicitly:
   consistent with the contracts **and says so in its report, which the PR description carries**,
   so the choice is visible and cheap to overturn. **A brief that contradicts a recorded
   decision is a fork too**, however explicit the brief is: when the brief asks for something a
-  `DECISIONS.md` record or a doc's stated rule rules out, the agent builds nothing that overturns
+  record under `docs/decisions/` or a doc's stated rule rules out, the agent builds nothing that overturns
   it and reports the clash, quoting both.
 - **What the final report must contain**: per item, what was built and how it was verified; every
   choice made where the design was silent; every fork left open. The report is the merge review's

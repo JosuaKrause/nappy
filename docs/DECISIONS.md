@@ -17,7 +17,9 @@ many of those.
 
 **A citation reads "`DECISIONS.md`, M129, a spent park is closed"** wherever it stands — a code
 comment, a skill, a doc: a milestone and a record's title. `tools/decisions.sh M129` lists that
-milestone's records, titles first, and the title picks one out.
+milestone's records, titles first, and the title picks one out. Where the cited words are a
+heading inside a record rather than its title ("M100, events spawn inside a fully blocked
+street"), `tools/decisions.sh <those words>` finds the record by its text.
 
 A record says what was true when it was written, with what was measured and what was rejected;
 none of it should be read as current. The open work is [TODO.md](TODO.md) and the entries under

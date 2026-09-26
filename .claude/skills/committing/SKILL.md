@@ -66,11 +66,11 @@ thing or built it wrong, the correction is committed on that PR's branch and the
 is updated to say what it now carries. A follow-up PR for the fix would either merge the broken
 work first or leave two PRs that only make sense together, and neither is a completed item.
 
-**And the unit is the work item, not the milestone number.** *(2026-09-14: "why do you keep
+**And the unit is the work item, not the queue entry.** *(2026-09-14: "why do you keep
 creating new PRs for things that should go in the same PR?")* One question splits into several
-numbered entries as it is worked — a probe, the thing the probe found, the fix for it — and each
-number is still the same item until the player has what they asked for. The fix for what a PR's
-probe found goes on that PR, whatever number the queue gave it; a new PR is for a new question.
+queue entries as it is worked — a probe, the thing the probe found, the fix for it — and each
+entry is still the same item until the player has what they asked for. The fix for what a PR's
+probe found goes on that PR, whatever name or number the queue gave it; a new PR is for a new question.
 
 **A pull request carries every document its own changes make false.** Not a follow-up, not a
 cleanup pass afterwards, not a note for the next session: the doc edit is part of the change and
@@ -186,7 +186,7 @@ independently authored records distinct, and converting a branch still on the ol
 queue with `tools/convert-queue-edits.py`. Side-selection shortcuts such as `--ours` and
 `--theirs` do not satisfy that review.
 
-**One branch per work item** (which may span several milestone numbers), named
+**One branch per work item** (which may span several queue entries), named
 `feature/<thing>`; `main` receives it as one squashed commit.
 
 **Delete a branch as soon as its pull request is merged, always, without being asked.** The

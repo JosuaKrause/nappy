@@ -68,7 +68,9 @@ many of those.
 
 **A citation reads "`DECISIONS.md`, M129, a spent park is closed"** wherever it stands — a code
 comment, a skill, a doc: a milestone and a record's title. `tools/decisions.sh M129` lists that
-milestone's records, titles first, and the title picks one out.
+milestone's records, titles first, and the title picks one out. Where the cited words are a
+heading inside a record rather than its title ("M100, events spawn inside a fully blocked
+street"), `tools/decisions.sh <those words>` finds the record by its text.
 
 A record says what was true when it was written, with what was measured and what was rejected;
 none of it should be read as current. The open work is [TODO.md](TODO.md) and the entries under
@@ -150,14 +152,16 @@ human review / test runs. That way you can keep working without having to stop. 
 can capture multiple items at once.")* The work goes on while this list waits, and one run
 answers as many of these as it passes through.
 
-**How it is kept.** Each item is a file under [review/](review/), named after the queue entry
-whose work it asks about (`<entry name>.md`, and `<entry name>-2.md` for a second item from the
-same entry). It enters when work lands that only a person can judge, in the same PR as the work,
-and names what to do, where to look, and the question a run answers — not what was built, which
-is the record's under [decisions/](decisions/). A playtest closes the items it covered: the
-finding goes in the playtest's file, the item's file is deleted in the same commit, and what the
-player asked for goes to the queue. Nothing here is a task; a task is an item under
-[todo/](todo/). What a rig has measured and no person has felt yet is an item like any other.
+**How it is kept.** Each item is a file under [review/](review/), named after the queue entry whose
+work it asks about (`<entry name>.md`, and `<entry name>-2.md` for a second item from the same
+entry); an item from before names is named by the date it was written and its first words
+(`2026-09-13-touch-the-day-4-chalk-mark.md`). It enters when work lands that only a person can
+judge, in the same PR as the work, and names what to do, where to look, and the question a run
+answers — not what was built, which is the record's under [decisions/](decisions/). A playtest
+closes the items it covered: the finding goes in the playtest's file, the item's file is deleted in
+the same commit, and what the player asked for goes to the queue. Nothing here is a task; a task is
+an item under [todo/](todo/). What a rig has measured and no person has felt yet is an item like
+any other.
 
 ## Next run, in one sitting
 
