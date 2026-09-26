@@ -14,28 +14,29 @@ until the player separately asks for integration.
 - Build sounds from original oscillators, seeded noise, envelopes and filters. Do not use recordings,
   downloaded sounds, sample libraries or pretrained audio output unless the player changes that
   constraint.
-- Keep the editable generator under `tools/` and run it through the locked `uv` environment. Give
-  every random source a deterministic seed. Record the exact rebuild command and seed beside the
-  audition.
-- Record the sample rate, channels, encoding, processing chain, durations, levels and SHA-256 hashes
-  in a machine-readable manifest. Include a frozen copy of the exact generator in each pass and
-  name that copy, rather than the evolving tracked tool, in the pass's rebuild command.
-- Reuse the current audition folder and filenames for revisions on the open PR; overwriting them
-  is allowed. Update the frozen recipe, manifest, page and ZIP together, and refresh the PR's
-  commit-pinned links. Keep downloads reasonably small; extra pass folders are not required.
+- Keep the editable generator under `tools/` (`tools/synthesize-sfx.py`) and run it through the
+  locked `uv` environment. Give every random source a deterministic seed.
+- No generated audio and no frozen copy of the generator lives in the tree: git history already
+  holds every past version of `tools/synthesize-sfx.py`. A finished pass gets an entry in
+  `tools/sound-lab/passes.json` instead — the commit whose `tools/synthesize-sfx.py` built it (for
+  most passes, the commit that finished that pass), its seed, its extra `--selection`/CLI args, and
+  the SHA-256 of every WAV it writes. `tools/sound-lab.sh` extracts that commit's generator with
+  `git show`, rebuilds it through the locked environment into git-ignored `build/sound-lab/<pass>/`,
+  and refuses to serve anything whose hashes have drifted from what the recipe recorded — the
+  reproducibility guarantee is enforced on every run, not just claimed in prose.
+- A pass is a frozen listening artifact, pinned to the commit that made it, so it keeps rebuilding
+  byte for byte after the generator moves on. Live iteration on the generator itself — before it is
+  worth freezing as a pass — is `uv run python tools/synthesize-sfx.py --output build/sound-lab/scratch
+  --seed <n> --selection <name>` run directly, with no entry in `passes.json` yet.
 
-The current lab rebuilds with:
+**Share a pass as the command to run, never a zip or a committed page.** Point at
+`tools/sound-lab.sh --pass <name>` (default: the newest pass); `--lan` prints an address a phone on
+the same network can open, and `--no-serve` builds and verifies without serving. Nobody downloads
+an `index.html` to listen.
 
-```sh
-uv run python tools/synthesize-sfx.py \
-  --output docs/evidence/copper-lark-sound-lab-2026-09-26-pass-4 \
-  --seed 260926 \
-  --selection subtle-revision
-```
-
-It writes 48 kHz mono PCM16 WAVs, a local A/B page, an ordered comparison and a portable ZIP. It
-does not play audio. Keep the generator's defaults, README and manifest aligned when that behavior
-changes.
+It writes 48 kHz mono PCM16 WAVs and a local A/B page, one clip playing at a time. Keep
+`tools/sound-lab/passes.json`'s recorded hashes aligned with the generator commit they name whenever
+a new pass is added.
 
 ## Make the comparison honest
 
