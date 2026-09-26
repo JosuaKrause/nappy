@@ -23,8 +23,10 @@ from typing import Final
 SAMPLE_RATE: Final = 48_000
 PCM_MAX: Final = 32_767
 TARGET_PEAK: Final = 0.70
+TARGET_RMS_DBFS: Final = -22.5
+TARGET_RMS: Final = 10.0 ** (TARGET_RMS_DBFS / 20.0)
 DEFAULT_SEED: Final = 260_926
-DEFAULT_OUTPUT: Final = Path("docs/evidence/copper-lark-sound-lab-2026-09-26")
+DEFAULT_OUTPUT: Final = Path("docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2")
 ARCHIVE_NAME: Final = "copper-lark-sound-lab.zip"
 
 Signal = list[float]
@@ -43,35 +45,30 @@ RECIPE_NOTES: Final = {
         "scrapes under exponential envelopes."
     ),
     "footsteps-stylized.wav": (
-        "Two pitched impacts: downward sine chirps, a soft second harmonic and brief synthetic "
-        "noise ticks."
+        "Two pitched impacts: downward sine chirps, a soft second harmonic and brief synthetic noise ticks."
     ),
     "stroller-wheels-grounded.wav": (
         "Low-passed rolling noise with slow load variation, four uneven pavement joints and a "
         "restrained axle resonance."
     ),
     "stroller-wheels-stylized.wav": (
-        "A wobbling low oscillator, repeating rounded wheel pulses and bright but band-limited "
-        "joint pips."
+        "A wobbling low oscillator, repeating rounded wheel pulses and bright but band-limited joint pips."
     ),
     "car-horn-grounded.wav": (
-        "A two-frequency horn dyad with quiet upper harmonics, breath noise and mechanical attack "
-        "and release ramps."
+        "A two-frequency horn dyad with quiet upper harmonics, breath noise and mechanical attack and release ramps."
     ),
     "car-horn-stylized.wav": (
-        "An exaggerated two-note honk with a downward pitch scoop, vibrato and a rounded harmonic "
-        "edge."
+        "An exaggerated two-note honk with a downward pitch scoop, vibrato and a rounded harmonic edge."
     ),
     "loudspeaker-crackle-grounded.wav": (
-        "Band-limited hiss, low electrical hum and a seeded set of short irregular electrical "
-        "pops with resonant tails."
+        "Band-limited hiss, low electrical hum and a seeded set of short irregular electrical pops with resonant tails."
     ),
     "loudspeaker-crackle-stylized.wav": (
         "Stepped noise, amplitude-gated buzz and a seeded train of tonal digital spits, kept below "
         "the piercing upper band."
     ),
     "comparison.wav": (
-        "The eight normalized auditions concatenated as grounded then stylized within each pair, "
+        "The eight level-matched auditions concatenated as grounded then stylized within each pair, "
         "with 0.45 seconds inside pairs and 1.0 second between pairs."
     ),
 }
@@ -82,7 +79,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         description="Generate the deterministic Copper lark A/B sound-effects audition.",
         epilog=(
             "example: uv run python tools/synthesize-sfx.py --output "
-            "docs/evidence/copper-lark-sound-lab-2026-09-26 --seed 260926"
+            "docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2 --seed 260926"
         ),
     )
     parser.add_argument(
@@ -133,7 +130,7 @@ def _smooth_gate(t: float, start: float, end: float, ramp: float) -> float:
     return math.sin(0.5 * math.pi * attack) ** 2 * math.sin(0.5 * math.pi * release) ** 2
 
 
-def _finish(values: Signal, target_peak: float = TARGET_PEAK) -> Signal:
+def _finish(values: Signal) -> Signal:
     mean = sum(values) / len(values)
     centered = [value - mean for value in values]
     fade_frames = _frames(0.012)
@@ -142,9 +139,10 @@ def _finish(values: Signal, target_peak: float = TARGET_PEAK) -> Signal:
         centered[index] *= gain
         centered[-1 - index] *= gain
     peak = max(abs(value) for value in centered)
-    if peak == 0.0:
+    rms = math.sqrt(sum(value * value for value in centered) / len(centered))
+    if peak == 0.0 or rms == 0.0:
         raise ValueError("recipe produced silence")
-    scale = target_peak / peak
+    scale = min(TARGET_PEAK / peak, TARGET_RMS / rms)
     finished = [value * scale for value in centered]
     finished[0] = 0.0
     finished[-1] = 0.0
@@ -335,7 +333,9 @@ def _comparison(signals: dict[str, Signal]) -> Signal:
         result.extend(signals[stylized])
         if index != len(PAIRS) - 1:
             result.extend(subject_gap)
-    return _finish(result)
+    result[0] = 0.0
+    result[-1] = 0.0
+    return result
 
 
 def _pcm_bytes(values: Sequence[float]) -> bytes:
@@ -395,7 +395,7 @@ subjects:
 From the repository root, with the locked Python 3.14 environment:
 
 ```sh
-uv run python tools/synthesize-sfx.py --output docs/evidence/copper-lark-sound-lab-2026-09-26 --seed {seed}
+uv run python tools/synthesize-sfx.py --output docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2 --seed {seed}
 ```
 
 The generator defaults to that output directory and seed. It writes files only; it does not play
@@ -403,10 +403,11 @@ audio. The ZIP also carries a copy of the exact generator as `recipe/synthesize-
 
 ## Format and level
 
-All WAVs are 48 kHz, mono, signed PCM16. Each individual audition and the comparison file is
-DC-centered, faded over 12 ms at both boundaries and normalized to a 0.70 linear peak (about
--3.1 dBFS). Equal peak targets make A/B playback comparable while leaving mix headroom. They do
-not make perceived loudness identical, so listen at a comfortable device volume.
+All WAVs are 48 kHz, mono, signed PCM16. Each individual audition is DC-centered, faded over 12 ms
+at both boundaries and set to -22.5 dBFS RMS unless its peak first reaches the 0.70 ceiling (about
+-3.1 dBFS). The comparison preserves those levels. This keeps energy close across the A/B set
+while leaving transient headroom; it is still not a perceptual loudness match, so listen at a
+comfortable device volume.
 
 `manifest.json` records the seed, recipe chain, duration, measured peak and RMS, file hashes and
 the generator hash. The test suite rebuilds two temporary copies and checks them byte for byte in
@@ -422,8 +423,14 @@ def _review_page() -> str:
             f"""<section class="pair">
       <h2>{title}</h2>
       <div class="takes">
-        <article><span>A</span><h3>Grounded</h3><audio controls preload="metadata" src="{grounded}"></audio><a download href="{grounded}">Download WAV</a></article>
-        <article><span>B</span><h3>Stylized</h3><audio controls preload="metadata" src="{stylized}"></audio><a download href="{stylized}">Download WAV</a></article>
+        <article><span>A</span><h3>Grounded</h3>
+          <audio controls preload="metadata" src="{grounded}"></audio>
+          <a download href="{grounded}">Download WAV</a>
+        </article>
+        <article><span>B</span><h3>Stylized</h3>
+          <audio controls preload="metadata" src="{stylized}"></audio>
+          <a download href="{stylized}">Download WAV</a>
+        </article>
       </div>
     </section>"""
         )
@@ -434,7 +441,10 @@ def _review_page() -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Copper lark sound lab</title>
   <style>
-    :root {{ color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: #171816; color: #f2ecdc; }}
+    :root {{
+      color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #171816; color: #f2ecdc;
+    }}
     body {{ max-width: 920px; margin: 0 auto; padding: 40px 20px 72px; }}
     header {{ border: 1px solid #6f765e; padding: 24px; background: #20231f; box-shadow: 7px 7px 0 #0b0c0a; }}
     h1 {{ margin: 0 0 10px; font-size: clamp(2rem, 7vw, 4.5rem); line-height: .92; letter-spacing: -.07em; }}
@@ -446,7 +456,10 @@ def _review_page() -> str:
     .pair > h2 {{ font-size: 1.35rem; border-bottom: 1px solid #6f765e; padding-bottom: 8px; }}
     .takes {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }}
     article {{ position: relative; padding: 18px; background: #292c27; border: 1px solid #545a4b; }}
-    article span {{ float: right; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #ca493d; color: white; font-weight: 800; }}
+    article span {{
+      float: right; display: grid; place-items: center; width: 34px; height: 34px;
+      border-radius: 50%; background: #ca493d; color: white; font-weight: 800;
+    }}
     h3 {{ margin: 0 0 18px; }}
     audio {{ display: block; width: 100%; margin-bottom: 12px; }}
     footer {{ margin-top: 38px; color: #c0bdaf; font-size: .9rem; }}
@@ -455,11 +468,17 @@ def _review_page() -> str:
 <body>
   <header>
     <h1>Copper lark<br>sound lab</h1>
-    <p>Four original procedural effects, each in a tactile grounded treatment and a clearly synthetic treatment. These are listening auditions and are not installed in the game.</p>
-    <div class="actions"><a class="button" href="comparison.wav">Play the ordered comparison</a><a class="button" download href="{ARCHIVE_NAME}">Download the complete ZIP</a><a class="button" href="README.md">Read the recipe notes</a></div>
+    <p>Four original procedural effects, each in a tactile grounded treatment and a clearly
+    synthetic treatment. These are listening auditions and are not installed in the game.</p>
+    <div class="actions">
+      <a class="button" href="comparison.wav">Play the ordered comparison</a>
+      <a class="button" download href="{ARCHIVE_NAME}">Download the complete ZIP</a>
+      <a class="button" href="README.md">Read the recipe notes</a>
+    </div>
   </header>
-  {''.join(cards)}
-  <footer>48 kHz mono PCM16 · common 0.70 peak target · deterministic seed and hashes in <a href="manifest.json">manifest.json</a></footer>
+  {"".join(cards)}
+  <footer>48 kHz mono PCM16 · common RMS target with a 0.70 peak ceiling · deterministic seed and
+  hashes in <a href="manifest.json">manifest.json</a></footer>
 </body>
 </html>
 """
@@ -500,14 +519,18 @@ def generate(output: Path, seed: int) -> None:
         "files": audio_metadata,
         "generator": "tools/synthesize-sfx.py",
         "generator_sha256": hashlib.sha256(generator_data).hexdigest(),
-        "method": "Handwritten procedural synthesis using standard-library oscillators, seeded noise, envelopes and filters.",
-        "mix_target_peak": TARGET_PEAK,
+        "method": (
+            "Handwritten procedural synthesis using standard-library oscillators, seeded noise, envelopes and filters."
+        ),
+        "mix_peak_ceiling": TARGET_PEAK,
+        "mix_target_rms_dbfs": TARGET_RMS_DBFS,
         "reproducibility": {
             "guarantee": (
                 "Two rebuilds are checked byte-for-byte with the tracked generator and locked Python 3.14 environment."
             ),
             "limit": (
-                "No blanket cross-platform bit-identical promise is made because platform math implementations may differ."
+                "No blanket cross-platform bit-identical promise is made because platform math "
+                "implementations may differ."
             ),
         },
         "sample_format": {"bits": 16, "channels": 1, "encoding": "signed PCM", "sample_rate_hz": SAMPLE_RATE},

@@ -12,7 +12,8 @@
 #   - after a SessionStart with source:compact, the main session gets orchestrating again and a
 #     sub-agent's own markers from before the compact are untouched
 #   - each path added to the mapping (src/routes/**, src/city/traffic_signals.gd,
-#     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd) injects its skill
+#     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd, sound recipes and
+#     generated audio) injects its skill
 #   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
 #
@@ -173,6 +174,12 @@ assert_eq "src/ground_shape.gd -> crowd-traffic (not city -- it is not under src
     "crowd-traffic,godot,orchestrating," "$(project_rules_skills ground-shape-session "" "src/ground_shape.gd")"
 assert_eq "src/autoload/telemetry.gd -> telemetry" \
     "godot,orchestrating,telemetry," "$(project_rules_skills telemetry-session "" "src/autoload/telemetry.gd")"
+assert_eq "tools/synthesize-sfx.py -> cli + Python + sound-effects" \
+    "cli-tools,python-tooling,sound-effects," \
+    "$(project_rules_skills sound-recipe-session "" "tools/synthesize-sfx.py")"
+assert_eq "a generated WAV -> sound-effects" \
+    "sound-effects," \
+    "$(project_rules_skills sound-asset-session "" "docs/evidence/sound-lab/example.wav")"
 
 # src/visuals/ holds loader code, not pictures: it gets the GDScript rules and never the
 # PNG-drawing ones, which govern art/illustrated/ alone.

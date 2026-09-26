@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import struct
 import subprocess
 import sys
@@ -93,9 +94,7 @@ class CliHelpTests(unittest.TestCase):
             first = root / "first"
             second = root / "second"
             for output in (first, second):
-                result = self.run_tool(
-                    "synthesize-sfx.py", "--output", str(output), "--seed", "4173", cwd=root
-                )
+                result = self.run_tool("synthesize-sfx.py", "--output", str(output), "--seed", "4173", cwd=root)
                 self.assertEqual(result.returncode, 0, result.stderr)
 
             first_files = {path.name: path.read_bytes() for path in first.iterdir()}
@@ -104,6 +103,7 @@ class CliHelpTests(unittest.TestCase):
 
             manifest: dict[str, Any] = json.loads(first_files["manifest.json"])
             self.assertEqual(set(manifest["files"]), set(SOUND_FILES))
+            audition_rms_db: list[float] = []
             for filename in SOUND_FILES:
                 with self.subTest(wav=filename):
                     path = first / filename
@@ -115,13 +115,19 @@ class CliHelpTests(unittest.TestCase):
                         raw = wav_file.readframes(wav_file.getnframes())
                     samples = [value[0] for value in struct.iter_unpack("<h", raw)]
                     peak = max(abs(value) for value in samples)
+                    rms = math.sqrt(sum(value * value for value in samples) / len(samples))
                     self.assertGreater(peak, 2_000, "audio is effectively silent")
                     self.assertLess(peak, 0.75 * 32_767, "audio lacks the documented headroom")
                     self.assertEqual(samples[0], 0)
                     self.assertEqual(samples[-1], 0)
                     self.assertLess(max(abs(value) for value in samples[:16]), 700)
                     self.assertLess(max(abs(value) for value in samples[-16:]), 700)
-                    self.assertEqual(manifest["files"][filename]["sha256"], hashlib.sha256(path.read_bytes()).hexdigest())
+                    if filename != "comparison.wav":
+                        audition_rms_db.append(20.0 * math.log10(rms / 32_767))
+                    self.assertEqual(
+                        manifest["files"][filename]["sha256"], hashlib.sha256(path.read_bytes()).hexdigest()
+                    )
+            self.assertLess(max(audition_rms_db) - min(audition_rms_db), 1.0, "A/B levels diverge")
 
             page = first_files["index.html"].decode()
             readme = first_files["README.md"].decode()
