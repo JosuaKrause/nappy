@@ -46,8 +46,13 @@ deduplicate them by name, or mark one complete because the other is.
 **Old numbers are never reused, and new names need no renumbering.** A queue entry, its items,
 its decision, a review item and a playtest are each a file of their own, named
 `<date>-<adjective>-<animal>` by `tools/new-name.sh` (the playtest-feedback skill), so two branches
-never edit the same record's file, and all but never draw the same pair of words; when two do,
-`tools/lint.sh` rejects the second use and that branch draws a new name. The milestone numbers and
+never edit the same record's file, and all but never draw the same pair of words. When two do,
+`tools/lint.sh` rejects the second use wherever the names can tell two things apart: a pair under
+two dates, a playtest's pair used by anything else, or a decision or review item drawn without
+`--entry` (its heading says "not from an entry") beside anything else of the same date and pair;
+that branch draws a new name. Two entries filed under the same date and pair meet instead as an
+add/add conflict on the folder's `README.md`, and the second takes a new name the same way. A name
+typed by hand counts as taken like any other. The milestone numbers and
 `PLAYTEST-NN` files that already exist keep their numbers, and no new thing takes a number.
 
 **One case still collides: a branch from before the queue was files** that filed a new entry

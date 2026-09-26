@@ -19,8 +19,8 @@
 # docs/evidence/README.md, whose job is filenames that embed hashes.
 #
 # Three checks are about the queue's layout rather than a sentence, and run on the history too:
-# a name (<date>-<adjective>-<animal>, the words from tools/names/) used for two different things
-# across docs/todo, docs/decisions, docs/review and docs/playtests; a checkbox anywhere under
+# a name (<date>-<word>-<word>) used for two different things across docs/todo, docs/decisions,
+# docs/review and docs/playtests; a checkbox anywhere under
 # docs/todo/, where finishing an item deletes its file; and a link in docs/TODO.md to an entry
 # folder that does not exist.
 #
@@ -174,17 +174,15 @@ lint_order_links() {
     done < <(grep -nE '\]\(todo/[^)/]+' "$f")
 }
 
-# One pair of words is one thing: a name <date>-<adjective>-<animal> (words from tools/names/, and
-# a -2, -3 suffix for a second decision or review item from one entry) may appear under two dates,
-# or as both a playtest and an entry, nowhere. An entry's folder, its decision and its review items
-# share the name on purpose; a milestone-numbered or slug-named file is not a name and is skipped.
+# One pair of words is one thing. A name is <date>-<word>-<word>, with a -2, -3 suffix for a second
+# decision or review item from one entry; the words need not be in tools/names/, since a name typed
+# by hand is taken all the same. A pair may appear under two dates, or as a playtest and as
+# anything else, nowhere. Under one date, an entry's folder, its decisions and its review items
+# share the name on purpose; a decision or review item new-name.sh drew without --entry says so in
+# its heading ("· not from an entry"), and may share its name with nothing. A milestone-numbered
+# file, or a record named by a longer heading slug, is not a name and is skipped.
 lint_duplicate_names() {
-    local folder path base
-    [[ -f tools/names/adjectives.txt && -f tools/names/animals.txt ]] || {
-        echo "tools/lint.sh: tools/names/adjectives.txt or animals.txt is missing" >&2
-        hits=$((hits + 1))
-        return
-    }
+    local folder path base own
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         printf '%s\n' "$line"
@@ -195,24 +193,34 @@ lint_duplicate_names() {
             for path in "$folder"/*; do
                 [[ -e "$path" ]] || continue
                 base="${path##*/}"
-                printf '%s %s\n' "$folder" "${base%.md}"
+                base="${base%.md}"
+                [[ "$base" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z]+-[a-z]+(-[0-9]+)?$ ]] || continue
+                own=0
+                if [[ "$folder" == docs/decisions || "$folder" == docs/review ]] \
+                    && head -n 1 "$path" | grep -qF '· not from an entry'; then
+                    own=1
+                fi
+                printf '%s %s %s\n' "$folder" "$base" "$own"
             done
         done | awk '
-            FILENAME == ARGV[1] { adj[$1] = 1; next }
-            FILENAME == ARGV[2] { ani[$1] = 1; next }
             {
-                folder = $1; base = $2
-                if (base !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-/) next
+                folder = $1; base = $2; own = $3
                 n = split(substr(base, 12), part, "-")
-                if (n < 2 || n > 3 || !(part[1] in adj) || !(part[2] in ani)) next
-                if (n == 3 && part[3] !~ /^[0-9]+$/) next
                 pair = part[1] "-" part[2]
+                date = substr(base, 1, 10)
                 kind = (folder == "docs/playtests") ? "playtest" : "entry"
-                key = substr(base, 1, 10) " " kind
-                if (!((pair, key) in seen)) { seen[pair, key] = 1; count[pair]++; where[pair] = where[pair] " " folder "/" base }
+                key = date " " kind
+                if (!((pair, key) in seen)) { seen[pair, key] = 1; count[pair]++ }
+                files[pair, key]++
+                if (own) owned[pair, key] = 1
+                where[pair] = where[pair] " " folder "/" base
             }
-            END { for (p in count) if (count[p] > 1) printf "%s: duplicate name, used for more than one thing:%s\n", p, where[p] }
-        ' tools/names/adjectives.txt tools/names/animals.txt -
+            END {
+                for (k in owned) if (files[k] > 1) { split(k, kp, SUBSEP); bad[kp[1]] = 1 }
+                for (p in count) if (count[p] > 1) bad[p] = 1
+                for (p in bad) printf "%s: duplicate name, used for more than one thing:%s\n", p, where[p]
+            }
+        '
     )
 }
 

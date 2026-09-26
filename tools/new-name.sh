@@ -15,7 +15,8 @@
 #
 # A decision and a review item usually take the name of the entry they come from (`--entry`), as
 # `<entry name>.md`, and `<entry name>-2.md` and on when that is taken. `--entry` accepts the full
-# name, its two words, or an old entry's milestone number (M210).
+# name, its two words, or an old entry's milestone number (M210). One drawn without `--entry` gets
+# a new pair, and its heading ends "· not from an entry", which tools/lint.sh reads.
 #
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
@@ -186,7 +187,12 @@ case "$kind" in
         [[ "$kind" == review ]] && sub="review"
         mkdir -p "$root/docs/$sub"
         name="$(free_suffix "$root/docs/$sub" "$base")"
-        printf '# %s — %s · %s\n\n' "$words" "$title" "$day" > "$root/docs/$sub/$name.md"
+        # Drawn without --entry, its name is its own, and the heading says so: under one date the
+        # lint lets an entry, its decisions and its review items share a name, and this is how it
+        # tells a fresh draw that happens to match another branch's entry from one of those.
+        own=""
+        [[ -z "$entry" ]] && own=" · not from an entry"
+        printf '# %s — %s · %s%s\n\n' "$words" "$title" "$day" "$own" > "$root/docs/$sub/$name.md"
         written="docs/$sub/$name.md"
         ;;
     playtest)

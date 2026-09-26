@@ -386,6 +386,12 @@ first="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look
 second="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look again" 2>/dev/null)"
 check_that "new-name.sh names a review item after its entry, and a second one with -2" \
     '[[ "$first" == 2026-09-27-busy-otter && "$second" == 2026-09-27-busy-otter-2 ]]'
+printf 'otter\nheron\n' > "$names_repo/tools/names/animals.txt"
+fresh="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-29 decision "Moved out of a docstring" 2>/dev/null)"
+check_that "new-name.sh marks a decision drawn without --entry as not from an entry" \
+    '[[ "$fresh" == 2026-09-29-busy-heron ]] && grep -q "· not from an entry$" "$names_repo/docs/decisions/$fresh.md"'
+rm -f "$names_repo/docs/decisions/2026-09-29-busy-heron.md"
+printf 'badger\notter\n' > "$names_repo/tools/names/animals.txt"
 closed="$(cd "$names_repo" && ./tools/new-name.sh decision --entry M210 "Built" 2>/dev/null)"
 check_that "new-name.sh names an old entry's decision by its folder" \
     '[[ "$closed" == 2026-09-26-M210 && -s "$names_repo/docs/decisions/2026-09-26-M210.md" ]]'
@@ -421,6 +427,24 @@ lint_in_names_repo docs/playtests/2026-09-28-busy-otter.md
 status=$?
 rm "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
 check_that "lint.sh rejects a pair of words used again for another thing" '[[ $status -ne 0 ]]'
+printf '# busy-otter — Drawn fresh · 2026-09-27 · not from an entry\n' \
+    > "$names_repo/docs/decisions/2026-09-27-busy-otter.md"
+lint_in_names_repo docs/decisions/2026-09-27-busy-otter.md
+status=$?
+rm "$names_repo/docs/decisions/2026-09-27-busy-otter.md"
+check_that "lint.sh rejects a decision drawn without --entry that shares its date and pair with an entry" \
+    '[[ $status -ne 0 ]]'
+printf '# Playtest copper-lark — Typed by hand\n' > "$names_repo/docs/playtests/2026-09-26-copper-lark.md"
+printf '# copper-lark — Another thing · 2026-09-28 · not from an entry\n' \
+    > "$names_repo/docs/decisions/2026-09-28-copper-lark.md"
+lint_in_names_repo docs/decisions/2026-09-28-copper-lark.md
+status=$?
+rm "$names_repo/docs/decisions/2026-09-28-copper-lark.md"
+check_that "lint.sh counts a name whose words are not in tools/names/ as taken" '[[ $status -ne 0 ]]'
+lint_in_names_repo docs/playtests/2026-09-26-copper-lark.md
+status=$?
+rm "$names_repo/docs/playtests/2026-09-26-copper-lark.md"
+check_that "lint.sh passes a name typed by hand that nothing else uses" '[[ $status -eq 0 ]]'
 printf -- '- [ ] **Do it**\n' > "$names_repo/docs/todo/2026-09-27-busy-otter/do-it.md"
 lint_in_names_repo docs/todo/2026-09-27-busy-otter/do-it.md
 status=$?
