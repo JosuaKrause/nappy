@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 TOOLS = Path(__file__).resolve().parent
+PROJECT_ROOT = TOOLS.parent
 
 # Every tools/*.py a person or a script runs directly. Not the test_*.py files themselves --
 # unittest.main() already gives every one of them -h and rejects an unknown flag, which is the
@@ -36,14 +37,10 @@ TOOLS = Path(__file__).resolve().parent
 ENTRY_POINTS = ("clip.py", "reference.py", "remove-checkerboard.py", "codex-hooks.py", "synthesize-sfx.py")
 
 SOUND_FILES = (
-    "footsteps-grounded.wav",
-    "footsteps-stylized.wav",
-    "stroller-wheels-grounded.wav",
-    "stroller-wheels-stylized.wav",
-    "car-horn-grounded.wav",
-    "car-horn-stylized.wav",
-    "loudspeaker-crackle-grounded.wav",
-    "loudspeaker-crackle-stylized.wav",
+    "footsteps-old-grounded.wav",
+    "footsteps-revised-grounded.wav",
+    "stroller-wheels-old-grounded.wav",
+    "stroller-wheels-revised-grounded.wav",
     "comparison.wav",
 )
 
@@ -94,15 +91,20 @@ class CliHelpTests(unittest.TestCase):
             first = root / "first"
             second = root / "second"
             for output in (first, second):
-                result = self.run_tool("synthesize-sfx.py", "--output", str(output), "--seed", "4173", cwd=root)
+                result = self.run_tool("synthesize-sfx.py", "--output", str(output), "--seed", "260926", cwd=root)
                 self.assertEqual(result.returncode, 0, result.stderr)
 
-            first_files = {path.name: path.read_bytes() for path in first.iterdir()}
-            second_files = {path.name: path.read_bytes() for path in second.iterdir()}
+            first_files = {
+                path.relative_to(first).as_posix(): path.read_bytes() for path in first.rglob("*") if path.is_file()
+            }
+            second_files = {
+                path.relative_to(second).as_posix(): path.read_bytes() for path in second.rglob("*") if path.is_file()
+            }
             self.assertEqual(first_files, second_files, "same seed produced different output bytes")
 
             manifest: dict[str, Any] = json.loads(first_files["manifest.json"])
             self.assertEqual(set(manifest["files"]), set(SOUND_FILES))
+            self.assertEqual(manifest["selection"], "grounded-revision")
             audition_rms_db: list[float] = []
             for filename in SOUND_FILES:
                 with self.subTest(wav=filename):
@@ -129,16 +131,27 @@ class CliHelpTests(unittest.TestCase):
                     )
             self.assertLess(max(audition_rms_db) - min(audition_rms_db), 1.0, "A/B levels diverge")
 
+            pass_one = PROJECT_ROOT / "docs/evidence/copper-lark-sound-lab-2026-09-26"
+            self.assertEqual(
+                first_files["footsteps-old-grounded.wav"], (pass_one / "footsteps-grounded.wav").read_bytes()
+            )
+            self.assertEqual(
+                first_files["stroller-wheels-old-grounded.wav"],
+                (pass_one / "stroller-wheels-grounded.wav").read_bytes(),
+            )
+
             page = first_files["index.html"].decode()
             readme = first_files["README.md"].decode()
             for filename in SOUND_FILES:
                 self.assertIn(filename, page if filename == "comparison.wav" else page + readme)
             self.assertIn("copper-lark-sound-lab.zip", page)
+            self.assertIn("other.pause()", page)
+            self.assertIn("other.currentTime = 0", page)
 
             with zipfile.ZipFile(first / "copper-lark-sound-lab.zip") as archive:
                 names = set(archive.namelist())
                 self.assertEqual(names, set(manifest["archive_contents"]))
-                for name in names - {"recipe/synthesize-sfx.py"}:
+                for name in names:
                     self.assertEqual(archive.read(name), first_files[name], f"archive copy differs: {name}")
                 self.assertEqual(archive.read("recipe/synthesize-sfx.py"), (TOOLS / "synthesize-sfx.py").read_bytes())
 

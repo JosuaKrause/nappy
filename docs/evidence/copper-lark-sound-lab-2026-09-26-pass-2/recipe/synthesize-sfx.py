@@ -26,47 +26,17 @@ TARGET_PEAK: Final = 0.70
 TARGET_RMS_DBFS: Final = -22.5
 TARGET_RMS: Final = 10.0 ** (TARGET_RMS_DBFS / 20.0)
 DEFAULT_SEED: Final = 260_926
-DEFAULT_OUTPUT: Final = Path("docs/evidence/copper-lark-sound-lab-2026-09-26-pass-3")
+DEFAULT_OUTPUT: Final = Path("docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2")
 ARCHIVE_NAME: Final = "copper-lark-sound-lab.zip"
 
 Signal = list[float]
 Recipe = Callable[[int], Signal]
-Pair = tuple[str, str, str, str, str]
 
-FULL_PAIRS: Final[tuple[Pair, ...]] = (
-    ("Footsteps", "Grounded", "footsteps-grounded.wav", "Stylized", "footsteps-stylized.wav"),
-    (
-        "Stroller wheels",
-        "Grounded",
-        "stroller-wheels-grounded.wav",
-        "Stylized",
-        "stroller-wheels-stylized.wav",
-    ),
-    ("Car horn", "Grounded", "car-horn-grounded.wav", "Stylized", "car-horn-stylized.wav"),
-    (
-        "Loudspeaker crackle",
-        "Grounded",
-        "loudspeaker-crackle-grounded.wav",
-        "Stylized",
-        "loudspeaker-crackle-stylized.wav",
-    ),
-)
-
-REVISION_PAIRS: Final[tuple[Pair, ...]] = (
-    (
-        "Footsteps",
-        "Old grounded (pass 1)",
-        "footsteps-old-grounded.wav",
-        "Revised grounded",
-        "footsteps-revised-grounded.wav",
-    ),
-    (
-        "Stroller wheels",
-        "Old grounded (pass 1)",
-        "stroller-wheels-old-grounded.wav",
-        "Revised grounded",
-        "stroller-wheels-revised-grounded.wav",
-    ),
+PAIRS: Final = (
+    ("Footsteps", "footsteps-grounded.wav", "footsteps-stylized.wav"),
+    ("Stroller wheels", "stroller-wheels-grounded.wav", "stroller-wheels-stylized.wav"),
+    ("Car horn", "car-horn-grounded.wav", "car-horn-stylized.wav"),
+    ("Loudspeaker crackle", "loudspeaker-crackle-grounded.wav", "loudspeaker-crackle-stylized.wav"),
 )
 
 RECIPE_NOTES: Final = {
@@ -97,26 +67,9 @@ RECIPE_NOTES: Final = {
         "Stepped noise, amplitude-gated buzz and a seeded train of tonal digital spits, kept below "
         "the piercing upper band."
     ),
-    "footsteps-old-grounded.wav": (
-        "The byte-preserved pass-1 grounded footsteps the player heard: falling low sine thumps, "
-        "low-passed grit and short filtered scrapes, with the original peak-only finishing stage."
-    ),
-    "footsteps-revised-grounded.wav": (
-        "Two lighter heel-and-toe contacts: short midrange sole taps, restrained surface texture "
-        "and a small scuff, with the former low thump removed and transient peaks gently compressed."
-    ),
-    "stroller-wheels-old-grounded.wav": (
-        "The byte-preserved pass-1 grounded stroller the player heard: low-passed rolling noise, "
-        "slow load variation, pavement joints and axle resonance, with the original peak-only "
-        "finishing stage."
-    ),
-    "stroller-wheels-revised-grounded.wav": (
-        "Dry, closely spaced wheel contacts with a quiet rotation pulse and paired seeded mechanism "
-        "rattles; no continuous broad noise wash."
-    ),
     "comparison.wav": (
-        "The selected level-matched auditions concatenated A then B within each pair, with 0.45 "
-        "seconds inside pairs and 1.0 second between pairs."
+        "The eight level-matched auditions concatenated as grounded then stylized within each pair, "
+        "with 0.45 seconds inside pairs and 1.0 second between pairs."
     ),
 }
 
@@ -126,8 +79,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         description="Generate the deterministic Copper lark A/B sound-effects audition.",
         epilog=(
             "example: uv run python tools/synthesize-sfx.py --output "
-            "docs/evidence/copper-lark-sound-lab-2026-09-26-pass-3 --seed 260926 "
-            "--selection grounded-revision"
+            "docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2 --seed 260926"
         ),
     )
     parser.add_argument(
@@ -143,17 +95,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_SEED,
         metavar="INTEGER",
         help=f"master seed for every recipe (default: {DEFAULT_SEED})",
-    )
-    parser.add_argument(
-        "--selection",
-        choices=("grounded-revision", "full"),
-        default="grounded-revision",
-        help="audition set to generate (default: grounded-revision)",
-    )
-    parser.add_argument(
-        "--repack-existing",
-        action="store_true",
-        help="rebuild only the ZIP from existing output files; do not synthesize or change WAVs",
     )
     return parser.parse_args(argv)
 
@@ -189,7 +130,7 @@ def _smooth_gate(t: float, start: float, end: float, ramp: float) -> float:
     return math.sin(0.5 * math.pi * attack) ** 2 * math.sin(0.5 * math.pi * release) ** 2
 
 
-def _prepare(values: Signal) -> Signal:
+def _finish(values: Signal) -> Signal:
     mean = sum(values) / len(values)
     centered = [value - mean for value in values]
     fade_frames = _frames(0.012)
@@ -197,23 +138,6 @@ def _prepare(values: Signal) -> Signal:
         gain = math.sin(0.5 * math.pi * index / fade_frames) ** 2
         centered[index] *= gain
         centered[-1 - index] *= gain
-    return centered
-
-
-def _finish_peak_only(values: Signal) -> Signal:
-    centered = _prepare(values)
-    peak = max(abs(value) for value in centered)
-    if peak == 0.0:
-        raise ValueError("recipe produced silence")
-    scale = TARGET_PEAK / peak
-    finished = [value * scale for value in centered]
-    finished[0] = 0.0
-    finished[-1] = 0.0
-    return finished
-
-
-def _finish(values: Signal) -> Signal:
-    centered = _prepare(values)
     peak = max(abs(value) for value in centered)
     rms = math.sqrt(sum(value * value for value in centered) / len(centered))
     if peak == 0.0 or rms == 0.0:
@@ -225,19 +149,7 @@ def _finish(values: Signal) -> Signal:
     return finished
 
 
-def _compress_peaks(values: Signal, threshold_fraction: float, ratio: float) -> Signal:
-    peak = max(abs(value) for value in values)
-    threshold = peak * threshold_fraction
-    compressed: Signal = []
-    for value in values:
-        magnitude = abs(value)
-        if magnitude > threshold:
-            magnitude = threshold + (magnitude - threshold) / ratio
-        compressed.append(math.copysign(magnitude, value))
-    return compressed
-
-
-def _footsteps_grounded_raw(seed: int) -> Signal:
+def footsteps_grounded(seed: int) -> Signal:
     count = _frames(1.15)
     rng = _rng(seed, "footsteps-grounded")
     grit = _lowpass(_noise(count, rng), 2_600.0)
@@ -251,38 +163,7 @@ def _footsteps_grounded_raw(seed: int) -> Signal:
             contact = grit[index] * math.exp(-46.0 * tau)
             drag = scrape[index] * _smooth_gate(tau, 0.025, 0.19, 0.025)
             values[index] += weight * (0.84 * thud + 0.27 * contact + 0.12 * drag)
-    return values
-
-
-def footsteps_grounded(seed: int) -> Signal:
-    return _finish(_footsteps_grounded_raw(seed))
-
-
-def footsteps_original_grounded(seed: int) -> Signal:
-    return _finish_peak_only(_footsteps_grounded_raw(seed))
-
-
-def footsteps_revised_grounded(seed: int) -> Signal:
-    count = _frames(1.15)
-    rng = _rng(seed, "footsteps-revised-grounded")
-    sole = _lowpass(_noise(count, rng), 3_200.0)
-    scuff = _lowpass(_noise(count, rng), 1_500.0)
-    values = [0.0] * count
-    for start, weight in ((0.14, 1.0), (0.69, 0.88)):
-        for index in range(round(start * SAMPLE_RATE), min(count, round((start + 0.16) * SAMPLE_RATE))):
-            tau = index / SAMPLE_RATE - start
-            heel_phase = 2.0 * math.pi * (205.0 * tau - 170.0 * tau * tau)
-            heel = math.sin(heel_phase) * math.exp(-52.0 * tau)
-            contact = sole[index] * math.exp(-82.0 * tau)
-            drag = scuff[index] * _smooth_gate(tau, 0.018, 0.155, 0.022)
-            values[index] += weight * (0.20 * heel + 0.15 * contact + 0.13 * drag)
-
-        toe_start = start + 0.047
-        for index in range(round(toe_start * SAMPLE_RATE), min(count, round((toe_start + 0.075) * SAMPLE_RATE))):
-            tau = index / SAMPLE_RATE - toe_start
-            toe = math.sin(2.0 * math.pi * 315.0 * tau) * math.exp(-66.0 * tau)
-            values[index] += weight * (0.07 * toe + 0.04 * sole[index] * math.exp(-105.0 * tau))
-    return _finish(_compress_peaks(values, 0.28, 4.0))
+    return _finish(values)
 
 
 def footsteps_stylized(seed: int) -> Signal:
@@ -302,7 +183,7 @@ def footsteps_stylized(seed: int) -> Signal:
     return _finish(values)
 
 
-def _stroller_wheels_grounded_raw(seed: int) -> Signal:
+def stroller_wheels_grounded(seed: int) -> Signal:
     count = _frames(2.2)
     rng = _rng(seed, "stroller-wheels-grounded")
     raw_noise = _noise(count, rng)
@@ -319,50 +200,6 @@ def _stroller_wheels_grounded_raw(seed: int) -> Signal:
             bump = math.sin(2.0 * math.pi * 104.0 * tau) * math.exp(-42.0 * tau)
             axle = math.sin(2.0 * math.pi * 610.0 * tau) * math.exp(-55.0 * tau)
             values[index] += weight * (0.48 * bump + 0.07 * axle)
-    return values
-
-
-def stroller_wheels_grounded(seed: int) -> Signal:
-    return _finish(_stroller_wheels_grounded_raw(seed))
-
-
-def stroller_wheels_original_grounded(seed: int) -> Signal:
-    return _finish_peak_only(_stroller_wheels_grounded_raw(seed))
-
-
-def stroller_wheels_revised_grounded(seed: int) -> Signal:
-    count = _frames(2.2)
-    rng = _rng(seed, "stroller-wheels-revised-grounded")
-    contact = _lowpass(_noise(count, rng), 2_100.0)
-    values = [0.0] * count
-
-    for index in range(count):
-        t = index / SAMPLE_RATE
-        rotation = max(0.0, math.sin(2.0 * math.pi * 4.35 * t)) ** 8
-        values[index] = 0.018 * rotation * math.sin(2.0 * math.pi * 92.0 * t)
-
-    rolling_starts: list[float] = []
-    start = 0.09
-    while start < 2.11:
-        rolling_starts.append(start + rng.uniform(-0.005, 0.005))
-        start += 0.113 + rng.uniform(-0.004, 0.004)
-    for contact_index, start in enumerate(rolling_starts):
-        weight = 0.75 + 0.13 * (contact_index % 3)
-        for index in range(round(start * SAMPLE_RATE), min(count, round((start + 0.047) * SAMPLE_RATE))):
-            tau = index / SAMPLE_RATE - start
-            tire = contact[index] * math.exp(-105.0 * tau)
-            bump = math.sin(2.0 * math.pi * 142.0 * tau) * math.exp(-78.0 * tau)
-            values[index] += weight * (0.12 * tire + 0.17 * bump)
-
-    for start in (0.26, 0.62, 0.98, 1.35, 1.72, 2.03):
-        for offset, pitch, weight in ((0.0, 730.0, 0.08), (0.017, 1_080.0, 0.052)):
-            click_start = start + offset + rng.uniform(-0.002, 0.002)
-            for index in range(
-                round(click_start * SAMPLE_RATE), min(count, round((click_start + 0.028) * SAMPLE_RATE))
-            ):
-                tau = index / SAMPLE_RATE - click_start
-                rattle = math.sin(2.0 * math.pi * pitch * tau) * math.exp(-135.0 * tau)
-                values[index] += weight * rattle
     return _finish(values)
 
 
@@ -474,7 +311,7 @@ def loudspeaker_crackle_stylized(seed: int) -> Signal:
     return _finish(values)
 
 
-FULL_RECIPES: Final[dict[str, Recipe]] = {
+RECIPES: Final[dict[str, Recipe]] = {
     "footsteps-grounded.wav": footsteps_grounded,
     "footsteps-stylized.wav": footsteps_stylized,
     "stroller-wheels-grounded.wav": stroller_wheels_grounded,
@@ -485,31 +322,16 @@ FULL_RECIPES: Final[dict[str, Recipe]] = {
     "loudspeaker-crackle-stylized.wav": loudspeaker_crackle_stylized,
 }
 
-REVISION_RECIPES: Final[dict[str, Recipe]] = {
-    "footsteps-old-grounded.wav": footsteps_original_grounded,
-    "footsteps-revised-grounded.wav": footsteps_revised_grounded,
-    "stroller-wheels-old-grounded.wav": stroller_wheels_original_grounded,
-    "stroller-wheels-revised-grounded.wav": stroller_wheels_revised_grounded,
-}
 
-
-def _configuration(selection: str) -> tuple[tuple[Pair, ...], dict[str, Recipe]]:
-    if selection == "grounded-revision":
-        return REVISION_PAIRS, REVISION_RECIPES
-    if selection == "full":
-        return FULL_PAIRS, FULL_RECIPES
-    raise ValueError(f"unknown selection: {selection}")
-
-
-def _comparison(signals: dict[str, Signal], pairs: Sequence[Pair]) -> Signal:
+def _comparison(signals: dict[str, Signal]) -> Signal:
     result: Signal = []
     pair_gap = [0.0] * _frames(0.45)
     subject_gap = [0.0] * _frames(1.0)
-    for index, (_, _, first, _, second) in enumerate(pairs):
-        result.extend(signals[first])
+    for index, (_, grounded, stylized) in enumerate(PAIRS):
+        result.extend(signals[grounded])
         result.extend(pair_gap)
-        result.extend(signals[second])
-        if index != len(pairs) - 1:
+        result.extend(signals[stylized])
+        if index != len(PAIRS) - 1:
             result.extend(subject_gap)
     result[0] = 0.0
     result[-1] = 0.0
@@ -549,29 +371,12 @@ def _audio_metadata(filename: str, values: Sequence[float], data: bytes) -> dict
     }
 
 
-def _comparison_order(pairs: Sequence[Pair]) -> list[str]:
-    return [filename for _, _, first, _, second in pairs for filename in (first, second)]
+def _comparison_order() -> list[str]:
+    return [filename for _, grounded, stylized in PAIRS for filename in (grounded, stylized)]
 
 
-def _readme(seed: int, selection: str, pairs: Sequence[Pair]) -> str:
-    order = "\n".join(f"{index}. `{name}`" for index, name in enumerate(_comparison_order(pairs), 1))
-    if selection == "grounded-revision":
-        comparison_description = (
-            "Open `index.html` for the focused controls. A is the preserved old grounded take and "
-            "B is its revised grounded take."
-        )
-        level_description = (
-            "The revised WAVs are DC-centered, faded over 12 ms at both boundaries and set to "
-            "-22.5 dBFS RMS unless their peak first reaches the 0.70 ceiling (about -3.1 dBFS). "
-            "The OLD WAVs are byte-identical to pass 1 and retain its original 0.70 peak-only "
-            "finishing stage."
-        )
-    else:
-        comparison_description = "Open `index.html` for labeled A/B controls. A is grounded and B is stylized."
-        level_description = (
-            "Each WAV is DC-centered, faded over 12 ms at both boundaries and set to -22.5 dBFS "
-            "RMS unless its peak first reaches the 0.70 ceiling (about -3.1 dBFS)."
-        )
+def _readme(seed: int) -> str:
+    order = "\n".join(f"{index}. `{name}`" for index, name in enumerate(_comparison_order(), 1))
     return f"""# Copper lark sound lab
 
 This folder is a listening audition. It is not installed in the game and makes no claim that the
@@ -579,69 +384,56 @@ sounds are realistic or approved. Every sound comes from the tracked Python reci
 seeded noise, envelopes and simple filters, with no recordings, downloads, sample libraries or
 pretrained audio.
 
-{comparison_description} `comparison.wav` plays this order, with 0.45 seconds between A and B and
-1.0 second between subjects:
+Open `index.html` for labeled A/B controls. The grounded treatment is A and the stylized treatment
+is B. `comparison.wav` plays this order, with 0.45 seconds between A and B and 1.0 second between
+subjects:
 
 {order}
 
 ## Rebuild
 
-This pass carries its frozen generator inside the ZIP as `recipe/synthesize-sfx.py`. After extracting
-the ZIP, run that copy through the repository's locked Python 3.14 environment into a scratch folder:
+From the repository root, with the locked Python 3.14 environment:
 
 ```sh
-uv run python /path/to/extracted/recipe/synthesize-sfx.py \
-  --output /path/to/rebuilt-pass \
-  --seed {seed} \
-  --selection {selection}
+uv run python tools/synthesize-sfx.py --output docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2 --seed {seed}
 ```
 
-The frozen recipe writes files only; it does not play audio. Rebuilding into scratch keeps the
-submitted pass intact.
+The generator defaults to that output directory and seed. It writes files only; it does not play
+audio. The ZIP also carries a copy of the exact generator as `recipe/synthesize-sfx.py`.
 
 ## Format and level
 
-All WAVs are 48 kHz, mono, signed PCM16. {level_description} The comparison preserves those levels.
-This is not a perceptual loudness match, so listen at a comfortable device volume.
+All WAVs are 48 kHz, mono, signed PCM16. Each individual audition is DC-centered, faded over 12 ms
+at both boundaries and set to -22.5 dBFS RMS unless its peak first reaches the 0.70 ceiling (about
+-3.1 dBFS). The comparison preserves those levels. This keeps energy close across the A/B set
+while leaving transient headroom; it is still not a perceptual loudness match, so listen at a
+comfortable device volume.
 
 `manifest.json` records the seed, recipe chain, duration, measured peak and RMS, file hashes and
-the frozen generator hash. The current pass is rebuilt twice and compared byte for byte in the
-pinned environment before submission. Floating-point math implementations can differ across
-operating systems, so this is not a blanket promise of cross-platform bit identity.
+the generator hash. The test suite rebuilds two temporary copies and checks them byte for byte in
+the pinned environment. Floating-point math implementations can differ across operating systems,
+so this is not a blanket promise of cross-platform bit identity.
 """
 
 
-def _review_page(selection: str, pairs: Sequence[Pair]) -> str:
+def _review_page() -> str:
     cards = []
-    for title, first_label, first, second_label, second in pairs:
+    for title, grounded, stylized in PAIRS:
         cards.append(
             f"""<section class="pair">
       <h2>{title}</h2>
       <div class="takes">
-        <article><span>A</span><h3>{first_label}</h3>
-          <audio controls preload="metadata" src="{first}"></audio>
-          <a download href="{first}">Download WAV</a>
+        <article><span>A</span><h3>Grounded</h3>
+          <audio controls preload="metadata" src="{grounded}"></audio>
+          <a download href="{grounded}">Download WAV</a>
         </article>
-        <article><span>B</span><h3>{second_label}</h3>
-          <audio controls preload="metadata" src="{second}"></audio>
-          <a download href="{second}">Download WAV</a>
+        <article><span>B</span><h3>Stylized</h3>
+          <audio controls preload="metadata" src="{stylized}"></audio>
+          <a download href="{stylized}">Download WAV</a>
         </article>
       </div>
     </section>"""
         )
-    introduction = (
-        "Two grounded recognition revisions. Compare each preserved old take with a lighter or "
-        "more mechanically distinct revision. No stylized sounds are included in this pass."
-        if selection == "grounded-revision"
-        else (
-            "Four original procedural effects, each in a tactile grounded treatment and a clearly synthetic treatment."
-        )
-    )
-    level_summary = (
-        "OLD is byte-identical pass 1 · revised uses a -22.5 dBFS RMS target and 0.70 peak ceiling"
-        if selection == "grounded-revision"
-        else "common RMS target with a 0.70 peak ceiling"
-    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -676,7 +468,8 @@ def _review_page(selection: str, pairs: Sequence[Pair]) -> str:
 <body>
   <header>
     <h1>Copper lark<br>sound lab</h1>
-    <p>{introduction} These are listening auditions and are not installed in the game.</p>
+    <p>Four original procedural effects, each in a tactile grounded treatment and a clearly
+    synthetic treatment. These are listening auditions and are not installed in the game.</p>
     <div class="actions">
       <a class="button" href="comparison.wav">Play the ordered comparison</a>
       <a class="button" download href="{ARCHIVE_NAME}">Download the complete ZIP</a>
@@ -684,24 +477,14 @@ def _review_page(selection: str, pairs: Sequence[Pair]) -> str:
     </div>
   </header>
   {"".join(cards)}
-  <footer>48 kHz mono PCM16 · {level_summary} · deterministic seed and
+  <footer>48 kHz mono PCM16 · common RMS target with a 0.70 peak ceiling · deterministic seed and
   hashes in <a href="manifest.json">manifest.json</a></footer>
-  <script>
-    const players = [...document.querySelectorAll("audio")];
-    for (const player of players) {{
-      player.addEventListener("play", () => {{
-        for (const other of players) {{
-          if (other !== player) {{ other.pause(); other.currentTime = 0; }}
-        }}
-      }});
-    }}
-  </script>
 </body>
 </html>
 """
 
 
-def _write_archive(output: Path, filenames: Sequence[str]) -> None:
+def _write_archive(output: Path, filenames: Sequence[str], generator_data: bytes) -> None:
     archive_path = output / ARCHIVE_NAME
     with zipfile.ZipFile(archive_path, "w") as archive:
         for filename in filenames:
@@ -710,24 +493,17 @@ def _write_archive(output: Path, filenames: Sequence[str]) -> None:
             info.create_system = 3
             info.external_attr = 0o644 << 16
             archive.writestr(info, (output / filename).read_bytes())
+        recipe_info = zipfile.ZipInfo("recipe/synthesize-sfx.py", date_time=(1980, 1, 1, 0, 0, 0))
+        recipe_info.compress_type = zipfile.ZIP_DEFLATED
+        recipe_info.create_system = 3
+        recipe_info.external_attr = 0o644 << 16
+        archive.writestr(recipe_info, generator_data)
 
 
-def repack_existing(output: Path) -> None:
-    manifest: dict[str, object] = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
-    contents = manifest.get("archive_contents")
-    if not isinstance(contents, list) or not all(isinstance(name, str) for name in contents):
-        raise ValueError("manifest archive_contents must be a list of paths")
-    missing = [name for name in contents if not (output / name).is_file()]
-    if missing:
-        raise FileNotFoundError(f"cannot repack; missing: {', '.join(missing)}")
-    _write_archive(output, contents)
-
-
-def generate(output: Path, seed: int, selection: str) -> None:
+def generate(output: Path, seed: int) -> None:
     output.mkdir(parents=True, exist_ok=True)
-    pairs, recipes = _configuration(selection)
-    signals = {filename: recipe(seed) for filename, recipe in recipes.items()}
-    signals["comparison.wav"] = _comparison(signals, pairs)
+    signals = {filename: recipe(seed) for filename, recipe in RECIPES.items()}
+    signals["comparison.wav"] = _comparison(signals)
 
     audio_metadata: dict[str, dict[str, object]] = {}
     for filename, values in signals.items():
@@ -736,13 +512,10 @@ def generate(output: Path, seed: int, selection: str) -> None:
         audio_metadata[filename] = _audio_metadata(filename, values, data)
 
     generator_data = Path(__file__).read_bytes()
-    recipe_path = output / "recipe" / "synthesize-sfx.py"
-    recipe_path.parent.mkdir(exist_ok=True)
-    recipe_path.write_bytes(generator_data)
-    archive_files = ["index.html", "README.md", "manifest.json", *signals, "recipe/synthesize-sfx.py"]
+    archive_files = ["index.html", "README.md", "manifest.json", *signals]
     manifest = {
-        "archive_contents": archive_files,
-        "comparison_order": _comparison_order(pairs),
+        "archive_contents": [*archive_files, "recipe/synthesize-sfx.py"],
+        "comparison_order": _comparison_order(),
         "files": audio_metadata,
         "generator": "tools/synthesize-sfx.py",
         "generator_sha256": hashlib.sha256(generator_data).hexdigest(),
@@ -751,11 +524,6 @@ def generate(output: Path, seed: int, selection: str) -> None:
         ),
         "mix_peak_ceiling": TARGET_PEAK,
         "mix_target_rms_dbfs": TARGET_RMS_DBFS,
-        "level_strategy": (
-            "OLD files preserve pass 1 peak-only finishing; revised files use the RMS target and peak ceiling."
-            if selection == "grounded-revision"
-            else "Every file uses the RMS target and peak ceiling."
-        ),
         "reproducibility": {
             "guarantee": (
                 "Two rebuilds are checked byte-for-byte with the tracked generator and locked Python 3.14 environment."
@@ -766,25 +534,19 @@ def generate(output: Path, seed: int, selection: str) -> None:
             ),
         },
         "sample_format": {"bits": 16, "channels": 1, "encoding": "signed PCM", "sample_rate_hz": SAMPLE_RATE},
-        "selection": selection,
         "seed": seed,
         "status": "standalone audition; not installed in the game",
     }
-    (output / "README.md").write_text(_readme(seed, selection, pairs), encoding="utf-8")
+    (output / "README.md").write_text(_readme(seed), encoding="utf-8")
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    (output / "index.html").write_text(_review_page(selection, pairs), encoding="utf-8")
-    _write_archive(output, archive_files)
+    (output / "index.html").write_text(_review_page(), encoding="utf-8")
+    _write_archive(output, archive_files, generator_data)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    if args.repack_existing:
-        repack_existing(args.output)
-        print(f"Repacked {ARCHIVE_NAME} from existing files in {args.output}")
-        return 0
-    _, recipes = _configuration(args.selection)
-    generate(args.output, args.seed, args.selection)
-    print(f"Generated {len(recipes) + 1} WAV files and {ARCHIVE_NAME} in {args.output}")
+    generate(args.output, args.seed)
+    print(f"Generated {len(RECIPES) + 1} WAV files and {ARCHIVE_NAME} in {args.output}")
     return 0
 
 

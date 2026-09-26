@@ -20,14 +20,19 @@ subjects:
 
 ## Rebuild
 
-From the repository root, with the locked Python 3.14 environment:
+This pass carries its frozen generator both beside this README and inside the ZIP as
+`recipe/synthesize-sfx.py`. From the repository root, run that copy through the locked Python 3.14
+environment into scratch:
 
 ```sh
-uv run python tools/synthesize-sfx.py --output docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2 --seed 260926
+uv run python docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2/recipe/synthesize-sfx.py \
+  --output "${TMPDIR:-/tmp}/copper-lark-sound-lab-pass-2-rebuild" \
+  --seed 260926
 ```
 
-The generator defaults to that output directory and seed. It writes files only; it does not play
-audio. The ZIP also carries a copy of the exact generator as `recipe/synthesize-sfx.py`.
+The frozen generator writes files only; it does not play audio. Rebuilding into scratch keeps the
+submitted pass intact. The tracked `tools/synthesize-sfx.py` evolves with later passes and is not
+the source for this one.
 
 ## Format and level
 
@@ -38,6 +43,7 @@ while leaving transient headroom; it is still not a perceptual loudness match, s
 comfortable device volume.
 
 `manifest.json` records the seed, recipe chain, duration, measured peak and RMS, file hashes and
-the generator hash. The test suite rebuilds two temporary copies and checks them byte for byte in
-the pinned environment. Floating-point math implementations can differ across operating systems,
-so this is not a blanket promise of cross-platform bit identity.
+the frozen generator hash. Compare a scratch rebuild's WAV hashes with that manifest; the current
+repository tests cover the current pass rather than claiming that an evolving tool rebuilds this
+archive. Floating-point math implementations can differ across operating systems, so this is not a
+blanket promise of cross-platform bit identity.

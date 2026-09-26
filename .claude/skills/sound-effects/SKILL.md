@@ -18,7 +18,8 @@ until the player separately asks for integration.
   every random source a deterministic seed. Record the exact rebuild command and seed beside the
   audition.
 - Record the sample rate, channels, encoding, processing chain, durations, levels and SHA-256 hashes
-  in a machine-readable manifest. Include the generator's hash or exact source in the review package.
+  in a machine-readable manifest. Include a frozen copy of the exact generator in each pass and
+  name that copy, rather than the evolving tracked tool, in the pass's rebuild command.
 - Preserve a pass once it has been submitted for review. Put a revised attempt in a new pass folder
   rather than silently replacing the sound the player heard.
 
@@ -26,8 +27,9 @@ The current lab rebuilds with:
 
 ```sh
 uv run python tools/synthesize-sfx.py \
-  --output docs/evidence/copper-lark-sound-lab-2026-09-26-pass-2 \
-  --seed 260926
+  --output docs/evidence/copper-lark-sound-lab-2026-09-26-pass-3 \
+  --seed 260926 \
+  --selection grounded-revision
 ```
 
 It writes 48 kHz mono PCM16 WAVs, a local A/B page, an ordered comparison and a portable ZIP. It
@@ -38,7 +40,14 @@ changes.
 
 Use one documented level strategy across an A/B set. Leave headroom, fade file boundaries, reject
 clipped or silent files and keep piercing energy restrained. The current lab targets -22.5 dBFS RMS
-with a 0.70 peak ceiling; this keeps A/B energy close but does not make perceived loudness equal.
+with a 0.70 peak ceiling for revised takes while preserving the old comparison bytes; this keeps
+A/B energy close but does not make perceived loudness equal.
+
+Establish recognition and implied weight before exploring style or polish. When a listener cannot
+tell what a sound represents, preserve the rejected take and compare it directly with a focused
+revision of the named defect. Broad noise is not forbidden, but a rolling mechanism needs discrete
+contact or mechanical detail if a broad wash reads as water, and a light step should not be carried
+by a heavy low thump.
 
 Automated checks can establish format, non-silence, headroom, clean boundaries, file references and
 deterministic rebuilds in the pinned environment. They cannot establish realism, comfort, fit or

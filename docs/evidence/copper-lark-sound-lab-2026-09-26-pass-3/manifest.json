@@ -1,0 +1,85 @@
+{
+  "archive_contents": [
+    "index.html",
+    "README.md",
+    "manifest.json",
+    "footsteps-old-grounded.wav",
+    "footsteps-revised-grounded.wav",
+    "stroller-wheels-old-grounded.wav",
+    "stroller-wheels-revised-grounded.wav",
+    "comparison.wav",
+    "recipe/synthesize-sfx.py"
+  ],
+  "comparison_order": [
+    "footsteps-old-grounded.wav",
+    "footsteps-revised-grounded.wav",
+    "stroller-wheels-old-grounded.wav",
+    "stroller-wheels-revised-grounded.wav"
+  ],
+  "files": {
+    "comparison.wav": {
+      "duration_seconds": 8.6,
+      "frames": 412800,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "The selected level-matched auditions concatenated A then B within each pair, with 0.45 seconds inside pairs and 1.0 second between pairs.",
+      "rms_dbfs": -23.492,
+      "sha256": "31adf98d022880ecac8ea80595b9415b7754840086766b8dbff6c275ab414cb3"
+    },
+    "footsteps-old-grounded.wav": {
+      "duration_seconds": 1.15,
+      "frames": 55200,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "The byte-preserved pass-1 grounded footsteps the player heard: falling low sine thumps, low-passed grit and short filtered scrapes, with the original peak-only finishing stage.",
+      "rms_dbfs": -22.018,
+      "sha256": "7e854b623d25e7263721770dc368d111803ffe99d40ba3fc9b0a5bd783156be1"
+    },
+    "footsteps-revised-grounded.wav": {
+      "duration_seconds": 1.15,
+      "frames": 55200,
+      "peak_dbfs": -5.997,
+      "peak_linear": 0.501385,
+      "recipe": "Two lighter heel-and-toe contacts: short midrange sole taps, restrained surface texture and a small scuff, with the former low thump removed and transient peaks gently compressed.",
+      "rms_dbfs": -22.5,
+      "sha256": "0695e82855e2d0cbd69c22fc1ec2bcec68cd246e448d34b6663328b8602fb05d"
+    },
+    "stroller-wheels-old-grounded.wav": {
+      "duration_seconds": 2.2,
+      "frames": 105600,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "The byte-preserved pass-1 grounded stroller the player heard: low-passed rolling noise, slow load variation, pavement joints and axle resonance, with the original peak-only finishing stage.",
+      "rms_dbfs": -22.481,
+      "sha256": "d98619b1ffcce45ac2fddaf79be0e960a00c618b3f20f64d2ae76b90deece7e8"
+    },
+    "stroller-wheels-revised-grounded.wav": {
+      "duration_seconds": 2.2,
+      "frames": 105600,
+      "peak_dbfs": -4.859,
+      "peak_linear": 0.571564,
+      "recipe": "Dry, closely spaced wheel contacts with a quiet rotation pulse and paired seeded mechanism rattles; no continuous broad noise wash.",
+      "rms_dbfs": -22.5,
+      "sha256": "8f971b8bc8465d74d5d85544c45d6ea17e48937ef6c2c225b659899dd20ab814"
+    }
+  },
+  "generator": "tools/synthesize-sfx.py",
+  "generator_sha256": "d15008b61f0d94698b50b1fcd34fb5157dd04aee865c22dee80a97a50f129226",
+  "level_strategy": "OLD files preserve pass 1 peak-only finishing; revised files use the RMS target and peak ceiling.",
+  "method": "Handwritten procedural synthesis using standard-library oscillators, seeded noise, envelopes and filters.",
+  "mix_peak_ceiling": 0.7,
+  "mix_target_rms_dbfs": -22.5,
+  "reproducibility": {
+    "guarantee": "Two rebuilds are checked byte-for-byte with the tracked generator and locked Python 3.14 environment.",
+    "limit": "No blanket cross-platform bit-identical promise is made because platform math implementations may differ."
+  },
+  "sample_format": {
+    "bits": 16,
+    "channels": 1,
+    "encoding": "signed PCM",
+    "sample_rate_hz": 48000
+  },
+  "seed": 260926,
+  "selection": "grounded-revision",
+  "status": "standalone audition; not installed in the game"
+}

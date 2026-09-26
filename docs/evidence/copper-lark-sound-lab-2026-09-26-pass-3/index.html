@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Copper lark sound lab</title>
+  <style>
+    :root {
+      color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #171816; color: #f2ecdc;
+    }
+    body { max-width: 920px; margin: 0 auto; padding: 40px 20px 72px; }
+    header { border: 1px solid #6f765e; padding: 24px; background: #20231f; box-shadow: 7px 7px 0 #0b0c0a; }
+    h1 { margin: 0 0 10px; font-size: clamp(2rem, 7vw, 4.5rem); line-height: .92; letter-spacing: -.07em; }
+    p { line-height: 1.55; max-width: 72ch; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    a { color: #ffd26d; }
+    .button { padding: 10px 14px; border: 1px solid #ffd26d; text-decoration: none; background: #323327; }
+    .pair { margin-top: 32px; }
+    .pair > h2 { font-size: 1.35rem; border-bottom: 1px solid #6f765e; padding-bottom: 8px; }
+    .takes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    article { position: relative; padding: 18px; background: #292c27; border: 1px solid #545a4b; }
+    article span {
+      float: right; display: grid; place-items: center; width: 34px; height: 34px;
+      border-radius: 50%; background: #ca493d; color: white; font-weight: 800;
+    }
+    h3 { margin: 0 0 18px; }
+    audio { display: block; width: 100%; margin-bottom: 12px; }
+    footer { margin-top: 38px; color: #c0bdaf; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Copper lark<br>sound lab</h1>
+    <p>Two grounded recognition revisions. Compare each preserved old take with a lighter or more mechanically distinct revision. No stylized sounds are included in this pass. These are listening auditions and are not installed in the game.</p>
+    <div class="actions">
+      <a class="button" href="comparison.wav">Play the ordered comparison</a>
+      <a class="button" download href="copper-lark-sound-lab.zip">Download the complete ZIP</a>
+      <a class="button" href="README.md">Read the recipe notes</a>
+    </div>
+  </header>
+  <section class="pair">
+      <h2>Footsteps</h2>
+      <div class="takes">
+        <article><span>A</span><h3>Old grounded (pass 1)</h3>
+          <audio controls preload="metadata" src="footsteps-old-grounded.wav"></audio>
+          <a download href="footsteps-old-grounded.wav">Download WAV</a>
+        </article>
+        <article><span>B</span><h3>Revised grounded</h3>
+          <audio controls preload="metadata" src="footsteps-revised-grounded.wav"></audio>
+          <a download href="footsteps-revised-grounded.wav">Download WAV</a>
+        </article>
+      </div>
+    </section><section class="pair">
+      <h2>Stroller wheels</h2>
+      <div class="takes">
+        <article><span>A</span><h3>Old grounded (pass 1)</h3>
+          <audio controls preload="metadata" src="stroller-wheels-old-grounded.wav"></audio>
+          <a download href="stroller-wheels-old-grounded.wav">Download WAV</a>
+        </article>
+        <article><span>B</span><h3>Revised grounded</h3>
+          <audio controls preload="metadata" src="stroller-wheels-revised-grounded.wav"></audio>
+          <a download href="stroller-wheels-revised-grounded.wav">Download WAV</a>
+        </article>
+      </div>
+    </section>
+  <footer>48 kHz mono PCM16 · OLD is byte-identical pass 1 · revised uses a -22.5 dBFS RMS target and 0.70 peak ceiling · deterministic seed and
+  hashes in <a href="manifest.json">manifest.json</a></footer>
+  <script>
+    const players = [...document.querySelectorAll("audio")];
+    for (const player of players) {
+      player.addEventListener("play", () => {
+        for (const other of players) {
+          if (other !== player) { other.pause(); other.currentTime = 0; }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
