@@ -328,8 +328,7 @@ checks and worktrees can move independently of this file.
   days is the coming day's and shows the nerves, the pause screen's restart restarts, the held
   restart fills and works first time on a phone, and the chalk mark's robber stands at the far
   end of its alley. None has an agent. M213 overlaps M137's resistance director, so it follows
-  #362. This queue entry and the playtest sit on the local branch `docs/playtest-142`, not
-  pushed.
+  #362.
 - **A cloud session owns the GoatCounter counter** — what ended a day, the special events and
   one-off encounters she met, and reading the counts back — on
   `claude/compassionate-goldberg-707zti`, whose first commit files it as PLAYTEST-141. It may
