@@ -22,7 +22,7 @@
 #
 # It never touches the pull request itself: no `gh pr merge`, no enabling auto-merge. The semantic
 # review of the merge — whether the result actually reconciles both sides' intent, per the
-# merging-main skill — is the reviewer's, every time; the script only says so and lists the files
+# merging-main skill — is the merger's, every time; the script only says so and lists the files
 # origin/main changed since the merge base, so there is something concrete to review.
 #
 # Refuses, and does no work, when: the worktree it would operate in is dirty; the branch's local
@@ -49,7 +49,7 @@ other conflict. On a clean result it runs `git diff --cached --check`, `./tools/
 `./tools/check.sh`, commits a message naming the branch tip, main tip, merge base and the
 resolution, and pushes (HTTPS fallback if SSH is refused). Never merges the pull request itself
 and never enables auto-merge; says so in its own output, alongside the files main changed since
-the merge base, since that review is the reviewer's.
+the merge base, since that review is the merger's.
 
   --dry-run    Fetch and report what would conflict (via git merge-tree --write-tree), without
                creating, checking out or otherwise touching any worktree. Exits 0 for a clean
