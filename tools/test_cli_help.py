@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import struct
 import subprocess
 import sys
@@ -30,6 +31,7 @@ from typing import Any
 
 TOOLS = Path(__file__).resolve().parent
 PROJECT_ROOT = TOOLS.parent
+EVIDENCE_ROOT = Path(os.environ.get("NAPPY_SOUND_EVIDENCE_ROOT", str(PROJECT_ROOT / "docs/evidence")))
 
 # Every tools/*.py a person or a script runs directly. Not the test_*.py files themselves --
 # unittest.main() already gives every one of them -h and rejects an unknown flag, which is the
@@ -149,15 +151,6 @@ class CliHelpTests(unittest.TestCase):
                     )
             self.assertLess(max(audition_rms_db) - min(audition_rms_db), 1.0, "A/B levels diverge")
 
-            pass_one = PROJECT_ROOT / "docs/evidence/copper-lark-sound-lab-2026-09-26"
-            self.assertEqual(
-                first_files["footsteps-old-grounded.wav"], (pass_one / "footsteps-grounded.wav").read_bytes()
-            )
-            self.assertEqual(
-                first_files["stroller-wheels-old-grounded.wav"],
-                (pass_one / "stroller-wheels-grounded.wav").read_bytes(),
-            )
-
             page = first_files["index.html"].decode()
             readme = first_files["README.md"].decode()
             for filename in SOUND_FILES:
@@ -172,6 +165,24 @@ class CliHelpTests(unittest.TestCase):
                 for name in names:
                     self.assertEqual(archive.read(name), first_files[name], f"archive copy differs: {name}")
                 self.assertEqual(archive.read("recipe/synthesize-sfx.py"), (TOOLS / "synthesize-sfx.py").read_bytes())
+
+    def test_revision_old_files_match_player_heard_pass_when_evidence_available(self) -> None:
+        pass_one = EVIDENCE_ROOT / "copper-lark-sound-lab-2026-09-26"
+        references = {
+            "footsteps-old-grounded.wav": pass_one / "footsteps-grounded.wav",
+            "stroller-wheels-old-grounded.wav": pass_one / "stroller-wheels-grounded.wav",
+        }
+        missing = [path for path in references.values() if not path.is_file()]
+        if missing:
+            self.skipTest("archived sound evidence is absent from this checkout")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "revision"
+            result = self.run_tool("synthesize-sfx.py", "--output", str(output), "--seed", "260926")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for generated_name, archived_path in references.items():
+                with self.subTest(wav=generated_name):
+                    self.assertEqual((output / generated_name).read_bytes(), archived_path.read_bytes())
 
 
 if __name__ == "__main__":
