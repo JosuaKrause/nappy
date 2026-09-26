@@ -832,9 +832,14 @@ func _spawn_closure(closure: RoadClosure) -> void:
 ## body behind the whole line. The panels are separate nodes so that a barrier running away
 ## from the camera y-sorts panel by panel against the player; the collision is one box,
 ## because collision does not care what order things are drawn in.
+##
+## **The line's width is the closure's own** (`barrier_width()`), a street's width for an ordinary
+## closure and one calm area's own edge for a `ParkClosure` — so a run longer or shorter than a
+## street's mouth still tiles panels edge to edge across its own real length rather than a fixed
+## one, with no overlap and no gap to overshoot a corner with.
 func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var across := closure.barrier_runs_across()
-	var width := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
+	var width := closure.barrier_width()
 	var panels := maxi(1, roundi(width / AtlasLibrary.native_size(ClosureMarker.FENCE_ACROSS).x))
 	var span := width / panels
 	for i in panels:
@@ -970,10 +975,19 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	# the same way one landing off calm ground already is — checked before it is ever added rather
 	# than thinned out afterwards, the same rule closures and events are already held to.
 	var planted: Array[Vector2] = []
+	# **The one exception to "the same every morning" is the one park this run ever fences.**
+	# `ParkClosure`'s line stands on the lot's own edge row, and a tree seeded there before the
+	# fence existed would stand on the fence line — cleared for the barrier the same way the
+	# ground itself was, on the one occasion the ground changes at all. `margin` only widens past
+	# the ordinary 16px inset while `block` is `map.fenced_park`, so every other park's trees are
+	# untouched by this at every reading.
+	var margin := 16.0
+	if map.fenced_park == block and ClosurePlanner.calm_area_rect(map, block) == layout.open_rect:
+		margin += Tuning.CLOSURE_BARRIER_DEPTH
 	while placed < wanted and attempts < wanted * 8:
 		attempts += 1
-		var at := Vector2(rng.randf_range(lot.position.x + 16.0, lot.end.x - 16.0),
-				rng.randf_range(lot.position.y + 16.0, lot.end.y - 16.0))
+		var at := Vector2(rng.randf_range(lot.position.x + margin, lot.end.x - margin),
+				rng.randf_range(lot.position.y + margin, lot.end.y - margin))
 		# Keep the playground clear so the swing frame reads.
 		if not Tile.is_calm(map.tile_type_at_world(at)):
 			continue

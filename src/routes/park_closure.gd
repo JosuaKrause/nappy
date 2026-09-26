@@ -1,33 +1,43 @@
 class_name ParkClosure
 extends RoadClosure
-## One fenced run of a shut calm area's edge: the barriers `City` stands where the area's ground
-## meets the ground she walks on. *(PLAYTEST-140: "a spent park should not be accesible and no route
-## should go through it".)*
+## One fenced run of `CityMap.fenced_park`'s edge — the one calm area this run ever physically
+## closes, at most once, in act III or later. *(PLAYTEST-140, statement 9: "doing it for one park,
+## sure, more towards the later stages of the game once but not for regular".)* Every other used
+## area is off the route tree the same way (`CityMap.shut_calm`) but carries no fence at all: this
+## class only ever draws the one area `CityMap.fenced_park` names.
 ##
 ## **It is a `RoadClosure` so that it is drawn, and stands in her way, exactly as a closed street's
 ## barriers do.** `ClosurePlanner.plan_day` hands these to `City` beside the day's street closures,
 ## and `City._spawn_closure()` stands the same line of barrier panels — the same pictures, the
 ## `closed` sign on the middle one and one static body behind the line — at every point
 ## `mouth_centres()` answers, lying the way `barrier_runs_across()` says. The kind is `PARK`, which
-## like `CORDON` leaves nothing lying anywhere. So a shut park reads the way a shut street reads,
-## from the pavement beside it, before she has taken a step onto it.
+## like `CORDON` leaves nothing lying anywhere. So the one fenced park reads the way a shut street
+## reads, from the pavement beside it, before she has taken a step onto it.
 ##
-## **Which ground is shut is not decided here**: `ClosurePlanner.calm_to_shut()` decides it at the
-## repaint, checked before it is accepted, and `CityMap.shut_calm` records it. This is only the
-## fence around what was decided.
+## **Which park is fenced is not decided here**: `CityMap._shut_the_spent_calm()` decides it at the
+## repaint, from `ClosurePlanner.calm_to_shut()`'s own candidates, and `CityMap.fenced_park` records
+## it. This is only the fence around what was decided.
 ##
 ## **The fence stands on the calm ground's own edge row, never on the pavement.** A barrier line is
 ## `Tuning.CLOSURE_BARRIER_DEPTH` deep and stands half of that inside the edge, so the pavement
 ## beside the park stays exactly as wide as it was and a route that runs along it is untouched.
-## Each run is covered end to end: a line is `Tuning.STREET_WIDTH` tiles long (what `City` draws for
-## one mouth), so a longer run gets several, overlapping where the length does not divide — and the
-## lines at a corner overlap too, since each stands inside its own edge, so there is no gap at a
-## corner for a pram to get through.
+## **One line covers a whole run, end to end, and no two lines overlap or overshoot one another.**
+## `barrier_width()` overrides `RoadClosure`'s own street-width answer with the run's real length, so
+## `City._spawn_barrier()` tiles panels across exactly that length rather than a fixed one — a run
+## far longer or shorter than a street's mouth still reads as one continuous rail, with no overhang
+## past either end of its own ground.
+##
+## **A north-south edge (`UP`/`DOWN`) keeps the whole side, corner tiles included; an east-west edge
+## (`LEFT`/`RIGHT`) stops one tile short of each end.** The two would otherwise both reach the same
+## corner tile and cross there instead of meeting — see `_entrance_runs()`. Letting one axis own
+## every corner and trimming the other is what turns that cross into a clean joint, with no gap a
+## pram could use: the horizontal line's own barrier depth already covers the corner tile's outer
+## edge, and the vertical line picks up flush against it.
 ##
 ## **An entrance is any tile of the edge with walkable ground outside it.** An open park's lot is
 ## bordered by pavement all round, so every side is one run; a courtyard's court is walled but for
-## the archway, so its one run is where the archway lands, and the line across it overhangs the
-## court's walls either side the way it would a street's frontage.
+## the archway, so its one run is exactly where the archway lands, flush with its jambs rather than
+## overhanging them.
 
 ## The strip of edge a fence stands on, dressed as the street a `RoadClosure` closes — so everything
 ## that reads a closure's `segment` (the day's holds, the run log, the telemetry map) reads this one
@@ -79,14 +89,23 @@ static func fence(map: CityMap, block: Vector2i) -> Array[ParkClosure]:
 
 ## The runs of `rect`'s edge on the `out` side that open onto walkable ground outside it, each as a
 ## one-tile strip.
+##
+## **`UP`/`DOWN` scan the whole side; `LEFT`/`RIGHT` stop one tile short of each end**, unless the
+## side is too short to spare them (`length <= 2`, where there is no room for the ambiguity the trim
+## exists to resolve). The two corner tiles of a rectangle belong to exactly one edge each — the
+## horizontal one, arbitrarily but consistently — so the vertical scan simply never offers them, and
+## a fence never reaches into a corner two ways at once. See the class doc for what that buys.
 static func _entrance_runs(map: CityMap, rect: Rect2i, out: Vector2i) -> Array[Rect2i]:
 	var runs: Array[Rect2i] = []
 	var horizontal := out.y != 0
 	var length: int = rect.size.x if horizontal else rect.size.y
+	var trim := not horizontal and length > 2
+	var first_index := 1 if trim else 0
+	var last_index := length - 1 if trim else length
 	var start := -1
-	for i in length + 1:
+	for i in range(first_index, last_index + 1):
 		var open := false
-		if i < length:
+		if i < last_index:
 			var tile := _edge_tile(rect, out, i)
 			open = map.is_walkable(tile) and map.is_walkable(tile + out)
 		if open and start < 0:
@@ -108,29 +127,20 @@ static func _edge_tile(rect: Rect2i, out: Vector2i, i: int) -> Vector2i:
 		return Vector2i(rect.position.x, rect.position.y + i)
 	return Vector2i(rect.end.x - 1, rect.position.y + i)
 
-## Where each line of barrier stands: along the strip, `Tuning.STREET_WIDTH` tiles apart from one
-## end, with the last one pulled back to finish flush with the other end, so the lines cover the
-## run end to end. Across it, half a barrier's depth inside the area's edge.
-##
-## **Every step between two lines is a whole even number of tiles**, on every run an open calm lot
-## has (8 or 22 tiles, both even): `City` cuts each line into panels of two-thirds of a tile, so an
-## even step puts an overlapping line's panels exactly on top of its neighbour's and the overlap
-## draws as one fence rather than two.
-func mouth_centres(_map: CityMap) -> Array[Vector2]:
-	var found: Array[Vector2] = []
+## How wide this fence's one line is: the run's own length, in pixels — never a street's width.
+## Overrides `RoadClosure.barrier_width()`, which `City._spawn_barrier()` reads instead of assuming
+## `Tuning.STREET_WIDTH`; see the class doc.
+func barrier_width() -> float:
 	var run: Rect2i = segment.tile_rect()
 	var horizontal := outward.y != 0
-	var length: int = run.size.x if horizontal else run.size.y
-	var line := Tuning.STREET_WIDTH
-	var offsets: Array[float] = []
-	if length <= line:
-		offsets.append(length * 0.5)
-	else:
-		var along := line * 0.5
-		while along < length - line * 0.5:
-			offsets.append(along)
-			along += line
-		offsets.append(length - line * 0.5)
+	return float(run.size.x if horizontal else run.size.y) * Tuning.TILE_SIZE
+
+## Where the one line of barrier stands: the middle of the run, across it half a barrier's depth
+## inside the area's edge. One point is the whole of it — `barrier_width()` already says how wide
+## `City._spawn_barrier()` draws it, so nothing here has to split a long run into several.
+func mouth_centres(_map: CityMap) -> Array[Vector2]:
+	var run: Rect2i = segment.tile_rect()
+	var horizontal := outward.y != 0
 	var tile := float(Tuning.TILE_SIZE)
 	var inset := Tuning.CLOSURE_BARRIER_DEPTH * 0.5
 	var across := run.end.x * tile - inset
@@ -140,11 +150,9 @@ func mouth_centres(_map: CityMap) -> Array[Vector2]:
 		across = run.end.y * tile - inset
 	elif outward == Vector2i.LEFT:
 		across = run.position.x * tile + inset
-	for offset in offsets:
-		if horizontal:
-			found.append(Vector2((run.position.x + offset) * tile, across))
-		else:
-			found.append(Vector2(across, (run.position.y + offset) * tile))
+	var along := (run.position.x + run.size.x * 0.5) * tile if horizontal \
+			else (run.position.y + run.size.y * 0.5) * tile
+	var found: Array[Vector2] = [Vector2(along, across) if horizontal else Vector2(across, along)]
 	return found
 
 ## The middle of the shut area — nothing is lying there, but `DevRig`'s `closure:<n>` spawn reads the

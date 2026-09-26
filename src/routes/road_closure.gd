@@ -86,3 +86,10 @@ func cause_centre(map: CityMap) -> Vector2:
 ## north-south street. It decides which of the two fence sprites is used.
 func barrier_runs_across() -> bool:
 	return not segment.horizontal
+
+## How wide a line of barrier is, in pixels — a street's own width, since its mouth is exactly
+## that wide by construction. `City._spawn_barrier()` reads this rather than `Tuning.STREET_WIDTH`
+## directly, so a closure whose line is not a street's width (`ParkClosure`, one line the length of
+## a whole edge) can say so without this class knowing anything drew it that way.
+func barrier_width() -> float:
+	return Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)

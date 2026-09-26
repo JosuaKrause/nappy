@@ -146,6 +146,16 @@ var settled_in: Dictionary = {}
 func settled_yesterday() -> Vector2i:
 	return settled_in.get(day - 1, Vector2i(-1, -1))
 
+## The one calm area barriers ever stand around this run, once she has used it —
+## `Vector2i(-1, -1)` until one is. Chosen no earlier than act III; see docs/CITY.md, "Shutting a
+## spent park". `Main._start_day()` hands this and `fenced_park_act` to `CityMap.
+## set_fenced_park_state()` before the repaint and reads both back once it returns, the same
+## handover `set_spent_calm()` already uses.
+var fenced_park := Vector2i(-1, -1)
+## The act `fenced_park` was chosen in, 0 until one is. It stands fenced for the rest of that act;
+## once the act has passed, nothing is ever fenced again this run.
+var fenced_park_act := 0
+
 ## Every calm area she has used **so far this act**, most recent first, today excluded.
 ##
 ## **The act, not last night.** Remembering one night spoils one park, which makes day 2 a fresh
@@ -193,6 +203,8 @@ func start_run(seed_value: int = 0) -> void:
 	city_state.reset()
 	posters.reset()
 	settled_in.clear()
+	fenced_park = Vector2i(-1, -1)
+	fenced_park_act = 0
 	sabotage_done = false
 	resistance_carrying_package = false
 	completed_resistance_alley_tiles.clear()

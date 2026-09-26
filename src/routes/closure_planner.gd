@@ -54,16 +54,17 @@ class CalmArea extends RefCounted:
 ## as closure candidates: a closure on a region boundary would be two things standing in the same
 ## spot, one placed by this pass and one by the region's own wall or door.
 ##
-## **The fences of today's shut calm areas come back with the streets** (`CityMap.shut_calm`, one
-## `ParkClosure` per fenced run of an area's edge), after them and outside the day's quota: they are
-## what `City` stands barriers at, the same way it stands them at a closed street's two mouths. The
-## shut ground itself was decided at the repaint and is already closed on the map, so every
-## candidate below is judged with it closed.
+## **`CityMap.fenced_park`'s fence comes back with the streets** (one `ParkClosure` per fenced run
+## of its edge), after them and outside the day's quota: it is what `City` stands barriers at, the
+## same way it stands them at a closed street's two mouths. Every other used area in `CityMap.
+## shut_calm` gets no fence at all — it is off the route tree but not off the ground, so nothing
+## here draws anything for it. The fenced ground itself was decided at the repaint and is already
+## closed on the map, so every candidate below is judged with it closed.
 static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null) -> Array[RoadClosure]:
 	var chosen := _close_streets(map, day, rng, tree, region_plan)
-	for block in map.shut_calm:
-		for fence in ParkClosure.fence(map, block):
+	if map.fenced_park.x >= 0:
+		for fence in ParkClosure.fence(map, map.fenced_park):
 			chosen.append(fence)
 	return chosen
 
@@ -206,30 +207,33 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 
 # ------------------------------------------------------------ spent calm ---
 
-## Which of the calm areas she has used this act (`spent`, most recent first) are shut today: she
-## cannot get into one, and no route of the day goes through it. *(PLAYTEST-140: "a spent park
-## should not be accesible and no route should go through it".)* Called by `CityMap.repaint()`,
-## before anything grows the day's tree, so the tree, the region plan and the street closures are
-## all planned around what this shuts.
+## Which of the calm areas she has used this act (`spent`, most recent first) are taken off today's
+## route tree: the tree neither grows a branch to one nor runs a route through it, though the
+## ground stays calm and walkable — she is stopped by what `EventScheduler.
+## _spoil_the_parks_she_used` places there, not by the ground itself. *(PLAYTEST-140, statement 8:
+## "a used park is shut by the events placed in it, as before... and no route of the day goes
+## through it".)* Called by `CityMap.repaint()`, before anything grows the day's tree, so the tree,
+## the region plan and the street closures are all planned around what this excludes.
 ##
-## **Checked before it is accepted, one area at a time, the way a street closure is** — never shut
-## everything and then reopen until the day is legal. An area is refused for the day, and stays
-## open, when shutting it would:
+## **Checked before it is accepted, one area at a time, the way a street closure is** — never
+## exclude everything and then reinclude until the day is legal. An area is refused for the day, and
+## stays fully on the tree's table, when excluding it would:
 ##
 ## - **leave fewer than `Tuning.MIN_CALM_AREAS_REACHABLE` calm areas open** — the count every
 ##   closure is held to, and what leaves `EventScheduler._ensure_one_usable_park` a park to keep
 ##   clean;
-## - **cut anything off** — any tile the doorstep reaches with nothing shut that it no longer
-##   reaches with this area and every area already accepted shut. That is stronger than the calm
-##   count, and it is the one question that covers every guarantee at once: the other calm areas,
-##   day 9's door and the power station's door, and every street a route could need, since a park
-##   that is the only way between two parts of the city is a park whose shutting cuts one of them
-##   off.
+## - **cut anything off** — any tile the doorstep reaches with nothing excluded that it no longer
+##   reaches with this area and every area already accepted, both simulated as if their ground were
+##   impassable. That is stronger than the calm count, and it is the one question that covers every
+##   guarantee at once: the other calm areas, day 9's door and the power station's door, and every
+##   street a route could need, since a park that is the only way between two parts of the city is a
+##   park a route still has to be allowed through.
 ##
-## `protected` is never shut: day 12's park, whose swing is the day's task. An area that is not calm
-## today (requisitioned since, or never calm) is not in `map.calm_blocks` and is passed over. A
-## refused area is still one she has used, so `EventScheduler._spoil_the_parks_she_used` spoils it
-## instead, which is what a used park got before it could be shut at all.
+## `protected` is never excluded: day 12's park, whose swing is the day's task. An area that is not
+## calm today (requisitioned since, or never calm) is not in `map.calm_blocks` and is passed over.
+## A refused area is still one she has used, so `EventScheduler._spoil_the_parks_she_used` spoils it
+## — which every accepted area not chosen as `CityMap.fenced_park` also gets, since exclusion from
+## the tree is the only thing accepting an area here actually does.
 static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 		protected: Array[Vector2i] = []) -> Array[Vector2i]:
 	var shut: Array[Vector2i] = []
@@ -321,9 +325,10 @@ static func _open_calm_reached(map: CityMap, field: PackedInt32Array, shut: Arra
 ## (`RouteTree.for_day`) and every closure is placed off the tree, so like the calm half this is the
 ## second opinion rather than the thing that keeps it.
 ##
-## **With today's shut calm ground closed as well** (`CityMap.shut_calm`, in `map.closed_tiles` from
-## the repaint on): a street closure that leaves two areas reachable only through a park that is
-## shut has left them unreachable.
+## **With today's fenced park closed as well** (`CityMap.fenced_park`, in `map.closed_tiles` from
+## the repaint on): a street closure that leaves two areas reachable only through the one park that
+## is actually fenced has left them unreachable. A merely-`shut_calm` area is not in `closed_tiles`
+## — its ground stays open, so a street closure may still rely on a route through it.
 static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[CalmArea],
 		today_closed: Dictionary, places: Array[Array] = []) -> bool:
 	var blocked := _barrier_tiles(map, today_closed)
