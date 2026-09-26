@@ -71,3 +71,18 @@ landed, since M223 rewrites the file that maps paths to rules:
    sub-agent does, never in a scratch folder elsewhere.** → M227.
 10. **Whether a Claude Code plugin for Codex exists is to be found out first**; the player is not
     sure. → M227.
+
+## Where M223's overhaul goes
+
+Told that M223's one remaining item, the overhaul of every relevant entry and review item
+(PLAYTEST-144, statement 14), comes after the open PRs are converted and before M225, because the
+converter replays each PR's queue edits onto `main`'s entry files and an overhaul first would make
+those conversions refuse:
+
+> "sounds good"
+
+> "once all is updated let's do the telemetry finally"
+
+11. **M223's overhaul comes after the open PRs' conversion and before M225**: the orchestrator's
+    ordering, agreed to by the player. → M223, the queue's order.
+12. **M225, the telemetry, comes once everything is updated.** → the queue's order.
