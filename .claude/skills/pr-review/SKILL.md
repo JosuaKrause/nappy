@@ -13,10 +13,15 @@ the change has posted the verdict *ready* on the PR, against the PR's current he
 author's report of "done and verified" are inputs to the review, never a substitute for it.
 
 **A push after the review is reviewed too.** Whatever lands on the branch after the verdict (a
-fix for a finding, a merge of `main` that needed resolving, the orchestrator's queue move) gets a
-review of the delta since the reviewed head before the PR merges. A merge of `main` that went in
-without a conflict is the one exception: nothing the branch says changed, and the merger's own
-semantic reconciliation under **merging-main** covers what `main` brought.
+fix for a finding, a merge of `main` that needed resolving) gets a review of the delta since the
+reviewed head before the PR merges. The one exception is a merge of `main` whose result is Git's
+own, with nothing resolved or edited by hand (`git show --remerge-diff <merge>` prints nothing):
+nothing the branch says changed, and the merger's own semantic reconciliation under
+**merging-main** covers what `main` brought.
+
+**A merged PR can be reviewed after the fact** the same way. Its summary names both the head
+commit and the merge commit, the verdict it would have had, and for each finding the follow-up it
+needs (which file, what change), since the PR itself can no longer be fixed.
 
 ## Adversarial means the reviewer's job is to find what is wrong
 
@@ -36,7 +41,8 @@ review agent like any other. In Codex, use its delegation tools with the same fe
 also verify that a work item is semantically correct".)* Correct code that builds the wrong thing
 passes every other check this repo has. So before reading the diff for bugs, the reviewer reads the
 player's own words the PR cites (the playtest, not the queue entry's paraphrase of it; for a PR with
-no playtest, the quote in its queue entry or its brief) and every decision the change touches, and
+no playtest, the quote in its queue entry, its brief or its own description) and every decision
+the change touches, and
 answers these. Each "no" is a finding:
 
 - **Is this what the player asked for?** Nothing they asked for is left out, and every case they
@@ -44,7 +50,7 @@ answers these. Each "no" is a finding:
   it is marked: a mechanism under "Proposed, not asked for" (**playtest-feedback**), which the
   player agreed to if it changes what they see across the game, or a small choice the PR
   description names as open to overturn (**orchestrating**, "Forks come back"). An unmarked
-  addition is a finding; so is a game-wide one the player never saw.
+  addition is a finding; so is a game-wide one the player never agreed to.
 - **Does it keep what is already decided?** No `DECISIONS.md` record and no doc rule is overturned,
   narrowed or rewritten in passing. A doc sentence the PR changed says what the player decided, not
   what the PR happened to build.
@@ -56,10 +62,6 @@ answers these. Each "no" is a finding:
   item it only partly does is still there and says what is left. An item left queued after its work
   merges is how a finished thing gets picked up again with a different approach; an item removed
   for work the PR did not do is how an ask disappears.
-
-*(The case that taught it: a review of a park fenced with street-closure barriers found "no
-correctness bug in the mechanism"; the player had asked only that the router not path through a
-used park, and had decided long before that a used park is spoiled with events.)*
 
 ## Then the code
 

@@ -11,8 +11,9 @@
 #      and left it CONFLICTING -- the ruleset's checks are not strict
 #      (strict_required_status_checks_policy is false), so a PR that is merely behind main needs
 #      nothing and merges once its own green run lands
-#   3. only when conflicting: tools/update-pr.sh <n> (merges origin/main in, resolves the
-#      recurring docs/DECISIONS.md shape, checks, pushes), then keep waiting
+#   3. when conflicting: turn its auto-merge off and stop, naming it. A resolved conflict is a
+#      change the PR's review never saw, so it is resolved with tools/update-pr.sh <n> and reviewed
+#      under the pr-review skill before it is landed again
 #   4. once merged: git pull --ff-only on main in this checkout, then
 #      tools/prune-merged.sh <branch> to retire the worktree and branch
 #
@@ -48,9 +49,10 @@ Lands a queue of already-authorized pull requests in order, one at a time: merge
 directly (gh pr merge <n> --squash) when its mergeStateStatus already reads CLEAN, since GitHub
 refuses to enable auto-merge on a PR that could merge right now, otherwise by enabling auto-merge
 (gh pr merge <n> --squash --auto) and falling back to the direct merge if that still fails with
-GitHub's "clean status" error -- waits for GitHub to merge it, runs tools/update-pr.sh <n> only
-when an earlier merge left it conflicting with main and keeps waiting -- a PR that is merely
-behind main needs nothing, since the ruleset's checks are not strict -- then once merged
+GitHub's "clean status" error -- waits for GitHub to merge it, and stops if an earlier merge left
+it conflicting with main, turning its auto-merge off, since a resolved conflict has to be reviewed
+before it lands (resolve it with tools/update-pr.sh <n>) -- a PR that is merely behind main needs
+nothing, since the ruleset's checks are not strict -- then once merged
 fast-forwards main in this checkout (git pull --ff-only) and retires the branch with
 tools/prune-merged.sh. After the batch, it names main's own CI run on the last merge as the check
 for two PRs that are wrong together and prints the run's URL when one is cheaply available.
@@ -268,16 +270,12 @@ $failing"
 
         # The ruleset's checks are not strict (strict_required_status_checks_policy is false), so
         # a PR that is merely behind main merges on its own once its own run is green -- nothing
-        # to do here. Only a real conflict with main needs tools/update-pr.sh to bring it up to
-        # date; that re-run is on this branch alone and proves nothing about a PR merged beside it,
-        # which is why main's own CI run after the batch is the check that matters there.
+        # to do here. A real conflict is different: resolving it changes the branch after its
+        # review, and the pr-review skill wants that change reviewed before it lands. So the run
+        # turns the PR's auto-merge off and stops rather than resolving and merging it unseen.
         if [[ "$mergeable" == CONFLICTING ]]; then
-            echo "PR #$n conflicts with main; running tools/update-pr.sh $n"
-            if ! ./tools/update-pr.sh "$n"; then
-                stop "PR #$n ($url): tools/update-pr.sh could not bring it up to date -- see its output above"
-            fi
-            echo "up to date with main; still waiting for PR #$n to merge"
-            continue
+            gh pr merge "$n" --disable-auto >/dev/null 2>&1 || true
+            stop "PR #$n ($url) conflicts with main: auto-merge is off. Resolve it with tools/update-pr.sh $n, have the resolution reviewed (pr-review), then land it again"
         fi
 
         sleep "$poll_s"
@@ -302,4 +300,6 @@ echo "main's own CI run on the last merge is the check that these PRs are not wr
     "a semantic conflict between two that touch different files passes each one's own gate and" \
     "only shows up there. Watch it."
 run_url="$(gh run list --branch main --limit 1 --json url -q '.[0].url' 2>/dev/null)"
-[[ -n "$run_url" ]] && echo "  $run_url"
+if [[ -n "$run_url" ]]; then
+    echo "  $run_url"
+fi

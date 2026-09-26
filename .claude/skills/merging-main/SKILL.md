@@ -7,7 +7,8 @@ description: Merge main into an existing PR or branch with explicit theirs/ours/
 
 Use this skill before updating a PR branch with main, and read `committing` for the repository's
 git workflow. This updates the branch; merging the PR into main follows **committing** (explicit
-permission in this session). Keep design and final semantic review in the orchestrating session.
+permission in this session). Keep design in the orchestrating session; the review before merge is
+a separate reviewer's, under **pr-review**.
 
 ## Establish the three histories
 

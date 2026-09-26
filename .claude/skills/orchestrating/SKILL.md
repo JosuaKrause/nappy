@@ -143,18 +143,15 @@ Every agent prompt contains, explicitly:
   so the choice is visible and cheap to overturn. **A brief that contradicts a recorded
   decision is a fork too**, however explicit the brief is: when the brief asks for something a
   `DECISIONS.md` record or a doc's stated rule rules out, the agent builds nothing that overturns
-  it and reports the clash, quoting both. *(2026-09-26: a brief asked for a used park to be fenced;
-  M24's "It spoils with events, not by taking the ground away" said otherwise, and the agent
-  rewrote that sentence instead of reporting it.)*
+  it and reports the clash, quoting both.
 - **What the final report must contain**: per item, what was built and how it was verified; every
   choice made where the design was silent; every fork left open. The report is the merge review's
   input — an outcome it does not mention is an outcome that did not happen.
 - **Do not merge, do not delete the branch.** After the report, the orchestrator commits the
-  queue move on the PR branch (below), and then the PR goes to a review agent under **pr-review**,
-  which checks that move with everything else. The move is the orchestrator's: it commits the
   `TODO.md` → `DECISIONS.md` move on the PR branch (the agent's silent choices recorded as open to
-  overturn, not narrated as settled), merges only under **committing**'s permission rule, and
-  retires the branch with `tools/prune-merged.sh`.
+  overturn, not narrated as settled); then the PR goes to a review agent under **pr-review**, which
+  checks that move with everything else; then the orchestrator merges only under **committing**'s
+  permission rule and retires the branch with `tools/prune-merged.sh`.
 
 ## Running agents in parallel
 
@@ -175,15 +172,17 @@ merging is what collides — so parallelism is planned at the file level, before
 - **Merging follows committing** (explicit permission in this session). As each agent lands,
   push and open its PR. Once merging is authorized, merge one at a time; a second PR merges as it
   stands unless the new `main` now conflicts with it, in which case the conflict is resolved on
-  its own branch under **merging-main** — the ruleset's checks are not strict, so a PR merely
+  its own branch under **merging-main** and the resolution is reviewed under **pr-review** before
+  it lands — the ruleset's checks are not strict, so a PR merely
   behind `main` needs nothing. The semantic gate is `main`'s own CI run after the batch, which the
   orchestrator watches: a conflict between two PRs that touch different files passes both PRs'
   own gates and only shows up there. Then retire the branch with `tools/prune-merged.sh <branch>`
   from the main checkout (see **committing**), which removes the worktree and deletes the branch
   only once GitHub vouches for it. `tools/land-prs.sh <pr-number>...` is that sequence for several
-  already-authorized PRs in one call: auto-merge, wait, bring a conflicting one up to date, then
-  fast-forward `main` and prune, one PR at a time, printing `main`'s own CI run at the end as the
-  check to watch.
+  already-authorized, reviewed PRs in one call: merge or auto-merge, wait, then fast-forward
+  `main` and prune, one PR at a time, printing `main`'s own CI run at the end as the check to
+  watch. A PR that an earlier merge left conflicting stops the run, since its resolution needs a
+  review before it lands.
 - **The harness's own branches go with the same script.** Each spawn also leaves a
   `worktree-agent-*` branch pointing at the worktree's base. `tools/prune-merged.sh` deletes the
   ones whose worktree is gone, with `git branch -d`, and keeps a live agent's: that worktree has
