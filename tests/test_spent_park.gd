@@ -56,12 +56,10 @@ func _calm_on(map: CityMap, day: int) -> Array[Vector2i]:
 
 ## What an act would have used by `day`: one area a day since the act began, most recent first,
 ## drawn from today's calm in an order rolled from the seed — the shape `GameState.
-## settled_this_act()` has, without playing the days.
-##
-## `fenced` is the block, if any, the sweep has already fenced this run — never in the result, the
-## way a real `settled_in` never is either: once it is fenced she cannot walk onto it again to
-## settle there, so `GameState.settled_this_act()` would never offer it either.
-func _used_by(map: CityMap, day: int, fenced: Vector2i = Vector2i(-1, -1)) -> Array[Vector2i]:
+## settled_this_act()` has, without playing the days. A block chosen as `CityMap.fenced_park` on an
+## earlier day may still be here on a later one, the same way `GameState.settled_in` still carries
+## the day she used it before it was fenced — fencing does not erase the past.
+func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 	var calm := _calm_on(map, day)
 	var act_start := 1
 	for start: int in Tuning.ACT_START_DAYS:
@@ -75,8 +73,6 @@ func _used_by(map: CityMap, day: int, fenced: Vector2i = Vector2i(-1, -1)) -> Ar
 		var held := order[i]
 		order[i] = order[j]
 		order[j] = held
-	if fenced.x >= 0:
-		order.erase(fenced)
 	var used: Array[Vector2i] = []
 	for i in mini(day - act_start, order.size()):
 		used.push_front(order[i])
@@ -122,7 +118,7 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t) -> void:
 		var fenced := Vector2i(-1, -1)
 		var fenced_act := 0
 		for day in _days():
-			var used := _used_by(map, day, fenced)
+			var used := _used_by(map, day)
 			var result := _repaint(map, day, used, fenced, fenced_act)
 			fenced = result[0]
 			fenced_act = result[1]
@@ -131,9 +127,15 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t) -> void:
 			if map.fenced_park.x >= 0:
 				fenced_days += 1
 			for block in map.shut_calm:
-				t.check(block in used, "seed %d day %d takes %s off the tree, which she used"
-						% [map.seed_used, day, block])
 				var is_fenced := block == map.fenced_park
+				# The fenced park stays off the tree by carrying over from the day it was chosen
+				# (`CityMap._shut_the_spent_calm()`), not by being in every later day's own `used` —
+				# once fenced she cannot settle there again, but a day she did before it was fenced
+				# is still one `GameState.settled_in` remembers. Every other shut area is
+				# recomputed fresh from `used` each day, so it has to be in it.
+				t.check(is_fenced or block in used,
+						"seed %d day %d takes %s off the tree, which she used"
+						% [map.seed_used, day, block])
 				t.check(is_fenced != (block in map.calm_blocks),
 						"seed %d day %d: %s is calm today unless it is the one fenced park"
 						% [map.seed_used, day, block])
@@ -164,9 +166,12 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t) -> void:
 	t.check(shut > 0, "the sweep took some used areas off the tree (%d of %d used)"
 			% [shut, offered])
 	t.check(fenced_days > 0, "the sweep fenced a park on at least one day (%d)" % fenced_days)
-	print(("  spent parks: %d of %d used calm areas taken off the tree, %d refused, over %d seeds "
-			+ "x %d days; a park stood fenced on %d of those day-checks")
-			% [shut, offered, offered - shut, SEEDS, Tuning.RUN_LENGTH_DAYS, fenced_days])
+	# `shut` can exceed `offered`: the one fenced park stays in `shut_calm` every day of the act it
+	# was chosen in (see `_shut_the_spent_calm()`'s own carry-forward), while `used` only ever counts
+	# the day she actually settled there — so the two are not a split of one total to subtract.
+	print(("  spent parks: %d used-area day-checks taken off the tree (of %d used-area day-checks "
+			+ "offered), over %d seeds x %d days; a park stood fenced on %d of those day-checks")
+			% [shut, offered, SEEDS, Tuning.RUN_LENGTH_DAYS, fenced_days])
 
 ## The one fenced park's fence closes it: every edge tile with walkable ground outside it is covered
 ## by a barrier line lying along that edge, and every line stands on the area's own ground, never on
@@ -334,7 +339,7 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 		var fenced := Vector2i(-1, -1)
 		var fenced_act := 0
 		for day in [3, 6, 10, 13]:
-			var used := _used_by(map, day, fenced)
+			var used := _used_by(map, day)
 			var result := _repaint(map, day, used, fenced, fenced_act)
 			fenced = result[0]
 			fenced_act = result[1]

@@ -1931,18 +1931,19 @@ game.
 So the calm block the baby actually fell asleep in is remembered — by `GameState`, not by
 reading the telemetry; see docs/TELEMETRY.md.
 
-**The city shuts it first, where it can** (`ClosurePlanner.calm_to_shut()`; docs/CITY.md, "Shutting
-a spent park"): closed the way a street is, so she cannot get into it and no route of the day runs
-through it. What follows here is what happens to a used area whose shutting is refused — the last
-areas the calm count keeps open, or one the city would be cut in two without — and it is what every
-used area got before it could be shut at all.
+**And the day's route tree plans around every area this remembers** (`ClosurePlanner.
+calm_to_shut()`; docs/CITY.md, "Shutting a spent park"): the tree neither grows a branch to a used
+area nor routes through it, checked before it is accepted the way a street closure is. **One used
+area, at most once a run and never before act III, is fenced instead of spoiled** — the first one
+`calm_to_shut()` accepts once the run is that far along, closed the way a street is for the rest of
+that act and never chosen again. Every other used area — which on most days is every one of
+them — gets what follows here.
 
 Three things keep it from being a punishment for playing well, and all three are load-bearing:
 
-- **An area the city could not shut spoils with events, not by taking the ground away.** It is
-  still calm ground and still walkable; things are standing in it, visible from the street, and she
-  decides. Nothing lethal or mobile is ever chosen for this, and nothing whose body would close
-  the lot.
+- **It spoils with events, not by taking the ground away.** The park is still there, still calm
+  ground, still walkable. Things are standing in it, and she can see that from the street and
+  decide. An event that could seal or end the day is never chosen for this.
 - **The usable-park rule is told to protect a different one**, or the two halves fight — the day
   puts spoilers in her park, and the rule, looking for the least disturbed calm ground, finds the
   block with spoilers on it and strips the very events that were the point.
