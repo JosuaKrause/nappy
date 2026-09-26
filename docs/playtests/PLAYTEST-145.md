@@ -142,3 +142,13 @@ And, next:
 23. **All three conditions hold at once: a thing telegraphs only if it goes fast, is dangerous and
     comes toward her.** Cars are fast and dangerous but keep to their lanes rather than coming at
     her, so they do not telegraph. → M226.
+
+Asked what counts as dangerous, with the orchestrator's recommendation of "can end the day"
+(`hard_fail`), under which the fire truck and the day-13 column lose the warning PR #372 gives them,
+against also counting a big hit to the meter:
+
+> "okay that sounds good -- I was thinking fire truck counts, too, but you convinced me"
+
+24. **Dangerous means it can end the day** (`hard_fail`): the orchestrator's proposal, agreed to by
+    the player, who had first thought the fire truck counted. So the fire truck and the day-13
+    column do not telegraph; the cyclist and the pursuers do. → M226.

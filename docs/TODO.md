@@ -759,9 +759,11 @@ nothing."
       not telegraph; the loose dog and the cat come at her but are not dangerous. The cues rule's badge for "something
       lethal or faster than a walk" becomes fast and dangerous, and the fairness contract, the
       badge and warning-first placement are stated for those things only. Every row the change
-      moves out of telegraphing is listed with what it does instead. Open, for the player: **what
-      counts as dangerous** — the orchestrator's reading, not confirmed, is a thing that can end
-      the day (`hard_fail`).
+      moves out of telegraphing is listed with what it does instead. **Dangerous means it can end
+      the day** (`hard_fail`) *("okay that sounds good -- I was thinking fire truck counts, too, but
+      you convinced me"; statement 24, the orchestrator's proposal agreed to)*, so the fire truck
+      and the day-13 column, which PR #372 warns first, stop telegraphing and simply drive up the
+      road; the cyclist and the pursuers keep it.
 
 Replaces the orchestrator's proposal on PR #372 of a 2.9s badge before the dog's 4.5s approach,
 which would have lengthened the day-3 timing the player calls correct.
