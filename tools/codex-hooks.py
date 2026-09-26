@@ -91,11 +91,12 @@ def main() -> None:
                 # .claude/hooks/git-grep-guard.sh's own header). Checked before the
                 # shell-reminder below, and on a deny nothing else about this call is
                 # printed -- Codex accepts the same permissionDecision JSON Claude Code does.
-                # Codex documents `command` as a string; an argument list (["bash", "-lc",
-                # "..."]) is passed on too, and the guard joins it with spaces, so an
-                # unexpected shape is checked rather than skipped. Codex's unified-exec tool
-                # (`exec_command`) carries its command in `cmd` instead, so that is read when
-                # `command` is absent or empty.
+                # Codex reports every shell call as `Bash` with `tool_input.command`, a string
+                # (measured with Codex CLI 0.157.1). An argument list (["bash", "-lc", "..."])
+                # is passed on too, and the guard joins it with spaces, so an unexpected shape
+                # is checked rather than skipped. `cmd` is read when `command` is absent only as
+                # a fail-safe: it is the argument name of the tool the model calls, and no
+                # Codex hook payload has been seen to carry it.
                 command = args.get("command") or args.get("cmd")
                 if isinstance(command, (str, list)) and command:
                     guard = run_hook("git-grep-guard.sh", "Bash", extra_input={"command": command})

@@ -19,9 +19,8 @@ unbounded `git grep` on Codex's own Bash calls the same way Claude Code's does, 
 the startup rules on session start, resume, compaction and subagent start. **A change to a hook
 script under `.claude/hooks/` or to the hooks in `.claude/settings.json` updates
 `tools/codex-hooks.py` and its tests in the same PR** *(2026-09-26: "okay, yes this is important to
-keep up to date")*, because Codex names its tools and fields differently (`apply_patch` rather than
-`Edit`/`Write`, `exec_command`'s `cmd` rather than `command`) and a hook that works only in Claude
-Code leaves Codex unguarded. The hooks need Python 3.9+, Bash and jq, and run only once the
+keep up to date")*, because Codex names its tools differently (`apply_patch` rather than
+`Edit`/`Write`) and a hook that works only in Claude Code leaves Codex unguarded. The hooks need Python 3.9+, Bash and jq, and run only once the
 repository is trusted and the hooks are reviewed through `/hooks`; restart Codex if new hooks or
 skills do not appear. Where a rule says `Read`, Codex uses
 file-reading tools or shell reads; where it says `Edit` or `Write`, `apply_patch`, which keeps the

@@ -303,9 +303,11 @@ class CodexHooksTest(unittest.TestCase):
         text = self.call(tool="Bash", command="git grep -n foo -- '*.md' 2>/dev/null")
         self.assertIn("committing", text)
 
-    def test_git_grep_guard_reads_exec_commands_cmd_field(self) -> None:
-        # Codex's unified-exec tool sends {"cmd": "..."} rather than {"command": "..."}; the
-        # adapter reads either, so the guard is not skipped for the field name.
+    def test_git_grep_guard_falls_back_to_a_cmd_field(self) -> None:
+        # A fail-safe, not a payload Codex is known to send: Codex reports shell calls as Bash
+        # with `command` (measured with Codex CLI 0.157.1). `cmd` is the argument name of the
+        # model-facing exec tool, so if a Codex version ever passed it through, the adapter
+        # still checks it rather than skipping the guard.
         output = self.call_raw(tool="exec_command", tool_input={"cmd": "git grep -n -i foo -- docs/"})
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")

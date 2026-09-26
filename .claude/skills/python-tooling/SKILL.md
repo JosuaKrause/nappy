@@ -55,10 +55,9 @@ echo '{"hook_event_name":"SessionStart","session_id":"x","cwd":"'"$PWD"'"}' | /u
 important to keep up to date".)* A new or changed script under `.claude/hooks/`, or a changed hook
 entry in `.claude/settings.json` (a new matcher, a new tool name, a new field read), comes with the
 matching change to `tools/codex-hooks.py`, `.codex/hooks.json` where its matcher is affected, and a
-case in `tools/test_codex_hooks.py`. Codex names its tools and fields differently — `apply_patch`
-rather than `Edit`/`Write`, `exec_command` carrying its command in `cmd` rather than `command` — so
-a hook that is only checked against Claude Code's payloads leaves Codex unguarded without any test
-turning red.
+case in `tools/test_codex_hooks.py`. Codex names its tools differently — a patch arrives as
+`apply_patch` rather than `Edit`/`Write` — so a hook that is only checked against Claude Code's
+payloads leaves Codex unguarded without any test turning red.
 
 ## Add a tooling dependency
 
