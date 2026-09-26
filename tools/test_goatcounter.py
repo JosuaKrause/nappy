@@ -106,6 +106,32 @@ class DotenvTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp, mock.patch.dict("os.environ", {}, clear=True):
             self.assertIsNone(goatcounter.env_or_dotenv("GOATCOUNTER_TOKEN", root=Path(temp)))
 
+    def _worktree_layout(self, temp: str) -> tuple[Path, Path]:
+        # The layout `git worktree add` leaves: the main checkout's .git directory holds
+        # worktrees/<name>/commondir ("../.."), and the worktree's .git is a file pointing there.
+        main = Path(temp) / "main"
+        gitdir = main / ".git" / "worktrees" / "wt"
+        gitdir.mkdir(parents=True)
+        (gitdir / "commondir").write_text("../..\n", encoding="utf-8")
+        worktree = main / ".claude" / "worktrees" / "wt"
+        worktree.mkdir(parents=True)
+        (worktree / ".git").write_text(f"gitdir: {gitdir}\n", encoding="utf-8")
+        return main, worktree
+
+    def test_env_or_dotenv_in_a_worktree_falls_back_to_the_main_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, mock.patch.dict("os.environ", {}, clear=True):
+            main, worktree = self._worktree_layout(temp)
+            (main / ".env").write_text("GOATCOUNTER_TOKEN=from-main\n", encoding="utf-8")
+            self.assertEqual(goatcounter.env_or_dotenv("GOATCOUNTER_TOKEN", root=worktree), "from-main")
+            (worktree / ".env").write_text("GOATCOUNTER_TOKEN=from-worktree\n", encoding="utf-8")
+            self.assertEqual(goatcounter.env_or_dotenv("GOATCOUNTER_TOKEN", root=worktree), "from-worktree")
+
+    def test_main_checkout_is_none_outside_a_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            main, _worktree = self._worktree_layout(temp)
+            self.assertIsNone(goatcounter._main_checkout(main))
+            self.assertIsNone(goatcounter._main_checkout(Path(temp)))
+
 
 class ClassifyTests(unittest.TestCase):
     def test_run_level_shapes(self) -> None:
@@ -418,8 +444,12 @@ class MainTests(unittest.TestCase):
             raise AssertionError("make_fetcher must not be called when the key is missing")
 
         stdout, stderr = io.StringIO(), io.StringIO()
+        # An empty root, so a real .env in this checkout (or in the main checkout, from a worktree)
+        # cannot supply the key the test says is missing.
         with (
+            tempfile.TemporaryDirectory() as temp,
             mock.patch.dict("os.environ", {}, clear=True),
+            mock.patch.object(goatcounter, "_repo_root", return_value=Path(temp)),
             mock.patch.object(goatcounter, "make_fetcher", side_effect=never),
             redirect_stdout(stdout),
             redirect_stderr(stderr),

@@ -23,7 +23,8 @@ way. A process environment variable always wins; when one is not set, a `.env` f
 repository root (`KEY=value` per line, blank lines and `#` comments ignored, optional surrounding
 quotes stripped -- git-ignored, so it never reaches a commit) is read for it instead, which is
 mainly for a local checkout where exporting the variable in every shell is more friction than a
-file read once. Nothing here prints either value.
+file read once. In a linked git worktree the main checkout's `.env` is read after the worktree's
+own. Nothing here prints either value.
 
 `GET /api/v0/stats/hits` answers `{hits: [...], more, total}`, paginated by repeating
 `exclude_paths=<path_id>` for every id already seen while `more` stays true (see
@@ -135,18 +136,48 @@ def _parse_dotenv(path: Path) -> dict[str, str]:
     return values
 
 
+def _main_checkout(root: Path) -> Path | None:
+    """The main checkout's root when `root` is a linked git worktree, else None.
+
+    A worktree's `.git` is a file (`gitdir: <main>/.git/worktrees/<name>`), and that directory's
+    `commondir` names the shared `.git`, whose parent is the main checkout. Read from the files
+    rather than by running git, so a missing git or an odd layout only means no second place to
+    look.
+    """
+    try:
+        text = (root / ".git").read_text(encoding="utf-8").strip()
+        if not text.startswith("gitdir:"):
+            return None
+        gitdir = Path(text.partition(":")[2].strip())
+        if not gitdir.is_absolute():
+            gitdir = root / gitdir
+        common = (gitdir / (gitdir / "commondir").read_text(encoding="utf-8").strip()).resolve()
+    except OSError:
+        return None
+    main = common.parent
+    return main if main.resolve() != root.resolve() else None
+
+
 def env_or_dotenv(key: str, *, root: Path | None = None) -> str | None:
     """`key` from the process environment, falling back to a `.env` file at the repo root.
 
     The process environment always wins -- `.env` is a convenience for a shell that has not
-    exported the variable, never a way to override one that has. Callers never print what comes
-    back; this only says whether a value was found.
+    exported the variable, never a way to override one that has. In a linked worktree, which has
+    no `.env` of its own unless one is put there, the main checkout's `.env` is read after the
+    worktree's, so an agent working in a worktree finds the key the player keeps in the checkout.
+    Callers never print what comes back; this only says whether a value was found.
     """
     value = os.environ.get(key)
     if value:
         return value
-    found = _parse_dotenv((root or _repo_root()) / ".env").get(key)
-    return found or None
+    here = root or _repo_root()
+    for place in (here, _main_checkout(here)):
+        if place is None:
+            continue
+        found = _parse_dotenv(place / ".env").get(key)
+        if found:
+            return found
+    return None
 
 
 # --------------------------------------------------------------------------------------- time ---
