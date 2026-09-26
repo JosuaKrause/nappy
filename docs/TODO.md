@@ -223,6 +223,8 @@ The entries, in the order the gameplay queue above gives them, reassessed on 202
 - [M222 — The red arrow for the van ends on the van](todo/2026-09-26-M222/)
 - [M223 — One file per queue entry and per decision, named by date and two words](todo/2026-09-26-M223/)
 - [M225 — The counter counts every attempt, a key player, and a torn poster's chase](todo/2026-09-26-M225/)
+- [M227 — Codex works as a sub-agent of a Claude Code session, in a worktree](todo/2026-09-26-M227/)
+- [M228 — Editing a hook loads the rule that keeps the Codex adapter current](todo/2026-09-26-M228/)
 - [M159 — A slow frame names the frame that was slow](todo/2026-09-19-M159/)
 - [M129 — A path through the city never has to cost · one route in five still breaks](todo/2026-09-25-M129/)
 - [M137 — The contact is whoever she hands the note to, and the trap comes to her](todo/2026-09-13-M137/)

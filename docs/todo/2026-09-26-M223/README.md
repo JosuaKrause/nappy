@@ -8,7 +8,8 @@ record is [2026-09-26-M223](../../decisions/2026-09-26-M223.md). What is open is
 player asked for with it. The split moved every open entry and review item as it was written; none
 of them has yet been re-read against its playtest.
 
-The order is the player's (2026-09-26): "get the hook in. then the new planning rules. then we need
+The order is the player's ([2026-09-26-brisk-heron](../../playtests/2026-09-26-brisk-heron.md),
+statement 1): "get the hook in. then the new planning rules. then we need
 to update all open PRs to follow the new planning rules". So the open pull requests are converted
 to the layout first, and the overhaul reads the queue they leave.
 
