@@ -1,0 +1,126 @@
+{
+  "archive_contents": [
+    "index.html",
+    "README.md",
+    "manifest.json",
+    "footsteps-grounded.wav",
+    "footsteps-stylized.wav",
+    "stroller-wheels-grounded.wav",
+    "stroller-wheels-stylized.wav",
+    "car-horn-grounded.wav",
+    "car-horn-stylized.wav",
+    "loudspeaker-crackle-grounded.wav",
+    "loudspeaker-crackle-stylized.wav",
+    "comparison.wav",
+    "recipe/synthesize-sfx.py"
+  ],
+  "comparison_order": [
+    "footsteps-grounded.wav",
+    "footsteps-stylized.wav",
+    "stroller-wheels-grounded.wav",
+    "stroller-wheels-stylized.wav",
+    "car-horn-grounded.wav",
+    "car-horn-stylized.wav",
+    "loudspeaker-crackle-grounded.wav",
+    "loudspeaker-crackle-stylized.wav"
+  ],
+  "files": {
+    "car-horn-grounded.wav": {
+      "duration_seconds": 1.18,
+      "frames": 56640,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "A two-frequency horn dyad with quiet upper harmonics, breath noise and mechanical attack and release ramps.",
+      "rms_dbfs": -11.335,
+      "sha256": "5b23904f214e5a198562a6a6056fcc93f18036e7767ae8c4e5c3853875660c43"
+    },
+    "car-horn-stylized.wav": {
+      "duration_seconds": 1.18,
+      "frames": 56640,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "An exaggerated two-note honk with a downward pitch scoop, vibrato and a rounded harmonic edge.",
+      "rms_dbfs": -8.531,
+      "sha256": "755ef321e24728c5d598ceaa69fea24a35e1c7c3c84ad48bbb8f17f24dcce31f"
+    },
+    "comparison.wav": {
+      "duration_seconds": 17.56,
+      "frames": 842880,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "The eight normalized auditions concatenated as grounded then stylized within each pair, with 0.45 seconds inside pairs and 1.0 second between pairs.",
+      "rms_dbfs": -16.266,
+      "sha256": "f48bd64fa8439408f5e820ff545ac207f2611b7af74931df2c1267961d304b2b"
+    },
+    "footsteps-grounded.wav": {
+      "duration_seconds": 1.15,
+      "frames": 55200,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "Two irregular sole strikes: falling low sine thumps, low-passed grit and short filtered scrapes under exponential envelopes.",
+      "rms_dbfs": -22.018,
+      "sha256": "7e854b623d25e7263721770dc368d111803ffe99d40ba3fc9b0a5bd783156be1"
+    },
+    "footsteps-stylized.wav": {
+      "duration_seconds": 1.15,
+      "frames": 55200,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "Two pitched impacts: downward sine chirps, a soft second harmonic and brief synthetic noise ticks.",
+      "rms_dbfs": -19.962,
+      "sha256": "da66616a25029c04cd825aaaf39581f4bf3e6348e35eb73028a95d9c7b540472"
+    },
+    "loudspeaker-crackle-grounded.wav": {
+      "duration_seconds": 1.85,
+      "frames": 88800,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "Band-limited hiss, low electrical hum and a seeded set of short irregular electrical pops with resonant tails.",
+      "rms_dbfs": -22.648,
+      "sha256": "b5ca7f5edc55cbbe66652cd7868590732de7171d7b8f2ce100ad7ed9dd758baa"
+    },
+    "loudspeaker-crackle-stylized.wav": {
+      "duration_seconds": 1.85,
+      "frames": 88800,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "Stepped noise, amplitude-gated buzz and a seeded train of tonal digital spits, kept below the piercing upper band.",
+      "rms_dbfs": -20.265,
+      "sha256": "7735314a12ecfaa78d78d0938694a4c69c771effd03ba922ce31eebff8a24bf5"
+    },
+    "stroller-wheels-grounded.wav": {
+      "duration_seconds": 2.2,
+      "frames": 105600,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "Low-passed rolling noise with slow load variation, four uneven pavement joints and a restrained axle resonance.",
+      "rms_dbfs": -22.481,
+      "sha256": "d98619b1ffcce45ac2fddaf79be0e960a00c618b3f20f64d2ae76b90deece7e8"
+    },
+    "stroller-wheels-stylized.wav": {
+      "duration_seconds": 2.2,
+      "frames": 105600,
+      "peak_dbfs": -3.098,
+      "peak_linear": 0.7,
+      "recipe": "A wobbling low oscillator, repeating rounded wheel pulses and bright but band-limited joint pips.",
+      "rms_dbfs": -13.259,
+      "sha256": "0bb6f06f6ce34868e65df682d94e4e1ff05c8e0cff7134f0b78bb5152ac299b7"
+    }
+  },
+  "generator": "tools/synthesize-sfx.py",
+  "generator_sha256": "4ab70701f2e758f4914bfcd7dc70134e7dce254c84ca47ad75c76c9d260ad881",
+  "method": "Handwritten procedural synthesis using standard-library oscillators, seeded noise, envelopes and filters.",
+  "mix_target_peak": 0.7,
+  "reproducibility": {
+    "guarantee": "Two rebuilds are checked byte-for-byte with the tracked generator and locked Python 3.14 environment.",
+    "limit": "No blanket cross-platform bit-identical promise is made because platform math implementations may differ."
+  },
+  "sample_format": {
+    "bits": 16,
+    "channels": 1,
+    "encoding": "signed PCM",
+    "sample_rate_hz": 48000
+  },
+  "seed": 260926,
+  "status": "standalone audition; not installed in the game"
+}
