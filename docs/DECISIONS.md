@@ -18,8 +18,9 @@ BSD `grep -r` stays flat at a few MB and needs no guard. The full table is in PR
 
 **What is built.** `.claude/hooks/git-grep-guard.sh`, a `PreToolUse` hook on `Bash` and `Monitor`
 (which runs a shell command too) in `.claude/settings.json` and, through `tools/codex-hooks.py`, on
-Codex's shell tools (`exec_command`, `shell`, `shell_command`; the adapter reads `command` or
-`cmd`). It denies a `git grep` (including `git -C <dir> grep`, `git --no-pager grep`, a full path to
+Codex's shell calls, which reach its hooks as `Bash` with the command in `command` (measured with a
+live Codex CLI 0.157.1 run; the adapter also reads a `cmd` field as a fail-safe no payload has
+been seen to carry). It denies a `git grep` (including `git -C <dir> grep`, `git --no-pager grep`, a full path to
 git, in a loop, after `&&`, `;` or `|`, or in `$(…)`) that has neither an effective `-I` nor a
 pathspec restricted to a known list of text extensions. `-I` is read the way git reads it: the last
 of `-I` and `-a`/`--text`/`--no-text` wins, and an `-e`/`-f` argument is never a flag. An exclusion
@@ -30,9 +31,10 @@ It reads the raw command text three ways and denies if any reading matches: quot
 replaced by spaces, and quotes honoured. So a wrapper (`timeout`, `sudo`, `find | xargs`), a heredoc
 fed to an interpreter, quoted code run by one (`bash -c`, `python3 -c`, an f-string) and a mention
 all deny. What still passes is a `grep` that is not its own word after `git`: `git log --grep=…`,
-`git log -S grep`, `git … | grep`, the bare word `git-grep`, and "git, grep" in prose. A command
-over 128 KB holding both words is denied before the slow quote-honouring reading, and the hook's
-timeout is 10s, the same as the other hooks. Claude Code's hooks documentation says settings hooks
+`git log -S grep`, `git … | grep`, the bare word `git-grep`, and "git, grep" in prose. All three
+readings are linear in the text's length, and a command over 32 KB holding both words is denied
+before they run, which keeps the densest text at about 1.2s against the hook's 10s timeout, the
+same as the other hooks'. Claude Code's hooks documentation says settings hooks
 fire for a sub-agent's tool calls too, which is what ran the command. A hook added to
 `settings.json` runs only once the player has approved it through `/hooks`.
 
@@ -46,21 +48,25 @@ Open to overturn.
 boundary words (a newline or an unknown wrapper ended a command early); a quote-opaque parse that
 skipped heredoc bodies (the call inside `bash <<EOF` passed); a single quote-deleting reading (it
 glued the character before a quote onto the next word, so `f"git grep …"` and `cmd="git grep …"`
-passed); and a bash tokenizer, which ran past the 5s timeout at about 20 KB.
+passed); a bash tokenizer, which ran past the 5s timeout at about 20 KB; and a quote-honouring
+reading that appended to an array in its state, quadratic in the number of words, so dense
+short-word text ran past the 10s timeout at 128 KB.
 
-**Accepted holes**, listed in the hook's header: a shell or git alias, a `git` or `grep` assembled by
-an expansion (`$(echo gi)t grep`), a command kept in a
-file the command runs (`bash x.sh`), and an attributes file or `--attr-source` that marks binaries
-as text.
+**Accepted holes**, each needing a deliberate step; the hook's header holds the full list. Among
+them: a shell or git alias, a `git` or `grep` assembled by an expansion (`$(echo gi)t grep`), an
+encoded command, a command kept in a file the command runs (`bash x.sh`), and an attributes file or
+`--attr-source` that marks binaries as text.
 
 **Choices open to overturn**: a revision-less `git grep` gets no exemption, since the working tree
 without `-I` grew fastest of all; several trees on one line get no rule of their own, since the
 branches share blobs; the extension list is explicit, so `-- '*.png'` is denied; any long pathspec
 magic (`:(glob)*.md`) and a text pathspec that also carries an exclusion are false denies.
 
-**The review found two places the hook did not reach**, `Monitor` and Codex's `cmd` field, which is
-why a change to a hook now updates the adapter and its tests in the same PR *(2026-09-26: "okay,
-yes this is important to keep up to date")*; the rule is in `CLAUDE.md` and python-tooling.
+**A review found `Monitor` unguarded**, and a second guess that Codex sent its commands as
+`exec_command` with a `cmd` field was disproved only by running Codex. That is why a change to a
+hook now checks whether Codex's side is affected (a new tool name, payload field or hook event)
+and updates the adapter, `.codex/hooks.json` and their tests in the same PR when it is *(2026-09-26:
+"okay, yes this is important to keep up to date")*; the rule is in `CLAUDE.md` and python-tooling.
 
 ## Amber otter — Fence graphics accepted · 2026-09-26
 
