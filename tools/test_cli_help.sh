@@ -192,6 +192,9 @@ assert_exit "new-name.sh --bogus" nonzero ./tools/new-name.sh --bogus todo "x"
 assert_exit "new-name.sh (no title)" nonzero ./tools/new-name.sh todo
 assert_exit "new-name.sh (unknown kind)" nonzero ./tools/new-name.sh entry "x"
 assert_exit "new-name.sh --entry on a todo" nonzero ./tools/new-name.sh todo --entry M1 "x"
+assert_exit "new-name.sh --priority on a review" nonzero ./tools/new-name.sh review --priority now "x"
+assert_exit "new-name.sh --priority (unknown band)" nonzero ./tools/new-name.sh todo --priority soon "x"
+assert_exit "new-name.sh --priority (missing value)" nonzero ./tools/new-name.sh todo --priority
 assert_exit "decisions.sh --bogus" nonzero ./tools/decisions.sh --bogus
 assert_exit "decisions.sh --in (unknown folder)" nonzero ./tools/decisions.sh --in archive M129
 assert_exit "queue.sh --bogus" nonzero ./tools/queue.sh --bogus
@@ -407,10 +410,10 @@ fi
 names_repo="$work_dir/names-repo"
 mkdir -p "$names_repo/tools/names" "$names_repo/docs/todo/2026-09-26-M210" "$names_repo/docs/decisions" \
     "$names_repo/docs/review" "$names_repo/docs/playtests"
-cp "$root/tools/new-name.sh" "$root/tools/decisions.sh" "$names_repo/tools/"
+cp "$root/tools/new-name.sh" "$root/tools/decisions.sh" "$root/tools/queue.sh" "$names_repo/tools/"
 printf 'busy\n' > "$names_repo/tools/names/adjectives.txt"
 printf 'badger\notter\n' > "$names_repo/tools/names/animals.txt"
-printf '## M210 — The brief is the coming day\x27s · asked for 2026-09-26\n' \
+printf 'priority: next\n\n## M210 — The brief is the coming day\x27s · asked for 2026-09-26\n' \
     > "$names_repo/docs/todo/2026-09-26-M210/README.md"
 printf '# Playtest busy-badger — Taken\n' > "$names_repo/docs/playtests/2026-09-01-busy-badger.md"
 
@@ -429,6 +432,8 @@ check_that "new-name.sh takes the one pair not already used, in any folder, what
     '[[ "$made" == 2026-09-27-busy-otter ]]'
 check_that "new-name.sh writes the entry's context file with its heading and date" \
     'grep -qx "# busy-otter — Stars for nerves · filed 2026-09-27" "$names_repo/docs/todo/2026-09-27-busy-otter/README.md"'
+check_that "new-name.sh opens a new entry with the band line priority: later" \
+    '[[ "$(head -n 1 "$names_repo/docs/todo/2026-09-27-busy-otter/README.md")" == "priority: later" ]]'
 out="$(cd "$names_repo" && ./tools/new-name.sh playtest "No words left" 2>&1)"
 status=$?
 check_that "new-name.sh refuses when every pair is taken, and writes nothing" \
@@ -510,6 +515,27 @@ printf -- '- [gone](todo/2026-09-01-quiet-heron/)\n' >> "$names_repo/docs/TODO.m
 lint_in_names_repo docs/TODO.md
 status=$?
 check_that "lint.sh rejects a link in TODO.md to an entry folder that does not exist" '[[ $status -ne 0 ]]'
+printf '# TODO\n' > "$names_repo/docs/TODO.md"
+cp "$names_repo/docs/todo/2026-09-26-M210/README.md" "$work_dir/M210-README.md"
+sed '1d' "$work_dir/M210-README.md" > "$names_repo/docs/todo/2026-09-26-M210/README.md"
+lint_in_names_repo docs/todo/2026-09-26-M210/README.md
+status=$?
+check_that "lint.sh rejects an entry with no priority line" '[[ $status -ne 0 ]]'
+printf 'priority: next\nafter: 2026-09-01-gone-heron\n' > "$names_repo/docs/todo/2026-09-26-M210/README.md"
+sed '1d' "$work_dir/M210-README.md" >> "$names_repo/docs/todo/2026-09-26-M210/README.md"
+lint_in_names_repo docs/todo/2026-09-26-M210/README.md
+status=$?
+check_that "lint.sh rejects an after naming no entry" '[[ $status -ne 0 ]]'
+cp "$work_dir/M210-README.md" "$names_repo/docs/todo/2026-09-26-M210/README.md"
+lint_in_names_repo docs/todo/2026-09-26-M210/README.md
+status=$?
+check_that "lint.sh passes the entry again once its band line is whole" '[[ $status -eq 0 ]]'
+printf 'otter\nwren\n' > "$names_repo/tools/names/animals.txt"
+made="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-30 todo --priority now "Now it is" 2>/dev/null)"
+check_that "new-name.sh --priority writes the band it names" \
+    '[[ "$made" == 2026-09-30-busy-wren && "$(head -n 1 "$names_repo/docs/todo/$made/README.md")" == "priority: now" ]]'
+rm -rf "$names_repo/docs/todo/2026-09-30-busy-wren"
+printf 'badger\notter\n' > "$names_repo/tools/names/animals.txt"
 
 # ----------------------------------------------------- queue.sh orders the entries by their bands ---
 # A scratch queue: two `now` entries, which print newest first; two old `next` entries under one

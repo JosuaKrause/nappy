@@ -10,7 +10,8 @@ same name, in the same commit.
 Search the records (`tools/decisions.sh <noun>`) before designing anything. No ticked boxes, no
 "Done:" paragraphs, no branch names or status words in headings, here or in an entry.
 
-`tools/new-name.sh todo "<title>"` makes a new entry's folder and prints its name. Read
+`tools/new-name.sh todo "<title>"` makes a new entry's folder, its `README.md` opening with
+`priority: later` unless `--priority` names another band, and prints its name. Read
 [HANDOFF.md](HANDOFF.md) first for the state of the tree.
 
 Each entry is one git branch, squash-merged to `main` through its pull request. An item somebody
