@@ -1523,6 +1523,9 @@ func _add_touch_controls() -> void:
 ## browser ever resizing the canvas, latching the wrong `content_scale_size` until a reload. Asking
 ## the same question every frame instead means the decision cannot go stale between calls.
 func _apply_orientation() -> void:
+	# DEBUG_PROBE: guard against the boot-time race, see if this alone fixes the repro.
+	if not _player or not _touch_controls or not _hud:
+		return
 	var rotate := ScreenOrientation.wants_rotation(get_window().size, _touch_available)
 	_rotated = rotate
 	get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
