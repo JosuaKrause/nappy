@@ -174,10 +174,12 @@ if [[ "$NO_SERVE" -eq 1 ]]; then
     exit 0
 fi
 
+bind="127.0.0.1"
 echo
 echo "serving ${OUT_DIR#"$PROJECT_DIR"/}"
 echo "open:  http://localhost:$PORT/index.html"
 if [[ "$LAN" -eq 1 ]]; then
+    bind="0.0.0.0"
     lan_ip=""
     for iface in en0 en1 en2; do
         lan_ip="$(ipconfig getifaddr "$iface" 2>/dev/null || true)"
@@ -190,4 +192,4 @@ if [[ "$LAN" -eq 1 ]]; then
     fi
 fi
 echo "(Ctrl-C to stop)"
-cd "$OUT_DIR" && exec python3 -m http.server "$PORT"
+cd "$OUT_DIR" && exec python3 -m http.server --bind "$bind" "$PORT"
