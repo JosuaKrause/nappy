@@ -126,3 +126,26 @@ river", "*robber not Robert"):
     next.** → M223, M225.
 14. **Every file is split where that is appropriate, the review file included, and every item
     still relevant is overhauled** in the new layout. → M223.
+
+## Then, on the orchestrator's list of additions beyond the player's words
+
+The orchestrator listed 27 choices made beyond the player's words across the open PRs, numbered,
+for the player to reaffirm or overturn. The player:
+
+> "can you elaborate on 9. Let's do chasing guard for the van. Robber for yeller is fine *if* it
+> starts offsceeen. 13 is not okay. 17. Why? 18 wdym? For the roof I need to see examples. Explain
+> 25. How can I check on a phone anyway? Screenshots? All other items looked good"
+
+The items the answer names, as listed: 9, code comments citing "`DECISIONS.md`, M129, …" stay and
+resolve through a search command (M223); 11, a chasing robber also after the van, the burnt shell
+and the roadblock (M137); 13, the cyclist's smaller field makes him cheaper to pass, 16.0 to 12.1
+(M207); 17, roof furniture is not carried onto an extended roof, and 18, a column against the map
+edge stays blank (M203); 25, the day-6 handover ends the man shouting's charge at 36px, inside his
+45px inner radius (M205).
+
+15. **After the van (day 7) a guard chases her**; after the man shouting, the robber, which is
+    fine only if he starts off screen. → M137.
+16. **The cyclist must not become cheaper to pass** for the shorter warning. → M207.
+17. **The roof cases are judged on pictures.** → M203.
+18. **Every other listed addition is reaffirmed**: 1–8, 10, 12, 14–16, 19–24, 26 and 27, and 9,
+    17, 18 and 25 wait on the explanations asked for.
