@@ -46,3 +46,6 @@ __pycache__/
 # Per-session agent briefs the orchestrator writes before spawning (tools/agent-status.sh reads
 # them back). Local working state, never repo content.
 .claude/briefs/
+
+# The session-end restart prompt (session-cleanup): local, rewritten by every handover
+.claude/restart-prompt.md
