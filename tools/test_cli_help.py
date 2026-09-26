@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import struct
 import subprocess
 import sys
@@ -165,26 +166,33 @@ class CliHelpTests(unittest.TestCase):
         tools/synthesize-sfx.py directly, with no pinned commit) matches every hash the recipe
         records for it. No archived evidence is read here: the recipe carries its own expected
         hashes, which is the point of replacing a committed listening kit with a reproducible
-        command."""
+        command.
+
+        Builds into a scratch SOUND_LAB_BUILD_ROOT rather than the real build/sound-lab/: the real
+        one may be what a running `tools/sound-lab.sh` is serving to a listener, and this test's
+        own `rm -rf` (inside the script) must not delete it out from under them."""
         recipe = json.loads((TOOLS / "sound-lab" / "passes.json").read_text())
         pass_name = recipe["pass"]
         recorded_hashes: dict[str, str] = recipe["hashes"]
 
-        result = subprocess.run(
-            [str(TOOLS / "sound-lab.sh"), "--no-serve"],
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            cwd=PROJECT_ROOT,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
+        with tempfile.TemporaryDirectory() as temporary:
+            build_root = Path(temporary) / "sound-lab"
+            result = subprocess.run(
+                [str(TOOLS / "sound-lab.sh"), "--no-serve"],
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd=PROJECT_ROOT,
+                env={**os.environ, "SOUND_LAB_BUILD_ROOT": str(build_root)},
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
 
-        output_dir = PROJECT_ROOT / "build" / "sound-lab" / pass_name
-        for filename, expected_sha256 in recorded_hashes.items():
-            with self.subTest(wav=filename):
-                actual_sha256 = hashlib.sha256((output_dir / filename).read_bytes()).hexdigest()
-                self.assertEqual(actual_sha256, expected_sha256, f"{filename} did not rebuild byte-for-byte")
+            output_dir = build_root / pass_name
+            for filename, expected_sha256 in recorded_hashes.items():
+                with self.subTest(wav=filename):
+                    actual_sha256 = hashlib.sha256((output_dir / filename).read_bytes()).hexdigest()
+                    self.assertEqual(actual_sha256, expected_sha256, f"{filename} did not rebuild byte-for-byte")
 
 
 if __name__ == "__main__":

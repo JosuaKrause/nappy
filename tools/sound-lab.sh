@@ -26,12 +26,17 @@
 # Live iteration on the generator before it is worth freezing this way is
 # `uv run python tools/synthesize-sfx.py` straight, per the sound-effects skill, into a scratch
 # --output of your own choosing.
+#
+# SOUND_LAB_BUILD_ROOT overrides the directory a pass is rebuilt into; it is a test-only escape
+# hatch (tools/test_cli_help.py points it at a tempfile.TemporaryDirectory() rather than the real
+# build/sound-lab/, so a test run's own `rm -rf` never deletes what a running `tools/sound-lab.sh`
+# is serving to a listener). Nobody runs the tool this way by hand, so it is not a flag.
 set -uo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GENERATOR="$PROJECT_DIR/tools/synthesize-sfx.py"
 RECIPE_FILE="$PROJECT_DIR/tools/sound-lab/passes.json"
-BUILD_ROOT="$PROJECT_DIR/build/sound-lab"
+BUILD_ROOT="${SOUND_LAB_BUILD_ROOT:-$PROJECT_DIR/build/sound-lab}"
 
 usage() {
     cat <<'EOF'
