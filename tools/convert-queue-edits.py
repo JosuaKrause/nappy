@@ -12,9 +12,10 @@ same edit to that one file. Each of those is applied to `main`'s side -- three-w
 changed the same file too -- and the three old files are resolved to `main`'s new text.
 
 It refuses, naming every path, and changes nothing, when an edit cannot be mapped: the branch
-changed a file `main` deleted, deleted one `main` changed, added one `main` has differently, or
-made a change to the same file as `main` that does not merge. The semantic review of the merge
-stays the reviewer's (the merging-main skill).
+edited the text above `TODO.md`'s order or above `REVIEW.md`'s first item, which the new layout
+replaces rather than moves, changed a file `main` deleted, deleted one `main` changed, added one
+`main` has differently, or made a change to the same file as `main` that does not merge. The
+semantic review of the merge stays the reviewer's (the merging-main skill).
 """
 
 from __future__ import annotations
@@ -141,6 +142,17 @@ def plan(cwd: Path, base: str, branch: str, main: str) -> Plan:
         out.problems.append(
             f"{main} still has the old single-file queue: merge it normally, there is nothing to convert"
         )
+        return out
+    # The migration replaces these headers rather than moving them, so an edit there has no file to go to.
+    base_headers, branch_headers = q.old_headers(base_texts), q.old_headers(branch_texts)
+    for path in sorted(set(base_headers) | set(branch_headers)):
+        if base_headers.get(path) != branch_headers.get(path):
+            where = "above `## The order`" if path == q.TODO else "above its first item"
+            out.problems.append(
+                f"{path}: the branch edited the text {where}, which the new layout replaces rather"
+                " than moves; carry that edit into a file by hand"
+            )
+    if out.problems:
         return out
     try:
         before = q.migrate(base_texts, q.git_first_dates(base, str(cwd)), strict=False).tree

@@ -153,6 +153,17 @@ class ConvertTests(unittest.TestCase):
         self.assertTrue(any("second-item.md" in problem for problem in plan.problems), plan.problems)
         self.assertEqual(self.git("status", "--porcelain"), before)
 
+    def test_an_edit_above_the_first_review_item_is_refused(self) -> None:
+        # The shape an open PR used: a new section inserted under `# Review`, above the header text.
+        self.migrate_main()
+        review = replaced(fixtures.REVIEW, "# Review\n\n", "# Review\n\n## Added on the branch\n\nTry this.\n\n")
+        self.branch_edits({q.REVIEW: review})
+        before = self.git("status", "--porcelain")
+        plan = self.run_plan()
+        self.assertTrue(any(problem.startswith(q.REVIEW + ":") for problem in plan.problems), plan.problems)
+        self.assertEqual(plan.writes, {})
+        self.assertEqual(self.git("status", "--porcelain"), before)
+
     def test_a_main_still_on_the_old_files_is_refused(self) -> None:
         self.write("docs/playtests/PLAYTEST-1.md", "# Playtest 1\n")
         self.commit("main moves on the old way")

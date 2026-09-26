@@ -537,6 +537,14 @@ def split_items(lines: list[str], offset: int) -> tuple[list[str], list[Item]]:
     return context, items
 
 
+def todo_header(lines: list[str], order_at: int) -> list[str]:
+    """TODO.md's text above `## The order`, which the migration replaces with NEW_TODO_HEADER."""
+    header = lines[:order_at]
+    while header and header[-1].strip() in ("", "---"):
+        header.pop()
+    return header
+
+
 def parse_todo(text: str, strict: bool, report: Report) -> tuple[list[str], list[Entry]]:
     """Return the order section's lines (entries inside it replaced by markers) and every entry."""
     lines = text.split("\n")
@@ -548,9 +556,7 @@ def parse_todo(text: str, strict: bool, report: Report) -> tuple[list[str], list
         order_at = lines.index("## The order")
     except ValueError as error:
         raise QueueFormatError(f"{TODO}: no `## The order` heading") from error
-    header = lines[:order_at]
-    while header and header[-1].strip() in ("", "---"):
-        header.pop()
+    header = todo_header(lines, order_at)
     if strict and join(header) != OLD_TODO_HEADER:
         raise QueueFormatError(
             f"{TODO}: the header above `## The order` is not the text tools/lib_queue.py rewrites"
@@ -700,6 +706,14 @@ class Bullet:
     lines: list[str]
 
 
+def review_header(lines: list[str], first: int) -> list[str]:
+    """REVIEW.md's text above its first item, which the migration replaces with NEW_REVIEW."""
+    header = lines[:first]
+    while header and header[-1].strip() == "":
+        header.pop()
+    return header
+
+
 def parse_review(text: str, strict: bool, report: Report) -> list[Bullet]:
     """Every item of both lists: the next run's and what no person has tested yet."""
     lines = text.split("\n")
@@ -710,9 +724,7 @@ def parse_review(text: str, strict: bool, report: Report) -> list[Bullet]:
     first = next((i for i, line in enumerate(lines) if line.startswith("- ")), None)
     if first is None:
         raise QueueFormatError(f"{REVIEW}: no item")
-    header = lines[:first]
-    while header and header[-1].strip() == "":
-        header.pop()
+    header = review_header(lines, first)
     if strict and join(header) != OLD_REVIEW_HEADER:
         raise QueueFormatError(
             f"{REVIEW}: the text above the first item is not OLD_REVIEW_HEADER in tools/lib_queue.py;"
@@ -798,6 +810,24 @@ def migrate(texts: dict[str, str], dates: DateLookup, strict: bool = True) -> Mi
             raise QueueFormatError(f"two things would be written to {sorted(clash)}")
         tree.update(part)
     return Migration(tree, report)
+
+
+def old_headers(texts: dict[str, str]) -> dict[str, str]:
+    """The text above the first entry of TODO.md and above the first item of REVIEW.md.
+
+    The migration writes neither of them out: it replaces each with the new file's own header. So
+    a strict migration refuses when one differs from the text it expects, and a non-strict one
+    (the conversion's, which reads branches cut before a header changed) needs the caller to
+    compare them, or an edit there would vanish without a word.
+    """
+    out: dict[str, str] = {}
+    todo = texts[TODO].split("\n")
+    if "## The order" in todo:
+        out[TODO] = join(todo_header(todo, todo.index("## The order")))
+    review = texts[REVIEW].split("\n")
+    first = next((i for i, line in enumerate(review) if line.startswith("- ")), len(review))
+    out[REVIEW] = join(review_header(review, first))
+    return out
 
 
 def is_old_format(texts: dict[str, str]) -> bool:
