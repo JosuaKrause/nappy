@@ -99,6 +99,8 @@ assert_exit "lint.sh --help"       zero ./tools/lint.sh --help
 assert_exit "pycheck.sh --help"    zero ./tools/pycheck.sh --help
 assert_exit "export-web.sh --help" zero ./tools/export-web.sh --help
 assert_exit "serve-web.sh --help"  zero ./tools/serve-web.sh --help
+assert_exit "sound-lab.sh --help"  zero ./tools/sound-lab.sh --help
+assert_exit "sound-lab.sh -h"      zero ./tools/sound-lab.sh -h
 assert_exit "release.sh --help"    zero ./tools/release.sh --help
 assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
@@ -140,6 +142,9 @@ assert_exit "lint.sh --bogus-flag"    nonzero ./tools/lint.sh --bogus-flag
 assert_exit "pycheck.sh --bogus"      nonzero ./tools/pycheck.sh --bogus
 assert_exit "export-web.sh --bogus"   nonzero ./tools/export-web.sh --bogus
 assert_exit "serve-web.sh --bogus"    nonzero ./tools/serve-web.sh --bogus
+assert_exit "sound-lab.sh --bogus"    nonzero ./tools/sound-lab.sh --bogus
+assert_exit "sound-lab.sh --pass (there is one pass; the flag is gone)" nonzero ./tools/sound-lab.sh --pass pass-4
+assert_exit "sound-lab.sh (bad port)" nonzero ./tools/sound-lab.sh notaport
 assert_exit "release.sh --bogus"      nonzero ./tools/release.sh --bogus
 assert_exit "run.sh --bogus"          nonzero ./tools/run.sh --bogus
 assert_exit "shot.sh --bogus"         nonzero ./tools/shot.sh "$work_dir/shot-out.png" 1 --bogus
