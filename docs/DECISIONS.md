@@ -26,6 +26,14 @@ a release reaching another control, and a fill drawn only on hover (`_draw()` re
 `hold_progress` alone). The fill is pinned by reading `hold_progress` partway through a real hold
 on both screens. Each fix's test fails with the fix reverted.
 
+**Why the fill was invisible on a phone.** The fill is a translucent white sweep over the disc.
+Under a mouse the cursor hovers the disc for the whole hold, so the disc sits on the brighter
+`Palette.BUTTON_HOVER` and the sweep reads; a touch never hovers, so the sweep painted over the dark
+`BUTTON_FILL` and barely showed. *([PLAYTEST-144](playtests/PLAYTEST-144.md): "this is already
+implemented for mouse. Just make it appear everywhere.")* `ModeButton._refresh_look()` now takes
+the bright fill for any hold, mouse or touch; a test drives both through the engine's real input
+path on both screens and fails with the fix reverted.
+
 **Not verified on a device.** No capture shows the disc filling under a held finger: `--tap` sends
 press and release in one frame and `--press` carries no screen position, so a sustained synthetic
 touch needs a new dev capability. It waits on a phone (`REVIEW.md`).
