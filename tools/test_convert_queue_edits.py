@@ -90,7 +90,7 @@ class ConvertTests(unittest.TestCase):
 
     def migrate_main(self) -> dict[str, str]:
         """`main` runs the migration, then files one more item in M5."""
-        tree = q.migrate(fixtures.texts(), q.git_line_dates("HEAD", str(self.repo))).tree
+        tree = q.migrate(fixtures.texts(), q.git_first_dates("HEAD", str(self.repo))).tree
         for path, text in tree.items():
             self.write(path, text)
         self.commit("migrate")

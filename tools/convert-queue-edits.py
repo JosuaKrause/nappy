@@ -143,8 +143,8 @@ def plan(cwd: Path, base: str, branch: str, main: str) -> Plan:
         )
         return out
     try:
-        before = q.migrate(base_texts, q.git_line_dates(base, str(cwd)), strict=False).tree
-        after = q.migrate(branch_texts, q.git_line_dates(branch, str(cwd)), strict=False).tree
+        before = q.migrate(base_texts, q.git_first_dates(base, str(cwd)), strict=False).tree
+        after = q.migrate(branch_texts, q.git_first_dates(branch, str(cwd)), strict=False).tree
     except q.QueueFormatError as error:
         out.problems.append(f"the old files do not migrate: {error}")
         return out

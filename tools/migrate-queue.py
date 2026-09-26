@@ -67,7 +67,7 @@ def main(argv: list[str]) -> int:
         print(f"refusing: {q.DECISIONS} at {args.rev} is not in the old format -- nothing to migrate", file=sys.stderr)
         return 1
     try:
-        migration = q.migrate(texts, q.git_line_dates(args.rev, str(ROOT)))
+        migration = q.migrate(texts, q.git_first_dates(args.rev, str(ROOT)))
     except q.QueueFormatError as error:
         print(f"refusing: {error}", file=sys.stderr)
         print("nothing was written.", file=sys.stderr)

@@ -209,7 +209,8 @@ class Report:
             f"  {self.decision_embedded_headings} `#`/`##` headings of superseded documents quoted inside"
             f" a record stay in that record; {self.decision_part_headings} `# ` headings not after a `---`"
             " stay in the record they continue",
-            f"  {self.decision_undated} headings carry no date and took the date git gives their heading line",
+            f"  {self.decision_undated} headings carry no date and took the date of the commit that first wrote"
+            " their heading line",
             f"TODO.md: {self.todo_entries} entries -> folders in {TODO_DIR}/, {self.todo_items} items -> files"
             f" ({self.todo_items_midway} mid-way); {self.todo_undated} headings carry no date",
             f"REVIEW.md: {self.review_items} items of the next run -> files in {REVIEW_DIR}/;"
@@ -806,6 +807,51 @@ def migrate(texts: dict[str, str], dates: DateLookup, strict: bool = True) -> Mi
 
 def is_old_format(texts: dict[str, str]) -> bool:
     return texts[DECISIONS].startswith("# Decisions\n\n## ")
+
+
+def git_first_dates(rev: str, cwd: str | None = None) -> DateLookup:
+    """A `DateLookup` answering with the author date of the commit that first wrote the line's text.
+
+    Not the commit that last touched it, which is what `git blame` gives: a record moved from
+    `HANDOFF.md` into `DECISIONS.md`, or an entry whose heading was reworded in place, would take
+    the date of the move. The history of every top-level `docs/*.md` reachable from `rev` is read
+    once, oldest first, and a text's first addition anywhere in it is its date; a line never seen
+    added (which only a history rewrite could cause) falls back to `git blame`.
+    """
+    result = subprocess.run(
+        [
+            *("git", "log", "--reverse", "--no-renames", "--format=%x00%ad", "--date=short", "-p", "-U0"),
+            *(rev, "--", ":(glob)docs/*.md"),
+        ],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise QueueFormatError(f"git log {rev} failed: {result.stderr.strip()}")
+    first: dict[str, str] = {}
+    date = ""
+    for line in result.stdout.split("\n"):
+        if line.startswith("\0"):
+            date = line[1:].strip()
+        elif line.startswith("+") and not line.startswith("+++"):
+            first.setdefault(line[1:], date)
+    texts: dict[str, list[str]] = {}
+    blamed = git_line_dates(rev, cwd)
+
+    def lookup(path: str, line: int) -> str:
+        if path not in texts:
+            shown = git_show(rev, path, cwd)
+            if shown is None:
+                raise QueueFormatError(f"{rev} has no {path}")
+            texts[path] = shown.split("\n")
+        lines = texts[path]
+        if not 1 <= line <= len(lines):
+            raise QueueFormatError(f"{rev}:{path} has no line {line}")
+        return first.get(lines[line - 1]) or blamed(path, line)
+
+    return lookup
 
 
 def git_line_dates(rev: str, cwd: str | None = None) -> DateLookup:
