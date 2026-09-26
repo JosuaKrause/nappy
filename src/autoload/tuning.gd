@@ -1493,9 +1493,10 @@ const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
 
 ## Distance from her to the edge of the view along `heading` — a ray to the edge of the
 ## `VIEW_HALF_EXTENT` box, the same arithmetic `DangerEdge._distance_to_edge` already draws the
-## screen-edge badge with. `EventDirector` sites a row that travels toward her — a pursuer or a
-## `TOWARD_PLAYER` row — at least this far out, so it starts genuinely off screen whichever way she
-## is walking rather than only on the one axis a flat number happened to cover.
+## screen-edge badge with. Anything that arrives from off screen — a pursuer the director sites, or
+## the place a warning holds for a thing not yet in the world (`PendingWarning`) — is at least this
+## far out, so it starts genuinely off screen whichever way she is walking rather than only on the
+## one axis a flat number happened to cover.
 func offscreen_boundary(heading: Vector2) -> float:
 	var boundary := INF
 	if not is_zero_approx(heading.x):
@@ -1511,19 +1512,19 @@ func offscreen_boundary(heading: Vector2) -> float:
 func min_offscreen_boundary() -> float:
 	return VIEW_HALF_EXTENT.y
 
-## The default seconds a row travelling toward her has to still be off screen once it is sited, at
+## The default seconds a row travelling toward her has to still be off screen once it is created, at
 ## the speed the gap is actually closing. *(2026-09-07: "events that go towards the player (biker /
 ## pursuing dog) should at least be 200ms off screen with a warning.")*
 ##
 ## **Per-row rather than universal**, since playtest 34 asked for two rows to move in opposite
 ## directions on the same day: `charging_dog` needs more of it (finding 2) and `cyclist` needs less
-## overall notice, bought a different way (finding 3, see `EventDef.offscreen_notice`'s own
-## reasoning). This constant stays as the default every row gets unless it overrides.
+## notice (finding 3), which his own warning time now answers rather than this. This constant stays
+## as the default every row gets unless it overrides.
 const OFFSCREEN_NOTICE := 0.2
 
-## Where `EventDirector` sites a row that travels toward her — a pursuer or a `TOWARD_PLAYER` row —
-## along `heading`: outside the view (`offscreen_boundary()`) and `notice` seconds further still, at
-## `closing_speed`.
+## How far out along `heading` something that travels toward her starts — a pursuer the director
+## sites, or the place a warning holds for a thing not yet created (`PendingWarning`): outside the
+## view (`offscreen_boundary()`) and `notice` seconds further still, at `closing_speed`.
 ##
 ## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
 ## usually walking into it, so the gap between the siting and the boundary closes at both speeds

@@ -374,9 +374,10 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## stream is spent exactly as it always was, and only the walk's siting reads this.
 @export var pastes_a_front := false
 
-## Seconds of closing this row needs beyond the screen edge before `EventDirector` will site it —
-## `Tuning.OFFSCREEN_NOTICE` (0.2) unless a row overrides it. Only `AHEAD_OF_PLAYER` (`pursues`) and
-## `TOWARD_PLAYER` rows read this; a `MAP` row is placed at dawn and never asks.
+## Seconds of closing this row needs beyond the screen edge where it is created — sited by
+## `EventDirector`, or where a warning for it points (`PendingWarning`) — `Tuning.OFFSCREEN_NOTICE`
+## (0.2) unless a row overrides it. `AHEAD_OF_PLAYER` pursuers, `TOWARD_PLAYER` rows, the fire engine
+## and day 13's column read it; a `MAP` row is placed at dawn and never asks.
 ##
 ## **Per-row because two rows needed to move in opposite directions on the same day.**
 ## *(2026-09-07: "pursuing dog is still too short notice", "while biker is now too long notice".)*
@@ -390,8 +391,8 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## can outlast the row's own budget before it ever gets to catch her — `duration` stays at
 ## `Tuning.PURSUIT_TIME` (`tests/test_events.gd` holds every pursuer to that exact ceiling), so the
 ## room has to come from the telegraph instead. See that field on the same row for the arithmetic.
-## `cyclist` is left at the default: its own notice is bought back a different way, in
-## `outer_radius` and `telegraph_time` — see the reasoning on that row.
+## `cyclist` is left at the default: his warning is his `telegraph_time`, run before he exists, and
+## this is only how far off screen he is then created.
 @export var offscreen_notice := Tuning.OFFSCREEN_NOTICE
 
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
@@ -1121,18 +1122,18 @@ func validate() -> bool:
 	if solid_once_it_starts and telegraph_time <= 0.0:
 		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
-	# `EventDirector` sites a `TOWARD_PLAYER` row at least `Tuning.offscreen_lead(heading,
-	# closing_speed, offscreen_notice)` in front of her, which is never less than
+	# A `TOWARD_PLAYER` row is created at least `Tuning.offscreen_lead(heading, closing_speed,
+	# offscreen_notice)` in front of her, where its warning points, which is never less than
 	# `Tuning.min_offscreen_lead()` at the row's own closing speed (its `speed` plus `WALK_SPEED`,
 	# since she is usually walking into it) and its own notice, whatever she is facing — so a row
-	# whose own field reaches that far would appear already inside its own outer radius on the one
-	# heading and moment the director cannot avoid, which is the one thing "she gets close and it
-	# arrives" cannot mean.
+	# whose own field reaches that far would be created already on her on the one heading and
+	# moment the director cannot avoid, which is the one thing "she gets close and it arrives"
+	# cannot mean.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
 		var floor_lead := Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
 		if outer_radius >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
-					% [id, outer_radius] + "%.0fpx it is sited at on the worst axis: it would arrive "
+					% [id, outer_radius] + "%.0fpx it is created at on the worst axis: it would arrive "
 					% floor_lead + "already inside its own reach there")
 			return false
 	# **A lethal radius and a solid body are the same mechanism**, and putting both on one event
