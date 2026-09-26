@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_title_hides_the_graph_and_keeps_its_ring(t)
+	_test_opening_the_title_reasserts_the_orientation_it_finds_stale(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_play_seconds_only_advances_while_the_world_moves(t)
@@ -386,7 +387,14 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 
 	main._player = stroller
 	main._city = City.new()
-	main._hud = CanvasLayer.new()
+	# A real scene instance rather than a bare `CanvasLayer.new()` — `_open_the_title()` now calls
+	# `_apply_orientation()` too (see that function's own doc), which reaches `_hud.set_rotated()`,
+	# a method a bare layer does not have. Added to the tree for the same reason `_title` below is:
+	# its own `@onready` children have to exist before anything reads them.
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	t.add_child(hud)
+	hud.set_process(false)
+	main._hud = hud
 	main._edge_layer = CanvasLayer.new()
 	main._status = Label.new()
 	main._status_layer = CanvasLayer.new()
@@ -427,6 +435,77 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 	main._title.free()
 	main._edge_layer.free()
 	main._hud.free()
+	main._city.free()
+	main.free()
+	stroller.free()
+
+## PLAYTEST-140, statement 5: "when you lose with game over the title screen is sideways" — seen
+## on the phone only. `_ready()`'s own `_apply_orientation()` call happens before `_start_day()`,
+## and `main.gd`'s own boot log times that at hundreds of milliseconds (planning a day's closures
+## and every event on it); a real phone's browser chrome can still be settling into its own real
+## shape somewhere in that gap, most plausibly on the very tap that just dismissed the ending
+## screen and asked for this restart. Nothing re-read the window between the two, until
+## `_open_the_title()` started asking again — see that function's own doc.
+##
+## `main` itself is never added to this suite's own tree — same reason as the test above, its own
+## `_ready()` boots a whole run — so `_apply_orientation()`'s own `Engine.get_main_loop()` is what
+## resolves the window here, exactly the substitution that function's own doc explains. That window
+## is this suite's real one: landscape and untouched, which is this test's ground truth for "the
+## way up this screen actually belongs" — a portrait window is not needed to prove the reassertion
+## runs, only a wrong answer for it to correct. `_touch_controls`, the title's own `CanvasLayer` and
+## the player's camera are all set to the rotated shape *before* `_open_the_title()` runs, standing
+## in for whatever left the previous screen mid-turn; asserting they are back to the unrotated truth
+## afterwards is what fails on the code before `_open_the_title()` called `_apply_orientation()` at
+## all, and passes once it does.
+func _test_opening_the_title_reasserts_the_orientation_it_finds_stale(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._add_touch_controls()
+
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+
+	main._player = stroller
+	main._city = City.new()
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	t.add_child(hud)
+	hud.set_process(false)
+	main._hud = hud
+	main._edge_layer = CanvasLayer.new()
+	main._status = Label.new()
+	main._status_layer = CanvasLayer.new()
+	main._title = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(main._title)
+
+	# Standing in for whatever the previous screen left behind: rotated, exactly as if
+	# `_apply_orientation()` had last been asked while the window was portrait and touch.
+	main._rotated = true
+	main._touch_controls.rotated = true
+	main._player.set_screen_rotation(deg_to_rad(90.0))
+	ScreenOrientation.apply_to_layer(main._title, true)
+	t.check(main._touch_controls.rotated and not camera.ignore_rotation,
+			"set up rotated, to prove the assertions below actually move something")
+
+	main._open_the_title()
+
+	t.check(not main._rotated,
+			"opening the title re-reads the window rather than trusting the stale rotated flag")
+	t.check(not main._touch_controls.rotated,
+			"and hands the touch controls the corrected answer, not the stale one")
+	t.check(camera.ignore_rotation and is_zero_approx(camera.rotation),
+			"and puts the player's own camera back to the window's real, unrotated shape")
+	t.check(main._title.transform == Transform2D.IDENTITY,
+			"and the title's own layer, the screen this whole test is about, matches too")
+
+	main._status.free()
+	main._status_layer.free()
+	main._title.free()
+	main._edge_layer.free()
+	hud.free()
 	main._city.free()
 	main.free()
 	stroller.free()
