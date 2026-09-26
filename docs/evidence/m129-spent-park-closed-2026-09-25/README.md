@@ -32,6 +32,24 @@ corner as one fence:
 - An end-on panel stands its feet at the near end of its share, so the column covers its own ground
   rather than standing half a panel up the screen from it.
 
+## The draft pieces, for review before they go in
+
+The player on the corners above: "the closed off park is still bad. you probably need new textures
+for corners." The front-view rails, the end-on bar and the grey post are three different objects
+butted together. `fence-draft/` holds new pictures, not yet used by the game, that draw the fence as
+one object: the same two rails, the same thickness, stripe and outline as `barrier_across.svg`, bend
+90° at each corner (`corner_{nw,ne,sw,se}.svg`) and run down the west and east sides seen from
+their end (`side_{w,e}.svg`), with the posts standing between them; a run that turns no corner ends
+with the rails stopped square and its own post (`end_{n,s}_{w,e}.svg`). There is no separate corner
+post. The north and south runs are the existing `barrier_across.svg` panels, unchanged.
+
+The `draft-*` stills stand those pictures on the real city at the stroller's play zoom (2), with the
+game's own park fence hidden: `draft-corners-{1x,3x}` (NW, NE / SW, SE, crops as above),
+`draft-corners-closeup` (each bend enlarged), `draft-sides-{1x,3x}` (the middle of the north and
+south runs / the west and east runs), `draft-whole`, and `draft-archway-{1x,3x}` and
+`draft-archway-nosign-3x` (the one-tile archway of the courtyard at block (9, 8), with and without
+its `closed` sign).
+
 ## Why these are not a `tools/shot.sh` capture
 
 Reaching "a day with a park she has already used" needs at least one full day actually played to a
