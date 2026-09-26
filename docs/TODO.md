@@ -455,6 +455,58 @@ day summary or both) was not said, so both are checked.
 
 ---
 
+## M223 — One file per queue entry and per decision, named by date and two words · asked for 2026-09-26
+
+> "we can do one file per queue entry/decision and handoff only at the end of a session" · "would
+> it be possible to use random words eg Mgray-busy-badger to create random but memorable tasks?" ·
+> "that numbering should be for everything that currently has a strict sequential number"
+
+[PLAYTEST-144](playtests/PLAYTEST-144.md), statements 1, 2, 4, 5, 6 and 7. Of the repo's 590 merges since
+2026-09-01, 136 conflicted: 86 in `docs/DECISIONS.md` (every PR inserts its record at the same
+spot under `# Decisions`), 57 in `docs/TODO.md` (neighbouring entries share their `---` lines),
+23 in `docs/HANDOFF.md` and 12 in `docs/REVIEW.md`, against 6 in the most conflicted code file.
+The M-numbers also need coordination between sessions: merging-main carries renumbering rules
+for them, and two branches claimed M208 on 2026-09-26.
+
+This changes every file an open PR moves its entry in, so it starts once the open PRs have
+landed. Until then, entries are filed the old way.
+
+- [ ] **A queue entry is a folder, and each of its items is a file**:
+      `docs/todo/<date filed>-<adjective>-<animal>/`, named and linked by its two words
+      ("busy-badger"). Sorting the folder puts the newest last. One file holds the player's words
+      and the entry's context. Each item is a file of its own beside it, written in full prose with
+      no checkbox, and completing the item deletes its file ("completing a task is just deleting
+      the file"). An existing entry moves into a folder under its date and keeps its M-number
+      (`docs/todo/2026-09-26-M210/`); nothing existing is renamed. `docs/TODO.md` keeps only what
+      is not an entry: its header and "The order", which names entries by their folders.
+- [ ] **A decision is a file**, `docs/decisions/<same name>.md`, written when an entry's last
+      item is done; the entry's folder goes in the same commit.
+      The existing `DECISIONS.md` is split along its `## ` headings, by a script that asserts every
+      heading was written out and every line survived. No index is checked in, since an index every
+      PR edits is the same conflict again. A command lists and searches the folder by date and
+      title, and `DECISIONS.md` says where the records are.
+- [ ] **A new playtest is a file under the same kind of name**, `docs/playtests/<date>-<adjective>-<animal>.md`,
+      and so is anything else numbered in sequence. Existing playtest files keep their numbers
+      and are never rewritten.
+- [ ] **A command makes the name**: it picks an unused adjective and animal (checked against every
+      folder that takes these names), writes the file with its heading and date, and prints the
+      name. It follows cli-tools, and gets a row in using-tools' catalogue. The lint rejects a
+      duplicate name across the folders.
+- [ ] **`docs/HANDOFF.md` is written only at the end of a session**, by session-cleanup, and no
+      longer by each PR. committing's "a PR carries every document its own changes make false"
+      says so for HANDOFF.
+- [ ] **Every rule that assumes one file or a number says the new thing**: `CLAUDE.md` (a
+      milestone named "by its number *and* a short title" becomes its two words and a title; the
+      path table's `docs/TODO.md` and `PLAYTEST-*.md`), the path-rules hook
+      (`.claude/hooks/project-rules.sh`: `docs/todo/**` and the new playtest names bring
+      playtest-feedback), and the committing, merging-main (the renumbering rules shrink to the old
+      numbers), orchestrating, playtest-feedback, session-cleanup and session-captures skills
+      (`<mNNN|playtest-NN>-<slug>-<date>` evidence folders), plus `tools/lint.sh`,
+      `tools/resolve-decisions-top.sh` (retired once nothing inserts at the top) and
+      `tools/codex-hooks.py`.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
