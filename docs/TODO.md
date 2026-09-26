@@ -738,12 +738,16 @@ behavior still require the work below. `--frame-trace` supplies bounded raw call
 and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md#raw-frame-traces).
 
 - [ ] **Separate scenery animation from static ground and buildings.**
+      **Plan only; wait for the player to resume implementation and measurements.** The
+      [animation plan and full analysis](plans/scenery-animation-separation.md) specifies the work.
       [PLAYTEST-145](playtests/PLAYTEST-145.md) reports visible desktop stutter in the measured
       runs and asks that animations have their own drawing, with no duplicate animated texture
       in the static ground. The [crowded-scene measurement](evidence/entity-performance-2026-09-26/README.md)
       finds batches of whole-building redraws; isolate the roof vents while preserving their
       animation timing, placement, sorting and building states. Audit scenery animation for
-      the same coupling. Animate the frozen water south of the map on its own drawing layer,
+      the same coupling, including the broken-pipe fountain and car-accident smoke: keep their
+      stationary scene artwork separate and animate only the small moving parts, in both street
+      orientations. Animate the frozen water south of the map on its own drawing layer,
       removing its texture from the static ground; preserve the bulkhead, bridge opening,
       map boundaries and walkability. **Proposed, not asked for:** subtle motion of the existing
       water artwork, with an early burst for the player to judge. Keep the ground's existing

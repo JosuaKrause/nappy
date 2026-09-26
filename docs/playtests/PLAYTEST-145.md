@@ -29,3 +29,9 @@ prerequisites. The suspected link to current mobile stutter remains a hypothesis
 ## Desktop observation and separate scenery animation
 
 > "I see the stutter on the desktop, too, in the runs that you just did. ground animations should not be done by redrawing the ground! they should be separated out and the ground should not have the texture that is animating. that also brings me to the water at the south of the map which is currently frozen but would need the same treatment"
+
+> "the same for things like the water fountain in the broken pipe texture or the smoke cloud from the car accident. separate the animated parts out and only animate the small bits not the entire texture"
+
+> "write that down as a plan for now"
+
+> "with the whole analysis"

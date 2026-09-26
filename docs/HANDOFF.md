@@ -8,11 +8,11 @@ progress-tracking, which lives there too.
 
 ## The state of the tree
 
-**M159, a slow frame names the frame that was slow, continues with separate scenery animation.**
-[Playtest 145](playtests/PLAYTEST-145.md) asks for animated details outside static ground and
-building drawing, including the south-edge water. Follow its queue entry and retain controlled
-before/after evidence using the [profiling method](plans/crowded-frame-profiling.md).
-This is the player's current authorized work; the older priority order below applies to other work.
+**M159, a slow frame names the frame that was slow, is at a plan-only checkpoint.**
+[Playtest 145](playtests/PLAYTEST-145.md) asks for separate roof-vent, south-water, broken-pipe
+fountain and crash-smoke animation. The [plan and full analysis](plans/scenery-animation-separation.md)
+hold the implementation contract, measured evidence and limits. Wait for the player to resume
+implementation or measurements. The older priority order below applies to other work.
 
 **Check `git status`, `git branch` and `git worktree list` for the current checkout and open work.**
 Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAUDE.md` directly

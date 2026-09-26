@@ -42,6 +42,15 @@ The probe passes import/boot, focused frame-trace verification, analyzer integri
 and whitespace checks. Measurement completes that subtask; M159 remains open for the requested
 scenery changes, controlled before/after evidence and the wider phone/optimization work.
 
+The player extends the separation to "the water fountain in the broken pipe texture or the smoke
+cloud from the car accident", requiring "only animate the small bits not the entire texture".
+They then say "write that down as a plan for now" and "with the whole analysis". The
+[separate-animation plan](plans/scenery-animation-separation.md) records all four cases and the
+analysis. No implementation starts and no further measurements run until they resume the work.
+This replaces the implementation go-ahead above with a plan-only checkpoint. M100's existing
+water/smoke two-frame behavior and periods remain the visual contract; separating the pictures
+does not authorize deleting their motion, redrawing a different scene, or changing event costs.
+
 ## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
 
 *([PLAYTEST-142](playtests/PLAYTEST-142.md): "the pause screen is currently bugged where you cannot

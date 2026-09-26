@@ -1,7 +1,9 @@
 # Crowded-scene frame profiling
 
-**The player authorizes the investigation, probes, measurements and a draft PR.**
-This plan is the next step for M159, a slow frame names the frame that was slow. The source is
+**The measurement record is retained; the current follow-up is plan only.** The player asks to
+write down the [separate-animation plan and full analysis](scenery-animation-separation.md).
+Do not start implementation or additional measurements until the player resumes them.
+This is the measurement method for M159, a slow frame names the frame that was slow. The source is
 [Playtest 145, measure the work in a crowded scene](../playtests/PLAYTEST-145.md).
 
 ## Question and deliverable
