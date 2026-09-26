@@ -306,37 +306,57 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## Where the last session stopped, 2026-09-26
 
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
-checks and worktrees can move independently of this file.
+checks and worktrees can move independently of this file. The player's order, from
+[PLAYTEST-144](playtests/PLAYTEST-144.md): the `git grep` hook, then M223, then M225 and a
+release; nothing else is picked up before those. At the end of the session the player tabled
+everything else: "let's table work that is not immediately important. we can let the agents
+finish what they have but we can pick up the prs later", and, on the park fence, "do not schedule
+additional work".
 
-- **Seven implementation agents died at a usage limit and are cold.** Each is replaced in its own
-  worktree, as **orchestrating** says under "An agent that died mid-task": run
-  `tools/agent-status.sh`, read the brief in `.claude/briefs/`, commit the inherited work as it
-  stands, merge `origin/main`, continue. Nothing inherited has been reviewed.
-
-  | Worktree | Milestone | State at the stop |
-  |---|---|---|
-  | `trap-comes-to-her` | M137, the contact and the trap (PR #362, CI green) | three local commits unpushed and ten files uncommitted: the robber's warning shortened for M207 |
-  | `back-front-windows` | M203, a back front has windows (PR #365, no CI run) | `tests/test_ground_floor.gd` uncommitted; push to start CI |
-  | `spent-park-closed` | M129, a spent park is closed | one WIP commit, `tests/test_spent_park.gd` and a probe uncommitted; no PR |
-  | `trailer` | M204, the trailer rendered from the game | WIP commits and six files uncommitted; no PR |
-  | `cyclist-warning` | M207, a warning comes shortly before its danger | catalogue, test, `docs/COSTS.md` and a probe uncommitted; no commits, no PR |
-  | `yeller-charges` | M205, the man shouting charges the meter | only an untracked `tests/zz_probe/`; nothing built |
-  | `title-upright` | M206, the title screen the right way up | `src/main.gd` uncommitted; no PR |
-
-  `clips-in-evidence` is merged (#367) and only needs `tools/prune-merged.sh`.
-- **[PLAYTEST-142](playtests/PLAYTEST-142.md) is filed as M210 to M213**: the brief between two
-  days is the coming day's and shows the nerves, the pause screen's restart restarts, the held
-  restart fills and works first time on a phone, and the chalk mark's robber stands at the far
-  end of its alley. None has an agent. M213 overlaps M137's resistance director, so it follows
-  #362.
-- **A cloud session owns the GoatCounter counter** — what ended a day, the special events and
-  one-off encounters she met, and reading the counts back — on
-  `claude/compassionate-goldberg-707zti`, whose first commit files it as PLAYTEST-141. It may
-  claim M208 or M209; the trailer worktree already uses M208, so check for a collision before
-  merging either.
-- **The player said "merge when things are ready" on 2026-09-26**, in the session that stopped;
-  a new session confirms merge permission before using it.
-- M175, M182, M185 and M159 are as `TODO.md` says.
+- **HIGH PRIORITY: these three, in this order, and nothing else until they are done.** Each
+  step waits for the one before it:
+  1. **PR #377, the `git grep` guard.** Its latest push answers review 5326484007 and has had no
+     review yet. Review it under **pr-review**, merge, then tell the player to approve the hook
+     in `/hooks`; it does not run until they do.
+  2. **PR #382, M223, queue entries, items, decisions and review items as files** (draft,
+     worktree `queue-as-files`). PLAYTEST-144 and M223's entry are on `main` now, so its next
+     step is the one its brief names: merge `origin/main`, re-run `tools/migrate-queue.py` on the
+     result, restore M223's own decision file, remove M223's entry folder, lint, mark ready,
+     review, merge. Then every open PR's old-format queue edits are converted with
+     `tools/convert-queue-edits.py`.
+  3. **PR #368, M225, the counter's asks**, taken over from the stopped cloud session. The brief
+     is written and waits for M223. Then review, merge, and cut a release so traffic reaches the
+     new GoatCounter site.
+- **STOPPED, not to be continued yet.** Each of these is committed and pushed at a safe point,
+  and none gets an agent, a review or a merge until the player picks it up again. They are listed
+  only so their state is known:
+  - **#370, M204 and M214, the trailer's tools**: reviewed ready and CI green at its head; the
+    first to merge. M204 stays queued for the player's notes on the cut.
+  - **#374, M129, a spent park is closed**: the player rejected three fence attempts and the
+    redrawn fence pieces ("the fence still doesn't look right"). Ask the player what looks wrong
+    before anything is drawn again. The PR description and its decision record also still need
+    rewriting to the player's routing answer.
+  - **#372, M207, the cyclist's warning**: not ready; its record must name how raising the
+    cyclist's intensity reshaped his cost with distance (dearer close in, free past about 60px).
+  - **#362, M137, the trap comes to her**: built (a chasing guard after the van; the robber after
+    the man shouting starts off screen; the burnt shell and roadblock keep a waiting guard, open
+    to the player), needs its decision record, description and review.
+  - **#379, M205, the man shouting** (draft): handing over the note now needs a 2.5s stand inside
+    his inner field (the orchestrator's proposal, marked so), costing about 20 points awake. His
+    zero charge on an ordinary day did not reproduce in any test or full boot; the PR names two
+    suspects (the halo's cap of eight sources at a busy crosswalk, and his own warning window).
+    Not reviewed.
+  - **#365, M203 and M216, roofs**: built and green (a courtyard block's roof turns its corners;
+    roof furniture rolls on an extended roof too). No pictures yet: every rig walk to a courtyard
+    hit a parked vehicle or a closure on the way, and `tests/probes/m216_evidence.gd` computes
+    seeds and walks for the stills. A front facing the map's edge happens only on a cul-de-sac's
+    dead-end wall, never on a real block front; that goes to the player before the special case is
+    kept or dropped. The PR description predates M216.
+- **Merge permission**: the player said "if you reviewed all PRs and they are ready you can
+  merge" in the session that stopped; a new session confirms it before using it. A release needs
+  its own go-ahead, which the player gave for after M225.
+- `.claude/briefs/` holds a brief per open branch with every amendment; start fresh agents from
+  them rather than resuming this session's.
 
 ## The queue, as prioritised on 2026-09-09
 

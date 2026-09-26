@@ -50,6 +50,25 @@ decision somebody can overturn. Nothing else is.
 The test of whether it was written down is not "did I mention it" — it is whether **somebody opening
 the repo cold could build the thing that was asked for** from what is on disk.
 
+**A mechanism the player did not name is the filer's proposal, and the entry says so.** Filing
+turns a sentence like "a spent park should not be accesible" into something buildable, and the
+how is easy to write as though it were part of the ask. *(2026-09-26, on a park fenced with a
+street closure's barriers: "where do you get this from? I never asked for this. a park that was
+used should be shut down, yes, but by placing events in it how it was before.")* The queue entry
+states the player's ask in their terms, and any mechanism beyond it under **Proposed, not asked
+for:**, with the plainer alternative the proposal replaces. A proposal that changes what the
+player sees across the whole game goes back to them as a question before it is briefed; a small
+one is briefed with its first pictures due early, so the player can turn it down before it is
+built everywhere.
+
+**An answer that can be read two ways is read back before it is filed.** One line in the same
+turn — "I read this as X, not Y" — costs the player a word; filing the wrong reading costs a
+milestone. *(2026-09-26: "the Sep 25th answer was about *routing* the router should not attempt
+to path through a spent park", after "a spent park should not be accesible" had been filed as a
+park she cannot enter.)* And **an item that replaces something already built quotes the decision
+that built it**: search `DECISIONS.md` and the docs for the mechanism's own name before writing
+"instead", since a replacement that does not name what it replaces is an overturn nobody sees.
+
 **A playtest also closes what it covered in `docs/REVIEW.md`.** That file is the list of things
 waiting on a person; when a run has looked at one, the verdict is in the playtest file and the
 item leaves the list in the same commit, whether the verdict was *fine* or a new finding. An item

@@ -719,6 +719,7 @@ func _bare_gate_main(t) -> Node2D:
 	main._add_touch_controls()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	var stroller := Stroller.new()
 	stroller.add_child(camera)
 	t.add_child(stroller)
