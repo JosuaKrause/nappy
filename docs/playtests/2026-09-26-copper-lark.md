@@ -41,3 +41,15 @@ before expanding the set. The stylized direction is rejected for this experiment
 The footsteps need to be much subtler, with the wheels quieter still. The assistant proposes
 a focused pass with lower step impacts and a lower wheel level, preserving pass 3 for comparison.
 This remains an audition, without runtime integration.
+
+## Upload size and replacing audition files
+
+> "you can upload things to the PR"
+
+> "just make sure the size is reasonable"
+
+> "if you keep overwriting the file it's okay since we will squash in the end anyway"
+
+The player permits overwriting the audition files during PR iteration. Separate preserved
+folders for every new attempt are not required. Keep the uploaded files reasonably small and
+keep each revision's source recipe and generated package consistent.

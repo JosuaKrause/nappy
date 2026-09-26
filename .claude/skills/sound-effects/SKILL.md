@@ -20,8 +20,9 @@ until the player separately asks for integration.
 - Record the sample rate, channels, encoding, processing chain, durations, levels and SHA-256 hashes
   in a machine-readable manifest. Include a frozen copy of the exact generator in each pass and
   name that copy, rather than the evolving tracked tool, in the pass's rebuild command.
-- Preserve a pass once it has been submitted for review. Put a revised attempt in a new pass folder
-  rather than silently replacing the sound the player heard.
+- Reuse the current audition folder and filenames for revisions on the open PR; overwriting them
+  is allowed. Update the frozen recipe, manifest, page and ZIP together, and refresh the PR's
+  commit-pinned links. Keep downloads reasonably small; extra pass folders are not required.
 
 The current lab rebuilds with:
 
@@ -46,8 +47,8 @@ RMS for subtler steps and -38 dBFS RMS for wheels that should sit below them, al
 ceiling. These targets are audition proposals, not approved runtime mix values.
 
 Establish recognition and implied weight before exploring style or polish. When a listener cannot
-tell what a sound represents, preserve the rejected take and compare it directly with a focused
-revision of the named defect. Broad noise is not forbidden, but a rolling mechanism needs discrete
+tell what a sound represents, focus the revision on the named defect. Keep an earlier take in the
+current comparison only when it helps judge that revision. Broad noise is not forbidden, but a rolling mechanism needs discrete
 contact or mechanical detail if a broad wash reads as water, and a light step should not be carried
 by a heavy low thump.
 
