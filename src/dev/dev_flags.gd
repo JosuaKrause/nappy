@@ -69,12 +69,19 @@ extends RefCounted
 ##   --title         0
 ##   --no-title      0
 ##   --quit-when-still 0?
+##   --player-view   0
+##   --parent        1
+##   --zoom-out      1?
+##   --caption       1
+##   --title-card    1
 ## END_DEV_FLAG_TABLE
 ##
 ## Which of the flags above mark a run as a **rig** rather than a person at the keyboard — the
 ## same set `main._somebody_is_playing()` already lists as "something else is holding the keys"
 ## (`--screenshot`, `--walk`, `--flee`, `--press`, `--route`), plus `--tap`, which drives a
-## synthetic touch the same way. `is_rig()` below is the live read; `tools/lib_dev_flags.sh`'s own
+## synthetic touch the same way. A run Godot's own movie writer records (`--write-movie`, which
+## `tools/record.sh` and `tools/trailer.sh` launch with) is a rig too, whatever its flags — see
+## `recording()`. `is_rig()` below is the live read; `tools/lib_dev_flags.sh`'s own
 ## `rig_flag_present()` reads this exact block, so shot.sh/run.sh's decision to strip a window's
 ## focus, disable vsync, gate input and enforce the wall-clock limit can never name a different set
 ## of flags than the game itself locks real input out for. A plain `tools/run.sh` session — no
@@ -89,15 +96,17 @@ extends RefCounted
 ##   --route
 ## END_RIG_FLAGS
 ##
-## The three numbers `rig_quit_seconds_from()` below turns into a rig's own wall-clock deadline,
-## read by the same shell helper so its external kill (`RIG_KILL_GRACE_SECONDS` past the deadline)
-## can never compute a shorter wait than the deadline the game itself is timing against. See
-## `rig_quit_seconds_from()`'s own doc for what each name means.
+## The numbers `rig_quit_seconds_from()` below turns into a rig's own deadline, read by the same
+## shell helper (`tools/lib_dev_flags.sh`) so an external kill (`RIG_KILL_GRACE_SECONDS` past the
+## deadline) can never compute a shorter wait than the deadline the game itself is timing against.
+## See `rig_quit_seconds_from()`'s own doc for what each name means, and `RIG_MOVIE_SLOWDOWN` for
+## `movie_slowdown`.
 ##
 ## RIG_QUIT_SECONDS
 ##   margin 15.0
 ##   ceiling 240.0
 ##   kill_grace 15.0
+##   movie_slowdown 10.0
 ## END_RIG_QUIT_SECONDS
 
 ## Whether dev flags are readable at all. `main.gd` also reads this directly for the two gated
@@ -810,6 +819,92 @@ static func quit_when_still_seconds() -> float:
 
 const _QUIT_WHEN_STILL_DEFAULT := 1.0
 
+# ------------------------------------------------------- recording, and a trailer shot ---
+## PLAYTEST-139: "the trailer will be a set of paths in pre determined seeds with fixed events so
+## we can reproduce it easily" · "we shouldn't show something that will never be visible" · and,
+## on the route rig, "I want to also be able to see some runs myself". `tools/record.sh` records
+## any rig run through Godot's own movie writer, and `tools/trailer.sh` records every shot in
+## `tools/trailer/shots.json` the same way, with the flags below beside the ones that already
+## choose a seed, a day, a spawn and a walk.
+
+## Whether Godot's own movie writer is recording this run (`--write-movie`, an engine flag rather
+## than one of this table's): the game then advances exactly `1 / --fixed-fps` a frame however
+## long a frame takes to save, so nobody can be playing it. Read by `is_rig()`, by
+## `main._somebody_is_playing()`, by `main.gd`'s deadline — counted in game seconds while this
+## holds — and by `AutoScreenshot`, which ends a recording at `--after`. Behind `enabled()` like
+## every flag here.
+static func recording() -> bool:
+	return enabled() and OS.has_feature("movie")
+
+## `--player-view` draws the frame a player sees: the release build's own HUD, and the developer
+## readout off unless `--debug` asks for it — `main.gd` reads this for both. The debug layers,
+## the route lines and the frame graph already start off unless `--layers` or `--spikes` asks.
+## *(PLAYTEST-139: "we shouldn't show something that will never be visible"; on the route rig's
+## recording, the game's own view.)*
+static func player_view_requested() -> bool:
+	return "--player-view" in _args()
+
+## `--parent mother|father` — which presentation the run shows, instead of the roll
+## `GameState.start_run()` makes from the seed. The raw word is checked here rather than handed on:
+## `""` for "not given", and an unknown word is refused with `push_warning` and treated the same,
+## the reasoning `_validate_skip_words()` gives — a shot of the wrong parent that said nothing
+## about it would be the one failure the shot list exists to rule out.
+static func parent_override() -> String:
+	var args := _args()
+	var index := args.find("--parent")
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	return parse_parent(args[index + 1])
+
+## The bare parsing of a `--parent` value, pulled out so a test can drive it without a command line.
+static func parse_parent(raw: String) -> String:
+	if raw in ["mother", "father"]:
+		return raw
+	push_warning("--parent: '%s' is neither mother nor father, ignoring the flag" % raw)
+	return ""
+
+## `--zoom-out <seconds> [delay]` pulls the camera back from her to the whole city over `seconds`,
+## after holding on her for `delay` (0 when absent) — the trailer's last shot, "a zoom out from her
+## doorstep to show the full buzzling city". `-1.0` for "not given"; a value that is not a
+## positive number refuses the whole flag the way `parse_zoom()` refuses a malformed `--zoom`.
+## `ZoomOutCamera` (`src/dev/zoom_out_camera.gd`) is what moves.
+static func zoom_out_seconds() -> float:
+	var args := _args()
+	var index := args.find("--zoom-out")
+	if index == -1 or index + 1 >= args.size():
+		return -1.0
+	var raw := args[index + 1]
+	if not raw.is_valid_float() or float(raw) <= 0.0:
+		push_warning("--zoom-out: '%s' is not a positive number of seconds, ignoring" % raw)
+		return -1.0
+	return float(raw)
+
+## `--zoom-out`'s optional second value: seconds held on her before the camera starts to move.
+## Read only when it is a number, the same as `--flee`'s own delay, so `--zoom-out 4 --seed 1`
+## does not swallow the next flag.
+static func zoom_out_delay() -> float:
+	var args := _args()
+	var index := args.find("--zoom-out")
+	if index == -1 or index + 2 >= args.size() or not args[index + 2].is_valid_float():
+		return 0.0
+	return maxf(0.0, float(args[index + 2]))
+
+## `--caption <text>` — one line of on-screen text for a trailer shot, or `""`. See `TrailerText`
+## (`src/dev/trailer_text.gd`) for where and how it is drawn.
+static func caption_text() -> String:
+	return _word_after("--caption")
+
+## `--title-card <text>` — the game's name, large and centred over the shot, or `""`.
+static func title_card_text() -> String:
+	return _word_after("--title-card")
+
+static func _word_after(flag: String) -> String:
+	var args := _args()
+	var index := args.find(flag)
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	return args[index + 1]
+
 # ---------------------------------------------------------------------- a rig's own lockdown ---
 ## PLAYTEST-133: "since those are godot apps that launch in my view it could be that accidentally
 ## pressed a button maybe? since it takes the focus away from what I'm doing every time" — and,
@@ -830,7 +925,7 @@ const _RIG_FLAGS := ["--screenshot", "--walk", "--flee", "--press", "--tap", "--
 ## asks the same question for telemetry's sake and must never disagree with this: both read
 ## `active_args()`/`_args()` against the identical set of flags (this file's one list, above).
 static func is_rig() -> bool:
-	return _is_rig_from_args(_args())
+	return _is_rig_from_args(_args()) or recording()
 
 static func _is_rig_from_args(args: PackedStringArray) -> bool:
 	for flag in _RIG_FLAGS:
@@ -851,6 +946,14 @@ const RIG_QUIT_CEILING_SECONDS := 240.0
 ## machine's own boot never races it, short enough that a genuinely wedged rig does not tie up
 ## whoever is waiting on the command to return.
 const RIG_KILL_GRACE_SECONDS := 15.0
+## How many wall-clock seconds a recorded game second may take before `tools/record.sh` and
+## `tools/trailer.sh` kill Godot from outside. Under the movie writer (`recording()`) the game runs
+## frame-locked and saves every frame before drawing the next, so it counts its own deadline in
+## game seconds (`main._process()`), and a wall-clock limit is only the outside backstop for a
+## process that stopped running at all — this factor stretches that game-second deadline into one.
+## Generous against the slowest measured recording, a frame-by-frame PNG at 60fps, which records
+## a game second in about four; read by `tools/lib_dev_flags.sh` out of `RIG_QUIT_SECONDS`.
+const RIG_MOVIE_SLOWDOWN := 10.0
 
 ## Pure: seconds until a rig quits itself, from the two numbers that decide it. `after` is
 ## `--after`'s own value if the flag was given (a screenshot or timed-trace rig's own wait, the

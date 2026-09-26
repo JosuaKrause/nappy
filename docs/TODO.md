@@ -217,6 +217,7 @@ The entries, in the order the gameplay queue above gives them, reassessed on 202
 - [M182 — A finished task is shown by the world, never by text](todo/2026-09-20-M182/)
 - [M185 — A ground floor is blank wall or shops](todo/2026-09-23-M185/)
 - [M199 — The roadblock closes its whole street](todo/2026-09-25-M199/)
+- [M204 — A trailer, rendered from the game by a script](todo/2026-09-25-M204/)
 - [M205 — The man shouting charges the meter again](todo/2026-09-25-M205/)
 - [M206 — The title screen after a game over is the right way up](todo/2026-09-25-M206/)
 - [M207 — A warning comes shortly before its danger](todo/2026-09-25-M207/)
