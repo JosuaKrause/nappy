@@ -12,6 +12,11 @@ var time_remaining := 0.0
 var time_total := 0.0
 ## Set when the day ends badly, for the summary screen to explain itself.
 var failure_reason := ""
+## The raw `reason` a hard fail carried — `EventBus.hard_fail_triggered`'s own string, "car_strike"
+## or a catalogue id — kept beside `failure_reason`'s translated sentence so `main._on_day_finished()`
+## can name what ended the day for `VisitCounter` without re-deriving it from the narrative text.
+## "" off a hard fail, and reset every `start()` — never carried from a previous attempt.
+var hard_fail_reason := ""
 
 var _map: CityMap
 var _player: Node2D
@@ -39,6 +44,7 @@ func start(length: float) -> void:
 	time_remaining = length
 	phase = GameEnums.DayPhase.WALKING
 	failure_reason = ""
+	hard_fail_reason = ""
 	_last_emitted_second = int(time_remaining)
 	EventBus.day_time_changed.emit(time_remaining, time_total)
 
@@ -144,6 +150,7 @@ func _on_hard_fail(reason: String) -> void:
 	if _ignores_loss(GameEnums.DayResult.LOST_HARD_FAIL):
 		return
 	failure_reason = _HARD_FAIL_TEXT.get(reason, "It went wrong.")
+	hard_fail_reason = reason
 	_end(GameEnums.DayResult.LOST_HARD_FAIL)
 
 ## The one place all three losing paths ask before ending the day, so `--invincible` cannot drift

@@ -796,6 +796,12 @@ static func escape_part_for(raw: String) -> String:
 func _on_escape_exit_requested() -> void:
 	_build_the_finale_city()
 	_finale.enter_city()
+	# `VisitCounter`'s own "escape-city" — the building is behind her and the city section begins.
+	# Fires once per attempt at the *building* section: a retry of the city section alone goes
+	# through `FinaleController.restart_section()` instead, which never calls `enter_city()` again,
+	# so this is not repeated for it — see `EventBus.escape_lost`'s own doc for how a retry of
+	# either section is counted instead. See docs/TELEMETRY.md, "The page counts visits".
+	EventBus.escape_city_entered.emit()
 
 ## A section is about to be walked — the first time, or again after a loss. Where she goes is this
 ## file's answer because only this file holds both worlds, and once she is standing there the
@@ -1716,6 +1722,75 @@ func _event_summary() -> String:
 	parts.sort()
 	return ", ".join(parts) if not parts.is_empty() else "none"
 
+## `EventBus.day_lost_to`'s own suffix for a hard-fail day, named for `VisitCounter`:
+## `instant-car` for the one hard fail that is not a catalogue row
+## (`EventBus.hard_fail_triggered("car_strike")`, `Crowd._strike()`), otherwise `instant-<id>` off
+## whatever row actually struck her (`EventBus.hard_fail_triggered(instance.def.id)`,
+## `EventManager._check_hard_fails()`) — hyphenated the same way every other cause name is, so a new
+## hard-fail row (`roadblock`'s guard once it hunts, `night_raid`, and everything already in the
+## catalogue) is covered without a second list naming it here. Pure, and tested directly —
+## `tests/test_day_lost_to.gd`.
+static func _hard_fail_cause_suffix(reason: String) -> String:
+	var name := "car" if reason == "car_strike" else reason.replace("_", "-")
+	return "instant-%s" % name
+
+## `EventBus.day_lost_to`'s own suffix for a crying day: `noise-<x>`, where `x` is whichever group
+## in `landed_by_group` (see `_crying_landed_by_group()` below) landed the most on her over the
+## crying window — a catalogue id (hyphenated), `crowd` for walkers, `traffic` for cars, or `self`
+## for her own running and standing in an alley.
+##
+## **Ties, and the window reading entirely empty, pick the alphabetically first key that is
+## present** — deterministic without inventing a second "who landed first" rule, and stated here
+## rather than left to whatever order a `Dictionary` happens to iterate in. An empty dictionary
+## (nothing landed anything inside the window at all) falls back to `self`, the one group that
+## always exists whether or not anything else ever did.
+static func _crying_cause_suffix(landed_by_group: Dictionary) -> String:
+	var names := landed_by_group.keys()
+	names.sort()
+	var best := ""
+	var best_points := -1.0
+	for name: String in names:
+		var points: float = landed_by_group[name]
+		if points > best_points:
+			best = name
+			best_points = points
+	if best == "":
+		best = "self"
+	return "noise-%s" % String(best).replace("_", "-")
+
+## The impure half `_crying_cause_suffix()` above is named for: every live event's own `landed()`
+## grouped by its catalogue id, every live crowd agent's grouped by `crowd` (a walker) or `traffic`
+## (a car), and the baby's own running/alley share under `self` (`Baby.self_landed()`) — all over
+## the same `ExcitementHalo.WINDOW` the halo itself reads. Only positive shares are kept, so an
+## empty result means nothing landed anything in the window at all.
+##
+## Read once, from `_on_day_finished()`, in the same physics frame `Baby._update_state()` decided
+## she was crying — `EventBus.baby_state_changed` -> `DayController._on_baby_state_changed()` ->
+## `_end()` -> `day_finished` all run synchronously in that one call, so nothing below has aged out
+## of the window between the two. **Not itself unit-tested**: it asks a live `City` and a live
+## `Baby` for their own current numbers rather than computing anything, so there is nothing pure
+## left to pin without a scene — see `tests/test_day_loop.gd` for the integration coverage a day's
+## own ending already gets.
+func _crying_landed_by_group() -> Dictionary:
+	var by_group := {}
+	if _city and _city.events:
+		for instance: EventInstance in _city.events.instances():
+			var points := instance.landed()
+			if points > 0.0:
+				by_group[instance.def.id] = float(by_group.get(instance.def.id, 0.0)) + points
+	if _city and _city.crowd:
+		for agent: CrowdAgent in _city.crowd.agents():
+			var points := agent.landed()
+			if points <= 0.0:
+				continue
+			var key := "traffic" if agent.kind == CrowdAgent.Kind.CAR else "crowd"
+			by_group[key] = float(by_group.get(key, 0.0)) + points
+	if _baby:
+		var self_points := _baby.self_landed()
+		if self_points > 0.0:
+			by_group["self"] = float(by_group.get("self", 0.0)) + self_points
+	return by_group
+
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var finished_day := GameState.day
 	# Captured here, before anything below touches `_day`, so the summary's clock reads the
@@ -1738,6 +1813,16 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# before `end_day()` stops the clock, so it is timestamped where it happened.
 	if _observer:
 		_observer.day_finished(result)
+	# `VisitCounter`'s own "what ended a day" — before `day_ended` below, and only for the two
+	# results whose own name does not already say what filled the meter or which row struck her;
+	# `LOST_TIMEOUT`'s existing `nappy-day-N-lost-timeout` already says everything about a clock
+	# that simply ran out. See `EventBus.day_lost_to`'s own doc and docs/TELEMETRY.md, "The page
+	# counts visits".
+	match result:
+		GameEnums.DayResult.LOST_HARD_FAIL:
+			EventBus.day_lost_to.emit(finished_day, _hard_fail_cause_suffix(_day.hard_fail_reason))
+		GameEnums.DayResult.LOST_CRYING:
+			EventBus.day_lost_to.emit(finished_day, _crying_cause_suffix(_crying_landed_by_group()))
 	# `VisitCounter`'s own "each day's end, won or lost and to what" — `finished_day` rather
 	# than `GameState.day`, since a won final day hands over to the escape before the calendar
 	# would otherwise move past it. Fires whether or not a run log is being kept.
