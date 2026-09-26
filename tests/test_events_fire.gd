@@ -477,8 +477,19 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 			continue
 
 		var path := due[1] as PackedVector2Array
+		# A row that comes down her line is warned of first: she walks on through its warning, and
+		# it is created where the warning then points, its telegraph spent — `EventManager`'s
+		# `_warn_down_her_line()` and `spawn_warned()`.
+		if def.warns_before_it_exists():
+			var direction := (path[0] - path[1]).normalized()
+			for i in int(ceil(def.telegraph_time / STEP)):
+				at += north * STEP
+			path = PendingWarning.route_down_her_line(map,
+					PendingWarning.down_her_line(map, def, at, direction), at, direction)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
+		if def.warns_before_it_exists():
+			instance.resume(def.telegraph_time, 0.0)
 		t.add_child(instance)
 		instance.set_process(false)
 

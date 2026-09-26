@@ -89,16 +89,22 @@ static func is_off_screen(offset: Vector2, closing: float, notice: float) -> boo
 ## How far to either side of her line a place down it may be moved to reach its ground, in tiles —
 ## a street's width, which reaches from any lane of a corridor to both of its sidewalks.
 const LATERAL_TILES := Tuning.STREET_WIDTH
+## How much further down her line than just off screen a place may be moved to reach its ground,
+## in tiles — two streets' widths, which carries it across the carriageway of a cross street and
+## the junction it makes.
+const FURTHER_TILES := Tuning.STREET_WIDTH * 2
 
 ## The waiting place of a row that comes down her own line (`cyclist`, `loose_dog`): just off
-## screen in `direction` from her, moved sideways onto the nearest ground `def.placement` names —
-## a sidewalk or a square — within `LATERAL_TILES`. `Vector2.INF` where there is none.
+## screen in `direction` from her, on the nearest ground `def.placement` names — a sidewalk or a
+## square. Moved sideways first, within `LATERAL_TILES`, and where there is none level with that
+## point — the carriageway of a cross street is ahead — further down her line, within
+## `FURTHER_TILES`, never nearer. `Vector2.INF` where there is none.
 ##
 ## `direction` is fixed when the warning goes up and is not re-read from her heading, so a badge
 ## that said *from there* keeps saying it: she answers it by crossing the street or turning, and a
-## place that swung round with her would take the answer away. Sideways only, never along it, so the
-## place is always the same distance ahead of her along `direction`, which is the part that keeps it
-## off screen.
+## place that swung round with her would take the answer away. The place is never nearer her along
+## `direction` than just off screen, which is the part that keeps it off screen and keeps walking on
+## from bringing the thing sooner.
 ##
 ## `map` null is open ground, where every point is ground — the probe and the tests that measure
 ## the timing rather than the city.
@@ -108,14 +114,17 @@ static func down_her_line(map: CityMap, row: EventDef, her: Vector2,
 	var ahead := her + direction * Tuning.offscreen_lead(direction, closing, row.offscreen_notice)
 	if not map:
 		return ahead
+	var along := direction * Tuning.TILE_SIZE
 	var across := Vector2(-direction.y, direction.x) * Tuning.TILE_SIZE
-	for step in LATERAL_TILES + 1:
-		for side: float in [1.0, -1.0]:
-			var at := ahead + across * (float(step) * side)
-			if _is_its_ground(map, row, at):
-				return at
-			if step == 0:
-				break
+	for further in FURTHER_TILES + 1:
+		var level := ahead + along * float(further)
+		for step in LATERAL_TILES + 1:
+			for side: float in [1.0, -1.0]:
+				var at := level + across * (float(step) * side)
+				if _is_its_ground(map, row, at):
+					return at
+				if step == 0:
+					break
 	return Vector2.INF
 
 ## The route a row that came down her line is created on: from its place along `direction` back
@@ -139,19 +148,21 @@ static func _is_its_ground(map: CityMap, row: EventDef, at: Vector2) -> bool:
 # -------------------------------------------------------------- on its route ---
 
 ## The waiting place of a row that drives a fixed route to a place of its own — the fire engine,
-## on the fire's street, coming to the kerb at `stop`: the point on the road up from `stop`, against
-## the way it travels (`travel`, unit), nearest the stop that is off screen from her by its notice.
-## No further up the road than `reach`, which is as far as the road runs inside the map.
+## on the fire's street, coming to the kerb at `stop`: on the road up from `stop`, against the way
+## it travels (`travel`, unit), **level with her or further up it**, the nearest such point that is
+## off screen from her by its notice. No further up the road than `reach`, which is as far as the
+## road runs inside the map.
 ##
-## So the engine is always on its way to the fire and never past it: walking up the street toward
-## where it comes from keeps it just off screen ahead of her, and walking away past the fire leaves
-## it at the first stretch of its road she cannot see — once the fire is itself out of view that is
-## a tile up the road from it, where it arrives and parks unseen. `Vector2.INF` when no point of
-## the road is off screen, which is only ever her standing at its far end.
+## So the engine is always on its way to the fire and never past it, and never between her and the
+## fire unless she is past the fire herself: walking up the street toward where it comes from keeps it
+## just off screen ahead of her, and walking away past the fire leaves it on the first stretch of its
+## road she cannot see — a tile up from the fire, once the fire itself is out of view, where it
+## arrives and parks unseen. `Vector2.INF` when no point of the road up from her is off screen, which
+## is only ever her standing at its far end.
 static func on_its_route(row: EventDef, her: Vector2, stop: Vector2, travel: Vector2,
 		reach: float) -> Vector2:
 	var closing := row.speed + Tuning.WALK_SPEED
-	var up := float(Tuning.TILE_SIZE)
+	var up := maxf(float(Tuning.TILE_SIZE), (stop - her).dot(travel))
 	while up <= reach:
 		var at := stop - travel * up
 		if is_off_screen(at - her, closing, row.offscreen_notice):

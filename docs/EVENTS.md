@@ -259,17 +259,20 @@ stay on the sidewalk".)* Each kind of row has its own ground:
   corridor of the pavement she is on (see "Where an event happens") — and kept for the warning's
   whole life, so a badge that said *from there* keeps saying it and crossing the street or turning is
   an answer to it. The place is just off screen that way, moved sideways onto the nearest tile of the
-  row's own `placement` within a street's width; it is created on a route back down that line and on
-  past her by the same distance, so a bike she stepped off the pavement for rides past on his own.
+  row's own `placement` within a street's width — and where there is none level with it, the
+  carriageway of a cross street being ahead, further down her line, never nearer; it is created on a
+  route back down that line and on past her by the same distance, so a bike she stepped off the
+  pavement for rides past on his own.
   The region doors are asked of that route again when it is created, the same refusal the director's
   siting makes.
 - **The fire engine, on the road on its way to the fire** (`PendingWarning.on_its_route()`). Its
   route is the fire's own street, from one end (a coin flip on the day's stream) to the near kerb
-  across from the fire. The place is the point of that road nearest the fire that is off screen
-  from her, never past the fire and no further than the road runs inside the map: walking up the
-  street toward where it comes from keeps it just ahead of her, and walking away past the fire leaves
-  it on the first stretch of its road she cannot see — a tile up from the fire, once the fire itself
-  is out of view, where it arrives and parks unseen.
+  across from the fire. The place is on that road up from the kerb, level with her or further up
+  it, the nearest such point that is off screen from her; never past the fire, never between her
+  and the fire unless she is past it herself, and no further than the road runs inside the map.
+  Walking up the street toward where it comes from keeps it just ahead of her, and walking away past
+  the fire leaves it on the first stretch of its road she cannot see — a tile up from the fire, once
+  the fire itself is out of view, where it arrives and parks unseen.
 - **Day 13's column, in its lane of the main road** (`PendingWarning.in_its_lane()`), level with her
   along the road and just off screen up it, held on the map where the road leaves it. The trucks,
   `Tuning.COLUMN_SPACING` apart behind the first, and the place the rear one stops to leave its

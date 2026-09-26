@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_the_fire_is_sited_on_the_way_she_is_walking(t)
 	_test_the_fire_burns_where_her_walk_put_it(t)
 	_test_the_fire_she_did_not_choose_leaves_her_a_way_out(t)
+	_test_the_engine_waits_on_its_road_to_the_fire(t)
 	_test_a_fire_that_was_never_lit_was_not_spent(t)
 	_test_a_won_day_with_the_fire_unmet_still_burns(t)
 	_teardown()
@@ -525,6 +526,101 @@ func _walk(rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vec
 		if _walk_clock >= WALK_SECONDS:
 			return heading
 	return heading
+
+## **The engine's warning waits on its road, on its way to the fire.** *(PLAYTEST-145: "the spawn
+## point follows her but must keep making sense. the firetruck needs to stay on the road traveling
+## to the fire".)* She walks out and sees the fire, which puts the engine's warning up with no engine
+## in the world; then she keeps walking — on along the day's route, and back the way she came —
+## while it runs. Every frame, its place is on the carriageway, on the line of the fire's own street
+## through the kerb it stops at, up the road from that kerb rather than past it, level with her or
+## further up rather than between her and the fire, and just off screen by the engine's own notice. Then the engine is created where the place last was and is given the
+## route down to the kerb.
+func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
+	var scars_before := GameState.scars.duplicate()
+	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	_start(Tuning.RUN_TAUGHT_DAY)
+	var plan := _fire_plan()
+	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
+	var rig := _walker(t, route[0])
+	_walk_clock = 0.0
+	if plan:
+		_walk(rig, route,
+				func() -> bool: return plan.is_placed() and _city.events._is_on_screen(plan.position))
+	var warning: PendingWarning = null
+	for pending in _city.events.pending_warnings():
+		if pending.def.id == "fire_truck":
+			warning = pending
+	t.check(plan != null and warning != null, "she walks out, finds the fire, and the engine is warned")
+	if not warning:
+		rig.free()
+		_city.events.stream_radius = INF
+		GameState.scars = scars_before
+		return
+	var stop := EventManager.where_the_summoned_row_stops(_city.map, plan.position)
+	var up_the_road := (warning.place - stop).normalized()
+	var across := Vector2(-up_the_road.y, up_the_road.x)
+	var looked := [0]
+	var wrong: Array[String] = []
+	var last := [warning.place]
+	var watch := func() -> bool:
+		if not _city.events.pending_warnings().has(warning):
+			return true
+		looked[0] += 1
+		last[0] = warning.place
+		var from_the_kerb := warning.place - stop
+		if absf(from_the_kerb.dot(across)) > 0.5:
+			wrong.append("off the line of its street at %v" % warning.place)
+		elif from_the_kerb.dot(up_the_road) <= 0.0:
+			wrong.append("past the fire's kerb at %v" % warning.place)
+		elif from_the_kerb.dot(up_the_road) \
+				< (rig.global_position - stop).dot(up_the_road) - 0.5:
+			wrong.append("between her and the fire at %v with her at %v"
+					% [warning.place, rig.global_position])
+		elif not Tile.is_road(_city.map.tile_type_at_world(warning.place)):
+			wrong.append("off the carriageway at %v" % warning.place)
+		elif not PendingWarning.is_off_screen(warning.place - rig.global_position,
+				warning.closing_speed(), warning.def.offscreen_notice):
+			wrong.append("on screen at %v with her at %v" % [warning.place, rig.global_position])
+		return false
+	# On along the route for half the warning, then back the way she came.
+	_walk_clock = WALK_SECONDS - warning.left * 0.5
+	_walk(rig, route, watch)
+	var back := route.duplicate()
+	back.reverse()
+	_walk_clock = 0.0
+	_walk(rig, back, watch)
+	t.check(looked[0] > 0 and wrong.is_empty(),
+			"its place stays on its road, on its way to the fire, just off screen, for all %d frames%s"
+			% [looked[0], "" if wrong.is_empty() else ": " + wrong[0]])
+	var engine: EventInstance = null
+	for instance in _city.events.instances():
+		if instance.def.id == "fire_truck":
+			engine = instance
+	t.check(engine != null, "and the engine is created once the warning is over")
+	if engine:
+		t.close_to(engine.path[0].distance_to(last[0]), 0.0,
+				"where the warning last pointed", Tuning.WALK_SPEED * WALK_STEP + 1.0)
+		t.close_to(engine.path[engine.path.size() - 1].distance_to(stop), 0.0,
+				"and it drives to the kerb across from the fire", 1.0)
+	rig.free()
+	_city.events.stream_radius = INF
+	GameState.scars = scars_before
+
+	# The same place on a straight road, walked a long way up it toward where the engine comes from:
+	# the stretch between her and the fire goes out of view behind her long before she stops, and
+	# the place stays ahead of her rather than dropping in behind her there.
+	var truck := EventCatalogue.by_id("fire_truck")
+	var kerb := Vector2.ZERO
+	var her := Vector2(Tuning.TILE_SIZE * 1.5, 0.0)
+	var behind_her := 0
+	for i in int(round(8.0 / WALK_STEP)):
+		her += Vector2.UP * Tuning.WALK_SPEED * WALK_STEP
+		var place := PendingWarning.on_its_route(truck, her, kerb, Vector2.DOWN, 4000.0)
+		if place == Vector2.INF or place.y > her.y:
+			behind_her += 1
+	t.check(behind_her == 0,
+			"walking a long way up its road, the place stays up the road from her (%d frames not)"
+			% behind_her)
 
 ## Paints one disc of ground into a `blocked` set, the way the day's own reachability questions do.
 func _block(blocked: Dictionary, at: Vector2, radius: float) -> void:

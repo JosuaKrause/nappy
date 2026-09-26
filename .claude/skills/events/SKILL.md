@@ -83,8 +83,9 @@ fire engine, day 13's column — is a `PendingWarning` first (`EventManager.warn
 the world, the badge up at once, its place following her each frame just off screen
 (`Tuning.offscreen_lead()` along its own ray) **on ground that makes sense for the thing** — a
 sidewalk for the bike and the dog, the road on its way to the fire for the engine, its lane for the
-column. When its own `telegraph_time` is over the thing is created there with that telegraph
-spent (`EventManager.spawn_warned()`).
+column — moved sideways or further out to reach that ground, never nearer. When its own
+`telegraph_time` is over the thing is created there with that telegraph spent
+(`EventManager.spawn_warned()`).
 
 **The warning time is the row's own number.** *(PLAYTEST-145: "I don't like that the warning is
 tied to the size of the field or the speed.")* Nothing about where a thing is created may be
