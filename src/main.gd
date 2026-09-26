@@ -1360,7 +1360,7 @@ func _exit_tree() -> void:
 ## pipeline cache is a Forward+/Mobile (RenderingDevice) feature, and the engine's own proposal
 ## tracker still carries "Add shader precompilation to the Compatibility rendering method" as an
 ## open request — so the only lever left is a real draw call: a throwaway `Node2D` draws one
-## transparent pixel with `EntityHalo.new_material()` and is freed the frame after.
+## transparent pixel with `EntityHalo.shared_material()` and is freed the frame after.
 ##
 ## **At `ground`, not off in the distance.** A canvas item outside the camera's visible rect is
 ## culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
@@ -1368,7 +1368,7 @@ func _exit_tree() -> void:
 ## defeating the whole pass. `ground` is the boot camera's own `global_position` (see
 ## `_new_boot_camera()`, made current by both boot paths before this is ever
 ## called), so a probe placed there sits exactly at that camera's own screen centre — on screen
-## regardless of zoom or viewport size. Fully transparent (`halo_colour`'s own plain `uniform`
+## regardless of zoom or viewport size. Fully transparent (`halo_colour`'s instance uniform
 ## default, never set here) makes it imperceptible regardless: the GLSL program compiles from the
 ## material and the draw call alone, never from the pixels it happens to write.
 ##
@@ -1380,7 +1380,7 @@ func _warm_the_halo_shader(ground: Vector2) -> void:
 	var probe := Node2D.new()
 	probe.name = "HaloWarm"
 	probe.global_position = ground
-	probe.material = EntityHalo.new_material()
+	probe.material = EntityHalo.shared_material()
 	probe.draw.connect(func() -> void: probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.WHITE))
 	add_child(probe)
 	_pauses_with_the_game(probe)

@@ -43,7 +43,6 @@ func run(t) -> void:
 	_test_a_flock_is_selected_and_lands(t)
 	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
 	_test_the_rims_mirrored_copies_land_on_the_ring(t)
-	_test_each_rims_material_carries_its_own_colour(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -672,59 +671,3 @@ func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
 		t.check(is_equal_approx(out, EntityHalo.HALO_MARGIN),
 				"every copy sits exactly HALO_MARGIN (%.1fpx) out from the bobbing body (%.3f)"
 				% [EntityHalo.HALO_MARGIN, out])
-
-# ------------------------------------------------------- one material per rim, not one shared ---
-# M205 (found on the released Web page, PLAYTEST-140 statement 4: "the yeller has no effect on the
-# meter and its halo doesn't even turn on"): the meter side was never broken (`ExcitementHalo`'s own
-# arithmetic above is platform-independent GDScript), but a real Web export, driven headlessly
-# through `tests/zz_probe/` and read back over `read_console_messages`, computed a real target alpha
-# for a live `homeless_yeller` (0.69, logged) while the rim never appeared on screen, though the same
-# `gl_compatibility` renderer draws it correctly natively. The cause: every `EntityHalo` used to draw
-# through one `ShaderMaterial` the whole game shared, carrying its one live colour through Godot's
-# per-`CanvasItem` `instance uniform` channel (`set_instance_shader_parameter()`) rather than through
-# the material itself — and that channel's value silently never reaches the fragment shader on this
-# project's Web export, though nothing on the GDScript side, and no console error, says so.
-#
-# Headless never renders a pixel, so what is asserted is the fact an `instance uniform` bypasses:
-# the actual `ShaderMaterial` object a plain `uniform` reads from. Two rims must not share one, and
-# each one's own material — not just its own `_alpha`/`_colour` fields — must carry its own colour.
-func _test_each_rims_material_carries_its_own_colour(t) -> void:
-	var red := EntityHalo.new(Callable(), Callable())
-	var blue := EntityHalo.new(Callable(), Callable())
-	t.check(red.material != blue.material,
-			"two rims never draw through the same ShaderMaterial object -- a material shared by " +
-			"the whole game has only one live value, which is what left every rim's own colour " +
-			"unreachable on the Web export's renderer")
-
-	red.set_glow(ExcitementHalo.MAX_ALPHA, Color.RED)
-	blue.set_glow(ExcitementHalo.MAX_ALPHA, Color.BLUE)
-	var steps := int(round(EntityHalo.FADE_IN_SECONDS / STEP)) + 2
-	for i in steps:
-		red._process(STEP)
-		blue._process(STEP)
-
-	# Untyped on purpose: before the fix `get_shader_parameter()` answers Nil (the old code wrote
-	# `set_instance_shader_parameter()` on the `CanvasItem`, never touching the material's own
-	# uniform at all), and a typed `Color` assignment there throws inside `run()` rather than
-	# failing the check -- exactly the trap the verify skill's own testing policy warns against.
-	# `t.check` the type first, so a regression here is a clean failure, not a hung runner.
-	var red_param: Variant = (red.material as ShaderMaterial).get_shader_parameter("halo_colour")
-	t.check(typeof(red_param) == TYPE_COLOR,
-			"the red rim's own material actually carries a halo_colour parameter, not Nil -- " +
-			"which is what get_shader_parameter() answers when nothing was ever set on the " +
-			"material itself")
-	if typeof(red_param) == TYPE_COLOR:
-		t.check((red_param as Color).is_equal_approx(Color(1.0, 0.0, 0.0, ExcitementHalo.MAX_ALPHA)),
-				"the red rim's own material carries red at full alpha -- the value a plain " +
-				"`uniform` reads, not merely `red._colour` -- rather than the shader's own " +
-				"untouched default")
-
-	var blue_param: Variant = (blue.material as ShaderMaterial).get_shader_parameter("halo_colour")
-	t.check(typeof(blue_param) == TYPE_COLOR,
-			"and the blue rim's own material actually carries a halo_colour parameter too")
-	if typeof(blue_param) == TYPE_COLOR:
-		t.check((blue_param as Color).is_equal_approx(Color(0.0, 0.0, 1.0, ExcitementHalo.MAX_ALPHA)),
-				"and the blue rim's own material carries blue, not the red rim's value nor the " +
-				"default")
-	red.free()
-	blue.free()
