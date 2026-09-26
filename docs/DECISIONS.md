@@ -20,8 +20,12 @@ BSD `grep -r` stays flat at a few MB and needs no guard. The full table is in PR
 `.claude/settings.json` and, through `tools/codex-hooks.py`, in Codex. It denies a `git grep`
 (including `git -C <dir> grep` and `git --no-pager grep`, in a loop, after `&&`, `;` or `|`, or in
 `$(…)`) that has neither `-I` nor a pathspec restricted to a known list of text extensions. The
-reason tells the model the rewrite. A mention in quotes (`echo "git grep"`, a commit message)
-passes. Claude Code's hooks documentation says settings hooks fire for a sub-agent's tool calls
+reason tells the model the rewrite. It matches on the raw command text, quotes and heredoc bodies
+included, so a mention (`echo "git grep"`, a commit message), a wrapper (`timeout`, `sudo`,
+`find | xargs`), a heredoc fed to an interpreter or quoted code run by one (`bash -c`, `python3 -c`)
+all deny too — `git log`/`shortlog --grep=…` is the one mention still allowed, since that `grep` is
+glued to a dash rather than its own word. Claude Code's hooks documentation says settings hooks
+fire for a sub-agent's tool calls
 too, which is what ran the command. A hook added to `settings.json` runs only once the player has
 approved it through `/hooks`.
 

@@ -217,10 +217,29 @@ class CodexHooksTest(unittest.TestCase):
         text = self.call(tool="Bash", command="git grep -n -I -i foo origin/main -- docs/")
         self.assertIn("committing", text)
 
-    def test_git_grep_guard_ignores_a_git_grep_mention_in_a_commit_message(self) -> None:
-        # No permissionDecision in the output -- call() already asserts additionalContext exists,
-        # which fails outright if a deny snuck in instead.
-        text = self.call(tool="Bash", command='git commit -m "explains why git grep needs a guard"')
+    def test_git_grep_guard_denies_a_git_grep_mention_in_a_commit_message(self) -> None:
+        # This design prefers a false deny to a false allow and matches on the raw command text,
+        # so a mention denies too -- confirming the adapter forwards that, not only a real
+        # invocation's deny.
+        output = self.call_raw(command='git commit -m "explains why git grep needs a guard"')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_denies_a_wrapped_invocation(self) -> None:
+        # Confirms the adapter forwards a deny for the wrapper-command shape too (timeout, sudo,
+        # env, ... -- see git-grep-guard.sh's own header for the full list this closes).
+        output = self.call_raw(command='timeout 5 git grep -n -i "foo" origin/main -- docs/')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_denies_quoted_code_run_by_a_nested_interpreter(self) -> None:
+        output = self.call_raw(command='bash -c "git grep -n -i pattern origin/main -- docs/"')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_allows_git_log_grep_option(self) -> None:
+        # The one mention still allowed: --grep is an option glued to a dash, never its own word.
+        text = self.call(tool="Bash", command="git log --grep=foo")
         self.assertIn("committing", text)
 
     def test_git_grep_guard_denies_across_an_unquoted_newline(self) -> None:

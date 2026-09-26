@@ -15,11 +15,13 @@
 #     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd) injects its skill
 #   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
-#   - git-grep-guard.sh denies a git grep with neither -I nor a text-only pathspec, however it is
-#     spelled (git -C <dir> grep, git --no-pager grep, an unrecognised global option such as
-#     -c name=value or --git-dir=...) or wherever it sits (a for loop, after &&/;/|, an unquoted
-#     newline, inside $(...)), skips a heredoc body rather than scanning it as a command, and
-#     passes a guarded one, an rg call and a mere mention of the words
+#   - git-grep-guard.sh matches on the raw command text (quotes and heredoc bodies included) and
+#     denies any git followed later by grep as its own word, with neither -I nor a text-only
+#     pathspec in between -- a wrapper (timeout, sudo, env, find | xargs), a heredoc fed to an
+#     interpreter (bash <<EOF, ssh <<EOF), quoted code run by a nested interpreter (bash -c,
+#     python3 -c), and a mere mention (echo, a commit message, a heredoc to cat) all deny now;
+#     git log/shortlog --grep=... is the one mention still allowed, since that grep is glued to a
+#     dash and never its own word
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -38,7 +40,7 @@ usage: tools/test_rules_hooks.sh [--help|-h]
 Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh and git-grep-guard.sh
 with synthetic hook JSON on stdin, under a private TMPDIR, and asserts the per-agent marker
 keying, the compaction/resume reset, every path added to the skill mapping, the lint-docs.sh
-governed set, and every git-grep-guard.sh deny/allow shape.
+governed set, and every git-grep-guard.sh raw-text deny/allow shape.
 Takes no arguments besides --help/-h.
 
   tools/test_rules_hooks.sh
@@ -283,16 +285,32 @@ assert_guard "bundled -Ii -> allow" allow \
     'git grep -Ii "foo" origin/main -- docs/'
 assert_guard "text-only pathspec -> allow" allow \
     "git grep -n -i 'wrap.*corner' origin/main -- 'docs/*.md'"
-assert_guard "rg on the checkout -> allow" allow \
+assert_guard "three quoted text-only globs -> allow" allow \
+    "git grep -I -- '*.md' '*.gd' '*.sh'"
+assert_guard "rg on the checkout, own search -> allow" allow \
     'rg -n -i "wrap.*corner|goes around" docs/'
-assert_guard "echo mentions the words -> allow" allow \
-    'echo "git grep is dangerous, be careful"'
-assert_guard "commit message mentions the words -> allow" allow \
-    'git commit -m "explains why git grep needs a guard now"'
-assert_guard "rg quoting the phrase -> allow" allow \
-    'rg "git grep"'
 assert_guard "unrelated git command -> allow" allow \
     'git status'
+assert_guard "git log --grep=foo -- the one mention still allowed, an option not a subcommand" allow \
+    'git log --grep=foo'
+assert_guard "git shortlog --grep=foo -> allow, same reason" allow \
+    'git shortlog --grep=foo'
+assert_guard "git log piped to an unrelated plain grep -> allow" allow \
+    'git log --oneline | grep foo'
+assert_guard "a hyphenated mention (git-grep) never tokenizes as the two words -> allow" allow \
+    'echo "see git-grep for details"'
+assert_guard "wrapped and guarded still allows" allow \
+    'sudo git grep -n -I -i "foo" origin/main -- docs/'
+
+# This design prefers a false deny to a false allow: it matches on the raw command text, quotes
+# and heredoc bodies included, rather than trying to tell a mention from a real invocation, a
+# wrapper from a bare command, or a heredoc's body from a command. So a mention now denies too.
+assert_guard "echo mentions the words -> deny, was allow before the adversarial review" deny \
+    'echo "git grep is dangerous, be careful"'
+assert_guard "commit message mentions the words -> deny, was allow before the adversarial review" deny \
+    'git commit -m "explains why git grep needs a guard now"'
+assert_guard "rg quoting the phrase -> deny, was allow before the adversarial review" deny \
+    'rg "git grep"'
 
 # An unquoted newline separates commands exactly like `;` -- a review of the pull request that
 # added this file found both of these passed silently, and the second is the incident command
@@ -307,9 +325,10 @@ assert_guard "guarded git grep on its own line -> allow" allow \
     'cd /x
 git grep -n -I -i "wrap.*corner" origin/main -- docs/'
 
-# A heredoc body is never executed, so a mention inside one is not a command and must not be
-# scanned -- and must not be mistaken for ending the real command that follows it either.
-assert_guard "heredoc body mentions the words, no real invocation follows -> allow" allow \
+# This design does not try to tell a heredoc body from a command: it never scans for a `<<WORD`
+# terminator at all, so a body is matched exactly like anything else on the raw command text --
+# which is also what closes the "a heredoc fed to an interpreter" gap below.
+assert_guard "heredoc body mentions the words, no real invocation follows -> deny, was allow before" deny \
     'cat <<EOF
 please run git grep sometime
 EOF'
@@ -318,16 +337,52 @@ assert_guard "heredoc body mentions the words, an unsafe invocation follows -> d
 mentions git grep here
 EOF
 git grep -n -i "foo" origin/main -- docs/'
-assert_guard "heredoc with a quoted delimiter still skips its body -> allow" allow \
+assert_guard "heredoc with a quoted delimiter, unsafe body -> deny, was allow before" deny \
     "cat <<'EOF'
 git grep -n -i foo origin/main -- docs/
 EOF
 git status"
-assert_guard "heredoc with <<- and a tab-indented delimiter still skips its body -> allow" allow \
+assert_guard "heredoc with <<- and a tab-indented delimiter, unsafe body -> deny, was allow before" deny \
     'cat <<-EOF
 	git grep -n -i foo origin/main -- docs/
 	EOF
 git status'
+
+# An adversarial review of this pull request found three more classes of false negative, all
+# closed the same way: matching raw text does not care that a wrapper, a nested interpreter or a
+# heredoc's own destination sits between the shell and the invocation.
+assert_guard "wrapper: timeout -> deny" deny \
+    'timeout 5 git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: sudo -> deny" deny \
+    'sudo git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: env -> deny" deny \
+    'env git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: nice -> deny" deny \
+    'nice git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: nohup -> deny" deny \
+    'nohup git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: command -> deny" deny \
+    'command git grep -n -i "foo" origin/main -- docs/'
+assert_guard "wrapper: watch -> deny" deny \
+    'watch git grep -n -i "foo" origin/main -- docs/'
+assert_guard "find piped to xargs -> deny" deny \
+    'find docs | xargs -I{} git grep -n -i "foo" {} -- docs/'
+assert_guard "a heredoc fed to bash, unsafe invocation inside -> deny" deny \
+    'bash <<EOF
+git grep -n -i "foo" origin/main -- docs/
+EOF'
+assert_guard "a heredoc fed to ssh, unsafe invocation inside -> deny" deny \
+    'ssh host <<EOF
+git grep -n -i "foo" origin/main -- docs/
+EOF'
+assert_guard "nested interpreter: bash -c \"git grep ...\" -> deny" deny \
+    'bash -c "git grep -n -i pattern origin/main -- docs/"'
+assert_guard "nested interpreter: sh -c \"git grep ...\" -> deny" deny \
+    'sh -c "git grep -n -i pattern origin/main -- docs/"'
+assert_guard "nested interpreter: python3 -c os.system(...) -> deny" deny \
+    "python3 -c \"os.system('git grep -n -i pattern origin/main -- docs/')\""
+assert_guard "nested interpreter: perl -e system(...) -> deny" deny \
+    'perl -e "system(\"git grep -n -i pattern origin/main -- docs/\")"'
 
 # An unknown global git option before `grep` must not stop the scan (fail-safe: skip any
 # `-`-prefixed token, not only a recognised few), whether or not it is one of the handful that

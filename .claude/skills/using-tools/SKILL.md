@@ -45,15 +45,21 @@ place the flag list lives — not what each is for; that gap is this file's job.
 A tool's own header and `--help` are still the source of truth for its exact flags; this table
 says what it is *for*, not its full usage.
 
-**A `git grep` with neither `-I` nor a text-only pathspec is denied, not run.**
-`.claude/hooks/git-grep-guard.sh` is a `PreToolUse` hook, not a catalogued tool -- it fires on
-every `Bash` call (and, through `tools/codex-hooks.py`, on Codex's own) and stops a `git grep`
-invocation, however it is spelled (`git -C <dir> grep`, `git --no-pager grep`) or wherever it sits
-(a loop body, after `&&`/`;`/`|`, inside `$(...)`), that has neither `-I` (skip binary files) nor
-a `--` pathspec made only of known-text-extension globs: measured against this repo's own
-binary-heavy `docs/` tree, that shape grows past a few gigabytes without finishing rather than
-running slow. The denial names the fix in the same line -- add `-I`, restrict the pathspec (e.g.
-`-- '*.md' '*.gd' '*.sh'`), or use `rg` on the checkout instead.
+**A `git grep` with neither `-I` nor a text-only pathspec is denied, not run — and so is a mere
+mention of the words.** `.claude/hooks/git-grep-guard.sh` is a `PreToolUse` hook, not a catalogued
+tool -- it fires on every `Bash` call (and, through `tools/codex-hooks.py`, on Codex's own) and
+matches on the raw command text, quotes and heredoc bodies included, rather than trying to tell a
+real invocation from a mention, a wrapper or a nested interpreter's own quoted code: any `git`
+followed later by `grep` as its own word, with neither `-I` (skip binary files) nor a `--` pathspec
+made only of known-text-extension globs in between, is denied — a wrapper (`timeout`, `sudo`, `env`,
+`find | xargs`), a heredoc fed to an interpreter (`bash <<EOF`), quoted code run by one (`bash -c`,
+`python3 -c`), and a plain mention (`echo "git grep"`, a commit message) included, since a real
+invocation measured against this repo's own binary-heavy `docs/` tree grows past a few gigabytes
+without finishing rather than running slow, and telling those shapes apart reliably is exactly the
+parsing that let earlier versions of this hook through. `git log`/`shortlog --grep=...` is the one
+mention still allowed, since that `grep` is glued to a dash rather than being its own word. The
+denial names the workaround in the same line -- write it as `git-grep`, add `-I`, restrict the
+pathspec (e.g. `-- '*.md' '*.gd' '*.sh'`), or use `rg` on the checkout instead.
 
 ## A manual sequence done a second time becomes a script
 
