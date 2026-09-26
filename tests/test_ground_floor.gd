@@ -813,11 +813,15 @@ func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_
 	covered_civic.free()
 
 ## `City._assign_roof_extensions()`'s own wiring, asked of whatever the generator actually builds:
-## every covered column's own south-neighbour tile belongs to some building's lot, and that
-## building's own `roof_extension_rows` at the matching column is exactly the covered building's
-## own `wall_tiles()` — enough roof to reach exactly the world row the covered building's own roof
-## already starts at, never more and never less. `has_point()` over every building's own `lot`
-## rather than a spatial index, since the whole set is small and this only runs once per seed.
+## every covered column's own south-neighbour tile that is still on the map belongs to some
+## building's lot, and that building's own `roof_extension_rows` at the matching column is exactly
+## the covered building's own `wall_tiles()` — enough roof to reach exactly the world row the
+## covered building's own roof already starts at, never more and never less. `has_point()` over
+## every building's own `lot` rather than a spatial index, since the whole set is small and this
+## only runs once per seed. A south tile past the map's own edge is covered too
+## (`_covered_ground_cols()`'s own out-of-bounds default) but belongs to no lot — the map's own
+## boundary, not a building — so those columns are skipped rather than checked, the same tolerance
+## `_assign_roof_extensions()` itself already has.
 func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t) -> void:
 	var checked := 0
 	for i in SWEEP_SEEDS:
@@ -834,13 +838,21 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 					continue
 				var south := Vector2i(building.lot.position.x + col,
 						building.lot.position.y + building.lot.size.y)
+				if not map.in_bounds(south):
+					# `_covered_ground_cols()`'s own out-of-bounds default (`CityMap.tile_at()`
+					# reads a tile past the map's own edge as `BUILDING`) marks this column covered
+					# too, with no lot on the other side to extend a roof from — the map's own
+					# boundary, not a building. `_assign_roof_extensions()` tolerates exactly this
+					# (`tile_to_index.get(south, -1)`, `if front_index < 0: continue`), so nothing
+					# more is asked of this column here either.
+					continue
 				var front: Building = null
 				for candidate: Building in buildings:
 					if candidate.lot.has_point(south):
 						front = candidate
 						break
 				t.check(front != null,
-						"seed %d: a covered column's own south tile belongs to some building's lot"
+						"seed %d: a covered column's own south tile, in bounds, belongs to some building's lot"
 						% map.seed_used)
 				if front == null:
 					continue
