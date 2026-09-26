@@ -31,6 +31,12 @@ measured in the pinned environment, not asserted across all floating-point imple
 No agent listening approval is claimed; recognition, comfort and preferred style await the
 player in `REVIEW.md`. The game's visual-only warning contract remains unchanged.
 
+**Listening verdict, 2026-09-26:** the player rejected the stylized direction as too far off and
+preferred the grounded direction, while saying it still failed to represent the subjects. The
+stroller sounded like ocean waves and the footsteps were too heavy. The next requested pass
+therefore addresses recognition and weight before any expansion or runtime binding; the specific
+dry-contact/rattle and light-sole recipes are assistant proposals, not approved sound outcomes.
+
 ## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
 
 *([PLAYTEST-142](playtests/PLAYTEST-142.md): "the pause screen is currently bugged where you cannot

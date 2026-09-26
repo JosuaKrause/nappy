@@ -24,3 +24,12 @@ The authoring method belongs in a repository skill, with recipes and regeneratio
 preserved beside the listening samples. The sound experiment has its own branch and pull request,
 separate from the park fence repair. The samples are delivered as a comparison WAV and an offline
 listening-page bundle.
+
+## Listening verdict
+
+> "okay, the stylized sound is too far off. the grounded is better but also the sound effects don't match what they are supposed to represent. the stroller sounds like waves on the ocean. the foot steps are too heavy"
+
+Continue with the grounded direction. Recognition is not established by the first samples:
+the stroller needs to suggest wheels and a small mechanism rather than an ocean-like wash, and
+the footsteps need to be lighter. The assistant proposes a focused revision of those two sounds
+before expanding the set. The stylized direction is rejected for this experiment.
