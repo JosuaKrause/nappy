@@ -8,8 +8,8 @@ are retained.
 Generation need not reproduce identical pixels; extraction must be reproducible from the saved
 output.
 
-Each family's generation, registration and rebuild commands are indexed in
-`docs/evidence/README.md`, "Graphics recipes". Run Python recipes with `uv run`, and choose a
+Each family's generation, registration and rebuild commands are in its own evidence folder's
+`GENERATION.md` or `README.md`. Run Python recipes with `uv run`, and choose a
 fresh output directory each time. Inspect retained highlights and transparent gaps; registration
 alone does not establish faithful interior geometry or sufficient gameplay detail.
 
@@ -38,7 +38,7 @@ that starts the engine (`check.sh`, `test.sh`, `shot.sh`, `run.sh`) rebakes in t
 mode, so an `--svg` bake cannot be tested or captured through them. Compare against the SVG with
 source previews at the same scale (svg-art, "Render with the game's SVG parser").
 Keep captures bounded to one or two windowed runs. Preserve whole run folders as session-captures
-says, and record build, flags and coverage in the milestone's `docs/DECISIONS.md` entry.
+says, and record build, flags and coverage in the entry's decision record under `docs/decisions/`.
 
 For comic redraws, preserve generated alpha within the native canvas and align functional
 anchors. Save the actual registration script with each family. Opaque terrain retains full

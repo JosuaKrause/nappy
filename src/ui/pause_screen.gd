@@ -79,6 +79,8 @@ func _ready() -> void:
 	visible = false
 	_refresh_body()
 	_refresh_buttons()
+	# Fires the instant the disc fills, not on release — see `ModeButton.hold_completed`'s own doc.
+	_restart_button.hold_completed.connect(func() -> void: restart_requested.emit())
 
 ## Its own function for the same reason it always was: so a test can call this again rather than
 ## reaching for a fresh scene. No longer branches on `_touch` — see `_BODY`'s own doc.
@@ -187,7 +189,9 @@ func _wants_rotation() -> bool:
 ## Returns whether `event` belonged to the restart button at all — a press that landed inside its
 ## `catch_rect()`, or the matching release, whichever way the hold resolves. The caller returns
 ## without falling through to the catch-all exactly when this is true, so a press that starts a hold
-## never also closes the screen underneath it, and a release — met or not — never does either.
+## never also closes the screen underneath it, and a release — completed or not — never does either.
+## A completed hold's own restart already fired before this release ever arrives; see
+## `ModeButton.hold_completed`'s own doc.
 func _handle_restart_touch(event: InputEvent) -> bool:
 	# `_buttons.visible` rather than `_restart_button.visible`: a `Control`'s own `visible` says
 	# nothing about an invisible ancestor, so a button left at its default `true` inside a hidden
@@ -211,6 +215,16 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 	else:
 		return false
 	if pressed:
+		# **A second touch anywhere while the disc is already held is this button's business too.**
+		# *(M212: "sometimes it just doesn't work at all... you have to hold long multiple times".)*
+		# Without this, a stray second finger — the other hand steadying the phone, a palm graze —
+		# fails `begin_hold()` below (only one index may hold at a time), falls through to the
+		# catch-all in `_unhandled_input()`, and reads as *carry on*, resuming the day out from under
+		# a hold already in progress. Swallowed here instead: it does nothing, same as any other
+		# press once a hold is running, rather than ending the hold for something that was never it.
+		if _restart_button.is_held():
+			get_viewport().set_input_as_handled()
+			return true
 		var at := ScreenOrientation.to_design_space(position, _wants_rotation())
 		if not _restart_button.catch_rect().has_point(at):
 			return false
@@ -221,8 +235,10 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 	if not _restart_button.is_held_by(index):
 		return false
 	get_viewport().set_input_as_handled()
-	if _restart_button.end_hold(index):
-		restart_requested.emit()
+	# The restart itself already fired from `ModeButton.hold_completed` the instant the disc filled,
+	# while this same finger or click was still down — see that signal's own doc. This only tears
+	# the hold's own state down; calling `restart_requested.emit()` here too would restart twice.
+	_restart_button.end_hold(index)
 	return true
 
 ## Stands in for the touch index a mouse event carries none of, in `_handle_restart_touch()`'s own
@@ -310,7 +326,29 @@ func _unhandled_input(event: InputEvent) -> void:
 	# A tap or a mouse click carries on exactly as space does. *(2026-09-06: "I still need to press
 	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen
 	# has to accept one too rather than leaving the keyboard as the only way past it.
-	if TouchInput.is_press(event):
+	#
+	# **The two event shapes are split rather than read through `TouchInput.is_press()`, the same
+	# way `DaySummary._unhandled_input()`'s own equivalent branch already is.** *(M211: "the pause
+	# screen is currently bugged where you cannot restart from it. it just goes back to the current
+	# game when pressing the button.")* A real touch device emulates a mouse click from every finger
+	# it reads, and — confirmed by driving a real touch through `Input.parse_input_event()` +
+	# `flush_buffered_events()` in `tests/test_held_restart.gd` — that emulated `InputEventMouseButton`
+	# press dispatches *before* the real `InputEventScreenTouch` press for the same finger, not
+	# after. A press on the restart button used to reach here first as the emulated click, since
+	# `TouchInput.is_press()` does not ask whether this device even has touch hardware to emulate
+	# one from, firing `_acknowledge_and_resume()` a frame or two ahead of the real touch reaching
+	# `_handle_restart_touch()` above — and that coroutine's own `close()` cancels whatever hold the
+	# real touch had just started and resumes the day before the hold could ever complete. Gating
+	# the mouse branch on `not _touch`, exactly as `_handle_restart_touch()`'s own mouse branch
+	# already is, means the emulated click never reaches a branch at all on a device where a real
+	# touch already has — the same reasoning `DaySummary`'s own doc gives for its own mouse branch.
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		get_viewport().set_input_as_handled()
+		_acknowledge_and_resume()
+		return
+	if not _touch and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		get_viewport().set_input_as_handled()
 		_acknowledge_and_resume()
 		return
