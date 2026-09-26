@@ -199,3 +199,18 @@ beside her doorstep:
 
 27. **The halo draws in desktop Chrome too**; what failed to draw it was the locally exported debug
     build the agent tested, not the game. The man shouting has no halo there either. → M205.
+
+## Then, on what comes after the layout
+
+Asked whether the orchestrator should take over PR #368, the cloud session's counter work that had
+not picked up the review comments, and what to do with `docs/evidence/README.md`'s "Graphics
+recipes" table (about 63 rows, each linking an artwork to the file in its evidence folder that
+records how it was made, edited by 44 PRs):
+
+> "yes, take over from the cloud session"
+
+> "if the information is still there and the table in readme is redundant we can remove"
+
+28. **The orchestrating session takes #368 over** and builds M225 on it, after M223. → M225.
+29. **The graphics-recipes table goes**, once every row's information is confirmed to be in its own
+    evidence folder; a row whose information is only in the table moves there first. → M223.
