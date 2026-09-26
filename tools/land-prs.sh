@@ -2,7 +2,11 @@
 # The manual sequence that landed a queue of already-authorized pull requests by hand, twice in
 # one session -- see docs/TODO.md, one command lands a queue of pull requests in order:
 #
-#   1. gh pr merge <n> --squash --auto     (turns auto-merge on)
+#   1. gh pr merge <n> --squash --auto     (turns auto-merge on) -- or, when the PR's own
+#      mergeStateStatus already reads CLEAN (checks green, no conflict), gh pr merge <n> --squash
+#      directly, since GitHub refuses to enable auto-merge on a PR that could merge right now
+#      ("Pull request is in clean status (enablePullRequestAutoMerge)") -- the same direct merge is
+#      the fallback if auto-merge is attempted anyway and fails with that error
 #   2. poll gh pr view <n> --json state,mergeable until it is MERGED, or until main moved under it
 #      and left it CONFLICTING -- the ruleset's checks are not strict
 #      (strict_required_status_checks_policy is false), so a PR that is merely behind main needs
@@ -40,8 +44,11 @@ usage() {
     cat <<'EOF'
 usage: tools/land-prs.sh [--help|-h] [--dry-run] [--timeout <minutes>] <pr-number> [<pr-number>...]
 
-Lands a queue of already-authorized pull requests in order, one at a time: enables auto-merge
-(gh pr merge <n> --squash --auto), waits for GitHub to merge it, runs tools/update-pr.sh <n> only
+Lands a queue of already-authorized pull requests in order, one at a time: merges each one --
+directly (gh pr merge <n> --squash) when its mergeStateStatus already reads CLEAN, since GitHub
+refuses to enable auto-merge on a PR that could merge right now, otherwise by enabling auto-merge
+(gh pr merge <n> --squash --auto) and falling back to the direct merge if that still fails with
+GitHub's "clean status" error -- waits for GitHub to merge it, runs tools/update-pr.sh <n> only
 when an earlier merge left it conflicting with main and keeps waiting -- a PR that is merely
 behind main needs nothing, since the ruleset's checks are not strict -- then once merged
 fast-forwards main in this checkout (git pull --ff-only) and retires the branch with
@@ -205,19 +212,36 @@ echo "plan: land ${#prs[@]} PR(s) in this order: ${prs[*]}"
 for n in "${prs[@]}"; do
     echo
     echo "== PR #$n =="
-    pr_json="$(gh pr view "$n" --json state,mergeable,url,headRefName 2>&1)" \
+    pr_json="$(gh pr view "$n" --json state,mergeable,mergeStateStatus,url,headRefName 2>&1)" \
         || refuse "gh pr view $n failed: $pr_json"
     state="$(pr_field "$pr_json" state)"
     url="$(pr_field "$pr_json" url)"
+    merge_state="$(pr_field "$pr_json" mergeStateStatus)"
 
     if [[ "$state" == CLOSED ]]; then
         stop "PR #$n ($url) is closed, not open -- nothing to land"
     fi
 
     if [[ "$state" != MERGED ]]; then
-        echo "enabling auto-merge (squash)"
-        merge_out="$(gh pr merge "$n" --squash --auto 2>&1)" \
-            || refuse "PR #$n: gh pr merge --squash --auto failed: $merge_out"
+        if [[ "$merge_state" == CLEAN ]]; then
+            # Already mergeable right now (checks green, no conflict) -- GitHub's own
+            # enablePullRequestAutoMerge refuses a PR in this state ("Pull request is in clean
+            # status"), so there is nothing to wait for; merge it directly.
+            echo "already clean -- merging directly (squash)"
+            merge_out="$(gh pr merge "$n" --squash 2>&1)" \
+                || refuse "PR #$n: gh pr merge --squash failed: $merge_out"
+        else
+            echo "enabling auto-merge (squash)"
+            if ! merge_out="$(gh pr merge "$n" --squash --auto 2>&1)"; then
+                if [[ "$merge_out" == *"is in clean status"* ]]; then
+                    echo "auto-merge refused because the PR is already clean -- merging directly (squash)"
+                    merge_out="$(gh pr merge "$n" --squash 2>&1)" \
+                        || refuse "PR #$n: gh pr merge --squash failed: $merge_out"
+                else
+                    refuse "PR #$n: gh pr merge --squash --auto failed: $merge_out"
+                fi
+            fi
+        fi
     fi
 
     deadline=$(( $(date +%s) + timeout_min * 60 ))
