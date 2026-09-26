@@ -384,8 +384,16 @@ are deliberately dangerous."
 
 [PLAYTEST-140](playtests/PLAYTEST-140.md), statement 5. Seen on the phone.
 
-- [ ] **Reproduce it, fix it, and pin it with a test**: after a lost day's game over, the title
-      screen is drawn in the screen's own orientation. Check the desktop and the touch layout.
+Not reproduced off the phone. PR #378 re-applies the orientation as the title opens and closes a
+startup race, and rules out the two suspects: on the web export, touch detection is the browser's
+fixed `'ontouchstart' in window` and the window size is re-read from the canvas every frame, so the
+per-frame orientation poll (`main._process()`, running through pauses) cannot stay wrong for more
+than a frame. The player: "the only way to test this is to release it".
+
+- [ ] **The released page decides it**: after a lost day's game over on the phone, the title is
+      the right way up (`REVIEW.md`). If it is still sideways, the next pass reproduces it in a
+      debug web build in Chrome's phone emulation (`tools/export-web.sh debug`, as M205 did), and
+      asks whether it happens after every lost run and whether anything besides the title turns.
 
 
 The player's phone, v0.18.0 ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 26, and
