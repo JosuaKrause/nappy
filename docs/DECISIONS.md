@@ -1,10 +1,10 @@
 # Decisions
 
-## M207 — The cyclist's shorter warning through a smaller field · tried and turned down 2026-09-26
+## M207 — A warning comes by itself, and the thing spawns where it points · built 2026-09-26
 
 *([PLAYTEST-140](playtests/PLAYTEST-140.md): "12.9s is a *long* warning to the point where nothing
 really happens anymore. I feel the same with the biker. it gets warned too early so most of the
-time you're already gone when anything happens." · turned down in
+time you're already gone when anything happens." · its first build turned down in
 [PLAYTEST-145](playtests/PLAYTEST-145.md): "I don't like that the warning is tied to the size of
 the field or the speed.")*
 
@@ -22,12 +22,41 @@ to 0.7 to 1.2) and free past about 60px, where it had cost 2.2 at 75px.
 
 **Why it was turned down.** The player does not want a warning tied to the size of a thing's field
 or to its speed. The warning is to go up by itself, and the thing is to spawn where it points when
-its time comes, the waiting place following her on the thing's own ground. That design is M207 in
-`TODO.md`, built on the same PR, #372.
+its time comes, the waiting place following her on the thing's own ground, which is what is built.
+
+**What is built instead** ([PLAYTEST-145](playtests/PLAYTEST-145.md): "the warning appears by
+itself with a reasonable position and when the time is right the object is spawned in at that
+location just offscreen" · "the spawn point follows her but must keep making sense" · "all
+offscreen events should work like that" · "2.9s is a fair time to react and *think* about what to
+do. so I'd file mark that as the minimum"). A `PendingWarning` (`src/events/pending_warning.gd`)
+holds a place and a clock and nothing in the world; the screen-edge badge is up for it the whole
+time. Each frame the place follows her on the thing's own ground, and once `telegraph_time` is
+over and the place is on that ground and off screen by `Tuning.offscreen_lead()`, the thing is
+created there with its telegraph already spent, so a `hard_fail` row is lethal from the moment it
+exists. It covers `cyclist` and `loose_dog` (on a sidewalk, down her line), `fire_truck` (on its
+street's road, level with her or up the road, never past the fire) and the day-13 column (in its
+lane). The siting no longer derives from the telegraph: `Tuning.outlasting_telegraph_lead()` and
+`EventDef.toward_player_lead()` are gone, and the cyclist is back to his 90px field and `intensity`
+18.0, 16.0 over a full pass. The minimum warning for these rows is `Tuning.OFFSCREEN_WARNING_MIN`,
+2.9s, measured from the badge to the earliest moment the thing can reach her
+(`EventDef.warning_time()`); the cyclist's `telegraph_time` is 2.13s, 2.92s from badge to reach
+walking into him. `required_telegraph_time()` still sets the minimum for every other row. Two bugs
+the measuring found in the waiting place were fixed with it: the fire truck's place was the point of
+the road nearest the fire, which put it behind her once she walked a screen up the road, and the
+cyclist's place held still at a cross street while she walked into it, which brought it on screen.
+
+**Choices made by the implementer where the design was silent, open to overturn**: a place with no
+sensible ground moves sideways up to a street's width, then further along her line up to two
+streets, never nearer; if nothing is found it stays where it was and the thing waits past its time
+until its place is on its ground and off screen again. The direction a cyclist or loose dog comes
+from is fixed when the warning goes up; if she turns, it does not swing round with her. A fire
+truck whose fire she has walked past arrives a tile up from the fire and parks unseen. Her entering
+a building or a park has no special handling. `loose_dog` is exempt from the 2.9s for now, held to
+its field's minimum (2.07s; it warns 2.40s). What is still open is M207 in `TODO.md`.
 
 **The table of every warned row's lead**, `tests/probes/m207_warning_lead.gd`
-(`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it), measured under the
-siting that was turned down. For each row it measures the seconds from the first warning she can
+(`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it). Its first printing
+was measured under the siting that was turned down. For each row it measures the seconds from the first warning she can
 see, the badge or the thing in view, to the earliest moment it can reach her, walking toward it,
 standing, and walking away, against `EventDef.minimum_telegraph()`. Its first printing, over the
 floor in seconds walking toward / standing / walking away: `door_guard` +2.35 / +0.50 / +2.35;
@@ -38,6 +67,11 @@ line (to no warning at all horizontally), `charging_dog` from day 4, `alley_robb
 `masked_pursuer` and `pigeon_flock` walking toward it, `military_convoy` and `police_patrol`'s
 return leg by a fraction of a second. Whether each is a contract breach or the probe standing her in
 the wrong place is M224, a warning shorter than its own floor.
+Printed again under warning first, from the badge to the earliest reach, walking toward / standing /
+walking away, against the floor: `loose_dog` vertically 2.43 / 2.53 / 3.13 and horizontally 3.05 /
+3.60 / 6.63 against 2.07; the cyclist vertically 2.92 / 3.35 / 4.87 and horizontally 3.47 / 4.20 /
+never against 2.90; `fire_truck` 6.30 each way against 5.96; the day-13 column 4.45 each way
+against 4.29. The rows not warned first measure as in the first printing.
 
 ## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
 

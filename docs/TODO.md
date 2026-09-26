@@ -674,64 +674,32 @@ silently.
 > with the biker. it gets warned too early so most of the time you're already gone when anything
 > happens."
 
-[PLAYTEST-140](playtests/PLAYTEST-140.md). And how it is to be done,
-[PLAYTEST-145](playtests/PLAYTEST-145.md):
+[PLAYTEST-140](playtests/PLAYTEST-140.md). How it is done is
+[PLAYTEST-145](playtests/PLAYTEST-145.md): the warning goes up by itself, the thing spawns just off
+screen where it points when its time comes, the waiting place follows her on the thing's own
+ground, for every event that arrives from off screen, and a warning is at least 2.9s ("2.9s is a
+fair time to react and *think* about what to do"). What is built on PR #372 is in `DECISIONS.md`,
+M207. Four things are open, each waiting on the player:
 
-> "I don't like that the warning is tied to the size of the field or the speed. how offscreen
-> warnings and placements should work is that the warning appears by itself with a reasonable
-> position and when the time is right the object is spawned in at that location just offscreen.
-> that way even if you keep moving the object will move with you until it is actually spawned" ·
-> "the spawn point follows her but must keep making sense. the firetruck needs to stay on the road
-> traveling to the fire. the biker needs to stay on the sidewalk"
-
-This replaces the way a row that travels toward her is sited today (`docs/EVENTS.md`, "Everything
-arrives from off screen"): it is placed in the world at once, far enough out that its telegraph is
-spent on the approach, and for a `hard_fail` row that distance is `telegraph_time + notice` of
-closing speed (`Tuning.outlasting_telegraph_lead()`), because `EventInstance.is_lethal_at()`
-refuses the whole telegraph. EVENTS.md then ties the telegraph to the field ("How long that
-telegraph is is not a free choice — it is tied to `outer_radius`"), which is the tie the player
-turned down. The first build on PR #372 shortened the cyclist's warning through that tie, by
-shrinking his field (`DECISIONS.md`, M207); it is undone here.
-
-- [ ] **An offscreen warning appears by itself, and the thing spawns where it points when its time
-      comes.** For every row that arrives from off screen under the screen-edge badge, the badge
-      goes up with nothing in the world yet. When the row's warning time is over, the thing is
-      spawned at the place the badge pointed to, just off screen: the view's edge plus the row's
-      own offscreen notice, as PLAYTEST-33 asked ("at least be 200ms off screen with a warning").
-      Until then that place moves with her, so walking on neither brings it sooner nor leaves it
-      behind, and it stays on ground that makes sense for the thing: the cyclist and the loose dog
-      on a sidewalk, the fire truck on the road on its way to the fire, a car or convoy on its road.
-- [ ] **The warning time is each row's own number**, set per row, and no longer derived from its
-      field or its speed. The siting no longer spends it. The cyclist's field goes back to 90px and
-      his `intensity` to 18.0, which were changed only to shorten his warning through the old tie,
-      and his full-pass cost is 16.0 again without the louder field.
-- [ ] **The fairness contract is stated for this mechanism**: the moment the badge goes up is the
-      moment the event "becomes visible", and the contract and its test hold every row to it.
-      How short a warning may be is the open question below.
-- [ ] **`docs/EVENTS.md` and the events skill say the new rule**, and the tie of telegraph to
-      field goes from both, with every docstring that restates it.
-- [ ] **The lead table is measured again** (`tests/probes/m207_warning_lead.gd`) under the new
-      mechanism, from the badge to the earliest moment each row can reach her.
-
-**Open, for the player: how short may a warning be?** The fairness contract ("a player who starts
-walking away the instant an event becomes visible must get clear before it hurts") has a minimum,
-`Tuning.required_telegraph_time()`, and that minimum is itself worked out from the field: for a
-row faster than a walk it is the time to walk across the field's whole forward reach, doubled for a
-`hard_fail` row. At the cyclist's 90px field that is about 2.9s, the warning the player called too
-early; at 60px it was 1.95s, which is why the first build shrank the field. The orchestrator's
-proposal, not asked for: for a `hard_fail` row, double only the part that ends the day (its
-33px lethal reach) and hold the rest of the field to the ordinary single margin, which puts the
-cyclist's minimum at about 1.5s with his 90px field. The plainer alternatives: keep the minimum as
-it is and let the field set it; or keep the 60px field.
-
-**Proposed, not asked for** (the orchestrator's, open to overturn): the waiting place is the point
-on the thing's own ground nearest to where the badge points, kept just off screen; the rows covered
-are all that arrive from off screen under the badge, the fire truck and the convoy included (the
-player named the fire truck); a row whose waiting place has no sensible ground when its time comes
-is the implementer's smallest choice, stated in the PR. Rows that wait in one place (`alley_robbery`,
-`masked_pursuer`, `pigeon_flock`) and `cat_dash`, which is sited ahead of her to cross, are not
-covered: none of them arrives from off screen. The robber who chases her after a handover is
-M137's, on PR #362, and follows the same rule once both have landed.
+- [ ] **What the 2.9s counts to.** Built: from the badge to the earliest moment the thing can reach
+      her (`EventDef.warning_time()`; the cyclist's `telegraph_time` is 2.13s, and he takes about
+      0.77s more from just off screen). The other reading counts to the spawn: his timer 2.9s and
+      about 3.7s in all. Switching is one term in `warning_time()`.
+- [ ] **`loose_dog` under the 2.9s.** Its timer is 2.25s, 2.40s from badge to reach walking into
+      it, and the player said "the dog timer is good" without naming the dog. It is exempt for now
+      (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`); raising it to 2.75s, or 2.9s if the count is to the
+      spawn, is the other answer.
+- [ ] **`charging_dog` is not warned first.** Its 4.5s timer is its visible approach on screen
+      before the chase. Spent before the dog exists, it leaves only the 3s chase, which a walk
+      outlasts, against the pursuit rule `tests/test_events_pursuit.gd` holds: "Walking has to lose,
+      or the mechanic teaches nothing." The orchestrator's proposal, not asked for: the badge goes up
+      for 2.9s first, then the dog spawns just off screen and closes and chases as it does now.
+- [ ] **Three kinds of offscreen arrival are not warned first, each against a stated rule.**
+      `police_patrol`'s return leg and the torn-poster patrol have no badge at all, since the cues
+      rule gives one only to "something lethal or faster than a walk" and a patrol is neither; the
+      `MAP`-placed `military_convoy` and the finale's trucks are planned places, and the events rule
+      says "Do not move a guarantee out of `build_day` and into the streaming." Warning them first
+      needs the player to overturn one rule or the other for them.
 
 ---
 

@@ -331,9 +331,10 @@ additional work".
   PLAYTEST-145: the screen-edge warning goes up first, the thing spawns where it points when its
   time comes, and the waiting place follows her on the thing's own ground ("add the new info to the
   PR so it becomes the new guidance *and* its implementation"). M207 is back in `TODO.md` with the
-  design and one open question for the player: how short a warning may be under the fairness
-  contract. An implementation agent works in `.claude/worktrees/cyclist-warning`
-  (`.claude/briefs/feature-cyclist-warning.md`).
+  design built, and `TODO.md`'s M207 holds the four questions still open for the player (what the
+  2.9s minimum counts to, `loose_dog` under it, `charging_dog` warned first, the patrols and planned
+  convoys). Once answered: amend `.claude/briefs/feature-cyclist-warning.md`, build in
+  `.claude/worktrees/cyclist-warning`, file the record, review under **pr-review**.
 - **STOPPED, not to be continued yet.** Each of these is committed and pushed at a safe point,
   and none gets an agent, a review or a merge until the player picks it up again. They are listed
   only so their state is known:

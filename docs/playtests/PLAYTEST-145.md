@@ -40,6 +40,15 @@ Then, while this file was being written:
 6. **This goes on PR #372** as the new rule for offscreen warnings and placements and as its
    implementation, replacing the smaller field. → M207, on PR #372.
 
-The question of which events it covers was not answered in words. The second answer names the fire
-truck, which does not come toward her at all, so this file reads the rule as applying to everything
-that arrives from off screen under a screen-edge warning, not only to what heads for her.
+Then, asked how short a warning may be, since the fairness contract's minimum is worked out from
+the field (about 2.9s for the cyclist at his 90px field, 1.95s at the 60px of the first build):
+
+> "yes, all offscreen events should work like that. to a human 100ms feels instant, 1s is time
+> needed to react to something, 2.9s is a fair time to react and *think* about what to do. so I'd
+> file mark that as the minimum. what is the dogs timer right now? the dog timer is good"
+
+7. **Every event that arrives from off screen works this way.** → M207.
+8. **The minimum warning is 2.9s**, a human's time to react and think: 100ms feels instant, 1s is
+   the time to react. → M207.
+9. **The dog's timer is good.** Which dog, and what the 2.9s counts to (the spawn, or the moment
+   the thing can reach her), went back to the player. → M207.
