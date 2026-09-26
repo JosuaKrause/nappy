@@ -55,6 +55,14 @@ var _clock := 0.0
 ## `decay_in_window()`, what `ExcitementHalo` shares this against.
 var _decay_history: Array = []
 
+## `[when, points]` entries of her own running and alley share of `incoming`, in the same sliding
+## window every other source's `landed()` keeps — see `EventInstance._landed_history`,
+## `CrowdAgent._landed_history`. **Read by nothing in gameplay.** `EXCITEMENT_FROM_RUNNING` and
+## `EXCITEMENT_FROM_ALLEY` are folded into `incoming` with no source object of their own
+## (`_update_excitement()` below), so this is where "what she did to herself" is kept for whatever
+## names the cause of a crying day — see `main._crying_landed_by_group()`.
+var _self_landed_history: Array = []
+
 ## `[when, points]` entries of the bar's own would-be overflow while sitting at
 ## `Tuning.METER_MAX` — see `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` for what this counts and why, and
 ## `_record_overflow()` for where it is fed. Pruned the same shape `_decay_history` is, to
@@ -78,6 +86,7 @@ func reset() -> void:
 	last_incoming = 0.0
 	last_decay = 0.0
 	_decay_history.clear()
+	_self_landed_history.clear()
 	_overflow_history.clear()
 	_set_state(GameEnums.BabyState.AWAKE)
 	EventBus.sleepiness_changed.emit(sleepiness)
@@ -125,12 +134,19 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	var invincible := DevFlags.invincible()
 	var sources := [] if invincible else (_world.excitement_sources_at(here) if _world else [])
 	var incoming := 0.0
+	var self_incoming := 0.0
 	if not invincible:
 		for pair in sources:
 			incoming += pair[1]
-		incoming += Tuning.EXCITEMENT_FROM_RUNNING * _stroller.run_excess_ratio()
+		# Added to `incoming` one term at a time, exactly as before `self_incoming` existed:
+		# summing the two first and adding the total would round differently, and a record kept
+		# only for the counter must not move the meter by even its last bit.
+		var from_running := Tuning.EXCITEMENT_FROM_RUNNING * _stroller.run_excess_ratio()
+		incoming += from_running
+		self_incoming = from_running
 		if in_alley:
 			incoming += Tuning.EXCITEMENT_FROM_ALLEY
+			self_incoming += Tuning.EXCITEMENT_FROM_ALLEY
 	# A sleeping baby is harder to disturb, but not immune -- and whatever fraction of a source's
 	# own contribution actually reaches the meter is exactly the fraction that should reach that
 	# source's own accumulate_landed(), or the halo would read a cost the meter never took.
@@ -140,6 +156,7 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 		var source = pair[0]
 		var contribution: float = pair[1]
 		source.accumulate_landed(contribution * sensitivity * delta)
+	_record_self_landed(self_incoming * sensitivity * delta)
 
 	var decay := decay_rate()
 	last_incoming = incoming
@@ -174,6 +191,30 @@ func _prune_decay_history() -> void:
 	var cutoff := _clock - ExcitementHalo.WINDOW
 	while not _decay_history.is_empty() and _decay_history[0][0] < cutoff:
 		_decay_history.pop_front()
+
+## Folds this frame's running/alley share into the sliding window `self_landed()` reads, the same
+## `[when, points]` shape and the same `ExcitementHalo.WINDOW` prune every other source's own
+## `accumulate_landed()` keeps — see `_self_landed_history`'s own doc for why there is no source
+## object to call that method on instead.
+func _record_self_landed(points: float) -> void:
+	_prune_self_landed_history()
+	if points > 0.0:
+		_self_landed_history.append([_clock, points])
+
+func _prune_self_landed_history() -> void:
+	var cutoff := _clock - ExcitementHalo.WINDOW
+	while not _self_landed_history.is_empty() and _self_landed_history[0][0] < cutoff:
+		_self_landed_history.pop_front()
+
+## The sum of every entry still inside `ExcitementHalo.WINDOW` — her own running and alley share of
+## what has landed on her, the same sliding sum `landed()` gives every other source. Read only by
+## `main._crying_landed_by_group()`, naming what ended a crying day for `VisitCounter`.
+func self_landed() -> float:
+	_prune_self_landed_history()
+	var total := 0.0
+	for entry in _self_landed_history:
+		total += entry[1]
+	return total
 
 ## The decay taken from the meter over the last `ExcitementHalo.WINDOW` seconds — what
 ## `ExcitementHalo` divides among the sources that landed a point in the same window, in

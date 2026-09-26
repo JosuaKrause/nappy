@@ -4,9 +4,13 @@ extends Node
 ## debug doesn't get tracked").
 ##
 ## **A different thing from `Telemetry`, the run log.** This never writes a file and never reads
-## one back — it only calls the page's own `window.goatcounter.count()`, the same function the
-## page's `<head>` already loads `count.js` for (`export_presets.cfg`'s `html/head_include`).
-## Off the web, on a debug build, or behind `?debug=1`, it is a silent no-op — see
+## one back — it only calls the page's own `window.goatcounter.count()`, which the page's `<head>`
+## loads `count.js` for (`export_presets.cfg`'s `html/head_include`) with the game's own site,
+## `nappy.goatcounter.com`, as its endpoint. That site keeps no sessions, so every event sent
+## counts every time it is sent — a day lost three times in an evening is three `lost-*` — while
+## the page visit goes to `josuakrause.goatcounter.com` as its own hit, where a visit stays a
+## unique visitor (PLAYTEST-143: "use this for nappy stats. for the site visit stat use the old
+## account"). Off the web, on a debug build, or behind `?debug=1`, it is a silent no-op — see
 ## `_may_ever_send()`. `count.js` loading asynchronously is not one of those: an event asked for
 ## before it has finished loading is queued and sent the moment it appears — see `_pending` — and
 ## only a `count.js` genuinely never loading (missing or blocked) leaves that queue unsent.
@@ -18,8 +22,8 @@ extends Node
 ## signal it listens to already exists for another reason (or was added purely to be listened to,
 ## with no behaviour of its own — see `EventBus`'s own doc on each one).
 ##
-## Every event name starts with `nappy-` so it can never collide with an event the marketing site
-## sends through the same GoatCounter account, and every name is short, lowercase and hyphenated —
+## Every event name starts with `nappy-`, the prefix `tools/goatcounter.sh` reads events back by,
+## and every name is short, lowercase and hyphenated —
 ## `nappy-day-6-lost-crying`, PLAYTEST-132's own shape for it. Counts only: no seed, no position,
 ## no time and nothing that could tell one visitor from another or from their own next visit.
 ##
@@ -28,26 +32,52 @@ extends Node
 ## - `nappy-day-N-began` — each day begun (a retry begins it again, for the day it repeats).
 ## - `nappy-day-N-won` / `nappy-day-N-lost-crying` / `nappy-day-N-lost-timeout` /
 ##   `nappy-day-N-lost-hard-fail` — each day's end, using `GameEnums.DayResult`'s own names.
-## - `nappy-day-N-restarted` — a held restart, never the ordinary return to the title after an
-##   ending already reported through `nappy-ending-*` (see `EventBus.run_restarted`'s own doc).
-## - `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each task done, and each task a day
-##   ended without: a mark never reached, or a perform step reached but not finished.
+## - `nappy-day-N-instant-<what>` / `nappy-day-N-noise-<what>` — beside the pair above, what a
+##   hard-fail or crying loss actually was: `instant-car` or `instant-<row>` for whichever row
+##   struck her, `noise-<row>` / `noise-crowd` / `noise-traffic` / `noise-self` for whichever
+##   source landed the most on her over the crying window. See `EventBus.day_lost_to`'s own doc.
+## - `nappy-day-3-seen-fire` / `nappy-day-3-fire-unmet` — the burning building sighted, and lit off
+##   her path at dusk on a day she won without meeting it.
+## - `nappy-day-14-blackout` — the city goes dark, whether or not a mast was silenced.
+## - `nappy-escape-city` — the building is behind her and the city section begins.
+## - `nappy-day-N-dog-chased` / `nappy-day-N-dog-shaken` / `nappy-day-N-dog-outlasted` —
+##   `charging_dog` starts chasing, and how the chase ended without catching her. A caught chase is
+##   `nappy-day-N-instant-charging-dog` instead, off the pair above.
+## - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
+##   noticed, touched, or untouched when the day it belongs to ends.
+## - `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each perform step done, and each a day
+##   ended without: a mark never gives one of these any more, see `mark-*` above.
+## - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn,
+##   every mother who stops her to chat and every checkpoint hold.
+## - `nappy-day-N-poster-pursuit` — a tear that sends a patrol after her, beside its `poster-torn`.
 ## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
 ##   handover only), lost (either section, any attempt), or got out.
-## - `nappy-controls-joystick` / `nappy-controls-tap` — the "etc.": which control scheme was
-##   picked on the title screen, cheap to answer and part of "how far people get" in its own way.
+## - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — the "etc.": which
+##   button began the run on the title screen, or that a key did, cheap to answer and part of "how
+##   far people get" in its own way.
 
 func _ready() -> void:
 	EventBus.run_begun.connect(_on_run_begun)
 	EventBus.day_started.connect(_on_day_started)
+	EventBus.day_lost_to.connect(_on_day_lost_to)
 	EventBus.day_ended.connect(_on_day_ended)
 	EventBus.run_restarted.connect(_on_run_restarted)
 	EventBus.run_ended.connect(_on_run_ended)
 	EventBus.resistance_contact_available.connect(_on_task_offered)
 	EventBus.resistance_step_completed.connect(_on_task_completed)
 	EventBus.resistance_step_failed.connect(_on_task_failed)
+	EventBus.resistance_mark_seen.connect(_on_mark_seen)
+	EventBus.event_sighted.connect(_on_event_sighted)
+	EventBus.event_lit_unmet.connect(_on_event_lit_unmet)
+	EventBus.city_gone_dark.connect(_on_city_gone_dark)
+	EventBus.pursuit_began.connect(_on_pursuit_began)
+	EventBus.pursuit_ended.connect(_on_pursuit_ended)
+	EventBus.poster_torn.connect(_on_poster_torn)
+	EventBus.poster_pursuit_sent.connect(_on_poster_pursuit_sent)
+	EventBus.player_detained.connect(_on_player_detained)
 	EventBus.escape_begun.connect(_on_escape_begun)
+	EventBus.escape_city_entered.connect(_on_escape_city_entered)
 	EventBus.escape_lost.connect(_on_escape_lost)
 	EventBus.escape_out.connect(_on_escape_out)
 	EventBus.controls_chosen.connect(_on_controls_chosen)
@@ -154,8 +184,29 @@ static func _loss_cause(result: GameEnums.DayResult) -> String:
 static func _run_begun_name(day: int, resumed: bool) -> String:
 	return "nappy-run-resumed-day-%d" % day if resumed else "nappy-run-fresh"
 
-static func _controls_event_name(mode: int) -> String:
+## `keys` when a key began the run, whatever mode that gave it — the title begins a key's run in
+## `Mode.TAP`, and a key player is not a tap player — otherwise the button pressed.
+static func _controls_event_name(mode: int, by_key: bool) -> String:
+	if by_key:
+		return "nappy-controls-keys"
 	return "nappy-controls-joystick" if mode == ControlsMode.Mode.JOYSTICK else "nappy-controls-tap"
+
+## `EventBus.player_detained`'s own `id` (`nearest.def.id` in `EventManager._check_detentions()`),
+## named the way the day brief already tells the two kinds of stop apart: `chatting_mother` is a
+## `chat`, and every other id that can reach here (`checkpoint_hut`, `checkpoint_post` —
+## `checkpoint_gate`'s own boom never detains, see `EventCatalogue`) is a `checkpoint`.
+static func _detention_suffix(id: String) -> String:
+	return "chat" if id == "chatting_mother" else "checkpoint"
+
+## Whether `step` is a chalk-mark pickup or the perform half it unlocks — read straight off the
+## resistance's own data (`ResistanceSteps.Step.is_pickup`) rather than a parity rule invented
+## here, so a step's own kind can never disagree with what the resistance itself built it as.
+## `false` for an index `ResistanceSteps` does not know (the finale's own step, or a stale index),
+## which reads as a task rather than a mark — the safer default, since a `task-done`/`task-skipped`
+## miscount is the smaller error next to a `mark-*` sent for a step that was never a mark at all.
+static func _is_pickup_step(step: int) -> bool:
+	var data := ResistanceSteps.by_index(step)
+	return data != null and data.is_pickup
 
 # ------------------------------------------------------------------- signals ---
 
@@ -194,6 +245,9 @@ func _on_run_begun(day: int, resumed: bool) -> void:
 func _on_day_started(day: int) -> void:
 	_send_event(_day_event_name(day, "began"))
 
+func _on_day_lost_to(day: int, cause: String) -> void:
+	_send_event(_day_event_name(day, cause))
+
 ## Which day offered a step is on offer, kept only long enough to say whether the day it belongs
 ## to ended with the step done or without it — `step index -> day`. A retry re-offers the same
 ## index for the same day (`GameState._give_the_resistance_back()` restores the step lists a lost
@@ -206,7 +260,7 @@ func _on_task_offered(step: int) -> void:
 func _on_task_completed(step: int) -> void:
 	var day: int = _open_tasks.get(step, GameState.day)
 	_open_tasks.erase(step)
-	_send_event(_day_event_name(day, "task-done"))
+	_send_event(_day_event_name(day, "mark-read" if _is_pickup_step(step) else "task-done"))
 
 ## A timed step's own deadline passed — `ResistanceDirector`'s one expiry path. Counted the same
 ## as a step a day simply ended without touching (`_on_day_ended()` below): both are "a task day
@@ -214,7 +268,55 @@ func _on_task_completed(step: int) -> void:
 func _on_task_failed(step: int) -> void:
 	var day: int = _open_tasks.get(step, GameState.day)
 	_open_tasks.erase(step)
-	_send_event(_day_event_name(day, "task-skipped"))
+	_send_event(_day_event_name(day, "mark-missed" if _is_pickup_step(step) else "task-skipped"))
+
+func _on_mark_seen(step: int) -> void:
+	var day: int = _open_tasks.get(step, GameState.day)
+	_send_event(_day_event_name(day, "mark-seen"))
+
+func _on_event_sighted(id: String) -> void:
+	if id != "burning_building":
+		return
+	_send_event(_day_event_name(GameState.day, "seen-fire"))
+
+func _on_event_lit_unmet(id: String) -> void:
+	if id != "burning_building":
+		return
+	_send_event(_day_event_name(GameState.day, "fire-unmet"))
+
+func _on_city_gone_dark() -> void:
+	_send_event(_day_event_name(GameState.day, "blackout"))
+
+func _on_pursuit_began(id: String) -> void:
+	if id != "charging_dog":
+		return
+	_send_event(_day_event_name(GameState.day, "dog-chased"))
+
+func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
+	if id != "charging_dog":
+		return
+	_send_event(_day_event_name(GameState.day, "dog-shaken" if shaken_off else "dog-outlasted"))
+
+## Every tear, not the first of an attempt: the game's site keeps no sessions so that each one is
+## counted (PLAYTEST-143: "we need a telemetry item for ripping posters").
+func _on_poster_torn() -> void:
+	_send_event(_day_event_name(GameState.day, "poster-torn"))
+
+## A tear whose marble sends a patrol, beside that tear's own `poster-torn` (PLAYTEST-143: "we
+## need a telemetry item for ripping posters and pursuit triggered by poster ripping").
+func _on_poster_pursuit_sent() -> void:
+	_send_event(_day_event_name(GameState.day, "poster-pursuit"))
+
+## Every hold: `EventManager._check_detentions()` emits once per catch, a mother only ever chats
+## once, and a checkpoint that holds her again is a second stop she paid for.
+func _on_player_detained(id: String) -> void:
+	_send_event(_day_event_name(GameState.day, _detention_suffix(id)))
+
+func _on_run_restarted(day: int) -> void:
+	_send_event(_day_event_name(day, "restarted"))
+
+func _on_run_ended(ending: GameEnums.Ending) -> void:
+	_send_event("nappy-ending-%s" % String(GameEnums.Ending.keys()[ending]).to_lower())
 
 func _on_day_ended(day: int, result: GameEnums.DayResult) -> void:
 	_send_event(_day_event_name(day, _loss_cause(result)))
@@ -224,16 +326,13 @@ func _on_day_ended(day: int, result: GameEnums.DayResult) -> void:
 		if int(_open_tasks[step]) != day:
 			continue
 		_open_tasks.erase(step)
-		_send_event(_day_event_name(day, "task-skipped"))
-
-func _on_run_restarted(day: int) -> void:
-	_send_event(_day_event_name(day, "restarted"))
-
-func _on_run_ended(ending: GameEnums.Ending) -> void:
-	_send_event("nappy-ending-%s" % String(GameEnums.Ending.keys()[ending]).to_lower())
+		_send_event(_day_event_name(day, "mark-missed" if _is_pickup_step(step) else "task-skipped"))
 
 func _on_escape_begun() -> void:
 	_send_event("nappy-escape-begun")
+
+func _on_escape_city_entered() -> void:
+	_send_event("nappy-escape-city")
 
 func _on_escape_lost() -> void:
 	_send_event("nappy-escape-lost")
@@ -241,5 +340,5 @@ func _on_escape_lost() -> void:
 func _on_escape_out() -> void:
 	_send_event("nappy-escape-out")
 
-func _on_controls_chosen(mode: int) -> void:
-	_send_event(_controls_event_name(mode))
+func _on_controls_chosen(mode: int, by_key: bool) -> void:
+	_send_event(_controls_event_name(mode, by_key))

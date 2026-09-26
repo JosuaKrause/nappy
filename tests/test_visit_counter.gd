@@ -11,18 +11,31 @@ extends RefCounted
 
 const VISIT_COUNTER_SCRIPT = preload("res://src/autoload/visit_counter.gd")
 
+## `VisitCounter` with `_send_event()` recording the name instead of reaching for a page, so a test
+## can read what each signal would send. Everything else is the real counter's own code.
+class RecordingCounter extends "res://src/autoload/visit_counter.gd":
+	var sent: Array[String] = []
+
+	func _send_event(name: String) -> void:
+		sent.append(name)
+
 func run(t) -> void:
 	_test_should_send_truth_table(t)
 	_test_day_event_name(t)
 	_test_loss_cause_names_every_day_result(t)
 	_test_run_begun_name(t)
 	_test_controls_event_name(t)
+	_test_detention_suffix(t)
+	_test_is_pickup_step(t)
 	_test_listening_touches_no_gameplay_state(t)
 	_test_task_skipped_only_for_a_step_still_open_on_its_own_day(t)
+	_test_mark_and_task_sends_are_split_by_the_resistance_own_data(t)
+	_test_every_tear_and_every_hold_is_sent(t)
 	_test_resumed_for_report_truth_table(t)
 	_test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t)
 	_test_pending_events_queue_until_present_and_flush_in_order(t)
 	_test_send_event_never_queues_when_it_may_never_send(t)
+	_test_a_chase_is_reported_once_however_the_pursuer_arrived(t)
 
 ## `_should_send()` — on the web, released, unasked-for and with a live
 ## `window.goatcounter.count` are all four required; missing any one of them refuses.
@@ -66,11 +79,37 @@ func _test_run_begun_name(t) -> void:
 	t.check(VISIT_COUNTER_SCRIPT._run_begun_name(9, true) == "nappy-run-resumed-day-9",
 		"a resumed run names the day it resumed on")
 
+## A key begins the run in `Mode.TAP`, and is still reported as keys: the name comes from the
+## input that began the run, not the mode it fell back to.
 func _test_controls_event_name(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.JOYSTICK)
-			== "nappy-controls-joystick", "the joystick scheme")
-	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP)
-			== "nappy-controls-tap", "the tap scheme")
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.JOYSTICK, false)
+			== "nappy-controls-joystick", "the joystick button")
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP, false)
+			== "nappy-controls-tap", "the tap button")
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP, true)
+			== "nappy-controls-keys", "a key, whose run begins in tap mode, is reported as keys")
+
+## `chatting_mother` is a `chat`; every other id that can reach `EventBus.player_detained` — the
+## catalogue's only other two rows with a `detain_seconds` above zero — is a `checkpoint`.
+func _test_detention_suffix(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._detention_suffix("chatting_mother") == "chat",
+		"the mother who stops her for a conversation")
+	t.check(VISIT_COUNTER_SCRIPT._detention_suffix("checkpoint_hut") == "checkpoint",
+		"a checkpoint's hut")
+	t.check(VISIT_COUNTER_SCRIPT._detention_suffix("checkpoint_post") == "checkpoint",
+		"a checkpoint's post")
+
+## The mark/task split comes from `ResistanceSteps` itself — index 1 is day 6's chalk mark and
+## index 2 is the perform step it unlocks (`ResistanceSteps._build()`), so this is real catalogue
+## data rather than an index chosen to make the parity come out right.
+func _test_is_pickup_step(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._is_pickup_step(1), "index 1 is day 6's chalk mark")
+	t.check(not VISIT_COUNTER_SCRIPT._is_pickup_step(2),
+		"index 2 is the perform step the mark unlocks")
+	t.check(not VISIT_COUNTER_SCRIPT._is_pickup_step(17),
+		"the finale's own step is not a pickup either")
+	t.check(not VISIT_COUNTER_SCRIPT._is_pickup_step(999),
+		"an index the resistance does not know reads as a task, the safer default")
 
 ## Drives every signal handler the counter connects to and checks that none of it moved anything
 ## `GameState` owns. This process is never on the web (`OS.get_name() != "Web"`), so
@@ -85,17 +124,28 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	var before := _gamestate_snapshot()
 	counter._on_run_begun(1, false)
 	counter._on_day_started(1)
+	counter._on_day_lost_to(1, "noise-homeless-yeller")
 	counter._on_task_offered(0)
 	counter._on_task_completed(0)
 	counter._on_task_offered(1)
 	counter._on_task_failed(1)
+	counter._on_mark_seen(1)
+	counter._on_event_sighted("burning_building")
+	counter._on_event_lit_unmet("burning_building")
+	counter._on_city_gone_dark()
+	counter._on_pursuit_began("charging_dog")
+	counter._on_pursuit_ended("charging_dog", true)
+	counter._on_poster_torn()
+	counter._on_poster_pursuit_sent()
+	counter._on_player_detained("chatting_mother")
 	counter._on_day_ended(1, GameEnums.DayResult.WON)
 	counter._on_run_restarted(1)
 	counter._on_run_ended(GameEnums.Ending.NEUTRAL)
 	counter._on_escape_begun()
+	counter._on_escape_city_entered()
 	counter._on_escape_lost()
 	counter._on_escape_out()
-	counter._on_controls_chosen(ControlsMode.Mode.TAP)
+	counter._on_controls_chosen(ControlsMode.Mode.TAP, true)
 	var after := _gamestate_snapshot()
 	t.check(before == after,
 		"answering every signal the counter connects to leaves GameState untouched")
@@ -126,6 +176,51 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT)
 	t.check(not counter._open_tasks.has(6),
 		"the day it belonged to ending, won or lost, closes it out as skipped")
+	counter.free()
+
+## `_on_task_completed()`/`_on_task_failed()`/`_on_day_ended()`'s own sweep all ask
+## `_is_pickup_step()` rather than a parity rule of their own — checked here through `_open_tasks`
+## directly, since `_send_event` itself is silent in this process (see the test above this one).
+## Index 1 (day 6's mark) and index 2 (the perform step it unlocks) are real `ResistanceSteps` data,
+## not indices chosen to make a parity come out right.
+func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
+	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter._on_task_offered(1)
+	counter._on_task_offered(2)
+	counter._on_task_completed(1)
+	counter._on_task_completed(2)
+	t.check(not counter._open_tasks.has(1) and not counter._open_tasks.has(2),
+		"a completed mark and a completed task both close out, whatever they are sent as")
+	counter._on_task_offered(1)
+	counter._on_task_offered(2)
+	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT)
+	t.check(not counter._open_tasks.has(1) and not counter._open_tasks.has(2),
+		"the day ending closes out an untouched mark and an untouched task alike")
+	counter.free()
+
+## `poster-torn`, `chat` and `checkpoint` are sent every time, within one attempt and across a
+## retry alike: the game's site keeps no sessions so that a count is every time a thing happened
+## (PLAYTEST-143: "no, even current run wouldn't work if the player dies multiple times on the same
+## day"). Read off `RecordingCounter`, which keeps what `_send_event()` was asked for, since the
+## real one is silent in this process.
+func _test_every_tear_and_every_hold_is_sent(t) -> void:
+	var counter := RecordingCounter.new()
+	var day := GameState.day
+	counter._on_day_started(day)
+	counter._on_poster_torn()
+	counter._on_poster_torn()
+	counter._on_player_detained("checkpoint_hut")
+	counter._on_player_detained("checkpoint_hut")
+	counter._on_day_started(day)
+	counter._on_poster_torn()
+	var torn := "nappy-day-%d-poster-torn" % day
+	var held := "nappy-day-%d-checkpoint" % day
+	t.check(counter.sent.count(torn) == 3,
+		"two tears in one attempt and one in the retry are three poster-torn events")
+	t.check(counter.sent.count(held) == 2, "a checkpoint that holds her twice is two events")
+	counter._on_poster_pursuit_sent()
+	t.check(counter.sent.back() == "nappy-day-%d-poster-pursuit" % day,
+		"a tear that sends a patrol sends its own poster-pursuit")
 	counter.free()
 
 ## Review finding: a genuinely fresh visit that hands over to the escape at day 14 re-enters
@@ -195,3 +290,60 @@ func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 	t.check(counter._pending.is_empty(),
 		"off the web, an event is refused outright rather than queued forever unsent")
 	counter.free()
+
+## `EventBus.pursuit_began` (the counter's `dog-chased`) fires once per chase, and **a pursuer
+## created where its warning pointed reports the chase it starts**. `EventManager.spawn_warned()`
+## creates such a row through `EventInstance.resume()` to spend the telegraph the warning already
+## ran, and a resume otherwise stands for an instance streamed back in, whose chase — for a row
+## like `charging_dog` that never waits (`pursues_within` 0.0) — began before it streamed out and
+## was already reported. Three arrivals of the one row: placed at once and telegraphing, created
+## warned the way `spawn_warned()` does it (`came_under_a_warning` set, then `resume()`), and
+## streamed back in mid-chase, which reports nothing a second time.
+func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
+	var def := EventCatalogue.by_id("charging_dog")
+	t.check(def.pursues and def.pursues_within <= 0.0,
+		"'charging_dog' is a pursuer that never waits, the case a resume could misread")
+	var began: Array[String] = []
+	var on_began := func(id: String) -> void: began.append(id)
+	EventBus.pursuit_began.connect(on_began)
+	var step := 1.0 / 60.0
+	var her := Vector2(200.0, 0.0)
+
+	var placed := EventInstance.new()
+	placed.setup(def, Vector2.ZERO)
+	t.add_child(placed)
+	placed.set_process(false)
+	for i in int(ceil((def.telegraph_time + 0.5) / step)):
+		placed.player_at = her
+		placed._process(step)
+	t.check(began.size() == 1, "placed at once, its chase is reported once after its telegraph "
+		+ "(%d reports)" % began.size())
+	var age := placed.age
+	var travelled := placed.path_travelled()
+	placed.free()
+
+	began.clear()
+	var streamed := EventInstance.new()
+	streamed.setup(def, Vector2.ZERO)
+	t.add_child(streamed)
+	streamed.set_process(false)
+	streamed.resume(age, travelled)
+	for i in 10:
+		streamed.player_at = her
+		streamed._process(step)
+	t.check(began.is_empty(), "streamed back in mid-chase, the same chase is not reported again")
+	streamed.free()
+
+	var warned := EventInstance.new()
+	warned.setup(def, Vector2.ZERO)
+	t.add_child(warned)
+	warned.set_process(false)
+	warned.came_under_a_warning = true
+	warned.resume(def.telegraph_time, 0.0)
+	for i in 10:
+		warned.player_at = her
+		warned._process(step)
+	t.check(began.size() == 1 and began[0] == "charging_dog",
+		"created where its warning pointed, its chase is reported once (%s)" % [began])
+	warned.free()
+	EventBus.pursuit_began.disconnect(on_began)

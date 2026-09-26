@@ -39,6 +39,7 @@ ENTRY_POINTS = (
     "reference.py",
     "remove-checkerboard.py",
     "codex-hooks.py",
+    "goatcounter.py",
     "synthesize-sfx.py",
     "migrate-queue.py",
     "convert-queue-edits.py",

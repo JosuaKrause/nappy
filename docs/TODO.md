@@ -31,10 +31,10 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
 **First, before any new task** ([PLAYTEST-144](playtests/PLAYTEST-144.md)): every open PR
-converted to M223's layout of one file per queue entry and per decision, then **M223**'s one open
-item, the overhaul of every entry and review item, then **M225**, the counter counts every
-attempt, a key player, and a torn poster's chase. The player's order is M223, then the PRs
-converted, then M225 ([2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statement 1:
+converted to M223's layout of one file per queue entry and per decision, then **M223**'s open
+items, the overhaul of every entry and review item and the priority bands. The player's order is
+M223, then the PRs converted, then the counter's asks
+([2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statement 1:
 "then the new planning rules. then we need to update all open PRs to follow the new planning
 rules" · "then the counter args" · "then we can do regular work again"). Putting M223's overhaul
 after the conversions is the orchestrator's ordering: a conversion replays a PR's queue edits onto
@@ -233,7 +233,6 @@ The entries, in the order the gameplay queue above gives them, reassessed on 202
 - [M223 — One file per queue entry and per decision, named by date and two words](todo/2026-09-26-M223/)
 - [M224 — A warning shorter than its own floor](todo/2026-09-26-M224/)
 - [M226 — The pursuing dog keeps its day-3 timing, and the other warnings fit it](todo/2026-09-26-M226/)
-- [M225 — The counter counts every attempt, a key player, and a torn poster's chase](todo/2026-09-26-M225/)
 - [M227 — Codex works as a sub-agent of a Claude Code session, in a worktree](todo/2026-09-26-M227/)
 - [M228 — Editing a hook loads the rule that keeps the Codex adapter current](todo/2026-09-26-M228/)
 - [M159 — A slow frame names the frame that was slow](todo/2026-09-19-M159/)

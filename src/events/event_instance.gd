@@ -902,7 +902,8 @@ var path: PackedVector2Array = PackedVector2Array()
 var age := 0.0
 ## Whether this was created where a warning pointed, once that warning was over
 ## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` reads it to carry
-## the warning's badge on to the thing itself until it comes into view.
+## the warning's badge on to the thing itself until it comes into view, and `resume()` reads it to
+## tell a fresh instance from one streamed back in.
 var came_under_a_warning := false
 var is_finished := false
 
@@ -1645,6 +1646,12 @@ var _last_range := INF
 ## `resume()`'s own `from_noticed_at`, so a notice made before an instance left the world is not
 ## made twice.
 var _noticed_at := INF
+## Whether `EventBus.pursuit_began` has already been sent for this instance's own chase — a row
+## with no `pursues_within` at all (`is_waiting()` never true) starts chasing on its very first
+## `_chase()` call rather than on a `_noticed_at` transition, so this is stated over "have I told
+## `VisitCounter` yet" rather than re-derived from `_noticed_at`. See `EventBus.pursuit_began`'s own
+## doc.
+var _pursuit_began_reported := false
 ## True once she has come close enough during the telegraph for the thing to start, which ends the
 ## telegraph there and then. **The start is fired by her, not by a clock**, and two rows want it
 ## for the same reason at two distances.
@@ -1712,6 +1719,12 @@ func _chase(delta: float) -> void:
 			# was looking down the alley is now looking at you.
 			_heading = toward.normalized()
 		return
+	if not _pursuit_began_reported:
+		_pursuit_began_reported = true
+		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
+		# out of `is_waiting()` or (a row with no `pursues_within` at all) this chase's first frame.
+		# See docs/TELEMETRY.md, "The page counts visits".
+		EventBus.pursuit_began.emit(def.id)
 	_heading = toward.normalized()
 	# From what ends her day, not from where the field's core ends: the same `lethal_reach()`
 	# `Tuning.validate_pursuit()` states the contract over. Every row but `roadblock` has no
@@ -1939,6 +1952,16 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	age = from_age
 	_path_travelled = from_travelled
 	_noticed_at = from_noticed_at
+	# A resume restores an instance already past age 0 (the guard above), and a pursuer streamed
+	# back in still `is_waiting()` given the restored `_noticed_at` is the one case that has not
+	# begun chasing yet — every other pursuer streamed back in, including a `pursues_within <= 0.0`
+	# row that never waits at all, was already chasing before it streamed out. Stated over the
+	# restored value rather than over `is_waiting()` itself, which this assignment runs ahead of.
+	# **A row created where its warning pointed is not streamed back in**: `EventManager.
+	# spawn_warned()` sets `came_under_a_warning` before calling this only to spend a telegraph
+	# the warning already ran, and it has chased nothing yet.
+	_pursuit_began_reported = not came_under_a_warning \
+			and not (def.pursues_within > 0.0 and from_noticed_at == INF)
 	# A stride never starts mid-cycle, the same reason `setup()` resets it — a resumed instance is
 	# a fresh object (see this function's own doc), so this is normally already true, but the rule
 	# is stated at both entry points rather than left to rely on that.
@@ -2256,6 +2279,13 @@ const LEAVING_GIVES_UP := 6.0
 func _be_done(may_park := true) -> void:
 	if is_finished or is_leaving or is_parked:
 		return
+	if def.pursues and _pursuit_began_reported:
+		# `VisitCounter`'s own "dog-shaken"/"dog-outlasted" — a pursuit that had actually begun is
+		# over without catching her, `gave_up` telling which of the two ways. A catch never reaches
+		# here: it ends the day through `_check_hard_fails()`'s own `hard_fail_triggered` instead,
+		# and this instance is never asked to finish after that. See `EventBus.pursuit_ended`'s own
+		# doc.
+		EventBus.pursuit_ended.emit(def.id, gave_up)
 	if def.stops_where_it_arrives and may_park:
 		is_parked = true
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
