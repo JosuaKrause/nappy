@@ -1,5 +1,88 @@
 # Decisions
 
+## Copper lark — Reuse audition files while iterating · 2026-09-26
+
+The player permits overwriting sound audition files on the open PR because the work will be
+squashed, and asks for reasonable upload sizes. Their exact words are in
+[the sound playtest](playtests/2026-09-26-copper-lark.md). The sound-effects skill's mandatory
+new-folder-per-attempt rule is replaced with reusing the current paths, updating the frozen
+recipe and generated package together, and refreshing commit-pinned review links. An old take
+can remain when useful for comparison; keeping every attempt in its own directory is not required.
+This changes future iteration practice; no existing audio files are changed in this docs update.
+
+## Copper lark — Subtle steps and quieter wheels · 2026-09-26
+
+The player rejected pass 3: "the audio is still not good. a step needs to be way more subtle
+and wheel sound is even quieter". Full words are in
+[the listening verdict](playtests/2026-09-26-copper-lark.md). Pass 4 preserves the pass-3
+references and compares them with softer step contacts and restrained wheel ticks, under
+`docs/evidence/copper-lark-sound-lab-2026-09-26-pass-4/`.
+
+The assistant's proposed targets are -31 dBFS RMS for steps and -38 dBFS RMS for wheels:
+8.5 and 15.5 dB below the respective pass-3 references. These exact gains and timbre changes
+are audition choices, open to the player's verdict. The comparison retains those levels;
+equalizing them would defeat the requested hierarchy. No runtime installation is included.
+
+The pass carries its frozen generator, manifest, comparison, listening page and ZIP. Earlier
+submitted files remain intact. The sound-effects skill corrects its blanket level-matching
+guidance: matching energy helps compare timbres, but a requested level hierarchy must survive
+the finishing stage. The previous equal-RMS strategy came to attention when the player again
+found steps too prominent and asked for quieter wheels. Recognition and preference remain
+questions in REVIEW; objective checks do not claim listening approval.
+
+## Copper lark — Original sound synthesis auditions · built 2026-09-26
+
+[Player's words](playtests/2026-09-26-copper-lark.md): create sounds here from scratch, with no
+precreated assets; compare grounded and stylized versions; write the approach down like graphics
+so it is reproducible; keep the experiment on its own branch.
+
+The experiment generates footsteps, stroller wheels, a car horn and loudspeaker crackle in both
+styles from handwritten Python oscillators, seeded noise, envelopes and filters. These four
+subjects were the assistant's selection, not a request for particular game triggers. There is no
+runtime audio installation. Human breathing and voices were discussed as a separate, more
+difficult synthesis experiment, not implemented or promised as realistic.
+
+`tools/synthesize-sfx.py` writes eight 48 kHz mono PCM16 WAVs, a comparison, a labeled offline
+listening page, a provenance manifest and a portable ZIP carrying the exact generator. The
+sound-effects skill records source recipes, seeds, processing, commands, hashes, preservation of
+submitted passes and the distinction between technical checks and listening approval; the edit
+hook loads it for audio and sound-generator paths.
+
+The first shared pass used equal peak levels. The second keeps the same designs but targets
+-22.5 dBFS RMS with a 0.70 peak ceiling to reduce loudness bias in the comparison; the measured
+RMS spread was under 0.15 dB. This is energy matching, not proof of equal perceived loudness.
+Both passes are preserved under `docs/evidence/copper-lark-sound-lab-2026-09-26/` and its
+`-pass-2` sibling. The second pass is the current listening proposal.
+
+Verification covered Python formatting/types/tests, help and rejected-argument paths with no
+output, two-directory byte-for-byte rebuilds, WAV format/non-silence/headroom/boundaries,
+page/ZIP references, hook dispatch, skill validation and document lint. Reproducibility is
+measured in the pinned environment, not asserted across all floating-point implementations.
+No agent listening approval is claimed; recognition, comfort and preferred style await the
+player in `REVIEW.md`. The game's visual-only warning contract remains unchanged.
+
+**Listening verdict, 2026-09-26:** the player rejected the stylized direction as too far off and
+preferred the grounded direction, while saying it still failed to represent the subjects. The
+stroller sounded like ocean waves and the footsteps were too heavy. The next requested pass
+therefore addresses recognition and weight before any expansion or runtime binding; the specific
+dry-contact/rattle and light-sole recipes are assistant proposals, not approved sound outcomes.
+
+**The focused revision.** Pass 3 compares the exact first-shared grounded footsteps and stroller
+WAVs with revised versions: restrained midrange heel/toe contacts instead of the footsteps'
+low thump, and dry wheel contacts with paired mechanical rattles instead of the stroller's wash.
+The four clips' measured RMS spread is 0.49 dB. The user has not approved their recognition or
+weight; the listening question is in `REVIEW.md`. No stylized iteration or runtime binding is
+included. The listening page now pauses and resets other players when a new clip starts.
+
+**Reproducibility correction found in review.** The first pass's README originally invoked the
+mutable current generator, so its command would have overwritten the preserved pass with newer
+bytes. Each pass now includes its own frozen recipe and a scratch-output command. Passes 1 and 2
+were rebuilt with those archived recipes and all WAV bytes compared identical. Submitted audio
+is preserved; external and packaged instructions identify the matching source. The skill now
+requires each review pass's recipe to stay independently executable and asks listeners to judge
+subject recognition and implied weight before style refinement. Final Python/CLI, hook, skill,
+determinism, audio-integrity and archive checks passed.
+
 ## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
 
 *([PLAYTEST-142](playtests/PLAYTEST-142.md): "the pause screen is currently bugged where you cannot

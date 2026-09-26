@@ -1,0 +1,89 @@
+{
+  "archive_contents": [
+    "index.html",
+    "README.md",
+    "manifest.json",
+    "footsteps-pass-3-grounded.wav",
+    "footsteps-subtle-grounded.wav",
+    "stroller-wheels-pass-3-grounded.wav",
+    "stroller-wheels-quieter-grounded.wav",
+    "comparison.wav",
+    "recipe/synthesize-sfx.py"
+  ],
+  "comparison_order": [
+    "footsteps-pass-3-grounded.wav",
+    "footsteps-subtle-grounded.wav",
+    "stroller-wheels-pass-3-grounded.wav",
+    "stroller-wheels-quieter-grounded.wav"
+  ],
+  "files": {
+    "comparison.wav": {
+      "duration_seconds": 8.6,
+      "frames": 412800,
+      "peak_dbfs": -4.859,
+      "peak_linear": 0.571564,
+      "recipe": "The selected auditions concatenated A then B within each pair, with 0.45 seconds inside pairs and 1.0 second between pairs.",
+      "rms_dbfs": -26.313,
+      "sha256": "439eb73a61d0112ef716aad1491636b7c40647b2c6d1d9fad87db697fb3ebea3"
+    },
+    "footsteps-pass-3-grounded.wav": {
+      "duration_seconds": 1.15,
+      "frames": 55200,
+      "peak_dbfs": -5.997,
+      "peak_linear": 0.501385,
+      "recipe": "The byte-preserved pass-3 grounded footsteps: two heel-and-toe contacts with restrained surface texture and no low thump.",
+      "rms_dbfs": -22.5,
+      "sha256": "0695e82855e2d0cbd69c22fc1ec2bcec68cd246e448d34b6663328b8602fb05d"
+    },
+    "footsteps-subtle-grounded.wav": {
+      "duration_seconds": 1.15,
+      "frames": 55200,
+      "peak_dbfs": -12.746,
+      "peak_linear": 0.230514,
+      "recipe": "Two quiet sole brushes with short, compressed midrange contacts and a faint toe release; the impact body is reduced and the level sits below pass 3.",
+      "rms_dbfs": -31.0,
+      "sha256": "4d2dd140fedc54b973f850ded30bfacc8729b0d7930874914fed49b4fd161a92"
+    },
+    "stroller-wheels-pass-3-grounded.wav": {
+      "duration_seconds": 2.2,
+      "frames": 105600,
+      "peak_dbfs": -4.859,
+      "peak_linear": 0.571564,
+      "recipe": "The byte-preserved pass-3 grounded stroller wheels: dry wheel contacts, a rotation pulse and paired mechanism rattles.",
+      "rms_dbfs": -22.5,
+      "sha256": "8f971b8bc8465d74d5d85544c45d6ea17e48937ef6c2c225b659899dd20ab814"
+    },
+    "stroller-wheels-quieter-grounded.wav": {
+      "duration_seconds": 2.2,
+      "frames": 105600,
+      "peak_dbfs": -23.364,
+      "peak_linear": 0.06789,
+      "recipe": "Very quiet dry wheel contacts with a faint rotation pulse and restrained single mechanism ticks; the level sits below the subtle steps.",
+      "rms_dbfs": -38.0,
+      "sha256": "93ac1f0c40eb3d509d03140490abba6ed8222d1ae32a148dbe2d5cef44fe0dc2"
+    }
+  },
+  "generator": "recipe/synthesize-sfx.py",
+  "generator_sha256": "99d2f68afa007a16a125eb06c5a36f5fb9e3db8402b22db7bb11239a6d1eecbb",
+  "level_strategy": "Pass-3 files preserve their bytes; new footsteps and wheels use separate lower RMS targets, with wheels lower.",
+  "method": "Handwritten procedural synthesis using standard-library oscillators, seeded noise, envelopes and filters.",
+  "mix_peak_ceiling": 0.7,
+  "mix_target_rms_dbfs": {
+    "pass_3_preserved": -22.5,
+    "quieter_wheels": -38.0,
+    "subtle_footsteps": -31.0
+  },
+  "reproducibility": {
+    "guarantee": "A scratch rebuild from the frozen generator is checked byte-for-byte against the generated package in the locked Python 3.14 environment.",
+    "limit": "No blanket cross-platform bit-identical promise is made because platform math implementations may differ."
+  },
+  "sample_format": {
+    "bits": 16,
+    "channels": 1,
+    "encoding": "signed PCM",
+    "sample_rate_hz": 48000
+  },
+  "seed": 260926,
+  "selection": "subtle-revision",
+  "status": "standalone audition; not installed in the game"
+}

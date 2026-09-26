@@ -1,5 +1,13 @@
 # Review
 
+## Copper lark — Subtle steps and quieter wheels
+
+Listen to `docs/evidence/copper-lark-sound-lab-2026-09-26-pass-4/comparison.wav`, or open that
+pass's `index.html` from the ZIP. The order is pass-3 footsteps, new subtle footsteps, pass-3
+wheels, new quieter wheels. Keep device volume fixed across the comparison: the lower levels
+are part of the proposal. Are the steps subtle enough, and do the wheels sit quietly below them?
+Do both still suggest their intended subjects? This remains a standalone grounded audition.
+
 **What waits on a human.** Everything here is built, measured by a rig, and unfelt: a person has
 to play it, look at it, or decide about it. *(2026-09-11: "keep a document with items that need
 human review / test runs. That way you can keep working without having to stop. And test runs

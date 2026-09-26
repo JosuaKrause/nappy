@@ -66,6 +66,7 @@ is the moment somebody is about to touch the file.
 | `src/telemetry/**`, `src/autoload/telemetry.gd` | **telemetry** |
 | `src/autoload/tuning.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
+| `tools/synthesize-sfx.py`, any `*.wav`, `*.ogg`, `*.flac` or `*.mp3` | **sound-effects** |
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify** |
 | `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **playtest-feedback** |
