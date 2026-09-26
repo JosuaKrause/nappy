@@ -38,7 +38,8 @@ what was tried and rejected, or what a number used to be, that is the records un
 `docs/decisions/`, one file each, fetched on demand with `tools/decisions.sh <noun>`
 ([docs/DECISIONS.md](docs/DECISIONS.md) says how). Nothing outside them describes a past state.
 
-Read [docs/HANDOFF.md](docs/HANDOFF.md) for where to pick up, then [docs/TODO.md](docs/TODO.md).
+Read [docs/HANDOFF.md](docs/HANDOFF.md) for where to pick up, then run `tools/queue.sh` for the
+queue's order ([docs/TODO.md](docs/TODO.md) says how an entry's band sets it).
 
 ---
 

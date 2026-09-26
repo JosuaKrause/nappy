@@ -81,8 +81,15 @@ touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`
 the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
 `tools/new-name.sh decision --entry <name> "<title>"`, which takes `-2` and on when the entry
 already has one); **when that was the entry's last item, the entry's folder goes in the same PR**,
-and its link in `TODO.md`'s order with it, because the queue holds open work only and the entry
-stops being open the moment the PR merges.
+and every `after:` line in another entry that names it goes with it, because the queue holds open
+work only and the entry stops being open the moment the PR merges (`tools/lint.sh` rejects an
+`after:` naming no entry, so a line left behind is a red check).
+
+**The queue's order is each entry's band line**, the first lines of its `README.md`
+(`priority: now|next|later|parked`, then any `after:` lines), and `tools/queue.sh` prints it.
+Setting or moving a band is the orchestrator's (**orchestrating**) and edits that one file, so it
+meets another PR only when both change the same entry; there is no shared order list for a PR to
+edit.
 
 **`docs/HANDOFF.md` is not a PR's.** *(2026-09-26: "handoff only at the end of a session".)* It is
 written once, at the end of a session, by the **session-cleanup** pass, which reads the tree as it

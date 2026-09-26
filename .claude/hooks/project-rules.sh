@@ -137,7 +137,7 @@ esac
 case "$path" in
 	*/tests/*)                 wanted+=(verify) ;;
 esac
-# The queue (TODO.md's order, every entry's folder under docs/todo/), the review items and the
+# The queue (TODO.md's header, every entry's folder under docs/todo/), the review items and the
 # playtests: what the player asked for, written down before anything is built.
 case "$path" in
 	*/docs/playtests/*.md|*/docs/TODO.md|*/docs/todo/*|*/docs/review/*) wanted+=(playtest-feedback) ;;

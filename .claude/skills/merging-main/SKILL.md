@@ -55,6 +55,13 @@ add/add conflict on the folder's `README.md`, and the second takes a new name th
 typed by hand counts as taken like any other. The milestone numbers and
 `PLAYTEST-NN` files that already exist keep their numbers, and no new thing takes a number.
 
+**The queue's order is each entry's band line, so a merge meets it in two ways.** Both sides
+moving the same entry between bands conflict on that `README.md`'s first line; which band holds
+is a question for the orchestrator, never a side picked to clear the marker. And a side that
+closed an entry merges cleanly beside the other side's `after:` naming it: `tools/lint.sh`
+(through `tools/queue.sh --check`) names the line, and it goes, since the wait it stated is over
+when the entry it named is closed.
+
 **One case still collides: a branch from before the queue was files** that filed a new entry
 `M<n>` or a new `PLAYTEST-NN.md` the old way, when `main` has a different record under the same
 number. Keep `main`'s record and number intact; give the branch's record a name from

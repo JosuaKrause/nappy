@@ -76,9 +76,13 @@ record of what was said, and the records cite them.
 
 In `docs/TODO.md` and the entries under `docs/todo/`:
 
-- **Remove what got done.** A finished item's file is deleted; a finished entry's folder goes, its
-  link leaves `TODO.md`'s order and its record is a decision under the entry's name; nothing is
-  ticked. `tools/lint.sh` names a link in the order to a folder that is gone.
+- **Remove what got done.** A finished item's file is deleted; a finished entry's folder goes,
+  every `after:` line naming it goes, and its record is a decision under the entry's name; nothing
+  is ticked. `tools/lint.sh` names an `after:` that names no entry, and a link in `TODO.md` to a
+  folder that is gone.
+- **Every entry's band is still true.** `tools/queue.sh` prints the order the bands give; an entry
+  the player has since put first, or set aside, moves with a one-line edit to its `priority:`
+  line, and an `after:` whose wait the entry's own text no longer states goes.
 - **No status words in headings.** A heading names the work, never its state.
 - **Reassess anything long open.** An item nobody has touched in ten milestones is either still
   wanted, superseded, or already done by something else. Say which, in the entry. An open item with
@@ -109,7 +113,7 @@ for this session's work.
 `docs/HANDOFF.md` is the last thing to write and the first thing the next session reads, and this
 pass is the only thing that writes it *(2026-09-26: "handoff only at the end of a session")*:
 pull requests do not, so rewrite it from the tree and the open pull requests as they stand. It says the
-tree state, what is queued in order, and nothing else. **If it is wrong, everything downstream of it
+tree state, what is queued in the order `tools/queue.sh` prints, and nothing else. **If it is wrong, everything downstream of it
 is wrong too.**
 
 ### 8. End with a fresh-context restart prompt
@@ -121,7 +125,8 @@ that git ignores, and never into the chat**: copying long text out of the CLI co
 write it to a local file and don't check it in")*. Each handover overwrites the file, and the
 report in the chat names its path. Do not require the next session to have read this conversation or
 to resume an old agent transcript. The prompt tells it to fetch and inspect live PR state, then read
-`CLAUDE.md`, `docs/HANDOFF.md`, `docs/TODO.md` and the named work-item sources before acting.
+`CLAUDE.md`, `docs/HANDOFF.md` and `docs/TODO.md`, run `tools/queue.sh`, and read the named
+work-item sources before acting.
 
 Name every open thread by PR number and short title, branch or worktree when relevant, current
 checkpoint, exact next action, remaining gate and verification already completed. Restate the
