@@ -1045,6 +1045,11 @@ func _track_sight_and_reposition(delta: float) -> void:
 		_seen_dwell += delta
 		if _seen_dwell >= SEEN_DWELL_SECONDS:
 			_seen = true
+			if _step.is_pickup:
+				# `VisitCounter`'s own "mark-seen" — a perform step's own contact runs through this
+				# same tracking and never fires it, since the counter asks about the chalk mark, not
+				# about whatever the task rides on. See docs/TELEMETRY.md, "The page counts visits".
+				EventBus.resistance_mark_seen.emit(_step.index)
 			Telemetry.note("contact", "step %d seen at %s after %.1fs within %.0fpx" % [
 				_step.index, TelemetryLog.tile(_map.world_to_tile(at)),
 				SEEN_DWELL_SECONDS, SEEN_DISTANCE])

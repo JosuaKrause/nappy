@@ -54,6 +54,13 @@ var _broadcast_clock := 0.0
 ## day in `clear()`.
 var _sighted: Dictionary = {}
 
+## Which planned events have already told `EventBus.event_sighted` they were seen — kept apart from
+## `_sighted` above because that one only marks a *successful* summon and keeps retrying every
+## frame until it gets one, while a sighting itself happens on the first on-screen frame regardless
+## of whether the truck it summons can be placed. Keyed by `Planned`, cleared with the rest of the
+## day in `clear()`.
+var _sight_reported: Dictionary = {}
+
 ## The day's placement context for a row the day left for her walk to site, or `null` on a day that
 ## left none — the whole of `EventDef.sited_on_her_way`, which today is day 3's fire and nothing
 ## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
@@ -352,6 +359,7 @@ func clear() -> void:
 	_walked_under = 0
 	_guard_after_her = null
 	_sighted.clear()
+	_sight_reported.clear()
 	_broadcast_clock = 0.0
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
@@ -824,6 +832,13 @@ func _summon_what_has_been_sighted() -> void:
 			continue
 		if not _is_on_screen(plan.live.global_position):
 			continue
+		# `VisitCounter`'s own "seen-fire" — the moment she could see it, whether or not a truck
+		# can actually be placed below: a summon that finds no in-bounds direction keeps retrying
+		# every frame, but she has already seen the fire either way. Reported once, not once per
+		# retry.
+		if not _sight_reported.get(plan, false):
+			_sight_reported[plan] = true
+			EventBus.event_sighted.emit(plan.def.id)
 		if _summon_the_sighted_row(plan.def, plan.live.global_position):
 			_sighted[plan] = true
 
@@ -1085,6 +1100,9 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		# streamed back in by the next `stream_around` a rig made on the same day.
 		plan.spent = true
 		_map.release_obstruction(plan.get_instance_id())
+		# `VisitCounter`'s own "fire-unmet" — a won day on which this row was lit off her path
+		# rather than met. See docs/TELEMETRY.md, "The page counts visits".
+		EventBus.event_lit_unmet.emit(plan.def.id)
 		# Where and why, because nothing else records it: which site a dusk fire took depends on
 		# where she finished the day, and no seed reproduces that from outside.
 		Telemetry.note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "
@@ -1276,6 +1294,9 @@ func _check_detentions() -> void:
 		# not a third side; it is one of the two, chosen the same way every time.
 		_door_entry_side[nearest] = -1.0 if offset.dot(axis) < 0.0 else 1.0
 	body.detain(nearest.def.detain_seconds)
+	# `VisitCounter`'s own "chat"/"checkpoint" — `nearest.def.id` names which. See
+	# docs/TELEMETRY.md, "The page counts visits".
+	EventBus.player_detained.emit(nearest.def.id)
 	Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
 		nearest.def.id, TelemetryLog.tile(_map.world_to_tile(nearest.global_position)),
 		nearest.def.detain_seconds,

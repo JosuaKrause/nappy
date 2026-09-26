@@ -43,16 +43,58 @@ The events:
 - `nappy-day-N-won` / `nappy-day-N-lost-crying` / `nappy-day-N-lost-timeout` /
   `nappy-day-N-lost-hard-fail` — each day's end, named straight off `GameEnums.DayResult`'s own
   keys rather than a second copy of the game's loss causes.
+- `nappy-day-N-instant-<what>` / `nappy-day-N-noise-<what>` — beside the pair above, what a
+  hard-fail or crying loss actually was, emitted by `main._on_day_finished()` as
+  `EventBus.day_lost_to` just before `day_ended`. A hard fail names the row that struck her —
+  `instant-car` for the one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
+  `Crowd._strike()`), otherwise `instant-<id>` off whichever row's own `is_lethal_at()` fired
+  (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
+  caught `charging_dog` is `instant-charging-dog`. A crying loss names whichever source landed the
+  most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she cried: a
+  catalogue id (`EventInstance.landed()`), `crowd` for walkers or `traffic` for cars
+  (`CrowdAgent.landed()`, told apart by `CrowdAgent.kind`), or `self` for her own running and
+  standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
+  own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
+  present, falling back to `self` when there is none (`main._crying_cause_suffix()`).
+- `nappy-day-3-seen-fire` — the first frame the burning building is on screen, whether or not the
+  fire engine it summons can actually be placed (`EventManager._summon_what_has_been_sighted()`).
+- `nappy-day-3-fire-unmet` — a won day 3 on which the fire was never met and was lit off her path
+  at dusk (`EventManager.light_what_she_never_met()`).
+- `nappy-day-14-blackout` — the city goes dark, whether or not a mast was silenced
+  (`Blackout.go_dark()`; `city_went_quiet` fires only when there was one to silence).
+- `nappy-escape-city` — the building is behind her and the city section begins
+  (`main._on_escape_exit_requested()`). Once per attempt at the *building* section; a retry of the
+  city section alone (`FinaleController.restart_section()`) never repeats it.
+- `nappy-day-N-dog-chased` — `charging_dog` starts chasing her (`EventInstance._chase()`).
+  `nappy-day-N-dog-shaken` or `nappy-day-N-dog-outlasted` follows once the chase is over without
+  catching her — whether she ran it off or its own clock simply ran out
+  (`EventInstance._be_done()`, `EventInstance.gave_up`). A caught chase is
+  `nappy-day-N-instant-charging-dog` instead, off the pair above, and never also sends
+  `dog-outlasted`.
+- `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
+  actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
+  on screen for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
+  mark/task split reads `ResistanceSteps.Step.is_pickup` off the resistance's own data.
+- `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each perform step done, and each a day
+  ended without: a perform step reached but not finished. A chalk mark sends `mark-*` above
+  instead.
+- `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — the first poster torn
+  (`PosterWalls._tear()`), the first mother who stops her to chat, or the first checkpoint that
+  stops her (`EventManager._check_detentions()`), each once per attempt at the day — the counter
+  forgets all three on the next `day_started`.
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
   return to the title after an ending already reported through `nappy-ending-*`.
-- `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each task done, and each task a day ended
-  without: a chalk mark never reached, or a perform step reached but not finished, both counted the
-  moment the day they belong to ends.
 - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: the fresh handover
   from a won day 14, either section lost on any attempt, or the tunnel or the bridge reached.
 - `nappy-controls-joystick` / `nappy-controls-tap` — which control scheme was picked on the title
   screen, cheap to answer and its own small piece of "how far people get".
+
+Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
+`event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,
+`resistance_mark_seen`, `player_detained`, `poster_torn` — is listen-only: it rolls no RNG and
+changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
+existing `escape_*` signals already use.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
 things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
