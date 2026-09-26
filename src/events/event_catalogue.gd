@@ -1215,30 +1215,33 @@ static func _pigeon_flock() -> EventDef:
 ## It does not `pursue`: a bike does not chase, it rides straight through wherever she was standing.
 ##
 ## The fairness contract does the work — `hard_fail` doubles the margin and the speed means the
-## whole radius counts, so the bell has to ring for (90/92) x 2 = 1.96s before it arrives. That is
+## whole forward reach counts: 60px grown ahead of the bike by its own 165px/s (`Tuning.field_scale()`
+## at e = 0.33) is 90px, so the bell has to ring for 90 x 2 / 92 = 1.95s before it arrives. That is
 ## right: it is audible from down the street, she has two seconds and one step to make, and stepping
-## off a pavement is a step. It is also why the field is this size — a field wider than
+## off a pavement is a step. `EventDef.validate()` also refuses a field that reaches
 ## `Tuning.min_offscreen_lead(speed + WALK_SPEED)` (231px at this row's 165px/s — 180 for the
-## vertical axis plus 51 for 200ms of closing) would already be on her the moment it appeared on the
-## axis and moment `EventDirector` sites it closest to; `EventDef.validate()` refuses that
-## arrangement and 90 sits comfortably under it.
+## vertical axis plus 51 for 200ms of closing), which would already be on her the moment it
+## appeared on the axis `EventDirector` sites it closest on; 60 sits far under it.
 ##
 ## **`hard_fail` has to survive its own telegraph, or the "ends your day" above is not true.**
 ## *(2026-09-07: "also a biker hit should be lethal.")* `EventInstance.is_lethal_at()` refuses the
 ## whole time an event `is_telegraphing()`, so `EventDirector._toward_her()` sites a `hard_fail` row
 ## at `Tuning.outlasting_telegraph_lead()` rather than the ordinary offscreen margin — for this row
-## the telegraph term dominates on every heading: `(2.0 + 0.2) * 257` = 565px, against at most 371px
+## the telegraph term dominates on every heading: `(2.1 + 0.2) * 257` = 591px, against at most 371px
 ## from the offscreen margin alone.
 ##
-## **The field stays this size rather than wider, because `outer_radius` and `telegraph_time` are
-## one number under the doubled `hard_fail` margin: how long she is warned for and how far it can be
-## felt from move together, at the fixed ratio `Tuning.TELEGRAPH_HARD_FAIL_MARGIN` sets against
-## `WALK_SPEED`.** *(2026-09-07: "while biker is now too long notice" — the player reversing the
-## caution this row was built with, that shortening the telegraph "buys the lethality back by taking
-## the notice away". The complaint has flipped for this row: not too little warning, but watching it
-## close from off screen for over three seconds. `EventInstance.is_lethal_at()` still refuses the
-## whole telegraph, so the arrival still has to land after it ends — this row's siting is what keeps
-## that true at any size, and it is why the field moved rather than only the telegraph.)*
+## **The warning is short on purpose, and the field is what sets how short.** *(2026-09-25: "I feel
+## the same with the biker. it gets warned too early so most of the time you're already gone when
+## anything happens.")* `outer_radius` and `telegraph_time` are one number under the doubled
+## `hard_fail` margin: how long she is warned for and how far the bike can be felt from move
+## together, at the fixed ratio `Tuning.TELEGRAPH_HARD_FAIL_MARGIN` sets against `WALK_SPEED`. So a
+## shorter warning is a smaller field, and the field is sized for the warning rather than the other
+## way round — the siting follows the telegraph, and walking into him the warning she can see is the
+## contract's floor and about a tenth of a second, measured from the screen-edge badge rather than
+## from where he is sited (`tests/probes/m207_warning_lead.gd` measures every warned row's lead;
+## `tests/test_events_pursuit.gd` holds this one there). `EventInstance.is_lethal_at()` still refuses
+## the whole telegraph, so the arrival still has to land after it ends — this row's siting is what
+## keeps that true at any size.
 ##
 ## **`inner_radius` is 33px, not the 26 a bike's own width would suggest.** *(Playtest 25, finding
 ## 7: "biker currently is also basically inconsequential. when hit it should be dayending" — and the
@@ -1264,11 +1267,13 @@ static func _cyclist() -> EventDef:
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.intensity = 18.0
 	def.inner_radius = 33.0
-	def.outer_radius = 90.0
+	def.outer_radius = 60.0
 	# hard_fail and faster than a walk, so the escape distance is the forward reach and the margin
-	# is doubled: `outer_radius · Tuning.field_scale(e)` at 165px/s (e = 0.33) is 134px, * 2 / 92 =
-	# 2.92s, plus the margin the row already carried.
-	def.telegraph_time = 2.97
+	# is doubled: `outer_radius · Tuning.field_scale(e)` at 165px/s (e = 0.33) is 90px, * 2 / 92 =
+	# 1.95s. The 0.15s over it is what the screen-edge badge spends rising — `DangerEdge` smooths the
+	# approach it measures before it announces anything — so the warning she can actually see,
+	# walking into him, still clears the floor, by about a tenth of a second.
+	def.telegraph_time = 2.1
 	def.mobile = true
 	def.speed = 165.0
 	def.hard_fail = true

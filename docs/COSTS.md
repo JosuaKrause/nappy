@@ -40,7 +40,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | market_stall         |      wall |      14.0 |              — |           — |         38.0 |         64.0 |           2.0 |          8.0 |          3.5 |         — |               8.5 |
 | leaf_blower          |      wall |      19.3 |           35.0 |        64.0 |         45.0 |        190.0 |           2.0 |          4.0 |          4.8 |         — |              52.9 |
 | pigeon_flock         |      none |      42.0 |              — |           — |         26.0 |        168.0 |           2.0 |            — |            — |         — |              44.9 |
-| cyclist              |      none |      18.0 |              — |           — |         33.0 |         90.0 |           2.0 |            — |            — |     165.0 |              16.0 |
+| cyclist              |      none |      18.0 |              — |           — |         33.0 |         60.0 |           2.0 |            — |            — |     165.0 |              12.1 |
 | ice_cream_van        |      wall |      13.0 |              — |           — |         48.0 |        240.0 |           2.0 |         11.0 |          3.2 |         — |              18.4 |
 | reversing_lorry      |      wall |      16.0 |              — |           — |         46.0 |        175.0 |           2.0 |          1.6 |          4.0 |         — |              23.1 |
 | charging_dog         |      none |      12.0 |              — |           — |         26.0 |        150.0 |           2.0 |            — |            — |     130.0 |               8.8 |
@@ -96,7 +96,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | market_stall         |       2.8 |       2.8 |       0.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | leaf_blower          |      15.9 |      15.9 |      14.4 |       5.5 |       4.3 |      -0.3 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | pigeon_flock         |      34.7 |      32.0 |      24.6 |      13.1 |       5.1 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| cyclist              |      12.0 |      12.0 |      10.4 |       2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| cyclist              |      12.0 |      12.0 |       4.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | ice_cream_van        |       2.1 |       2.1 |       2.1 |       2.0 |       1.5 |      -0.2 |      -3.0 |      -6.0 |      -6.0 |      -6.0 |
 | reversing_lorry      |       4.0 |       4.0 |       4.0 |       3.5 |       2.2 |      -2.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | charging_dog         |       6.0 |       6.0 |       5.6 |       4.1 |       1.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -152,7 +152,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | market_stall         |      -1.2 |      -1.2 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | leaf_blower          |       6.0 |       6.0 |       5.2 |       0.4 |      -0.3 |      -2.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | pigeon_flock         |      16.4 |      14.9 |      10.8 |       4.5 |       0.1 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| cyclist              |       3.9 |       3.9 |       3.0 |      -1.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| cyclist              |       3.9 |       3.9 |      -0.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | ice_cream_van        |      -1.5 |      -1.5 |      -1.5 |      -1.6 |      -1.9 |      -2.8 |      -4.3 |      -6.0 |      -6.0 |      -6.0 |
 | reversing_lorry      |      -0.5 |      -0.5 |      -0.5 |      -0.8 |      -1.5 |      -4.1 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | charging_dog         |       0.6 |       0.6 |       0.4 |      -0.4 |      -1.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -208,7 +208,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | market_stall         |         — |       2.5 |       1.3 |       0.0 |       0.0 |
 | leaf_blower          |         — |      22.6 |      18.7 |       7.1 |      -0.1 |
 | pigeon_flock         |         — |         — |         — |         — |         — |
-| cyclist              |       3.4 |       3.3 |       2.7 |      -0.4 |       0.0 |
+| cyclist              |       3.4 |       3.2 |       2.1 |       0.0 |       0.0 |
 | ice_cream_van        |         — |      -0.3 |      -0.7 |      -2.4 |      -5.5 |
 | reversing_lorry      |         — |       5.6 |       4.9 |       1.6 |      -4.1 |
 | charging_dog         |         — |         — |         — |         — |         — |
@@ -264,7 +264,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | market_stall         |         — |      -2.2 |      -2.2 |       0.0 |       0.0 |
 | leaf_blower          |         — |       1.3 |      -0.6 |      -6.2 |      -8.7 |
 | pigeon_flock         |         — |         — |         — |         — |         — |
-| cyclist              |      -0.0 |      -0.0 |      -0.2 |      -1.1 |       0.0 |
+| cyclist              |       0.5 |       0.6 |       0.2 |       0.0 |       0.0 |
 | ice_cream_van        |         — |     -14.2 |     -14.3 |     -14.6 |     -15.2 |
 | reversing_lorry      |         — |      -7.1 |      -7.3 |      -8.2 |      -9.8 |
 | charging_dog         |         — |         — |         — |         — |         — |

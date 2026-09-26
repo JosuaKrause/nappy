@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
 	_test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
+	_test_the_cyclist_is_warned_shortly_before_he_arrives(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
@@ -347,6 +348,53 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 				% [def.id, def.telegraph_time] + "telegraph before it reaches her")
 		instance.free()
 	t.check(checked > 0, "there is at least one hard_fail TOWARD_PLAYER row to check ('cyclist')")
+
+## How far over the contract's floor the cyclist's warning may run, walking into him, and still be
+## *shortly* before he arrives. Half a second is about three strides — enough for frame timing and the
+## badge's own rise, and well short of the extra second she spent watching him close from off screen
+## when "most of the time you're already gone when anything happens".
+const CYCLIST_WARNING_OVER_THE_FLOOR := 0.5
+
+## **The cyclist is warned shortly before he arrives, and the warning still reaches her.**
+## *(2026-09-25: "I feel the same with the biker. it gets warned too early so most of the time you're
+## already gone when anything happens.")*
+##
+## Walked by `M207Lead.measure()` (`tests/probes/m207_warning_lead.gd`) — the probe that prints
+## every warned row's lead — from where the director sites him, on both axes, with the first warning
+## taken from what she can actually see: `DangerEdge`'s own badge rule, called rather than restated.
+## Three things have to hold together, and each one fails a different way:
+##
+## - **the warning reaches her**: the screen-edge badge is up before he can hit her — a siting
+##   inside the badge's own margin would leave her nothing but his arrival;
+## - **it is at least the contract's floor** (`EventDef.minimum_telegraph()`), measured from the
+##   badge rather than from his siting, walking into him and standing still alike;
+## - **and walking into him it is not much more than that**, which is the player's half of it.
+func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
+	var edge := DangerEdge.new()
+	var walked := 0
+	for encounter in M207Lead.encounters():
+		var def: EventDef = encounter["def"]
+		if def.id != "cyclist":
+			continue
+		walked += 1
+		var floor_s := def.minimum_telegraph()
+		var toward := M207Lead.measure(encounter, M207Lead.Answer.TOWARD, edge)
+		t.check(toward["by"] == "badge" and toward["lead"] < INF,
+				"cyclist (%s): the screen-edge badge warns her before he can hit her (by %s, %.2fs)"
+				% [encounter["how"], toward["by"], toward["lead"]])
+		t.check(toward["lead"] >= floor_s,
+				"cyclist (%s): walking into him she is warned %.2fs ahead, at least the %.2fs floor"
+				% [encounter["how"], toward["lead"], floor_s])
+		t.check(toward["lead"] <= floor_s + CYCLIST_WARNING_OVER_THE_FLOOR,
+				"cyclist (%s): and at most %.1fs over it, so the warning is shortly before he arrives "
+				% [encounter["how"], CYCLIST_WARNING_OVER_THE_FLOOR] + "(%.2fs over)"
+				% (toward["lead"] - floor_s))
+		var stood := M207Lead.measure(encounter, M207Lead.Answer.STAND, edge)
+		t.check(stood["lead"] < INF and stood["lead"] >= floor_s,
+				"cyclist (%s): standing on his line she is still reached, %.2fs after the warning"
+				% [encounter["how"], stood["lead"]])
+	edge.free()
+	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)
 
 ## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
 ## appeared once (I died) then it didn't appear again.")*
