@@ -18,7 +18,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import os
 import struct
 import subprocess
 import sys
@@ -31,7 +30,6 @@ from typing import Any
 
 TOOLS = Path(__file__).resolve().parent
 PROJECT_ROOT = TOOLS.parent
-EVIDENCE_ROOT = Path(os.environ.get("NAPPY_SOUND_EVIDENCE_ROOT", str(PROJECT_ROOT / "docs/evidence")))
 
 # Every tools/*.py a person or a script runs directly. Not the test_*.py files themselves --
 # unittest.main() already gives every one of them -h and rejects an unknown flag, which is the
@@ -175,23 +173,32 @@ class CliHelpTests(unittest.TestCase):
                     self.assertEqual(archive.read(name), first_files[name], f"archive copy differs: {name}")
                 self.assertEqual(archive.read("recipe/synthesize-sfx.py"), (TOOLS / "synthesize-sfx.py").read_bytes())
 
-    def test_revision_old_files_match_player_heard_pass_when_evidence_available(self) -> None:
-        pass_three = EVIDENCE_ROOT / "copper-lark-sound-lab-2026-09-26-pass-3"
-        references = {
-            "footsteps-pass-3-grounded.wav": pass_three / "footsteps-revised-grounded.wav",
-            "stroller-wheels-pass-3-grounded.wav": pass_three / "stroller-wheels-revised-grounded.wav",
-        }
-        missing = [path for path in references.values() if not path.is_file()]
-        if missing:
-            self.skipTest("archived sound evidence is absent from this checkout")
+    def test_sound_lab_no_serve_matches_recipe_hashes(self) -> None:
+        """The generator's own reproducibility is `test_synth_output_is_valid_deterministic_and_portable`
+        above; this is tools/sound-lab.sh's own contract -- that its --no-serve build of the newest
+        pass (extracted from the commit tools/sound-lab/passes.json records, not the tracked
+        tools/synthesize-sfx.py directly) matches every hash the recipe records for it. No archived
+        evidence is read here: the recipe carries its own expected hashes, which is the point of
+        replacing a committed listening kit with a reproducible command."""
+        passes = json.loads((TOOLS / "sound-lab" / "passes.json").read_text())
+        default_pass = passes["default_pass"]
+        recorded_hashes: dict[str, str] = passes["passes"][default_pass]["hashes"]
 
-        with tempfile.TemporaryDirectory() as temporary:
-            output = Path(temporary) / "revision"
-            result = self.run_tool("synthesize-sfx.py", "--output", str(output), "--seed", "260926")
-            self.assertEqual(result.returncode, 0, result.stderr)
-            for generated_name, archived_path in references.items():
-                with self.subTest(wav=generated_name):
-                    self.assertEqual((output / generated_name).read_bytes(), archived_path.read_bytes())
+        result = subprocess.run(
+            [str(TOOLS / "sound-lab.sh"), "--pass", default_pass, "--no-serve"],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=PROJECT_ROOT,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        output_dir = PROJECT_ROOT / "build" / "sound-lab" / default_pass
+        for filename, expected_sha256 in recorded_hashes.items():
+            with self.subTest(wav=filename):
+                actual_sha256 = hashlib.sha256((output_dir / filename).read_bytes()).hexdigest()
+                self.assertEqual(actual_sha256, expected_sha256, f"{filename} did not rebuild byte-for-byte")
 
 
 if __name__ == "__main__":
