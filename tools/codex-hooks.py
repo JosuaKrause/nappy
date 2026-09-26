@@ -93,8 +93,10 @@ def main() -> None:
                 # printed -- Codex accepts the same permissionDecision JSON Claude Code does.
                 # Codex documents `command` as a string; an argument list (["bash", "-lc",
                 # "..."]) is passed on too, and the guard joins it with spaces, so an
-                # unexpected shape is checked rather than skipped.
-                command = args.get("command")
+                # unexpected shape is checked rather than skipped. Codex's unified-exec tool
+                # (`exec_command`) carries its command in `cmd` instead, so that is read when
+                # `command` is absent or empty.
+                command = args.get("command") or args.get("cmd")
                 if isinstance(command, (str, list)) and command:
                     guard = run_hook("git-grep-guard.sh", "Bash", extra_input={"command": command})
                     if guard and guard.get("hookSpecificOutput", {}).get("permissionDecision") == "deny":

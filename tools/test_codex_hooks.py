@@ -303,6 +303,16 @@ class CodexHooksTest(unittest.TestCase):
         text = self.call(tool="Bash", command="git grep -n foo -- '*.md' 2>/dev/null")
         self.assertIn("committing", text)
 
+    def test_git_grep_guard_reads_exec_commands_cmd_field(self) -> None:
+        # Codex's unified-exec tool sends {"cmd": "..."} rather than {"command": "..."}; the
+        # adapter reads either, so the guard is not skipped for the field name.
+        output = self.call_raw(tool="exec_command", tool_input={"cmd": "git grep -n -i foo -- docs/"})
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        allowed = self.call_raw(tool="exec_command", tool_input={"cmd": "git grep -I -n -i foo -- docs/"})
+        assert allowed is not None
+        self.assertNotIn("permissionDecision", allowed["hookSpecificOutput"])
+
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(
             command="*** Update File: ../outside/src/events/a.gd\n*** Update File: /tmp/outside/src/city/b.gd\n"
