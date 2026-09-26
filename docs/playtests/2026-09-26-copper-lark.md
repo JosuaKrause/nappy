@@ -33,3 +33,11 @@ Continue with the grounded direction. Recognition is not established by the firs
 the stroller needs to suggest wheels and a small mechanism rather than an ocean-like wash, and
 the footsteps need to be lighter. The assistant proposes a focused revision of those two sounds
 before expanding the set. The stylized direction is rejected for this experiment.
+
+## Listening verdict on pass 3
+
+> "read your restart note. I like the graphics now -- the audio is still not good. a step needs to be way more subtle and wheel sound is even quieter"
+
+The footsteps need to be much subtler, with the wheels quieter still. The assistant proposes
+a focused pass with lower step impacts and a lower wheel level, preserving pass 3 for comparison.
+This remains an audition, without runtime integration.
