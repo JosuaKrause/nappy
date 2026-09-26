@@ -51,11 +51,14 @@ interpreter when you change it:
 echo '{"hook_event_name":"SessionStart","session_id":"x","cwd":"'"$PWD"'"}' | /usr/bin/python3 tools/codex-hooks.py
 ```
 
-**A change to a hook updates the adapter in the same PR.** *(2026-09-26: "okay, yes this is
-important to keep up to date".)* A new or changed script under `.claude/hooks/`, or a changed hook
-entry in `.claude/settings.json` (a new matcher, a new tool name, a new field read), comes with the
-matching change to `tools/codex-hooks.py`, `.codex/hooks.json` where its matcher is affected, and a
-case in `tools/test_codex_hooks.py`. Codex names its tools differently — a patch arrives as
+**A change to a hook is checked against the adapter, and updates it in the same PR when it
+needs to.** *(2026-09-26: "okay, yes this is important to keep up to date".)* A new or changed
+script under `.claude/hooks/`, or a changed hook entry in `.claude/settings.json`, asks whether
+Codex's side is affected: a new tool name, a new payload field read, a new hook event, a matcher
+Codex should share. Where it is, the same PR changes `tools/codex-hooks.py`, `.codex/hooks.json`
+and `tools/test_codex_hooks.py` to match. A change to a hook's own logic alone (the guard's jq,
+say) needs nothing from the adapter, and nor does a Claude-only tool such as `Monitor`, which
+Codex does not have. Codex names its tools differently — a patch arrives as
 `apply_patch` rather than `Edit`/`Write` — so a hook that is only checked against Claude Code's
 payloads leaves Codex unguarded without any test turning red.
 
