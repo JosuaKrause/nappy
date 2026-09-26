@@ -637,6 +637,13 @@ item below for as long as looking takes.
   to 296px out at its own speed rather than at 200px at most (`DECISIONS.md`, M191, the horn
   watches as far as the contract needs): **is the earlier horn a warning you can act on, or noise?**
 
+- **After the next release, read the counter back** (`tools/goatcounter.sh --check`, then
+  `tools/goatcounter.sh`, in a session that carries `GOATCOUNTER_TOKEN`). `--check` should say the
+  key reads statistics, and the funnel should start showing `instant-*`, `noise-*`, `mark-*` and
+  the day's one-off events beside the old ones. **Does each loss now name its cause, and do the
+  counts answer "are the special/unique things actually getting encountered"?** Record is
+  `DECISIONS.md`, M208 and M209.
+
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 

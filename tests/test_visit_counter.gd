@@ -17,8 +17,12 @@ func run(t) -> void:
 	_test_loss_cause_names_every_day_result(t)
 	_test_run_begun_name(t)
 	_test_controls_event_name(t)
+	_test_detention_suffix(t)
+	_test_is_pickup_step(t)
 	_test_listening_touches_no_gameplay_state(t)
 	_test_task_skipped_only_for_a_step_still_open_on_its_own_day(t)
+	_test_mark_and_task_sends_are_split_by_the_resistance_own_data(t)
+	_test_report_once_this_attempt_forgets_on_day_started(t)
 	_test_resumed_for_report_truth_table(t)
 	_test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t)
 	_test_pending_events_queue_until_present_and_flush_in_order(t)
@@ -72,6 +76,28 @@ func _test_controls_event_name(t) -> void:
 	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP)
 			== "nappy-controls-tap", "the tap scheme")
 
+## `chatting_mother` is a `chat`; every other id that can reach `EventBus.player_detained` — the
+## catalogue's only other two rows with a `detain_seconds` above zero — is a `checkpoint`.
+func _test_detention_suffix(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._detention_suffix("chatting_mother") == "chat",
+		"the mother who stops her for a conversation")
+	t.check(VISIT_COUNTER_SCRIPT._detention_suffix("checkpoint_hut") == "checkpoint",
+		"a checkpoint's hut")
+	t.check(VISIT_COUNTER_SCRIPT._detention_suffix("checkpoint_post") == "checkpoint",
+		"a checkpoint's post")
+
+## The mark/task split comes from `ResistanceSteps` itself — index 1 is day 6's chalk mark and
+## index 2 is the perform step it unlocks (`ResistanceSteps._build()`), so this is real catalogue
+## data rather than an index chosen to make the parity come out right.
+func _test_is_pickup_step(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._is_pickup_step(1), "index 1 is day 6's chalk mark")
+	t.check(not VISIT_COUNTER_SCRIPT._is_pickup_step(2),
+		"index 2 is the perform step the mark unlocks")
+	t.check(not VISIT_COUNTER_SCRIPT._is_pickup_step(17),
+		"the finale's own step is not a pickup either")
+	t.check(not VISIT_COUNTER_SCRIPT._is_pickup_step(999),
+		"an index the resistance does not know reads as a task, the safer default")
+
 ## Drives every signal handler the counter connects to and checks that none of it moved anything
 ## `GameState` owns. This process is never on the web (`OS.get_name() != "Web"`), so
 ## `should_send()` refuses every one of these and `_send_event()` never reaches
@@ -85,14 +111,24 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	var before := _gamestate_snapshot()
 	counter._on_run_begun(1, false)
 	counter._on_day_started(1)
+	counter._on_day_lost_to(1, "noise-homeless-yeller")
 	counter._on_task_offered(0)
 	counter._on_task_completed(0)
 	counter._on_task_offered(1)
 	counter._on_task_failed(1)
+	counter._on_mark_seen(1)
+	counter._on_event_sighted("burning_building")
+	counter._on_event_lit_unmet("burning_building")
+	counter._on_city_gone_dark()
+	counter._on_pursuit_began("charging_dog")
+	counter._on_pursuit_ended("charging_dog", true)
+	counter._on_poster_torn()
+	counter._on_player_detained("chatting_mother")
 	counter._on_day_ended(1, GameEnums.DayResult.WON)
 	counter._on_run_restarted(1)
 	counter._on_run_ended(GameEnums.Ending.NEUTRAL)
 	counter._on_escape_begun()
+	counter._on_escape_city_entered()
 	counter._on_escape_lost()
 	counter._on_escape_out()
 	counter._on_controls_chosen(ControlsMode.Mode.TAP)
@@ -126,6 +162,39 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT)
 	t.check(not counter._open_tasks.has(6),
 		"the day it belonged to ending, won or lost, closes it out as skipped")
+	counter.free()
+
+## `_on_task_completed()`/`_on_task_failed()`/`_on_day_ended()`'s own sweep all ask
+## `_is_pickup_step()` rather than a parity rule of their own — checked here through `_open_tasks`
+## directly, since `_send_event` itself is silent in this process (see the test above this one).
+## Index 1 (day 6's mark) and index 2 (the perform step it unlocks) are real `ResistanceSteps` data,
+## not indices chosen to make a parity come out right.
+func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
+	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter._on_task_offered(1)
+	counter._on_task_offered(2)
+	counter._on_task_completed(1)
+	counter._on_task_completed(2)
+	t.check(not counter._open_tasks.has(1) and not counter._open_tasks.has(2),
+		"a completed mark and a completed task both close out, whatever they are sent as")
+	counter._on_task_offered(1)
+	counter._on_task_offered(2)
+	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT)
+	t.check(not counter._open_tasks.has(1) and not counter._open_tasks.has(2),
+		"the day ending closes out an untouched mark and an untouched task alike")
+	counter.free()
+
+## `poster-torn`/`chat`/`checkpoint` fire once per attempt and forget on the next `day_started` —
+## checked through `_reported_this_attempt` directly, the state `_report_once_this_attempt()`
+## reads, since `_send_event` is silent in this process.
+func _test_report_once_this_attempt_forgets_on_day_started(t) -> void:
+	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter._report_once_this_attempt("poster-torn")
+	t.check(counter._reported_this_attempt.get("poster-torn", false),
+		"the first tear this attempt is recorded")
+	counter._on_day_started(1)
+	t.check(counter._reported_this_attempt.is_empty(),
+		"a fresh attempt at the day forgets every suffix already reported")
 	counter.free()
 
 ## Review finding: a genuinely fresh visit that hands over to the escape at day 14 re-enters
