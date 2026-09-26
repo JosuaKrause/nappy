@@ -21,6 +21,9 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **On the phone, lose a day and look at the title** (the released page). **Is it the right way
+  up?** If not: after every lost run or only sometimes, and does anything else turn with it?
+  Record is M206 in `TODO.md`, the title screen after a game over is the right way up.
 - **On a phone, hold the restart disc on the pause screen, then on the day summary** (the
   released page, or a debug build). **Does the disc fill visibly while your finger is down, and
   does one completed hold start a new game every time**, even with a second finger resting on
