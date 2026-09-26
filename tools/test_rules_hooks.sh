@@ -252,7 +252,9 @@ fi
 # by $2 (Bash when omitted).
 guard_decision() {
     local cmd="$1" tool="${2:-Bash}" raw
-    raw=$(jq -n --arg c "$cmd" --arg t "$tool" '{tool_name:$t, tool_input:{command:$c}}' \
+    # The command goes to jq on stdin, never as an argument: Linux caps one argument at 128 KB, so
+    # the long-text rows would fail to build their payload on CI while passing on macOS.
+    raw=$(printf '%s' "$cmd" | jq -Rs --arg t "$tool" '{tool_name:$t, tool_input:{command:.}}' \
         | "$root/.claude/hooks/git-grep-guard.sh")
     if [ -z "$raw" ]; then
         printf 'allow'
