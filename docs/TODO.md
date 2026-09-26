@@ -726,7 +726,8 @@ in Codex's `/hooks`, per checkout path.
       way `orchestrating` starts a Claude one, and gets its report back.
 - [ ] **It works in a git worktree under `.claude/worktrees/`**, never in a scratch folder
       elsewhere. Codex trusts hooks per `hooks.json` path, so a new worktree's hooks need the
-      player's approval before they run; say how that is handled.
+      player's approval before they run; say how that is handled. The worktree is the fence, not
+      Codex's sandbox: a `codex exec -s read-only` run still wrote a file through its patch tool.
 - [ ] **`orchestrating` says when to reach for Codex** and how its scope fence, verification and
       brief file carry over.
 
@@ -836,11 +837,16 @@ the route costs something"), and it is most of what the probe still blames. What
       days 10–11 `ClosurePlanner.calm_to_shut()` runs after `CityMap.repaint()` has reset
       `fenced_park`, so it counts the fenced area as open and its ground as walkable, and the tree
       can keep one calm area against `MIN_CALM_AREAS_REACHABLE` (2); seed 14965, day 10, is one.
-      The plan, with a regression across seeds 14040+37·i, the restoration of two rules that PR
-      rewrote in passing (M24's "Nothing lethal or mobile is ever chosen for this" in `EVENTS.md`,
-      and `CITY.md`'s spoiler bullet), the rejected broad post leaving the atlas and four stale
-      doc lines, is `.claude/briefs/fix-spent-park-followup.md` on branch
-      `fix/spent-park-followup`, whose one commit is an unrun start of the regression. With it,
+      The plan: the carried fence is known (excluded, its ground blocked) before `calm_to_shut()`
+      judges anything, with a regression carrying a day-9 fence into days 10–11 across seeds
+      14040+37·i that fails before the fix; M24's sentence in `EVENTS.md` restored word for word
+      ("Nothing lethal or mobile is ever chosen for this, and nothing whose body would close the
+      lot", which that PR rewrote without *mobile*), and `CITY.md`'s spoiler bullet and the word
+      "spoiling" restored; the rejected broad post (`art/closures/barrier_post.svg`, reached only
+      through a dead `ClosureMarker.POST` path) leaving the atlas for the rejected-graphics
+      archive; and the stale lines the review names in `CITY.md`, `ParkClosure`'s class doc, the
+      zero-cost probe's doc and the evidence README fixed. Branch `fix/spent-park-followup` holds
+      only an unrun start of that regression in `tests/test_spent_park.gd`. With it,
       `CITY.md` states that a day's path ends in an available calm area ("a path should end in an
       available calm zone"), which is why the tree refuses a branch ending at a used area; the
       night escape's repaint dropping a fence chosen on day 13 or 14 stays ("night escape doesn't

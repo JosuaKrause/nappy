@@ -2,7 +2,7 @@
 
 2026-09-26. Said in conversation while PRs #377 (the `git grep` guard), #372 (M207, the cyclist's
 warning) and #374 (M129, a spent park is closed) were reviewed. The player's words on the pursuing
-dog's timing from the same conversation are in [PLAYTEST-145](PLAYTEST-145.md), statements 10–16.
+dog's timing from the same conversation are in PLAYTEST-145, statements 10–16, which PR #372 adds.
 
 ## The order
 
