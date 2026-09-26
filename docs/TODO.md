@@ -480,7 +480,9 @@ each entry says whether it is an event.
       apart from the days.
 - [ ] **A cloud session reaches it** once the environment allows the host
       `josuakrause.goatcounter.com` and carries `GOATCOUNTER_TOKEN` as a secret; a local session
-      needs only the variable. Written where the tool is catalogued.
+      needs only the variable, set in the shell or as a `GOATCOUNTER_TOKEN=...` line in a
+      `.env` file at the repository root, which git ignores. A variable already set in the
+      environment wins over the file. Written where the tool is catalogued.
 
 ---
 

@@ -30,6 +30,10 @@ Thumbs.db
 .venv/
 __pycache__/
 
+# Local secrets for the tools, one KEY=value per line (GOATCOUNTER_TOKEN for tools/goatcounter.sh).
+# Never committed: a key in the history is a key published.
+.env
+
 # tools/test.sh stages tests/runner_fixtures/unparseable_suite.gd.src to this real .gd path for
 # the one process that names it, and removes it (and the .uid Godot writes beside it) as soon as
 # that process ends. Ignored as well, so an interrupted run never leaves a parse-broken .gd
