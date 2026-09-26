@@ -92,6 +92,18 @@ var hold_progress := 0.0:
 		hold_progress = clampf(value, 0.0, 1.0)
 		queue_redraw()
 
+## Fires the instant a hold reaches `RESTART_HOLD_SECONDS`, while whatever started it is still
+## down — not on release. *(Playtest 144, the player: "The button only activated when releasing
+## though. It should trigger the moment it is full.")* `PauseScreen` and `DaySummary` each connect
+## this once, to their own `restart_requested`, instead of deciding completion from `end_hold()`'s
+## own return at release the way they used to. `_held_by` stays set until the real release arrives
+## regardless of this signal — a second finger is still refused meanwhile, and the eventual release
+## still reaches `end_hold()` to tear the hold down — so `_fired` below is what stops that release
+## from raising this a second time, and what stops the screen's own catch-all from ever seeing it:
+## `_handle_restart_touch()` on both screens still intercepts the release because `is_held_by()`
+## is still true, and now just cleans up rather than emitting again.
+signal hold_completed()
+
 ## The disc's own fill, while held — see `_draw()`. Translucent rather than opaque: a script
 ## `_draw()` on a `Button` paints over the stylebox and the icon, and a fully opaque fill would
 ## hide the glyph underneath it as the sweep passed over it.
@@ -111,6 +123,11 @@ var _held_by := -1
 ## `Time.get_ticks_msec() / 1000.0` when `_held_by` was grabbed, so `_process()` can measure the
 ## hold against `RESTART_HOLD_SECONDS` without keeping its own delta accumulator.
 var _held_since := 0.0
+## Whether `hold_completed` has already fired for the hold currently in progress. Reset to `false`
+## only by `begin_hold()`, so a hold kept down well past `RESTART_HOLD_SECONDS` before its release
+## still raises the signal exactly once, at the moment it first reaches full rather than again on
+## every later frame `_process()` finds `hold_progress` still clamped at `1.0`.
+var _fired := false
 
 ## Acquires the `ui` group before `_ready()` sets `icon` from it — see `Building._enter_tree()`'s
 ## own doc for why this is paired with `_exit_tree()` rather than folded into `_ready()`.
@@ -165,6 +182,12 @@ func _process(_delta: float) -> void:
 	# with the pressed fill over — and the last frame the pressed fill is allowed to still be showing.
 	if _pressed_look and hold_progress > 0.0:
 		clear_forced_press()
+	# **Completion is decided here, the moment the disc actually fills, not at whatever later frame
+	# a release happens to arrive on.** See `hold_completed`'s own doc for why a screen no longer
+	# reads `end_hold()`'s return to decide this.
+	if not _fired and hold_progress >= 1.0:
+		_fired = true
+		hold_completed.emit()
 
 ## Starts tracking a hold from `touch_index`, unless something else already holds this button.
 ## Returns whether it was accepted — the caller (`PauseScreen`/`DaySummary`) treats a `false` here
@@ -183,6 +206,7 @@ func begin_hold(touch_index: int) -> bool:
 		return false
 	_held_by = touch_index
 	_held_since = Time.get_ticks_msec() / 1000.0
+	_fired = false
 	hold_progress = 0.0
 	force_pressed_look()
 	return true
@@ -192,10 +216,27 @@ func begin_hold(touch_index: int) -> bool:
 func is_held_by(touch_index: int) -> bool:
 	return _held_by == touch_index
 
+## Whether anything at all currently holds this button, regardless of which index — what
+## `PauseScreen`/`DaySummary` check a *different* touch's own press against, before letting it fall
+## through to their own catch-all. *(M212: "sometimes it just doesn't work at all... you have to
+## hold long multiple times".)* A second finger landing anywhere on the screen while `RESTART` is
+## already held — the other hand steadying the phone, a palm graze — used to reach the catch-all
+## unopposed and read as *carry on*, resuming or continuing the screen out from under a hold
+## already in progress. Named apart from `is_held_by()` because the caller here does not know or
+## care which index holds it, only that one already does.
+func is_held() -> bool:
+	return _held_by != -1
+
 ## Ends the hold `touch_index` started and answers whether it lasted long enough. Safe to call
 ## whether or not `touch_index` is actually the one held — a mismatched index simply changes
 ## nothing and answers `false`, so a caller that already checked `is_held_by()` never has to guard
 ## twice.
+##
+## **The return no longer decides whether to restart.** A completed hold has already raised
+## `hold_completed` from inside `_process()`, at the frame the disc actually filled; by the time a
+## release calls this, `held >= RESTART_HOLD_SECONDS` is still true (time only moves forward), but
+## a caller acting on it here would restart a second time. `PauseScreen`/`DaySummary` call this only
+## to tear the hold's own state down on release.
 func end_hold(touch_index: int) -> bool:
 	if _held_by != touch_index:
 		return false
@@ -213,10 +254,10 @@ func cancel_hold() -> void:
 	clear_forced_press()
 
 ## Whether a real press or `RESTART`'s own timed hold currently forces the pressed fill, and
-## whether the mouse currently sits over this button — the two inputs `_refresh_look()` resolves
-## into the one stylebox `Button` will actually draw. Pressed beats hovered beats resting, the same
-## precedence a native `Button` would give its own draw modes if `MOUSE_FILTER_IGNORE` ever let it
-## reach them.
+## whether the mouse currently sits over this button — two of the three inputs `_refresh_look()`
+## resolves into the one stylebox `Button` will actually draw, the third being `is_held()` itself.
+## Pressed beats held-or-hovered beats resting, the same precedence a native `Button` would give
+## its own draw modes if `MOUSE_FILTER_IGNORE` ever let it reach them.
 var _pressed_look := false
 var _hovered_look := false
 
@@ -253,11 +294,19 @@ func set_hovered(hovered: bool) -> void:
 ## would. Only `"normal"` is ever selected for drawing — `Button`'s own `hover`/`pressed`/
 ## `hover_pressed` styleboxes are installed by `_apply_disc_style()` for completeness but never
 ## reached, since `MOUSE_FILTER_IGNORE` keeps this control out of `Button`'s own draw-mode switch.
+##
+## **`is_held()` lights the disc the same way `_hovered_look` does.** A touch has no cursor to sit
+## over the button and set that flag — a mouse hold reads as hovered for as long as the pointer
+## rests on the disc it is pressing, but a finger sets nothing of the kind, so without this a touch
+## hold left `RESTART`'s own sweep in `_draw()` painting over the plain resting fill for the whole
+## second while a mouse hold painted it over the brighter one. Every hold now brightens the disc
+## the same way regardless of what is holding it, so `_draw()`'s sweep has the same base to read
+## against on every device.
 func _refresh_look() -> void:
 	var fill := Palette.BUTTON_FILL
 	if _pressed_look:
 		fill = Palette.BUTTON_PRESSED
-	elif _hovered_look:
+	elif _hovered_look or is_held():
 		fill = Palette.BUTTON_HOVER
 	add_theme_stylebox_override("normal", _disc_style(fill))
 
