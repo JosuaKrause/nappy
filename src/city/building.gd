@@ -1157,6 +1157,16 @@ func _draw_fire_escape() -> void:
 ## contract `_build_windows()` already keeps. Nothing is placed on a roof too shallow to have an
 ## interior cell at all (`roof_tiles() < 3` or `columns() < 3`), which most `INDUSTRIAL` and
 ## `CIVIC` roofs are not, and most single-tile-deep slivers are.
+##
+## **The interior pool includes a covered column's own extension rows** (`roof_extension_rows`,
+## M203/M216): a unit can land anywhere from row 1 up to one short of whatever row that column's
+## own roof actually tops out at, extended or not, rather than being bounded by `roof_rows` alone
+## — a unit still never lands on the true perimeter, the same rule the unextended case already
+## follows. Reads no new RNG stream of its own: `variant` and `global_position` are unaffected by
+## an extension, so which cells the interior pool contains is the only thing that changes, and the
+## roll itself (`_shuffle`, `wanted`, the placement loop) stays byte-for-byte the deterministic
+## roll it already was. A different seed can still reshuffle which buildings receive an extension
+## at all, which is expected and no different from any other seed-to-seed layout change.
 func _build_roof_furniture() -> void:
 	_roof_furniture.clear()
 	_has_vent = false
@@ -1169,8 +1179,9 @@ func _build_roof_furniture() -> void:
 	if kinds.is_empty() or density <= 0.0:
 		return
 	var interior: Array[Vector2i] = []
-	for row in range(1, roof_rows - 1):
-		for col in range(1, cols - 1):
+	for col in range(1, cols - 1):
+		var col_rows := maxi(roof_rows, roof_rows + _extension_rows(col))
+		for row in range(1, col_rows - 1):
 			interior.append(Vector2i(col, row))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("roof:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
