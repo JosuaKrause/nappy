@@ -136,3 +136,9 @@ And, next:
 
 22. **What telegraphs goes fast and toward her.** Whether this adds a third condition to statement
     21 (fast, dangerous and toward her) or restates it went back to the player. → M226.
+
+> "cars don't go towards the player -- they don't need telegraphing"
+
+23. **All three conditions hold at once: a thing telegraphs only if it goes fast, is dangerous and
+    comes toward her.** Cars are fast and dangerous but keep to their lanes rather than coming at
+    her, so they do not telegraph. → M226.
