@@ -3,11 +3,12 @@
 # one session -- see docs/TODO.md, one command lands a queue of pull requests in order:
 #
 #   1. gh pr merge <n> --squash --auto     (turns auto-merge on)
-#   2. poll gh pr view <n> --json state,mergeable until it is MERGED, or until it can no longer
-#      merge because main moved under it -- behind (the ruleset's strict checks want an
-#      up-to-date branch) or conflicting
-#   3. then: tools/update-pr.sh <n> (merges origin/main in, resolves the recurring
-#      docs/DECISIONS.md shape, checks, pushes), then keep waiting
+#   2. poll gh pr view <n> --json state,mergeable until it is MERGED, or until main moved under it
+#      and left it CONFLICTING -- the ruleset's checks are not strict
+#      (strict_required_status_checks_policy is false), so a PR that is merely behind main needs
+#      nothing and merges once its own green run lands
+#   3. only when conflicting: tools/update-pr.sh <n> (merges origin/main in, resolves the
+#      recurring docs/DECISIONS.md shape, checks, pushes), then keep waiting
 #   4. once merged: git pull --ff-only on main in this checkout, then
 #      tools/prune-merged.sh <branch> to retire the worktree and branch
 #
@@ -40,10 +41,12 @@ usage() {
 usage: tools/land-prs.sh [--help|-h] [--dry-run] [--timeout <minutes>] <pr-number> [<pr-number>...]
 
 Lands a queue of already-authorized pull requests in order, one at a time: enables auto-merge
-(gh pr merge <n> --squash --auto), waits for GitHub to merge it, runs tools/update-pr.sh <n> when
-an earlier merge left it behind main or conflicting and keeps waiting, then once
-merged fast-forwards main in this checkout (git pull --ff-only) and retires the branch with
-tools/prune-merged.sh. The next PR is brought up to date only after the previous one merged.
+(gh pr merge <n> --squash --auto), waits for GitHub to merge it, runs tools/update-pr.sh <n> only
+when an earlier merge left it conflicting with main and keeps waiting -- a PR that is merely
+behind main needs nothing, since the ruleset's checks are not strict -- then once merged
+fast-forwards main in this checkout (git pull --ff-only) and retires the branch with
+tools/prune-merged.sh. After the batch, it names main's own CI run on the last merge as the check
+for two PRs that are wrong together and prints the run's URL when one is cheaply available.
 
 This script enables auto-merge and merges pull requests -- run it only where merging every PR
 named on the command line is already authorized, per the committing skill's permission rule.
@@ -224,11 +227,10 @@ for n in "${prs[@]}"; do
             stop "PR #$n: timed out after ${timeout_min}m waiting for it to merge"
         fi
 
-        pr_json="$(gh pr view "$n" --json state,mergeable,mergeStateStatus,url 2>&1)" \
+        pr_json="$(gh pr view "$n" --json state,mergeable,url 2>&1)" \
             || refuse "PR #$n: gh pr view failed: $pr_json"
         state="$(pr_field "$pr_json" state)"
         mergeable="$(pr_field "$pr_json" mergeable)"
-        merge_state="$(pr_field "$pr_json" mergeStateStatus)"
         url="$(pr_field "$pr_json" url)"
 
         [[ "$state" == MERGED ]] && { echo "PR #$n merged"; break; }
@@ -240,10 +242,13 @@ for n in "${prs[@]}"; do
 $failing"
         fi
 
-        # The ruleset's strict checks mean a PR merely behind main never merges either: auto-merge
-        # waits for an up-to-date branch that nothing else will produce.
-        if [[ "$mergeable" == CONFLICTING || "$merge_state" == BEHIND ]]; then
-            echo "PR #$n is behind or conflicts with main; running tools/update-pr.sh $n"
+        # The ruleset's checks are not strict (strict_required_status_checks_policy is false), so
+        # a PR that is merely behind main merges on its own once its own run is green -- nothing
+        # to do here. Only a real conflict with main needs tools/update-pr.sh to bring it up to
+        # date; that re-run is on this branch alone and proves nothing about a PR merged beside it,
+        # which is why main's own CI run after the batch is the check that matters there.
+        if [[ "$mergeable" == CONFLICTING ]]; then
+            echo "PR #$n conflicts with main; running tools/update-pr.sh $n"
             if ! ./tools/update-pr.sh "$n"; then
                 stop "PR #$n ($url): tools/update-pr.sh could not bring it up to date -- see its output above"
             fi
@@ -268,3 +273,9 @@ done
 
 echo
 echo "landed ${#prs[@]} PR(s): ${prs[*]}"
+echo
+echo "main's own CI run on the last merge is the check that these PRs are not wrong together --" \
+    "a semantic conflict between two that touch different files passes each one's own gate and" \
+    "only shows up there. Watch it."
+run_url="$(gh run list --branch main --limit 1 --json url -q '.[0].url' 2>/dev/null)"
+[[ -n "$run_url" ]] && echo "  $run_url"
