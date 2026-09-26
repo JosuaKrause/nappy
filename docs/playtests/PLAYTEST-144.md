@@ -104,9 +104,11 @@ of conflicts, becomes files as well:
 Asked, among others: how the restart disc's fill should show under a thumb; whether the brief
 between two days may drop "She fell asleep after m:ss"; whether the chalk mark's robber may stand
 out of waking range at the far end of a long alley; whether the burning building's sidewalk body
-stays; whether the counter's asks get queue entries. The player, in one message ("Robert" and
-"river" are dictation for *robber*, as the player said after: "*robber not river", "*robber not
-Robert"; "teller" is read as *yeller*):
+stays; whether the counter's asks get queue entries; and, on PR #362, whether the robber who
+chases her after a handover comes only after the man shouting or also after the van, the burnt
+shell and the roadblock. The player, in one message ("Robert" and "river" are dictation for
+*robber*, as the player said after: "*robber not river", "*robber not Robert"; "teller" is the
+filer's reading of dictation for *yeller*):
 
 > "373 this is already implemented for mouse. Just make it appear everywhere. Where does the
 > decision to add a river after handing to the teller come from? You can keep the she feel asleep
@@ -145,9 +147,9 @@ edge stays blank (M203); 25, the day-6 handover ends the man shouting's charge a
 45px inner radius (M205).
 
 15. **After the van (day 7) a guard chases her**; after the man shouting, the robber, which is
-    fine only if he starts off screen. → M137.
-16. **The cyclist must not become cheaper to pass** for the shorter warning. → M207.
-17. **The roof cases are judged on pictures.** → M203.
+    fine only if he starts off screen. → M137, on PR #362.
+16. **The cyclist must not become cheaper to pass** for the shorter warning. → M207, on PR #372.
+17. **The roof cases are judged on pictures.** → M203, on PR #365.
 18. **Every other listed addition is reaffirmed**: 1–8, 10, 12, 14, 19–24, 26 and 27. 9 and 25
     wait on the explanations asked for, and 15–18, the roof cases, on the pictures. Of 11, the
     answer names the van and the man shouting; the burnt shell and the roadblock go back to their
@@ -165,9 +167,10 @@ The orchestrator explained 9, 17, 18 and 25, and how to check the halo on a phon
 > look at the trailer? Any other input needed from me? Will create a screenshot"
 
 19. **An extended roof carries roof furniture too**, rolled from the seed like the rest, so a fixed
-    seed still gives the same city. → M203.
-20. **A front facing the map's edge should not exist**, since a street always runs there; if the
-    case is unreachable it goes. → M203.
+    seed still gives the same city. → M203, on PR #365.
+20. **The player asks how a front could face the map's edge, expecting that a street always runs
+    there.** Whether the case can happen is checked, and if it cannot, the special case goes (the
+    orchestrator's plan). → M203, on PR #365.
 21. **The man shouting had no effect on the meter on an ordinary day**, not only on the day of the
     note. → M205.
 22. **Handing over a task's note costs excitement.** A task is an extra challenge about managing
@@ -182,13 +185,14 @@ Four screenshots of the released page on the player's phone, in
 > · "This is the screen when resetting" · "The button only activated when releasing though" · "It
 > should trigger the moment it is full"
 
-23. **The halo draws on the phone** (a car's, on day 1). → M205.
+23. **The halo draws on the phone** (on a passer-by beside the pram, day 1). → M205.
 24. **The man shouting draws no halo and does not move the meter on the phone**, on an ordinary
     day. → M205.
 25. **The held restart fires only when the finger is lifted; it fires the moment the disc is
     full.** → M212.
-26. **After the held restart the screen shows the city upright with no title**, where the game
-    around it was drawn turned for the phone. → M206.
+26. **The player shows the screen after a held restart**, captioned "This is the screen when
+    resetting". The still shows the city upright with no title, where the other stills show the
+    game turned for the phone; that reading, and linking it to M206, are the filer's. → M206.
 
 Told that the halo had been found invisible only in this Mac's desktop Chrome, the player sent a
 screenshot of the released page in desktop Chrome on the Mac
@@ -197,8 +201,9 @@ beside her doorstep:
 
 > "this is just not true"
 
-27. **The halo draws in desktop Chrome too**; what failed to draw it was the locally exported debug
-    build the agent tested, not the game. The man shouting has no halo there either. → M205.
+27. **The halo draws in desktop Chrome too, and the man shouting has no halo there either.** → M205.
+    The orchestrator's reading, not the player's words: the earlier finding came from the agent's
+    own locally exported debug builds.
 
 ## Then, on what comes after the layout
 
@@ -212,5 +217,6 @@ records how it was made, edited by 44 PRs):
 > "if the information is still there and the table in readme is redundant we can remove"
 
 28. **The orchestrating session takes #368 over** and builds M225 on it, after M223. → M225.
-29. **The graphics-recipes table goes**, once every row's information is confirmed to be in its own
-    evidence folder; a row whose information is only in the table moves there first. → M223.
+29. **The graphics-recipes table goes** if every row's information is in its own evidence folder
+    and the table is redundant. → M223. (Moving a row whose information is only in the table into
+    its folder first is the orchestrator's reading.)

@@ -364,18 +364,26 @@ points a second beside him.
 
 - [ ] **Reproduce it, find the cause, fix it**, with a test that fails before the fix: a rig
       standing beside him on a released-build seed, the meter and the halo both read. Say when
-      it broke and what else the same cause silences.
+      it broke and what else the same cause silences. He does this on an ordinary day, not only on
+      the day of the note ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 21), and in the
+      released page on the phone and in desktop Chrome alike, where other walkers' halos draw
+      (statements 23, 24 and 27;
+      `docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/yeller-no-halo-no-charge.png` and
+      `desktop-chrome-halo-on-a-car-yeller-none.png`).
 
+[PLAYTEST-144](playtests/PLAYTEST-144.md), statement 22: "Giving the note has to cost, too. Those
+tasks are extra challenges that revolve around proper excitement management. While a normal route
+provides an almost free optional path. Tasks are deliberately dangerous."
 
-[PLAYTEST-144](playtests/PLAYTEST-144.md), statements 21 and 22: "No the yeller had no effect on a
-regular day. Giving the note has to cost, too. Those tasks are extra challenges that revolve around
-proper excitement management. While a normal route provides an almost free optional path. Tasks
-are deliberately dangerous."
+- [ ] **Handing over a task's note costs excitement.** A task is deliberately dangerous, and the
+      ordinary route is the almost free path. Today she hands the note over at 36px, inside his
+      45px full-strength zone, and he leaves at once, so the handover lands about 3.3 points where
+      an ordinary man shouting's full charge is 62.5. Say what it costs before and after the change.
 
-- [ ] **Handing over a task's note costs excitement**: the handover of a note to a man shouting
-      happens inside his charge, not at its edge. Today she hands it over at 36px and he leaves at
-      once, which lands about 3.3 points against an ordinary man shouting's full charge. Say what
-      it costs after the change.
+      **Proposed, not asked for:** she has to stand inside his charge for a moment before the note
+      changes hands. The plainer alternative is that he keeps shouting for a while after the
+      handover before he leaves.
+
 ---
 
 ## M206 — The title screen after a game over is the right way up · found 2026-09-25
@@ -391,16 +399,19 @@ per-frame orientation poll (`main._process()`, running through pauses) cannot st
 than a frame. The player: "the only way to test this is to release it".
 
 - [ ] **The released page decides it**: after a lost day's game over on the phone, the title is
-      the right way up (`REVIEW.md`). If it is still sideways, the next pass reproduces it in a
-      debug web build in Chrome's phone emulation (`tools/export-web.sh debug`, as M205 did), and
-      asks whether it happens after every lost run and whether anything besides the title turns.
-
+      the right way up, and so is the screen after a held restart from the day summary
+      (`REVIEW.md`). If either is still wrong, the next pass asks the player whether it happens
+      every time, how long it lasts and whether anything besides the title turns, before
+      reproducing it. A locally exported debug build is not the evidence: one of those failed to
+      draw the halo where the released page draws it
+      ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 27).
 
 The player's phone, v0.18.0 ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 26, and
-`docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/after-the-restart.png`): after a held restart
-from the day summary, the screen shows the city upright with no title, where the game before it was
-drawn turned for the phone. The per-frame poll was argued to correct any wrong orientation within a
-frame; this screen stayed. The release after PR #378 tells whether its re-applied orientation fixes it.
+`docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/after-the-restart.png`), captioned "This is
+the screen when resetting": the still shows the city upright with no title after a held restart
+from the day summary, where the player's other stills show the game turned for the phone. It is
+one still, so how long that lasted is not known.
+
 ---
 
 ## M207 — A warning comes shortly before its danger · asked for 2026-09-25
@@ -689,7 +700,6 @@ the folder; the date the migration runs; a checkbox-free item with no marker; nu
       `tools/resolve-decisions-top.sh` (retired once nothing inserts at the top) and
       `tools/codex-hooks.py`.
 
-
 **Order and scope** ([PLAYTEST-144](playtests/PLAYTEST-144.md), statements 13 and 14): M223 lands
 before any new task is picked up, and M225, the counter's asks, comes next. "Split every file
 where appropriate. Even the review file": `REVIEW.md`'s list of what no person has tested yet
@@ -701,6 +711,12 @@ silently.
 
 - [ ] **The overhaul**: every open entry and review item re-read against its playtest, rewritten
       in full, and the ones that no longer apply listed for the player.
+- [ ] **The graphics-recipes table in `docs/evidence/README.md` goes** once every row's information
+      is confirmed to be in its own evidence folder ([PLAYTEST-144](playtests/PLAYTEST-144.md),
+      statement 29: "if the information is still there and the table in readme is redundant we can
+      remove"). Moving a row whose information is only in the table into its folder first is the
+      orchestrator's reading.
+
 ---
 
 ## M225 — The counter counts every attempt, a key player, and a torn poster's chase · asked for 2026-09-26
@@ -711,8 +727,10 @@ silently.
 > the site visit stat use the old account" · "After that the telemetry changes are next"
 
 [PLAYTEST-143](playtests/PLAYTEST-143.md), statements 9–11; [PLAYTEST-144](playtests/PLAYTEST-144.md),
-statement 13. PR #368 (a cloud session's, PLAYTEST-141) builds the counter; these asks are on it
-as review comments of 2026-09-26 and not yet built. Keys: a run begun with a key is reported as tap
+statements 13 and 28. PR #368 (a cloud session's, PLAYTEST-141) builds the counter; these asks are
+on it as review comments of 2026-09-26 and not yet built. The orchestrating session takes #368 over
+from the stopped cloud session ("yes, take over from the cloud session") and builds these on it,
+after M223. Keys: a run begun with a key is reported as tap
 today, so the answer to the player's question is no.
 
 - [ ] **Every game event counts every time**: events go to `nappy.goatcounter.com` (sessions off),
