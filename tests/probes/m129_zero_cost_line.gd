@@ -111,6 +111,20 @@ extends RefCounted
 ## about. `_closes_the_street` asks the other question instead: do these rows, by themselves, leave
 ## no walk from one end of this street to the other? One row first, then a pair, then the lot.
 ##
+## # Used parks
+##
+## **By default the day has none**, which is the day a run's first morning of each act is. The
+## environment variable `M129_USED_PARKS` plans every measured day after an act's first with the
+## calm area nearest the doorstep already used, the one a player is likeliest to have settled in:
+##
+##     M129_USED_PARKS=spoiled tools/test.sh probes/m129_zero_cost_line.gd
+##     M129_USED_PARKS=shut tools/test.sh probes/m129_zero_cost_line.gd
+##
+## `shut` hands it to the repaint the way `Main._start_day()` does, so it is shut where it can be
+## (`ClosurePlanner.calm_to_shut()`) and fenced; `spoiled` only tells `EventScheduler.build_day`, so
+## it is filled by the calm-ground pass (`_spoil_the_parks_she_used`) instead — the day a used park
+## gets when its shutting is refused.
+##
 ## # Sizing
 ##
 ## `SEEDS` × one day per act. Every day is a whole city's planning — a tree, a region plan,
@@ -125,6 +139,9 @@ const BASE_SEED := 129129
 ## to hold on the emptiest day too, and 9 and 13 because the region wall and its doors only exist
 ## from day 7.
 const DAYS: Array[int] = [1, 5, 9, 13]
+
+## What the days measured know about the parks she has used — see the class doc, "Used parks".
+enum UsedParks { NONE, SPOILED, SHUT }
 
 ## Spacing between samples along a row's own route, in px. Half a tile: fine enough that a swept
 ## beat has no gaps in it at any radius in the catalogue.
@@ -211,7 +228,8 @@ func run(t) -> void:
 
 func _measure() -> void:
 	var started := Time.get_ticks_msec()
-	print("\n== M129: the zero-cost line, %d seeds x one day per act %s ==" % [SEEDS, DAYS])
+	print("\n== M129: the zero-cost line, %d seeds x one day per act %s, used parks: %s ==" % [
+			SEEDS, DAYS, UsedParks.keys()[_used_parks()].to_lower()])
 
 	var readings := [Reading.BEAT_OPENING, Reading.BEAT_UNION, Reading.CATALOGUE_ONLY]
 	# reading -> act -> [clear, total]
@@ -307,12 +325,47 @@ func _measure() -> void:
 # ----------------------------------------------------------------- planning a day ---
 
 ## The corridor, the regions and the closures, in `City._close_streets`'s own order — the tree
-## first, because everything else is placed off it.
+## first, because everything else is placed off it. With `M129_USED_PARKS=shut` the used park is
+## handed to the repaint first, as `Main._start_day()` does.
 func _plan_the_day(map: CityMap, day: int) -> RouteTree:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	map.repaint(state)
+	_used = _used_by(map, day)
+	if _used_parks() == UsedParks.SHUT and not _used.is_empty():
+		map.set_spent_calm(_used)
+		map.repaint(state)
 	return RouteTree.for_day(map, day)
+
+## The day's used calm areas, set by `_plan_the_day` and read by `_place_the_day`.
+var _used: Array[Vector2i] = []
+
+func _used_parks() -> UsedParks:
+	match OS.get_environment("M129_USED_PARKS"):
+		"spoiled":
+			return UsedParks.SPOILED
+		"shut":
+			return UsedParks.SHUT
+	return UsedParks.NONE
+
+## The calm area nearest the doorstep by walking, on any measured day but an act's first; none on
+## `UsedParks.NONE`.
+func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
+	var used: Array[Vector2i] = []
+	if _used_parks() == UsedParks.NONE or day in Tuning.ACT_START_DAYS:
+		return used
+	var field := map.walk_field(map.world_to_tile(map.doorstep_world_position()))
+	var best := -1
+	var nearest := Vector2i(-1, -1)
+	for block in map.calm_blocks:
+		for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, block)):
+			var distance := map.distance_at(field, tile)
+			if distance >= 0 and (best < 0 or distance < best):
+				best = distance
+				nearest = block
+	if nearest.x >= 0:
+		used.append(nearest)
+	return used
 
 ## Everything the day stands on the streets, assembled exactly as `EventManager.start_day` does:
 ## the region's wall and doors, the closures, the held ground, the seals, the catalogue's own fill,
@@ -366,7 +419,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
 	var plans := EventScheduler.build_day(day, _rng(map, day, "events"), map, no_one_shots,
-			no_scars, no_calm, tree, 0, doors, [], standing)
+			no_scars, _used if not _used.is_empty() else no_calm, tree, 0, doors, [], standing)
 	# Which pass placed a row is not on the plan, so it is recorded as the lists are joined — the
 	# one place that still knows. See `Source`.
 	_sources.clear()

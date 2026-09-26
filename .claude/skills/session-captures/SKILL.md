@@ -14,8 +14,13 @@ For a new capture, use a display-capable session and a bounded command such as:
 tools/shot.sh /private/tmp/nappy-shot.png 4 --seed 4242 --spawn arterial --walk 2s3e
 ```
 
-New evidence goes in `docs/evidence/<mNNN|playtest-NN>-<slug>-<date>/` as the whole run folder
-under its original name (playtest-feedback, "Evidence lives in the repo"). `archive/session-captures/<date>/`
+New evidence goes in `docs/evidence/<words>-<slug>-<date>/`, where `<words>` are the two words of
+the queue entry or playtest it belongs to (`busy-otter-roof-cases-2026-09-27/`), and an entry or
+playtest from before names gives its number instead (`m203-roof-cases-2026-09-26/`,
+`playtest-144-phone-v0.18.0-2026-09-26/`) *(PLAYTEST-144, the table the player accepted:
+"`docs/evidence/busy-badger-slug-date/`, taking the entry's name")*. It holds the whole run folder
+under its original name (playtest-feedback, "Evidence lives in the repo"), and the slug says what
+it shows, so two folders for one entry differ by their slugs. `archive/session-captures/<date>/`
 holds earlier captures. *(2026-09-23: the player chose this over copying a single named PNG into
 the dated archive folder, which had drifted from playtest-feedback's "copy the whole `<run>/`
 folder" and from how every current evidence folder is actually named.)* Update every in-repo

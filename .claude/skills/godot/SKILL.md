@@ -185,13 +185,13 @@ the arithmetic it guards.
 **This applies to every `##` docstring and every `#` comment, exactly as it applies to the docs.**
 A comment states what the thing **is** and **why**, never where it came from.
 
-- **No milestone numbers.** Not `(M39, playtest 10 finding 13: …)`, not "since M33", not "for twelve
-  milestones this was wrong".
+- **No milestone numbers or entry names.** Not `(M39, playtest 10 finding 13: …)`, not "since M33",
+  not "for twelve milestones this was wrong", and not a queue entry's two words either.
 - **No former values.** Not "it was 148 until M35", not "this used to be `(1−t)²`". Keep the
   *relationship* that makes the current number right — "above the 12.0/s decay on the ground it
-  stands on" — and let `docs/DECISIONS.md` hold the story.
+  stands on" — and let the decision records under `docs/decisions/` hold the story.
 - **No narration of the fix.** "The first version parked every route against the city wall" belongs
-  in the commit message and in `DECISIONS.md`, not above the function.
+  in the commit message and in the decision record, not above the function.
 - **Keep the trap.** A comment warning that a rule is easy to get backwards, or that a value is
   load-bearing for something non-obvious, is *current* and stays. The test is whether the sentence
   is still true if you know nothing about this project's history.
