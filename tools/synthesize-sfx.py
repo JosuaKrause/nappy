@@ -27,7 +27,7 @@ TARGET_RMS_DBFS: Final = -22.5
 SUBTLE_STEP_RMS_DBFS: Final = -31.0
 QUIET_WHEEL_RMS_DBFS: Final = -38.0
 DEFAULT_SEED: Final = 260_926
-DEFAULT_OUTPUT: Final = Path("docs/evidence/copper-lark-sound-lab-2026-09-26-pass-4")
+DEFAULT_OUTPUT: Final = Path("build/sound-lab/scratch")
 ARCHIVE_NAME: Final = "copper-lark-sound-lab.zip"
 
 Signal = list[float]
@@ -160,7 +160,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         description="Generate the deterministic Copper lark A/B sound-effects audition.",
         epilog=(
             "example: uv run python tools/synthesize-sfx.py --output "
-            "docs/evidence/copper-lark-sound-lab-2026-09-26-pass-4 --seed 260926 "
+            "build/sound-lab/scratch --seed 260926 "
             "--selection subtle-revision"
         ),
     )
