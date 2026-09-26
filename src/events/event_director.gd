@@ -775,13 +775,15 @@ func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
 ## "road" tiles fail `is_driveable_at()` and this returns empty exactly where the brief asks it
 ## to: a park, a square, a precinct.
 ##
-## **Created at once, and it does not telegraph.** A row on foot that `_toward_her()` sites goes up
-## as a screen-edge warning before it exists (`EventDef.warns_before_it_exists()`); a patrol is
-## sited here in the world at the ordinary `Tuning.offscreen_lead()` margin instead, since a thing
+## **Created at once, not warned first.** A row on foot that `_toward_her()` sites goes up as a
+## screen-edge warning before it exists (`EventDef.warns_before_it_exists()`); a patrol is sited
+## here in the world at the ordinary `Tuning.offscreen_lead()` margin instead, and telegraphs on its
+## way in (`telegraph_time` 1.97s) with no badge, since 74px/s is slower than a walk and it is never
+## `hard_fail` (`EventDef.at_heat()` states it for the `PRESSES` rung) — that is why
+## `DangerEdge._is_worth_an_arrow()` gives it no badge today. Under the player's rule a thing
 ## telegraphs only if it goes fast, can end the day and comes toward her (PLAYTEST-145, statements
-## 19-24), and a patrol is neither fast nor `hard_fail` at any heat (`EventDef.at_heat()` states it
-## for the `PRESSES` rung) — not an exemption, just outside what needs telegraphing at all, so
-## `DangerEdge._is_worth_an_arrow()` rightly gives it no badge.
+## 19-24), and a patrol is neither fast nor `hard_fail`, so it needs no telegraph at all; what it
+## does instead is M226's.
 func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
 	if inward == Vector2i.ZERO:

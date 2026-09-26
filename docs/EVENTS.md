@@ -284,9 +284,9 @@ stay on the sidewalk".)* Each kind of row has its own ground:
 waits past its time until its place is both on its ground and off screen by its notice again — so it
 is never created closer than that, whatever she did while it waited.
 
-**Three kinds of thing that come from off screen are not warned first, and only one is still an
-open question.** *(PLAYTEST-145, statement 7: "all offscreen events should work like that".)* What
-is built, and what stands in the way:
+**Three kinds of thing that come from off screen are not warned first, and one of them — the
+pursuer — M226 warns first.** *(PLAYTEST-145, statement 7: "all offscreen events should work like
+that".)* What is built, and what stands in the way:
 
 - **A director-sited pursuer** (`charging_dog`, on `RUN_TAUGHT_DAY` and when the director sends it
   later) **is put in the world at once**, `Tuning.offscreen_lead()` ahead of her at its
@@ -310,17 +310,19 @@ is built, and what stands in the way:
   to "something lethal or faster than a walk", and a patrol is neither (slower than a walk, never
   `hard_fail` at any heat).
 - **A `MAP` mover** — `military_convoy` on an ordinary day from 13, the escape's trucks — **is a
-  place the day planned at dawn** and streams in at `Tuning.EVENT_STREAM_RADIUS`; its badge rises as
-  it comes. It is not `hard_fail` either, so it stays a place the plan checked at dawn rather than
-  one warning first would move into the streaming ("Do not move a guarantee out of `build_day` and
-  into the streaming", the events skill, "The day is planned whole").
+  place the day planned at dawn** and streams in at `Tuning.EVENT_STREAM_RADIUS`, with a badge
+  because 120px/s is faster than a walk (the cues rule), and the fairness contract checks it like
+  every row. Under the player's rule it needs no telegraph at all (PLAYTEST-145, statements 19-24),
+  so it is not to be warned first; what it does instead is M226's.
 
-Neither the patrol nor the convoy is exempted from the cues rule or the fairness contract above: a
-thing telegraphs only if it goes fast, can end the day and comes toward her (PLAYTEST-145,
-statements 19-24), and neither is `hard_fail`, so what governs telegraphing does not govern them at
-all. The fire engine and day 13's column — the copy of `military_convoy` `EventManager.as_warned()`
-makes — are warned first under the build above; restating the cues rule and the fairness contract
-for what needs telegraphing, and removing their warning, is M226.
+Neither the patrol nor the convoy needs telegraphing under the player's rule: a thing telegraphs
+only if it goes fast, can end the day and comes toward her (PLAYTEST-145, statements 19-24), and
+neither can end the day. As built they still telegraph in the world as they did before warning
+first — the patrol's 1.97s with no badge, the convoy's 4.43s with a badge since 120px/s outruns a
+walk — and the fairness contract checks both like every row. The fire engine and day 13's column —
+the copy of `military_convoy` `EventManager.as_warned()` makes — are warned first under the build
+above; restating the cues rule and the fairness contract for what needs telegraphing, and what
+these do instead, is M226.
 
 **The margin applies to what travels toward her, not to a crossing.** `cat_dash` keeps
 `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()`: a crossing row's whole content is a
