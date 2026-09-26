@@ -27,9 +27,9 @@ The current lab rebuilds with:
 
 ```sh
 uv run python tools/synthesize-sfx.py \
-  --output docs/evidence/copper-lark-sound-lab-2026-09-26-pass-3 \
+  --output docs/evidence/copper-lark-sound-lab-2026-09-26-pass-4 \
   --seed 260926 \
-  --selection grounded-revision
+  --selection subtle-revision
 ```
 
 It writes 48 kHz mono PCM16 WAVs, a local A/B page, an ordered comparison and a portable ZIP. It
@@ -38,10 +38,12 @@ changes.
 
 ## Make the comparison honest
 
-Use one documented level strategy across an A/B set. Leave headroom, fade file boundaries, reject
-clipped or silent files and keep piercing energy restrained. The current lab targets -22.5 dBFS RMS
-with a 0.70 peak ceiling for revised takes while preserving the old comparison bytes; this keeps
-A/B energy close but does not make perceived loudness equal.
+Use a documented level strategy across an A/B set. Leave headroom, fade file boundaries, reject
+clipped or silent files and keep piercing energy restrained. Equal RMS is useful only when the
+audition asks for an unbiased style comparison. When the listening direction itself establishes a
+level hierarchy, preserve it: the current lab keeps pass 3 at its submitted level, targets -31 dBFS
+RMS for subtler steps and -38 dBFS RMS for wheels that should sit below them, all with a 0.70 peak
+ceiling. These targets are audition proposals, not approved runtime mix values.
 
 Establish recognition and implied weight before exploring style or polish. When a listener cannot
 tell what a sound represents, preserve the rejected take and compare it directly with a focused

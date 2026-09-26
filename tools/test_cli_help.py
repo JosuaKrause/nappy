@@ -39,10 +39,10 @@ EVIDENCE_ROOT = Path(os.environ.get("NAPPY_SOUND_EVIDENCE_ROOT", str(PROJECT_ROO
 ENTRY_POINTS = ("clip.py", "reference.py", "remove-checkerboard.py", "codex-hooks.py", "synthesize-sfx.py")
 
 SOUND_FILES = (
-    "footsteps-old-grounded.wav",
-    "footsteps-revised-grounded.wav",
-    "stroller-wheels-old-grounded.wav",
-    "stroller-wheels-revised-grounded.wav",
+    "footsteps-pass-3-grounded.wav",
+    "footsteps-subtle-grounded.wav",
+    "stroller-wheels-pass-3-grounded.wav",
+    "stroller-wheels-quieter-grounded.wav",
     "comparison.wav",
 )
 
@@ -120,12 +120,12 @@ class CliHelpTests(unittest.TestCase):
 
             manifest: dict[str, Any] = json.loads(first_files["manifest.json"])
             self.assertEqual(set(manifest["files"]), set(SOUND_FILES))
-            self.assertEqual(manifest["selection"], "grounded-revision")
+            self.assertEqual(manifest["selection"], "subtle-revision")
             self.assertEqual(manifest["generator"], "recipe/synthesize-sfx.py")
             self.assertEqual(
                 manifest["generator_sha256"], hashlib.sha256(first_files["recipe/synthesize-sfx.py"]).hexdigest()
             )
-            audition_rms_db: list[float] = []
+            audition_rms_db: dict[str, float] = {}
             for filename in SOUND_FILES:
                 with self.subTest(wav=filename):
                     path = first / filename
@@ -145,11 +145,20 @@ class CliHelpTests(unittest.TestCase):
                     self.assertLess(max(abs(value) for value in samples[:16]), 700)
                     self.assertLess(max(abs(value) for value in samples[-16:]), 700)
                     if filename != "comparison.wav":
-                        audition_rms_db.append(20.0 * math.log10(rms / 32_767))
+                        audition_rms_db[filename] = 20.0 * math.log10(rms / 32_767)
                     self.assertEqual(
                         manifest["files"][filename]["sha256"], hashlib.sha256(path.read_bytes()).hexdigest()
                     )
-            self.assertLess(max(audition_rms_db) - min(audition_rms_db), 1.0, "A/B levels diverge")
+            self.assertLess(
+                audition_rms_db["footsteps-subtle-grounded.wav"],
+                audition_rms_db["footsteps-pass-3-grounded.wav"] - 6.0,
+                "new footsteps are not substantially quieter than pass 3",
+            )
+            self.assertLess(
+                audition_rms_db["stroller-wheels-quieter-grounded.wav"],
+                audition_rms_db["footsteps-subtle-grounded.wav"] - 4.0,
+                "new wheels do not sit clearly below the new footsteps",
+            )
 
             page = first_files["index.html"].decode()
             readme = first_files["README.md"].decode()
@@ -167,10 +176,10 @@ class CliHelpTests(unittest.TestCase):
                 self.assertEqual(archive.read("recipe/synthesize-sfx.py"), (TOOLS / "synthesize-sfx.py").read_bytes())
 
     def test_revision_old_files_match_player_heard_pass_when_evidence_available(self) -> None:
-        pass_one = EVIDENCE_ROOT / "copper-lark-sound-lab-2026-09-26"
+        pass_three = EVIDENCE_ROOT / "copper-lark-sound-lab-2026-09-26-pass-3"
         references = {
-            "footsteps-old-grounded.wav": pass_one / "footsteps-grounded.wav",
-            "stroller-wheels-old-grounded.wav": pass_one / "stroller-wheels-grounded.wav",
+            "footsteps-pass-3-grounded.wav": pass_three / "footsteps-revised-grounded.wav",
+            "stroller-wheels-pass-3-grounded.wav": pass_three / "stroller-wheels-revised-grounded.wav",
         }
         missing = [path for path in references.values() if not path.is_file()]
         if missing:
