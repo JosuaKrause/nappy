@@ -2050,14 +2050,21 @@ Top-down camera with a fake vertical extrusion:
   36px tall and rises four pixels into the row above, so every window on that row sits two
   pixels higher to keep its sill clear. The door's cell and a fire escape's are not blank wall:
   `Building.blank_ground_floor_cells()`, the cells a poster can go on, leaves them all out.
-- **A column with another building directly south of it draws a window instead, never a shop,
-  the blank-wall plinth, a door, a portico or a fire escape** — the same picture its own upper
-  floors already use, since every rule above only ever describes ground she can actually stand
-  on. Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's
-  own ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never
-  from anything drawn and never from a day's own closures — a covered column stays covered for
-  the whole run, the same fixed fact `CityMap.building_rects` already is. A partly covered front
-  keeps every other column's ordinary ground floor untouched: its storefront span only lands
+- **A column with another building directly south of it draws no facade at all** — no shop, blank
+  wall, window, door, portico or fire escape — since every rule above only ever describes ground
+  she can actually stand on. The building standing there instead draws its own roof deeper to meet
+  it: extended north by exactly the covered building's own `wall_tiles()` (`Building.
+  roof_extension_rows`), enough to reach the world row the covered building's roof already starts
+  at, edge to edge, with a parapet cap (`ROOF_EDGE_N`) where the two meet and a step cap
+  (`ROOF_EDGE_W`/`ROOF_EDGE_E`) wherever the extended roof sits beside a shorter column, covered or
+  not — roof meets roof, and nothing is drawn where the covered front's wall would have been.
+  Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's own
+  ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never from
+  anything drawn and never from a day's own closures — a covered column stays covered for the whole
+  run, the same fixed fact `CityMap.building_rects` already is. A power station's yard is fenced
+  ground with no roof to extend, so a column it would have covered is simply left blank, roof and
+  facade alike. A partly covered front keeps every other column's ordinary ground floor untouched:
+  its storefront span only lands
   where both of its own two columns are reachable, its entrance door is re-placed onto whichever
   reachable column the same tiering that already keeps it off a fire escape still offers (never
   simply dropped while one is reachable), and its portico — one picture across the one or two
