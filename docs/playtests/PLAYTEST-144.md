@@ -52,3 +52,12 @@ And, in the same conversation:
 7. **Each item of a queue entry is a file of its own**, written in full prose with no checkbox, and
    completing it deletes the file. An entry is then a folder: its own words and context in one
    file, one file per item beside it. → M223.
+
+Asked whether `docs/REVIEW.md`, the list of things waiting on a person and the fourth biggest source
+of conflicts, becomes files as well:
+
+> "yes, let's do review, too. rest sounds fine."
+
+8. **Each review item is a file**, under `docs/review/`, named after the entry it came from, and a
+   playtest that covers it deletes it. An item's steps are not numbered, and its name is its
+   entry's. → M223.

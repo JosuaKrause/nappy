@@ -461,7 +461,7 @@ day summary or both) was not said, so both are checked.
 > it be possible to use random words eg Mgray-busy-badger to create random but memorable tasks?" ·
 > "that numbering should be for everything that currently has a strict sequential number"
 
-[PLAYTEST-144](playtests/PLAYTEST-144.md), statements 1, 2, 4, 5, 6 and 7. Of the repo's 590 merges since
+[PLAYTEST-144](playtests/PLAYTEST-144.md), statements 1, 2, 4, 5, 6, 7 and 8. Of the repo's 590 merges since
 2026-09-01, 136 conflicted: 86 in `docs/DECISIONS.md` (every PR inserts its record at the same
 spot under `# Decisions`), 57 in `docs/TODO.md` (neighbouring entries share their `---` lines),
 23 in `docs/HANDOFF.md` and 12 in `docs/REVIEW.md`, against 6 in the most conflicted code file.
@@ -492,6 +492,9 @@ landed. Until then, entries are filed the old way.
       folder that takes these names), writes the file with its heading and date, and prints the
       name. It follows cli-tools, and gets a row in using-tools' catalogue. The lint rejects a
       duplicate name across the folders.
+- [ ] **A review item is a file**, `docs/review/<the entry's name>.md` (a second item from one
+      entry takes a suffix), deleted by the playtest that covers it. `docs/REVIEW.md` keeps only
+      its header and how a run is set up.
 - [ ] **`docs/HANDOFF.md` is written only at the end of a session**, by session-cleanup, and no
       longer by each PR. committing's "a PR carries every document its own changes make false"
       says so for HANDOFF.
