@@ -36,6 +36,8 @@ func run(t) -> void:
 	_test_a_save_from_before_the_escape_still_loads(t)
 	_test_completed_resistance_alley_tiles_survive_a_round_trip(t)
 	_test_a_save_from_before_the_alley_tiles_still_loads(t)
+	_test_the_fenced_park_survives_a_round_trip(t)
+	_test_a_save_from_before_the_fenced_park_still_loads(t)
 	_test_a_save_from_before_a_task_was_one_day_still_loads(t)
 	_test_the_posters_survive_a_round_trip(t)
 
@@ -59,12 +61,14 @@ func run(t) -> void:
 	GameSave.clear()
 	GameSave.set_path_override("")
 	GameState.restore_snapshot(baseline)
-	# `restore_snapshot()` writes every field the *snapshot* carries, and the escape's own section
-	# and the resistance's used alley tiles are deliberately not among them — see
-	# `_SAVED_OUTSIDE_THE_SNAPSHOT` — so this suite has to put both back by hand or the next one
-	# starts in the middle of an escape with somebody else's used alleys still on the list.
+	# `restore_snapshot()` writes every field the *snapshot* carries, and the escape's own section,
+	# the resistance's used alley tiles and the one fenced park are deliberately not among them —
+	# see `_SAVED_OUTSIDE_THE_SNAPSHOT` — so this suite has to put all three back by hand or the next
+	# one starts in the middle of an escape with somebody else's used alleys and fenced park still on.
 	GameState.escape_section = FinaleController.Section.NONE
 	GameState.completed_resistance_alley_tiles.clear()
+	GameState.fenced_park = Vector2i(-1, -1)
+	GameState.fenced_park_act = 0
 
 # ---------------------------------------------------------------------- policy ---
 
@@ -138,9 +142,12 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## the escape existed unreadable, for the sake of one int. `_test_a_save_from_before_the_escape_
 ## still_loads()` is what holds that. `completed_resistance_alley_tiles` rides the same way, for
 ## the same reason — `_test_a_save_from_before_the_alley_tiles_still_loads()` holds it — and so do
-## `posters`, what is pasted on the walls (`_test_the_posters_survive_a_round_trip()`).
+## `posters`, what is pasted on the walls (`_test_the_posters_survive_a_round_trip()`), and
+## `fenced_park`/`fenced_park_act`, the one calm area a run may fence
+## (`_test_a_save_from_before_the_fenced_park_still_loads()`).
 const _SAVED_OUTSIDE_THE_SNAPSHOT := [
 	"escape_section", "completed_resistance_alley_tiles", "posters",
+	"fenced_park", "fenced_park_act",
 ]
 
 ## The guard the brief asks for: a field added to `GameState` later and forgotten in
@@ -381,6 +388,47 @@ func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
 	t.check(not resumed.is_empty(), "a save with no alley tiles still resumes")
 	t.check(GameState.completed_resistance_alley_tiles.is_empty(),
 			"and the list is empty, rather than keeping whatever was in memory")
+	GameSave.clear()
+
+## The same mechanism `escape_section` rides on, for the one calm area this run has fenced (M129) —
+## closing the game mid-act must not let a second park get fenced on reopening, which is exactly
+## what forgetting `fenced_park` on reload would do.
+func _test_the_fenced_park_survives_a_round_trip(t) -> void:
+	GameState.start_run(535353)
+	GameState.fenced_park = Vector2i(6, 9)
+	GameState.fenced_park_act = 3
+	t.check(GameSave._write_now(false), "a run with a fenced park writes a save")
+	GameState.start_run(1)
+	t.check(GameState.fenced_park == Vector2i(-1, -1),
+			"a fresh run has fenced none (the check below would pass vacuously otherwise)")
+	t.check(not GameSave._read_now().is_empty(), "and the file resumes")
+	t.check(GameState.fenced_park == Vector2i(6, 9) and GameState.fenced_park_act == 3,
+			"onto the same park and the same act it was closed with")
+	GameSave.clear()
+
+## **A save written before this field existed still loads**, the same reasoning
+## `_test_a_save_from_before_the_escape_still_loads()` holds for `escape_section`: a file with no
+## mention of it is a complete save and resumes with no park fenced, by absence — the same state a
+## run that has not reached act III yet is already in, so nothing forces a second fence later.
+func _test_a_save_from_before_the_fenced_park_still_loads(t) -> void:
+	GameState.start_run(646464)
+	var old_shape := JSON.stringify({
+		"format_version": GameSave.FORMAT_VERSION,
+		"build": "a build from before this field",
+		"day_under_way": true,
+		"escape_section": GameState.escape_section,
+		"state": GameState.save_snapshot(),
+	})
+	t.check(not old_shape.contains("fenced_park"),
+			"the payload really is one with no fenced park recorded in it")
+	GameState.start_run(1)
+	GameState.fenced_park = Vector2i(3, 3)
+	GameState.fenced_park_act = 2
+	_write_raw(old_shape)
+	var resumed := GameSave._read_now()
+	t.check(not resumed.is_empty(), "a save with no fenced park still resumes")
+	t.check(GameState.fenced_park == Vector2i(-1, -1) and GameState.fenced_park_act == 0,
+			"and none is fenced, rather than keeping whatever was in memory")
 	GameSave.clear()
 
 ## **The walls survive the file, and a save from before there were posters loads with none up.**
