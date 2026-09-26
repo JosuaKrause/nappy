@@ -387,6 +387,12 @@ are deliberately dangerous."
 - [ ] **Reproduce it, fix it, and pin it with a test**: after a lost day's game over, the title
       screen is drawn in the screen's own orientation. Check the desktop and the touch layout.
 
+
+The player's phone, v0.18.0 ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 26, and
+`docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/after-the-restart.png`): after a held restart
+from the day summary, the screen shows the city upright with no title, where the game before it was
+drawn turned for the phone. The per-frame poll was argued to correct any wrong orientation within a
+frame; this screen stayed. The release after PR #378 tells whether its re-applied orientation fixes it.
 ---
 
 ## M207 — A warning comes shortly before its danger · asked for 2026-09-25

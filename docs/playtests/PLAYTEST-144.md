@@ -172,3 +172,20 @@ The orchestrator explained 9, 17, 18 and 25, and how to check the halo on a phon
     note. → M205.
 22. **Handing over a task's note costs excitement.** A task is an extra challenge about managing
     excitement and is deliberately dangerous; the ordinary route is the almost free path. → M205.
+
+## Then, on the phone (v0.18.0)
+
+Four screenshots of the released page on the player's phone, in
+`docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/`:
+
+> "Halo works" · "Yeller has no halo and doesn't move the meter" · "I guess the button works now?"
+> · "This is the screen when resetting" · "The button only activated when releasing though" · "It
+> should trigger the moment it is full"
+
+23. **The halo draws on the phone** (a car's, on day 1). → M205.
+24. **The man shouting draws no halo and does not move the meter on the phone**, on an ordinary
+    day. → M205.
+25. **The held restart fires only when the finger is lifted; it fires the moment the disc is
+    full.** → M212.
+26. **After the held restart the screen shows the city upright with no title**, where the game
+    around it was drawn turned for the phone. → M206.
