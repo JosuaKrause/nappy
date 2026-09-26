@@ -88,8 +88,12 @@ several offsets, so its draw cost also needs a separate reading.
 - `src/dev/dev_flags.gd` supplies existing crowd/event/shadow/motion skip probes. Such toggles
   are diagnostic interventions and do not by themselves establish a causal timing delta.
 
-No trustworthy current frame breakdown is available at this checkpoint. Probe code and any
-new retained evidence need review before conclusions are drawn. Run the import/boot check and
-only the affected probes/tests when resuming implementation; no local full-suite run is needed
-for this plan. Documentation-only verification is `tools/lint.sh` and a diff check. Keep the
-plan PR open; merging requires the player's authorization and independent review.
+The [measurement record](../evidence/entity-performance-2026-09-26/README.md) retains the native
+every-frame breakdown, raw streams, analyzer outputs and rejected trials. It distinguishes
+steady entity and prediction work from building-redraw spikes, and states the profiler's
+material perturbation. The player's desktop stutter observation and separate-animation request
+are in [Playtest 145](../playtests/PLAYTEST-145.md); the open implementation is M159's queue entry.
+Repeat equal active windows when measuring an optimization and keep observer/profiler settings
+explicit. Run the import/boot check and only the affected probes/tests; no local full-suite run
+is needed for this investigation. Documentation-only verification is `tools/lint.sh` and a diff
+check. Merging requires the player's authorization and independent review.

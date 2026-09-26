@@ -737,12 +737,20 @@ This establishes a reduction in query cost, while the remaining long-frame cause
 behavior still require the work below. `--frame-trace` supplies bounded raw callback intervals
 and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md#raw-frame-traces).
 
-- [ ] **Measure subsystem contributions in a crowded scene.** [PLAYTEST-145](playtests/PLAYTEST-145.md)
-      asks for time per frame with many cars and people on screen; desktop stutter reproduction
-      and phone access are not prerequisites. Record actual population and distinguish CPU
-      callback costs from render submission, GPU work and presentation. The player authorizes
-      measurements. The [crowded-scene profiling plan](plans/crowded-frame-profiling.md)
-      specifies the scene selection, per-frame attribution groups, evidence and verification.
+- [ ] **Separate scenery animation from static ground and buildings.**
+      [PLAYTEST-145](playtests/PLAYTEST-145.md) reports visible desktop stutter in the measured
+      runs and asks that animations have their own drawing, with no duplicate animated texture
+      in the static ground. The [crowded-scene measurement](evidence/entity-performance-2026-09-26/README.md)
+      finds batches of whole-building redraws; isolate the roof vents while preserving their
+      animation timing, placement, sorting and building states. Audit scenery animation for
+      the same coupling. Animate the frozen water south of the map on its own drawing layer,
+      removing its texture from the static ground; preserve the bulkhead, bridge opening,
+      map boundaries and walkability. **Proposed, not asked for:** subtle motion of the existing
+      water artwork, with an early burst for the player to judge. Keep the ground's existing
+      runtime composition; separating animation does not authorize rebaking its variants.
+      Verify that animation advances without rebuilding static draw lists or ground tiles,
+      and retain repeated before/after timing and visual evidence. The measurement and its
+      limits are filed in `DECISIONS.md`, M159, crowded-scene CPU attribution.
 - [ ] **Attribute the remaining slow intervals before another optimization.** Use the raw traces
       to select a reproducible expensive call or span, reduce that work, and retain controlled
       before/after evidence with identical-behavior checks. Establish repeatable full active-play
