@@ -1,0 +1,43 @@
+# Playtest 138 — The phone stutters, and a front nobody can stand at shows a ground floor
+
+2026-09-25. Said in conversation, after playing the released page (v0.18.0) on a phone.
+
+## What the player said
+
+> "so I tried it on mobile and it's a bit stuttery."
+
+> "also, if you have buildings like
+>
+>     ..X
+>     XXX
+>
+> the building in the back has a visible ground floor. this is confusing since you can't actually
+> walk in front of that building. we should just do a regular row of windows there"
+
+## The statements
+
+1. **The phone build stutters.** No device, browser or moment was named; M159, a slow frame names
+   the frame that was slow, already holds profiling the phone as an open item.
+2. **A front with a building directly in front of it draws its ground floor as a regular row of
+   windows**, like the floors above it, rather than shops, blank wall or a door: nobody can walk
+   in front of it, so a ground floor there says something the city does not offer. In the
+   player's picture the back building stands above the right end of a row of three, its front
+   against the roof of the building below it.
+
+## Then, on the first pictures (PR #365)
+
+The pictures showed seed 61400: a back building eight columns wide, the west four of its front
+standing against the roof of the building below it, drawn with a row of windows on the ground
+floor there, and the east four facing an open square with their shops.
+
+> "the
+>
+>     xx
+>     .x
+>
+> house situation needs a different solution. it would be easier to just extend the roof from the
+> bottom building above to the roof of the top building"
+
+3. **Where a front stands against the building in front of it, that building's roof extends up
+   to the back building's roof**, so the covered part of the back front is not drawn at all:
+   roof meets roof, with no facade between them. This replaces statement 2's row of windows.
