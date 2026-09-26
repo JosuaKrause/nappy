@@ -1,5 +1,34 @@
 # Decisions
 
+## A hook denies a `git grep` that can eat the machine's memory · built 2026-09-26
+
+*(2026-09-26, after the player's machine kernel-panicked: "let's create a hook for git grep.")*
+
+**The incident.** At 06:22 EDT on 2026-09-26 the player's 16 GB Mac panicked on a watchdog timeout
+with its memory compressor full. A read-only search sub-agent had run `git grep -n -i
+"…wrap.*corner…" <branch> -- docs/`, in a loop over six branches. The kernel log shows it killing
+`git` at about 80 GB six times, once per branch, before it found nothing left to kill. Nine
+implementation agents died with the machine.
+
+**What the measurement showed** (every probe capped at 1–2s): the cause is a missing `-I`, not the
+regex, the tree or the number of trees. Without `-I`, `git grep` runs its pattern over every blob,
+the evidence images included: over `docs/` it passed 2.7 GB in 2s and kept growing. With `-I` the
+same search finished at about 850 MB, and with a text-only pathspec (`-- 'docs/*.md'`) at 16 MB.
+BSD `grep -r` stays flat at a few MB and needs no guard. The full table is in PR #377.
+
+**What is built.** `.claude/hooks/git-grep-guard.sh`, a `PreToolUse` hook on `Bash` in
+`.claude/settings.json` and, through `tools/codex-hooks.py`, in Codex. It denies a `git grep`
+(including `git -C <dir> grep` and `git --no-pager grep`, in a loop, after `&&`, `;` or `|`, or in
+`$(…)`) that has neither `-I` nor a pathspec restricted to a known list of text extensions. The
+reason tells the model the rewrite. A mention in quotes (`echo "git grep"`, a commit message)
+passes. Claude Code's hooks documentation says settings hooks fire for a sub-agent's tool calls
+too, which is what ran the command. A hook added to `settings.json` runs only once the player has
+approved it through `/hooks`.
+
+**Choices open to overturn**: a revision-less `git grep` gets no exemption, since the working tree
+without `-I` grew fastest of all; several trees on one line get no rule of their own, since the
+branches share blobs; the extension list is explicit, so `-- '*.png'` is denied.
+
 ## M129 — A region wall or a seal may cost a route at a junction · decided 2026-09-25
 
 *([PLAYTEST-140](playtests/PLAYTEST-140.md): "it's okay if the route costs something".)*
