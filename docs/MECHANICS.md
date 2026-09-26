@@ -1142,9 +1142,11 @@ escape_distance = outer_radius − inner_radius     for anything at or below wal
                 = outer_radius                    for anything FASTER than walking
 ```
 
-The split matters for a row without a badge of its own. A stationary event, or one slower than the
-player (a dog walker at 32 px/s), only has to be walked away from, so clearing the falloff band is
-enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
+The split matters for a row that is in the world while it telegraphs, not a row without a badge of
+its own — the map-placed `military_convoy` has a badge that rises as it comes and still keeps this
+split, because it exists and telegraphs in the world rather than being warned first. A stationary
+event, or one slower than the player (a dog walker at 32 px/s), only has to be walked away from, so
+clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
 radius along the street, and the only escape is getting off its line, so it must give enough
 warning to clear the *full* radius. A row warned of before it exists is held to a different floor
 instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) from its screen-edge badge to the earliest
