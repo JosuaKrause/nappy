@@ -55,7 +55,8 @@ a building or a park has no special handling. `loose_dog` is exempt from the 2.9
 its field's minimum (2.07s; it warns 2.40s): "the loose dog can stay as short as it wants since it is
 not lethal and relatively low impact" (PLAYTEST-145, statement 11). The player's "the dog timer is
 good" was the pursuing dog's, and warning `charging_dog` first while keeping its day-3 timing is
-M226. What is still open is M207 in `TODO.md`.
+M226; M226 also fits every other offscreen warning to that dog's timing on day 3, its warning
+time and its on-screen chase, in place of the flat 2.9s ("the 2.9 is not important"). What is still open is M207 in `TODO.md`.
 
 **The table of every warned row's lead**, `tests/probes/m207_warning_lead.gd`
 (`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it). Its first printing

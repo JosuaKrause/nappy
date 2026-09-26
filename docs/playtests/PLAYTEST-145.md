@@ -71,3 +71,14 @@ Then, answering which dog, after statement 9 had been filed as possibly the loos
 13. **The warning-first system is made to work for the pursuing dog while keeping that timing.**
     → M226.
 14. **Statements 10, 12 and 13 are a later PR, not PR #372.** → M226.
+
+Then, asked which reading of "other timings should be adjusted to fit that" was meant:
+
+> "the 2.9 is not important. what is important is the timing breakdown for the pursuing dog during
+> the tutorial -- this is the gold timing with warning time and onscreen pursuing time seen as
+> correct"
+
+15. **The 2.9s is not what matters.** → M226.
+16. **The gold timing is the tutorial's pursuing dog, broken down into its warning time and its
+    on-screen pursuing time**, both seen as correct; the other offscreen warnings are fitted to that
+    breakdown. → M226.
