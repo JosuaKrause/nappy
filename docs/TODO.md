@@ -483,6 +483,11 @@ each entry says whether it is an event.
       needs only the variable, set in the shell or as a `GOATCOUNTER_TOKEN=...` line in a
       `.env` file at the repository root, which git ignores. A variable already set in the
       environment wins over the file. Written where the tool is catalogued.
+- [ ] **The API is reached only through the tool** *(2026-09-26: "make it so the interaction with
+      the API happens via script not directly")*: never a hand-written request, and a question
+      the tool cannot answer becomes a flag on it. So it also prints every path's count for a
+      range, events and page loads alike, and checks whether the key works and what it may do,
+      without ever printing the key.
 
 ---
 
