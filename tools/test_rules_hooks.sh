@@ -31,7 +31,8 @@
 #     after a text pathspec (2>/dev/null, 2>&1, > file) is not a pathspec entry, while a quoted or
 #     escaped '>' is
 #   - a Monitor script is guarded like a Bash command
-#   - a 100 KB command is checked in under half the hook's 10-second timeout, and a command over
+#   - 31 KB of the densest text, ending in a git grep only the third reading sees, is read in
+#     full in under half the hook's 10-second timeout, and a command over
 #     32 KB holding both words is denied at once without being read
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
@@ -653,21 +654,24 @@ assert_guard "a Monitor script with a guarded git grep -> allow" allow \
 assert_guard "a tool that runs no shell is not read -> allow" allow \
     'git grep -n -i foo -- docs/' Read
 
-# A command far longer than any real one still finishes well inside the hook's 10-second timeout
-# (a hook that times out lets the command through), and still denies.
-long_body="$(printf 'Lorem ipsum dolor sit amet, "quoted words", '"'"'more'"'"'; x | y (z) [w]\n%.0s' $(seq 1 1500))"
-long_start=$SECONDS
-assert_guard "a 100 KB heredoc ending in an unguarded git grep -> deny" deny \
-    "python3 - <<'PY'
-$long_body
-import os; os.system('git grep -n -i foo -- docs/')
-PY"
+# The slowest text measured, just under the 32 KB bound, is still read in full well inside the
+# hook's 10-second timeout (a hook that times out lets the command through), and still denies.
+# It is `git` on a line of its own, so every word is a candidate, and it ends in an invocation
+# only the third, quote-honouring reading can see: the first two split "/x y" into two words and
+# never reach `grep`, so all three readings run to the end.
+dense_body="$(printf 'git\n%.0s' $(seq 1 8000))"
+dense_start=$SECONDS
+assert_guard "31 KB of short words, then a git grep only reading 3 catches -> deny" deny \
+    "$dense_body
+git -C \"/x y\" grep -i foo -- docs/"
 checks=$((checks + 1))
-if [ $((SECONDS - long_start)) -lt 5 ]; then
-    echo "ok   the 100 KB command is checked in under 5 seconds"
+if [ $((SECONDS - dense_start)) -lt 5 ]; then
+    echo "ok   the 31 KB dense command is read in full in under 5 seconds"
 else
-    fail "the 100 KB command took $((SECONDS - long_start)) seconds, past half the hook's 10-second timeout"
+    fail "the 31 KB dense command took $((SECONDS - dense_start)) seconds, past half the hook's 10-second timeout"
 fi
+assert_guard "the same invocation alone is caught only by reading 3 -> deny" deny \
+    'git -C "/x y" grep -i foo -- docs/'
 
 # Past 32 KB, a text holding both words is denied without being read, even when the one
 # git grep in it is guarded; a long text without both words still allows at once.
