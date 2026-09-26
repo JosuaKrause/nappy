@@ -310,8 +310,7 @@ checks and worktrees can move independently of this file. The player's order, fr
 [PLAYTEST-144](playtests/PLAYTEST-144.md): the `git grep` hook, then M223, then M225 and a
 release; nothing else is picked up before those. At the end of the session the player tabled
 everything else: "let's table work that is not immediately important. we can let the agents
-finish what they have but we can pick up the prs later", and, on the park fence, "do not schedule
-additional work".
+finish what they have but we can pick up the prs later".
 
 - **HIGH PRIORITY: these three, in this order, and nothing else until they are done.** Each
   step waits for the one before it:
@@ -332,10 +331,6 @@ additional work".
   only so their state is known:
   - **#370, M204 and M214, the trailer's tools**: reviewed ready and CI green at its head; the
     first to merge. M204 stays queued for the player's notes on the cut.
-  - **#374, M129, a spent park is closed**: the player rejected three fence attempts and the
-    redrawn fence pieces ("the fence still doesn't look right"). Ask the player what looks wrong
-    before anything is drawn again. The PR description and its decision record also still need
-    rewriting to the player's routing answer.
   - **#372, M207, the cyclist's warning**: not ready; its record must name how raising the
     cyclist's intensity reshaped his cost with distance (dearer close in, free past about 60px).
   - **#362, M137, the trap comes to her**: built (a chasing guard after the van; the robber after
