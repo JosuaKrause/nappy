@@ -123,6 +123,10 @@ assert_exit "update-pr.sh --help" zero ./tools/update-pr.sh --help
 assert_exit "update-pr.sh -h"     zero ./tools/update-pr.sh -h
 assert_exit "land-prs.sh --help" zero ./tools/land-prs.sh --help
 assert_exit "land-prs.sh -h"     zero ./tools/land-prs.sh -h
+assert_exit "new-name.sh --help" zero ./tools/new-name.sh --help
+assert_exit "new-name.sh -h"     zero ./tools/new-name.sh -h
+assert_exit "decisions.sh --help" zero ./tools/decisions.sh --help
+assert_exit "decisions.sh -h"     zero ./tools/decisions.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "ci-costs.sh --bogus"        nonzero ./tools/ci-costs.sh --bogus
@@ -165,6 +169,13 @@ assert_exit "land-prs.sh (no PR)"        nonzero ./tools/land-prs.sh
 assert_exit "land-prs.sh (bad PR number)" nonzero ./tools/land-prs.sh abc
 assert_exit "land-prs.sh --timeout (missing value)" nonzero ./tools/land-prs.sh --timeout
 assert_exit "land-prs.sh --timeout (not a number)"  nonzero ./tools/land-prs.sh --timeout foo 1
+assert_exit "new-name.sh --bogus" nonzero ./tools/new-name.sh --bogus todo "x"
+# A name with no kind or no title would write an empty or an unfindable thing, so it writes none.
+assert_exit "new-name.sh (no title)" nonzero ./tools/new-name.sh todo
+assert_exit "new-name.sh (unknown kind)" nonzero ./tools/new-name.sh entry "x"
+assert_exit "new-name.sh --entry on a todo" nonzero ./tools/new-name.sh todo --entry M1 "x"
+assert_exit "decisions.sh --bogus" nonzero ./tools/decisions.sh --bogus
+assert_exit "decisions.sh --in (unknown folder)" nonzero ./tools/decisions.sh --in archive M129
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and
@@ -474,6 +485,61 @@ while read -r flag; do
         failures=$(( failures + 1 ))
     fi
 done < <(dev_flag_names)
+
+# ------------------------------------------------- new-name.sh and decisions.sh, on a scratch tree ---
+# Both work on the repository they sit in, so they are copied into a throwaway tree with a docs/
+# of its own: new-name.sh must write what it names and never reuse a pair of words, and
+# decisions.sh must find a record by its title and by its text.
+names_repo="$work_dir/names-repo"
+mkdir -p "$names_repo/tools/names" "$names_repo/docs/todo/2026-09-26-M210" "$names_repo/docs/decisions" \
+    "$names_repo/docs/review" "$names_repo/docs/playtests"
+cp "$root/tools/new-name.sh" "$root/tools/decisions.sh" "$names_repo/tools/"
+printf 'busy\n' > "$names_repo/tools/names/adjectives.txt"
+printf 'badger\notter\n' > "$names_repo/tools/names/animals.txt"
+printf '## M210 — The brief is the coming day\x27s · asked for 2026-09-26\n' \
+    > "$names_repo/docs/todo/2026-09-26-M210/README.md"
+printf '# Playtest busy-badger — Taken\n' > "$names_repo/docs/playtests/2026-09-01-busy-badger.md"
+
+check_that() {
+    checks=$(( checks + 1 ))
+    if eval "$2"; then
+        echo "ok   $1"
+    else
+        echo "FAIL $1" >&2
+        failures=$(( failures + 1 ))
+    fi
+}
+
+made="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-27 todo "Stars for nerves" 2>/dev/null)"
+check_that "new-name.sh takes the one pair not already used, in any folder, whatever its date" \
+    '[[ "$made" == 2026-09-27-busy-otter ]]'
+check_that "new-name.sh writes the entry's context file with its heading and date" \
+    'grep -qx "# busy-otter — Stars for nerves · filed 2026-09-27" "$names_repo/docs/todo/2026-09-27-busy-otter/README.md"'
+out="$(cd "$names_repo" && ./tools/new-name.sh playtest "No words left" 2>&1)"
+status=$?
+check_that "new-name.sh refuses when every pair is taken, and writes nothing" \
+    '[[ $status -ne 0 && $(ls "$names_repo/docs/playtests" | wc -l | tr -d " ") -eq 1 ]]'
+first="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look at it" 2>/dev/null)"
+second="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look again" 2>/dev/null)"
+check_that "new-name.sh names a review item after its entry, and a second one with -2" \
+    '[[ "$first" == 2026-09-27-busy-otter && "$second" == 2026-09-27-busy-otter-2 ]]'
+closed="$(cd "$names_repo" && ./tools/new-name.sh decision --entry M210 "Built" 2>/dev/null)"
+check_that "new-name.sh names an old entry's decision by its folder" \
+    '[[ "$closed" == 2026-09-26-M210 && -s "$names_repo/docs/decisions/2026-09-26-M210.md" ]]'
+if command -v rg >/dev/null 2>&1; then
+    printf 'The brief says what is coming, spent or not.\n' >> "$names_repo/docs/decisions/2026-09-26-M210.md"
+    found="$(cd "$names_repo" && ./tools/decisions.sh M210)"
+    check_that "decisions.sh finds a record by the milestone in its title" \
+        '[[ "$found" == "docs/decisions/2026-09-26-M210.md  M210 — Built · "* ]]'
+    found="$(cd "$names_repo" && ./tools/decisions.sh --in all spent coming)"
+    check_that "decisions.sh finds a record by words only in its text, under its own line" \
+        '[[ "$found" == $'"'"'-- in the text:\ndocs/decisions/2026-09-26-M210.md'"'"'* ]]'
+    (cd "$names_repo" && ./tools/decisions.sh nothing-says-this >/dev/null 2>&1)
+    status=$?
+    check_that "decisions.sh exits non-zero when nothing matches" '[[ $status -ne 0 ]]'
+else
+    echo "skip decisions.sh's search cases: rg is not on PATH"
+fi
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
