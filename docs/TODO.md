@@ -366,6 +366,16 @@ points a second beside him.
       standing beside him on a released-build seed, the meter and the halo both read. Say when
       it broke and what else the same cause silences.
 
+
+[PLAYTEST-144](playtests/PLAYTEST-144.md), statements 21 and 22: "No the yeller had no effect on a
+regular day. Giving the note has to cost, too. Those tasks are extra challenges that revolve around
+proper excitement management. While a normal route provides an almost free optional path. Tasks
+are deliberately dangerous."
+
+- [ ] **Handing over a task's note costs excitement**: the handover of a note to a man shouting
+      happens inside his charge, not at its edge. Today she hands it over at 36px and he leaves at
+      once, which lands about 3.3 points against an ordinary man shouting's full charge. Say what
+      it costs after the change.
 ---
 
 ## M206 — The title screen after a game over is the right way up · found 2026-09-25

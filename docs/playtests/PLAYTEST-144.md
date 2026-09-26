@@ -152,3 +152,23 @@ edge stays blank (M203); 25, the day-6 handover ends the man shouting's charge a
     wait on the explanations asked for, and 15–18, the roof cases, on the pictures. Of 11, the
     answer names the van and the man shouting; the burnt shell and the roadblock go back to their
     waiting guard as the smallest reading, open to the player.
+
+## Then, on the explanations
+
+The orchestrator explained 9, 17, 18 and 25, and how to check the halo on a phone. The player:
+
+> "17. You can just use rng when extending too the while prices is deterministic so a fixed seed
+> will still produce the same results. How would a building face offsceeen? There is always a
+> road, no? 25. No the yeller had no effect on a regular day. Giving the note has to cost, too.
+> Those tasks are extra challenges that revolve around proper excitement management. While a
+> normal route provides an almost free optional path. Tasks are deliberately dangerous. How can I
+> look at the trailer? Any other input needed from me? Will create a screenshot"
+
+19. **An extended roof carries roof furniture too**, rolled from the seed like the rest, so a fixed
+    seed still gives the same city. → M203.
+20. **A front facing the map's edge should not exist**, since a street always runs there; if the
+    case is unreachable it goes. → M203.
+21. **The man shouting had no effect on the meter on an ordinary day**, not only on the day of the
+    note. → M205.
+22. **Handing over a task's note costs excitement.** A task is an extra challenge about managing
+    excitement and is deliberately dangerous; the ordinary route is the almost free path. → M205.
