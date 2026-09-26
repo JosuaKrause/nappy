@@ -23,6 +23,7 @@ func run(t) -> void:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 37))
 	_test_a_used_area_is_taken_off_the_tree_and_stays_open(t)
 	_test_the_fenced_park_closes_every_entrance(t)
+	_test_the_fence_turns_each_corner_on_one_post(t)
 	_test_the_guarantees_hold_with_the_fenced_park(t)
 	_test_a_never_used_park_is_unaffected(t)
 	_test_the_day_spoils_every_shut_area_but_the_fenced_one(t)
@@ -229,6 +230,54 @@ func _test_the_fenced_park_closes_every_entrance(t) -> void:
 					t.check(covered, "seed %d day %d: the way in at %s of fenced %s is fenced"
 							% [map.seed_used, day, tile, block])
 	t.check(checked > 0, "the sweep had a fenced park to check (%d)" % checked)
+
+## Two runs that meet at a corner of the area turn on it as one fence: each line ends exactly at
+## the corner of the two fence lines (neither stops short of it nor runs past it), one post stands
+## there and only one, and an end that turns no corner ends on a post of its own on its own ground.
+## Asked of every calm area of every map, whether or not the sweep ever fences it, since which one
+## is fenced is a matter of the day and the corners are a matter of the ground.
+func _test_the_fence_turns_each_corner_on_one_post(t) -> void:
+	var corners := 0
+	var open_ends := 0
+	for map in _maps:
+		var none: Array[Vector2i] = []
+		_repaint(map, 9, none)
+		for block in map.calm_blocks:
+			var fences := ParkClosure.fence(map, block)
+			var posts := {}
+			for fence in fences:
+				for at in fence.posts(map):
+					t.check(not posts.has(at), "seed %d %s: one post at %s, not two"
+							% [map.seed_used, block, at])
+					posts[at] = true
+			for fence in fences:
+				t.check(fence.barrier_width() > 0.0, "seed %d %s: a run of %s has length"
+						% [map.seed_used, block, fence.segment.tile_rect()])
+				for end: Array in [[fence.joined_start, fence.from_along, 1.0],
+						[fence.joined_end, fence.to_along, -1.0]]:
+					var joined: bool = end[0]
+					var along: float = end[1]
+					var inward: float = end[2]
+					var point := fence._point(along)
+					if not joined:
+						open_ends += 1
+						t.check(posts.has(fence._point(along + inward * ParkClosure.POST_HALF)),
+								"seed %d %s: the open end at %s ends on its own post"
+								% [map.seed_used, block, point])
+						continue
+					corners += 1
+					var meets := 0
+					for other in fences:
+						if other != fence and (other._point(other.from_along) == point
+								or other._point(other.to_along) == point):
+							meets += 1
+					t.check(meets == 1, "seed %d %s: the run ending at %s meets exactly one "
+							% [map.seed_used, block, point] + "other run there (%d)" % meets)
+					t.check(posts.has(point), "seed %d %s: a post stands at the corner %s"
+							% [map.seed_used, block, point])
+	t.check(corners > 0, "the sweep had corners to turn (%d)" % corners)
+	print("  fence corners: %d run ends turn a corner, %d end on a post of their own"
+			% [corners, open_ends])
 
 func _edge_tiles(rect: Rect2i, out: Vector2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []

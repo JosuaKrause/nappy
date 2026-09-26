@@ -9,22 +9,28 @@ player turned down (`docs/playtests/PLAYTEST-140.md`, "Then, on the first pictur
 
 The design is now: **every** used calm area is spoiled with events, the way it always was, and the
 day's route tree plans around it — no barrier, ground stays walkable. **One** area, at most once a
-run and never before act III, gets `ParkClosure`'s fence instead. These three stills are of that one
-fenced park, with the corner defect the player flagged fixed.
+run and never before act III, gets `ParkClosure`'s fence instead. The stills are of that one fenced
+park.
 
-## What was wrong with the corners, and the fix
+## The corners
 
-The old `ParkClosure.mouth_centres()` covered a long run with several `Tuning.STREET_WIDTH`-wide
-lines, spaced to overlap on purpose so panels never left a gap — which read as doubled rails
-wherever they overlapped, and let two edges' lines both reach into the same corner tile and cross
-there instead of meeting. Now:
+The player on the second attempt's corners: "The corners of the park barrier are not fixed. Now
+they're just disconnected. Do a proper fix." The west and east runs stopped one tile short of each
+corner, so their end-on column ended about 30px below the north rails and never touched them, and
+the north and south rails ran half a barrier's depth past the side lines. Now the fence turns each
+corner as one fence:
 
-- `RoadClosure.barrier_width()` (default: a street's own width) is overridden on `ParkClosure` to
-  return the *run's own length*, so `City._spawn_barrier()` tiles one continuous rail across exactly
-  that length — no overlap, no gap, one line per side.
-- `UP`/`DOWN` runs keep the whole side, corner tiles included; `LEFT`/`RIGHT` runs stop one tile
-  short of each end, so the two edges never both claim the same corner tile. See
-  `ParkClosure._entrance_runs()`.
+- Every side's run covers its own corner tiles, and where two sides' runs share a corner tile both
+  lines stop exactly at the corner of the two fence lines (`ParkClosure.fence()`), so neither stops
+  short of the other nor runs past it.
+- One post stands at that corner, a new picture, `art/closures/barrier_post.svg`: steel grey like
+  the panels' own posts but as wide as the end-on column's two rails, capped, on a foot plate. The
+  north and south rails end behind its middle.
+- The west and east columns are drawn at the broadside rails' height (`ParkClosure.RAIL_RISE`, the
+  lower rail's 7.4px), so a column leaves the north corner post right under the north rails and runs
+  in behind the south rails and post. Its feet and its collision stay on the ground.
+- An end-on panel stands its feet at the near end of its share, so the column covers its own ground
+  rather than standing half a panel up the screen from it.
 
 ## Why these are not a `tools/shot.sh` capture
 
@@ -44,8 +50,11 @@ the route tree and chosen as the run's one fenced park.
 
 ## The stills
 
-- `corner-nw.png` — the fenced park's north-west corner: the top rail keeps the whole side including
-  the corner tile, the left rail stops flush against it, one sign per side, no overshoot.
-- `corner-se.png` — the opposite (south-east) corner, same joint on the other axis.
-- `whole.png` — pulled back far enough to see all four sides at once: one rail per side, one sign
-  each, trees inside the fence but clear of every rail, no doubled panels anywhere along a run.
+Seed 14040, day 9, camera at the stroller's own play zoom (2). In the two corner sheets the cells
+are the NW and NE corners over the SW and SE ones, each a 320x240 crop centred on the area's own
+corner; the 3x sheet is the same pixels enlarged with nearest-neighbour.
+
+- `attempt3-corners-1x.png`, `attempt3-corners-3x.png` — the four corners as they are drawn now.
+- `attempt3-whole.png` — the whole fenced park at play zoom.
+- `before-corners-1x.png`, `before-corners-3x.png` — the same four crops of the second attempt, the
+  one the player turned down, for comparison.
