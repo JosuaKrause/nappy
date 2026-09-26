@@ -73,15 +73,20 @@ because nothing checks a route around a thing with no tile.
 **For a row warned of before it exists, "becomes visible" is its badge**, and the contract holds
 `EventDef.warning_time()` — the badge to the earliest it can reach her — against
 `minimum_telegraph()`, which for such a row is the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s, the
-player's time to react and think), never a figure worked out from its field or speed.
+player's time to react and think), never a figure worked out from its field or speed — the fire
+engine and day 13's column included, whose place follows her so a walk out of their field is not
+one she can take during the badge. The one exemption is `loose_dog`
+(`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`), which keeps its field's minimum: *"the loose dog can stay
+as short as it wants since it is not lethal and relatively low impact"* (PLAYTEST-145).
 
 ## Everything from off screen is warned first, and spawns where it points
 
 *(PLAYTEST-145: "the warning appears by itself with a reasonable position and when the time is
 right the object is spawned in at that location just offscreen".)* A row that arrives from off
-screen under the screen-edge badge — `cyclist` and `loose_dog` (`warns_before_it_exists()`), the
-fire engine, day 13's column — is a `PendingWarning` first (`EventManager.warn_first()`): nothing in
-the world, the badge up at once, its place following her each frame just off screen
+screen under the screen-edge badge — `cyclist` and `loose_dog`, the fire engine, day 13's column,
+each a row `warns_before_it_exists()` answers true for (the engine flagged `warned_first` on its
+row, the column's copy made so by `EventManager.as_warned()`, which every warning goes through) —
+is a `PendingWarning` first (`EventManager.warn_first()`): nothing in the world, the badge up at once, its place following her each frame just off screen
 (`Tuning.offscreen_lead()` along its own ray) **on ground that makes sense for the thing** — a
 sidewalk for the bike and the dog, the road on its way to the fire for the engine, its lane for the
 column — moved sideways or further out to reach that ground, never nearer. When its own

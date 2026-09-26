@@ -218,10 +218,12 @@ forced queue alone: there is no ordinary queue under it for this to add to or re
 is created where the warning points.** *(PLAYTEST-145: "how offscreen warnings and placements should
 work is that the warning appears by itself with a reasonable position and when the time is right the
 object is spawned in at that location just offscreen. that way even if you keep moving the object
-will move with you until it is actually spawned".)* Four arrive that way: `cyclist` and `loose_dog`,
-the `TOWARD_PLAYER` rows on foot the director sites down her line (`EventDef.warns_before_it_exists()`);
-`fire_truck`, the moment `burning_building` is seen; and day 13's column of `military_convoy`
-trucks (`ResistanceHappenings`). When one is sited, nothing is put in the world. A `PendingWarning`
+will move with you until it is actually spawned".)* Four arrive that way, and each is a row
+`EventDef.warns_before_it_exists()` answers true for: `cyclist` and `loose_dog`, the `TOWARD_PLAYER`
+rows on foot the director sites down her line; `fire_truck`, the moment `burning_building` is seen
+(flagged `warned_first` on its row); and day 13's column of `military_convoy` trucks
+(`ResistanceHappenings`), a copy of the row made `warned_first` by `EventManager.as_warned()`, which
+everything put up as a warning goes through. When one is sited, nothing is put in the world. A `PendingWarning`
 is put up instead (`EventManager.warn_first()`), and `DangerEdge` draws its badge from that frame,
 pointing at the place the thing will come from.
 
@@ -1192,7 +1194,7 @@ All implemented.
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
 | `burning_building` | ONE_SHOT | 3 | Against a frontage, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is — and **sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, beyond the streaming band across the block and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking further along that route. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, you cannot walk through the fire, and the shell it leaves stands where it actually burned. |
-| `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md), warned of first — its badge goes up the moment the fire is seen, pointing up the fire's own street, and it is created just off screen on that road once the telegraph is over — and driving to the near kerb across from it. **It parks there for the rest of the day** (`stops_where_it_arrives`): a standing 26/s field out to 340px beside a fire she was led to is what makes the pair a street to turn round on — *"a fire engine has a high cost"*, *"you're not supposed to go past it"* (PLAYTEST-119). It has no body, so what it closes is the ground its field covers rather than the road itself. |
+| `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph, its whole warning and held to the flat minimum a warning first owes (see "Telegraph contract"), warned of first — its badge goes up the moment the fire is seen, pointing up the fire's own street, and it is created just off screen on that road once the telegraph is over — and driving to the near kerb across from it. **It parks there for the rest of the day** (`stops_where_it_arrives`): a standing 26/s field out to 340px beside a fire she was led to is what makes the pair a street to turn round on — *"a fire engine has a high cost"*, *"you're not supposed to go past it"* (PLAYTEST-119). It has no body, so what it closes is the ground its field covers rather than the road itself. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a
 neighbourhood's own rather than a patrol's.
@@ -1429,8 +1431,13 @@ other row it is `telegraph_time`, the time between appearing and being at full s
 **And the minimum it is held to is flat: `Tuning.OFFSCREEN_WARNING_MIN`, 2.9s**, not worked out from
 its field or its speed. *(2026-09-26, the player: "to a human 100ms feels instant, 1s is time needed
 to react to something, 2.9s is a fair time to react and *think* about what to do. so I'd file mark
-that as the minimum.")* `EventDef.minimum_telegraph()` answers it for a row warned of before it
-exists, and `Tuning.validate_warning()` checks it; every other row keeps the minimum its field sets.
+that as the minimum.")* `EventDef.minimum_telegraph()` answers it for every row warned of before
+it exists — the cyclist, the fire engine and day 13's column — and `Tuning.validate_warning()`
+checks it; every other row keeps the minimum its field sets. A field-derived floor is the walk out
+of a field, and a thing warned first has no field to walk out of until it exists, while its place
+follows her all through the badge. The engine's 6.27s and the column's 4.43s clear it by a wide
+margin; fitting them to the pursuing dog's day-3 timing is M226, the pursuing dog keeps its day-3
+timing and the other warnings fit it, in `TODO.md`.
 The cyclist's `telegraph_time` is the smallest hundredth that clears it: 2.13s of badge, then 0.77s
 from 231px out to his 33px reach at 257px/s of closing, 2.90s in all. `loose_dog` is held to its
 field's minimum instead (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`): 2.40s from its badge to its field,

@@ -1823,8 +1823,10 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## the earliest it can reach her — flat, and not worked out from its field or its speed. *(2026-09-26,
 ## the player: "to a human 100ms feels instant, 1s is time needed to react to something, 2.9s is a
 ## fair time to react and *think* about what to do. so I'd file mark that as the minimum.")*
-## `EventDef.minimum_telegraph()` answers it for a row warned of before it exists; every other row
-## keeps the minimum its field sets (`required_telegraph_time()`).
+## `EventDef.minimum_telegraph()` answers it for every row warned of before it exists
+## (`EventDef.warns_before_it_exists()`: the cyclist, the fire engine, day 13's column), whose place
+## follows her until it exists, so the walk out of its field that `required_telegraph_time()` prices
+## is not a walk she can take during the badge; every other row keeps the minimum its field sets.
 const OFFSCREEN_WARNING_MIN := 2.9
 ## Rows warned of before they exist that are held to their field's minimum
 ## (`required_telegraph_time()`) instead of `OFFSCREEN_WARNING_MIN`. `loose_dog` warns 2.40s from
@@ -2204,9 +2206,9 @@ func degradation_for(day: int) -> float:
 ## an event becomes visible must clear its outer radius before it reaches full intensity.
 ##
 ## `warning` is the seconds from that instant to the earliest it can reach her —
-## `EventDef.warning_time()`: the telegraph for a row that is in the world while it telegraphs, and
-## the badge-to-reach time for one warned of before it exists, whose badge is the instant it becomes
-## visible. Held against `required_telegraph_time()`.
+## `EventDef.warning_time()`, which for a row in the world while it telegraphs is its telegraph.
+## Held against `required_telegraph_time()`. A row warned of before it exists is checked by
+## `validate_warning()` instead.
 ##
 ## Returns true if the geometry is fair; pushes an error and returns false if it is not.
 func validate_event(id: String, warning: float, inner_radius: float,
@@ -2222,8 +2224,8 @@ func validate_event(id: String, warning: float, inner_radius: float,
 
 ## The same contract for a row warned of before it exists, whose minimum is not its geometry's:
 ## `warning` (`EventDef.warning_time()`, from its badge to its reach) against `minimum`
-## (`EventDef.minimum_telegraph()`, `OFFSCREEN_WARNING_MIN`). Pushes an error and returns false if
-## it is short.
+## (`EventDef.minimum_telegraph()`: `OFFSCREEN_WARNING_MIN`, or for the one exempt row its field's
+## minimum). Pushes an error and returns false if it is short.
 func validate_warning(id: String, warning: float, minimum: float) -> bool:
 	if warning + 0.001 < minimum:
 		push_error("Unfair event '%s': warned %.2fs before it can reach her < required %.2fs"

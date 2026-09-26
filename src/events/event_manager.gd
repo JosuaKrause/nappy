@@ -718,9 +718,12 @@ func pending_warnings() -> Array[PendingWarning]:
 ## standing at `her`, and hands `arrive` the place once the row's own `telegraph_time` is over — see
 ## `PendingWarning` for both callables. Returns the warning, or null when `where` has no place for it
 ## on the thing's own ground right now, in which case nothing is up and the caller asks again later.
+##
+## **Whatever comes through here is a row warned of before it exists** (`as_warned()`), so the
+## fairness contract holds it to the flat `Tuning.OFFSCREEN_WARNING_MIN` whichever caller sent it.
 func warn_first(def: EventDef, her: Vector2, where: Callable,
 		arrive: Callable) -> PendingWarning:
-	var warning := PendingWarning.new(def, where, arrive)
+	var warning := PendingWarning.new(as_warned(def), where, arrive)
 	if not warning.follow(her):
 		return null
 	_pending.append(warning)
@@ -730,10 +733,17 @@ func warn_first(def: EventDef, her: Vector2, where: Callable,
 ## existed: from its first frame it is what it is after its telegraph — lethal, for a `hard_fail`
 ## row, and at its own intensity for a loud one.
 func spawn_warned(def: EventDef, path: PackedVector2Array) -> EventInstance:
-	var instance := _spawn_unplanned(def, path[0], path)
+	var instance := _spawn_unplanned(as_warned(def), path[0], path)
 	instance.resume(def.telegraph_time, 0.0)
 	instance.came_under_a_warning = true
 	return instance
+
+## `def` as a row warned of before it exists (`EventDef.warns_before_it_exists()`): itself when it
+## already is one — `cyclist`, `loose_dog`, the fire engine — and otherwise its
+## `EventDef.as_warned_first()` copy, which is how day 13's column of `military_convoy`, a row the
+## day otherwise plans as a place, is held to the minimum a warning first owes.
+static func as_warned(def: EventDef) -> EventDef:
+	return def if def.warns_before_it_exists() else def.as_warned_first()
 
 ## Moves every warning's place with her, standing at `here`, and creates what is due. Run every
 ## frame there is a player.

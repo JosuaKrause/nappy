@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_a_protest_stays_something_she_can_be_routed_through(t)
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 	_test_catalogue_is_fair(t)
+	_test_a_warning_first_is_owed_a_flat_minimum(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
@@ -119,6 +120,41 @@ func _test_catalogue_is_fair(t) -> void:
 	var playground := EventCatalogue.by_id("playground")
 	t.check(playground.kind == GameEnums.EventKind.AMBIENT,
 			"the playground is ambient, so its zero telegraph is intended")
+
+## **Every row warned of before it exists is owed the same flat minimum, whatever its field and its
+## speed.** *(PLAYTEST-145: "I don't like that the warning is tied to the size of the field or the
+## speed" · "all offscreen events should work like that".)* Asked of every such row — the catalogue's
+## own (`cyclist`, the fire engine) and day 13's column, the copy of `military_convoy` that
+## `EventManager.as_warned()` makes of it — and asked as a relation: widening its field and speeding
+## it up leaves its `minimum_telegraph()` where it was, at `Tuning.OFFSCREEN_WARNING_MIN`. `loose_dog`
+## is the one row exempt (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`: "the loose dog can stay as short as
+## it wants"), and keeps its field's minimum.
+func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
+	var warned: Array[EventDef] = []
+	for def in EventCatalogue.all():
+		if def.warns_before_it_exists() and not Tuning.OFFSCREEN_WARNING_MIN_EXEMPT.has(def.id):
+			warned.append(def)
+	var column := EventManager.as_warned(EventCatalogue.by_id("military_convoy"))
+	warned.append(column)
+	var ids: Array[String] = []
+	for def in warned:
+		ids.append(def.id)
+		var wider: EventDef = def.duplicate()
+		wider.shape = def.shape
+		wider.outer_radius *= 1.5
+		wider.speed *= 1.5
+		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
+				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),
+				("'%s' is warned first and owed %.2fs, and %.2fs with a field half as wide again "
+				% [def.id, def.minimum_telegraph(), wider.minimum_telegraph()])
+				+ "and half as fast again: the flat %.2fs either way" % Tuning.OFFSCREEN_WARNING_MIN)
+		t.check(def.validate(), "and '%s' gives it" % def.id)
+	for id in ["cyclist", "fire_truck", "military_convoy"]:
+		t.check(ids.has(id), "'%s' is among the rows warned first (%s)" % [id, ", ".join(ids)])
+	var dog := EventCatalogue.by_id("loose_dog")
+	t.check(dog.warns_before_it_exists() and dog.minimum_telegraph() < Tuning.OFFSCREEN_WARNING_MIN,
+			"'loose_dog' is warned first and keeps its field's %.2fs, under the flat minimum"
+			% dog.minimum_telegraph())
 
 ## **A body on a pavement has to fit on the pavement — the whole of it, not the lane it happened to
 ## be planned on.** `_draw_spread` and its cousins draw a body at exactly the width `obstructs_radius`

@@ -5,6 +5,7 @@ extends RefCounted
 ## can see to the earliest moment the thing can reach her**, for the three answers she can give the
 ## instant she sees it — keep walking into it, stop, or turn round and walk away — against the floor
 ## the row's own fairness contract sets (`EventDef.minimum_telegraph()`:
+## `Tuning.OFFSCREEN_WARNING_MIN` for a row warned of before it exists, `loose_dog` excepted,
 ## `Tuning.required_telegraph_time()` for an ordinary row, `Tuning.PURSUIT_MIN_NOTICE` for a
 ## pursuer). Not a suite: it prints a table rather than asserting one, so it lives under
 ## `tests/probes/`, where the runner never discovers it, and runs only by name:
@@ -155,11 +156,14 @@ static func encounters() -> Array[Dictionary]:
 	# Day 13's column: warned in its lane of the main road, level with her; the front truck, driving
 	# south at her as she walks north beside the lane.
 	var lane_x := -Tuning.TILE_SIZE * 1.5
+	# The copy of the row the column is made of (`EventManager.as_warned()`), held to the minimum a
+	# warning first owes.
+	var column := EventManager.as_warned(convoy)
 	var lane_where := func(her: Vector2) -> Vector2:
-		return PendingWarning.in_its_lane(convoy, her, lane_x, 1.0, -1.0e6, 1.0e6)
+		return PendingWarning.in_its_lane(column, her, lane_x, 1.0, -1.0e6, 1.0e6)
 	var lane_route := func(place: Vector2, _her: Vector2) -> PackedVector2Array:
 		return PackedVector2Array([place, place + Vector2(0.0, 4000.0)])
-	list.append(_warned(convoy, "day 13's column, warned in its lane", lane_where, lane_route, up))
+	list.append(_warned(column, "day 13's column, warned in its lane", lane_where, lane_route, up))
 
 	# `pigeon_flock`: waits, quiet, until she is within `pursues_within`, then goes up.
 	var flock := EventCatalogue.by_id("pigeon_flock")

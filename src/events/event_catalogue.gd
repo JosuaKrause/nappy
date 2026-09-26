@@ -783,13 +783,13 @@ static func _fire_truck() -> EventDef:
 	def.intensity = 26.0
 	def.inner_radius = 70.0
 	def.outer_radius = 340.0
-	# A truck at 190px/s outruns a walk, so the fairness rule demands the FULL forward reach of
-	# clearance, not just the falloff band — and a field moving that fast reaches further ahead of
-	# itself than its own catalogued radius: `outer_radius · Tuning.field_scale(e)` (e = 0.38) is
-	# 548px, 5.96s, plus the margin the row already carried. It is the engine's whole warning: the
-	# badge goes up the moment the fire is seen and the engine is created just off screen on its road
-	# when this is over — see `EventManager._summon_the_sighted_row()`.
+	# The engine's whole warning: the badge goes up the moment the fire is seen and the engine is
+	# created just off screen on its road when this is over — see
+	# `EventManager._summon_the_sighted_row()`. Warned first, so the contract holds it to the flat
+	# `Tuning.OFFSCREEN_WARNING_MIN`, which this clears by a wide margin; fitting it to the pursuing
+	# dog's day-3 timing is M226 in `docs/TODO.md`.
 	def.telegraph_time = 6.27
+	def.warned_first = true
 	def.mobile = true
 	def.speed = 190.0
 	# And it stays at the fire once it gets there. See `EventDef.stops_where_it_arrives`: the
@@ -1980,9 +1980,10 @@ static func _military_convoy() -> EventDef:
 	def.intensity = 22.0
 	def.inner_radius = 76.0
 	def.outer_radius = 300.0
-	# Faster than a walk, so the escape distance is the forward reach: `outer_radius ·
-	# Tuning.field_scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the margin the row already
-	# carried.
+	# As a place the day planned, faster than a walk, so the escape distance is the forward reach:
+	# `outer_radius · Tuning.field_scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the margin
+	# the row already carried. Day 13's column is this row warned first
+	# (`EventManager.as_warned()`), and that copy is held to the flat `Tuning.OFFSCREEN_WARNING_MIN`.
 	def.telegraph_time = 4.43
 	def.mobile = true
 	def.speed = 120.0

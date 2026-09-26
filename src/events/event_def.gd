@@ -395,6 +395,14 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## this is only how far off screen he is then created.
 @export var offscreen_notice := Tuning.OFFSCREEN_NOTICE
 
+## Whether this row, whatever its `spawn_mode`, only ever enters the world under a warning that runs
+## before it exists (`EventManager.warn_first()`): the fire engine, which the fire summons, and the
+## copy of `military_convoy` day 13's column is made of (`as_warned_first()`, which
+## `EventManager.as_warned()` makes of any row that comes through a warning first). Read by
+## `warns_before_it_exists()`, and so by the fairness contract, which holds such a row to the flat
+## `Tuning.OFFSCREEN_WARNING_MIN` rather than to a floor worked out from its field and speed.
+@export var warned_first := false
+
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
 @export var mobile := false
 @export var speed := 0.0
@@ -1210,10 +1218,15 @@ func validate() -> bool:
 
 ## Shortest warning this row may fairly give — held against `warning_time()`.
 ##
-## **A row warned of before it exists is owed `Tuning.OFFSCREEN_WARNING_MIN`**, a flat time to react
-## and think, whatever its field and its speed. *(PLAYTEST-145: "I don't like that the warning is
-## tied to the size of the field or the speed.")* Every other row is owed the time to walk out of its
-## own field, `Tuning.required_telegraph_time()`.
+## **A row warned of before it exists (`warns_before_it_exists()`) is owed
+## `Tuning.OFFSCREEN_WARNING_MIN`**, a flat time to react and think, whatever its field and its
+## speed — the cyclist, the fire engine and day 13's column alike. *(PLAYTEST-145: "I don't like
+## that the warning is tied to the size of the field or the speed" · "all offscreen events should
+## work like that".)* Its place follows her until it exists, so walking during the badge does not
+## take her out of its field, and a floor worked out from the walk out of that field would buy
+## nothing. `loose_dog` is the one exemption (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`) and keeps its
+## field's minimum. Every other row is owed the time to walk out of its own field,
+## `Tuning.required_telegraph_time()`.
 ##
 ## A pursuer's is a different quantity and is stated in `Tuning.PURSUIT_MIN_NOTICE`: the ordinary
 ## rule buys the time to walk out of a *field*, and there is no walking out of something that
@@ -1267,15 +1280,28 @@ func warning_time() -> float:
 	var created_at := Tuning.min_offscreen_lead(closing, offscreen_notice)
 	return telegraph_time + maxf(0.0, created_at - reach) / closing
 
-## Whether the director warns of this row before it exists rather than creating it: a
-## `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`), whose screen-edge badge goes up with
-## nothing in the world and whose instance is created where it points once `telegraph_time` is
-## over — see `PendingWarning`. A road-going `TOWARD_PLAYER` copy (`police_patrol`'s return leg) is
-## created at once instead: nothing announces it at the edge of the screen, since it is slower than
-## a walk and never lethal. The fire engine and the day-13 column are warned first too, by the
-## callers that summon them rather than by anything on the row.
+## Whether this row is warned of before it exists rather than created at once: its screen-edge
+## badge goes up with nothing in the world, and its instance is created where the badge points once
+## `telegraph_time` is over — see `PendingWarning`. Two kinds are: a `TOWARD_PLAYER` row on foot
+## (`cyclist`, `loose_dog`), which the director warns of down her line, and a row flagged
+## `warned_first` (the fire engine, day 13's column), which the caller that summons it warns of. A
+## road-going `TOWARD_PLAYER` copy (`police_patrol`'s return leg) is created at once instead —
+## see docs/EVENTS.md, "Everything arrives from off screen", for why it is not warned first yet.
 func warns_before_it_exists() -> bool:
-	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
+	return warned_first or (spawn_mode == SpawnMode.TOWARD_PLAYER
+			and not placement.has(GameEnums.TileType.ROAD))
+
+## A copy of this row that enters the world only under a warning that runs first
+## (`warned_first`), for a row warned of that is otherwise placed some other way — day 13's column of
+## `military_convoy`, whose ordinary row is a `MAP` place the day plans at dawn
+## (`EventManager.as_warned()`). The copy is validated as it is made, so it is held to the flat
+## minimum a warning first owes.
+func as_warned_first() -> EventDef:
+	var variant: EventDef = duplicate()
+	variant.shape = shape
+	variant.warned_first = true
+	variant.validate()
+	return variant
 
 ## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that
