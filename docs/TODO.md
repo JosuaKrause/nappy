@@ -752,8 +752,9 @@ nothing."
       them rather than being exempted. `Tuning.OFFSCREEN_WARNING_MIN_EXEMPT` goes with it. Where
       each now comes from (the dog down her sidewalk, the cat across her line) is the build's to
       propose, with a picture.
-- [ ] **Telegraphing is for things that go fast *and* are dangerous** *("telegraphing is for things
-      that go fast *and* are dangerous"; statement 21)*. The cues rule's badge for "something
+- [ ] **Telegraphing is for things that go fast *and* are dangerous, coming toward her**
+      *("telegraphing is for things that go fast *and* are dangerous" · "go fast and towards the
+      player"; statements 21–22)*. The cues rule's badge for "something
       lethal or faster than a walk" becomes fast and dangerous, and the fairness contract, the
       badge and warning-first placement are stated for those things only. Every row the change
       moves out of telegraphing is listed with what it does instead. Open, for the player: **what

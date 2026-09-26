@@ -129,3 +129,10 @@ And, while that was being filed:
 21. **A thing telegraphs its coming only if it is both fast and dangerous.** The cues rule gives a
     badge to "something lethal or faster than a walk"; this makes it *and*. What counts as
     dangerous went back to the player. → M226.
+
+And, next:
+
+> "go fast and towards the player"
+
+22. **What telegraphs goes fast and toward her.** Whether this adds a third condition to statement
+    21 (fast, dangerous and toward her) or restates it went back to the player. → M226.
