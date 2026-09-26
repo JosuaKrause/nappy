@@ -930,7 +930,9 @@ outcomes* rather than the same outcome at two prices:
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
 | Bounded | gives up after `PURSUIT_TIME`, **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
 
-Its telegraph is the **approach**, the way a fire engine's is. A pursuer that stands still while it
+Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
+telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge badge
+with nothing in the world until its telegraph is spent). A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
@@ -1140,12 +1142,15 @@ escape_distance = outer_radius − inner_radius     for anything at or below wal
                 = outer_radius                    for anything FASTER than walking
 ```
 
-The split matters. A stationary event, or one slower than the player (a dog walker at
-32 px/s), only has to be walked away from, so clearing the falloff band is enough. Something
-faster than the player — a fire engine at 190 px/s — cannot be outwalked at all; it sweeps
-its entire outer radius along the street, and the only escape is getting off its line. So
-it must give enough warning to clear the *full* radius. That is why the fire engine's
-telegraph is 4 seconds and not the 2.9 the band rule would have allowed.
+The split matters for a row without a badge of its own. A stationary event, or one slower than the
+player (a dog walker at 32 px/s), only has to be walked away from, so clearing the falloff band is
+enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
+radius along the street, and the only escape is getting off its line, so it must give enough
+warning to clear the *full* radius. A row warned of before it exists is held to a different floor
+instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) from its screen-edge badge to the earliest
+it can reach her, since its place follows her and there is no field to walk out of during the
+badge. The fire engine, warned first this way, is created with its field already on her when she
+is on its street; its `telegraph_time` is 6.27s, well past that floor.
 
 `Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
 the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
