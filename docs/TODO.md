@@ -402,9 +402,12 @@ reaction time a warning must leave her; the player's complaint is the other end.
 
 [PLAYTEST-142](playtests/PLAYTEST-142.md), statements 1 and 2.
 
-- [ ] **Title, day number and text all describe the coming day.** Nothing on the brief says she
-      fell asleep; the number is the day about to start. Find every screen that shows a brief
-      (the first day's included) and pin the number with a test.
+- [ ] **Title, day number and text all describe the coming day**, below one line for the day that
+      ended: "She fell asleep after m:ss" stays (M154, [PLAYTEST-144](playtests/PLAYTEST-144.md),
+      statement 10: "You can keep the she feel asleep after xx:xx and then do the rest about the next
+      day. Or we will have to split it into two screens"). If one screen cannot carry both, it
+      becomes two: the day that ended, then the brief. The number is the day about to start. Find
+      every screen that shows a brief (the first day's included) and pin the number with a test.
 - [ ] **The brief shows the nerves** she carries into the coming day, drawn the way the HUD
       draws them.
 
@@ -453,7 +456,9 @@ day summary or both) was not said, so both are checked.
 - [ ] **The robber guarding a chalk mark always spawns at the alley's other end from the mark**,
       and a test states the distance from the mark to him over many seeds.
 - [ ] **The mark is reachable**: a rig walks in from the mark's end, reads it and leaves without
-      waking him, on seeds where it cannot today.
+      waking him, on seeds where it cannot today. He may stand where he never wakes: "It's fine if
+      the Robert doesn't get triggered every time" ([PLAYTEST-144](playtests/PLAYTEST-144.md),
+      statement 11).
 
 ---
 
@@ -514,12 +519,14 @@ wait for M211 and M212's branch, which owns `day_summary.gd` and `pause_screen.g
 [PLAYTEST-143](playtests/PLAYTEST-143.md), statement 4. The row's body stands on the sidewalk
 against a wall (`EventCatalogue._burning_building()`: `placement` SIDEWALK, `pavement_side`
 AGAINST_THE_BUILDING). `EventInstance._draw_fire()` draws its flames at that ground spot, and the
-facade behind them is drawn unharmed. The danger's footprint and its fairness contracts stay as
-they are. This is about what is drawn.
+facade behind them is drawn unharmed. "The fire goes on the building. The challenge is the fire
+truck not the fire" ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 12).
 
-- [ ] **The flames and smoke are drawn on the facade of the building the row stands against**,
-      so the building reads as burning. Any fire left on the sidewalk reads as falling from it.
-      Stills in the PR.
+- [ ] **The flames and smoke are drawn on the facade of the building the row stands against**, so
+      the building reads as burning. Stills in the PR.
+- [ ] **The fire is no obstacle on the sidewalk**: no solid body and no danger of its own there;
+      the fire truck that comes for it is the danger. Say what the row's field and cost become,
+      and regenerate `docs/COSTS.md`.
 
 ---
 
@@ -649,6 +656,38 @@ besides milestones and playtests.
       (`<mNNN|playtest-NN>-<slug>-<date>` evidence folders), plus `tools/lint.sh`,
       `tools/resolve-decisions-top.sh` (retired once nothing inserts at the top) and
       `tools/codex-hooks.py`.
+
+
+**Order and scope** ([PLAYTEST-144](playtests/PLAYTEST-144.md), statements 13 and 14): M223 lands
+before any new task is picked up, and M225, the counter's asks, comes next. "Split every file
+where appropriate. Even the review file": `REVIEW.md`'s list of what no person has tested yet
+becomes files too, and any other document that is a list of independent items is split the same
+way where that is appropriate. "We overhaul all items that are currently relevant": once split,
+every queue entry and review item still relevant is rewritten in full in the new layout, checked
+against the player's own words; one that no longer applies is put to the player, never dropped
+silently.
+
+- [ ] **The overhaul**: every open entry and review item re-read against its playtest, rewritten
+      in full, and the ones that no longer apply listed for the player.
+---
+
+## M225 — The counter counts every attempt, a key player, and a torn poster's chase · asked for 2026-09-26
+
+> "no, even current run wouldn't work if the player dies multiple times on the same day" · "we need
+> a telemetry item for ripping posters and pursuit triggered by poster ripping" · "is telemetry
+> currently correctly identifying when a player plays with keys?" · "use this for nappy stats. for
+> the site visit stat use the old account" · "After that the telemetry changes are next"
+
+[PLAYTEST-143](playtests/PLAYTEST-143.md), statements 9–11; [PLAYTEST-144](playtests/PLAYTEST-144.md),
+statement 13. PR #368 (a cloud session's, PLAYTEST-141) builds the counter; these asks are on it
+as review comments of 2026-09-26 and not yet built. Keys: a run begun with a key is reported as tap
+today, so the answer to the player's question is no.
+
+- [ ] **Every game event counts every time**: events go to `nappy.goatcounter.com` (sessions off),
+      the page visit stays on `josuakrause.goatcounter.com`, and `tools/goatcounter.py` reads the
+      new site with the `.env` key.
+- [ ] **A key player is counted as one**, from the input that began the run.
+- [ ] **A torn poster that sends a patrol sends its own event**, beside the tear's own.
 
 ---
 

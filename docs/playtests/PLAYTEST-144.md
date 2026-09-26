@@ -88,3 +88,30 @@ of conflicts, becomes files as well:
 8. **Each review item is a file**, under `docs/review/`, named after the entry it came from, and a
    playtest that covers it deletes it. Its name is its entry's. → M223. (That its steps are prose rather than
    numbered is the orchestrator's proposal, not the player's words.)
+
+## Then, answering the reviews' open questions
+
+Asked, among others: how the restart disc's fill should show under a thumb; whether the brief
+between two days may drop "She fell asleep after m:ss"; whether the chalk mark's robber may stand
+out of waking range at the far end of a long alley; whether the burning building's sidewalk body
+stays; whether the counter's asks get queue entries. The player, in one message ("Robert" and
+"river" are dictation for *robber*, "teller" for *yeller*):
+
+> "373 this is already implemented for mouse. Just make it appear everywhere. Where does the
+> decision to add a river after handing to the teller come from? You can keep the she feel asleep
+> after xx:xx and then do the rest about the next day. Or we will have to split it into two
+> screens. It's fine if the Robert doesn't get triggered every time. The fire goes on the
+> building. The challenge is the fire truck not the fire. The file layout change needs to land
+> before picking up new tasks. After that the telemetry changes are next. Split every file where
+> appropriate. Even the review file. We overhaul all items that are currently relevant."
+
+9. **The held restart's fill shows on touch as it does for the mouse.** → M212, on PR #373.
+10. **The brief between two days keeps "She fell asleep after m:ss"** for the day that ended, and
+    the rest of it is the coming day's; or it becomes two screens. → M210.
+11. **The chalk mark's robber stands at the far end even where he then never wakes.** → M213.
+12. **The burning building's fire is drawn on the building, and the fire itself is no obstacle on
+    the sidewalk: the danger is the fire truck.** → M218.
+13. **The file layout (M223) lands before any new task is picked up, and the counter's asks come
+    next.** → M223, M225.
+14. **Every file is split where that is appropriate, the review file included, and every item
+    still relevant is overhauled** in the new layout. → M223.
