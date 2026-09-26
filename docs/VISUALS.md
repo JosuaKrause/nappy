@@ -208,8 +208,8 @@ The [hand-contact comparison](evidence/pram-contact-2026-09-12/MEASUREMENTS.md) 
 formats at the current continuous stroller offset. Shadows and cues share that drawing position;
 the uniformly enlarged stroller retains its bottom ground anchor, and the collision body retains
 its separate ground-plane position. Static contact does not establish
-live turning. The [recipe index](evidence/README.md#graphics-recipes) locates generation,
-registration, comparison-sheet and walking-GIF scripts with their inputs and regeneration commands.
+live turning. Each evidence folder carries its own recipe: the generation, registration,
+comparison-sheet and walking-GIF scripts with their inputs and regeneration commands.
 The [comic prop record](evidence/comic-props-2026-09-12/GENERATION.md) preserves the redrawn
 garbage and litter, their generated silhouettes and reproducible anchor registration.
 The [city prop record](evidence/comic-city-props-2026-09-12/GENERATION.md) covers trees,

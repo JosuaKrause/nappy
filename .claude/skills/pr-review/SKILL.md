@@ -51,8 +51,8 @@ answers these. Each "no" is a finding:
   player agreed to if it changes what they see across the game, or a small choice the PR
   description names as open to overturn (**orchestrating**, "Forks come back"). An unmarked
   addition is a finding; so is a game-wide one the player never agreed to.
-- **Does it keep what is already decided?** No `DECISIONS.md` record and no doc rule is overturned,
-  narrowed or rewritten in passing. A doc sentence the PR changed says what the player decided, not
+- **Does it keep what is already decided?** No record under `docs/decisions/` and no doc rule is
+  overturned, narrowed or rewritten in passing. A doc sentence the PR changed says what the player decided, not
   what the PR happened to build.
 - **Would the player recognise it in the pictures?** A visible change is judged on its pictures
   against their words, before its code. A visible change with no pictures is a finding.

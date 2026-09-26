@@ -12,10 +12,17 @@
 #   tools/lint.sh              # the whole governed set
 #   tools/lint.sh a.md b.md    # just these files (how the PostToolUse hook calls it)
 #
-# Governed: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md and docs/*.md — except
-# docs/DECISIONS.md and docs/playtests/PLAYTEST-*.md, which are history and primary sources and are
-# allowed to say what was true then, and docs/evidence/README.md, whose job is filenames that
-# embed hashes.
+# Governed: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md, docs/*.md, and every file
+# of the queue (docs/todo/<entry>/*.md) and of the review list (docs/review/*.md) — except
+# docs/DECISIONS.md, the records under docs/decisions/ and the playtests under docs/playtests/,
+# which are history and primary sources and are allowed to say what was true then, and
+# docs/evidence/README.md, whose job is filenames that embed hashes.
+#
+# Three checks are about the queue's layout rather than a sentence, and run on the history too:
+# a name (<date>-<word>-<word>) used for two different things across docs/todo, docs/decisions,
+# docs/review and docs/playtests; a checkbox anywhere under
+# docs/todo/, where finishing an item deletes its file; and a link in docs/TODO.md to an entry
+# folder that does not exist.
 #
 # A hit is `file:line: label`, and a nonzero exit if there is at least one. The marker
 # `lint-allow` inside an HTML comment on the same line is a deliberate exception and is not
@@ -34,9 +41,12 @@ usage: tools/lint.sh [--help|-h] [file...]
 Scans governed docs for volatile-fact sentence shapes (a commit hash, a branch name, a check
 count, a ticked box, a status marker anywhere in the doc) and every tracked SVG for well-formed
 XML. With no arguments, scans the whole governed set (AGENTS.md, CLAUDE.md, README.md, every
-.claude/skills/*/SKILL.md, every docs/*.md except DECISIONS.md and the playtests). Given file
-arguments, scans only those -- how the PostToolUse hook calls it after an edit. A named file
-that does not exist is an error, not a silent skip.
+.claude/skills/*/SKILL.md, every docs/*.md except DECISIONS.md, and every file under docs/todo/
+and docs/review/). Also checks the queue's layout: a name used for two things across docs/todo,
+docs/decisions, docs/review and docs/playtests, a checkbox under docs/todo/, and a link in
+docs/TODO.md to an entry folder that does not exist. Given file arguments, scans only those --
+how the PostToolUse hook calls it after an edit -- and runs the layout check each one belongs to.
+A named file that does not exist is an error, not a silent skip.
 
   tools/lint.sh
   tools/lint.sh docs/CITY.md README.md
@@ -57,7 +67,10 @@ done
 
 files=()
 if [[ $# -gt 0 ]]; then
-    files=("$@")
+    # The hook passes absolute paths; every rule below is written against the repository's own.
+    for f in "$@"; do
+        files+=("${f#"$root"/}")
+    done
 else
     [[ -f AGENTS.md ]] && files+=("AGENTS.md")
     [[ -f CLAUDE.md ]] && files+=("CLAUDE.md")
@@ -65,7 +78,7 @@ else
     for f in .claude/skills/*/SKILL.md; do
         [[ -f "$f" ]] && files+=("$f")
     done
-    for f in docs/*.md; do
+    for f in docs/*.md docs/todo/*/*.md docs/review/*.md; do
         [[ -f "$f" ]] && files+=("$f")
     done
 fi
@@ -141,9 +154,93 @@ lint_status_marker() {
     done < <(grep -nE '\*?\((in progress|not started|partly built|done)\)\*?|^[[:space:]]*Done:' "$f")
 }
 
+# A checkbox anywhere in the queue's files: an item is a file, and finishing it deletes the file.
+lint_queue_checkbox() {
+    local f="$1" n content
+    while IFS=: read -r n content; do
+        report "$f" "$n" "checkbox in a queue file (an item is a file; finishing it deletes the file)" "$content"
+    done < <(grep -nE '^[[:space:]]*[-*] \[[ ~xX]\]' "$f")
+}
+
+# A link in docs/TODO.md to docs/todo/<name>/ where no such folder is.
+lint_order_links() {
+    local f="docs/TODO.md" n content name
+    [[ -f "$f" ]] || return
+    while IFS=: read -r n content; do
+        for name in $(printf '%s\n' "$content" | grep -oE '\]\(todo/[^)/]+' | sed 's#^](todo/##'); do
+            [[ -d "docs/todo/$name" ]] \
+                || report "$f" "$n" "link to an entry folder that does not exist: todo/$name/" "$content"
+        done
+    done < <(grep -nE '\]\(todo/[^)/]+' "$f")
+}
+
+# One pair of words is one thing. A name is <date>-<word>-<word>, with a -2, -3 suffix for a second
+# decision or review item from one entry; the words need not be in tools/names/, since a name typed
+# by hand is taken all the same. A pair may appear under two dates, or as a playtest and as
+# anything else, nowhere. Under one date, an entry's folder, its decisions and its review items
+# share the name on purpose; a decision or review item new-name.sh drew without --entry says so in
+# its heading ("· not from an entry"), and may share its name with nothing. A milestone-numbered
+# file, or a record named by a longer heading slug, is not a name and is skipped.
+lint_duplicate_names() {
+    local folder path base own
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        printf '%s\n' "$line"
+        hits=$((hits + 1))
+    done < <(
+        for folder in docs/todo docs/decisions docs/review docs/playtests; do
+            [[ -d "$folder" ]] || continue
+            for path in "$folder"/*; do
+                [[ -e "$path" ]] || continue
+                base="${path##*/}"
+                base="${base%.md}"
+                [[ "$base" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z]+-[a-z]+(-[0-9]+)?$ ]] || continue
+                own=0
+                if [[ "$folder" == docs/decisions || "$folder" == docs/review ]] \
+                    && head -n 1 "$path" | grep -qF '· not from an entry'; then
+                    own=1
+                fi
+                printf '%s %s %s\n' "$folder" "$base" "$own"
+            done
+        done | awk '
+            {
+                folder = $1; base = $2; own = $3
+                n = split(substr(base, 12), part, "-")
+                pair = part[1] "-" part[2]
+                date = substr(base, 1, 10)
+                kind = (folder == "docs/playtests") ? "playtest" : "entry"
+                key = date " " kind
+                if (!((pair, key) in seen)) { seen[pair, key] = 1; count[pair]++ }
+                files[pair, key]++
+                if (own) owned[pair, key] = 1
+                where[pair] = where[pair] " " folder "/" base
+            }
+            END {
+                for (k in owned) if (files[k] > 1) { split(k, kp, SUBSEP); bad[kp[1]] = 1 }
+                for (p in count) if (count[p] > 1) bad[p] = 1
+                for (p in bad) printf "%s: duplicate name, used for more than one thing:%s\n", p, where[p]
+            }
+        '
+    )
+}
+
+layout_names=0
+layout_order=0
 for f in "${files[@]}"; do
     case "$f" in
-        docs/DECISIONS.md|docs/playtests/PLAYTEST-*.md|docs/evidence/README.md)
+        docs/todo/*|docs/decisions/*|docs/review/*|docs/playtests/*) layout_names=1 ;;
+    esac
+    case "$f" in
+        docs/TODO.md|docs/todo/*) layout_order=1 ;;
+    esac
+    if [[ -f "$f" ]]; then
+        case "$f" in
+            docs/todo/*) lint_queue_checkbox "$f" ;;
+        esac
+    fi
+    case "$f" in
+        docs/DECISIONS.md|docs/decisions/*|docs/playtests/*|docs/evidence/README.md)
+            [[ -f "$f" ]] || { echo "tools/lint.sh: no such file: $f" >&2; exit 2; }
             continue
             ;;
     esac
@@ -199,6 +296,12 @@ PY
 }
 
 lint_svgs "$@"
+if [[ $# -eq 0 || "$layout_names" -eq 1 ]]; then
+    lint_duplicate_names
+fi
+if [[ $# -eq 0 || "$layout_order" -eq 1 ]]; then
+    lint_order_links
+fi
 
 if [[ "$hits" -gt 0 ]]; then
     echo
