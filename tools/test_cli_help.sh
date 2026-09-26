@@ -102,6 +102,10 @@ assert_exit "serve-web.sh --help"  zero ./tools/serve-web.sh --help
 assert_exit "release.sh --help"    zero ./tools/release.sh --help
 assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
+assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help
+assert_exit "trailer.sh -h"        zero ./tools/trailer.sh -h
+assert_exit "record.sh --help"     zero ./tools/record.sh --help
+assert_exit "record.sh -h"         zero ./tools/record.sh -h
 assert_exit "stats.sh --help"      zero ./tools/stats.sh --help
 assert_exit "telemetry.sh --help"  zero ./tools/telemetry.sh --help
 assert_exit "test.sh --help"       zero ./tools/test.sh --help
@@ -137,6 +141,13 @@ assert_exit "serve-web.sh --bogus"    nonzero ./tools/serve-web.sh --bogus
 assert_exit "release.sh --bogus"      nonzero ./tools/release.sh --bogus
 assert_exit "run.sh --bogus"          nonzero ./tools/run.sh --bogus
 assert_exit "shot.sh --bogus"         nonzero ./tools/shot.sh "$work_dir/shot-out.png" 1 --bogus
+assert_exit "trailer.sh --bogus"      nonzero ./tools/trailer.sh --bogus
+assert_exit "trailer.sh --shot (missing name)" nonzero ./tools/trailer.sh --shot
+assert_exit "trailer.sh --list --shot (combined)" nonzero ./tools/trailer.sh --list --shot choice
+assert_exit "record.sh --bogus"       nonzero ./tools/record.sh --bogus
+assert_exit "record.sh (no flags)"    nonzero ./tools/record.sh
+assert_exit "record.sh --this-is-not-a-dev-flag" nonzero ./tools/record.sh --this-is-not-a-dev-flag
+assert_exit "record.sh --out (missing name)" nonzero ./tools/record.sh --out
 assert_exit "stats.sh --bogus"        nonzero ./tools/stats.sh --bogus
 assert_exit "telemetry.sh --bogus"    nonzero ./tools/telemetry.sh --bogus
 assert_exit "clip.sh --bogus"         nonzero ./tools/clip.sh --bogus

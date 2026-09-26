@@ -5,10 +5,94 @@
   "shots": [
     {
       "name": "choice",
-      "seed": 25, "day": 2, "parent": "mother",
-      "in": 0.3, "length": 7.0,
+      "seed": 25,
+      "day": 2,
+      "parent": "mother",
+      "in": 0.3,
+      "length": 7.0,
       "walk": "1.2s1.3w0.6p2.3e2.4s",
       "caption": "Every walk is a choice."
+    },
+    {
+      "name": "danger",
+      "seed": 25,
+      "day": 3,
+      "parent": "father",
+      "in": 5.8,
+      "length": 3.5,
+      "gap": 0.3,
+      "walk": "12s",
+      "flags": [
+        "--flee",
+        "0.2"
+      ],
+      "caption": "Not every street is safe."
+    },
+    {
+      "name": "title",
+      "seed": 25,
+      "day": 1,
+      "parent": "father",
+      "in": 0.2,
+      "length": 2.5,
+      "gap": 0.3,
+      "walk": "2s",
+      "title": "Nappy"
+    },
+    {
+      "name": "trucks",
+      "seed": 4242,
+      "day": 13,
+      "parent": "mother",
+      "in": 0.5,
+      "length": 1.0,
+      "gap": 0.3,
+      "walk": "2n"
+    },
+    {
+      "name": "gatehouse",
+      "seed": 771103,
+      "day": 9,
+      "parent": "father",
+      "in": 2.0,
+      "length": 1.0,
+      "gap": 0.3,
+      "walk": "east",
+      "flags": [
+        "--spawn",
+        "door:0"
+      ]
+    },
+    {
+      "name": "chase",
+      "seed": 25,
+      "day": 1,
+      "parent": "mother",
+      "in": 5.3,
+      "length": 1.0,
+      "gap": 0.3,
+      "flags": [
+        "--start-escape",
+        "stairwell:right",
+        "--press",
+        "ui_accept",
+        "0.1"
+      ]
+    },
+    {
+      "name": "zoomout",
+      "seed": 25,
+      "day": 1,
+      "parent": "mother",
+      "in": 0.2,
+      "length": 5.3,
+      "gap": 0.3,
+      "flags": [
+        "--zoom-out",
+        "5",
+        "0.5"
+      ],
+      "caption": "One family. A whole city."
     }
   ]
 }
