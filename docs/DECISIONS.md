@@ -30,8 +30,11 @@ horizontally), `charging_dog` from day 4, `alley_robbery`, `masked_pursuer` walk
 of a second. Those are warnings too short, not too early; whether each is a contract breach or the
 probe standing her in the wrong place is M224, a warning shorter than its own floor.
 
-**A side effect the player did not ask for**: the smaller field makes him cheaper to pass, 16.0 to
-12.1 over a full pass (`docs/COSTS.md`).
+**A side effect the player did not ask for**: the smaller field first made him cheaper to pass, 16.0
+to 12.1 over a full pass — flagged on PLAYTEST-144, statement 16 ("13 is not okay") — and corrected
+back to 16.0 by raising `intensity` alone, 18.0 to 21.5; `walk_through_cost()` is linear in
+`intensity` at fixed radii, so the warning geometry (`outer_radius`, `telegraph_time`) is untouched
+(`docs/COSTS.md`).
 
 **Choices open to overturn**: both numbers moved rather than the telegraph alone; the test's
 tolerance above the floor is 0.5s, looser than the measured 0.09s so it does not restate it. No

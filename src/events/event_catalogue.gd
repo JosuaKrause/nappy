@@ -1265,7 +1265,16 @@ static func _cyclist() -> EventDef:
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
-	def.intensity = 18.0
+	# 18.0 until the smaller field (below) quietly halved his reach and took a third of his full-pass
+	# cost with it — 16.0 to 12.1 points, a side effect the shorter warning never asked for.
+	# PLAYTEST-144, statement 16: "13 is not okay." `walk_through_cost()` is linear in `intensity` at
+	# fixed radii (it integrates `Tuning.falloff()`, itself linear in `intensity`), so raising this
+	# alone — nothing about the geometry that sets the warning — restores it: mean emission along the
+	# line is `0.85 · intensity` at this row's 33/60px band, so `(0.85 · 21.5 − 6.0) · 120 / 92 = 16.0`
+	# (`Tuning.EXCITEMENT_DECAY_WALKING`, `Tuning.WALK_SPEED`), matching the pre-M207 figure to the
+	# table's own rounding. `required_telegraph_time()` and `minimum_telegraph()` never read
+	# `intensity`, so the ~2s warning this row was shortened to is untouched by the louder field.
+	def.intensity = 21.5
 	def.inner_radius = 33.0
 	def.outer_radius = 60.0
 	# hard_fail and faster than a walk, so the escape distance is the forward reach and the margin
