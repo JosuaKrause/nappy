@@ -241,6 +241,28 @@ const CALM_ZONE_DENIAL_RATE := 7.7
 ## it: this is a decision she made, not ground she has to cross.
 const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
 
+## Seconds day 6's note-for-a-stranger contact (`ResistanceSteps.Step.handover_dwell_seconds`)
+## makes her stand continuously inside `homeless_yeller`'s own `inner_radius` (45px) before the
+## handover completes.
+##
+## **Without it, the handover was cheaper than an ordinary pass.** `ContactPoint.REACH` (36px) sits
+## inside his 45px `inner_radius`, so the instant handover fired the moment she brushed the outer
+## few pixels of his full-strength field and he left at once (`EventInstance.
+## leave_for_a_completed_task()`) — `tests/probes/m205_note_handover.gd`'s "before" figure is
+## ~4.7 points awake, against an ordinary full pass past him doing nothing in particular
+## (`M174Pass.pass_net_averaged()` at 0px, the same simulation `docs/COSTS.md`'s "the pass —
+## awake" row is generated from: 11.1). Handing a note to a man mid-shout has to cost at least
+## that.
+##
+## **Measured, not derived.** `tests/probes/m205_note_handover.gd` walks a bare `homeless_yeller`
+## instance the way a player closing on him actually would, averaged over eight points in his own
+## pulse, and reads what the walk-up-and-dwell actually lands against what an ordinary pass lands.
+## 2.5s of continuous dwelling nets ~20.4 points awake — comfortably over the 11.1 target, since his
+## pulse's own trough (`current_intensity()`'s envelope, `0.25`..`1.0` of `intensity`) lands less on
+## an unlucky beat than the average the probe reports, which is why this is stated as a floor with
+## margin rather than the exact number a single phase would give.
+const NOTE_HANDOVER_DWELL_SECONDS := 2.5
+
 ## Excitement per second at full sprint, scaled by how far above walk speed we are.
 ##
 ## **The run button is a trap by design**: running is the wrong move against every row that merely
