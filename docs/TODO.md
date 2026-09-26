@@ -606,7 +606,9 @@ landed. Until then, entries are filed the old way.
       and the entry's context. Each item is a file of its own beside it, written in full prose with
       no checkbox, and completing the item deletes its file ("completing a task is just deleting
       the file"). An existing entry moves into a folder under its date and keeps its M-number
-      (`docs/todo/2026-09-26-M210/`); nothing existing is renamed. `docs/TODO.md` keeps only what
+      (`docs/todo/2026-09-26-M210/`); nothing existing is renamed. An entry whose heading carries
+      no date (M56, M129) takes the date `git log` gives its heading line. A `[~]` (mid-way) item
+      says so in its prose. `docs/TODO.md` keeps only what
       is not an entry: its header and "The order", which names entries by their folders.
 - [ ] **A decision is a file**, `docs/decisions/<same name>.md`, written when an entry's last
       item is done; the entry's folder goes in the same commit.
@@ -617,18 +619,26 @@ landed. Until then, entries are filed the old way.
 - [ ] **A new playtest is a file under the same kind of name**, `docs/playtests/<date>-<adjective>-<animal>.md`,
       and so is anything else numbered in sequence. Existing playtest files keep their numbers
       and are never rewritten.
+**Proposed, not asked for** (the orchestrator's, open to overturn; the player's "rest sounds fine"
+answered the layout above, not these): splitting the existing `DECISIONS.md` into files rather than
+leaving old records where they are; no checked-in index, with a command that lists and searches
+the records instead; a command that makes names, and a lint for duplicate names. The plainer
+alternative to each is to leave it out.
+
 - [ ] **A command makes the name**: it picks an unused adjective and animal (checked against every
       folder that takes these names), writes the file with its heading and date, and prints the
       name. It follows cli-tools, and gets a row in using-tools' catalogue. The lint rejects a
       duplicate name across the folders.
 - [ ] **A review item is a file**, `docs/review/<the entry's name>.md` (a second item from one
-      entry takes a suffix), deleted by the playtest that covers it. `docs/REVIEW.md` keeps only
-      its header and how a run is set up.
+      entry takes a suffix, which is the orchestrator's proposal), its steps written as prose rather
+      than numbered, deleted by the playtest that covers it. `docs/REVIEW.md` keeps only its header,
+      how a run is set up, and its list of what no person has tested yet.
 - [ ] **`docs/HANDOFF.md` is written only at the end of a session**, by session-cleanup, and no
       longer by each PR. committing's "a PR carries every document its own changes make false"
       says so for HANDOFF.
 - [ ] **Every rule that assumes one file or a number says the new thing**: `CLAUDE.md` (a
-      milestone named "by its number *and* a short title" becomes its two words and a title; the
+      milestone named "by its number *and* a short title" becomes its two words and a title; "No
+      quest logs outside `DECISIONS.md`"; the
       path table's `docs/TODO.md` and `PLAYTEST-*.md`), the path-rules hook
       (`.claude/hooks/project-rules.sh`: `docs/todo/**` and the new playtest names bring
       playtest-feedback), and the committing, merging-main (the renumbering rules shrink to the old

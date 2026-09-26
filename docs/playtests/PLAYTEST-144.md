@@ -53,6 +53,12 @@ And, in the same conversation:
    completing it deletes the file. An entry is then a folder: its own words and context in one
    file, one file per item beside it. → M223.
 
+The proposal the player was answering, as the orchestrator put it: a queue entry is a folder
+named by date and two words, each of its items a file with a descriptive name deleted when done; a
+decision is a file under the entry's name; a new playtest is named the same way; an evidence folder
+takes its entry's name; existing M-numbers and PLAYTEST-NN files keep their names; statement
+numbers inside a playtest stay numbers; releases keep their version numbers; `HANDOFF.md` stays
+one file written at the end of a session, and `TODO.md` keeps only its header and "The order".
 Asked whether `docs/REVIEW.md`, the list of things waiting on a person and the fourth biggest source
 of conflicts, becomes files as well:
 
