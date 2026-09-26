@@ -52,3 +52,22 @@ the field (about 2.9s for the cyclist at his 90px field, 1.95s at the 60px of th
    the time to react. → M207.
 9. **The dog's timer is good.** Which dog, and what the 2.9s counts to (the spawn, or the moment
    the thing can reach her), went back to the player. → M207.
+
+Then, answering which dog, after statement 9 had been filed as possibly the loose dog:
+
+> "I think the agent responsible for 372 got my comment about the pursuit of the dog wrong. I meant
+> the pursuing dog *not* the loose dog. the loose dog can stay as short as it wants since it is not
+> lethal and relatively low impact. the pursuit dog timing from the day 3 lesson is the correct
+> timing. other timings should be adjusted to fit that. and the new system should be made to work
+> to retain that timing for the pursuing dog"
+
+> "we can defer this change to a later PR though"
+
+10. **"The dog timer is good" is the pursuing dog's**, `charging_dog`, not `loose_dog`. → M226.
+11. **`loose_dog` may warn as briefly as it likes**, since it is not lethal and costs little; the
+    2.9s minimum does not bind it. → M207.
+12. **The pursuing dog's timing on the day-3 lesson is the correct timing, and other timings are
+    adjusted to fit it.** → M226.
+13. **The warning-first system is made to work for the pursuing dog while keeping that timing.**
+    → M226.
+14. **Statements 10, 12 and 13 are a later PR, not PR #372.** → M226.

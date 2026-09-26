@@ -290,7 +290,8 @@ is never created closer than that, whatever she did while it waited.
   telegraph is its stand-off approach rather than a warning alone, and spending it before the dog
   existed would leave only the chase: `Tuning.PURSUIT_TIME` of it, which a walk outlasts from just
   off screen — and walking away has to lose, or the lesson teaches nothing (`docs/MECHANICS.md`,
-  "Running that matters"). **The notice is per row, `EventDef.offscreen_notice`**, because two rows
+  "Running that matters"); warning it first while keeping the day-3 timing the player calls
+  correct is M226 in `TODO.md`. **The notice is per row, `EventDef.offscreen_notice`**, because two rows
   needed to move in opposite directions on the same day *(2026-09-07: "pursuing dog is still too
   short notice", "while biker is now too long notice")*: `Tuning.OFFSCREEN_NOTICE` (0.2s) is the
   default, and `charging_dog` carries 0.5s — at 222px/s closing the default buys only 44px, and
@@ -1427,8 +1428,9 @@ that as the minimum.")* `EventDef.minimum_telegraph()` answers it for a row warn
 exists, and `Tuning.validate_warning()` checks it; every other row keeps the minimum its field sets.
 The cyclist's `telegraph_time` is the smallest hundredth that clears it: 2.13s of badge, then 0.77s
 from 231px out to his 33px reach at 257px/s of closing, 2.90s in all. `loose_dog` is held to its
-field's minimum instead (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`) while the player's answer on it is
-open: 2.40s from its badge to its field, against the 2.07s its field asks.
+field's minimum instead (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`): 2.40s from its badge to its field,
+against the 2.07s its field asks, since it is neither lethal nor dear. *(2026-09-26, the player:
+"the loose dog can stay as short as it wants since it is not lethal and relatively low impact.")*
 
 **`AMBIENT` events are exempt**, and have to be: they are permanent features of a fixed
 map, so there is no moment at which they appear and nothing to warn about. The player

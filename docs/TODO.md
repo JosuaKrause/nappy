@@ -679,21 +679,14 @@ silently.
 screen where it points when its time comes, the waiting place follows her on the thing's own
 ground, for every event that arrives from off screen, and a warning is at least 2.9s ("2.9s is a
 fair time to react and *think* about what to do"). What is built on PR #372 is in `DECISIONS.md`,
-M207. Four things are open, each waiting on the player:
+M207. `loose_dog` stays under the 2.9s ("the loose dog can stay as short as it wants since it is not
+lethal and relatively low impact"), and the pursuing dog is M226. Two things are open, each waiting
+on the player:
 
 - [ ] **What the 2.9s counts to.** Built: from the badge to the earliest moment the thing can reach
       her (`EventDef.warning_time()`; the cyclist's `telegraph_time` is 2.13s, and he takes about
       0.77s more from just off screen). The other reading counts to the spawn: his timer 2.9s and
       about 3.7s in all. Switching is one term in `warning_time()`.
-- [ ] **`loose_dog` under the 2.9s.** Its timer is 2.25s, 2.40s from badge to reach walking into
-      it, and the player said "the dog timer is good" without naming the dog. It is exempt for now
-      (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`); raising it to 2.75s, or 2.9s if the count is to the
-      spawn, is the other answer.
-- [ ] **`charging_dog` is not warned first.** Its 4.5s timer is its visible approach on screen
-      before the chase. Spent before the dog exists, it leaves only the 3s chase, which a walk
-      outlasts, against the pursuit rule `tests/test_events_pursuit.gd` holds: "Walking has to lose,
-      or the mechanic teaches nothing." The orchestrator's proposal, not asked for: the badge goes up
-      for 2.9s first, then the dog spawns just off screen and closes and chases as it does now.
 - [ ] **Three kinds of offscreen arrival are not warned first, each against a stated rule.**
       `police_patrol`'s return leg and the torn-poster patrol have no badge at all, since the cues
       rule gives one only to "something lethal or faster than a walk" and a patrol is neither; the
@@ -717,6 +710,40 @@ rules call a broken contract "a bug, not a difficulty setting".
 - [ ] **For each row under its floor, say whether it is a real breach or the probe's placement**
       (the probe stands her by rule rather than on a real route), with the frame or the
       measurement that shows it. A real breach gets fixed and a test that fails before the fix.
+
+---
+
+## M226 — The pursuing dog keeps its day-3 timing, and the other warnings fit it · asked for 2026-09-26
+
+> "I meant the pursuing dog *not* the loose dog. the loose dog can stay as short as it wants since
+> it is not lethal and relatively low impact. the pursuit dog timing from the day 3 lesson is the
+> correct timing. other timings should be adjusted to fit that. and the new system should be made
+> to work to retain that timing for the pursuing dog" · "we can defer this change to a later PR
+> though"
+
+[PLAYTEST-145](playtests/PLAYTEST-145.md), statements 10–14. Builds on M207's warning first (the
+badge goes up with nothing in the world, the thing spawns just off screen where it points), which
+PR #372 builds for the cyclist, `loose_dog`, the fire truck and the day-13 column but not for
+`charging_dog`. On `Tuning.RUN_TAUGHT_DAY` (day 3, the lesson that teaches running) the dog is sited
+dead ahead of her 0.5s of closing outside the view (`offscreen_notice`), spends its 4.5s
+`telegraph_time` visibly closing at its stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME`
+(3s); `tests/test_events_pursuit.gd` holds that "Walking has to lose, or the mechanic teaches
+nothing."
+
+- [ ] **Measure the day-3 dog's timing as she meets it**: seconds from the first warning she can
+      see (badge or dog in view) to the moment it can reach her, walking toward, standing and
+      walking away, with `tests/probes/m207_warning_lead.gd`.
+- [ ] **`charging_dog` is warned first and keeps exactly that timing**, on day 3 and wherever else
+      it arrives from off screen, with walking still losing the chase. A test fails if the day-3
+      timing moves.
+- [ ] **The other offscreen warnings are adjusted to fit it.** Open, for the player: whether that
+      means every warning is set against the dog's figure (which may raise the 2.9s minimum,
+      `Tuning.OFFSCREEN_WARNING_MIN`, for the cyclist, the fire truck and the column), or only that
+      the rest of the system is shaped so the dog's timing survives. `loose_dog` is outside it
+      either way.
+
+Replaces the orchestrator's proposal on PR #372 of a 2.9s badge before the dog's 4.5s approach,
+which would have lengthened the day-3 timing the player calls correct.
 
 ---
 

@@ -51,8 +51,11 @@ streets, never nearer; if nothing is found it stays where it was and the thing w
 until its place is on its ground and off screen again. The direction a cyclist or loose dog comes
 from is fixed when the warning goes up; if she turns, it does not swing round with her. A fire
 truck whose fire she has walked past arrives a tile up from the fire and parks unseen. Her entering
-a building or a park has no special handling. `loose_dog` is exempt from the 2.9s for now, held to
-its field's minimum (2.07s; it warns 2.40s). What is still open is M207 in `TODO.md`.
+a building or a park has no special handling. `loose_dog` is exempt from the 2.9s, held to
+its field's minimum (2.07s; it warns 2.40s): "the loose dog can stay as short as it wants since it is
+not lethal and relatively low impact" (PLAYTEST-145, statement 11). The player's "the dog timer is
+good" was the pursuing dog's, and warning `charging_dog` first while keeping its day-3 timing is
+M226. What is still open is M207 in `TODO.md`.
 
 **The table of every warned row's lead**, `tests/probes/m207_warning_lead.gd`
 (`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it). Its first printing
