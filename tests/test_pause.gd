@@ -758,11 +758,16 @@ func _test_the_restart_button_is_a_hold(t) -> void:
 	t.check(resumed[0] == 0, "and still does not carry on")
 	t.check(not pause._restart_button.is_held_by(0), "and the hold's own state is cleared either way")
 
-	# Held the full duration this time, backdating the start so the test does not sleep.
+	# Held the full duration this time, backdating the start so the test does not sleep. Firing is
+	# `ModeButton`'s own `_process()` reaching full — *(Playtest 144: "The button only activated
+	# when releasing though. It should trigger the moment it is full.")* — not this release; see
+	# `tests/test_held_restart.gd`'s own real-engine-dispatch version of the same thing.
 	pause._unhandled_input(_touch_at(at, true))
 	pause._restart_button._held_since = Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	pause._restart_button._process(0.0)
+	t.check(restarts[0] == 1, "the disc filling fires it, before any release")
 	pause._unhandled_input(_touch_at(at, false))
-	t.check(restarts[0] == 1, "held the full duration, it fires")
+	t.check(restarts[0] == 1, "and the release afterwards does not fire it again")
 
 	pause.close()
 	t.get_tree().paused = false
@@ -846,12 +851,16 @@ func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t) 
 
 	pause._restart_button._held_since = \
 			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	pause._restart_button._process(0.0)
+	t.check(restarts[0] == 1,
+			"held the full duration, the disc filling fires it through a real, GUI-routed event")
+
 	var release := InputEventScreenTouch.new()
 	release.position = at
 	release.pressed = false
 	release.index = 0
 	pause.get_viewport().push_input(release, true)
-	t.check(restarts[0] == 1, "held the full duration through a real, GUI-routed event, it fires")
+	t.check(restarts[0] == 1, "and the matching release, also GUI-routed, does not fire it again")
 
 	pause.close()
 	t.get_tree().paused = false
@@ -1099,8 +1108,10 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 	t.check(continued[0] == 0, "and does not also read as continuing")
 
 	summary._restart_button._held_since = Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	summary._restart_button._process(0.0)
+	t.check(restarts[0] == 1, "the disc filling fires it, before any release")
 	summary._unhandled_input(_touch_at(at, false))
-	t.check(restarts[0] == 1, "held the full duration, it fires")
+	t.check(restarts[0] == 1, "and the release afterwards does not fire it again")
 	t.check(continued[0] == 0, "and still never reads as continuing")
 
 	# A touch elsewhere on the same screen still means continue, exactly as before this button
@@ -1174,12 +1185,16 @@ func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t) -> vo
 
 	summary._restart_button._held_since = \
 			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS
+	summary._restart_button._process(0.0)
+	t.check(restarts[0] == 1,
+			"held the full duration, the disc filling fires it through a real, GUI-routed event")
+
 	var release := InputEventScreenTouch.new()
 	release.position = at
 	release.pressed = false
 	release.index = 0
 	summary.get_viewport().push_input(release, true)
-	t.check(restarts[0] == 1, "held the full duration through a real, GUI-routed event, it fires")
+	t.check(restarts[0] == 1, "and the matching release, also GUI-routed, does not fire it again")
 
 	t.get_tree().paused = false
 	summary.queue_free()

@@ -79,6 +79,8 @@ func _ready() -> void:
 	visible = false
 	_refresh_body()
 	_refresh_buttons()
+	# Fires the instant the disc fills, not on release — see `ModeButton.hold_completed`'s own doc.
+	_restart_button.hold_completed.connect(func() -> void: restart_requested.emit())
 
 ## Its own function for the same reason it always was: so a test can call this again rather than
 ## reaching for a fresh scene. No longer branches on `_touch` — see `_BODY`'s own doc.
@@ -187,7 +189,9 @@ func _wants_rotation() -> bool:
 ## Returns whether `event` belonged to the restart button at all — a press that landed inside its
 ## `catch_rect()`, or the matching release, whichever way the hold resolves. The caller returns
 ## without falling through to the catch-all exactly when this is true, so a press that starts a hold
-## never also closes the screen underneath it, and a release — met or not — never does either.
+## never also closes the screen underneath it, and a release — completed or not — never does either.
+## A completed hold's own restart already fired before this release ever arrives; see
+## `ModeButton.hold_completed`'s own doc.
 func _handle_restart_touch(event: InputEvent) -> bool:
 	# `_buttons.visible` rather than `_restart_button.visible`: a `Control`'s own `visible` says
 	# nothing about an invisible ancestor, so a button left at its default `true` inside a hidden
@@ -231,8 +235,10 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 	if not _restart_button.is_held_by(index):
 		return false
 	get_viewport().set_input_as_handled()
-	if _restart_button.end_hold(index):
-		restart_requested.emit()
+	# The restart itself already fired from `ModeButton.hold_completed` the instant the disc filled,
+	# while this same finger or click was still down — see that signal's own doc. This only tears
+	# the hold's own state down; calling `restart_requested.emit()` here too would restart twice.
+	_restart_button.end_hold(index)
 	return true
 
 ## Stands in for the touch index a mouse event carries none of, in `_handle_restart_touch()`'s own
