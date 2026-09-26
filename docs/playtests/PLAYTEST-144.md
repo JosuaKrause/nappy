@@ -86,5 +86,5 @@ of conflicts, becomes files as well:
 > "yes, let's do review, too. rest sounds fine."
 
 8. **Each review item is a file**, under `docs/review/`, named after the entry it came from, and a
-   playtest that covers it deletes it. An item's steps are not numbered, and its name is its
-   entry's. → M223.
+   playtest that covers it deletes it. Its name is its entry's. → M223. (That its steps are prose rather than
+   numbered is the orchestrator's proposal, not the player's words.)

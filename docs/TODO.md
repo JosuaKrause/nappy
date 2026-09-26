@@ -607,7 +607,7 @@ landed. Until then, entries are filed the old way.
       no checkbox, and completing the item deletes its file ("completing a task is just deleting
       the file"). An existing entry moves into a folder under its date and keeps its M-number
       (`docs/todo/2026-09-26-M210/`); nothing existing is renamed. An entry whose heading carries
-      no date (M56, M129) takes the date `git log` gives its heading line. A `[~]` (mid-way) item
+      no date (M56, M129) takes the date of the commit that first wrote its heading line. A `[~]` (mid-way) item
       says so in its prose. `docs/TODO.md` keeps only what
       is not an entry: its header and "The order", which names entries by their folders.
 - [ ] **A decision is a file**, `docs/decisions/<same name>.md`, written when an entry's last
@@ -621,11 +621,12 @@ landed. Until then, entries are filed the old way.
       and are never rewritten.
 
 **Proposed, not asked for** (the orchestrator's, open to overturn; the player saw and accepted the
-split of the old records, the name-making script and the duplicate lint, but not these): no
+split of the old records and the duplicate lint, but not these): a command that makes names; no
 checked-in index, with a command that lists and searches the records instead; an entry with no
-date in its heading takes the date of the commit that first wrote its heading line; a review
-item's steps written as prose; `REVIEW.md` keeping its list of what no person has tested yet.
-Nothing else in the repo is numbered in sequence besides milestones, playtests and review items.
+date in its heading takes the date of the commit that first wrote its heading line; a `[~]`
+(mid-way) item says so in its prose; a review item's steps written as prose; `REVIEW.md` keeping
+its list of what no person has tested yet. Nothing else in the repo is numbered in sequence
+besides milestones and playtests.
 
 - [ ] **A command makes the name**: it picks an unused adjective and animal (checked against every
       folder that takes these names), writes the file with its heading and date, and prints the
