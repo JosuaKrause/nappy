@@ -415,7 +415,9 @@ determinism test holds.
 Names keep the counter's shape — `nappy-` first, lowercase, hyphens — so the player's
 `instant_car` is `nappy-day-N-instant-car`. A catalogue id inside a name is hyphenated
 (`homeless_yeller` → `homeless-yeller`). Each is sent once per attempt at a day, the same as
-`nappy-day-N-began`, so a nerve-bought retry counts again and the count reads against `began`.
+`nappy-day-N-began`. GoatCounter reports an event's count as visitors, not sends (the API's
+`count` is "Number of visitors for the selected date range"), so a retry by the same person adds
+nothing and every count reads as how many people met the thing, against how many began that day.
 
 - [ ] **What ended a day**, sent beside the existing `nappy-day-N-lost-*` so the counts already
       collected keep their meaning:
@@ -458,6 +460,27 @@ she is near enough to hear it, so no moment says she heard it), the HUD's tips (
 every time its day begins), and opening the pause screen (not a one-off). GoatCounter counts an
 event against the account's monthly total the same as a page view, which is why the repeatable
 moments are counted once per attempt.
+
+---
+
+## M209 — Claude reads the counter back · asked for 2026-09-26
+
+> "how can I make claude be able to see values from goatcounter"
+
+[PLAYTEST-141](playtests/PLAYTEST-141.md), statement 4. GoatCounter has a read API on the
+counter's own domain (`https://josuakrause.goatcounter.com/api/v0/`, spec at `/api.json`), taking
+an API key as `Authorization: Bearer <key>`. `GET /api/v0/stats/hits` lists paths with their
+visitor counts for a date range (`start`, `end`, `limit` up to 100, `exclude_paths` to page), and
+each entry says whether it is an event.
+
+- [ ] **A `tools/` entry point prints the `nappy-` event counts as a per-day funnel** for a date
+      range, reading the key from the environment variable `GOATCOUNTER_TOKEN` and failing with a
+      message that says how to set it when it is missing. Plain text, readable by a person and by
+      an assistant, with the run-level events (`run-*`, `ending-*`, `escape-*`, `controls-*`)
+      apart from the days.
+- [ ] **A cloud session reaches it** once the environment allows the host
+      `josuakrause.goatcounter.com` and carries `GOATCOUNTER_TOKEN` as a secret; a local session
+      needs only the variable. Written where the tool is catalogued.
 
 ---
 
