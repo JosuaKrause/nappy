@@ -30,7 +30,7 @@ auto-merge, manually merging, and asking an agent or monitor to merge. Permissio
 session does not carry over. Finishing implementation, opening a PR and green CI do not imply
 merge permission. Leave the PR open and report its link when permission has not been given.
 
-**A PR merges only after its review.** A review under **reviewing** has posted the verdict
+**A PR merges only after its review.** A review under **pr-review** has posted the verdict
 *ready* on the PR against its current head, or against a head whose later pushes were reviewed
 too. *(2026-09-26: "all PRs must go through a (adversarial) review before ready to be merged.")*
 Merge permission and green CI do not replace it.
@@ -167,7 +167,7 @@ it is the fallback for a description written by hand rather than the rule.
 ## Reviewing a pull request
 
 **Every pull request is reviewed adversarially before it is ready to merge**, and the findings go
-on the PR as comments. How is the **reviewing** skill's.
+on the PR as comments. How is the **pr-review** skill's.
 
 ## Branches
 

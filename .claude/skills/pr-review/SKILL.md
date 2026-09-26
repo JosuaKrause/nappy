@@ -1,5 +1,5 @@
 ---
-name: reviewing
+name: pr-review
 description: How every pull request is reviewed before it may merge — adversarially, by a reviewer that did not write it, semantic correctness first (the player's words, recorded decisions, the queue), then code, with the findings posted on the PR and a verdict against its current head. Load this BEFORE reviewing a PR, briefing a review agent, or deciding a PR is ready to merge.
 ---
 
