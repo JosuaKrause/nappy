@@ -158,6 +158,10 @@ const _HARD_FAIL_TEXT := {
 	# The same man, sent after her by a handed-over task rather than met in an alley, so the line
 	# is the alley robber's with the alley taken out of it.
 	"robber_giving_chase": "They were waiting for you.",
+	# The van's own guard, sent after her the same way — but he is the door's own man rather than
+	# the alley's, so his line follows `door_guard`'s tone (a detention, not a killing) with the
+	# package named as the reason, the same "what is lost is named, never dwelt on" rule.
+	"van_guard_giving_chase": "He caught up with the package still on her. They took her in.",
 	"firefight": "You walked into the middle of it.",
 	# Not an event, and the only hard fail the player can walk into rather than be caught by.
 	"car_strike": "It never slowed down. You were in the road.",

@@ -122,7 +122,7 @@ The subquest must *cost the core resource*. Joining the resistance means deliber
 choosing the worst routes for your baby: alleys, crowds, closed districts, a stranger's
 own field. The player trades the thing they have spent the whole game protecting, and every
 task is one verb — **get to a dangerous place and touch it**, the same day the mark that names it
-is touched: a guarded place, or one that sets a robber on her the moment she has.
+is touched: a guarded place, or one that sets someone on her the moment she has.
 
 ### Structure
 
@@ -162,20 +162,25 @@ the resistance*, narrowed to a task with exactly one place to be.
   notices them. Seeded from the run and the day, so the distance that was safe on day 9 of
   this run is safe on day 9 every time you replay it — the pattern is learnable, which is
   the difference between risk and a coin flip.
-- **A task that rides on something in the street sends a robber after her.** The man shouting,
-  the van, the burnt shell and a roadblock are not guarded where they wait. The moment she hands
-  the task over, a robber is sent after her from off screen — usually from above or below her,
-  `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) away, far enough past the edge of the view that the
-  screen-edge badge announces him before he is in it — awake and running at her from the first
-  frame. The warning is short: standing still, he reaches her about two seconds after the badge
-  rises. Running shakes him off; walking away does not, except where he has to come along her own
-  street from the side, which is further off. Whichever look-alike she
-  chose, the price is the same, and it is paid on the way out rather than guarded at one spot she
-  could avoid by choosing another. *(2026-09-13: "maybe spawn the robber in pursuing mode
-  offscreen when she interacts with the yeller so it runs towards her from offscreen.")* A task
-  that sits on a bare point — the district door, a mast's foot, the swing, the last night's front
-  door — keeps a robber waiting near it, as a mark does; the neighbor's has neither, since they
-  are walking home and there is no one spot to guard.
+- **Two tasks send someone after her rather than guarding where she finds them.** The man shouting
+  and the van's package are not guarded at the contact. The moment she hands either over, someone
+  is sent after her from off screen — usually from above or below her,
+  `Tuning.TRAP_ARRIVAL_DISTANCE` (313px) away, far enough past the edge of the view that the
+  screen-edge badge announces them before they are in it — awake and running at her from the first
+  frame. The man shouting's note sends the alley robber himself; the van's package sends the
+  roadblock's own guard, the same look and the same rules. The warning is short: standing still,
+  whoever comes reaches her about two seconds after the badge rises. Running shakes them off;
+  walking away does not, except where they have to come along her own street from the side, which
+  is further off. Whichever look-alike she chose for the man shouting, the price is the same, and
+  it is paid on the way out rather than guarded at one spot she could avoid by choosing another.
+  *(2026-09-13: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
+  yeller so it runs towards her from offscreen." PLAYTEST-144, statement 15, on a semantic review
+  that had widened this to every task riding on a row: "After the van (day 7) a guard chases her;
+  after the man shouting, the robber, which is fine only if he starts off screen.")* Every other
+  task that rides on something in the street or sits on a bare point — the burnt shell, a
+  roadblock, the district door, a mast's foot, the swing, the last night's front door — keeps a
+  robber waiting near it, as a mark does; the neighbor's has neither, since they are walking home
+  and there is no one spot to guard.
 - **The any-instance contact is whichever look-alike the player hands the note to.** It does
   not wait at the one instance the day happened to seed; it rides onto whichever live
   look-alike — a `homeless_yeller` or a `roadblock` — the player is within reach of, and follows

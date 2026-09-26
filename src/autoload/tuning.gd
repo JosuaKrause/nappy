@@ -335,35 +335,46 @@ const RESISTANCE_GOAL := 5
 ## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
 const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
-## How far from her the robber a handed-over task sets on her starts (`ResistanceDirector.
-## _set_the_trap_on_her()`, `EventCatalogue._robber_giving_chase()`): the trap of a perform step
-## comes to her rather than waiting at the contact, awake from its first frame and off screen.
+## How far from her a task's own trap starts (`ResistanceDirector._set_the_trap_on_her()`,
+## `EventCatalogue._robber_giving_chase()` and `_van_guard_giving_chase()`): the trap of a perform
+## step comes to her rather than waiting at the contact, awake from its first frame and off screen.
+## Shared by both rows the director can spawn, so it has to clear both their contracts, not the
+## robber's alone.
 ##
-## **It is the furthest start a walker still loses from.** Walking directly away, the gap closes at
-## his `pursue_speed` less `WALK_SPEED` (130 − 92 = 38px/s), and he has his notice plus his chase —
-## `telegraph_time` 2.0s and `duration` 6.0s on his row — to close it to his 30px catch. With half a
-## second of that kept as margin: 30 + 38 × (2.0 + 6.0 − 0.5) = **315px**. Any further and a player
-## who simply walks away outlasts him, which is the one answer a pursuit may not accept.
+## **It is the furthest start a walker still loses from — for whichever row has the tighter catch.**
+## Walking directly away, the gap closes at `pursue_speed` less `WALK_SPEED` (130 − 92 = 38px/s) for
+## either row (`Tuning.HEAT_HUNTS_SPEED`, the same figure `_alley_robbery()` hardcodes), and each has
+## its notice plus its chase — `telegraph_time` 2.0s and `duration` 6.0s on both rows — to close it
+## to its own catch. **The van's guard catches two pixels tighter than the robber**, 28px
+## (`MASKED_MAN_REACH`, `door_guard`'s own reach) against 30px, so his row is the one this constant
+## is stated over: with half a second of the notice-plus-chase kept as margin,
+## 28 + 38 × (2.0 + 6.0 − 0.5) = **313px**. At the robber's own 30px catch the same arithmetic would
+## allow 315px, so 313px leaves the robber a hair more margin than his own row alone would need —
+## the price of one constant serving two rows is that it is stated over whichever is less forgiving.
+## Any further and a player who simply walks away outlasts whichever row is watching, which is the
+## one answer a pursuit may not accept.
 ##
-## **Two floors it has to clear, and both are held by `tests/test_resistance.gd`:**
+## **Two floors it has to clear, and both are held by `tests/test_resistance.gd` for each row:**
 ##
-## - **The screen-edge badge is up before he is on screen.** `DangerEdge` raises one only for a
+## - **The screen-edge badge is up before it is on screen.** `DangerEdge` raises one only for a
 ##   thing `SCREEN_MARGIN` (130 screen px, 65px of world at zoom 2) outside the view, and only once
-##   its smoothed measure of his approach has risen, about 0.1s. So he has to start past the view's
-##   half-extent, plus the camera's lead toward him (`Stroller.CAMERA_LOOK_AHEAD`, 46px sideways and
-##   32px vertically), plus that margin, plus the 22px the gap closes while the badge rises:
-##   180 + 32 + 65 + 22 = 299px vertically, 320 + 46 + 65 + 22 = 453px sideways
-##   (`ResistanceDirector.badge_line()`). 315 clears the first and not the second, so the director
-##   starts him within about 18° of straight above or below her; where no such start has a clear run
-##   at her, he comes along her own street from the side at about 466px instead, and walking away
-##   outlasts him there (`ResistanceDirector._draw_arrival_position()`).
-## - **Standing still, he lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after he appears.** His
-##   lunge fires at his stand-off, `pursuit_standoff(130, 30)` = 108px, so the start has to be at
-##   least 108 + 130 × 1.5 = 303px.
+##   its smoothed measure of its approach has risen. So it has to start past the view's half-extent,
+##   plus the camera's lead toward it (`Stroller.CAMERA_LOOK_AHEAD`, 46px sideways and 32px
+##   vertically), plus that margin, plus the ground the gap closes while the badge rises — a figure
+##   `ResistanceDirector.badge_line()` computes per row, since it depends on the row's own
+##   `outer_radius` as well as its speed. 313px clears the vertical line and not the sideways one for
+##   either row, so the director starts it within a cone of straight above or below her; where no
+##   such start has a clear run at her, it comes along her own street from the side instead
+##   (`ResistanceDirector._draw_arrival_position()`, `beside_distance()`), and walking away outlasts
+##   it there.
+## - **Standing still, it lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after it appears.** The
+##   lunge fires at the row's own stand-off, `pursuit_standoff(130, inner)` — 108px for the robber's
+##   30px catch, 106px for the guard's 28px — so the start has to be at least stand-off plus
+##   130 × 1.5 = 303px for the robber, 301px for the guard; 313px clears both.
 ##
 ## Not `OUT_OF_SIGHT` (420px) plus a notice: from that far a walker escapes unless the chase ran
-## past the 6.0s `Tuning.validate_pursuit()` allows any pursuer.
-const TRAP_ARRIVAL_DISTANCE := 315.0
+## past the 6.0s `Tuning.validate_pursuit()` allows either pursuer.
+const TRAP_ARRIVAL_DISTANCE := 313.0
 
 ## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
 ## way. Chosen, not measured, and open to overturn once the late days are timed (M184).

@@ -351,7 +351,7 @@ func _header_text() -> String:
 			"than duplicated — `tests/test_events.gd`'s own relationship test runs the identical " +
 			"code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, " +
 			"pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, " +
-			"masked_pursuer) — its notice " +
+			"van_guard_giving_chase, masked_pursuer) — its notice " +
 			"and chase " +
 			"state is driven by where the player is, which the rig never tells it, so there is no " +
 			"pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty " +

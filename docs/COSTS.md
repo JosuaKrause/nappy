@@ -13,7 +13,7 @@ Every figure is on quiet sidewalk (ground multiplier 1.0); other grounds are not
 
 **`Walking at a fixed distance — awake`/`Walking at a fixed distance — asleep`** are the net points a second while she walks and stays a fixed distance from a row's centre: the field (`EventDef.emission_at()`, which is what `contribution_at()` charges) averaged over the row's own pulse, times the sleeping sensitivity where the baby is asleep, less the walking decay. A pure query on the row's own data — no instance, no notice or chase state — so every included row gets a real number here, pursuers and the three detainers (`chatting_mother`, `checkpoint_hut`, `checkpoint_post`) included, the same way `walk_through_cost()` already prices them: a detainer's real cost is `Tuning.CHAT_EXCITEMENT` over the hold rather than this field, so its figures here are notional, exactly as `docs/EVENTS.md` already says of its own column.
 
-**`The pass — awake`/`The pass — asleep`** are the net points from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going different directions, the row moving exactly as the game moves it (pacing, mobile, or held still), averaged over 8 samples of its own pulse phase except where the two paragraphs below say otherwise. `M174Pass.pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather than duplicated — `tests/test_events.gd`'s own relationship test runs the identical code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, masked_pursuer) — its notice and chase state is driven by where the player is, which the rig never tells it, so there is no pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty for a pursuer. The 0px column is dashed for a row with a solid, still body (`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk through.
+**`The pass — awake`/`The pass — asleep`** are the net points from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going different directions, the row moving exactly as the game moves it (pacing, mobile, or held still), averaged over 8 samples of its own pulse phase except where the two paragraphs below say otherwise. `M174Pass.pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather than duplicated — `tests/test_events.gd`'s own relationship test runs the identical code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, van_guard_giving_chase, masked_pursuer) — its notice and chase state is driven by where the player is, which the rig never tells it, so there is no pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty for a pursuer. The 0px column is dashed for a row with a solid, still body (`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk through.
 
 **A row that comes at her is met inside its own telegraph, and the pass says so.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: `EventDirector` creates it the moment it is owed, `EventDef.toward_player_lead()` px down her own line, and it covers that ground while it is still telegraphing — at `Tuning.TELEGRAPH_INTENSITY_FRACTION` of its intensity. So its pass is simulated from the spawn the director actually makes, at the closest siting any heading could give it (`EventDef.min_toward_player_lead()`, so the figure does not depend on which way a walk was going), telegraph running, moving as it moves. Such a row is measured once rather than averaged over 8 pulse phases: its pulse starts when it is created, so how far through the beat it is when it reaches her is fixed by the flight.
 
@@ -72,6 +72,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | collapsed_frontage   |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | neighbor             |  friction |       0.0 |              — |           — |         20.0 |         40.0 |           2.0 |            — |            — |      46.0 |              -5.2 |
 | robber_giving_chase  |      wall |      16.0 |              — |           — |         30.0 |        200.0 |           2.0 |            — |            — |     130.0 |              23.8 |
+| van_guard_giving_chase |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
 | finale_explosion     |      wall |      24.0 |              — |           — |        300.0 |        520.0 |           2.0 |            — |            — |         — |             165.2 |
 | impact_crater        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
@@ -129,6 +130,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | collapsed_frontage   |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | neighbor             |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | robber_giving_chase  |      10.0 |      10.0 |       9.8 |       8.9 |       7.3 |       2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| van_guard_giving_chase |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | finale_explosion     |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      13.0 |      -6.0 |
 | impact_crater        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | masked_pursuer       |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -186,6 +188,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | collapsed_frontage   |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | neighbor             |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | robber_giving_chase  |       2.8 |       2.8 |       2.7 |       2.2 |       1.3 |      -1.6 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| van_guard_giving_chase |       3.9 |       3.9 |       3.3 |       1.3 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | finale_explosion     |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       4.5 |      -6.0 |
 | impact_crater        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | masked_pursuer       |       3.9 |       3.9 |       3.3 |       1.3 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -243,6 +246,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | collapsed_frontage   |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | neighbor             |      -3.5 |      -3.0 |       0.0 |       0.0 |       0.0 |
 | robber_giving_chase  |         — |         — |         — |         — |         — |
+| van_guard_giving_chase |         — |         — |         — |         — |         — |
 | finale_explosion     |     -58.9 |     -58.8 |     -59.0 |     -59.3 |     -59.8 |
 | impact_crater        |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | masked_pursuer       |         — |         — |         — |         — |         — |
@@ -300,6 +304,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | collapsed_frontage   |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | neighbor             |      -3.5 |      -3.0 |       0.0 |       0.0 |       0.0 |
 | robber_giving_chase  |         — |         — |         — |         — |         — |
+| van_guard_giving_chase |         — |         — |         — |         — |         — |
 | finale_explosion     |     -62.3 |     -62.2 |     -62.3 |     -62.3 |     -62.4 |
 | impact_crater        |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | masked_pursuer       |         — |         — |         — |         — |         — |

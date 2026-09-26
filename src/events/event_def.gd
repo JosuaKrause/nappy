@@ -100,6 +100,10 @@ enum Look {
 	ROBBER_GIVING_CHASE, ## The man a handed-over task sets on her — the alley robber himself, only
 	                     ## ever drawn coming (he never waits), badged by his side view, since
 	                     ## `ROBBER`'s badge is already the front of the lunge.
+	# ---- the resistance's own guard, sent after her from the van ----
+	VAN_GUARD_GIVING_CHASE, ## The guard the van's task sets on her — the same man as `DOOR_GUARD`
+	                        ## and `MASKED_PURSUER`, only ever drawn coming, badged by his back
+	                        ## view, the one picture of him neither of theirs already stands for.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -1113,10 +1117,11 @@ func validate() -> bool:
 	# `Tuning.EVENT_STREAM_RADIUS` away, off screen, before she could ever meet it. Only a row
 	# something sets on her at a moment of its own may have that shape, and the catalogue's own
 	# sentinel for such a row is `SCRIPTED` on day 0, the day nobody plays: `available_on()` then
-	# never offers it to the roll, the stream or the budget. `door_guard` (set on her by a door)
-	# and `robber_giving_chase` (set on her by a handed-over task) are the two. Asked of both days a
-	# row can answer — `spawn_mode_on()`'s switch — so `charging_dog`, trigger-less only while the
-	# director sites it and waiting once it is placed, is the shape this allows rather than refuses.
+	# never offers it to the roll, the stream or the budget. `door_guard` (set on her by a door),
+	# and `robber_giving_chase` and `van_guard_giving_chase` (both set on her by a handed-over
+	# task) are the three. Asked of both days a row can answer — `spawn_mode_on()`'s switch — so
+	# `charging_dog`, trigger-less only while the director sites it and waiting once it is placed,
+	# is the shape this allows rather than refuses.
 	if pursues and not (kind == GameEnums.EventKind.SCRIPTED and scripted_day == 0):
 		var awake_on_the_map := spawn_mode == SpawnMode.MAP and pursues_within <= 0.0
 		if spawn_mode_switches_after_day > 0 and spawn_mode_after_first_day == SpawnMode.MAP \

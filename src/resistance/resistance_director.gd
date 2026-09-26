@@ -1,8 +1,9 @@
 class_name ResistanceDirector
 extends Node
 ## Places the day's resistance contact, and enforces the two things that make the subquest
-## cost something: every contact is paid for in danger — a mark is guarded, and a task that rides
-## on a row sets a robber on her the moment it is handed over — and a timed step expires.
+## cost something: every contact is paid for in danger — a mark is guarded, and the man shouting's
+## note or the van's package sets someone on her the moment it is handed over — and a timed step
+## expires.
 ##
 ## Deterministic from the run seed and the day, like everything else, so an alley that was
 ## safe on day 9 of this run is safe on day 9 of this run every time you replay it. The
@@ -256,9 +257,10 @@ func _begin_step(step: ResistanceSteps.Step) -> void:
 		_step.index, TelemetryLog.tile(_map.world_to_tile(at))])
 
 	# A guard stands where a contact waits. The neighbor does not wait — they are walking home — so
-	# a robber at the spot they set out from would guard nothing. And a task that rides on a row is
-	# not guarded where it waits at all: its trap comes to her once she has handed it over
-	# (`sets_a_trap_on_her()`), from wherever she did.
+	# a robber at the spot they set out from would guard nothing. The man shouting and the van are
+	# not guarded where they wait at all: their trap comes to her once she has handed it over
+	# (`sets_a_trap_on_her()`), from wherever she did. Every other task that rides on a row — the
+	# burnt shell, a roadblock — keeps a guard waiting at the contact, exactly like a chalk mark.
 	if not neighbor and not sets_a_trap_on_her(_step):
 		_maybe_set_a_trap(_day, _rng, at)
 
@@ -289,9 +291,10 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 	return null
 
 ## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor a task that sits
-## on a bare point (a door, a mast's foot, a swing, the last night's front door) — a robber drawn
+## on a bare point (a door, a mast's foot, a swing, the last night's front door) or rides on a row
+## without sending its own trap after her (the burnt shell, a roadblock) — a robber drawn
 ## from the band `alley_robbery`'s own numbers fix, so *always guarded* stays survivable
-## instead of a guaranteed lost day. A task that rides on a row gets `_set_the_trap_on_her()`
+## instead of a guaranteed lost day. The man shouting and the van get `_set_the_trap_on_her()`
 ## instead, and the neighbor neither: see `_begin_step()`. See docs/DECISIONS.md, "the guard,
 ## worked out from the numbers rather than chosen": below the band touching the mark is death,
 ## always; above it he is scenery; between them which side she approaches from decides whether he
@@ -329,25 +332,38 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 			% [at.distance_to(guard_at), min_distance, max_distance])
 	_guard = _city.events.spawn_extra(robbery, guard_at)
 
-## Whether `step`'s trap comes to her rather than waiting at its contact: a perform step whose
-## contact rides on a row (`task_event_id` — the man shouting, the van, the burnt shell, a
-## roadblock), which is where *"spawn the robber in pursuing mode offscreen when she interacts with
-## the yeller"* was said. **Not the neighbor**, whose task has never been guarded — they are
-## walking home, and a guard at the spot they set out from would guard nothing — and never a chalk
-## mark, a bare-point task or the last night, whose robber still waits at the contact
-## (`_maybe_set_a_trap()`).
+## Whether `step`'s trap comes to her rather than waiting at its contact: the man shouting
+## (`task_event_id` "homeless_yeller") and the van (`"delivery_van"`), the two tasks named at the
+## keyboard — *"spawn the robber in pursuing mode offscreen when she interacts with the yeller"*
+## for the first, PLAYTEST-144 statement 15 for the second: "After the van (day 7) a guard chases
+## her; after the man shouting, the robber, which is fine only if he starts off screen." A
+## semantic review of this PR (github.com/JosuaKrause/nappy/pull/362#pullrequestreview-5326113448)
+## had widened this to every perform step whose contact rides on a row — the burnt shell and a
+## roadblock besides — which nobody had asked for; the player's answer sends those two back to
+## their waiting guard, the smallest reading. **Not the neighbor**, whose task has never been
+## guarded — they are walking home, and a guard at the spot they set out from would guard nothing
+## — and never a chalk mark, a bare-point task, the burnt shell, a roadblock or the last night,
+## whose robber still waits at the contact (`_maybe_set_a_trap()`).
 static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
-	return step != null and not step.is_pickup and step.task_event_id != "" \
-			and step.target_kind != ResistanceSteps.TargetKind.NEIGHBOR
+	return step != null and step.task_event_id in ["homeless_yeller", "delivery_van"]
+
+## Which catalogue row `_set_the_trap_on_her()` spawns for the current step's own task: the alley
+## robber for the man shouting, the roadblock's own guard for the van. Only ever asked once
+## `sets_a_trap_on_her(_step)` is already true, so every other `task_event_id` would be a bug
+## reaching here rather than a real third case.
+func _trap_row_id() -> String:
+	return "van_guard_giving_chase" if _step and _step.task_event_id == "delivery_van" \
+			else "robber_giving_chase"
 
 ## **The trap comes to her.** *(2026-09-13, the player: "maybe spawn the robber in pursuing mode
 ## offscreen when she interacts with the yeller so it runs towards her from offscreen".)* The moment
-## a task that rides on a row is handed over, a `robber_giving_chase` — the alley robber, awake from
-## his first frame — is spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) above or
-## below her, always far enough past the edge of the view that the screen-edge badge is up before he
+## the man shouting's note or the van's package is handed over, `_trap_row_id()`'s row — the alley
+## robber for the first, the roadblock's own guard for the second, awake from its first frame — is
+## spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (313px) above or
+## below her, always far enough past the edge of the view that the screen-edge badge is up before it
 ## is in it (`_draw_arrival_position()`), and comes at her. So whichever look-alike she chose, the errand costs the same: the price is
 ## paid on the way out, from wherever she did it, rather than guarded at one seeded spot she could
-## avoid by picking another. The screen-edge badge announces him while he is off screen, the same
+## avoid by picking another. The screen-edge badge announces it while it is off screen, the same
 ## way it announces any pursuer (`DangerEdge._is_worth_an_arrow()`).
 ##
 ## From `TRAP_FIRST_DAY`, like the guard. Where she is, or the contact she has just touched when
@@ -356,7 +372,7 @@ static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 func _set_the_trap_on_her() -> void:
 	if _day < TRAP_FIRST_DAY or not _city or not _city.events:
 		return
-	var def := EventCatalogue.by_id("robber_giving_chase")
+	var def := EventCatalogue.by_id(_trap_row_id())
 	if not def:
 		return
 	var her := _player_position()
@@ -385,11 +401,13 @@ func _set_the_trap_on_her() -> void:
 ## qualifies; `clear` when the straight line from there to her is walkable; `beside` when he starts
 ## to her side rather than above or below her.
 ##
-## **Above or below her, `Tuning.TRAP_ARRIVAL_DISTANCE` (315px) out, by preference.** That is past
-## the badge line vertically within `arrival_cone()` (about 18°) of straight up or down, and never
-## sideways, where the view is wider — so those bearings are drawn inside the two cones rather than
-## from the whole circle. Straight up and straight down first, in an order the day's RNG picks,
-## then `TRAP_DRAW_LIMIT` bearings from the cones.
+## **Above or below her, `Tuning.TRAP_ARRIVAL_DISTANCE` (313px) out, by preference.** That is past
+## the badge line vertically within `arrival_cone()` — about 17° for `robber_giving_chase`
+## (`outer_radius` 200), about 13° for `van_guard_giving_chase` (`outer_radius` 120, a narrower
+## field, so the badge needs longer to rise and the cone that stays past its line is tighter) — of
+## straight up or down, and never sideways, where the view is wider — so those bearings are drawn
+## inside the two cones rather than from the whole circle. Straight up and straight down first, in
+## an order the day's RNG picks, then `TRAP_DRAW_LIMIT` bearings from the cones.
 ##
 ## **A clear run at her is what decides it**, since he chases in a straight line
 ## (`EventInstance._chase()`), sliding along whatever wall is in the way: a start behind a building
@@ -442,7 +460,10 @@ func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: Event
 ## - plus the ground the gap closes by while the badge rises (`badge_rise_time()`), at his speed and
 ##   hers together, since she may be walking into him.
 ##
-## For `robber_giving_chase` at 315px, about 452 sideways and 299 vertically.
+## For `robber_giving_chase` at 313px, about 453 sideways and 299 vertically; for
+## `van_guard_giving_chase` at the same 313px, about 459 sideways and 305 vertically — a few px
+## more each way, since his narrower 120px `outer_radius` (against the robber's 200px) leaves more
+## of the approach still to close and so costs the badge a little longer to rise.
 static func badge_line(def: EventDef, distance: float) -> Vector2:
 	var world_per_screen_px := Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
 	var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD, Stroller.CAMERA_LOOK_AHEAD * Stroller.OBLIQUE_Y)
@@ -456,7 +477,9 @@ static func badge_line(def: EventDef, distance: float) -> Vector2:
 ## from zero), and it announces once that reaches `DangerEdge.announces()`'s own threshold at that
 ## range — `CLOSING_SPEED`, or the gap to the field over `LEAD_TIME`. Plus two frames at 30 frames a
 ## second, the slowest a phone runs it: the first, which has no earlier position to measure an
-## approach from, and one of rounding. About 0.1s for the robber at 315px, 0.15s at 466px.
+## approach from, and one of rounding. About 0.1s for the robber at 313px, 0.15s at his 466px
+## beside distance; about 0.13s for the van's guard at 313px, 0.2s at his own 476px beside
+## distance — his narrower field leaves more of the approach still to close either way.
 static func badge_rise_time(speed: float, distance: float, outer: float) -> float:
 	var needed := maxf(DangerEdge.CLOSING_SPEED, maxf(0.0, distance - outer) / DangerEdge.LEAD_TIME)
 	if needed >= speed:
