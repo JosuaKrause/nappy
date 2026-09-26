@@ -426,7 +426,7 @@ static func forced_row() -> String:
 ##
 ## Short, because the point of the flag is to see the same encounter several times in a row without
 ## walking a day for each one, and long enough that two are never on screen together: a `cyclist`
-## sited 565px out and closing at 257px/s takes about 2.2s to arrive, so 6s leaves the last one
+## sited 591px out and closing at 257px/s takes about 2.3s to arrive, so 6s leaves the last one
 ## finished and gone before the next is placed.
 static func forced_interval() -> float:
 	var args := _args()

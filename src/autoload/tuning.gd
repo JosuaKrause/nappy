@@ -1343,8 +1343,8 @@ const CAR_WARNING_HOLD := 1.4
 ## The mark over her head is the one cue in the game that gives an **instruction**, and its second
 ## level says *it is bad now and you are in it: one step left*. That is a claim about a moment, so it
 ## needs a clock rather than a radius: raised anywhere inside a lethal event's **outer** radius it
-## covers more than thirty times the area that can end the day for a cyclist, and stays up while the
-## bike rides away.
+## covers about three times the area that can end the day for a cyclist (a 60px outer radius against
+## a 33px lethal reach), and stays up while the bike rides away.
 ##
 ## Read it as the step: at `WALK_SPEED` it is 64px, which is two tiles, which is the width of the
 ## pavement she would have to leave. Long enough to be an instruction she can still obey and short
@@ -1553,7 +1553,7 @@ func min_offscreen_lead(closing_speed: float, notice: float = OFFSCREEN_NOTICE) 
 ## `TOWARD_PLAYER` row gets), or the distance that takes `telegraph_time + notice` to close at
 ## `closing_speed` — the same margin restated over the telegraph instead of the view boundary, so
 ## the approach outlasts it by a real amount rather than by a coin flip of frame timing. At `cyclist`'s
-## current 2.0s telegraph the telegraph term still dominates: `(2.0 + 0.2) * 257` = 565px, against an
+## current 2.1s telegraph the telegraph term still dominates: `(2.1 + 0.2) * 257` = 591px, against an
 ## `offscreen_lead()` of at most 371px on the widest axis.
 ##
 ## **`arrival_margin` is what "before it arrives" means for this row, and it is not the same

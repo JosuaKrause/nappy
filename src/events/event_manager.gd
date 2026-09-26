@@ -938,10 +938,10 @@ static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 ## cue being honest about a game whose first days are barely dangerous.
 ##
 ## **And `NOW` is about the pair of them, not about the disc.** Raised for any live lethal event
-## whose **outer** radius covers her, it is up across more than thirty times the area that could
-## hurt her — a cyclist ends the day inside 26px and reaches 145 — and it stays up while the bike
-## rides away, which is *"the flashing exclamation marks after the fact"* on the events' side of a
-## fix the traffic already has in `stand_down()`.
+## whose **outer** radius covers her, it is up across about three times the area that could hurt
+## her — a cyclist ends the day inside 33px and its outer radius reaches 60 — and it stays up while
+## the bike rides away, which is *"the flashing exclamation marks after the fact"* on the events'
+## side of a fix the traffic already has in `stand_down()`.
 ##
 ## So it is two conditions: she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the
 ## day, **and** the gap is actually shrinking at the speeds in play.
