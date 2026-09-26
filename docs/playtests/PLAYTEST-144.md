@@ -29,8 +29,7 @@ conflicted code file.
 ## Then, on how the names work
 
 Offered: a date in the file's name with two words after it, the same with three words, or three
-words alone with the date inside the file, after the orchestrator's note that "A small script
-picks an unused name and writes the file's header". The player chose the first, whose option read
+words alone with the date inside the file. The player chose the first, whose option read
 "File docs/todo/2026-09-26-busy-badger.md; spoken and linked as "busy-badger". Sorted by date for
 free; short to say; lint rejects a duplicate.":
 
@@ -66,10 +65,13 @@ The proposal the player was answering, verbatim from the orchestrator's message:
 > | **Playtest** | `docs/playtests/PLAYTEST-144.md` | `docs/playtests/2026-09-26-quiet-heron.md` | **yes** |
 > | **Evidence folder** | `docs/evidence/m203-slug-date/` | `docs/evidence/busy-badger-slug-date/`, taking the entry's name | follows the entry |
 >
+>
+> What keeps its number or form:
 > - **Existing M1–M223 and PLAYTEST-01…144** keep their numbers. Old entries still move into
 >   folders, e.g. `docs/todo/2026-09-26-M210/`, and old decisions into files, e.g.
 >   `docs/decisions/…-M203.md`. Renaming them would be a diff nobody can review.
-> - **Statement numbers inside a playtest** ("statement 3") stay numbers.
+> - **Statement numbers inside a playtest** ("statement 3") stay numbers. They're local to one
+>   file, so two PRs never compete for them.
 > - **Releases** keep semantic version numbers (`v0.19.0`), and PR numbers are GitHub's.
 > - **`HANDOFF.md`** stays one file, written only at the end of a session.
 > - **`TODO.md`** keeps only its header and "The order", the priority list that points at entry
