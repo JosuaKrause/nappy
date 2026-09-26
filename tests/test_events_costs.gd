@@ -180,12 +180,12 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 			"and there is exactly one of them (%d): a second is a decision somebody takes"
 			% _RUNNING_IS_CHEAPER.size())
 
-## **The cyclist's shorter warning was not asked to make him cheaper.** *(PLAYTEST-144, statement
-## 16: "13 is not okay" — M207 shrank his field to shorten the warning and halved his full-pass
-## cost as a side effect, 16.0 to 12.1 (`docs/DECISIONS.md`, M207).)* Pinned at the pre-M207 figure
-## rather than compared against a stored "old" run, so a future change to his geometry has to keep
-## clearing this line rather than quietly redefining it — `docs/COSTS.md`'s own rounding
-## (one decimal place) is the tolerance.
+## **A shorter warning for the cyclist may not make him cheaper to pass.** *(PLAYTEST-144, statement
+## 16: "13 is not okay" — the player's answer to a smaller field that shortened his warning and cut
+## his full pass from 16.0 to 12.1; `docs/DECISIONS.md`, M207.)* So his full pass,
+## `EventDef.walk_through_cost()`, is pinned at 16.0 rather than compared against a stored run, and a
+## change to his geometry or his warning has to keep clearing this line rather than quietly
+## redefining it — `docs/COSTS.md`'s own rounding (one decimal place) is the tolerance.
 const CYCLIST_FULL_PASS_COST := 16.0
 const CYCLIST_FULL_PASS_COST_TOLERANCE := 0.1
 
@@ -197,8 +197,8 @@ func _test_the_cyclist_costs_what_he_did(t) -> void:
 		found = true
 		var cost := def.walk_through_cost()
 		t.check(absf(cost - CYCLIST_FULL_PASS_COST) <= CYCLIST_FULL_PASS_COST_TOLERANCE,
-				("cyclist: a full pass costs %.1f, not the %.1f it cost before the smaller field " +
-				"made him cheaper for a shorter warning") % [cost, CYCLIST_FULL_PASS_COST])
+				("cyclist: a full pass costs %.1f, pinned at %.1f so that a change to his warning " +
+				"does not make him cheaper") % [cost, CYCLIST_FULL_PASS_COST])
 	t.check(found, "the cyclist is still in the catalogue")
 
 ## *(Playtest 07: "on day 3 we introduce the running key (it is possible to run before but not

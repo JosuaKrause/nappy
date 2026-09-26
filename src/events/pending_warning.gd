@@ -23,7 +23,7 @@ extends RefCounted
 ## **Where there is no sensible ground this frame the place holds where it last was**, rather than
 ## leaving its ground, and the thing waits past its time until both are true again: the place is on
 ## its ground, and it is off screen by the row's own notice. A thing never spawns closer than that,
-## so the fairness contract measured from the badge (`EventDef.least_warning()`) holds whatever she
+## so the fairness contract measured from the badge (`EventDef.warning_time()`) holds whatever she
 ## did while it waited. The owner of the warning (`EventManager`) decides what "arrive" does; this
 ## class holds the place and the clock.
 
