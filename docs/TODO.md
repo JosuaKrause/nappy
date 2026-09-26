@@ -33,10 +33,15 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 **First, before any new task** ([PLAYTEST-144](playtests/PLAYTEST-144.md)): every open PR
 converted to M223's layout of one file per queue entry and per decision, then **M223**'s one open
 item, the overhaul of every entry and review item, then **M225**, the counter counts every
-attempt, a key player, and a torn poster's chase
-([2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statement 1: "then the new planning
-rules. then we need to update all open PRs to follow the new planning rules" · "then the counter
-args" · "then we can do regular work again").
+attempt, a key player, and a torn poster's chase. The player's order is M223, then the PRs
+converted, then M225 ([2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statement 1:
+"then the new planning rules. then we need to update all open PRs to follow the new planning
+rules" · "then the counter args" · "then we can do regular work again"). Putting M223's overhaul
+after the conversions is the orchestrator's ordering: a conversion replays a PR's queue edits onto
+`main`'s entry files, and refuses where the PR closes an item or entry whose file `main` has
+changed, or edits lines `main` rewrote, so an overhaul first would make the conversion of every PR
+that closes or edits an entry refuse. The player agreed to it (brisk-heron, statements 11 and 12:
+"sounds good" · "once all is updated let's do the telemetry finally").
 
 0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
    left open**, on the same footing as the round before it: **M125**, the test suite
