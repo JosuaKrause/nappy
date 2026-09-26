@@ -127,8 +127,11 @@ is touched.
 ### Structure
 
 A task is one day: she touches the chalk mark, the task is announced there and then, and it is
-performed the same day. Every task day starts with a mark. Touching either — the mark or the
-task's own contact — is instant: there is no key to hold, and no standing still to pay for. Only
+performed the same day. Every task day starts with a mark. Touching the mark is instant: there is
+no key to hold, and no standing still to pay for. So is every task's own contact but one: day 6's
+note has to be given from inside the man's own full field, held for a real stretch
+(`Tuning.NOTE_HANDOVER_DWELL_SECONDS`) rather than brushed on the way past, since an instant
+handover used to cost less than an ordinary walk past him doing nothing at all. Only
 completing the task itself grants **1 resistance progress**; the mark is the note, not the
 errand. Reaching `Tuning.RESISTANCE_GOAL` (five) tasks earns the chance at the good ending; the
 day-14 sabotage is the act on top of it — see "The finale" below.

@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_walking_away_leaves_it_untouched(t)
 	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
 	_test_a_perform_contact_rides_on_its_instance(t)
+	_test_the_notes_handover_costs_a_real_dwell_not_an_instant_touch(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
@@ -215,6 +216,7 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 	_player = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	_player.add_child(camera)
 	t.add_child(_player)
 	_player.set_physics_process(false)
@@ -233,14 +235,81 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 	contact._physics_process(STEP)
 	t.check(not contact.is_done, "out of reach of where the rider is now")
 
-	# The rider moves; the contact follows it rather than staying where it started.
+	# The rider moves; the contact follows it rather than staying where it started. Index 2's own
+	# handover_dwell_seconds (M205) means reaching it is not instant any more -- see the dedicated
+	# dwell tests below -- so this drives enough ticks to actually clear it, which is still "once
+	# she reaches wherever the rider has gone", only over the dwell rather than in one tick.
 	instance.position = Vector2.ZERO
-	contact._physics_process(STEP)
+	var ticks := ceili(Tuning.NOTE_HANDOVER_DWELL_SECONDS / STEP) + 1
+	for _i in ticks:
+		contact._physics_process(STEP)
 	t.check(contact.is_done, "and completes once she reaches wherever the rider has gone")
 
 	contact.free()
 	instance.free()
 	_player.free()
+
+## M205, "the note costs, and the ordinary day" -- fails before the fix: the old code completed
+## the instant `ContactPoint.REACH` (36px) was reached, which sits inside a rider's 45px
+## `inner_radius`, so a note handed over on the way past landed only the last few pixels of his
+## full-strength field before he left. Pins three things about `handover_dwell_seconds` at once:
+## it does not fire on the first tick, brushing the radius and stepping back out does not bank
+## time toward a later approach, and continuous dwelling for the whole of it does complete.
+func _test_the_notes_handover_costs_a_real_dwell_not_an_instant_touch(t) -> void:
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	player.add_child(camera)
+	t.add_child(player)
+	player.set_physics_process(false)
+
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
+	t.add_child(instance)
+	instance.set_process(false)
+
+	var contact := ContactPoint.new()
+	var step := ResistanceSteps.by_index(2)
+	t.check(step.handover_dwell_seconds > 0.0,
+			"day 6's note is the step this dwell exists for")
+	contact.ride(step, instance, Vector2.ZERO)
+	t.add_child(contact)
+	contact.set_physics_process(false)
+	player.global_position = Vector2.ZERO
+
+	contact._physics_process(STEP)
+	t.check(not contact.is_done, "one tick, even standing exactly on him, is not a handover")
+
+	# Half the dwell, then she steps back out past his inner_radius and returns: the partial dwell
+	# does not survive the break.
+	var half_ticks := int(round((step.handover_dwell_seconds * 0.5) / STEP))
+	for _i in half_ticks:
+		contact._physics_process(STEP)
+	t.check(not contact.is_done, "half the dwell is still not a handover")
+
+	player.global_position = Vector2.ONE * (instance.def.inner_radius + 5.0)
+	contact._physics_process(STEP)
+	t.check(not contact.is_done, "stepping outside his inner_radius does not complete it either")
+	player.global_position = Vector2.ZERO
+	contact._physics_process(STEP)
+	# One tick back in is not the whole dwell again from scratch -- confirm the clock actually
+	# reset rather than merely paused, by running out only the remainder a *paused* clock would
+	# have needed and checking it still is not done.
+	for _i in (half_ticks - 2):
+		contact._physics_process(STEP)
+	t.check(not contact.is_done,
+			"stepping out reset the dwell -- the remainder of the first attempt is not enough")
+
+	# Now the whole dwell, uninterrupted.
+	var ticks := ceili(step.handover_dwell_seconds / STEP) + 1
+	for _i in ticks:
+		contact._physics_process(STEP)
+	t.check(contact.is_done, "a full, continuous dwell inside his inner_radius completes it")
+
+	contact.free()
+	instance.free()
+	player.free()
 
 func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 	var instance := EventInstance.new()
@@ -1030,7 +1099,11 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 
 		var completed: Array[int] = []
 		director._contact.completed.connect(func(index: int) -> void: completed.append(index))
-		director._contact._physics_process(STEP)
+		# Step 2's own handover_dwell_seconds (M205) means standing on the retargeted contact
+		# takes the same dwell an ordinary approach would, not one tick.
+		var ticks := ceili(Tuning.NOTE_HANDOVER_DWELL_SECONDS / STEP) + 1
+		for _i in ticks:
+			director._contact._physics_process(STEP)
 		t.check(completed == [2], "touching the retargeted contact completes step 2 itself")
 
 		player.free()

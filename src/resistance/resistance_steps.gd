@@ -73,6 +73,12 @@ class Step extends RefCounted:
 	var header := ""
 	## True for the one perform step that makes the pram heavier for the rest of the day.
 	var applies_package_weight := false
+	## Seconds `ContactPoint` makes her stand continuously within the rider's own `inner_radius`
+	## before this perform step completes, instead of the instant `ContactPoint.REACH` (36px) is
+	## reached. 0 for every step but day 6's note (M205, "the note costs, and the ordinary day"):
+	## `Tuning.NOTE_HANDOVER_DWELL_SECONDS` for that one. See that constant's own doc for why an
+	## instant handover was cheaper than an ordinary pass.
+	var handover_dwell_seconds := 0.0
 
 static var _all: Array[Step] = []
 
@@ -249,14 +255,18 @@ static func _finale(index: int, title: String, day: int, header: String) -> Step
 	return step
 
 static func _build() -> Array[Step]:
+	# Day 6 · a note for the man shouting — any of them. He is the group's lookout, and the cost
+	# is the approach: several homeless_yeller rows are already live, and the one carrying the
+	# contact looks exactly like the rest of them. A local rather than inline in the array below
+	# so `handover_dwell_seconds` can be set on it — see that field's own doc.
+	var note_for_a_stranger := _perform(2, "A note for a stranger", 6, "homeless_yeller",
+			[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], false,
+			TargetKind.EVENT, false, "the one who won't stop shouting")
+	note_for_a_stranger.handover_dwell_seconds = Tuning.NOTE_HANDOVER_DWELL_SECONDS
+
 	return [
-		# Day 6 · a note for the man shouting — any of them. He is the group's lookout, and
-		# the cost is the approach: several homeless_yeller rows are already live, and the one
-		# carrying the contact looks exactly like the rest of them.
 		_mark(1, "A chalk mark", 6, "Give it to the one who won't stop shouting."),
-		_perform(2, "A note for a stranger", 6, "homeless_yeller",
-				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], false,
-				TargetKind.EVENT, false, "the one who won't stop shouting"),
+		note_for_a_stranger,
 
 		# Day 7 · the package at a delivery_van's drop — one place, red arrow. From the group
 		# to the neighbor down the hall; carrying it makes the pram heavier for the rest of the
