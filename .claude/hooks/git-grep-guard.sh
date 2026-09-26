@@ -41,8 +41,9 @@
 #      grep ..."`, `os.system(r'git grep ...')`;
 #   3. quotes and backslash escapes honoured, a quoted string staying inside its word, so a quoted
 #      argument with a space stays one word (`git -C "/a b" grep`, `-c "x=bold red"`), a quoted
-#      pattern such as `"gcc -I"` is not read as the `-I` flag, and a quoted `'>'` or `'<'` is a
-#      pathspec entry rather than a redirect.
+#      pattern such as `"gcc -I"` is not read as the `-I` flag, a quoted `'>'` or `'<'` is a
+#      pathspec entry rather than a redirect, and a quoted `')'`, `'|'` or `\;` is an argument
+#      rather than the end of the command.
 #   In the first two readings a comma right after a quote mark splits words, which is how a Python
 #   list (`["git", "grep", ...]`) reads; a comma anywhere else does not, so prose such as "git,
 #   grep" is not an invocation. In the third reading every unquoted comma splits.
@@ -103,14 +104,16 @@ def plain_words:
 
 # Reading 3 honours quotes and backslash escapes: a quoted string stays inside its word, and a
 # newline inside one becomes a space. A word that had any quoting and looks like a redirect (`'>'`,
-# `"2>"`, `\<`) is a literal argument to bash, so it gets a leading \u0001 that no redirect, option
-# or text glob starts with. `foreach` hands each finished word straight to the collecting `[...]`
+# `"2>"`, `\<`) or is a separator (`')'`, `'|'`, `\;`, git grep's own `\( ... \)` grouping) is a
+# literal argument to bash, so it gets a leading \u0001 that no redirect, separator, option or text
+# glob starts with. `foreach` hands each finished word straight to the collecting `[...]`
 # rather than appending it to an array in the state, which jq would copy on every append and make
 # the reading quadratic in the number of words; a `null` after the last character flushes the last
 # word.
 def flush:
   if .cur != "" then
-    .emit += [if .quoted and (.cur[0:3] | test("^[0-9]{0,2}[<>]")) then "\u0001" + .cur else .cur end]
+    .emit += [if .quoted and ((.cur[0:3] | test("^[0-9]{0,2}[<>]")) or (.cur | IN(";", "&", "|", "(", ")", "`")))
+              then "\u0001" + .cur else .cur end]
     | .cur = ""
   else . end
   | .quoted = false;

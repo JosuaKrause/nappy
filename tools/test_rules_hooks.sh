@@ -628,6 +628,22 @@ assert_guard "text pathspec, then &>/dev/null at the end -> allow" allow \
 assert_guard "a guarded git grep sent to the background with a bare & -> allow" allow \
     "git grep -I -n foo -- docs/ & wait"
 
+# A quoted or escaped separator is an argument, not the end of the command.
+assert_guard "a quoted ')' before a non-text entry -> deny" deny \
+    "git grep -n foo -- '*.md' ')' docs/"
+assert_guard "a quoted '|' before a non-text entry -> deny" deny \
+    "git grep -n foo -- '*.md' '|' docs/"
+assert_guard "an escaped \\; before a non-text entry -> deny" deny \
+    "git grep -n foo -- '*.md' \\; docs/"
+assert_guard "git grep's quoted '(' ... ')' grouping, then a cancelling -a -> deny" deny \
+    "git grep -I '(' -e foo ')' -a"
+assert_guard "git grep's escaped \\( ... \\) grouping, then a cancelling -a -> deny" deny \
+    "git grep -I \\( -e foo \\) -a"
+assert_guard "a guarded grouping with no -a after it -> allow" allow \
+    "git grep -I '(' -e foo --or -e bar ')' -- docs/"
+assert_guard "an unquoted ; still ends the command -> allow" allow \
+    "git grep -I -n foo; ls docs/"
+
 # The reviewer's minor shapes.
 assert_guard "\$'git' grep (ANSI-C quoting) -> deny" deny \
     "\$'git' grep -n -i foo -- docs/"
