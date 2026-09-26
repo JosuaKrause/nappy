@@ -350,7 +350,8 @@ class CheckKeyTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertTrue(result["reads_statistics"])
         self.assertFalse(result["permissions_available"])
-        self.assertIn("statistics-only key", result["note"])
+        self.assertIn("HTTP 404", result["note"])
+        self.assertIn("the key still reads statistics", result["note"])
 
     def test_stats_ok_and_me_403_is_the_same_as_404(self) -> None:
         def me_fetch(_site: str, _token: str) -> dict[str, Any]:
@@ -400,11 +401,14 @@ class CheckKeyTests(unittest.TestCase):
                 "ok": True,
                 "reads_statistics": True,
                 "permissions_available": False,
-                "note": "permission list is not available to a statistics-only key, which is the recommended kind",
+                "note": (
+                    "permission list could not be read (GET /api/v0/me answered HTTP 404); "
+                    "the key still reads statistics"
+                ),
             },
             site="s",
         )
-        self.assertIn("statistics-only key", unavailable)
+        self.assertIn("could not be read", unavailable)
         self.assertNotIn("secret", unavailable)
 
 
@@ -559,7 +563,7 @@ class MainTests(unittest.TestCase):
             code = goatcounter.main(["--check"])
         self.assertEqual(code, 0)
         self.assertIn("reads statistics", stdout.getvalue())
-        self.assertIn("statistics-only key", stdout.getvalue())
+        self.assertIn("HTTP 404", stdout.getvalue())
         self.assertNotIn("secret", stdout.getvalue())
 
     def test_check_reports_a_rejected_key_with_a_nonzero_exit_and_never_calls_me(self) -> None:

@@ -36,11 +36,11 @@ printed anyway, at the end, rather than silently dropped. `--raw` skips the grou
 alike -- what an assistant would otherwise reach for a hand-written request to answer.
 
 `--check` proves the key works with `GET /api/v0/stats/total` for the last hour, which needs only
-the "Read statistics" permission -- the one every read-only key has, and the recommended kind for
-this tool. It then tries `GET /api/v0/me` for the token's own name and permissions, which a
-statistics-only key is *not* allowed to see: on a 403 or 404 there it says so and still succeeds,
-since the key demonstrably works; only a failure of the statistics call itself (401/403, or a
-network error) is the real "this key does not work". Never prints the key.
+the "Read statistics" permission -- the one every read-only key has. It then tries `GET /api/v0/me`
+for the token's own name and permissions, which is optional extra information: on a 403 or 404
+there it says so and still succeeds, since the statistics call already proved the key works; only a
+failure of the statistics call itself (401/403, or a network error) is the real "this key does not
+work". Never prints the key.
 
 **GoatCounter's API is reached only through this script.** An assistant that needs something this
 cannot yet answer adds a flag here rather than writing a one-off `curl` or web request against the
@@ -91,8 +91,9 @@ class GoatCounterError(RuntimeError):
 class GoatCounterHTTPError(GoatCounterError):
     """A GoatCounter HTTP error, carrying the status code for a caller that needs to tell them apart
 
-    (`--check` treats a 403/404 from `GET /api/v0/me` as "not available to this key", not a failure,
-    while the same status from `GET /api/v0/stats/total` is the real "key does not work").
+    (`--check` treats a 403/404 from `GET /api/v0/me` as that optional information failing to load,
+    not a failure, while the same status from `GET /api/v0/stats/total` is the real "key does not
+    work").
     """
 
     def __init__(self, status: int, message: str) -> None:
@@ -253,9 +254,9 @@ def fetch_hits(fetch: Fetcher, start: datetime, end: datetime, *, limit: int = P
 
 
 def fetch_me(site: str, token: str) -> dict[str, Any]:
-    """`GET /api/v0/me` -- the token's own name and permissions, which a statistics-only key (the
-    recommended kind) is not allowed to see; see `check_key`, which calls this second and tolerates
-    a 403/404 here.
+    """`GET /api/v0/me` -- the token's own name and permissions, optional extra information on top
+    of what `check_key` already proved; see `check_key`, which calls this second and tolerates a
+    403/404 here.
     """
     opener = _build_opener()
     return _get(opener, site.rstrip("/") + "/me", token)
@@ -283,8 +284,9 @@ def check_key(
     `GET /api/v0/stats/total` for the last hour is the proof -- it needs only "Read statistics",
     the one permission every read-only key has, so a failure there (401/403, or a network error)
     is the real "this key does not work" and is left to raise. `GET /api/v0/me` is tried next for
-    the token's own name and permissions; a statistics-only key is not allowed to see those, so a
-    403 or 404 there is expected and does not fail the check -- only reduces what it can report.
+    the token's own name and permissions, which is optional extra information: a 403 or 404 there
+    does not fail the check -- only reduces what it can report, because the statistics call already
+    proved the key works.
 
     `stats_fetch`/`me_fetch` default to the real network calls; a test passes fakes instead. The
     defaults are looked up here rather than bound at definition time, so a test that patches
@@ -301,7 +303,10 @@ def check_key(
         me = me_fetch(site, token)
     except GoatCounterHTTPError as exc:
         if exc.status in (403, 404):
-            note = "permission list is not available to a statistics-only key, which is the recommended kind"
+            note = (
+                f"permission list could not be read (GET /api/v0/me answered HTTP {exc.status}); "
+                "the key still reads statistics"
+            )
         else:
             note = f"permission list could not be checked: {exc}"
         return {"ok": True, "reads_statistics": True, "permissions_available": False, "note": note}

@@ -31,10 +31,10 @@ key from GOATCOUNTER_TOKEN (never accepted as a flag). Default range is the last
 plain text. --raw prints every path and its count for the range, unfiltered by --prefix -- events
 and page loads alike. --check proves the key works with GET /api/v0/stats/total (needs only "Read
 statistics", the one permission every read-only key has) and reports its permissions too if
-GET /api/v0/me allows it -- a statistics-only key, the recommended kind, cannot see those and that
-alone does not fail the check; never prints the key. GoatCounter's API is reached only through this
-script; a question it cannot yet answer gets a new flag here rather than a one-off curl or web
-request.
+GET /api/v0/me allows it -- GET /api/v0/me is optional extra information, and a 403/404 from it
+does not fail the check, since the statistics call already proved the key works; never prints the
+key. GoatCounter's API is reached only through this script; a question it cannot yet answer gets a
+new flag here rather than a one-off curl or web request.
 
   tools/goatcounter.sh
   tools/goatcounter.sh --days 7
