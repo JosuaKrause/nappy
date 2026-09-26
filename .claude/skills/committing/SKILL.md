@@ -30,6 +30,11 @@ auto-merge, manually merging, and asking an agent or monitor to merge. Permissio
 session does not carry over. Finishing implementation, opening a PR and green CI do not imply
 merge permission. Leave the PR open and report its link when permission has not been given.
 
+**A PR merges only after its review.** A review under **reviewing** has posted the verdict
+*ready* on the PR against its current head, or against a head whose later pushes were reviewed
+too. *(2026-09-26: "all PRs must go through a (adversarial) review before ready to be merged.")*
+Merge permission and green CI do not replace it.
+
 When merging is explicitly authorized, check mergeability and let CI gate the merge. Resolve
 conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**
 (`gh pr merge <n> --squash`) and retire the branch (see "Branches"). A dependent wait belongs to
@@ -159,51 +164,10 @@ The alternative that does not depend on the repository at all is uploading the i
 attachment, which is what dragging a file into the PR text box does; it cannot be done from `gh`, so
 it is the fallback for a description written by hand rather than the rule.
 
-## Reviewing a pull request leaves its findings on the pull request
+## Reviewing a pull request
 
-**A review's findings are posted as comments on the PR, anchored to the lines they are about,
-never only reported in the conversation.** *(2026-09-09: "reviewing a PR should result in comments
-in the PR so they can be picked up and resolved".)* A finding in a chat message is read once by
-whoever asked and is gone for the person who has to fix it; a comment on the diff is a thing the
-author, or an agent sent to the branch, can pick up one at a time and resolve, and its thread
-records what was decided about it.
-
-Each comment carries what a finding needs to be acted on without the reviewer present: what is
-wrong, a concrete case where it fails or misleads, and what the fix is where one is clear. Post the
-inline comments as one review with a short summary rather than as one comment per finding, so the
-author gets them together; a finding that has no line to hang on — a missing doc, a missing test
-row — goes in the summary. **A review with nothing to say still says so** on the PR, so that
-"no comments" is a verdict rather than an absence.
-
-**A review checks that the work item is semantically right, not only that the code is
-correct.** *(2026-09-26, after a post-mortem: "a PR review should not only check for code
-correctness but also verify that a work item is semantically correct".)* Correct code that builds
-the wrong thing passes every other check this repo has. So before reading the diff for bugs, the
-reviewer reads the player's own words the PR cites (the playtest, not the queue entry's paraphrase
-of it) and every decision the change touches, and answers three questions, each a finding when
-the answer is no:
-
-- **Is this what the player asked for?** Nothing built beyond their words without being marked
-  as a proposal they agreed to, and nothing they asked for left out. Every case they described is
-  covered and shown, not only the first.
-- **Does it keep what is already decided?** No `DECISIONS.md` record and no doc rule is overturned,
-  narrowed or rewritten in passing; a doc sentence the PR changed says what the player decided,
-  not what the PR happened to build.
-- **Would the player recognise it in the pictures?** A visible change is judged on its pictures
-  against their words, before its code.
-- **Does the finished work leave the queue inside this PR?** *(2026-09-26: "reviews should check
-  that work items are properly removed from the queue *inside* the PR that finished it".)* Every
-  item the PR completes is gone from the queue in this diff, with its record written, and every
-  item it only partly does is still there and says what is left. An item left queued after its
-  work merges is how a finished thing gets picked up again with a different approach; an item
-  removed for work the PR did not do is how an ask disappears. Check both against the diff.
-
-*(The case that taught it: a review of a park fenced with street-closure barriers found "no
-correctness bug in the mechanism"; the player had asked only that the router not path through a
-used park, and had decided long before that a used park is spoiled with events.)*
-
-The conversation still gets the recap, since the player reads that first; the PR is where the
-findings live.
+**Every pull request is reviewed adversarially before it is ready to merge**, and the findings go
+on the PR as comments. How is the **reviewing** skill's.
 
 ## Branches
 
