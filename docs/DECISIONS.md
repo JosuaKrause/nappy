@@ -13,7 +13,8 @@ not go under, so a smaller field is how the telegraph shortens without losing it
 analytic floor at 60px is 1.95s. Measured from the screen-edge badge, walking into him, she is
 warned 2.03s ahead, about a tenth of a second over it. `_test_the_cyclist_is_warned_shortly_before_he_arrives`
 (`tests/test_events_pursuit.gd`) holds the lead at or above the floor and at most 0.5s over it, on
-both axes. The robber sent after a handover is M137's, the trap comes to her.
+both axes. The robber sent after a handover gets his shorter warning on M137, the trap comes to
+her, not here.
 
 **The table of every warned row's lead** is `tests/probes/m207_warning_lead.gd`
 (`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it). For each row it
