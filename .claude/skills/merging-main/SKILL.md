@@ -7,7 +7,8 @@ description: Merge main into an existing PR or branch with explicit theirs/ours/
 
 Use this skill before updating a PR branch with main, and read `committing` for the repository's
 git workflow. This updates the branch; merging the PR into main follows **committing** (explicit
-permission in this session). Keep design and final semantic review in the orchestrating session.
+permission in this session). Keep design in the orchestrating session; the review before merge is
+a separate reviewer's, under **pr-review**.
 
 ## Establish the three histories
 
@@ -104,7 +105,8 @@ semantic review below.
 `tools/update-pr.sh <pr-number | branch>` runs the whole mechanical sequence for an ordinary PR
 update — fetch, merge, `git diff --check`/`lint.sh`/`check.sh`, commit, push — and refuses, naming
 the files, the moment the merge conflicts; it never substitutes for the semantic review below,
-which stays the reviewer's on every merge it produces.
+which stays the merger's own on every merge it produces (a merge that needed resolving is then
+also reviewed under **pr-review**).
 
 ## Check semantic alignment for every merge
 

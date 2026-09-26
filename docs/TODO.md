@@ -30,6 +30,10 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
+**First, before any new task** ([PLAYTEST-144](playtests/PLAYTEST-144.md)): the `git grep`
+hook (PR #377), then **M223**, one file per queue entry and per decision, then **M225**, the
+counter counts every attempt, a key player, and a torn poster's chase.
+
 0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
    left open**, on the same footing as the round before it: **M125**, the test suite
    is slow again — ten suites pruned and the
@@ -208,8 +212,6 @@ The entries, in the order the gameplay queue above gives them, reassessed on 202
 - [M206 — The title screen after a game over is the right way up](todo/2026-09-25-M206/)
 - [M207 — A warning comes shortly before its danger](todo/2026-09-25-M207/)
 - [M210 — The brief between two days is the coming day's](todo/2026-09-26-M210/)
-- [M211 — The pause screen's held restart starts a new game](todo/2026-09-26-M211/)
-- [M212 — The held restart fills and restarts on a phone, first time](todo/2026-09-26-M212/)
 - [M213 — The chalk mark's robber stands at the far end of its alley](todo/2026-09-26-M213/)
 - [M215 — The power station's chimneys stand in front of her](todo/2026-09-26-M215/)
 - [M216 — The small courtyard building's roofs go around the corner](todo/2026-09-26-M216/)
@@ -219,6 +221,8 @@ The entries, in the order the gameplay queue above gives them, reassessed on 202
 - [M220 — "The same face is on most of them." starts its own line](todo/2026-09-26-M220/)
 - [M221 — A failed day leaves no chalk mark behind](todo/2026-09-26-M221/)
 - [M222 — The red arrow for the van ends on the van](todo/2026-09-26-M222/)
+- [M223 — One file per queue entry and per decision, named by date and two words](todo/2026-09-26-M223/)
+- [M225 — The counter counts every attempt, a key player, and a torn poster's chase](todo/2026-09-26-M225/)
 - [M159 — A slow frame names the frame that was slow](todo/2026-09-19-M159/)
 - [M129 — A path through the city never has to cost · one route in five still breaks](todo/2026-09-25-M129/)
 - [M137 — The contact is whoever she hands the note to, and the trap comes to her](todo/2026-09-13-M137/)

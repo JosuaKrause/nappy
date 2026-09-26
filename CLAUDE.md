@@ -97,7 +97,7 @@ rather than a place:
 | run a sequence of shell commands by hand — git/gh housekeeping, checking on agents, verification, a capture, a build | **using-tools** |
 | respond to a playtest or a design instruction, *before* any file is touched | **playtest-feedback** |
 | commit, branch, merge, or write a commit message | **committing** |
-| review a pull request — the findings go on the PR as comments | **committing** |
+| review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |
 | **end a session** | **session-cleanup** |
 
