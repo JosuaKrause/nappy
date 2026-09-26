@@ -1,0 +1,21 @@
+<!-- The post a closure barrier turns a corner on, or ends on. The same steel grey as the posts
+     inside `barrier_across.svg`'s panels, but stout: as wide as `barrier_along.svg`'s two rails
+     together (8px), a little taller than the panels' posts, capped, on a foot plate. It stands exactly at the corner of a fenced calm
+     area, where a broadside run's rails end at its middle and the end-on run's column meets its
+     foot, so the two runs share one post rather than stopping short of or running past each
+     other; a run that ends anywhere else ends on one too. Upright on both axes, so the same
+     picture serves a broadside end and an end-on one. Feet-anchored at the bottom centre: the
+     rails' heights (7.4 to 21 above the feet in `barrier_across.svg`) fall between its foot and
+     its cap. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="26" viewBox="0 0 14 26" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+  <!-- The foot plate. -->
+  <path d="M1 23.8 L13 23.8 L13 25.4 L1 25.4 Z" fill="#3a3436" stroke-width="0.9"/>
+  <!-- The post: steel grey, lit down its left, shaded down its right, as wide as the end-on
+       run's two rails together so the column it turns into ends square behind it. -->
+  <path d="M3 2.8 L11 2.8 L11 23.8 L3 23.8 Z" fill="#8a8378" stroke="none"/>
+  <path d="M8.6 2.8 L11 2.8 L11 23.8 L8.6 23.8 Z" fill="#2a2226" fill-opacity="0.3" stroke="none"/>
+  <path d="M4.1 3.4 L4.1 23.2" fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="0.8"/>
+  <path d="M3 2.8 L11 2.8 L11 23.8 L3 23.8 Z" fill="none" stroke-width="1.2"/>
+  <!-- The cap. -->
+  <path d="M2.2 1 L11.8 1 L11.8 3 L2.2 3 Z" fill="#6b6357" stroke-width="1"/>
+</svg>

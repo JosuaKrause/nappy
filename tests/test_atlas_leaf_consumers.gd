@@ -88,6 +88,7 @@ func _test_building_acquires_and_releases_buildings(t) -> void:
 func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
 	var names: Array = [
 		ClosureMarker.FENCE_ACROSS, ClosureMarker.FENCE_ALONG, ClosureMarker.SIGN,
+		ClosureMarker.POST,
 		TrafficLight.HEAD, TrafficLight.HEAD_BACK, TrafficLight.HEAD_SIDE,
 		CityEdge.TUNNEL, CityEdge.BRIDGE, CityEdge.ROAD_ON,
 	]

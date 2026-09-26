@@ -93,3 +93,17 @@ func barrier_runs_across() -> bool:
 ## a whole edge) can say so without this class knowing anything drew it that way.
 func barrier_width() -> float:
 	return Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
+
+## How far up the screen an end-on line's panels are drawn above the ground they cover. None for a
+## street, whose line meets no other. `ParkClosure` lifts its end-on runs to the broadside rails'
+## height, which is where a rail running away from the camera is seen, so the column meets the
+## rails of the runs it turns onto at their own height rather than at their feet.
+func end_on_rise() -> float:
+	return 0.0
+
+## Where a post stands on its own, at the end of a line of barrier or at the corner two lines turn
+## on (`ClosureMarker.Piece.POST`). None for a street: its line runs wall to wall across the mouth,
+## so it has no end in the open to finish. `ParkClosure` answers the corners and ends of its runs.
+func posts(_map: CityMap) -> Array[Vector2]:
+	var none: Array[Vector2] = []
+	return none

@@ -820,6 +820,13 @@ func region_plan() -> RegionPlanner.RegionPlan:
 func _spawn_closure(closure: RoadClosure) -> void:
 	for mouth in closure.mouth_centres(map):
 		_spawn_barrier(closure, mouth)
+	# After the panels, so a post whose feet share a panel's y draws over the rail ends it caps.
+	for feet in closure.posts(map):
+		var post := ClosureMarker.new()
+		post.piece = ClosureMarker.Piece.POST
+		post.kind = closure.kind
+		post.position = feet
+		_add_closure_node(post, true)
 	if ClosureMarker.CAUSES.has(closure.kind):
 		var cause := ClosureMarker.new()
 		cause.piece = ClosureMarker.Piece.CAUSE
@@ -848,7 +855,11 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		panel.kind = closure.kind
 		panel.across = across
 		panel.span = span
-		var offset := -width * 0.5 + span * (i + 0.5)
+		panel.rise = closure.end_on_rise()
+		# Broadside a panel's feet are the middle of its share; end-on they are the near end of
+		# it, since an end-on panel is drawn up the screen from its feet — feet at the middle
+		# would stand the whole column half a panel up the screen from the ground it covers.
+		var offset := -width * 0.5 + span * (i + (0.5 if across else 1.0))
 		panel.position = at + (Vector2(offset, 0.0) if across else Vector2(0.0, offset))
 		_add_closure_node(panel, true)
 

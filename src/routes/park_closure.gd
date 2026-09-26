@@ -27,12 +27,16 @@ extends RoadClosure
 ## far longer or shorter than a street's mouth still reads as one continuous rail, with no overhang
 ## past either end of its own ground.
 ##
-## **A north-south edge (`UP`/`DOWN`) keeps the whole side, corner tiles included; an east-west edge
-## (`LEFT`/`RIGHT`) stops one tile short of each end.** The two would otherwise both reach the same
-## corner tile and cross there instead of meeting — see `_entrance_runs()`. Letting one axis own
-## every corner and trimming the other is what turns that cross into a clean joint, with no gap a
-## pram could use: the horizontal line's own barrier depth already covers the corner tile's outer
-## edge, and the vertical line picks up flush against it.
+## **Where two runs meet at a corner of the area they turn on one shared post.** A run covers its
+## own tiles of the edge, corner tiles included, on every side; where the next side's run also
+## reaches the same corner tile, each line stops exactly at the corner of the two fence lines
+## (half a barrier's depth in from both edges) and one `barrier_post.svg` stands there. The
+## broadside run's rails end at the post's middle and the end-on run's column covers the ground
+## from that corner to the next, so its far end meets the post's foot and its near end runs in
+## behind the next broadside run's end post: one fence turning the corner, with no gap between the
+## two lines, no rail past the other and nothing overhanging the post. A run that ends anywhere
+## else — against a wall, or at an archway's jamb — runs to the end of its own ground and ends on a
+## post of its own, inset so the post stays on that ground. See `fence()` and `posts()`.
 ##
 ## **An entrance is any tile of the edge with walkable ground outside it.** An open park's lot is
 ## bordered by pavement all round, so every side is one run; a courtyard's court is walled but for
@@ -68,44 +72,107 @@ class Edge extends StreetNetwork.Segment:
 	func mouth_rect(_at_a: bool) -> Rect2i:
 		return run
 
+## Half the width of `barrier_post.svg`'s post body (8px, and its outline): how far a post at a
+## run's open end stands in from that end, so the post stays on the run's own ground.
+const POST_HALF := 4.6
+
 ## The calm area this fence belongs to, as the tile rect of its calm ground.
 var area := Rect2i()
 ## Which way is out of the area from this run — the direction the pavement is in.
 var outward := Vector2i.ZERO
+## Where the line starts and ends along its run, in world pixels on the run's own axis (x for a
+## north or south edge, y for a west or east one). The run's own tiles, except at an end that turns
+## a corner onto the next side's run, which stops at the corner of the two fence lines instead.
+var from_along := 0.0
+var to_along := 0.0
+## Whether each end turns a corner onto the next side's run (`fence()`).
+var joined_start := false
+var joined_end := false
 
-func _init(anchor: Vector2i, calm_rect: Rect2i, strip: Rect2i, out: Vector2i) -> void:
+func _init(anchor: Vector2i, calm_rect: Rect2i, strip: Rect2i, out: Vector2i,
+		start_turns := false, end_turns := false) -> void:
 	super(RoadClosure.Kind.PARK, Edge.new(anchor, strip, out.y != 0))
 	area = calm_rect
 	outward = out
+	joined_start = start_turns
+	joined_end = end_turns
+	var tile := float(Tuning.TILE_SIZE)
+	var horizontal := out.y != 0
+	from_along = (strip.position.x if horizontal else strip.position.y) * tile
+	to_along = (strip.end.x if horizontal else strip.end.y) * tile
+	if joined_start:
+		from_along = _line(calm_rect, Vector2i.LEFT if horizontal else Vector2i.UP)
+	if joined_end:
+		to_along = _line(calm_rect, Vector2i.RIGHT if horizontal else Vector2i.DOWN)
 
-## Every fence a shut calm area needs: one per run of its edge that has walkable ground outside it.
+## Every fence a shut calm area needs: one per run of its edge that has walkable ground outside it,
+## each told which of its ends turns a corner onto the next side's run. The two runs at a corner
+## are joined when both reach its corner tile, which is the same question asked from either side.
 static func fence(map: CityMap, block: Vector2i) -> Array[ParkClosure]:
 	var found: Array[ParkClosure] = []
 	var rect := ClosurePlanner.calm_area_rect(map, block)
-	for out: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		for strip in _entrance_runs(map, rect, out):
-			found.append(ParkClosure.new(block, rect, strip, out))
+	var runs := {}
+	for out: Vector2i in SIDES:
+		runs[out] = _entrance_runs(map, rect, out)
+	var first := rect.position
+	var last := rect.end - Vector2i.ONE
+	for out: Vector2i in SIDES:
+		var horizontal := out.y != 0
+		var row: int = first.y if out == Vector2i.UP else last.y
+		var column: int = first.x if out == Vector2i.LEFT else last.x
+		for strip: Rect2i in runs[out]:
+			var start_corner := Vector2i(first.x, row) if horizontal else Vector2i(column, first.y)
+			var end_corner := Vector2i(last.x, row) if horizontal else Vector2i(column, last.y)
+			var start_side := Vector2i.LEFT if horizontal else Vector2i.UP
+			var end_side := Vector2i.RIGHT if horizontal else Vector2i.DOWN
+			var start_turns := strip.has_point(start_corner) \
+					and _any_covers(runs[start_side], start_corner)
+			var end_turns := strip.has_point(end_corner) and _any_covers(runs[end_side], end_corner)
+			found.append(ParkClosure.new(block, rect, strip, out, start_turns, end_turns))
 	return found
 
+## The four sides, the west and east first. **The order is load-bearing for the drawing**: `City`
+## spawns closures in this order, and y-sorting breaks a tie by the order nodes were added, so an
+## end-on column's nearest panel, whose feet share the south run's y, is drawn behind that run's
+## rails and its corner post rather than over them.
+const SIDES: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+
+## How far above its feet `barrier_across.svg`'s lower rail runs (its foot edge is at 16.6 of 24):
+## an end-on run is drawn this far up the screen (`end_on_rise()`), so its far end meets the north
+## run's rails where they end on the corner post and its near end runs in behind the south run's.
+const RAIL_RISE := 7.4
+
+static func _any_covers(strips: Array[Rect2i], tile: Vector2i) -> bool:
+	for strip in strips:
+		if strip.has_point(tile):
+			return true
+	return false
+
+## The world coordinate of the fence line on `rect`'s `out` side, across that side: half a
+## barrier's depth inside the area's edge. A y for a north or south side, an x for a west or east.
+static func _line(rect: Rect2i, out: Vector2i) -> float:
+	var world := Rect2(Vector2(rect.position) * Tuning.TILE_SIZE,
+			Vector2(rect.size) * Tuning.TILE_SIZE)
+	var inset := Tuning.CLOSURE_BARRIER_DEPTH * 0.5
+	if out == Vector2i.UP:
+		return world.position.y + inset
+	if out == Vector2i.DOWN:
+		return world.end.y - inset
+	if out == Vector2i.LEFT:
+		return world.position.x + inset
+	return world.end.x - inset
+
 ## The runs of `rect`'s edge on the `out` side that open onto walkable ground outside it, each as a
-## one-tile strip.
-##
-## **`UP`/`DOWN` scan the whole side; `LEFT`/`RIGHT` stop one tile short of each end**, unless the
-## side is too short to spare them (`length <= 2`, where there is no room for the ambiguity the trim
-## exists to resolve). The two corner tiles of a rectangle belong to exactly one edge each — the
-## horizontal one, arbitrarily but consistently — so the vertical scan simply never offers them, and
-## a fence never reaches into a corner two ways at once. See the class doc for what that buys.
+## one-tile strip. Every side is scanned whole, corner tiles included: a corner tile belongs to both
+## of its sides' runs, and `fence()` is what makes the two meet there rather than cross.
 static func _entrance_runs(map: CityMap, rect: Rect2i, out: Vector2i) -> Array[Rect2i]:
 	var runs: Array[Rect2i] = []
 	var horizontal := out.y != 0
 	var length: int = rect.size.x if horizontal else rect.size.y
-	var trim := not horizontal and length > 2
-	var first_index := 1 if trim else 0
-	var last_index := length - 1 if trim else length
 	var start := -1
-	for i in range(first_index, last_index + 1):
+	for i in range(0, length + 1):
 		var open := false
-		if i < last_index:
+		if i < length:
 			var tile := _edge_tile(rect, out, i)
 			open = map.is_walkable(tile) and map.is_walkable(tile + out)
 		if open and start < 0:
@@ -127,33 +194,38 @@ static func _edge_tile(rect: Rect2i, out: Vector2i, i: int) -> Vector2i:
 		return Vector2i(rect.position.x, rect.position.y + i)
 	return Vector2i(rect.end.x - 1, rect.position.y + i)
 
-## How wide this fence's one line is: the run's own length, in pixels — never a street's width.
-## Overrides `RoadClosure.barrier_width()`, which `City._spawn_barrier()` reads instead of assuming
-## `Tuning.STREET_WIDTH`; see the class doc.
+## How long this fence's one line is: from `from_along` to `to_along`, in pixels — never a
+## street's width. Overrides `RoadClosure.barrier_width()`, which `City._spawn_barrier()` reads
+## instead of assuming `Tuning.STREET_WIDTH`; see the class doc.
 func barrier_width() -> float:
-	var run: Rect2i = segment.tile_rect()
-	var horizontal := outward.y != 0
-	return float(run.size.x if horizontal else run.size.y) * Tuning.TILE_SIZE
+	return to_along - from_along
 
-## Where the one line of barrier stands: the middle of the run, across it half a barrier's depth
+## Where the one line of barrier stands: the middle of its span, across it half a barrier's depth
 ## inside the area's edge. One point is the whole of it — `barrier_width()` already says how wide
 ## `City._spawn_barrier()` draws it, so nothing here has to split a long run into several.
 func mouth_centres(_map: CityMap) -> Array[Vector2]:
-	var run: Rect2i = segment.tile_rect()
-	var horizontal := outward.y != 0
-	var tile := float(Tuning.TILE_SIZE)
-	var inset := Tuning.CLOSURE_BARRIER_DEPTH * 0.5
-	var across := run.end.x * tile - inset
-	if outward == Vector2i.UP:
-		across = run.position.y * tile + inset
-	elif outward == Vector2i.DOWN:
-		across = run.end.y * tile - inset
-	elif outward == Vector2i.LEFT:
-		across = run.position.x * tile + inset
-	var along := (run.position.x + run.size.x * 0.5) * tile if horizontal \
-			else (run.position.y + run.size.y * 0.5) * tile
-	var found: Array[Vector2] = [Vector2(along, across) if horizontal else Vector2(across, along)]
+	var found: Array[Vector2] = [_point((from_along + to_along) * 0.5)]
 	return found
+
+## The posts this run ends on (`RoadClosure.posts()`). A corner two runs turn on has one post, and
+## the north or south run owns it, so the west or east run only stands posts at ends that turn no
+## corner. An open end's post stands `POST_HALF` in from the end, on the run's own ground.
+func posts(_map: CityMap) -> Array[Vector2]:
+	var found: Array[Vector2] = []
+	var horizontal := outward.y != 0
+	if horizontal or not joined_start:
+		found.append(_point(from_along if joined_start else from_along + POST_HALF))
+	if horizontal or not joined_end:
+		found.append(_point(to_along if joined_end else to_along - POST_HALF))
+	return found
+
+func end_on_rise() -> float:
+	return RAIL_RISE
+
+## The point `along` pixels down this run's axis, on its fence line.
+func _point(along: float) -> Vector2:
+	var across := _line(area, outward)
+	return Vector2(along, across) if outward.y != 0 else Vector2(across, along)
 
 ## The middle of the shut area — nothing is lying there, but `DevRig`'s `closure:<n>` spawn reads the
 ## line from here out through a fence to stand her on the pavement looking at it.
