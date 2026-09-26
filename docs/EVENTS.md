@@ -955,11 +955,16 @@ than argued. She is **outside the inner radius where the field is at full streng
 out of the rest of it inside the 2.2s telegraph** — which is the contract's own worst case rather
 than a hole in it: the fire stands on the route she is walking, so it can come into view from any
 direction, and the view is 180px deep against the fire's 260px field, so an approach up or down the
-screen has the outer edge of the field on her already. The engine is created **outside its own
-forward reach of her**, measured from the worst position the sighting allows, which is the view's
-half diagonal up the street rather than directly under the fire. And **the home and a calm area she
-has not used are still reachable from where she is standing**, outside both fields — the same
-question `EventScheduler.WalkSiting` asks before it accepts a candidate at all.
+screen has the outer edge of the field on her already. The engine is **warned first and created
+just off screen on its road** (see "Everything arrives from off screen"), and its field reaches
+548px ahead of it, further than the view reaches from her (180px up or down, 320px across), so
+while she stands on its street **it is created with its field already on her**: what she is owed is
+the warning before it exists, from the badge to the earliest it can reach her, at least the row's
+own minimum (see "Telegraph contract"), from anywhere the sighting allows her to be, which is up to
+the view's half diagonal up the street rather than directly under the fire. The same holds for day
+13's column, whose 395px of forward reach is created about 220px up its lane. And **the home and a
+calm area she has not used are still reachable from where she is standing**, outside both fields —
+the same question `EventScheduler.WalkSiting` asks before it accepts a candidate at all.
 
 **A one-shot without the flag is offered on every route and happens on one.** The day plans it **at
 every site of a covering set** — `RouteTree.covering_sites`, the smallest set of streets such that

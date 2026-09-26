@@ -900,8 +900,13 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.position))
 		var kerb: Vector2 = plan.position - Vector2(inward) \
 				* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+		# She stands where she first saw the fire while the warning runs, frame by frame, the way
+		# `_physics_process` runs it.
 		var before := _city.events.instances().size()
-		_city.events._run_the_warnings(warning.left + WALK_STEP, rig.global_position)
+		var her_at := rig.global_position
+		while _city.events.pending_warnings().has(warning) \
+				and warning.shown < warning.def.telegraph_time + 5.0:
+			_city.events._run_the_warnings(WALK_STEP, her_at)
 		var arrived: EventInstance = null
 		for instance in _city.events.instances():
 			if instance.def.id == "fire_truck":
@@ -909,6 +914,32 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		t.check(arrived != null and _city.events.instances().size() == before + 1,
 				"and it is created once its warning is over")
 		if arrived:
+			# **Where it is created and how long after its badge it can reach her, on the real
+			# siting.** Its forward reach (548px) is deeper than the view is from her, so standing on
+			# its street she is inside its field from its first frame: what she is owed is the
+			# warning before it existed, and that is what is held — at least the row's own minimum
+			# (`EventDef.minimum_telegraph()`), from the badge to the first frame its field reaches
+			# her (or, for a lethal row, its lethal reach does).
+			t.check(PendingWarning.is_off_screen(arrived.global_position - her_at,
+					warning.closing_speed(), warning.def.offscreen_notice),
+					"and it is created just off screen (%.0fpx from her)"
+					% arrived.global_position.distance_to(her_at))
+			var to_reach := 0.0
+			var reaches := func() -> bool:
+				return arrived.is_lethal_at(her_at) if arrived.def.hard_fail \
+						else arrived.contribution_at(her_at) > 0.0
+			var on_her_at_once: bool = reaches.call()
+			while not reaches.call() and to_reach < 10.0:
+				arrived.player_at = her_at
+				arrived._process(WALK_STEP)
+				to_reach += WALK_STEP
+			print("      the engine is created %.0fpx from her after %.2fs of badge, its field %s"
+					% [arrived.global_position.distance_to(her_at), warning.shown,
+					"already on her" if on_her_at_once else "reaching her %.2fs later" % to_reach])
+			t.check(warning.shown + to_reach + 0.001 >= arrived.def.minimum_telegraph(),
+					("and from its badge to the earliest it reaches her is %.2fs, at least the "
+					% (warning.shown + to_reach))
+					+ "%.2fs it is owed" % arrived.def.minimum_telegraph())
 			t.check(arrived.path.size() == 2, "and it is given a route down the fire's own street")
 			t.close_to(arrived.path[0].distance_to(warning.place), 0.0,
 					"starting where its badge pointed", 1.0)

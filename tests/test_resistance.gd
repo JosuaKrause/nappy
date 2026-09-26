@@ -2117,7 +2117,12 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 			_city.events._run_the_warnings(STEP, her)
 			t.close_to(absf(warning.place.y - her.y), was,
 					"and it moves with her rather than coming sooner", 1.0)
-		_city.events._run_the_warnings(convoy.telegraph_time, her)
+		# The rest of the warning, frame by frame, the way `EventManager._physics_process` runs it.
+		var pointed := warning.place if warning else Vector2.INF
+		while warning and _city.events.pending_warnings().has(warning) \
+				and warning.shown < convoy.telegraph_time + 5.0:
+			pointed = warning.place
+			_city.events._run_the_warnings(STEP, her)
 		var trucks := happenings.column
 		t.check(trucks.size() == Tuning.COLUMN_TRUCKS,
 				"once the warning is over, a column of %d trucks comes (%d)"
@@ -2142,6 +2147,26 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 				t.check(StreetNetwork.segment_containing(map.world_to_tile(stop)) != null,
 						"on a street, not a junction")
 		t.check(leaving == 1, "one barricade's worth, from the rear truck (%d)" % leaving)
+		# **Where the front truck is created and how long after the badge it can reach her, on the
+		# real siting.** Its forward reach (395px) is deeper than the view is from her, so standing
+		# by its road she may be inside its field from its first frame: what she is owed is the
+		# warning before it existed, at least the row's own minimum (`EventDef.minimum_telegraph()`),
+		# from the badge to the first frame its field reaches her.
+		if warning and not trucks.is_empty():
+			var front := trucks[0]
+			t.check(PendingWarning.is_off_screen(front.global_position - her,
+					warning.closing_speed(), warning.def.offscreen_notice)
+					and front.global_position.distance_to(pointed) < 1.0,
+					"its front truck is created just off screen, where the badge pointed")
+			var to_reach := 0.0
+			while front.contribution_at(her) <= 0.0 and to_reach < 10.0:
+				front.player_at = her
+				front._process(STEP)
+				to_reach += STEP
+			t.check(warning.shown + to_reach + 0.001 >= warning.def.minimum_telegraph(),
+					("and from the badge to the earliest its field reaches her is %.2fs, at least "
+					% (warning.shown + to_reach))
+					+ "the %.2fs it is owed" % warning.def.minimum_telegraph())
 		happenings.tick(STEP, her, Vector2.ZERO, Callable())
 		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
 		for truck in trucks:
