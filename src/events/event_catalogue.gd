@@ -786,10 +786,9 @@ static func _fire_truck() -> EventDef:
 	# A truck at 190px/s outruns a walk, so the fairness rule demands the FULL forward reach of
 	# clearance, not just the falloff band — and a field moving that fast reaches further ahead of
 	# itself than its own catalogued radius: `outer_radius · Tuning.field_scale(e)` (e = 0.38) is
-	# 548px, 5.96s, plus the margin the row already carried. Unchanged by where it is sited: the
-	# contract is a property of this geometry and this speed, not of dawn placement versus a
-	# runtime summons — see `EventManager._summon_the_sighted_row()` for the siting itself and
-	# `tests/test_events.gd` for the worst-position check the new siting owes on top of it.
+	# 548px, 5.96s, plus the margin the row already carried. It is the engine's whole warning: the
+	# badge goes up the moment the fire is seen and the engine is created just off screen on its road
+	# when this is over — see `EventManager._summon_the_sighted_row()`.
 	def.telegraph_time = 6.27
 	def.mobile = true
 	def.speed = 190.0
@@ -913,23 +912,18 @@ static func _burnt_shell() -> EventDef:
 ## why what the player asked for next was bought in timing rather than in another point of
 ## intensity.
 ##
-## **It is loud while it passes her, and that is a siting decision rather than a field one.**
+## **It is loud while it passes her, because its warning is over before it exists.**
 ## *(2026-09-20: "unleashed dog still has too little influence -- needs to be more intense"; "but
-## keep things in relation to each other".)* A telegraph damps the row to
-## `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) because *this has not started yet* — and at 132px/s
-## against a walk, the ordinary offscreen margin put the dog about a second away when it was
-## created, so the whole meeting happened inside the warning and it was behind her before it was
-## ever at 39. `EventDef.toward_player_lead()` now sites it so its telegraph is over a notice before
-## its **field** touches her rather than a notice before the dog does, which is the same argument
-## `cyclist` already used for the kill. Nothing about the field moved; the dog simply arrives
-## having finished saying it is coming.
+## keep things in relation to each other".)* A telegraph damps a row to
+## `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) because *this has not started yet*, and a dog met
+## inside its own telegraph is behind her before it is ever at 39. Its telegraph is its screen-edge
+## warning instead, run with nothing in the world (`PendingWarning`), and the dog is created just off
+## screen with it spent, at its own intensity. Nothing about the field moved for this.
 ##
-## **Its `telegraph_time` is unchanged at 2.25s and lengthening it would not have helped.** Under
-## the ordinary margin the dog was sited 225px out on the worst axis against a 190px forward reach,
-## so its field was on her 0.16s after it existed: no telegraph short enough to be over by then is
-## long enough to be fair. The warning is not shortened either — it is the same 2.25s, now spent
-## further away, and while it is off screen the screen-edge badge a faster-than-walking row earns
-## is what carries it.
+## **Its `telegraph_time` is 2.25s**, and with the 0.15s the dog takes from where it is created
+## closest (225px on the vertical axis) until its 190px forward reach is on her walking into it, the
+## badge is up 2.40s before it charges her, against the 2.07s its field asks
+## (`EventDef.warning_time()`).
 ##
 ## No change to placement: `TOWARD_PLAYER` costs more than the walk-through table alone suggests
 ## already, since the whole point of the row is that she dodges rather than walks the line.
@@ -1214,31 +1208,20 @@ static func _pigeon_flock() -> EventDef:
 ## meeting it on a street the day chose at dawn, before it knew whether she would ever walk down it.
 ## It does not `pursue`: a bike does not chase, it rides straight through wherever she was standing.
 ##
-## The fairness contract does the work — `hard_fail` doubles the margin and the speed means the
-## whole radius counts, so the bell has to ring for (90/92) x 2 = 1.96s before it arrives. That is
-## right: it is audible from down the street, she has two seconds and one step to make, and stepping
-## off a pavement is a step. It is also why the field is this size — a field wider than
+## **He is warned of before he exists.** *(PLAYTEST-145: "the warning appears by itself with a
+## reasonable position and when the time is right the object is spawned in at that location just
+## offscreen".)* The director's siting puts up a screen-edge badge with nothing in the world, its
+## place following her just off screen down her line on a sidewalk (`PendingWarning.down_her_line()`),
+## and he is created there when his `telegraph_time` is over, with that telegraph spent — so he is
+## lethal from his first frame, and `EventInstance.is_lethal_at()` refusing a running telegraph never
+## lets him ride through her harmless. *(2026-09-07: "also a biker hit should be lethal.")*
+##
+## The fairness contract does the work: from the badge to his reach, walking into him, she is owed
+## the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) every warning from off screen is owed, which is what
+## `EventDef.warning_time()` measures. `EventDef.validate()` also refuses a field that reaches where he is created closest,
 ## `Tuning.min_offscreen_lead(speed + WALK_SPEED)` (231px at this row's 165px/s — 180 for the
-## vertical axis plus 51 for 200ms of closing) would already be on her the moment it appeared on the
-## axis and moment `EventDirector` sites it closest to; `EventDef.validate()` refuses that
-## arrangement and 90 sits comfortably under it.
-##
-## **`hard_fail` has to survive its own telegraph, or the "ends your day" above is not true.**
-## *(2026-09-07: "also a biker hit should be lethal.")* `EventInstance.is_lethal_at()` refuses the
-## whole time an event `is_telegraphing()`, so `EventDirector._toward_her()` sites a `hard_fail` row
-## at `Tuning.outlasting_telegraph_lead()` rather than the ordinary offscreen margin — for this row
-## the telegraph term dominates on every heading: `(2.0 + 0.2) * 257` = 565px, against at most 371px
-## from the offscreen margin alone.
-##
-## **The field stays this size rather than wider, because `outer_radius` and `telegraph_time` are
-## one number under the doubled `hard_fail` margin: how long she is warned for and how far it can be
-## felt from move together, at the fixed ratio `Tuning.TELEGRAPH_HARD_FAIL_MARGIN` sets against
-## `WALK_SPEED`.** *(2026-09-07: "while biker is now too long notice" — the player reversing the
-## caution this row was built with, that shortening the telegraph "buys the lethality back by taking
-## the notice away". The complaint has flipped for this row: not too little warning, but watching it
-## close from off screen for over three seconds. `EventInstance.is_lethal_at()` still refuses the
-## whole telegraph, so the arrival still has to land after it ends — this row's siting is what keeps
-## that true at any size, and it is why the field moved rather than only the telegraph.)*
+## vertical axis plus 51 for 200ms of closing), which would already be on her the moment he existed;
+## 90 sits far under it.
 ##
 ## **`inner_radius` is 33px, not the 26 a bike's own width would suggest.** *(Playtest 25, finding
 ## 7: "biker currently is also basically inconsequential. when hit it should be dayending" — and the
@@ -1265,10 +1248,13 @@ static func _cyclist() -> EventDef:
 	def.intensity = 18.0
 	def.inner_radius = 33.0
 	def.outer_radius = 90.0
-	# hard_fail and faster than a walk, so the escape distance is the forward reach and the margin
-	# is doubled: `outer_radius · Tuning.field_scale(e)` at 165px/s (e = 0.33) is 134px, * 2 / 92 =
-	# 2.92s, plus the margin the row already carried.
-	def.telegraph_time = 2.97
+	# His warning, run before he exists: the screen-edge badge goes up with nothing in the world
+	# and he is created just off screen when it is over (`PendingWarning`). What the contract holds
+	# is the badge-to-reach time, `EventDef.warning_time()`, against the flat
+	# `Tuning.OFFSCREEN_WARNING_MIN` (2.9s): this, plus 0.77s for him to close from where he is
+	# created closest (`Tuning.min_offscreen_lead()`, 231px) to his 33px reach at 257px/s with her
+	# walking into him — 2.90s, the smallest hundredth that clears it.
+	def.telegraph_time = 2.13
 	def.mobile = true
 	def.speed = 165.0
 	def.hard_fail = true

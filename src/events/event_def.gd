@@ -374,9 +374,10 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## stream is spent exactly as it always was, and only the walk's siting reads this.
 @export var pastes_a_front := false
 
-## Seconds of closing this row needs beyond the screen edge before `EventDirector` will site it —
-## `Tuning.OFFSCREEN_NOTICE` (0.2) unless a row overrides it. Only `AHEAD_OF_PLAYER` (`pursues`) and
-## `TOWARD_PLAYER` rows read this; a `MAP` row is placed at dawn and never asks.
+## Seconds of closing this row needs beyond the screen edge where it is created — sited by
+## `EventDirector`, or where a warning for it points (`PendingWarning`) — `Tuning.OFFSCREEN_NOTICE`
+## (0.2) unless a row overrides it. `AHEAD_OF_PLAYER` pursuers, `TOWARD_PLAYER` rows, the fire engine
+## and day 13's column read it; a `MAP` row is placed at dawn and never asks.
 ##
 ## **Per-row because two rows needed to move in opposite directions on the same day.**
 ## *(2026-09-07: "pursuing dog is still too short notice", "while biker is now too long notice".)*
@@ -390,8 +391,8 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## can outlast the row's own budget before it ever gets to catch her — `duration` stays at
 ## `Tuning.PURSUIT_TIME` (`tests/test_events.gd` holds every pursuer to that exact ceiling), so the
 ## room has to come from the telegraph instead. See that field on the same row for the arithmetic.
-## `cyclist` is left at the default: its own notice is bought back a different way, in
-## `outer_radius` and `telegraph_time` — see the reasoning on that row.
+## `cyclist` is left at the default: his warning is his `telegraph_time`, run before he exists, and
+## this is only how far off screen he is then created.
 @export var offscreen_notice := Tuning.OFFSCREEN_NOTICE
 
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
@@ -1121,18 +1122,18 @@ func validate() -> bool:
 	if solid_once_it_starts and telegraph_time <= 0.0:
 		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
-	# `EventDirector` sites a `TOWARD_PLAYER` row at least `Tuning.offscreen_lead(heading,
-	# closing_speed, offscreen_notice)` in front of her, which is never less than
+	# A `TOWARD_PLAYER` row is created at least `Tuning.offscreen_lead(heading, closing_speed,
+	# offscreen_notice)` in front of her, where its warning points, which is never less than
 	# `Tuning.min_offscreen_lead()` at the row's own closing speed (its `speed` plus `WALK_SPEED`,
 	# since she is usually walking into it) and its own notice, whatever she is facing — so a row
-	# whose own field reaches that far would appear already inside its own outer radius on the one
-	# heading and moment the director cannot avoid, which is the one thing "she gets close and it
-	# arrives" cannot mean.
+	# whose own field reaches that far would be created already on her on the one heading and
+	# moment the director cannot avoid, which is the one thing "she gets close and it arrives"
+	# cannot mean.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
 		var floor_lead := Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
 		if outer_radius >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
-					% [id, outer_radius] + "%.0fpx it is sited at on the worst axis: it would arrive "
+					% [id, outer_radius] + "%.0fpx it is created at on the worst axis: it would arrive "
 					% floor_lead + "already inside its own reach there")
 			return false
 	# **A lethal radius and a solid body are the same mechanism**, and putting both on one event
@@ -1202,15 +1203,24 @@ func validate() -> bool:
 		# rule says nothing about it and `validate_pursuit` is the contract instead. What its
 		# telegraph has to buy is the moment of *noticing*, which is checked there.
 		return true
-	return Tuning.validate_event(id, telegraph_time, inner_radius, outer_radius, hard_fail,
+	if warns_before_it_exists():
+		return Tuning.validate_warning(id, warning_time(), minimum_telegraph())
+	return Tuning.validate_event(id, warning_time(), inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)
 
-## Shortest telegraph this geometry may fairly have.
+## Shortest warning this row may fairly give — held against `warning_time()`.
+##
+## **A row warned of before it exists is owed `Tuning.OFFSCREEN_WARNING_MIN`**, a flat time to react
+## and think, whatever its field and its speed. *(PLAYTEST-145: "I don't like that the warning is
+## tied to the size of the field or the speed.")* Every other row is owed the time to walk out of its
+## own field, `Tuning.required_telegraph_time()`.
 ##
 ## A pursuer's is a different quantity and is stated in `Tuning.PURSUIT_MIN_NOTICE`: the ordinary
 ## rule buys the time to walk out of a *field*, and there is no walking out of something that
 ## follows. What its telegraph buys is the time to see it coming and change what you are doing.
 func minimum_telegraph() -> float:
+	if warns_before_it_exists() and not Tuning.OFFSCREEN_WARNING_MIN_EXEMPT.has(id):
+		return Tuning.OFFSCREEN_WARNING_MIN
 	if pursues:
 		return Tuning.PURSUIT_MIN_NOTICE
 	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail,
@@ -1236,38 +1246,36 @@ func ahead_of_player_lead() -> float:
 		time_to_middle += telegraph_time
 	return maxf(Tuning.AHEAD_LEAD_DISTANCE, time_to_middle * Tuning.WALK_SPEED)
 
-## How far down her own line `EventDirector._toward_her()` sites this `TOWARD_PLAYER` row, along
-## `heading`. **The one place that answer lives**, because two things that are not the director ask
-## it: `EventDef.validate()` needs the floor under it, and the pass measurement behind
-## `docs/COSTS.md` has to spawn the row where the game spawns it or it is pricing a meeting that
-## never happens.
+## Seconds from the moment this row becomes visible to the earliest it can reach her, on the worst
+## heading the game can give it — what the fairness contract holds against `minimum_telegraph()`.
 ##
-## `closing_speed` is the row's own `speed` plus `WALK_SPEED`, since she is usually walking into it.
+## **For a row in the world while it telegraphs, that is `telegraph_time`**: it is seen when it
+## appears, and nothing it does inside the telegraph can end the day or charge her at full strength.
 ##
-## **Every such row is sited so that its telegraph is over before it arrives, and what "arrives"
-## means is the only thing that differs between them.** A row that arrives inside its own telegraph
-## has spent its entire encounter on the warning: `EventInstance.is_lethal_at()` refuses the whole
-## telegraph, so a lethal one rides through her unable to fire, and `_notice_damping()` holds a loud
-## one at `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15), so a loud one is past her before it is ever
-## at its own intensity. Same defect, one at the kill and one at the meter.
-##
-## So `Tuning.outlasting_telegraph_lead()` gets the row's own arrival distance as its margin: zero
-## for `hard_fail`, where arriving is touching her, and `field_reach()` for anything else, where
-## arriving is its field reaching her. A lethal row's siting is unchanged by that reading — it was
-## always zero — and a loud one now goes loud a notice before she is inside it rather than a notice
-## before it is on top of her.
-func toward_player_lead(heading: Vector2) -> float:
-	return Tuning.outlasting_telegraph_lead(heading, speed + Tuning.WALK_SPEED, telegraph_time,
-			offscreen_notice, 0.0 if hard_fail else field_reach())
+## **For a row warned of before it exists** (`warns_before_it_exists()`) **it is its badge to its
+## reach**: the whole `telegraph_time`, run with nothing in the world, plus the time the thing then
+## takes to reach her from where it is created. Created closest on the vertical axis —
+## `Tuning.min_offscreen_lead()` at its own speed plus a walk and its own `offscreen_notice` — and
+## reaching her with her walking into it: at its lethal reach for a `hard_fail` row, which is when
+## it can end the day, and at its field's forward reach for any other, which is when it charges
+## her. A field that already covers her where it is created adds nothing.
+func warning_time() -> float:
+	if not warns_before_it_exists():
+		return telegraph_time
+	var closing := speed + Tuning.WALK_SPEED
+	var reach := lethal_reach() if hard_fail else field_reach()
+	var created_at := Tuning.min_offscreen_lead(closing, offscreen_notice)
+	return telegraph_time + maxf(0.0, created_at - reach) / closing
 
-## `toward_player_lead()` with no heading to ask about: the least it can be on any heading, which is
-## the closest the director could ever site this row and so the cheapest version of the meeting.
-## What `tests/probes/m174_pass.gd` measures the pass against, for the same reason
-## `Tuning.min_offscreen_lead()` exists — a figure in `docs/COSTS.md` may not depend on which way a
-## particular walk happened to be going.
-func min_toward_player_lead() -> float:
-	return Tuning.min_outlasting_telegraph_lead(speed + Tuning.WALK_SPEED, telegraph_time,
-			offscreen_notice, 0.0 if hard_fail else field_reach())
+## Whether the director warns of this row before it exists rather than creating it: a
+## `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`), whose screen-edge badge goes up with
+## nothing in the world and whose instance is created where it points once `telegraph_time` is
+## over — see `PendingWarning`. A road-going `TOWARD_PLAYER` copy (`police_patrol`'s return leg) is
+## created at once instead: nothing announces it at the edge of the screen, since it is slower than
+## a walk and never lethal. The fire engine and the day-13 column are warned first too, by the
+## callers that summon them rather than by anything on the row.
+func warns_before_it_exists() -> bool:
+	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
 
 ## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that

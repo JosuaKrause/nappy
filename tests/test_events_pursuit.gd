@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
 	_test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
+	_test_the_cyclist_is_warned_shortly_before_he_arrives(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
@@ -307,11 +308,10 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 ## **A row declared lethal has to actually get the chance to be lethal.** *(2026-09-07: "also a
 ## biker hit should be lethal.")* `cyclist` carries `hard_fail = true`, but
 ## `EventInstance.is_lethal_at()` returns false for the whole of `is_telegraphing()` — so a
-## `TOWARD_PLAYER` row sited close enough to reach her before its own telegraph ends rides straight
-## through, declared lethal and never once able to fire. `EventDirector._toward_her()` sites a
-## `hard_fail` row at `Tuning.outlasting_telegraph_lead()` rather than the plain offscreen margin
-## precisely so this cannot happen; this checks the contract directly, at the instance level, rather
-## than trusting the siting alone.
+## `TOWARD_PLAYER` row that reached her before its own telegraph ended would ride straight through,
+## declared lethal and never once able to fire. Such a row's telegraph is its warning, run before it
+## exists (`PendingWarning`), and it is created with that telegraph spent; this walks the warning and
+## the arrival together, at the instance level, rather than trusting the construction.
 ##
 ## Walks every `hard_fail` `TOWARD_PLAYER` row in the catalogue rather than naming `cyclist`, so a
 ## second row of the same shape is covered by construction rather than by remembering to add it.
@@ -321,32 +321,209 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.hard_fail:
 			continue
 		checked += 1
-		var closing := def.speed + Tuning.WALK_SPEED
-		var lead := Tuning.outlasting_telegraph_lead(Vector2.RIGHT, closing, def.telegraph_time,
-				def.offscreen_notice)
-		# The same construction `_toward_her` uses: sited `lead` ahead along the heading, routed the
-		# same distance behind so it is still going somewhere when it reaches her.
-		var path := PackedVector2Array([Vector2(lead, 0.0), Vector2(-lead, 0.0)])
-		var instance := EventInstance.new()
-		instance.setup(def, path[0], path)
+		var arrived: Array[EventInstance] = []
+		var warning := _warned_down_her_line(def, Vector2.ZERO, Vector2.RIGHT, arrived)
 		var her := Vector2.ZERO
 		var was_lethal := false
 		var elapsed := 0.0
-		# Generous over the time they would meet at, so a regression that undershoots the lead only
-		# a little still gets caught rather than timing the loop out first.
-		var limit := lead / closing * 1.5
-		while elapsed < limit and not instance.is_finished:
+		while elapsed < def.telegraph_time + 5.0:
 			her.x += Tuning.WALK_SPEED * STEP
-			instance._process(STEP)
-			if instance.is_lethal_at(her):
+			elapsed += STEP
+			if arrived.is_empty():
+				warning.tick(STEP, her)
+				continue
+			arrived[0]._process(STEP)
+			if arrived[0].is_lethal_at(her):
 				was_lethal = true
 				break
-			elapsed += STEP
 		t.check(was_lethal,
-				"'%s' is declared hard_fail but the approach never once outlasts its own %.1fs "
-				% [def.id, def.telegraph_time] + "telegraph before it reaches her")
-		instance.free()
+				"'%s' is declared hard_fail and its warning is over by the time it reaches her"
+				% def.id)
+		for instance in arrived:
+			instance.free()
 	t.check(checked > 0, "there is at least one hard_fail TOWARD_PLAYER row to check ('cyclist')")
+
+## A warning for `def` coming down her line from `direction`, on open ground, put up with her at
+## `her` — the construction `EventManager._warn_down_her_line()` makes, with creation done the way
+## `EventManager.spawn_warned()` does it: its telegraph spent. What it creates is appended to
+## `arrived`, for the caller to tick and free.
+static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector2,
+		arrived: Array[EventInstance]) -> PendingWarning:
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.down_her_line(null, def, at, direction)
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var path := PendingWarning.route_down_her_line(null, place, at, direction)
+		var instance := EventInstance.new()
+		instance.setup(def, path[0], path)
+		instance.resume(def.telegraph_time, 0.0)
+		arrived.append(instance)
+		return true
+	var warning := PendingWarning.new(def, where, arrive)
+	warning.follow(her)
+	return warning
+
+## How far over the contract's floor the cyclist's warning may run, walking into him, and still be
+## *shortly* before he arrives. Half a second is about three strides — enough for frame timing, and
+## well short of the extra second she spent watching him close from off screen when "most of the
+## time you're already gone when anything happens".
+const CYCLIST_WARNING_OVER_THE_FLOOR := 0.5
+
+## **The cyclist is warned by himself first, and arrives where the warning pointed, shortly after.**
+## *(2026-09-25: "I feel the same with the biker. it gets warned too early so most of the time you're
+## already gone when anything happens." · PLAYTEST-145: "the warning appears by itself with a
+## reasonable position and when the time is right the object is spawned in at that location just
+## offscreen" · "the biker needs to stay on the sidewalk".)*
+##
+## On the real map, with the warning held the way `EventManager` holds one (`warn_first()`,
+## `_run_the_warnings()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
+## out onto the carriageway and back:
+##
+## - **the badge is up with nothing in the world**;
+## - **the place stays on a sidewalk and just off screen the whole time**, and never nearer her than
+##   the distance ahead it started at, so walking on does not bring him sooner;
+## - **he is created no sooner than his `telegraph_time`, where the badge pointed, off screen, with
+##   his telegraph spent**.
+##
+## Then, walked by `M207Lead.measure()` (`tests/probes/m207_warning_lead.gd`, the probe that prints
+## every warned row's lead) on open ground on both axes: **from the badge to his reach, walking into
+## him, is at least the contract's floor**, exactly his warning and then his approach from just off
+## screen, and standing still he still reaches her no sooner than the floor. **And on the narrower
+## axis that is not much more than the floor.**
+func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
+	var def := EventCatalogue.by_id("cyclist")
+	var map := _map()
+	# Her own kerb-side sidewalk beside the arterial, walking north from a point where the place just
+	# off screen ahead of her is on a sidewalk too rather than in the carriageway of a cross street.
+	var her := CrowdLanes.arterial_pavement(map)
+	for _tile in map.size.y / 2:
+		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
+			break
+		her.y += Tuning.TILE_SIZE
+	var manager := EventManager.new()
+	var player := Node2D.new()
+	t.add_child(player)
+	player.global_position = her
+	var edge := DangerEdge.new()
+	t.add_child(edge)
+	edge.setup(manager, player)
+	var created: Array[EventInstance] = []
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.down_her_line(map, def, at, Vector2.UP)
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var path := PendingWarning.route_down_her_line(map, place, at, Vector2.UP)
+		var instance := EventInstance.new()
+		instance.setup(def, path[0], path)
+		instance.resume(def.telegraph_time, 0.0)
+		created.append(instance)
+		return true
+	var warning := manager.warn_first(def, her, where, arrive)
+	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
+	if not warning:
+		manager.free()
+		return
+	edge._measure(STEP)
+	var badged := false
+	for badge in edge.announcing():
+		badged = badged or badge["id"] == "cyclist"
+	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
+
+	var ahead := Tuning.offscreen_lead(Vector2.UP, def.speed + Tuning.WALK_SPEED,
+			def.offscreen_notice)
+	var ground := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	var elapsed := 0.0
+	var looked := 0
+	var off_its_ground := 0
+	var on_screen := 0
+	var moved := 0
+	var nearer := 0
+	var was := warning.place
+	var pointed := warning.place
+	var came_at := INF
+	while elapsed < def.telegraph_time + 3.0:
+		# North up the sidewalk, then a stride out onto the carriageway and back.
+		var step := Vector2.UP
+		if elapsed > 0.6 and elapsed <= 1.2:
+			step = Vector2.RIGHT
+		elif elapsed > 1.2 and elapsed <= 1.8:
+			step = Vector2.LEFT
+		her += step * Tuning.WALK_SPEED * STEP
+		pointed = warning.place
+		manager._run_the_warnings(STEP, her)
+		elapsed += STEP
+		if not created.is_empty():
+			came_at = elapsed
+			break
+		looked += 1
+		if not ground.has(map.tile_at(map.world_to_tile(warning.place))):
+			off_its_ground += 1
+		if not PendingWarning.is_off_screen(warning.place - her, warning.closing_speed(),
+				def.offscreen_notice):
+			on_screen += 1
+		if warning.place != was:
+			moved += 1
+		if (warning.place - her).dot(Vector2.UP) < ahead - 0.5:
+			nearer += 1
+		was = warning.place
+	t.check(looked > 0 and moved > 0,
+			"it was watched (%d frames) and it moved with her (%d)" % [looked, moved])
+	t.check(off_its_ground == 0,
+			"and its place stayed on a sidewalk the whole time (%d frames off it)" % off_its_ground)
+	t.check(on_screen == 0,
+			"and just off screen the whole time (%d frames on it)" % on_screen)
+	t.check(nearer == 0,
+			"and never nearer her than the %.0fpx ahead it started at (%d frames nearer)"
+			% [ahead, nearer])
+	t.check(created.size() == 1 and came_at >= def.telegraph_time,
+			"he is created once his %.2fs warning is over (%.2fs)" % [def.telegraph_time, came_at])
+	if created.size() == 1:
+		var bike := created[0]
+		t.close_to(bike.global_position.distance_to(warning.place), 0.0,
+				"where the badge pointed", 0.5)
+		t.check(PendingWarning.is_off_screen(bike.global_position - her,
+				def.speed + Tuning.WALK_SPEED, def.offscreen_notice),
+				"off screen by his own notice")
+		t.check(not bike.is_telegraphing(), "with his telegraph already spent, so he can end the day")
+	for instance in created:
+		instance.free()
+	edge.free()
+	player.free()
+	manager.free()
+
+	var walked := 0
+	for encounter in M207Lead.encounters():
+		var row: EventDef = encounter["def"]
+		if row.id != "cyclist":
+			continue
+		walked += 1
+		var floor_s := row.minimum_telegraph()
+		var probe_edge := DangerEdge.new()
+		var toward := M207Lead.measure(encounter, M207Lead.Answer.TOWARD, probe_edge)
+		t.check(toward["by"] == "badge" and toward["lead"] < INF,
+				"cyclist (%s): the badge warns her before he can hit her (by %s, %.2fs)"
+				% [encounter["how"], toward["by"], toward["lead"]])
+		t.check(toward["lead"] >= floor_s,
+				"cyclist (%s): walking into him she is warned %.2fs ahead, at least the %.2fs floor"
+				% [encounter["how"], toward["lead"], floor_s])
+		# What the walk measures is the contract's own figure on this axis: his warning, then his
+		# approach from just off screen to his reach. The horizontal axis adds only the wider view.
+		var heading: Vector2 = encounter["heading"]
+		var closing := row.speed + Tuning.WALK_SPEED
+		var predicted := row.telegraph_time + (Tuning.offscreen_lead(heading, closing,
+				row.offscreen_notice) - row.lethal_reach()) / closing
+		t.close_to(toward["lead"], predicted,
+				"cyclist (%s): which is his warning and then his approach from just off screen"
+				% encounter["how"], 3.0 * STEP)
+		var stood := M207Lead.measure(encounter, M207Lead.Answer.STAND, probe_edge)
+		t.check(stood["lead"] < INF and stood["lead"] >= floor_s,
+				"cyclist (%s): standing on his line she is still reached, %.2fs after the warning"
+				% [encounter["how"], stood["lead"]])
+		probe_edge.free()
+	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)
+	# And the tightest of them — the contract's own figure, on the narrower axis of the view — is
+	# shortly before he arrives rather than long before it.
+	t.check(def.warning_time() <= def.minimum_telegraph() + CYCLIST_WARNING_OVER_THE_FLOOR,
+			"his warning, %.2fs from the badge to his reach, is at most %.1fs over the %.2fs floor"
+			% [def.warning_time(), CYCLIST_WARNING_OVER_THE_FLOOR, def.minimum_telegraph()])
 
 ## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
 ## appeared once (I died) then it didn't appear again.")*

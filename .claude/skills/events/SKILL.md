@@ -64,11 +64,40 @@ catalogue. A violation is a bug, not a difficulty setting.
 One documented exemption: `AMBIENT` events, which never "appear". Nothing is city-wide: every row
 has a place and an edge to walk out of, the loudspeaker masts included.
 
-A director-sited (`AHEAD_OF_PLAYER`/`TOWARD_PLAYER`) event is **not** an exemption — it has no
-telegraph she can see coming from down the street, so the contract is paid in geometry: the
-director sites it a row-specific lead ahead of her, `EventDef.validate()` refuses a `TOWARD_PLAYER`
-field that would reach her from that lead, and it refuses any director-sited row that obstructs,
+A director-sited (`AHEAD_OF_PLAYER`/`TOWARD_PLAYER`) event is **not** an exemption. A crossing
+has no telegraph she can see coming from down the street, so its contract is paid in geometry: the
+director sites it a row-specific lead ahead of her. `EventDef.validate()` refuses a `TOWARD_PLAYER`
+field that would reach her from where it is created, and any director-sited row that obstructs,
 because nothing checks a route around a thing with no tile.
+
+**For a row warned of before it exists, "becomes visible" is its badge**, and the contract holds
+`EventDef.warning_time()` — the badge to the earliest it can reach her — against
+`minimum_telegraph()`, which for such a row is the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s, the
+player's time to react and think), never a figure worked out from its field or speed.
+
+## Everything from off screen is warned first, and spawns where it points
+
+*(PLAYTEST-145: "the warning appears by itself with a reasonable position and when the time is
+right the object is spawned in at that location just offscreen".)* A row that arrives from off
+screen under the screen-edge badge — `cyclist` and `loose_dog` (`warns_before_it_exists()`), the
+fire engine, day 13's column — is a `PendingWarning` first (`EventManager.warn_first()`): nothing in
+the world, the badge up at once, its place following her each frame just off screen
+(`Tuning.offscreen_lead()` along its own ray) **on ground that makes sense for the thing** — a
+sidewalk for the bike and the dog, the road on its way to the fire for the engine, its lane for the
+column — moved sideways or further out to reach that ground, never nearer. When its own
+`telegraph_time` is over the thing is created there with that telegraph spent
+(`EventManager.spawn_warned()`).
+
+**The warning time is the row's own number.** *(PLAYTEST-145: "I don't like that the warning is
+tied to the size of the field or the speed.")* Nothing about where a thing is created may be
+derived from its telegraph, and a row's telegraph is not shortened by shrinking its field. A thing
+is never created closer than just off screen by its notice: with no sensible ground, the place holds
+and the thing waits.
+
+**Not warned first, each for a rule**: a director-sited pursuer (its telegraph is its stand-off
+approach, and spent early a walk outlasts the chase), a patrol sent down the road (no badge
+announces it), and a `MAP` mover (a place the day planned). The reasoning is `docs/EVENTS.md`,
+"Everything arrives from off screen".
 
 ## The contract is per event and the player experiences the sum
 

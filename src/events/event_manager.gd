@@ -24,6 +24,9 @@ extends Node
 ## setting from this node.
 
 var _instances: Array[EventInstance] = []
+## Warnings that are up for something not yet in the world — see `PendingWarning` and
+## `warn_first()`. Each is dropped the frame the thing it warns about is created.
+var _pending: Array[PendingWarning] = []
 ## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
 var _plans: Array[EventScheduler.Planned] = []
 var _director: EventDirector
@@ -352,6 +355,7 @@ func clear() -> void:
 	_walked_under = 0
 	_guard_after_her = null
 	_sighted.clear()
+	_pending.clear()
 	_broadcast_clock = 0.0
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
@@ -698,6 +702,50 @@ func owed_ahead() -> int:
 func instances() -> Array[EventInstance]:
 	return _instances
 
+## The warnings that are up for something not in the world yet — what `DangerEdge` draws a badge
+## for alongside `instances()`. See `PendingWarning`.
+func pending_warnings() -> Array[PendingWarning]:
+	return _pending
+
+# ------------------------------------------------------- the warning comes first ---
+# *(PLAYTEST-145: "how offscreen warnings and placements should work is that the warning appears by
+# itself with a reasonable position and when the time is right the object is spawned in at that
+# location just offscreen.")* Everything that arrives from off screen under the screen-edge badge
+# comes through here: `cyclist` and `loose_dog` from the director, the fire engine from the fire it
+# was called to, and day 13's column from `ResistanceHappenings`.
+
+## Puts up a warning for `def` with nothing in the world yet, at the place `where` gives for her
+## standing at `her`, and hands `arrive` the place once the row's own `telegraph_time` is over — see
+## `PendingWarning` for both callables. Returns the warning, or null when `where` has no place for it
+## on the thing's own ground right now, in which case nothing is up and the caller asks again later.
+func warn_first(def: EventDef, her: Vector2, where: Callable,
+		arrive: Callable) -> PendingWarning:
+	var warning := PendingWarning.new(def, where, arrive)
+	if not warning.follow(her):
+		return null
+	_pending.append(warning)
+	return warning
+
+## Creates `def` on `path` with its telegraph already spent, for a row whose warning ran before it
+## existed: from its first frame it is what it is after its telegraph — lethal, for a `hard_fail`
+## row, and at its own intensity for a loud one.
+func spawn_warned(def: EventDef, path: PackedVector2Array) -> EventInstance:
+	var instance := _spawn_unplanned(def, path[0], path)
+	instance.resume(def.telegraph_time, 0.0)
+	instance.came_under_a_warning = true
+	return instance
+
+## Moves every warning's place with her, standing at `here`, and creates what is due. Run every
+## frame there is a player.
+func _run_the_warnings(delta: float, here: Vector2) -> void:
+	if _pending.is_empty():
+		return
+	var still_up: Array[PendingWarning] = []
+	for warning in _pending:
+		if not warning.tick(delta, here):
+			still_up.append(warning)
+	_pending = still_up
+
 # ------------------------------------------------------------ WorldContext ---
 
 ## Every live instance's own contribution at this point, as `[instance, contribution]` pairs, for
@@ -804,6 +852,7 @@ func _physics_process(delta: float) -> void:
 		stream_around(_player.global_position)
 		_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
+		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()
 		_watch_the_door_lines()
@@ -843,31 +892,19 @@ func _is_on_screen(world_position: Vector2) -> bool:
 	var offset := world_position - _player.global_position
 	return absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y
 
-## Creates the row `source.spawns_on_sight` names, entering along `at`'s own street from off
-## screen and ending at `at` itself — `at` is a sidewalk point (`burning_building` is placed
-## `AGAINST_THE_BUILDING`), so the along-street axis is `CityMap.pavement_inward()` turned a
-## quarter turn, the construction `EventDirector._onto_her_side()` uses for the same reason: it
-## is the corridor's own axis, not whichever way she happens to be facing. Returns false, and
-## creates nothing, when neither direction along that axis lands in bounds.
+## Warns of the row `source.spawns_on_sight` names, coming along `at`'s own street to `at` — `at`
+## is a sidewalk point (`burning_building` is placed `AGAINST_THE_BUILDING`), so the along-street
+## axis is `CityMap.pavement_inward()` turned a quarter turn, the construction
+## `EventDirector._onto_her_side()` uses for the same reason: it is the corridor's own axis, not
+## whichever way she happens to be facing. Which end it comes from is a coin flip on the day's own
+## stream. Returns false, and puts nothing up, when neither way along that axis has any road off
+## screen to wait on.
 ##
-## **Sited by `Tuning.offscreen_lead()`, not `Tuning.outlasting_telegraph_lead()`.** The
-## stricter siting `EventDirector._toward_her()` gives a `hard_fail` row exists to hold the
-## *whole* telegraph in reserve before a lethal thing can reach her; the engine cannot end the
-## day, so the ordinary M77 margin — off screen, plus its own closing notice — is what "far
-## enough up the street" owes on its own. What is still owed is `EventDef.validate()`'s own rule
-## for an ordinary `TOWARD_PLAYER` row (`outer_radius` must sit inside the siting distance, so
-## she can never be found already inside a field that has just become visible) — the row's
-## `minimum_telegraph()` contract then buys the walk clear of it, exactly as it does wherever
-## else in the catalogue a row is met. Both halves are checked from the worst position on the
-## street in `tests/test_events.gd` rather than trusted from the geometry alone.
-##
-## **The margin is measured off `at`, not off her.** Every other caller of `offscreen_lead()`
-## states its siting relative to her own live position, which is exactly where the view is
-## centred, so clearing the view already clears her. This one is triggered by `at` coming on
-## screen, which only bounds her distance from `at` to the half diagonal of the view,
-## `Tuning.VIEW_HALF_EXTENT.length()` (≈367px, `ResistanceDirector.NOTICE_RADIUS`'s own
-## reasoning) — so the siting also has to clear the engine's own forward reach from *that* worst
-## case, not only the screen edge.
+## **Warned first, like everything else that arrives from off screen** (`warn_first()`): the badge
+## goes up the moment the fire is seen, with no engine in the world, pointing up the road it will
+## come down; its place stays on that road, on its way to the fire, just off screen from her
+## (`PendingWarning.on_its_route()`), and the engine is created there when its `telegraph_time` is
+## over and drives to the kerb (`where_the_summoned_row_stops()`), where it parks.
 func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
 	var summoned := EventCatalogue.by_id(source.spawns_on_sight)
 	if not summoned:
@@ -878,20 +915,36 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
 		return false
 	var along := Vector2(inward.y, inward.x)
 	var road_at := where_the_summoned_row_stops(_map, at)
-	var closing := summoned.speed + Tuning.WALK_SPEED
-	var lead := maxf(Tuning.offscreen_lead(along, closing, summoned.offscreen_notice),
-			summoned.field_reach() + Tuning.VIEW_HALF_EXTENT.length())
 	var headings: Array[Vector2] = [along, -along]
 	if GameState.day_rng(_day, "sighted:%s" % source.id).randf() < 0.5:
 		headings.reverse()
+	var her := _player.global_position if _player else at
 	for heading in headings:
-		var entry: Vector2 = road_at + heading * lead
-		if not _map.in_bounds(_map.world_to_tile(entry)):
-			continue
-		var instance := _create(summoned, entry, PackedVector2Array([entry, road_at]))
-		_instances.append(instance)
-		return true
+		var reach := _road_left(road_at, heading)
+		var travel := -heading
+		var where := func(standing: Vector2) -> Vector2:
+			return PendingWarning.on_its_route(summoned, standing, road_at, travel, reach)
+		var arrive := func(place: Vector2, _standing: Vector2) -> bool:
+			spawn_warned(summoned, PackedVector2Array([place, road_at]))
+			return true
+		if warn_first(summoned, her, where, arrive):
+			return true
 	return false
+
+## How far the road runs from `from` along the axis-aligned `heading` before the map's edge, less
+## half a tile — as far up its street as a summoned row may wait.
+func _road_left(from: Vector2, heading: Vector2) -> float:
+	var size := _map.world_size()
+	var room := INF
+	if heading.x > 0.0:
+		room = size.x - from.x
+	elif heading.x < 0.0:
+		room = from.x
+	elif heading.y > 0.0:
+		room = size.y - from.y
+	elif heading.y < 0.0:
+		room = from.y
+	return room - Tuning.TILE_SIZE * 0.5
 
 ## Where a row summoned on sight comes to rest: the near kerb across from `at`, which is the
 ## sidewalk point the row that summoned it is standing on. `Vector2.INF` where `at` is not beside a
@@ -938,10 +991,10 @@ static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 ## cue being honest about a game whose first days are barely dangerous.
 ##
 ## **And `NOW` is about the pair of them, not about the disc.** Raised for any live lethal event
-## whose **outer** radius covers her, it is up across more than thirty times the area that could
-## hurt her — a cyclist ends the day inside 26px and reaches 145 — and it stays up while the bike
-## rides away, which is *"the flashing exclamation marks after the fact"* on the events' side of a
-## fix the traffic already has in `stand_down()`.
+## whose **outer** radius covers her, it is up across about seven times the area that could hurt
+## her — a cyclist ends the day inside 33px and its outer radius reaches 90 — and it stays up while
+## the bike rides away, which is *"the flashing exclamation marks after the fact"* on the events'
+## side of a fix the traffic already has in `stand_down()`.
 ##
 ## So it is two conditions: she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the
 ## day, **and** the gap is actually shrinking at the speeds in play.
@@ -1000,6 +1053,9 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 		return
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
+	if def.warns_before_it_exists():
+		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
+		return
 	_spawn_unplanned(def, path[0], path)
 	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
 	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
@@ -1012,6 +1068,27 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
 		def.id, verb, lead,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## A row the director sited down her own line, warned first: the badge goes up at once, its place
+## follows her just off screen in `direction` on a sidewalk or a square (`PendingWarning.
+## down_her_line()`), and the thing is created there down her line once its telegraph is over.
+##
+## **The route is asked of the region doors again when it is created**, the same refusal
+## `EventDirector.due()` makes when it sites one — the place has moved with her since, and a
+## cyclist coming through a door's gap is exactly what that refuses. A refusal keeps the warning
+## up and asks again next frame.
+func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.down_her_line(_map, def, at, direction)
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		var path := PendingWarning.route_down_her_line(_map, place, at, direction)
+		if not _director.clear_of_the_doors(path, def):
+			return false
+		spawn_warned(def, path)
+		Telemetry.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
+				% [def.id, place.distance_to(at), TelemetryLog.tile(_map.world_to_tile(at))])
+		return true
+	warn_first(def, her, where, arrive)
 
 ## The other half of the director's day: a place the day budgeted and left unsited, put on a
 ## building face ahead of her once her heading for the day is clear. Day 3's fire is the only row

@@ -415,25 +415,6 @@ one still, so how long that lasted is not known.
 
 ---
 
-## M207 — A warning comes shortly before its danger · asked for 2026-09-25
-
-> "12.9s is a *long* warning to the point where nothing really happens anymore. I feel the same
-> with the biker. it gets warned too early so most of the time you're already gone when anything
-> happens."
-
-[PLAYTEST-140](playtests/PLAYTEST-140.md), statement 2. The telegraph contract sets the floor, the
-reaction time a warning must leave her; the player's complaint is the other end.
-
-- [ ] **The cyclist is warned shortly before he arrives**, not so early that she has usually
-      passed: its lead (spawned `EventDef.toward_player_lead()` down her line, telegraphing 2.97s
-      at 165px/s) comes down to the contract's floor plus a small margin. The robber that comes
-      after a handover is fixed on M137's own PR.
-- [ ] **A table of every warned row's lead**: how long from the first warning to the moment the
-      danger can reach her, walking toward it, standing and walking away, against the contract's
-      floor, so the player can name the next one.
-
----
-
 ## M210 — The brief between two days is the coming day's · asked for 2026-09-26
 
 > "the day brief is inconsistent it say she fell asleep but really it's the day brief for the next
@@ -684,6 +665,58 @@ silently.
       statement 29: "if the information is still there and the table in readme is redundant we can
       remove"). Moving a row whose information is only in the table into its folder first is the
       orchestrator's reading.
+
+---
+
+## M207 — A warning comes shortly before its danger, and comes by itself · asked for 2026-09-25
+
+> "12.9s is a *long* warning to the point where nothing really happens anymore. I feel the same
+> with the biker. it gets warned too early so most of the time you're already gone when anything
+> happens."
+
+[PLAYTEST-140](playtests/PLAYTEST-140.md). How it is done is
+[PLAYTEST-145](playtests/PLAYTEST-145.md): the warning goes up by itself, the thing spawns just off
+screen where it points when its time comes, the waiting place follows her on the thing's own
+ground, for every event that arrives from off screen, and a warning is at least 2.9s ("2.9s is a
+fair time to react and *think* about what to do"). What is built on PR #372 is in `DECISIONS.md`,
+M207. Four things are open, each waiting on the player:
+
+- [ ] **What the 2.9s counts to.** Built: from the badge to the earliest moment the thing can reach
+      her (`EventDef.warning_time()`; the cyclist's `telegraph_time` is 2.13s, and he takes about
+      0.77s more from just off screen). The other reading counts to the spawn: his timer 2.9s and
+      about 3.7s in all. Switching is one term in `warning_time()`.
+- [ ] **`loose_dog` under the 2.9s.** Its timer is 2.25s, 2.40s from badge to reach walking into
+      it, and the player said "the dog timer is good" without naming the dog. It is exempt for now
+      (`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`); raising it to 2.75s, or 2.9s if the count is to the
+      spawn, is the other answer.
+- [ ] **`charging_dog` is not warned first.** Its 4.5s timer is its visible approach on screen
+      before the chase. Spent before the dog exists, it leaves only the 3s chase, which a walk
+      outlasts, against the pursuit rule `tests/test_events_pursuit.gd` holds: "Walking has to lose,
+      or the mechanic teaches nothing." The orchestrator's proposal, not asked for: the badge goes up
+      for 2.9s first, then the dog spawns just off screen and closes and chases as it does now.
+- [ ] **Three kinds of offscreen arrival are not warned first, each against a stated rule.**
+      `police_patrol`'s return leg and the torn-poster patrol have no badge at all, since the cues
+      rule gives one only to "something lethal or faster than a walk" and a patrol is neither; the
+      `MAP`-placed `military_convoy` and the finale's trucks are planned places, and the events rule
+      says "Do not move a guarantee out of `build_day` and into the streaming." Warning them first
+      needs the player to overturn one rule or the other for them.
+
+---
+
+## M224 — A warning shorter than its own floor · found 2026-09-26
+
+Found by M207's lead table (`tests/probes/m207_warning_lead.gd`, `DECISIONS.md`, M207, a warning
+comes shortly before its danger). Measured from the first warning she can see to the earliest
+moment the thing can reach her, several rows come in under their own
+`EventDef.minimum_telegraph()`. Walking away, which is what the fairness contract is about,
+`cat_dash` across her line horizontally reads 0.00s against a 2.51s floor. Walking toward or
+standing, `charging_dog` from day 4, `alley_robbery`, `masked_pursuer`, `pigeon_flock`,
+`military_convoy` and `police_patrol`'s return leg read under by up to about a second. The events
+rules call a broken contract "a bug, not a difficulty setting".
+
+- [ ] **For each row under its floor, say whether it is a real breach or the probe's placement**
+      (the probe stands her by rule rather than on a real route), with the frame or the
+      measurement that shows it. A real breach gets fixed and a test that fails before the fix.
 
 ---
 

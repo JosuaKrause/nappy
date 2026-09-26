@@ -15,7 +15,7 @@ Every figure is on quiet sidewalk (ground multiplier 1.0); other grounds are not
 
 **`The pass — awake`/`The pass — asleep`** are the net points from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going different directions, the row moving exactly as the game moves it (pacing, mobile, or held still), averaged over 8 samples of its own pulse phase except where the two paragraphs below say otherwise. `M174Pass.pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather than duplicated — `tests/test_events.gd`'s own relationship test runs the identical code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, pigeon_flock, charging_dog, door_guard, alley_robbery, masked_pursuer) — its notice and chase state is driven by where the player is, which the rig never tells it, so there is no pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty for a pursuer. The 0px column is dashed for a row with a solid, still body (`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk through.
 
-**A row that comes at her is met inside its own telegraph, and the pass says so.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: `EventDirector` creates it the moment it is owed, `EventDef.toward_player_lead()` px down her own line, and it covers that ground while it is still telegraphing — at `Tuning.TELEGRAPH_INTENSITY_FRACTION` of its intensity. So its pass is simulated from the spawn the director actually makes, at the closest siting any heading could give it (`EventDef.min_toward_player_lead()`, so the figure does not depend on which way a walk was going), telegraph running, moving as it moves. Such a row is measured once rather than averaged over 8 pulse phases: its pulse starts when it is created, so how far through the beat it is when it reaches her is fixed by the flight.
+**A row that comes at her is met the moment it is created, its telegraph already spent.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: its screen-edge warning goes up with nothing in the world, runs for its `telegraph_time`, and the row is then created just off screen down her own line (`EventManager.spawn_warned()`), coming at her at its own intensity. So its pass is simulated from that creation, at the closest it can be made on any heading (`Tuning.min_offscreen_lead()` at its speed plus `Tuning.WALK_SPEED`, so the figure does not depend on which way a walk was going), moving as it moves. Such a row is measured once rather than averaged over 8 pulse phases: its pulse starts where its warning did, so how far through the beat it is when it reaches her is fixed by the warning and the flight.
 
 **Every other row is walked up to, and its telegraph is long over by then** — a `MAP` placement was made at dawn — so those passes start after the telegraph and nothing above changes what they say.
 
@@ -204,11 +204,11 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | fire_truck           |      31.6 |      31.5 |      31.2 |      29.5 |      26.4 |
 | burning_building     |         — |      13.2 |      12.7 |      10.2 |       5.4 |
 | burnt_shell          |         — |      -6.3 |      -5.9 |       0.0 |       0.0 |
-| loose_dog            |      24.2 |      23.7 |      22.1 |      14.1 |       2.0 |
+| loose_dog            |      23.8 |      23.3 |      21.7 |      13.8 |       2.0 |
 | market_stall         |         — |       2.5 |       1.3 |       0.0 |       0.0 |
 | leaf_blower          |         — |      22.6 |      18.7 |       7.1 |      -0.1 |
 | pigeon_flock         |         — |         — |         — |         — |         — |
-| cyclist              |       3.4 |       3.3 |       2.7 |      -0.4 |       0.0 |
+| cyclist              |       5.5 |       5.3 |       4.3 |      -0.4 |       0.0 |
 | ice_cream_van        |         — |      -0.3 |      -0.7 |      -2.4 |      -5.5 |
 | reversing_lorry      |         — |       5.6 |       4.9 |       1.6 |      -4.1 |
 | charging_dog         |         — |         — |         — |         — |         — |
@@ -260,11 +260,11 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | fire_truck           |      10.9 |      10.8 |      10.7 |       9.9 |       8.4 |
 | burning_building     |         — |      -7.9 |      -8.1 |      -9.0 |     -10.6 |
 | burnt_shell          |         — |      -7.9 |      -7.2 |       0.0 |       0.0 |
-| loose_dog            |       9.9 |       9.7 |       9.0 |       5.0 |      -0.6 |
+| loose_dog            |       9.7 |       9.5 |       8.7 |       4.8 |      -0.7 |
 | market_stall         |         — |      -2.2 |      -2.2 |       0.0 |       0.0 |
 | leaf_blower          |         — |       1.3 |      -0.6 |      -6.2 |      -8.7 |
 | pigeon_flock         |         — |         — |         — |         — |         — |
-| cyclist              |      -0.0 |      -0.0 |      -0.2 |      -1.1 |       0.0 |
+| cyclist              |       1.1 |       1.1 |       0.7 |      -1.1 |       0.0 |
 | ice_cream_van        |         — |     -14.2 |     -14.3 |     -14.6 |     -15.2 |
 | reversing_lorry      |         — |      -7.1 |      -7.3 |      -8.2 |      -9.8 |
 | charging_dog         |         — |         — |         — |         — |         — |

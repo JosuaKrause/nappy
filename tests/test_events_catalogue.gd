@@ -99,7 +99,9 @@ func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t) -> void:
 
 ## The contract from docs/EVENTS.md: a player who starts walking away the instant an event
 ## becomes visible clears its outer radius before it reaches full strength. A violation is
-## a bug, not a difficulty setting, so the whole catalogue is checked.
+## a bug, not a difficulty setting, so the whole catalogue is checked. "Visible" is the badge for a
+## row warned of before it exists, so what is held against the floor is `EventDef.warning_time()`
+## rather than the telegraph alone.
 func _test_catalogue_is_fair(t) -> void:
 	var defs := EventCatalogue.all()
 	t.check(not defs.is_empty(), "the catalogue is not empty")
@@ -107,9 +109,9 @@ func _test_catalogue_is_fair(t) -> void:
 		t.check(def.id != "", "every event has an id")
 		t.check(def.validate(), "event '%s' gives the player time to walk clear" % def.id)
 		if def.kind != GameEnums.EventKind.AMBIENT:
-			t.check(def.telegraph_time >= def.minimum_telegraph(),
-					"event '%s' telegraph %.2fs >= minimum %.2fs"
-					% [def.id, def.telegraph_time, def.minimum_telegraph()])
+			t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
+					"event '%s' warns %.2fs before it can reach her >= minimum %.2fs"
+					% [def.id, def.warning_time(), def.minimum_telegraph()])
 		t.check(def.outer_radius > def.inner_radius,
 				"event '%s' has a falloff band to fade across" % def.id)
 

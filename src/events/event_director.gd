@@ -712,60 +712,48 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		return PackedVector2Array()
 	return PackedVector2Array([from, to])
 
-## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point. Sited at
-## least `def.offscreen_notice` seconds outside the view along her heading —
-## `Tuning.offscreen_lead(heading, def.speed + Tuning.WALK_SPEED, def.offscreen_notice)`, since she
-## is usually walking into it — and travelling back down the same line she is walking, so a rig that
-## keeps going meets it on a genuine collision course rather than a near miss that depends on nobody
-## moving. *(2026-09-07: "bikers / unleashed dogs all pop in in front of the player instead of
-## starting off screen", and "events that go towards the player (biker / pursuing dog) should at
-## least be 200ms off screen with a warning".)* A row sited at a flat 200px was already on screen on
-## the horizontal axis; this is not, on either axis — for `cyclist` at 165px/s the closing speed is
-## 165 + 92 = 257px/s, 51px of margin past the boundary at the default notice.
+## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point, for a
+## row on foot (`cyclist`, `loose_dog`). Returns `[place, far end]`: where its warning's badge
+## points, and the far end of the route it will be created on once that warning is over —
+## `EventManager` puts the warning up rather than the thing (`PendingWarning`), and the direction the
+## thing comes from is read off these two points.
 ##
-## **And further still than that, so its own telegraph is over before it arrives.**
-## *(2026-09-07: "also a biker hit should be lethal.")* `Tuning.outlasting_telegraph_lead()` takes
-## whichever is further: the ordinary offscreen margin, or the distance that takes
-## `telegraph_time + def.offscreen_notice` to close, plus whatever "arrives" means for the row —
-## nothing for a `hard_fail` one, where arriving is touching her, and its own `field_reach()` for a
-## loud one, where arriving is its field reaching her. The telegraph term is the binding one on
-## every heading for both rows that use this. A row this far out is well past
-## `EVENT_STREAM_RADIUS`'s own concerns; it exists for exactly this one moment and is created only
-## when it is due, so there is no cost to sitting it further than a `MAP` row ever would be.
+## **The place is just off screen, whatever the row's telegraph.** *(2026-09-07: "bikers / unleashed
+## dogs all pop in in front of the player instead of starting off screen", and "events that go
+## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning".)*
+## `PendingWarning.down_her_line()` puts it `Tuning.offscreen_lead(heading, def.speed +
+## Tuning.WALK_SPEED, def.offscreen_notice)` out along her heading, on a sidewalk or a square.
+## *(PLAYTEST-145: "I don't like that the warning is tied to the size of the field or the speed.")*
+## The warning is the row's own `telegraph_time`, spent before the thing exists, so nothing about
+## where it is sited has to outlast it.
 ##
 ## **The line is straightened onto the pavement she is standing on, when she is standing on one.**
 ## *(2026-09-07: "also biker should be on the same side of the road not the other side".)* Sited
-## along her literal heading, a hundreds-of-pixels lead drifts across the carriageway from a heading
-## only a little off the corridor's own axis — a diagonal drag on the touch controls crosses a
-## six-tile street well before a `hard_fail` row's own lead reaches it, landing the row on the far
-## sidewalk, where it reads as scenery rather than as a lane she has to answer for. `_onto_her_side()`
-## below is the preference, not a requirement: where there is no pavement edge to prefer — the
-## carriageway, a junction, open ground — or the heading has no along-corridor component to send it
-## down, the literal heading is used exactly as before.
+## along her literal heading, the lead drifts across the carriageway from a heading only a little off
+## the corridor's own axis — a diagonal drag on the touch controls crosses a six-tile street before
+## the lead reaches the edge of the view, landing the row on the far sidewalk, where it reads as
+## scenery rather than as a lane she has to answer for. `_onto_her_side()` below is the preference,
+## not a requirement: where there is no pavement edge to prefer — the carriageway, a junction, open
+## ground — or the heading has no along-corridor component to send it down, the literal heading is
+## used exactly as before.
 ##
-## **Which lead the row gets is `EventDef.toward_player_lead()`**, not a branch here: the pass
-## measurement behind `docs/COSTS.md` has to spawn the row exactly where this sites it, so the rule
-## lives on the def where both can read it rather than in the director where only the director can.
-##
-## The far end of the route runs the same distance **behind** her rather than stopping where she
-## is standing: it has to still be going somewhere when it reaches her, or `EventInstance` reads
-## the end of its path as *arrived* and leaves right where it met her, which is exactly the
-## "flickers past and is gone" complaint the badge already answers for a fast mover the other way.
-##
-## Empty when either end is not somewhere anybody could stand — the map's edge, or the geometry of
-## a bend putting the far point inside a building. The caller waits and asks again; it does not
-## retry the near point only, because a route that starts on the pavement and ends in a wall is not
-## a route either.
+## Empty when there is no sidewalk or square at the place, or the route would leave the map. The
+## caller waits and asks again.
 func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
 	var site_heading := _onto_her_side(at, heading)
-	var lead := def.toward_player_lead(site_heading)
-	var far := at + site_heading * lead
-	if not _map.is_walkable(_map.world_to_tile(far)):
+	var place := PendingWarning.down_her_line(_map, def, at, site_heading)
+	if place == Vector2.INF:
 		return PackedVector2Array()
-	var behind := at - site_heading * lead
-	if not _map.in_bounds(_map.world_to_tile(behind)):
+	var path := PendingWarning.route_down_her_line(_map, place, at, site_heading)
+	if path[0].distance_to(path[1]) < Tuning.TILE_SIZE:
 		return PackedVector2Array()
-	return PackedVector2Array([far, behind])
+	return path
+
+## Whether a route stays out of the clear ground around today's region doors — the same refusal
+## `due()` makes of every siting, asked again by `EventManager` of a warned row's route when the
+## row is created, since its place has moved with her since it was sited.
+func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
+	return EventScheduler.clear_of_the_doors(path[0], path, _doors, def.field_reach())
 
 ## The road-aware sibling of `_toward_her()`, for a `TOWARD_PLAYER` row whose `placement` names
 ## `ROAD` — `owe_the_return()`'s own `police_patrol` copies and a torn poster's (`send_a_patrol()`),
@@ -787,11 +775,13 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2A
 ## "road" tiles fail `is_driveable_at()` and this returns empty exactly where the brief asks it
 ## to: a park, a square, a precinct.
 ##
-## **No `hard_fail` branch.** `_toward_her()` sites a lethal row further out so its telegraph
-## outlasts the approach; `police_patrol` never gains `hard_fail` at any heat (`EventDef.at_heat()`
-## states it explicitly for the `PRESSES` rung), so the ordinary `Tuning.offscreen_lead()` margin
-## is all this owes today. A future lethal road row would need the same
-## `Tuning.outlasting_telegraph_lead()` branch `_toward_her()` carries.
+## **Created at once rather than warned first.** A row on foot that `_toward_her()` sites goes up as
+## a screen-edge warning before it exists (`EventDef.warns_before_it_exists()`); a patrol is sited
+## here in the world at the ordinary `Tuning.offscreen_lead()` margin and telegraphs on its way in,
+## because nothing announces it from the edge of the screen: it is slower than a walk and never
+## `hard_fail` at any heat (`EventDef.at_heat()` states it for the `PRESSES` rung), so
+## `DangerEdge._is_worth_an_arrow()` gives it no badge, and a warning with no badge would be a car
+## that appears just off screen already past its telegraph.
 func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
 	if inward == Vector2i.ZERO:

@@ -1343,8 +1343,8 @@ const CAR_WARNING_HOLD := 1.4
 ## The mark over her head is the one cue in the game that gives an **instruction**, and its second
 ## level says *it is bad now and you are in it: one step left*. That is a claim about a moment, so it
 ## needs a clock rather than a radius: raised anywhere inside a lethal event's **outer** radius it
-## covers more than thirty times the area that can end the day for a cyclist, and stays up while the
-## bike rides away.
+## covers about seven times the area that can end the day for a cyclist (a 90px outer radius against
+## a 33px lethal reach), and stays up while the bike rides away.
 ##
 ## Read it as the step: at `WALK_SPEED` it is 64px, which is two tiles, which is the width of the
 ## pavement she would have to leave. Long enough to be an instruction she can still obey and short
@@ -1493,9 +1493,10 @@ const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
 
 ## Distance from her to the edge of the view along `heading` — a ray to the edge of the
 ## `VIEW_HALF_EXTENT` box, the same arithmetic `DangerEdge._distance_to_edge` already draws the
-## screen-edge badge with. `EventDirector` sites a row that travels toward her — a pursuer or a
-## `TOWARD_PLAYER` row — at least this far out, so it starts genuinely off screen whichever way she
-## is walking rather than only on the one axis a flat number happened to cover.
+## screen-edge badge with. Anything that arrives from off screen — a pursuer the director sites, or
+## the place a warning holds for a thing not yet in the world (`PendingWarning`) — is at least this
+## far out, so it starts genuinely off screen whichever way she is walking rather than only on the
+## one axis a flat number happened to cover.
 func offscreen_boundary(heading: Vector2) -> float:
 	var boundary := INF
 	if not is_zero_approx(heading.x):
@@ -1511,19 +1512,19 @@ func offscreen_boundary(heading: Vector2) -> float:
 func min_offscreen_boundary() -> float:
 	return VIEW_HALF_EXTENT.y
 
-## The default seconds a row travelling toward her has to still be off screen once it is sited, at
+## The default seconds a row travelling toward her has to still be off screen once it is created, at
 ## the speed the gap is actually closing. *(2026-09-07: "events that go towards the player (biker /
 ## pursuing dog) should at least be 200ms off screen with a warning.")*
 ##
 ## **Per-row rather than universal**, since playtest 34 asked for two rows to move in opposite
 ## directions on the same day: `charging_dog` needs more of it (finding 2) and `cyclist` needs less
-## overall notice, bought a different way (finding 3, see `EventDef.offscreen_notice`'s own
-## reasoning). This constant stays as the default every row gets unless it overrides.
+## notice (finding 3), which his own warning time now answers rather than this. This constant stays
+## as the default every row gets unless it overrides.
 const OFFSCREEN_NOTICE := 0.2
 
-## Where `EventDirector` sites a row that travels toward her — a pursuer or a `TOWARD_PLAYER` row —
-## along `heading`: outside the view (`offscreen_boundary()`) and `notice` seconds further still, at
-## `closing_speed`.
+## How far out along `heading` something that travels toward her starts — a pursuer the director
+## sites, or the place a warning holds for a thing not yet created (`PendingWarning`): outside the
+## view (`offscreen_boundary()`) and `notice` seconds further still, at `closing_speed`.
 ##
 ## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
 ## usually walking into it, so the gap between the siting and the boundary closes at both speeds
@@ -1539,47 +1540,6 @@ func offscreen_lead(heading: Vector2, closing_speed: float, notice: float = OFFS
 ## floor that does not depend on a heading nothing at validation time has chosen yet.
 func min_offscreen_lead(closing_speed: float, notice: float = OFFSCREEN_NOTICE) -> float:
 	return min_offscreen_boundary() + closing_speed * notice
-
-## Where a `hard_fail` row travelling toward her has to be sited so its own telegraph is over
-## *before* it reaches her, not merely so it starts off screen.
-##
-## **A declared `hard_fail` that arrives while still `is_telegraphing()` is not lethal at all** —
-## `EventInstance.is_lethal_at()` refuses the whole time, so a row sited close enough rides straight
-## through her, "declared" lethal and never once able to fire. *(2026-09-07: "also a biker hit
-## should be lethal.")* `cyclist` (`telegraph_time` 3.3s) sited at the old flat 200px and closing at
-## 257px/s arrived in 0.78s — nowhere near outlasting a 3.3s telegraph.
-##
-## So the siting is whichever is further: `offscreen_lead()` (the ordinary offscreen margin every
-## `TOWARD_PLAYER` row gets), or the distance that takes `telegraph_time + notice` to close at
-## `closing_speed` — the same margin restated over the telegraph instead of the view boundary, so
-## the approach outlasts it by a real amount rather than by a coin flip of frame timing. At `cyclist`'s
-## current 2.0s telegraph the telegraph term still dominates: `(2.0 + 0.2) * 257` = 565px, against an
-## `offscreen_lead()` of at most 371px on the widest axis.
-##
-## **`arrival_margin` is what "before it arrives" means for this row, and it is not the same
-## distance for a lethal row and a loud one.** A `hard_fail` row arrives when it touches her, so
-## zero is right: the telegraph has to be over a notice before contact and no sooner. A row whose
-## whole content is the noise it makes arrives when its *field* touches her — everything inside
-## `EventDef.field_reach()` is already the encounter — so a telegraph that ends at contact has
-## spent the approach damping the thing it was warning about. Pass the reach, and the row goes loud
-## before she is in it.
-func outlasting_telegraph_lead(heading: Vector2, closing_speed: float,
-		telegraph_time: float, notice: float = OFFSCREEN_NOTICE,
-		arrival_margin: float = 0.0) -> float:
-	return maxf(offscreen_lead(heading, closing_speed, notice),
-			(telegraph_time + notice) * closing_speed + arrival_margin)
-
-## The least `outlasting_telegraph_lead()` can be for a row with this telegraph closing at this
-## speed, whichever way she is heading — `min_offscreen_lead()` against the same telegraph term.
-## The same per-row floor `min_offscreen_lead()` is, for the same reason: a measurement or a
-## validation that has no heading to ask about needs the worst case the director could ever site
-## the row in rather than the case one particular walk happens to produce. Where the telegraph term
-## is the larger of the two the answer does not depend on the heading at all, and this is then the
-## exact siting rather than a floor under it.
-func min_outlasting_telegraph_lead(closing_speed: float, telegraph_time: float,
-		notice: float = OFFSCREEN_NOTICE, arrival_margin: float = 0.0) -> float:
-	return maxf(min_offscreen_lead(closing_speed, notice),
-			(telegraph_time + notice) * closing_speed + arrival_margin)
 
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".
@@ -1859,6 +1819,20 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## And the least notice one has to give: its telegraph, during which it is visibly coming and
 ## emitting `TELEGRAPH_INTENSITY_FRACTION`, but cannot yet end the day.
 ##
+## The least warning anything that arrives from off screen is owed, from its screen-edge badge to
+## the earliest it can reach her — flat, and not worked out from its field or its speed. *(2026-09-26,
+## the player: "to a human 100ms feels instant, 1s is time needed to react to something, 2.9s is a
+## fair time to react and *think* about what to do. so I'd file mark that as the minimum.")*
+## `EventDef.minimum_telegraph()` answers it for a row warned of before it exists; every other row
+## keeps the minimum its field sets (`required_telegraph_time()`).
+const OFFSCREEN_WARNING_MIN := 2.9
+## Rows warned of before they exist that are held to their field's minimum
+## (`required_telegraph_time()`) instead of `OFFSCREEN_WARNING_MIN`, while the player's answer is
+## open. `loose_dog` warns 2.40s from its badge to its reach (a 2.25s `telegraph_time`), under the
+## flat minimum, and the player called "the dog timer" good without yet saying which dog, so
+## whether the flat minimum covers it is theirs to answer. Emptying this is one answer.
+const OFFSCREEN_WARNING_MIN_EXEMPT: Array[String] = ["loose_dog"]
+
 ## A pursuer's telegraph is the **approach**, the way a fire engine's is — a dog that has to bark
 ## for two seconds before it is allowed to start running is not a dog. So the notice is the sight
 ## of it closing, and this is how much of that she is owed before it can touch her.
@@ -2230,15 +2204,31 @@ func degradation_for(day: int) -> float:
 ## The fairness contract from docs/EVENTS.md: a player who starts walking away the instant
 ## an event becomes visible must clear its outer radius before it reaches full intensity.
 ##
+## `warning` is the seconds from that instant to the earliest it can reach her —
+## `EventDef.warning_time()`: the telegraph for a row that is in the world while it telegraphs, and
+## the badge-to-reach time for one warned of before it exists, whose badge is the instant it becomes
+## visible. Held against `required_telegraph_time()`.
+##
 ## Returns true if the geometry is fair; pushes an error and returns false if it is not.
-func validate_event(id: String, telegraph_time: float, inner_radius: float,
+func validate_event(id: String, warning: float, inner_radius: float,
 		outer_radius: float, hard_fail: bool, speed: float = 0.0) -> bool:
 	var required := required_telegraph_time(inner_radius, outer_radius, hard_fail, speed)
-	if telegraph_time + 0.001 < required:
-		push_error("Unfair event '%s': telegraph_time %.2fs < required %.2fs "
-				% [id, telegraph_time, required]
+	if warning + 0.001 < required:
+		push_error("Unfair event '%s': warned %.2fs before it can reach her < required %.2fs "
+				% [id, warning, required]
 				+ "(inner %.0f, outer %.0f, hard_fail %s)"
 				% [inner_radius, outer_radius, hard_fail])
+		return false
+	return true
+
+## The same contract for a row warned of before it exists, whose minimum is not its geometry's:
+## `warning` (`EventDef.warning_time()`, from its badge to its reach) against `minimum`
+## (`EventDef.minimum_telegraph()`, `OFFSCREEN_WARNING_MIN`). Pushes an error and returns false if
+## it is short.
+func validate_warning(id: String, warning: float, minimum: float) -> bool:
+	if warning + 0.001 < minimum:
+		push_error("Unfair event '%s': warned %.2fs before it can reach her < required %.2fs"
+				% [id, warning, minimum])
 		return false
 	return true
 
