@@ -41,15 +41,18 @@
 #   options that take one), a redirect, a newline (black puts `"git",` and `"grep",` on lines of
 #   their own), and the `)` or backtick that closes `$(which git)`. A `grep` glued onto a dash is
 #   never the word, so `git log --grep=foo` allows.
-# - The tail runs from `grep` to the next separator word. `-I` counts case-sensitively and is never
-#   folded together with `-i`. The pathspec counts as text only if every entry after `--`,
+# - The tail runs from `grep` to the next separator word. Before `--`, its options are read as git
+#   reads them: `-I` counts case-sensitively and is never folded together with `-i`, the last of
+#   `-I` and `-a`/`--text`/`--no-text` wins (`-I -a` and `-Ia` search binaries as text), and the
+#   argument of `-e`/`-f`/`-A`/`-B`/`-C`/`-m`, attached (`-eImport`) or the next word (`-e -I`), is
+#   never a flag. The pathspec counts as text only if every entry after `--`,
 #   redirects aside, is a text glob; an exclusion never counts, because an exclusion with nothing
 #   else searches everything else. Any `!` or `^` in the short magic after the colon makes one
 #   (`:!*.json`, `:^*.md`, `:/!*.json`, `:!/*.md`), and so does long magic naming `exclude`.
 #
 # Accepted holes, each needing a deliberate step: a shell alias or function, a git alias
 # (`git -c alias.g=grep g ...`), a `git` or `grep` assembled by an expansion (`$(echo gi)t`,
-# `$G` with G=git), an encoded command, a pattern given as `-e -I`, and a global option git adds
+# `$G` with G=git), an encoded command, and a global option git adds
 # later that takes a separate argument. Accepted false denies: a mention (`[git] grep` in prose
 # included), a line ending in `git` followed by a line starting with `grep`, a text-only pathspec
 # that also carries an exclusion (`-- '*.md' ':!x.md'`), any long pathspec magic (`:(glob)*.md`,
@@ -103,8 +106,32 @@ def quoted_words:
 def last_part: (split("/") | last // "") | ltrimstr("$") | ascii_downcase;
 def is_git: last_part == "git";
 def is_grep: last_part == "grep";
-# `-I` alone or in a short-option cluster, never in a `--long` option; case-sensitive.
-def has_dash_I: startswith("-") and (startswith("--") | not) and contains("I");
+# One short-option cluster (`-nIi`), read letter by letter as git's option parser does: `I` skips
+# binaries, `a` searches them as text, and the later one wins; `e`, `f`, `A`, `B`, `C` and `m` take an
+# argument, which is the rest of the cluster (`-eImport`) or, when nothing follows, the next word;
+# `O` takes only an attached one. Gives {I: true/false/null (no change), next: 1 or 2 words}.
+def short_cluster:
+  reduce (.[1:] | explode[] | [.] | implode) as $c ({I: null, stop: false, arg: false};
+    if .stop then .arg = false
+    elif $c == "I" then .I = true
+    elif $c == "a" then .I = false
+    elif $c | IN("e", "f", "A", "B", "C", "m") then .stop = true | .arg = true
+    elif $c == "O" then .stop = true
+    else . end)
+  | {I, next: (if .arg then 2 else 1 end)};
+# True when the options before `--` end with binaries skipped: the last of `-I` and `-a`/`--text`
+# (or `--no-text`, which restores the default of searching them) wins, case-sensitively, and `-I`
+# is never folded together with `-i`.
+def skips_binaries($opts):
+  {t: 0, I: false}
+  | until(.t >= ($opts | length);
+      $opts[.t] as $x
+      | if $x == "--text" or $x == "--no-text" then .I = false | .t += 1
+        elif ($x | startswith("-")) and ($x | startswith("--") | not) and ($x | length) > 1 then
+          ($x | short_cluster) as $r
+          | (if $r.I == null then . else .I = $r.I end) | .t += $r.next
+        else .t += 1 end)
+  | .I;
 # The words a redirect takes (2 when its target is the next word, 1 when glued on), else 0.
 def redirect_width:
   sub("^[0-9]{0,2}"; "") as $w
@@ -153,7 +180,7 @@ def text_only($specs):
 # The tail after `grep` carries neither `-I` before `--` nor a text-only pathspec after it.
 def unguarded($tail):
   (first(range(0; $tail | length) | select($tail[.] == "--")) // null) as $dd
-  | (if $dd == null then $tail else $tail[:$dd] end | any(.[]; has_dash_I)) as $has_I
+  | skips_binaries(if $dd == null then $tail else $tail[:$dd] end) as $has_I
   | ($dd != null and text_only($tail[$dd + 1:])) as $text
   | ($has_I or $text) | not;
 

@@ -23,8 +23,8 @@
 #   - the same denies survive a line continuation, a full path, upper case, a backslash or quote
 #     mark inside the word, a quoted -C/-c/--git-dir argument (a space in it included), $'git',
 #     $(which git), a redirect or a newline between git and grep, and a Python list, black-
-#     formatted or not; -I stays its own flag, never folded together with -i, and a quoted "gcc -I"
-#     pattern is not the flag
+#     formatted or not; -I stays its own flag, never folded together with -i, a quoted "gcc -I"
+#     pattern or an -e argument (-eImport, -e -I) is not the flag, and a later -a/--text cancels it
 #   - an exclusion-only pathspec (:!*.json, :/!*.json, :(exclude)*.md) denies, and a redirect after a text pathspec
 #     (2>/dev/null, 2>&1, > file) is not a pathspec entry
 #   - a Monitor script is guarded like a Bash command
@@ -494,6 +494,28 @@ assert_guard "os.system(r'git grep ...') -> deny" deny \
     "python3 -c \"import os; os.system(r'git grep -n -i foo -- docs/')\""
 assert_guard "os.system(b'git grep ...'.decode()) -> deny" deny \
     "python3 -c \"import os; os.system(b'git grep -n -i foo -- docs/'.decode())\""
+
+# The last of -I and -a/--text wins in git, and an option's argument is never a flag.
+assert_guard "-I then -a searches binaries as text -> deny" deny \
+    'git grep -I -a -n -i foo -- docs/'
+assert_guard "-Ia cluster, a after I -> deny" deny \
+    'git grep -Ia -n -i foo -- docs/'
+assert_guard "-I then --text -> deny" deny \
+    'git grep -I --text -n -i foo -- docs/'
+assert_guard "-I then --no-text restores the default -> deny" deny \
+    'git grep -I --no-text -n -i foo -- docs/'
+assert_guard "-a then -I, -I last -> allow" allow \
+    'git grep -a -I -n -i foo -- docs/'
+assert_guard "-aI cluster, I after a -> allow" allow \
+    'git grep -aI -n -i foo -- docs/'
+assert_guard "-eImport, an attached pattern with a capital I -> deny" deny \
+    'git grep -n -i -eImport -- docs/'
+assert_guard "-e -I, the pattern -I as a separate word -> deny" deny \
+    'git grep -n -e -I -- docs/'
+assert_guard "-nIe foo, I before the argument letter -> allow" allow \
+    'git grep -nIe foo -- docs/'
+assert_guard "-e foo -I, the flag after the pattern -> allow" allow \
+    'git grep -e foo -I -- docs/'
 
 # A newline may stand between git and grep: black puts each list element on a line of its own.
 assert_guard "a black-formatted list in a python3 heredoc -> deny" deny \
