@@ -81,6 +81,10 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
+**First, before any new task** ([PLAYTEST-144](playtests/PLAYTEST-144.md)): the `git grep`
+hook (PR #377), then **M223**, one file per queue entry and per decision, then **M225**, the
+counter counts every attempt, a key player, and a torn poster's chase.
+
 0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
    left open**, on the same footing as the round before it: **M125**, the test suite
    is slow again — ten suites pruned and the
@@ -604,8 +608,10 @@ spot under `# Decisions`), 57 in `docs/TODO.md` (neighbouring entries share thei
 The M-numbers also need coordination between sessions: merging-main carries renumbering rules
 for them, and two branches claimed M208 on 2026-09-26.
 
-This changes every file an open PR moves its entry in, so it starts once the open PRs have
-landed. Until then, entries are filed the old way.
+The order is the player's: the `git grep` hook first ("merge the hook before the new system -- that
+has even higher priority"), then this, before any new task ("prioritize the new system. and once
+each agent is done convert theirs to the new system"). Work in flight is converted to the new
+layout as each agent finishes. Until this lands, entries are filed the old way.
 
 - [ ] **A queue entry is a folder, and each of its items is a file**:
       `docs/todo/<date filed>-<adjective>-<animal>/`, named and linked by its two words
@@ -631,9 +637,9 @@ landed. Until then, entries are filed the old way.
 split of the old records and the duplicate lint, but not these): a command that makes names; no
 checked-in index, with a command that lists and searches the records instead; an entry with no
 date in its heading takes the date of the commit that first wrote its heading line; a `[~]`
-(mid-way) item says so in its prose; a review item's steps written as prose; `REVIEW.md` keeping
-its list of what no person has tested yet. Nothing else in the repo is numbered in sequence
-besides milestones and playtests.
+(mid-way) item says so in its prose; a review item's steps written as prose. The plainer
+alternative to each: a name picked by hand with the lint catching a duplicate; `ls` and `rg` on
+the folder; the date the migration runs; a checkbox-free item with no marker; numbered steps.
 
 - [ ] **A command makes the name**: it picks an unused adjective and animal (checked against every
       folder that takes these names), writes the file with its heading and date, and prints the

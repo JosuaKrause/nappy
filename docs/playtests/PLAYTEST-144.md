@@ -29,12 +29,22 @@ conflicted code file.
 ## Then, on how the names work
 
 Offered: a date in the file's name with two words after it, the same with three words, or three
-words alone with the date inside the file. The player chose the first, whose option read
-"File docs/todo/2026-09-26-busy-badger.md; spoken and linked as "busy-badger". Sorted by date for
-free; short to say; lint rejects a duplicate.":
+words alone with the date inside the file. The player chose the first option, which read, label
+and description verbatim:
 
-> "Date file, 2 words": `docs/todo/2026-09-26-busy-badger.md`, spoken and linked as
-> "busy-badger".
+> Date file, 2 words (Recommended) — File docs/todo/2026-09-26-busy-badger.md; spoken and linked
+> as "busy-badger". Sorted by date for free; short to say; lint rejects a duplicate.
+
+Then, in the same conversation:
+
+> "so which items will now have random words and are separate files?"
+
+> "prioritize the new system. and once each agent is done convert theirs to the new system"
+
+> "merge the hook before the new system -- that has even higher priority"
+
+The first was answered by the table quoted above. The other two set the order: the `git grep` hook
+first, then M223, and each agent's work converted to the new layout as it finishes.
 
 5. **A new queue entry is named by two random words, an adjective and an animal, after the date it
    was filed**, and the file keeps that name when it becomes a decision. Sorting the folder puts
@@ -95,7 +105,8 @@ Asked, among others: how the restart disc's fill should show under a thumb; whet
 between two days may drop "She fell asleep after m:ss"; whether the chalk mark's robber may stand
 out of waking range at the far end of a long alley; whether the burning building's sidewalk body
 stays; whether the counter's asks get queue entries. The player, in one message ("Robert" and
-"river" are dictation for *robber*, "teller" for *yeller*):
+"river" are dictation for *robber*, "teller" for *yeller*, as the player said after: "*robber not
+river", "*robber not Robert"):
 
 > "373 this is already implemented for mouse. Just make it appear everywhere. Where does the
 > decision to add a river after handing to the teller come from? You can keep the she feel asleep
