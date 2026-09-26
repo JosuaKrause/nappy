@@ -818,8 +818,8 @@ func region_plan() -> RegionPlanner.RegionPlan:
 	return _region_plan
 
 func _spawn_closure(closure: RoadClosure) -> void:
-	# Supports precede the rails mounted on them. In a one-panel archway the end post
-	# shares the sign's y, so drawing it afterwards would cover the sign's white bar.
+	# Supports precede the rails mounted on them. The sign's panel draws its composite
+	# after the rail, at the run midpoint rather than at a panel endpoint.
 	for feet in closure.posts(map):
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
 		post.piece = ClosureMarker.Piece.POST
@@ -858,17 +858,28 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var end_inset := 0.0 if fence.joined_end else ParkClosure.POST_HALF
 		picture_width -= start_inset + end_inset
 		picture_at += (Vector2.RIGHT if across else Vector2.DOWN) * (start_inset - end_inset) * 0.5
-	var panels := maxi(1, roundi(picture_width / AtlasLibrary.native_size(ClosureMarker.FENCE_ACROSS).x))
+	var pitch := float(AtlasLibrary.native_size(ClosureMarker.FENCE_ACROSS).x)
+	if closure is ParkClosure and not across:
+		pitch = 44.0
+	var panels := maxi(1, roundi(picture_width / pitch))
 	var span := picture_width / panels
+	var sign_panel := panels / 2
+	if closure is ParkClosure and not across:
+		# This is the nearest panel whose elevated rail can cross the sign. Draw the
+		# composite after that rail; later panels start at or below the sign's feet.
+		var sign_from_start := at.y - (picture_at.y - picture_width * 0.5)
+		sign_panel = mini(panels - 1,
+				ceili((sign_from_start + ParkFenceMarker.UPPER_RISE) / span) - 1)
 	for i in panels:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
-		panel.piece = ClosureMarker.Piece.SIGN if i == panels / 2 else ClosureMarker.Piece.FENCE
+		panel.piece = ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE
 		panel.kind = closure.kind
 		panel.across = across
 		panel.span = span
 		panel.rise = closure.end_on_rise()
 		if panel is ParkFenceMarker:
 			(panel as ParkFenceMarker).draw_support = i < panels - 1
+			(panel as ParkFenceMarker).rail_offset = -(closure as ParkClosure).outward.x * 4.0
 		# Broadside a panel's feet are the middle of its share; end-on they are the near end of
 		# it, since an end-on panel is drawn up the screen from its feet — feet at the middle
 		# would stand the whole column half a panel up the screen from the ground it covers.
@@ -880,6 +891,8 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 			# differ by a fraction of a pixel and make y-sort put the post over the sign.
 			panel.position = fence._point(fence.to_along if fence.joined_end
 					else fence.to_along - ParkClosure.POST_HALF)
+		if panel is ParkFenceMarker:
+			(panel as ParkFenceMarker).sign_offset = at - panel.position
 		_add_closure_node(panel, true)
 
 	var body := StaticBody2D.new()

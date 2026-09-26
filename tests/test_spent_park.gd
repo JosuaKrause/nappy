@@ -528,25 +528,44 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 		var shape := (body.get_child(0) as CollisionShape2D).shape as RectangleShape2D
 		bodies.append(Rect2(body.position - shape.size * 0.5, shape.size))
 	t.check(park_pictures > 0, "the fenced park has runtime pictures to check")
-	# A short end-on entrance puts its sign and end post on the same ground point.
-	# Exact equality matters: a subpixel y difference can reverse their draw order.
+	# End-on terminal panels share the post's exact anchor: subpixel drift can reverse
+	# their draw order. The mounted sign has its own midpoint support on either axis.
 	var short_run := ParkClosure.new(Vector2i.ZERO, Rect2i(117, 121, 4, 4),
 			Rect2i(120, 122, 1, 1), Vector2i.RIGHT)
 	city._spawn_closure(short_run)
-	var shared_sign_posts := 0
+	var shared_panel_posts := 0
+	var short_end := short_run.posts(city.map).back() as Vector2
+	var short_end_checked := false
+	var sign_centers := {}
+	for closure in city.closures():
+		if closure is ParkClosure:
+			for center in closure.mouth_centres(city.map):
+				sign_centers[center] = true
+	sign_centers[short_run.mouth_centres(city.map)[0]] = true
 	for node in city._closure_nodes:
 		var marker := node as ParkFenceMarker
-		if not marker or marker.across or marker.piece != ClosureMarker.Piece.SIGN:
+		if marker and marker.piece == ClosureMarker.Piece.SIGN:
+			var sign_ground := marker.position + marker.sign_offset
+			t.check(sign_centers.has(sign_ground),
+					"each park sign stands at one run's exact midpoint")
+			sign_centers.erase(sign_ground)
+		if not marker or marker.across or marker.piece == ClosureMarker.Piece.POST:
 			continue
 		for other in city._closure_nodes:
 			var post := other as ParkFenceMarker
 			if not post or post.piece != ClosureMarker.Piece.POST:
 				continue
 			if marker.position.distance_to(post.position) < 0.01:
-				shared_sign_posts += 1
-				t.check(marker.position == post.position and post.get_index() < marker.get_index(),
-						"a shared archway post sorts behind its sign, without subpixel drift")
-	t.check(shared_sign_posts > 0, "the scene includes a short end-on sign and terminal post")
+				shared_panel_posts += 1
+				t.check(marker.position == post.position,
+						"an endpoint rail and its post share exactly one ground anchor")
+				if post.position == short_end:
+					short_end_checked = true
+					t.check(post.get_index() < marker.get_index(),
+							"the unjoined archway support draws behind its rail and mounted sign")
+	t.check(shared_panel_posts > 0, "the scene includes an end-on terminal panel and post")
+	t.check(short_end_checked, "the short archway's support order is exercised")
+	t.check(sign_centers.is_empty(), "every park fence run has exactly one centered mounted sign")
 	var block := city.map.fenced_park
 	var rect := ClosurePlanner.calm_area_rect(city.map, block)
 	var entrances := 0

@@ -510,7 +510,8 @@ walks there without a route pointing the way.
   stands amber-and-white barrier rails and the street closure's `closed` sign at every entrance to
   the fenced area's own ground; nothing is spoiled inside it, since its fence is the whole of what it
   shows. `ParkFenceMarker` draws both rails above one ground line: side runs show their narrow top
-  surfaces, upright posts keep their height, and the corner joins meet at the rails' elevations.
+  surfaces mounted inward of visible upright poles, and corners share one pole with rail collars.
+  Each run's closed sign is mounted on a support at its exact midpoint.
 - **At least one calm area is always usable.** `_ensure_one_usable_park` is the last line under it,
   for the day she has settled in every calm area there is. The player has to find out which.
 

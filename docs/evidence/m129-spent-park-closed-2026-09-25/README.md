@@ -1,99 +1,52 @@
 # M129 — a spent park is closed
 
-## Upright projection review material
+`poles-*` is the current visual proposal: square upright poles with two collars, broad feet,
+and narrow end-on rails mounted on the poles' inward side. Each run's sign is one composite
+plate and support, centered on the run. It draws after the overlapping rail surfaces so those
+surfaces cannot cover the white bar. These images establish rendering, not player approval.
 
-`upright-*` captures the `ParkFenceMarker` rendering attempt: the side rails share one ground
-line, their elevation moves them in screen Y, and the supports stay upright. These are review
-artifacts, not approved references.
+The game permits one physically fenced calm area, once per run in act III or later. Other used
+areas keep their event spoiling and route exclusion. The pictures inspect the fence's projection,
+corners and short entrance, not that policy or the outcome of a played day. The player's design
+is in PLAYTEST-140, statements 8–10; visual feedback is recorded in `docs/DECISIONS.md`.
 
-- `upright-corners-1x.png` contains separate NW, NE, SW and SE 320×240 views at play zoom 2,
-  in that reading order. Their montage is not a single small park.
-- `upright-corners-3x.png` enlarges those same pixels three times with nearest-neighbor sampling.
-- `upright-overview-fitted.png` shows the entire fenced area at fitted zoom 0.8654.
-- `upright-archway-{1x,3x}.png` shows the one-tile entrance at block (9, 8). Its terminal panel
-  and post share exactly the same ground Y, so the post does not cover the closed sign.
-- `upright-capture.log` identifies the fixture and camera scales.
+## Current runtime pictures
 
-The real-City fixture uses seed 14040, day 9, with block (5, 1) handed over as used and no
-previously fenced park, act III. The normal closure planner chooses it: world rectangle
-(2432, 640), size 704×704. The archway is a separate rendering fixture passed through
-`ParkClosure.fence()` and `City._spawn_closure()`, not evidence that a day chooses two fences.
-The bounded scratch scene carries `--no-save --no-telemetry`; it has no player, HUD, crowd,
-event manager or day outcome. Its separate stdout log is not a telemetry run folder.
+- `poles-corners-1x.png`: NW and NE above SW and SE, each a separate 320×240 crop at play zoom 2,
+  with an 8px gutter between cells. This montage is not a single small park photographed whole.
+- `poles-corners-3x.png`: the same pixels enlarged three times with nearest-neighbor sampling.
+- `poles-side-{1x,3x}.png`: the side supports and midpoint mounted sign, at play zoom and enlarged.
+- `poles-overview-fitted.png`: the entire fenced calm zone at fitted camera zoom 0.8654,
+  for its overall silhouette; this is not normal play scale.
+- `poles-archway-{1x,3x}.png`: the one-tile end-on entrance at block (9, 8), at play zoom 2
+  and enlarged three times. The closed plate remains unobscured.
+- `poles-capture.log`: the fixture's seed, day, chosen area and camera scales.
 
-Superseded once already: the first pictures here showed every used calm area fenced off, which the
-player turned down (`docs/playtests/PLAYTEST-140.md`, "Then, on the first pictures of a spent park"):
+## Capture setup
 
-> "a park that was used should be shut down, yes, but by placing events in it how it was before.
-> where does this barrier thing come from? doing it for one park, sure, more towards the later
-> stages of the game once but not for regular" · "yes, the corners look wrong, too"
+A bounded scratch scene builds the real `City` with seed 14040 and day 9. It hands over the
+nearest calm area whose fence has all four joined sides, block (5, 1), as used via
+`CityMap.set_spent_calm()`, and supplies no previously fenced area plus act III through
+`set_fenced_park_state()`. `City.start_day()` and the real closure planner choose and draw it.
+Its ground rectangle is (2432, 640), size 704×704 world pixels.
 
-The design is now: **every** used calm area is spoiled with events, the way it always was, and the
-day's route tree plans around it — no barrier, ground stays walkable. **One** area, at most once a
-run and never before act III, gets `ParkClosure`'s fence instead. The stills are of that one fenced
-park.
+The archway is a separate rendering fixture: the script calls `ParkClosure.fence()` for block
+(9, 8) and passes that single run through `City._spawn_closure()`. This exercises the actual
+runtime drawing path without claiming that a day selects two fenced areas. A plain `Camera2D`
+uses play zoom for detail views and fitted zoom for the overview; its interpolation is reset
+between views. The scene has no player, HUD, crowd, event manager or day outcome.
 
-## The corners
+The Godot invocation carries `--no-save --no-telemetry`, so these are fixture captures with a
+separate stdout log, not a telemetry run folder. The engine renders the current atlas assets;
+no asset is substituted or hidden. No existing dev flag provides this used-park handover.
 
-The player on the second attempt's corners: "The corners of the park barrier are not fixed. Now
-they're just disconnected. Do a proper fix." The west and east runs stopped one tile short of each
-corner, so their end-on column ended about 30px below the north rails and never touched them, and
-the north and south rails ran half a barrier's depth past the side lines. Now the fence turns each
-corner as one fence:
+## Other review material
 
-- Every side's run covers its own corner tiles, and where two sides' runs share a corner tile both
-  lines stop exactly at the corner of the two fence lines (`ParkClosure.fence()`), so neither stops
-  short of the other nor runs past it.
-- One post stands at that corner, a new picture, `art/closures/barrier_post.svg`: steel grey like
-  the panels' own posts but as wide as the end-on column's two rails, capped, on a foot plate. The
-  north and south rails end behind its middle.
-- The west and east columns are drawn at the broadside rails' height (`ParkClosure.RAIL_RISE`, the
-  lower rail's 7.4px), so a column leaves the north corner post right under the north rails and runs
-  in behind the south rails and post. Its feet and its collision stay on the ground.
-- An end-on panel stands its feet at the near end of its share, so the column covers its own ground
-  rather than standing half a panel up the screen from it.
+`upright-*` uses the same fixture. Its rail is centered on a narrow support, with no inward
+mounting offset, and its corner montage has no gutters. Its `1x` and `3x` sizes mean play zoom
+and enlarged pixels; its overview is fitted. The files are retained review evidence, not
+approved visual references.
 
-## The draft pieces, for review before they go in
-
-The player on the corners above: "the closed off park is still bad. you probably need new textures
-for corners." The front-view rails, the end-on bar and the grey post are three different objects
-butted together. `fence-draft/` holds new pictures, not yet used by the game, that draw the fence as
-one object: the same two rails, the same thickness, stripe and outline as `barrier_across.svg`, bend
-90° at each corner (`corner_{nw,ne,sw,se}.svg`) and run down the west and east sides seen from
-their end (`side_{w,e}.svg`), with the posts standing between them; a run that turns no corner ends
-with the rails stopped square and its own post (`end_{n,s}_{w,e}.svg`). There is no separate corner
-post. The north and south runs are the existing `barrier_across.svg` panels, unchanged.
-
-The `draft-*` stills stand those pictures on the real city at the stroller's play zoom (2), with the
-game's own park fence hidden: `draft-corners-{1x,3x}` (NW, NE / SW, SE, crops as above),
-`draft-corners-closeup` (each bend enlarged), `draft-sides-{1x,3x}` (the middle of the north and
-south runs / the west and east runs), `draft-whole`, and `draft-archway-{1x,3x}` and
-`draft-archway-nosign-3x` (the one-tile archway of the courtyard at block (9, 8), with and without
-its `closed` sign).
-
-## Why these are not a `tools/shot.sh` capture
-
-Reaching "a day with a park she has already used" needs at least one full day actually played to a
-win, and reaching "act III, with a fence chosen" needs several — no existing dev flag plays a day
-through for a screenshot rig, and `--route calm,home` (`RouteRig`) quits the process the moment one
-day ends rather than carrying into the next. `src/dev/` is also fenced off to this PR (a live agent,
-M204, owns it). So these are a small one-off script, not committed, that builds the same real `City`
-`tests/test_spent_park.gd`'s own scene test does and hands it the same state `Main._start_day()`
-would after several days of play: a used calm area (`CityMap.set_spent_calm()`) and "nothing fenced
-yet, act III" (`CityMap.set_fenced_park_state()`), then lets the real `City.start_day()` →
-`ClosurePlanner.calm_to_shut()` → `ParkClosure` chain decide and draw the rest. A plain `Camera2D`
-(the same zoom `Main._new_boot_camera()` uses) stands in for the player.
-
-Seed 14040, day 9, the nearest calm area to the doorstep handed over as used; it was both taken off
-the route tree and chosen as the run's one fenced park.
-
-## The stills
-
-Seed 14040, day 9, camera at the stroller's own play zoom (2). In the two corner sheets the cells
-are the NW and NE corners over the SW and SE ones, each a 320x240 crop centred on the area's own
-corner; the 3x sheet is the same pixels enlarged with nearest-neighbour.
-
-- `attempt3-corners-1x.png`, `attempt3-corners-3x.png` — the four corners as they are drawn now.
-- `attempt3-whole.png` — the whole fenced park at play zoom.
-- `before-corners-1x.png`, `before-corners-3x.png` — the same four crops of the second attempt, the
-  one the player turned down, for comparison.
+`before-*`, `attempt3-*`, `draft-*` and `fence-draft/` are also retained review material.
+The draft SVGs are unbound and are not runtime assets. The decisions and visual feedback for
+those pictures belong to `docs/DECISIONS.md`; the current proposal is the `poles-*` set above.
