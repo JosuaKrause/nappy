@@ -1,0 +1,23 @@
+# Amber otter — Park fence perspective and original sound effects
+
+2026-09-26. Feedback and an experimental request in conversation.
+
+## The player's words
+
+> "the fence in PR #374 (park is closed) looks wrong. can you fix it in the PR? besides that I want you to work on something experimental: can you create sound effects for the game from scratch. no precreated assets. we create the assets here from scratch. you can be creative in approaching this task. tell me how you want to do it and we can discuss"
+
+Asked about the fence's gameplay scope, the player clarified:
+
+> "we agreed to use the fence once in the game -- you don't have to change any logic there. I want you to update the graphics to make sense. the vertical segments look like rotated sideways sections right now. pass it to a subagent"
+
+## Scope
+
+The fence repair belongs on the existing park PR. Its once-per-game behavior is unchanged.
+The graphics must depict the vertical sections in the game's perspective rather than as rotated
+sideways sections; the corners must join those sections coherently. Delegate the repair.
+
+The sound request is an experiment to discuss before integration. All assets are created here
+from scratch, without precreated sound assets. The assistant proposes code-generated sound
+recipes, with a small listening set to choose a direction; that method and sample list are
+proposals, not decisions by the player. The game's existing requirement that visual warnings
+work without audio remains in force.
