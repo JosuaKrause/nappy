@@ -81,7 +81,8 @@ the place is in view.
 **What telegraphs at all is M226's.** The last question M207 left, whether patrols and planned
 convoys are warned first, is answered by the player's rule that a thing telegraphs only if it goes
 fast, can end the day and comes toward her (PLAYTEST-145, statements 19–24): none of them can end
-the day, so none telegraphs, and that is not an exemption. The fire engine and the day-13 column,
+the day, so none needs to telegraph, and that is not an exemption; in this build they telegraph as
+they did before, and M226 changes that. The fire engine and the day-13 column,
 which this build warns first, stop telegraphing under the same rule; M226 builds that, with the
 pursuing dog's gold timing.
 
