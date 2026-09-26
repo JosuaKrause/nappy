@@ -224,10 +224,10 @@ func cancel_hold() -> void:
 	clear_forced_press()
 
 ## Whether a real press or `RESTART`'s own timed hold currently forces the pressed fill, and
-## whether the mouse currently sits over this button — the two inputs `_refresh_look()` resolves
-## into the one stylebox `Button` will actually draw. Pressed beats hovered beats resting, the same
-## precedence a native `Button` would give its own draw modes if `MOUSE_FILTER_IGNORE` ever let it
-## reach them.
+## whether the mouse currently sits over this button — two of the three inputs `_refresh_look()`
+## resolves into the one stylebox `Button` will actually draw, the third being `is_held()` itself.
+## Pressed beats held-or-hovered beats resting, the same precedence a native `Button` would give
+## its own draw modes if `MOUSE_FILTER_IGNORE` ever let it reach them.
 var _pressed_look := false
 var _hovered_look := false
 
@@ -264,11 +264,19 @@ func set_hovered(hovered: bool) -> void:
 ## would. Only `"normal"` is ever selected for drawing — `Button`'s own `hover`/`pressed`/
 ## `hover_pressed` styleboxes are installed by `_apply_disc_style()` for completeness but never
 ## reached, since `MOUSE_FILTER_IGNORE` keeps this control out of `Button`'s own draw-mode switch.
+##
+## **`is_held()` lights the disc the same way `_hovered_look` does.** A touch has no cursor to sit
+## over the button and set that flag — a mouse hold reads as hovered for as long as the pointer
+## rests on the disc it is pressing, but a finger sets nothing of the kind, so without this a touch
+## hold left `RESTART`'s own sweep in `_draw()` painting over the plain resting fill for the whole
+## second while a mouse hold painted it over the brighter one. Every hold now brightens the disc
+## the same way regardless of what is holding it, so `_draw()`'s sweep has the same base to read
+## against on every device.
 func _refresh_look() -> void:
 	var fill := Palette.BUTTON_FILL
 	if _pressed_look:
 		fill = Palette.BUTTON_PRESSED
-	elif _hovered_look:
+	elif _hovered_look or is_held():
 		fill = Palette.BUTTON_HOVER
 	add_theme_stylebox_override("normal", _disc_style(fill))
 

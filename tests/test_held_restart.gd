@@ -1,20 +1,24 @@
 extends RefCounted
-## M211 + M212 — the pause screen's held restart restarts a run rather than resuming it, and a
-## hold survives what the real engine and a second finger can throw at it, on both the pause screen
-## and the day summary.
+## M211 + M212 — the pause screen's held restart restarts a run rather than resuming it, a hold
+## survives what the real engine and a second finger can throw at it, and the disc it fills lights
+## up the same way for a touch hold as it does for a mouse one, on both the pause screen and the
+## day summary.
 ##
-## Held apart from `tests/test_pause.gd` because pinning M211's own bug needs the real engine's
-## input dispatch (`Input.parse_input_event()` + `Input.flush_buffered_events()`), not the bare
-## `_unhandled_input()` calls or `Viewport.push_input()` every touch test in that file already
-## drives — see `_test_the_pause_restart_survives_its_own_emulated_mouse_click()`'s own doc for why
-## that distinction is the whole bug.
+## Held apart from `tests/test_pause.gd` because pinning M211's own bug, and M212's own fill-visible
+## bug, needs the real engine's input dispatch (`Input.parse_input_event()` +
+## `Input.flush_buffered_events()`), not the bare `_unhandled_input()` calls or
+## `Viewport.push_input()` every touch test in that file already drives — see
+## `_test_the_pause_restart_survives_its_own_emulated_mouse_click()`'s own doc for why that
+## distinction is the whole bug.
 ##
 ## **Causes investigated for M212 and found not to be bugs**, so no test pins them: a drag off the
 ## disc (`_handle_restart_touch()` never reads an `InputEventScreenDrag` at all, and a release ends
 ## the hold by its touch index alone — the position is never rechecked, so drifting off the disc
 ## mid-hold changes nothing); a release reaching another control (the release branch returns before
-## the catch-all ever sees it, whether or not the hold actually completed); the fill drawn only on
-## hover (`ModeButton._draw()` paints from `hold_progress` alone, with no hover term in it at all).
+## the catch-all ever sees it, whether or not the hold actually completed); the sweep drawn only on
+## hover (`ModeButton._draw()` paints from `hold_progress` alone, with no hover term in it at all —
+## see `_test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one()`'s own doc for
+## the hover term that actually was missing, one function over in `_refresh_look()`).
 
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
@@ -24,6 +28,7 @@ func run(t) -> void:
 	_test_the_pause_restart_ignores_a_second_touch_mid_hold(t)
 	_test_the_summary_restart_ignores_a_second_touch_mid_hold(t)
 	_test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t)
+	_test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t)
 
 ## **The bug playtest 142 found, reproduced through the real engine's own input pipeline.**
 ## *(2026-09-26, the player: "the pause screen is currently bugged where you cannot restart from
@@ -238,9 +243,119 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 	t.get_tree().paused = false
 	summary.queue_free()
 
+## **M212's "the restart button doesn't visible fill up on mobile when pressing" — the sweep was
+## never invisible, the disc under it was.** `ModeButton._refresh_look()` picks
+## `Palette.BUTTON_HOVER` — a materially brighter fill than the resting `Palette.BUTTON_FILL` —
+## whenever `_hovered_look` is set, and a mouse hold sets it: the pointer that is pressing the disc
+## also sits on top of it, so `PauseScreen`/`DaySummary`'s own `not _touch` mouse-motion branch
+## calls `ModeButton.set_hovered(true)` for as long as the hold lasts. A touch sets nothing of the
+## kind — there is no motion event to read a finger's position from between its press and its
+## release — so a touch hold used to leave `_draw()`'s translucent sweep painted over the plain
+## resting fill instead of the brighter one a mouse hold reaches, on top of a disc already mostly
+## covered by the finger holding it. **Fixed** by having `_refresh_look()` also read `is_held()`,
+## so any hold — whatever started it — reaches the same brighter base.
+##
+## Driven through the real engine's own emulate-mouse-from-touch pass (`Input.parse_input_event()`
+## + `Input.flush_buffered_events()`), the same way
+## `_test_the_pause_restart_survives_its_own_emulated_mouse_click()` above does, so an emulated
+## mouse motion synced to the touch position — if one ever reached `set_hovered()` — could not
+## quietly mask the bug by setting `_hovered_look` on its own.
+func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t) -> void:
+	var original_window_size: Vector2i = t.get_window().size
+	t.get_window().size = Vector2i(ScreenOrientation.DESIGN_SIZE)
+
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	pause._touch = false
+	pause._refresh_buttons()
+	t.get_tree().paused = false
+	pause.open()
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
+	var pause_at: Vector2 = pause._restart_button.get_global_rect().get_center()
+
+	var hover := InputEventMouseMotion.new()
+	hover.position = pause_at
+	Input.parse_input_event(hover)
+	Input.flush_buffered_events()
+	Input.parse_input_event(_mouse_at(pause_at, true))
+	Input.flush_buffered_events()
+	pause._restart_button._held_since = \
+			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS * 0.5
+	pause._restart_button._process(0.0)
+	var mouse_bg: Color = \
+			(pause._restart_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+	t.check(mouse_bg == Palette.BUTTON_HOVER,
+			"halfway through a mouse hold, the pause screen's disc reads the brighter hover fill")
+
+	Input.parse_input_event(_mouse_at(pause_at, false))
+	Input.flush_buffered_events()
+	pause.close()
+	t.get_tree().paused = false
+	pause.queue_free()
+
+	pause = PAUSE.instantiate()
+	t.add_child(pause)
+	pause._touch = true
+	pause._refresh_buttons()
+	t.get_tree().paused = false
+	pause.open()
+	pause._restart_button.position = Vector2(500.0, 400.0)
+	pause._restart_button.size = Vector2(92.0, 108.0)
+	pause_at = pause._restart_button.get_global_rect().get_center()
+
+	Input.parse_input_event(_touch_at(pause_at, true, 0))
+	Input.flush_buffered_events()
+	pause._restart_button._held_since = \
+			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS * 0.5
+	pause._restart_button._process(0.0)
+	var touch_bg: Color = \
+			(pause._restart_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+	t.check(touch_bg == mouse_bg,
+			"and halfway through a real touch hold the pause screen's disc reads the same fill "
+			+ "(got %s, wanted the mouse hold's %s)" % [touch_bg, mouse_bg])
+
+	Input.parse_input_event(_touch_at(pause_at, false, 0))
+	Input.flush_buffered_events()
+	pause.close()
+	t.get_tree().paused = false
+	pause.queue_free()
+
+	var summary: CanvasLayer = SUMMARY.instantiate()
+	t.add_child(summary)
+	summary._touch = true
+	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary._restart_button.position = Vector2(500.0, 400.0)
+	summary._restart_button.size = Vector2(92.0, 108.0)
+	var summary_at: Vector2 = summary._restart_button.get_global_rect().get_center()
+
+	Input.parse_input_event(_touch_at(summary_at, true, 0))
+	Input.flush_buffered_events()
+	summary._restart_button._held_since = \
+			Time.get_ticks_msec() / 1000.0 - ModeButton.RESTART_HOLD_SECONDS * 0.5
+	summary._restart_button._process(0.0)
+	var summary_touch_bg: Color = \
+			(summary._restart_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+	t.check(summary_touch_bg == Palette.BUTTON_HOVER,
+			"and the day summary's own disc reads the same brighter fill under a real touch hold")
+
+	Input.parse_input_event(_touch_at(summary_at, false, 0))
+	Input.flush_buffered_events()
+	t.get_tree().paused = false
+	summary.queue_free()
+
+	t.get_window().size = original_window_size
+
 func _touch_at(position: Vector2, pressed: bool, index: int) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
 	event.position = position
 	event.pressed = pressed
 	event.index = index
+	return event
+
+func _mouse_at(position: Vector2, pressed: bool) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.position = position
+	event.pressed = pressed
+	event.button_index = MOUSE_BUTTON_LEFT
 	return event
