@@ -14,8 +14,9 @@ author's report of "done and verified" are inputs to the review, never a substit
 
 **A push after the review is reviewed too.** Whatever lands on the branch after the verdict (a
 fix for a finding, a merge of `main` that needed resolving, the orchestrator's queue move) gets a
-review of the delta since the reviewed head before the PR merges. A clean `main` merge with no
-conflict is the one exception, since nothing on the branch changed.
+review of the delta since the reviewed head before the PR merges. A merge of `main` that went in
+without a conflict is the one exception: nothing the branch says changed, and the merger's own
+semantic reconciliation under **merging-main** covers what `main` brought.
 
 ## Adversarial means the reviewer's job is to find what is wrong
 
@@ -34,12 +35,16 @@ review agent like any other. In Codex, use its delegation tools with the same fe
 *(2026-09-26, after a post-mortem: "a PR review should not only check for code correctness but
 also verify that a work item is semantically correct".)* Correct code that builds the wrong thing
 passes every other check this repo has. So before reading the diff for bugs, the reviewer reads the
-player's own words the PR cites (the playtest, not the queue entry's paraphrase of it) and every
-decision the change touches, and answers these. Each "no" is a finding:
+player's own words the PR cites (the playtest, not the queue entry's paraphrase of it; for a PR with
+no playtest, the quote in its queue entry or its brief) and every decision the change touches, and
+answers these. Each "no" is a finding:
 
-- **Is this what the player asked for?** Nothing built beyond their words without being marked as
-  a proposal they agreed to (see **playtest-feedback**, "Proposed, not asked for"), and nothing they
-  asked for left out. Every case they described is covered and shown, not only the first.
+- **Is this what the player asked for?** Nothing they asked for is left out, and every case they
+  described is covered and shown, not only the first. Nothing is built beyond their words unless
+  it is marked: a mechanism under "Proposed, not asked for" (**playtest-feedback**), which the
+  player agreed to if it changes what they see across the game, or a small choice the PR
+  description names as open to overturn (**orchestrating**, "Forks come back"). An unmarked
+  addition is a finding; so is a game-wide one the player never saw.
 - **Does it keep what is already decided?** No `DECISIONS.md` record and no doc rule is overturned,
   narrowed or rewritten in passing. A doc sentence the PR changed says what the player decided, not
   what the PR happened to build.
@@ -70,8 +75,8 @@ touches (the path table in `CLAUDE.md`). Look for:
 - anything the description claims that the diff does not do.
 
 The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
-may run a suite from a checkout of its own, one Godot process at a time, and never `git grep` over a
-folder that holds images (the hook denies it; see `using-tools`).
+may run a suite from a checkout of its own, one Godot process at a time, and never runs `git grep`
+over a folder that holds images (see **using-tools**).
 
 ## The findings go on the PR
 

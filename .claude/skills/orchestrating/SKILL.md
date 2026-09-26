@@ -149,8 +149,9 @@ Every agent prompt contains, explicitly:
 - **What the final report must contain**: per item, what was built and how it was verified; every
   choice made where the design was silent; every fork left open. The report is the merge review's
   input — an outcome it does not mention is an outcome that did not happen.
-- **Do not merge, do not delete the branch.** After the report, the PR goes to a review agent
-  under **pr-review** before anything else happens to it; then the orchestrator commits the
+- **Do not merge, do not delete the branch.** After the report, the orchestrator commits the
+  queue move on the PR branch (below), and then the PR goes to a review agent under **pr-review**,
+  which checks that move with everything else. The move is the orchestrator's: it commits the
   `TODO.md` → `DECISIONS.md` move on the PR branch (the agent's silent choices recorded as open to
   overturn, not narrated as settled), merges only under **committing**'s permission rule, and
   retires the branch with `tools/prune-merged.sh`.

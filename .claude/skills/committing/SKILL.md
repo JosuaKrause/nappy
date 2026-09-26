@@ -32,7 +32,7 @@ merge permission. Leave the PR open and report its link when permission has not 
 
 **A PR merges only after its review.** A review under **pr-review** has posted the verdict
 *ready* on the PR against its current head, or against a head whose later pushes were reviewed
-too. *(2026-09-26: "all PRs must go through a (adversarial) review before ready to be merged.")*
+too; a merge of `main` that went in without a conflict needs no second review (**pr-review**). *(2026-09-26: "all PRs must go through a (adversarial) review before ready to be merged.")*
 Merge permission and green CI do not replace it.
 
 When merging is explicitly authorized, check mergeability and let CI gate the merge. Resolve
