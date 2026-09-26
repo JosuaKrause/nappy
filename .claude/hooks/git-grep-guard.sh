@@ -43,15 +43,17 @@
 #   never the word, so `git log --grep=foo` allows.
 # - The tail runs from `grep` to the next separator word. `-I` counts case-sensitively and is never
 #   folded together with `-i`. The pathspec counts as text only if every entry after `--`,
-#   redirects aside, is a text glob; an exclusion (`:!*.json`, `:^*.md`) never counts, because an
-#   exclusion with nothing else searches everything else.
+#   redirects aside, is a text glob; an exclusion never counts, because an exclusion with nothing
+#   else searches everything else. Any `!` or `^` in the short magic after the colon makes one
+#   (`:!*.json`, `:^*.md`, `:/!*.json`, `:!/*.md`), and so does long magic naming `exclude`.
 #
 # Accepted holes, each needing a deliberate step: a shell alias or function, a git alias
 # (`git -c alias.g=grep g ...`), a `git` or `grep` assembled by an expansion (`$(echo gi)t`,
 # `$G` with G=git), an encoded command, a pattern given as `-e -I`, and a global option git adds
 # later that takes a separate argument. Accepted false denies: a mention (`[git] grep` in prose
 # included), a line ending in `git` followed by a line starting with `grep`, a text-only pathspec
-# that also carries an exclusion (`-- '*.md' ':!x.md'`), and any command the jq program fails on.
+# that also carries an exclusion (`-- '*.md' ':!x.md'`), any long pathspec magic (`:(glob)*.md`,
+# whose parentheses split it in the first two readings), and any command the jq program fails on.
 #
 # Guards both of Claude Code's tools that run a shell command: `Bash`, and `Monitor`, whose script
 # runs in the same shell and lives for minutes. Reads the hook JSON on stdin (`tool_input.command`
@@ -107,9 +109,15 @@ def has_dash_I: startswith("-") and (startswith("--") | not) and contains("I");
 def redirect_width:
   sub("^[0-9]{0,2}"; "") as $w
   | if ($w | test("^[<>]")) | not then 0 elif ($w | test("^[<>]+$")) then 2 else 1 end;
+# A pathspec exclusion: short magic after `:` whose leading run of `/`, `!`, `^` holds a `!` or `^`
+# (`:!x`, `:^x`, `:/!x`, `:!/x`), or long magic `:(...)` naming `exclude` or holding `!`/`^`.
+def is_exclusion:
+  startswith(":")
+  and (if startswith(":(") then ltrimstr(":(") | split(")")[0] | ascii_downcase | test("exclude|[!^]")
+       else .[1:] | test("^[/!^]*[!^]") end);
 # A pathspec entry restricted to a known text extension; an exclusion never counts.
 def text_glob:
-  if startswith(":!") or startswith(":^") then false
+  if is_exclusion then false
   else test("\\.(md|gd|sh|py|json|toml|txt|cfg|ini|yml|yaml|csv|svg|html|htm|css|js|ts|xml|"
             + "rs|go|c|h|cpp|hpp|java|rb|pl|tres|tscn|gdshader|glsl|cs)$")
   end;

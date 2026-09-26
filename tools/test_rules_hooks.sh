@@ -25,7 +25,7 @@
 #     $(which git), a redirect or a newline between git and grep, and a Python list, black-
 #     formatted or not; -I stays its own flag, never folded together with -i, and a quoted "gcc -I"
 #     pattern is not the flag
-#   - an exclusion-only pathspec (:!*.json) denies, and a redirect after a text pathspec
+#   - an exclusion-only pathspec (:!*.json, :/!*.json, :(exclude)*.md) denies, and a redirect after a text pathspec
 #     (2>/dev/null, 2>&1, > file) is not a pathspec entry
 #   - a Monitor script is guarded like a Bash command
 #   - a 100 KB command is checked well inside the hook's 5-second timeout
@@ -526,6 +526,20 @@ assert_guard "an exclusion-only pathspec :!*.json -> deny" deny \
     "git grep -n -i foo -- ':!*.json'"
 assert_guard "an exclusion-only pathspec :^*.md -> deny" deny \
     "git grep -n -i foo origin/main -- ':^*.md'"
+assert_guard "combined short magic top+exclude :/!*.json -> deny" deny \
+    "git grep -n -i foo -- ':/!*.json'"
+assert_guard "combined short magic top+exclude :/^*.md -> deny" deny \
+    "git grep -n -i foo -- ':/^*.md'"
+assert_guard "combined short magic in the other order :!/*.md -> deny" deny \
+    "git grep -n -i foo -- ':!/*.md'"
+assert_guard "long magic :(exclude)*.md -> deny" deny \
+    "git grep -n -i foo -- ':(exclude)*.md'"
+assert_guard "long magic :(top,exclude)*.md -> deny" deny \
+    "git grep -n -i foo -- ':(top,exclude)*.md'"
+assert_guard "top-only short magic :/*.md is still text -> allow" allow \
+    "git grep -n -i foo -- ':/*.md'"
+assert_guard "long magic :(glob)**/*.md -> deny (accepted false deny: split at its parentheses)" deny \
+    "git grep -n -i foo -- ':(glob)**/*.md'"
 assert_guard "a text pathspec with an exclusion too -> deny (accepted false deny)" deny \
     "git grep -n -i foo -- '*.md' ':!x.md'"
 
