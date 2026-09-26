@@ -21,6 +21,11 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Meet the cyclist head-on, then name the next warning to shorten.** His warning now comes
+  about 2s before he can reach her, down from about 3s. **Does it come shortly before he arrives,
+  as asked, and is it still enough?** Then read the lead table in `DECISIONS.md`, M207, a warning
+  comes shortly before its danger (its numbers are in PR #372), and **name the row to change next**.
+  Several rows measure under their own floor there, `cat_dash` and `alley_robbery` among them.
 - **Keep working while an agent takes a capture** (any `tools/shot.sh` or rig-flagged
   `tools/run.sh`, on this Mac). The rig's window should flash up and hand focus straight back to
   whatever app was in front. **Does your focus stay put, and is the flicker short enough to

@@ -1,5 +1,34 @@
 # Decisions
 
+## M207 — A warning comes shortly before its danger · built 2026-09-26
+
+*([PLAYTEST-140](playtests/PLAYTEST-140.md): "12.9s is a *long* warning to the point where nothing
+really happens anymore. I feel the same with the biker. it gets warned too early so most of the
+time you're already gone when anything happens.")*
+
+**The cyclist.** His field and his telegraph came down together: `outer_radius` 90px to 60px,
+`telegraph_time` 2.97s to 2.1s. They are one number under the `hard_fail` margin
+(`Tuning.required_telegraph_time()`): the field sets the floor a `hard_fail` row's telegraph may
+not go under, so a smaller field is how the telegraph shortens without losing its lethality. The
+analytic floor at 60px is 1.95s. Measured from the screen-edge badge, walking into him, she is
+warned 2.03s ahead, about a tenth of a second over it. `_test_the_cyclist_is_warned_shortly_before_he_arrives`
+(`tests/test_events_pursuit.gd`) holds the lead at or above the floor and at most 0.5s over it, on
+both axes. The robber sent after a handover is M137's, the trap comes to her.
+
+**The table of every warned row's lead** is `tests/probes/m207_warning_lead.gd`
+(`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it). For each row it
+measures the seconds from the first warning she can see, the badge or the thing in view, to the
+earliest moment it can reach her, walking toward it, standing, and walking away, against
+`EventDef.minimum_telegraph()`. Its first printing is in PR #372. Several rows other than the
+cyclist measure under their own floor that way: `cat_dash` across her line (to no warning at all
+horizontally), `charging_dog` from day 4, `alley_robbery`, `masked_pursuer` walking toward it,
+`pigeon_flock` walking toward it, `military_convoy` and `police_patrol`'s return leg by a fraction
+of a second. None was changed: the player names the next one (`REVIEW.md`).
+
+**Choices open to overturn**: both numbers moved rather than the telegraph alone; the test's
+tolerance above the floor is 0.5s, looser than the measured 0.09s so it does not restate it. No
+burst was taken, since `--spawn event:cyclist` refuses a row sited from her walk.
+
 ## M129 — A region wall or a seal may cost a route at a junction · decided 2026-09-25
 
 *([PLAYTEST-140](playtests/PLAYTEST-140.md): "it's okay if the route costs something".)*
