@@ -452,38 +452,6 @@ reaction time a warning must leave her; the player's complaint is the other end.
 
 ---
 
-## M211 — The pause screen's held restart starts a new game · found 2026-09-26
-
-> "the pause screen is currently bugged where you cannot restart from it. it just goes back to
-> the current game when pressing the button."
-
-[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 3. What a completed hold does is the
-player's word in [PLAYTEST-143](playtests/PLAYTEST-143.md), statement 12: "restart button
-restarts the game from scratch".
-
-- [ ] **Reproduce it, fix it, and pin it with a test that fails before the fix**: a completed
-      hold on the pause screen's restart starts a new game from scratch rather than
-      unpausing it. Say which press reached the continue path.
-
----
-
-## M212 — The held restart fills and restarts on a phone, first time · found 2026-09-26
-
-> "also the restart button doesn't visible fill up on mobile when pressing. and sometimes it just
-> doesn't work at all which is frustrating. you have to hold long multiple times until it
-> actually restarts"
-
-[PLAYTEST-142](playtests/PLAYTEST-142.md), statement 4. Seen on a phone; which screen (pause,
-day summary or both) was not said, so both are checked.
-
-- [ ] **The disc's radial fill shows while a touch is held**, on the pause screen and the day
-      summary.
-- [ ] **One completed hold always restarts.** Find what cancels or ignores a hold on touch —
-      a second touch, a drag off the disc, a release event reaching another control — and pin it
-      with a test that drives `InputEventScreenTouch`.
-
----
-
 ## M213 — The chalk mark's robber stands at the far end of its alley · asked for 2026-09-26
 
 > "the rubber in the alley with the mark is too close to the mark. It's impossible to get the
@@ -541,8 +509,7 @@ change how one building's roof meets the next.
 repeats `*`, while the day brief and the finale brief (`show_day_brief()` and
 `show_finale_brief()` in `day_summary.gd`) and the pause screen (`_show_where_the_run_stands()`)
 say "%d nerves left". It goes on one branch with M210, the brief between two days is the coming
-day's, which already asks the brief to show the nerves "drawn the way the HUD draws them". Both
-wait for M211 and M212's branch, which owns `day_summary.gd` and `pause_screen.gd`.
+day's, which already asks the brief to show the nerves "drawn the way the HUD draws them".
 
 - [ ] **Every screen that shows the nerves draws them as stars**, drawn the same way everywhere;
       no screen shows them as a number.
