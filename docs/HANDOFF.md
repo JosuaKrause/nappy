@@ -306,35 +306,52 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## Where the last session stopped, 2026-09-26
 
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
-checks and worktrees can move independently of this file.
+checks and worktrees can move independently of this file. The player's order, from
+[PLAYTEST-144](playtests/PLAYTEST-144.md): the `git grep` hook, then M223, then M225 and a
+release; nothing else is picked up before those. At the end of the session the player tabled
+everything else: "let's table work that is not immediately important. we can let the agents
+finish what they have but we can pick up the prs later".
 
-- **The GoatCounter counter's new events and the read-back tool are in one open pull request**,
-  titled "M208/M209: the counter says what ended a day and what she met, and Claude reads it
-  back", ready for review and waiting on CI and on the player's permission to merge. Its records
-  are already in `DECISIONS.md` (M208 and M209). If CI is red, fix it on that branch.
-- **GoatCounter is read only through `tools/goatcounter.sh`** (see the using-tools skill); the key
-  is `GOATCOUNTER_TOKEN`, from the environment or a git-ignored `.env` at the root.
-- **The story's pacing is built** (M181, the resistance has a reason, and a task is one day,
-  in `DECISIONS.md`): every task and happening, the late days timed, and the seals on her
-  building's front. M182, a finished task is shown by the world, has the other tasks' answers
-  open, and M185's crafted house, drawn to match the escape's interiors, is the home block's next
-  step.
-- **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
-  "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
-  the first entry of `REVIEW.md`.
-- **M175, a row states what it costs, has its table built and one item open**: rows declaring
-  a net cost tier, whose tier names and values go to the player first
-  ([PLAYTEST-114](playtests/PLAYTEST-114.md)).
-- **M159, a slow frame names the frame that was slow, has its first optimization in and three
-  items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
-  velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
-  contribution sweeps; [PLAYTEST-86](playtests/PLAYTEST-86.md) is the player's demand for an
-  optimization rather than a measurement). Whole-frame tails remain: attributing the remaining
-  slow intervals, profiling the phone, and completing the atlas measurements are the open items,
-  and no toggle causality is claimed.
-
-PR merges and auto-merge require explicit permission in the current session. Use fresh agents
-with self-contained briefs for new implementation or investigation.
+- **HIGH PRIORITY: these three, in this order, and nothing else until they are done.** Each
+  step waits for the one before it:
+  1. **PR #377, the `git grep` guard.** Its latest push answers review 5326484007 and has had no
+     review yet. Review it under **pr-review**, merge, then tell the player to approve the hook
+     in `/hooks`; it does not run until they do.
+  2. **PR #382, M223, queue entries, items, decisions and review items as files** (draft,
+     worktree `queue-as-files`). PLAYTEST-144 and M223's entry are on `main` now, so its next
+     step is the one its brief names: merge `origin/main`, re-run `tools/migrate-queue.py` on the
+     result, restore M223's own decision file, remove M223's entry folder, lint, mark ready,
+     review, merge. Then every open PR's old-format queue edits are converted with
+     `tools/convert-queue-edits.py`.
+  3. **PR #368, M225, the counter's asks**, taken over from the stopped cloud session. The brief
+     is written and waits for M223. Then review, merge, and cut a release so traffic reaches the
+     new GoatCounter site.
+- **STOPPED, not to be continued yet.** Each of these is committed and pushed at a safe point,
+  and none gets an agent, a review or a merge until the player picks it up again. They are listed
+  only so their state is known:
+  - **#370, M204 and M214, the trailer's tools**: reviewed ready and CI green at its head; the
+    first to merge. M204 stays queued for the player's notes on the cut.
+  - **#372, M207, the cyclist's warning**: not ready; its record must name how raising the
+    cyclist's intensity reshaped his cost with distance (dearer close in, free past about 60px).
+  - **#362, M137, the trap comes to her**: built (a chasing guard after the van; the robber after
+    the man shouting starts off screen; the burnt shell and roadblock keep a waiting guard, open
+    to the player), needs its decision record, description and review.
+  - **#379, M205, the man shouting** (draft): handing over the note now needs a 2.5s stand inside
+    his inner field (the orchestrator's proposal, marked so), costing about 20 points awake. His
+    zero charge on an ordinary day did not reproduce in any test or full boot; the PR names two
+    suspects (the halo's cap of eight sources at a busy crosswalk, and his own warning window).
+    Not reviewed.
+  - **#365, M203 and M216, roofs**: built and green (a courtyard block's roof turns its corners;
+    roof furniture rolls on an extended roof too). No pictures yet: every rig walk to a courtyard
+    hit a parked vehicle or a closure on the way, and `tests/probes/m216_evidence.gd` computes
+    seeds and walks for the stills. A front facing the map's edge happens only on a cul-de-sac's
+    dead-end wall, never on a real block front; that goes to the player before the special case is
+    kept or dropped. The PR description predates M216.
+- **Merge permission**: the player said "if you reviewed all PRs and they are ready you can
+  merge" in the session that stopped; a new session confirms it before using it. A release needs
+  its own go-ahead, which the player gave for after M225.
+- `.claude/briefs/` holds a brief per open branch with every amendment; start fresh agents from
+  them rather than resuming this session's.
 
 ## The queue, as prioritised on 2026-09-09
 
@@ -362,15 +379,17 @@ way (`DECISIONS.md`, M108, the crowd car), and a street about-face crosses the k
 
 ## What to distrust
 
-**What nobody has played is listed in [REVIEW.md](REVIEW.md), not here.** Every item there is
-something a rig has measured and a person has not felt, with what to look at and the question a
-run answers; a playtest closes the items it covered. Read it before asking for a playtest, and
+**What nobody has played is listed in [REVIEW.md](REVIEW.md) and the items under
+[review/](review/), not here.** Every item there is something a rig has measured and a person has
+not felt, with what to look at and the question a run answers; a playtest closes the items it
+covered. Read it before asking for a playtest, and
 add to it before merging work that only a person can judge.
 
 ## The rule that matters most before starting anything
 
-**The first tool call of a design task is a search for the words, not a plan.** Grep `TODO.md` and
-the playtest files for the noun. Three separate things in one session turned out to be already
+**The first tool call of a design task is a search for the words, not a plan.**
+`tools/decisions.sh --in all <noun>` searches the queue's entries, the records, the review items and
+the playtest files. Three separate things in one session turned out to be already
 written down and never built — the interact key (filed in playtest 02), the alley roulette, and M40
 itself. The code is evidence of what was built; it is never evidence of what was agreed.
 

@@ -25,7 +25,15 @@ TOOLS = Path(__file__).resolve().parent
 # Every tools/*.py a person or a script runs directly. Not the test_*.py files themselves --
 # unittest.main() already gives every one of them -h and rejects an unknown flag, which is the
 # standard library's job rather than this repository's.
-ENTRY_POINTS = ("clip.py", "reference.py", "remove-checkerboard.py", "codex-hooks.py", "goatcounter.py")
+ENTRY_POINTS = (
+    "clip.py",
+    "reference.py",
+    "remove-checkerboard.py",
+    "codex-hooks.py",
+    "goatcounter.py",
+    "migrate-queue.py",
+    "convert-queue-edits.py",
+)
 
 
 class CliHelpTests(unittest.TestCase):
