@@ -20,7 +20,9 @@ extends RefCounted
 ## still resumes, reading as `FinaleController.Section.NONE` by absence. Putting it in
 ## `_SAVE_FIELDS` instead would have made every save on disk unreadable for the sake of one int.
 ## `"completed_resistance_alley_tiles"` rides the same way, for the same reason, reading as "none
-## recorded" by absence.
+## recorded" by absence. `"fenced_park"`/`"fenced_park_act"` ride the same way too: a save from
+## before the one calm area a run could fence existed loads with none chosen, which is exactly what
+## a run that has not reached act III looks like anyway.
 ##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
 ## run; `set_path_override()` is the one seam a test uses to point at a scratch file instead, and
@@ -144,6 +146,8 @@ static func _write_now(day_under_way: bool) -> bool:
 		"day_under_way": day_under_way,
 		"escape_section": GameState.escape_section,
 		"completed_resistance_alley_tiles": alley_tiles,
+		"fenced_park": {"x": GameState.fenced_park.x, "y": GameState.fenced_park.y},
+		"fenced_park_act": GameState.fenced_park_act,
 		"posters": GameState.posters.to_data(),
 		"state": GameState.save_snapshot(),
 	}))
@@ -228,6 +232,15 @@ static func _read_now() -> Dictionary:
 	GameState.completed_resistance_alley_tiles.clear()
 	for raw: Dictionary in data.get("completed_resistance_alley_tiles", []):
 		GameState.completed_resistance_alley_tiles.append(Vector2i(int(raw["x"]), int(raw["y"])))
+	# And the one park barriers may already stand around, the same way again: a save from before
+	# `fenced_park` existed loads with none chosen, so act III can still choose one fresh — the same
+	# state a run that has not reached act III yet is already in.
+	var fenced_park: Variant = data.get("fenced_park", null)
+	if fenced_park is Dictionary:
+		GameState.fenced_park = Vector2i(int(fenced_park.get("x", -1)), int(fenced_park.get("y", -1)))
+	else:
+		GameState.fenced_park = Vector2i(-1, -1)
+	GameState.fenced_park_act = int(data.get("fenced_park_act", 0))
 	# And the walls, the same way again: a save from before there were posters loads with none up,
 	# and the next dawn pastes the city's from `PosterWalls.FIRST_DAY` onward.
 	GameState.posters.reset()

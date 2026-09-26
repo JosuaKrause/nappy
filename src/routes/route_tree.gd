@@ -60,8 +60,8 @@ extends RefCounted
 ## one, for the picture and for `Corridor`'s tile-level questions.
 ##
 ## **The growth walks a smaller graph than the grid.** *(2026-09-14, the player: "why not just
-## remove the street tiles and main street blocks from the graph entirely?")* Two kinds of cell are
-## out of it, and a junction box is out of neither:
+## remove the street tiles and main street blocks from the graph entirely?")* Three kinds of cell are
+## out of it, and a junction box is out of none of them:
 ##
 ## - **a carriageway between two junctions**, so a route crosses a street only where crossing is
 ##   legal. *(2026-09-13, PLAYTEST-69: "the routing should only cross the street at intersections.
@@ -72,6 +72,10 @@ extends RefCounted
 ##   should never go alongside the main road — main road by itself can be considered a blocker —
 ##   paths can only cross the main road".)* Crossing it at a junction is untouched, and
 ##   `SealPlanner` refuses the spine as a candidate outright for its own reasons — see its doc.
+## - **the ground of a calm area today's tree leaves alone** (`CityMap.shut_calm`: one she has
+##   already used this act), so no route goes through it, and none is grown to it either — the area
+##   stays calm, walkable ground (`CityMap.calm_blocks` still has it); it is only this graph, the one
+##   the tree itself walks, that does not.
 ##
 ## `_is_off_the_growths_graph` is the whole of it and `_ways` is where it is applied. **It filters
 ## this class's own view and nothing else**: `ReachabilityGrid` is untouched, so every guarantee
@@ -244,11 +248,24 @@ static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
 	var grid := ReachabilityGrid.build(map)
-	var tree := grow(map, ClosurePlanner.home_street(map), ClosurePlanner.calm_areas(map),
+	var tree := grow(map, ClosurePlanner.home_street(map), _growable_areas(map),
 			map.blocked_segments(), grid, rng)
 	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
 		tree._grow_a_spur_to(map.rect_tiles(map.power_station_door))
 	return tree
+
+## `ClosurePlanner.calm_areas(map)`, minus whatever `CityMap.shut_calm` names today. **A shut area
+## is still in `map.calm_blocks`** — it stays calm ground for every guarantee stated over reachable
+## calm, `ClosurePlanner`'s street-closure invariant among them — but it is not a destination this
+## tree may grow a branch to: `_grow_a_branch()` would otherwise still reach its access streets and
+## record a branch for it, even with its own interior tiles off the graph, which is a route "to" the
+## area exactly as much as one "through" it. Both are what statement 8 refuses.
+static func _growable_areas(map: CityMap) -> Array[ClosurePlanner.CalmArea]:
+	var areas: Array[ClosurePlanner.CalmArea] = []
+	for area in ClosurePlanner.calm_areas(map):
+		if not area.block in map.shut_calm:
+			areas.append(area)
+	return areas
 
 ## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets a
 ## calm zone absorbed. Their ground is already reflected in `grid` as walkable calm tiles, so it
@@ -444,8 +461,9 @@ func _carries(node: int, colour: int) -> bool:
 
 # ------------------------------------- the main road, and the kerbs (M129) ---
 
-## **The graph the growth actually walks**, which is the grid's with two kinds of cell taken out of
-## it: a carriageway between two junctions, and the main road anywhere but at a junction.
+## **The graph the growth actually walks**, which is the grid's with three kinds of cell taken out
+## of it: a carriageway between two junctions, the main road anywhere but at a junction, and a shut
+## calm area's ground.
 ## *(2026-09-14, the player: "why not just remove the street tiles and main street blocks from the
 ## graph entirely?")* Every probe that plans a route calls this rather than the grid directly —
 ## `_walk_home`, `_shortest_home` and `_grow_the_trunk`'s own search. `node_depths()` does not,
@@ -528,6 +546,13 @@ func _ways_including_the_spine(node: int) -> Array:
 func _is_off_the_growths_graph(tile: Vector2i, refuse_the_spine: bool) -> bool:
 	if not _map:
 		return false
+	# **A used calm area the tree has been told to leave alone is not a route, the trunk's fallback
+	# included.** *(PLAYTEST-140, statement 8: "no route of the day goes through it".)* Its ground
+	# stays open (`CityMap.shut_calm`, `is_shut()`) — she is stopped by the events placed there, not
+	# by the tile — and unlike the spine it is never the only way anywhere: `ClosurePlanner.
+	# calm_to_shut()` refuses to exclude an area whose exclusion would cut any ground off.
+	if _map.is_shut(tile):
+		return true
 	if CityMap.junction_at(tile) != Vector2i(-1, -1):
 		return false
 	if refuse_the_spine and _map.main_road >= 0 \

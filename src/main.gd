@@ -1644,8 +1644,20 @@ func _start_day() -> void:
 	# The city becomes today's city before anything is placed in it: the scheduler has to
 	# see the parks that are still parks, not yesterday's.
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
+	# The calm areas she has used this act, handed to the repaint `_city.start_day()` opens with, so
+	# the ones that can be shut are shut before the day's route tree is grown around them. See
+	# `CityMap.set_spent_calm()`.
+	_city.map.set_spent_calm(GameState.settled_this_act())
+	# What `GameState` already remembers about the one park barriers ever stand around this run,
+	# handed over the same way, so a fence chosen on an earlier day of this act stands again today
+	# rather than being re-decided. See `CityMap.set_fenced_park_state()`.
+	_city.map.set_fenced_park_state(GameState.fenced_park, GameState.fenced_park_act,
+			GameState.current_act())
 	_city.start_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
+	# Remember the first choice for the run. Today's physical fence disappears after its act,
+	# but that must not erase the history and allow tomorrow to choose another one.
+	GameState.remember_fenced_park(_city.map.fenced_park, _city.map.fenced_park_act)
 	# The tree `_city.start_day()` just grew is today's whole plan, so the picture only has to be
 	# rebuilt here — once a day — rather than read fresh every frame the way `_debug_layers` reads
 	# the live geometry state. See `RouteLines.refresh()`.
