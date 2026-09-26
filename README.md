@@ -142,7 +142,7 @@ launches rather than risking a picture that is silently never written.
 | `--overview` | Frame the whole city at once |
 | `--zoom <factor>` | Scale the camera's zoom by `factor` (`0.5` shows twice as much each way) with everything else as a player sees it; anything but a positive number is ignored with a warning |
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
-| `--walk north\|south\|east\|west\|<script>` | Hold a direction down for the whole run, or walk a script of timed steps — `1s5e` is one second south then five east, and `3@45@2e` is three seconds at a bearing of 45° then two east. A bearing is degrees clockwise from north, delimited by a pair of `@`s so its digits do not run into the next step's |
+| `--walk north\|south\|east\|west\|<script>` | Hold a direction down for the whole run, or walk a script of timed steps — `1s5e` is one second south then five east, `3@45@2e` is three seconds at a bearing of 45° then two east, and `1.7w0.6p2S` is 1.7 seconds west, 0.6 seconds standing still, then two seconds south at a run. A bearing is degrees clockwise from north, delimited by a pair of `@`s so its digits do not run into the next step's; a duration may carry a decimal point; `p` stands still for its duration, pressing nothing; and an uppercase letter is that direction at a run instead of a walk |
 | `--flee [delay]` | Turn round and run when something starts chasing her, after dithering for `delay` seconds |
 | `--press <action\|key:name> <seconds>` | Tap an action or a bare key, so a rig can press one. May be given more than once — `--press pause 2 --press key:r 3.5` |
 | `--tap X Y` | Send one synthetic touch at the raw screen position (X, Y), the moment the run starts |
