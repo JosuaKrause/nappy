@@ -47,6 +47,22 @@ place the flag list lives — not what each is for; that gap is this file's job.
 A tool's own header and `--help` are still the source of truth for its exact flags; this table
 says what it is *for*, not its full usage.
 
+**A `git grep` with neither `-I` nor a text-only pathspec is denied, not run, and so is a mention
+of the words.** `.claude/hooks/git-grep-guard.sh` is a `PreToolUse` hook rather than a catalogued
+tool: it fires on every `Bash` and `Monitor` call (and, through `tools/codex-hooks.py`, on
+Codex's) and reads the whole command text, quoted strings and heredoc bodies included. Any `git` followed by `grep` as a
+word of its own, with neither `-I` (skip binary files) nor a `--` pathspec made only of
+known-text-extension globs, is denied: behind a wrapper (`timeout`, `sudo`, `find | xargs`), inside a
+heredoc or a quoted string an interpreter runs (`bash <<EOF`, `bash -c`, `python3 -c`, an f-string),
+and as a plain mention (`echo "git grep"`, a commit message, `rg "git grep"`) alike. A later `-a` or
+`--text` cancels `-I`, as it does in git, and an exclusion (`:!*.json`) is never text-only. Without
+`-I`, a search over this repo's binary-heavy `docs/` grows past a few gigabytes instead of finishing,
+and telling a mention from an invocation is the parsing that keeps having holes. What passes is
+whatever never puts `grep` as its own word right after `git` and its options: `git log --grep=...`,
+`git log -S grep`, `git ... | grep`, the bare word `git-grep`. The denial names the way out: write
+`git-grep` for a mention; for a search, add `-I`, restrict the pathspec (`-- '*.md' '*.gd'
+'*.sh'`), or use `rg` on the checkout.
+
 ## A manual sequence done a second time becomes a script
 
 `CLAUDE.md` states the rule, with the player's words. What it means here: when the same manual
