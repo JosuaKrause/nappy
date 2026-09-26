@@ -171,6 +171,16 @@ if [[ "$checked" -eq 0 ]]; then
     echo "sound-lab.sh: '$PASS_NAME' recorded no hashes to verify" >&2
     exit 1
 fi
+# The loop above only checks the files the recipe names; a WAV the generator writes without a
+# matching passes.json entry would otherwise be served unverified (for example a new clip added to
+# the generator's recipe set without updating the recipe).
+while IFS= read -r wav_path; do
+    wav_name="$(basename "$wav_path")"
+    if ! jq -e --arg n "$wav_name" '.hashes | has($n)' "$RECIPE_FILE" >/dev/null; then
+        echo "sound-lab.sh: '$PASS_NAME' wrote $wav_name, which the recipe does not record a hash for" >&2
+        mismatch=1
+    fi
+done < <(find "$OUT_DIR" -maxdepth 1 -name '*.wav')
 if [[ "$mismatch" -ne 0 ]]; then
     echo "sound-lab.sh: '$PASS_NAME' did not rebuild byte-for-byte; see above" >&2
     exit 1

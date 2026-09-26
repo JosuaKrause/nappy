@@ -244,6 +244,48 @@ class CliHelpTests(unittest.TestCase):
                         f"pass={unsafe_name!r} deleted something outside the scratch build root",
                     )
 
+    def test_sound_lab_rejects_a_wav_the_recipe_does_not_record(self) -> None:
+        """The hash loop only checks the files passes.json names; a WAV the generator writes
+        without a matching entry (for example a new clip added to a recipe set without updating
+        the recipe) must still fail the build rather than being served unverified. Points the
+        script at a scratch recipe missing one of the real generator's five subtle-revision WAVs
+        from its `hashes`, so that WAV is on disk but unrecorded."""
+        real_recipe = json.loads((TOOLS / "sound-lab" / "passes.json").read_text())
+        incomplete_hashes = dict(real_recipe["hashes"])
+        del incomplete_hashes["comparison.wav"]
+        self.assertTrue(incomplete_hashes, "the real recipe must still have other hashes to check")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            recipe_file = root / "passes.json"
+            recipe_file.write_text(
+                json.dumps(
+                    {
+                        "pass": real_recipe["pass"],
+                        "label": real_recipe["label"],
+                        "seed": real_recipe["seed"],
+                        "args": real_recipe["args"],
+                        "hashes": incomplete_hashes,
+                    }
+                )
+            )
+            build_root = root / "build"
+            result = subprocess.run(
+                [str(TOOLS / "sound-lab.sh"), "--no-serve"],
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd=PROJECT_ROOT,
+                env={
+                    **os.environ,
+                    "SOUND_LAB_RECIPE_FILE": str(recipe_file),
+                    "SOUND_LAB_BUILD_ROOT": str(build_root),
+                },
+            )
+            self.assertNotEqual(result.returncode, 0, "an unrecorded comparison.wav was accepted")
+            self.assertIn("comparison.wav", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
