@@ -175,11 +175,26 @@ author gets them together; a finding that has no line to hang on — a missing d
 row — goes in the summary. **A review with nothing to say still says so** on the PR, so that
 "no comments" is a verdict rather than an absence.
 
-**A review reads the change against what the player asked, not only against the code.** It opens
-the playtest the PR cites and the decisions the change touches, and a finding is also a design
-that goes beyond the player's quoted words, or a doc rule the PR rewrote rather than obeyed.
-*(2026-09-26: a review of a park fenced with barriers found "no correctness bug in the mechanism";
-the player had never asked for the fence.)*
+**A review checks that the work item is semantically right, not only that the code is
+correct.** *(2026-09-26, after a post-mortem: "a PR review should not only check for code
+correctness but also verify that a work item is semantically correct".)* Correct code that builds
+the wrong thing passes every other check this repo has. So before reading the diff for bugs, the
+reviewer reads the player's own words the PR cites (the playtest, not the queue entry's paraphrase
+of it) and every decision the change touches, and answers three questions, each a finding when
+the answer is no:
+
+- **Is this what the player asked for?** Nothing built beyond their words without being marked
+  as a proposal they agreed to, and nothing they asked for left out. Every case they described is
+  covered and shown, not only the first.
+- **Does it keep what is already decided?** No `DECISIONS.md` record and no doc rule is overturned,
+  narrowed or rewritten in passing; a doc sentence the PR changed says what the player decided,
+  not what the PR happened to build.
+- **Would the player recognise it in the pictures?** A visible change is judged on its pictures
+  against their words, before its code.
+
+*(The case that taught it: a review of a park fenced with street-closure barriers found "no
+correctness bug in the mechanism"; the player had asked only that the router not path through a
+used park, and had decided long before that a used park is spoiled with events.)*
 
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.
