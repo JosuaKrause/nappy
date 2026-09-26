@@ -32,7 +32,7 @@
 #     escaped '>' is
 #   - a Monitor script is guarded like a Bash command
 #   - a 100 KB command is checked in under half the hook's 10-second timeout, and a command over
-#     128 KB holding both words is denied at once without the slow reading
+#     32 KB holding both words is denied at once without being read
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -669,7 +669,7 @@ else
     fail "the 100 KB command took $((SECONDS - long_start)) seconds, past half the hook's 10-second timeout"
 fi
 
-# Past 128 KB, a text holding both words is denied before the slow reading, even when the one
+# Past 32 KB, a text holding both words is denied without being read, even when the one
 # git grep in it is guarded; a long text without both words still allows at once.
 huge_body="$(printf 'Lorem ipsum dolor sit amet, "quoted words", '"'"'more'"'"'; x | y (z) [w]\n%.0s' $(seq 1 3200))"
 huge_start=$SECONDS

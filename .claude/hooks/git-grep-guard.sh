@@ -25,10 +25,12 @@
 #   through. A backslash-newline pair is deleted first, joining the two lines as bash does. For the
 #   first two readings, `${IFS}` and `$IFS` also become a space and `$'`/`$"` a plain quote, so
 #   `git${IFS}grep` and `g$'i't` read as they run.
-# - A text over 128 KB that holds both words is denied without being read further. The third
-#   reading below costs about 10 to 15 microseconds a character, so 128 KB takes one to two seconds
-#   against the hook's 10-second timeout even on a loaded machine; past the bound a real command
-#   is rare (a heredoc writing a large file) and the way out is to write the text to a file first.
+# - A text over 32 KB that holds both words is denied without being read further. Every reading
+#   is linear, but the three together cost most on dense text of short words, where each word is
+#   a step of its own: about 1.2 seconds at 32 KB of `git` on a line each, the slowest text
+#   measured, against the hook's 10-second timeout, so a loaded machine still finishes in time.
+#   Past the bound a real command holding both words is rare (a heredoc writing a large file), and
+#   the way out is to write the text to a file first.
 # - The text is then read three ways, and a match in any one of them denies:
 #   1. every backslash and quote mark deleted, as bash's quote removal does, so `g"i"t`, `g\it`,
 #      `"git" grep` and `git -C "$root" grep` read as they run;
@@ -81,9 +83,10 @@ set -uo pipefail
 
 # ------------------------------------------------------------------------------ the check (jq) ---
 # Prints the unguarded invocations it finds, joined by "; ", and nothing when there is none. Every
-# step is a literal split/join, one reduce over the characters, or a walk over an array of words,
-# never a regex over the whole text: jq's match, scan and gsub cost the length of the text per
-# match, and bash 3.2's arrays cost their length per lookup, either of which makes a long heredoc
+# step is a literal split/join, one foreach over the characters, or a walk over an array of words,
+# never a regex over the whole text and never an append to an array held in a reduce's state: jq's
+# match, scan and gsub cost the length of the text per match, jq copies a state array on each
+# append, and bash 3.2's arrays cost their length per lookup, any of which makes a long heredoc
 # outrun the hook's timeout.
 read -r -d '' check_program <<'JQ'
 def drop($c): split($c) | join("");
@@ -99,28 +102,34 @@ def plain_words:
 # Reading 3 honours quotes and backslash escapes: a quoted string stays inside its word, and a
 # newline inside one becomes a space. A word that had any quoting and looks like a redirect (`'>'`,
 # `"2>"`, `\<`) is a literal argument to bash, so it gets a leading \u0001 that no redirect, option
-# or text glob starts with.
+# or text glob starts with. `foreach` hands each finished word straight to the collecting `[...]`
+# rather than appending it to an array in the state, which jq would copy on every append and make
+# the reading quadratic in the number of words; a `null` after the last character flushes the last
+# word.
 def flush:
   if .cur != "" then
-    .out += [if .quoted and (.cur[0:3] | test("^[0-9]{0,2}[<>]")) then "\u0001" + .cur else .cur end]
+    .emit += [if .quoted and (.cur[0:3] | test("^[0-9]{0,2}[<>]")) then "\u0001" + .cur else .cur end]
     | .cur = ""
   else . end
   | .quoted = false;
 def quoted_words:
-  reduce (explode[] | [.] | implode) as $c ({q: 0, esc: false, quoted: false, cur: "", out: []};
-    if .esc then .cur += $c | .esc = false
-    elif .q == 1 then (if $c == "'" then .q = 0 else .cur += $c end)
-    elif .q == 2 then
-      (if $c == "\\" then .esc = true elif $c == "\"" then .q = 0 else .cur += $c end)
-    elif $c == "\\" then .esc = true | .quoted = true
-    elif $c == "'" then .q = 1 | .quoted = true
-    elif $c == "\"" then .q = 2 | .quoted = true
-    elif $c == " " or $c == "\t" or $c == "," or $c == "[" or $c == "]" then flush
-    elif $c == ";" or $c == "&" or $c == "|" or $c == "(" or $c == ")" or $c == "`" or $c == "\n"
-    then flush | .out += [$c]
-    else .cur += $c end)
-  | flush
-  | [.out[] | if . == "\n" then . else swap("\n"; " ") end];
+  [foreach ((explode[] | [.] | implode), null) as $c
+     ({q: 0, esc: false, quoted: false, cur: "", emit: []};
+      .emit = []
+      | if $c == null then flush
+        elif .esc then .cur += $c | .esc = false
+        elif .q == 1 then (if $c == "'" then .q = 0 else .cur += $c end)
+        elif .q == 2 then
+          (if $c == "\\" then .esc = true elif $c == "\"" then .q = 0 else .cur += $c end)
+        elif $c == "\\" then .esc = true | .quoted = true
+        elif $c == "'" then .q = 1 | .quoted = true
+        elif $c == "\"" then .q = 2 | .quoted = true
+        elif $c == " " or $c == "\t" or $c == "," or $c == "[" or $c == "]" then flush
+        elif $c == ";" or $c == "&" or $c == "|" or $c == "(" or $c == ")" or $c == "`" or $c == "\n"
+        then flush | .emit += [$c]
+        else .cur += $c end;
+      .emit[])
+   | if . == "\n" then . else swap("\n"; " ") end];
 
 # `git` / `grep` in any case, as a path or not, a leading `$` ignored.
 def last_part: (split("/") | last // "") | ltrimstr("$") | ascii_downcase;
@@ -235,8 +244,8 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   | ($bare | drop("\\") | drop("\"") | drop("'") | ascii_downcase) as $flat
   # Every match needs both words, so most commands stop here.
   | if ($flat | contains("git") and contains("grep")) | not then empty
-    elif ($raw | length) > 131072 then
-      "(the whole command: over 128 KB and holding both words, too long to read in full inside the hook's timeout; write the long text to a file first, then run a short command)"
+    elif ($raw | length) > 32768 then
+      "(the whole command: over 32 KB and holding both words, too long to read in full inside the hook's timeout; write the long text to a file first, then run a short command)"
     else
       ($bare | drop("\\") | swap("\","; "\" ") | swap("',"; "' ")) as $unescaped
       | first(
