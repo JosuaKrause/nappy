@@ -20,6 +20,10 @@
 # - jq does all of the reading, in time linear in the text's length, because bash 3.2's string
 #   operations and array lookups are not, and a hook that outruns its timeout lets the command
 #   through. A backslash-newline pair is deleted first, joining the two lines as bash does.
+# - A text over 128 KB that holds both words is denied without being read further. The third
+#   reading below costs about 10 to 15 microseconds a character, so 128 KB takes one to two seconds
+#   against the hook's 10-second timeout even on a loaded machine; past the bound a real command
+#   is rare (a heredoc writing a large file) and the way out is to write the text to a file first.
 # - The text is then read three ways, and a match in any one of them denies:
 #   1. every backslash and quote mark deleted, as bash's quote removal does, so `g"i"t`, `g\it`,
 #      `"git" grep` and `git -C "$root" grep` read as they run;
@@ -208,7 +212,10 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   | drop("\\\n") as $raw
   | ($raw | drop("\\") | drop("\"") | drop("'") | ascii_downcase) as $flat
   # Every match needs both words, so most commands stop here.
-  | if ($flat | contains("git") and contains("grep")) | not then empty else
+  | if ($flat | contains("git") and contains("grep")) | not then empty
+    elif ($raw | length) > 131072 then
+      "(the whole command: over 128 KB and holding both words, too long to read in full inside the hook's timeout; write the long text to a file first, then run a short command)"
+    else
       ($raw | drop("\\") | swap("\","; "\" ") | swap("',"; "' ")) as $unescaped
       | first(
           ($unescaped | drop("\"") | drop("'") | plain_words | findings),
@@ -229,8 +236,8 @@ fi
 [ -z "$flagged" ] && exit 0
 
 reason="This command's text has git followed by grep as a word of its own, with neither -I nor a \
--- pathspec restricted to text extensions (a mention and a real invocation are treated the same on \
-purpose; see .claude/hooks/git-grep-guard.sh). A git grep without -I over this repo's ~900 MB docs/, \
+-- pathspec restricted to text extensions, or it could not be read in full (see Flagged below). A \
+mention and a real invocation are treated the same on purpose; see .claude/hooks/git-grep-guard.sh. A git grep without -I over this repo's ~900 MB docs/, \
 binaries included, has been measured past 2.7 GB and still growing. If this is only a mention, write \
 git-grep instead of git grep. If it is a search, add -I (skip binary files), restrict the pathspec to \
 text globs (e.g. -- '*.md' '*.gd' '*.sh'), or use rg on the checkout. Flagged: $flagged"

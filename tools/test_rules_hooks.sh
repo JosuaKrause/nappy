@@ -28,7 +28,8 @@
 #   - an exclusion-only pathspec (:!*.json, :/!*.json, :(exclude)*.md) denies, and a redirect after a text pathspec
 #     (2>/dev/null, 2>&1, > file) is not a pathspec entry
 #   - a Monitor script is guarded like a Bash command
-#   - a 100 KB command is checked well inside the hook's 5-second timeout
+#   - a 100 KB command is checked in under half the hook's 10-second timeout, and a command over
+#     128 KB holding both words is denied at once without the slow reading
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -620,8 +621,8 @@ assert_guard "a Monitor script with a guarded git grep -> allow" allow \
 assert_guard "a tool that runs no shell is not read -> allow" allow \
     'git grep -n -i foo -- docs/' Read
 
-# A command far longer than any real one still finishes inside the hook's 5-second timeout (a
-# hook that times out lets the command through), and still denies.
+# A command far longer than any real one still finishes well inside the hook's 10-second timeout
+# (a hook that times out lets the command through), and still denies.
 long_body="$(printf 'Lorem ipsum dolor sit amet, "quoted words", '"'"'more'"'"'; x | y (z) [w]\n%.0s' $(seq 1 1500))"
 long_start=$SECONDS
 assert_guard "a 100 KB heredoc ending in an unguarded git grep -> deny" deny \
@@ -633,7 +634,22 @@ checks=$((checks + 1))
 if [ $((SECONDS - long_start)) -lt 5 ]; then
     echo "ok   the 100 KB command is checked in under 5 seconds"
 else
-    fail "the 100 KB command took $((SECONDS - long_start)) seconds, past the hook's 5-second timeout"
+    fail "the 100 KB command took $((SECONDS - long_start)) seconds, past half the hook's 10-second timeout"
+fi
+
+# Past 128 KB, a text holding both words is denied before the slow reading, even when the one
+# git grep in it is guarded; a long text without both words still allows at once.
+huge_body="$(printf 'Lorem ipsum dolor sit amet, "quoted words", '"'"'more'"'"'; x | y (z) [w]\n%.0s' $(seq 1 3200))"
+huge_start=$SECONDS
+assert_guard "a 200 KB command with only a guarded git grep -> deny (too long to read in full)" deny \
+    "echo \"$huge_body\"; git grep -I -n foo -- '*.md'"
+assert_guard "a 200 KB command without both words -> allow" allow \
+    "echo \"$huge_body\"; git status"
+checks=$((checks + 1))
+if [ $((SECONDS - huge_start)) -lt 3 ]; then
+    echo "ok   both 200 KB commands are decided in under 3 seconds"
+else
+    fail "the 200 KB commands took $((SECONDS - huge_start)) seconds; the length bound should decide them at once"
 fi
 
 echo
