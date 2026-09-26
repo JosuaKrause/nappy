@@ -20,12 +20,12 @@
 #   tools/land-prs.sh <pr-number> [<pr-number>...]
 #   tools/land-prs.sh --dry-run <pr-number> [<pr-number>...]
 #
-# Lands the PRs in the given order, one at a time: the next PR is only brought up to date once
-# the previous one has actually merged, since each merge moves main and can conflict a PR that
-# was clean a moment ago. It stops, naming the PR and the reason, on: a red check (the failing
+# Lands the PRs in the given order, one at a time: the next PR is only started once the previous
+# one has actually merged, since each merge moves main and can conflict a PR that was clean a
+# moment ago. It stops, naming the PR and the reason, on: a red check (the failing
 # checks' names and the PR's URL -- see below for why this is not restricted to gh's own
-# `--required` filter), a conflict tools/update-pr.sh cannot resolve, a PR that closes without
-# merging, or that PR's own timeout. A later PR in the list is left untouched when an earlier one
+# `--required` filter), a conflict with main (its auto-merge turned off, since a resolved conflict
+# is reviewed before it lands), a PR that closes without merging, or that PR's own timeout. A later PR in the list is left untouched when an earlier one
 # stops the run.
 #
 # Why every failing check, not just gh pr checks --required: main's ruleset requires a check
@@ -35,8 +35,8 @@
 # happens instead of waiting for "test" to summarise it.
 #
 # This script enables auto-merge and merges pull requests. It never pushes a commit of its own --
-# tools/update-pr.sh and tools/prune-merged.sh each own their own push, HTTPS fallback included --
-# so there is no push path here to give one.
+# tools/prune-merged.sh owns its own push, HTTPS fallback included -- so there is no push path here
+# to give one.
 #
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
@@ -61,14 +61,15 @@ This script enables auto-merge and merges pull requests -- run it only where mer
 named on the command line is already authorized, per the committing skill's permission rule.
 
   --dry-run           Report the plan and each PR's current state, mergeability and check status;
-                      touches nothing -- no gh pr merge, no tools/update-pr.sh, no git pull, no
+                      touches nothing -- no gh pr merge, no git pull, no
                       tools/prune-merged.sh.
   --timeout <minutes> How long to wait for one PR to merge before giving up on it (default 90).
                       The clock restarts for each PR in the list.
 
 Stops, naming the PR and the reason, on: a red check (the failing checks' names and the PR's
-URL), a conflict tools/update-pr.sh cannot resolve, a PR that closes without merging, or that
-PR's own timeout. Every PR after the one that stopped is left untouched.
+URL), a conflict with main (auto-merge is turned off; resolve it with tools/update-pr.sh and have
+the resolution reviewed before landing it again), a PR that closes without merging, or that PR's
+own timeout. Every PR after the one that stopped is left untouched.
 
 Refuses to start, before anything but --dry-run touches anything, unless run from the main
 checkout on main -- tools/prune-merged.sh needs both. --dry-run is exempt, since it changes
@@ -199,7 +200,7 @@ if [[ "$dry_run" -eq 1 ]]; then
         fi
     done
     echo
-    echo "dry run: nothing changed -- no gh pr merge, no tools/update-pr.sh, no git pull, no tools/prune-merged.sh"
+    echo "dry run: nothing changed -- no gh pr merge, no git pull, no tools/prune-merged.sh"
     if [[ "$here" != "$main_checkout" || "$current_branch" != "main" ]]; then
         echo "note: a real run would refuse here -- this is $here on '$current_branch', not the main checkout ($main_checkout) on main"
     fi
@@ -222,6 +223,10 @@ for n in "${prs[@]}"; do
 
     if [[ "$state" == CLOSED ]]; then
         stop "PR #$n ($url) is closed, not open -- nothing to land"
+    fi
+
+    if [[ "$state" != MERGED && "$merge_state" == DIRTY ]]; then
+        stop "PR #$n ($url) conflicts with main: resolve it with tools/update-pr.sh $n, have the resolution reviewed (pr-review), then land it again"
     fi
 
     if [[ "$state" != MERGED ]]; then
@@ -275,6 +280,9 @@ $failing"
         # turns the PR's auto-merge off and stops rather than resolving and merging it unseen.
         if [[ "$mergeable" == CONFLICTING ]]; then
             gh pr merge "$n" --disable-auto >/dev/null 2>&1 || true
+            if [[ -n "$(gh pr view "$n" --json autoMergeRequest -q '.autoMergeRequest.mergeMethod // empty' 2>/dev/null)" ]]; then
+                stop "PR #$n ($url) conflicts with main and its auto-merge could NOT be turned off -- turn it off by hand (gh pr merge $n --disable-auto) before resolving the conflict, or the resolution merges unreviewed"
+            fi
             stop "PR #$n ($url) conflicts with main: auto-merge is off. Resolve it with tools/update-pr.sh $n, have the resolution reviewed (pr-review), then land it again"
         fi
 

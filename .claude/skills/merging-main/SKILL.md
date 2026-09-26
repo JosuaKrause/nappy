@@ -109,7 +109,8 @@ refuses anything else; running it does not exempt that merge from the semantic r
 `tools/update-pr.sh <pr-number | branch>` runs the whole mechanical sequence for an ordinary PR
 update — fetch, merge, that one `docs/DECISIONS.md` shape, `git diff --check`/`lint.sh`/`check.sh`,
 commit, push — and refuses, naming the files, the moment a conflict is anything else; it never
-substitutes for the semantic review below, which stays the reviewer's on every merge it produces.
+substitutes for the semantic review below, which stays the merger's own on every merge it
+produces (a merge that needed resolving is then also reviewed under **pr-review**).
 
 ## Check semantic alignment for every merge
 
