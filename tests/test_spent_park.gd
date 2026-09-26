@@ -368,6 +368,11 @@ func _test_the_city_stands_a_barrier_body_along_every_entrance(t) -> void:
 	var calm: Array[Vector2i] = []
 	city.map.repaint(state)
 	calm = city.map.calm_blocks.duplicate()
+	t.check(calm.size() >= 2, "seed %d day %d has at least two calm areas to use (%d)"
+			% [city.map.seed_used, day, calm.size()])
+	if calm.size() < 2:
+		city.free()
+		return
 	var used: Array[Vector2i] = [calm[0], calm[1]]
 	city.map.set_spent_calm(used)
 	var rng := RandomNumberGenerator.new()

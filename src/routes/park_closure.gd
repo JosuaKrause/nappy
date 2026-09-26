@@ -108,10 +108,6 @@ static func _edge_tile(rect: Rect2i, out: Vector2i, i: int) -> Vector2i:
 		return Vector2i(rect.position.x, rect.position.y + i)
 	return Vector2i(rect.end.x - 1, rect.position.y + i)
 
-## The strip's own tiles — the edge the fence stands on.
-func tiles(map: CityMap) -> Array[Vector2i]:
-	return map.rect_tiles(segment.tile_rect())
-
 ## Where each line of barrier stands: along the strip, `Tuning.STREET_WIDTH` tiles apart from one
 ## end, with the last one pulled back to finish flush with the other end, so the lines cover the
 ## run end to end. Across it, half a barrier's depth inside the area's edge.
