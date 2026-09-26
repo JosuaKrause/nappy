@@ -99,10 +99,16 @@ derived from its telegraph, and a row's telegraph is not shortened by shrinking 
 is never created closer than just off screen by its notice: with no sensible ground, the place holds
 and the thing waits.
 
-**Not warned first, each for a rule**: a director-sited pursuer (its telegraph is its stand-off
-approach, and spent early a walk outlasts the chase), a patrol sent down the road (no badge
-announces it), and a `MAP` mover (a place the day planned). The reasoning is `docs/EVENTS.md`,
-"Everything arrives from off screen".
+**Not warned first yet, and none of them is a rule.** *(PLAYTEST-145, statement 7: "all offscreen
+events should work like that".)* Three kinds are still built the way they were before warning
+first, each waiting on a decision open in `docs/TODO.md`: a director-sited pursuer (`charging_dog`,
+whose telegraph is its stand-off approach; warning it first while keeping its day-3 timing is M226,
+the pursuing dog keeps its day-3 timing), and a patrol sent down the road and a `MAP` mover (the
+first has no badge, since the cues rule gives one only to something lethal or faster than a walk;
+the second is a place the day planned, and "Do not move a guarantee out of `build_day`" below
+stands in the way), both M207's open question for the player. **Do not add a row to them, and do
+not cite them as the reason something else is not warned first.** What stands in the way of each
+is `docs/EVENTS.md`, "Everything arrives from off screen".
 
 ## The contract is per event and the player experiences the sum
 

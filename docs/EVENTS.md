@@ -284,16 +284,20 @@ stay on the sidewalk".)* Each kind of row has its own ground:
 waits past its time until its place is both on its ground and off screen by its notice again — so it
 is never created closer than that, whatever she did while it waited.
 
-**Three kinds of thing that come from off screen are not warned first, each for its own rule.**
+**Three kinds of thing that come from off screen are not warned first yet.** *(PLAYTEST-145,
+statement 7: "all offscreen events should work like that".)* None of the three is an exception the
+player agreed to: each is built the way it was before warning first, and each waits on a decision
+that is open in `TODO.md`. What is built, and what stands in the way:
 
 - **A director-sited pursuer** (`charging_dog`, on `RUN_TAUGHT_DAY` and when the director sends it
   later) **is put in the world at once**, `Tuning.offscreen_lead()` ahead of her at its
-  `pursue_speed` plus a walk, and closes on screen through its telegraph under the badge. Its
-  telegraph is its stand-off approach rather than a warning alone, and spending it before the dog
-  existed would leave only the chase: `Tuning.PURSUIT_TIME` of it, which a walk outlasts from just
-  off screen — and walking away has to lose, or the lesson teaches nothing (`docs/MECHANICS.md`,
-  "Running that matters"); warning it first while keeping the day-3 timing the player calls
-  correct is M226 in `TODO.md`. **The notice is per row, `EventDef.offscreen_notice`**, because two rows
+  `pursue_speed` plus a walk, and closes on screen through its telegraph under the badge. What
+  stands in the way: its telegraph is its stand-off approach rather than a warning alone, and
+  spending it before the dog existed would leave only the chase, `Tuning.PURSUIT_TIME` of it, which
+  a walk outlasts from just off screen, while walking away has to lose or the lesson teaches nothing
+  (`docs/MECHANICS.md`, "Running that matters"). Warning it first while keeping the day-3 timing the
+  player calls correct is M226, the pursuing dog keeps its day-3 timing and the other warnings fit
+  it, in `TODO.md`. **The notice is per row, `EventDef.offscreen_notice`**, because two rows
   needed to move in opposite directions on the same day *(2026-09-07: "pursuing dog is still too
   short notice", "while biker is now too long notice")*: `Tuning.OFFSCREEN_NOTICE` (0.2s) is the
   default, and `charging_dog` carries 0.5s — at 222px/s closing the default buys only 44px, and
@@ -302,13 +306,20 @@ is never created closer than that, whatever she did while it waited.
   `duration` stays at `Tuning.PURSUIT_TIME`, so `charging_dog`'s telegraph is 4.5s, and closing the
   worst-case gap at the rate walking away still loses by (38px/s) takes about 7.0s, inside the 7.5s
   the two give it.
-- **A patrol sent toward her on the road** (the return leg's, and a torn poster's) is created at
-  once and telegraphs on its way in: nothing announces it at the edge of the screen — it is slower
-  than a walk and never `hard_fail` at any heat — so a warning first would be a car appearing just
-  off screen already past its telegraph with nothing said.
-- **A `MAP` mover** — `military_convoy` on an ordinary day from 13, the escape's trucks — is a place
-  the day planned at dawn and streams in at `Tuning.EVENT_STREAM_RADIUS`; its badge rises as it
-  comes. Moving it with her would move a guarantee the plan was checked for out of the day's plan.
+- **A patrol sent toward her on the road** (the return leg's, and a torn poster's) **is created at
+  once** and telegraphs on its way in. What stands in the way: the cues rule gives the screen-edge
+  badge only to "something lethal or faster than a walk", and a patrol is neither (slower than a
+  walk, never `hard_fail` at any heat), so warned first it would be a car appearing just off screen
+  already past its telegraph with nothing said. Whether it gets a badge so it can be warned first is
+  M207's open question for the player in `TODO.md`.
+- **A `MAP` mover** — `military_convoy` on an ordinary day from 13, the escape's trucks — **is a
+  place the day planned at dawn** and streams in at `Tuning.EVENT_STREAM_RADIUS`; its badge rises as
+  it comes. What stands in the way: warned first, its place would follow her, which moves a
+  guarantee the plan was checked for out of the day's plan, against "Do not move a guarantee out of
+  `build_day` and into the streaming" (the events skill, "The day is planned whole"). Which of the
+  two gives way is the same open question in M207. When the player was asked which events warning
+  first covers, the question named "the fire truck and the convoy included"; only day 13's column
+  is built.
 
 **The margin applies to what travels toward her, not to a crossing.** `cat_dash` keeps
 `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()`: a crossing row's whole content is a

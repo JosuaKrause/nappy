@@ -775,13 +775,15 @@ func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
 ## "road" tiles fail `is_driveable_at()` and this returns empty exactly where the brief asks it
 ## to: a park, a square, a precinct.
 ##
-## **Created at once rather than warned first.** A row on foot that `_toward_her()` sites goes up as
-## a screen-edge warning before it exists (`EventDef.warns_before_it_exists()`); a patrol is sited
-## here in the world at the ordinary `Tuning.offscreen_lead()` margin and telegraphs on its way in,
-## because nothing announces it from the edge of the screen: it is slower than a walk and never
-## `hard_fail` at any heat (`EventDef.at_heat()` states it for the `PRESSES` rung), so
-## `DangerEdge._is_worth_an_arrow()` gives it no badge, and a warning with no badge would be a car
-## that appears just off screen already past its telegraph.
+## **Created at once, not warned first yet.** A row on foot that `_toward_her()` sites goes up as a
+## screen-edge warning before it exists (`EventDef.warns_before_it_exists()`); a patrol is sited
+## here in the world at the ordinary `Tuning.offscreen_lead()` margin and telegraphs on its way in.
+## PLAYTEST-145 asks for every offscreen arrival to be warned first ("all offscreen events should
+## work like that"); what stands in the way here is that nothing announces a patrol from the edge of
+## the screen: it is slower than a walk and never `hard_fail` at any heat (`EventDef.at_heat()`
+## states it for the `PRESSES` rung), so `DangerEdge._is_worth_an_arrow()` gives it no badge, and a
+## warning with no badge would be a car that appears just off screen already past its telegraph.
+## Whether it gets one is M207's open question for the player in docs/TODO.md.
 func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
 	if inward == Vector2i.ZERO:
