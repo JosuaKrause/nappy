@@ -9,9 +9,12 @@ Run it through the wrapper, which owns the environment:
     tools/goatcounter.sh --json
 
 `VisitCounter` (`src/autoload/visit_counter.gd`) sends one GoatCounter event per moment worth
-counting, each path starting `nappy-` -- see `docs/TELEMETRY.md`, "The page counts visits". This
-reads them back through GoatCounter's own read API (`GET /api/v0/stats/hits`), groups them the way
-the names are shaped, and prints the result for a person or an assistant to read.
+counting, each path starting `nappy-`, to the game's own site, `nappy.goatcounter.com` -- see
+`docs/TELEMETRY.md`, "The page counts visits". This reads them back through GoatCounter's own read
+API (`GET /api/v0/stats/hits`), groups them the way the names are shaped, and prints the result for
+a person or an assistant to read. The page visit itself is counted on `josuakrause.goatcounter.com`,
+a different site with a different key; `--site` with that site's API URL, and that site's key in
+`GOATCOUNTER_TOKEN`, reads it.
 
 The API key is a read-only token from the GoatCounter site's own Settings -> API page, passed only
 through the environment variable `GOATCOUNTER_TOKEN` -- never as a command-line flag, since a flag
@@ -24,16 +27,19 @@ file read once. Nothing here prints either value.
 
 `GET /api/v0/stats/hits` answers `{hits: [...], more, total}`, paginated by repeating
 `exclude_paths=<path_id>` for every id already seen while `more` stays true (see
-`https://josuakrause.goatcounter.com/api.json`, the endpoint's own Swagger spec). `count` on each
-hit is "Number of visitors for the selected date range", the API's own wording -- a retry by the
-same person adds nothing to it.
+`https://nappy.goatcounter.com/api.json`, the endpoint's own Swagger spec). `count` on each hit is
+"Number of visitors for the selected date range", the API's own wording -- and `nappy.goatcounter.com`
+keeps no sessions, so GoatCounter counts every hit as a visit ("If it's disabled every pageview
+counts as a 'visit'", its own help on sessions): a count is every time the event was sent, a retry
+by the same person included.
 
 Grouping follows the shape `docs/TELEMETRY.md` documents rather than a hard-coded list of event
 names, since the catalogue keeps growing: a name is either run-level (`run-*`, `ending-*`,
 `escape-*`, `controls-*`), a day event (`day-<N>-<rest>`), or -- if it matches neither shape --
 printed anyway, at the end, rather than silently dropped. `--raw` skips the grouping and the
 `--prefix` filter and prints every path GoatCounter has for the range, events and page loads
-alike -- what an assistant would otherwise reach for a hand-written request to answer.
+alike (the game's own site holds events only) -- what an assistant would otherwise reach for a
+hand-written request to answer.
 
 `--check` proves the key works with `GET /api/v0/stats/total` for the last hour, which needs only
 the "Read statistics" permission -- the one every read-only key has. It then tries `GET /api/v0/me`
@@ -64,7 +70,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NamedTuple
 
-DEFAULT_SITE = "https://josuakrause.goatcounter.com/api/v0/"
+DEFAULT_SITE = "https://nappy.goatcounter.com/api/v0/"
 DEFAULT_PREFIX = "nappy-"
 DEFAULT_DAYS = 30
 PAGE_LIMIT = 100
@@ -385,8 +391,8 @@ def _sorted_desc(items: dict[str, int]) -> list[tuple[str, int]]:
 def format_text(grouped: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str) -> str:
     lines = [f"GoatCounter events for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})"]
     lines.append(
-        "Counts are visitors, not attempts -- a day's outcomes can add up to more than its began "
-        "(one person can lose, retry with a nerve, and win the same day)."
+        "Counts are attempts, not visitors -- the game's site keeps no sessions, so an event counts "
+        "every time it was sent, and a day's began includes every retry of it."
     )
 
     run_level: dict[str, int] = grouped["run_level"]

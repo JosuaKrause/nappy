@@ -4,9 +4,13 @@ extends Node
 ## debug doesn't get tracked").
 ##
 ## **A different thing from `Telemetry`, the run log.** This never writes a file and never reads
-## one back — it only calls the page's own `window.goatcounter.count()`, the same function the
-## page's `<head>` already loads `count.js` for (`export_presets.cfg`'s `html/head_include`).
-## Off the web, on a debug build, or behind `?debug=1`, it is a silent no-op — see
+## one back — it only calls the page's own `window.goatcounter.count()`, which the page's `<head>`
+## loads `count.js` for (`export_presets.cfg`'s `html/head_include`) with the game's own site,
+## `nappy.goatcounter.com`, as its endpoint. That site keeps no sessions, so every event sent
+## counts every time it is sent — a day lost three times in an evening is three `lost-*` — while
+## the page visit goes to `josuakrause.goatcounter.com` as its own hit, where a visit stays a
+## unique visitor (PLAYTEST-143: "use this for nappy stats. for the site visit stat use the old
+## account"). Off the web, on a debug build, or behind `?debug=1`, it is a silent no-op — see
 ## `_may_ever_send()`. `count.js` loading asynchronously is not one of those: an event asked for
 ## before it has finished loading is queued and sent the moment it appears — see `_pending` — and
 ## only a `count.js` genuinely never loading (missing or blocked) leaves that queue unsent.
@@ -18,8 +22,8 @@ extends Node
 ## signal it listens to already exists for another reason (or was added purely to be listened to,
 ## with no behaviour of its own — see `EventBus`'s own doc on each one).
 ##
-## Every event name starts with `nappy-` so it can never collide with an event the marketing site
-## sends through the same GoatCounter account, and every name is short, lowercase and hyphenated —
+## Every event name starts with `nappy-`, the prefix `tools/goatcounter.sh` reads events back by,
+## and every name is short, lowercase and hyphenated —
 ## `nappy-day-6-lost-crying`, PLAYTEST-132's own shape for it. Counts only: no seed, no position,
 ## no time and nothing that could tell one visitor from another or from their own next visit.
 ##
@@ -43,8 +47,8 @@ extends Node
 ##   noticed, touched, or untouched when the day it belongs to ends.
 ## - `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each perform step done, and each a day
 ##   ended without: a mark never gives one of these any more, see `mark-*` above.
-## - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — the first poster
-##   torn, mother stopped for or checkpoint stopped at in an attempt at the day.
+## - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn,
+##   every mother who stops her to chat and every checkpoint hold.
 ## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
 ##   handover only), lost (either section, any attempt), or got out.
@@ -233,9 +237,6 @@ func _on_run_begun(day: int, resumed: bool) -> void:
 
 func _on_day_started(day: int) -> void:
 	_send_event(_day_event_name(day, "began"))
-	# `poster-torn` / `chat` / `checkpoint` are each once per attempt at a day, the same as
-	# `began` itself — a nerve-bought retry gets a clean slate for all three.
-	_reported_this_attempt.clear()
 
 func _on_day_lost_to(day: int, cause: String) -> void:
 	_send_event(_day_event_name(day, cause))
@@ -289,21 +290,15 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 		return
 	_send_event(_day_event_name(GameState.day, "dog-shaken" if shaken_off else "dog-outlasted"))
 
-## `poster-torn`, `chat` and `checkpoint` each once per attempt at the day they belong to — see
-## `_on_day_started()`'s own clear. Keyed by the suffix itself, since the three never collide.
-var _reported_this_attempt := {}
-
-func _report_once_this_attempt(suffix: String) -> void:
-	if _reported_this_attempt.get(suffix, false):
-		return
-	_reported_this_attempt[suffix] = true
-	_send_event(_day_event_name(GameState.day, suffix))
-
+## Every tear, not the first of an attempt: the game's site keeps no sessions so that each one is
+## counted (PLAYTEST-143: "we need a telemetry item for ripping posters").
 func _on_poster_torn() -> void:
-	_report_once_this_attempt("poster-torn")
+	_send_event(_day_event_name(GameState.day, "poster-torn"))
 
+## Every hold: `EventManager._check_detentions()` emits once per catch, a mother only ever chats
+## once, and a checkpoint that holds her again is a second stop she paid for.
 func _on_player_detained(id: String) -> void:
-	_report_once_this_attempt(_detention_suffix(id))
+	_send_event(_day_event_name(GameState.day, _detention_suffix(id)))
 
 func _on_run_restarted(day: int) -> void:
 	_send_event(_day_event_name(day, "restarted"))

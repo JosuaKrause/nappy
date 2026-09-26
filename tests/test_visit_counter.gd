@@ -11,6 +11,14 @@ extends RefCounted
 
 const VISIT_COUNTER_SCRIPT = preload("res://src/autoload/visit_counter.gd")
 
+## `VisitCounter` with `_send_event()` recording the name instead of reaching for a page, so a test
+## can read what each signal would send. Everything else is the real counter's own code.
+class RecordingCounter extends "res://src/autoload/visit_counter.gd":
+	var sent: Array[String] = []
+
+	func _send_event(name: String) -> void:
+		sent.append(name)
+
 func run(t) -> void:
 	_test_should_send_truth_table(t)
 	_test_day_event_name(t)
@@ -22,7 +30,7 @@ func run(t) -> void:
 	_test_listening_touches_no_gameplay_state(t)
 	_test_task_skipped_only_for_a_step_still_open_on_its_own_day(t)
 	_test_mark_and_task_sends_are_split_by_the_resistance_own_data(t)
-	_test_report_once_this_attempt_forgets_on_day_started(t)
+	_test_every_tear_and_every_hold_is_sent(t)
 	_test_resumed_for_report_truth_table(t)
 	_test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t)
 	_test_pending_events_queue_until_present_and_flush_in_order(t)
@@ -184,17 +192,26 @@ func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
 		"the day ending closes out an untouched mark and an untouched task alike")
 	counter.free()
 
-## `poster-torn`/`chat`/`checkpoint` fire once per attempt and forget on the next `day_started` —
-## checked through `_reported_this_attempt` directly, the state `_report_once_this_attempt()`
-## reads, since `_send_event` is silent in this process.
-func _test_report_once_this_attempt_forgets_on_day_started(t) -> void:
-	var counter: Node = VISIT_COUNTER_SCRIPT.new()
-	counter._report_once_this_attempt("poster-torn")
-	t.check(counter._reported_this_attempt.get("poster-torn", false),
-		"the first tear this attempt is recorded")
-	counter._on_day_started(1)
-	t.check(counter._reported_this_attempt.is_empty(),
-		"a fresh attempt at the day forgets every suffix already reported")
+## `poster-torn`, `chat` and `checkpoint` are sent every time, within one attempt and across a
+## retry alike: the game's site keeps no sessions so that a count is every time a thing happened
+## (PLAYTEST-143: "no, even current run wouldn't work if the player dies multiple times on the same
+## day"). Read off `RecordingCounter`, which keeps what `_send_event()` was asked for, since the
+## real one is silent in this process.
+func _test_every_tear_and_every_hold_is_sent(t) -> void:
+	var counter := RecordingCounter.new()
+	var day := GameState.day
+	counter._on_day_started(day)
+	counter._on_poster_torn()
+	counter._on_poster_torn()
+	counter._on_player_detained("checkpoint_hut")
+	counter._on_player_detained("checkpoint_hut")
+	counter._on_day_started(day)
+	counter._on_poster_torn()
+	var torn := "nappy-day-%d-poster-torn" % day
+	var held := "nappy-day-%d-checkpoint" % day
+	t.check(counter.sent.count(torn) == 3,
+		"two tears in one attempt and one in the retry are three poster-torn events")
+	t.check(counter.sent.count(held) == 2, "a checkpoint that holds her twice is two events")
 	counter.free()
 
 ## Review finding: a genuinely fresh visit that hands over to the escape at day 14 re-enters

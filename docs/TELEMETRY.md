@@ -10,30 +10,48 @@ what actually happens to a person playing, and nobody should have to have an opi
 
 ## The page counts visits
 
-**The published page counts its loads with GoatCounter, and that is separate from the run log.**
-The export's `<head>` (`html/head_include` in `export_presets.cfg`) loads GoatCounter's
-`count.js`, which sends one hit per page load to `josuakrause.goatcounter.com`: a path made of the
-page's host and path alone (so this game's loads stay apart from the rest of that site), the page
-title, the referrer, the screen width and the query string in a field of its own, from which GoatCounter
-reads campaign parameters such as `ref` and `utm_source`. Its server sees the browser's
-user agent and derives a country from the address, as any request does. It sets no cookie and
-stores nothing on the device, which is why the page shows no consent banner, and a visitor is never followed across
-days or sites. **A page carrying `?debug=1` never loads `count.js`**, so neither its load nor anything played on
-it is counted (PLAYTEST-132: "anything with debug doesn't get tracked"). `count.js` ignores
-`localhost` and private network addresses, so `tools/serve-web.sh`
-and a phone on the same Wi-Fi count nothing. `--no-telemetry` does not reach it: it is the page
-counting a load, not the game recording a run, and nothing the game itself does is sent.
+**The published page counts with GoatCounter on two sites, and that is separate from the run
+log.** *(PLAYTEST-143: "use this for nappy stats. for the site visit stat use the old account".)*
 
-**The game counts how far a run gets, as the same kind of anonymous GoatCounter hit.**
+- **The page load goes to `josuakrause.goatcounter.com`**, where sessions stay on, so a person
+  reloading the page within GoatCounter's session window is one visitor. The export's `<head>`
+  (`html/head_include` in `export_presets.cfg`) sends it as one image request to that site's
+  `/count` ([GoatCounter's pixel](https://www.goatcounter.com/help/pixel), requested from script
+  so it can carry what `count.js` would): a path made of the page's host and path alone (so this
+  game's loads stay apart from the rest of that site), the page title, the referrer, the screen
+  size and the query string in a field of its own, from which GoatCounter reads campaign
+  parameters such as `ref` and `utm_source`.
+- **The game's events go to `nappy.goatcounter.com`**, a site with sessions off, so every event
+  counts every time it is sent: a day lost three times in an evening is three `lost-*`, where a
+  session would have counted it once (PLAYTEST-143: "no, even current run wouldn't work if the
+  player dies multiple times on the same day"). The same `<head>` loads GoatCounter's `count.js`
+  with that site as its endpoint and `no_onload` set, so it counts no page load of its own and
+  only carries `VisitCounter`'s events.
+
+Either server sees the browser's user agent and derives a country from the address, as any
+request does. Neither sets a cookie or stores anything on the device, which is why the page shows
+no consent banner, and a visitor is never followed across days or sites. **A page carrying
+`?debug=1` runs none of it**, so neither its load nor anything played on it is counted
+(PLAYTEST-132: "anything with debug doesn't get tracked"). `count.js` ignores `localhost`,
+private network addresses, `file:` and a page inside a frame, and the page load's request skips
+the same pages and any browser driven by WebDriver, so `tools/serve-web.sh` and a phone on
+the same Wi-Fi count nothing. `--no-telemetry` does not reach either: it switches off the run
+log, and neither counter writes one.
+
+`tools/goatcounter.sh` reads the events back from `nappy.goatcounter.com` with that site's
+read-only API key in `GOATCOUNTER_TOKEN`; its `--site` option and the other site's key read the
+page loads.
+
+**The game counts how far a run gets, as anonymous GoatCounter events.**
 `VisitCounter` (`src/autoload/visit_counter.gd`) is an autoload that only listens — every method
 answers an `EventBus` signal, decides nothing, and changes nothing about play, the same "telemetry
 must not touch gameplay" invariant the run log keeps. It calls the page's own
 `window.goatcounter.count({path, title, event: true})` (see
-[GoatCounter's own docs](https://www.goatcounter.com/help/events)), one call per event, each name
-starting `nappy-` so it can never collide with an event the marketing site sends through the same
-account, and short, lowercase and hyphenated — `nappy-day-6-lost-crying`, PLAYTEST-132's own shape
-for it. Counts only: no seed, no position, no time, nothing that could tell one visitor from
-another or from their own next visit.
+[GoatCounter's own docs](https://www.goatcounter.com/help/events)), one call per event and one
+event every time its moment happens, each name starting `nappy-`, the prefix
+`tools/goatcounter.sh` reads by, and short, lowercase and hyphenated — `nappy-day-6-lost-crying`,
+PLAYTEST-132's own shape for it. Counts only: no seed, no position, no time, nothing that could
+tell one visitor from another or from their own next visit.
 
 The events:
 
@@ -78,10 +96,9 @@ The events:
 - `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each perform step done, and each a day
   ended without: a perform step reached but not finished. A chalk mark sends `mark-*` above
   instead.
-- `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — the first poster torn
-  (`PosterWalls._tear()`), the first mother who stops her to chat, or the first checkpoint that
-  stops her (`EventManager._check_detentions()`), each once per attempt at the day — the counter
-  forgets all three on the next `day_started`.
+- `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn
+  (`PosterWalls._tear()`), every mother who stops her to chat, and every time a checkpoint holds
+  her (`EventManager._check_detentions()`, once per catch).
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
   return to the title after an ending already reported through `nappy-ending-*`.
 - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
