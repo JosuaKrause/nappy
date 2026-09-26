@@ -358,16 +358,17 @@ func _header_text() -> String:
 			"(`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk " +
 			"through.")
 	lines.append("")
-	lines.append("**A row that comes at her is met inside its own telegraph, and the pass says " +
-			"so.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: `EventDirector` " +
-			"creates it the moment it is owed, `EventDef.toward_player_lead()` px down her own " +
-			"line, and it covers that ground while it is still telegraphing — at " +
-			"`Tuning.TELEGRAPH_INTENSITY_FRACTION` of its intensity. So its pass is simulated from " +
-			"the spawn the director actually makes, at the closest siting any heading could give " +
-			"it (`EventDef.min_toward_player_lead()`, so the figure does not depend on which way a " +
-			"walk was going), telegraph running, moving as it moves. Such a row is measured once " +
-			"rather than averaged over 8 pulse phases: its pulse starts when it is created, so how " +
-			"far through the beat it is when it reaches her is fixed by the flight.")
+	lines.append("**A row that comes at her is met the moment it is created, its telegraph " +
+			"already spent.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: its " +
+			"screen-edge warning goes up with nothing in the world, runs for its `telegraph_time`, " +
+			"and the row is then created just off screen down her own line " +
+			"(`EventManager.spawn_warned()`), coming at her at its own intensity. So its pass is " +
+			"simulated from that creation, at the closest it can be made on any heading " +
+			"(`Tuning.min_offscreen_lead()` at its speed plus `Tuning.WALK_SPEED`, so the figure " +
+			"does not depend on which way a walk was going), moving as it moves. Such a row is " +
+			"measured once rather than averaged over 8 pulse phases: its pulse starts where its " +
+			"warning did, so how far through the beat it is when it reaches her is fixed by the " +
+			"warning and the flight.")
 	lines.append("")
 	lines.append("**Every other row is walked up to, and its telegraph is long over by then** — a " +
 			"`MAP` placement was made at dawn — so those passes start after the telegraph and " +

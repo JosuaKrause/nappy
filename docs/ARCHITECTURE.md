@@ -78,6 +78,8 @@ src/
 	                       answers total_excitement_at
 	event_director.gd     sites what the day budgeted and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
+	pending_warning.gd    a screen-edge warning up before its thing exists: the place it
+	                       holds just off screen on the thing's own ground, and its clock
   day/
 	day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/

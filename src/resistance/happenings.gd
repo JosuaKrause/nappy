@@ -375,17 +375,19 @@ func _close_a_ring(delta: float) -> void:
 ## behind the other `Tuning.COLUMN_SPACING` apart in one lane of the spine, sent down it toward the
 ## point level with her once she comes within `Tuning.COLUMN_WITHIN` of the main road — or at
 ## `Tuning.COLUMN_BY` into the day wherever she is, when it passes out of her sight. Each truck is
-## the catalogue's own row with its own telegraph contract; the column is sited as a road-going
-## row sited at her is (`Tuning.outlasting_telegraph_lead()`), far enough up the road that its
-## telegraph is over before its field reaches her, and it drives on past her.
+## the catalogue's own row with its own telegraph contract, and the column arrives the way
+## everything from off screen does (`EventManager.warn_first()`): its badge goes up first, pointing
+## up the main road, its place stays in its lane level with her and just off screen
+## (`PendingWarning.in_its_lane()`), and the trucks are created there, their telegraph spent, once
+## the row's `telegraph_time` is over, and drive on past her.
 ##
 ## **What it leaves is the barricade** its rear truck stops at, out of her sight beyond where she
 ## stood — or, where nothing beyond her will do, short of her on the stretch it drives in on — the
 ## row's own `spawns_on_finish`, so it is a scar and stands for the rest of the run, but only where
 ## she can still reach home and a calm area with it standing
 ## (`EventScheduler.WalkSiting.leaves_her_a_way()`), checked before the stop is accepted, a block
-## further on at a time. The trucks ahead of it drive on without one. A column with nowhere to stop
-## leaves nothing and says so.
+## further on at a time, from where she is standing when the trucks arrive. The trucks ahead of it
+## drive on without one. A column with nowhere to stop leaves nothing and says so.
 func _maybe_the_column(her: Vector2) -> void:
 	if her == Vector2.INF or not _city or not _city.events or _map.main_road < 0:
 		return
@@ -400,22 +402,22 @@ func _spine_x() -> float:
 	return (float(_map.main_road * CityMap.period()) + Tuning.STREET_WIDTH * 0.5) \
 			* Tuning.TILE_SIZE
 
-## Sends the column down the main road toward the point level with `her`, from whichever end the
-## day's stream picks, and returns its trucks, front first.
-func send_the_column(her: Vector2) -> Array[EventInstance]:
+## Puts up the column's warning, coming down the main road toward the point level with `her` from
+## whichever end the day's stream picks, and returns it — or null when there is no main road or no
+## row. `column` holds the trucks, front first, once they have arrived.
+func send_the_column(her: Vector2) -> PendingWarning:
 	var def := EventCatalogue.by_id("military_convoy")
 	if not def or _map.main_road < 0:
-		return column
+		return null
 	var going := 1.0 if _rng.randf() < 0.5 else -1.0
 	var top := Tuning.TILE_SIZE * 0.5
 	var bottom := _map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
-	var lead := Tuning.outlasting_telegraph_lead(Vector2(0.0, -going),
-			def.speed + Tuning.WALK_SPEED, def.telegraph_time, Tuning.OFFSCREEN_NOTICE,
-			def.field_reach())
+	var lead := Tuning.offscreen_lead(Vector2(0.0, -going), def.speed + Tuning.WALK_SPEED,
+			def.offscreen_notice)
 	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
-	# From the end with room for the whole approach behind her and a stop beyond her, when only
-	# one end has it; with neither, from the end with more road behind her. The spine leaves the
-	# map by a tunnel and a bridge, so a lead the map cannot hold starts at its edge.
+	# From the end with room for its place behind her and a stop beyond her, when only one end has
+	# it; with neither, from the end with more road behind her. The spine leaves the map by a tunnel
+	# and a bridge, so a lead the map cannot hold starts at its edge.
 	var fits := func(way: float) -> bool:
 		var behind := her.y - top if way > 0.0 else bottom - her.y
 		var ahead := bottom - her.y if way > 0.0 else her.y - top
@@ -428,7 +430,23 @@ func send_the_column(her: Vector2) -> Array[EventInstance]:
 			if behind_here < (bottom - top) - behind_here:
 				going = -going
 	var lane_x := CrowdLanes.lane_centre(_map.main_road, CrowdLanes.road_lane(true, going))
-	var start_y := clampf(her.y - going * lead, top, bottom)
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.in_its_lane(def, at, lane_x, going, top, bottom)
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		_bring_the_column(def, place, at, lane_x, going, top, bottom)
+		return true
+	var warning := _city.events.warn_first(def, her, where, arrive)
+	Telemetry.note("contact", "a column of %d trucks is coming down the main road %s" % [
+		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
+	return warning
+
+## Creates the column's trucks, front first, the front one at `place` and the rest behind it up the
+## road, each on its own path down the lane — the rear one to where it stops and leaves its
+## barricade, decided now from where she is standing (`her`), the others on to the end of the road.
+func _bring_the_column(def: EventDef, place: Vector2, her: Vector2, lane_x: float, going: float,
+		top: float, bottom: float) -> void:
+	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
+	var start_y := place.y
 	# Beyond her first, the way it is going; and where no stop ahead of her will do, short of her,
 	# on the stretch it drives in on, before it has reached her at all.
 	var stop := _where_the_column_stops(her, lane_x, her.y + going * past, going, INF, def)
@@ -443,13 +461,11 @@ func send_the_column(her: Vector2) -> Array[EventInstance]:
 		var rear := i == Tuning.COLUMN_TRUCKS - 1
 		var to := Vector2(lane_x, stop.y if rear and stop != Vector2.INF else far_y)
 		var truck := def if rear and stop != Vector2.INF else trailing
-		column.append(_city.events.spawn_extra(truck, from,
-				PackedVector2Array([from, to])))
+		column.append(_city.events.spawn_warned(truck, PackedVector2Array([from, to])))
 	Telemetry.note("contact", "a column of %d trucks comes down the main road %s%s" % [
 		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north",
 		", and stops at %s" % TelemetryLog.tile(_map.world_to_tile(stop)) if stop != Vector2.INF
 				else ", with nowhere to stop"])
-	return column
 
 ## Where the rear truck stops and leaves its barricade: from `wanted_y` on along the road in the
 ## direction `going`, no further than `limit` from her, the first point in the middle of a street

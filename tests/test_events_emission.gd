@@ -17,7 +17,7 @@ func run(t) -> void:
 	_test_the_leaf_blowers_core_is_in_the_meter(t)
 	_test_no_other_rows_field_moved(t)
 	_test_the_rows_she_walks_up_to_pass_positively_awake(t)
-	_test_a_row_that_comes_at_her_is_done_telegraphing_when_it_arrives(t)
+	_test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t)
 	_test_duration_and_finish(t)
 	_test_an_event_leaves_rather_than_vanishing(t)
 
@@ -174,39 +174,17 @@ func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
 					"%s: a pass at %.0fpx of an ordinary sidewalk nets %.2f/s awake, above zero"
 					% [id, offset, net])
 
-## **A row that comes at her has to finish telegraphing before it arrives, or the telegraph is the
-## whole encounter.** *(2026-09-20: "unleashed dog still has too little influence -- needs to be
-## more intense"; "but keep things in relation to each other".)* `EventInstance.is_lethal_at()`
-## refuses the whole telegraph and `_notice_damping()` holds the field at
-## `Tuning.TELEGRAPH_INTENSITY_FRACTION` for it, so a row sited too close rides past her unable to
-## do the one thing it is for — the kill for a `hard_fail` row, the noise for a loud one.
+## **The loose dog stays above the dog walker**, which is the relation the player asked to be kept.
+## *(2026-09-20: "unleashed dog still has too little influence -- needs to be more intense"; "but
+## keep things in relation to each other".)* A dog running loose at 132px/s costs more to be passed
+## by than a leashed one costs to walk past. Both figures come off `M174Pass`, the same simulation
+## `docs/COSTS.md` prints, so the two can never disagree about what a pass is.
 ##
-## Two claims, and the first is the general one. **The siting outlasts the telegraph by the row's
-## own arrival distance**: nothing for a lethal row, where arriving is touching her, and
-## `field_reach()` for anything else, where arriving is its field reaching her. Stated over
-## `min_toward_player_lead()`, the closest the director could ever put it, so a heading that gives
-## it more room cannot rescue a row that fails here.
-##
-## **And the loose dog stays above the dog walker**, which is the relation the player asked to be
-## kept: a dog running loose at 132px/s costs more to be passed by than a leashed one costs to walk
-## past. Both figures come off `M174Pass`, the same simulation `docs/COSTS.md` prints, so the two
-## can never disagree about what a pass is.
-func _test_a_row_that_comes_at_her_is_done_telegraphing_when_it_arrives(t) -> void:
-	var checked := 0
-	for def in EventCatalogue.all():
-		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER:
-			continue
-		checked += 1
-		var closing := def.speed + Tuning.WALK_SPEED
-		var arrival: float = 0.0 if def.hard_fail else def.field_reach()
-		var gap_at_the_end := def.min_toward_player_lead() - def.telegraph_time * closing
-		t.check(gap_at_the_end >= arrival,
-				("'%s' is sited %.0fpx out and has closed to %.0fpx by the end of its %.1fs "
-				+ "telegraph, which has to clear the %.0fpx at which it arrives")
-				% [def.id, def.min_toward_player_lead(), gap_at_the_end, def.telegraph_time,
-				arrival])
-	t.check(checked > 0, "there were rows that come at her to ask (%d)" % checked)
-
+## That the loose dog meets her at that intensity at all — created with its warning over rather than
+## still telegraphing at `Tuning.TELEGRAPH_INTENSITY_FRACTION` — is asked of the game's own warning
+## and creation, on a real city: `tests/test_event_manager.gd`,
+## `_test_a_row_warned_down_her_line_arrives_at_its_own_intensity`.
+func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t) -> void:
 	var dog := EventCatalogue.by_id("loose_dog")
 	var walker := EventCatalogue.by_id("dog_walker")
 	for offset in [0.0, 20.0, 40.0]:

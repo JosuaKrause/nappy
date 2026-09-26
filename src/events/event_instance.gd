@@ -900,6 +900,10 @@ var def: EventDef
 var path: PackedVector2Array = PackedVector2Array()
 
 var age := 0.0
+## Whether this was created where a warning pointed, once that warning was over
+## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` reads it to carry
+## the warning's badge on to the thing itself until it comes into view.
+var came_under_a_warning := false
 var is_finished := false
 
 ## A mast that has been reached and silenced — `EventManager.silence_mast()`/`silence_all_masts()`
