@@ -175,6 +175,12 @@ author gets them together; a finding that has no line to hang on — a missing d
 row — goes in the summary. **A review with nothing to say still says so** on the PR, so that
 "no comments" is a verdict rather than an absence.
 
+**A review reads the change against what the player asked, not only against the code.** It opens
+the playtest the PR cites and the decisions the change touches, and a finding is also a design
+that goes beyond the player's quoted words, or a doc rule the PR rewrote rather than obeyed.
+*(2026-09-26: a review of a park fenced with barriers found "no correctness bug in the mechanism";
+the player had never asked for the fence.)*
+
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.
 
