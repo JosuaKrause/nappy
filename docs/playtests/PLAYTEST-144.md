@@ -189,3 +189,13 @@ Four screenshots of the released page on the player's phone, in
     full.** → M212.
 26. **After the held restart the screen shows the city upright with no title**, where the game
     around it was drawn turned for the phone. → M206.
+
+Told that the halo had been found invisible only in this Mac's desktop Chrome, the player sent a
+screenshot of the released page in desktop Chrome on the Mac
+(`desktop-chrome-halo-on-a-car-yeller-none.png`), the halo on a car and none on the man shouting
+beside her doorstep:
+
+> "this is just not true"
+
+27. **The halo draws in desktop Chrome too**; what failed to draw it was the locally exported debug
+    build the agent tested, not the game. The man shouting has no halo there either. → M205.
