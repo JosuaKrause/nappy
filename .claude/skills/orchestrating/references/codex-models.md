@@ -1,8 +1,8 @@
 # Codex: match the subagent to the task's difficulty
 
 **Delegation is recommended in Codex too.** Hand specified implementation and routine
-investigation to a model suited to that delegated task, keeping design, ambiguous decisions and
-final review in the orchestrating session. The orchestrator may use any model; choose the
+investigation to a model suited to that delegated task, keeping design and ambiguous decisions in
+the orchestrating session; the review before merge is a separate reviewer's, under **pr-review**. The orchestrator may use any model; choose the
 subagent independently by the difficulty of the delegated task. Describe the parent as the
 orchestrator in task briefs, without naming or assuming its model. Prefer the least costly
 model that can handle the task reliably:
