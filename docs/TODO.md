@@ -364,10 +364,10 @@ points a second beside him.
 
 - [ ] **Reproduce it, find the cause, fix it**, with a test that fails before the fix: a rig
       standing beside him on a released-build seed, the meter and the halo both read. Say when
-      it broke and what else the same cause silences. He does this on an ordinary day, not only on
-      the day of the note ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 21), and in the
-      released page on the phone and in desktop Chrome alike, where other walkers' halos draw
-      (statements 23, 24 and 27;
+      it broke and what else the same cause silences. The man shouting charges nothing on an
+      ordinary day, not only on the day of the note ([PLAYTEST-144](playtests/PLAYTEST-144.md),
+      statement 21), and has no halo in the released page on the phone and in desktop Chrome
+      alike, where the halo draws on others near her (statements 23, 24 and 27;
       `docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/yeller-no-halo-no-charge.png` and
       `desktop-chrome-halo-on-a-car-yeller-none.png`).
 
@@ -402,9 +402,10 @@ than a frame. The player: "the only way to test this is to release it".
       the right way up, and so is the screen after a held restart from the day summary
       (`REVIEW.md`). If either is still wrong, the next pass asks the player whether it happens
       every time, how long it lasts and whether anything besides the title turns, before
-      reproducing it. A locally exported debug build is not the evidence: one of those failed to
-      draw the halo where the released page draws it
-      ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 27).
+      reproducing it, on the released page rather than a locally exported debug build: the
+      released page draws the halo in desktop Chrome where the agent's local builds reported
+      none ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 27, and the orchestrator's
+      reading of why).
 
 The player's phone, v0.18.0 ([PLAYTEST-144](playtests/PLAYTEST-144.md), statement 26, and
 `docs/evidence/playtest-144-phone-v0.18.0-2026-09-26/after-the-restart.png`), captioned "This is

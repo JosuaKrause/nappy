@@ -185,9 +185,10 @@ Four screenshots of the released page on the player's phone, in
 > · "This is the screen when resetting" · "The button only activated when releasing though" · "It
 > should trigger the moment it is full"
 
-23. **The halo draws on the phone** (on a passer-by beside the pram, day 1). → M205.
-24. **The man shouting draws no halo and does not move the meter on the phone**, on an ordinary
-    day. → M205.
+23. **The halo draws on the phone.** → M205. (That the still shows it on a passer-by beside the
+    pram on day 1 is the filer's reading.)
+24. **The man shouting draws no halo and does not move the meter on the phone.** → M205. (That the
+    still is an ordinary day is the filer's reading.)
 25. **The held restart fires only when the finger is lifted; it fires the moment the disc is
     full.** → M212.
 26. **The player shows the screen after a held restart**, captioned "This is the screen when
