@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Exercises .claude/hooks/project-rules.sh, session-rules.sh and lint-docs.sh directly, feeding
-# them the same synthetic hook JSON on stdin the harness would, under a private TMPDIR so no run
-# of this script ever touches a real session's markers.
+# Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh and git-grep-guard.sh
+# directly, feeding them the same synthetic hook JSON on stdin the harness would, under a private
+# TMPDIR so no run of this script ever touches a real session's markers.
 #
 #   tools/test_rules_hooks.sh
 #
@@ -15,6 +15,9 @@
 #     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd) injects its skill
 #   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
+#   - git-grep-guard.sh denies a git grep with neither -I nor a text-only pathspec, however it is
+#     spelled (git -C <dir> grep, git --no-pager grep) or wherever it sits (a for loop, after
+#     &&/;/|, inside $(...)), and passes a guarded one, an rg call and a mere mention of the words
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -30,9 +33,10 @@ usage() {
     cat <<'EOF'
 usage: tools/test_rules_hooks.sh [--help|-h]
 
-Exercises .claude/hooks/project-rules.sh, session-rules.sh and lint-docs.sh with synthetic hook
-JSON on stdin, under a private TMPDIR, and asserts the per-agent marker keying, the
-compaction/resume reset, every path added to the skill mapping, and the lint-docs.sh governed set.
+Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh and git-grep-guard.sh
+with synthetic hook JSON on stdin, under a private TMPDIR, and asserts the per-agent marker
+keying, the compaction/resume reset, every path added to the skill mapping, the lint-docs.sh
+governed set, and every git-grep-guard.sh deny/allow shape.
 Takes no arguments besides --help/-h.
 
   tools/test_rules_hooks.sh
@@ -226,6 +230,67 @@ if [ -z "$evidence_output" ]; then
 else
     fail "lint-docs.sh flagged a doc under docs/evidence/: $evidence_output"
 fi
+
+# ---------------------------------------------------------------- git-grep-guard.sh -------------
+# Prints "deny" or "allow" for one synthetic Bash command through git-grep-guard.sh.
+guard_decision() {
+    local cmd="$1" raw
+    raw=$(jq -n --arg c "$cmd" '{tool_name:"Bash", tool_input:{command:$c}}' \
+        | "$root/.claude/hooks/git-grep-guard.sh")
+    if [ -z "$raw" ]; then
+        printf 'allow'
+    else
+        printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'
+    fi
+}
+
+# $1 label  $2 expected ("deny" or "allow")  $3 command
+assert_guard() {
+    checks=$((checks + 1))
+    local got
+    got="$(guard_decision "$3")"
+    if [ "$got" = "$2" ]; then
+        echo "ok   $1"
+    else
+        fail "$1: expected $2, got $got for: $3"
+    fi
+}
+
+assert_guard "no -I, no text pathspec, one tree -> deny" deny \
+    'git grep -n -i "wrap.*corner\|goes around" origin/main -- docs/'
+assert_guard "no -I, working tree only -> deny" deny \
+    'git grep -n -i "wrap.*corner\|goes around" -- docs/'
+assert_guard "no -- pathspec at all -> deny" deny \
+    'git grep -n -i "foo" origin/main'
+assert_guard "git -C <dir> grep, no -I -> deny" deny \
+    'git -C /tmp/other grep -n -i "foo" origin/main -- docs/'
+assert_guard "git --no-pager grep, no -I -> deny" deny \
+    'git --no-pager grep -n -i "foo" origin/main -- docs/'
+assert_guard "after && -> deny" deny \
+    'echo hi && git grep -i "foo" origin/main -- docs/'
+assert_guard "inside \$(...) -> deny" deny \
+    'x=$(git grep -c "foo" origin/main -- docs/); echo "$x"'
+assert_guard "for loop body -> deny" deny \
+    'for b in origin/main origin/other; do git grep -n -i "foo" $b -- docs/; done'
+assert_guard "multiple trees, no -I -> deny" deny \
+    'git grep -n -i "foo" origin/main origin/other -- docs/'
+
+assert_guard "-I present -> allow" allow \
+    'git grep -n -I -i "wrap.*corner\|goes around" origin/main -- docs/'
+assert_guard "bundled -Ii -> allow" allow \
+    'git grep -Ii "foo" origin/main -- docs/'
+assert_guard "text-only pathspec -> allow" allow \
+    "git grep -n -i 'wrap.*corner' origin/main -- 'docs/*.md'"
+assert_guard "rg on the checkout -> allow" allow \
+    'rg -n -i "wrap.*corner|goes around" docs/'
+assert_guard "echo mentions the words -> allow" allow \
+    'echo "git grep is dangerous, be careful"'
+assert_guard "commit message mentions the words -> allow" allow \
+    'git commit -m "explains why git grep needs a guard now"'
+assert_guard "rg quoting the phrase -> allow" allow \
+    'rg "git grep"'
+assert_guard "unrelated git command -> allow" allow \
+    'git status'
 
 echo
 echo "$checks checks, $failures failures"
