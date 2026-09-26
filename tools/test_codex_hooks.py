@@ -82,6 +82,38 @@ class CodexHooksTest(unittest.TestCase):
         assert isinstance(context, str)
         return context
 
+    def call_raw(
+        self,
+        kind: str = "PreToolUse",
+        tool: str = "Bash",
+        command: str = "",
+        root: Path | None = None,
+        **extra: Any,
+    ) -> dict[str, Any] | None:
+        # Like call(), but for a response shaped as a permissionDecision rather than
+        # additionalContext -- call()'s own assertions require the latter.
+        root = root or self.root
+        event: dict[str, Any] = {
+            "hook_event_name": kind,
+            "session_id": "session",
+            "cwd": str(root),
+            "tool_name": tool,
+            "tool_input": {"command": command},
+        }
+        event.update(extra)
+        result = subprocess.run(
+            [sys.executable, str(root / "tools/codex-hooks.py")],
+            input=json.dumps(event),
+            text=True,
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        if not result.stdout.strip():
+            return None
+        output: dict[str, Any] = json.loads(result.stdout)
+        return output
+
     def write(self, name: str, content: str = "- [x] Finished\n") -> None:
         target = self.root / name
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -170,6 +202,26 @@ class CodexHooksTest(unittest.TestCase):
         patch += "*** Delete File: docs/REMOVED.md\n"
         self.assertEqual(self.call(kind="PostToolUse", command=patch), "")
         self.assertEqual(self.call(kind="PostToolUse", tool="Bash", command="pwd"), "")
+
+    def test_git_grep_guard_denies_an_unbounded_git_grep(self) -> None:
+        output = self.call_raw(command='git grep -n -i "foo\\|bar" origin/main -- docs/')
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["hookEventName"], "PreToolUse")
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("-I", specific["permissionDecisionReason"])
+
+    def test_git_grep_guard_allows_a_guarded_git_grep_and_still_reminds(self) -> None:
+        # -I keeps it bounded (see git-grep-guard.sh's own header); the call is not denied,
+        # so the ordinary shell-reminder still fires underneath it.
+        text = self.call(tool="Bash", command="git grep -n -I -i foo origin/main -- docs/")
+        self.assertIn("committing", text)
+
+    def test_git_grep_guard_ignores_a_git_grep_mention_in_a_commit_message(self) -> None:
+        # No permissionDecision in the output -- call() already asserts additionalContext exists,
+        # which fails outright if a deny snuck in instead.
+        text = self.call(tool="Bash", command='git commit -m "explains why git grep needs a guard"')
+        self.assertIn("committing", text)
 
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(

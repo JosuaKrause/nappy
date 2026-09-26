@@ -45,8 +45,16 @@ def main() -> None:
     state.mkdir(parents=True, exist_ok=True)
     context: list[str] = []
 
-    def run_hook(name: str, tool: str = "", path: Optional[Path] = None) -> None:
-        payload = dict(event, session_id=session, tool_name=tool, tool_input={"file_path": str(path)} if path else {})
+    def run_hook(
+        name: str, tool: str = "", path: Optional[Path] = None, extra_input: Optional[dict[str, Any]] = None
+    ) -> Optional[dict[str, Any]]:
+        if extra_input is not None:
+            tool_input = extra_input
+        elif path:
+            tool_input = {"file_path": str(path)}
+        else:
+            tool_input = {}
+        payload = dict(event, session_id=session, tool_name=tool, tool_input=tool_input)
         result = subprocess.run(
             ["bash", str(ROOT / ".claude/hooks" / name)],
             input=json.dumps(payload),
@@ -54,11 +62,13 @@ def main() -> None:
             capture_output=True,
             check=True,
         )
-        if result.stdout.strip():
-            output = json.loads(result.stdout)
-            text = output.get("hookSpecificOutput", {}).get("additionalContext")
-            if text:
-                context.append(text)
+        if not result.stdout.strip():
+            return None
+        output: dict[str, Any] = json.loads(result.stdout)
+        text = output.get("hookSpecificOutput", {}).get("additionalContext")
+        if text:
+            context.append(text)
+        return output
 
     if kind in ("SessionStart", "SubagentStart"):
         # Resumed/compacted contexts must receive the rules again, even if the
@@ -76,6 +86,17 @@ def main() -> None:
             run_hook("project-rules.sh", "Agent")
         elif tool in ("Bash", "exec_command", "shell", "shell_command"):
             if kind == "PreToolUse":
+                # The same guard Claude Code runs on every Bash call: a git grep with
+                # neither -I nor a text-only pathspec can grow without bound (see
+                # .claude/hooks/git-grep-guard.sh's own header). Checked before the
+                # shell-reminder below, and on a deny nothing else about this call is
+                # printed -- Codex accepts the same permissionDecision JSON Claude Code does.
+                command = args.get("command")
+                if isinstance(command, str) and command:
+                    guard = run_hook("git-grep-guard.sh", "Bash", extra_input={"command": command})
+                    if guard and guard.get("hookSpecificOutput", {}).get("permissionDecision") == "deny":
+                        print(json.dumps(guard))
+                        return
                 # Arbitrary scripts can compute their paths. Preserve selective
                 # loading instead of dumping all skills on a read-only command.
                 marker = state / "shell-reminder"
