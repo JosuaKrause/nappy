@@ -1554,6 +1554,24 @@ func _add_touch_controls() -> void:
 ## `_test_opening_the_title_reasserts_the_orientation_it_finds_stale`. There is exactly one
 ## `SceneTree` for the whole process either way, so asking the engine for its root window answers
 ## the same question a parented `main`'s own `get_window()` would.
+##
+## **Neither of this function's two inputs can go persistently stale on the Web export, checked
+## against the engine's own source for the exported version (Godot 4.7).** `_touch_available`
+## (`TouchInput.available()` → `DisplayServer.is_touchscreen_available()`) compiles on Web to
+## `platform/web/js/libs/library_godot_display.js`'s `godot_js_display_touchscreen_is_available:
+## function () { return 'ontouchstart' in window; }` — a static browser capability check, not one
+## learned from an actual touch event, and never cached anywhere in this project (no autoload, no
+## `static var`, nothing on `GameState`): every `main` recomputes it fresh from the same real
+## device fact. And `window.size` (`DisplayServerWeb::window_get_size()`, reading the canvas
+## element's own `width`/`height`) is resynced against the browser's real viewport every single
+## rendered frame before Godot's own per-frame processing ever runs —
+## `platform/web/web_main.cpp`'s `main_loop_callback()`, registered as the page's
+## `requestAnimationFrame` callback, calls `DisplayServerWeb::check_size_force_redraw()`
+## unconditionally as its first line, ahead of `os->main_loop_iterate()`. So whatever a lost run's
+## restart leaves `window.size` and `_touch_available` reading, `_process()`'s own poll (right
+## above, and `_apply_orientation()` here) is asking the *current* frame's real answer, not a
+## leftover one — a review of PR #378 raised both as a candidate cause for PLAYTEST-140's sideways
+## title, and this is the paper trail for why the answer is no, not a shrug.
 func _apply_orientation() -> void:
 	if not _player or not _touch_controls or not _hud:
 		return
