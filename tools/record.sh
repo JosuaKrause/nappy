@@ -12,9 +12,10 @@
 #
 # Every dev flag after the script's own two (`--help`/`-h`, `--out`) is forwarded to the game
 # exactly as tools/run.sh forwards them, validated against the game's own DEV_FLAG_TABLE first.
-# `--player-view` and `--no-focus-pause` are added automatically -- the release build's own view,
-# and the same M195 lockdown a movie-writer window always needs since it never has real focus to
-# begin with (see tools/trailer.sh's own header for the frame this misses without it). The rig
+# `--player-view`, `--no-focus-pause` and `--no-save` are always added -- the release build's own
+# view, the same M195 lockdown a movie-writer window always needs since it never has real focus to
+# begin with (see tools/trailer.sh's own header for the frame this misses without it), and keeping
+# the recording off the player's own save the same way every other dev flag already does. The rig
 # quits itself (a `--route` run does this on arrival; anything else needs its own `--after` or
 # `--day-length`), and this waits for that with the same outside kill tools/trailer.sh uses
 # (`rig_kill_after_movie_seconds`) rather than a fixed timer of its own. Frames are deleted once
@@ -33,10 +34,11 @@ usage: tools/record.sh [--help|-h] [--out NAME.mp4] [--] <dev flags for the game
 
 Records a rig run through Godot's movie writer, frame-locked, at the game's own resolution with
 its audio, then encodes it with ffmpeg. Every flag after the ones listed above is forwarded to the
-game, validated against its own dev-flag table first; --player-view and --no-focus-pause are added
-for you. The rig has to quit on its own -- a --route run does, on arrival; anything else needs its
-own --after or --day-length, or this waits for the wall-clock kill tools/trailer.sh's own runs
-share. Output goes to build/records/ (gitignored); frames are deleted once it is encoded.
+game, validated against its own dev-flag table first; --player-view, --no-focus-pause and --no-save
+are always added for you, ahead of whatever you give. The rig has to quit on its own -- a --route
+run does, on arrival; anything else needs its own --after or --day-length, or this waits for the
+wall-clock kill tools/trailer.sh's own runs share. Output goes to build/records/ (gitignored);
+frames are deleted once it is encoded.
 
   --out NAME.mp4   name the output file (default: a seed/timestamp-based name)
 
@@ -67,10 +69,13 @@ if [[ ${#GAME_FLAGS[@]} -eq 0 ]]; then
     exit 1
 fi
 
-# --player-view and --no-focus-pause are added unless the caller already asked for something else
-# there -- a caller who wants the debug readout in their own review video may still pass --debug
-# themselves, which --player-view does not turn off (see DevFlags.player_view_requested()'s own
-# doc: the readout stays behind its own flag).
+# --player-view, --no-focus-pause and --no-save are always added, ahead of whatever the caller
+# gave: --player-view is the release build's own view (a caller who still wants the debug readout
+# in their own review video may pass --debug too, which --player-view does not turn off -- see
+# DevFlags.player_view_requested()'s own doc, the readout stays behind its own flag);
+# --no-focus-pause is the M195 lockdown a movie-writer window always needs; --no-save keeps a
+# recording off the player's own save the same way every other dev flag already does, for a run
+# that would otherwise carry none of its own (a bare --route).
 FULL_FLAGS=(--player-view --no-focus-pause --no-save "${GAME_FLAGS[@]}")
 if ! validate_dev_flags "${FULL_FLAGS[@]}"; then
     echo "record.sh: the game does not know one of those flags (see above)" >&2
@@ -167,7 +172,10 @@ ffmpeg -hide_banner -loglevel error -y \
     -framerate 60 -i "$WORK/frame%08d.png" "${audio[@]}" \
     -shortest -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
     -c:a aac -b:a 192k -movflags +faststart "$OUTPUT"
-rm -rf "$WORK/frame"*.png "$WORK/frame.wav"
+# Frames are deleted here by the `cleanup` trap's `rm -rf "$WORK"` on exit -- not by name here,
+# which used to be `rm -rf "$WORK/frame"*.png`: a route day can write over 12,000 frames (a full
+# 210s day at 60fps), and a glob that long overflows the argument list, failing with "Argument
+# list too long" right after the mp4 was written, under `set -e`.
 
 status=0
 after="$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)"

@@ -242,7 +242,7 @@ render_frames() {
     rm -rf "$dir"; mkdir -p "$dir"
     while IFS= read -r word; do flags+=("$word"); done < <(shot_game_flags "$name")
     after="$(shot_render_seconds "$name")"
-    kill_after="$(rig_kill_after_movie_seconds "$after")"
+    kill_after="$(rig_kill_after_movie_seconds --after "$after")"
     echo "rendering '$name' (${after}s of game at ${FPS}fps)..." >&2
     local noted
     noted="$(rig_focus_note)"

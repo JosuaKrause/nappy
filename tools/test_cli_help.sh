@@ -486,6 +486,32 @@ while read -r flag; do
     fi
 done < <(dev_flag_names)
 
+# --------------------- tools/trailer.sh's kill deadline follows the shot's length, not the day's ---
+# rig_kill_after_movie_seconds only reads --after/--day-length out of the argv it is given --
+# passing it a bare number (tools/trailer.sh once did: `rig_kill_after_movie_seconds "$after"`)
+# silently falls back to the day's own length times RIG_MOVIE_SLOWDOWN, killing a hung Godot after
+# about 38 minutes instead of about 4 for a short shot. Checked two ways: the function itself
+# answers differently for a short --after than for none at all, and trailer.sh's own call site is
+# grepped for the exact --after shape rather than a bare value, which is the one thing that would
+# have caught this regression at the source instead of only in the function's own unit shape.
+checks=$(( checks + 1 ))
+short_kill="$(rig_kill_after_movie_seconds --after 5)"
+long_kill="$(rig_kill_after_movie_seconds)"
+if [[ "$short_kill" -lt "$long_kill" ]]; then
+    echo "ok   rig_kill_after_movie_seconds follows --after ($short_kill < $long_kill)"
+else
+    echo "FAIL rig_kill_after_movie_seconds did not shorten for a short --after ($short_kill vs $long_kill)" >&2
+    failures=$(( failures + 1 ))
+fi
+
+checks=$(( checks + 1 ))
+if grep -qE 'rig_kill_after_movie_seconds +--after +"\$after"' "$root/tools/trailer.sh"; then
+    echo "ok   trailer.sh calls rig_kill_after_movie_seconds with --after, not a bare value"
+else
+    echo "FAIL trailer.sh's call to rig_kill_after_movie_seconds does not pass --after \"\$after\" -- a hung Godot would be killed after the day's own length instead of the shot's" >&2
+    failures=$(( failures + 1 ))
+fi
+
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
 # undocumented the way audit-pck.sh, export-web.sh, release.sh, serve-web.sh and stats.sh used to
