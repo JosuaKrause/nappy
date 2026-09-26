@@ -313,9 +313,7 @@ checks and worktrees can move independently of this file.
   back", ready for review and waiting on CI and on the player's permission to merge. Its records
   are already in `DECISIONS.md` (M208 and M209). If CI is red, fix it on that branch.
 - **GoatCounter is read only through `tools/goatcounter.sh`** (see the using-tools skill); the key
-  is `GOATCOUNTER_TOKEN`, from the environment or a git-ignored `.env` at the root. A session
-  carrying it can run `tools/goatcounter.sh --check` to confirm the fixed key check against the
-  live account, which has not been done yet.
+  is `GOATCOUNTER_TOKEN`, from the environment or a git-ignored `.env` at the root.
 - **The story's pacing is built** (M181, the resistance has a reason, and a task is one day,
   in `DECISIONS.md`): every task and happening, the late days timed, and the seals on her
   building's front. M182, a finished task is shown by the world, has the other tasks' answers

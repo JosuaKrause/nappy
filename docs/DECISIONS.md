@@ -19,8 +19,11 @@ flag. The using-tools catalogue says the API is reached only through this script
 the funnel printed the last 30 days (two fresh runs, both ending badly, one reaching day 7).
 `--check` first failed with HTTP 404 on `/api/v0/me`, which answers 401 without a key and 404 to a
 key with only "Read statistics"; it now proves the key through the statistics endpoint and says
-the permission list is not available instead of failing. The success path of the fixed `--check`
-has not yet been run against the live key.
+the permission list is not available instead of failing. On 2026-09-26, in a later session, the
+fixed `--check` passed against the live account with the key named `claude`: the statistics
+endpoint answered, and `/api/v0/me` answered too, reporting permissions `65` and sites `[-1]`, so
+that run took the branch that prints the permissions. The branch for a refused `/me` is covered by
+the script's offline tests only.
 
 **Choices left open to overturn**: `--raw` ignores `--prefix`; `began`'s own line shows no share;
 a 429 is retried up to five times with backoff and a 401 or 403 is not; `--check` prints
