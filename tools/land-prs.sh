@@ -24,9 +24,10 @@
 # one has actually merged, since each merge moves main and can conflict a PR that was clean a
 # moment ago. It stops, naming the PR and the reason, on: a red check (the failing
 # checks' names and the PR's URL -- see below for why this is not restricted to gh's own
-# `--required` filter), a conflict with main (its auto-merge turned off, since a resolved conflict
-# is reviewed before it lands), a PR that closes without merging, or that PR's own timeout. A later PR in the list is left untouched when an earlier one
-# stops the run.
+# `--required` filter), a conflict with main, a PR that closes without merging, or that PR's own
+# timeout. On a red check, a conflict or a timeout it first turns the PR's auto-merge off and says
+# whether GitHub confirmed it, since whatever is pushed to fix the PR is reviewed before it lands.
+# A later PR in the list is left untouched when an earlier one stops the run.
 #
 # Why every failing check, not just gh pr checks --required: main's ruleset requires a check
 # named exactly "test" (see .github/workflows/ci.yml), which needs both "gates" and "shards" and
@@ -67,9 +68,10 @@ named on the command line is already authorized, per the committing skill's perm
                       The clock restarts for each PR in the list.
 
 Stops, naming the PR and the reason, on: a red check (the failing checks' names and the PR's
-URL), a conflict with main (auto-merge is turned off; resolve it with tools/update-pr.sh and have
-the resolution reviewed before landing it again), a PR that closes without merging, or that PR's
-own timeout. Every PR after the one that stopped is left untouched.
+URL), a conflict with main (resolve it with tools/update-pr.sh), a PR that closes without merging,
+or that PR's own timeout. On a red check, a conflict or a timeout it turns the PR's auto-merge off
+first and says whether GitHub confirmed it, since a fix pushed to the PR is reviewed (pr-review)
+before it lands again. Every PR after the one that stopped is left untouched.
 
 Refuses to start, before anything but --dry-run touches anything, unless run from the main
 checkout on main -- tools/prune-merged.sh needs both. --dry-run is exempt, since it changes
@@ -141,6 +143,19 @@ refuse() {
 stop() {
     echo "stopping: $*" >&2
     exit 1
+}
+# Stops the run on PR $1 with message $2, first turning the PR's auto-merge off. Any change pushed
+# to a stopped PR -- a conflict resolved, a red check fixed -- is one its review never saw, and the
+# pr-review skill wants it reviewed before it lands; an auto-merge left on would land it unseen.
+# Fails closed: unless GitHub confirms auto-merge is off, the message says it could not be.
+stop_with_auto_merge_off() {
+    local n="$1" msg="$2" off
+    gh pr merge "$n" --disable-auto >/dev/null 2>&1 || true
+    if off="$(gh pr view "$n" --json autoMergeRequest -q '.autoMergeRequest == null' 2>/dev/null)" \
+            && [[ "$off" == true ]]; then
+        stop "$msg -- auto-merge is off; have any change to it reviewed (pr-review) before landing it again"
+    fi
+    stop "$msg -- and its auto-merge could NOT be confirmed off: turn it off by hand (gh pr merge $n --disable-auto) before pushing anything to it, or that push merges unreviewed"
 }
 
 git rev-parse --git-dir >/dev/null 2>&1 || { echo "not a git repository" >&2; exit 1; }
@@ -226,7 +241,7 @@ for n in "${prs[@]}"; do
     fi
 
     if [[ "$state" != MERGED && "$merge_state" == DIRTY ]]; then
-        stop "PR #$n ($url) conflicts with main: resolve it with tools/update-pr.sh $n, have the resolution reviewed (pr-review), then land it again"
+        stop_with_auto_merge_off "$n" "PR #$n ($url) conflicts with main: resolve it with tools/update-pr.sh $n"
     fi
 
     if [[ "$state" != MERGED ]]; then
@@ -255,7 +270,7 @@ for n in "${prs[@]}"; do
     while true; do
         now="$(date +%s)"
         if [[ "$now" -gt "$deadline" ]]; then
-            stop "PR #$n: timed out after ${timeout_min}m waiting for it to merge"
+            stop_with_auto_merge_off "$n" "PR #$n: timed out after ${timeout_min}m waiting for it to merge"
         fi
 
         pr_json="$(gh pr view "$n" --json state,mergeable,url 2>&1)" \
@@ -269,7 +284,7 @@ for n in "${prs[@]}"; do
 
         failing="$(red_checks "$n")"
         if [[ -n "$failing" ]]; then
-            stop "PR #$n ($url): failing check(s) --
+            stop_with_auto_merge_off "$n" "PR #$n ($url): failing check(s) --
 $failing"
         fi
 
@@ -279,11 +294,7 @@ $failing"
         # review, and the pr-review skill wants that change reviewed before it lands. So the run
         # turns the PR's auto-merge off and stops rather than resolving and merging it unseen.
         if [[ "$mergeable" == CONFLICTING ]]; then
-            gh pr merge "$n" --disable-auto >/dev/null 2>&1 || true
-            if [[ -n "$(gh pr view "$n" --json autoMergeRequest -q '.autoMergeRequest.mergeMethod // empty' 2>/dev/null)" ]]; then
-                stop "PR #$n ($url) conflicts with main and its auto-merge could NOT be turned off -- turn it off by hand (gh pr merge $n --disable-auto) before resolving the conflict, or the resolution merges unreviewed"
-            fi
-            stop "PR #$n ($url) conflicts with main: auto-merge is off. Resolve it with tools/update-pr.sh $n, have the resolution reviewed (pr-review), then land it again"
+            stop_with_auto_merge_off "$n" "PR #$n ($url) conflicts with main: resolve it with tools/update-pr.sh $n"
         fi
 
         sleep "$poll_s"
