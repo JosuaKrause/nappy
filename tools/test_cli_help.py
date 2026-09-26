@@ -89,22 +89,11 @@ class CliHelpTests(unittest.TestCase):
             root = Path(temporary)
             first = root / "first"
             second = root / "second"
+            # Both builds run the one tracked generator (no frozen per-pass copy is written any
+            # more): this checks the generator's own determinism and portability, not a copy's.
             result = self.run_tool("synthesize-sfx.py", "--output", str(first), "--seed", "260926", cwd=root)
             self.assertEqual(result.returncode, 0, result.stderr)
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(first / "recipe/synthesize-sfx.py"),
-                    "--output",
-                    str(second),
-                    "--seed",
-                    "260926",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=15,
-                cwd=root,
-            )
+            result = self.run_tool("synthesize-sfx.py", "--output", str(second), "--seed", "260926", cwd=root)
             self.assertEqual(result.returncode, 0, result.stderr)
 
             first_files = {
@@ -114,13 +103,16 @@ class CliHelpTests(unittest.TestCase):
                 path.relative_to(second).as_posix(): path.read_bytes() for path in second.rglob("*") if path.is_file()
             }
             self.assertEqual(first_files, second_files, "same seed produced different output bytes")
+            self.assertNotIn(
+                "recipe/synthesize-sfx.py", first_files, "the generator no longer writes a frozen copy of itself"
+            )
 
             manifest: dict[str, Any] = json.loads(first_files["manifest.json"])
             self.assertEqual(set(manifest["files"]), set(SOUND_FILES))
             self.assertEqual(manifest["selection"], "subtle-revision")
-            self.assertEqual(manifest["generator"], "recipe/synthesize-sfx.py")
+            self.assertEqual(manifest["generator"], "tools/synthesize-sfx.py")
             self.assertEqual(
-                manifest["generator_sha256"], hashlib.sha256(first_files["recipe/synthesize-sfx.py"]).hexdigest()
+                manifest["generator_sha256"], hashlib.sha256((TOOLS / "synthesize-sfx.py").read_bytes()).hexdigest()
             )
             audition_rms_db: dict[str, float] = {}
             for filename in SOUND_FILES:

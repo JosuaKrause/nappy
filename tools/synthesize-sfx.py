@@ -695,20 +695,20 @@ pretrained audio.
 
 ## Rebuild
 
-This folder keeps a copy of the generator that built it, frozen at `recipe/synthesize-sfx.py`. Run
-that copy, or the repository's own tracked `tools/synthesize-sfx.py`, through the locked Python
-3.14 environment with the same seed and selection:
+Run `tools/sound-lab.sh` for the one pass `tools/sound-lab/passes.json` records; it rebuilds this
+folder from the repository's tracked `tools/synthesize-sfx.py` and checks the result against the
+recorded hashes. To rebuild by hand instead, or with a different seed or selection, run the tracked
+generator through the locked Python 3.14 environment:
 
 ```sh
-uv run python recipe/synthesize-sfx.py \
-  --output /path/to/rebuilt-pass \
-  --seed {seed} \
+uv run python tools/synthesize-sfx.py \\
+  --output /path/to/rebuilt-pass \\
+  --seed {seed} \\
   --selection {selection}
 ```
 
-The frozen recipe writes files only; it does not play audio. Rebuilding into a fresh directory
-keeps this one intact. `tools/sound-lab.sh` does the same rebuild for the one pass
-`tools/sound-lab/passes.json` records, and checks it against the recorded hashes.
+It writes files only; it does not play audio. Rebuilding into a fresh directory keeps this one
+intact.
 
 ## Format and level
 
@@ -716,9 +716,8 @@ All WAVs are 48 kHz, mono, signed PCM16. {level_description} The comparison pres
 This is not a perceptual loudness match, so listen at a comfortable device volume.
 
 `manifest.json` records the seed, recipe chain, duration, measured peak and RMS, file hashes and
-the frozen generator hash. The current pass is rebuilt twice and compared byte for byte in the
-pinned environment before submission. Floating-point math implementations can differ across
-operating systems, so this is not a blanket promise of cross-platform bit identity.
+the generator's own hash. Floating-point math implementations can differ across operating systems,
+so this is not a blanket promise of cross-platform bit identity.
 """
 
 
@@ -828,13 +827,10 @@ def generate(output: Path, seed: int, selection: str) -> None:
         audio_metadata[filename] = _audio_metadata(filename, values, data)
 
     generator_data = Path(__file__).read_bytes()
-    recipe_path = output / "recipe" / "synthesize-sfx.py"
-    recipe_path.parent.mkdir(exist_ok=True)
-    recipe_path.write_bytes(generator_data)
     manifest = {
         "comparison_order": _comparison_order(pairs),
         "files": audio_metadata,
-        "generator": "recipe/synthesize-sfx.py",
+        "generator": "tools/synthesize-sfx.py",
         "generator_sha256": hashlib.sha256(generator_data).hexdigest(),
         "method": (
             "Handwritten procedural synthesis using standard-library oscillators, seeded noise, envelopes and filters."
@@ -861,8 +857,8 @@ def generate(output: Path, seed: int, selection: str) -> None:
         ),
         "reproducibility": {
             "guarantee": (
-                "A scratch rebuild from the frozen generator is checked byte-for-byte against the "
-                "generated package in the locked Python 3.14 environment."
+                "A rebuild from the tracked tools/synthesize-sfx.py is checked byte-for-byte "
+                "against the generated package in the locked Python 3.14 environment."
             ),
             "limit": (
                 "No blanket cross-platform bit-identical promise is made because platform math "
