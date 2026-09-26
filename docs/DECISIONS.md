@@ -34,6 +34,13 @@ implemented for mouse. Just make it appear everywhere.")* `ModeButton._refresh_l
 the bright fill for any hold, mouse or touch; a test drives both through the engine's real input
 path on both screens and fails with the fix reverted.
 
+**The restart fires the moment the disc is full**, not when the finger or button is lifted
+*([PLAYTEST-144](playtests/PLAYTEST-144.md): "The button only activated when releasing though" ·
+"It should trigger the moment it is full")*. `ModeButton` raises `hold_completed` from `_process()`
+the frame `hold_progress` reaches full, once per hold; both screens restart on it. The later release
+only ends the hold: it neither restarts again nor reads as carry on. A test holds a touch and a mouse
+on both screens and sees the restart before any release, and fails with the fix reverted.
+
 **Not verified on a device.** No capture shows the disc filling under a held finger: `--tap` sends
 press and release in one frame and `--press` carries no screen position, so a sustained synthetic
 touch needs a new dev capability. It waits on a phone (`REVIEW.md`).
