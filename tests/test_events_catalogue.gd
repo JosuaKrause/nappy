@@ -167,6 +167,9 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 ## changes nothing `as_warned_first()` copies by hand.
 func _test_as_warned_first_carries_solid_parts_too(t) -> void:
 	var crash := EventCatalogue.by_id("car_accident")
+	t.check(crash.solid_parts.size() >= 2,
+			"'car_accident' has at least two solid parts (%d), so the copy below cannot pass vacuously"
+			% crash.solid_parts.size())
 	var widened := crash.duplicate() as EventDef
 	widened.shape = crash.shape
 	widened.solid_parts = crash.solid_parts
