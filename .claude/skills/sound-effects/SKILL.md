@@ -17,26 +17,31 @@ until the player separately asks for integration.
 - Keep the editable generator under `tools/` (`tools/synthesize-sfx.py`) and run it through the
   locked `uv` environment. Give every random source a deterministic seed.
 - No generated audio and no frozen copy of the generator lives in the tree: git history already
-  holds every past version of `tools/synthesize-sfx.py`. A finished pass gets an entry in
-  `tools/sound-lab/passes.json` instead — the commit whose `tools/synthesize-sfx.py` built it (for
-  most passes, the commit that finished that pass), its seed, its extra `--selection`/CLI args, and
-  the SHA-256 of every WAV it writes. `tools/sound-lab.sh` extracts that commit's generator with
-  `git show`, rebuilds it through the locked environment into git-ignored `build/sound-lab/<pass>/`,
-  and refuses to serve anything whose hashes have drifted from what the recipe recorded — the
-  reproducibility guarantee is enforced on every run, not just claimed in prose.
-- A pass is a frozen listening artifact, pinned to the commit that made it, so it keeps rebuilding
-  byte for byte after the generator moves on. Live iteration on the generator itself — before it is
-  worth freezing as a pass — is `uv run python tools/synthesize-sfx.py --output build/sound-lab/scratch
-  --seed <n> --selection <name>` run directly, with no entry in `passes.json` yet.
+  holds every past version of `tools/synthesize-sfx.py`. The current pass gets one entry in
+  `tools/sound-lab/passes.json` instead — its seed, its extra `--selection`/CLI args, and the
+  SHA-256 of every WAV it writes. `tools/sound-lab.sh` builds it from the tracked
+  `tools/synthesize-sfx.py` directly, through the locked environment, into git-ignored
+  `build/sound-lab/<pass>/`, and refuses to serve anything whose hashes have drifted from what the
+  recipe recorded — the reproducibility guarantee is enforced on every run, not just claimed in
+  prose.
+- `passes.json` names exactly one pass: the current proposal, with no pinned commit. A branch
+  reaches `main` squashed, which would take a pin to one of its own commits with it, and a
+  rejected pass is not worth keeping alive anyway — its findings stay in `DECISIONS.md`. Make a
+  new pass by changing the generator's defaults or `passes.json`'s `args`, rebuilding with
+  `tools/sound-lab.sh`, and listening; once it is worth keeping, overwrite `passes.json`'s
+  `seed`/`args`/`label` and every hash with the new build's own. Live iteration on the generator
+  before it is worth freezing this way is `uv run python tools/synthesize-sfx.py --output
+  build/sound-lab/scratch --seed <n> --selection <name>` run directly, with no change to
+  `passes.json` yet.
 
 **Share a pass as the command to run, never a zip or a committed page.** Point at
-`tools/sound-lab.sh --pass <name>` (default: the newest pass); `--lan` prints an address a phone on
-the same network can open, and `--no-serve` builds and verifies without serving. Nobody downloads
-an `index.html` to listen.
+`tools/sound-lab.sh`; `--lan` prints an address a phone on the same network can open, and
+`--no-serve` builds and verifies without serving. Nobody downloads an `index.html` or a zip to
+listen.
 
 It writes 48 kHz mono PCM16 WAVs and a local A/B page, one clip playing at a time. Keep
-`tools/sound-lab/passes.json`'s recorded hashes aligned with the generator commit they name whenever
-a new pass is added.
+`tools/sound-lab/passes.json`'s recorded hashes aligned with the generator whenever the pass
+changes.
 
 ## Make the comparison honest
 
