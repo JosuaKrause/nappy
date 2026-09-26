@@ -375,10 +375,34 @@ func _is_covered(col: int) -> bool:
 		roof_extension_rows = value
 		queue_redraw()
 
+## Per-column: whether this front's own extension at that column reaches into another rectangle
+## of the *same* original lot (M216) rather than a genuinely separate building. A single-block or
+## apartment-complex courtyard is cut into up to four rectangles around its hole
+## (`City._assign_roof_extensions()`'s own doc), each its own `Building`, so a covered seam between
+## two of them is the same wall-meets-roof relationship M203 already extends a roof to fill — but
+## capping that extension with `ROOF_EDGE_N` where it reaches the covered piece's own roof would
+## draw a parapet in the middle of what is, physically, one roof: the covered piece's own roof
+## continues right above it either way, uncapped from below. So a seamless extension skips
+## `ROOF_EDGE_N` at its own top and lets the covered piece's roof carry on; a non-seamless one
+## (M203's ordinary front-and-back case, two actually separate buildings) still caps there, since
+## that cap is the real, visible step between them. Sized to `columns()`, or empty when nothing
+## needs the distinction; `_extension_is_seamless()` reads an index past the end as false, the same
+## convention `roof_extension_rows` and `covered_ground_cols` already use.
+@export var roof_extension_seamless: Array[bool] = []:
+	set(value):
+		roof_extension_seamless = value
+		queue_redraw()
+
 ## How many extra roof rows column `col` draws (`roof_extension_rows`), defaulting to 0 for an
 ## index the array does not reach.
 func _extension_rows(col: int) -> int:
 	return roof_extension_rows[col] if col >= 0 and col < roof_extension_rows.size() else 0
+
+## Whether column `col`'s own extension is seamless (`roof_extension_seamless`), defaulting to
+## false for an index the array does not reach.
+func _extension_is_seamless(col: int) -> bool:
+	return roof_extension_seamless[col] if col >= 0 and col < roof_extension_seamless.size() \
+			else false
 
 ## The upper-floor column the neighbor's boarded window (`NEIGHBOR_WINDOW_SEALED`) draws over,
 ## from day 11 on, or -1 for every building but the one `City.board_neighbor_window()` picked: the
@@ -879,7 +903,11 @@ func _draw() -> void:
 			draw_texture(AtlasLibrary.region(ROOF), at, roof_colour)
 			if row == 0:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_S), at)
-			if row == col_rows - 1:
+			# A seamless extension (M216) is capped only when it is also the column's own true
+			# top (extension 0, an ordinary roof with nothing extending it) — the covered piece's
+			# own roof carries on right above a seamless one, uncapped from below, so this is the
+			# one place `ROOF_EDGE_N` is withheld rather than drawn once per column.
+			if row == col_rows - 1 and not (_extension_rows(col) > 0 and _extension_is_seamless(col)):
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
 			if col == hall.x:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_W), at)

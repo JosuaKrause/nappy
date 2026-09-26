@@ -626,16 +626,27 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 		result.append(not map.is_walkable(Vector2i(rect.position.x + col, south_row)))
 	return result
 
-## `Building.roof_extension_rows` for every building in `buildings` (parallel to
-## `map.building_rects`, M203): wherever a building's own `covered_ground_cols` marks a column
-## covered, the tile directly south of it belongs to some other lot's rect — the one whose roof
-## now has to reach up to meet the covered building's own roof — found by a tile lookup over every
-## rect rather than a spatial search, since the whole set is small and built once per run. The
-## extension at that column is exactly the covered building's own `wall_tiles()`: precisely enough
-## rows to reach the world row its roof already starts at, edge to edge. A power station's yard
-## columns (`_hall_cols()`, read after `_dress_the_power_station()` above has set `power_station`)
-## are skipped since no roof stands there to extend — the yard is fenced ground, not a building
-## mass; the rare column a yard would have covered is simply left blank, roof and facade alike.
+## `Building.roof_extension_rows`/`roof_extension_seamless` for every building in `buildings`
+## (parallel to `map.building_rects`, M203/M216): wherever a building's own `covered_ground_cols`
+## marks a column covered, the tile directly south of it belongs to some other lot's rect — the
+## one whose roof now has to reach up to meet the covered building's own roof — found by a tile
+## lookup over every rect rather than a spatial search, since the whole set is small and built once
+## per run. The extension at that column is exactly the covered building's own `wall_tiles()`:
+## precisely enough rows to reach the world row its roof already starts at, edge to edge. A power
+## station's yard columns (`_hall_cols()`, read after `_dress_the_power_station()` above has set
+## `power_station`) are skipped since no roof stands there to extend — the yard is fenced ground,
+## not a building mass; the rare column a yard would have covered is simply left blank, roof and
+## facade alike.
+##
+## **Seamless when both rectangles are cut from the same courtyard lot** (M216). A single-block or
+## apartment-complex courtyard is cut into up to four rectangles around its hole
+## (`CityGenerator._build_block()`'s own `COURTYARD` branch, `_subtract_all()`), each its own
+## `Building` — so a covered seam between two of them is two pieces of one physical building, not
+## a front covering a genuinely separate one behind it, and the extension that fills it should read
+## as the *same* roof continuing rather than stopping in a parapet. `_courtyard_lot_of()` maps each
+## building index to whichever courtyard's own `map.lot_rect(block)` encloses it (or -1), computed
+## once here rather than per column, and two extensions in the same lot are marked seamless —
+## `Building._draw()` is what actually withholds the cap.
 func _assign_roof_extensions(buildings: Array[Building]) -> void:
 	var tile_to_index := {}
 	for i in map.building_rects.size():
@@ -643,12 +654,18 @@ func _assign_roof_extensions(buildings: Array[Building]) -> void:
 		for x in rect.size.x:
 			for y in rect.size.y:
 				tile_to_index[Vector2i(rect.position.x + x, rect.position.y + y)] = i
+	var courtyard_of := _courtyard_lot_of(map.building_rects)
 	var extensions: Array[Array] = []
+	var seamless: Array[Array] = []
 	for building in buildings:
 		var zeros: Array[int] = []
 		zeros.resize(building.columns())
 		zeros.fill(0)
 		extensions.append(zeros)
+		var falses: Array[bool] = []
+		falses.resize(building.columns())
+		falses.fill(false)
+		seamless.append(falses)
 	for i in buildings.size():
 		var back := buildings[i]
 		if back.covered_ground_cols.is_empty():
@@ -670,8 +687,32 @@ func _assign_roof_extensions(buildings: Array[Building]) -> void:
 					continue
 			var front_extension: Array[int] = extensions[front_index]
 			front_extension[local_col] = back.wall_tiles()
+			if courtyard_of[i] >= 0 and courtyard_of[i] == courtyard_of[front_index]:
+				var front_seamless: Array[bool] = seamless[front_index]
+				front_seamless[local_col] = true
 	for i in buildings.size():
 		buildings[i].roof_extension_rows = extensions[i]
+		buildings[i].roof_extension_seamless = seamless[i]
+
+## Which courtyard lot (an index into the courtyards found on `map`, or -1) each of `rects` was cut
+## from — single-block and apartment-complex courtyards alike, `map.zone_rects` or not, since both
+## go through the same `COURTYARD` branch of `_build_block()` and both can split into more than one
+## rectangle. `map.lot_rect(block)` is the whole lot a courtyard's rectangles were cut from, never
+## smaller than any of them, so `encloses()` is exact rather than an overlap test.
+func _courtyard_lot_of(rects: Array[Rect2i]) -> Array[int]:
+	var courtyard_lots: Array[Rect2i] = []
+	for block in map.block_layouts.keys():
+		if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
+			courtyard_lots.append(map.lot_rect(block))
+	var result: Array[int] = []
+	for rect in rects:
+		var found := -1
+		for i in courtyard_lots.size():
+			if courtyard_lots[i].encloses(rect):
+				found = i
+				break
+		result.append(found)
+	return result
 
 ## Makes `building` the power station when `rect` is its mass: the door over the pavement
 ## `CityMap.power_station_door` names, and the transformer yard over the other block — the hall is

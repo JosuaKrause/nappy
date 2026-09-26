@@ -1,10 +1,27 @@
 extends RefCounted
 ## Throwaway: finds a seed for M203 case 1 (a small back building fully covered) and for M216 (a
 ## small courtyard block), then prints a `--walk` script from the doorstep to a vantage tile in
-## front of each, computed from `CityMap.walk_field()` rather than by hand. Not a suite:
-## `tools/test.sh probes/m216_evidence.gd`.
+## front of each, computed from `CityMap.walk_field()`'s own downhill descent rather than by hand.
+## Not a suite: `tools/test.sh probes/m216_evidence.gd`.
+##
+## **Prefers a script with no short "jog" run.** `--walk`'s own script format only ever takes
+## whole seconds (`AutoScreenshot._parse_script()`), so a real BFS run of a handful of tiles still
+## costs a whole second (`WALK_SPEED` 92px/s over `TILE_SIZE` 32px is 2.875 tiles/s) held in that
+## direction — a two-tile jog rounds up to a 2.875-tile press, and the *next* run then starts
+## almost a tile off the corridor it needs, which a long press down a straight street turns into
+## landing in an entirely different block. So a script is only accepted if every one of its runs
+## is either the last one or at least `_SAFE_RUN_TILES` real tiles, which keeps the rounding error
+## small next to the run it is about to feed into.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const _SAFE_RUN_TILES := 6
+## Small: close enough to frame without a long walk, but past the home block's own notch, which
+## sits right against a neighbour on some seeds and reads as her own doorstep rather than a
+## generic front (`City._block_of()`'s own comment: "every lot on the home block is hers").
+const _VANTAGE_OFFSET := 6
+
+func _block_of(rect: Rect2i) -> Vector2i:
+	return (rect.position - Vector2i.ONE * Tuning.STREET_WIDTH) / CityMap.period()
 
 func run(t) -> void:
 	_find_fully_covered(t)
@@ -14,14 +31,19 @@ func run(t) -> void:
 # ------------------------------------------------------------- case 1: fully covered ---
 
 func _find_fully_covered(t) -> void:
-	var best_seed := -1
-	var best_lot := Rect2i()
-	var best_distance := 999999
-	for seed_value in range(1, 60):
+	var best: Dictionary = {}
+	var best_distance := 999999.0
+	var best_unsafe: Dictionary = {}
+	var best_unsafe_distance := 999999.0
+	for seed_value in range(1, 150):
 		var map := CityGenerator.generate(seed_value)
 		var city: City = CITY_SCENE.instantiate()
 		t.add_child(city)
 		city.build(map)
+		var courtyard_lots: Array[Rect2i] = []
+		for block in map.block_layouts.keys():
+			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
+				courtyard_lots.append(map.lot_rect(block))
 		var found: Building = null
 		for building: Building in city.buildings():
 			if building.is_home_building or building.power_station:
@@ -29,6 +51,13 @@ func _find_fully_covered(t) -> void:
 			var cols := building.covered_ground_cols
 			if cols.is_empty() or building.columns() > 2:
 				continue
+			var in_a_courtyard := false
+			for cl in courtyard_lots:
+				if cl.encloses(building.lot):
+					in_a_courtyard = true
+					break
+			if in_a_courtyard:
+				continue  # a courtyard sliver, not the plain "..X / XXX" case
 			var all_covered := true
 			for c in cols:
 				if not c:
@@ -38,60 +67,73 @@ func _find_fully_covered(t) -> void:
 				found = building
 				break
 		if found != null:
-			var source := map.world_to_tile(map.doorstep_world_position())
-			var d := (found.lot.position - source).length()
-			if d < best_distance:
-				best_distance = d
-				best_seed = seed_value
-				best_lot = found.lot
+			var south := Vector2i(found.lot.position.x, found.lot.end.y)
+			var front_lot := Rect2i()
+			for rect: Rect2i in map.building_rects:
+				if rect.has_point(south):
+					front_lot = rect
+					break
+			var home_block := CityGenerator.home_block()
+			if _block_of(found.lot) == home_block or _block_of(front_lot) == home_block:
+				city.free()
+				continue  # too close to her own doorstep to read as a generic front
+			var vantage := Vector2i(front_lot.position.x + front_lot.size.x / 2,
+					front_lot.end.y + _VANTAGE_OFFSET)
+			var walk := _walk_to(map, vantage)
+			if not walk.is_empty():
+				var d: float = (found.lot.position - walk["source"]).length()
+				if walk["safe"] and d < best_distance:
+					best_distance = d
+					best = {"seed": seed_value, "lot": found.lot, "front_lot": front_lot,
+							"walk": walk}
+				elif not walk["safe"] and d < best_unsafe_distance:
+					best_unsafe_distance = d
+					best_unsafe = {"seed": seed_value, "lot": found.lot, "front_lot": front_lot,
+							"walk": walk}
 		city.free()
-	if best_seed == -1:
-		t.check(false, "no fully covered small building found in 300 seeds")
+	var chosen := best if not best.is_empty() else best_unsafe
+	if chosen.is_empty():
+		t.check(false, "no fully covered small building found in 150 seeds")
 		return
-	var map := CityGenerator.generate(best_seed)
-	# Vantage south of the COVERING (front) building's own lot, never the covered (back) one's —
-	# the tile south of the back building's lot is the front building's own footprint, not a
-	# street, so `_nearest_walkable` would have to escape the whole front building first.
-	var south := Vector2i(best_lot.position.x, best_lot.end.y)
-	var front_lot := Rect2i()
-	for rect: Rect2i in map.building_rects:
-		if rect.has_point(south):
-			front_lot = rect
-			break
-	print("\n== seed %d: fully covered building at lot %s, front lot %s ==" \
-			% [best_seed, best_lot, front_lot])
-	var vantage := Vector2i(front_lot.position.x + front_lot.size.x / 2, front_lot.end.y + 3)
-	_print_walk_to(map, vantage, "case 1")
+	print("\n== case 1, seed %d: fully covered building at lot %s, front lot %s (safe=%s) =="
+			% [chosen["seed"], chosen["lot"], chosen["front_lot"], not best.is_empty()])
+	_print_walk(chosen["walk"], "case 1")
 
 # --------------------------------------------------------------- case 3: courtyard ---
 
 func _find_courtyard(t) -> void:
-	var best_seed := -1
-	var best_block := Vector2i()
-	var best_lot := Rect2i()
-	var best_distance := 999999
+	var best: Dictionary = {}
+	var best_distance := 999999.0
+	var best_unsafe: Dictionary = {}
+	var best_unsafe_distance := 999999.0
 	for seed_value in range(1, 150):
 		var map := CityGenerator.generate(seed_value)
-		var source := map.world_to_tile(map.doorstep_world_position())
 		for block in map.block_layouts.keys():
 			if map.starting_purpose(block) != GameEnums.BlockPurpose.COURTYARD:
 				continue
 			if map.zone_rects.has(block):
 				continue
+			if block == CityGenerator.home_block():
+				continue
 			var lot := map.lot_rect(block)
-			var d := (lot.position - source).length()
-			if d < best_distance:
+			var vantage := Vector2i(lot.position.x + lot.size.x / 2, lot.end.y + _VANTAGE_OFFSET)
+			var walk := _walk_to(map, vantage)
+			if walk.is_empty():
+				continue
+			var d: float = (lot.position - walk["source"]).length()
+			if walk["safe"] and d < best_distance:
 				best_distance = d
-				best_seed = seed_value
-				best_block = block
-				best_lot = lot
-	if best_seed == -1:
-		t.check(false, "no small courtyard found in 300 seeds")
+				best = {"seed": seed_value, "block": block, "lot": lot, "walk": walk}
+			elif not walk["safe"] and d < best_unsafe_distance:
+				best_unsafe_distance = d
+				best_unsafe = {"seed": seed_value, "block": block, "lot": lot, "walk": walk}
+	var chosen := best if not best.is_empty() else best_unsafe
+	if chosen.is_empty():
+		t.check(false, "no small courtyard found in 150 seeds")
 		return
-	print("\n== seed %d: courtyard block %s, lot %s ==" % [best_seed, best_block, best_lot])
-	var map := CityGenerator.generate(best_seed)
-	var vantage := Vector2i(best_lot.position.x + best_lot.size.x / 2, best_lot.end.y + 3)
-	_print_walk_to(map, vantage, "case 3")
+	print("\n== case 3, seed %d: courtyard block %s, lot %s (safe=%s) =="
+			% [chosen["seed"], chosen["block"], chosen["lot"], not best.is_empty()])
+	_print_walk(chosen["walk"], "case 3")
 
 # --------------------------------------------------------------------- pathing ---
 
@@ -109,15 +151,16 @@ func _nearest_walkable(map: CityMap, target: Vector2i) -> Vector2i:
 					return t2
 	return target
 
-## Prints a `--walk` script (integer seconds per cardinal run) from the doorstep to the nearest
-## walkable tile to `target`, by descending `CityMap.walk_field()` from the doorstep.
-func _print_walk_to(map: CityMap, target: Vector2i, label: String) -> void:
+## Builds the `--walk` script from the doorstep to the nearest walkable tile to `target`, by
+## descending `CityMap.walk_field()` from the doorstep. Returns `{}` if unreachable, else
+## `{"source", "dest", "tiles", "runs", "script", "safe"}` — `safe` is whether every run but the
+## last is at least `_SAFE_RUN_TILES` tiles (see the class doc).
+func _walk_to(map: CityMap, target: Vector2i) -> Dictionary:
 	var dest := _nearest_walkable(map, target)
 	var source := map.world_to_tile(map.doorstep_world_position())
 	var field := map.walk_field(source)
 	if not map.reaches(field, dest):
-		print("%s: doorstep cannot reach vantage tile %s" % [label, dest])
-		return
+		return {}
 	# Walk downhill from dest back to source, one step at a time.
 	var path: Array[Vector2i] = [dest]
 	var cur := dest
@@ -133,8 +176,7 @@ func _print_walk_to(map: CityMap, target: Vector2i, label: String) -> void:
 				stepped = true
 				break
 		if not stepped:
-			print("%s: path reconstruction stuck at %s" % [label, cur])
-			return
+			return {}
 	path.reverse()  # source .. dest
 	# Collapse consecutive same-direction tile steps into whole-second runs.
 	var runs: Array = []  # [{"letter": "n"/"s"/"e"/"w", "tiles": int}]
@@ -155,8 +197,17 @@ func _print_walk_to(map: CityMap, target: Vector2i, label: String) -> void:
 			runs.append({"letter": letter, "tiles": 1})
 	var tiles_per_second := Tuning.WALK_SPEED / float(Tuning.TILE_SIZE)
 	var script := ""
-	for run_dict in runs:
+	var safe := true
+	for i in runs.size():
+		var run_dict = runs[i]
+		if i < runs.size() - 1 and run_dict["tiles"] < _SAFE_RUN_TILES:
+			safe = false
 		var seconds := maxi(1, roundi(run_dict["tiles"] / tiles_per_second))
 		script += "%d%s" % [seconds, run_dict["letter"]]
-	print("%s: vantage tile %s, doorstep %s, %d tiles, script: %s"
-			% [label, dest, source, path.size() - 1, script])
+	return {"source": source, "dest": dest, "tiles": path.size() - 1, "runs": runs,
+			"script": script, "safe": safe}
+
+func _print_walk(walk: Dictionary, label: String) -> void:
+	print("%s: vantage tile %s, doorstep %s, %d tiles, %d runs, script: %s"
+			% [label, walk["dest"], walk["source"], walk["tiles"], walk["runs"].size(),
+			walk["script"]])

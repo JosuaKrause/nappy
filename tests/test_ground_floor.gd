@@ -54,12 +54,14 @@ func run(t) -> void:
 	_test_the_flower_pot_varies_within_one_escape(t)
 	_test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t)
 	_test_roof_extension_rows_reads_back_per_column(t)
+	_test_extension_is_seamless_reads_back_per_column(t)
 	_test_covered_columns_move_no_storefront_roll(t)
 	_test_the_door_only_lands_on_a_reachable_column(t)
 	_test_a_fully_covered_front_has_no_door(t)
 	_test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t)
 	_test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_instead(t)
 	_test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t)
+	_test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t)
 	_test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
 
 # ------------------------------------------------------------------- fixtures ---
@@ -701,6 +703,22 @@ func _test_roof_extension_rows_reads_back_per_column(t) -> void:
 	t.check(building._extension_rows(-1) == 0, "a negative index reads as 0 too")
 	building.free()
 
+## `roof_extension_seamless` (M216) is a fixture-settable geometry fact, the same shape
+## `roof_extension_rows` already is: empty by default (an ordinary front, no courtyard sibling to
+## be seamless with), `_extension_is_seamless()` reads it back per column, and an index past the
+## end reads false, the same "nobody told this building about one" convention every other
+## per-column accessor here already follows.
+func _test_extension_is_seamless_reads_back_per_column(t) -> void:
+	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0), 64.0)
+	t.check(not building._extension_is_seamless(0), "a building nobody told about one reads false")
+	building.roof_extension_seamless = [false, true, false, true]
+	for col in [0, 1, 2, 3]:
+		t.check(building._extension_is_seamless(col) == building.roof_extension_seamless[col],
+				"column %d: _extension_is_seamless() reads roof_extension_seamless back exactly" % col)
+	t.check(not building._extension_is_seamless(4), "an index past the end reads false")
+	t.check(not building._extension_is_seamless(-1), "a negative index reads false too")
+	building.free()
+
 ## `_build_front()`'s own `front:` stream — the storefront bag, the awning and ambient-shutter
 ## rolls — reads nothing about `covered_ground_cols`, so two otherwise-identical fronts, one fully
 ## covered and one not, roll it identically; only whether a pair actually draws
@@ -864,6 +882,69 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 				checked += 1
 		city.free()
 	t.check(checked > 0, "the sweep met at least one real covered column to check the extension's own wiring on (%d)" % checked)
+
+## `City._assign_roof_extensions()`'s own courtyard wiring (M216): a covered column's extension is
+## seamless exactly when the covered building and the covering building were both cut from the same
+## courtyard lot — a single-block courtyard's own `map.lot_rect(block)`, or an apartment complex's
+## (`_build_block()`'s shared `COURTYARD` branch cuts both the same way, `_subtract_all()` around
+## the hole). Recomputes the courtyard-lot membership independently here, the same way the roof-
+## extension sweep above recomputes "front" independently rather than trusting `_assign_roof_
+## extensions()`'s own bookkeeping — so this only passes if the wiring is actually right, not merely
+## self-consistent. Every OTHER covered column (M203's ordinary front-and-back case, two genuinely
+## separate buildings) must NOT be seamless, or a real parapet step would silently vanish there too.
+func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t) -> void:
+	var checked_courtyard := 0
+	var checked_ordinary := 0
+	for i in SWEEP_SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i * 977)
+		var courtyard_lots: Array[Rect2i] = []
+		for block in map.block_layouts.keys():
+			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
+				courtyard_lots.append(map.lot_rect(block))
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(map)
+		var buildings := city.buildings()
+		for building: Building in buildings:
+			if building.power_station or building.covered_ground_cols.is_empty():
+				continue
+			for col in building.covered_ground_cols.size():
+				if not building.covered_ground_cols[col]:
+					continue
+				var south := Vector2i(building.lot.position.x + col,
+						building.lot.position.y + building.lot.size.y)
+				if not map.in_bounds(south):
+					continue
+				var front: Building = null
+				for candidate: Building in buildings:
+					if candidate.lot.has_point(south):
+						front = candidate
+						break
+				if front == null:
+					continue
+				var back_lot := -1
+				var front_lot := -1
+				for lot_index in courtyard_lots.size():
+					if courtyard_lots[lot_index].encloses(building.lot):
+						back_lot = lot_index
+					if courtyard_lots[lot_index].encloses(front.lot):
+						front_lot = lot_index
+				var same_courtyard := back_lot >= 0 and back_lot == front_lot
+				var local_col := south.x - front.lot.position.x
+				var seamless := front._extension_is_seamless(local_col)
+				t.check(seamless == same_courtyard,
+						("seed %d: a covering front's extension is seamless exactly when it shares " +
+						"a courtyard lot with the column it covers (expected %s, got %s)")
+						% [map.seed_used, same_courtyard, seamless])
+				if same_courtyard:
+					checked_courtyard += 1
+				else:
+					checked_ordinary += 1
+		city.free()
+	t.check(checked_ordinary > 0,
+			"the sweep met at least one ordinary (non-courtyard) covered column to check (%d)" % checked_ordinary)
+	t.check(checked_courtyard > 0,
+			"the sweep met at least one courtyard seam to check seamlessness on (%d)" % checked_courtyard)
 
 # --------------------------------------------------------------------- the sweep ---
 
