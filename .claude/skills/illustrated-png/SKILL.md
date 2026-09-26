@@ -12,7 +12,7 @@ the source/derivative pair in the family's evidence manifest, including UI and i
 The catalogue-wide conversion manifest is open work under M109, convert the SVG catalogue to PNG.
 Raw generator outputs belong with generation evidence, not in the runtime asset catalogue.
 
-Read `docs/VISUALS.md`, M109, convert the SVG catalogue to PNG, in `docs/TODO.md`, and
+Read `docs/VISUALS.md`, M109, convert the SVG catalogue to PNG, in its queue folder under `docs/todo/`, and
 [the integration procedure](references/texture-integration.md) before working on this presentation.
 **The presentation is chosen by the bake, not by the running game.** The default
 `tools/bake-atlases.sh` takes the registered PNG wherever one exists beside its SVG, and the
@@ -59,7 +59,7 @@ Compare native-size and enlarged results across the whole family, including the 
 mirrors. Check that details common to adjacent animation frames hold still and that a state swap
 does not change who the character appears to be. Canvas registration does not prove consistent
 faces, clothing or interior placement. Update this workflow with observed results;
-record experiments and rejected options in `docs/DECISIONS.md`.
+record experiments and rejected options in a decision record under `docs/decisions/`.
 
 For the illustrated stroller, direction means travel direction: N/NE/NW show the baby and canopy
 opening; S/SE/SW show the outside of the hood; E/W use the original side picture. Preserve this

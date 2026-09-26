@@ -1,6 +1,6 @@
 ---
 name: session-cleanup
-description: The end-of-session hygiene pass — make every document true again, move what is now history out to DECISIONS.md, prune the queue, and leave the handoff accurate. Load this at the END of every session, before the final report, and whenever asked to tidy the docs.
+description: The end-of-session hygiene pass — make every document true again, move what is now history into a decision record, prune the queue and the review items, and write the handoff. Load this at the END of every session, before the final report, and whenever asked to tidy the docs.
 ---
 
 # End-of-session cleanup
@@ -13,7 +13,7 @@ answers to the same question, and no way to tell which is current.**
 It is a short pass when it is done every time and a milestone when it is not.
 
 The standard it enforces is `CLAUDE.md`'s "Documentation is written in the present tense": every
-document states what is true now, keeps the reason and moves the incident to `DECISIONS.md`.
+document states what is true now, keeps the reason and moves the incident to a decision record.
 
 ## The pass
 
@@ -21,8 +21,8 @@ document states what is true now, keeps the reason and moves the incident to `DE
 
 Check what the session touched, then check what claims things about it. The usual suspects:
 
-- **`docs/HANDOFF.md`** — the tree state and what is queued. This file is wrong more often
-  than any other because it is the one that talks about *now*.
+- **`docs/HANDOFF.md`** — the tree state and what is queued. No pull request edits it, so it is
+  wrong about everything that merged since the last session's end; step 7 rewrites it.
 - **`CLAUDE.md` and `.claude/skills/`** — did a rule change, or a file get renamed out from under
   one?
 - **The design docs** — `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`,
@@ -36,7 +36,7 @@ break of it: it scans the governed docs for exactly these shapes (a commit hash,
 check count, a ticked box, a status word in a heading) and fails loudly on a hit.
 
 Where a measurement *is* the point — a density, a cost, a ratio — say what it was measured over and
-when, and put it in `docs/DECISIONS.md` rather than in a rule.
+when, and put it in a decision record rather than in a rule.
 
 ### 2a. Grep for what pointed at anything you moved
 
@@ -45,8 +45,11 @@ relocated anything, search the repo for its old name before finishing — hooks,
 and settings included:
 
 ```sh
-git grep -n "<old name>" -- ':!docs/DECISIONS.md' ':!docs/playtests/'
+rg -n "<old name>" --glob '!docs/decisions/**' --glob '!docs/playtests/**' --glob '!docs/evidence/**'
 ```
+
+`rg` rather than `git grep`: the evidence folders hold tens of gigabytes of pictures, and a
+`git grep` without `-I` reads every one of them.
 
 ### 2b. The drift guard
 
@@ -56,27 +59,30 @@ against it: when the code changes, nothing else rereads the sentence that quoted
 
 ### 3. Move what is now history
 
-Anything that stopped being current this session goes to **`docs/DECISIONS.md`**: decisions taken
-with the options rejected and why, ideas rejected outright, and changes that happened with the
-measurement that justified them. Dated, and naming the milestone and playtest that produced it.
+Anything that stopped being current this session goes to **a decision record under
+`docs/decisions/`** — the entry's own when it has one, else a new one from `tools/new-name.sh
+decision "<title>"`: decisions taken with the options rejected and why, ideas rejected outright,
+and changes that happened with the measurement that justified them. Dated, and naming the entry
+and playtest that produced it.
 
-**The test:** every fact lifted out of a docstring or a rule must be findable in `DECISIONS.md` by
-searching for the symbol or the noun it was attached to.
+**The test:** every fact lifted out of a docstring or a rule must be findable with
+`tools/decisions.sh` by searching for the symbol or the noun it was attached to.
 
 **The playtest files are never rewritten**, not even into the present tense: they are the only
-record of what was said, and `DECISIONS.md` cites them.
+record of what was said, and the records cite them.
 
 ### 4. Prune the queue
 
-In `docs/TODO.md`:
+In `docs/TODO.md` and the entries under `docs/todo/`:
 
-- **Remove what got done.** A finished entry leaves `TODO.md` and its record goes to
-  `DECISIONS.md`; nothing is ticked.
+- **Remove what got done.** A finished item's file is deleted; a finished entry's folder goes, its
+  link leaves `TODO.md`'s order and its record is a decision under the entry's name; nothing is
+  ticked. `tools/lint.sh` names a link in the order to a folder that is gone.
 - **No status words in headings.** A heading names the work, never its state.
 - **Reassess anything long open.** An item nobody has touched in ten milestones is either still
   wanted, superseded, or already done by something else. Say which, in the entry. An open item with
   no reassessment date is an item that will be read as current forever.
-- **An open item keeps a pointer** to its `DECISIONS.md` section, so picking it up does not mean
+- **An open item keeps a pointer** to its decision records, so picking it up does not mean
   reconstructing the reasoning.
 
 ### 5. Check the rules did not drift out of their skill
@@ -93,12 +99,16 @@ permission in this session), and so does retiring a merged branch.
 
 ### 6a. Leave the review list true
 
-`docs/REVIEW.md` holds what waits on a person: **committing** says when a PR adds an entry and
-**playtest-feedback** when a playtest removes one; check both happened for this session's work.
+The items under `docs/review/` and the untested list in `docs/REVIEW.md` hold what waits on a
+person: **committing** says when a PR adds a review item and **playtest-feedback** when a
+playtest deletes one; close every item a playtest this session covered, and check both happened
+for this session's work.
 
 ### 7. Leave the handoff true
 
-`docs/HANDOFF.md` is the last thing to write and the first thing the next session reads. It says the
+`docs/HANDOFF.md` is the last thing to write and the first thing the next session reads, and this
+pass is the only thing that writes it *(2026-09-26: "handoff only at the end of a session")*:
+pull requests do not, so rewrite it from the tree and the open pull requests as they stand. It says the
 tree state, what is queued in order, and nothing else. **If it is wrong, everything downstream of it
 is wrong too.**
 
