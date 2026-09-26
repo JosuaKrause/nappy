@@ -62,6 +62,7 @@ run uv run mypy
 run uv run python tools/test_codex_hooks.py
 run uv run python tools/test_clip.py
 run uv run python tools/test_cli_help.py
+run uv run python tools/test_migrate_queue.py
 
 if [[ $status -ne 0 ]]; then
     echo
