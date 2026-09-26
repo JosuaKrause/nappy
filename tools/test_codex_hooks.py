@@ -258,6 +258,28 @@ class CodexHooksTest(unittest.TestCase):
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_git_grep_guard_denies_a_full_path_and_upper_case_invocation(self) -> None:
+        # The adapter forwards the guard's output verbatim, so this only confirms the
+        # normalise-before-tokenise fix (backslash-newline pairs and stray backslashes deleted,
+        # git/grep compared by last path component case-insensitively) is wired through this path
+        # too -- neither shape is an exact-string "git"/"grep" match without it.
+        for command in (
+            "/usr/bin/git grep -n -i pattern origin/main -- docs/",
+            'GIT GREP -n -i "pattern" origin/main -- docs/',
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_git_grep_guard_upper_case_i_is_not_the_dash_capital_i_flag(self) -> None:
+        # Normalising case for the git/grep keywords must not also fold -I (skip binary files)
+        # together with -i (ignore case) -- that would make this exact upper-cased incident shape
+        # allow, the one false allow the redesign cannot reintroduce.
+        output = self.call_raw(command='GIT GREP -n -i "pattern" origin/main -- docs/')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(
             command="*** Update File: ../outside/src/events/a.gd\n*** Update File: /tmp/outside/src/city/b.gd\n"

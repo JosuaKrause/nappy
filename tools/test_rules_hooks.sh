@@ -22,6 +22,10 @@
 #     python3 -c), and a mere mention (echo, a commit message, a heredoc to cat) all deny now;
 #     git log/shortlog --grep=... is the one mention still allowed, since that grep is glued to a
 #     dash and never its own word
+#   - the same denies survive a line continuation (git \<newline>grep), a full path
+#     (/usr/bin/git grep), upper case (GIT GREP, real on this Mac's case-insensitive disk) and a
+#     mid-word backslash escape (g\it grep) -- normalised away before tokenising -- while -I stays
+#     its own flag, never folded together with -i by that same normalisation
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -399,6 +403,44 @@ assert_guard "--literal-pathspecs before grep -> deny" deny \
     'git --literal-pathspecs grep -n -i "foo" origin/main -- docs/'
 assert_guard "unknown global option, but guarded with -I -> allow" allow \
     'git -c pager.grep=false grep -n -I -i "foo" origin/main -- docs/'
+
+# A later, adversarial review of the raw-text redesign above found four bypasses that need no
+# obfuscation at all: a line continuation, a full path, upper case (real on this Mac's own
+# case-insensitive, case-preserving disk) and a mid-word backslash escape. Command text is
+# normalised (backslash-newline pairs and remaining backslashes deleted, `git`/`grep` compared by
+# last path component, case-insensitively) before tokenising to close all four.
+assert_guard "line continuation splits git from grep across a backslash-newline -> deny" deny \
+    "$(printf 'git \\\ngrep -n -i "foo" origin/main -- docs/')"
+assert_guard "a full path bypasses the exact-string match -> deny" deny \
+    '/usr/bin/git grep -n -i "foo" origin/main -- docs/'
+assert_guard "upper case, real on this Mac's case-insensitive disk -> deny" deny \
+    'GIT GREP -n -i "foo" origin/main -- docs/'
+assert_guard "a backslash escape mid-word -> deny" deny \
+    'g\it grep -n -i "foo" origin/main -- docs/'
+
+# The same normalisation must not fold -I (skip binary files) and -i (ignore case) together --
+# doing so would make a real, unbounded git grep -i ... docs/ (no -I) indistinguishable from a
+# guarded one, the one false allow this file cannot reintroduce.
+assert_guard "upper-case GIT GREP with only -i (no -I) still denies" deny \
+    'GIT GREP -n -i "foo" origin/main -- docs/'
+assert_guard "a full path with a real -I still allows" allow \
+    '/usr/bin/git grep -I -n -i "foo" origin/main -- docs/'
+assert_guard "upper case GIT GREP with a real -I still allows" allow \
+    'GIT GREP -I -n -i "foo" origin/main -- docs/'
+
+# Nothing ordinary regresses: the same three allow-shapes the brief named, re-checked against the
+# normalised path.
+assert_guard "git log --grep=foo still allows after normalisation" allow \
+    'git log --grep=foo'
+assert_guard "git grep -I ... -- '*.md' still allows after normalisation" allow \
+    "git grep -I pattern -- '*.md'"
+assert_guard "a git-grep mention still allows after normalisation" allow \
+    'echo "see git-grep for details"'
+
+# $(echo git) grep and a shell alias stay the two named, accepted exceptions -- the former never
+# places git and grep as adjacent bare words, the latter cannot be seen at the text layer at all.
+assert_guard "\$(echo git) grep stays the named, accepted exception -> allow" allow \
+    '$(echo git) grep -n -i "foo" origin/main -- docs/'
 
 echo
 echo "$checks checks, $failures failures"

@@ -31,10 +31,31 @@
 # deny reason names the workaround: write it as `git-grep` (a mention never tokenizes as the bare
 # word `git` immediately followed by `grep`) or add `-I`.
 #
+# Raw-text matching still had four holes that need no obfuscation at all, found by a later review:
+# `git \`<newline>`grep ...` (bash joins a backslash-newline pair back into one line, so treating it
+# as a hard boundary was the bug); `/usr/bin/git grep ...` (an exact-string compare to `git` never
+# matches a path); `GIT GREP ...` (this Mac's case-insensitive, case-preserving disk runs `GIT` as
+# the same binary); and `g\it grep ...` (an unquoted mid-word backslash is a no-op escape bash
+# itself strips). The command text is normalised before tokenising to close all four: a backslash-
+# newline pair is deleted first, whole, joining the halves exactly as bash would, rather than
+# leaving a bare newline the tokenizer would still treat as a separator; every remaining backslash
+# is then deleted, so an escaped letter spells the word it escapes; and the two places this file
+# asks "is this token the word `git` / `grep`?" compare the token's last path component case-
+# insensitively rather than by exact string, so `/usr/bin/git`, `./git` and `GIT` all still count.
+# `-I`, the `--` pathspec and every other flag stay compared case-sensitively, on the untouched
+# token -- folding `-I` (skip binary files) together with `-i` (ignore case) would make a real,
+# unbounded `git grep -i ... docs/` indistinguishable from a guarded one, which is the one false
+# allow this file cannot reintroduce. `$(echo git) grep ...` and a shell alias stay the two named,
+# accepted exceptions: the former never places `git` and `grep` as adjacent bare words (the
+# substituted word lands as `echo`'s own argument), and the latter cannot be seen at the text layer
+# at all.
+#
 # Reads the hook JSON on stdin. Denies via hookSpecificOutput.permissionDecision (PreToolUse "deny"
 # JSON, see the pull request description for the doc citation confirming this shape and that
 # PreToolUse fires for a sub-agent's own tool calls too -- a sub-agent is what ran the command
-# above). Bash 3.2-safe, jq and bash only -- no external tokenizer, no rg, no python.
+# above). Bash 3.2-safe, jq and bash only -- no external tokenizer, no rg, no python; case-
+# insensitive matching uses bash's own `nocasematch` shell option, toggled on and back off around
+# one comparison at a time so it never leaks into the case-sensitive checks below.
 
 set -uo pipefail
 
@@ -43,6 +64,17 @@ tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
 [ "$tool" = "Bash" ] || exit 0
 command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)
 [ -z "$command" ] && exit 0
+
+# ------------------------------------------------------------------------- normalise ------------
+# Deletes every backslash-newline pair first (as a pair, so the join leaves nothing between the two
+# former lines -- exactly what bash itself does with a real line continuation), then deletes every
+# remaining backslash (so `g\it` spells `git`). Both patterns are built with a doubled backslash in
+# single quotes on purpose: in a glob pattern (which is what the right-hand side of `${var//..}` is)
+# a single `\` escapes the next character, so a *literal* one backslash has to be spelled as two.
+bs_nl='\\'$'\n'
+command="${command//$bs_nl/}"
+bs='\\'
+command="${command//$bs/}"
 
 # ---------------------------------------------------------------------------- tokenizer --------
 # Splits $1 into one token per output line, on whitespace alone: quotes, `$`, `<`, `(` and every
@@ -92,6 +124,24 @@ done < <(tokenize "$command")
 
 n=${#toks[@]}
 
+# Case-insensitively compares $1 to $2, without leaking bash's `nocasematch` option to anything
+# else in this file: turned on only for the one `[[ ... ]]` below, then off again before returning,
+# so the case-sensitive checks this file relies on elsewhere (`-I` vs `-i`, a `*.md` extension)
+# never see it.
+eq_ci() {
+	shopt -s nocasematch
+	local result=1
+	[[ "$1" == "$2" ]] && result=0
+	shopt -u nocasematch
+	return "$result"
+}
+
+# True for the bare word `git` / `grep`, case-insensitively, and also for either one written as a
+# path (`/usr/bin/git`, `./git`) -- only the token's last path component is compared, so a
+# directory earlier in the path can never itself read as `git` or `grep`.
+is_git_token() { eq_ci "${1##*/}" "git"; }
+is_grep_token() { eq_ci "${1##*/}" "grep"; }
+
 # A `-I` flag, standalone or bundled into another short-option cluster (`-nI`, `-Iin`, ...); never
 # matches a `--long` option, since the character right after the leading `-` there is another `-`.
 has_dash_I() {
@@ -121,7 +171,7 @@ is_text_glob() {
 findings=()
 i=0
 while [ "$i" -lt "$n" ]; do
-	if [ "${toks[$i]}" = "git" ]; then
+	if is_git_token "${toks[$i]}"; then
 		j=$((i + 1))
 		# Any global option before the subcommand, skipped fail-safe rather than off a closed
 		# whitelist: a `-`-prefixed token we do not otherwise recognise (`-c pager.grep=false`,
@@ -142,7 +192,7 @@ while [ "$i" -lt "$n" ]; do
 			*) break ;;
 			esac
 		done
-		if [ "$j" -lt "$n" ] && [ "${toks[$j]}" = "grep" ]; then
+		if [ "$j" -lt "$n" ] && is_grep_token "${toks[$j]}"; then
 			# The invocation's own tail: everything from `grep` up to the next unquoted
 			# separator (already its own token) or the end of the token stream.
 			k=$((j + 1))
