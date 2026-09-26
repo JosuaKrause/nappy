@@ -39,3 +39,18 @@ And to this session:
    task being done. The question it answers is the player's own: "are the special/unique things
    actually getting encountered?"
 4. **The player wants Claude able to read the counts back from GoatCounter.**
+
+## Then, in the same conversation
+
+On where a local session keeps the key:
+
+> "also add an .env gitignore in the repo where I can place the env for the other claude"
+
+And on how the key is used:
+
+> "make it so the interaction with the API happens via script not directly"
+
+5. **A git-ignored `.env` at the repository root holds the key** for a session on the player's
+   own machine.
+6. **GoatCounter's API is reached only through the repository's script**, never by a request
+   written by hand.
