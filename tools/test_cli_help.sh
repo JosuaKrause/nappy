@@ -137,7 +137,7 @@ assert_exit "pycheck.sh --bogus"      nonzero ./tools/pycheck.sh --bogus
 assert_exit "export-web.sh --bogus"   nonzero ./tools/export-web.sh --bogus
 assert_exit "serve-web.sh --bogus"    nonzero ./tools/serve-web.sh --bogus
 assert_exit "sound-lab.sh --bogus"    nonzero ./tools/sound-lab.sh --bogus
-assert_exit "sound-lab.sh --pass (missing value)" nonzero ./tools/sound-lab.sh --pass
+assert_exit "sound-lab.sh --pass (there is one pass; the flag is gone)" nonzero ./tools/sound-lab.sh --pass pass-4
 assert_exit "sound-lab.sh (bad port)" nonzero ./tools/sound-lab.sh notaport
 assert_exit "release.sh --bogus"      nonzero ./tools/release.sh --bogus
 assert_exit "run.sh --bogus"          nonzero ./tools/run.sh --bogus

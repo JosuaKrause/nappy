@@ -175,17 +175,18 @@ class CliHelpTests(unittest.TestCase):
 
     def test_sound_lab_no_serve_matches_recipe_hashes(self) -> None:
         """The generator's own reproducibility is `test_synth_output_is_valid_deterministic_and_portable`
-        above; this is tools/sound-lab.sh's own contract -- that its --no-serve build of the newest
-        pass (extracted from the commit tools/sound-lab/passes.json records, not the tracked
-        tools/synthesize-sfx.py directly) matches every hash the recipe records for it. No archived
-        evidence is read here: the recipe carries its own expected hashes, which is the point of
-        replacing a committed listening kit with a reproducible command."""
-        passes = json.loads((TOOLS / "sound-lab" / "passes.json").read_text())
-        default_pass = passes["default_pass"]
-        recorded_hashes: dict[str, str] = passes["passes"][default_pass]["hashes"]
+        above; this is tools/sound-lab.sh's own contract -- that its --no-serve build of the one
+        current pass tools/sound-lab/passes.json records (built from the tracked
+        tools/synthesize-sfx.py directly, with no pinned commit) matches every hash the recipe
+        records for it. No archived evidence is read here: the recipe carries its own expected
+        hashes, which is the point of replacing a committed listening kit with a reproducible
+        command."""
+        recipe = json.loads((TOOLS / "sound-lab" / "passes.json").read_text())
+        pass_name = recipe["pass"]
+        recorded_hashes: dict[str, str] = recipe["hashes"]
 
         result = subprocess.run(
-            [str(TOOLS / "sound-lab.sh"), "--pass", default_pass, "--no-serve"],
+            [str(TOOLS / "sound-lab.sh"), "--no-serve"],
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
@@ -194,7 +195,7 @@ class CliHelpTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
-        output_dir = PROJECT_ROOT / "build" / "sound-lab" / default_pass
+        output_dir = PROJECT_ROOT / "build" / "sound-lab" / pass_name
         for filename, expected_sha256 in recorded_hashes.items():
             with self.subTest(wav=filename):
                 actual_sha256 = hashlib.sha256((output_dir / filename).read_bytes()).hexdigest()

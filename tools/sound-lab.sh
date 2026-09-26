@@ -2,8 +2,7 @@
 # Builds and serves the Copper lark sound-effects listening lab locally, instead of downloading a
 # zip and an index.html from a pull request each time.
 #
-#   tools/sound-lab.sh                    # build + serve the newest pass on localhost:8070
-#   tools/sound-lab.sh --pass pass-3      # a named pass instead of the newest
+#   tools/sound-lab.sh                    # build + serve the current pass on localhost:8070
 #   tools/sound-lab.sh --no-serve         # build only; print the directory and stop
 #   tools/sound-lab.sh --lan              # also print an address a phone on the network can open
 #   tools/sound-lab.sh 8090               # a different port
@@ -13,38 +12,41 @@
 # builds and serves the listening page: "yeah I'd prefer a local command"; "same as with the
 # trailer / video" (tools/trailer.sh, which renders into gitignored build/ from a committed shot
 # list, tools/trailer/shots.json). This is that shape for sound: tools/sound-lab/passes.json
-# records the seed, extra flags and the exact commit whose tools/synthesize-sfx.py built each
-# pass -- the smallest committed description that rebuilds a pass byte for byte -- and this script
-# extracts that commit's generator with `git show`, runs it through the locked `uv` environment,
-# checks the result against the recipe's own recorded hashes, and serves the pass from git-ignored
-# build/sound-lab/<pass>/. Nothing here is committed audio: see .claude/skills/sound-effects.
+# records the one current pass's seed, extra flags and its own expected hashes -- the smallest
+# committed description that lets this script confirm a rebuild matches -- and this script runs
+# the tracked tools/synthesize-sfx.py directly (no pinned commit: a pass is squashed away with
+# every other branch commit, per the player, 2026-09-26: "yes 384 will get squashed so no
+# scrubbing necessary"), checks the result against the recipe's own recorded hashes, and serves it
+# from git-ignored build/sound-lab/<pass>/. Nothing here is committed audio: see
+# .claude/skills/sound-effects.
 #
-# Every pass is rebuilt from its own commit rather than the tracked tools/synthesize-sfx.py
-# directly, uniformly: a pass is a frozen listening artifact, and pinning it to the commit that
-# made it is what lets it keep rebuilding byte for byte after the generator moves on. Live
-# iteration on the generator itself is `uv run python tools/synthesize-sfx.py` straight, per the
-# sound-effects skill, into a scratch --output of your own choosing.
+# A new pass is made by changing the generator's defaults or tools/sound-lab/passes.json's args,
+# rebuilding, listening, and once it is worth keeping, overwriting passes.json's seed/args/label
+# and every hash with the new build's own -- there is exactly one recorded pass, the current one.
+# Live iteration on the generator before it is worth freezing this way is
+# `uv run python tools/synthesize-sfx.py` straight, per the sound-effects skill, into a scratch
+# --output of your own choosing.
 set -uo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+GENERATOR="$PROJECT_DIR/tools/synthesize-sfx.py"
 RECIPE_FILE="$PROJECT_DIR/tools/sound-lab/passes.json"
 BUILD_ROOT="$PROJECT_DIR/build/sound-lab"
 
 usage() {
     cat <<'EOF'
-usage: tools/sound-lab.sh [--help|-h] [--pass NAME] [--lan] [--no-serve] [port]
+usage: tools/sound-lab.sh [--help|-h] [--lan] [--no-serve] [port]
 
-Rebuilds a Copper lark sound-effects listening pass from tools/sound-lab/passes.json and the
-generator commit that built it, writes it to git-ignored build/sound-lab/<pass>/, verifies every
-WAV against the recipe's own recorded hashes, and serves it over plain HTTP.
+Rebuilds the Copper lark sound-effects listening pass tools/sound-lab/passes.json records from
+the tracked tools/synthesize-sfx.py, writes it to git-ignored build/sound-lab/<pass>/, verifies
+every WAV against the recipe's own recorded hashes, and serves it over plain HTTP.
 
-  --pass NAME    a pass named in tools/sound-lab/passes.json (default: the newest)
   --lan          also print an address a phone on the same network can open
   --no-serve     build and verify only; print the directory and stop, serving nothing
   port           the local port to serve on (default: 8070)
 
   tools/sound-lab.sh
-  tools/sound-lab.sh --pass pass-3 --no-serve
+  tools/sound-lab.sh --no-serve
   tools/sound-lab.sh --lan
 EOF
 }
@@ -55,22 +57,11 @@ for arg in "$@"; do
     esac
 done
 
-PASS_NAME=""
 LAN=0
 NO_SERVE=0
 PORT=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --pass)
-            if [[ $# -lt 2 || "$2" == --* ]]; then
-                echo "sound-lab.sh: --pass is missing its name" >&2
-                echo >&2
-                usage >&2
-                exit 1
-            fi
-            PASS_NAME="$2"
-            shift 2
-            ;;
         --lan) LAN=1; shift ;;
         --no-serve) NO_SERVE=1; shift ;;
         -*)
@@ -116,21 +107,12 @@ fi
 schema_errors="$(jq -r '
     . as $top |
     def num: type == "number";
-    (if ($top.default_pass | type) == "string" then empty else "default_pass must be a string" end),
-    (if ($top.passes | type) == "object" and ($top.passes | length) > 0 then empty
-        else "passes must be a non-empty object" end),
-    ($top.passes | to_entries[] |
-        (.key) as $n |
-        (if (.value.generator_commit | type) == "string"
-            and (.value.generator_commit | test("^[0-9a-f]{40}$"))
-            then empty else "\($n): generator_commit must be a 40-character commit hash" end),
-        (if (.value.seed | num) then empty else "\($n): seed must be a number" end),
-        (if (.value.args // [] | type) == "array" then empty else "\($n): args must be an array" end),
-        (if (.value.hashes | type) == "object" and (.value.hashes | length) > 0 then empty
-            else "\($n): hashes must be a non-empty object" end)
-    ),
-    (if ($top.passes | has($top.default_pass)) then empty
-        else "default_pass (\($top.default_pass)) names no pass in passes" end)
+    (if ($top.pass | type) == "string" then empty else "pass must be a string" end),
+    (if (.seed | num) then empty else "seed must be a number" end),
+    (if (.args // [] | type) == "array" then empty else "args must be an array" end),
+    (if (.label | type) == "string" then empty else "label must be a string" end),
+    (if (.hashes | type) == "object" and (.hashes | length) > 0 then empty
+        else "hashes must be a non-empty object" end)
 ' "$RECIPE_FILE" 2>&1)" || {
     echo "sound-lab.sh: ${RECIPE_FILE#"$PROJECT_DIR"/} is not valid JSON" >&2
     exit 1
@@ -141,41 +123,20 @@ if [[ -n "$schema_errors" ]]; then
     exit 1
 fi
 
-if [[ -z "$PASS_NAME" ]]; then
-    PASS_NAME="$(jq -r '.default_pass' "$RECIPE_FILE")"
-fi
-if ! jq -e --arg n "$PASS_NAME" '.passes | has($n)' "$RECIPE_FILE" >/dev/null; then
-    known="$(jq -r '.passes | keys | join(", ")' "$RECIPE_FILE")"
-    echo "sound-lab.sh: no pass named '$PASS_NAME' (known: $known)" >&2
-    exit 1
-fi
-
-commit="$(jq -r --arg n "$PASS_NAME" '.passes[$n].generator_commit' "$RECIPE_FILE")"
-seed="$(jq -r --arg n "$PASS_NAME" '.passes[$n].seed' "$RECIPE_FILE")"
-label="$(jq -r --arg n "$PASS_NAME" '.passes[$n].label' "$RECIPE_FILE")"
+PASS_NAME="$(jq -r '.pass' "$RECIPE_FILE")"
+seed="$(jq -r '.seed' "$RECIPE_FILE")"
+label="$(jq -r '.label' "$RECIPE_FILE")"
 args=()
-while IFS= read -r word; do args+=("$word"); done < <(jq -r --arg n "$PASS_NAME" '.passes[$n].args[]?' "$RECIPE_FILE")
+while IFS= read -r word; do args+=("$word"); done < <(jq -r '.args[]?' "$RECIPE_FILE")
 
-if ! git -C "$PROJECT_DIR" cat-file -e "$commit" 2>/dev/null; then
-    echo "sound-lab.sh: commit $commit (recorded for '$PASS_NAME') is not reachable in this checkout" >&2
-    echo "(a shallow clone may need 'git fetch --unshallow')" >&2
-    exit 1
-fi
-
-TEMP_GENERATOR=""
-cleanup() { [[ -n "$TEMP_GENERATOR" ]] && rm -f "$TEMP_GENERATOR"; }
-trap cleanup EXIT
-
-GENERATOR="$(mktemp "${TMPDIR:-/tmp}/sound-lab-generator.XXXXXX.py")"
-TEMP_GENERATOR="$GENERATOR"
-if ! git -C "$PROJECT_DIR" show "$commit:tools/synthesize-sfx.py" > "$GENERATOR" 2>/dev/null; then
-    echo "sound-lab.sh: cannot rebuild '$PASS_NAME' -- tools/synthesize-sfx.py is unreadable at $commit" >&2
+if [[ ! -f "$GENERATOR" ]]; then
+    echo "sound-lab.sh: no generator at ${GENERATOR#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
 
 OUT_DIR="$BUILD_ROOT/$PASS_NAME"
 echo "building '$PASS_NAME' ($label)" >&2
-echo "  generator: $commit, seed $seed${args[*]:+, ${args[*]}}" >&2
+echo "  seed $seed${args[*]:+, ${args[*]}}" >&2
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 if ! (cd "$PROJECT_DIR" && uv run --quiet python "$GENERATOR" --output "$OUT_DIR" --seed "$seed" \
@@ -197,7 +158,7 @@ while IFS=$'\t' read -r filename expected; do
         echo "sound-lab.sh: '$PASS_NAME'/$filename hash drifted (recipe $expected, built $actual)" >&2
         mismatch=1
     fi
-done < <(jq -r --arg n "$PASS_NAME" '.passes[$n].hashes | to_entries[] | "\(.key)\t\(.value)"' "$RECIPE_FILE")
+done < <(jq -r '.hashes | to_entries[] | "\(.key)\t\(.value)"' "$RECIPE_FILE")
 if [[ "$checked" -eq 0 ]]; then
     echo "sound-lab.sh: '$PASS_NAME' recorded no hashes to verify" >&2
     exit 1
@@ -229,6 +190,4 @@ if [[ "$LAN" -eq 1 ]]; then
     fi
 fi
 echo "(Ctrl-C to stop)"
-cleanup
-trap - EXIT
 cd "$OUT_DIR" && exec python3 -m http.server "$PORT"
