@@ -133,6 +133,8 @@ assert_exit "new-name.sh --help" zero ./tools/new-name.sh --help
 assert_exit "new-name.sh -h"     zero ./tools/new-name.sh -h
 assert_exit "decisions.sh --help" zero ./tools/decisions.sh --help
 assert_exit "decisions.sh -h"     zero ./tools/decisions.sh -h
+assert_exit "queue.sh --help" zero ./tools/queue.sh --help
+assert_exit "queue.sh -h"     zero ./tools/queue.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "ci-costs.sh --bogus"        nonzero ./tools/ci-costs.sh --bogus
@@ -192,6 +194,10 @@ assert_exit "new-name.sh (unknown kind)" nonzero ./tools/new-name.sh entry "x"
 assert_exit "new-name.sh --entry on a todo" nonzero ./tools/new-name.sh todo --entry M1 "x"
 assert_exit "decisions.sh --bogus" nonzero ./tools/decisions.sh --bogus
 assert_exit "decisions.sh --in (unknown folder)" nonzero ./tools/decisions.sh --in archive M129
+assert_exit "queue.sh --bogus" nonzero ./tools/queue.sh --bogus
+assert_exit "queue.sh --band (unknown band)" nonzero ./tools/queue.sh --band soon
+assert_exit "queue.sh --band (missing value)" nonzero ./tools/queue.sh --band
+assert_exit "queue.sh (a stray word)" nonzero ./tools/queue.sh next
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and
@@ -504,6 +510,59 @@ printf -- '- [gone](todo/2026-09-01-quiet-heron/)\n' >> "$names_repo/docs/TODO.m
 lint_in_names_repo docs/TODO.md
 status=$?
 check_that "lint.sh rejects a link in TODO.md to an entry folder that does not exist" '[[ $status -ne 0 ]]'
+
+# ----------------------------------------------------- queue.sh orders the entries by their bands ---
+# A scratch queue: two `now` entries, which print newest first; two old `next` entries under one
+# date, which print in milestone-number order; a `next` entry that waits on a `later` one, which
+# moves to straight behind it; and a `parked` one last. Then each broken band line --check names.
+queue_repo="$work_dir/queue-repo"
+mkdir -p "$queue_repo/tools"
+cp "$root/tools/queue.sh" "$queue_repo/tools/"
+add_entry() {
+    # $1 folder name  $2 opening block (band and after lines)  $3 heading
+    mkdir -p "$queue_repo/docs/todo/$1"
+    printf '%s\n\n## %s\n\nText.\n' "$2" "$3" > "$queue_repo/docs/todo/$1/README.md"
+}
+add_entry 2026-09-20-quiet-heron "priority: now" "quiet-heron — Older and now · filed 2026-09-20"
+add_entry 2026-09-22-busy-otter "priority: now" "busy-otter — Newer and now · filed 2026-09-22"
+add_entry 2026-09-01-M40 "priority: next" "M40 — Forty"
+add_entry 2026-09-01-M5 "priority: next" "M5 — Five · asked for 2026-09-01"
+add_entry 2026-09-02-calm-fox "$(printf 'priority: next\nafter: 2026-09-25-lazy-cat')" "calm-fox — Waits · filed 2026-09-02"
+add_entry 2026-09-25-lazy-cat "priority: later" "lazy-cat — Waited on · filed 2026-09-25"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked · filed 2026-09-03"
+order="$(cd "$queue_repo" && ./tools/queue.sh | awk '{ print $1 " " $2 }' | tr '\n' ' ')"
+check_that "queue.sh prints now newest first, the rest oldest first, and an entry behind what it waits on" \
+    '[[ "$order" == "now 2026-09-22-busy-otter now 2026-09-20-quiet-heron next 2026-09-01-M5 next 2026-09-01-M40 later 2026-09-25-lazy-cat next 2026-09-02-calm-fox parked 2026-09-03-slow-owl " ]]'
+line="$(cd "$queue_repo" && ./tools/queue.sh --band next | tail -n 1)"
+check_that "queue.sh --band prints one band, each line with its title and what it waits on" \
+    '[[ "$line" == "next    2026-09-02-calm-fox  calm-fox — Waits  (after 2026-09-25-lazy-cat)" ]]'
+(cd "$queue_repo" && ./tools/queue.sh --check)
+status=$?
+check_that "queue.sh --check passes a queue whose band lines are whole" '[[ $status -eq 0 ]]'
+queue_check_fails() {
+    # $1 label  $2 text --check's output must contain
+    local out status want="$2"
+    out="$(cd "$queue_repo" && ./tools/queue.sh --check 2>&1)"
+    status=$?
+    check_that "$1" '[[ $status -ne 0 && "$out" == *"$want"* ]]'
+    out="$(cd "$queue_repo" && ./tools/queue.sh 2>&1)"
+    status=$?
+    check_that "queue.sh refuses to print the order while --check fails ($2)" '[[ $status -ne 0 ]]'
+}
+printf '## slow-owl — Parked\n' > "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
+queue_check_fails "queue.sh --check rejects an entry with no priority line" "no \`priority:\` line"
+add_entry 2026-09-03-slow-owl "priority: someday" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects a band outside the set" "band outside"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nafter: 2026-09-04-gone-bird')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects an after naming no entry" "names no entry"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nafter: 2026-09-02-calm-fox')" "slow-owl — Parked"
+add_entry 2026-09-25-lazy-cat "$(printf 'priority: later\nafter: 2026-09-03-slow-owl')" "lazy-cat — Waited on"
+queue_check_fails "queue.sh --check rejects an after cycle" "cycle"
+add_entry 2026-09-25-lazy-cat "priority: later" "lazy-cat — Waited on"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+printf 'priority: next\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
+queue_check_fails "queue.sh --check rejects a band line below the opening block" "outside the opening block"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 
 # ------------------------------------ update-pr.sh stops a branch still on the old single queue ---
 # A throwaway origin whose base has the old single-file queue, a main that has it as files, and two
