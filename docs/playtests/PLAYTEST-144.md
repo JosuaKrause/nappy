@@ -29,7 +29,10 @@ conflicted code file.
 ## Then, on how the names work
 
 Offered: a date in the file's name with two words after it, the same with three words, or three
-words alone with the date inside the file. The player chose the first:
+words alone with the date inside the file, after the orchestrator's note that "A small script
+picks an unused name and writes the file's header". The player chose the first, whose option read
+"File docs/todo/2026-09-26-busy-badger.md; spoken and linked as "busy-badger". Sorted by date for
+free; short to say; lint rejects a duplicate.":
 
 > "Date file, 2 words": `docs/todo/2026-09-26-busy-badger.md`, spoken and linked as
 > "busy-badger".
@@ -53,12 +56,28 @@ And, in the same conversation:
    completing it deletes the file. An entry is then a folder: its own words and context in one
    file, one file per item beside it. → M223.
 
-The proposal the player was answering, as the orchestrator put it: a queue entry is a folder
-named by date and two words, each of its items a file with a descriptive name deleted when done; a
-decision is a file under the entry's name; a new playtest is named the same way; an evidence folder
-takes its entry's name; existing M-numbers and PLAYTEST-NN files keep their names; statement
-numbers inside a playtest stay numbers; releases keep their version numbers; `HANDOFF.md` stays
-one file written at the end of a session, and `TODO.md` keeps only its header and "The order".
+The proposal the player was answering, verbatim from the orchestrator's message:
+
+> | Thing | Today | After M223 | Random words? |
+> |---|---|---|---|
+> | **Queue entry** (a milestone) | a `## M215 — …` section in `TODO.md` | a folder: `docs/todo/2026-09-26-busy-badger/` | **yes**: date + two words |
+> | **Item of an entry** (today's `- [ ]` lines) | a checkbox line inside the section | one file per item in the entry's folder, written in full, deleted when done | no: a descriptive name like `stack-in-front.md`, since nothing outside its folder refers to it |
+> | **Decision** (a record) | a `## …` section in `DECISIONS.md` | `docs/decisions/2026-09-26-busy-badger.md`, the same name as the entry it closes | **yes**: the entry's name |
+> | **Playtest** | `docs/playtests/PLAYTEST-144.md` | `docs/playtests/2026-09-26-quiet-heron.md` | **yes** |
+> | **Evidence folder** | `docs/evidence/m203-slug-date/` | `docs/evidence/busy-badger-slug-date/`, taking the entry's name | follows the entry |
+>
+> - **Existing M1–M223 and PLAYTEST-01…144** keep their numbers. Old entries still move into
+>   folders, e.g. `docs/todo/2026-09-26-M210/`, and old decisions into files, e.g.
+>   `docs/decisions/…-M203.md`. Renaming them would be a diff nobody can review.
+> - **Statement numbers inside a playtest** ("statement 3") stay numbers.
+> - **Releases** keep semantic version numbers (`v0.19.0`), and PR numbers are GitHub's.
+> - **`HANDOFF.md`** stays one file, written only at the end of a session.
+> - **`TODO.md`** keeps only its header and "The order", the priority list that points at entry
+>   folders.
+>
+> **One gap:** `docs/REVIEW.md` … I'd make each review item a file under `docs/review/` too, named
+> after the entry it came from, and delete it when a playtest covers it. Shall I add that to M223?
+
 Asked whether `docs/REVIEW.md`, the list of things waiting on a person and the fourth biggest source
 of conflicts, becomes files as well:
 

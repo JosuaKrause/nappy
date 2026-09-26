@@ -619,11 +619,13 @@ landed. Until then, entries are filed the old way.
 - [ ] **A new playtest is a file under the same kind of name**, `docs/playtests/<date>-<adjective>-<animal>.md`,
       and so is anything else numbered in sequence. Existing playtest files keep their numbers
       and are never rewritten.
-**Proposed, not asked for** (the orchestrator's, open to overturn; the player's "rest sounds fine"
-answered the layout above, not these): splitting the existing `DECISIONS.md` into files rather than
-leaving old records where they are; no checked-in index, with a command that lists and searches
-the records instead; a command that makes names, and a lint for duplicate names. The plainer
-alternative to each is to leave it out.
+
+**Proposed, not asked for** (the orchestrator's, open to overturn; the player saw and accepted the
+split of the old records, the name-making script and the duplicate lint, but not these): no
+checked-in index, with a command that lists and searches the records instead; an entry with no
+date in its heading takes the date of the commit that first wrote its heading line; a review
+item's steps written as prose; `REVIEW.md` keeping its list of what no person has tested yet.
+Nothing else in the repo is numbered in sequence besides milestones, playtests and review items.
 
 - [ ] **A command makes the name**: it picks an unused adjective and animal (checked against every
       folder that takes these names), writes the file with its heading and date, and prints the
