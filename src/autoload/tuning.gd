@@ -1837,9 +1837,11 @@ const OFFSCREEN_WARNING_MIN := 2.9
 ## (PLAYTEST-145, statement 11), and whether it needs one at all is open (statements 17-18).
 const OFFSCREEN_WARNING_MIN_EXEMPT: Array[String] = ["loose_dog"]
 
-## A pursuer's telegraph is the **approach**, the way a fire engine's is — a dog that has to bark
-## for two seconds before it is allowed to start running is not a dog. So the notice is the sight
-## of it closing, and this is how much of that she is owed before it can touch her.
+## A pursuer's telegraph is the **approach**: it exists and visibly closes on her the whole time it
+## telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge
+## badge with nothing in the world until its telegraph is spent). A dog that has to bark for two
+## seconds before it is allowed to start running is not a dog. So the notice is the sight of it
+## closing, and this is how much of that she is owed before it can touch her.
 const PURSUIT_MIN_NOTICE := 1.5
 
 ## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
