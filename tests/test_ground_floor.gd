@@ -13,14 +13,18 @@ extends RefCounted
 ## for it, and `_column_under_door()` is the overlap test. A geometry fact, not a roll, so it moves
 ## no RNG stream — only which of `_draws_window_at()`'s already-computed answers gets painted where.
 ##
-## M203's rule is the same shape, for the opposite reason: where the tile directly south of a
+## M203's rule reaches the same columns for the opposite reason: where the tile directly south of a
 ## non-home front's own column is another building rather than walkable ground
 ## (`Building.covered_ground_cols`, another geometry fact `City._spawn_buildings()` hands over, read
-## off `CityMap.is_walkable()`), that column draws a plain window row instead — no storefront, no
-## blank-wall plinth, no door, no portico, no fire escape. Every roll still runs exactly as far as
-## it always has (`_pair_is_storefront()`, `_portico_is_drawn()`, `_door_col_from()`'s own covered
-## filter, the fire escape's drop in `_build_front()`); only which of the answers gets painted, or
-## in the door's case which reachable column it re-places onto, changes.
+## off `CityMap.is_walkable()`), that column draws no facade at all — no wall, no window at any
+## floor, no storefront, no blank-wall plinth, no door, no portico, no fire escape. The building
+## that covers it draws its own roof further north instead, up to exactly the covered building's
+## own roof line (`Building.roof_extension_rows`, `City._assign_roof_extensions()`) — roof meets
+## roof, replacing a row of windows the player turned down on the first pictures (PLAYTEST-138
+## statement 3). Every roll still runs exactly as far as it always has (`_pair_is_storefront()`,
+## `_portico_is_drawn()`, `_door_col_from()`'s own covered filter, the fire escape's drop in
+## `_build_front()`); only which of the answers gets painted, or in the door's case which reachable
+## column it re-places onto, changes. `roof_extension_rows` itself is pure geometry, not a roll.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## A spread of cities, built in full (buildings, street trees, crowd, events) so the sweep exercises
@@ -48,12 +52,14 @@ func run(t) -> void:
 	_test_a_wide_front_may_carry_a_second_escape_with_the_gap(t)
 	_test_no_second_escape_on_a_front_too_narrow_for_one(t)
 	_test_the_flower_pot_varies_within_one_escape(t)
-	_test_a_covered_column_draws_the_window_row_and_an_uncovered_one_keeps_its_ground_floor(t)
+	_test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t)
+	_test_roof_extension_rows_reads_back_per_column(t)
 	_test_covered_columns_move_no_storefront_roll(t)
 	_test_the_door_only_lands_on_a_reachable_column(t)
 	_test_a_fully_covered_front_has_no_door(t)
 	_test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t)
 	_test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_instead(t)
+	_test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t)
 	_test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
 
 # ------------------------------------------------------------------- fixtures ---
@@ -652,24 +658,47 @@ func _test_the_flower_pot_varies_within_one_escape(t) -> void:
 
 # ------------------------------------------------------------------- M203: covered columns ---
 
-## The rule stated directly: a covered column draws the window row every upper floor already
-## draws, and an uncovered column of the same front is unaffected — still plain wall, since this
-## fixture is `RESIDENTIAL` with no door rolled onto either uncovered column (checked below).
-func _test_a_covered_column_draws_the_window_row_and_an_uncovered_one_keeps_its_ground_floor(t) -> void:
+## The rule stated directly: a covered column draws no facade at all — not even the window row
+## the first, superseded pass drew there — and an uncovered column of the same front is unaffected
+## either way, since this fixture is `RESIDENTIAL` with no door rolled onto either uncovered column
+## (checked below). `_draws_window_at()` no longer reads `covered_ground_cols` at all: `_draw()`'s
+## own wall loop skips a covered column's whole cell before this is ever asked about it, so the
+## function's own answer for a covered column is identical to an ordinary blank-wall one.
+func _test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t) -> void:
 	var covered: Array[bool] = [true, false, true, false]
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0),
 			64.0, false, Vector2(5555.0, 6666.0), covered)
 	t.check(building.wall_tiles() >= 2, "the fixture is genuinely multi-story")
 	for col in building.columns():
-		t.check(building._draws_window_at(0, col) == building._is_covered(col),
-				"column %d: a ground-floor window is drawn iff the column is covered (M203)" % col)
+		t.check(not building._draws_window_at(0, col),
+				"column %d: no ground-floor window is drawn, covered or not (M203 moved this to the roof instead)" % col)
+		for row in range(1, building.wall_tiles()):
+			t.check(building._draws_window_at(row, col),
+					"column %d row %d: an upper floor still draws its own window regardless of coverage" % [col, row])
 	for col in [0, 2]:
+		t.check(building._is_covered(col), "column %d: the fixture covers it" % col)
 		t.check(building._ground_floor_texture(col) == &"",
-				"column %d: a covered column has no storefront and no blank-wall plinth" % col)
+				"column %d: a covered column has no storefront and no blank-wall plinth either" % col)
 	for col in [1, 3]:
+		t.check(not building._is_covered(col), "column %d: the fixture leaves it reachable" % col)
 		if col != building.entrance_door_col():
 			t.check(building._ground_floor_texture(col) == Building.WALL_BASE,
 					"column %d: an uncovered column of the same front keeps its plain-wall ground floor" % col)
+	building.free()
+
+## `roof_extension_rows` is a fixture-settable geometry fact, the same shape `covered_ground_cols`
+## already is: `_extension_rows()` reads it back per column, and an index past the end — or a
+## building nobody ever told about one — reads as 0, the same "nobody told this building about
+## one" convention `_is_covered()` and `_windows`' own out-of-range reads already use.
+func _test_roof_extension_rows_reads_back_per_column(t) -> void:
+	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0), 64.0)
+	t.check(building._extension_rows(0) == 0, "a building nobody told about an extension reads 0")
+	building.roof_extension_rows = [0, 3, 0, 5]
+	for col in [0, 1, 2, 3]:
+		t.check(building._extension_rows(col) == building.roof_extension_rows[col],
+				"column %d: _extension_rows() reads roof_extension_rows back exactly" % col)
+	t.check(building._extension_rows(4) == 0, "an index past the end reads as 0")
+	t.check(building._extension_rows(-1) == 0, "a negative index reads as 0 too")
 	building.free()
 
 ## `_build_front()`'s own `front:` stream — the storefront bag, the awning and ambient-shutter
@@ -717,7 +746,7 @@ func _test_a_fully_covered_front_has_no_door(t) -> void:
 			64.0, false, Vector2(9001.0, 4002.0), covered)
 	t.check(building.entrance_door_col() == -1, "a fully covered front has no door")
 	t.check(building.blank_ground_floor_cells().is_empty(),
-			"a fully covered front offers no blank cell either, since every column is a window")
+			"a fully covered front offers no blank cell either, since every column draws no facade at all")
 	building.free()
 
 ## The same `front:`-stream comparison `_test_the_home_flag_changes_no_front_roll` already makes for
@@ -783,6 +812,47 @@ func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_
 			"the door does not land on the covered portico column")
 	covered_civic.free()
 
+## `City._assign_roof_extensions()`'s own wiring, asked of whatever the generator actually builds:
+## every covered column's own south-neighbour tile belongs to some building's lot, and that
+## building's own `roof_extension_rows` at the matching column is exactly the covered building's
+## own `wall_tiles()` — enough roof to reach exactly the world row the covered building's own roof
+## already starts at, never more and never less. `has_point()` over every building's own `lot`
+## rather than a spatial index, since the whole set is small and this only runs once per seed.
+func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t) -> void:
+	var checked := 0
+	for i in SWEEP_SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i * 977)
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(map)
+		var buildings := city.buildings()
+		for building: Building in buildings:
+			if building.power_station or building.covered_ground_cols.is_empty():
+				continue
+			for col in building.covered_ground_cols.size():
+				if not building.covered_ground_cols[col]:
+					continue
+				var south := Vector2i(building.lot.position.x + col,
+						building.lot.position.y + building.lot.size.y)
+				var front: Building = null
+				for candidate: Building in buildings:
+					if candidate.lot.has_point(south):
+						front = candidate
+						break
+				t.check(front != null,
+						"seed %d: a covered column's own south tile belongs to some building's lot"
+						% map.seed_used)
+				if front == null:
+					continue
+				var local_col := south.x - front.lot.position.x
+				var extension := front._extension_rows(local_col)
+				t.check(extension == building.wall_tiles(),
+						"seed %d: the covering front's own roof reaches exactly the covered front's own roof line (%d rows expected, got %d)"
+						% [map.seed_used, building.wall_tiles(), extension])
+				checked += 1
+		city.free()
+	t.check(checked > 0, "the sweep met at least one real covered column to check the extension's own wiring on (%d)" % checked)
+
 # --------------------------------------------------------------------- the sweep ---
 
 ## Every accessor cell a real building offers is plain wall (`_ground_floor_texture()` says
@@ -807,7 +877,7 @@ func _check_accessor_invariant(t, building: Building, seed_used: int) -> void:
 		t.check(col != building.entrance_door_col() and not building._fire_escape_cols.has(col),
 				"seed %d: no accessor cell is the door's column or a fire escape's" % seed_used)
 		t.check(not building._is_covered(col),
-				"seed %d: no accessor cell is a covered column — those show a window, never blank wall" % seed_used)
+				"seed %d: no accessor cell is a covered column — those draw no facade at all, never blank wall" % seed_used)
 
 ## Full `City` scenes across a spread of seeds — the only path that exercises
 ## `City._spawn_buildings()`'s own wiring of `is_home_building`, `door_world_x_range` and
@@ -861,12 +931,16 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 				continue
 			var any_covered := false
 			for col in building.columns():
+				# Never a window, covered or not: the row-of-windows pass this replaced is what used to
+				# draw one on a covered column; the roof extension that replaces it draws nothing on the
+				# wall at all (M203, `docs/DECISIONS.md`, "A front nobody can stand at is covered by the
+				# roof in front of it").
+				t.check(not building._draws_window_at(0, col),
+						"seed %d: no ground-floor column of a building that is not her own draws a window, covered or not (district %d)"
+						% [map.seed_used, building.district])
 				if building._is_covered(col):
 					any_covered = true
 					checked_covered_columns += 1
-					t.check(building._draws_window_at(0, col),
-							"seed %d: a covered column (%d) draws the upper-floor window row (district %d)"
-							% [map.seed_used, col, building.district])
 					t.check(building._ground_floor_texture(col) == &"",
 							"seed %d: a covered column (%d) has no storefront and no blank-wall plinth (district %d)"
 							% [map.seed_used, col, building.district])
@@ -875,10 +949,6 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 							% [map.seed_used, col, building.district])
 					t.check(not building._fire_escape_cols.has(col),
 							"seed %d: a covered column (%d) never carries a fire escape (district %d)"
-							% [map.seed_used, col, building.district])
-				else:
-					t.check(not building._draws_window_at(0, col),
-							"seed %d: an uncovered ground-floor column (%d) of a building that is not her own draws no window (district %d)"
 							% [map.seed_used, col, building.district])
 			var fully_covered := any_covered and building.covered_ground_cols.count(true) == building.columns()
 			if fully_covered:
