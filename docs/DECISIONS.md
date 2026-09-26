@@ -20,11 +20,18 @@ her, not here.
 (`tools/test.sh probes/m207_warning_lead.gd`; the runner does not discover it). For each row it
 measures the seconds from the first warning she can see, the badge or the thing in view, to the
 earliest moment it can reach her, walking toward it, standing, and walking away, against
-`EventDef.minimum_telegraph()`. Its first printing is in PR #372. Several rows other than the
+`EventDef.minimum_telegraph()`. Its first printing, over the floor in seconds walking toward /
+standing / walking away: `door_guard` +2.35 / +0.50 / +2.35; `military_convoy` −0.21 / −0.21 /
++11.24; `charging_dog` on day 3 −0.33 / +0.48 / +5.18; `loose_dog` +0.10 / +1.62 / never; the
+cyclist +0.09 / +1.20 / never. The full table is in PR #372. Several rows other than the
 cyclist measure under their own floor that way: `cat_dash` across her line (to no warning at all
 horizontally), `charging_dog` from day 4, `alley_robbery`, `masked_pursuer` walking toward it,
 `pigeon_flock` walking toward it, `military_convoy` and `police_patrol`'s return leg by a fraction
-of a second. None was changed: the player names the next one (`REVIEW.md`).
+of a second. Those are warnings too short, not too early; whether each is a contract breach or the
+probe standing her in the wrong place is M224, a warning shorter than its own floor.
+
+**A side effect the player did not ask for**: the smaller field makes him cheaper to pass, 16.0 to
+12.1 over a full pass (`docs/COSTS.md`).
 
 **Choices open to overturn**: both numbers moved rather than the telegraph alone; the test's
 tolerance above the floor is 0.5s, looser than the measured 0.09s so it does not restate it. No
