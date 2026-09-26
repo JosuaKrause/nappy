@@ -23,10 +23,12 @@
 # paths, if the working tree's own status changed while it ran.
 #
 # The window opens at the game's own resolution (project.godot's viewport size), takes no focus
-# and hears no stray key: `--trailer` is a rig flag, so the game's M195 lockdown applies, and the
-# same focus guard tools/shot.sh uses hands focus straight back. A shot is killed from outside if
-# it outlives the movie writer's own deadline (see rig_kill_after_movie_seconds in
-# tools/lib_dev_flags.sh).
+# and hears no stray key: the movie writer (`--write-movie`) makes DevFlags.recording() true, which
+# is itself one of is_rig()'s conditions, so the game's M195 lockdown applies without any dev flag
+# of its own, and the same focus guard tools/shot.sh uses hands focus straight back. Every shot also
+# carries `--player-view`, so the frame is the release build's own HUD with the debug readout off
+# rather than a rig's. A shot is killed from outside if it outlives the movie writer's own deadline
+# (see rig_kill_after_movie_seconds in tools/lib_dev_flags.sh).
 set -euo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
@@ -140,7 +142,7 @@ shot_game_flags() {
     caption="$(shot_field "$name" caption)"
     title="$(shot_field "$name" title)"
     after="$(shot_render_seconds "$name")"
-    printf '%s\n' --trailer --no-save \
+    printf '%s\n' --player-view --no-save \
         --seed "$(shot_field "$name" seed)" --day "$(shot_field "$name" day 1)" \
         --parent "$(shot_field "$name" parent)" --after "$after"
     [[ -n "$walk" ]] && printf '%s\n' --walk "$walk"

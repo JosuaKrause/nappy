@@ -164,6 +164,11 @@ launches rather than risking a picture that is silently never written.
 | `--frame-trace` | Buffer raw post-draw callback timestamps and same-callback counters after five seconds of warmup, plus bounded atlas CPU phase spans from startup; export JSON on scene exit, including percentiles and missed-budget counts. Add `--after N` for a timed walking/input rig that quits without a screenshot. Independent of the log and debug layers; see `docs/TELEMETRY.md`, "Raw frame traces" |
 | `--web` | Preview the web export's hidden-quit shape (`QuitOption`) from a desktop debug build |
 | `--quit-when-still [seconds]` | Once she has moved at all, if she then holds within a few pixels of one spot for `seconds` (about a second by default) while the day is running — not paused, not on a brief, summary or death screen, not detained (a chat, a checkpoint), and not waiting on the sidewalk for a red light on the main road — save a screenshot into the run's own telemetry folder, note it in the run log, print the path and quit. Counts her position, not her input, so a wedge against the crowd or a parked car is "still" too; works the same under a human's own hands and under `--route` |
+| `--player-view` | Draw the frame a player would see — the release build's own HUD — with the developer readout off unless `--debug` also asks for it; the debug layers, route lines and frame graph already default off. What `tools/trailer.sh` carries on every shot, so nothing debug-only ever reaches a recording |
+| `--parent mother\|father` | Force which parent's presentation the run shows, instead of the roll `GameState.start_run()` would otherwise make from the seed — an unrecognised word is refused with a warning and treated as not given, so a shot of the wrong parent never passes as silently the right one |
+| `--zoom-out seconds [delay]` | Pull the camera back from her to the whole city over `seconds`, after holding on her own camera for `delay` (0 when absent) — the trailer's last shot. A value that is not a positive number refuses the whole flag |
+| `--caption text` | Draw one line of on-screen text over the shot, in the title screen's own body font, fading in after a beat and holding |
+| `--title-card text` | Draw the game's name, large and centred over a scrim, the same way the title screen sets its own |
 
 ## Run logs
 
