@@ -14,6 +14,10 @@ extends RefCounted
 
 const SEEDS := 6
 const BASE_SEED := 14040
+## The wider sweep `_test_a_carried_fence_keeps_two_calm_areas_on_the_tree` walks, on the same seed
+## spacing: a fence carried into the days after it is chosen is rarer per seed than a fresh one, so
+## six seeds leave too few carried days to see a guarantee break on.
+const CARRIED_SEEDS := 40
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 var _maps: Array[CityMap] = []
@@ -29,6 +33,7 @@ func run(t) -> void:
 	_test_a_never_used_park_is_unaffected(t)
 	_test_the_day_spoils_every_shut_area_but_the_fenced_one(t)
 	_test_shutting_is_refused_rather_than_breaking_a_guarantee(t)
+	_test_a_carried_fence_keeps_two_calm_areas_on_the_tree(t)
 	_test_the_swing_park_is_never_shut_or_fenced_on_its_day(t)
 	_test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t)
 	_test_the_city_stands_a_barrier_body_along_the_fenced_park(t)
@@ -484,6 +489,58 @@ func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t) -> void:
 					"seed %d day %d: only the fenced park, if any, leaves calm_blocks (%d calm, "
 					% [map.seed_used, day, calm.size()] + "%d left, fenced %s)"
 					% [map.calm_blocks.size(), map.fenced_park])
+
+## A fence stands for the rest of the act it is chosen in, and every later day of that act judges
+## its used areas with the fence already standing: its area counts as neither open nor walkable, so
+## the day keeps at least `MIN_CALM_AREAS_REACHABLE` calm areas the tree may grow a branch to, each
+## reachable from the doorstep with the fenced ground closed, and the tree reaches that many. Walked
+## over act III with the fence carried day to day the way `Main._start_day()` carries it, twice per
+## seed: one used area a day, and every calm area used. The tests above that force a fresh fence
+## (`_force_a_fence`) never see a carried one, which is the day this is about.
+func _test_a_carried_fence_keeps_two_calm_areas_on_the_tree(t) -> void:
+	var carried := 0
+	var short := 0
+	for i in CARRIED_SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i * 37)
+		var home := map.world_to_tile(map.doorstep_world_position())
+		for every_area_used: bool in [false, true]:
+			var fenced := Vector2i(-1, -1)
+			var fenced_act := 0
+			for day in range(Tuning.ACT_START_DAYS[2], Tuning.ACT_START_DAYS[3]):
+				var used: Array[Vector2i] = _calm_on(map, day) if every_area_used else _used_by(map, day)
+				var carries := fenced.x >= 0 and fenced_act == Tuning.act_for_day(day)
+				var result := _repaint(map, day, used, fenced, fenced_act)
+				if not carries:
+					fenced = result[0]
+					fenced_act = result[1]
+					continue
+				carried += 1
+				t.check(map.fenced_park == fenced, "seed %d day %d carries the fence at %s (%s)"
+						% [map.seed_used, day, fenced, map.fenced_park])
+				var field := map.walk_field(home, map.closed_tiles)
+				var growable := 0
+				for area in ClosurePlanner.calm_areas(map):
+					if area.block in map.shut_calm:
+						continue
+					for tile in map.rect_tiles(area.rect):
+						if Tile.is_calm(map.tile_at(tile)) and map.reaches(field, tile):
+							growable += 1
+							break
+				var branches := RouteTree.for_day(map, day).branches.size()
+				if growable < Tuning.MIN_CALM_AREAS_REACHABLE:
+					short += 1
+				t.check(growable >= Tuning.MIN_CALM_AREAS_REACHABLE,
+						"seed %d day %d (%s): %d calm areas left on the tree and reachable with the "
+						% [map.seed_used, day, "every area used" if every_area_used else "one a day",
+						growable] + "fence at %s carried, need %d (calm %s, off the tree %s)"
+						% [fenced, Tuning.MIN_CALM_AREAS_REACHABLE, map.calm_blocks,
+						map.shut_calm])
+				t.check(branches >= Tuning.MIN_CALM_AREAS_REACHABLE,
+						"seed %d day %d: the tree grows %d branches with the fence carried, need %d"
+						% [map.seed_used, day, branches, Tuning.MIN_CALM_AREAS_REACHABLE])
+	t.check(carried > 0, "the sweep carried a fence into a later day (%d)" % carried)
+	print("  spent parks: %d carried-fence days over %d seeds, %d with fewer than %d calm areas "
+			% [carried, CARRIED_SEEDS, short, Tuning.MIN_CALM_AREAS_REACHABLE] + "on the tree")
 
 ## Day 12's park is where the day's task is, so it is never taken off the tree or fenced on its day,
 ## even when she used it.
