@@ -138,10 +138,15 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	if not invincible:
 		for pair in sources:
 			incoming += pair[1]
-		self_incoming = Tuning.EXCITEMENT_FROM_RUNNING * _stroller.run_excess_ratio()
+		# Added to `incoming` one term at a time, exactly as before `self_incoming` existed:
+		# summing the two first and adding the total would round differently, and a record kept
+		# only for the counter must not move the meter by even its last bit.
+		var from_running := Tuning.EXCITEMENT_FROM_RUNNING * _stroller.run_excess_ratio()
+		incoming += from_running
+		self_incoming = from_running
 		if in_alley:
+			incoming += Tuning.EXCITEMENT_FROM_ALLEY
 			self_incoming += Tuning.EXCITEMENT_FROM_ALLEY
-		incoming += self_incoming
 	# A sleeping baby is harder to disturb, but not immune -- and whatever fraction of a source's
 	# own contribution actually reaches the meter is exactly the fraction that should reach that
 	# source's own accumulate_landed(), or the halo would read a cost the meter never took.
