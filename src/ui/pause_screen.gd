@@ -310,7 +310,29 @@ func _unhandled_input(event: InputEvent) -> void:
 	# A tap or a mouse click carries on exactly as space does. *(2026-09-06: "I still need to press
 	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen
 	# has to accept one too rather than leaving the keyboard as the only way past it.
-	if TouchInput.is_press(event):
+	#
+	# **The two event shapes are split rather than read through `TouchInput.is_press()`, the same
+	# way `DaySummary._unhandled_input()`'s own equivalent branch already is.** *(M211: "the pause
+	# screen is currently bugged where you cannot restart from it. it just goes back to the current
+	# game when pressing the button.")* A real touch device emulates a mouse click from every finger
+	# it reads, and — confirmed by driving a real touch through `Input.parse_input_event()` +
+	# `flush_buffered_events()` in `tests/test_held_restart.gd` — that emulated `InputEventMouseButton`
+	# press dispatches *before* the real `InputEventScreenTouch` press for the same finger, not
+	# after. A press on the restart button used to reach here first as the emulated click, since
+	# `TouchInput.is_press()` does not ask whether this device even has touch hardware to emulate
+	# one from, firing `_acknowledge_and_resume()` a frame or two ahead of the real touch reaching
+	# `_handle_restart_touch()` above — and that coroutine's own `close()` cancels whatever hold the
+	# real touch had just started and resumes the day before the hold could ever complete. Gating
+	# the mouse branch on `not _touch`, exactly as `_handle_restart_touch()`'s own mouse branch
+	# already is, means the emulated click never reaches a branch at all on a device where a real
+	# touch already has — the same reasoning `DaySummary`'s own doc gives for its own mouse branch.
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		get_viewport().set_input_as_handled()
+		_acknowledge_and_resume()
+		return
+	if not _touch and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		get_viewport().set_input_as_handled()
 		_acknowledge_and_resume()
 		return
