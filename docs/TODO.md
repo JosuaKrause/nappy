@@ -740,7 +740,9 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
 - [ ] **Measure subsystem contributions in a crowded scene.** [PLAYTEST-145](playtests/PLAYTEST-145.md)
       asks for time per frame with many cars and people on screen; desktop stutter reproduction
       and phone access are not prerequisites. Record actual population and distinguish CPU
-      callback costs from render submission, GPU work and presentation.
+      callback costs from render submission, GPU work and presentation. **Measurements wait for
+      the player to resume them.** The [crowded-scene profiling plan](plans/crowded-frame-profiling.md)
+      specifies the scene selection, per-frame attribution groups, evidence and verification.
 - [ ] **Attribute the remaining slow intervals before another optimization.** Use the raw traces
       to select a reproducible expensive call or span, reduce that work, and retain controlled
       before/after evidence with identical-behavior checks. Establish repeatable full active-play

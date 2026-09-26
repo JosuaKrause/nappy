@@ -15,3 +15,9 @@ Asked which phone/browser and location reproduce it:
 This continues M159, a slow frame names the frame that was slow: measure subsystem time in a
 crowded scene on the available desktop. Desktop stutter reproduction and phone access are not
 prerequisites. The suspected link to current mobile stutter remains a hypothesis.
+
+## Follow-up instructions
+
+> "hold off on measurements right now"
+
+> "can you write the plan down for now so you can continue later?"
