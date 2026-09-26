@@ -311,8 +311,9 @@ documented in the [pushing stride record](evidence/comic-pushing-strides-2026-09
 The female carrying family is **F — Hip motion**; its SVG sources, three whole-figure poses,
 closed idle frame, registration and eight-direction GIF recipe are in the
 [carrying hip-motion record](evidence/comic-carrying-hip-motion-2026-09-12/GENERATION.md).
-The [graphics recipe index](evidence/README.md#graphics-recipes) also locates the named comparison
-versions and their preserved rollouts.
+The named comparison versions and their preserved rollout are in the carrying redraw's own
+[versions](evidence/comic-carrying-redraw-2026-09-12/versions/README.md) and
+[rollout](evidence/comic-carrying-redraw-2026-09-12/rollout/README.md) records.
 The [player authoring directory](graphics-creation/player/README.md) holds the high-fidelity SVG
 generation targets and their runtime/PNG pairings. The runtime SVG catalogue supplies vector
 artwork for contact and together poses. The female PNG presentation uses the accepted F and P2

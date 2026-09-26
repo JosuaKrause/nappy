@@ -8,8 +8,8 @@ are retained.
 Generation need not reproduce identical pixels; extraction must be reproducible from the saved
 output.
 
-Each family's generation, registration and rebuild commands are indexed in
-`docs/evidence/README.md`, "Graphics recipes". Run Python recipes with `uv run`, and choose a
+Each family's generation, registration and rebuild commands are in its own evidence folder's
+`GENERATION.md` or `README.md`. Run Python recipes with `uv run`, and choose a
 fresh output directory each time. Inspect retained highlights and transparent gaps; registration
 alone does not establish faithful interior geometry or sufficient gameplay detail.
 

@@ -128,8 +128,9 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
 Keep every script used to create retained graphics, comparison sheets, walking rollouts and GIFs
 beside its output under `docs/evidence/<family>-<YYYY-MM-DD>/`. Include source paths and hashes, extraction
 bounds, frame order, mirroring, scale, GIF timing, tool/font requirements and exact regeneration
-commands. Preserve immutable inputs or fail loudly when their hashes change. Link each recipe
-from `docs/evidence/README.md` and the family's graphics documentation so it can be found again.
+commands. Preserve immutable inputs or fail loudly when their hashes change. The folder's own
+`GENERATION.md` or `README.md` is the recipe, and no index lists them: link it from the family's
+graphics documentation (`docs/GRAPHICS.md`) so it can be found again.
 Distinguish nondeterministic image generation from reproducible extraction and assembly of its
 saved output. A temporary script or chat-only command is insufficient provenance.
 

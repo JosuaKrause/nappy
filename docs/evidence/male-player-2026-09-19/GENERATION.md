@@ -15,6 +15,12 @@ The SVGs are authored and inspected before the corresponding raster generation.
 The [B-contact source review](b-contact/GENERATION.md) documents the original pushing source
 review and the approved six-frame pushing/carrying runtime family. The raw atlases, registered
 PNGs and original generation-input hashes below remain unchanged.
+The father's initial leg-refinement and donor trials are the
+[first leg-drawing refinement](b-contact/leg-refinement-2026-09-19/README.md), the
+[woman-leg donor trial](b-contact/woman-leg-trial-2026-09-19/README.md) and the
+[diagonal fallback and carrying contact assembly](b-contact/diagonal-carrying-2026-09-19/README.md);
+their attempt history and the player's verdicts are the records `tools/decisions.sh M167` lists,
+M167, the father's natural legs.
 The [final-woman-leg crop evidence](b-contact/final-woman-legs-2026-09-19/README.md)
 preserves the rejected literal-copy preview. The
 [high-resolution normalization recipe](b-contact/normalized-crop-2026-09-19/README.md)
