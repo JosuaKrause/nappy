@@ -1299,7 +1299,11 @@ func warns_before_it_exists() -> bool:
 ## minimum a warning first owes.
 func as_warned_first() -> EventDef:
 	var variant: EventDef = duplicate()
+	# `shape` and `solid_parts` are carried across by hand, as every copy of a row does (see
+	# `at_heat()`) — a copy that lost its parts would quietly go back to one body spanning its
+	# whole shape.
 	variant.shape = shape
+	variant.solid_parts = solid_parts
 	variant.warned_first = true
 	variant.validate()
 	return variant
