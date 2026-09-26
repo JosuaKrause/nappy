@@ -22,7 +22,9 @@
 # How the text is read:
 # - jq does all of the reading, in time linear in the text's length, because bash 3.2's string
 #   operations and array lookups are not, and a hook that outruns its timeout lets the command
-#   through. A backslash-newline pair is deleted first, joining the two lines as bash does. For the
+#   through. A backslash-newline pair is deleted first, joining the two lines as bash does, and the
+#   `&` of a redirect (`2>&1`, `>&2`, `&>file`) is dropped, so it is not read as the `&` that ends a
+#   command and the words after the redirect stay in the invocation. For the
 #   first two readings, `${IFS}` and `$IFS` also become a space and `$'`/`$"` a plain quote, so
 #   `git${IFS}grep` and `g$'i't` read as they run.
 # - A text over 32 KB that holds both words is denied without being read further. Every reading
@@ -238,7 +240,7 @@ def findings:
 if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
-  | drop("\\\n") as $raw
+  | (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
   # `${IFS}` and `$IFS` are word breaks, and `$'...'`/`$"..."` are quotes, for readings 1 and 2.
   | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$'"; "'") | swap("$\""; "\"")) as $bare
   | ($bare | drop("\\") | drop("\"") | drop("'") | ascii_downcase) as $flat

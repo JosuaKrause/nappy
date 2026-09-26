@@ -611,6 +611,23 @@ assert_guard "\"\$(git --exec-path)/git-grep\" -I -> allow" allow \
 assert_guard "git -C x log piped to grep -> allow" allow \
     'git -C x log --oneline | grep foo'
 
+# The & of a redirect (2>&1, >&2, &>) is part of the redirect, not a separator, so the words after
+# it are still arguments to git.
+assert_guard "2>&1 before a non-text entry -> deny" deny \
+    "git grep -n foo -- '*.md' 2>&1 docs/"
+assert_guard "&>/dev/null before a non-text entry -> deny" deny \
+    "git grep -n foo -- '*.md' &>/dev/null docs/"
+assert_guard ">&2 before a non-text entry -> deny" deny \
+    "git grep -n foo -- '*.md' >&2 docs/"
+assert_guard "2>&1 between -I and a cancelling -a -> deny" deny \
+    'git grep -I 2>&1 -a foo'
+assert_guard "2>&1 between git and grep -> deny" deny \
+    'git 2>&1 grep -i foo -- docs/'
+assert_guard "text pathspec, then &>/dev/null at the end -> allow" allow \
+    "git grep -n foo -- '*.md' &>/dev/null"
+assert_guard "a guarded git grep sent to the background with a bare & -> allow" allow \
+    "git grep -I -n foo -- docs/ & wait"
+
 # The reviewer's minor shapes.
 assert_guard "\$'git' grep (ANSI-C quoting) -> deny" deny \
     "\$'git' grep -n -i foo -- docs/"
