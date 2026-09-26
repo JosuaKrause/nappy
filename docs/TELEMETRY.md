@@ -104,8 +104,10 @@ The events:
 - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: the fresh handover
   from a won day 14, either section lost on any attempt, or the tunnel or the bridge reached.
-- `nappy-controls-joystick` / `nappy-controls-tap` — which control scheme was picked on the title
-  screen, cheap to answer and its own small piece of "how far people get".
+- `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — which button began
+  the run on the title screen, or `keys` when a key did (`space` or a walking key, which begins the
+  run in tap mode; the name comes from the input that began it, not the mode it falls back to),
+  cheap to answer and its own small piece of "how far people get".
 
 Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,

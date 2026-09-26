@@ -353,9 +353,18 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 	main._status = Label.new()
 	main._title = TitleScreen.new()
 
+	var chosen: Array = []
+	var record := func(mode: int, by_key: bool) -> void: chosen.append([mode, by_key])
+	EventBus.controls_chosen.connect(record)
 	main._on_title_start(ControlsMode.Mode.JOYSTICK)
 	t.check(main._touch_controls._mode == ControlsMode.Mode.JOYSTICK,
 			"pressing the joystick button on the title screen sets that mode on the one control reader")
+	main._on_title_start(ControlsMode.Mode.TAP, true)
+	EventBus.controls_chosen.disconnect(record)
+	t.check(main._touch_controls._mode == ControlsMode.Mode.TAP,
+			"a key begins the run in tap mode")
+	t.check(chosen == [[ControlsMode.Mode.JOYSTICK, false], [ControlsMode.Mode.TAP, true]],
+			"and the counter hears which input began each run, a key as a key")
 
 	main._status.free()
 	main._title.free()

@@ -52,8 +52,9 @@ extends Node
 ## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
 ##   handover only), lost (either section, any attempt), or got out.
-## - `nappy-controls-joystick` / `nappy-controls-tap` — the "etc.": which control scheme was
-##   picked on the title screen, cheap to answer and part of "how far people get" in its own way.
+## - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — the "etc.": which
+##   button began the run on the title screen, or that a key did, cheap to answer and part of "how
+##   far people get" in its own way.
 
 func _ready() -> void:
 	EventBus.run_begun.connect(_on_run_begun)
@@ -181,7 +182,11 @@ static func _loss_cause(result: GameEnums.DayResult) -> String:
 static func _run_begun_name(day: int, resumed: bool) -> String:
 	return "nappy-run-resumed-day-%d" % day if resumed else "nappy-run-fresh"
 
-static func _controls_event_name(mode: int) -> String:
+## `keys` when a key began the run, whatever mode that gave it — the title begins a key's run in
+## `Mode.TAP`, and a key player is not a tap player — otherwise the button pressed.
+static func _controls_event_name(mode: int, by_key: bool) -> String:
+	if by_key:
+		return "nappy-controls-keys"
 	return "nappy-controls-joystick" if mode == ControlsMode.Mode.JOYSTICK else "nappy-controls-tap"
 
 ## `EventBus.player_detained`'s own `id` (`nearest.def.id` in `EventManager._check_detentions()`),
@@ -328,5 +333,5 @@ func _on_escape_lost() -> void:
 func _on_escape_out() -> void:
 	_send_event("nappy-escape-out")
 
-func _on_controls_chosen(mode: int) -> void:
-	_send_event(_controls_event_name(mode))
+func _on_controls_chosen(mode: int, by_key: bool) -> void:
+	_send_event(_controls_event_name(mode, by_key))

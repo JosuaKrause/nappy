@@ -133,5 +133,7 @@ signal escape_out()
 
 ## The player's own answer to the controls question, pressed on the title screen — a
 ## `ControlsMode.Mode` passed as `int`, the same cross-script-enum reason `FinaleController`
-## passes its own enums as `int` (see the **godot** skill).
-signal controls_chosen(mode: int)
+## passes its own enums as `int` (see the **godot** skill). `by_key` is true when a key began the
+## run rather than a button, which the title answers with `Mode.TAP`; `VisitCounter` reports it as
+## `controls-keys` rather than as that fallback.
+signal controls_chosen(mode: int, by_key: bool)

@@ -78,11 +78,15 @@ func _test_run_begun_name(t) -> void:
 	t.check(VISIT_COUNTER_SCRIPT._run_begun_name(9, true) == "nappy-run-resumed-day-9",
 		"a resumed run names the day it resumed on")
 
+## A key begins the run in `Mode.TAP`, and is still reported as keys: the name comes from the
+## input that began the run, not the mode it fell back to.
 func _test_controls_event_name(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.JOYSTICK)
-			== "nappy-controls-joystick", "the joystick scheme")
-	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP)
-			== "nappy-controls-tap", "the tap scheme")
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.JOYSTICK, false)
+			== "nappy-controls-joystick", "the joystick button")
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP, false)
+			== "nappy-controls-tap", "the tap button")
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP, true)
+			== "nappy-controls-keys", "a key, whose run begins in tap mode, is reported as keys")
 
 ## `chatting_mother` is a `chat`; every other id that can reach `EventBus.player_detained` — the
 ## catalogue's only other two rows with a `detain_seconds` above zero — is a `checkpoint`.
@@ -139,7 +143,7 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_escape_city_entered()
 	counter._on_escape_lost()
 	counter._on_escape_out()
-	counter._on_controls_chosen(ControlsMode.Mode.TAP)
+	counter._on_controls_chosen(ControlsMode.Mode.TAP, true)
 	var after := _gamestate_snapshot()
 	t.check(before == after,
 		"answering every signal the counter connects to leaves GameState untouched")

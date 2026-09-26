@@ -204,7 +204,7 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool) -> void: started[0] += 1)
 	title.open()
 
 	TitleScreen.note_restart_requested()
@@ -238,7 +238,7 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 
 	var started := [0]
 	var quit := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool) -> void: started[0] += 1)
 	title.quit_requested.connect(func() -> void: quit[0] += 1)
 	title._unhandled_input(_accept())
 	t.check(started[0] == 1, "space begins the run")
@@ -260,12 +260,16 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started_modes: Array[ControlsMode.Mode] = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: started_modes.append(mode))
+	var by_keys: Array[bool] = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool) -> void:
+		started_modes.append(mode)
+		by_keys.append(by_key))
 	title.open()
 
 	title._unhandled_input(_action("move_left"))
 	t.check(started_modes.size() == 1, "a direction key begins the run exactly as space does")
 	t.check(started_modes[0] == ControlsMode.Mode.TAP, "and always chooses tap, never joystick")
+	t.check(by_keys == [true], "and says a key began it, so the counter reports keys, not tap")
 
 	title.close()
 	title.queue_free()
@@ -284,7 +288,10 @@ func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started_modes: Array[ControlsMode.Mode] = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: started_modes.append(mode))
+	var by_keys: Array[bool] = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool) -> void:
+		started_modes.append(mode)
+		by_keys.append(by_key))
 	title.open()
 	title._joystick_button.position = Vector2(300.0, 400.0)
 	title._joystick_button.size = Vector2(92.0, 92.0)
@@ -305,6 +312,7 @@ func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 	t.get_tree().process_frame.emit()
 	t.check(started_modes == [ControlsMode.Mode.JOYSTICK, ControlsMode.Mode.TAP],
 			"and pressing the tap button starts a second run in Mode.TAP")
+	t.check(by_keys == [false, false], "a button press is never reported as a key")
 
 	title.close()
 	title.queue_free()
@@ -318,7 +326,10 @@ func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started_modes: Array[ControlsMode.Mode] = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode) -> void: started_modes.append(mode))
+	var by_keys: Array[bool] = []
+	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool) -> void:
+		started_modes.append(mode)
+		by_keys.append(by_key))
 	title.open()
 	title._joystick_button.position = Vector2(300.0, 400.0)
 	title._joystick_button.size = Vector2(92.0, 92.0)
@@ -1256,7 +1267,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool) -> void: started[0] += 1)
 	title.open()
 	title._unhandled_input(_touch(false))
 	t.check(started[0] == 0, "lifting a finger does nothing on the title")
@@ -1321,7 +1332,7 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode) -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool) -> void: started[0] += 1)
 	title.open()
 	var release := _left_click()
 	release.pressed = false

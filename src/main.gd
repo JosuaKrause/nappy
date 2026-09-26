@@ -1011,7 +1011,7 @@ func _on_finale_summary_continued() -> void:
 ## built (the interior or the finale city, whichever section she was in) stays exactly as it is,
 ## so this shows that section's brief instead of throwing the world away and reloading — see
 ## `_on_finale_section_started()`'s own doc for why the title stood in front of it at all.
-func _on_escape_title_start(mode: ControlsMode.Mode) -> void:
+func _on_escape_title_start(mode: ControlsMode.Mode, _by_key := false) -> void:
 	_touch_controls.set_mode(mode)
 	if _escape_title_is_resume_gate:
 		_escape_title_is_resume_gate = false
@@ -1139,7 +1139,8 @@ func _open_the_title() -> void:
 ## `Symbol.JOYSTICK`/`Symbol.TAP` button, or `Mode.TAP` when a key began the run instead. Handed
 ## straight to `_touch_controls.set_mode()`, which overrides whatever `_add_touch_controls()` set
 ## from `ControlsMode.resolve()` at boot — see that function's own doc for why a rig that never
-## reaches this screen keeps that earlier answer instead.
+## reaches this screen keeps that earlier answer instead. `by_key` says a key began the run, which
+## reaches the counter alone: the controls a key player gets are still `mode`'s.
 ##
 ## Guarded with `is_inside_tree()` the same way `_process()` already guards `get_window()`: false
 ## for the script-only instance `tests/test_main.gd` drives straight through this function with no
@@ -1153,11 +1154,12 @@ func _open_the_title() -> void:
 ## screen's own continue that reaches `_engage_the_day()`, through `_on_summary_continued()`'s own
 ## `_resume_gate_open` branch — see that function's own doc for why the same signal reaches two
 ## different places depending on which screen raised it.
-func _on_title_start(mode: ControlsMode.Mode) -> void:
-	# `VisitCounter`'s own cheap "etc." — which control scheme was picked. `mode` as `int`: a
-	# cross-script enum is not the same type as itself as a signal parameter (see the **godot**
-	# skill), the same reason `FinaleController`'s own signals pass theirs that way.
-	EventBus.controls_chosen.emit(mode)
+func _on_title_start(mode: ControlsMode.Mode, by_key := false) -> void:
+	# `VisitCounter`'s own cheap "etc." — which control scheme was picked, or that a key began the
+	# run. `mode` as `int`: a cross-script enum is not the same type as itself as a signal
+	# parameter (see the **godot** skill), the same reason `FinaleController`'s own signals pass
+	# theirs that way.
+	EventBus.controls_chosen.emit(mode, by_key)
 	_touch_controls.set_mode(mode)
 	_in_the_title = false
 	_title.close()
