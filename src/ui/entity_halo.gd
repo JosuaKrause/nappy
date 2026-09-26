@@ -88,19 +88,21 @@ func _init(draw_body: Callable, bob: Callable) -> void:
 	draw.connect(_on_draw)
 
 ## A fresh `ShaderMaterial` on the one shared `Shader` resource — never cached statically, so every
-## rim (and `main.gd`'s warm-pass probe, through `shared_material()` below) gets its own instance
-## to carry its own `halo_colour`.
+## rim (and `main.gd`'s warm-pass probe, through `new_material()` below) gets its own instance to
+## carry its own `halo_colour`.
 static func _halo_material() -> ShaderMaterial:
-	var new_material := ShaderMaterial.new()
-	new_material.shader = preload("res://assets/shaders/excitement_halo.gdshader")
-	return new_material
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://assets/shaders/excitement_halo.gdshader")
+	return material
 
 ## A `ShaderMaterial` on the halo's own `Shader`, for `main.gd`'s warm pass: it draws one throwaway
 ## quad with it so the Compatibility renderer's shader program compiles before the day starts
 ## rather than at the first real halo — see the warm pass's own doc for why a hidden draw is what
 ## 4.7 offers here. The program compiles once per `Shader` resource, not per `ShaderMaterial`, so
-## this warms every rim's own material the same as if it were still the one they all shared.
-static func shared_material() -> ShaderMaterial:
+## this warms every rim's own material the same as any other call here would — nothing here is
+## shared any more, which is why this is named for what it returns, a fresh material, not a
+## borrowed one.
+static func new_material() -> ShaderMaterial:
 	return _halo_material()
 
 ## Sets the alpha and colour this rim is easing *toward* — see the class doc. `colour`'s own alpha

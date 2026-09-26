@@ -703,12 +703,28 @@ func _test_each_rims_material_carries_its_own_colour(t) -> void:
 		red._process(STEP)
 		blue._process(STEP)
 
-	var red_param: Color = (red.material as ShaderMaterial).get_shader_parameter("halo_colour")
-	var blue_param: Color = (blue.material as ShaderMaterial).get_shader_parameter("halo_colour")
-	t.check(red_param.is_equal_approx(Color(1.0, 0.0, 0.0, ExcitementHalo.MAX_ALPHA)),
-			"the red rim's own material carries red at full alpha -- the value a plain `uniform` " +
-			"reads, not merely `red._colour` -- rather than the shader's own untouched default")
-	t.check(blue_param.is_equal_approx(Color(0.0, 0.0, 1.0, ExcitementHalo.MAX_ALPHA)),
-			"and the blue rim's own material carries blue, not the red rim's value nor the default")
+	# Untyped on purpose: before the fix `get_shader_parameter()` answers Nil (the old code wrote
+	# `set_instance_shader_parameter()` on the `CanvasItem`, never touching the material's own
+	# uniform at all), and a typed `Color` assignment there throws inside `run()` rather than
+	# failing the check -- exactly the trap the verify skill's own testing policy warns against.
+	# `t.check` the type first, so a regression here is a clean failure, not a hung runner.
+	var red_param: Variant = (red.material as ShaderMaterial).get_shader_parameter("halo_colour")
+	t.check(typeof(red_param) == TYPE_COLOR,
+			"the red rim's own material actually carries a halo_colour parameter, not Nil -- " +
+			"which is what get_shader_parameter() answers when nothing was ever set on the " +
+			"material itself")
+	if typeof(red_param) == TYPE_COLOR:
+		t.check((red_param as Color).is_equal_approx(Color(1.0, 0.0, 0.0, ExcitementHalo.MAX_ALPHA)),
+				"the red rim's own material carries red at full alpha -- the value a plain " +
+				"`uniform` reads, not merely `red._colour` -- rather than the shader's own " +
+				"untouched default")
+
+	var blue_param: Variant = (blue.material as ShaderMaterial).get_shader_parameter("halo_colour")
+	t.check(typeof(blue_param) == TYPE_COLOR,
+			"and the blue rim's own material actually carries a halo_colour parameter too")
+	if typeof(blue_param) == TYPE_COLOR:
+		t.check((blue_param as Color).is_equal_approx(Color(0.0, 0.0, 1.0, ExcitementHalo.MAX_ALPHA)),
+				"and the blue rim's own material carries blue, not the red rim's value nor the " +
+				"default")
 	red.free()
 	blue.free()
