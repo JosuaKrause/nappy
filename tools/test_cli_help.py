@@ -194,6 +194,56 @@ class CliHelpTests(unittest.TestCase):
                     actual_sha256 = hashlib.sha256((output_dir / filename).read_bytes()).hexdigest()
                     self.assertEqual(actual_sha256, expected_sha256, f"{filename} did not rebuild byte-for-byte")
 
+    def test_sound_lab_rejects_an_unsafe_pass_name_before_deleting_anything(self) -> None:
+        """tools/sound-lab.sh derives the directory it `rm -rf`s from passes.json's `pass` field,
+        which is committed and hand-edited -- the skill tells whoever freezes a new pass to
+        overwrite it. A value that is not a plain name (empty, a dot-led name, or one carrying a
+        path separator) must be rejected by the schema check before that `rm -rf` ever runs.
+        SOUND_LAB_RECIPE_FILE and SOUND_LAB_BUILD_ROOT point the script at scratch copies, and a
+        sentinel directory next to (not inside) the scratch build root stands in for whatever a
+        path-traversing pass name would actually delete; it must survive every case."""
+        unsafe_names = ("", ".", "..", ".hidden", "../sentinel", "a/b", "/tmp/whatever")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            recipe_file = root / "passes.json"
+            build_root = root / "build" / "sound-lab"
+            build_root.mkdir(parents=True)
+            sentinel = root / "sentinel"
+            sentinel.mkdir()
+            (sentinel / "marker").write_text("do not delete")
+
+            for unsafe_name in unsafe_names:
+                with self.subTest(pass_name=unsafe_name):
+                    recipe_file.write_text(
+                        json.dumps(
+                            {
+                                "pass": unsafe_name,
+                                "label": "unsafe name probe",
+                                "seed": 1,
+                                "args": [],
+                                "hashes": {"comparison.wav": "0" * 64},
+                            }
+                        )
+                    )
+                    result = subprocess.run(
+                        [str(TOOLS / "sound-lab.sh"), "--no-serve"],
+                        stdin=subprocess.DEVNULL,
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                        cwd=PROJECT_ROOT,
+                        env={
+                            **os.environ,
+                            "SOUND_LAB_RECIPE_FILE": str(recipe_file),
+                            "SOUND_LAB_BUILD_ROOT": str(build_root),
+                        },
+                    )
+                    self.assertNotEqual(result.returncode, 0, f"pass={unsafe_name!r} was accepted: {result.stdout}")
+                    self.assertTrue(
+                        sentinel.is_dir() and (sentinel / "marker").is_file(),
+                        f"pass={unsafe_name!r} deleted something outside the scratch build root",
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

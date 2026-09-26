@@ -27,15 +27,17 @@
 # `uv run python tools/synthesize-sfx.py` straight, per the sound-effects skill, into a scratch
 # --output of your own choosing.
 #
-# SOUND_LAB_BUILD_ROOT overrides the directory a pass is rebuilt into; it is a test-only escape
-# hatch (tools/test_cli_help.py points it at a tempfile.TemporaryDirectory() rather than the real
-# build/sound-lab/, so a test run's own `rm -rf` never deletes what a running `tools/sound-lab.sh`
-# is serving to a listener). Nobody runs the tool this way by hand, so it is not a flag.
+# SOUND_LAB_RECIPE_FILE and SOUND_LAB_BUILD_ROOT override the recipe path and the directory a
+# pass is rebuilt into; both are test-only escape hatches (tools/test_cli_help.py points them at a
+# scratch recipe and a tempfile.TemporaryDirectory() rather than the real passes.json and
+# build/sound-lab/, so a test run's own `rm -rf` never touches the checkout, whether the test is
+# checking an ordinary rebuild or a rejected malformed pass name). Nobody runs the tool this way by
+# hand, so they are not flags.
 set -uo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GENERATOR="$PROJECT_DIR/tools/synthesize-sfx.py"
-RECIPE_FILE="$PROJECT_DIR/tools/sound-lab/passes.json"
+RECIPE_FILE="${SOUND_LAB_RECIPE_FILE:-$PROJECT_DIR/tools/sound-lab/passes.json}"
 BUILD_ROOT="${SOUND_LAB_BUILD_ROOT:-$PROJECT_DIR/build/sound-lab}"
 
 usage() {
@@ -112,7 +114,8 @@ fi
 schema_errors="$(jq -r '
     . as $top |
     def num: type == "number";
-    (if ($top.pass | type) == "string" then empty else "pass must be a string" end),
+    (if ($top.pass | type) == "string" and ($top.pass | test("^[A-Za-z0-9][A-Za-z0-9._-]*$"))
+        then empty else "pass must be a non-empty name of letters, digits, dot, dash or underscore" end),
     (if (.seed | num) then empty else "seed must be a number" end),
     (if (.args // [] | type) == "array" then empty else "args must be an array" end),
     (if (.label | type) == "string" then empty else "label must be a string" end),
