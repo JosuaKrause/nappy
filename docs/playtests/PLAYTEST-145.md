@@ -21,3 +21,7 @@ prerequisites. The suspected link to current mobile stutter remains a hypothesis
 > "hold off on measurements right now"
 
 > "can you write the plan down for now so you can continue later?"
+
+## Resumption
+
+> "read the brief from .claude/restart-prompt.md and continue -- yes, you can create a draft PR. you can also continue the investigation, probes, and measurements"

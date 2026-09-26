@@ -1,6 +1,6 @@
 # Crowded-scene frame profiling
 
-**Measurements are paused at the player's request. Resume only when the player asks to continue.**
+**The player authorizes the investigation, probes, measurements and a draft PR.**
 This plan is the next step for M159, a slow frame names the frame that was slow. The source is
 [Playtest 145, measure the work in a crowded scene](../playtests/PLAYTEST-145.md).
 
@@ -17,7 +17,7 @@ samples, scene setup, engine/build identity, launch commands and analysis beside
 Identify expensive work and proposed optimization targets; this investigation does not change
 gameplay, population, tick rates or visual behavior. The wider optimization request remains open.
 
-## Measurement sequence after resumption
+## Measurement sequence
 
 1. Fetch current remote state and inspect existing investigation worktrees before editing.
    Read `CLAUDE.md`, `HANDOFF.md`, the M159 entry in `TODO.md`, and the relevant skills. Reuse

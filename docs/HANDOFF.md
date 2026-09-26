@@ -8,10 +8,10 @@ progress-tracking, which lives there too.
 
 ## The state of the tree
 
-**Crowded-scene performance measurements wait for the player to resume them.** The
+**Crowded-scene performance investigation is authorized.** The
 [profiling plan](plans/crowded-frame-profiling.md) specifies how to measure CPU contributions
-per frame in a busy scene for M159, a slow frame names the frame that was slow. Recording the
-plan is not authorization to restart the measurements.
+per frame in a busy scene for M159, a slow frame names the frame that was slow. Continue the
+probes and measurements, retaining raw evidence on the draft PR.
 
 **Check `git status`, `git branch` and `git worktree list` for the current checkout and open work.**
 Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAUDE.md` directly
