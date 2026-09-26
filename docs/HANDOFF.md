@@ -303,32 +303,40 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
-## Where the last session stopped, 2026-09-20
+## Where the last session stopped, 2026-09-26
 
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **The story's pacing is built** (M181, the resistance has a reason, and a task is one day,
-  in `DECISIONS.md`): every task and happening, the late days timed, and the seals on her
-  building's front. M182, a finished task is shown by the world, has the other tasks' answers
-  open, and M185's crafted house, drawn to match the escape's interiors, is the home block's next
-  step.
-- **The newest release's numbers are waiting on the player's own runs** ([PLAYTEST-115](playtests/PLAYTEST-115.md):
-  "Once it's released we will do some runs and tweak the numbers by feel"); what to look at is
-  the first entry of `REVIEW.md`.
-- **M175, a row states what it costs, has its table built and one item open**: rows declaring
-  a net cost tier, whose tier names and values go to the player first
-  ([PLAYTEST-114](playtests/PLAYTEST-114.md)).
-- **M159, a slow frame names the frame that was slow, has its first optimization in and three
-  items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
-  velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
-  contribution sweeps; [PLAYTEST-86](playtests/PLAYTEST-86.md) is the player's demand for an
-  optimization rather than a measurement). Whole-frame tails remain: attributing the remaining
-  slow intervals, profiling the phone, and completing the atlas measurements are the open items,
-  and no toggle causality is claimed.
+- **Seven implementation agents died at a usage limit and are cold.** Each is replaced in its own
+  worktree, as **orchestrating** says under "An agent that died mid-task": run
+  `tools/agent-status.sh`, read the brief in `.claude/briefs/`, commit the inherited work as it
+  stands, merge `origin/main`, continue. Nothing inherited has been reviewed.
 
-PR merges and auto-merge require explicit permission in the current session. Use fresh agents
-with self-contained briefs for new implementation or investigation.
+  | Worktree | Milestone | State at the stop |
+  |---|---|---|
+  | `trap-comes-to-her` | M137, the contact and the trap (PR #362, CI green) | three local commits unpushed and ten files uncommitted: the robber's warning shortened for M207 |
+  | `back-front-windows` | M203, a back front has windows (PR #365, no CI run) | `tests/test_ground_floor.gd` uncommitted; push to start CI |
+  | `spent-park-closed` | M129, a spent park is closed | one WIP commit, `tests/test_spent_park.gd` and a probe uncommitted; no PR |
+  | `trailer` | M204, the trailer rendered from the game | WIP commits and six files uncommitted; no PR |
+  | `cyclist-warning` | M207, a warning comes shortly before its danger | catalogue, test, `docs/COSTS.md` and a probe uncommitted; no commits, no PR |
+  | `yeller-charges` | M205, the man shouting charges the meter | only an untracked `tests/zz_probe/`; nothing built |
+  | `title-upright` | M206, the title screen the right way up | `src/main.gd` uncommitted; no PR |
+
+  `clips-in-evidence` is merged (#367) and only needs `tools/prune-merged.sh`.
+- **[PLAYTEST-142](playtests/PLAYTEST-142.md) is filed as M210 to M213**: the brief between two
+  days is the coming day's and shows the nerves, the pause screen's restart restarts, the held
+  restart fills and works first time on a phone, and the chalk mark's robber stands at the far
+  end of its alley. None has an agent. M213 overlaps M137's resistance director, so it follows
+  #362.
+- **A cloud session owns the GoatCounter counter** — what ended a day, the special events and
+  one-off encounters she met, and reading the counts back — on
+  `claude/compassionate-goldberg-707zti`, whose first commit files it as PLAYTEST-141. It may
+  claim M208 or M209; the trailer worktree already uses M208, so check for a collision before
+  merging either.
+- **The player said "merge when things are ready" on 2026-09-26**, in the session that stopped;
+  a new session confirms merge permission before using it.
+- M175, M182, M185 and M159 are as `TODO.md` says.
 
 ## The queue, as prioritised on 2026-09-09
 
