@@ -402,6 +402,15 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 	else:
 		return false
 	if pressed:
+		# **A second touch anywhere while the disc is already held is this button's business too.**
+		# *(M212: "sometimes it just doesn't work at all... you have to hold long multiple times".)*
+		# The same guard `PauseScreen._handle_restart_touch()` carries — see its own doc. Without
+		# this, a stray second finger fails `begin_hold()` below, falls through to the catch-all in
+		# `_unhandled_input()`, and reads as *carry on*, continuing past the day out from under a
+		# hold already in progress.
+		if _restart_button.is_held():
+			get_viewport().set_input_as_handled()
+			return true
 		var at := ScreenOrientation.to_design_space(position, _wants_rotation())
 		if not _restart_button.catch_rect().has_point(at):
 			return false

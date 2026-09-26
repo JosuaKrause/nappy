@@ -192,6 +192,17 @@ func begin_hold(touch_index: int) -> bool:
 func is_held_by(touch_index: int) -> bool:
 	return _held_by == touch_index
 
+## Whether anything at all currently holds this button, regardless of which index — what
+## `PauseScreen`/`DaySummary` check a *different* touch's own press against, before letting it fall
+## through to their own catch-all. *(M212: "sometimes it just doesn't work at all... you have to
+## hold long multiple times".)* A second finger landing anywhere on the screen while `RESTART` is
+## already held — the other hand steadying the phone, a palm graze — used to reach the catch-all
+## unopposed and read as *carry on*, resuming or continuing the screen out from under a hold
+## already in progress. Named apart from `is_held_by()` because the caller here does not know or
+## care which index holds it, only that one already does.
+func is_held() -> bool:
+	return _held_by != -1
+
 ## Ends the hold `touch_index` started and answers whether it lasted long enough. Safe to call
 ## whether or not `touch_index` is actually the one held — a mismatched index simply changes
 ## nothing and answers `false`, so a caller that already checked `is_held_by()` never has to guard
