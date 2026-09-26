@@ -14,7 +14,6 @@ import json
 import math
 import random
 import wave
-import zipfile
 from array import array
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -28,7 +27,6 @@ SUBTLE_STEP_RMS_DBFS: Final = -31.0
 QUIET_WHEEL_RMS_DBFS: Final = -38.0
 DEFAULT_SEED: Final = 260_926
 DEFAULT_OUTPUT: Final = Path("build/sound-lab/scratch")
-ARCHIVE_NAME: Final = "copper-lark-sound-lab.zip"
 
 Signal = list[float]
 Recipe = Callable[[int], Signal]
@@ -183,11 +181,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         choices=("subtle-revision", "grounded-revision", "full"),
         default="subtle-revision",
         help="audition set to generate (default: subtle-revision)",
-    )
-    parser.add_argument(
-        "--repack-existing",
-        action="store_true",
-        help="rebuild only the ZIP from existing output files; do not synthesize or change WAVs",
     )
     return parser.parse_args(argv)
 
@@ -702,18 +695,20 @@ pretrained audio.
 
 ## Rebuild
 
-This pass carries its frozen generator inside the ZIP as `recipe/synthesize-sfx.py`. After extracting
-the ZIP, run that copy through the repository's locked Python 3.14 environment into a scratch folder:
+This folder keeps a copy of the generator that built it, frozen at `recipe/synthesize-sfx.py`. Run
+that copy, or the repository's own tracked `tools/synthesize-sfx.py`, through the locked Python
+3.14 environment with the same seed and selection:
 
 ```sh
-uv run python /path/to/extracted/recipe/synthesize-sfx.py \
+uv run python recipe/synthesize-sfx.py \
   --output /path/to/rebuilt-pass \
   --seed {seed} \
   --selection {selection}
 ```
 
-The frozen recipe writes files only; it does not play audio. Rebuilding into scratch keeps the
-submitted pass intact.
+The frozen recipe writes files only; it does not play audio. Rebuilding into a fresh directory
+keeps this one intact. `tools/sound-lab.sh` does the same rebuild for the one pass
+`tools/sound-lab/passes.json` records, and checks it against the recorded hashes.
 
 ## Format and level
 
@@ -799,7 +794,6 @@ def _review_page(selection: str, pairs: Sequence[Pair]) -> str:
     <p>{introduction} These are listening auditions and are not installed in the game.</p>
     <div class="actions">
       <a class="button" href="comparison.wav">Play the ordered comparison</a>
-      <a class="button" download href="{ARCHIVE_NAME}">Download the complete ZIP</a>
       <a class="button" href="README.md">Read the recipe notes</a>
     </div>
   </header>
@@ -821,28 +815,6 @@ def _review_page(selection: str, pairs: Sequence[Pair]) -> str:
 """
 
 
-def _write_archive(output: Path, filenames: Sequence[str]) -> None:
-    archive_path = output / ARCHIVE_NAME
-    with zipfile.ZipFile(archive_path, "w") as archive:
-        for filename in filenames:
-            info = zipfile.ZipInfo(filename, date_time=(1980, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
-            info.create_system = 3
-            info.external_attr = 0o644 << 16
-            archive.writestr(info, (output / filename).read_bytes())
-
-
-def repack_existing(output: Path) -> None:
-    manifest: dict[str, object] = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
-    contents = manifest.get("archive_contents")
-    if not isinstance(contents, list) or not all(isinstance(name, str) for name in contents):
-        raise ValueError("manifest archive_contents must be a list of paths")
-    missing = [name for name in contents if not (output / name).is_file()]
-    if missing:
-        raise FileNotFoundError(f"cannot repack; missing: {', '.join(missing)}")
-    _write_archive(output, contents)
-
-
 def generate(output: Path, seed: int, selection: str) -> None:
     output.mkdir(parents=True, exist_ok=True)
     pairs, recipes = _configuration(selection)
@@ -859,9 +831,7 @@ def generate(output: Path, seed: int, selection: str) -> None:
     recipe_path = output / "recipe" / "synthesize-sfx.py"
     recipe_path.parent.mkdir(exist_ok=True)
     recipe_path.write_bytes(generator_data)
-    archive_files = ["index.html", "README.md", "manifest.json", *signals, "recipe/synthesize-sfx.py"]
     manifest = {
-        "archive_contents": archive_files,
         "comparison_order": _comparison_order(pairs),
         "files": audio_metadata,
         "generator": "recipe/synthesize-sfx.py",
@@ -907,18 +877,13 @@ def generate(output: Path, seed: int, selection: str) -> None:
     (output / "README.md").write_text(_readme(seed, selection, pairs), encoding="utf-8")
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (output / "index.html").write_text(_review_page(selection, pairs), encoding="utf-8")
-    _write_archive(output, archive_files)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    if args.repack_existing:
-        repack_existing(args.output)
-        print(f"Repacked {ARCHIVE_NAME} from existing files in {args.output}")
-        return 0
     _, recipes = _configuration(args.selection)
     generate(args.output, args.seed, args.selection)
-    print(f"Generated {len(recipes) + 1} WAV files and {ARCHIVE_NAME} in {args.output}")
+    print(f"Generated {len(recipes) + 1} WAV files in {args.output}")
     return 0
 
 

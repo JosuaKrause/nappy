@@ -24,7 +24,6 @@ import sys
 import tempfile
 import unittest
 import wave
-import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -162,16 +161,10 @@ class CliHelpTests(unittest.TestCase):
             readme = first_files["README.md"].decode()
             for filename in SOUND_FILES:
                 self.assertIn(filename, page if filename == "comparison.wav" else page + readme)
-            self.assertIn("copper-lark-sound-lab.zip", page)
+            self.assertNotIn(".zip", page, "the listening page no longer offers a zip to download")
+            self.assertFalse(list(first.glob("*.zip")), "the generator no longer writes a zip alongside the WAVs")
             self.assertIn("other.pause()", page)
             self.assertIn("other.currentTime = 0", page)
-
-            with zipfile.ZipFile(first / "copper-lark-sound-lab.zip") as archive:
-                names = set(archive.namelist())
-                self.assertEqual(names, set(manifest["archive_contents"]))
-                for name in names:
-                    self.assertEqual(archive.read(name), first_files[name], f"archive copy differs: {name}")
-                self.assertEqual(archive.read("recipe/synthesize-sfx.py"), (TOOLS / "synthesize-sfx.py").read_bytes())
 
     def test_sound_lab_no_serve_matches_recipe_hashes(self) -> None:
         """The generator's own reproducibility is `test_synth_output_is_valid_deterministic_and_portable`
