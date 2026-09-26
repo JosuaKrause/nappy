@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t)
 	_test_pending_events_queue_until_present_and_flush_in_order(t)
 	_test_send_event_never_queues_when_it_may_never_send(t)
+	_test_a_chase_is_reported_once_however_the_pursuer_arrived(t)
 
 ## `_should_send()` — on the web, released, unasked-for and with a live
 ## `window.goatcounter.count` are all four required; missing any one of them refuses.
@@ -289,3 +290,60 @@ func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 	t.check(counter._pending.is_empty(),
 		"off the web, an event is refused outright rather than queued forever unsent")
 	counter.free()
+
+## `EventBus.pursuit_began` (the counter's `dog-chased`) fires once per chase, and **a pursuer
+## created where its warning pointed reports the chase it starts**. `EventManager.spawn_warned()`
+## creates such a row through `EventInstance.resume()` to spend the telegraph the warning already
+## ran, and a resume otherwise stands for an instance streamed back in, whose chase — for a row
+## like `charging_dog` that never waits (`pursues_within` 0.0) — began before it streamed out and
+## was already reported. Three arrivals of the one row: placed at once and telegraphing, created
+## warned the way `spawn_warned()` does it (`came_under_a_warning` set, then `resume()`), and
+## streamed back in mid-chase, which reports nothing a second time.
+func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
+	var def := EventCatalogue.by_id("charging_dog")
+	t.check(def.pursues and def.pursues_within <= 0.0,
+		"'charging_dog' is a pursuer that never waits, the case a resume could misread")
+	var began: Array[String] = []
+	var on_began := func(id: String) -> void: began.append(id)
+	EventBus.pursuit_began.connect(on_began)
+	var step := 1.0 / 60.0
+	var her := Vector2(200.0, 0.0)
+
+	var placed := EventInstance.new()
+	placed.setup(def, Vector2.ZERO)
+	t.add_child(placed)
+	placed.set_process(false)
+	for i in int(ceil((def.telegraph_time + 0.5) / step)):
+		placed.player_at = her
+		placed._process(step)
+	t.check(began.size() == 1, "placed at once, its chase is reported once after its telegraph "
+		+ "(%d reports)" % began.size())
+	var age := placed.age
+	var travelled := placed.path_travelled()
+	placed.free()
+
+	began.clear()
+	var streamed := EventInstance.new()
+	streamed.setup(def, Vector2.ZERO)
+	t.add_child(streamed)
+	streamed.set_process(false)
+	streamed.resume(age, travelled)
+	for i in 10:
+		streamed.player_at = her
+		streamed._process(step)
+	t.check(began.is_empty(), "streamed back in mid-chase, the same chase is not reported again")
+	streamed.free()
+
+	var warned := EventInstance.new()
+	warned.setup(def, Vector2.ZERO)
+	t.add_child(warned)
+	warned.set_process(false)
+	warned.came_under_a_warning = true
+	warned.resume(def.telegraph_time, 0.0)
+	for i in 10:
+		warned.player_at = her
+		warned._process(step)
+	t.check(began.size() == 1 and began[0] == "charging_dog",
+		"created where its warning pointed, its chase is reported once (%s)" % [began])
+	warned.free()
+	EventBus.pursuit_began.disconnect(on_began)

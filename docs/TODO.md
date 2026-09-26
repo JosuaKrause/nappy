@@ -33,7 +33,7 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 **First, before any new task** ([PLAYTEST-144](playtests/PLAYTEST-144.md)): every open PR
 converted to M223's layout of one file per queue entry and per decision, then **M223**'s open
 items, the overhaul of every entry and review item and the priority bands. The player's order is
-M223, then the PRs converted, then the counter's asks, which M225 built
+M223, then the PRs converted, then the counter's asks
 ([2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statement 1:
 "then the new planning rules. then we need to update all open PRs to follow the new planning
 rules" · "then the counter args" · "then we can do regular work again"). Putting M223's overhaul
@@ -217,9 +217,9 @@ The entries, in the order the gameplay queue above gives them, reassessed on 202
 - [M182 — A finished task is shown by the world, never by text](todo/2026-09-20-M182/)
 - [M185 — A ground floor is blank wall or shops](todo/2026-09-23-M185/)
 - [M199 — The roadblock closes its whole street](todo/2026-09-25-M199/)
+- [M204 — A trailer, rendered from the game by a script](todo/2026-09-25-M204/)
 - [M205 — The man shouting charges the meter again](todo/2026-09-25-M205/)
 - [M206 — The title screen after a game over is the right way up](todo/2026-09-25-M206/)
-- [M207 — A warning comes shortly before its danger](todo/2026-09-25-M207/)
 - [M210 — The brief between two days is the coming day's](todo/2026-09-26-M210/)
 - [M213 — The chalk mark's robber stands at the far end of its alley](todo/2026-09-26-M213/)
 - [M215 — The power station's chimneys stand in front of her](todo/2026-09-26-M215/)
@@ -231,6 +231,8 @@ The entries, in the order the gameplay queue above gives them, reassessed on 202
 - [M221 — A failed day leaves no chalk mark behind](todo/2026-09-26-M221/)
 - [M222 — The red arrow for the van ends on the van](todo/2026-09-26-M222/)
 - [M223 — One file per queue entry and per decision, named by date and two words](todo/2026-09-26-M223/)
+- [M224 — A warning shorter than its own floor](todo/2026-09-26-M224/)
+- [M226 — The pursuing dog keeps its day-3 timing, and the other warnings fit it](todo/2026-09-26-M226/)
 - [M227 — Codex works as a sub-agent of a Claude Code session, in a worktree](todo/2026-09-26-M227/)
 - [M228 — Editing a hook loads the rule that keeps the Codex adapter current](todo/2026-09-26-M228/)
 - [M159 — A slow frame names the frame that was slow](todo/2026-09-19-M159/)

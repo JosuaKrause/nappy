@@ -900,6 +900,11 @@ var def: EventDef
 var path: PackedVector2Array = PackedVector2Array()
 
 var age := 0.0
+## Whether this was created where a warning pointed, once that warning was over
+## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` reads it to carry
+## the warning's badge on to the thing itself until it comes into view, and `resume()` reads it to
+## tell a fresh instance from one streamed back in.
+var came_under_a_warning := false
 var is_finished := false
 
 ## A mast that has been reached and silenced — `EventManager.silence_mast()`/`silence_all_masts()`
@@ -1947,12 +1952,16 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	age = from_age
 	_path_travelled = from_travelled
 	_noticed_at = from_noticed_at
-	# A resume only ever restores an instance already past age 0 (the guard above), and a pursuer
-	# still `is_waiting()` given the restored `_noticed_at` is the one case that has not begun
-	# chasing yet — every other pursuer restored here, including a `pursues_within <= 0.0` row
-	# that never waits at all, was already chasing before it streamed out. Stated over the
+	# A resume restores an instance already past age 0 (the guard above), and a pursuer streamed
+	# back in still `is_waiting()` given the restored `_noticed_at` is the one case that has not
+	# begun chasing yet — every other pursuer streamed back in, including a `pursues_within <= 0.0`
+	# row that never waits at all, was already chasing before it streamed out. Stated over the
 	# restored value rather than over `is_waiting()` itself, which this assignment runs ahead of.
-	_pursuit_began_reported = not (def.pursues_within > 0.0 and from_noticed_at == INF)
+	# **A row created where its warning pointed is not streamed back in**: `EventManager.
+	# spawn_warned()` sets `came_under_a_warning` before calling this only to spend a telegraph
+	# the warning already ran, and it has chased nothing yet.
+	_pursuit_began_reported = not came_under_a_warning \
+			and not (def.pursues_within > 0.0 and from_noticed_at == INF)
 	# A stride never starts mid-cycle, the same reason `setup()` resets it — a resumed instance is
 	# a fresh object (see this function's own doc), so this is normally already true, but the rule
 	# is stated at both entry points rather than left to rely on that.

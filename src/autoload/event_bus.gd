@@ -50,9 +50,10 @@ signal event_telegraphed(instance)
 signal event_activated(instance)
 signal hard_fail_triggered(reason: String)
 ## `EventManager._summon_what_has_been_sighted()`'s own first frame a `spawns_on_sight` row (only
-## `burning_building` today) is actually on screen — fired once per plan whether or not the row it
-## summons could be placed, since seeing the fire is what happened and a truck with nowhere to
-## enter from is a separate fact about the geometry. `id` is the seen row's own `def.id`.
+## `burning_building` today) is actually on screen — fired once per plan whether or not the warning
+## for the row it summons could be put up, since seeing the fire is what happened and an engine with
+## no road off screen to wait on is a separate fact about the geometry. `id` is the seen row's own
+## `def.id`.
 ## Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal event_sighted(id: String)
 ## `EventManager.light_what_she_never_met()`'s own moment a `sited_on_her_way` row (only day 3's
