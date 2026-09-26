@@ -132,6 +132,22 @@ class DotenvTests(unittest.TestCase):
             self.assertIsNone(goatcounter._main_checkout(main))
             self.assertIsNone(goatcounter._main_checkout(Path(temp)))
 
+    def test_main_checkout_is_none_when_the_shared_directory_is_not_a_dot_git(self) -> None:
+        # A worktree of a bare repository (or of one made with --separate-git-dir): commondir
+        # names a directory that is not `<checkout>/.git`, so its parent is no checkout, and a
+        # `.env` beside it is never read.
+        with tempfile.TemporaryDirectory() as temp, mock.patch.dict("os.environ", {}, clear=True):
+            bare = Path(temp) / "shared" / "repo.git"
+            gitdir = bare / "worktrees" / "wt"
+            gitdir.mkdir(parents=True)
+            (gitdir / "commondir").write_text("../..\n", encoding="utf-8")
+            worktree = Path(temp) / "wt"
+            worktree.mkdir()
+            (worktree / ".git").write_text(f"gitdir: {gitdir}\n", encoding="utf-8")
+            (bare.parent / ".env").write_text("GOATCOUNTER_TOKEN=unrelated\n", encoding="utf-8")
+            self.assertIsNone(goatcounter._main_checkout(worktree))
+            self.assertIsNone(goatcounter.env_or_dotenv("GOATCOUNTER_TOKEN", root=worktree))
+
 
 class ClassifyTests(unittest.TestCase):
     def test_run_level_shapes(self) -> None:
@@ -436,6 +452,68 @@ class CheckKeyTests(unittest.TestCase):
         )
         self.assertIn("could not be read", unavailable)
         self.assertNotIn("secret", unavailable)
+
+
+class KeyStaysOnItsSiteTests(unittest.TestCase):
+    def test_require_https_refuses_anything_but_an_https_url_with_a_host(self) -> None:
+        goatcounter.require_https("https://nappy.goatcounter.com/api/v0/")
+        for site in ("http://nappy.goatcounter.com/api/v0/", "nappy.goatcounter.com/api/v0/", "https://", "ftp://x/"):
+            with self.subTest(site=site), self.assertRaises(goatcounter.GoatCounterError):
+                goatcounter.require_https(site)
+
+    def _redirect(self, newurl: str) -> Any:
+        request = goatcounter.urllib.request.Request(
+            "https://nappy.goatcounter.com/api/v0/stats/hits", headers={"Authorization": "Bearer secret"}
+        )
+        return goatcounter._SameSiteRedirects().redirect_request(request, None, 302, "Found", {}, newurl)
+
+    def test_a_redirect_to_another_host_or_to_http_is_refused_rather_than_sent_the_key(self) -> None:
+        for newurl in (
+            "https://elsewhere.example/api/v0/stats/hits",
+            "http://nappy.goatcounter.com/api/v0/stats/hits",
+            "https://nappy.goatcounter.com.elsewhere.example/",
+        ):
+            with self.subTest(newurl=newurl), self.assertRaises(goatcounter.GoatCounterError) as caught:
+                self._redirect(newurl)
+            self.assertNotIn("secret", str(caught.exception))
+
+    def test_a_redirect_within_the_same_https_host_is_followed(self) -> None:
+        # urllib's own http_error_302 joins a relative Location onto the request's URL before
+        # redirect_request sees it, so what arrives here is always absolute.
+        followed = self._redirect("https://nappy.goatcounter.com/api/v0/stats/hits?page=2")
+        self.assertIsNotNone(followed)
+        self.assertEqual(followed.full_url, "https://nappy.goatcounter.com/api/v0/stats/hits?page=2")
+
+    def test_the_opener_uses_the_same_site_redirect_handler(self) -> None:
+        opener = goatcounter._build_opener()
+        self.assertTrue(any(isinstance(h, goatcounter._SameSiteRedirects) for h in opener.handlers))
+        self.assertFalse(
+            any(type(h) is goatcounter.urllib.request.HTTPRedirectHandler for h in opener.handlers),
+            "urllib's own handler, which carries the key to any host, is replaced rather than kept beside it",
+        )
+
+    def test_main_refuses_an_http_site_from_the_flag_or_the_environment_before_any_request(self) -> None:
+        def never(_site: str, _token: str) -> None:
+            raise AssertionError("make_fetcher must not be called for a site that is not https")
+
+        for argv, env in (
+            (["--site", "http://nappy.goatcounter.com/api/v0/"], {"GOATCOUNTER_TOKEN": "secret"}),
+            ([], {"GOATCOUNTER_TOKEN": "secret", "GOATCOUNTER_SITE": "http://nappy.goatcounter.com/api/v0/"}),
+            (["--check", "--site", "http://nappy.goatcounter.com/api/v0/"], {"GOATCOUNTER_TOKEN": "secret"}),
+        ):
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with (
+                self.subTest(argv=argv, env=sorted(env)),
+                mock.patch.dict("os.environ", env, clear=True),
+                mock.patch.object(goatcounter, "make_fetcher", side_effect=never),
+                mock.patch.object(goatcounter, "check_key", side_effect=never),
+                redirect_stdout(stdout),
+                redirect_stderr(stderr),
+            ):
+                code = goatcounter.main(argv)
+            self.assertEqual(code, 2)
+            self.assertIn("https://", stderr.getvalue())
+            self.assertNotIn("secret", stderr.getvalue() + stdout.getvalue())
 
 
 class MainTests(unittest.TestCase):

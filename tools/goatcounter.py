@@ -26,6 +26,11 @@ mainly for a local checkout where exporting the variable in every shell is more 
 file read once. In a linked git worktree the main checkout's `.env` is read after the worktree's
 own. Nothing here prints either value.
 
+The key goes only to the site it was set for: a `--site` or `GOATCOUNTER_SITE` that is not an
+`https://` URL is refused before any request, since it would send the key in the clear, and a
+redirect that leaves the site's own `https://` host is refused rather than followed, since urllib
+carries the `Authorization` header across a redirect to any host.
+
 `GET /api/v0/stats/hits` answers `{hits: [...], more, total}`, paginated by repeating
 `exclude_paths=<path_id>` for every id already seen while `more` stays true (see
 `https://nappy.goatcounter.com/api.json`, the endpoint's own Swagger spec). `count` on each hit is
@@ -142,7 +147,9 @@ def _main_checkout(root: Path) -> Path | None:
     A worktree's `.git` is a file (`gitdir: <main>/.git/worktrees/<name>`), and that directory's
     `commondir` names the shared `.git`, whose parent is the main checkout. Read from the files
     rather than by running git, so a missing git or an odd layout only means no second place to
-    look.
+    look. **Only a shared directory named `.git` has a checkout for a parent**: a worktree of a bare
+    repository, or of one made with `--separate-git-dir`, shares a directory somewhere else, whose
+    parent is not a checkout at all, so there is no fallback there.
     """
     try:
         text = (root / ".git").read_text(encoding="utf-8").strip()
@@ -153,6 +160,8 @@ def _main_checkout(root: Path) -> Path | None:
             gitdir = root / gitdir
         common = (gitdir / (gitdir / "commondir").read_text(encoding="utf-8").strip()).resolve()
     except OSError:
+        return None
+    if common.name != ".git":
         return None
     main = common.parent
     return main if main.resolve() != root.resolve() else None
@@ -215,6 +224,42 @@ def parse_moment(text: str) -> datetime:
 # ---------------------------------------------------------------------------------- fetching ---
 
 
+def require_https(site: str) -> None:
+    """Refuses a site that is not an `https://` URL with a host: the key would travel in the clear."""
+    parts = urllib.parse.urlsplit(site)
+    if parts.scheme != "https" or not parts.netloc:
+        raise GoatCounterError(
+            f"the site must be an https:// URL, not {site!r} -- the API key would be sent in the clear"
+        )
+
+
+class _SameSiteRedirects(urllib.request.HTTPRedirectHandler):
+    """Follows a redirect only within the request's own `https://` host.
+
+    urllib's own handler copies every header but the content ones onto the redirected request,
+    `Authorization` included, whatever host it points at; a redirect elsewhere, or down to
+    `http://`, is refused instead of handing the key to it.
+    """
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        here = urllib.parse.urlsplit(req.full_url)
+        there = urllib.parse.urlsplit(urllib.parse.urljoin(req.full_url, newurl))
+        if there.scheme != "https" or there.netloc != here.netloc:
+            raise GoatCounterError(
+                f"GoatCounter redirected {here.netloc} to {there.scheme}://{there.netloc} (HTTP {code}); "
+                "not following it with the API key"
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _build_opener() -> urllib.request.OpenerDirector:
     # ssl.create_default_context() already honours the OpenSSL-level SSL_CERT_FILE/SSL_CERT_DIR
     # and the system trust store on its own; REQUESTS_CA_BUNDLE is not an OpenSSL variable, so it
@@ -224,7 +269,7 @@ def _build_opener() -> urllib.request.OpenerDirector:
     # reads it.
     cafile = os.environ.get("SSL_CERT_FILE") or os.environ.get("REQUESTS_CA_BUNDLE")
     context = ssl.create_default_context(cafile=cafile) if cafile else ssl.create_default_context()
-    return urllib.request.build_opener(urllib.request.HTTPSHandler(context=context))
+    return urllib.request.build_opener(urllib.request.HTTPSHandler(context=context), _SameSiteRedirects())
 
 
 def _get(opener: urllib.request.OpenerDirector, url: str, token: str, *, timeout: float = 20.0) -> dict[str, Any]:
@@ -543,6 +588,13 @@ def main(argv: list[str] | None = None) -> int:
         print("goatcounter: --days must be a positive number of days", file=sys.stderr)
         return 2
 
+    site = args.site or env_or_dotenv("GOATCOUNTER_SITE") or DEFAULT_SITE
+    try:
+        require_https(site)
+    except GoatCounterError as exc:
+        print(f"goatcounter: {exc}", file=sys.stderr)
+        return 2
+
     # The key check happens before any network call, on purpose -- see the module docstring and
     # M209's brief. GOATCOUNTER_TOKEN is never accepted as a flag: a flag lands in shell history
     # and process listings, an environment variable does not print itself by accident.
@@ -557,8 +609,6 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
-
-    site = args.site or env_or_dotenv("GOATCOUNTER_SITE") or DEFAULT_SITE
 
     if args.check:
         try:
