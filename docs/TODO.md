@@ -525,18 +525,14 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
 wall reading and the catalogue seeing the seals and the region wall are built and recorded
 (`DECISIONS.md`, M129 and its sections, the newest "the catalogue sees the seals and the wall").
 The probe, `tests/probes/m129_zero_cost_line.gd`, assembles a day the way `EventManager.start_day`
-does and finds a zero-cost line along 239 of 299 routes. A region wall or a seal may cost a route where it
+does and finds a zero-cost line along 239 of 299 routes. A spent park is closed
+(`DECISIONS.md`, M129, a spent park is closed). A region wall or a seal may cost a route where it
 stands at a junction ([PLAYTEST-140](playtests/PLAYTEST-140.md), statement 7: "it's okay if
 the route costs something"), and it is most of what the probe still blames. What is left:
 
 - [ ] **Open: a `roadblock` on a carriageway** is seen by no sidewalk rule, only by the junction
       rule when it is near one. M199, the roadblock closes its whole street, makes the catalogue
       roadblock a true closure, so this is settled with it.
-- [ ] **A spent park is closed** ([PLAYTEST-140](playtests/PLAYTEST-140.md), statement 1: "a
-      spent park should not be accesible and no route should go through it"). The calm-ground
-      pass (`_spoil_the_parks_she_used`) places in a used park's rect without the rules; instead
-      the park is shut the way a closure shuts ground, checked before it is accepted, and the
-      day's route tree plans around it. Its picture still reads as spent.
 - [ ] **The night raid's van**, spawned by `ResistanceDirector` through `spawn_extra` near her
       doorstep, and the other `spawn_extra` sites in `happenings.gd` are not checked against the
       three questions. Trace each and say whether it may cost a route.
