@@ -391,8 +391,9 @@ func _set_the_trap_on_her() -> void:
 	if arrival[1]:
 		run = "a clear run at her along her street, beside her" if arrival[2] \
 				else "a clear run at her"
-	Telemetry.note("roll", "task handed over: a robber sent after her from %s, %.0fpx off (%s)"
-			% [TelemetryLog.tile(_map.world_to_tile(at)), her.distance_to(at), run])
+	var sent := "a robber" if def.id == "robber_giving_chase" else "a guard"
+	Telemetry.note("roll", "task handed over: %s sent after her from %s, %.0fpx off (%s)"
+			% [sent, TelemetryLog.tile(_map.world_to_tile(at)), her.distance_to(at), run])
 
 ## Where the robber a handed-over task sets on her starts, past `badge_line()` so the screen-edge
 ## badge is up before he is on screen, on ground `_draw_guard_position()`'s own refusals leave alone
