@@ -284,10 +284,9 @@ stay on the sidewalk".)* Each kind of row has its own ground:
 waits past its time until its place is both on its ground and off screen by its notice again — so it
 is never created closer than that, whatever she did while it waited.
 
-**Three kinds of thing that come from off screen are not warned first yet.** *(PLAYTEST-145,
-statement 7: "all offscreen events should work like that".)* None of the three is an exception the
-player agreed to: each is built the way it was before warning first, and each waits on a decision
-that is open in `TODO.md`. What is built, and what stands in the way:
+**Three kinds of thing that come from off screen are not warned first, and only one is still an
+open question.** *(PLAYTEST-145, statement 7: "all offscreen events should work like that".)* What
+is built, and what stands in the way:
 
 - **A director-sited pursuer** (`charging_dog`, on `RUN_TAUGHT_DAY` and when the director sends it
   later) **is put in the world at once**, `Tuning.offscreen_lead()` ahead of her at its
@@ -307,19 +306,21 @@ that is open in `TODO.md`. What is built, and what stands in the way:
   worst-case gap at the rate walking away still loses by (38px/s) takes about 7.0s, inside the 7.5s
   the two give it.
 - **A patrol sent toward her on the road** (the return leg's, and a torn poster's) **is created at
-  once** and telegraphs on its way in. What stands in the way: the cues rule gives the screen-edge
-  badge only to "something lethal or faster than a walk", and a patrol is neither (slower than a
-  walk, never `hard_fail` at any heat), so warned first it would be a car appearing just off screen
-  already past its telegraph with nothing said. Whether it gets a badge so it can be warned first is
-  M207's open question for the player in `TODO.md`.
+  once** and telegraphs on its way in, with no badge: the cues rule gives the screen-edge badge only
+  to "something lethal or faster than a walk", and a patrol is neither (slower than a walk, never
+  `hard_fail` at any heat).
 - **A `MAP` mover** — `military_convoy` on an ordinary day from 13, the escape's trucks — **is a
   place the day planned at dawn** and streams in at `Tuning.EVENT_STREAM_RADIUS`; its badge rises as
-  it comes. What stands in the way: warned first, its place would follow her, which moves a
-  guarantee the plan was checked for out of the day's plan, against "Do not move a guarantee out of
-  `build_day` and into the streaming" (the events skill, "The day is planned whole"). Which of the
-  two gives way is the same open question in M207. When the player was asked which events warning
-  first covers, the question named "the fire truck and the convoy included"; only day 13's column
-  is built.
+  it comes. It is not `hard_fail` either, so it stays a place the plan checked at dawn rather than
+  one warning first would move into the streaming ("Do not move a guarantee out of `build_day` and
+  into the streaming", the events skill, "The day is planned whole").
+
+Neither the patrol nor the convoy is exempted from the cues rule or the fairness contract above: a
+thing telegraphs only if it goes fast, can end the day and comes toward her (PLAYTEST-145,
+statements 19-24), and neither is `hard_fail`, so what governs telegraphing does not govern them at
+all. The fire engine and day 13's column — the copy of `military_convoy` `EventManager.as_warned()`
+makes — are warned first under the build above; restating the cues rule and the fairness contract
+for what needs telegraphing, and removing their warning, is M226.
 
 **The margin applies to what travels toward her, not to a crossing.** `cat_dash` keeps
 `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()`: a crossing row's whole content is a
