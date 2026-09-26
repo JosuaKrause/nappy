@@ -21,6 +21,9 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **On the phone, lose a day and look at the title** (the released page). **Is it the right way
+  up?** If not: after every lost run or only sometimes, and does anything else turn with it?
+  Record is M206 in `TODO.md`, the title screen after a game over is the right way up.
 - **Keep working while an agent takes a capture** (any `tools/shot.sh` or rig-flagged
   `tools/run.sh`, on this Mac). The rig's window should flash up and hand focus straight back to
   whatever app was in front. **Does your focus stay put, and is the flicker short enough to
