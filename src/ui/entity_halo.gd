@@ -34,14 +34,15 @@ extends Node2D
 ## gait frame is wearing the rim of the body it is drawing *now*. See `_process()`.
 ##
 ## **`show_behind_parent`** places the rim behind the entity, the crowd and the player the same
-## way each entity's own shadow is placed, so it stays a hint rather than a wall. **The shared
-## `ShaderMaterial`** is one resource for every rim in the game rather than a copy per instance,
-## because the shader itself carries no state of its own to duplicate — see
-## `assets/shaders/excitement_halo.gdshader` for why the per-instance colour and strength travel
-## through `set_instance_shader_parameter()` rather than through the material or `modulate`: a
-## fragment function that writes `COLOR` is not re-multiplied by a node's own `modulate`
-## afterward, so `instance uniform` is the only channel that reaches one value per rim on one
-## shared material.
+## way each entity's own shadow is placed, so it stays a hint rather than a wall. **Every rim
+## carries its own `ShaderMaterial`**, built fresh in `_init()` (`_halo_material()`) rather than
+## one instance shared by the whole game, because `set_glow()` writes an ordinary `uniform` on it
+## (`assets/shaders/excitement_halo.gdshader`'s own `halo_colour`) — a fragment function that
+## writes `COLOR` is not re-multiplied by a node's own `modulate` afterward, so `modulate` cannot
+## carry a per-rim colour and the material has to. A dedicated `ShaderMaterial` per rim, bounded by
+## `ExcitementHalo.MAX_SOURCES` (8) live rims at once, costs nothing worth measuring; the `Shader`
+## resource itself — the compiled program `_warm_the_halo_shader()` pays for once — is still the
+## one `preload()` every material points at, so nothing about warming it twice.
 
 ## How many directions the ring redraws the body in. Checked against a leaf blower's own concave
 ## silhouette (the arm breaks the body's own outline) at 8 first, which already read as a smooth
@@ -78,9 +79,6 @@ var _colour := Color.WHITE
 var _target_alpha := 0.0
 var _target_colour := Color.WHITE
 
-## One `ShaderMaterial`, shared by every `EntityHalo` rather than built per instance.
-static var _shared_material: ShaderMaterial
-
 func _init(draw_body: Callable, bob: Callable) -> void:
 	_draw_body = draw_body
 	_bob = bob
@@ -89,16 +87,19 @@ func _init(draw_body: Callable, bob: Callable) -> void:
 	material = _halo_material()
 	draw.connect(_on_draw)
 
+## A fresh `ShaderMaterial` on the one shared `Shader` resource — never cached statically, so every
+## rim (and `main.gd`'s warm-pass probe, through `shared_material()` below) gets its own instance
+## to carry its own `halo_colour`.
 static func _halo_material() -> ShaderMaterial:
-	if not _shared_material:
-		_shared_material = ShaderMaterial.new()
-		_shared_material.shader = preload("res://assets/shaders/excitement_halo.gdshader")
-	return _shared_material
+	var new_material := ShaderMaterial.new()
+	new_material.shader = preload("res://assets/shaders/excitement_halo.gdshader")
+	return new_material
 
-## The one `ShaderMaterial` every rim shares, built if this is the first call. `main.gd`'s warm
-## pass calls this to get the material built and then draws one throwaway quad with it, so the
-## Compatibility renderer's shader program compiles before the day starts rather than at the
-## first real halo — see the warm pass's own doc for why a hidden draw is what 4.7 offers here.
+## A `ShaderMaterial` on the halo's own `Shader`, for `main.gd`'s warm pass: it draws one throwaway
+## quad with it so the Compatibility renderer's shader program compiles before the day starts
+## rather than at the first real halo — see the warm pass's own doc for why a hidden draw is what
+## 4.7 offers here. The program compiles once per `Shader` resource, not per `ShaderMaterial`, so
+## this warms every rim's own material the same as if it were still the one they all shared.
 static func shared_material() -> ShaderMaterial:
 	return _halo_material()
 
@@ -163,7 +164,8 @@ func _process(delta: float) -> void:
 		_colour.r = move_toward(_colour.r, _target_colour.r, channel_step)
 		_colour.g = move_toward(_colour.g, _target_colour.g, channel_step)
 		_colour.b = move_toward(_colour.b, _target_colour.b, channel_step)
-		set_instance_shader_parameter("halo_colour", Color(_colour.r, _colour.g, _colour.b, _alpha))
+		(material as ShaderMaterial).set_shader_parameter(
+				"halo_colour", Color(_colour.r, _colour.g, _colour.b, _alpha))
 	# The frame a fade finally reaches zero still redraws once, which is what clears the last rim
 	# off the screen; after that a dark halo costs nothing at all.
 	if not settled or is_showing():
