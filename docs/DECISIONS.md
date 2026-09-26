@@ -1,5 +1,32 @@
 # Decisions
 
+## Copper lark — A pass is a command, and no audio is in the tree · 2026-09-26
+
+*([The sound playtest](playtests/2026-09-26-copper-lark.md): "I'm a bit irritated by having to
+download an index.html each time. is there a better way to approach this? other than that we can
+merge it but delete all the artifacts before I don't want them in tree" · "yeah I'd prefer a local
+command" · "same as with the trailer / video" · on the per-pass generator copies: "okay if they're
+not worth let's remove them" · "yes 384 will get squashed so no scrubbing necessary".)*
+
+GitHub serves a committed `index.html` as text, so every audition meant downloading and unzipping a
+kit. `tools/sound-lab.sh` builds the current pass from the committed generator into git-ignored
+`build/sound-lab/` and serves the listening page on localhost (`--lan` for a phone on the same
+network), the way `tools/trailer.sh` builds the trailer. The evidence folders with their WAVs,
+zips, pages, manifests and generator copies are deleted, and the PR lands squashed, so none of it
+reaches `main`'s history.
+
+**Only the current pass rebuilds.** Passes 1 to 3 were built by generator versions that exist only
+on the PR branch's own commits, which a squash leaves out of `main`; keeping them alive would need a
+tag on those commits, and they were rejected auditions. Their findings are the records below.
+Pass 4 rebuilds byte for byte from the committed generator, and its comparison carries the pass-3
+references.
+
+**The findings, pass 4 as the current proposal**: steps with a softer contact, 8.5 dB below pass 3;
+wheels with restrained ticks, 15.5 dB below pass 3 and 7 dB below the new steps; targets of -31 and
+-38 dBFS RMS, the assistant's proposals awaiting the player's ear; the grounded direction over the
+stylized one; a requested level hierarchy survives the finishing stage rather than being
+equalized. Audio stays a standalone experiment with no runtime integration.
+
 ## Copper lark — Reuse audition files while iterating · 2026-09-26
 
 The player permits overwriting sound audition files on the open PR because the work will be
@@ -15,16 +42,15 @@ This changes future iteration practice; no existing audio files are changed in t
 The player rejected pass 3: "the audio is still not good. a step needs to be way more subtle
 and wheel sound is even quieter". Full words are in
 [the listening verdict](playtests/2026-09-26-copper-lark.md). Pass 4 preserves the pass-3
-references and compares them with softer step contacts and restrained wheel ticks, under
-`docs/evidence/copper-lark-sound-lab-2026-09-26-pass-4/`.
+references and compares them with softer step contacts and restrained wheel ticks;
+`tools/sound-lab.sh` builds it.
 
 The assistant's proposed targets are -31 dBFS RMS for steps and -38 dBFS RMS for wheels:
 8.5 and 15.5 dB below the respective pass-3 references. These exact gains and timbre changes
 are audition choices, open to the player's verdict. The comparison retains those levels;
 equalizing them would defeat the requested hierarchy. No runtime installation is included.
 
-The pass carries its frozen generator, manifest, comparison, listening page and ZIP. Earlier
-submitted files remain intact. The sound-effects skill corrects its blanket level-matching
+The sound-effects skill corrects its blanket level-matching
 guidance: matching energy helps compare timbres, but a requested level hierarchy must survive
 the finishing stage. The previous equal-RMS strategy came to attention when the player again
 found steps too prominent and asked for quieter wheels. Recognition and preference remain
@@ -51,8 +77,8 @@ hook loads it for audio and sound-generator paths.
 The first shared pass used equal peak levels. The second keeps the same designs but targets
 -22.5 dBFS RMS with a 0.70 peak ceiling to reduce loudness bias in the comparison; the measured
 RMS spread was under 0.15 dB. This is energy matching, not proof of equal perceived loudness.
-Both passes are preserved under `docs/evidence/copper-lark-sound-lab-2026-09-26/` and its
-`-pass-2` sibling. The second pass is the current listening proposal.
+The second pass was the listening proposal of its day; neither pass is kept (see "A pass is a
+command").
 
 Verification covered Python formatting/types/tests, help and rejected-argument paths with no
 output, two-directory byte-for-byte rebuilds, WAV format/non-silence/headroom/boundaries,
@@ -77,8 +103,8 @@ included. The listening page now pauses and resets other players when a new clip
 **Reproducibility correction found in review.** The first pass's README originally invoked the
 mutable current generator, so its command would have overwritten the preserved pass with newer
 bytes. Each pass now includes its own frozen recipe and a scratch-output command. Passes 1 and 2
-were rebuilt with those archived recipes and all WAV bytes compared identical. Submitted audio
-is preserved; external and packaged instructions identify the matching source. The skill now
+were rebuilt with those archived recipes and all WAV bytes compared identical. (The archives
+and the audio later left the tree; see "A pass is a command".) The skill now
 requires each review pass's recipe to stay independently executable and asks listeners to judge
 subject recognition and implied weight before style refinement. Final Python/CLI, hook, skill,
 determinism, audio-integrity and archive checks passed.

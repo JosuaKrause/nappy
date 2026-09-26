@@ -53,3 +53,28 @@ This remains an audition, without runtime integration.
 The player permits overwriting the audition files during PR iteration. Separate preserved
 folders for every new attempt are not required. Keep the uploaded files reasonably small and
 keep each revision's source recipe and generated package consistent.
+
+## No artifacts in the tree, and a local command to listen
+
+> "384 is experimental -- its findings are useful but I'm a bit irritated by having to download an index.html each time. is there a better way to approach this? other than that we can merge it but delete all the artifacts before I don't want them in tree"
+
+Offered a local command that builds and serves the listening page instead:
+
+> "yeah I'd prefer a local command"
+
+> "same as with the trailer / video"
+
+Told the per-pass generator copies were not worth keeping:
+
+> "recipe copies. -- are they useful to keep, though?"
+
+> "okay if they're not worth let's remove them"
+
+> "yes, delete them"
+
+Told that after a squash only the current pass can be rebuilt:
+
+> "yes 384 will get squashed so no scrubbing necessary"
+
+The sound lab's audio, pages, zips and generator copies leave the tree; a local command builds and
+serves the current pass; the findings stay as text.
