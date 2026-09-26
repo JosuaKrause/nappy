@@ -379,6 +379,10 @@ def _sorted_desc(items: dict[str, int]) -> list[tuple[str, int]]:
 
 def format_text(grouped: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str) -> str:
     lines = [f"GoatCounter events for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})"]
+    lines.append(
+        "Counts are visitors, not attempts -- a day's outcomes can add up to more than its began "
+        "(one person can lose, retry with a nerve, and win the same day)."
+    )
 
     run_level: dict[str, int] = grouped["run_level"]
     lines.append("")

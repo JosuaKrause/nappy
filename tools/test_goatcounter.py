@@ -178,6 +178,22 @@ class FormatTextTests(unittest.TestCase):
         self.assertIn("2026-08-27T00:00:00Z", text)
         self.assertIn("2026-09-26T00:00:00Z", text)
 
+    def test_a_note_says_counts_are_visitors_not_attempts(self) -> None:
+        # A day's outcomes can outnumber its began: one visitor can lose, retry with a nerve, and
+        # win the same day, and GoatCounter counts each event by visitor, not by attempt.
+        grouped = goatcounter.group_hits(
+            [
+                hit("nappy-day-6-began", 1, 1),
+                hit("nappy-day-6-lost-crying", 1, 2),
+                hit("nappy-day-6-lost-hard-fail", 1, 3),
+                hit("nappy-day-6-won", 1, 4),
+            ],
+            "nappy-",
+        )
+        text = goatcounter.format_text(grouped, site="s", start=self.start, end=self.end, prefix="nappy-")
+        self.assertIn("visitors, not attempts", text)
+        self.assertLess(text.index("visitors, not attempts"), text.index("Day 6:"))
+
     def test_began_comes_first_and_rest_sorts_by_count_descending_with_percentage(self) -> None:
         hits = [
             hit("nappy-day-3-began", 100, 1),
