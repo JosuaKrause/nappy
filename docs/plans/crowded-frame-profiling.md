@@ -4,7 +4,7 @@
 write down the [separate-animation plan and full analysis](scenery-animation-separation.md).
 Do not start implementation or additional measurements until the player resumes them.
 This is the measurement method for M159, a slow frame names the frame that was slow. The source is
-[Playtest 145, measure the work in a crowded scene](../playtests/PLAYTEST-145.md).
+[Sunny lynx, measure the work in a crowded scene](../playtests/2026-09-26-sunny-lynx.md).
 
 ## Question and deliverable
 
@@ -94,7 +94,7 @@ The [measurement record](../evidence/entity-performance-2026-09-26/README.md) re
 every-frame breakdown, raw streams, analyzer outputs and rejected trials. It distinguishes
 steady entity and prediction work from building-redraw spikes, and states the profiler's
 material perturbation. The player's desktop stutter observation and separate-animation request
-are in [Playtest 145](../playtests/PLAYTEST-145.md); the open implementation is M159's queue entry.
+are in [Sunny lynx](../playtests/2026-09-26-sunny-lynx.md); the open implementation is M159's queue entry.
 Repeat equal active windows when measuring an optimization and keep observer/profiler settings
 explicit. Run the import/boot check and only the affected probes/tests; no local full-suite run
 is needed for this investigation. Documentation-only verification is `tools/lint.sh` and a diff

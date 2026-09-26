@@ -8,12 +8,6 @@ progress-tracking, which lives there too.
 
 ## The state of the tree
 
-**M159, a slow frame names the frame that was slow, is at a plan-only checkpoint.**
-[Playtest 145](playtests/PLAYTEST-145.md) asks for separate roof-vent, south-water, broken-pipe
-fountain and crash-smoke animation. The [plan and full analysis](plans/scenery-animation-separation.md)
-hold the implementation contract, measured evidence and limits. Wait for the player to resume
-implementation or measurements. The older priority order below applies to other work.
-
 **Check `git status`, `git branch` and `git worktree list` for the current checkout and open work.**
 Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAUDE.md` directly
 through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the skills through the

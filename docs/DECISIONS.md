@@ -2,7 +2,7 @@
 
 ## M159 — Crowded-scene CPU attribution and separate scenery animation · 2026-09-26
 
-[Playtest 145](playtests/PLAYTEST-145.md) asks for the work in each frame of a crowded scene,
+[Sunny lynx](playtests/2026-09-26-sunny-lynx.md) asks for the work in each frame of a crowded scene,
 without requiring desktop stutter reproduction or phone access. The player explicitly resumes
 measurements and authorizes a draft PR after pausing the first investigation.
 

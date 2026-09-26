@@ -2,7 +2,7 @@
 
 **Plan only. Do not start implementation or more measurements until the player resumes them.**
 This is the next implementation contract for M159, a slow frame names the frame that was slow.
-The player's complete instructions are in [Playtest 145](../playtests/PLAYTEST-145.md).
+The player's complete instructions are in [Sunny lynx](../playtests/2026-09-26-sunny-lynx.md).
 The [full measurement report](../evidence/entity-performance-2026-09-26/README.md) holds the raw
 streams, analysis outputs, commands, engine identity, rejection records and provenance.
 
