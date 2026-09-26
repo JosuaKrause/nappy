@@ -166,14 +166,17 @@ merging is what collides — so parallelism is planned at the file level, before
   are the repo's convergence points; two agents adding rows or checks to the same file will not
   auto-merge.
 - **Merging follows committing** (explicit permission in this session). As each agent lands,
-  push and open its PR. Once merging is authorized, merge one at a time; a second PR is brought up
-  to date with the new `main` first, since the ruleset requires strict checks, and that re-run on
-  the merge result is the gate that catches two green branches that are wrong together. Then
-  retire the branch with `tools/prune-merged.sh <branch>` from the main checkout (see
-  **committing**), which removes the worktree and deletes the branch only once GitHub vouches
-  for it. `tools/land-prs.sh <pr-number>...` is that sequence for several already-authorized PRs
-  in one call: auto-merge, wait, bring a conflicted one up to date, then fast-forward `main` and
-  prune, one PR at a time.
+  push and open its PR. Once merging is authorized, merge one at a time; a second PR merges as it
+  stands unless the new `main` now conflicts with it, in which case the conflict is resolved on
+  its own branch under **merging-main** — the ruleset's checks are not strict, so a PR merely
+  behind `main` needs nothing. The semantic gate is `main`'s own CI run after the batch, which the
+  orchestrator watches: a conflict between two PRs that touch different files passes both PRs'
+  own gates and only shows up there. Then retire the branch with `tools/prune-merged.sh <branch>`
+  from the main checkout (see **committing**), which removes the worktree and deletes the branch
+  only once GitHub vouches for it. `tools/land-prs.sh <pr-number>...` is that sequence for several
+  already-authorized PRs in one call: auto-merge, wait, bring a conflicting one up to date, then
+  fast-forward `main` and prune, one PR at a time, printing `main`'s own CI run at the end as the
+  check to watch.
 - **The harness's own branches go with the same script.** Each spawn also leaves a
   `worktree-agent-*` branch pointing at the worktree's base. `tools/prune-merged.sh` deletes the
   ones whose worktree is gone, with `git branch -d`, and keeps a live agent's: that worktree has
