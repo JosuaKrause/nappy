@@ -1,5 +1,14 @@
 # Review
 
+## Copper lark — Lighter footsteps and mechanical stroller wheels
+
+Listen to `docs/evidence/copper-lark-sound-lab-2026-09-26-pass-3/comparison.wav`, or download
+that pass's ZIP from the sound experiment's PR and open `index.html`. The order is old footsteps,
+revised footsteps, old stroller wheels, revised stroller wheels. The old WAVs are the exact
+first-shared samples. Are the steps now light enough, and does the stroller suggest wheels and
+a small mechanism rather than ocean waves? The grounded direction is preferred; the stylized
+direction is rejected. This is still an audition, with no runtime sound installation.
+
 **What waits on a human.** Everything here is built, measured by a rig, and unfelt: a person has
 to play it, look at it, or decide about it. *(2026-09-11: "keep a document with items that need
 human review / test runs. That way you can keep working without having to stop. And test runs

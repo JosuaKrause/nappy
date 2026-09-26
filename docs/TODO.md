@@ -14,15 +14,6 @@ mid-way through.
 
 ## The order
 
-### Copper lark — Recognizable grounded sound effects
-
-[Listening verdict](playtests/2026-09-26-copper-lark.md): the stylized set is too far off, the
-grounded sounds are closer but do not yet represent their subjects. Revise the stroller's
-ocean-like wash into recognizable wheel/mechanism sounds and make the footsteps lighter.
-Proposed, not asked for: dry rolling contact with small rattles, and soft sole taps with reduced
-low thumps. Preserve submitted attempts, rebuild from recipes and deliver a focused grounded
-listening revision. Keep the experiment on its own branch and out of game runtime.
-
 ### M109 — Convert the SVG catalogue to PNG
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in

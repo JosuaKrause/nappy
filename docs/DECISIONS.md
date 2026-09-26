@@ -37,6 +37,22 @@ stroller sounded like ocean waves and the footsteps were too heavy. The next req
 therefore addresses recognition and weight before any expansion or runtime binding; the specific
 dry-contact/rattle and light-sole recipes are assistant proposals, not approved sound outcomes.
 
+**The focused revision.** Pass 3 compares the exact first-shared grounded footsteps and stroller
+WAVs with revised versions: restrained midrange heel/toe contacts instead of the footsteps'
+low thump, and dry wheel contacts with paired mechanical rattles instead of the stroller's wash.
+The four clips' measured RMS spread is 0.49 dB. The user has not approved their recognition or
+weight; the listening question is in `REVIEW.md`. No stylized iteration or runtime binding is
+included. The listening page now pauses and resets other players when a new clip starts.
+
+**Reproducibility correction found in review.** The first pass's README originally invoked the
+mutable current generator, so its command would have overwritten the preserved pass with newer
+bytes. Each pass now includes its own frozen recipe and a scratch-output command. Passes 1 and 2
+were rebuilt with those archived recipes and all WAV bytes compared identical. Submitted audio
+is preserved; external and packaged instructions identify the matching source. The skill now
+requires each review pass's recipe to stay independently executable and asks listeners to judge
+subject recognition and implied weight before style refinement. Final Python/CLI, hook, skill,
+determinism, audio-integrity and archive checks passed.
+
 ## M211 and M212 — The held restart starts a new game, on the pause screen and on a phone · built 2026-09-26
 
 *([PLAYTEST-142](playtests/PLAYTEST-142.md): "the pause screen is currently bugged where you cannot
