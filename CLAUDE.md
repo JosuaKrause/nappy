@@ -14,10 +14,17 @@ directory. The system, developer and user instructions take precedence over repo
 
 Codex finds the skills through `.agents/skills`, a link to `.claude/skills`, and runs the same
 hook scripts through `.codex/hooks.json` and the adapter `tools/codex-hooks.py`: it loads the rules
-for every path a patch touches, rename destinations included, lints each edited doc, and reloads
-the startup rules on session start, resume, compaction and subagent start. The hooks need Python
-3.9+, Bash and jq, and run only once the repository is trusted and the hooks are reviewed through
-`/hooks`; restart Codex if new hooks or skills do not appear. Where a rule says `Read`, Codex uses
+for every path a patch touches, rename destinations included, lints each edited doc, denies an
+unbounded `git grep` on Codex's own Bash calls the same way Claude Code's does, and reloads
+the startup rules on session start, resume, compaction and subagent start. **A change to a hook
+script under `.claude/hooks/` or to the hooks in `.claude/settings.json` checks whether the
+adapter and its tests need to change — a new tool name, payload field or hook event — and updates
+them in the same PR when they do** *(2026-09-26: "okay, yes this is important to keep up to
+date")*, because Codex names its tools differently (`apply_patch` rather than `Edit`/`Write`) and a
+hook that works only in Claude Code leaves Codex unguarded; a change to a hook's own logic alone
+needs nothing from the adapter. The hooks need Python 3.9+, Bash and jq, and run only once the
+repository is trusted and the hooks are reviewed through `/hooks`; restart Codex if new hooks or
+skills do not appear. Where a rule says `Read`, Codex uses
 file-reading tools or shell reads; where it says `Edit` or `Write`, `apply_patch`, which keeps the
 diff reviewable, fails on a stale match and is what the path rules load on — shell scripts are for
 tools, git and inspection. Where a skill names Claude's `Agent`/`Task` tools or Sonnet, use the
