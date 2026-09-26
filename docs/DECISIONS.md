@@ -33,6 +33,17 @@ The graphics repair preserves the existing late-game single-fence exception, sel
 collision, event spoiling and routing. The sound experiment requested in the same conversation
 is developed separately and contributes no assets or runtime code to this work item.
 
+**Once-per-run review correction.** Independent review reproduced a bookkeeping defect with
+seed 14040: the act III fence selected on day 9 disappeared on day 12, and reading the empty
+daily state back into `GameState` erased its history, allowing a second fence on day 13.
+`GameState.remember_fenced_park()` now retains only the first nonempty choice, and `CityMap`
+distinguishes that historical choice from a physically active fence. The original act lifetime,
+save schema and art are unchanged; a run that has never fenced an area can still select its first
+in act IV. Act-boundary and real save/reload regressions failed seven checks before the fix and
+passed afterward with the focused spent-park/save suites (55,008 checks, no failures). Boot and
+lint also passed. The city guarantee's rationale now correctly excludes fenced ground before
+counting reachable calm areas; the spare reachable area covers event spoiling.
+
 **Main reconciliation.** Merged main `97f42f3427b253615fb93e9d5eebe172429665b9` into branch
 `22347b1bf0d899235358d57b9d912a100e56f39e`, from base
 `2ac17470a8975accc25668c9aba82cb415dd6816`. The only conflict was both sides inserting

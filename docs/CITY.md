@@ -465,9 +465,9 @@ each is stated where its decision is taken:
 | the day | at least `MIN_CALM_AREAS_REACHABLE` calm areas are still reachable after the closures |
 | the city | **no single street cuts off all the calm** — the winnability sentence edge-disjointness stands in for, asserted directly |
 
-The count of *areas* is two, because one of them may be `CityMap.fenced_park`, the one park a day
-in act III or later may have physically closed. A merely spoiled area costs the count nothing — its
-ground stays open — and neither does one taken off the route tree without being fenced.
+The count of *areas* is two because one may be spoiled with events while its ground remains
+walkable. A physically fenced area is removed from `calm_blocks` before this count; it cannot
+satisfy the guarantee. Routing exclusion alone also leaves an area's ground walkable.
 
 `tests/test_generator.gd` checks it directly by closing each street segment in turn and
 confirming a park is still reachable — with one exemption. **The street outside the home is
@@ -512,6 +512,9 @@ walks there without a route pointing the way.
   shows. `ParkFenceMarker` draws both rails above one ground line: side runs show their narrow top
   surfaces mounted inward of visible upright poles, and corners share one pole with rail collars.
   Each run's closed sign is mounted on a support at its exact midpoint.
+  `GameState` retains the first fenced block and its act for the whole run, including saves;
+  `CityMap` exposes a physical fence only during that act. An expired fence spends the run's
+  allowance even when no barrier stands today.
 - **At least one calm area is always usable.** `_ensure_one_usable_park` is the last line under it,
   for the day she has settled in every calm area there is. The player has to find out which.
 
@@ -603,8 +606,8 @@ question below:
 - `EventScheduler._ensure_one_usable_park` is the last line under it, for the day she has used
   every calm area there is and nothing was protected.
 - `_spoil_the_parks_she_used` spoils every area she has already settled in **this act** — what stops
-  her going back to the same bench every day — except `CityMap.fenced_park`, the one area a day in
-  act III or later may have physically closed instead.
+  her going back to the same bench every day — except the currently active `CityMap.fenced_park`,
+  the run's single physical fence, which stands for the remainder of its chosen act.
 - `_ensure_the_city_is_still_walkable` drops obstructions that would seal the city, or seal off
   the one place the resistance sends her to that day (see "Guarantees").
 
@@ -1250,9 +1253,9 @@ about the city rather than about each area: **no one street cuts off all the cal
 (`tests/test_routes.gd`). The second route to any given area is an offer the day makes when the map
 allows one.
 
-**The count of areas is two**, because one of them may be `CityMap.fenced_park`, the one park a day
-in act III or later may have physically closed; one reachable area is the unwinnable day this
-invariant exists to prevent, and going below two would be a separate decision.
+**The count of areas is two**, because one of the reachable areas may be spoiled with events.
+A physically fenced area is excluded before this count. One reachable area is the unwinnable day
+this invariant exists to prevent, and going below two would be a separate decision.
 
 Both ends of the journey are exempt from being charged for their own doorway:
 
