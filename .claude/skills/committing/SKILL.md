@@ -191,6 +191,12 @@ the answer is no:
   not what the PR happened to build.
 - **Would the player recognise it in the pictures?** A visible change is judged on its pictures
   against their words, before its code.
+- **Does the finished work leave the queue inside this PR?** *(2026-09-26: "reviews should check
+  that work items are properly removed from the queue *inside* the PR that finished it".)* Every
+  item the PR completes is gone from the queue in this diff, with its record written, and every
+  item it only partly does is still there and says what is left. An item left queued after its
+  work merges is how a finished thing gets picked up again with a different approach; an item
+  removed for work the PR did not do is how an ask disappears. Check both against the diff.
 
 *(The case that taught it: a review of a park fenced with street-closure barriers found "no
 correctness bug in the mechanism"; the player had asked only that the router not path through a
