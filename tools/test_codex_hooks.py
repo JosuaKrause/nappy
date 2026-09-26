@@ -288,6 +288,21 @@ class CodexHooksTest(unittest.TestCase):
                 assert output is not None
                 self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_git_grep_guard_denies_a_glued_quote_and_a_command_given_as_a_list(self) -> None:
+        # A word glued onto a quote (an f-string, VAR="...") is read with the quote as a space,
+        # and a `command` sent as an argument list is joined rather than skipped.
+        for command in (
+            "python3 -c 'import subprocess; subprocess.run(f\"git grep -n -i {p} -- docs/\", shell=True)'",
+            'cmd="git grep -n -i foo origin/main -- docs/"; $cmd',
+            ["bash", "-lc", "git grep -n -i foo -- docs/"],
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(tool_input={"command": command})
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        text = self.call(tool="Bash", command="git grep -n foo -- '*.md' 2>/dev/null")
+        self.assertIn("committing", text)
+
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(
             command="*** Update File: ../outside/src/events/a.gd\n*** Update File: /tmp/outside/src/city/b.gd\n"

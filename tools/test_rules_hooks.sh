@@ -15,20 +15,19 @@
 #     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd) injects its skill
 #   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
-#   - git-grep-guard.sh matches on the raw command text (quotes and heredoc bodies included) and
-#     denies any git followed later by grep as its own word, with neither -I nor a text-only
-#     pathspec in between -- a wrapper (timeout, sudo, env, find | xargs), a heredoc fed to an
-#     interpreter (bash <<EOF, ssh <<EOF), quoted code run by a nested interpreter (bash -c,
-#     python3 -c), and a mere mention (echo, a commit message, a heredoc to cat) all deny now;
-#     git log/shortlog --grep=... is the one mention still allowed, since that grep is glued to a
-#     dash and never its own word
-#   - the same denies survive a line continuation (git \<newline>grep), a full path
-#     (/usr/bin/git grep), upper case (GIT GREP, real on this Mac's case-insensitive disk) and a
-#     mid-word backslash escape (g\it grep) -- normalised away before tokenising -- while -I stays
-#     its own flag, never folded together with -i by that same normalisation
-#   - and a quoted -C/-c/--git-dir argument, a quoted git or grep, and a Python argument list
-#     (subprocess.run(["git", "grep", ...])) all still deny, now that quote marks are deleted the
-#     same way backslashes are and `,`/`[`/`]` split words like whitespace does
+#   - git-grep-guard.sh reads the whole command text, quotes and heredoc bodies included, and
+#     denies any git followed by grep as a word of its own with neither -I nor a text-only
+#     pathspec: behind a wrapper (timeout, sudo, env, find | xargs), inside a heredoc or quoted
+#     code an interpreter runs (bash <<EOF, bash -c, python3 -c, an f-string, VAR="..."; $VAR,
+#     bash <<<"..."), and as a mere mention; git log --grep=... and prose "git, grep" allow
+#   - the same denies survive a line continuation, a full path, upper case, a backslash or quote
+#     mark inside the word, a quoted -C/-c/--git-dir argument (a space in it included), $'git',
+#     $(which git), a redirect or a newline between git and grep, and a Python list, black-
+#     formatted or not; -I stays its own flag, never folded together with -i, and a quoted "gcc -I"
+#     pattern is not the flag
+#   - an exclusion-only pathspec (:!*.json) denies, and a redirect after a text pathspec
+#     (2>/dev/null, 2>&1, > file) is not a pathspec entry
+#   - a 100 KB command is checked well inside the hook's 5-second timeout
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -47,7 +46,7 @@ usage: tools/test_rules_hooks.sh [--help|-h]
 Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh and git-grep-guard.sh
 with synthetic hook JSON on stdin, under a private TMPDIR, and asserts the per-agent marker
 keying, the compaction/resume reset, every path added to the skill mapping, the lint-docs.sh
-governed set, and every git-grep-guard.sh raw-text deny/allow shape.
+governed set, and every git-grep-guard.sh deny/allow shape.
 Takes no arguments besides --help/-h.
 
   tools/test_rules_hooks.sh
@@ -439,9 +438,9 @@ assert_guard "git grep -I ... -- '*.md' still allows after normalisation" allow 
 assert_guard "a git-grep mention still allows after normalisation" allow \
     'echo "see git-grep for details"'
 
-# $(echo git) grep and a shell alias stay the two named, accepted exceptions -- the former never
-# places git and grep as adjacent bare words, the latter cannot be seen at the text layer at all.
-assert_guard "\$(echo git) grep stays the named, accepted exception -> allow" allow \
+# The `)` closing a command substitution may stand between git and grep, so a git produced by
+# $(echo git) or $(which git) is still git.
+assert_guard "\$(echo git) grep -> deny" deny \
     '$(echo git) grep -n -i "foo" origin/main -- docs/'
 
 # A third, adversarial review of the normalise-before-match fix above found that a quote mark,
@@ -469,11 +468,126 @@ assert_guard "a quote mark mid-word (g\"i\"t) -> deny" deny \
 assert_guard "a Python argument list (subprocess.run([\"git\", \"grep\", ...])) -> deny" deny \
     'python3 -c '"'"'import subprocess; subprocess.run(["git", "grep", "-n", "-i", "foo", "origin/main", "--", "docs/"])'"'"''
 
-# Still accepted, not fixed: a quoted search pattern that happens to contain " -I" reads as the
-# flag, since this file does not track which characters are inside a quoted argument. Rare, and
-# named in the header rather than chased with the quote-tracking this design deliberately avoids.
-assert_guard "a quoted pattern containing -I is read as the flag -- accepted, documented gap" allow \
+# The third reading honours quotes, so a quoted pattern containing " -I" is not the flag.
+assert_guard "a quoted pattern containing -I is not the flag -> deny" deny \
     'git grep -n -i "gcc -I" origin/main -- docs/'
+
+# A word glued onto a quote mark (the second reading turns quotes into spaces).
+assert_guard "an f-string in python3 -c -> deny" deny \
+    'python3 -c '"'"'import subprocess; subprocess.run(f"git grep -n -i {p} origin/main -- docs/", shell=True)'"'"''
+assert_guard "an f-string in a python3 heredoc -> deny" deny \
+    "python3 - <<'PY'
+import subprocess
+subprocess.run(f\"git -C {root} grep -n -i {p} -- docs/\", shell=True)
+PY"
+assert_guard "cmd=\"git grep ...\"; \$cmd -> deny" deny \
+    'cmd="git grep -n -i foo origin/main -- docs/"; $cmd'
+assert_guard "CMD='git grep ...'; eval \"\$CMD\" -> deny" deny \
+    "CMD='git grep -n -i foo -- docs/'; eval \"\$CMD\""
+assert_guard "args=\"git grep ...\" in subprocess.run -> deny" deny \
+    'python3 -c '"'"'import subprocess; subprocess.run(args="git grep -n -i foo -- docs/", shell=True)'"'"''
+assert_guard "bash <<<\"git grep ...\" -> deny" deny \
+    'bash <<<"git grep -n -i foo -- docs/"'
+assert_guard "os.system(r'git grep ...') -> deny" deny \
+    "python3 -c \"import os; os.system(r'git grep -n -i foo -- docs/')\""
+assert_guard "os.system(b'git grep ...'.decode()) -> deny" deny \
+    "python3 -c \"import os; os.system(b'git grep -n -i foo -- docs/'.decode())\""
+
+# A newline may stand between git and grep: black puts each list element on a line of its own.
+assert_guard "a black-formatted list in a python3 heredoc -> deny" deny \
+    "python3 - <<'PY'
+import subprocess
+subprocess.run(
+    [
+        \"git\",
+        \"grep\",
+        \"-n\",
+        \"-i\",
+        \"foo\",
+        \"--\",
+        \"docs/\",
+    ]
+)
+PY"
+assert_guard "[\"git\",<newline> \"grep\", ...] -> deny" deny \
+    'x = ["git",
+     "grep", "-n", "-i", "foo", "--", "docs/"]'
+
+# Global options that take a separate argument.
+assert_guard "--config-env with a separate argument -> deny" deny \
+    'git --config-env core.pager=PAGER grep -n -i foo -- docs/'
+assert_guard "--attr-source with a separate argument -> deny" deny \
+    'git --attr-source HEAD grep -n -i foo -- docs/'
+
+# An exclusion alone searches everything else, so it never counts as text-only.
+assert_guard "an exclusion-only pathspec :!*.json -> deny" deny \
+    "git grep -n -i foo -- ':!*.json'"
+assert_guard "an exclusion-only pathspec :^*.md -> deny" deny \
+    "git grep -n -i foo origin/main -- ':^*.md'"
+assert_guard "a text pathspec with an exclusion too -> deny (accepted false deny)" deny \
+    "git grep -n -i foo -- '*.md' ':!x.md'"
+
+# A redirect after the pathspec is not a pathspec entry.
+assert_guard "text pathspec, then 2>/dev/null -> allow" allow \
+    "git grep -n foo -- '*.md' 2>/dev/null"
+assert_guard "text pathspec, then 2>&1 | head -> allow" allow \
+    "git grep -n foo -- '*.md' 2>&1 | head"
+assert_guard "text pathspec, then > file -> allow" allow \
+    "git grep -n foo -- '*.md' '*.gd' > /tmp/out.txt"
+assert_guard "a -- with only a redirect after it -> deny" deny \
+    'git grep -n -i foo -- 2>/dev/null'
+assert_guard "a redirect, then a non-text entry -> deny" deny \
+    "git grep -n -i foo -- '*.md' 2>/dev/null docs/"
+
+# The reviewer's minor shapes.
+assert_guard "\$'git' grep (ANSI-C quoting) -> deny" deny \
+    "\$'git' grep -n -i foo -- docs/"
+assert_guard "\$(which git) grep -> deny" deny \
+    '$(which git) grep -n -i foo -- docs/'
+assert_guard "\`which git\` grep -> deny" deny \
+    '`which git` grep -n -i foo -- docs/'
+assert_guard "a redirect between git and grep -> deny" deny \
+    'git 2>/dev/null grep -n -i foo -- docs/'
+assert_guard "a quoted -C path with a space -> deny" deny \
+    'git -C "/Users/krause/My Drive/nappy" grep -n -i foo -- docs/'
+assert_guard "a quoted -c value with a space -> deny" deny \
+    'git -c "color.grep.match=bold red" grep -n -i foo -- docs/'
+assert_guard "a quoted --git-dir= path with a space -> deny" deny \
+    'git --git-dir="/x y/.git" grep -n -i foo -- docs/'
+assert_guard "\"git, grep\" in prose is not an invocation -> allow" allow \
+    'git commit -m "Tools: git, grep and rg"'
+
+# Nothing ordinary regresses.
+assert_guard "a guarded search for the phrase git grep -> allow" allow \
+    'git grep -I -n "git grep" -- docs/'
+assert_guard "git -C \"\$root\" grep -I ... -> allow" allow \
+    'git -C "$root" grep -I -n -i foo -- docs/'
+assert_guard "git log -S grep -> allow" allow \
+    'git -C "$root" log -S grep'
+assert_guard "git log --format with a comma, piped to grep -> allow" allow \
+    'git log --format="%h,%s" | grep fix'
+
+# A git with nothing after it, or only options, is no grep.
+assert_guard "git as the last word -> allow" allow \
+    'gh pr view 377 --json body --jq .body | grep -n git'
+assert_guard "git and an option as the last words -> allow" allow \
+    'echo git --version'
+
+# A command far longer than any real one still finishes inside the hook's 5-second timeout (a
+# hook that times out lets the command through), and still denies.
+long_body="$(printf 'Lorem ipsum dolor sit amet, "quoted words", '"'"'more'"'"'; x | y (z) [w]\n%.0s' $(seq 1 1500))"
+long_start=$SECONDS
+assert_guard "a 100 KB heredoc ending in an unguarded git grep -> deny" deny \
+    "python3 - <<'PY'
+$long_body
+import os; os.system('git grep -n -i foo -- docs/')
+PY"
+checks=$((checks + 1))
+if [ $((SECONDS - long_start)) -lt 5 ]; then
+    echo "ok   the 100 KB command is checked in under 5 seconds"
+else
+    fail "the 100 KB command took $((SECONDS - long_start)) seconds, past the hook's 5-second timeout"
+fi
 
 echo
 echo "$checks checks, $failures failures"

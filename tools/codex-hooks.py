@@ -91,8 +91,11 @@ def main() -> None:
                 # .claude/hooks/git-grep-guard.sh's own header). Checked before the
                 # shell-reminder below, and on a deny nothing else about this call is
                 # printed -- Codex accepts the same permissionDecision JSON Claude Code does.
+                # Codex documents `command` as a string; an argument list (["bash", "-lc",
+                # "..."]) is passed on too, and the guard joins it with spaces, so an
+                # unexpected shape is checked rather than skipped.
                 command = args.get("command")
-                if isinstance(command, str) and command:
+                if isinstance(command, (str, list)) and command:
                     guard = run_hook("git-grep-guard.sh", "Bash", extra_input={"command": command})
                     if guard and guard.get("hookSpecificOutput", {}).get("permissionDecision") == "deny":
                         print(json.dumps(guard))

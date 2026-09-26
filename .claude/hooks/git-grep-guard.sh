@@ -1,284 +1,202 @@
 #!/usr/bin/env bash
 # Denies a `git grep` that can grow without bound.
 #
-# On 2026-09-26 a sub-agent's `git grep -i "...\|..."` over docs/ (about 900 MB of PNG/JPEG/MP4
-# evidence, plus JSON traces with 100 KB lines) ran with no tree given, no `-I`, and no text-only
-# pathspec, and a second command repeated the shape in a `for` loop over several refs -- both from
-# the main checkout, both against Apple's `git` (2.54, Apple Git-157), which runs the regex over
-# every blob unless told not to. The unified log shows the kernel killing `git` at about 80 GB, six
-# times in a row -- once per loop iteration -- then a watchdog-timeout panic on a 16 GB Mac.
-# Measured afterwards, every run capped and polled for peak RSS rather than let run uncapped (see
-# the pull request that added this file for the full table): the same pattern without `-I` climbed
-# past 2.7 GB and was still climbing at a 2-second cap, on the *working tree* alone, no tree-ish
-# needed; `-F` (fixed string) climbed the same way -- the driver is the absence of `-I`, not regex
-# backtracking. Either `-I` (skip binary files) or a pathspec restricted to known text extensions
-# keeps it bounded and fast regardless of `-F`, how many trees are named, or which tree: measured
-# between 15 MB and 916 MB, finishing in under two seconds every time either guard was present.
+# Without `-I`, git runs the pattern over every blob, binaries included. Over docs/ (about 900 MB of
+# PNG/JPEG/MP4 evidence and JSON traces with 100 KB lines) a case-insensitive search was measured
+# past 2.7 GB and still climbing at a 2-second cap, on the working tree alone and with `-F` alike,
+# and one such search took down a 16 GB Mac. `-I` (skip binary files), or a `--` pathspec made only
+# of known text-extension globs, keeps the same search between 15 MB and 916 MB and under two
+# seconds. So a `git` followed by `grep` as a word of its own is denied unless that same invocation
+# carries one of the two.
 #
-# A shell parser keeps having holes, and a hole here crashes the machine -- an earlier version of
-# this file tracked quotes, command boundaries and heredoc bodies to tell a real invocation from a
-# mention, and review after review found a shape it let through: a wrapper (`timeout 5 git grep`,
-# `sudo`, `env`, `find | xargs git grep`), a heredoc fed to an interpreter (`bash <<EOF ... git grep
-# ... EOF`, `ssh host <<EOF`), quoted code run by a nested interpreter (`bash -c "git grep ..."`,
-# `python3 -c "os.system('git grep ...')"`). So this file no longer tries to tell those apart: it
-# matches on the raw command text, quotes and heredoc bodies included, and **prefers a false deny
-# to a false allow**. Any `git`, followed later by `grep` as its own word -- with any git options
-# between, and `grep` never counting when it is glued onto a `-`, so `git log --grep=foo` and
-# `git shortlog --grep=foo` are the one shape this still allows -- is an invocation, denied unless
-# that same invocation carries `-I` or a `--` pathspec made only of known-text-extension globs.
-# **A mention now denies too** -- `echo "git grep"`, a commit message, a heredoc to `cat` -- since
-# telling a mention from a real invocation is exactly the parsing this file no longer attempts. The
-# deny reason names the workaround: write it as `git-grep` (a mention never tokenizes as the bare
-# word `git` immediately followed by `grep`) or add `-I`.
+# **This prefers a false deny to a false allow.** A parser that tells a real invocation from a
+# mention keeps having holes (a wrapper such as `timeout` or `xargs`, a heredoc fed to `bash` or
+# `python3`, `bash -c "..."`, a Python string), and a hole here crashes the machine. So this reads
+# the whole command text, heredoc bodies and quoted strings included, and a mention denies too
+# (`echo "git grep"`, a commit message). The deny reason names the way out: write `git-grep` for a
+# mention, and add `-I` to a search.
 #
-# Raw-text matching still had four holes that need no obfuscation at all, found by a later review:
-# `git \`<newline>`grep ...` (bash joins a backslash-newline pair back into one line, so treating it
-# as a hard boundary was the bug); `/usr/bin/git grep ...` (an exact-string compare to `git` never
-# matches a path); `GIT GREP ...` (this Mac's case-insensitive, case-preserving disk runs `GIT` as
-# the same binary); and `g\it grep ...` (an unquoted mid-word backslash is a no-op escape bash
-# itself strips). The command text is normalised before tokenising to close all four: a backslash-
-# newline pair is deleted first, whole, joining the halves exactly as bash would, rather than
-# leaving a bare newline the tokenizer would still treat as a separator; every remaining backslash
-# is then deleted, so an escaped letter spells the word it escapes; and the two places this file
-# asks "is this token the word `git` / `grep`?" compare the token's last path component case-
-# insensitively rather than by exact string, so `/usr/bin/git`, `./git` and `GIT` all still count.
-# `-I`, the `--` pathspec and every other flag stay compared case-sensitively, on the untouched
-# token -- folding `-I` (skip binary files) together with `-i` (ignore case) would make a real,
-# unbounded `git grep -i ... docs/` indistinguishable from a guarded one, which is the one false
-# allow this file cannot reintroduce. `$(echo git) grep ...` and a shell alias stay the two named,
-# accepted exceptions: the former never places `git` and `grep` as adjacent bare words (the
-# substituted word lands as `echo`'s own argument), and the latter cannot be seen at the text layer
-# at all.
+# How the text is read:
+# - jq does all of the reading, in time linear in the text's length, because bash 3.2's string
+#   operations and array lookups are not, and a hook that outruns its timeout lets the command
+#   through. A backslash-newline pair is deleted first, joining the two lines as bash does.
+# - The text is then read three ways, and a match in any one of them denies:
+#   1. every backslash and quote mark deleted, as bash's quote removal does, so `g"i"t`, `g\it`,
+#      `"git" grep` and `git -C "$root" grep` read as they run;
+#   2. every backslash deleted and every quote mark turned into a space, so a word glued onto a
+#      quote still stands alone: `f"git grep ..."`, `cmd="git grep ..."; $cmd`, `bash <<<"git
+#      grep ..."`, `os.system(r'git grep ...')`;
+#   3. quotes and backslash escapes honoured, a quoted string staying inside its word, so a quoted
+#      argument with a space stays one word (`git -C "/a b" grep`, `-c "x=bold red"`) and a quoted
+#      pattern such as `"gcc -I"` is not read as the `-I` flag.
+#   In the first two readings a comma right after a quote mark splits words, which is how a Python
+#   list (`["git", "grep", ...]`) reads; a comma anywhere else does not, so prose such as "git,
+#   grep" is not an invocation. In the third reading every unquoted comma splits.
+# - Words split on whitespace, `[` and `]`. `;`, `&`, `|`, `(`, `)`, a backtick and a newline are
+#   words of their own, and each one ends an invocation's tail.
+# - `git` is any word whose last path component is `git` in any case, a leading `$` ignored:
+#   `/usr/bin/git`, `GIT` (this Mac's disk is case-insensitive, so it runs git), `$'git'`, `$git`.
+#   `grep` is read the same way.
+# - Between `git` and `grep` may stand any `-` option (with the separate argument of the global
+#   options that take one), a redirect, a newline (black puts `"git",` and `"grep",` on lines of
+#   their own), and the `)` or backtick that closes `$(which git)`. A `grep` glued onto a dash is
+#   never the word, so `git log --grep=foo` allows.
+# - The tail runs from `grep` to the next separator word. `-I` counts case-sensitively and is never
+#   folded together with `-i`. The pathspec counts as text only if every entry after `--`,
+#   redirects aside, is a text glob; an exclusion (`:!*.json`, `:^*.md`) never counts, because an
+#   exclusion with nothing else searches everything else.
 #
-# A quote mark was still its own token, and a real one sits between `git` and `grep` as often as
-# not: a quoted `-C`/`-c`/`--git-dir` argument (`git -C "$root" grep ...`, what an agent writes),
-# a quoted `git` or `grep` (`"git" grep`, `git "grep"`, `g"i"t grep`), and a Python argument list
-# (`subprocess.run(["git", "grep", ...])`) all put a stray quote token where the option-skip loop
-# or the `grep` check expects an adjacent flag or the bare word, and all denied with no obfuscation
-# at all before this fix. `"` and `'` are now deleted in the same normalise pass as the backslashes
-# -- bash's own quote removal, so `g"i"t` spells `git` exactly as bash runs it -- and `,`, `[` and
-# `]` join the tokenizer's whitespace branch, so a Python list's `"git", "grep"` still splits into
-# two words once its quotes are gone. **Accepted, not fixed:** a quoted search pattern that happens
-# to contain ` -I` reads as the flag (`git grep -i "gcc -I" -- docs/` allows) -- rare, and fixing it
-# needs the quote-tracking this file deliberately does not do.
+# Accepted holes, each needing a deliberate step: a shell alias or function, a git alias
+# (`git -c alias.g=grep g ...`), a `git` or `grep` assembled by an expansion (`$(echo gi)t`,
+# `$G` with G=git), an encoded command, a pattern given as `-e -I`, and a global option git adds
+# later that takes a separate argument. Accepted false denies: a mention (`[git] grep` in prose
+# included), a line ending in `git` followed by a line starting with `grep`, a text-only pathspec
+# that also carries an exclusion (`-- '*.md' ':!x.md'`), and any command the jq program fails on.
 #
-# Reads the hook JSON on stdin. Denies via hookSpecificOutput.permissionDecision (PreToolUse "deny"
-# JSON, see the pull request description for the doc citation confirming this shape and that
-# PreToolUse fires for a sub-agent's own tool calls too -- a sub-agent is what ran the command
-# above). Bash 3.2-safe, jq and bash only -- no external tokenizer, no rg, no python; case-
-# insensitive matching uses bash's own `nocasematch` shell option, toggled on and back off around
-# one comparison at a time so it never leaks into the case-sensitive checks below.
+# Reads the hook JSON on stdin (a `command` given as an argument list is joined with spaces) and
+# denies with PreToolUse's `permissionDecision: "deny"` JSON, which also stops a sub-agent's call.
+# Needs bash 3.2 and jq only.
 
 set -uo pipefail
 
-input=$(cat)
-tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
-[ "$tool" = "Bash" ] || exit 0
-command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)
-[ -z "$command" ] && exit 0
+# ------------------------------------------------------------------------------ the check (jq) ---
+# Prints the unguarded invocations it finds, joined by "; ", and nothing when there is none. Every
+# step is a literal split/join, one reduce over the characters, or a walk over an array of words,
+# never a regex over the whole text: jq's match, scan and gsub cost the length of the text per
+# match, and bash 3.2's arrays cost their length per lookup, either of which makes a long heredoc
+# outrun the hook's timeout.
+read -r -d '' check_program <<'JQ'
+def drop($c): split($c) | join("");
+def swap($c; $r): split($c) | join($r);
 
-# ------------------------------------------------------------------------- normalise ------------
-# Deletes every backslash-newline pair first (as a pair, so the join leaves nothing between the two
-# former lines -- exactly what bash itself does with a real line continuation), then deletes every
-# remaining backslash (so `g\it` spells `git`). Both patterns are built with a doubled backslash in
-# single quotes on purpose: in a glob pattern (which is what the right-hand side of `${var//..}` is)
-# a single `\` escapes the next character, so a *literal* one backslash has to be spelled as two.
-bs_nl='\\'$'\n'
-command="${command//$bs_nl/}"
-bs='\\'
-command="${command//$bs/}"
-# Then every quote mark, the same way bash's own quote removal drops them once they have done their
-# job: `g"i"t` spells `git`, `"git" grep` spells `git grep`, and a quoted `-C`/`-c`/`--git-dir`
-# argument (`git -C "$root" grep ...`) collapses back to the plain, unquoted shape the option-skip
-# loop below already expects (two tokens: the flag, then its argument). Neither character is a glob
-# metacharacter, so each is a literal pattern with no escaping needed.
-dq='"'
-command="${command//$dq/}"
-sq="'"
-command="${command//$sq/}"
+# Readings 1 and 2 split on whitespace, `[` and `]`; each separator is a word of its own.
+def plain_words:
+  [swap("\t"; " ") | swap("["; " ") | swap("]"; " ")
+   | swap(";"; " ; ") | swap("&"; " & ") | swap("|"; " | ") | swap("("; " ( ") | swap(")"; " ) ")
+   | swap("`"; " ` ") | swap("\n"; " \n ")
+   | split(" ")[] | select(length > 0)];
 
-# ---------------------------------------------------------------------------- tokenizer --------
-# Splits $1 into one token per output line, on whitespace -- plus `,`, `[` and `]`, which split a
-# word exactly like whitespace does but (like whitespace) leave no token of their own behind, so a
-# Python argument list (`["git", "grep", ...]`, quotes already gone by the time this runs) still
-# reads as the separate words `git` and `grep` -- and on `; & | ( ) \``, each of which *is* its own
-# one-character token, since those carry real meaning this file depends on (a statement boundary, a
-# subshell, a pipe, a background job, a command substitution): this scan does not know or care what
-# is quoted (quote marks are deleted before this ever runs -- see normalise above), is inside a
-# heredoc body, or is arguments to some other command, on purpose. A newline is also its own token,
-# so a run of dash-flags and a pathspec are never credited to a `git grep` match that a different
-# statement's `;`/`&`/`|`/newline actually separates it from.
-#
-# Tokens are printed NUL-separated (a token may legitimately contain other bytes) and read back
-# with `read -d ''`, which is bash-3.2-safe.
-tokenize() {
-	local s="$1" i=0 n=${#1} c cur="" have=0
-	while ((i < n)); do
-		c="${s:i:1}"
-		case "$c" in
-		' ' | $'\t' | ',' | '[' | ']')
-			if [ "$have" = 1 ]; then printf '%s\0' "$cur"; cur=""; have=0; fi
-			i=$((i + 1))
-			;;
-		$'\n')
-			if [ "$have" = 1 ]; then printf '%s\0' "$cur"; cur=""; have=0; fi
-			printf '%s\0' $'\n'
-			i=$((i + 1))
-			;;
-		';' | '&' | '|' | '(' | ')' | '`')
-			if [ "$have" = 1 ]; then printf '%s\0' "$cur"; cur=""; have=0; fi
-			printf '%s\0' "$c"
-			i=$((i + 1))
-			;;
-		*)
-			have=1
-			cur+="$c"
-			i=$((i + 1))
-			;;
-		esac
-	done
-	[ "$have" = 1 ] && printf '%s\0' "$cur"
-}
+# Reading 3 honours quotes and backslash escapes: a quoted string stays inside its word, and a
+# newline inside one becomes a space.
+def flush: if .cur != "" then .out += [.cur] | .cur = "" else . end;
+def quoted_words:
+  reduce (explode[] | [.] | implode) as $c ({q: 0, esc: false, cur: "", out: []};
+    if .esc then .cur += $c | .esc = false
+    elif .q == 1 then (if $c == "'" then .q = 0 else .cur += $c end)
+    elif .q == 2 then
+      (if $c == "\\" then .esc = true elif $c == "\"" then .q = 0 else .cur += $c end)
+    elif $c == "\\" then .esc = true
+    elif $c == "'" then .q = 1
+    elif $c == "\"" then .q = 2
+    elif $c == " " or $c == "\t" or $c == "," or $c == "[" or $c == "]" then flush
+    elif $c == ";" or $c == "&" or $c == "|" or $c == "(" or $c == ")" or $c == "`" or $c == "\n"
+    then flush | .out += [$c]
+    else .cur += $c end)
+  | flush
+  | [.out[] | if . == "\n" then . else swap("\n"; " ") end];
 
-toks=()
-while IFS= read -r -d '' tok; do
-	toks+=("$tok")
-done < <(tokenize "$command")
+# `git` / `grep` in any case, as a path or not, a leading `$` ignored.
+def last_part: (split("/") | last // "") | ltrimstr("$") | ascii_downcase;
+def is_git: last_part == "git";
+def is_grep: last_part == "grep";
+# `-I` alone or in a short-option cluster, never in a `--long` option; case-sensitive.
+def has_dash_I: startswith("-") and (startswith("--") | not) and contains("I");
+# The words a redirect takes (2 when its target is the next word, 1 when glued on), else 0.
+def redirect_width:
+  sub("^[0-9]{0,2}"; "") as $w
+  | if ($w | test("^[<>]")) | not then 0 elif ($w | test("^[<>]+$")) then 2 else 1 end;
+# A pathspec entry restricted to a known text extension; an exclusion never counts.
+def text_glob:
+  if startswith(":!") or startswith(":^") then false
+  else test("\\.(md|gd|sh|py|json|toml|txt|cfg|ini|yml|yaml|csv|svg|html|htm|css|js|ts|xml|"
+            + "rs|go|c|h|cpp|hpp|java|rb|pl|tres|tscn|gdshader|glsl|cs)$")
+  end;
+def is_sep: IN(";", "&", "|", ")", "`", "\n");
+def takes_argument:
+  IN("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env",
+     "--attr-source");
 
-n=${#toks[@]}
+# From the index after `git`, the index of the first word that is not one of git's own options (with
+# a separate argument where it takes one), a redirect, a newline, or the `)`/backtick closing
+# `$(which git)`. An unrecognised `-` option is skipped too, so an unfamiliar one cannot hide
+# `grep`; the same skip keeps `git log --grep=foo` safe.
+def after_options($w):
+  until(. >= ($w | length)
+        or ($w[.] as $x
+            | ($x | startswith("-")) or ($x | IN("\n", ")", "`")) or ($x | redirect_width) > 0
+            | not);
+    $w[.] as $x
+    | if $x | takes_argument then . + 2
+      elif ($x | startswith("-")) or ($x | IN("\n", ")", "`")) then . + 1
+      else . + ($x | redirect_width) end);
 
-# Case-insensitively compares $1 to $2, without leaking bash's `nocasematch` option to anything
-# else in this file: turned on only for the one `[[ ... ]]` below, then off again before returning,
-# so the case-sensitive checks this file relies on elsewhere (`-I` vs `-i`, a `*.md` extension)
-# never see it.
-eq_ci() {
-	shopt -s nocasematch
-	local result=1
-	[[ "$1" == "$2" ]] && result=0
-	shopt -u nocasematch
-	return "$result"
-}
+# True when a `--` pathspec is present and every entry, redirects aside, is a text glob.
+def text_only($specs):
+  {t: 0, entries: 0, ok: true}
+  | until(.t >= ($specs | length) or (.ok | not);
+      ($specs[.t] | redirect_width) as $r
+      | if $r > 0 then .t += $r
+        elif $specs[.t] | text_glob then .entries += 1 | .t += 1
+        else .ok = false end)
+  | .ok and .entries > 0;
 
-# True for the bare word `git` / `grep`, case-insensitively, and also for either one written as a
-# path (`/usr/bin/git`, `./git`) -- only the token's last path component is compared, so a
-# directory earlier in the path can never itself read as `git` or `grep`.
-is_git_token() { eq_ci "${1##*/}" "git"; }
-is_grep_token() { eq_ci "${1##*/}" "grep"; }
+# The tail after `grep` carries neither `-I` before `--` nor a text-only pathspec after it.
+def unguarded($tail):
+  (first(range(0; $tail | length) | select($tail[.] == "--")) // null) as $dd
+  | (if $dd == null then $tail else $tail[:$dd] end | any(.[]; has_dash_I)) as $has_I
+  | ($dd != null and text_only($tail[$dd + 1:])) as $text
+  | ($has_I or $text) | not;
 
-# A `-I` flag, standalone or bundled into another short-option cluster (`-nI`, `-Iin`, ...); never
-# matches a `--long` option, since the character right after the leading `-` there is another `-`.
-has_dash_I() {
-	case "$1" in
-	-[!-]*)
-		case "$1" in
-		*I*) return 0 ;;
-		esac
-		;;
-	esac
-	return 1
-}
+# Each unguarded `git ... grep <tail>` in the word array, the tail ending at the next separator.
+def findings:
+  . as $w
+  | ($w | length) as $n
+  | {i: 0, out: []}
+  | until(.i >= $n;
+      if $w[.i] | is_git | not then .i += 1
+      else (.i + 1 | after_options($w)) as $j
+        | if $j >= $n or ($w[$j] | is_grep | not) then .i += 1
+          else ($j + 1 | until(. >= $n or ($w[.] | is_sep); . + 1)) as $k
+            | (if unguarded($w[$j + 1:$k])
+               then .out += [[["git"] + $w[$j:$k] | .[] | swap("\n"; " ")] | join(" ")]
+               else . end)
+            | .i = $k
+          end
+      end)
+  | .out;
 
-# A pathspec argument restricted to a known text extension -- the shapes the fix examples in this
-# file's header and the pull request actually use (`*.md`, `*.gd`, `*.sh`, ...). Not exhaustive on
-# purpose: an unrecognised extension falls through to "not text-restricted", which asks for `-I`
-# instead, the safe default.
-is_text_glob() {
-	case "$1" in
-	*.md | *.gd | *.sh | *.py | *.json | *.toml | *.txt | *.cfg | *.ini | *.yml | *.yaml | \
-		*.csv | *.svg | *.html | *.htm | *.css | *.js | *.ts | *.xml | *.rs | *.go | *.c | *.h | \
-		*.cpp | *.hpp | *.java | *.rb | *.pl | *.tres | *.tscn | *.gdshader | *.glsl | *.cs) return 0 ;;
-	*) return 1 ;;
-	esac
-}
+if .tool_name != "Bash" then empty else
+  (.tool_input.command // "")
+  | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
+  | drop("\\\n") as $raw
+  | ($raw | drop("\\") | drop("\"") | drop("'") | ascii_downcase) as $flat
+  # Every match needs both words, so most commands stop here.
+  | if ($flat | contains("git") and contains("grep")) | not then empty else
+      ($raw | drop("\\") | swap("\","; "\" ") | swap("',"; "' ")) as $unescaped
+      | first(
+          ($unescaped | drop("\"") | drop("'") | plain_words | findings),
+          ($unescaped | swap("\""; " ") | swap("'"; " ") | plain_words | findings),
+          ($raw | quoted_words | findings)
+          | select(length > 0))
+      | join("; ")
+    end
+end
+JQ
 
-findings=()
-i=0
-while [ "$i" -lt "$n" ]; do
-	if is_git_token "${toks[$i]}"; then
-		j=$((i + 1))
-		# Any global option before the subcommand, skipped fail-safe rather than off a closed
-		# whitelist: a `-`-prefixed token we do not otherwise recognise (`-c pager.grep=false`,
-		# `--git-dir=...`, `-P`, `--literal-pathspecs`, ...) is still skipped, or an unfamiliar
-		# one would silently stop the scan before it ever reaches `grep`. Only the handful git
-		# itself defines as taking a separate argument (rather than one glued on with `=`) also
-		# skip that argument token. This same loop is what makes `git log --grep=foo` safe: that
-		# token is `-`-prefixed too, so it is skipped here rather than ever being compared to the
-		# bare word `grep`.
-		while [ "$j" -lt "$n" ]; do
-			case "${toks[$j]}" in
-			-C | -c | --git-dir | --work-tree | --namespace | --exec-path)
-				j=$((j + 2)) # the option and its separate argument
-				;;
-			-*)
-				j=$((j + 1)) # any other global option, no separate argument assumed
-				;;
-			*) break ;;
-			esac
-		done
-		if [ "$j" -lt "$n" ] && is_grep_token "${toks[$j]}"; then
-			# The invocation's own tail: everything from `grep` up to the next unquoted
-			# separator (already its own token) or the end of the token stream.
-			k=$((j + 1))
-			while [ "$k" -lt "$n" ]; do
-				case "${toks[$k]}" in
-				';' | '&' | '|' | ')' | '`' | $'\n') break ;;
-				esac
-				k=$((k + 1))
-			done
-			# tail = toks[j+1 .. k-1]
-			has_I=0
-			dashdash=-1
-			t=$((j + 1))
-			while [ "$t" -lt "$k" ]; do
-				if [ "$dashdash" -lt 0 ]; then
-					if [ "${toks[$t]}" = "--" ]; then
-						dashdash=$t
-					elif has_dash_I "${toks[$t]}"; then
-						has_I=1
-					fi
-				fi
-				t=$((t + 1))
-			done
-			text_only=0
-			if [ "$dashdash" -ge 0 ] && [ $((dashdash + 1)) -lt "$k" ]; then
-				text_only=1
-				t=$((dashdash + 1))
-				while [ "$t" -lt "$k" ]; do
-					# Quotes are already gone (see normalise above), so a quoted pathspec like
-					# -- '*.md' reaches here as the plain token *.md, no special-casing needed
-					# for the quote marks themselves.
-					if ! is_text_glob "${toks[$t]}"; then
-						text_only=0
-						break
-					fi
-					t=$((t + 1))
-				done
-			fi
-			if [ "$has_I" = 0 ] && [ "$text_only" = 0 ]; then
-				tail=""
-				t=$j
-				while [ "$t" -lt "$k" ]; do
-					tail="$tail ${toks[$t]}"
-					t=$((t + 1))
-				done
-				findings+=("git$tail")
-			fi
-			i=$k
-			continue
-		fi
-	fi
-	i=$((i + 1))
-done
+# A failure of the program itself denies rather than letting the command through; only a missing
+# jq, which every hook here needs, passes everything.
+command -v jq >/dev/null 2>&1 || exit 0
+if ! flagged=$(jq -r "$check_program" 2>/dev/null); then
+	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
+fi
+[ -z "$flagged" ] && exit 0
 
-[ "${#findings[@]}" -eq 0 ] && exit 0
-
-reason="This command's raw text has git followed by grep as its own word (a mention or a real \
-invocation are treated the same on purpose -- see git-grep-guard.sh's own header), with neither -I \
-nor a --pathspec restricted to text extensions in between. A real, unbounded git grep over this \
-repo's ~900 MB docs/ (binaries included) has been measured to grow past 2.7 GB and keep climbing \
-rather than finish. If this is only a mention, write it as git-grep instead of git grep. If it is a \
-real search, add -I (skip binary files), restrict the pathspec to text globs (e.g. -- '*.md' \
-'*.gd' '*.sh'), or use rg on the checkout instead of git grep. Flagged: ${findings[*]}"
+reason="This command's text has git followed by grep as a word of its own, with neither -I nor a \
+-- pathspec restricted to text extensions (a mention and a real invocation are treated the same on \
+purpose; see .claude/hooks/git-grep-guard.sh). A git grep without -I over this repo's ~900 MB docs/, \
+binaries included, has been measured past 2.7 GB and still growing. If this is only a mention, write \
+git-grep instead of git grep. If it is a search, add -I (skip binary files), restrict the pathspec to \
+text globs (e.g. -- '*.md' '*.gd' '*.sh'), or use rg on the checkout. Flagged: $flagged"
 
 jq -n --arg reason "$reason" '{
   hookSpecificOutput: {
