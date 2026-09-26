@@ -1203,15 +1203,24 @@ func validate() -> bool:
 		# rule says nothing about it and `validate_pursuit` is the contract instead. What its
 		# telegraph has to buy is the moment of *noticing*, which is checked there.
 		return true
+	if warns_before_it_exists():
+		return Tuning.validate_warning(id, warning_time(), minimum_telegraph())
 	return Tuning.validate_event(id, warning_time(), inner_radius, outer_radius, hard_fail,
 			speed if mobile else 0.0)
 
-## Shortest telegraph this geometry may fairly have.
+## Shortest warning this row may fairly give — held against `warning_time()`.
+##
+## **A row warned of before it exists is owed `Tuning.OFFSCREEN_WARNING_MIN`**, a flat time to react
+## and think, whatever its field and its speed. *(PLAYTEST-145: "I don't like that the warning is
+## tied to the size of the field or the speed.")* Every other row is owed the time to walk out of its
+## own field, `Tuning.required_telegraph_time()`.
 ##
 ## A pursuer's is a different quantity and is stated in `Tuning.PURSUIT_MIN_NOTICE`: the ordinary
 ## rule buys the time to walk out of a *field*, and there is no walking out of something that
 ## follows. What its telegraph buys is the time to see it coming and change what you are doing.
 func minimum_telegraph() -> float:
+	if warns_before_it_exists() and not Tuning.OFFSCREEN_WARNING_MIN_EXEMPT.has(id):
+		return Tuning.OFFSCREEN_WARNING_MIN
 	if pursues:
 		return Tuning.PURSUIT_MIN_NOTICE
 	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail,

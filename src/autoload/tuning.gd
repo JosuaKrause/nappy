@@ -1819,6 +1819,20 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## And the least notice one has to give: its telegraph, during which it is visibly coming and
 ## emitting `TELEGRAPH_INTENSITY_FRACTION`, but cannot yet end the day.
 ##
+## The least warning anything that arrives from off screen is owed, from its screen-edge badge to
+## the earliest it can reach her — flat, and not worked out from its field or its speed. *(2026-09-26,
+## the player: "to a human 100ms feels instant, 1s is time needed to react to something, 2.9s is a
+## fair time to react and *think* about what to do. so I'd file mark that as the minimum.")*
+## `EventDef.minimum_telegraph()` answers it for a row warned of before it exists; every other row
+## keeps the minimum its field sets (`required_telegraph_time()`).
+const OFFSCREEN_WARNING_MIN := 2.9
+## Rows warned of before they exist that are held to their field's minimum
+## (`required_telegraph_time()`) instead of `OFFSCREEN_WARNING_MIN`, while the player's answer is
+## open. `loose_dog` warns 2.40s from its badge to its reach (a 2.25s `telegraph_time`), under the
+## flat minimum, and the player called "the dog timer" good without yet saying which dog, so
+## whether the flat minimum covers it is theirs to answer. Emptying this is one answer.
+const OFFSCREEN_WARNING_MIN_EXEMPT: Array[String] = ["loose_dog"]
+
 ## A pursuer's telegraph is the **approach**, the way a fire engine's is — a dog that has to bark
 ## for two seconds before it is allowed to start running is not a dog. So the notice is the sight
 ## of it closing, and this is how much of that she is owed before it can touch her.
@@ -2204,6 +2218,17 @@ func validate_event(id: String, warning: float, inner_radius: float,
 				% [id, warning, required]
 				+ "(inner %.0f, outer %.0f, hard_fail %s)"
 				% [inner_radius, outer_radius, hard_fail])
+		return false
+	return true
+
+## The same contract for a row warned of before it exists, whose minimum is not its geometry's:
+## `warning` (`EventDef.warning_time()`, from its badge to its reach) against `minimum`
+## (`EventDef.minimum_telegraph()`, `OFFSCREEN_WARNING_MIN`). Pushes an error and returns false if
+## it is short.
+func validate_warning(id: String, warning: float, minimum: float) -> bool:
+	if warning + 0.001 < minimum:
+		push_error("Unfair event '%s': warned %.2fs before it can reach her < required %.2fs"
+				% [id, warning, minimum])
 		return false
 	return true
 

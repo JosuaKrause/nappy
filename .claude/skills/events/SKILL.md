@@ -72,7 +72,8 @@ because nothing checks a route around a thing with no tile.
 
 **For a row warned of before it exists, "becomes visible" is its badge**, and the contract holds
 `EventDef.warning_time()` — the badge to the earliest it can reach her — against
-`minimum_telegraph()`, not its telegraph alone.
+`minimum_telegraph()`, which for such a row is the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s, the
+player's time to react and think), never a figure worked out from its field or speed.
 
 ## Everything from off screen is warned first, and spawns where it points
 

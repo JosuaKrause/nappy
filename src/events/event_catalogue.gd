@@ -1216,11 +1216,9 @@ static func _pigeon_flock() -> EventDef:
 ## lethal from his first frame, and `EventInstance.is_lethal_at()` refusing a running telegraph never
 ## lets him ride through her harmless. *(2026-09-07: "also a biker hit should be lethal.")*
 ##
-## The fairness contract does the work — `hard_fail` doubles the margin and the speed means the
-## whole forward reach counts: 90px grown ahead of the bike by its own 165px/s
-## (`Tuning.field_scale()` at e = 0.33) is 134px, so from the badge to his reach she is owed
-## 134 x 2 / 92 = 2.92s. That is what `EventDef.warning_time()` measures, badge to reach, walking into
-## him. `EventDef.validate()` also refuses a field that reaches where he is created closest,
+## The fairness contract does the work: from the badge to his reach, walking into him, she is owed
+## the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) every warning from off screen is owed, which is what
+## `EventDef.warning_time()` measures. `EventDef.validate()` also refuses a field that reaches where he is created closest,
 ## `Tuning.min_offscreen_lead(speed + WALK_SPEED)` (231px at this row's 165px/s — 180 for the
 ## vertical axis plus 51 for 200ms of closing), which would already be on her the moment he existed;
 ## 90 sits far under it.
@@ -1251,13 +1249,12 @@ static func _cyclist() -> EventDef:
 	def.inner_radius = 33.0
 	def.outer_radius = 90.0
 	# His warning, run before he exists: the screen-edge badge goes up with nothing in the world
-	# and he is created just off screen when it is over (`PendingWarning`). hard_fail and faster
-	# than a walk, so the fairness floor is the forward reach, doubled: `outer_radius ·
-	# Tuning.field_scale(e)` at 165px/s (e = 0.33) is 134px, * 2 / 92 = 2.92s. What is held against
-	# it is the badge-to-reach time, `EventDef.warning_time()`: this, plus 0.77s for him to close
-	# from where he is created closest (`Tuning.min_offscreen_lead()`, 231px) to his 33px reach at
-	# 257px/s with her walking into him — 2.92s, the smallest hundredth that clears the floor.
-	def.telegraph_time = 2.15
+	# and he is created just off screen when it is over (`PendingWarning`). What the contract holds
+	# is the badge-to-reach time, `EventDef.warning_time()`, against the flat
+	# `Tuning.OFFSCREEN_WARNING_MIN` (2.9s): this, plus 0.77s for him to close from where he is
+	# created closest (`Tuning.min_offscreen_lead()`, 231px) to his 33px reach at 257px/s with her
+	# walking into him — 2.90s, the smallest hundredth that clears it.
+	def.telegraph_time = 2.13
 	def.mobile = true
 	def.speed = 165.0
 	def.hard_fail = true

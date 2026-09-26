@@ -426,7 +426,7 @@ static func forced_row() -> String:
 ##
 ## Short, because the point of the flag is to see the same encounter several times in a row without
 ## walking a day for each one, and long enough that two are never on screen together: a `cyclist`
-## is warned for his 2.15s `telegraph_time`, then created just off screen, reaches her about a
+## is warned for his 2.13s `telegraph_time`, then created just off screen, reaches her about a
 ## second later closing at 257px/s and is out of sight a second or so after that, so 6s leaves the
 ## last one gone before the next is even created.
 static func forced_interval() -> float:
