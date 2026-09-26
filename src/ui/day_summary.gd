@@ -129,6 +129,8 @@ func _ready() -> void:
 	_heading.add_theme_color_override("font_color", Palette.GAME_OVER)
 	_brief.add_theme_color_override("font_color", Palette.CHALK_DONE)
 	_refresh_buttons()
+	# Fires the instant the disc fills, not on release — see `ModeButton.hold_completed`'s own doc.
+	_restart_button.hold_completed.connect(func() -> void: restart_requested.emit())
 	_root.hide()
 
 ## Whether the screen currently up is the ending — read by `_refresh_buttons()` to decide whether
@@ -402,6 +404,15 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 	else:
 		return false
 	if pressed:
+		# **A second touch anywhere while the disc is already held is this button's business too.**
+		# *(M212: "sometimes it just doesn't work at all... you have to hold long multiple times".)*
+		# The same guard `PauseScreen._handle_restart_touch()` carries — see its own doc. Without
+		# this, a stray second finger fails `begin_hold()` below, falls through to the catch-all in
+		# `_unhandled_input()`, and reads as *carry on*, continuing past the day out from under a
+		# hold already in progress.
+		if _restart_button.is_held():
+			get_viewport().set_input_as_handled()
+			return true
 		var at := ScreenOrientation.to_design_space(position, _wants_rotation())
 		if not _restart_button.catch_rect().has_point(at):
 			return false
@@ -412,8 +423,10 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 	if not _restart_button.is_held_by(index):
 		return false
 	get_viewport().set_input_as_handled()
-	if _restart_button.end_hold(index):
-		restart_requested.emit()
+	# The restart itself already fired from `ModeButton.hold_completed` the instant the disc filled,
+	# while this same finger or click was still down — see that signal's own doc. This only tears
+	# the hold's own state down; calling `restart_requested.emit()` here too would restart twice.
+	_restart_button.end_hold(index)
 	return true
 
 ## Stands in for the touch index a mouse event carries none of — the same role
