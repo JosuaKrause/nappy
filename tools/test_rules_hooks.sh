@@ -27,6 +27,7 @@
 #     pattern is not the flag
 #   - an exclusion-only pathspec (:!*.json) denies, and a redirect after a text pathspec
 #     (2>/dev/null, 2>&1, > file) is not a pathspec entry
+#   - a Monitor script is guarded like a Bash command
 #   - a 100 KB command is checked well inside the hook's 5-second timeout
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
@@ -242,10 +243,11 @@ else
 fi
 
 # ---------------------------------------------------------------- git-grep-guard.sh -------------
-# Prints "deny" or "allow" for one synthetic Bash command through git-grep-guard.sh.
+# Prints "deny" or "allow" for one synthetic command through git-grep-guard.sh, as the tool named
+# by $2 (Bash when omitted).
 guard_decision() {
-    local cmd="$1" raw
-    raw=$(jq -n --arg c "$cmd" '{tool_name:"Bash", tool_input:{command:$c}}' \
+    local cmd="$1" tool="${2:-Bash}" raw
+    raw=$(jq -n --arg c "$cmd" --arg t "$tool" '{tool_name:$t, tool_input:{command:$c}}' \
         | "$root/.claude/hooks/git-grep-guard.sh")
     if [ -z "$raw" ]; then
         printf 'allow'
@@ -254,11 +256,11 @@ guard_decision() {
     fi
 }
 
-# $1 label  $2 expected ("deny" or "allow")  $3 command
+# $1 label  $2 expected ("deny" or "allow")  $3 command  $4 tool name (Bash when omitted)
 assert_guard() {
     checks=$((checks + 1))
     local got
-    got="$(guard_decision "$3")"
+    got="$(guard_decision "$3" "${4:-Bash}")"
     if [ "$got" = "$2" ]; then
         echo "ok   $1"
     else
@@ -572,6 +574,15 @@ assert_guard "git as the last word -> allow" allow \
     'gh pr view 377 --json body --jq .body | grep -n git'
 assert_guard "git and an option as the last words -> allow" allow \
     'echo git --version'
+
+# Monitor runs its script in the same shell as Bash, for minutes, so it is guarded the same way;
+# a tool that runs no shell is not read at all.
+assert_guard "a Monitor script with an unguarded git grep -> deny" deny \
+    'git grep -n -i foo -- docs/' Monitor
+assert_guard "a Monitor script with a guarded git grep -> allow" allow \
+    'git grep -I -n -i foo -- docs/' Monitor
+assert_guard "a tool that runs no shell is not read -> allow" allow \
+    'git grep -n -i foo -- docs/' Read
 
 # A command far longer than any real one still finishes inside the hook's 5-second timeout (a
 # hook that times out lets the command through), and still denies.

@@ -53,8 +53,10 @@
 # included), a line ending in `git` followed by a line starting with `grep`, a text-only pathspec
 # that also carries an exclusion (`-- '*.md' ':!x.md'`), and any command the jq program fails on.
 #
-# Reads the hook JSON on stdin (a `command` given as an argument list is joined with spaces) and
-# denies with PreToolUse's `permissionDecision: "deny"` JSON, which also stops a sub-agent's call.
+# Guards both of Claude Code's tools that run a shell command: `Bash`, and `Monitor`, whose script
+# runs in the same shell and lives for minutes. Reads the hook JSON on stdin (`tool_input.command`
+# for both; a `command` given as an argument list is joined with spaces) and denies with
+# PreToolUse's `permissionDecision: "deny"` JSON, which also stops a sub-agent's call.
 # Needs bash 3.2 and jq only.
 
 set -uo pipefail
@@ -165,7 +167,7 @@ def findings:
       end)
   | .out;
 
-if .tool_name != "Bash" then empty else
+if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
   | drop("\\\n") as $raw

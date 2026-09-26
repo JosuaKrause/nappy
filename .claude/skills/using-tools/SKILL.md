@@ -47,8 +47,8 @@ says what it is *for*, not its full usage.
 
 **A `git grep` with neither `-I` nor a text-only pathspec is denied, not run, and so is a mention
 of the words.** `.claude/hooks/git-grep-guard.sh` is a `PreToolUse` hook rather than a catalogued
-tool: it fires on every `Bash` call (and, through `tools/codex-hooks.py`, on Codex's) and reads the
-whole command text, quoted strings and heredoc bodies included. Any `git` followed by `grep` as a
+tool: it fires on every `Bash` and `Monitor` call (and, through `tools/codex-hooks.py`, on
+Codex's) and reads the whole command text, quoted strings and heredoc bodies included. Any `git` followed by `grep` as a
 word of its own, with neither `-I` (skip binary files) nor a `--` pathspec made only of
 known-text-extension globs, is denied: behind a wrapper (`timeout`, `sudo`, `find | xargs`), inside a
 heredoc or a quoted string an interpreter runs (`bash <<EOF`, `bash -c`, `python3 -c`, an f-string),
