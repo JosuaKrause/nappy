@@ -1,5 +1,13 @@
 # Review
 
+## Amber otter — Park fence recognition
+
+Inspect the current `poles-*` pictures in the park-fence PR: native-size corners, side sign,
+short courtyard entrance and fitted overview. Do the vertical runs read as a standing fence,
+does one visible pole join both runs at every corner, and are all signs visibly mounted?
+The exact source images are under `docs/evidence/m129-spent-park-closed-2026-09-25/`.
+The once-per-game closure behavior is unchanged by this graphics pass.
+
 **What waits on a human.** Everything here is built, measured by a rig, and unfelt: a person has
 to play it, look at it, or decide about it. *(2026-09-11: "keep a document with items that need
 human review / test runs. That way you can keep working without having to stop. And test runs

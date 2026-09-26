@@ -14,21 +14,6 @@ mid-way through.
 
 ## The order
 
-### Amber otter — Park fence perspective
-
-[Player's words](playtests/2026-09-26-amber-otter.md). Repair the park fence's graphics on its
-existing work item: vertical segments must read as standing rails viewed end-on, with coherent
-corner joins, rather than rotated sideways sections. Preserve the once-per-game fence and all
-gameplay logic. Delegate the graphics repair and provide runtime images for review.
-
-### Amber otter — Original sound experiment
-
-[Player's words](playtests/2026-09-26-amber-otter.md). Discuss an approach for creating sound
-effects here from scratch, with no precreated assets. Proposed, not asked for: generate WAVs from
-editable synthesis recipes and compare a small grounded/stylized listening set. Sound direction
-and first samples await discussion; this does not authorize changing game behavior or replacing
-the visual warnings.
-
 ### M109 — Convert the SVG catalogue to PNG
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in

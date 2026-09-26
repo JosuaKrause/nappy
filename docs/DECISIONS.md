@@ -1,5 +1,47 @@
 # Decisions
 
+## Amber otter — The park fence has upright supports and mounted signs · drawn 2026-09-26
+
+[Player's words](playtests/2026-09-26-amber-otter.md): keep the once-per-game fence logic, fix
+the vertical sections that look rotated sideways, delegate the graphics. The first upright-rail
+preview was rejected: signs were scattered, corners had no visible pole joining the perpendicular
+runs, and the whole did not read as a fence.
+
+The new proposal uses a dedicated `ParkFenceMarker` to leave street barriers unchanged. Its SVG
+post has a visible square shaft, cap, collars and planted foot. The narrow end-on rail mounts
+4px inward from the support so it cannot hide that shaft, with supports about 44px apart. One
+corner pole joins each pair of runs. One composite mounted sign remains at each run's midpoint;
+the nearest panel whose elevated rail can overlap the sign draws that plate after its rail.
+The small inward offset is an illustrative construction choice to keep height legible, not a
+physics or route change. All drawing dimensions remain open to visual judgment.
+
+The run's terminal panel and post share an exact ground-coordinate expression: accumulating
+panel spans independently produced a fractional Y difference, so y-sorting could overrule the
+intended draw order at a short archway. The focused integration check protects the shared
+endpoint and the unjoined entrance's ordering. Boot/import, lint/XML and the spent-park and
+atlas-consumer suites passed; current native-size corners, sign, short entrance and fitted
+overview are the `poles-*` files in `docs/evidence/m129-spent-park-closed-2026-09-25/`.
+These are proposed artwork, not a player approval; the judgment is in `REVIEW.md`.
+
+Earlier pictures are preserved in the same folder. The second attempt stopped the side runs one
+tile short; the third shifted old end-on columns upward 7.4px and added broad 8px posts. The
+unbound draft bent two rails into concentric outlines. The first `upright-*` revision kept a
+single ground line but hid its poles behind the rail, and the player rejected it. Its exact
+pole/rail proportions explained why correct projection alone did not make a recognizable fence.
+
+The graphics repair preserves the existing late-game single-fence exception, selection,
+collision, event spoiling and routing. The sound experiment requested in the same conversation
+is developed separately and contributes no assets or runtime code to this work item.
+
+## M129 — Regular spent parks are spoiled; one late park is fenced · corrected 2026-09-26
+
+PLAYTEST-140 statements 8–9 clarify the original request: a used park is spoiled with events,
+its ground stays walkable, and the router avoids it; a fence is allowed for one park once, later
+in the game. The earlier all-parks-closed implementation recorded below was superseded on this
+PR before the graphics repair. The branch selects at most one physical fence from accepted used
+areas in act III or later and persists that choice; the swing is protected on its own day.
+The PR description now states that distinction rather than the superseded all-parks mechanism.
+
 ## M129 — A spent park is closed · built 2026-09-26
 
 *([PLAYTEST-140](playtests/PLAYTEST-140.md): "a spent park should not be accesible and no route

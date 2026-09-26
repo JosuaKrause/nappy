@@ -21,3 +21,20 @@ from scratch, without precreated sound assets. The assistant proposes code-gener
 recipes, with a small listening set to choose a direction; that method and sample list are
 proposals, not decisions by the player. The game's existing requirement that visual warnings
 work without audio remains in force.
+
+## Verdict on the first upright-rail revision
+
+> "you're saying your fence fix is done? really? I would not say so"
+
+> "use a proper model for it"
+
+> "and signs are all over the place"
+
+> "and the corners don't have a pole that connects the orthogonal pieces together"
+
+> "it doesn't read as a fence right now"
+
+The picture is rejected. Each corner needs a visible upright pole joining both perpendicular
+runs, and signs need coherent mounting on the structure. The overall picture must read as a
+standing fence at gameplay scale; coordinate consistency or passing tests do not establish that.
+The assistant assigns a fresh Astra visual critique before another drawing pass.
