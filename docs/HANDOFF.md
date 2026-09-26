@@ -313,7 +313,8 @@ everything else: "let's table work that is not immediately important. we can let
 finish what they have but we can pick up the prs later", and, on the park fence, "do not schedule
 additional work".
 
-- **The order, each step behind the last:**
+- **HIGH PRIORITY: these three, in this order, and nothing else until they are done.** Each
+  step waits for the one before it:
   1. **PR #377, the `git grep` guard.** Its latest push answers review 5326484007 and has had no
      review yet. Review it under **pr-review**, merge, then tell the player to approve the hook
      in `/hooks`; it does not run until they do.
@@ -326,7 +327,9 @@ additional work".
   3. **PR #368, M225, the counter's asks**, taken over from the stopped cloud session. The brief
      is written and waits for M223. Then review, merge, and cut a release so traffic reaches the
      new GoatCounter site.
-- **Tabled PRs, each waiting for the player to pick PRs up again:**
+- **STOPPED, not to be continued yet.** Each of these is committed and pushed at a safe point,
+  and none gets an agent, a review or a merge until the player picks it up again. They are listed
+  only so their state is known:
   - **#370, M204 and M214, the trailer's tools**: reviewed ready and CI green at its head; the
     first to merge. M204 stays queued for the player's notes on the cut.
   - **#374, M129, a spent park is closed**: the player rejected three fence attempts and the
