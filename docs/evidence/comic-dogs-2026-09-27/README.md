@@ -55,6 +55,13 @@ candidate, with the raw grid cell and visible bounds, source and candidate hashe
 registration box, shared A/B scale, placement, and final alpha bounds. The `candidates/` files are
 evidence candidates only; none is a runtime asset.
 
+[input-manifest.json](input-manifest.json) is the separate, authoritative provenance boundary. It
+freezes the hashes and roles of all twenty SVGs, both raw generations, forty saved source rasters,
+both approved style references, and the road and sidewalk comparison backgrounds. Every
+`assemble.py` rebuild and verification command checks the exact required path set, roles, file
+existence and hashes before it reads or writes any output. There is no command that refreshes or
+silently adopts changed input hashes.
+
 ## Extraction and registration
 
 Each raw sheet uses inspected column and row boundaries recorded in `assemble.py`, because the
@@ -76,8 +83,9 @@ is not present in any candidate.
 
 ## Rebuild
 
-Run from the repository root. A fresh worktree runs the import check first so Godot has its class
-registry:
+Run from the repository root. The Godot command below records how the saved source rasters were
+captured in the original batch; those rasters are now frozen inputs rather than ordinary rebuild
+outputs. A fresh worktree runs the import check first so Godot has its class registry:
 
 ```sh
 ./tools/check.sh
@@ -90,7 +98,7 @@ uv run python docs/evidence/comic-dogs-2026-09-27/assemble.py source-grids
 
 Use the built-in generator with the local reference paths and exact prompts in `PROMPTS.md`, then
 preserve its raw outputs under `raw/` with the filenames and hashes above. Rebuild and verify every
-deterministic derivative:
+deterministic derivative. Each command refuses a missing or changed frozen input before writing:
 
 ```sh
 uv run python docs/evidence/comic-dogs-2026-09-27/assemble.py candidates
@@ -98,6 +106,6 @@ uv run python docs/evidence/comic-dogs-2026-09-27/assemble.py verify
 ```
 
 The retained recipe ran with Godot 4.7.2 (`ed1daf0bf`), Python 3.14.7, and Pillow 12.3.0.
-`verify` checks all twenty source hashes, all twenty source-to-candidate mappings, exact native
-candidate dimensions, actual transparent and visible alpha, and both comparison sheets and pose
-comparisons.
+The preflight checks all sixty-six frozen inputs. `verify` then checks all twenty source hashes,
+all twenty source-to-candidate mappings, exact native candidate dimensions, actual transparent
+and visible alpha, and both comparison sheets and pose comparisons.

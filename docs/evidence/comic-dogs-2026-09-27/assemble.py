@@ -21,11 +21,17 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
+INPUT_MANIFEST = HERE / "input-manifest.json"
 RENDERS = HERE / "source-renders" / "art" / "events"
 RAW = HERE / "raw"
 CROPS = HERE / "crops"
 CANDIDATES = HERE / "candidates"
 TILES = ROOT / "art" / "illustrated" / "svg-transfer" / "tiles"
+STYLE_REFERENCES = (
+    ROOT / "docs" / "style-references" / "graphics-reference-urban-01.jpeg",
+    ROOT / "docs" / "style-references" / "graphics-reference-cardinal.jpeg",
+)
+COMPARISON_BACKGROUNDS = (TILES / "sidewalk.png", TILES / "road.png")
 PAPER = (238, 235, 228, 255)
 INK = (42, 34, 38, 255)
 GOLD = (210, 164, 58, 255)
@@ -61,6 +67,73 @@ def sha256(path: Path) -> str:
 
 def source_path(name: str) -> Path:
     return ROOT / "art" / "events" / f"{name}.svg"
+
+
+def required_input_roles() -> dict[str, str]:
+    required: dict[str, str] = {}
+
+    def add(role: str, path: Path) -> None:
+        relative = path.relative_to(ROOT).as_posix()
+        if relative in required:
+            raise SystemExit(f"duplicate required input path: {relative}")
+        required[relative] = role
+
+    for spec in FAMILIES.values():
+        add("raw_generation", RAW / spec["raw"])
+        for name in spec["names"]:
+            add("svg_source", source_path(name))
+            add("saved_source_raster", RENDERS / f"{name}@1.png")
+            add("saved_source_raster", RENDERS / f"{name}@6.png")
+    for path in STYLE_REFERENCES:
+        add("style_reference", path)
+    for path in COMPARISON_BACKGROUNDS:
+        add("comparison_background", path)
+    return required
+
+
+def preflight_inputs() -> None:
+    try:
+        manifest = json.loads(INPUT_MANIFEST.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise SystemExit(f"missing frozen input manifest: {INPUT_MANIFEST}") from None
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"invalid frozen input manifest: {error}") from None
+    if manifest.get("schema") != 1 or not isinstance(manifest.get("inputs"), list):
+        raise SystemExit(f"{INPUT_MANIFEST}: expected schema 1 and an inputs list")
+
+    expected = required_input_roles()
+    entries: dict[str, dict[str, str]] = {}
+    for item in manifest["inputs"]:
+        if not isinstance(item, dict):
+            raise SystemExit(f"{INPUT_MANIFEST}: every input must be an object")
+        path = item.get("path")
+        role = item.get("role")
+        digest = item.get("sha256")
+        if not all(isinstance(value, str) for value in (path, role, digest)):
+            raise SystemExit(f"{INPUT_MANIFEST}: every input needs string path, role, and sha256")
+        if path in entries:
+            raise SystemExit(f"{INPUT_MANIFEST}: duplicate input path: {path}")
+        entries[path] = item
+
+    missing_records = sorted(set(expected) - set(entries))
+    extra_records = sorted(set(entries) - set(expected))
+    if missing_records or extra_records:
+        raise SystemExit(
+            f"{INPUT_MANIFEST}: path set drift; missing={missing_records}, extra={extra_records}")
+
+    for relative, role in expected.items():
+        item = entries[relative]
+        if item["role"] != role:
+            raise SystemExit(
+                f"{INPUT_MANIFEST}: {relative} role {item['role']!r}, expected {role!r}")
+        path = ROOT / relative
+        if not path.is_file():
+            raise SystemExit(f"frozen input missing: {relative}")
+        actual = sha256(path)
+        if actual != item["sha256"]:
+            raise SystemExit(
+                f"frozen input changed: {relative}; expected {item['sha256']}, got {actual}")
+    print(f"verified {len(expected)} frozen inputs before output access")
 
 
 def alpha_bbox(image: Image.Image) -> tuple[int, int, int, int]:
@@ -388,14 +461,15 @@ def main() -> None:
         print(__doc__)
         raise SystemExit(0 if len(sys.argv) == 2 else 2)
     command = sys.argv[1]
+    if command not in {"source-grids", "candidates", "verify"}:
+        raise SystemExit(f"unknown command: {command}")
+    preflight_inputs()
     if command == "source-grids":
         build_source_grids()
     elif command == "candidates":
         build_candidates()
     elif command == "verify":
         verify()
-    else:
-        raise SystemExit(f"unknown command: {command}")
 
 
 if __name__ == "__main__":
