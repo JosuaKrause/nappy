@@ -28,19 +28,19 @@
 #   first two readings, `${IFS}` and `$IFS` also become a space and `$'`/`$"` a plain quote, so
 #   `git${IFS}grep` and `g$'i't` read as they run.
 # - A text over `too_long` (32 KB) skips every pass below and is decided by one regex test
-#   instead: a backslash, a newline, a quote character or `$` may stand between any two letters of
-#   `git` or of `grep`, the same skip github-write-guard.sh's own over-the-bound search uses for
-#   its write-tool names, so `g\it`, `g"i"t` and `g$'i't` still read as the word; a command holding
-#   both words anywhere denies, one holding neither allows. The length is checked before anything
-#   else because building the text the readings below work on (dropping backslashes and quote
-#   marks, folding `${IFS}`) is itself a pass over the whole command: on dense runs of the
-#   characters it drops it takes seconds per megabyte, so an unbounded command would run the hook
-#   past its 10-second timeout, and a timed-out hook lets the command through, in Claude Code and
-#   in Codex alike. A real command over 32 KB holding both words is rare (a heredoc writing a large
-#   file), and the way out is to write the text to a file first. Past `hard_cap` (1 MB, matching
-#   github-write-guard.sh's own bound) the deny message just names the larger bound; the regex
-#   deciding it is the same either side of it, and a single regex search is linear in the input
-#   with no second pass over it, so this decides in well under a second whatever the input's size.
+#   instead: a backslash-newline pair, a lone backslash, a quote character or `$` may stand
+#   between any two letters of `git` or of `grep`, so `g\it`, `g"i"t`, `g$'i't` and a word split by
+#   a line continuation still read as the word; a command holding both words anywhere denies, one
+#   holding neither allows. A newline on its own is not skipped, since the shell joins two lines
+#   only at a backslash: prose with a line ending in `g` before one starting with `it` holds no
+#   `git`. The length is checked before anything else because building the text the readings
+#   below work on (dropping backslashes and quote marks, folding `${IFS}`) is itself a pass over
+#   the whole command that costs seconds per megabyte on dense runs of the characters it drops,
+#   and a hook that runs past its 10-second timeout lets the command through, in Claude Code and
+#   in Codex alike. A real command over 32 KB holding both words is rare (a heredoc writing a
+#   large file), and the way out is to write the text to a file first. Past `hard_cap` (1 MB) the
+#   command is denied without the regex, as github-write-guard.sh denies every command past the
+#   same size, so past it neither guard reads the command at all.
 # - At or under 32 KB, the text is read in full, and no reading costs more than a few passes over
 #   it: one pass over the characters, and over the words one table of where each word's run of
 #   git options ends, built by pointer doubling (a pass over the words for each doubling of the
@@ -274,23 +274,27 @@ def findings:
 # Past `too_long`, none of the passes below run at all: one regex test decides instead, as the
 # header says, since `$raw`, `$bare` and `$flat` are each a pass over a command of unbounded
 # length. A command holding neither word, however the shell would have joined, quoted or expanded
-# its letters, cannot be a `git ... grep` invocation at all, so it allows. Past `hard_cap` the
-# message only names the larger bound; the decision is the same regex either side of it.
+# its letters, cannot be a `git ... grep` invocation at all, so it allows. Between two letters the
+# regex skips a backslash-newline pair, a lone backslash, a quote mark and a `$`, never a newline
+# on its own: the shell joins two lines only at a backslash, so a line ending in `g` before a line
+# starting with `it` is two words. Past `hard_cap` nothing is read at all and the command is
+# denied, as github-write-guard.sh denies it.
 def too_long: 32768;
 def hard_cap: 1048576;
-def skip: "[\\\\\n\"'$]*";
+def skip: "(?:\\\\\n|[\\\\\"'$])*";
 def obscured($word): ($word | split("") | join(skip));
-def over_bound_verdict($label):
+def over_bound_verdict:
   if (test(obscured("git"); "i") and test(obscured("grep"); "i"))
-  then "(the whole command: over \($label) and holding both words, not read further; write the long text to a file first, then run a short command)"
+  then "(the whole command: over 32 KB and holding both words, not read further; write the long text to a file first, then run a short command)"
   else empty
   end;
 
 if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
-  | if length > hard_cap then over_bound_verdict("1 MB")
-    elif length > too_long then over_bound_verdict("32 KB")
+  | if length > hard_cap
+    then "(the whole command: over 1 MB, not read at all; write the long text to a file first, then run a short command)"
+    elif length > too_long then over_bound_verdict
     else
       (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
       # `${IFS}` and `$IFS` are word breaks, and `$'...'`/`$"..."` are quotes, for readings 1 and 2.

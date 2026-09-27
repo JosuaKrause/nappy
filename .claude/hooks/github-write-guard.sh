@@ -627,18 +627,22 @@ def findings($w; $unsure):
 # (a separator on every character) is decided in about a quarter of the timeout.
 #
 # Over it, the check is deliberately dumb and fast rather than a reading of the shell: with every
-# backslash, newline, quote character and `$` taken out (however the shell would have joined,
-# quoted or expanded them -- `g$''it` and `g$""it` are `git` to bash), a command in which `git`, `gh` or a pushing script's name appears anywhere, even
-# inside another word, is denied with the hint to put the long text in a file; one in which none
-# appears cannot name a write and is allowed. The characters are skipped by the regex itself
-# (`[\\\n"'$]*` between every two letters of a name) rather than removed from a copy, so the
-# check is one linear regex search: every name starts with a letter outside that set, so a run
-# of skipped characters is scanned once per letter that precedes it. Over `hard_cap` (1 MB) a command is denied without even that,
-# so the hook's own cost stays well under a second whatever it is given.
+# backslash-newline pair, lone backslash, quote character and `$` taken out (however the shell
+# would have joined, quoted or expanded them -- `g$''it` and `g$""it` are `git` to bash), a command
+# in which `git`, `gh` or a pushing script's name appears anywhere, even inside another word, is
+# denied with the hint to put the long text in a file; one in which none appears cannot name a
+# write and is allowed. A newline on its own is not taken out, since the shell joins two lines
+# only at a backslash: prose with a line ending in `g` before one starting with `it` holds no
+# `git`.
+# The characters are skipped by the regex itself (`(?:\\\n|[\\"'$])*` between every two letters of
+# a name) rather than removed from a copy, so the check is one linear regex search: every name
+# starts with a letter outside that set, so a run of skipped characters is scanned once per letter
+# that precedes it. Over `hard_cap` (1 MB) a command is denied without even that, so the hook's
+# own cost stays well under a second whatever it is given.
 def too_long: 65536;
 def hard_cap: 1048576;
 def names_a_write_tool:
-  "[\\\\\n\"'$]*" as $skip
+  "(?:\\\\\n|[\\\\\"'$])*" as $skip
   | "(?i)" + (["git", "gh", "release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"]
              | map(split("") | map(if . == "." then "\\." else . end) | join($skip))
              | join("|"));

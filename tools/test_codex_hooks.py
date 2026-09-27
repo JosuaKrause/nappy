@@ -319,23 +319,32 @@ class CodexHooksTest(unittest.TestCase):
         self.assertNotIn("permissionDecision", allowed["hookSpecificOutput"])
 
     def test_git_grep_guard_over_the_bound_is_one_fast_regex(self) -> None:
-        # Past too_long (32 KB), a backslash, a quote mark or $ between the letters of git/grep
-        # still reads as the word, so an obscured pair over the bound denies, through the adapter
-        # the same as directly; naming only "git" (no "grep" anywhere) allows.
+        # Past too_long (32 KB), a backslash-newline pair, a lone backslash, a quote mark or $
+        # between the letters of git/grep still reads as the word, so an obscured pair over the
+        # bound denies, through the adapter the same as directly; naming only "git" (no "grep"
+        # anywhere) allows, and so do lines ending in "g" and starting with "it"/"rep", which the
+        # shell never joins.
         padding = "a" * 40000
-        output = self.call_raw(command=f"echo '{padding}'; g\\it status; g\"r\"ep foo")
-        assert output is not None
-        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        for command in (
+            f"echo '{padding}'; g\\it status; g\"r\"ep foo",
+            f"echo '{padding}'; g$'i't status; gr$'e'p foo",
+            f"echo '{padding}'; g\\\nit status; gr\\\nep foo",
+        ):
+            with self.subTest(command=command[-30:]):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
         text = self.call(tool="Bash", command=f"echo '{padding}'; git status")
         self.assertIn("committing", text)
-        # Over hard_cap (1 MB) the same regex still decides, named with the larger bound.
-        output = self.call_raw(command="echo '" + "a" * 1100000 + '\'; g\\it status; g"r"ep foo')
+        self.assertIsNone(self.call_raw(command=f"cat <<EOF\n{padding} drawing\nitem, PNG\nreplacement\nEOF"))
+        # Over hard_cap (1 MB) every command denies without being read.
+        output = self.call_raw(command="echo '" + "a" * 1100000 + "'")
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
-        # At or under 1 MB, the guard used to build its whole $raw/$bare/$flat text before any
-        # length was checked, which on these two shapes (dense in the characters those passes
-        # drop, not in git/grep) was measured at a few seconds each; timed alone (the adapter also
-        # runs github-write-guard.sh, whose cost is its own) it now decides in well under a second.
+        self.assertIn("over 1 MB", output["hookSpecificOutput"]["permissionDecisionReason"])
+        # These two shapes are dense in the characters the full readings drop; past 32 KB the
+        # guard never builds those readings, so timed alone (the adapter also runs
+        # github-write-guard.sh, whose cost is its own) each is decided in well under a second.
         guard = self.root / ".claude/hooks/git-grep-guard.sh"
         for command in ("echo " + "a'" * 500000, "echo " + "x\\\n" * 330000):
             with self.subTest(command=command[:20]):
@@ -535,8 +544,9 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
     def test_github_write_guard_over_the_bound_is_one_dumb_fast_search(self) -> None:
-        # Over 64 KB, backslashes, newlines and quotes are skipped wherever they fall, so no mix of
-        # joined and unjoined lines hides a name; over 1 MB nothing is read and every command denies.
+        # Over 64 KB, backslash-newline pairs, backslashes and quotes are skipped wherever they
+        # fall, so no mix of joined and unjoined lines hides a name, while a newline on its own
+        # still separates two words; over 1 MB nothing is read and every command denies.
         padding = "x" * 70000
         for command in (
             f"echo {padding}\necho x\\\\\ngi\\\nt push",

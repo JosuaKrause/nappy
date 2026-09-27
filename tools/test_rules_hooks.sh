@@ -40,11 +40,12 @@
 #     32 KB holding both words is denied at once without being read
 #   - a chain of git words whose options swallow the next one (git -c git -c ..., git > git > ...),
 #     at 10 KB and at the 32 KB bound, is decided in under half the timeout too
-#   - past 32 KB (too_long), an obscured pair (g\it, g"r"ep) still denies and "git" alone (no
-#     "grep" anywhere) allows, both decided by one regex rather than by building the whole text
-#     three times over; past 1 MB (hard_cap) the same regex decides, and the two shapes that used
-#     to take several seconds building that text -- 1 MB of a' and 1 MB of backslash-newlines,
-#     both holding neither word -- now allow at once
+#   - past 32 KB (too_long), one regex decides rather than the three readings: an obscured pair
+#     (g\it, g"r"ep, g$'i't, a backslash-newline between two letters) still denies, "git" alone
+#     (no "grep" anywhere) allows, and so does prose whose lines end in "g" and start with "it" or
+#     "rep", since only a backslash joins two lines; 1 MB of a' and 1 MB of backslash-newlines,
+#     both holding neither word and dense in the characters the readings drop, allow in under a
+#     second; past 1 MB (hard_cap) every command denies without being read
 #   - github-write-guard.sh denies an unwrapped git push and every commit-making git verb (commit;
 #     cherry-pick/revert/am unless --abort/--quit; merge/rebase unless --abort/--no-commit/
 #     --ff-only; pull unless --ff-only), any gh noun's verb unless it is on the shared read list
@@ -848,29 +849,41 @@ else
     fail "the 200 KB commands took $((SECONDS - huge_start)) seconds; the length bound should decide them at once"
 fi
 
-# Past 32 KB (too_long), a fast regex decides instead of building $raw/$bare/$flat over the whole
-# text: a backslash, a quote mark or $ between the letters of git/grep still reads as the word, so
-# an obscured pair over the bound denies too, and one holding only "git" (no "grep" anywhere)
-# allows -- it cannot be a git ... grep invocation without the second word.
+# Past 32 KB (too_long), one regex decides instead of building $raw/$bare/$flat over the whole
+# text: a backslash-newline pair, a lone backslash, a quote mark or $ between the letters of
+# git/grep still reads as the word, so an obscured pair over the bound denies too, and one holding
+# only "git" (no "grep" anywhere) allows -- it cannot be a git ... grep invocation without the
+# second word. A newline on its own is not skipped: the shell joins two lines only at a backslash,
+# so prose whose lines end in "g" and start with "it" or "rep" names neither word.
 over_bound_filler="$(head -c 40000 /dev/zero | tr '\0' 'a')"
 assert_guard "over 32 KB, g\\\\it and g\"r\"ep obscured -> deny" deny \
     "echo '${over_bound_filler}'; g\\it status; g\"r\"ep foo"
+assert_guard "over 32 KB, g\$'i't and gr\$'e'p (an ANSI-C string between letters) -> deny" deny \
+    "echo '${over_bound_filler}'; g\$'i't status; gr\$'e'p foo"
+assert_guard "over 32 KB, a backslash-newline between the letters of both words -> deny" deny \
+    "echo '${over_bound_filler}'; g\\
+it status; gr\\
+ep foo"
 assert_guard "over 32 KB, git only (no grep anywhere) -> allow" allow \
     "echo '${over_bound_filler}'; git status"
+assert_guard "over 32 KB, lines ending in g and starting with it and rep -> allow" allow \
+    "cat <<EOF
+${over_bound_filler} drawing
+item one, PNG
+replacement
+EOF"
 
-# Over hard_cap (1 MB), the same regex still decides, named with the larger bound in the message;
-# up to and including it, a command a few megabytes long used to build $raw/$bare/$flat over the
-# whole text before any length was ever checked, which is the gap this cap closes (see the hook's
-# own header). The near-cap shapes are the two the gap was measured on: 1 MB of `a'` and 1 MB of
-# `x\` + newline, dense in the characters those passes drop rather than in git/grep -- both hold
-# neither word and must still allow, and now do so at once rather than after several seconds.
+# The two shapes dense in the characters the readings drop (1 MB of `a'` and 1 MB of `x\` +
+# newline) hold neither word and allow, decided by the one regex in well under a second each;
+# past hard_cap (1 MB) every command denies without being read, the same as
+# github-write-guard.sh, obscured words or none.
 over_cap="$(head -c 1100000 /dev/zero | tr '\0' 'a')"
 near_cap_quotes="$(head -c 1000000 /dev/zero | tr '\0' "'" | sed "s/''/a'/g")"
 near_cap_lines="$(yes 'x\' | head -n 330000)"
 cap_start=$SECONDS
 assert_guard "over 1 MB, obscured g\\\\it and g\"r\"ep -> deny" deny \
     "echo '${over_cap}'; g\\it status; g\"r\"ep foo"
-assert_guard "over 1 MB, naming neither word -> allow, decided quickly" allow \
+assert_guard "over 1 MB, naming neither word -> deny, not read at all" deny \
     "echo '${over_cap}'"
 assert_guard "1 MB of a', naming neither word -> allow, decided quickly" allow \
     "echo ${near_cap_quotes}"
@@ -1392,6 +1405,11 @@ assert_write_guard "a 70 KB command, an escaped backslash, then gi\\<newline>t p
 echo x\\\\
 gi\\
 t push"
+assert_write_guard "a 70 KB command, lines ending in g and starting with it -> allow" allow \
+    "cat <<EOF
+${over_bound} drawing
+item
+EOF"
 assert_write_guard "a 70 KB command naming g, i and t split by quotes -> deny" deny \
     "echo '${over_bound}'; 'g'\"i\"t push"
 assert_write_guard "a 70 KB command naming g\$''it (an empty \$'' string) -> deny" deny \
