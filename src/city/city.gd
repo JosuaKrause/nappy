@@ -1205,7 +1205,8 @@ func _composed_ground_tile_set() -> TileSet:
 ## portal's opening (`CityEdge.TUNNEL_DEPTH_TILES`), because past the mouth the road is inside the
 ## mountain and what is on top of it is rock.
 ##
-## Nothing here is walkable and none of it has a `GameEnums.TileType`: this paints the **tilemap**
+## Nothing here is walkable and none of it has a `GameEnums.TileType`: this paints the tilemap
+## and the separate animated water surface,
 ## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
 ## tile for tile. The boundary wall is still what stops her.
 func _paint_outside_the_map() -> void:

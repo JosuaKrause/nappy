@@ -12,7 +12,8 @@ canvas permits it. That texel preserves subpixel stroke coverage at the SVG view
 The original complete scenes remain the halo and badge sources. Each event retains its existing
 clock, per-instance phase offset, collider, shadow and lifetime.
 
-South water occupies its own surface, with no water cells in the static ground TileMap. The
+South water occupies its own surface, with no water cells or source in the static ground TileMap
+or composed sheet. The
 motion proposal distorts the existing water texture by at most 0.65px horizontally and 0.35px
 vertically, using sine angular rates of 0.7 and 0.5 radians/second. A local, pausable shader
 clock advances without rebuilding either water or ground draw lists. Sampling wraps within the
@@ -59,7 +60,13 @@ partial frames/log remain in `rejected-fixture-no-vent`. Full headless fixture c
 before the final retry. Captures use code checkpoint 224e1022 plus the fixture source; the static
 water-source cleanup is not part of the waterfront launch's loaded source.
 
-Controlled native before/after timing is still pending. The focused tests exercise ownership,
+The [native comparison](native/README.md) retains three alternating profiled pairs and one
+disabled-profiler pair, all accepted. Every six-second baseline window contains 180 full-building
+draws; every after window contains zero. Peak atlas lookups fall from 5,357–5,388 to 171–187 per
+frame. Overall median frame time is mixed across pairs and essentially unchanged in the disabled
+companion; the evidence supports removal of the targeted redraw spikes, not a general FPS claim.
+
+The focused tests exercise ownership,
 phase changes, static scene keys, unchanged collisions, water/ground separation, repaint and
 resource release/reentry. A headless check does not establish actual draw callback counts.
 
@@ -67,3 +74,10 @@ Native measurements use the same final probe schema on both revisions, five seco
 and six active seconds, alternating before/after with only one measured process at a time.
 The baseline includes the latest merged main and removes only the animation implementation.
 No result here establishes phone, browser or GPU performance.
+
+The event raster comparison differs by at most one RGBA8 alpha level and three premultiplied
+color levels from the original scene. These are separate-rasterization/compositing differences,
+not displaced geometry or missing underlying surfaces. The event atlas grows from 642×1074 to
+765×1024 pixels (375,408 additional base RGBA8 bytes), because unchanged halo/badge rendering
+still consumes the complete scenes alongside the new cropped parts. The building atlas remains
+332×576 and the baked ground atlas remains 172×308; no atlas-memory saving is claimed.

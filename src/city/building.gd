@@ -423,7 +423,7 @@ var _fire_escape_pots: Dictionary = {}
 ## that, so the home flag and the district's own entrance can change without rolling anything.
 var _door_col := 0
 ## One entry per roof unit: `{"cell": Vector2i, "kind": _Furniture, "span": int}`. Sorted
-## north-most (highest row) first at build time, so `_draw_roof_furniture` can paint far units
+## north-most (highest row) first at build time, so the roof layers can paint far units
 ## before near ones without re-sorting every frame — the same back-to-front order a unit taller
 ## than one tile (the water tank) needs to lie correctly over whatever is in the row behind it.
 var _roof_furniture: Array[Dictionary] = []
@@ -1048,7 +1048,7 @@ func _build_roof_furniture() -> void:
 		if kind == _Furniture.VENT:
 			_has_vent = true
 		placed += 1
-	# Farthest (highest row) first, so `_draw_roof_furniture` paints back to front without
+	# Farthest (highest row) first, so the roof layers paint back to front without
 	# re-sorting on every redraw.
 	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
 

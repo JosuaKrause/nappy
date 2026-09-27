@@ -40,6 +40,8 @@ src/
 	block_layout.gd       one block's carves, also fixed at generation
 	city_state.gd         run-scoped: how far along each arc the run has got
 	building.gd           one lot, assembled from 32px facade and roof tiles
+	scenery_layer.gd      retained static furniture or small alternating scenery parts
+	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
@@ -68,6 +70,8 @@ src/
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
 	event_def.gd          authored event data
+	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
+	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, lifetime, telegraph, emission; every picture
 	                       it draws is a region of the baked `events` page, by path
 	event_catalogue.gd    every event, defined in code
