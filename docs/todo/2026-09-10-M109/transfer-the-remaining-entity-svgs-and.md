@@ -8,16 +8,15 @@ and registration inputs. Inspect detail and animation consistency at gameplay sc
 
 The pursuing dog's appearance is accepted in
 [velvet-dolphin, the dog's leg motion](../../playtests/2026-09-27-velvet-dolphin.md).
-Complete three normal-dog poses per facing: resting, one leg forward, and the opposite leg
-forward, as requested in [teal-marmot, three dog poses](../../playtests/2026-09-27-teal-marmot.md).
-Preserve the existing two pictures; add the missing opposite step in side/diagonal views and
-the neutral pose in front/back views, which already have alternating steps. Author and review
-each new SVG source before generating its PNG. Keep fixed body attachments and actual geometry
-changes required by [tall-moose](../../playtests/2026-09-27-tall-moose.md) and
-[coral-goose](../../playtests/2026-09-27-coral-goose.md). Proposed preview sequence: step, rest,
-opposite step, rest. Show all facings, clean and color-free, before appearance acceptance and
-runtime installation verification.
-Their
+Review the [three-pose normal-dog proposal](../../evidence/comic-dogs-2026-09-27/walked-revision-5/README.md)
+against [teal-marmot, three dog poses](../../playtests/2026-09-27-teal-marmot.md): rest and both
+opposite steps, with the existing two pictures preserved. Judge all facings, including the
+tightly spaced front-diagonal paws, body/paw drift and shading differences, before appearance
+acceptance and runtime installation verification. Keep fixed body attachments and actual
+geometry changes required by [tall-moose](../../playtests/2026-09-27-tall-moose.md) and
+[coral-goose](../../playtests/2026-09-27-coral-goose.md). The proposed review sequence is step,
+rest, opposite step, rest; runtime selection and timing still require installation work.
+The
 [generation recipe](../../evidence/comic-dogs-2026-09-27/README.md) preserves the sources,
 raw outputs, native candidates, comparisons and synthetic stride loops; the
 [batch record](../../decisions/2026-09-10-M109.md) records the extraction decisions. Resolve
