@@ -70,7 +70,7 @@
     },
     {
       "path": "art/events/dog_back_diagonal_c.svg",
-      "sha256": "b8631ee863c5a951de4c829558278014d6547c01f74353be02566a7c39db6bd9"
+      "sha256": "106223898b6dd1056333600f43ff9114f17b22783a94d532d8144e43d2fd6768"
     },
     {
       "path": "art/events/dog_c.svg",
@@ -98,7 +98,7 @@
     },
     {
       "path": "art/events/dog_front_diagonal_c.svg",
-      "sha256": "d3c4860f5ac2fd32ddc8231ed31897e823804c6a0128b4f0f86b864b8227d851"
+      "sha256": "d1b1109ef99f9227fc5b051d3735a42afcb550897c4c622d6176ac41a02d8158"
     },
     {
       "path": "docs/evidence/comic-dogs-2026-09-27/assemble.py",
@@ -862,7 +862,7 @@
     },
     {
       "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-manifest.json",
-      "sha256": "79c06cdb3311260d15caf2ec0ab3592e500e6c90ebe95aa10f991ec527d583de"
+      "sha256": "3ca9b5819064e9fce808c8fc8f6b8e0ba95e7af165e1cf33a820c71bcb816412"
     },
     {
       "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_back_c@1.png",

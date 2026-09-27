@@ -7,17 +7,17 @@ atlas, or alter runtime behavior. The player acceptance gate remains open.
 ## Current proposal
 
 - [Three walked-dog poses](walked-revision-5/README.md) extends the selected family with five
-  unbound SVG sources: opposite side/diagonal steps and neutral cardinal poses. Their source
-  review precedes generation of the missing illustrations; existing selected images stay frozen.
-
+  reviewed unbound SVG sources and their generated illustrations: opposite side/diagonal steps
+  and neutral cardinal poses. [All-facing loops](walked-revision-5/review/all-facings-6x.gif)
+  show step, rest, opposite step, rest; [native-size evidence](walked-revision-5/review/all-facings-1x.gif)
+  and [three-pose sheets](walked-revision-5/review/all-facings-6x.png) show every mirrored facing.
+  Existing selected images stay frozen; appearance acceptance and runtime installation remain open.
 - [Walked-dog authored-geometry correction](walked-revision-4/README.md) supplies three B-frame
-  overrides with actual gathered hind-leg contours and changed foreleg reach. Its
+  resting images retained by the three-pose family. Its original two-frame
   [enlarged all-facing loop](walked-revision-4/review/all-facings-6x.gif),
   [native-size loop](walked-revision-4/review/all-facings-1x.gif) and
   [static A/B sheet](walked-revision-4/review/all-facings-6x.png) preserve every A and cardinal frame.
-  Separate color-free leg silhouettes expose geometry without relying on shading changes.
-  Appearance acceptance remains open; the linked record discloses displacement, ground-height
-  and body-redraw differences.
+  comparisons preserve their displacement, ground-height and body-redraw differences.
 - [Charging-dog source/candidate comparison](review-charging-dog.png) shows the same coverage for
   the charging family, whose appearance the player accepted. Its
   [A/B comparison](pose-comparison-charging-dog.gif) remains unchanged.

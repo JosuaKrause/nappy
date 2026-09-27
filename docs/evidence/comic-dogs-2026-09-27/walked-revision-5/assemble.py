@@ -12,11 +12,21 @@ from PIL import Image, ImageDraw
 HERE=Path(__file__).resolve().parent
 BASE=HERE.parent
 ROOT=HERE.parents[3]
-NAMES=('dog',)
-MANIFESTS={'input-manifest.json':'53411251857660a9c6c6d18e93e248649042011b1ebd8b26c328b8874bccd2e7'}
+NAMES=('dog','dog_front_diagonal','dog_back_diagonal','dog_front','dog_back')
+SELECTED={n:f'{n}_c.png' for n in NAMES}
+SELECTED['dog_front_diagonal']='dog_front_diagonal_c-retracted.png'
+MANIFESTS={'input-manifest.json':'719b236413cf78f099ccd871c3aaca0420a0bc02e6e8dd3097a8eacadff6f9fc',
+           'remaining-input-manifest.json':'2c16d766dd313babca16b8deeb424ddd963231df88e5107e59a1e72a7ac808c8',
+           'front-input-manifest.json':'38a4726b0785fda90f4447c1e79a572f0fe96c499b0b52eeddc6325c7411f700'}
 PAPER=(238,235,228,255)
 PHASES=(0,1,2,1)
 LEG_TOP={'dog':145,'dog_front_diagonal':187,'dog_back_diagonal':207,'dog_front':222,'dog_back':195}
+# Bounds of alpha>=128 in the stationary upper region, before this correction.
+# Diagonals: tail/head extremes through y170; cardinals: head/tail through y150.
+# No leg or paw extrema contribute to these measured scale/position corrections.
+REGISTRATION={'dog':(1.0,(0,0)), 'dog_front_diagonal':(320/308,(-9,-9)),
+              'dog_back_diagonal':(327/325,(-2,-2)), 'dog_front':(166/154,(-7,-9)),
+              'dog_back':(157/149,(-2,-4))}
 
 
 def sha(p:Path)->str:
@@ -96,15 +106,17 @@ def build()->None:
     mapping=json.loads((BASE/'candidate-manifest.json').read_text())['families'][0]['cells'];records=[]
     for name in NAMES:
         a=Image.open(BASE/'crops/dog'/f'{name}.png').convert('RGBA')
-        raw=Image.open(HERE/'raw'/f'{name}_c.png').convert('RGBA')
-        factor=a.width/raw.width;scaled=raw.resize((a.width,round(raw.height*factor)),Image.Resampling.LANCZOS)
-        im=Image.new('RGBA',a.size);im.alpha_composite(scaled)
+        raw=Image.open(HERE/'raw'/SELECTED[name]).convert('RGBA')
+        multiplier,offset=REGISTRATION[name]
+        factor=a.width/raw.width*multiplier
+        scaled=raw.resize((round(raw.width*factor),round(raw.height*factor)),Image.Resampling.LANCZOS)
+        im=Image.new('RGBA',a.size);im.alpha_composite(scaled,offset)
         im.save(HERE/'registered'/f'{name}_c.png',optimize=True)
         original=next(x for x in mapping if x['name']==name);s=original['shared_pair_scale']
         size=(round(a.width*s),round(a.height*s));native=Image.new('RGBA',tuple(original['native_size']))
         native.alpha_composite(im.resize(size,Image.Resampling.LANCZOS),tuple(original['candidate_position']))
         native.save(HERE/'candidates'/f'{name}_c.png',optimize=True)
-        records.append({'name':name+'_c','raw_size':list(raw.size),'raw_sha256':sha(HERE/'raw'/f'{name}_c.png'),'a_crop_size':list(a.size),'raw_to_a_scale':factor,'inherited_a_transform':original})
+        records.append({'name':name+'_c','selected_raw':SELECTED[name],'raw_size':list(raw.size),'raw_sha256':sha(HERE/'raw'/SELECTED[name]),'a_crop_size':list(a.size),'raw_to_a_scale':factor,'torso_canvas_multiplier':multiplier,'torso_offset':offset,'inherited_a_transform':original})
         review(name)
     if len(NAMES)==5:family()
     outputs=sorted(p for folder in ('registered','candidates','review') for p in (HERE/folder).iterdir() if p.is_file())

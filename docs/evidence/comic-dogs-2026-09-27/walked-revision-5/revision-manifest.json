@@ -2,6 +2,7 @@
   "new_poses": [
     {
       "name": "dog_c",
+      "selected_raw": "dog_c.png",
       "raw_size": [
         1519,
         1035
@@ -12,6 +13,11 @@
         218
       ],
       "raw_to_a_scale": 0.21066491112574062,
+      "torso_canvas_multiplier": 1.0,
+      "torso_offset": [
+        0,
+        0
+      ],
       "inherited_a_transform": {
         "name": "dog",
         "source": "art/events/dog.svg",
@@ -63,15 +69,329 @@
         ],
         "crop": "crops/dog/dog.png"
       }
+    },
+    {
+      "name": "dog_front_diagonal_c",
+      "selected_raw": "dog_front_diagonal_c-retracted.png",
+      "raw_size": [
+        1396,
+        1127
+      ],
+      "raw_sha256": "966aac6c225359205e40fe593e742a5a12f2887a635105e260f13479f68a19b3",
+      "a_crop_size": [
+        326,
+        263
+      ],
+      "raw_to_a_scale": 0.24262270680608788,
+      "torso_canvas_multiplier": 1.0389610389610389,
+      "torso_offset": [
+        -9,
+        -9
+      ],
+      "inherited_a_transform": {
+        "name": "dog_front_diagonal",
+        "source": "art/events/dog_front_diagonal.svg",
+        "source_sha256": "5abe648bb24e18d312022053078587dd227156c117d024feed8b38def69d9d16",
+        "candidate": "candidates/dog/dog_front_diagonal.png",
+        "candidate_sha256": "8d9d1c227310637c45ba0f3824a570c77d1dd9bc3e0cf58218d42c1d836eb79d",
+        "native_size": [
+          38,
+          28
+        ],
+        "source_pair_union_bounds": [
+          5,
+          6,
+          36,
+          28
+        ],
+        "shared_pair_scale": 0.08333333333333333,
+        "candidate_position": [
+          7,
+          6
+        ],
+        "candidate_alpha_bounds": [
+          7,
+          6,
+          34,
+          28
+        ],
+        "grid_cell": [
+          2,
+          0
+        ],
+        "grid_bounds": [
+          780,
+          0,
+          1230,
+          397
+        ],
+        "meaningful_alpha_bounds_in_cell": [
+          72,
+          107,
+          394,
+          366
+        ],
+        "crop_bounds_in_cell": [
+          70,
+          105,
+          396,
+          368
+        ],
+        "crop": "crops/dog/dog_front_diagonal.png"
+      }
+    },
+    {
+      "name": "dog_back_diagonal_c",
+      "selected_raw": "dog_back_diagonal_c.png",
+      "raw_size": [
+        1380,
+        1140
+      ],
+      "raw_sha256": "9519c0cd0568b0f67be1ce8fddf422eb89301b5ec89493204c1946bd7646baff",
+      "a_crop_size": [
+        333,
+        275
+      ],
+      "raw_to_a_scale": 0.24278929765886287,
+      "torso_canvas_multiplier": 1.0061538461538462,
+      "torso_offset": [
+        -2,
+        -2
+      ],
+      "inherited_a_transform": {
+        "name": "dog_back_diagonal",
+        "source": "art/events/dog_back_diagonal.svg",
+        "source_sha256": "cb23d16b8e9fd37251bbec24a2961d7fa84bfb2782c45be4be23e762f0813f52",
+        "candidate": "candidates/dog/dog_back_diagonal.png",
+        "candidate_sha256": "ee214935477571cd99c8d182b157e822ff4405bf238bcbe4397e70715f01c712",
+        "native_size": [
+          38,
+          28
+        ],
+        "source_pair_union_bounds": [
+          4,
+          5,
+          35,
+          28
+        ],
+        "shared_pair_scale": 0.08243727598566308,
+        "candidate_position": [
+          6,
+          5
+        ],
+        "candidate_alpha_bounds": [
+          6,
+          5,
+          33,
+          28
+        ],
+        "grid_cell": [
+          3,
+          0
+        ],
+        "grid_bounds": [
+          1230,
+          0,
+          1660,
+          397
+        ],
+        "meaningful_alpha_bounds_in_cell": [
+          52,
+          95,
+          381,
+          366
+        ],
+        "crop_bounds_in_cell": [
+          50,
+          93,
+          383,
+          368
+        ],
+        "crop": "crops/dog/dog_back_diagonal.png"
+      }
+    },
+    {
+      "name": "dog_front_c",
+      "selected_raw": "dog_front_c.png",
+      "raw_size": [
+        940,
+        1673
+      ],
+      "raw_sha256": "569192ded2341b771ec879adb95bb61014ff675b4cdbb55723152ef945dd5132",
+      "a_crop_size": [
+        172,
+        306
+      ],
+      "raw_to_a_scale": 0.19723680574744404,
+      "torso_canvas_multiplier": 1.077922077922078,
+      "torso_offset": [
+        -7,
+        -9
+      ],
+      "inherited_a_transform": {
+        "name": "dog_front",
+        "source": "art/events/dog_front.svg",
+        "source_sha256": "1ee6d6e8c6b8f401dcaa15269a8bb316f36e20417691dfa8b83cb5d95c384114",
+        "candidate": "candidates/dog/dog_front.png",
+        "candidate_sha256": "b6f407f1481df84fda7c06e164939e628efff61127f5aca40a51df4499d99062",
+        "native_size": [
+          30,
+          28
+        ],
+        "source_pair_union_bounds": [
+          8,
+          4,
+          22,
+          28
+        ],
+        "shared_pair_scale": 0.07792207792207792,
+        "candidate_position": [
+          8,
+          4
+        ],
+        "candidate_alpha_bounds": [
+          8,
+          4,
+          21,
+          28
+        ],
+        "grid_cell": [
+          1,
+          0
+        ],
+        "grid_bounds": [
+          450,
+          0,
+          780,
+          397
+        ],
+        "meaningful_alpha_bounds_in_cell": [
+          65,
+          64,
+          233,
+          366
+        ],
+        "crop_bounds_in_cell": [
+          63,
+          62,
+          235,
+          368
+        ],
+        "crop": "crops/dog/dog_front.png"
+      }
+    },
+    {
+      "name": "dog_back_c",
+      "selected_raw": "dog_back_c.png",
+      "raw_size": [
+        969,
+        1622
+      ],
+      "raw_sha256": "b6b3cb0ecc192b49244df96f93f6622ea87223067fd650a60c32ecdf4042a347",
+      "a_crop_size": [
+        162,
+        271
+      ],
+      "raw_to_a_scale": 0.17615891287634797,
+      "torso_canvas_multiplier": 1.0536912751677852,
+      "torso_offset": [
+        -2,
+        -4
+      ],
+      "inherited_a_transform": {
+        "name": "dog_back",
+        "source": "art/events/dog_back.svg",
+        "source_sha256": "5af4d9830236cf067ff42e4752e12c77bec1fec6984ebf7b259e1ac18adcc91c",
+        "candidate": "candidates/dog/dog_back.png",
+        "candidate_sha256": "ce3a19ea0b1190108fca2ea23ae759b0fb3d9b053971bf62a7c1adee36f89319",
+        "native_size": [
+          30,
+          28
+        ],
+        "source_pair_union_bounds": [
+          9,
+          5,
+          21,
+          28
+        ],
+        "shared_pair_scale": 0.07407407407407407,
+        "candidate_position": [
+          9,
+          8
+        ],
+        "candidate_alpha_bounds": [
+          9,
+          8,
+          21,
+          28
+        ],
+        "grid_cell": [
+          4,
+          0
+        ],
+        "grid_bounds": [
+          1660,
+          0,
+          1983,
+          397
+        ],
+        "meaningful_alpha_bounds_in_cell": [
+          81,
+          93,
+          239,
+          360
+        ],
+        "crop_bounds_in_cell": [
+          79,
+          91,
+          241,
+          362
+        ],
+        "crop": "crops/dog/dog_back.png"
+      }
     }
   ],
   "outputs": {
+    "candidates/dog_back_c.png": "769ba8a5c77833a3f978c775574e25018a7a163fa71851e9efd2201ae4646eae",
+    "candidates/dog_back_diagonal_c.png": "e48e1cd4fcbdd6e32e3ba60913dc43aca3238f39e88ea809e1ff6e358be226de",
     "candidates/dog_c.png": "62cef4e938a30e378de13e07e3c6a060d4dc85dd1074068a0bd690abc32a0fed",
+    "candidates/dog_front_c.png": "6227dd50c38a23777c803a24d924f6627c919118861ae3fafc486dcf9738c43f",
+    "candidates/dog_front_diagonal_c.png": "c0f0ed8264fcad1838eb279ff5f47110d9c2e6ae4e7acea4c67ab81a1a1b6f1d",
+    "registered/dog_back_c.png": "02aa242ecfa85543f01d062768d594640a895f53cc35f6a4746f405a3eff0fb5",
+    "registered/dog_back_diagonal_c.png": "63a590eb1d8e418b02e64989af2a05e435ec7c622ab64911b493a1d3325e3a91",
     "registered/dog_c.png": "73e2826313e28f5616c5ea25240d107ba8815110b6b0a44a3814bda16c1b1293",
+    "registered/dog_front_c.png": "94701be58a351b64a8a3e67d2d384cb22b468ef4ac1a398fea6c16d6d910cd12",
+    "registered/dog_front_diagonal_c.png": "409eea26547c1ed0b8575a1c422d7b5f716dfe6a13c9034177e87d6b50e90ad8",
+    "review/all-facings-1x.gif": "9a86234b73650b4f6f8148d02aadb0879fc0670c23277d9d1a7c395dbd1eecc1",
+    "review/all-facings-1x.png": "891240360f12646122fa59b7e498627556dd93340aa31afeb3754cd285d77088",
+    "review/all-facings-2x.gif": "ad20b33cc4ed5f0d66cd731366a06d046aca8ff76ade793423a1d54655edab2a",
+    "review/all-facings-2x.png": "1986458eb67bb7cbd041be441f143cbf80a9b6119026bde8a5a54f0887e5b64c",
+    "review/all-facings-6x.gif": "da3907b705e9a1fa5da9868e3e58ef41140825319e6c0856db7b42109f592909",
+    "review/all-facings-6x.png": "269d3d7f965178f1b1559aac0630007a859f57ec1b5061e7840a2c3e3f667f02",
     "review/dog-body-four-beats.gif": "32c8ef54a8cbb9f89d54a5267acd32101bf1d3747277f1e34307717ddc239349",
     "review/dog-body-three-poses.png": "578deb33da2d6313eef7530614a08ceeddf1383d4a9a38124e20d48a689853ba",
     "review/dog-leg-silhouette-four-beats.gif": "fa0afa46563f70a2f9f4d7d790884ce1ae84ec0208249e2a210592e6e0ee10b4",
     "review/dog-leg-silhouette-three-poses.png": "c11f59318baff12b35f738250e210a64f1448556ddbf479ca5001d3d4f80304b",
-    "review/dog-source-c.png": "9e80b44b889806cbbad198a5b77535060fbff9d3cca6d324c42a0cfe8c4046ee"
+    "review/dog-source-c.png": "9e80b44b889806cbbad198a5b77535060fbff9d3cca6d324c42a0cfe8c4046ee",
+    "review/dog_back-body-four-beats.gif": "adb07530b5eb6c619a4301fb086e65d8a044a3ea915ea4acb335120f6c15eddd",
+    "review/dog_back-body-three-poses.png": "02b297c7e81766a1d972365e4a94c300e1769be859a633089be394b474ea34fe",
+    "review/dog_back-leg-silhouette-four-beats.gif": "f962288cd1db32a63505adbe3fe8d0a49c1b4aa1cc84b5c85e3126077a88a3aa",
+    "review/dog_back-leg-silhouette-three-poses.png": "c6fff0a42b39e3b624004f47e778461f221fc9345268e7efbd90617ceeac8508",
+    "review/dog_back-source-c.png": "cd0bf466f8302698fde34e321cc998be03ac77b885100f4fb1ca5155609c51b2",
+    "review/dog_back_diagonal-body-four-beats.gif": "24595c45b6d9d1d071c482b1e6ce1b9c13d3f0016fe31a3d1a52f6be6e4ac946",
+    "review/dog_back_diagonal-body-three-poses.png": "889d61f1ea4b2fda3373643318cfdc0eeebdae399ef96eba8a0a691d398cf419",
+    "review/dog_back_diagonal-leg-silhouette-four-beats.gif": "4d2887cada0d73269b6aa419213b5a637cbf8ca1315f9ff890d283db4db056a0",
+    "review/dog_back_diagonal-leg-silhouette-three-poses.png": "3ecc68840ab5af03e08393824df9d8d3ff1aacfd82b965fc1d9df3ae4c7b7e85",
+    "review/dog_back_diagonal-source-c.png": "f91c739a478cbabb4d25be8abdade9b2827009914acd3a77d031770bf037414a",
+    "review/dog_front-body-four-beats.gif": "5e12e37fb4e64008de50de78e2c17c406dbc8338c018a2aed8f32360b9d24c9e",
+    "review/dog_front-body-three-poses.png": "00b2bd498dbf96156340f84dbf6660081330a069004075ea86c15a14e1de2395",
+    "review/dog_front-leg-silhouette-four-beats.gif": "7752608b36e1081a46941454dc3ccc960c1632df00d11e4b50b3e3cc532d97b2",
+    "review/dog_front-leg-silhouette-three-poses.png": "db939274fe3f07444a4bc0bfaf6d41c63260ca88aa6756dcd9e3f0da92f69ade",
+    "review/dog_front-source-c.png": "1a9e4e626021026fc58d8220ed76edc49f0a3cdaaa8a60fb2b043c797c895ae4",
+    "review/dog_front_diagonal-body-four-beats.gif": "c88a0e9f746202909a54102ff3068b7fbdb4d3526f1e48e2180e1ea2c9c43746",
+    "review/dog_front_diagonal-body-three-poses.png": "d844ea3e8da2ec5035a27992b5ed9412e0efb94652f1bc202ec3184372e170cb",
+    "review/dog_front_diagonal-leg-silhouette-four-beats.gif": "f1178e6d0b97f3c0ed94e974615185c516ed5c7f0d5499b1c610b6b89bfdb117",
+    "review/dog_front_diagonal-leg-silhouette-three-poses.png": "a84b6c21b1e885dc38c7d27cbb8c74e847ab95e7f935799a99aca7e1bd5a00ec",
+    "review/dog_front_diagonal-source-c.png": "07a1582fc4cf41428ee72f9239cfc3bcfd6014a167af6c44c21108622eb0030d"
   }
 }

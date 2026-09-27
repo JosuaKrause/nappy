@@ -228,8 +228,12 @@ The [three-pose dog extension](evidence/comic-dogs-2026-09-27/walked-revision-5/
 prepares `art/events/dog_c.svg`, `dog_front_diagonal_c.svg`, `dog_back_diagonal_c.svg`,
 `dog_front_c.svg` and `dog_back_c.svg` as unbound sources. Side/diagonal C is the opposite
 extended step; front/back C is neutral between their existing A/B steps. The selected
-revision-4 side/diagonal illustrations supply the resting phase. Source review precedes PNG
-generation; runtime selection remains unchanged.
+revision-4 side/diagonal illustrations supply the resting phase. The five source-first PNG
+derivatives complete the three-pose preview with clean and color-free comparisons, plus
+eight-facing step/rest/opposite-step/rest loops at native and enlarged scales. Existing
+selected images and the accepted pursuing family remain frozen. Residual shading, body/paw
+drift and tightly spaced near paws in SE/SW remain visible for appearance review; runtime
+selection remains unchanged.
 
 ## Prepared SVG assets without runtime bindings
 

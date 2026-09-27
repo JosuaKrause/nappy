@@ -1,5 +1,5 @@
 <!-- Unbound third pose for the walked/loose dog; no atlas or runtime binding.
-     Opposite extended step; A is the first step and B the gathered/rest pose.
+     Opposite extended step; the selected illustrated B supplies the resting pose.
      Body, limb roots, materials, canvas and bottom-center anchor match dog_back_diagonal.svg.
      Only the articulated limb paths differ. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="38" height="28" viewBox="0 0 38 28" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">

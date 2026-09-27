@@ -1,0 +1,16 @@
+{
+  "inputs": [
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/raw/front-retracted-missing-hind.png",
+      "sha256": "4acab05077c93af969b82eb54f3d117dfeccb6ecfe60fb671dd54cee09a24581"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/raw/dog_front_diagonal_c-retracted.png",
+      "sha256": "966aac6c225359205e40fe593e742a5a12f2887a635105e260f13479f68a19b3"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/FRONT-RETRACTION.md",
+      "sha256": "515cb42b319afc71702444369be6b02694790937ad863bf94b83a4b3f124df93"
+    }
+  ]
+}

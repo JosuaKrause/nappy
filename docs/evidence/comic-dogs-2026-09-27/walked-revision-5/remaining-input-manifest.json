@@ -1,0 +1,28 @@
+{
+  "inputs": [
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/raw/dog_front_diagonal_c.png",
+      "sha256": "24f2b4dbb7203169e21f3b2e8920e2639886bafd4bbcf5259d496a33093be6f8"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/raw/dog_back_diagonal_c.png",
+      "sha256": "9519c0cd0568b0f67be1ce8fddf422eb89301b5ec89493204c1946bd7646baff"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/raw/dog_front_c.png",
+      "sha256": "569192ded2341b771ec879adb95bb61014ff675b4cdbb55723152ef945dd5132"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/raw/dog_back_c.png",
+      "sha256": "b6b3cb0ecc192b49244df96f93f6622ea87223067fd650a60c32ecdf4042a347"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/PROMPTS.md",
+      "sha256": "c31959583aa922daae0295548ca18a3d9c40b144af14d80534853978a28b8485"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/REMAINING-PROMPTS.md",
+      "sha256": "c9dfe1eef3289be77f69550ae60747242aeb2d0c88617019f980f366f010e7f6"
+    }
+  ]
+}
