@@ -16,7 +16,7 @@ through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the 
 **Start with `git fetch --prune` and `gh pr list`.** Open pull requests may await review, checks or
 merge permission. Resolve conflicts with `main` under the **merging-main** rules. A PR stays open
 unless the user explicitly authorizes merging in the current session; enabling auto-merge and
-delegating a merge require the same permission. Use `tools/queue.sh`'s order for the next
+delegating a merge require the same permission. Use `TODO.md` for the next
 implementation and `REVIEW.md` for the questions a playtest should cover; the player's original
 reports and reference instructions live in `docs/playtests/`.
 
@@ -217,7 +217,7 @@ continue button and a held restart that acknowledges the press before the day it
 frame; the export publishes `index.js`, `index.wasm` and `index.pck` under a directory named for the
 release tag, so Pages' unchangeable `Cache-Control: max-age=600` can no longer serve a **mixed**
 build; and the shared card is opaque and declares its dimensions. The record is in `DECISIONS.md`
-under M76 and M80. **Follow `tools/queue.sh`'s order for what is next.**
+under M76 and M80. **Follow `TODO.md`'s own order for what is next.**
 
 **The two milestones at the front of that order both overturn something on purpose, and each entry
 says who did the overturning.** **M88** gives the two control schemes back to the player as a choice
@@ -278,7 +278,7 @@ day's route tree grows on it, and `ClosurePlanner` refuses a calm area's access 
 longer what answers *can she get there today*.
 
 Two of the queue's milestones carry state worth knowing before picking them up; their place in the
-order is `tools/queue.sh`'s.
+order is `TODO.md`'s.
 
 - **M56 — the resistance is noticed.** What remains is its measurement against the nerves, which
   waits until act III is reached.
@@ -355,15 +355,14 @@ finish what they have but we can pick up the prs later".
 
 ## The queue, as prioritised on 2026-09-09
 
-**The order is `tools/queue.sh`'s, from each entry's band, and the bands follow the gameplay queue the
-player set item by item.** Playtest
+**`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** Playtest
 66's four milestones are all built and released (`DECISIONS.md`, M119 to M122); what only a walk
 can judge about them is in `REVIEW.md`. M56 has only
 its measurement against the nerves left, and that waits for act III. The debug view (`1` to `5` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow, a body or the day's routes is checked by
 eye, and every one of the three is derived from the object's own `GroundShape` — one apiece for
 everything but the car crash, which is solid in two pieces because its picture is two cars with
-gaps between them (`DECISIONS.md`, M118). Ahead of M56 in `next`, since it waits on them: M99 (the corridor's density
+gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M99 (the corridor's density
 after the sealing) and M100 (the small work, the polish and the open design questions,
 consolidated). M96 (the teaching day and the dog after it) and M97 (calm areas that hold) are
 both done (`DECISIONS.md`, M96, the day ends crying only after a push at the top; M97, calm areas
@@ -371,7 +370,7 @@ that hold is closed).
 Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
-in `GRAPHICS.md`; M100's entry names the prepared drawings it binds.
+in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
 The crowd goes round every solid body it meets, not only a seal (`DECISIONS.md`, M110), and a
 car follows an arc through a turn with its heading
 continuous throughout (`DECISIONS.md`, M111), drawn through side, diagonal and end views on the
