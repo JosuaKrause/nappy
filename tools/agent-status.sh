@@ -185,12 +185,15 @@ env_or_dotenv() {
 
 # ------------------------------------------------------------------------------------- Codex ---
 # Everything that reads Codex's own session format lives in this section, so a format change is
-# one place to fix -- not one literal function, since the two jobs the rest of the script needs
-# (credit a worktree's most recent worker, `codex_credit_for`; list the worktrees Codex has ever
-# named, `codex_hit_worktrees`) share the same raw hits but return different shapes, and folding
-# both into one function would mean a caller passing a flag to say which it wants. Those two are
-# this section's only entry points; `codex_files_for` and `codex_pick_worker_file` are private
-# steps only `codex_credit_for` calls. Codex sessions are JSONL files under $CODEX_HOME/sessions/YYYY/MM/DD/
+# one place to fix -- not one literal function, since what the rest of the script needs from it
+# (credit a worktree's most recent worker, list the worktrees Codex has ever named, tell a worker
+# session from Codex's own approval guardian) share the same raw hits but return different shapes,
+# and folding them into one function would mean a caller passing a flag to say which it wants.
+# `codex_pick_worker_file` stays private to `codex_credit_for`; every other function here is also
+# called from outside the section (the "clone host labels" section below reuses
+# `codex_hit_worktrees`, `codex_files_for` and `codex_any_worker_file`, so a clone is never
+# credited with Codex activity on guardian noise alone -- see `codex_session_is_guardian`'s own
+# comment). Codex sessions are JSONL files under $CODEX_HOME/sessions/YYYY/MM/DD/
 # rollout-*.jsonl; of the two other places Codex keeps session records (~/.codex/session_index.jsonl
 # and state_5.sqlite), neither names a sub-agent's actual worktree -- session_index.jsonl carries
 # only an id, a thread name and a timestamp, and while state_5.sqlite's own `threads` table has a
@@ -241,18 +244,32 @@ codex_hit_worktrees() {
     printf '%s\n' "$codex_hits_tsv" | awk -F'\t' '{ print $1 }' | sort -u
 }
 
-# The newest file among a newline-separated list of candidates ($1) that is not Codex's own
-# approval guardian (never a worker), as "mtime<TAB>file" -- the guardian check
-# (`source.subagent.other == "guardian"` on the file's own session_meta line) is inline since
-# nothing else needs it.
+# A session file is Codex's own approval guardian, never a worker -- $1 is the file. The one
+# place "guardian is never a worker" is decided, so codex_pick_worker_file (picking a worker to
+# credit) and clone_has_codex_sessions (deciding whether a clone has ever run one) agree.
+codex_session_is_guardian() {
+    [[ "$(head -1 "$1" 2>/dev/null | jq -r 'try .payload.source.subagent.other catch empty' 2>/dev/null)" == "guardian" ]]
+}
+
+# Whether any file among a newline-separated list ($1) is not Codex's own approval guardian.
+codex_any_worker_file() {
+    local f
+    while IFS= read -r f; do
+        [[ -z "$f" ]] && continue
+        codex_session_is_guardian "$f" || return 0
+    done <<<"$1"
+    return 1
+}
+
+# The newest non-guardian file among a newline-separated list of candidates ($1), as
+# "mtime<TAB>file".
 codex_pick_worker_file() {
     { while IFS= read -r f; do
         [[ -z "$f" ]] && continue
         m="$(mtime_of "$f" 2>/dev/null)" || continue
         printf '%s\t%s\n' "$m" "$f"
     done <<<"$1"; } | sort -t $'\t' -k1,1 -rn | { while IFS=$'\t' read -r m f; do
-        guardian="$(head -1 "$f" 2>/dev/null | jq -r 'try .payload.source.subagent.other catch empty' 2>/dev/null)"
-        [[ "$guardian" == "guardian" ]] && continue
+        codex_session_is_guardian "$f" && continue
         printf '%s\t%s\n' "$m" "$f"
         break
     done; }
@@ -468,19 +485,24 @@ clone_has_claude_transcripts() {
     [[ -d "$(projects_dir_for "$1")" ]]
 }
 
-# Whether Codex's own session history names clone $1 as a `cwd` anywhere: a worktree under it
-# (from codex_hit_worktrees, already cached) or the clone root itself, plain or `file://`-prefixed
+# Whether Codex's own session history names clone $1 as a `cwd` anywhere in a *worker* session
+# (never counting its own approval guardian, via codex_any_worker_file/codex_session_is_guardian
+# above -- a clone whose only matching session is ever a guardian is safety-review noise, not
+# evidence Codex worked there): a worktree under it (from codex_hit_worktrees, already cached,
+# looked up per-file with codex_files_for) or the clone root itself, plain or `file://`-prefixed
 # (a session that ran there without a worktree -- this happens; see the header comment).
 clone_has_codex_sessions() {
     local clone="$1" wt
     while IFS= read -r wt; do
         case "$wt" in
-            "$clone"/.claude/worktrees/*) return 0 ;;
+            "$clone"/.claude/worktrees/*)
+                codex_any_worker_file "$(codex_files_for "$wt")" && return 0
+                ;;
         esac
     done < <(codex_hit_worktrees)
     [[ -d "$codex_sessions_dir" ]] && command -v rg >/dev/null 2>&1 || return 1
-    rg -q --fixed-strings "\"cwd\":\"$clone\"" "$codex_sessions_dir" 2>/dev/null && return 0
-    rg -q --fixed-strings "\"cwd\":\"file://$clone\"" "$codex_sessions_dir" 2>/dev/null
+    codex_any_worker_file "$(rg -l --fixed-strings "\"cwd\":\"$clone\"" "$codex_sessions_dir" 2>/dev/null)" && return 0
+    codex_any_worker_file "$(rg -l --fixed-strings "\"cwd\":\"file://$clone\"" "$codex_sessions_dir" 2>/dev/null)"
 }
 
 # ---------------------------------------------------------------------------- collect entries ---
