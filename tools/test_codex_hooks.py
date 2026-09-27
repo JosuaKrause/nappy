@@ -601,6 +601,20 @@ class CodexHooksTest(unittest.TestCase):
                 decision = (output or {}).get("hookSpecificOutput", {}).get("permissionDecision")
                 self.assertEqual(decision, expected)
 
+    def test_a_guard_past_the_shared_budget_denies_rather_than_lets_through(self) -> None:
+        # Codex lets a call through when the hook outruns its 10 seconds, so the adapter gives the
+        # two guards a shared budget short of that and denies when a guard is still running at its
+        # end, killing it and whatever it started (here a sleep holding the guard's stdout open,
+        # as jq does). The reply comes back inside Codex's timeout, not after the guard.
+        (self.root / ".claude/hooks/github-write-guard.sh").write_text("#!/usr/bin/env bash\nsleep 30\n")
+        started = time.monotonic()
+        output = self.call_raw(command="git status")
+        self.assertLess(time.monotonic() - started, 9.5)
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("github-write-guard.sh did not finish", specific["permissionDecisionReason"])
+
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
         command = (
             "uv run python tools/agent-identity.py run codex-coder -- gh pr create --title t --body "
