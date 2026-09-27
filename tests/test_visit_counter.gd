@@ -36,6 +36,7 @@ func run(t) -> void:
 	_test_pending_events_queue_until_present_and_flush_in_order(t)
 	_test_send_event_never_queues_when_it_may_never_send(t)
 	_test_a_chase_is_reported_once_however_the_pursuer_arrived(t)
+	_test_every_event_opts_out_of_sessions(t)
 
 ## `_should_send()` — on the web, released, unasked-for and with a live
 ## `window.goatcounter.count` are all four required; missing any one of them refuses.
@@ -199,7 +200,8 @@ func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
 	counter.free()
 
 ## `poster-torn`, `chat` and `checkpoint` are sent every time, within one attempt and across a
-## retry alike: the game's site keeps no sessions so that a count is every time a thing happened
+## retry alike: every event opts out of the site's sessions so that a count is every time a thing
+## happened
 ## (PLAYTEST-143: "no, even current run wouldn't work if the player dies multiple times on the same
 ## day"). Read off `RecordingCounter`, which keeps what `_send_event()` was asked for, since the
 ## real one is silent in this process.
@@ -347,3 +349,54 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 		"created where its warning pointed, its chase is reported once (%s)" % [began])
 	warned.free()
 	EventBus.pursuit_began.disconnect(on_began)
+
+## Every event the counter sends carries `no_session: true`, the one thing that keeps it counted
+## every time on a site whose sessions stay on for the page visit ("okay, I can turn session back
+## on and you opt out for everything except /nappy.josuakrause.com/"). Every handler is driven
+## through `RecordingCounter`, and each name it sent is checked in the options `_dispatch()` hands
+## `count()` and in the script line itself, parsed back rather than searched as text.
+func _test_every_event_opts_out_of_sessions(t) -> void:
+	var counter := RecordingCounter.new()
+	counter._on_run_begun(1, false)
+	counter._on_day_started(1)
+	counter._on_day_lost_to(1, "instant-car")
+	counter._on_task_offered(1)
+	counter._on_mark_seen(1)
+	counter._on_task_completed(1)
+	counter._on_task_offered(2)
+	counter._on_task_failed(2)
+	counter._on_task_offered(3)
+	counter._on_event_sighted("burning_building")
+	counter._on_event_lit_unmet("burning_building")
+	counter._on_city_gone_dark()
+	counter._on_pursuit_began("charging_dog")
+	counter._on_pursuit_ended("charging_dog", false)
+	counter._on_poster_torn()
+	counter._on_poster_pursuit_sent()
+	counter._on_player_detained("chatting_mother")
+	counter._on_player_detained("checkpoint_hut")
+	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_CRYING)
+	counter._on_run_restarted(1)
+	counter._on_run_ended(GameEnums.Ending.GOOD)
+	counter._on_escape_begun()
+	counter._on_escape_city_entered()
+	counter._on_escape_lost()
+	counter._on_escape_out()
+	counter._on_controls_chosen(ControlsMode.Mode.JOYSTICK, false)
+	t.check(counter.sent.size() >= 20,
+		"there were events to check (%d)" % counter.sent.size())
+	var prefix := "try { window.goatcounter.count("
+	var suffix := "); } catch (e) {}"
+	for name: String in counter.sent:
+		var options: Dictionary = VISIT_COUNTER_SCRIPT._count_options(name)
+		var call: String = VISIT_COUNTER_SCRIPT._count_call(name)
+		var parsed: Variant = null
+		if call.begins_with(prefix) and call.ends_with(suffix):
+			parsed = JSON.parse_string(call.substr(prefix.length(),
+					call.length() - prefix.length() - suffix.length()))
+		t.check(options.get("no_session") == true and options.get("event") == true
+				and options.get("path") == name,
+			"%s is an event under its own path that opts out of sessions" % name)
+		t.check(parsed is Dictionary and parsed == options,
+			"%s: the script line hands count() exactly those options" % name)
+	counter.free()
