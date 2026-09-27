@@ -2235,10 +2235,20 @@ Top-down camera with a fake vertical extrusion:
   player hugging a frontage, and every cue drawn above an entity's head. That is why it read as an
   occasional glitch rather than as a rule.
 
-  The fix is not a better comparison. Buildings tile their lots exactly and no lot tile is
-  walkable, both asserted in `tests/test_generator.gd`, so **nothing can ever legitimately stand
-  behind a building** — and two things that can never be on opposite sides of each other have no
-  business being sorted against each other.
+  The fix is not a better comparison. Buildings tile their lots exactly, no lot tile is
+  walkable, both asserted in `tests/test_generator.gd`, and a building's drawing stays inside its
+  own lot, so **nothing can ever legitimately stand behind a building** — and two things that can
+  never be on opposite sides of each other have no business being sorted against each other.
+
+  **The power station's two stacks are the one exception, so they are not drawn by the building.**
+  Each is 192px tall from a foot on the hall's roof and rises well past the lot's north edge into
+  the street beyond, where she can stand behind it. *(PLAYTEST-143: "the chimneys of the power
+  plant render behind the player. they should be in front.")* So each stands in `Entities` at its
+  own foot (`Building.StationStack`, placed from `Building.stack_feet()` by
+  `City._spawn_buildings()`) and sorts like any entity: drawn over whatever stands north of its
+  foot, her and anything over her head included, and under whatever stands south of it. The rest
+  of the station, hall and yard, stays in the building layer. `tests/test_power_station.gd` holds
+  the stacks to that layer and their pictures to walkable ground behind them.
 - Sprite anchor is the *feet*, not the centre, so y-sorting matches the ground plane. A
   `Sprite2D` with `centered = false` puts the node at the sprite's *top-left*, which makes
   y-sort compare the wrong edge; use `offset` to draw upward from the ground plane instead.

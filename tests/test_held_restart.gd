@@ -181,7 +181,7 @@ func _test_the_summary_restart_ignores_a_second_touch_mid_hold(t) -> void:
 	summary.continued.connect(func() -> void: continued[0] += 1)
 
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var at: Vector2 = summary._restart_button.catch_rect().get_center()
@@ -237,7 +237,7 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var summary_at: Vector2 = summary._restart_button.catch_rect().get_center()
@@ -336,7 +336,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var summary_at: Vector2 = summary._restart_button.get_global_rect().get_center()
@@ -448,7 +448,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
 	summary.continued.connect(func() -> void: continued[0] += 1)
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var summary_at: Vector2 = summary._restart_button.get_global_rect().get_center()
@@ -478,7 +478,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
 	summary.continued.connect(func() -> void: continued[0] += 1)
 	summary._touch = false
-	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	summary_at = summary._restart_button.get_global_rect().get_center()

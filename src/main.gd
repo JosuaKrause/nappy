@@ -1132,7 +1132,7 @@ func _show_an_ending_for_a_rig() -> bool:
 		return false
 	_run_over = true
 	_ending_shown = true
-	_summary.show_ending(wanted[wanted_arg] as GameEnums.Ending)
+	_summary.show_ending(wanted[wanted_arg] as GameEnums.Ending, GameState.day)
 	return true
 
 # --------------------------------------------------------------- the title ---
@@ -1246,7 +1246,7 @@ func _show_the_resume_gate() -> void:
 		# zero nerves any other way. `GameState.ending` is already set (`GameState.finish_day()`
 		# set it in `_ready()`), so nothing downstream can write a save naming this run again.
 		_ending_shown = true
-		_summary.show_ending(GameState.ending)
+		_summary.show_ending(GameState.ending, GameState.day)
 		return
 	_resume_gate_open = true
 	# The second of the two moments a page may load in, open for as long as the brief is up and
@@ -2007,8 +2007,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	if _hands_over_to_the_escape(result):
 		GameState.escape_section = FinaleController.Section.BUILDING
 		_save_now(false)
-		_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves,
-				elapsed_seconds)
+		_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 		return
 	_run_over = not GameState.finish_day(result)
 	# The end-of-day write — one of the two moments a run is saved. Skipped when the run just
@@ -2016,7 +2015,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# save, and writing here would resurrect a file naming a run that is over.
 	if not _run_over:
 		_save_now(false)
-	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves, elapsed_seconds)
+	_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 
 ## Whether the day that just ended is the one the escape follows: **won, the last day, and every
 ## task complete**. *"After completing all tasks"*, and what that already means in this game is
@@ -2063,7 +2062,7 @@ func _on_summary_continued() -> void:
 		return
 	if not _ending_shown:
 		_ending_shown = true
-		_summary.show_ending(GameState.ending)
+		_summary.show_ending(GameState.ending, GameState.day)
 		return
 	# A run that is over goes back to where a run begins, which is the title screen: an ending is
 	# not a dead end the player has to quit out of.

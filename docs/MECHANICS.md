@@ -402,10 +402,15 @@ instead. Neither scheme is tied to a touchscreen or a mouse: either can be picke
 Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
 disagree. A mouse aims from her own world position, and a click within a generous radius of that
 position stops her. A real touch instead aims from whichever of two fixed points on the screen is
-nearer the press — drawn as a ring with a knob at the currently-held direction, so what is locked in
-can be read off the glass without watching her — and is stopped by a press on either point or by one
-in a band down the screen's own middle, never by a press near her own position: the camera keeps her
-at the middle of the screen, so that ground is the band's own.
+nearer the press — drawn as a ring with a knob at the heading she is actually walking, so what she
+is walking can be read off the glass without watching her — and is stopped by a press on either
+point or by one in a band down the screen's own middle, never by a press near her own position: the
+camera keeps her at the middle of the screen, so that ground is the band's own. **Both rings always
+show that same heading**, whichever one a press aimed through, and also while the keyboard is what
+is actually steering her: the knob reads the walk's own input state directly rather than only
+`Joystick`'s own last press, so a real key overriding a stale click shows up on both circles the
+instant it does. `Tap` draws nothing to update, having only her own position to aim from rather
+than two fixed points to keep in agreement.
 
 The pause button, top right, is shown on every device once a day — or a section of the escape, the
 run's own ending — is actually running: a real `InputEventAction` for `pause` through
@@ -1229,15 +1234,22 @@ Running out is a day loss. The timer is shown as a light-level shift rather than
 with an explicit clock in the HUD corner, `m:ss` through `GameState.format_clock_seconds()`.
 
 The summary between days (`DaySummary.show_day()`) names the same clock at the instant the day
-ended, one line under its title: a won day reads *"She fell asleep after 1:24."*, a lost day
-reads its own reason with the clock worked into it — *"She started crying after 1:24. There is
-no settling her now."* for a crying loss, the reason then the clock as its own sentence for a
-hard fail — and a day lost to running out of daylight shows only its reason, since dusk already
-is the whole day and printing the day's own length back would only repeat it.
+ended, as its own title: a won day reads *"She fell asleep after 1:24."*, a lost day reads its
+own reason with the clock worked into it — *"She started crying after 1:24. There is no settling
+her now."* for a crying loss, the reason then the clock as its own sentence for a hard fail —
+and a day lost to running out of daylight shows only its reason, since dusk already is the whole
+day and printing the day's own length back would only repeat it.
 `GameState.format_clock_seconds()` is the shared `m:ss` formatter the HUD clock and this line
 both read through, so the two can never disagree; the ending screen's *"Time played"* line stays
 on `GameState.format_clock()`'s millisecond form, over the whole run rather than one day — see
 "The run clock" below.
+
+**Everything below that one line is the coming day's, not the day that just ended.** The day
+number, the nerves carried into it and the morning's own line (`_DAY_BRIEF`, below) all read off
+`GameState.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
+today again (a loss with nerves left retries the same day) — never off the day that just ended.
+The day brief a resumed run opens on (`DaySummary.show_day_brief()`) is built the same way, since
+it is the same screen showing what a load already charged rather than what a day just did.
 
 ## The run clock
 
@@ -1251,6 +1263,13 @@ the only place it is shown, once, on every ending alike: bad, neutral and good a
 under their own body text reading the run's length as `%d:%02d.%03d`, to the millisecond.
 `GameState.format_clock()` is the one place that format is written, so a second clock reading to
 the millisecond calls it rather than carrying a second copy of the string.
+
+**The `BAD` ending's own line names the day the run reached** — *"You made it to day %d."*,
+beside "Time played" — the last day played rather than the last day completed, so a run that
+loses its last nerve on day 1 reads day 1, not 0. `GameState.day` already holds it: the calendar
+is never advanced past the day nerves ran out on, or past the day a load spent the last one on
+(`GameState.finish_day()` ends the run before it would move the calendar). The neutral and good
+endings say nothing about the day, since both are reached by finishing day 14.
 
 ## The escape, which is the run's ending
 
@@ -1407,6 +1426,12 @@ she took, to the millisecond, which is the only number that screen carries.
 
 The run-level health bar. Starts at 5. Every lost day costs one. At 0 the run ends with the
 bad ending. Nerves never regenerate — this is what makes an early bad day matter.
+
+**Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
+debug header, the day brief, the day summary, the finale brief and the pause screen all read the
+count through `NerveDisplay.stars()` (`src/ui/nerve_display.gd`), a star per nerve and `-` for
+none, so a sixth screen that shows nerves has one function to match rather than a number to
+invent.
 
 **Five is a number to be measured, not derived**, and nobody has played a run against it: the run
 log's `nerve` entries are what say where they went. What makes it hard to reason about from first
