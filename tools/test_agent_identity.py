@@ -40,7 +40,9 @@ def _b64url_decode(text: str) -> bytes:
 
 class RoleTableTests(unittest.TestCase):
     def test_every_role_from_the_brief_is_present(self) -> None:
-        self.assertEqual(set(agent_identity.ROLES), {"claude-coder", "claude-reviewer", "codex-coder"})
+        self.assertEqual(
+            set(agent_identity.ROLES), {"claude-coder", "claude-reviewer", "codex-coder", "codex-reviewer"}
+        )
 
     def test_coder_roles_have_contents_and_workflows_write(self) -> None:
         for role in ("claude-coder", "codex-coder"):
@@ -50,9 +52,11 @@ class RoleTableTests(unittest.TestCase):
                 self.assertEqual(permissions["workflows"], "write")
 
     def test_reviewer_has_contents_read_and_no_workflows(self) -> None:
-        permissions = agent_identity.ROLES["claude-reviewer"].permissions
-        self.assertEqual(permissions["contents"], "read")
-        self.assertNotIn("workflows", permissions)
+        for role in ("claude-reviewer", "codex-reviewer"):
+            with self.subTest(role=role):
+                permissions = agent_identity.ROLES[role].permissions
+                self.assertEqual(permissions["contents"], "read")
+                self.assertNotIn("workflows", permissions)
 
     def test_every_role_can_read_and_write_pull_requests_and_issues(self) -> None:
         for role, spec in agent_identity.ROLES.items():

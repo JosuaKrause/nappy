@@ -4,21 +4,24 @@
 *(2026-09-27: "right now everything goes through my github account and it's basically me talking
 to myself when in reality it's me and claude and other agents talking to each other. I would like
 to be able to distinguish coding claude from reviewing claude from myself and from other agents" ·
-"I need a nappy-claude-coder, nappy-claude-reviewer, nappy-codex-coder for now".)*
+"I need a nappy-claude-coder, nappy-claude-reviewer, nappy-codex-coder for now" · 2026-09-26: "I
+want to create nappy-claude-coder, nappy-claude-reviewer, nappy-codex-code, and
+nappy-codex-reviewer for now" — read as `nappy-codex-coder`, the name already in use.)*
 
 **What was decided.** Each agent role posts on GitHub as a GitHub App of its own, so a pull
-request shows the player, `nappy-claude-coder[bot]`, `nappy-claude-reviewer[bot]` and
-`nappy-codex-coder[bot]` as four different authors. `tools/agent-identity.py` creates an app
+request shows the player, `nappy-claude-coder[bot]`, `nappy-claude-reviewer[bot]`,
+`nappy-codex-coder[bot]` and `nappy-codex-reviewer[bot]` as five different authors.
+`tools/agent-identity.py` creates an app
 through GitHub's manifest flow (`create`, run on the player's machine, which has the browser that is
 logged in), checks one (`status`) and runs a command as one (`run <role> -- ...`): it mints a
 one-hour installation token scoped to this repository and sets `GH_TOKEN` plus the git author and
 committer to the bot's noreply address, so `gh` posts and `git commit` records as the bot. The
-keys stay in `~/.config/nappy-agents/`, outside the repository. The reviewer app has read-only
-contents, so it cannot push. committing and pr-review say which role does what, and fall back to
+keys stay in `~/.config/nappy-agents/`, outside the repository. The reviewer apps have read-only
+contents, so neither can push. committing and pr-review say which role does what, and fall back to
 the player's account when a role is not usable.
 
 **Rejected.** *Machine users* (second GitHub accounts): GitHub's terms allow one free machine
-account per person, which is one identity where three were asked for, and each brings an email and
+account per person, which is one identity where four were asked for, and each brings an email and
 2FA to keep. *Labelling on the player's account* (a role in the commit author name, a header on
 each comment): GitHub still shows the player as the poster and the player still cannot approve a
 PR an agent opened, so it helps a reader and not GitHub. *Using Approve/Request changes for the

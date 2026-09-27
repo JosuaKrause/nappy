@@ -14,7 +14,7 @@ place the role table lives, so a later role is one row. Three subcommands:
         --force. See the module's own "create" section below for the exact steps.
 
     status [<role>...]
-        For each role (all three with none given): configured or not, and if configured, mints an
+        For each role (all four with none given): configured or not, and if configured, mints an
         installation token (never printed) and reports the app's slug, bot id, whether it is
         installed on the repository, and the token's granted permissions. Exits non-zero if any
         requested role is not usable, naming what is missing and the command that fixes it.
@@ -36,11 +36,11 @@ The repository is <owner>/<repo>, parsed from `git remote get-url origin` (an ht
 ssh git@github.com: URL, or a proxy-style URL whose path ends in /<owner>/<repo>, .git optional on
 each); --repo OWNER/REPO overrides it.
 
-**In a Claude Code cloud session, none of the three works.** The session's own proxy allows only
+**In a Claude Code cloud session, none of the four works.** The session's own proxy allows only
 repository-scoped GitHub API endpoints under the session's own authorization -- a bare
 `GET /users/octocat` there answers "This GitHub API path is not available: sessions are bound to
 their configured repositories" -- `gh` is not installed, and there is no browser to run the
-manifest flow's confirm page in. So all three are expected to fail in that environment,
+manifest flow's confirm page in. So all four are expected to fail in that environment,
 and the "not configured" message says identities are set up on the player's own machine.
 """
 
@@ -132,6 +132,9 @@ ROLES: dict[str, RoleSpec] = {
     ),
     "codex-coder": RoleSpec(
         "nappy-codex-coder", "Codex's own coding commits, pushes and pull requests.", _CODER_PERMISSIONS
+    ),
+    "codex-reviewer": RoleSpec(
+        "nappy-codex-reviewer", "Codex's adversarial pull request reviews.", _REVIEWER_PERMISSIONS
     ),
 }
 
@@ -718,7 +721,7 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "examples:\n"
-            "  uv run python tools/agent-identity.py create claude-coder claude-reviewer codex-coder\n"
+            "  uv run python tools/agent-identity.py create claude-coder claude-reviewer codex-coder codex-reviewer\n"
             "  uv run python tools/agent-identity.py status\n"
             "  uv run python tools/agent-identity.py run claude-coder -- git push\n"
         ),
@@ -742,7 +745,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Report whether each role is configured, installed, and usable.",
     )
     status.add_argument(
-        "roles", nargs="*", choices=ROLE_NAMES, metavar="ROLE", help=f"defaults to all three: {', '.join(ROLE_NAMES)}"
+        "roles", nargs="*", choices=ROLE_NAMES, metavar="ROLE", help=f"defaults to all four: {', '.join(ROLE_NAMES)}"
     )
     _add_repo_option(status)
 
