@@ -185,7 +185,9 @@ art/                      the authoring pictures, behind a .gdignore: the engine
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
 assets/                   what the engine still reads at runtime, and only that
-  shaders/                the excitement halo's silhouette rim
+  shaders/                the excitement halo's silhouette rim and the shared south-water ripple;
+                          both boot paths issue real transparent canvas draws before play because
+                          Compatibility has no shader-precompile call
   atlases/membership.json which picture belongs on which atlas page, with each group's
                           lifetime, its padding kind and the consumers that read it. "members"
                           is what both bake modes carry, "members_png" and "members_svg" what
@@ -215,6 +217,9 @@ tools/
   cost_table.gd           the survey itself, run headless as a scene (needs the Tuning autoload)
   lint.sh                 the governed docs, for sentences that go stale on their own
   pycheck.sh              ruff, mypy and the unit tests for the Python here
+  split-scenes.py         regenerate or check the pipe/crash static and moving SVG spans,
+                          runtime registration and atlas membership; evidence metadata is an
+                          explicit output rather than an ordinary regeneration side effect
   run.sh                  play; rebuilds the import cache first when a pull left it stale
   shot.sh                 render the game to a PNG
   telemetry.sh            show a run log; stats.sh aggregates them
