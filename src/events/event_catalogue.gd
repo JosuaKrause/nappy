@@ -1982,12 +1982,10 @@ static func _robber_giving_chase() -> EventDef:
 	return def
 
 ## **The guard a task sets on her: the roadblock's own guard, awake from his first frame, coming
-## at her from off screen the moment she hands the van's package over.** *(A semantic review of
-## PR #362 — github.com/JosuaKrause/nappy/pull/362#pullrequestreview-5326113448 — found the PR had
-## swapped every row-riding task's waiting guard for `robber_giving_chase`, where the player had
-## named only the man shouting. PLAYTEST-144, statement 15, the player's answer: "After the van
-## (day 7) a guard chases her; after the man shouting, the robber, which is fine only if he starts
-## off screen.")* Nothing places it but `ResistanceDirector._set_the_trap_on_her()`, on the same
+## at her from off screen the moment she hands the van's package over.** *(PLAYTEST-144, statement
+## 15, the player: "After the van (day 7) a guard chases her; after the man shouting, the robber,
+## which is fine only if he starts off screen.")* Nothing places it but
+## `ResistanceDirector._set_the_trap_on_her()`, on the same
 ## terms as `robber_giving_chase` — `Tuning.TRAP_ARRIVAL_DISTANCE` from her on walkable ground
 ## outside the view, `SCRIPTED` on day 0 so the roll, the stream and the budget never reach it.
 ##

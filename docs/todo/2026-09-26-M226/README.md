@@ -25,11 +25,11 @@ Replaces the orchestrator's proposal on PR #372 of a 2.9s badge before the dog's
 which would have lengthened the day-3 timing the player calls correct.
 
 **Also brings in the resistance's own director-sent pursuers, `robber_giving_chase` and
-`van_guard_giving_chase` (PR #362, M137).** Built the same way `charging_dog` was before this
-entry — created at once, closing under a screen-edge badge, not warned first — so PLAYTEST-145
+`van_guard_giving_chase` (PR #362, M137).** Built the same way `charging_dog` is still built —
+created at once, closing under a screen-edge badge, not warned first — so PLAYTEST-145
 statement 7 ("all offscreen events should work like that") applies to them the same as to
 `charging_dog`, and the events skill's rule against widening the "not warned first" exception
-means they are not to stay there either. The orchestrator, asked whether to keep PR #362's own
+means they are not to stay there either. The player, asked whether to keep PR #362's own
 2.0s notice and 6.0s chase until this milestone fits them to the gold timing, or retune them to
 the dog's own timing immediately: "A, remove the exemption." Both rows keep their built numbers
 until this milestone lands.

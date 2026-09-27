@@ -1,23 +1,25 @@
 class_name M137TrapArrival
 extends RefCounted
-## Measurement probe for the "about one handover in five" figure quoted in
-## `ResistanceDirector._draw_arrival_position()`'s own doc, the `docs/EVENTS.md` row for
-## `robber_giving_chase`/`van_guard_giving_chase`, and PR #362's fork 2: how often the trap's
-## start falls back to the along-her-street `beside_distance()` draw — a street that runs
-## sideways, with no crossing street near enough for a clear run above or below — rather than the
-## preferred above-or-below draw. Not a suite: it prints a rate rather than asserting one, so it
-## lives under `tests/probes/`, where the runner never discovers it, and runs only by name:
+## Measurement probe for how often the trap's start falls back to the along-her-street
+## `beside_distance()` draw — a street that runs sideways, with no crossing street near enough for
+## a clear run above or below — rather than the preferred above-or-below draw
+## (`ResistanceDirector._draw_arrival_position()`'s own doc and `docs/EVENTS.md`'s rows for
+## `robber_giving_chase`/`van_guard_giving_chase`). Not a suite: it prints a rate rather than
+## asserting one, so it lives under `tests/probes/`, where the runner never discovers it, and runs
+## only by name:
 ##
 ##     tools/test.sh probes/m137_trap_arrival.gd
 ##
 ## **The rig.** A real city and `ResistanceDirector` per seed (`CityGenerator.generate(seed)`),
-## carried to exactly the point a real handover reaches it: day 6's mark touched so the yeller
-## perform is active (`_on_contact_completed(1)`, the shape `tests/test_resistance.gd`'s
-## `_director_on_the_yeller_perform()` builds), day 7's mark touched so the van's perform is
-## active (`_on_contact_completed(3)`, `_director_on_the_van_perform()`'s shape). From there
-## `_draw_arrival_position()` — the same private call `_set_the_trap_on_her()` makes at the
-## handover — is asked directly with the director's own `_rng`, so the draw is exactly the one a
-## real handover would make on that seed, without spawning the event or writing to telemetry.
+## carried to exactly one handover per seed rather than to every look-alike she could have handed
+## the note to: day 6's mark touched so the yeller perform is active (`_on_contact_completed(1)`,
+## the shape `tests/test_resistance.gd`'s `_director_on_the_yeller_perform()` builds), day 7's mark
+## touched so the van's perform is active (`_on_contact_completed(3)`,
+## `_director_on_the_van_perform()`'s shape); `contact_position()` then reads back the one
+## look-alike that step reached. From there `_draw_arrival_position()` — the same private call
+## `_set_the_trap_on_her()` makes at the handover — is asked directly with the director's own
+## `_rng`, so the draw is exactly the one a real handover would make on that seed, without spawning
+## the event or writing to telemetry.
 ##
 ## Counted over `SEEDS_TO_SWEEP` seeds for each of the two rows, since one city says nothing
 ## about a rate — the whole reason the figure needed measuring rather than eyeballing.

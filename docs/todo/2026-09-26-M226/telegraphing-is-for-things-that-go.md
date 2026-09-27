@@ -10,6 +10,7 @@ the day** (`hard_fail`) *("okay that sounds good -- I was thinking fire truck co
 you convinced me"; statement 24, the orchestrator's proposal agreed to)*, so the fire truck
 and the day-13 column, which PR #372 warns first, stop telegraphing and simply drive up the
 road; the cyclist and the lethal pursuers (`charging_dog`, `alley_robbery`, `door_guard`,
-`masked_pursuer`) keep it, while `alley_mouse` and `pigeon_flock`, pursuers that cannot end
+`masked_pursuer`, the resistance's own `robber_giving_chase` and `van_guard_giving_chase` from
+PR #362, M137) keep it, while `alley_mouse` and `pigeon_flock`, pursuers that cannot end
 the day, stop, and so do `police_patrol`, the map-placed `military_convoy` and the finale's
 trucks, none of which can end the day.

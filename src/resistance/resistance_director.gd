@@ -336,14 +336,11 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 ## (`task_event_id` "homeless_yeller") and the van (`"delivery_van"`), the two tasks named at the
 ## keyboard — *"spawn the robber in pursuing mode offscreen when she interacts with the yeller"*
 ## for the first, PLAYTEST-144 statement 15 for the second: "After the van (day 7) a guard chases
-## her; after the man shouting, the robber, which is fine only if he starts off screen." An earlier
-## cut of this PR had widened this to every perform step whose contact rides on a row — the burnt
-## shell and a roadblock besides — which nobody had asked for; a semantic review of this PR
-## (github.com/JosuaKrause/nappy/pull/362#pullrequestreview-5326113448) caught it, and the player's
-## answer sends those two back to their waiting guard, the smallest reading. **Not the neighbor**,
-## whose task has never been guarded — they are walking home, and a guard at the spot they set out
-## from would guard nothing — and never a chalk mark, a bare-point task, the burnt shell, a
-## roadblock or the last night, whose robber still waits at the contact (`_maybe_set_a_trap()`).
+## her; after the man shouting, the robber, which is fine only if he starts off screen." **Not the
+## neighbor**, whose task has never been guarded — they are walking home, and a guard at the spot
+## they set out from would guard nothing — and never a chalk mark, a bare-point task, the burnt
+## shell, a roadblock or the last night, whose robber still waits at the contact
+## (`_maybe_set_a_trap()`).
 static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 	return step != null and step.task_event_id in ["homeless_yeller", "delivery_van"]
 

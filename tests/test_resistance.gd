@@ -1151,10 +1151,9 @@ func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t) -> void:
 		t.check(director._trap == null, "and nobody is sent after her before the handover")
 		director.free())
 
-## *(PLAYTEST-144, statement 15, the player's answer once a semantic review caught an earlier cut
-## of this PR widening the trap to every row-riding task: "Of 11 ... the burnt shell and the
-## roadblock go back to their waiting guard as the smallest reading".)* Both are guarded exactly
-## where they wait, like a chalk mark, and handing either over sends nobody after her.
+## *(PLAYTEST-144: "the burnt shell and the roadblock go back to their waiting guard as the
+## smallest reading".)* Both are guarded exactly where they wait, like a chalk mark, and handing
+## either over sends nobody after her.
 func _test_the_burnt_shell_and_the_roadblock_keep_a_waiting_guard(t) -> void:
 	_build_city(t)
 	var saved_scars := GameState.scars.duplicate()
@@ -1237,12 +1236,11 @@ func _is_really_on_screen(t, her: Vector2, at: Vector2) -> bool:
 ## line, never waiting, and coming at her from the first frame he is stepped, with a clear run at
 ## her so he actually arrives rather than standing against a wall.
 ##
-## **Swept over `RULE_SEEDS` cities rather than trusted on one** — a semantic review of this PR
-## found the derived badge-line arithmetic asserted but never checked against the game's own real
-## screen test, so this now also asks `DangerEdge.is_on_screen()`, the exact rotation-aware
-## predicate `ResistanceDirector.set_sight()` is wired to in play, whether the spawn point would
-## actually render — not only whether the badge-line formula says it should not. Every seed's
-## handover replays to the same place.
+## **Swept over `RULE_SEEDS` cities rather than trusted on one**, and checked against the game's
+## own real screen test rather than only the derived badge-line arithmetic: this also asks
+## `DangerEdge.is_on_screen()`, the exact rotation-aware predicate `ResistanceDirector.set_sight()`
+## is wired to in play, whether the spawn point would actually render. Every seed's handover
+## replays to the same place.
 func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 	var seeds: Array[int] = [4242, 90210, 2295276695, 291862120, 314159, 555555]
 	for seed_value: int in seeds.slice(0, RULE_SEEDS):
@@ -1345,9 +1343,9 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 			if guard:
 				var start := guard.global_position
 				# Above or below her at `Tuning.TRAP_ARRIVAL_DISTANCE` by preference; on a street
-				# that runs sideways with no clear run above or below (`_draw_arrival_position()`'s
-				# own doc: measured at 27.0% of 200 seeds for this row, `tests/probes/
-				# m137_trap_arrival.gd`), he comes along her own street instead, at
+				# that runs sideways with no clear run above or below (about a quarter of
+				# handovers for this row, `_draw_arrival_position()`'s own doc; measured by
+				# `tests/probes/m137_trap_arrival.gd`), he comes along her own street instead, at
 				# `beside_distance()` — either is a legal draw, so this checks for whichever the
 				# real city actually gave him rather than assuming the common case.
 				var dist := start.distance_to(her)

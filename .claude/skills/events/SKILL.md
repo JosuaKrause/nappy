@@ -103,17 +103,21 @@ is never created closer than just off screen by its notice: with no sensible gro
 and the thing waits.
 
 **Not warned first yet: the pursuer, which M226 warns first.** A director-sited pursuer
-(`charging_dog`), whose telegraph is its stand-off approach, is still built the way it was before
-warning first; warning it first while keeping its day-3 timing is M226, the pursuing dog keeps its
-day-3 timing (`docs/TODO.md`). A patrol sent down the road and a `MAP` mover (`military_convoy`)
-are not warned first, and are not to be: under the player's rule a thing telegraphs only if it goes
-fast, can end the day and comes toward her (PLAYTEST-145, statements 19-24), and neither can end
-the day. As built they still telegraph in the world as they did before warning first — the
-patrol's `telegraph_time` 1.97s with no badge (74px/s is slower than a walk), the convoy's 4.43s
-with a badge (120px/s is faster than one) — and the fairness contract checks both like every row;
-restating the cues rule and the contract for what needs telegraphing, and what these do instead, is
-M226. The fire engine and day 13's column, which this build still warns first, stop telegraphing
-under that same later rule. **Do not add a row to this exception, and do not cite it as the reason
+(`charging_dog`), whose telegraph is its stand-off approach, and the resistance's own
+director-sent pursuers (`robber_giving_chase`, `van_guard_giving_chase`), whose telegraph is a
+short notice instead, are all still built the way `charging_dog` was before warning first —
+created at once, closing under a screen-edge badge, no `PendingWarning`; warning all three first
+while keeping the dog's day-3 timing and fitting the other two to it is M226, the pursuing dog
+keeps its day-3 timing (`docs/TODO.md`). A patrol sent down the road and a `MAP` mover
+(`military_convoy`) are not warned first, and are not to be: under the player's rule a thing
+telegraphs only if it goes fast, can end the day and comes toward her (PLAYTEST-145, statements
+19-24), and neither can end the day. As built they still telegraph in the world as they did before
+warning first — the patrol's `telegraph_time` 1.97s with no badge (74px/s is slower than a walk),
+the convoy's 4.43s with a badge (120px/s is faster than one) — and the fairness contract checks
+both like every row; restating the cues rule and the contract for what needs telegraphing, and what
+these do instead, is M226. The fire engine and day 13's column, which this build still warns first,
+stop telegraphing under that same later rule. **Do not add a row to this exception, and do not cite
+it as the reason
 something else is not warned first.** What stands in the way of it is `docs/EVENTS.md`,
 "Everything arrives from off screen".
 
