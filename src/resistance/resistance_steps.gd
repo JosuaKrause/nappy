@@ -293,7 +293,7 @@ static func _build() -> Array[Step]:
 		# Day 9 · cross a named region door — one place, red arrow. The districts close that
 		# morning (`Tuning.REGION_WALL_FIRST_DAY`) and this is the day she finds out whether a
 		# stroller gets through one.
-		_mark(7, "Another mark", 9, "Cross at the district door. Find out if it lets a stroller through."),
+		_mark(7, "Another mark", 9, "Cross at this district door. See if they let you through."),
 		_perform(8, "The crossing", 9, "", [], true, TargetKind.DOOR, false,
 				"the district door"),
 
