@@ -393,11 +393,14 @@ def is_assignment: test("^[A-Za-z_][A-Za-z0-9_]*=");
 # their own options, whether written bare or as a path (`/usr/bin/env`), and
 # after the shell's reserved words `do`, `then`, `else`, `elif`, `if`, `while`, `until`, `{` and `!`
 # a command starts too -- `timeout` alone also takes one bare positional word (the duration) before
-# its command, which `after_options` does not skip on its own since it is not `-`-prefixed.
+# its command, which `after_options` does not skip on its own since it is not `-`-prefixed. A
+# command word matches in any case, as a path's last part (this Mac's disk is case-insensitive, so
+# `ENV` runs env); a reserved word matches only as the shell spells it, since `If` is not `if`.
 def wrapper_words: ["bash", "sh", "env", "timeout", "xargs", "nice", "nohup", "sudo", "command", "watch",
-                     "stdbuf", "caffeinate", "time", "exec", "eval", "do", "then", "else", "elif", "if", "while", "until", "{",
-                     "!"];
-def is_wrapper_word($x): (wrapper_words | index($x | last_part)) != null;
+                     "stdbuf", "caffeinate", "time", "exec", "eval"];
+def reserved_words: ["do", "then", "else", "elif", "if", "while", "until", "{", "!"];
+def is_wrapper_word($x):
+  ((reserved_words | index($x)) != null) or ((wrapper_words | index($x | last_part)) != null);
 
 # For every word, the wrapper word it follows within its command (null before any), which owns
 # the options read after it. One pass.
@@ -578,9 +581,11 @@ def starts_command($w; $t; $j; $n):
 # (`late_field`), which may be another call's flag, counts as a write even under a GET; a field
 # right after a quoted `--jq '.a | .b'` is still this call's and reads, and so does a GraphQL
 # read's variable after one. A non-GET method in the same place is late too, so under a GraphQL
-# read, whose own method is always POST, a late field or method is a write. The word `api` inside
-# a `--jq` filter's own string (`select(test("api"))`) reads as another call's too, so a field after
-# it denies: a false deny, the safe direction.
+# read, whose own method is always POST, a late field or method is a write. The word `api` as a
+# word of its own inside a quoted argument reads as another call's too, so a field after it
+# denies: inside a `--jq` filter's own string (`select(test("api"))`), and inside a GraphQL query
+# (`query='query($n:Int!){ repository(owner: "a", name: "api") { ... } }' -F n=1`). Both are false
+# denies, the safe direction.
 def gh_api_method($m):
   if (.crossed_at != null) and (($m | ascii_downcase) == "get") then .
   else .method = $m | (if .other_call then .late_field = true else . end) end;

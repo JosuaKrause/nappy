@@ -1512,6 +1512,15 @@ assert_write_guard "heredoc prose: 'if tools/land-prs.sh is named' -> deny (acce
     "cat > m.txt <<'EOF'
 if tools/land-prs.sh is named, it is read.
 EOF"
+# A reserved word matches only as the shell spells it, so capitalised prose is not one.
+assert_write_guard "heredoc prose: 'If tools/land-prs.sh fails, rerun it.' -> allow" allow \
+    "cat > m.txt <<'EOF'
+If tools/land-prs.sh fails, rerun it.
+EOF"
+assert_write_guard "heredoc prose: 'Then tools/prune-merged.sh cleans up.' -> allow" allow \
+    "cat > m.txt <<'EOF'
+Then tools/prune-merged.sh cleans up.
+EOF"
 assert_write_guard "time tools/prune-merged.sh -> deny" deny 'time tools/prune-merged.sh x'
 assert_write_guard "exec tools/prune-merged.sh -> deny" deny 'exec tools/prune-merged.sh x'
 assert_write_guard "exec -a name tools/prune-merged.sh -> deny" deny 'exec -a name tools/prune-merged.sh x'
