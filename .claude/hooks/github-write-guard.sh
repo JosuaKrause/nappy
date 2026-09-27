@@ -17,7 +17,9 @@
 # the running agent's own, a GraphQL merge mutation under a reviewer role, and a wrapper inside a
 # quoted script whose `--` is spelled with escapes (`\"--\"`, `\-\-`) are accepted gaps, each with
 # an example in
-# `docs/decisions/2026-09-27-tall-egret.md`'s "Accepted gaps" paragraph.
+# `docs/decisions/2026-09-27-tall-egret.md`'s "Accepted gaps" paragraph. So is an option argument
+# with a space in it under a third level of quoting (an escaped quote inside a quoted string
+# inside a quoted script, `python3 -c 'os.system("git -C \"/x y\" push")'`), which is not grouped.
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
 # unless they carry `--abort`/`--quit`; `merge`/`rebase` unless `--abort`/`--no-commit`/
@@ -39,7 +41,10 @@
 # `tools/agent-status.sh`'s `gh pr view`, is not on this list), and only when its name is in
 # command position (the first word of a command, past any `NAME=value` assignment or a wrapper
 # word's own options -- `bash`/`sh`/`env`/`timeout`/`xargs`/`nice`/`nohup`/`sudo`/`command`/`watch`,
-# `timeout` alone also taking one bare duration -- never where its name is merely a read's argument
+# `timeout` alone also taking one bare duration, and the argument of a wrapper option that takes
+# one (`sudo -u root`, `nice -n 10`, `timeout -s KILL`, `xargs -n 1`) skipped with it; the script
+# after `bash -c`/`sh -c` is a command of its own, so its first word is in command position too --
+# never where its name is merely a read's argument
 # (`cat`, `sed`, `git log --`/`diff --`/`show`, `rg`)), and, for `release.sh`, only with its own
 # `push` argument, for `land-prs.sh`/`update-pr.sh`, only without their own `--dry-run`.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
@@ -79,8 +84,13 @@
 # cheaper than the failure mode of a miss (a post lands under the player's own account again,
 # which is the whole thing this rule exists to stop). So this reads the command's raw text, quotes
 # and backslashes stripped before it is split into words, and a mention (a write's name inside an
-# echo, a commit message, a code comment) denies exactly like a real invocation would. Quotes are
-# still read for one thing first: a separator inside them (`--jq '.a | .b'`, `-f body='a; b'`, a
+# echo, a commit message, a code comment) denies exactly like a real invocation would. Each word
+# still remembers which shell word it came from, and which quoted word inside a quoted script, so
+# an option's argument is skipped whole however it is quoted, escaped or joined by a comma: `git
+# -C "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh patch push` and `bash -c 'git
+# -C "/x y" push'` all reach the push. When the reading is unsure (below), the same command is
+# also read word by word, the way it would be with no quotes at all, and a write either way
+# denies. Quotes are still read for one more thing first: a separator inside them (`--jq '.a | .b'`, `-f body='a; b'`, a
 # `(` in an inline GraphQL query) is soft -- it still splits words, so a command inside `bash -c
 # "..."` is still found, but it neither ends a `gh api` call's flags, so a write flag after the
 # quoted argument is seen, nor ends the exemption of a wrapper standing outside the quotes, so
@@ -168,36 +178,63 @@ def named($name): last_part == $name;
 # a quote that would soften every later separator and stretch a wrapper's exemption to the end of
 # the command. Its words are still split and read, so a write named in a comment denies as a
 # mention, and a separator in it stays hard (`# fine; git push` after a wrapped command denies).
+#
+# Every break the split below makes inside one shell word is marked as glue rather than a space:
+# whitespace, a comma or a bracket inside quotes or behind a backslash, the spaces around a soft
+# separator, and an unquoted comma or bracket (which the shell never splits on, though the split
+# does, for a Python list's sake). The words come out the same, but `leveled_parts` can then tell
+# which of them belong to one shell word, so a quoted option argument with a space in it (`git -C
+# "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh ... push`) is skipped whole. The
+# glue is U+0004, or U+0005 inside a second level of quotes within the first (a `"..."` inside
+# `'...'`, a `'...'` or `\"...\"` inside `"..."`), so a script in quotes (`bash -c 'git -C "/x y"
+# push'`) groups its own quoted arguments the same way.
 def sep_codepoints: [59, 38, 124, 40, 41, 96, 10];
 def word_edge_codepoints: [32, 9, 10, 34, 39];
 def comment_start_codepoints: [32, 9, 10, 59, 38, 124, 40, 41];
+def glue_codepoints: [32, 9, 44, 91, 93];
+# Membership in each set above as an array indexed by code point, so a character's class is one
+# lookup rather than a search of the set on every character.
+def codepoint_table($set): [range(128) as $c | ($set | index($c)) != null];
 def mark_soft_separators:
-  [foreach (explode + [3])[] as $c
-      ({q: 0, esc: false, prev: null, prev_esc: false, p2: null, p3: null, joined: false, emit: []};
+  codepoint_table(sep_codepoints) as $is_sep
+  | codepoint_table(glue_codepoints) as $is_glue
+  | codepoint_table([44, 91, 93]) as $is_list_mark
+  | codepoint_table(word_edge_codepoints) as $is_edge
+  | codepoint_table(word_edge_codepoints + sep_codepoints) as $is_edge_or_sep
+  | codepoint_table(comment_start_codepoints) as $is_comment_start
+  | [foreach (explode + [3])[] as $c
+      ({q: 0, iq: false, esc: false, prev: null, prev_esc: false, p2: null, p3: null, joined: false,
+        emit: []};
       .prev as $prev
       | .esc as $escaped
+      | (if .iq then 5 else 4 end) as $g
       | (if .q == 4 then [$c]
-         elif .esc and .q == 3 and $c == 110 then [32, 1, 32]
-         elif (.esc or .q != 0) and ((sep_codepoints | index($c)) != null) then [32, 1, 32]
+         elif .esc and .q == 3 and $c == 110 then [$g, 1, $g]
+         elif (.esc or .q != 0) and $is_sep[$c] then [$g, 1, $g]
+         elif (.esc or .q != 0) and $is_glue[$c] then [$g]
+         elif $is_list_mark[$c] then [4]
          else [$c] end) as $out
       | .p3 as $p3
       | ((.esc | not) and .q != 0 and .q != 4 and .prev == 45 and .p2 == 45
-         and ($p3 == null or ((word_edge_codepoints | index($p3)) != null))
-         and (((word_edge_codepoints + sep_codepoints) | index($c)) != null)) as $quoted_dashes
+         and ($p3 == null or $is_edge[$p3]) and $is_edge_or_sep[$c]) as $quoted_dashes
       | if $c == 3 then .emit = (if .esc or (.q | IN(1, 2, 3)) then [3] else [] end)
         elif .q == 4 then (if $c == 10 then .q = 0 else . end) | .emit = $out
         elif .esc and $c == 10 and .q != 3 then .esc = false | .emit = [] | .joined = true
-        elif .esc then .esc = false | .emit = $out
+        elif .esc then
+          .esc = false | .emit = $out | (if .q == 2 and $c == 34 then .iq = (.iq | not) else . end)
         elif $c == 92 and .q != 1 then .esc = true | .emit = [$c]
         elif .q == 0 and $c == 35
-             and ($prev == null or ((comment_start_codepoints | index($prev)) != null))
+             and ($prev == null or $is_comment_start[$prev])
         then .q = 4 | .emit = [$c]
         elif .q == 0 and $c == 39 then
           .q = (if .prev == 36 and (.prev_esc | not) then 3 else 1 end) | .emit = [$c]
         elif .q == 0 and $c == 34 then .q = 2 | .emit = [$c]
-        elif (.q == 1 or .q == 3) and $c == 39 then .q = 0 | .emit = [$c]
-        elif .q == 2 and $c == 34 then .q = 0 | .emit = [$c]
-        else .emit = $out
+        elif (.q == 1 or .q == 3) and $c == 39 then .q = 0 | .iq = false | .emit = [$c]
+        elif .q == 2 and $c == 34 then .q = 0 | .iq = false | .emit = [$c]
+        else
+          .emit = $out
+          | (if ((.q == 1 or .q == 3) and $c == 34) or (.q == 2 and $c == 39)
+             then .iq = (.iq | not) else . end)
         end
       | (if $quoted_dashes then .emit = [2] + .emit else . end)
       | if .joined then .joined = false | .prev = .p2 | .p2 = .p3 | .p3 = null | .prev_esc = false
@@ -226,6 +263,21 @@ def split_words:
   | swap("("; " ( ") | swap(")"; " ) ") | swap("`"; " ` ") | swap("\n"; " \n ")
   | split(" ") | map(select(length > 0));
 
+# Splits every word at its glue into parts, each with a level: 0 for the first part of a shell
+# word, 1 for a later part of it, 2 for a later part inside a second level of quotes. The parts,
+# in order, are exactly the words a split at every glue would give.
+def leveled_parts:
+  [.[]
+   | if (contains("\u0004") or contains("\u0005")) | not then {w: ., c: 0}
+     else
+       [split("\u0004") | to_entries[] | .key as $j
+        | .value | split("\u0005") | to_entries[]
+        | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end)}]
+       | map(select(.w | length > 0))
+       | (if length > 0 then .[0].c = 0 else . end)
+       | .[]
+     end];
+
 def is_sep: IN(";", "&", "|", "(", ")", "`", "\n", "\u0001");
 def is_hard_sep: IN(";", "&", "|", "(", ")", "`", "\n");
 
@@ -247,17 +299,64 @@ def takes_argument:
 # every start runs to the end of the chain, a cost quadratic in its length.
 def resolve: until(. as $p | all(range(length); $p[$p[.]] == $p[.]); . as $p | map($p[.]));
 
+# The options each wrapper word takes with a separate argument, so the word after `sudo -u`,
+# `nice -n`, `timeout -s` or `xargs -n` is skipped as that argument rather than taken for the
+# command; `bash -c`/`sh -c` is not among them, since the word after `-c` is the script, whose
+# own first word is in command position (`bash -c 'tools/prune-merged.sh x'`), and neither is
+# `env -S`, whose argument is the command line itself.
+def wrapper_argument_options:
+  {sudo: ["-u", "-g", "-h", "-p", "-C", "-D", "-R", "-r", "-t", "-T", "-U", "--user", "--group",
+          "--host", "--prompt", "--close-from", "--chdir", "--chroot", "--role", "--type",
+          "--other-user", "--command-timeout"],
+   env: ["-u", "-C", "-P", "--unset", "--chdir"],
+   nice: ["-n", "--adjustment"],
+   timeout: ["-s", "-k", "--signal", "--kill-after"],
+   xargs: ["-n", "-I", "-L", "-P", "-s", "-d", "-E", "-a", "--max-args", "--max-lines",
+           "--max-procs", "--max-chars", "--delimiter", "--eof", "--arg-file"],
+   watch: ["-n", "--interval"],
+   bash: ["-o", "-O", "--rcfile", "--init-file"],
+   sh: ["-o", "-O"]};
+# For every index, the first index after it whose part starts a word at its own level or an
+# outer one: `.z` for a level-0 option (the next shell word), `.o` for a level-1 one (the next word
+# of a script in quotes). One pass from the end.
+def word_ends($lv):
+  ($lv | length) as $n
+  | [foreach range($n - 1; -1; -1) as $p ({z: $n, o: $n, out: null};
+       .out = {z, o}
+       | (if $lv[$p] == 0 then .z = $p else . end)
+       | (if $lv[$p] <= 1 then .o = $p else . end);
+       .out)]
+  | reverse;
+
 # For every index in the word array (and one past its end), the index of the first word from there
-# on that is not a leading `-`-prefixed option (or that option's own separate argument).
-def options_table:
+# on that is not a leading `-`-prefixed option (or that option's own separate argument). With
+# levels (`$lv`), an option and its argument are each skipped as a whole word at the option's own
+# level, so `-C "/x y"` is two words, not three; with `$lv` null every part is a word of its own,
+# which is how an unsure command is also read (see `findings`).
+#
+# With `$owners` (see `wrapper_owners`), the options read are a wrapper's own rather than git's
+# and gh's: which of them take a separate argument depends on the wrapper they follow. `$g` is
+# `{lv, ends}` (the levels and their `word_ends`, built once per command) or null.
+def options_table($g; $owners):
   . as $w
   | length as $n
-  | [range($n) as $i
+  | ($g.lv) as $lv
+  | ($g.ends) as $ends
+  | def word_end($l; $p):
+      if $ends == null or $p >= $n then $p + 1
+      elif $l == 0 then $ends[$p].z elif $l == 1 then $ends[$p].o else $p + 1 end;
+    [range($n) as $i
      | $w[$i] as $x
      | if ($x | startswith("-")) | not then $i
-       elif $x | takes_argument then ([$i + 2, $n] | min)
-       else $i + 1 end]
-  + [$n]
+       else
+         ($lv[$i] // 0) as $l
+         | word_end($l; $i) as $e
+         | (if $owners == null then ($x | takes_argument)
+            else (wrapper_argument_options[$owners[$i] // ""] // []) | index($x) != null end) as $arg
+         | (if $arg and $e < $n then word_end($l; $e) else $e end)
+         | if . > $n then $n else . end
+       end]
+    + [$n]
   | resolve;
 def after_options($t; $i): $t.ao[$i] // $i;
 
@@ -273,22 +372,36 @@ def is_assignment: test("^[A-Za-z_][A-Za-z0-9_]*=");
 def wrapper_words: ["bash", "sh", "env", "timeout", "xargs", "nice", "nohup", "sudo", "command", "watch"];
 def is_wrapper_word($x): (wrapper_words | index($x)) != null;
 
+# For every word, the wrapper word it follows within its command (null before any), which owns
+# the options read after it. One pass.
+def wrapper_owners:
+  [foreach .[] as $x (null; if $x | is_sep then null elif is_wrapper_word($x) then $x else . end)];
+
 # For every index (already known to be in command position), the index of the real command word:
 # skips any run of assignments and wrapper words (with the wrapper's own options, and `timeout`'s
 # own duration argument), so `FOO=1 tools/release.sh`, `env FOO=1 tools/prune-merged.sh`, `timeout
 # 60 tools/land-prs.sh` and `bash -x tools/prune-merged.sh` all land on the script name, not on the
-# assignment, the option or the duration. A table, like `options_table`.
-def command_table($ao):
+# assignment, the option or the duration. A table, like `options_table`, and with levels each
+# of those is skipped as a whole shell word (`FOO="a b"`, `timeout "1 m"`).
+def command_table($ao; $g):
   . as $w
   | length as $n
-  | [range($n) as $i
+  | ($g.lv) as $lv
+  | ($g.ends) as $ends
+  | def word_end($p):
+      if $ends == null or $p >= $n then $p + 1
+      else ($lv[$p]) as $l
+        | if $l == 0 then $ends[$p].z elif $l == 1 then $ends[$p].o else $p + 1 end
+      end;
+    [range($n) as $i
      | $w[$i] as $x
-     | if ($x | contains("=")) and ($x | is_assignment) then $i + 1
+     | if ($x | contains("=")) and ($x | is_assignment) then word_end($i)
        elif is_wrapper_word($x) then
-         ($ao[$i + 1] // $n) as $after
-         | (if ($x | last_part) == "timeout" and $after < $n then $after + 1 else $after end)
-       else $i end]
-  + [$n]
+         ($ao[word_end($i)] // $n) as $after
+         | (if ($x | last_part) == "timeout" and $after < $n then word_end($after) else $after end)
+       else $i end
+     | if . > $n then $n else . end]
+    + [$n]
   | resolve;
 def command_word($t; $i): $t.cw[$i] // $i;
 
@@ -579,31 +692,67 @@ def is_merge_like($reason):
 # ended: a `gh api` before it is scanned bounded (see `detect_gh_api`). Every run of options,
 # assignments and wrapper words, and every script's `push`/`--dry-run`, is read from the tables in
 # `$t`, built once, so no word is walked from more than once however the command is built.
-def findings($w; $unsure):
-  ($w | length) as $n
+# The first of two hits that names a write, else the first; the second is computed only when the
+# first names none.
+def either(a; b):
+  a as $x
+  | if $x != null and $x.reason != null then $x
+    else (b as $y | if $y != null and $y.reason != null then $y else $x end) end;
+#
+# Command position is where any of up to four tables puts it: past a wrapper, its options read
+# as git's and gh's (`cw`) and as the wrapper's own (`cw2`), each grouped by shell word (`$t`)
+# and, when the reading is unsure, also word by word (`$tp`).
+def command_words($t; $tp; $i):
+  [command_word($t; $i)]
+  + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)
+  + (if $tp == null then [] else [command_word($tp; $i), ($tp.cw2[$i] // $i)] end);
+def findings($w; $levels; $unsure):
+  # Levels that are all 0 group nothing, and the plain reading would be the same one again.
+  (if $levels | any(. > 0) then $levels else null end) as $lv
+  | ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
-  | ($w | options_table) as $ao
-  | {ao: $ao, cw: ($w | command_table($ao)), sw: ($w | script_table)} as $t
+  # A command with no wrapper word needs no table of wrapper options.
+  | (if any($w[]; is_wrapper_word(.)) then $w | wrapper_owners else null end) as $owners
+  | (if $lv == null then null else {lv: $lv, ends: word_ends($lv)} end) as $g
+  | ($w | options_table($g; null)) as $ao
+  | {ao: $ao, cw: ($w | command_table($ao; $g)),
+     cw2: (if $owners == null then null else $w | command_table($w | options_table($g; $owners); $g) end),
+     sw: ($w | script_table)} as $t
+  | (if $unsure and $lv != null
+     then ($w | options_table(null; null)) as $ao0
+       | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null))
+       | .cw2 = (if $owners == null then null
+                 else $w | command_table($w | options_table(null; $owners); null) end)
+     else null end) as $tp
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,
-     cmd_word_index: (command_word($t; 0)), out: [], reviewer_push: false, scanned_to: -1}
+     cmd_words: command_words($t; $tp; 0), out: [], reviewer_push: false, scanned_to: -1}
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
-      | (detect_wrapper($w; $t; $state.i; $n)) as $wrap
-      | ($state.i == $state.cmd_word_index) as $cmd_pos
+      | (detect_wrapper($w; $t; $state.i; $n)
+         // (if $tp == null then null else detect_wrapper($w; $tp; $state.i; $n) end)) as $wrap
+      | (($state.cmd_words | index($state.i)) != null) as $cmd_pos
       | if $x | is_sep then
           $state
           | (if $unsure or ($x | is_hard_sep) or .wrap_inner
              then .wrap_from = null | .wrap_role = null | .wrap_inner = false else . end)
-          | .cmd_word_index = (command_word($t; $state.i + 1)) | .i += 1
+          | .cmd_words = command_words($t; $tp; $state.i + 1)
+          | .i += 1
         elif $wrap != null then
           $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role | .wrap_inner = $wrap.inner
           | .wrapped = true
-          | .cmd_word_index = (command_word($t; $wrap.next)) | .i += 1
+          | .cmd_words = command_words($t; $tp; $wrap.next)
+          | .i += 1
         else
-          (detect_git($w; $t; $state.i; $n)
-           // detect_gh($w; $t; $state.i; $n; $lm; $state.i < $state.scanned_to)
-           // detect_tool($w; $t; $state.i; $cmd_pos)) as $hit
+          ($state.i < $state.scanned_to) as $bounded
+          | ($t.ao[$state.i + 1]) as $a1
+          | (either(detect_git($w; $t; $state.i; $n);
+                    if $tp == null or $tp.ao[$state.i + 1] == $a1 then null
+                    else detect_git($w; $tp; $state.i; $n) end)
+             // either(detect_gh($w; $t; $state.i; $n; $lm; $bounded);
+                       if $tp == null or ($tp.ao[$state.i + 1] == $a1 and $w[$a1] == "api") then null
+                       else detect_gh($w; $tp; $state.i; $n; $lm; $bounded) end)
+             // detect_tool($w; $t; $state.i; $cmd_pos)) as $hit
           | if $hit == null then $state | .i += 1
             elif $hit.reason == null then $state | .i = $hit.next | .scanned_to = ($hit.scan_end // .scanned_to)
             else
@@ -661,12 +810,16 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
     else
       (swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
       | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ")) as $bare
-      | ($bare | mark_soft_separators) as $marked
+      # With no quote, backslash or `#` in it, the character pass has nothing to track: only an
+      # unquoted comma or bracket becomes glue.
+      | ($bare
+         | if test("['\"\\\\#]") then mark_soft_separators
+           else swap(","; "\u0004") | swap("["; "\u0004") | swap("]"; "\u0004") end) as $marked
       | (($marked | contains("\u0003"))
          or ($bare | drop("\\\n") | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
-      | ($marked | drop("\u0003") | split_words
-         | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
-      | (findings($w; $unsure)) as $result
+      | ($marked | drop("\u0003") | split_words | leveled_parts) as $parts
+      | ($parts | map(.w) | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
+      | (findings($w; $parts | map(.c); $unsure)) as $result
       | if ($result.out | length) == 0 then empty else $result end
     end
 end

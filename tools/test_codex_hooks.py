@@ -592,6 +592,9 @@ class CodexHooksTest(unittest.TestCase):
         ):
             cases.append((unit * ((size - len(tail)) // len(unit)) + tail, expected))
         cases.append(("cat <<EOF\n" + line * 2170 + "EOF", None))
+        # A quoted script at the search guard's bound, every -C argument quoted with a space: all
+        # four of its readings and the write guard's grouped reading run to the end.
+        cases.append(("bash -c '" + 'git -C "a b" ' * 2512 + "'; git grep -I x", None))
         for command, expected in cases:
             with self.subTest(size=len(command), expected=expected):
                 started = time.monotonic()
@@ -600,6 +603,31 @@ class CodexHooksTest(unittest.TestCase):
                 # An allowed call prints the shell reminder once per session, then nothing.
                 decision = (output or {}).get("hookSpecificOutput", {}).get("permissionDecision")
                 self.assertEqual(decision, expected)
+
+    def test_a_quoted_option_argument_is_one_word_to_both_guards(self) -> None:
+        # A -C/-c argument with a space in it is one shell word, so the word after it is the
+        # subcommand, at the top level and inside a quoted script alike; a wrapper's own
+        # argument-taking option, and the script after bash -c, leave a pushing script in command
+        # position. The wrapped push still allows.
+        wrap = "uv run python tools/agent-identity.py run codex-coder -- "
+        for command in (
+            'git -C "/x y" push',
+            "git -c 'a=b c' push",
+            'git -C "$(pwd)/my dir" push',
+            "bash -c 'git -C \"/x y\" push'",
+            "bash -c 'git -C \"/x y\" grep x'",
+            "sudo -u root tools/prune-merged.sh x",
+            "bash -c 'tools/prune-merged.sh x'",
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        for command in (wrap + 'git -C "/x y" push', "gh -R 'a b' pr view 1", "bash -c 'cat tools/prune-merged.sh'"):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                decision = (output or {}).get("hookSpecificOutput", {}).get("permissionDecision")
+                self.assertIsNone(decision)
 
     def test_a_guard_past_the_shared_budget_denies_rather_than_lets_through(self) -> None:
         # Codex lets a call through when the hook outruns its 10 seconds, so the adapter gives the

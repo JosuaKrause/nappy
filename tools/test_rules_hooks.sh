@@ -39,7 +39,10 @@
 #     full in under half the hook's 10-second timeout, and a command over
 #     32 KB holding both words is denied at once without being read
 #   - a chain of git words whose options swallow the next one (git -c git -c ..., git > git > ...),
-#     at 10 KB and at the 32 KB bound, is decided in under half the timeout too
+#     at 10 KB and at the 32 KB bound, is decided in under half the timeout too, and so is a
+#     quoted script of git -C "a b" at the bound
+#   - inside a quoted script (bash -c '...' or "..."), a -C/-c argument quoted with a space is one
+#     word and a quoted pattern holding -I is not the flag, so the search still denies
 #   - past 32 KB (too_long), one regex decides rather than the three readings: an obscured pair
 #     (g\it, g"r"ep, g$'i't, a backslash-newline between two letters) still denies, "git" alone
 #     (no "grep" anywhere) allows, and so does prose whose lines end in "g" and start with "it" or
@@ -79,7 +82,12 @@
 #     of the command (git -c git -c ..., ; env -c ; env -c ..., gh pr -R gh -R ..., a pushing
 #     script rewrapped before each repeat, a heredoc naming gh api on every line), at 16 KB and at
 #     the 64 KB bound; a gh api mentioned inside another call's scan still denies on a write flag
-#     of its own before its next separator.
+#     of its own before its next separator. An option's argument is one shell word however it
+#     is quoted, escaped or joined by a comma (git -C "/x y" push, git -c 'a=b c' push, git -c
+#     k=a,b push, FOO="a b" tools/release.sh patch push, the same inside bash -c '...', and in an
+#     unsure command), a wrapper option's argument (sudo -u, nice -n, timeout -s, xargs -n) is
+#     skipped before the command word, and the script after bash -c is a command of its own; the
+#     wrapped forms and the reads through the same wrappers still allow.
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -802,6 +810,20 @@ fi
 assert_guard "the same invocation alone is caught only by reading 3 -> deny" deny \
     'git -C "/x y" grep -i foo -- docs/'
 
+# Inside a quoted script, reading 4 keeps the script's own quoted arguments whole: a -C or -c
+# argument with a space in it, quoted with the other kind of quote or with \", is skipped as one
+# word, and a quoted pattern holding -I is not the -I flag.
+assert_guard "bash -c '...' with a double-quoted -C argument holding a space -> deny" deny \
+    "bash -c 'git -C \"/x y\" grep x'"
+assert_guard "bash -c \"...\" with an escaped-quote -C argument holding a space -> deny" deny \
+    'bash -c "git -C \"/x y\" grep x"'
+assert_guard "bash -c \"...\" with a single-quoted -c argument holding a space -> deny" deny \
+    "bash -c \"git -c 'a=b c' grep x\""
+assert_guard "bash -c '...' whose only -I is inside a quoted pattern -> deny" deny \
+    "bash -c 'git grep \"gcc -I\" x'"
+assert_guard "bash -c '...' with a quoted -C argument and a real -I -> allow" allow \
+    "bash -c 'git -C \"/x y\" grep -I x'"
+
 # $1 label  $2 expected  $3 command: assert_guard, plus a check that the hook decided it in under
 # 5 seconds, half its 10-second timeout.
 assert_guard_timed() {
@@ -833,6 +855,11 @@ assert_guard_timed "10 KB of git > git > ..., then a git grep only reading 3 cat
     "${chain_redirect_10k}; git -C \"/x y\" grep -i foo -- docs/"
 assert_guard_timed "32 KB of git > git > ..., then a guarded git grep -> allow" allow \
     "${chain_redirect_32k}; git grep -I x"
+# The same at the bound inside a quoted script, where every quoted -C argument is grouped by the
+# fourth reading and all four readings run to the end.
+chain_quoted_32k="$(printf 'git -C "a b" %.0s' $(seq 1 2512))"
+assert_guard_timed "32 KB of bash -c 'git -C \"a b\" ...', then a guarded git grep -> allow" allow \
+    "bash -c '${chain_quoted_32k}'; git grep -I x"
 
 # Past 32 KB, a text holding both words is denied without being read, even when the one
 # git grep in it is guarded; a long text without both words still allows at once.
@@ -1454,6 +1481,55 @@ if [ $((SECONDS - dense_under_start)) -lt 5 ]; then
 else
     fail "the densest command under the bound took $((SECONDS - dense_under_start)) seconds"
 fi
+# An option's argument is skipped as one shell word, however it is quoted, escaped or joined by a
+# comma, so a quoted argument with a space in it no longer shifts the subcommand onto a later
+# word: the push after it is read as the push, and wrapped it still allows.
+assert_write_guard "git -C \"/x y\" push -> deny" deny 'git -C "/x y" push'
+assert_write_guard "git -c 'a=b c' push -> deny" deny "git -c 'a=b c' push"
+assert_write_guard "git -c k=a,b push (the shell does not split on a comma) -> deny" deny 'git -c k=a,b push'
+assert_write_guard "git -C \"a;b\" push (a quoted ; in the argument) -> deny" deny 'git -C "a;b" push'
+assert_write_guard "git -C /x\\ y push (an escaped space) -> deny" deny 'git -C /x\ y push'
+assert_write_guard "git -C \"\$(pwd)/my dir\" push, an unsure command -> deny" deny 'git -C "$(pwd)/my dir" push'
+assert_write_guard "bash -c '...' with a double-quoted -C argument, then push -> deny" deny \
+    "bash -c 'git -C \"/x y\" push'"
+assert_write_guard "bash -c \"...\" with an escaped-quote -C argument, then push -> deny" deny \
+    'bash -c "git -C \"/x y\" push"'
+assert_write_guard "bash -c \"...\" with a single-quoted -c argument, then push -> deny" deny \
+    "bash -c \"git -c 'a=b c' push\""
+assert_write_guard "wrapped git -C \"/x y\" push -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git -C "/x y" push'
+assert_write_guard "wrapped git -C \"\$(pwd)/my dir\" push -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git -C "$(pwd)/my dir" push'
+assert_write_guard "wrapped, run's own --repo quoted with a space -> allow" allow \
+    "uv run python tools/agent-identity.py run --repo 'a b' claude-coder -- git push"
+assert_write_guard "gh -R 'a b' pr view, a quoted global option before a read -> allow" allow \
+    "gh -R 'a b' pr view 1"
+assert_write_guard "gh -R 'a b' pr merge -> deny" deny "gh -R 'a b' pr merge 1"
+assert_write_guard "FOO=\"a b\" tools/release.sh patch push -> deny" deny \
+    'FOO="a b" tools/release.sh patch push'
+assert_write_guard "env FOO='a b' tools/prune-merged.sh -> deny" deny "env FOO='a b' tools/prune-merged.sh x"
+assert_write_guard "timeout 'x y' tools/prune-merged.sh -> deny" deny "timeout 'x y' tools/prune-merged.sh x"
+
+# A wrapper's own options that take an argument (sudo -u, nice -n, timeout -s, xargs -n) skip
+# that argument before the command word, and the script after bash -c or sh -c is a command of
+# its own, so a pushing script there is in command position; read through the same wrappers, it
+# still allows.
+assert_write_guard "sudo -u root tools/prune-merged.sh -> deny" deny 'sudo -u root tools/prune-merged.sh x'
+assert_write_guard "nice -n 10 tools/prune-merged.sh -> deny" deny 'nice -n 10 tools/prune-merged.sh x'
+assert_write_guard "timeout -s KILL 60 tools/prune-merged.sh -> deny" deny \
+    'timeout -s KILL 60 tools/prune-merged.sh x'
+assert_write_guard "xargs -n 1 tools/prune-merged.sh -> deny" deny 'xargs -n 1 tools/prune-merged.sh < f'
+assert_write_guard "bash -c 'tools/prune-merged.sh x' -> deny" deny "bash -c 'tools/prune-merged.sh x'"
+assert_write_guard "sudo -u root bash -c 'tools/prune-merged.sh x' -> deny" deny \
+    "sudo -u root bash -c 'tools/prune-merged.sh x'"
+assert_write_guard "sudo -u root cat tools/release.sh, a read -> allow" allow 'sudo -u root cat tools/release.sh'
+assert_write_guard "bash -c 'cat tools/prune-merged.sh', a read -> allow" allow "bash -c 'cat tools/prune-merged.sh'"
+assert_write_guard "bash -c 'tools/release.sh patch', a dry run -> allow" allow "bash -c 'tools/release.sh patch'"
+assert_write_guard "timeout -s KILL 60 tools/land-prs.sh --dry-run -> allow" allow \
+    'timeout -s KILL 60 tools/land-prs.sh --dry-run 1'
+assert_write_guard "wrapped bash -c 'tools/prune-merged.sh x' -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- bash -c 'tools/prune-merged.sh x'"
+
 # $1 label  $2 expected  $3 command: assert_write_guard, plus a check that the hook decided it in
 # under 5 seconds, half its 10-second timeout.
 assert_write_guard_timed() {
@@ -1498,6 +1574,14 @@ assert_write_guard_timed "a 64 KB heredoc naming gh api on every line -> allow" 
     "cat <<EOF
 ${w_mentions_64k}
 EOF"
+# Quoted text at the bound: every quoted -C argument grouped inside a script, and one quoted word
+# of 64 KB split into its parts.
+w_chain_quoted_64k="$(printf 'git -C "a b" %.0s' $(seq 1 5027))"
+w_quoted_words_64k="$(printf 'a %.0s' $(seq 1 32650))"
+assert_write_guard_timed "64 KB of bash -c 'git -C \"a b\" ...' -> allow" allow \
+    "bash -c '${w_chain_quoted_64k}'"
+assert_write_guard_timed "a 64 KB quoted string of short words, then git push -> deny" deny \
+    "echo '${w_quoted_words_64k}'; git push origin main"
 # A gh api mentioned inside another call's scan is still read up to its own next separator, so a
 # write flag of its own there denies, and one past that separator still counts toward the first
 # call's scan.
