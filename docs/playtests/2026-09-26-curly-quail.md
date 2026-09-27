@@ -57,3 +57,11 @@ And, on the release:
 6. **`tools/agent-status.sh` reads Claude Code's transcripts under `~/.claude/projects/` even when
    run from Terminal or Codex**, which sets off macOS's "access data from other apps" prompt and
    finds nothing; that is a gap to fix. → queued at the end of this session.
+
+Told that GoatCounter stores the visit's path as `/nappy.josuakrause.com`:
+
+> "`/nappy` is for site access `nappy-` is for metrics"
+
+7. **On the counter, a path starting `/nappy` is a visit to the site, and a name starting `nappy-` is a
+   game metric.** The visit (`/nappy.josuakrause.com`) and every event (`nappy-…`) already follow it.
+   → `docs/TELEMETRY.md`.

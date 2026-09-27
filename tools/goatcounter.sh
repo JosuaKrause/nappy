@@ -27,7 +27,7 @@ usage: tools/goatcounter.sh [--help|-h] [--days N] [--start DATE] [--end DATE]
 
 Prints the nappy- GoatCounter event counts as a per-day funnel for a date range, reading the API
 key from GOATCOUNTER_TOKEN (never accepted as a flag). The site read is the game's own,
-nappy.goatcounter.com, which counts the page visit as nappy.josuakrause.com/ with sessions, so
+nappy.goatcounter.com, which counts the page visit (sent as nappy.josuakrause.com/, stored as /nappy.josuakrause.com) with sessions, so
 its count is visitors, and every event without them, so an event's count is attempts: every time
 it was sent. --site reads another; josuakrause.goatcounter.com holds only the visits and events
 from before the page counted everything on the game's site. Default range is the last 30 days;
