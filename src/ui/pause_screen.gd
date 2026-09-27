@@ -65,7 +65,11 @@ func set_touch_controls(controls: TouchControls) -> void:
 ## named a stop she can still ask for — a press within `STOP_RADIUS` of a focal point, or a mouse
 ## click on her — the same way nothing here has ever named a key: stopping still works, and the
 ## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
-const _BODY := "Tap to walk, double tap to run.\n" \
+##
+## Plain prose, not a string with its own `\n`: `_refresh_body()` breaks it onto more than one line
+## through `SentenceLines.break_for_label()`, the same helper every other screen's prose goes
+## through, so this reads exactly as it would in the source it was written in.
+const _BODY := "Tap to walk, double tap to run. " \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
@@ -85,7 +89,7 @@ func _ready() -> void:
 ## Its own function for the same reason it always was: so a test can call this again rather than
 ## reaching for a fresh scene. No longer branches on `_touch` — see `_BODY`'s own doc.
 func _refresh_body() -> void:
-	_body.text = _BODY
+	_body.text = SentenceLines.break_for_label(_BODY, _body)
 
 ## Shown on every device — there is one control scheme now, and a press sets a direction on a
 ## keyboard-and-mouse desktop exactly as it does on a phone, so the same pair of buttons is a
