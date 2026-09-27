@@ -16,6 +16,7 @@ def stats(values):
     return {
         "median": statistics.median(ordered),
         "p95": ordered[math.ceil(len(ordered) * 0.95) - 1],
+        "p99": ordered[math.ceil(len(ordered) * 0.99) - 1],
         "max": ordered[-1],
         "mean": statistics.mean(ordered),
     }

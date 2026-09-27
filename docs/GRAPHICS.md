@@ -40,6 +40,13 @@ Some visible graphics are code rather than image files:
 
 ### City ground and buildings
 
+South water uses the existing `tiles/water` atlas region on a separate `SceneryWater` canvas.
+It is absent from the static ground TileSet and composed sheet. A shader shifts the sample within
+each tile by less than a pixel, while the bulkhead, bridge and other ground stay still; its local
+clock pauses with gameplay. Roof rotors and the pipe/smoke parts likewise have separate retained
+canvases, with their pixels absent from the static layers. [Runtime bursts](evidence/m159-scenery-animation-2026-09-26/README.md)
+show all four cases and the proposed water motion.
+
 | Assets | Runtime binding and behaviour |
 |---|---|
 | The pictures named by `assets/ground_tileset.tres` | `scenes/world/city.tscn` binds this TileSet to the `Ground` layer, and `GroundTiles` chooses the source for roads, main-road lines, crossings, pavements and kerbs, alleys, open grounds, water edges and the city boundary. Each source carries its picture's baked region name (`tiles/road` for `art/tiles/road.svg`) rather than a texture, and `GroundLayers` composes the pixels out of the `ground` page; this indirect binding is why the tile filenames do not appear in the caller. `art/tiles/mountain.svg` is also repeated directly by `src/city/city_edge.gd` above the north edge. `art/tiles/{road,sidewalk,alley}_cracked_{hairline,cracked,broken}_{a,b}.svg` are eighteen further sources in the same set (ids 40–57): `GroundTiles._cracked()` swaps a plain road, sidewalk or alley tile for one of them from `Tuning.degradation_for(day)` and a fixed per-tile roll, never a kerb, line, crossing or main-road source — those keep their own markings. |

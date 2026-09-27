@@ -89,12 +89,23 @@ func _test_water_ownership(t) -> void:
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	var water := city._south_water
+	t.check(not city._ground.tile_set.has_source(GroundTiles.WATER),
+			"the static ground sheet contains no unused water source")
 	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
+	var expected: Dictionary[Vector2i, bool] = {}
+	var bridge_left := city.map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
+	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
+	for y in range(city.map.size.y + 1, city.map.size.y + City.OUTSIDE_DEPTH_TILES):
+		for x in range(-City.OUTSIDE_DEPTH_TILES, city.map.size.x + City.OUTSIDE_DEPTH_TILES):
+			if x < bridge_left or x >= bridge_right:
+				expected[Vector2i(x, y)] = true
+	var actual: Dictionary[Vector2i, bool] = {}
 	for tile in water.cells:
+		actual[tile] = true
 		t.check(city._ground.get_cell_source_id(tile) == -1,
 				"animated water has no duplicate pixel owner in the static TileMap")
-		t.check(city._border_source(tile.x, tile.y, City.OUTSIDE_DEPTH_TILES) == GroundTiles.WATER,
-				"water respects the border's corner and bridge ownership")
+	t.check(actual == expected and actual.size() == water.cells.size(),
+			"water fills the complete south band beyond the bulkhead, excluding the bridge")
 	var cells := water.cells.duplicate()
 	water._process(0.25)
 	t.check(water.elapsed > 0.0 and water.cells == cells,
