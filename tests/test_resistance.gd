@@ -3028,9 +3028,15 @@ func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
 		var van := _director(t)
 		van.start_day(7, _rng(7, "resistance"), 300.0)
 		van._on_contact_completed(3)
+		# M222, "the red arrow for the van does not end on the van": the touch point
+		# (`contact_position()`) sits at `_reachable_offset()`'s clearance beside the van's own
+		# body, where she can actually reach it — the arrow's tip is the van's body itself
+		# (`van._rider.global_position`), not that touch point.
+		t.check(van._rider != null, "the package's van is a rider, not a bare point")
 		t.check(van.red_arrow_target() != Vector2.INF
-				and van.red_arrow_target() == van.contact_position(),
-				"the package's van is one place, so it earns the arrow, exactly at the contact")
+				and van.red_arrow_target() == van._rider.global_position
+				and van.red_arrow_target() != van.contact_position(),
+				"the package's van is one place, so it earns the arrow, exactly on the van's body")
 		var task := van.current_step()
 		van._contact._complete()
 		t.check(task != null and van.red_arrow_target() == Vector2.INF,

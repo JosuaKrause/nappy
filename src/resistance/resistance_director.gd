@@ -1567,8 +1567,18 @@ func pointable_objective() -> Vector2:
 ## task is done**: the arrow is there until she has reached the place, and the world answers after
 ## that (`docs/NARRATIVE.md`: "A finished task is shown by the world and never by text"), not a pointer back at where she
 ## has just been.
+##
+## **The tip ends on the rider's own body when there is one, not on the touch point beside it**
+## (M222, "the red arrow for the van does not end on the van"): a task performed at an event sits
+## its contact at `_reachable_offset()`'s clearance from the rider, on purpose, so the touch point
+## stays where she can actually reach it — but that offset is not where the task *is*. Reads
+## `_rider.global_position` when this step has one (the van's drop, the burnt shell) and falls
+## back to `contact_position()` for a bare-point task (a door, a mast's foot, a swing, the last
+## night's front door) or the neighbor, whose own offset is zero and so already agrees with it.
 func red_arrow_target() -> Vector2:
 	var step := current_step()
 	if step == null or step.is_pickup or not step.is_one_place or _contact.is_done:
 		return Vector2.INF
+	if _rider and is_instance_valid(_rider):
+		return _rider.global_position
 	return contact_position()

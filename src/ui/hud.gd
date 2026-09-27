@@ -413,8 +413,9 @@ func set_home_guidance(showing: bool, home: Vector2) -> void:
 		_home_arrow.hide_arrow()
 
 ## The red arrow: shown from the moment a one-place task's own mark is touched until the task is
-## done, at exactly the contact's position — see `ResistanceDirector.red_arrow_target()`, the one
-## place that decides whether today's task earns it at all.
+## done, at whatever `ResistanceDirector.red_arrow_target()` answers — the task's own rider when it
+## has one (M222: the van's body, not the touch point beside it) or the bare contact point when it
+## does not. That function is the one place that decides whether today's task earns it at all.
 func set_task_guidance(showing: bool, at: Vector2) -> void:
 	if showing:
 		_task_arrow.show_toward(at)
