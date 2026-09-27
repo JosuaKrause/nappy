@@ -553,12 +553,25 @@ add_entry 2026-09-20-quiet-heron "priority: now" "quiet-heron — Older and now 
 add_entry 2026-09-22-busy-otter "priority: now" "busy-otter — Newer and now · filed 2026-09-22"
 add_entry 2026-09-01-M40 "priority: next" "M40 — Forty"
 add_entry 2026-09-01-M5 "priority: next" "M5 — Five · asked for 2026-09-01"
+add_entry 2026-09-01-able-ant "priority: next" "able-ant — Named, filed the same day as M5 · filed 2026-09-01"
 add_entry 2026-09-02-calm-fox "$(printf 'priority: next\nafter: 2026-09-25-lazy-cat')" "calm-fox — Waits · filed 2026-09-02"
 add_entry 2026-09-25-lazy-cat "priority: later" "lazy-cat — Waited on · filed 2026-09-25"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked · filed 2026-09-03"
-order="$(cd "$queue_repo" && ./tools/queue.sh | awk '{ print $1 " " $2 }' | tr '\n' ' ')"
+order="$(cd "$queue_repo" && LC_ALL=en_US.UTF-8 ./tools/queue.sh 2>/dev/null | awk '{ print $1 " " $2 }' | tr '\n' ' ')"
 check_that "queue.sh prints now newest first, the rest oldest first, and an entry behind what it waits on" \
-    '[[ "$order" == "now 2026-09-22-busy-otter now 2026-09-20-quiet-heron next 2026-09-01-M5 next 2026-09-01-M40 later 2026-09-25-lazy-cat next 2026-09-02-calm-fox parked 2026-09-03-slow-owl " ]]'
+    '[[ "$order" == "now 2026-09-22-busy-otter now 2026-09-20-quiet-heron next 2026-09-01-M5 next 2026-09-01-M40 next 2026-09-01-able-ant later 2026-09-25-lazy-cat next 2026-09-02-calm-fox parked 2026-09-03-slow-owl " ]]'
+check_that "queue.sh sorts same-day entries by name whatever the caller's locale (numbers, then words)" \
+    '[[ "$order" == *"M40 next 2026-09-01-able-ant"* ]]'
+mkdir -p "$queue_repo/docs/decisions"
+printf '# gone-bird — Built · 2026-09-04\n' > "$queue_repo/docs/decisions/2026-09-04-gone-bird.md"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nafter: 2026-09-04-gone-bird')" "slow-owl — Parked"
+(cd "$queue_repo" && ./tools/queue.sh --check)
+status=$?
+line="$(cd "$queue_repo" && ./tools/queue.sh --band parked)"
+check_that "queue.sh counts an after naming a closed entry (a record, no folder) as satisfied, shown as closed" \
+    '[[ $status -eq 0 && "$line" == *"(after 2026-09-04-gone-bird, closed)" ]]'
+rm "$queue_repo/docs/decisions/2026-09-04-gone-bird.md"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 line="$(cd "$queue_repo" && ./tools/queue.sh --band next | tail -n 1)"
 check_that "queue.sh --band prints one band, each line with its title and what it waits on" \
     '[[ "$line" == "next    2026-09-02-calm-fox  calm-fox — Waits  (after 2026-09-25-lazy-cat)" ]]'

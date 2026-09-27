@@ -76,10 +76,12 @@ record of what was said, and the records cite them.
 
 In `docs/TODO.md` and the entries under `docs/todo/`:
 
-- **Remove what got done.** A finished item's file is deleted; a finished entry's folder goes,
-  every `after:` line naming it goes, and its record is a decision under the entry's name; nothing
-  is ticked. `tools/lint.sh` names an `after:` that names no entry, and a link in `TODO.md` to a
-  folder that is gone.
+- **Remove what got done.** A finished item's file is deleted; a finished entry's folder goes and
+  its record is a decision under the entry's name; nothing is ticked. Every `after:` line that
+  `tools/queue.sh` prints as `<name>, closed` names an entry that has closed since, and goes now:
+  the pull request that closed it left the line alone so as not to edit a second entry.
+  `tools/lint.sh` names an `after:` that names neither an open entry nor a record, and a link in
+  `TODO.md` to a folder that is gone.
 - **Every entry's band is still true.** `tools/queue.sh` prints the order the bands give; an entry
   the player has since put first, or set aside, moves with a one-line edit to its `priority:`
   line, and an `after:` whose wait the entry's own text no longer states goes.

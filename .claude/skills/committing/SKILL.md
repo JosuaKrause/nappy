@@ -81,9 +81,11 @@ touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`
 the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
 `tools/new-name.sh decision --entry <name> "<title>"`, which takes `-2` and on when the entry
 already has one); **when that was the entry's last item, the entry's folder goes in the same PR**,
-and every `after:` line in another entry that names it goes with it, because the queue holds open
-work only and the entry stops being open the moment the PR merges (`tools/lint.sh` rejects an
-`after:` naming no entry, so a line left behind is a red check).
+because the queue holds open work only and the entry stops being open the moment the PR merges.
+Another entry's `after:` line naming it stays as it is: the record is what makes the wait count
+as over (`tools/queue.sh` prints it as `<name>, closed`, and the lint accepts it), so closing an
+entry never edits a second one, and the end-of-session pass (**session-cleanup**) deletes the
+line.
 
 **The queue's order is each entry's band line**, the first lines of its `README.md`
 (`priority: now|next|later|parked`, then any `after:` lines), and `tools/queue.sh` prints it.

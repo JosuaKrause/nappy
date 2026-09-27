@@ -4,9 +4,8 @@
 `<date filed>-<adjective>-<animal>` and spoken by its two words ("busy-badger"); an entry filed
 before names keeps its milestone number (`2026-09-26-M210`). Its `README.md` holds the player's
 words, the playtest links and the context, and each item is a file of its own beside it, written
-in full prose. Finishing an item deletes its file; when the last one goes, the folder goes, every
-`after:` line naming it goes, and the entry's record is written to [decisions/](decisions/) under the
-same name, in the same commit.
+in full prose. Finishing an item deletes its file; when the last one goes, the folder goes and the
+entry's record is written to [decisions/](decisions/) under the same name, in the same commit.
 Search the records (`tools/decisions.sh <noun>`) before designing anything. No ticked boxes, no
 "Done:" paragraphs, no branch names or status words in headings, here or in an entry.
 
@@ -36,10 +35,16 @@ after: 2026-09-09-M100
 
 `tools/queue.sh` prints the queue from those lines: the bands in that order, `now` newest first
 *("for "now" do reverse chronological maybe?", statement 14)* and every other band oldest first by
-the date the folder's name starts with, each entry moved to straight behind whatever its `after:`
-names. `tools/queue.sh --band now` prints one band. Moving an entry between bands edits one line of
-one file, and `tools/lint.sh` rejects an entry with no band, a band outside the four, an `after:`
-naming no entry and an `after:` cycle.
+the date the folder's name starts with. Entries filed on the same day sort by name, not by when
+they were filed: old milestone numbers in number order, then named entries by their words, and
+`now` reverses that too. An entry never prints before an open entry its `after:` names; one that
+would is held back to straight behind it. An `after:` naming an entry that has closed (its folder
+gone, its record under `decisions/`) holds nothing back and prints as `<name>, closed`, and the
+end-of-session pass deletes the line, so closing an entry never edits another.
+`tools/queue.sh --band now` prints one band. Moving an entry between bands edits one line of one
+file, and `tools/lint.sh` rejects an entry with no band, a band outside the four, an `after:`
+naming neither an open entry nor a closed one, an `after:` cycle, and a band line anywhere but the
+opening lines of the `README.md`.
 
 **A band is chosen on what the entry does to the route decision, and nothing goes lower for being a
 drawing.** *(2026-09-07: "let's remove the note about not working on graphics because it causes

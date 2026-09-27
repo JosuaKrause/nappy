@@ -24,7 +24,8 @@
 # docs/todo/, where finishing an item deletes its file; a link in docs/TODO.md to an entry
 # folder that does not exist; and an entry's band line, which tools/queue.sh --check judges (no
 # `priority:` line opening its README.md, a band outside now/next/later/parked, an `after:` naming
-# no entry, an `after:` cycle), so the band set lives in that one script.
+# neither an open entry nor a closed one's record, an `after:` cycle, a band line below the opening
+# block), so the band set lives in that one script.
 #
 # A hit is `file:line: label`, and a nonzero exit if there is at least one. The marker
 # `lint-allow` inside an HTML comment on the same line is a deliberate exception and is not
