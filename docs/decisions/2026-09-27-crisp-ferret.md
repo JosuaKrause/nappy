@@ -10,8 +10,11 @@ Godot skips that reset on a hidden node (godotengine/godot#110584). Her interpol
 pinned at the door for the whole hold, and the first frame she is shown blends from the door toward
 the far side.
 
-**Built (PR #413).** `Stroller.show_after_inspection()` resets the interpolation again after
-`visible = true`, the reset Godot honours. `tests/test_checkpoints.gd` drives a real hold through a
+**Built (PR #413).** Godot's skip reads `is_visible_in_tree()`, so every reset has to land while
+she is shown. `teleport_to()`, `show_after_inspection()` and `reset_at()` (a day that begins after
+one ended mid-hold) all reset through one helper, `_reset_interpolation_if_shown()`, and the
+camera's reset on hold entry, made while its parent is already hidden, goes through
+`_force_reset_camera_interpolation()`, which shows her for that one call. `tests/test_checkpoints.gd` drives a real hold through a
 spy subclass (`tests/stroller_interpolation_spy.gd`) and asserts the reset arrives while she is
 visible; it fails without the line. The bursts in `docs/evidence/hut-exit-frame-2026-09-27/` do not
 show the frame either way: a burst samples every 80 to 100ms and the flicker is one 33ms tick, so
