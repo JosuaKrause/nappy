@@ -7,4 +7,5 @@ after: 2026-09-13-M137
 > mark on most days. Let's always place the river at the other end of the alley"
 
 [PLAYTEST-142](../../playtests/PLAYTEST-142.md), statement 5. "rubber" and "river" are dictation for
-*robber*. M137's PR #362 touches the resistance director, so this waits for it or rides on it.
+*robber*. This rides on `ResistanceDirector._maybe_set_a_trap()`, the mark's own guard placement,
+which M137 (PR #362) leaves unchanged for a chalk mark.

@@ -335,6 +335,47 @@ const RESISTANCE_GOAL := 5
 ## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
 const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
+## How far from her a task's own trap starts (`ResistanceDirector._set_the_trap_on_her()`,
+## `EventCatalogue._robber_giving_chase()` and `_van_guard_giving_chase()`): the trap of a perform
+## step comes to her rather than waiting at the contact, awake from its first frame and off screen.
+## Shared by both rows the director can spawn, so it has to clear both their contracts, not the
+## robber's alone.
+##
+## **It is the furthest start a walker still loses from — for whichever row has the tighter catch.**
+## Walking directly away, the gap closes at `pursue_speed` less `WALK_SPEED` (130 − 92 = 38px/s) for
+## either row (`Tuning.HEAT_HUNTS_SPEED`, the same figure `_alley_robbery()` hardcodes), and each has
+## its notice plus its chase — `telegraph_time` 2.0s and `duration` 6.0s on both rows — to close it
+## to its own catch. **The van's guard catches two pixels tighter than the robber**, 28px
+## (`MASKED_MAN_REACH`, `door_guard`'s own reach) against 30px, so his row is the one this constant
+## is stated over: with half a second of the notice-plus-chase kept as margin,
+## 28 + 38 × (2.0 + 6.0 − 0.5) = **313px**. At the robber's own 30px catch the same arithmetic would
+## allow 315px, so 313px leaves the robber a hair more margin than his own row alone would need —
+## the price of one constant serving two rows is that it is stated over whichever is less forgiving.
+## Any further and a player who simply walks away outlasts whichever row is watching, which is the
+## one answer a pursuit may not accept.
+##
+## **Two floors it has to clear, and both are held by `tests/test_resistance.gd` for each row:**
+##
+## - **The screen-edge badge is up before it is on screen.** `DangerEdge` raises one only for a
+##   thing `SCREEN_MARGIN` (130 screen px, 65px of world at zoom 2) outside the view, and only once
+##   its smoothed measure of its approach has risen. So it has to start past the view's half-extent,
+##   plus the camera's lead toward it (`Stroller.CAMERA_LOOK_AHEAD`, 46px sideways and 32px
+##   vertically), plus that margin, plus the ground the gap closes while the badge rises — a figure
+##   `ResistanceDirector.badge_line()` computes per row, since it depends on the row's own
+##   `outer_radius` as well as its speed. 313px clears the vertical line and not the sideways one for
+##   either row, so the director starts it within a cone of straight above or below her; where no
+##   such start has a clear run at her, it comes along her own street from the side instead
+##   (`ResistanceDirector._draw_arrival_position()`, `beside_distance()`), and walking away outlasts
+##   it there.
+## - **Standing still, it lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after it appears.** The
+##   lunge fires at the row's own stand-off, `pursuit_standoff(130, inner)` — 108px for the robber's
+##   30px catch, 106px for the guard's 28px — so the start has to be at least stand-off plus
+##   130 × 1.5 = 303px for the robber, 301px for the guard; 313px clears both.
+##
+## Not `OUT_OF_SIGHT` (420px) plus a notice: from that far a walker escapes unless the chase ran
+## past the 6.0s `Tuning.validate_pursuit()` allows either pursuer.
+const TRAP_ARRIVAL_DISTANCE := 313.0
+
 ## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
 ## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
 ##
@@ -1806,6 +1847,31 @@ const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
 ## stand-off at `pursue_speed - WALK_SPEED` — 38px/s against the day-3 dog. Every extra pixel of
 ## stand-off therefore costs 1/38 s of chase, which is why a **narrower** stand-off is what buys a
 ## shorter one.
+##
+## **Two rows carve out this ceiling rather than fall below it: `robber_giving_chase` and
+## `van_guard_giving_chase` run `duration` at `PURSUIT_TIME × 2` (6.0s) each**, and
+## `tests/test_events_costs.gd` names both as the exception to every other pursuer's own ceiling.
+## The trade is the opposite one from the paragraph above: PLAYTEST-140, statement 2, found a long
+## telegraph itself the problem ("12.9s is a long warning to the point where nothing really happens
+## anymore"), so both rows spend the budget as a short notice (`PURSUIT_MIN_NOTICE` plus a stated
+## margin) and a long chase instead of a long notice and the 3.0s every other pursuer keeps — the
+## doubled chase is what still catches a player who walks away the instant either appears. A
+## runner sheds either row in `PURSUIT_SHAKEN_OFF`'s own 0.35s of running, never before he is
+## `PURSUIT_MIN_NOTICE` (1.5s) old — the doubled duration buys nothing there, since the sprint
+## cost above is paid only by however long she actually runs. Standing still, he catches her in
+## about 2s (`_robber_giving_chase()`'s own doc), which loses the day rather than costing meter,
+## before the doubled duration's extra seconds even begin.
+##
+## **What the doubling buys is seconds 5–8 of his life**, and a walker pays for that time in his
+## field, and, from the usual start, with the short sprint that sheds him. From the beside start
+## (Fork 2 in the decision record), the guard's 120px field never reaches a walker who left the
+## moment he appeared — his ~476px start closes to only ~172px over the whole 8.0s — and the
+## robber's 200px field reaches her only for about the last second, at its weak far edge. From
+## the usual `TRAP_ARRIVAL_DISTANCE` (313px) start above or below her, though — the rarer beside
+## start is the exception, not the rule — she is inside the robber's field from about 3s onward:
+## a 3.0s chase, every other pursuer's own ceiling, would have freed her at 5.0s, well before his
+## 30px catch at 7.4s, so the doubled 6.0s chase is what makes her keep paying his field until she
+## runs, and then pay the sprint cost above to shed him before the catch.
 const PURSUIT_TIME := 3.0
 
 ## And the least a pursuer's speed may differ from either of hers.

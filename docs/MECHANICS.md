@@ -934,7 +934,7 @@ outcomes* rather than the same outcome at two prices:
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
-| Bounded | gives up after `PURSUIT_TIME`, **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
+| Bounded | gives up after its own `duration` — `PURSUIT_TIME` for every row but two, `PURSUIT_TIME × 2` for the resistance's `robber_giving_chase` and `van_guard_giving_chase`, whose short notice (`PURSUIT_MIN_NOTICE` plus a stated margin) buys a longer chase instead of a longer wait before either exists — **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
 telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge badge

@@ -286,7 +286,12 @@ is never created closer than that, whatever she did while it waited.
 
 **Three kinds of thing that come from off screen are not warned first, and one of them — the
 pursuer — M226 warns first.** *(PLAYTEST-145, statement 7: "all offscreen events should work like
-that".)* What is built, and what stands in the way:
+that".)* **Not a fourth kind, and not a settled exception**: the resistance's own
+`robber_giving_chase` and `van_guard_giving_chase` are director-sent pursuers built the same way
+`charging_dog` is (created at once, closing under a screen-edge badge, no `PendingWarning`), so
+statement 7 and this rule's own "do not add a row to this exception" apply to them exactly as to
+`charging_dog` — M226 is what brings the dog and these two rows in, together with the timing fit
+below. What is built, and what stands in the way:
 
 - **A director-sited pursuer** (`charging_dog`, on `RUN_TAUGHT_DAY` and when the director sends it
   later) **is put in the world at once**, `Tuning.offscreen_lead()` ahead of her at its
@@ -302,9 +307,20 @@ that".)* What is built, and what stands in the way:
   default, and `charging_dog` carries 0.5s — at 222px/s closing the default buys only 44px, and
   playtest 20 measured a 1.5s chase as the shortest that ended in evasion. The further siting needs
   a longer `telegraph_time` to spend it in, or a player who only walks outlasts the row's budget:
-  `duration` stays at `Tuning.PURSUIT_TIME`, so `charging_dog`'s telegraph is 4.5s, and closing the
-  worst-case gap at the rate walking away still loses by (38px/s) takes about 7.0s, inside the 7.5s
-  the two give it.
+  `duration` stays at `Tuning.PURSUIT_TIME` — `tests/test_events_costs.gd` holds every pursuer to
+  that exact ceiling but two, tighter than `validate_pursuit`'s own — so `charging_dog`'s telegraph
+  is 4.5s, and closing the worst-case gap at the rate walking away still loses by (38px/s) takes
+  about 7.0s, inside the 7.5s the two give it.
+- **The resistance's own director-sent pursuers are the same shape today, and spend the same kind
+  of budget the other way.** `robber_giving_chase` and `van_guard_giving_chase` are the two rows
+  the cost test carves out of `charging_dog`'s own ceiling — PLAYTEST-140 found the long wait
+  itself the problem ("12.9s is a long warning to the point where nothing really happens
+  anymore"), so each keeps a short notice (`Tuning.PURSUIT_MIN_NOTICE` plus a stated margin, 2.0s)
+  and spends the rest of the budget on the chase itself, `validate_pursuit`'s longest allowed
+  `duration` (6.0s, `Tuning.PURSUIT_TIME` × 2) rather than on a longer wait before he exists — see
+  "The resistance's trap" below. These numbers stand as built until M226 fits them to the gold
+  timing alongside `charging_dog`'s own; nothing here treats the short notice as a second, accepted
+  reason they skip warning first.
 - **A patrol sent toward her on the road** (the return leg's, and a torn poster's) **is created at
   once** and telegraphs on its way in, with no badge: the cues rule gives the screen-edge badge only
   to "something lethal or faster than a walk", and a patrol is neither (slower than a walk, never
@@ -1291,6 +1307,16 @@ One row the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resi
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `neighbor` | SCRIPTED | day 1 | The neighbor down the hall, who works at the power station (`docs/NARRATIVE.md`, "What the tasks are for"): a figure in work clothes — steel-blue coveralls, a reflective band, a dark work cap — drawn in the passer-by's own five views and feet-passing frames. **Scenery, not a cost**: intensity 0 on a formal field drawn tight round the figure, mobile and therefore bodiless, walking at `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s, half hers). On every morning before day 10, `ResistanceHappenings` walks it out of her building beside her and off along her street, away from her, until the street runs out or a closure stops it, and it leaves the ordinary way; nothing points at it. **On day 10 it is walking home**: once her mark is touched, `ResistanceDirector._send_the_neighbor_home()` spawns `EventCatalogue.neighbor_heading_home()` — the same row, `stops_where_it_arrives` — on a sidewalk about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` (55s) of its own walk from her door and off screen from her, and hands it the walk home over the day's open ground as its path; the red arrow rides it. Reached first, it runs, away from her, at `departs_at` `EventCatalogue.NEIGHBOR_RUN_SPEED` (150px/s); reaching the door first, it stands there, the task is lost, and it is taken away with the raid once it is off screen. From day 11 it never appears. |
+
+### The resistance's trap — the robber and the guard sent after her
+
+Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resistance sets each
+on her at a handover, never at dawn.
+
+| id | kind | from | Behaviour |
+| --- | --- | --- | --- |
+| `robber_giving_chase` **`hard_fail`** | SCRIPTED | day 6 | **The trap of the man shouting's own task, coming to her rather than waiting at it.** *(PLAYTEST-144, statement 15, the player: "After the man shouting, the robber, which is fine only if he starts off screen." The van's own task sends `van_guard_giving_chase` below instead; the burnt shell and a roadblock keep a waiting guard.)* The moment she hands over the man shouting's note, `ResistanceDirector._set_the_trap_on_her()` spawns him off screen and he comes at her. **The alley robber, read off his row rather than copied**: the same body, 16 over a 30–200px field, 130px/s, the 30px catch, `hard_fail`, the walk-off at 100px/s. **No trigger**, so he is never waiting: his notice and his chase run from the frame he exists. **A short notice and a long chase**: 2.0s of notice, `Tuning.PURSUIT_MIN_NOTICE` and half a second, then a 6.0s chase, `Tuning.PURSUIT_TIME` × 2, the longest `validate_pursuit` allows and one of the two pursuers given it — walking away has to lose inside the two, and the notice may not be long. **Where he starts**: `Tuning.TRAP_ARRIVAL_DISTANCE` (313px, stated over the van guard's tighter catch — see that constant's own doc) above or below her, and past the line where the screen-edge badge can rise before he is on screen, which on the narrow vertical axis is 299px and holds within about 17° of straight up or down; on walkable ground a guard may stand on, with a straight walkable run at her, since he chases in a straight line. Where no start above or below has one — about a fifth of handovers (`tests/probes/m137_trap_arrival.gd`) — he comes along her own street from about 466px to her side, and there walking directly away outlasts him. **The man she just left keeps shouting, and charging her, for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205)** — longer than this row's own 2.0s notice, so his field is still live for the whole of it whichever way she answers. What that leaves her: standing still, he is on screen under a second after the badge rises, lunges from his stand-off about 1.6s after he appears and reaches her about 0.6s later, before the man would have stopped shouting on his own; walking into him he still lunges from his stand-off, and turning to run within `Tuning.PURSUIT_REACTION` of the badge gets her away; walking directly away he catches her about 7.4s after he appears; running for `PURSUIT_SHAKEN_OFF` shakes him off. Whether shouting-plus-chasing at once is more than a walker should answer is `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here. His own look, `ROBBER_GIVING_CHASE`, draws the alley robber's own pictures (only ever the lunge) and is badged by the lunge's side view, the one picture of him `ROBBER` does not already stand for — `door_guard`'s arrangement. `EventDef.validate()` refuses a pursuer with no trigger that the scheduler could place, so this shape exists only as a row nothing but a director spawns. |
+| `van_guard_giving_chase` **`hard_fail`** | SCRIPTED | day 7 | **The trap of the van's own task**, on the same terms as `robber_giving_chase` above: the moment she hands the van's package over, `ResistanceDirector._set_the_trap_on_her()` spawns him off screen at the same `Tuning.TRAP_ARRIVAL_DISTANCE` (313px), with the same no-trigger contract, the same 2.0s notice and 6.0s chase. **The roadblock's own guard, read off his row rather than copied**: the same body, 18 over a 28–120px field (`door_guard`'s own numbers, `MASKED_MAN_REACH` — 28px — the catch), `Tuning.HEAT_HUNTS_SPEED` (130px/s, identical to the robber's own speed, so nothing about the chase itself differs), `hard_fail`. His narrower 120px field (against the robber's 200px) leaves more of the approach still to close, so his own badge line sits at 305px vertically, within about 13° of straight up or down, and his own beside distance is about 476px rather than the robber's 466px — the tighter cone this leaves is why the beside fallback measures higher for this row than the robber's, about a quarter of handovers against about a fifth (`tests/probes/m137_trap_arrival.gd`). **The walk-off is the robber's**, 100px/s, rather than `door_guard`'s own (who never leaves his post): this guard, like the robber, is a stranger in the street with nowhere to be once he has lost her. His own look, `VAN_GUARD_GIVING_CHASE`, draws the same `guard_standing_*`/`guard_lunging_*` pictures as `door_guard` and `masked_pursuer`, badged by the lunge's back view, the one picture of the man neither of theirs already stands for. Caught, the loss line names what she was carrying rather than dwelling on it: "He caught up with the package still on her. They took her in." |
 
 ### The escape — the walk that is not a day
 

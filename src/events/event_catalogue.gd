@@ -164,6 +164,15 @@ static func _build() -> Array[EventDef]:
 		# resistance (`ResistanceHappenings`, `ResistanceDirector`). See "the neighbor" below.
 		_neighbor(),
 
+		# The robber a handed-over task sets on her — never rolled by the ordinary scheduler,
+		# spawned only by `ResistanceDirector` at the handover. See `_robber_giving_chase()`.
+		_robber_giving_chase(),
+
+		# The guard the van's task sets on her — same terms, never rolled by the ordinary
+		# scheduler, spawned only by `ResistanceDirector` at the handover. See
+		# `_van_guard_giving_chase()`.
+		_van_guard_giving_chase(),
+
 		# The finale — never rolled by the ordinary scheduler, placed only by `FinalePlanner` and
 		# `InteriorEvents`. See "the finale" below.
 		_finale_explosion(),
@@ -1914,6 +1923,124 @@ static func _alley_robbery() -> EventDef:
 	def.weight = 1.5
 	def.max_per_day = 4
 	def.cost = 2
+	return def
+
+## **The robber a task sets on her: the alley robber, awake from his first frame, coming at her
+## from off screen the moment she hands a task over.** *(2026-09-13, the player: "maybe spawn the
+## robber in pursuing mode offscreen when she interacts with the yeller so it runs towards her from
+## offscreen"; "we need a version of the robber that is not frozen when spawned".)* Nothing places
+## it but `ResistanceDirector._set_the_trap_on_her()`, `Tuning.TRAP_ARRIVAL_DISTANCE` (313px) from
+## her on walkable ground outside the view: `SCRIPTED` on day 0, the day nobody plays, so the roll,
+## the stream and the budget never reach it — `EventDef.validate()` refuses a pursuer with no
+## trigger on any other terms.
+##
+## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
+## (16 over 30–200px), his 130px/s, his 30px catch, his `hard_fail` and the way he walks off once
+## he has lost her. What differs is the whole of the request — **no trigger** (`pursues_within` 0),
+## so he is never `is_waiting()` and his notice and chase are clocked from the frame he exists —
+## and the split of his time between notice and chase.
+##
+## **A short notice and a long chase.** *(PLAYTEST-140, statement 2: a warning comes shortly before
+## its danger, "not so early that nothing happens by the time it does".)* `telegraph_time` is
+## `Tuning.PURSUIT_MIN_NOTICE` (1.5s), the least `Tuning.validate_pursuit()` accepts, plus half a
+## second of margin, so he may end her day 2.0s after he appears. Walking away still has to lose, so the
+## time that walking away needs is put into `duration` instead: `Tuning.PURSUIT_TIME` × 2 = 6.0s, the
+## longest chase `validate_pursuit()` allows, and `Tuning.TRAP_ARRIVAL_DISTANCE` is the furthest start
+## a walker loses from inside the 8.0s the two make. Running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s)
+## any time after the least notice ends him as it ends every chase, so the longer chase costs a
+## runner nothing; it is the cap on walking away and on standing still. He and `van_guard_giving_
+## chase` are the two pursuers whose chase is longer than `Tuning.PURSUIT_TIME`, and
+## `tests/test_events_costs.gd` names both as such.
+##
+## What that leaves her: the man she just left keeps shouting, and charging her, for
+## `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205) — longer
+## than this row's own 2.0s notice, so his field is still live for the whole of it whichever way
+## she answers. Standing still, he lunges from his stand-off about 1.6s after he appears and
+## reaches her about 0.6s later, before the man would have stopped shouting on his own; walking
+## into him, the lunge comes sooner and still at his stand-off; walking directly away, he closes
+## at 38px/s and catches her about 7.4s after he appeared; running for `PURSUIT_SHAKEN_OFF` shakes
+## him off. Whether shouting-plus-chasing at once is more than a walker should answer is
+## `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here.
+##
+## **His own look, `ROBBER_GIVING_CHASE`, drawing the alley robber's own pictures**, the way
+## `door_guard` draws a roadblock's guard: he never waits, so it is only ever the lunge, and the
+## badge is the one view of it `ROBBER` does not already stand for.
+static func _robber_giving_chase() -> EventDef:
+	var alley := _alley_robbery()
+	var def := EventDef.new()
+	def.id = "robber_giving_chase"
+	def.display_name = "Robber giving chase"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.ROBBER_GIVING_CHASE
+	def.shape = alley.shape
+	def.act_tag = 2
+	def.intensity = alley.intensity
+	def.inner_radius = alley.inner_radius
+	def.outer_radius = alley.outer_radius
+	def.telegraph_time = Tuning.PURSUIT_MIN_NOTICE + 0.5
+	def.duration = Tuning.PURSUIT_TIME * 2.0
+	def.pursues = true
+	def.pursue_speed = alley.pursue_speed
+	def.departs_at = alley.departs_at
+	def.hard_fail = alley.hard_fail
+	return def
+
+## **The guard a task sets on her: the roadblock's own guard, awake from his first frame, coming
+## at her from off screen the moment she hands the van's package over.** *(PLAYTEST-144, statement
+## 15, the player: "After the van (day 7) a guard chases her; after the man shouting, the robber,
+## which is fine only if he starts off screen.")* Nothing places it but
+## `ResistanceDirector._set_the_trap_on_her()`, on the same
+## terms as `robber_giving_chase` — `Tuning.TRAP_ARRIVAL_DISTANCE` from her on walkable ground
+## outside the view, `SCRIPTED` on day 0 so the roll, the stream and the budget never reach it.
+##
+## **The door guard, read off his row rather than copied**: his shape, his field (18 over a
+## 28–120px band — `MASKED_MAN_REACH` inside `door_guard`'s own 120px), his `hard_fail`, and
+## `Tuning.HEAT_HUNTS_SPEED` (130px/s) — the same figure `_alley_robbery()` hardcodes as the
+## robber's own `pursue_speed`, so nothing about the chase itself differs from the robber row.
+## What differs from `robber_giving_chase` is only the picture — `EventDef.Look.
+## VAN_GUARD_GIVING_CHASE`, its own look, drawn exactly like `door_guard` and `masked_pursuer`
+## (`guard_standing_*` then `guard_lunging_*`) but badged by the lunge's back view, the one
+## picture of the man neither of theirs already stands for — and the walk-off, copied from the
+## robber row rather than from `door_guard` itself:
+## `door_guard` never leaves his post, but this guard, like the robber, is a stranger in the
+## street with nowhere to be once he has lost her, so he walks off at the robber's own 100px/s
+## rather than standing where he gave up.
+##
+## **No trigger, and the same short notice and long chase as the robber row**: `pursues_within`
+## stays 0.0, so he is never `is_waiting()`; `telegraph_time` is `Tuning.PURSUIT_MIN_NOTICE` plus
+## half a second, `duration` is `Tuning.PURSUIT_TIME` × 2 — identical to `robber_giving_chase`,
+## since nothing about the notice or the chase length is the picture's to change.
+##
+## **`Tuning.TRAP_ARRIVAL_DISTANCE` is stated over this row's own catch, two pixels tighter than
+## the robber's (28px against 30px).** With the same 38px/s a walker opens on either (130px/s
+## pursue speed less `WALK_SPEED`), "a walker who leaves the moment it appears is still caught,
+## with half a second of chase to spare" only holds for both rows if the constant is measured
+## against whichever catch is tighter (see `Tuning.TRAP_ARRIVAL_DISTANCE`'s own doc); the robber
+## keeps the same contract with a hair more margin than his own row alone would need. His field is
+## also 80px narrower (120px against 200px), which only moves where the screen-edge badge can rise,
+## never the arrival distance. `tests/test_resistance.gd` holds the relationship for this row
+## rather than assuming the robber's own numbers carry over unchecked.
+static func _van_guard_giving_chase() -> EventDef:
+	var guard := _door_guard()
+	var alley := _alley_robbery()
+	var def := EventDef.new()
+	def.id = "van_guard_giving_chase"
+	def.display_name = "Van guard giving chase"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.VAN_GUARD_GIVING_CHASE
+	def.shape = guard.shape
+	def.act_tag = 2
+	def.intensity = guard.intensity
+	def.inner_radius = guard.inner_radius
+	def.outer_radius = guard.outer_radius
+	def.telegraph_time = Tuning.PURSUIT_MIN_NOTICE + 0.5
+	def.duration = Tuning.PURSUIT_TIME * 2.0
+	def.pursues = true
+	def.pursue_speed = guard.pursue_speed
+	def.departs_at = alley.departs_at
+	def.hard_fail = guard.hard_fail
 	return def
 
 ## A building goes in the night. Enormous, static, and it closes the block.

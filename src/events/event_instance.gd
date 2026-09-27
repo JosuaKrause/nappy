@@ -798,6 +798,13 @@ static func icon_for(look: EventDef.Look) -> String:
 		# The side view rather than `GUARD_LUNGING`, which is `MASKED_PURSUER`'s badge: the same man,
 		# and the one picture of his that no other look already stands for.
 		EventDef.Look.DOOR_GUARD: return str(GUARD_LUNGING_BY_VIEW["side"])
+		# The same reasoning for the same man: `ROBBER`'s badge is the lunge seen from the front,
+		# so the robber a handed-over task sets on her is badged by the one view of it no other
+		# look already stands for.
+		EventDef.Look.ROBBER_GIVING_CHASE: return str(ROBBER_LUNGING_BY_VIEW["side"])
+		# The same man again: `MASKED_PURSUER` already stands for the front (`GUARD_LUNGING`) and
+		# `DOOR_GUARD` for the side, so the guard the van's task sets on her is badged by the back.
+		EventDef.Look.VAN_GUARD_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["back"])
 		_: return ""
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
@@ -3437,7 +3444,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.UNMARKED_VAN:
 			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, UNMARKED_VAN_WHEELS_BY_VIEW,
 					VAN_VICTIM_BY_VIEW, VAN_VICTIM_BY_VIEW_B])
-		EventDef.Look.ROBBER:
+		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
 			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_LUNGING_BY_VIEW,
 					ROBBER_LUNGING_BY_VIEW_B])
 		EventDef.Look.RIOT_VAN:
@@ -3478,7 +3485,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [GUARD_STANDING])
 		EventDef.Look.IMPACT_CRATER:
 			_collect(sources, [IMPACT_CRATER])
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM, STEAM_B])
@@ -3581,7 +3588,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_roadblock(canvas)
 		EventDef.Look.UNMARKED_VAN:
 			_draw_abduction(canvas)
-		EventDef.Look.ROBBER:
+		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
 			_draw_robber(canvas)
 		EventDef.Look.RIOT_VAN:
 			# West-authored, like `unmarked_van` and `army_truck` — see `RIOT_VAN_BY_VIEW`'s own doc
@@ -3628,7 +3635,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
 		EventDef.Look.IMPACT_CRATER:
 			_draw_crater(canvas)
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE:
 			_draw_masked_pursuer(canvas)
 		EventDef.Look.STEAM:
 			_draw_simple(STEAM_B if _idle_stepping(STEAM_BILLOW_PERIOD) else STEAM, canvas)

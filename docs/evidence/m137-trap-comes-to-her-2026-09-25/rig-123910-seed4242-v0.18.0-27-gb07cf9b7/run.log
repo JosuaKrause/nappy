@@ -1,0 +1,159 @@
+nappy rig log  2026-09-26T12:39:10  version v0.18.0-27-gb07cf9b7
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.2 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.7 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 3.7 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 2.9 ms, 390 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 2.3 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 1.2 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 1.1 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 15.8 ms, 642 x 1074
+   0.0  texture  atlas page 'mother' loaded in the startup: 2.0 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 33.9 ms
+
+day 7  act 2  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 30.4 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  contact  step 3 on offer at (106,91)
+   0.0  roll     chalk mark guarded: robber 103px away (band 66-176)
+   0.0  plan     closed: roadworks h(6,10), accident h(6,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burnt_out_car x96, burst_water_main x17, busker x4, cafe_tables x33, car_accident x17, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x18, construction x39, cyclist x9, delivery_van x35, dog_walker x19, homeless_yeller x5, ice_cream_van x5, leaf_blower x10, loose_dog x10, loudspeaker x5, market_stall x39, moving_van x23, pigeon_flock x5, playground x2, police_patrol x12, poster_crew x12, reversing_lorry x8, roadblock x6, scaffolding x18, skip x19
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  contact  step 3 moved to (79,90): never seen at (106,91)
+   0.0  roll     chalk mark guarded: robber 112px away (band 66-176)
+   0.0  frame    fps 1, worst frame 246.7ms, draws 315, objects 1970, primitives 4407, process 23.93ms, physics 77.27ms
+   0.0  frame    fps 37, worst frame 25.0ms, draws 388, objects 2339, primitives 5162, process 18.12ms, physics 4.96ms
+   0.0  cross    stepped into the road at (75,86), at a zebra
+   0.0  frame    fps 76, worst frame 21.4ms, draws 312, objects 1969, primitives 4373, process 23.57ms, physics 4.63ms
+   0.0  path     onto the corridor at (75,88), after 0.0s off it
+   0.0  near     alley_robbery at (78,93), 198px, exc 0, in 0.0/s (crowd 0.0, events 0.3), sleep 1
+   0.0  contact  walked within 129px of the chalk mark at (79,90)
+   0.0  frame    fps 76, worst frame 22.2ms, draws 314, objects 1748, primitives 3931, process 21.33ms, physics 4.64ms
+   0.0  path     off the corridor at (76,89), after 0.0s on it
+   0.0  contact  step 3 seen at (79,90) after 1.0s within 150px
+   0.0  chase    alley_robbery came for her at (78,93) | exc 0, in 0.0/s (crowd 0.0, events 9.3), sleep 1
+   0.0  near     alley_robbery (telegraph) at (78,92), 108px, exc 0, in 0.0/s (crowd 0.0, events 12.6), sleep 1
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | alley_robbery 198px
+   0.0  frame    fps 79, worst frame 86.6ms, draws 327, objects 1767, primitives 4104, process 22.14ms, physics 4.57ms
+   0.0  contact  step 3 completed
+   0.0  contact  step 4 on offer at (29,30)
+   0.0  route    day 7: reached 'mark' at 4.9s (day time), 184px walked
+   0.0  near     alley_robbery at (78,91), 57px, exc 0, in 0.0/s (crowd 0.0, events 15.9), sleep 1
+   0.0  near     alley_robbery at (78,91), 30px, exc 0, in 0.0/s (crowd 0.0, events 16.0), sleep 1
+   0.0  near     alley_robbery at (78,89), 17px, exc 0, in 0.0/s (crowd 0.0, events 16.0), sleep 2
+   0.0  turn     doubled back 357°
+   0.0  frame    fps 73, worst frame 87.6ms, draws 332, objects 2048, primitives 4672, process 85.15ms, physics 4.58ms
+   0.0  near     dog_walker at (73,88), 102px, exc 0, in 0.0/s (crowd 0.0, events 18.2), sleep 2
+   0.0  path     onto the corridor at (75,88), after 0.0s off it
+   0.0  frame    fps 75, worst frame 22.4ms, draws 355, objects 2157, primitives 4842, process 22.34ms, physics 6.26ms
+   0.0  crowd    a car sounded its horn at her in the road at (75,87) | exc 0, in 0.0/s (crowd 4.9, events 23.6), sleep 2
+   0.0  path     off the corridor at (75,87), after 0.0s on it
+   0.0  cross    stepped into the road at (75,87), at a zebra
+   0.0  crowd    a car sounded its horn at her in the road at (75,87) | exc 0, in 0.0/s (crowd 6.6, events 25.2), sleep 2
+   0.0  frame    fps 70, worst frame 21.0ms, draws 434, objects 2657, primitives 5909, process 15.66ms, physics 6.60ms
+   0.0  crowd    walked into somebody at (75,84) | exc 0, in 0.0/s (crowd 38.1, events 16.0), sleep 3
+   0.0  path     onto the corridor at (75,83), after 0.0s off it
+   0.0  frame    fps 69, worst frame 24.2ms, draws 403, objects 2398, primitives 5370, process 24.19ms, physics 6.41ms
+   0.0  chase    alley_robbery stopped chasing after 0.0s — closest 0px, she ran 0.9s of it | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 3
+   0.0  cue      the mark over her head: now for 0.0s (0.7s of it on the road) | alley_robbery 98px
+   0.0  frame    fps 71, worst frame 26.4ms, draws 397, objects 2360, primitives 5258, process 24.96ms, physics 6.05ms
+   0.0  frame    fps 72, worst frame 25.7ms, draws 401, objects 2363, primitives 5315, process 23.96ms, physics 6.22ms
+   0.0  path     off the corridor at (75,75), after 0.0s on it
+   0.0  frame    fps 73, worst frame 19.8ms, draws 200, objects 2167, primitives 5046, process 15.53ms, physics 6.67ms
+   0.0  frame    fps 63, worst frame 27.9ms, draws 200, objects 2101, primitives 4965, process 25.84ms, physics 7.59ms
+   0.0  path     onto the corridor at (75,69), after 0.0s off it
+   0.0  frame    fps 62, worst frame 29.1ms, draws 387, objects 2209, primitives 5158, process 29.09ms, physics 8.05ms
+   0.0  frame    fps 59, worst frame 23.0ms, draws 383, objects 2176, primitives 5049, process 20.17ms, physics 7.30ms
+   0.0  near     police_patrol at (74,59), 183px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 5
+   0.0  ahead    cat_dash crosses 332px in front of her at (75,64)
+   0.0  frame    fps 59, worst frame 28.1ms, draws 369, objects 2212, primitives 4926, process 28.09ms, physics 7.66ms
+   0.0  path     off the corridor at (75,61), after 0.0s on it
+   0.0  path     onto the corridor at (75,59), after 0.0s off it
+   0.0  cross    stepped into the road at (75,59), at a zebra
+   0.0  frame    fps 58, worst frame 30.4ms, draws 369, objects 2450, primitives 5399, process 28.90ms, physics 7.73ms
+   0.0  frame    fps 61, worst frame 32.4ms, draws 296, objects 1802, primitives 4108, process 30.50ms, physics 8.24ms
+   0.0  near     cat_dash at (78,54), 118px, exc 0, in 0.0/s (crowd 22.1, events 14.3), sleep 6
+   0.0  ahead    poster_crew is sited 1443px ahead of her at (120,56), north of where she is at (75,55)
+   0.0  near     cat_dash at (77,54), 65px, exc 0, in 0.0/s (crowd 8.4, events 16.9), sleep 6
+   0.0  near     cat_dash at (76,54), 35px, exc 0, in 0.0/s (crowd 1.4, events 17.0), sleep 6
+   0.0  near     cat_dash at (75,54), 18px, exc 0, in 0.0/s (crowd 1.3, events 17.0), sleep 6
+   0.0  frame    fps 59, worst frame 48.2ms, draws 533, objects 2196, primitives 4800, process 17.81ms, physics 33.03ms
+   0.0  frame    fps 61, worst frame 27.8ms, draws 526, objects 2218, primitives 4772, process 27.77ms, physics 6.63ms
+   0.0  frame    fps 53, worst frame 31.6ms, draws 530, objects 2343, primitives 5048, process 31.58ms, physics 7.73ms
+   0.0  path     off the corridor at (75,45), after 0.0s on it
+   0.0  cross    stepped into the road at (75,45), at a zebra
+   0.0  frame    fps 66, worst frame 32.9ms, draws 539, objects 2315, primitives 5104, process 26.59ms, physics 6.37ms
+   0.0  frame    fps 70, worst frame 24.8ms, draws 370, objects 1743, primitives 4178, process 24.81ms, physics 7.15ms
+   0.0  path     onto the corridor at (75,41), after 0.0s off it
+   0.0  frame    fps 73, worst frame 26.5ms, draws 372, objects 1748, primitives 4209, process 24.82ms, physics 5.95ms
+   0.0  frame    fps 69, worst frame 31.6ms, draws 608, objects 2146, primitives 5111, process 29.42ms, physics 6.43ms
+   0.0  near     dog_walker at (77,33), 104px, exc 0, in 0.0/s (crowd 3.0, events 0.0), sleep 8
+   0.0  frame    fps 62, worst frame 20.9ms, draws 632, objects 2472, primitives 5689, process 16.83ms, physics 6.22ms
+   0.0  cross    stepped into the road at (73,32), at a zebra
+   0.0  frame    fps 65, worst frame 27.4ms, draws 839, objects 2820, primitives 6331, process 25.74ms, physics 7.08ms
+   0.0  frame    fps 65, worst frame 24.3ms, draws 592, objects 2370, primitives 5287, process 24.25ms, physics 6.12ms
+   0.0  ahead    cyclist comes at her from 0px in front of her at (69,32)
+   0.0  cue      edge badge: cyclist at 749px, closing 132px/s
+   0.0  frame    fps 82, worst frame 17.0ms, draws 598, objects 2378, primitives 5426, process 14.82ms, physics 5.32ms
+   0.0  frame    fps 85, worst frame 22.1ms, draws 606, objects 2517, primitives 5776, process 22.12ms, physics 5.02ms
+   0.0  cue      edge badge gone: cyclist after 0.0s, now 347px away
+   0.0  frame    fps 81, worst frame 23.5ms, draws 595, objects 2452, primitives 5472, process 22.22ms, physics 4.80ms
+   0.0  near     cyclist (telegraph) at (58,32), 89px, exc 0, in 0.0/s (crowd 2.1, events 2.1), sleep 11
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | cyclist 84px
+   0.0  near     cyclist at (59,32), 47px, exc 0, in 0.0/s (crowd 0.8, events 18.0), sleep 11
+   0.0  near     cyclist at (59,32), 23px, exc 0, in 0.0/s (crowd 0.0, events 18.0), sleep 11
+   0.0  cross    stepped into the road at (59,32), at a zebra
+   0.0  cue      the mark over her head: now for 0.0s (0.3s of it on the road) | cyclist 49px
+   0.0  frame    fps 81, worst frame 21.6ms, draws 602, objects 2456, primitives 5552, process 13.39ms, physics 5.15ms
+   0.0  frame    fps 77, worst frame 16.6ms, draws 829, objects 2908, primitives 6557, process 21.62ms, physics 4.63ms
+   0.0  frame    fps 80, worst frame 23.2ms, draws 578, objects 2495, primitives 5633, process 23.13ms, physics 4.47ms
+   0.0  frame    fps 84, worst frame 21.2ms, draws 587, objects 2619, primitives 5977, process 21.17ms, physics 4.51ms
+   0.0  near     police_patrol at (44,36), 184px, exc 0, in 0.0/s (crowd 1.7, events 2.5), sleep 13
+   0.0  frame    fps 77, worst frame 18.4ms, draws 592, objects 2612, primitives 5987, process 15.24ms, physics 5.31ms
+   0.0  near     police_patrol at (44,34), 99px, exc 0, in 0.0/s (crowd 0.0, events 9.0), sleep 13
+   0.0  path     off the corridor at (45,32), after 0.0s on it
+   0.0  cross    stepped into the road at (45,32), at a zebra
+   0.0  near     police_patrol at (44,33), 52px, exc 0, in 0.0/s (crowd 0.0, events 10.0), sleep 13
+   0.0  near     police_patrol at (44,33), 28px, exc 0, in 0.0/s (crowd 0.0, events 10.0), sleep 13
+   0.0  near     police_patrol at (44,32), 15px, exc 0, in 0.0/s (crowd 0.0, events 10.0), sleep 13
+   0.0  frame    fps 77, worst frame 23.7ms, draws 582, objects 2599, primitives 5844, process 22.34ms, physics 4.56ms
+   0.0  path     onto the corridor at (43,32), after 0.0s off it
+   0.0  path     off the corridor at (41,32), after 0.0s on it
+   0.0  frame    fps 78, worst frame 27.6ms, draws 801, objects 3008, primitives 6713, process 23.09ms, physics 4.85ms
+   0.0  near     car_accident at (38,31), 95px, exc 0, in 0.0/s (crowd 0.0, events 22.9), sleep 14
+   0.0  near     car_accident at (38,31), 51px, exc 0, in 0.0/s (crowd 0.0, events 50.0), sleep 14
+   0.0  frame    fps 76, worst frame 25.3ms, draws 567, objects 2524, primitives 5787, process 14.28ms, physics 4.93ms
+   0.0  frame    fps 73, worst frame 21.5ms, draws 541, objects 2476, primitives 5376, process 23.60ms, physics 5.14ms
+   0.0  frame    fps 66, worst frame 28.2ms, draws 543, objects 2535, primitives 5518, process 26.51ms, physics 5.72ms
+   0.0  shot     burst started: asked for an animation burst at (32,32) | exc 0, sleep 15 | playing | asked/burst-47483415-001
+   0.0  cross    stepped into the road at (31,32), at a zebra
+   0.0  near     delivery_van at (28,28), 146px, exc 0, in 0.0/s (crowd 2.6, events 0.0), sleep 15
+   0.0  frame    fps 37, worst frame 103.3ms, draws 537, objects 2502, primitives 5383, process 98.79ms, physics 5.71ms
+   0.0  cross    stepped into the road at (29,31), at a zebra
+   0.0  contact  step 4 completed
+   0.0  contact  the package is heavier now; the rest of today costs more
+   0.0  roll     task handed over: a robber sent after her from (29,41), 313px off (a clear run at her)
+   0.0  route    day 7: reached 'task' at 42.6s (day time), 2445px walked
+   0.0  chase    van_guard_giving_chase came for her at (29,40) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 15
+   0.0  cue      edge badge: van_guard_giving_chase at 294px, closing 67px/s
+   0.0  turn     doubled back 181°
+   0.0  frame    fps 10, worst frame 141.2ms, draws 539, objects 2470, primitives 5409, process 91.54ms, physics 58.73ms
+   0.0  cue      edge badge gone: van_guard_giving_chase after 0.0s, now 172px away
+   0.0  near     van_guard_giving_chase (telegraph) at (29,37), 117px, exc 0, in 0.0/s (crowd 3.4, events 0.2), sleep 16
+   0.0  cross    stepped into the road at (30,33), at a zebra
+   0.0  frame    fps 11, worst frame 101.7ms, draws 543, objects 2196, primitives 4834, process 93.69ms, physics 5.56ms
+   0.0  shot     burst complete: 32 frames | duration
+   0.0  cue      the mark over her head: soon for 0.0s (0.7s of it on the road) | van_guard_giving_chase 106px
+   0.0  path     onto the corridor at (32,34), after 0.0s off it
+   0.0  near     van_guard_giving_chase at (30,35), 64px, exc 0, in 0.0/s (crowd 5.3, events 17.2), sleep 16
+   0.0  ahead    loose_dog comes at her from 0px in front of her at (32,34)
+   0.0  near     van_guard_giving_chase at (31,34), 35px, exc 0, in 0.0/s (crowd 5.3, events 18.0), sleep 16
+   0.0  cue      edge badge: loose_dog at 688px, closing 111px/s
+   0.0  frame    fps 38, worst frame 95.5ms, draws 544, objects 2171, primitives 4815, process 91.39ms, physics 5.73ms
+   0.0  path     away from the corridor at (34,34), after 0.0s on it
+   0.0  calm     entered quiet_square (2,2), sleep 17
+   0.0  near     van_guard_giving_chase at (33,34), 19px, exc 0, in 0.0/s (crowd 3.0, events 18.0), sleep 17
+   0.0  route    day 7: reached 'calm' at 45.5s (day time), 179px walked
+   0.0  frame    fps 73, worst frame 22.7ms, draws 541, objects 2177, primitives 4826, process 15.78ms, physics 5.68ms
+   0.0  turn     doubled back 270°
