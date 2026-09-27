@@ -1,0 +1,24 @@
+{
+  "collectors_sha256": {
+    "entity_frame_profile.gd": "7e63c40f4b737f7ebf819e25df0aa44aaf8ed3b1cd05029f263f93b8878cae7a",
+    "entity_frame_profile.tscn": "4978dacec41b337f162c653b503fd37cf671b0fcf8bd7835ac21049e6b941eab",
+    "entity_frame_profile_observer.gd": "27edf350152f7a8aa0c005ffa6185d04d3605d11eeb15c670ae5969b03cf0a93"
+  },
+  "analyzer_sha256": "e58491bf568848d507940d8f3a9a25216021bb29adee782435fdb81bf0838391",
+  "warmup_seconds": 5,
+  "active_seconds": 6,
+  "order": [
+    "before",
+    "after",
+    "before",
+    "after",
+    "before",
+    "after",
+    "before",
+    "after"
+  ],
+  "revisions": {
+    "before": "24e6c6cd8db03a1070fe25c6807da45a5e67a980",
+    "after": "0fed117cb0b30f1fcd554c7b7256a9a510c14922"
+  }
+}

@@ -303,7 +303,7 @@ checks and worktrees can move independently of this file.
 - **After the release**: read the counter back as `docs/review/2026-09-26-after-the-next-release-read-the.md`
   says. The page visit is listed as `/nappy.josuakrause.com`; a path starting `/nappy` is a visit, a
   name starting `nappy-` is a game metric.
-- **Open pull requests, all on the queue-as-files layout, none reviewed for its own work yet**:
+- **Open pull requests, all on the queue-as-files layout**: inspect each live review and CI state.
   - **#362, M137, the trap comes to her**: built. Its record is named
     `2026-09-25-M137-the-contact-…`; `tools/queue.sh` counts an entry closed only through a record
     named for it, so rename it `2026-09-13-M137.md` (`tools/new-name.sh decision --entry M137`
@@ -316,14 +316,15 @@ checks and worktrees can move independently of this file.
     before the special case is kept or dropped.
   - **#379, M205, the man shouting** (draft): the note handover's 2.5s stand is the orchestrator's
     proposal; his zero charge on an ordinary day did not reproduce. Not reviewed.
-  - **#385, the scenery animation plan** (draft, plan only): its plan is M159's item
-    `separate-scenery-animation-from-static-ground.md` and its measurements are in
-    `docs/evidence/entity-performance-2026-09-26/`.
+  - **#385, separate scenery animation**: the player approves the vent, water, spray and smoke
+    visuals. Read the live PR's checks and correction review before acting. The retained contract
+    and evidence are under `docs/evidence/m159-scenery-animation-2026-09-26/`; the original
+    profiling evidence is under `docs/evidence/m159-entity-performance-2026-09-26/`. M159 retains
+    the broader partial-sprite audit, prediction/classification investigations and lazy visual
+    preparation.
 - **Branch `fix/spent-park-followup`, no PR**: M129's item "a fence carried into the next days keeps
   two calm areas on the route tree" holds the plan; the branch has only an unrun start of its
   regression test. The player: "plan the fix but we need to focus on other tasks right now".
-- **Merge permission**: the player said "merge the PRs as needed" in this session; a new session
-  confirms it before using it. A release needs its own go-ahead.
 - `.claude/briefs/` holds the brief of every branch worked this session, with every amendment;
   start fresh agents from them rather than resuming this session's.
 

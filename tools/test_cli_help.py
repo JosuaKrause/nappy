@@ -41,6 +41,7 @@ ENTRY_POINTS = (
     "codex-hooks.py",
     "goatcounter.py",
     "synthesize-sfx.py",
+    "split-scenes.py",
     "migrate-queue.py",
     "convert-queue-edits.py",
 )
@@ -83,6 +84,40 @@ class CliHelpTests(unittest.TestCase):
             with self.subTest(tool=name):
                 result = self.run_tool(name, "--this-flag-does-not-exist")
                 self.assertNotEqual(result.returncode, 0, f"{name} accepted an unknown flag")
+
+    def test_split_scenes_help_and_unknown_flag_do_not_launch_godot(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            marker = root / "godot-was-launched"
+            fake_godot = root / "fake-godot"
+            fake_godot.write_text(f"#!/bin/sh\ntouch '{marker}'\nexit 91\n")
+            fake_godot.chmod(0o755)
+            for flag in ("--help", "-h", "--this-flag-does-not-exist"):
+                with self.subTest(flag=flag):
+                    result = self.run_tool("split-scenes.py", "--godot", str(fake_godot), flag, cwd=root)
+                    self.assertEqual(result.returncode == 0, flag in ("--help", "-h"), result.stderr)
+                    self.assertFalse(marker.exists(), f"split-scenes.py {flag} launched Godot")
+
+    def test_split_scenes_crop_helper_help_and_unknown_flag_do_no_work(self) -> None:
+        godot = Path(os.environ.get("GODOT", "/Applications/Godot.app/Contents/MacOS/Godot"))
+        if not godot.is_file():
+            self.skipTest("Godot is unavailable for the direct helper CLI boundary")
+        helper = TOOLS / "split-scenes-crop.gd"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for flag in ("--help", "-h", "--this-flag-does-not-exist"):
+                with self.subTest(flag=flag):
+                    result = subprocess.run(
+                        [str(godot), "--headless", "--script", str(helper), "--", flag],
+                        stdin=subprocess.DEVNULL,
+                        capture_output=True,
+                        text=True,
+                        timeout=15,
+                        cwd=root,
+                    )
+                    self.assertEqual(result.returncode == 0, flag in ("--help", "-h"), result.stderr)
+                    self.assertIn("usage", (result.stdout + result.stderr).lower())
+                    self.assertEqual(list(root.iterdir()), [], f"crop helper {flag} wrote output")
 
     def test_synth_help_and_unknown_flag_do_no_work(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

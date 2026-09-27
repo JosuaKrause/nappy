@@ -57,6 +57,14 @@ Use contact shadows beneath individual objects. A scene containing empty roadway
 inherit one full-width ellipse across its people, cars and gaps. Check whether runtime code adds
 a shadow or redraws the body for a halo before baking one into the texture.
 
+**Separate partial motion from its stationary picture.** When only part of a sprite changes, the
+static owner omits those moving pixels and retains the stationary scene while a separate registered
+sprite or layer animates the moving part. A composed city block stays a still drawing. Static
+layers may overlap the moving crop to supply background revealed between phases or foreground
+occlusion in front of it; remove duplicate moving pixels rather than cutting holes in unchanged
+art. Compare every recomposed phase with the complete sources and preserve painter order. A moving
+part's bounding box does not prove that all static pixels inside it belong to the animation.
+
 Review material recognition rather than detail count: pipes need visible hollow mouths, a skip
 needs an open rim, wrecks need readable damage, and craters need uneven broken ground and concave
 shading. Regular concentric rims or radial spokes can read as manufactured structures. Choose
