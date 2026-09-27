@@ -271,15 +271,23 @@ func _resistance_tally_line() -> String:
 ## the only way out. Space dismisses every other screen in the game, so it is the key this one owes
 ## rather than a new one.
 ##
-func show_ending(ending: GameEnums.Ending) -> void:
+## `day` is the last day played, not the last day completed — a run that loses its last nerve on
+## day 1 names day 1, not 0. It is shown only on the `BAD` ending — the only one that can end
+## mid-day: `NEUTRAL` and `GOOD` are reached by finishing day 14, and every caller already has the
+## number this needs, since `GameState.day` is never advanced past the day a run ends on
+## (`GameState.finish_day()` ends the run before it would move the calendar) or past the day a
+## load spent the last nerve on.
+func show_ending(ending: GameEnums.Ending, day: int) -> void:
 	_heading.text = _ENDING_HEADING.get(ending, "THE END")
 	_heading.show()
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	# The one place `GameState.play_seconds` is ever shown — never during play, on every ending
 	# alike. `GameState.format_clock()` is the shared formatter so this line and the finale's own
 	# clock, once that is built, never carry two copies of the same format string.
-	_body.text = "%s\n\nTime played: %s" \
-			% [_ENDING_BODY.get(ending, ""), GameState.format_clock(GameState.play_seconds)]
+	var day_line := "\nYou made it to day %d." % day if ending == GameEnums.Ending.BAD else ""
+	_body.text = "%s\n\nTime played: %s%s" \
+			% [_ENDING_BODY.get(ending, ""), GameState.format_clock(GameState.play_seconds),
+					day_line]
 	_hint.text = ""
 	# The ending is not a day summary and has no morning line of its own to show.
 	_brief.visible = false

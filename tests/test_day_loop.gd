@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_the_summary_shows_the_coming_days_number(t)
 	_test_nerves_are_stars_never_numbers(t)
 	_test_the_day_7_brief_breaks_before_the_same_face(t)
+	_test_the_bad_ending_names_the_day_it_reached(t)
 	_test_a_lost_day_gives_the_resistance_back(t)
 	_test_a_lost_day_gives_back_what_it_burned(t)
 	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
@@ -548,6 +549,33 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 	summary.free()
 	t.get_tree().paused = saved_paused
 	GameState.day = saved_day
+
+## The `BAD` ending names the last day played, not the last day completed — a run that loses its
+## last nerve on day 1 reads day 1, not 0. The neutral and good endings are reached by finishing
+## day 14 and say nothing about which day, since the run finished rather than stopped mid-day.
+func _test_the_bad_ending_names_the_day_it_reached(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	summary.show_ending(GameEnums.Ending.BAD, 9)
+	t.check("You made it to day 9." in summary._body.text,
+			"the bad ending names the day it reached ('%s')" % summary._body.text)
+
+	summary.show_ending(GameEnums.Ending.BAD, 1)
+	t.check("You made it to day 1." in summary._body.text,
+			"dying on the first day says 1, not 0 ('%s')" % summary._body.text)
+
+	summary.show_ending(GameEnums.Ending.NEUTRAL, 14)
+	t.check(not "made it to day" in summary._body.text,
+			"the neutral ending says nothing about the day ('%s')" % summary._body.text)
+
+	summary.show_ending(GameEnums.Ending.GOOD, 14)
+	t.check(not "made it to day" in summary._body.text,
+			"and neither does the good ending ('%s')" % summary._body.text)
+
+	summary.free()
+	t.get_tree().paused = saved_paused
 
 # ------------------------------------------------------- the resistance's own day ---
 

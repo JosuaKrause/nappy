@@ -1256,6 +1256,13 @@ under their own body text reading the run's length as `%d:%02d.%03d`, to the mil
 `GameState.format_clock()` is the one place that format is written, so a second clock reading to
 the millisecond calls it rather than carrying a second copy of the string.
 
+**The `BAD` ending's own line names the day the run reached** — *"You made it to day %d."*,
+beside "Time played" — the last day played rather than the last day completed, so a run that
+loses its last nerve on day 1 reads day 1, not 0. `GameState.day` already holds it: the calendar
+is never advanced past the day nerves ran out on, or past the day a load spent the last one on
+(`GameState.finish_day()` ends the run before it would move the calendar). The neutral and good
+endings say nothing about the day, since both are reached by finishing day 14.
+
 ## The escape, which is the run's ending
 
 The walk out of the building and out of the city is the fifteenth and sixteenth walks of a run:

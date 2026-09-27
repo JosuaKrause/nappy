@@ -1132,7 +1132,7 @@ func _show_an_ending_for_a_rig() -> bool:
 		return false
 	_run_over = true
 	_ending_shown = true
-	_summary.show_ending(wanted[wanted_arg] as GameEnums.Ending)
+	_summary.show_ending(wanted[wanted_arg] as GameEnums.Ending, GameState.day)
 	return true
 
 # --------------------------------------------------------------- the title ---
@@ -1246,7 +1246,7 @@ func _show_the_resume_gate() -> void:
 		# zero nerves any other way. `GameState.ending` is already set (`GameState.finish_day()`
 		# set it in `_ready()`), so nothing downstream can write a save naming this run again.
 		_ending_shown = true
-		_summary.show_ending(GameState.ending)
+		_summary.show_ending(GameState.ending, GameState.day)
 		return
 	_resume_gate_open = true
 	# The second of the two moments a page may load in, open for as long as the brief is up and
@@ -2062,7 +2062,7 @@ func _on_summary_continued() -> void:
 		return
 	if not _ending_shown:
 		_ending_shown = true
-		_summary.show_ending(GameState.ending)
+		_summary.show_ending(GameState.ending, GameState.day)
 		return
 	# A run that is over goes back to where a run begins, which is the title screen: an ending is
 	# not a dead end the player has to quit out of.
