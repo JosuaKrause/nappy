@@ -11,9 +11,11 @@
 #
 # **The bar this holds itself to: a guardrail, not a security boundary.** It stops an agent's
 # ordinary GitHub writes from going out as the player by mistake -- every shape an agent would
-# plausibly type is fixed. It does not chase a deliberately adversarial shape meant to evade it --
-# see the one accepted gap below, and `docs/decisions/2026-09-27-tall-egret.md`'s own "Accepted
-# gaps" paragraph.
+# plausibly type is fixed. It does not chase a deliberately adversarial shape meant to evade it:
+# the wrapper's shape inside a mention (below), a write through a client other than git, gh or the
+# pushing scripts (`curl` with `gh auth token`, an MCP tool), and a command naming a role that is
+# not the running agent's own are accepted gaps, each with an example in
+# `docs/decisions/2026-09-27-tall-egret.md`'s "Accepted gaps" paragraph.
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
 # unless they carry `--abort`/`--quit`; `merge`/`rebase` unless `--abort`/`--no-commit`/
@@ -25,8 +27,10 @@
 # caught the same fail-safe way an unknown verb is (`gh browse` and `gh search` are read nouns
 # whole, with no verb of their own to check); `gh api` with a non-GET method or
 # `-f`/`-F`/`--input`/`--raw-field`/`--field`, attached or not, wherever the flag falls relative to
-# the endpoint -- a GraphQL call (`gh api graphql`) is a write only if the call contains the word
-# `mutation`, since a query-only call also goes through `-f` but reads; or one of the `tools/*.sh`
+# the endpoint, unless the method is an explicit GET (gh then sends the fields as query
+# parameters) -- a GraphQL call (`gh api graphql`) reads only when its query is written inline on
+# the command line and contains no `mutation`, and writes when it does or when its query comes from
+# a file, a shell expansion or `--input`, where the word cannot be checked; or one of the `tools/*.sh`
 # scripts whose own body pushes or posts (`tools/release.sh`, `tools/prune-merged.sh`,
 # `tools/land-prs.sh`, `tools/update-pr.sh` -- found with `rg` for `git push|git commit|gh pr |gh
 # issue |gh release|gh api` over `tools/*.sh`; a script that only reads, such as
@@ -38,7 +42,8 @@
 # `push` argument, for `land-prs.sh`/`update-pr.sh`, only without their own `--dry-run`.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
 # issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
-# search`, `gh browse`, a GET `gh api`, a GraphQL query with no `mutation`) stay unguarded.
+# search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
+# `mutation`) stay unguarded.
 #
 # **A reviewer identity (`claude-reviewer`, `codex-reviewer`) never pushes or merges, wrapped or
 # not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a
@@ -46,8 +51,9 @@
 # `_REVIEWER_PERMISSIONS`'s own comment in `tools/agent-identity.py`), so GitHub itself would let
 # it push or merge; this tool still refuses, on the theory that reviewing and coding stay two
 # identities even where GitHub's permission model would allow one to do both. So `git push`, the
-# pushing `tools/*.sh` scripts, `gh pr merge`, `gh pr update-branch` and a `gh api` call whose
-# endpoint ends in `/merge` are all denied even inside `run claude-reviewer --`/`run
+# pushing `tools/*.sh` scripts, `gh pr merge`, `gh pr update-branch` and a `gh api` write whose
+# endpoint ends in `/merge`, `/merges` or `/update-branch` (with an optional trailing `/` or
+# `?query`) or goes to a `/contents/` path are all denied even inside `run claude-reviewer --`/`run
 # codex-reviewer --`, with a message naming the coder identity to use instead. A role this hook
 # does not recognise as a reviewer is not specially blocked here either way:
 # `tools/agent-identity.py` itself refuses to mint a token for a name outside its own `ROLE_NAMES`,
@@ -187,64 +193,92 @@ def detect_git($w; $i; $n):
   end;
 
 # `gh api`'s own writes: an explicit non-GET method (`-X`/`--method`, attached or not, any case:
-# `-XPOST`, `-X=POST`, `--method=post`), ignored when the method is GET even with a field present
-# (gh sends `-f`/`-F` as query parameters under `-X GET`, not a request body); or any of
-# `-f`/`-F`/`--input`/`--raw-field`/`--field` (attached or not: `-fk=v`, `--field=k=v`) -- which is
-# what turns a call into a POST even with no `--method` at all, wherever the flag falls relative to
-# the endpoint (`gh api -X PUT repos/o/r/pulls/1/merge` is exactly how gh itself accepts it, so the
-# scan starts right after `api` itself rather than past its options). A `graphql` endpoint is a
-# write when its own visible query text contains `mutation`, or when that text is not visible at
-# all -- read from a file (`query=@file`), a shell variable or a command substitution
-# (`query=$Q`, `query=$(cat f)`), or the whole request body from `--input` -- since none of those
-# can be checked for the word at all. A `/merges?`/`/update-branch` endpoint (with an optional
-# trailing slash or query string) or a `PUT`/`DELETE` to `/contents/` counts as a merge-type write
-# (`is_merge_like`, below), the same as `gh pr merge`/`update-branch`.
+# `-XPOST`, `-X=POST`, `--method=post`), or any of `-f`/`-F`/`--input`/`--raw-field`/`--field`
+# (attached or not: `-fk=v`, `--field=k=v`) with no explicit GET -- a field is what turns a call
+# into a POST when no method is given, while under `-X GET` gh sends the fields as query
+# parameters, so `gh api -X GET search/issues -f q=...` reads. Flags are found wherever they fall
+# relative to the endpoint (`gh api -X PUT repos/o/r/pulls/1/merge` is exactly how gh itself
+# accepts it), so the scan starts right after `api` itself rather than past its options, and a
+# flag that takes a value consumes that value, so `-f k=v` before the endpoint is not mistaken
+# for it.
 #
-# The scan runs to the next separator or the end of the command either way, win or lose, so the
-# caller skips past everything already read: many `gh api ...` calls glued with no separator would
-# each otherwise rescan the rest of the text, a cost quadratic in how many there are. It never
-# stops early on a bare `git`/`gh` word either, so an endpoint or flag value merely ending in `/gh`
-# or `/git` is read in full rather than mistaken for the start of a new invocation.
+# A `graphql` call always POSTs, so its own rule is different: it reads only when its query text
+# is visible on the command line (a `query=` field whose value is written inline) and no word of
+# the call contains `mutation`. A query read from a file (`-F query=@q.graphql`), from a shell
+# variable or a command substitution (`query=$Q`, `query=$(cat q.graphql)`), a whole body from
+# `--input`, or no `query=` field at all cannot be checked for the word, so each counts as a write.
+#
+# A write whose endpoint ends in `/merge`, `/merges` or `/update-branch` (an optional trailing `/`
+# or `?query` included), or that goes to a `/contents/` path, is a merge-type write
+# (`is_merge_like`, below): the API form of `gh pr merge`/`update-branch`, a merge commit on a
+# branch, or a commit made through the contents API. These patterns are checked against every
+# non-option word of the call rather than a single parsed endpoint, since a header value such as
+# `-H 'Accept: application/vnd.github+json'` splits into two words and would otherwise be taken
+# for the endpoint.
+#
+# The scan runs to the next separator or the end of the command either way, win or lose, and a
+# flag's value is consumed only when it is not itself a separator, so the caller skips past
+# everything already read without ever skipping into the next command: many `gh api ...` calls
+# glued with no separator would each otherwise rescan the rest of the text, a cost quadratic in
+# how many there are. It never stops early on a bare `git`/`gh` word either, so an endpoint or
+# flag value merely ending in `/gh` or `/git` is read in full rather than mistaken for the start of
+# a new invocation.
+def gh_api_field_flag: IN("-f", "-F", "--raw-field", "--field");
+def gh_api_value_flag: IN("-H", "--header", "--hostname", "-p", "--preview", "-q", "--jq", "-t",
+  "--template", "--cache");
+
+# Folds one `k=v` field value into the scan state: `query=` with a value written inline makes the
+# query visible; `query=` whose value is empty, from a file (`@`) or a shell expansion (`$`) hides it.
+def gh_api_field_value($v):
+  if $v | test("(?i)^query=") then
+    ($v | sub("(?i)^query="; "")) as $q
+    | if ($q == "") or ($q | startswith("@")) or ($q | contains("$")) then .query_hidden = true
+      else .query_visible = true end
+  else . end;
+
 def detect_gh_api($w; $start; $n):
-  {i: $start, method: null, field: false, endpoint: null, mutation: false, unverifiable: false}
+  {i: $start, method: null, field: false, graphql: false, merge_type: false, mutation: false,
+   query_visible: false, query_hidden: false}
   | until(.i >= $n or ($w[.i] | is_sep);
       . as $s
       | ($w[$s.i]) as $x
-      | ($s.mutation or ($x | test("(?i)mutation"))) as $mut
-      # A graphql query whose body is not visible here -- read from a file (`query=@file`), from a
-      # shell variable or a command substitution (`query=$Q`, `query=$(cat f)`), or the whole
-      # request body from `--input` -- cannot be checked for the word "mutation" at all, so it
-      # counts as one whether or not that word actually appears.
-      | ($s.unverifiable
-         or ($x | test("(?i)^query=@"))
-         or ($x | test("(?i)^query=\\$"))
-         or ($x | test("^--input(=|$)"))) as $unverif
-      | (if $x | IN("-X", "--method") then $s | .method = ($w[$s.i + 1] // "") | .i += 2
-         elif $x | startswith("--method=") then $s | .method = ($x | ltrimstr("--method=")) | .i += 1
-         elif $x | test("^(?i)-X=?.+") then $s | .method = ($x | sub("^(?i)-X=?"; "")) | .i += 1
-         elif $x | IN("-f", "-F", "--input", "--raw-field", "--field") then $s | .field = true | .i += 1
-         elif $x | test("^--(field|raw-field|input)=") then $s | .field = true | .i += 1
-         elif $x | test("^-[fF].+") then $s | .field = true | .i += 1
-         elif ($s.endpoint == null) and (($x | startswith("-")) | not) then $s | .endpoint = $x | .i += 1
-         else $s | .i += 1
-         end) as $next
-      | $next | .mutation = $mut | .unverifiable = $unverif) as $r
-  | (($r.endpoint // "") | test("(?i)(^|/)graphql$")) as $is_graphql
-  | (($r.endpoint // "") | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) as $is_merge_endpoint
-  | (($r.method // "" | ascii_downcase | IN("put", "delete")) and ($r.endpoint // "" | test("(?i)/contents/"))) as $is_contents_write
-  | if $is_graphql then
-      (if $r.mutation or $r.unverifiable
-       then {next: $r.i, reason: "gh api graphql mutation"} else {next: $r.i, reason: null} end)
-    elif $is_merge_endpoint or $is_contents_write then
-      {next: $r.i, reason: "gh api merge-type"}
-    else
-      # An explicit GET reads even with a field: gh sends "-f"/"-F" as query parameters under
-      # -X GET, not a request body, which is what the player's own "writes only" means here.
-      (if ($r.method != null) and (($r.method | ascii_downcase) == "get") then {next: $r.i, reason: null}
-       elif (($r.method != null) and (($r.method | ascii_downcase) != "get")) or $r.field
-       then {next: $r.i, reason: "gh api"}
-       else {next: $r.i, reason: null}
-       end)
+      | ($w[$s.i + 1] // null) as $nx
+      | ($nx != null and (($nx | is_sep) | not)) as $has_value
+      | (if $x | test("(?i)mutation") then .mutation = true else . end)
+      | if $x | IN("-X", "--method") then
+          (if $has_value then .method = $nx | .i += 2 else .method = "" | .i += 1 end)
+        elif $x | startswith("--method=") then .method = ($x | ltrimstr("--method=")) | .i += 1
+        elif $x | test("^(?i)-X=?.+") then .method = ($x | sub("^(?i)-X=?"; "")) | .i += 1
+        elif $x | gh_api_field_flag then
+          .field = true
+          | (if $has_value
+             then (if $nx | test("(?i)mutation") then .mutation = true else . end)
+                  | gh_api_field_value($nx) | .i += 2
+             else .i += 1 end)
+        elif $x | test("^--(field|raw-field)=") then
+          .field = true | gh_api_field_value($x | sub("^--(field|raw-field)="; "")) | .i += 1
+        elif $x | test("^-[fF].+") then .field = true | gh_api_field_value($x | .[2:]) | .i += 1
+        elif $x == "--input" then
+          .field = true | .query_hidden = true | (if $has_value then .i += 2 else .i += 1 end)
+        elif $x | startswith("--input=") then .field = true | .query_hidden = true | .i += 1
+        elif $x | gh_api_value_flag then (if $has_value then .i += 2 else .i += 1 end)
+        elif $x | startswith("-") then .i += 1
+        else
+          (if $x | test("(?i)(^|/)graphql$") then .graphql = true else . end)
+          | (if ($x | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) or ($x | test("(?i)/contents/"))
+             then .merge_type = true else . end)
+          | .i += 1
+        end) as $r
+  | (($r.method != null) and (($r.method | ascii_downcase) == "get")) as $is_get
+  | if $r.graphql then
+      (if $r.mutation then {next: $r.i, reason: "gh api graphql mutation"}
+       elif $r.query_hidden or ($r.query_visible | not)
+       then {next: $r.i, reason: "gh api graphql with a query not written inline"}
+       else {next: $r.i, reason: null} end)
+    elif $is_get then {next: $r.i, reason: null}
+    elif ($r.method != null) or $r.field then
+      {next: $r.i, reason: (if $r.merge_type then "gh api merge-type" else "gh api" end)}
+    else {next: $r.i, reason: null}
     end;
 
 # Every `gh` noun writes unless its verb is on one shared list of reads (`view`, `list`, `status`,
@@ -407,7 +441,8 @@ else
 	reason="This command writes to GitHub ($flagged) outside any agent identity. A write is a git \
 push; a commit-making git verb (commit, cherry-pick/revert/am, merge/rebase past --abort, pull \
 past --ff-only); any gh noun's write verb (every noun, not only pr/issue/release), gh api with a \
-non-GET method/field or a GraphQL mutation; or a pushing/posting tools/ script in command \
+non-GET method or a field outside -X GET, or a GraphQL call whose query is a mutation or is not \
+written inline (a file, a variable, --input); or a pushing/posting tools/ script in command \
 position. It runs through 'uv run python tools/agent-identity.py run <role> -- <command>' instead \
 -- claude-coder or claude-reviewer in Claude Code, codex-coder or codex-reviewer in Codex -- never \
 directly. Check first with 'uv run python tools/agent-identity.py status <role>'; if it reports \

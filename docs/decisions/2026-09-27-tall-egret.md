@@ -34,7 +34,8 @@ REVIEW_REQUIRED/BLOCKED under `contents: read`, and the reviewer app was refused
 its own threads too (verified: nine of `claude-reviewer`'s own threads on PR #391, each returning
 `isResolved: true`). The permission changed, but a reviewer identity still never pushes or merges:
 `.claude/hooks/github-write-guard.sh` denies `git push`, the pushing `tools/` scripts, and a
-merge-type write (`gh pr merge`/`update-branch`, a `gh api` endpoint ending in `/merge`) when the
+merge-type write (`gh pr merge`/`update-branch`, a `gh api` write to an endpoint ending in
+`/merge`, `/merges` or `/update-branch`, or to a `/contents/` path) when the
 wrapping role is `claude-reviewer`/`codex-reviewer`, whatever GitHub's own permission allows —
 coders push and merge instead.
 
@@ -48,7 +49,8 @@ more. A `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes the
 rather than only remembered: it denies a `git push`; a commit-making git verb (`commit`, and
 `cherry-pick`/`revert`/`am`/`merge`/`rebase`/`pull` past their own abort-like or safe flag); any
 `gh` noun's write verb (every noun, not only `pr`/`issue`/`release`); a `gh api` call with a
-non-GET method/field or a GraphQL mutation; or one of the `tools/` scripts that pushes or posts
+non-GET method or a field outside `-X GET`, or a GraphQL call whose query is a mutation or is not
+written inline (a file, a variable, `--input`); or one of the `tools/` scripts that pushes or posts
 internally (`tools/release.sh`, `tools/prune-merged.sh`, `tools/land-prs.sh`,
 `tools/update-pr.sh`), only in command position — unless the same command runs through
 `tools/agent-identity.py run <role> -- ...` (the hook's own header comment carries the exact,
@@ -58,7 +60,13 @@ calls, reads included, through a fresh token this way too (`tools/lib_agent_role
 `agent_run`), rather than relying on the one token the whole script may itself have been wrapped
 in, since a run past the one-hour token's life must not have a later read 401 or a later write
 fail; run without `NAPPY_AGENT_ROLE` set (a human at their own terminal, not an agent), a script
-calls `gh`/`git` directly, exactly as it always did. The reviewer's own review now carries GitHub's
+calls `gh`/`git` directly, exactly as it always did. `.claude/settings.json`'s two allow rules for
+`tools/prune-merged.sh` name the wrapped line, `uv run python tools/agent-identity.py run
+claude-coder -- tools/prune-merged.sh` and its `codex-coder` twin, rather than the bare script:
+the hook denies the bare form, and a Claude Code allow rule is a literal prefix match on the
+command's text, so a rule for the bare script never matched what an agent must now type. The
+player, asked whether to move them: *"can you add it?"* Codex's approvals are its own sandbox's
+and are not read from this file. The reviewer's own review now carries GitHub's
 verdict too: APPROVE when the verdict is *ready*, REQUEST_CHANGES when it is *not ready*, COMMENT
 for an interim or partial review — it still never merges, which stays committing's call under its
 permission rule. Merging now also needs one approving review, from a reviewer bot or the player —
@@ -101,13 +109,21 @@ player — no bot identity can make either change, so `github-write-guard.sh`'s 
 retry.
 
 **Accepted gaps.** The write guard is a guardrail against an agent's own ordinary mistake, not a
-security boundary against a deliberately adversarial shape. One is live: a comment or a commit
-message that quotes the wrapper's own shape whole (for example `# see: tools/agent-identity.py run
-claude-coder -- git push` inside an echo) reads, to the guard, like a real wrapped call, so the
-write inside it is exempt rather than denied — closing it would mean telling a mention from a real
-invocation apart, the same parsing problem `git-grep-guard.sh` accepts rather than chases. Two
-gaps a review once raised no longer have a live instance: a `gh`/`git`-named path segment or
-endpoint no longer bypasses the scan (the "stop early" shortcut that caused it is gone), and a
-GraphQL mutation whose text is not visible on the command line — a file, a shell variable, a
-command substitution, or the whole body from `--input` — is now a write regardless of whether the
-word "mutation" itself appears.
+security boundary against a deliberately adversarial shape. Three gaps exist, each probed against
+the hook with a JSON payload:
+
+- **The wrapper's shape inside a mention exempts what follows it.** The guard reads raw text with
+  quotes stripped, so `FOO="tools/agent-identity.py run claude-coder --" git push` reads as a
+  wrapped push and is allowed, though the push runs as the player. Closing it means telling a
+  mention from a real invocation, the parsing problem `git-grep-guard.sh` accepts rather than
+  chases.
+- **A write through anything but `git`, `gh` or the four pushing scripts is not seen.** `curl -X
+  POST -H "Authorization: token $(gh auth token)" https://api.github.com/…`, a Python script that
+  calls the API, and a GitHub MCP tool (which posts under the MCP server's own credential) all pass.
+  The guard names the tools an agent uses for GitHub in this repo; it does not try to recognize
+  every HTTP client.
+- **The guard trusts the role a command names.** It cannot tell which agent is running, so a review
+  agent that wraps a push in `run claude-coder --` (or nests that inside its own `run
+  claude-reviewer --`), or a script that sets `NAPPY_AGENT_ROLE=claude-coder` itself, goes out as
+  the coder. Which agent uses which role is the skills' rule; the hook enforces only that some
+  bot identity is used, and that a reviewer role never pushes or merges.

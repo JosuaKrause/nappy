@@ -308,10 +308,14 @@ removes the branch's worktree (never with `--force`, so git refuses a dirty one)
 and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
 whose worktree is gone. Run it from the main checkout, through `uv run python
 tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` — its own remote
-delete is a write, so `github-write-guard.sh` denies it bare. **Use it rather than the bare
-commands**: Claude Code's auto-mode classifier refuses `git worktree remove` and `git branch -D`
-as destructive however the check came out, and `.claude/settings.json` allows this script by name
-because it cannot delete anything the check did not clear.
+delete is a write, so `github-write-guard.sh` denies it bare (Codex runs the same line with
+`codex-coder`). **Use it rather than the bare commands**: Claude Code's auto-mode classifier
+refuses `git worktree remove` and `git branch -D` as destructive however the check came out, and
+`.claude/settings.json` allows exactly that wrapped line, for `claude-coder` and `codex-coder`,
+because the script cannot delete anything the check did not clear. The allow rules are prefix
+matches on the command's text, so the line has to be spelled as above: `./tools/…`, a different
+role, or anything else in front of `tools/prune-merged.sh` is not covered and goes to the
+classifier.
 
 **A PR stacked on another is retargeted to `main` before its base branch goes.** The repository
 deletes a merged head branch on GitHub by itself; for a branch deleted by hand (`git push

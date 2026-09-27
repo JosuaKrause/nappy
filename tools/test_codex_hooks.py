@@ -356,8 +356,8 @@ class CodexHooksTest(unittest.TestCase):
         self.assertIn("reviewers never push", specific["permissionDecisionReason"])
 
     def test_github_write_guard_denies_a_gh_api_flag_before_the_endpoint(self) -> None:
-        # The High regression a review found in 88b660f9: a flag before the endpoint used to skip
-        # the guard entirely, since the scan started after skipping leading options.
+        # A flag before the endpoint is how gh itself accepts a write, so the scan has to see it
+        # rather than start past the call's leading options.
         output = self.call_raw(command="gh api -X PUT repos/o/r/pulls/1/merge")
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
@@ -377,9 +377,14 @@ class CodexHooksTest(unittest.TestCase):
         self.assertIn("never push or merge", specific["permissionDecisionReason"])
 
     def test_github_write_guard_denies_a_graphql_query_from_a_file(self) -> None:
-        # A review found this passing unwrapped: the query's own text is not on the command line,
-        # so it cannot be checked for "mutation" at all.
+        # The query's own text is not on the command line, so it cannot be checked for
+        # "mutation" at all.
         output = self.call_raw(command="gh api graphql -F query=@resolve.graphql -F id=PRRT_x")
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_github_write_guard_denies_a_graphql_body_from_input(self) -> None:
+        output = self.call_raw(command="gh api graphql --input payload.json")
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 

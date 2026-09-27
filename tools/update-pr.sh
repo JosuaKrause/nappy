@@ -21,8 +21,8 @@
 # `./tools/check.sh` (every one of the three has to pass), commits a message naming the three
 # revisions and the resolution, and pushes to the branch's own remote — attempted first over
 # `origin`'s own configured transport (HTTPS too, under `run`'s own token, once `insteadOf`
-# rewrites the SSH form), falling back to HTTPS through gh's own credential helper if that attempt
-# is refused.
+# rewrites the SSH form; the invoking user's own login, SSH typically, without `run`), falling back
+# to HTTPS through gh's own credential helper, as the same identity, if that attempt is refused.
 #
 # It never touches the pull request itself: no `gh pr merge`, no enabling auto-merge. The semantic
 # review of the merge — whether the result actually reconciles both sides' intent, per the
@@ -60,10 +60,12 @@ Merges origin/main into a pull request's branch: fetches, finds the branch's wor
 scratch one under $TMPDIR), merges with --no-ff --no-commit, and aborts naming the files on any
 conflict. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
 `./tools/check.sh`, commits a message naming the branch tip, main tip, merge base and the
-resolution, and pushes it (a second, different-identity HTTPS attempt if the first is refused).
-Never merges the pull request itself
-and never enables auto-merge; says so in its own output, alongside the files main changed since
-the merge base, since that review is the merger's.
+resolution, and pushes it: first over origin's own configured transport (HTTPS with the bot's
+token under tools/agent-identity.py run, whatever origin uses -- SSH, say -- with your own login
+without it), then, if that is refused, once more over HTTPS through gh's credential helper, as the
+same identity. Never merges the pull request itself and never enables auto-merge; says so in its
+own output, alongside the files main changed since the merge base, since that review is the
+merger's.
 
   --dry-run    Fetch and report what would conflict (via git merge-tree --write-tree), without
                creating, checking out or otherwise touching any worktree. Exits 0 for a clean
@@ -307,9 +309,11 @@ echo "committed $(git -C "$target_dir" rev-parse --short HEAD) on $branch"
 # ---- push, over origin's own configured transport first, gh's own HTTPS credential helper next -
 # Each push mints its own fresh installation token (tools/lib_agent_role.sh's `agent_run`) rather
 # than relying on the one this script may itself have been wrapped in. Under `run`, the first
-# attempt already goes out over HTTPS with that token (`insteadOf` rewrites an SSH `origin`); the
-# second attempt is a different HTTPS identity (gh's own credential helper), for whichever
-# identity -- the bot's or the player's own -- the first one was not.
+# attempt already goes out over HTTPS with that token (`insteadOf` rewrites an SSH `origin`), and
+# the second is the same bot over an explicit HTTPS URL. Without a role, the first attempt uses
+# `origin`'s own transport and the invoking user's login for it (SSH, typically), and the second
+# is that same user over HTTPS through gh's own credential helper. Either way the second attempt
+# changes the transport, never the identity.
 if agent_run git -C "$target_dir" push --quiet "$remote" "HEAD:refs/heads/$branch"; then
     echo "pushed to $remote/$branch"
 else

@@ -78,7 +78,8 @@ whatever never puts `grep` as its own word right after `git` and its options: `g
 (and Codex's, through `tools/codex-hooks.py`), denies a `git push`; a commit-making git verb
 (`commit`, and `cherry-pick`/`revert`/`am`/`merge`/`rebase`/`pull` past their own abort-like or
 safe flag); any `gh` noun's write verb, every noun, not only `pr`/`issue`/`release`; a `gh api`
-call with a non-GET method/field or a GraphQL mutation; or one of the `tools/` scripts that pushes
+call with a non-GET method or a field outside `-X GET`, or a GraphQL call whose query is a
+mutation or is not written inline; or one of the `tools/` scripts that pushes
 or posts internally (`tools/release.sh`, `tools/prune-merged.sh`, `tools/land-prs.sh`,
 `tools/update-pr.sh`), only in command position — unless the same command is wrapped in
 `tools/agent-identity.py run <role> -- <command>`; see **committing**'s "Who a commit and a pull

@@ -220,16 +220,24 @@ def load_role_config(root: Path, role: str) -> RoleConfig | None:
         text = path.read_text(encoding="utf-8")
     except OSError:
         return None
-    data = json.loads(text)
+    recreate = f"recreate it with 'create {role} --force'"
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise AgentIdentityError(f"{path} is not valid JSON ({exc}) -- {recreate}") from exc
     if not isinstance(data, dict):
-        raise AgentIdentityError(f"{path} is not a JSON object")
+        raise AgentIdentityError(f"{path} is not a JSON object -- {recreate}")
     missing = [key for key in ("app_id", "slug", "bot_id", "name", "html_url") if key not in data]
     if missing:
-        raise AgentIdentityError(f"{path} is missing {missing!r} -- recreate it with 'create {role} --force'")
+        raise AgentIdentityError(f"{path} is missing {missing!r} -- {recreate}")
+    try:
+        bot_id = int(data["bot_id"])
+    except (TypeError, ValueError) as exc:
+        raise AgentIdentityError(f"{path} has a bot_id that is not a number -- {recreate}") from exc
     return {
         "app_id": str(data["app_id"]),
         "slug": str(data["slug"]),
-        "bot_id": int(data["bot_id"]),
+        "bot_id": bot_id,
         "name": str(data["name"]),
         "html_url": str(data["html_url"]),
     }
@@ -356,6 +364,7 @@ def _request(
             raw = response.read()
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace").strip()
+        exc.close()
         message = f"GitHub returned HTTP {exc.code} for {method} {url}"
         raise AgentIdentityHTTPError(exc.code, f"{message}: {detail}" if detail else message) from exc
     except urllib.error.URLError as exc:
@@ -519,6 +528,19 @@ def fetch_bot_id(slug: str) -> int:
     return bot_id
 
 
+def _orphaned_app_recovery(role: str, spec: RoleSpec, slug: str, root: Path) -> str:
+    """What to do when the callback failed after GitHub created the app: the one-time code is spent,
+    so the private key it carried cannot be fetched again, and the app's name is taken until the app
+    is deleted.
+    """
+    where = f"https://github.com/settings/apps/{slug}" if slug else "Settings > Developer settings > GitHub Apps"
+    return (
+        f"GitHub created {spec.app_name} before redirecting here, but its private key was not saved "
+        f"under {root} and cannot be fetched again. Delete the app at {where}, then rerun "
+        f"'uv run python tools/agent-identity.py create {role} --force'."
+    )
+
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         probe.bind(("127.0.0.1", 0))
@@ -551,12 +573,17 @@ def run_manifest_flow(
             pass  # silences BaseHTTPRequestHandler's default per-request access log
 
         def _send(self, status: int, body: str) -> None:
+            # A browser that has already gone away makes the write fail; by then `outcome` already
+            # says what happened, and the wait loop reads that rather than this page.
             encoded = body.encode("utf-8")
-            self.send_response(status)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(encoded)))
-            self.end_headers()
-            self.wfile.write(encoded)
+            try:
+                self.send_response(status)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(encoded)))
+                self.end_headers()
+                self.wfile.write(encoded)
+            except OSError:
+                pass
 
         def do_GET(self) -> None:
             parsed = urllib.parse.urlsplit(self.path)
@@ -570,13 +597,20 @@ def run_manifest_flow(
             code = query.get("code", [""])[0]
             got_state = query.get("state", [""])[0]
             if got_state != state:
-                self._send(400, "<html><body>state did not match -- nothing was created.</body></html>")
                 outcome["error"] = "the callback's state did not match what was sent"
+                self._send(400, "<html><body>state did not match -- nothing was created.</body></html>")
                 return
             if not code:
-                self._send(400, "<html><body>GitHub sent no code.</body></html>")
                 outcome["error"] = "GitHub's callback carried no code"
+                self._send(400, "<html><body>GitHub sent no code.</body></html>")
                 return
+            # GitHub creates the app before it redirects here, and the code is single-use: from
+            # this point on, a failure leaves an app on GitHub whose private key was never saved.
+            # Any exception is caught -- an uncaught one would be swallowed by socketserver's own
+            # handle_error while the wait loop sat out its whole timeout -- and recorded in
+            # `outcome` before the error page is attempted, so the loop ends at once with a message
+            # saying how to recover.
+            slug = ""
             try:
                 created = exchange_manifest_code(code)
                 slug = str(created["slug"])
@@ -589,9 +623,9 @@ def run_manifest_flow(
                     "html_url": str(created["html_url"]),
                 }
                 write_role_config(root, role, config, str(created["pem"]))
-            except (AgentIdentityError, KeyError) as exc:
-                self._send(500, f"<html><body>{html.escape(str(exc))}</body></html>")
-                outcome["error"] = str(exc)
+            except Exception as exc:
+                outcome["error"] = f"{exc} -- {_orphaned_app_recovery(role, spec, slug, root)}"
+                self._send(500, f"<html><body>{html.escape(outcome['error'])}</body></html>")
                 return
             outcome["slug"] = slug
             outcome["install_url"] = install_url_for(slug)

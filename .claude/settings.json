@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "permissions": {
     "allow": [
-      "Bash(./tools/prune-merged.sh:*)",
-      "Bash(tools/prune-merged.sh:*)"
+      "Bash(uv run python tools/agent-identity.py run claude-coder -- tools/prune-merged.sh:*)",
+      "Bash(uv run python tools/agent-identity.py run codex-coder -- tools/prune-merged.sh:*)"
     ]
   },
   "hooks": {

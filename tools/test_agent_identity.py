@@ -1,27 +1,33 @@
 #!/usr/bin/env python3
-"""Offline tests for the agent-identity tool: nothing here reaches the network. The manifest flow's
-own server/browser orchestration (`run_manifest_flow`) is exercised only through its pure pieces
-(`build_manifest`, `render_manifest_form`, `roles_to_create`) -- the flow itself needs GitHub's own
-API and a browser, neither of which this container has (see the module docstring's "cloud session"
-paragraph). HTTP is mocked at the function boundary (`Getter`/`Poster` callables), never by
-patching `urllib` internals.
+"""Offline tests for the agent-identity tool: nothing here reaches GitHub. The manifest flow
+(`run_manifest_flow`) runs its real local server, visited by a fake browser on 127.0.0.1, with its
+two GitHub calls (`exchange_manifest_code`, `fetch_bot_id`) mocked. Other HTTP is mocked at the
+function boundary (`Getter`/`Poster` callables), or, where a test has to run the production
+`status`/`run` paths whole, by replacing `_opener()`'s return value -- never by patching `urllib`
+internals.
 """
 
 from __future__ import annotations
 
 import base64
+import email.message
 import importlib.util
 import io
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
+import urllib.error
+import urllib.request
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from unittest import mock
 
 SPEC = importlib.util.spec_from_file_location("agent_identity", Path(__file__).with_name("agent-identity.py"))
@@ -339,9 +345,9 @@ class GitHttpsAuthConfigTests(unittest.TestCase):
                 self.assertNotIn("ghs_supersecret", value)
 
     def test_a_nested_run_resets_the_outer_extraheader_rather_than_stacking_it(self) -> None:
-        # The regression a review found: without the empty-value reset, an inner run's own
-        # extraheader was appended after an outer run's, and git sent both -- an expired outer
-        # token first, then the fresh inner one, over the same request.
+        # Without the empty-value reset, an inner run's own extraheader would be appended after
+        # an outer run's, and git would send both -- a possibly expired outer token first, then
+        # the fresh inner one, over the same request.
         outer = agent_identity.git_https_auth_config("outer_stale_token", {})
         inner = agent_identity.git_https_auth_config("inner_fresh_token", outer)
         merged = {**outer, **inner}
@@ -515,21 +521,235 @@ class TokenMintingTests(unittest.TestCase):
         self.assertEqual(caught.exception.status, 500)
 
 
-class SecretsNeverPrintedTests(unittest.TestCase):
-    def test_run_environment_is_never_dumped_by_status_or_run_output(self) -> None:
-        # build_run_environment itself is pure and has no output; this checks the value it
-        # produces is never accidentally embedded in a str/repr a caller might print.
-        config: Any = {"app_id": "1", "slug": "s", "bot_id": 1, "name": "n", "html_url": "h"}
-        env = agent_identity.build_run_environment("claude-coder", config, "ghs_supersecret", {})
-        self.assertNotIn("ghs_supersecret", repr(env.keys()))
+class _FakeResponse:
+    def __init__(self, body: dict[str, Any]) -> None:
+        self._raw = json.dumps(body).encode("utf-8")
 
-    def test_http_error_never_includes_request_headers_in_its_message(self) -> None:
-        # A hand-built AgentIdentityHTTPError, the shape mint_token_for_role's callers raise: the
-        # message is built from GitHub's own body text, and the JWT/token that were sent as
-        # headers are never interpolated into it.
-        error = agent_identity.AgentIdentityHTTPError(404, "GitHub returned HTTP 404 for GET https://x: not found")
-        self.assertNotIn("Authorization", str(error))
-        self.assertNotIn("Bearer", str(error))
+    def __enter__(self) -> _FakeResponse:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._raw
+
+
+class _FakeGitHub:
+    """Stands in for `_opener()`'s own return value, so the production `_request`, `default_get`,
+    `default_post`, `mint_token_for_role`, `cmd_status` and `cmd_run` all run unchanged; records
+    every Authorization header it was sent, so a test can look for that exact secret in the output.
+    """
+
+    def __init__(self, token: str, *, fail_with: int | None = None) -> None:
+        self.token = token
+        self.fail_with = fail_with
+        self.authorizations: list[str] = []
+
+    def open(self, request: urllib.request.Request, timeout: float = 0.0) -> _FakeResponse:
+        authorization = request.get_header("Authorization")
+        if authorization:
+            self.authorizations.append(authorization)
+        if self.fail_with is not None:
+            raise urllib.error.HTTPError(
+                request.full_url, self.fail_with, "error", email.message.Message(), io.BytesIO(b"Bad credentials")
+            )
+        if request.get_method() == "GET":
+            return _FakeResponse({"id": 4242})
+        return _FakeResponse({"token": self.token, "permissions": {"contents": "write"}})
+
+
+class SecretsNeverPrintedTests(unittest.TestCase):
+    """Runs the real `status`, `run` and HTTP-error paths against a real private key and a faked
+    GitHub, capturing stdout and stderr, and looks for the key, the JWT and the installation token
+    in what they print or raise.
+    """
+
+    TOKEN = "ghs_SECRET_installation_token_value"
+
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        pem = agent_identity.role_pem_path(self.root, "claude-coder")
+        subprocess.run(["openssl", "genrsa", "-out", str(pem), "2048"], check=True, capture_output=True, timeout=30)
+        self.pem_body = pem.read_text(encoding="utf-8").splitlines()[1]
+        config = {"app_id": "1", "slug": "nappy-claude-coder", "bot_id": 5, "name": "n", "html_url": "h"}
+        agent_identity.role_json_path(self.root, "claude-coder").write_text(json.dumps(config), encoding="utf-8")
+
+    def _assert_no_secret(self, fake: _FakeGitHub, *texts: str) -> None:
+        self.assertTrue(fake.authorizations, "the faked GitHub was never called, so this proves nothing")
+        secrets_sent = [self.TOKEN, self.pem_body]
+        for authorization in fake.authorizations:
+            secrets_sent.append(authorization.split(" ", 1)[1])  # the JWT itself
+        for text in texts:
+            for secret in secrets_sent:
+                self.assertNotIn(secret, text)
+
+    def _status(self, fake: _FakeGitHub) -> tuple[int, str, str]:
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with (
+            mock.patch.object(agent_identity, "_opener", return_value=fake),
+            redirect_stdout(stdout),
+            redirect_stderr(stderr),
+        ):
+            code = agent_identity.cmd_status(["claude-coder"], self.root, "O", "R")
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def test_status_prints_neither_the_key_nor_the_jwt_nor_the_token(self) -> None:
+        fake = _FakeGitHub(self.TOKEN)
+        code, out, err = self._status(fake)
+        self.assertEqual(code, 0, out + err)
+        self.assertIn("installed on O/R", out)
+        self._assert_no_secret(fake, out, err)
+
+    def test_status_on_an_http_error_prints_github_s_text_but_no_secret(self) -> None:
+        fake = _FakeGitHub(self.TOKEN, fail_with=401)
+        code, out, err = self._status(fake)
+        self.assertNotEqual(code, 0)
+        self.assertIn("Bad credentials", out + err)
+        self._assert_no_secret(fake, out, err)
+
+    def test_run_hands_the_token_to_the_child_only_and_prints_nothing_secret(self) -> None:
+        fake = _FakeGitHub(self.TOKEN)
+        handed: dict[str, str] = {}
+
+        def fake_exec(_file: str, _args: list[str], env: dict[str, str]) -> None:
+            handed.update(env)
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with (
+            mock.patch.object(agent_identity, "_opener", return_value=fake),
+            mock.patch.object(agent_identity.os, "execvpe", side_effect=fake_exec),
+            redirect_stdout(stdout),
+            redirect_stderr(stderr),
+        ):
+            agent_identity.cmd_run("claude-coder", ["echo", "hi"], self.root, "O", "R")
+        self.assertEqual(handed.get("GH_TOKEN"), self.TOKEN)
+        self._assert_no_secret(fake, stdout.getvalue(), stderr.getvalue())
+
+    def test_run_on_an_http_error_prints_no_secret(self) -> None:
+        fake = _FakeGitHub(self.TOKEN, fail_with=500)
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with (
+            mock.patch.object(agent_identity, "_opener", return_value=fake),
+            redirect_stdout(stdout),
+            redirect_stderr(stderr),
+        ):
+            code = agent_identity.cmd_run("claude-coder", ["echo", "hi"], self.root, "O", "R")
+        self.assertNotEqual(code, 0)
+        self.assertIn("HTTP 500", stderr.getvalue())
+        self._assert_no_secret(fake, stdout.getvalue(), stderr.getvalue())
+
+    def test_an_http_error_s_own_text_never_carries_the_request_headers(self) -> None:
+        fake = _FakeGitHub(self.TOKEN, fail_with=401)
+        with (
+            mock.patch.object(agent_identity, "_opener", return_value=fake),
+            self.assertRaises(agent_identity.AgentIdentityHTTPError) as caught,
+        ):
+            agent_identity.default_get("https://api.github.com/x", {"Authorization": "Bearer JWT_SECRET_VALUE"})
+        self.assertIn("Bad credentials", str(caught.exception))
+        self.assertNotIn("JWT_SECRET_VALUE", str(caught.exception))
+        self.assertNotIn("JWT_SECRET_VALUE", repr(caught.exception.args))
+
+
+class MalformedRoleConfigTests(unittest.TestCase):
+    def test_status_reports_a_broken_role_json_and_goes_on_to_the_other_roles(self) -> None:
+        for broken in ("{bad", '{"app_id": "1", "slug": "s", "bot_id": "abc", "name": "n", "html_url": "h"}'):
+            with self.subTest(broken=broken), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                agent_identity.role_json_path(root, "claude-coder").write_text(broken, encoding="utf-8")
+                stdout, stderr = io.StringIO(), io.StringIO()
+                with redirect_stdout(stdout), redirect_stderr(stderr):
+                    code = agent_identity.cmd_status(list(agent_identity.ROLE_NAMES), root, "O", "R")
+                self.assertNotEqual(code, 0)
+                self.assertIn("claude-coder:", stderr.getvalue())
+                self.assertIn("create claude-coder --force", stderr.getvalue())
+                for role in agent_identity.ROLE_NAMES:
+                    if role != "claude-coder":
+                        self.assertIn(f"{role}: not configured", stdout.getvalue())
+
+
+class ManifestCallbackTests(unittest.TestCase):
+    """Drives `run_manifest_flow`'s real local server the way a browser would -- the form page, then
+    GitHub's redirect to /callback with the state that page carries -- with only the two GitHub
+    calls mocked. Nothing here reaches GitHub.
+    """
+
+    CREATED: ClassVar[dict[str, Any]] = {
+        "id": 77,
+        "slug": "nappy-claude-coder",
+        "name": "nappy-claude-coder",
+        "html_url": "https://github.com/apps/nappy-claude-coder",
+        "pem": "-----BEGIN RSA PRIVATE KEY-----\nabc\n-----END RSA PRIVATE KEY-----\n",
+    }
+
+    def _browser(self, opened: list[str]) -> Any:
+        direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+        def visit(local_url: str) -> None:
+            page = direct.open(local_url, timeout=10).read().decode("utf-8")
+            match = re.search(r"state=([A-Za-z0-9_-]+)", page)
+            assert match, "the form page carried no state"
+            try:
+                direct.open(f"{local_url}callback?code=abc&state={match.group(1)}", timeout=10).read()
+            except urllib.error.HTTPError as error_page:
+                error_page.close()  # a 500; the flow's own result is what the test checks
+
+        def open_browser(url: str) -> bool:
+            opened.append(url)
+            if url.startswith("http://127.0.0.1:"):
+                threading.Thread(target=visit, args=(url,), daemon=True).start()
+            return True
+
+        return open_browser
+
+    def _run(self, root: Path, opened: list[str]) -> None:
+        with redirect_stdout(io.StringIO()):
+            agent_identity.run_manifest_flow(
+                "claude-coder",
+                agent_identity.ROLES["claude-coder"],
+                "O",
+                "R",
+                root,
+                open_browser=self._browser(opened),
+                timeout_seconds=60,
+            )
+
+    def test_a_successful_callback_saves_the_config_and_opens_the_install_page(self) -> None:
+        opened: list[str] = []
+        with (
+            tempfile.TemporaryDirectory() as temp,
+            mock.patch.object(agent_identity, "exchange_manifest_code", return_value=dict(self.CREATED)),
+            mock.patch.object(agent_identity, "fetch_bot_id", return_value=4242),
+        ):
+            root = Path(temp) / "agents"
+            self._run(root, opened)
+            config = agent_identity.load_role_config(root, "claude-coder")
+            assert config is not None
+            self.assertEqual(config["bot_id"], 4242)
+        self.assertEqual(len(opened), 2)
+        self.assertIn("nappy-claude-coder", opened[1])
+
+    def test_a_failed_save_ends_the_wait_at_once_and_says_how_to_recover(self) -> None:
+        opened: list[str] = []
+        with (
+            tempfile.TemporaryDirectory() as temp,
+            mock.patch.object(agent_identity, "exchange_manifest_code", return_value=dict(self.CREATED)),
+            mock.patch.object(agent_identity, "fetch_bot_id", return_value=4242),
+            mock.patch.object(agent_identity, "write_role_config", side_effect=OSError("simulated disk full")),
+        ):
+            started = time.monotonic()
+            with self.assertRaises(agent_identity.AgentIdentityError) as caught:
+                self._run(Path(temp), opened)
+            elapsed = time.monotonic() - started
+        message = str(caught.exception)
+        self.assertLess(elapsed, 15, "the flow waited out its timeout instead of ending on the error")
+        self.assertIn("simulated disk full", message)
+        self.assertIn("https://github.com/settings/apps/nappy-claude-coder", message)
+        self.assertIn("create claude-coder --force", message)
+        self.assertNotIn("timed out", message)
+        self.assertEqual(len(opened), 1, "the install page must not open for an app whose key was lost")
 
 
 class CliHelpAndSubcommandTests(unittest.TestCase):

@@ -162,7 +162,8 @@ Every agent prompt contains, explicitly:
   filed (**committing** says how), the agent's silent choices recorded as open to overturn, not
   narrated as settled; then the PR goes to a review agent under **pr-review**, which checks that
   move with everything else; then the orchestrator merges only under **committing**'s permission
-  rule and retires the branch with `tools/prune-merged.sh`.
+  rule and retires the branch with `uv run python tools/agent-identity.py run claude-coder --
+  tools/prune-merged.sh <branch>`.
 
 ## Running agents in parallel
 
@@ -187,10 +188,12 @@ merging is what collides — so parallelism is planned at the file level, before
   it lands — the ruleset's checks are not strict, so a PR merely
   behind `main` needs nothing. The semantic gate is `main`'s own CI run after the batch, which the
   orchestrator watches: a conflict between two PRs that touch different files passes both PRs'
-  own gates and only shows up there. Then retire the branch with `tools/prune-merged.sh <branch>`
-  from the main checkout (see **committing**), which removes the worktree and deletes the branch
-  only once GitHub vouches for it. `tools/land-prs.sh <pr-number>...` is that sequence for several
-  already-authorized, reviewed PRs in one call: merge or auto-merge, wait, then fast-forward
+  own gates and only shows up there. Then retire the branch with `uv run python
+  tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>` from the main
+  checkout (see **committing**, which also says why it is spelled exactly so), which removes the
+  worktree and deletes the branch only once GitHub vouches for it. `uv run python
+  tools/agent-identity.py run claude-coder -- tools/land-prs.sh <pr-number>...` is that sequence
+  for several already-authorized, reviewed PRs in one call: merge or auto-merge, wait, then fast-forward
   `main` and prune, one PR at a time, printing `main`'s own CI run at the end as the check to
   watch. A PR that an earlier merge left conflicting stops the run, since its resolution needs a
   review before it lands.
