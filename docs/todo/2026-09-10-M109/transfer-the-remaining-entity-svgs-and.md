@@ -8,11 +8,11 @@ and registration inputs. Inspect detail and animation consistency at gameplay sc
 
 The pursuing dog's appearance is accepted in
 [velvet-dolphin, the dog's leg motion](../../playtests/2026-09-27-velvet-dolphin.md).
-Correct the walked dog's static hind legs in E/W and SE/SW and the disappearing leg in NE/NW
-on the same preview PR, then show the revised loops for
-[the next dog review](../../review/2026-09-10-M109-2.md). Their
+The walked dog's revised side and diagonal opposite-stride frames await
+[the next dog review](../../review/2026-09-10-M109-2.md): confirm the hind-leg exchange in E/W
+and SE/SW, continuous four-leg anatomy in NE/NW, and acceptable frame-to-frame contours. Their
 [generation recipe](../../evidence/comic-dogs-2026-09-27/README.md) preserves the sources,
 raw outputs, native candidates, comparisons and synthetic stride loops; the
 [batch record](../../decisions/2026-09-10-M109.md) records the extraction decisions. Resolve
-the walked dog's side/diagonal stride defects, obtain visual acceptance, and verify registration
+any remaining walked-dog stride defects identified in review, obtain visual acceptance, and verify registration
 and live movement before installing these candidates. Both families remain SVGs in the game.
