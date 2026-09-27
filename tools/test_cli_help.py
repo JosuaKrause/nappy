@@ -35,6 +35,7 @@ PROJECT_ROOT = TOOLS.parent
 # unittest.main() already gives every one of them -h and rejects an unknown flag, which is the
 # standard library's job rather than this repository's.
 ENTRY_POINTS = (
+    "agent-identity.py",
     "clip.py",
     "reference.py",
     "remove-checkerboard.py",
@@ -83,6 +84,32 @@ class CliHelpTests(unittest.TestCase):
             with self.subTest(tool=name):
                 result = self.run_tool(name, "--this-flag-does-not-exist")
                 self.assertNotEqual(result.returncode, 0, f"{name} accepted an unknown flag")
+
+    def test_agent_identity_help_and_unknown_flag_do_no_work(self) -> None:
+        # run's own "role -- command" without the "--" is rejected the same way as an unknown
+        # flag: usage on stderr, before config_root() or the origin remote is ever touched.
+        with tempfile.TemporaryDirectory() as temporary:
+            agents_dir = Path(temporary) / "nappy-agents"
+            env = {**os.environ, "NAPPY_AGENTS_DIR": str(agents_dir)}
+            cases: tuple[tuple[bool, tuple[str, ...]], ...] = (
+                (True, ("--help",)),
+                (True, ("-h",)),
+                (False, ("--this-flag-does-not-exist",)),
+                (True, ("run", "--help")),
+                (False, ("run", "claude-coder")),
+            )
+            for expect_zero, args in cases:
+                with self.subTest(args=args):
+                    result = subprocess.run(
+                        [sys.executable, str(TOOLS / "agent-identity.py"), *args],
+                        stdin=subprocess.DEVNULL,
+                        capture_output=True,
+                        text=True,
+                        timeout=15,
+                        env=env,
+                    )
+                    self.assertEqual(result.returncode == 0, expect_zero, args)
+                    self.assertFalse(agents_dir.exists(), f"{args} touched the agent config directory")
 
     def test_synth_help_and_unknown_flag_do_no_work(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

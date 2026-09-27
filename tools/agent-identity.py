@@ -284,13 +284,13 @@ def _openssl_sign(data: bytes, pem_path: Path) -> bytes:
     result = subprocess.run(
         ["openssl", "dgst", "-sha256", "-sign", str(pem_path)],
         input=data,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         check=False,
         timeout=15,
     )
     if result.returncode != 0:
-        raise AgentIdentityError(f"openssl could not sign the JWT: {result.stderr.decode('utf-8', 'replace').strip()}")
+        detail = result.stderr.decode("utf-8", "replace").strip()
+        raise AgentIdentityError(f"openssl could not sign the JWT: {detail}")
     return result.stdout
 
 
@@ -328,7 +328,9 @@ def _opener() -> urllib.request.OpenerDirector:
     return urllib.request.build_opener(urllib.request.HTTPSHandler(context=context))
 
 
-def _request(method: str, url: str, headers: dict[str, str], body: bytes | None = None, *, timeout: float = 20.0) -> dict[str, Any]:
+def _request(
+    method: str, url: str, headers: dict[str, str], body: bytes | None = None, *, timeout: float = 20.0
+) -> dict[str, Any]:
     """One GitHub HTTP call, decoded as JSON. Never receives or logs anything from `headers` in an
     error message; a GitHub error body may be included, since it is GitHub's own text, not ours.
     """
@@ -443,7 +445,7 @@ def build_manifest(role: str, spec: RoleSpec, owner: str, repo: str, port: int) 
         "url": repo_url,
         "hook_attributes": {"url": repo_url, "active": False},
         "redirect_url": f"http://127.0.0.1:{port}/callback",
-        "description": spec.description,
+        "description": f"nappy {role}: {spec.description}",
         "public": False,
         "default_permissions": dict(spec.permissions),
     }
@@ -456,7 +458,7 @@ def render_manifest_form(manifest: dict[str, Any], action_url: str) -> str:
     escaped_manifest = html.escape(json.dumps(manifest), quote=True)
     escaped_action = html.escape(action_url, quote=True)
     return (
-        "<!doctype html><html><body onload=\"document.forms[0].submit()\">"
+        '<!doctype html><html><body onload="document.forms[0].submit()">'
         f'<form method="post" action="{escaped_action}">'
         f'<input type="hidden" name="manifest" value="{escaped_manifest}">'
         "</form>"
@@ -549,8 +551,8 @@ def run_manifest_flow(
                 self._send(404, "not found")
                 return
             query = urllib.parse.parse_qs(parsed.query)
-            code = (query.get("code") or [None])[0]
-            got_state = (query.get("state") or [None])[0]
+            code = query.get("code", [""])[0]
+            got_state = query.get("state", [""])[0]
             if got_state != state:
                 self._send(400, "<html><body>state did not match -- nothing was created.</body></html>")
                 outcome["error"] = "the callback's state did not match what was sent"
@@ -581,7 +583,10 @@ def run_manifest_flow(
 
     server = http.server.HTTPServer(("127.0.0.1", port), _Handler)
     local_url = f"http://127.0.0.1:{port}/"
-    print(f"agent-identity: opening {local_url} to create {spec.app_name} -- open it by hand if a browser does not appear")
+    print(
+        f"agent-identity: opening {local_url} to create {spec.app_name}",
+        "-- open it by hand if a browser does not appear",
+    )
     open_browser(local_url)
     deadline = time.monotonic() + timeout_seconds
     try:
@@ -597,7 +602,10 @@ def run_manifest_flow(
     if "error" in outcome:
         raise AgentIdentityError(f"could not finish creating {role}: {outcome['error']}")
 
-    print(f"agent-identity: {role} created as {outcome['slug']} -- install it on {owner}/{repo} only: {outcome['install_url']}")
+    print(
+        f"agent-identity: {role} created as {outcome['slug']} -- install it on {owner}/{repo} only: "
+        f"{outcome['install_url']}"
+    )
     open_browser(str(outcome["install_url"]))
 
 
@@ -722,7 +730,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="run the GitHub App manifest flow for one or more roles (player's own machine only)",
         description="Run the GitHub App manifest flow for one or more roles.",
     )
-    create.add_argument("roles", nargs="+", choices=ROLE_NAMES, metavar="ROLE", help=f"one or more of: {', '.join(ROLE_NAMES)}")
+    create.add_argument(
+        "roles", nargs="+", choices=ROLE_NAMES, metavar="ROLE", help=f"one or more of: {', '.join(ROLE_NAMES)}"
+    )
     create.add_argument("--force", action="store_true", help="replace a role that already has a config")
     _add_repo_option(create)
 
@@ -751,7 +761,11 @@ def build_parser() -> argparse.ArgumentParser:
 def _build_run_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agent-identity.py run",
-        description="Mint a token for ROLE and exec COMMAND as that GitHub identity.",
+        usage="agent-identity.py run [-h] [--repo OWNER/REPO] ROLE -- COMMAND [ARGS...]",
+        description=(
+            "Mint a token for ROLE and exec COMMAND as that GitHub identity.\n"
+            "The literal -- is required; everything after it is COMMAND, unvalidated."
+        ),
         epilog="  uv run python tools/agent-identity.py run claude-coder -- git push -u origin my-branch\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

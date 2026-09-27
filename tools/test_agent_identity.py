@@ -27,6 +27,9 @@ from unittest import mock
 SPEC = importlib.util.spec_from_file_location("agent_identity", Path(__file__).with_name("agent-identity.py"))
 assert SPEC and SPEC.loader
 agent_identity = importlib.util.module_from_spec(SPEC)
+# dataclasses (RoleSpec) resolves its field types by looking itself up in sys.modules by
+# __module__ name -- it must be registered there before exec_module, or that lookup finds nothing.
+sys.modules[SPEC.name] = agent_identity
 SPEC.loader.exec_module(agent_identity)
 
 
@@ -69,7 +72,7 @@ class BuildManifestTests(unittest.TestCase):
         self.assertEqual(manifest["redirect_url"], "http://127.0.0.1:54321/callback")
         self.assertIs(manifest["public"], False)
         self.assertEqual(manifest["default_permissions"], spec.permissions)
-        self.assertIn("claude-coder", manifest["description"].lower() + spec.description.lower())
+        self.assertIn("claude-coder", manifest["description"])
 
     def test_reviewer_manifest_carries_the_reviewer_permissions(self) -> None:
         spec = agent_identity.ROLES["claude-reviewer"]
@@ -172,7 +175,16 @@ class JwtTests(unittest.TestCase):
         signature_file.write_bytes(_b64url_decode(signature_b64))
 
         result = subprocess.run(
-            ["openssl", "dgst", "-sha256", "-verify", str(public_key), "-signature", str(signature_file), str(data_file)],
+            [
+                "openssl",
+                "dgst",
+                "-sha256",
+                "-verify",
+                str(public_key),
+                "-signature",
+                str(signature_file),
+                str(data_file),
+            ],
             capture_output=True,
             text=True,
             timeout=15,
@@ -196,13 +208,17 @@ class JwtTests(unittest.TestCase):
 
 class RemoteUrlParsingTests(unittest.TestCase):
     def test_https_shape(self) -> None:
-        self.assertEqual(agent_identity.parse_remote_url("https://github.com/JosuaKrause/nappy"), ("JosuaKrause", "nappy"))
+        self.assertEqual(
+            agent_identity.parse_remote_url("https://github.com/JosuaKrause/nappy"), ("JosuaKrause", "nappy")
+        )
         self.assertEqual(
             agent_identity.parse_remote_url("https://github.com/JosuaKrause/nappy.git"), ("JosuaKrause", "nappy")
         )
 
     def test_ssh_shape(self) -> None:
-        self.assertEqual(agent_identity.parse_remote_url("git@github.com:JosuaKrause/nappy.git"), ("JosuaKrause", "nappy"))
+        self.assertEqual(
+            agent_identity.parse_remote_url("git@github.com:JosuaKrause/nappy.git"), ("JosuaKrause", "nappy")
+        )
         self.assertEqual(agent_identity.parse_remote_url("git@github.com:JosuaKrause/nappy"), ("JosuaKrause", "nappy"))
 
     def test_proxy_style_shape(self) -> None:
@@ -306,7 +322,10 @@ class RolesToCreateTests(unittest.TestCase):
             config: Any = {"app_id": "1", "slug": "s", "bot_id": 1, "name": "n", "html_url": "h"}
             agent_identity.write_role_config(root, "claude-coder", config, "key")
             stderr = io.StringIO()
-            with mock.patch.object(agent_identity, "run_manifest_flow", side_effect=never_flow), redirect_stderr(stderr):
+            with (
+                mock.patch.object(agent_identity, "run_manifest_flow", side_effect=never_flow),
+                redirect_stderr(stderr),
+            ):
                 code = agent_identity.cmd_create(["claude-coder"], force=False, owner="O", repo="R", root=root)
             self.assertNotEqual(code, 0)
             self.assertIn("--force", stderr.getvalue())
@@ -367,7 +386,9 @@ class TokenMintingTests(unittest.TestCase):
             raise agent_identity.AgentIdentityHTTPError(404, "GitHub returned HTTP 404")
 
         with self.assertRaises(agent_identity.AgentIdentityError) as caught:
-            agent_identity.fetch_installation_id(get, "jwt", "O", "R", install_url="https://github.com/apps/x/installations/new")
+            agent_identity.fetch_installation_id(
+                get, "jwt", "O", "R", install_url="https://github.com/apps/x/installations/new"
+            )
         self.assertIn("not installed", str(caught.exception))
         self.assertIn("https://github.com/apps/x/installations/new", str(caught.exception))
 
