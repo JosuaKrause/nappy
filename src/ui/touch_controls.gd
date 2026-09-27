@@ -31,17 +31,24 @@ extends Control
 ## **`Mode.JOYSTICK` aims from whichever of the two fixed focal points, `FOCUS_LEFT` (240, 480) or
 ## `FOCUS_RIGHT` (1040, 480) in the 1280x720 design box, is nearer the press** — see `nearer_focus()`
 ## and `_on_tap()`'s own doc for the coordinate-space trip a focus has to take to become a world
-## heading. **Both focal points are drawn**, as a ring at `STOP_RADIUS` with a knob at `_direction`
-## — see `_draw_focus_circles()`'s own doc. A press within `STOP_RADIUS` of either focus stops her
-## too, and so does one in the stop band down the middle of the screen, or a held pointer dragged
-## into either — see `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`. **A drag that leaves the
-## band re-picks which focus its heading is measured from, for whichever side it left on** — see
+## heading. **Both focal points are drawn, always, with a knob at the heading she is actually
+## walking** — a ring at `STOP_RADIUS` with the knob at `current_heading()`, read straight off
+## `Input.get_vector()` rather than off this node's own locked-in `_direction`, so a real key
+## overriding a stale press shows up on both circles exactly as a fresh press would — see
+## `_draw_focus_circles()`'s own doc. *(2026-09-27, playtest olive-koala statement 6: "the onscreen
+## controls should show the selected direction on both sides always. when using hands and when
+## using the keyboard".)* A press within `STOP_RADIUS` of either focus stops her too, and so does
+## one in the stop band down the middle of the screen, or a held pointer dragged into either — see
+## `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`. **A drag that leaves the band re-picks
+## which focus its heading is measured from, for whichever side it left on** — see
 ## `_drag_origin_focus`'s own doc for why crossing the band is safe to retarget on where a bare
 ## `nearer_focus()` on every motion event was not.
 ##
-## **`Mode.TAP` aims from her own world position instead, and draws nothing.** A press within
-## `TAP_STOP_RADIUS` of her stops her; the band and the focal circles do not exist in this mode at
-## all.
+## **`Mode.TAP` aims from her own world position instead, and draws nothing, and the 2026-09-27
+## item does not reach it.** The player's words ask both *sides* to agree, which is a `JOYSTICK`
+## question: `TAP` has one aiming origin, her, not two to keep in step, so there is nothing a second
+## drawn point could disagree with. A press within `TAP_STOP_RADIUS` of her stops her; the band and
+## the focal circles do not exist in this mode at all.
 ## *(Playtest 29 finding 6, on why a real touch in `JOYSTICK` mode no longer stops on a press near
 ## her own position: the camera sits on her, so her own screen position already is the band's own
 ## centre line, and covering that ground twice made a drag crossing her by accident stop her by
@@ -318,10 +325,17 @@ func _process(_delta: float) -> void:
 	var showing := not paused
 	if showing != visible:
 		visible = showing
-		queue_redraw()
 	if paused and not _was_paused:
 		_release_all()
 	_was_paused = paused
+	if showing:
+		# Every frame, not only on a change here — see `_draw_focus_circles()`'s own doc.
+		# `current_heading()` reads `Input.get_vector()` fresh each time, and a real key can change
+		# that between two presses this node itself handles, with no event of its own to redraw on
+		# (a key release is not routed to `_yield_to_the_keyboard()` at all). The same reason
+		# `DangerEdge` and `HomeArrow` redraw every frame while active: something that is not this
+		# node's own state can change what they draw.
+		queue_redraw()
 
 ## Every real touch, always; a mouse click stands in for one too, on every build including a
 ## release export — *(2026-09-06, on a laptop: "I still need to press space even in mouse mode",
@@ -641,10 +655,12 @@ func _stop() -> void:
 ## over the keyboard a frame later, and this node's own `run` press from a double click or tap —
 ## `_run_active`, never a bare `Input.action_release(&"run")`, for the same reason as the move
 ## actions: a real Shift held at the same moment is not this node's to release. Zeroing `_direction`
-## and `_walking` is what lets the drawn focus knob (`Mode.JOYSTICK`) read as centred — stopped and
-## keyboard-driven — rather than still pointing at a heading the keys have already overridden.
-## Harmless when nothing was ever clicked: both sets are already empty, so pure keyboard play never
-## reaches past the first `return` below.
+## and `_walking` matters for this node's own bookkeeping only now — what a later stop or release has
+## left to undo — **not** for what the two focal circles draw: `_draw_focus_circles()` reads
+## `current_heading()` off `Input.get_vector()` directly, every frame, so the knobs already show
+## wherever the keys just pointed her without anything here telling them to. Harmless when nothing
+## was ever clicked: both sets are already empty, so pure keyboard play never reaches past the first
+## `return` below.
 func _yield_to_the_keyboard(key: InputEventKey) -> void:
 	if get_tree().paused:
 		return
@@ -889,25 +905,62 @@ func _draw_pause_button() -> void:
 ## *(2026-09-07: "show the control circles again on both sides so the user can see what is
 ## currently locked in.")*
 ##
-## **What is drawn is the state, not only the place.** Each ring is `STOP_RADIUS` itself — the same
-## radius a press has to land inside to stop her — so the ring's own edge is the boundary between
-## the two doors a press through it can open, rather than an arbitrary aesthetic size. The knob
-## inside is `_direction`, the one heading this whole scheme ever holds, read identically off
-## either circle: there is one direction locked in, not one per focus, so the two always agree.
+## **What is drawn is the heading she is actually walking, not only this node's own last press.**
+## *(2026-09-27, playtest olive-koala statement 6: "the onscreen controls should show the selected
+## direction on both sides always. when using hands and when using the keyboard".)* The knob's
+## offset is `current_heading(_rig)`, read straight off `Input.get_vector()` — the same call
+## `Stroller._physics_process()` makes off these four actions — rather than off `_direction`, this
+## node's own locked-in press: a real key overriding a stale click (`_yield_to_the_keyboard()`)
+## changes what `Input.get_vector()` reports immediately, with nothing routed through this file at
+## all, so reading it fresh here is what makes a keyboard-set heading show up on both circles
+## exactly as a fresh press would, rather than reading as centred while she visibly walks. `_rig` is
+## fetched here the same lazy way `_on_tap()`/`set_direction()` already do, since a mode can be set
+## to `JOYSTICK` and drawn before any press has ever asked for the player group. Read identically off
+## either circle: there is one heading locked in, not one per focus, so the two always agree.
 ## Centred (no offset) reads as *stopped*; a knob toward the rim reads as *walking that way*;
 ## brighter and larger while `run` is held, since a hold on the run action is as much a part of
 ## "what is locked in" as the heading is.
 ##
+## **And centred while she is detained**, a conversation or a capture, even with a key still held —
+## `current_heading()`'s own doc has the reasoning; a key kept down through one used to swing the
+## knob toward it while she stood locked in place, disagreeing with the one thing she was actually
+## doing.
+##
 ## **Primitives, not an SVG, and that is the cues rule's own exception rather than a violation of
-## it.** A knob whose offset is a continuous function of `_direction` cannot be a static asset any
-## more than `ModeButton`'s own hold-progress sweep can — see that class's comment for the same call
-## made there: "a fill that is not a drawing of anything is not a picture." This ring and its knob
-## are that shape, not a glyph's.
+## it.** A knob whose offset is a continuous function of the current heading cannot be a static
+## asset any more than `ModeButton`'s own hold-progress sweep can — see that class's comment for the
+## same call made there: "a fill that is not a drawing of anything is not a picture." This ring and
+## its knob are that shape, not a glyph's.
 func _draw_focus_circles() -> void:
+	if not _rig:
+		_rig = get_tree().get_first_node_in_group("player") as Node2D
 	var running := Input.is_action_pressed(&"run")
 	var knob_radius := _FOCUS_KNOB_RADIUS * (1.3 if running else 1.0)
 	var knob_colour := Color(1.0, 1.0, 1.0, 1.0 if running else 0.8)
-	var offset := _direction * (STOP_RADIUS * 0.6)
+	var offset := current_heading(_rig) * (STOP_RADIUS * 0.6)
 	for focus in [FOCUS_LEFT, FOCUS_RIGHT]:
 		draw_arc(focus, STOP_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.35), 2.0, true)
 		draw_circle(focus + offset, knob_radius, knob_colour)
+
+## The heading she is actually walking this instant, whichever of the two doors set it: a press or
+## drag through `set_direction()` (`_set_axis()` presses these same four actions), or a real key
+## through `_yield_to_the_keyboard()` overriding it. `Input.get_vector()` on `move_left`/
+## `move_right`/`move_up`/`move_down` is the exact read `Stroller._physics_process()` makes to
+## decide her own velocity, so this is not a second, independent notion of "what is pressed" that
+## could disagree with it — `.normalized()` on top guarantees a unit vector or exactly
+## `Vector2.ZERO`, matching `heading_to()`'s own convention, rather than trusting whatever length a
+## diagonal keyboard press or a partial controller strength happens to produce.
+##
+## **Zero while `rig` is detained, the same door `Stroller._physics_process()` itself reads
+## first.** *(Found in review of #412: a key held through a conversation or a capture used to swing
+## both knobs toward it even though `_detained_for > 0.0` already makes her stand still — the read
+## would have disagreed with her own physics, the one thing this function's doc above promises it
+## never does.)* `rig` is untyped `Node2D` rather than `Stroller`, matching `_rig`'s own doc: this
+## suite's own test rigs are a bare `Node2D` with no `is_detained()` of their own, so `has_method()`
+## is the check rather than a cast that would just fail on them, and a rig with nothing to ask
+## answers "not detained" — the only sound default for something that cannot be captured at all.
+## `null` (a screen with no player in it, or a caller that does not care) answers the same way.
+static func current_heading(rig: Node2D = null) -> Vector2:
+	if rig != null and rig.has_method(&"is_detained") and bool(rig.call(&"is_detained")):
+		return Vector2.ZERO
+	return Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down").normalized()
