@@ -135,9 +135,11 @@ rather than the ordinary, tighter reach every other contact uses. He does not le
 it changes hands: he stays and keeps shouting for a couple of seconds first, still charging her
 the whole time, so walking away from him afterward costs about what an ordinary pass past him
 does — asked how an instant handover should still cost something, the player answered: "he keeps
-shouting for a bit." Only completing the task itself grants **1 resistance progress**; the mark
-is the note, not the errand. Reaching `Tuning.RESISTANCE_GOAL` (five) tasks earns the chance at
-the good ending; the day-14 sabotage is the act on top of it — see "The finale" below.
+shouting for a bit." That is one of two costs at day 6's own handover, not the whole of it: the
+man shouting is also one of the two tasks that sends someone after her the moment she hands it
+over — see "Risk" below. Only completing the task itself grants **1 resistance progress**; the
+mark is the note, not the errand. Reaching `Tuning.RESISTANCE_GOAL` (five) tasks earns the chance
+at the good ending; the day-14 sabotage is the act on top of it — see "The finale" below.
 
 The first mark is on the day the curfew is announced, and a task day follows most days after
 that through the day before the last night:
