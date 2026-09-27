@@ -23,7 +23,7 @@ reports and reference instructions live in `docs/playtests/`.
 **Every branch is work in progress; nothing is parked on one.** The sealing measurement probes,
 `tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where
 the runner does not discover them: they print rather than assert, they are the instrument the
-per-street density figures in `TODO.md` were read with, and `tools/test.sh probes/m64_density.gd`
+per-street density figures in M99's record (`tools/decisions.sh M99`) were read with, and `tools/test.sh probes/m64_density.gd`
 runs one by name.
 
 **Work reaches `main` through a pull request and nothing else.** `main`'s ruleset requires one, plus
@@ -207,8 +207,8 @@ replacement on the page where one exists and the SVG's raster where none does;
 runtime selects a mode. The authoring sources live in `art/`, which the engine ignores.
 The existing drawing transforms and animation remain in charge.
 Read [VISUALS.md](VISUALS.md) for reference roles and where the pictures live, and
-M109, convert the SVG catalogue to PNG, in
-[TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
+M109, convert the SVG catalogue to PNG, in its entry
+[todo/2026-09-10-M109/](todo/2026-09-10-M109/) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
 Compare each character's directions, gait frames and state variants as one family; the
 illustrated-PNG skill describes the identity references and extraction checks that keep them aligned.
 
@@ -274,7 +274,7 @@ the walk over the plan: where she went, which stretches she ran, and which event
 her, against the corridor the day expected her to take. `docs/TELEMETRY.md` says what it draws.
 Playtest 20's evidence is fourteen of them, one day and one dusk map for all seven days of a run —
 read alongside the run's own log, they are what turned "barriers don't work" into the specific,
-citable numbers now in `TODO.md` (the day-4 `charging_dog` killing her in 0.8s against every other
+citable numbers in [PLAYTEST-20](playtests/PLAYTEST-20.md) (the day-4 `charging_dog` killing her in 0.8s against every other
 encounter's 1.5s; the chalk mark going unfound on all four days it existed, `resistance 0/4`). **A
 rig can walk a route now**, so a picture of a specific route is cheap: `--walk` takes a script of
 timed steps — `--walk 3s15e` is three seconds south then fifteen east, and `--walk 3@45@2e` is three
