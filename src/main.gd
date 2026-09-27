@@ -1870,22 +1870,22 @@ func _event_summary() -> String:
 	parts.sort()
 	return ", ".join(parts) if not parts.is_empty() else "none"
 
-## `EventBus.day_lost_to`'s own suffix for a hard-fail day, named for `VisitCounter`:
-## `instant-car` for the one hard fail that is not a catalogue row
-## (`EventBus.hard_fail_triggered("car_strike")`, `Crowd._strike()`), otherwise `instant-<id>` off
-## whatever row actually struck her (`EventBus.hard_fail_triggered(instance.def.id)`,
-## `EventManager._check_hard_fails()`) — hyphenated the same way every other cause name is, so a new
-## hard-fail row (`roadblock`'s guard once it hunts, `night_raid`, and everything already in the
-## catalogue) is covered without a second list naming it here. Pure, and tested directly —
-## `tests/test_day_lost_to.gd`.
+## `EventBus.day_lost_to`'s own cause for a hard-fail day, named for `VisitCounter`, which folds it
+## into the one event a lost day sends (`VisitCounter._loss_event_suffix()`): `car` for the one
+## hard fail that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
+## `Crowd._strike()`), otherwise the id off whatever row actually struck her
+## (`EventBus.hard_fail_triggered(instance.def.id)`, `EventManager._check_hard_fails()`) —
+## hyphenated the same way every other cause name is, so a new hard-fail row (`roadblock`'s guard
+## once it hunts, `night_raid`, and everything already in the catalogue) is covered without a
+## second list naming it here. Pure, and tested directly — `tests/test_day_lost_to.gd`.
 static func _hard_fail_cause_suffix(reason: String) -> String:
-	var name := "car" if reason == "car_strike" else reason.replace("_", "-")
-	return "instant-%s" % name
+	return "car" if reason == "car_strike" else reason.replace("_", "-")
 
-## `EventBus.day_lost_to`'s own suffix for a crying day: `noise-<x>`, where `x` is whichever group
-## in `landed_by_group` (see `_crying_landed_by_group()` below) landed the most on her over the
-## crying window — a catalogue id (hyphenated), `crowd` for walkers, `traffic` for cars, or `self`
-## for her own running and standing in an alley.
+## `EventBus.day_lost_to`'s own cause for a crying day, folded into the one event a lost day sends
+## (`VisitCounter._loss_event_suffix()`): whichever group in `landed_by_group` (see
+## `_crying_landed_by_group()` below) landed the most on her over the crying window — a catalogue id
+## (hyphenated), `crowd` for walkers, `traffic` for cars, or `self` for her own running and standing
+## in an alley.
 ##
 ## **Ties, and the window reading entirely empty, pick the alphabetically first key that is
 ## present** — deterministic without inventing a second "who landed first" rule, and stated here
@@ -1904,7 +1904,7 @@ static func _crying_cause_suffix(landed_by_group: Dictionary) -> String:
 			best_points = points
 	if best == "":
 		best = "self"
-	return "noise-%s" % String(best).replace("_", "-")
+	return String(best).replace("_", "-")
 
 ## The impure half `_crying_cause_suffix()` above is named for: every live event's own `landed()`
 ## grouped by its catalogue id, every live crowd agent's grouped by `crowd` (a walker) or `traffic`
@@ -1961,11 +1961,11 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# before `end_day()` stops the clock, so it is timestamped where it happened.
 	if _observer:
 		_observer.day_finished(result)
-	# `VisitCounter`'s own "what ended a day" — before `day_ended` below, and only for the two
-	# results whose own name does not already say what filled the meter or which row struck her;
-	# `LOST_TIMEOUT`'s existing `nappy-day-N-lost-timeout` already says everything about a clock
-	# that simply ran out. See `EventBus.day_lost_to`'s own doc and docs/TELEMETRY.md, "The page
-	# counts visits".
+	# `VisitCounter`'s own "what ended a day" — before `day_ended` below, so it can fold this cause
+	# into the one event it sends when `day_ended` fires, and only for the two results whose own
+	# name does not already say what filled the meter or which row struck her; `LOST_TIMEOUT`'s
+	# existing `nappy-day-N-lost-timeout` already says everything about a clock that simply ran
+	# out. See `EventBus.day_lost_to`'s own doc and docs/TELEMETRY.md, "The page counts visits".
 	match result:
 		GameEnums.DayResult.LOST_HARD_FAIL:
 			EventBus.day_lost_to.emit(finished_day, _hard_fail_cause_suffix(_day.hard_fail_reason))
