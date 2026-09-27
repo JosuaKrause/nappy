@@ -62,6 +62,10 @@ answers these. Each "no" is a finding:
   item it only partly does is still there and says what is left. An item left queued after its work
   merges is how a finished thing gets picked up again with a different approach; an item removed
   for work the PR did not do is how an ask disappears.
+- **Is every defect already found in this change fixed inside it?** Nothing merges carrying a
+  defect that was already found: a finding from a playtest, a review or the player about work
+  whose PR is still open is built into that PR, never queued against it (`docs/decisions/`, M90,
+  the controls do what the hand does, where PLAYTEST-35's findings on the open branch went in).
 
 ## Then the code
 
