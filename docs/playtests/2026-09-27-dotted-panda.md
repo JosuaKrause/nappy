@@ -22,3 +22,16 @@ walking poses and the accepted pursuing dog), after its preview pictures.
 3. **Who finishes it.**
 
    > "you can fix things yourself -- the other agent is done with it for now"
+
+4. **The side view's seam.**
+
+   > "for 406 on the E/W graphics" · "the step 2 image hind leg can you just remove the black line
+   > between the body and the leg -- make it part of the pipeline of the image generation so it stays
+   > reproducible" · "the lighter hind leg" · "not the darker one since that one actually needs the
+   > line" · "just to be clear the fix for the dog only needs to happen for the regular dog. not the
+   > charging dog"
+
+5. **After the seam.**
+
+   > "dog graphics look good now -- make sure they will be used in game -- then we can merge" · "if
+   > 406 is ready just arm the auto merge instead of monitoring the CI"
