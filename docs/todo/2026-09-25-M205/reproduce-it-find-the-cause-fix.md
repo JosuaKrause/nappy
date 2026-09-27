@@ -12,6 +12,10 @@ native or headless, while every sighting (both playtests above, plus the release
 [2026-09-25-M205-2.md](../../decisions/2026-09-25-M205-2.md) for what was tried, including the two
 candidates the player's own stills already rule out.
 
-**Next step:** a local *release* Web export (the kind CI publishes, not a debug export served
-locally) walked beside a live `homeless_yeller`, reading his `contribution_at()`,
-`ExcitementHalo.select_sources()` and the meter's own rate in the browser while it happens.
+**Next step, runnable as written:** `tools/export-web.sh` with no argument (a release export, the
+kind CI publishes) builds `build/web/`; `cd build/web && python3 -m http.server 8060` serves it —
+the same command `tools/serve-web.sh` runs, so no COOP/COEP headers are needed (its preset has
+threads off); then open `http://localhost:8060/index.html?debug=1` — a release export answers the
+dev-flag query only with `?debug=1` present (`tools/serve-web.sh --help`). Walk beside a live
+`homeless_yeller` there, reading his `contribution_at()`, `ExcitementHalo.select_sources()` and the
+meter's own rate in the browser while it happens.
