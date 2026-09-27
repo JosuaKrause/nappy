@@ -180,8 +180,13 @@ env_or_dotenv() {
 }
 
 # ------------------------------------------------------------------------------------- Codex ---
-# Everything that reads Codex's own session format lives here, in one place, so a format change
-# is one place to fix. Codex sessions are JSONL files under $CODEX_HOME/sessions/YYYY/MM/DD/
+# Everything that reads Codex's own session format lives in this section, so a format change is
+# one place to fix -- not one literal function, since the two jobs the rest of the script needs
+# (credit a worktree's most recent worker, `codex_credit_for`; list the worktrees Codex has ever
+# named, `codex_hit_worktrees`) share the same raw hits but return different shapes, and folding
+# both into one function would mean a caller passing a flag to say which it wants. Those two are
+# this section's only entry points; `codex_files_for` and `codex_pick_worker_file` are private
+# steps only `codex_credit_for` calls. Codex sessions are JSONL files under $CODEX_HOME/sessions/YYYY/MM/DD/
 # rollout-*.jsonl; of the two other places Codex keeps session records (~/.codex/session_index.jsonl
 # and state_5.sqlite), neither names a sub-agent's actual worktree -- session_index.jsonl carries
 # only an id, a thread name and a timestamp, and while state_5.sqlite's own `threads` table has a
@@ -232,19 +237,18 @@ codex_hit_worktrees() {
     printf '%s\n' "$codex_hits_tsv" | awk -F'\t' '{ print $1 }' | sort -u
 }
 
-# A session file is Codex's own approval guardian, not a worker -- $1 is the file.
-codex_is_guardian() {
-    [[ "$(head -1 "$1" 2>/dev/null | jq -r 'try .payload.source.subagent.other catch empty' 2>/dev/null)" == "guardian" ]]
-}
-
-# The newest non-guardian file among a newline-separated list of candidates ($1), as "mtime<TAB>file".
+# The newest file among a newline-separated list of candidates ($1) that is not Codex's own
+# approval guardian (never a worker), as "mtime<TAB>file" -- the guardian check
+# (`source.subagent.other == "guardian"` on the file's own session_meta line) is inline since
+# nothing else needs it.
 codex_pick_worker_file() {
     { while IFS= read -r f; do
         [[ -z "$f" ]] && continue
         m="$(mtime_of "$f" 2>/dev/null)" || continue
         printf '%s\t%s\n' "$m" "$f"
     done <<<"$1"; } | sort -t $'\t' -k1,1 -rn | { while IFS=$'\t' read -r m f; do
-        codex_is_guardian "$f" && continue
+        guardian="$(head -1 "$f" 2>/dev/null | jq -r 'try .payload.source.subagent.other catch empty' 2>/dev/null)"
+        [[ "$guardian" == "guardian" ]] && continue
         printf '%s\t%s\n' "$m" "$f"
         break
     done; }
