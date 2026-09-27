@@ -215,8 +215,11 @@ and keep their tyres in their one picture.
 
 The [comic dog PNG preview](evidence/comic-dogs-2026-09-27/README.md) preserves the raw generated
 grids, native registered candidates, all-facing source comparisons and assembled A/B pose
-comparisons for the dog-walker/loose-dog and charging-dog families. These are review evidence;
-the runtime continues to draw the SVG atlas regions described above.
+comparisons for the dog-walker/loose-dog and charging-dog families. Its
+[walked-dog gait correction](evidence/comic-dogs-2026-09-27/walked-revision-2/README.md) overrides
+only the three defective B side/diagonal poses; the player's accepted charging family and every
+walked A/cardinal frame remain unchanged. These are review evidence; the runtime continues to draw
+the SVG atlas regions described above.
 
 ## Prepared SVG assets without runtime bindings
 

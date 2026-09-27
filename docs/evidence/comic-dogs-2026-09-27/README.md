@@ -6,16 +6,22 @@ atlas, or alter runtime behavior. The player acceptance gate remains open.
 
 ## Current proposal
 
-- [Walked-dog source/candidate comparison](review-dog.png) shows native and game-scale candidates,
-  6× enlargements, and all eight runtime facings, including the three west mirrors.
+- [Walked-dog gait correction](walked-revision-2/README.md) supplies three B-frame overrides for
+  the side and diagonal views. Its [current all-facing loop](walked-revision-2/review/current-walked-a-b.gif)
+  and [static A/B sheet](walked-revision-2/review/current-walked-a-b-sheet.png) show the corrected
+  family while preserving every A and cardinal frame.
 - [Charging-dog source/candidate comparison](review-charging-dog.png) shows the same coverage for
-  the charging family.
-- [Walked-dog A/B comparison](pose-comparison-dog.gif) and
-  [charging-dog A/B comparison](pose-comparison-charging-dog.gif) alternate the two extracted
-  poses. These GIFs are assembled pose comparisons, not captures or proof of live movement.
+  the charging family, whose appearance the player accepted. Its
+  [A/B comparison](pose-comparison-charging-dog.gif) remains unchanged.
+- The [first-pass walked-dog comparison](review-dog.png) and
+  [first-pass A/B loop](pose-comparison-dog.gif) preserve the superseded frames that exposed the
+  static hind legs and disappearing diagonal leg.
 - [Walked-dog raw output](raw/walked-dog-grid.png) and
   [charging-dog raw output](raw/charging-dog-grid.png) preserve the generator's first useful
   results unchanged.
+
+Every GIF in this evidence folder is an assembled pose comparison, not a capture or proof of live
+movement. The correction remains an evidence candidate and has no runtime binding.
 
 Both raw grids contain ten visible cells in the requested five-view by two-stride order and carry
 real alpha, with no floor, checkerboard, halo, leash, or cast shadow. The walked dog retains its

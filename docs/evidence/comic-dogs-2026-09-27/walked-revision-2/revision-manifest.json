@@ -1,0 +1,184 @@
+{
+  "recipe": "Three B-only overrides extracted from the selected raw with alpha > 10 for framing and original alpha preserved; each fits proportionally into its SVG pair-union bounds, then center/bottom aligns on the native canvas. All A frames, walked cardinals, and charging artifacts remain first-pass bytes.",
+  "selected_raw": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/raw/attempt-2-b-frames.png",
+  "selected_raw_sha256": "7c3b47eed75c9abc1f68300ffca67b7af44aec44ffac84064bbba3c57bb0d0d2",
+  "overrides": [
+    {
+      "name": "dog_b",
+      "replaces": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_b.png",
+      "replaced_sha256": "11d45e4c6f92c827ab694d3791adeccf44b36a57642e6dd0d24efed751c8d6ce",
+      "candidate": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/candidates/dog_b.png",
+      "candidate_sha256": "f7de2755b13f57a544bf74b4ef31820efd97239028f4e55f885feab403bc4847",
+      "source": "art/events/dog_b.svg",
+      "source_sha256": "cebfdee30a1e184055a8ef3a8673f54a2120b2a25eabe6dc1ca903967c23b072",
+      "native_size": [
+        26,
+        20
+      ],
+      "raw_cell_bounds": [
+        0,
+        0,
+        700,
+        724
+      ],
+      "crop_bounds_in_cell": [
+        91,
+        207,
+        662,
+        597
+      ],
+      "crop": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/crops/dog_b.png",
+      "crop_sha256": "8af4d03369c9adbaa027bedceec378d2f8a4ed036b0c368acfb6ee65345fed62",
+      "source_pair_union_bounds": [
+        1,
+        3,
+        26,
+        20
+      ],
+      "raw_to_native_scale": 0.04358974358974359,
+      "candidate_position": [
+        1,
+        3
+      ],
+      "candidate_alpha_bounds": [
+        1,
+        3,
+        26,
+        20
+      ]
+    },
+    {
+      "name": "dog_front_diagonal_b",
+      "replaces": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_front_diagonal_b.png",
+      "replaced_sha256": "f119fae361acb641ee7c94adce3d26d31b4801fe38f752ba01012cd98b7d8046",
+      "candidate": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/candidates/dog_front_diagonal_b.png",
+      "candidate_sha256": "68d8d8e0dc7c476e980d913f4fe5efd08df5f59d5e9a5c8659da54c4606231a3",
+      "source": "art/events/dog_front_diagonal_b.svg",
+      "source_sha256": "ea09839c3d8e459b97847751459750c55b668a09c602f87ca3fa9968e686e411",
+      "native_size": [
+        38,
+        28
+      ],
+      "raw_cell_bounds": [
+        700,
+        0,
+        1430,
+        724
+      ],
+      "crop_bounds_in_cell": [
+        129,
+        185,
+        661,
+        605
+      ],
+      "crop": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/crops/dog_front_diagonal_b.png",
+      "crop_sha256": "d4f2a4c9cdf6166e4210c81d851132e11666a4678abaaa0dde4ad4e8c2aee39c",
+      "source_pair_union_bounds": [
+        5,
+        6,
+        36,
+        28
+      ],
+      "raw_to_native_scale": 0.05238095238095238,
+      "candidate_position": [
+        6,
+        6
+      ],
+      "candidate_alpha_bounds": [
+        6,
+        6,
+        34,
+        28
+      ]
+    },
+    {
+      "name": "dog_back_diagonal_b",
+      "replaces": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_back_diagonal_b.png",
+      "replaced_sha256": "bed042f08a9d4a281105f028418924e94f66cb6af318268c67e43dc2fc726050",
+      "candidate": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/candidates/dog_back_diagonal_b.png",
+      "candidate_sha256": "5cefff183154d86201f23fd86d95b37765fed01a3de9a09c1622dbe6ba06b123",
+      "source": "art/events/dog_back_diagonal_b.svg",
+      "source_sha256": "35cef2725d825d07a1f853fa684d9ad045216484d33380c49b8d70e4a60d437a",
+      "native_size": [
+        38,
+        28
+      ],
+      "raw_cell_bounds": [
+        1430,
+        0,
+        2172,
+        724
+      ],
+      "crop_bounds_in_cell": [
+        124,
+        178,
+        680,
+        603
+      ],
+      "crop": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/crops/dog_back_diagonal_b.png",
+      "crop_sha256": "76c18cbb4fe6cb3b0e860d0ef645db058768788c531d497136dd59001b43587e",
+      "source_pair_union_bounds": [
+        4,
+        5,
+        35,
+        28
+      ],
+      "raw_to_native_scale": 0.05411764705882353,
+      "candidate_position": [
+        4,
+        5
+      ],
+      "candidate_alpha_bounds": [
+        4,
+        5,
+        34,
+        28
+      ]
+    }
+  ],
+  "preserved": {
+    "unaffected_walked_cardinals": {
+      "dog_front": "b6f407f1481df84fda7c06e164939e628efff61127f5aca40a51df4499d99062",
+      "dog_front_b": "0176256656ca30e299e6f88067f9eb4e38f4e5150f18cc30db6cf77f7db93af8",
+      "dog_back": "ce3a19ea0b1190108fca2ea23ae759b0fb3d9b053971bf62a7c1adee36f89319",
+      "dog_back_b": "9bf16550668208647432f6548c9dca56b0d15e3e9dab331bdd88c6a9744b6a2b"
+    },
+    "all_walked_a_frames": {
+      "dog": "99c9f9b7dd156d34d08d59181e2744975924a2cde661d288025c413ef15f7e3c",
+      "dog_front_diagonal": "8d9d1c227310637c45ba0f3824a570c77d1dd9bc3e0cf58218d42c1d836eb79d",
+      "dog_back_diagonal": "ee214935477571cd99c8d182b157e822ff4405bf238bcbe4397e70715f01c712"
+    },
+    "accepted_charging_artifacts": {
+      "docs/evidence/comic-dogs-2026-09-27/raw/charging-dog-grid.png": "a674ad5a021b939ad90a40c91769cbd8dab7521dfddef8cb44e8bd96ec0ee793",
+      "docs/evidence/comic-dogs-2026-09-27/review-charging-dog.png": "e9d5462f49d1075105607d93e0578f2c428eb588b573b08080cd0a843ee743be",
+      "docs/evidence/comic-dogs-2026-09-27/pose-comparison-charging-dog.gif": "259b9254bf9c4ed877d4204f2c4e369faf6fe10e6d363ab674631ddbb712ea04",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog.png": "209952170104795e3308741ecdd7a6e92b9eb33d43054553010c05504b8c6986",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_b.png": "0009d02928f73f2fb97fb00cb23799da26d51265db38776cd8d8e85705897195",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_back.png": "c0c85f0807a85f9de00f41e5f5b4c859e1b9da2b4ff32b90df553e4da34b314b",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_back_b.png": "73628850c99f3dfd8357195a40275951b21f10cf3f3ea76ffdf0739138fc432f",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_back_diagonal.png": "ba477b7d323947caea0921520675643260e3b67ecf3517236a0368a0353121ae",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_back_diagonal_b.png": "870838cfb0f5e5074ebc2d12f756b08df68c8d0a472acd1777dc6fa0f895fecc",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_front.png": "800c4d910c914e6f6647073ac84ab26d7ec5b9c9446df17ce32f043a09fb9c60",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_front_b.png": "310ba495c269e4582cf234c1dc1829a7ec081fe26ec02f1a745caa65ea2f4976",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_front_diagonal.png": "09109f9488621036d7eeeca31c7578769c51d239aadf1359feff5585f34bbcbf",
+      "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_front_diagonal_b.png": "6db77c151a5b5f9954e1d0fb03fdd32486ac8d79a7bea93862498031cc303200",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog.png": "d4eb1a06b5cf960f04e0813fba0228631de8d28bcbc887e99fd646e98ce1e72e",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_b.png": "621bf6903a123884d2b04918ff7a0545e535bfc3680fbfdfbc0281aee35c1d4e",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_back.png": "76ff4110d0490c2d127e5b75e8be21181bede83f11407a91685db454ffae9727",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_back_b.png": "9eef95ace4e48a1bf1c9688f7791c8eb8f8d473f4b1206dd5e0bb22900653d32",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_back_diagonal.png": "bd8d85505e9638839491653b3cf6573425eb5fd5fbfd286c811ed510d631104e",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_back_diagonal_b.png": "d3c6be57f5146ab6218e0e15c8bb85e125dbac10c80c3af4b069da02d21e1e80",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_front.png": "fbcfffc86f5f474e912eaf6eaf142a0da39d7c08d17aa5d0efc374c3737e24f4",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_front_b.png": "be7c3a1e9bdfd2fb52b75e692a5f0126b86a182d1c044e23aeb42450444ca1af",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_front_diagonal.png": "4d9475bf0a9733758d8a492871210f0d69c4ed22bd97f5cc13a40794e6ca5bd7",
+      "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_front_diagonal_b.png": "145dde80dbf67ec902b70d56a82bda57ff25601a044437f59f5e0607ef2e0b4d"
+    }
+  },
+  "reviews": {
+    "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/affected-a-b-sheet.png": "9a88cd29437bc0987190868020d4f6302be4708cffc730ed342a6ddfbd4ebd7a",
+    "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/affected-a-b.gif": "ccffdfd0d5ce25f1d7d81414890c9538e26e53d75a705bff2ca3eea86ee9a35a",
+    "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/affected-high-resolution.png": "1b897211c992317c27cdd022502a6d39839761d11e8ff6fea7b89a4675f530b4",
+    "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/current-walked-a-b-sheet.png": "ad299fb9c9c8e9d227e63e0d60ef5ea4de6bd5250303b09bdaad82299670bed7",
+    "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/current-walked-a-b.gif": "8ea06358d55edaea30dfd7ec5fbd7ab6dceaefd3db95a8c717c7926277eabc00"
+  }
+}
