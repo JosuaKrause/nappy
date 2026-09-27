@@ -1316,6 +1316,10 @@ gi\\
 t push"
 assert_write_guard "a 70 KB command naming g, i and t split by quotes -> deny" deny \
     "echo '${over_bound}'; 'g'\"i\"t push"
+assert_write_guard "a 70 KB command naming g\$''it (an empty \$'' string) -> deny" deny \
+    "echo '${over_bound}'; g\$''it push"
+assert_write_guard "a 70 KB command naming g\$\"\"it (an empty \$\"\" string) -> deny" deny \
+    "echo '${over_bound}'; g\$\"\"it push"
 checks=$((checks + 1))
 if [ $((SECONDS - bound_start)) -lt 3 ]; then
     echo "ok   commands over the bound are decided at once"

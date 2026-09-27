@@ -127,7 +127,7 @@ wrapped heredoc commit or PR body that names `git push`, so the deny message of 
 points at a body file (`git commit -F`, `--body-file`). And since a hook that runs past its
 10-second timeout lets the command through in both Claude Code and Codex, a command over 64 KB
 is not read for the shell at all: one in which `git`, `gh` or a pushing script's name appears
-anywhere, with backslashes, newlines and quotes skipped, is denied, and one over 1 MB is denied
+anywhere, with backslashes, newlines, quotes and `$` skipped, is denied, and one over 1 MB is denied
 outright. That check is a single regex search, decided in well under a second at the cap. The
 longest pull request body in the repository is about a third of 64 KB.
 

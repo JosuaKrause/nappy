@@ -513,6 +513,8 @@ class CodexHooksTest(unittest.TestCase):
         for command in (
             f"echo {padding}\necho x\\\\\ngi\\\nt push",
             f"echo {padding}; 'g'\"i\"t push",
+            f"echo {padding}; g$''it push",
+            f'echo {padding}; g$""it push',
             "echo " + "a" * 1100000,
         ):
             with self.subTest(command=command[-40:]):
