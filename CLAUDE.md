@@ -38,7 +38,8 @@ what was tried and rejected, or what a number used to be, that is the records un
 `docs/decisions/`, one file each, fetched on demand with `tools/decisions.sh <noun>`
 ([docs/DECISIONS.md](docs/DECISIONS.md) says how). Nothing outside them describes a past state.
 
-Read [docs/HANDOFF.md](docs/HANDOFF.md) for where to pick up, then [docs/TODO.md](docs/TODO.md).
+Read [docs/HANDOFF.md](docs/HANDOFF.md) for where to pick up, then run `tools/queue.sh` for the
+queue's order ([docs/TODO.md](docs/TODO.md) says how an entry's band sets it).
 
 ---
 
@@ -73,6 +74,7 @@ is the moment somebody is about to touch the file.
 | `src/telemetry/**`, `src/autoload/telemetry.gd` | **telemetry** |
 | `src/autoload/tuning.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
+| `tools/synthesize-sfx.py`, any `*.wav`, `*.ogg`, `*.flac` or `*.mp3` | **sound-effects** |
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify** |
 | `docs/playtests/*.md`, `docs/TODO.md`, `docs/todo/**`, `docs/review/**` | **playtest-feedback** |

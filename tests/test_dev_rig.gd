@@ -31,6 +31,8 @@ func run(t) -> void:
 	_test_a_queue_fed_row_refuses_by_name(t)
 	_test_a_waiting_row_stands_outside_its_trigger(t)
 	_test_the_pavement_offset_crosses_the_streets_own_axis(t)
+	_test_no_door_before_the_region_wall_starts(t)
+	_test_door_target_lands_on_the_approach_side_of_a_hut(t)
 	_teardown(t)
 
 func _rng(stream: String) -> RandomNumberGenerator:
@@ -188,3 +190,57 @@ func _test_the_pavement_offset_crosses_the_streets_own_axis(t) -> void:
 	var ew_offset := DevRig.pavement_offset(map, ew_at, RADIUS)
 	t.check(not is_zero_approx(ew_offset.y) and is_zero_approx(ew_offset.x),
 			"and on an east-west street it crosses local Y instead (got %s)" % ew_offset)
+
+# ---------------------------------------------------------------- --spawn door[:n] ---
+# M204 (the trailer): "the father walking towards a gatehouse". `_city`/DAY above is day 6,
+# before `Tuning.REGION_WALL_FIRST_DAY` (9), so it doubles as the no-checkpoint-yet case; the
+# door itself is checked against a separate city built on a seed `tests/test_checkpoints.gd`
+# already establishes has a door structure on that day (`_test_the_manager_actually_places_the_door_structure`).
+
+const _CHECKPOINT_SEED := 771103
+
+## Before the region wall exists, `door_bodies` is empty every day regardless of seed — the same
+## "not there yet" shape `_test_an_unknown_target_warns_and_returns_home` covers for a typo'd
+## target, but reached here through a real target on a day too early for it.
+func _test_no_door_before_the_region_wall_starts(t) -> void:
+	t.check(DAY < Tuning.REGION_WALL_FIRST_DAY,
+			"day %d is before the region wall starts (day %d)" % [DAY, Tuning.REGION_WALL_FIRST_DAY])
+	var at := DevRig.for_spawn_target("door", _city, _resistance)
+	t.check(at == _city.map.home_world_position(),
+			"no checkpoint exists yet, so --spawn door falls back to the doorstep")
+
+## `door:0` lands on a walkable tile `TILE_SIZE * 4` back from the first hut, along its own
+## `facing` axis — the approach side a `--walk` in that same direction closes toward.
+func _test_door_target_lands_on_the_approach_side_of_a_hut(t) -> void:
+	var day := Tuning.REGION_WALL_FIRST_DAY
+	var map := CityGenerator.generate(_CHECKPOINT_SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	city.events.stream_radius = INF
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	city.start_day(state, day, _rng("checkpoint-closures"))
+	var consumed: Array[String] = []
+	city.events.start_day(day, _rng("checkpoint-events"), consumed)
+
+	var huts: Array[EventScheduler.Planned] = []
+	for body in city.region_plan().door_bodies:
+		if body.def.id == "checkpoint_hut":
+			huts.append(body)
+	t.check(not huts.is_empty(), "seed %d day %d has at least one checkpoint hut" % [_CHECKPOINT_SEED, day])
+	if huts.is_empty():
+		city.free()
+		return
+
+	var at := DevRig.for_spawn_target("door:0", city, _resistance)
+	t.check(city.map.is_walkable(city.map.world_to_tile(at)), "--spawn door:0 lands on a walkable tile (%s)" % at)
+	var hut := huts[0]
+	var expected := hut.position - hut.facing * Tuning.TILE_SIZE * 4.0
+	t.check(at.distance_to(expected) < Tuning.TILE_SIZE * 2.0,
+			"stands close to four tiles back from the hut along its own facing axis (got %s, hut %s, facing %s)"
+					% [at, hut.position, hut.facing])
+	var closer := at + hut.facing * Tuning.TILE_SIZE
+	t.check(closer.distance_to(hut.position) < at.distance_to(hut.position),
+			"walking one tile in the hut's own facing direction closes the distance to it")
+	city.free()

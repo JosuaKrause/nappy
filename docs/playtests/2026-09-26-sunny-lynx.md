@@ -35,3 +35,9 @@ prerequisites. The suspected link to current mobile stutter remains a hypothesis
 > "write that down as a plan for now"
 
 > "with the whole analysis"
+
+## Animation implementation resumed
+
+> "main updated again -- read your brief and let's start with the animation optimization"
+
+> "pull the latest from the optimization branch"

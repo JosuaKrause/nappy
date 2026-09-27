@@ -1,3 +1,5 @@
+priority: later
+
 ## M182 — A finished task is shown by the world, never by text · asked for 2026-09-20
 
 > "yeller should just start walking offscreen -- no onscreen text for acknowledgements like this"

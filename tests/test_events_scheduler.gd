@@ -3,8 +3,8 @@ extends "res://tests/events_shared_city.gd"
 ## and per-day caps are respected, a one-shot fires once per run, an alley robbery and the alley
 ## mouse stay on the alley's own ground, a calm area a day has not used is left alone -- plus the
 ## day's own content guarantees: the successors of a resolved event resolve, the fire truck is
-## never itself scheduled, the fire engine is fair from the worst position on its street, and every
-## along-street path a row can walk stays in bounds.
+## never itself scheduled, the fire engine is warned long enough from the worst position on its
+## street, and every along-street path a row can walk stays in bounds.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again"; further split from
 ## a combined `test_events_scheduler.gd` (which also held "what a street costs", M19) once the
@@ -25,7 +25,7 @@ func run(t) -> void:
 	_test_successors_resolve(t)
 	_test_sighted_successors_resolve(t)
 	_test_fire_truck_is_never_scheduled(t)
-	_test_the_fire_engine_is_fair_from_the_worst_position_on_the_street(t)
+	_test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_street(t)
 	_test_along_street_paths_stay_in_bounds(t)
 
 
@@ -416,40 +416,74 @@ func _test_fire_truck_is_never_scheduled(t) -> void:
 		t.check(not truck.available_on(day),
 				"the fire engine is not schedulable on day %d" % day)
 
-## The engine's own contract, re-proven for the new siting. `EventManager._summon_the_sighted_
-## row()` sites it `maxf(Tuning.offscreen_lead(...), summoned.field_reach() + Tuning.
-## VIEW_HALF_EXTENT.length())` up the street from wherever the fire stopped it — the second term
-## is the one this test exists for: the trigger only bounds her distance from the fire to the
-## half diagonal of the view (`ResistanceDirector.NOTICE_RADIUS`'s own reasoning), not to zero,
-## so the siting has to clear the engine's own forward reach from *that* worst case, not just
-## from directly underneath it.
-func _test_the_fire_engine_is_fair_from_the_worst_position_on_the_street(t) -> void:
+## **The engine's own contract, on the game's own siting, from every position the sighting allows.**
+## Seeing the fire only bounds her distance from it to the half diagonal of the view
+## (`ResistanceDirector.NOTICE_RADIUS`'s own reasoning), so she may be anywhere from the kerb the
+## engine stops at to that far up its street. From each such point, standing still, the engine's
+## warning is walked the way `EventManager` runs it: its place is the one
+## `PendingWarning.on_its_route()` gives (what `EventManager._summon_the_sighted_row()` hands the
+## warning), and the engine is created there with its telegraph spent, as `spawn_warned()` does.
+## What holds: the place is up the road from the kerb and off screen by the engine's own notice when
+## it is created, and **from the badge to the earliest its field reaches her is at least the row's
+## own minimum** (`EventDef.minimum_telegraph()`).
+##
+## Its forward reach (548px) is deeper than the view is from her, so on its street she is inside its
+## field from its first frame, and the warning before it exists is the whole of what she is owed.
+func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_street(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
-	var heading := Vector2.DOWN
-	var closing := truck.speed + Tuning.WALK_SPEED
-	var reach := truck.field_reach()
+	var kerb := Vector2(2000.0, 4000.0)
+	# It comes down the street from the north to the kerb, so up its road is up the screen.
+	var travel := Vector2.DOWN
 	var worst_sight := Tuning.VIEW_HALF_EXTENT.length()
-	var lead := maxf(Tuning.offscreen_lead(heading, closing, truck.offscreen_notice),
-			reach + worst_sight)
-	t.check(lead >= reach + worst_sight,
-			"the siting clears the engine's own forward reach (%.0fpx) from the worst distance "
-			% reach + "she could already be from the fire when it is first seen (%.0fpx)" % worst_sight)
-
-	# The same construction `EventManager._summon_the_sighted_row()` uses: sited `lead` up the
-	# street from the point the engine stops at, travelling the same line down to it.
-	var road_at := Vector2(2000.0, 2000.0)
-	var entry := road_at + heading * lead
-	var instance := EventInstance.new()
-	instance.setup(truck, entry, PackedVector2Array([entry, road_at]))
-
-	# The worst position on the street: standing exactly `worst_sight` up the street from the
-	# fire, as far as she could be and still have triggered the summons by seeing it — the point
-	# with the least possible head start on the engine's approach.
-	var her := road_at + heading * worst_sight
-	t.check(instance.contribution_at(her) <= 0.001,
-			"the worst position on the street is already inside the engine's field at the "
-			+ "moment it is created, before she has had any warning at all")
-	instance.free()
+	var checked := 0
+	var wrong: Array[String] = []
+	var up := 0.0
+	while up <= worst_sight:
+		var her := kerb - travel * up
+		up += Tuning.TILE_SIZE
+		checked += 1
+		var created: Array[EventInstance] = []
+		var where := func(at: Vector2) -> Vector2:
+			return PendingWarning.on_its_route(truck, at, kerb, travel, 4000.0)
+		var arrive := func(place: Vector2, _at: Vector2) -> bool:
+			var instance := EventInstance.new()
+			instance.setup(truck, place, PackedVector2Array([place, kerb]))
+			instance.resume(truck.telegraph_time, 0.0)
+			created.append(instance)
+			return true
+		var warning := PendingWarning.new(truck, where, arrive)
+		if not warning.follow(her):
+			wrong.append("no place for its warning with her %.0fpx up from the kerb"
+					% her.distance_to(kerb))
+			continue
+		var place := warning.place
+		while created.is_empty() and warning.shown < truck.telegraph_time + 5.0:
+			place = warning.place
+			warning.tick(STEP, her)
+		if created.is_empty():
+			wrong.append("never created with her %.0fpx up from the kerb" % her.distance_to(kerb))
+			continue
+		var engine := created[0]
+		if (place - kerb).dot(travel) >= 0.0:
+			wrong.append("created at the kerb or past it at %v" % place)
+		elif not PendingWarning.is_off_screen(place - her, warning.closing_speed(),
+				truck.offscreen_notice):
+			wrong.append("created on screen at %v with her at %v" % [place, her])
+		var to_reach := 0.0
+		while engine.contribution_at(her) <= 0.0 and to_reach < 10.0:
+			engine.player_at = her
+			engine._process(STEP)
+			to_reach += STEP
+		var badge_to_reach := warning.shown + to_reach
+		if badge_to_reach + 0.001 < truck.minimum_telegraph():
+			wrong.append("its field reaches her %.2fs after the badge with her %.0fpx up from the "
+					% [badge_to_reach, her.distance_to(kerb)]
+					+ "kerb, under the %.2fs minimum" % truck.minimum_telegraph())
+		engine.free()
+	t.check(checked > 0 and wrong.is_empty(),
+			("from all %d positions up to %.0fpx up its street, the engine is created up its road "
+			% [checked, worst_sight]) + "off screen and reaches her no sooner than its minimum "
+			+ "after the badge%s" % ("" if wrong.is_empty() else ": " + wrong[0]))
 
 func _test_along_street_paths_stay_in_bounds(t) -> void:
 	var map := _map()

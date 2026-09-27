@@ -1,6 +1,8 @@
 **Separate scenery animation from static drawing.**
 
-**Plan only. Do not start implementation or more measurements until the player resumes them.**
+**Implementation is authorized.** The player resumes on 2026-09-26: "main updated again -- read
+your brief and let's start with the animation optimization". Start with the measured roof-vent
+redraw, then carry the same separation through water, pipe spray and crash smoke.
 This is the next implementation contract for M159, a slow frame names the frame that was slow.
 The player's complete instructions are in [Sunny lynx](../../playtests/2026-09-26-sunny-lynx.md).
 The [full measurement report](../../evidence/entity-performance-2026-09-26/README.md) holds the raw
@@ -14,8 +16,7 @@ moving parts animate; changing a small detail must not redraw an entire ground s
 building or event picture. The named cases are roof vents, the frozen water south of the map,
 the fountain in the broken-pipe scene and the smoke from the car accident.
 
-The player asks to preserve this as a plan with the whole analysis. No shipping optimization,
-new animation asset or rendering-policy change is implemented at this checkpoint.
+The retained analysis below supplies the baseline and preservation contract for implementation.
 
 ## Measured scene and method
 

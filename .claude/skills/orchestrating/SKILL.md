@@ -221,7 +221,9 @@ merging is what collides — so parallelism is planned at the file level, before
   read its entry's folder on `origin/main`; a brief built from a stale entry produces work that
   contradicts a decision the player has already recorded, and the contradiction is only found at
   review. If `main` has moved, merge it into the branch before the next agent commit rather than
-  after the last one.
+  after the last one. **What is next is `tools/queue.sh` run on that checkout**: it prints the
+  queue from each entry's band line (`priority:` and `after:`, the first lines of its
+  `README.md`), and setting or moving a band is the orchestrator's one-line edit to that entry.
 - **The merge order** when agents run in parallel — overlapping areas run sequentially instead;
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the

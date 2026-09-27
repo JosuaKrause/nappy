@@ -402,6 +402,8 @@ func _tear(tile: Vector2i) -> void:
 	var pursuit := bag.draw()
 	state.tears += 1
 	_refresh_wall(_by_tile[tile].x)
+	# `VisitCounter`'s own "poster-torn" — see docs/TELEMETRY.md, "The page counts visits".
+	EventBus.poster_torn.emit()
 	var what: String = PosterArt.Kind.keys()[kind].to_lower()
 	# Where and which, because nothing else records it: a tear depends on where she pushed.
 	Telemetry.note("scar", "she tears down the %s sheet at %s, tear %d of the run"

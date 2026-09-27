@@ -19,6 +19,8 @@ func run(t) -> void:
 	_test_a_protest_stays_something_she_can_be_routed_through(t)
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 	_test_catalogue_is_fair(t)
+	_test_a_warning_first_is_owed_a_flat_minimum(t)
+	_test_as_warned_first_carries_solid_parts_too(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
@@ -99,7 +101,9 @@ func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t) -> void:
 
 ## The contract from docs/EVENTS.md: a player who starts walking away the instant an event
 ## becomes visible clears its outer radius before it reaches full strength. A violation is
-## a bug, not a difficulty setting, so the whole catalogue is checked.
+## a bug, not a difficulty setting, so the whole catalogue is checked. "Visible" is the badge for a
+## row warned of before it exists, so what is held against the floor is `EventDef.warning_time()`
+## rather than the telegraph alone.
 func _test_catalogue_is_fair(t) -> void:
 	var defs := EventCatalogue.all()
 	t.check(not defs.is_empty(), "the catalogue is not empty")
@@ -107,9 +111,9 @@ func _test_catalogue_is_fair(t) -> void:
 		t.check(def.id != "", "every event has an id")
 		t.check(def.validate(), "event '%s' gives the player time to walk clear" % def.id)
 		if def.kind != GameEnums.EventKind.AMBIENT:
-			t.check(def.telegraph_time >= def.minimum_telegraph(),
-					"event '%s' telegraph %.2fs >= minimum %.2fs"
-					% [def.id, def.telegraph_time, def.minimum_telegraph()])
+			t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
+					"event '%s' warns %.2fs before it can reach her >= minimum %.2fs"
+					% [def.id, def.warning_time(), def.minimum_telegraph()])
 		t.check(def.outer_radius > def.inner_radius,
 				"event '%s' has a falloff band to fade across" % def.id)
 
@@ -117,6 +121,64 @@ func _test_catalogue_is_fair(t) -> void:
 	var playground := EventCatalogue.by_id("playground")
 	t.check(playground.kind == GameEnums.EventKind.AMBIENT,
 			"the playground is ambient, so its zero telegraph is intended")
+
+## **Every row warned of before it exists is owed the same flat minimum, whatever its field and its
+## speed.** *(PLAYTEST-145: "I don't like that the warning is tied to the size of the field or the
+## speed" · "all offscreen events should work like that".)* Asked of every such row — the catalogue's
+## own (`cyclist`, the fire engine) and day 13's column, the copy of `military_convoy` that
+## `EventManager.as_warned()` makes of it — and asked as a relation: widening its field and speeding
+## it up leaves its `minimum_telegraph()` where it was, at `Tuning.OFFSCREEN_WARNING_MIN`. `loose_dog`
+## is held to its field's minimum instead, through `Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`, a list an
+## earlier build added; whether it keeps that, or needs no warning at all, is open under M226, the
+## pursuing dog keeps its day-3 timing and the other warnings fit it.
+func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
+	var warned: Array[EventDef] = []
+	for def in EventCatalogue.all():
+		if def.warns_before_it_exists() and not Tuning.OFFSCREEN_WARNING_MIN_EXEMPT.has(def.id):
+			warned.append(def)
+	var column := EventManager.as_warned(EventCatalogue.by_id("military_convoy"))
+	warned.append(column)
+	var ids: Array[String] = []
+	for def in warned:
+		ids.append(def.id)
+		var wider: EventDef = def.duplicate()
+		wider.shape = def.shape
+		wider.outer_radius *= 1.5
+		wider.speed *= 1.5
+		t.check(is_equal_approx(def.minimum_telegraph(), Tuning.OFFSCREEN_WARNING_MIN)
+				and is_equal_approx(wider.minimum_telegraph(), def.minimum_telegraph()),
+				("'%s' is warned first and owed %.2fs, and %.2fs with a field half as wide again "
+				% [def.id, def.minimum_telegraph(), wider.minimum_telegraph()])
+				+ "and half as fast again: the flat %.2fs either way" % Tuning.OFFSCREEN_WARNING_MIN)
+		t.check(def.validate(), "and '%s' gives it" % def.id)
+	for id in ["cyclist", "fire_truck", "military_convoy"]:
+		t.check(ids.has(id), "'%s' is among the rows warned first (%s)" % [id, ", ".join(ids)])
+	var dog := EventCatalogue.by_id("loose_dog")
+	t.check(dog.warns_before_it_exists() and dog.minimum_telegraph() < Tuning.OFFSCREEN_WARNING_MIN,
+			"'loose_dog' is warned first and keeps its field's %.2fs, under the flat minimum"
+			% dog.minimum_telegraph())
+
+## **`as_warned_first()` carries `solid_parts` across by hand, the way every other copy of a row
+## does** (`at_heat()`, `EventScheduler._for_day()`, `EventCatalogue.neighbor_heading_home()`,
+## `SealPlanner`'s variants) — a copy that lost its parts would quietly go back to one body spanning
+## its whole shape. `car_accident` is the row with more than one piece, so it stands in for a
+## multi-part row sent through a warning first; its own telegraph is too short to clear the flat
+## floor a warned-first row is held to, so the duplicate's telegraph is widened first, which
+## changes nothing `as_warned_first()` copies by hand.
+func _test_as_warned_first_carries_solid_parts_too(t) -> void:
+	var crash := EventCatalogue.by_id("car_accident")
+	t.check(crash.solid_parts.size() >= 2,
+			"'car_accident' has at least two solid parts (%d), so the copy below cannot pass vacuously"
+			% crash.solid_parts.size())
+	var widened := crash.duplicate() as EventDef
+	widened.shape = crash.shape
+	widened.solid_parts = crash.solid_parts
+	widened.telegraph_time = 5.0
+	var warned := widened.as_warned_first()
+	t.check(warned.validate(), "the widened telegraph clears the flat warned-first floor")
+	t.check(warned.solid_parts.size() == crash.solid_parts.size(),
+			("as_warned_first() copies %d solid part(s), the row's own %d"
+			% [warned.solid_parts.size(), crash.solid_parts.size()]))
 
 ## **A body on a pavement has to fit on the pavement — the whole of it, not the lane it happened to
 ## be planned on.** `_draw_spread` and its cousins draw a body at exactly the width `obstructs_radius`
