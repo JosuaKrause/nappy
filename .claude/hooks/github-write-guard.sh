@@ -20,6 +20,9 @@
 # `docs/decisions/2026-09-27-tall-egret.md`'s "Accepted gaps" paragraph. So is an option argument
 # with a space in it under a third level of quoting (an escaped quote inside a quoted string
 # inside a quoted script, `python3 -c 'os.system("git -C \"/x y\" push")'`), which is not grouped.
+# So is a `gh api` call's own quoted argument holding a separator and then a git or gh command
+# word (`--jq '.x; git' -X POST`): the separator reads as the end of the call's flags, so a write
+# flag after that argument is not seen.
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
 # unless they carry `--abort`/`--quit`; `merge`/`rebase` unless `--abort`/`--no-commit`/
@@ -41,7 +44,8 @@
 # `tools/agent-status.sh`'s `gh pr view`, is not on this list), and only when its name is in
 # command position (the first word of a command, past any `NAME=value` assignment or a wrapper
 # word's own options -- `bash`/`sh`/`env`/`timeout`/`xargs`/`nice`/`nohup`/`sudo`/`command`/`watch`/
-# `time`/`exec`/`eval` and the shell's reserved words `do`/`then`/`else`/`elif`/`if`/`while`/`until`/
+# `stdbuf`/`caffeinate`/`time`/`exec`/`eval`, as a bare word or a path (`/usr/bin/env`), and the
+# shell's reserved words `do`/`then`/`else`/`elif`/`if`/`while`/`until`/
 # `{`/`!`, `timeout` alone also taking one bare duration, and the argument of a wrapper option
 # that takes one (`sudo -u root`, `sudo -iu root`, `nice -n 10`, `timeout -s KILL`, `xargs -n 1`,
 # `exec -a name`) skipped with it; the script after `bash -c`/`sh -c` is a command of its own, so
@@ -327,7 +331,9 @@ def wrapper_argument_options:
    watch: ["-n", "--interval"],
    bash: ["-o", "-O", "--rcfile", "--init-file"],
    sh: ["-o", "-O"],
-   exec: ["-a"]};
+   exec: ["-a"],
+   stdbuf: ["-i", "-o", "-e"],
+   caffeinate: ["-t", "-w"]};
 # For every index, the first index after it whose part starts a word at its own level or an
 # outer one: `.z` for a level-0 option (the next shell word), `.o` for a level-1 one (the next word
 # of a script in quotes). One pass from the end.
@@ -383,19 +389,20 @@ def is_assignment: test("^[A-Za-z_][A-Za-z0-9_]*=");
 
 # Words that hand a command to something else to run, carrying "command position" forward past
 # themselves and their own options: `bash`/`sh` run a script file, `env`/`timeout`/`xargs`/`nice`/
-# `nohup`/`sudo`/`command`/`watch`/`time`/`exec`/`eval` run the word after their own options, and
+# `nohup`/`sudo`/`command`/`watch`/`stdbuf`/`caffeinate`/`time`/`exec`/`eval` run the word after
+# their own options, whether written bare or as a path (`/usr/bin/env`), and
 # after the shell's reserved words `do`, `then`, `else`, `elif`, `if`, `while`, `until`, `{` and `!`
 # a command starts too -- `timeout` alone also takes one bare positional word (the duration) before
 # its command, which `after_options` does not skip on its own since it is not `-`-prefixed.
 def wrapper_words: ["bash", "sh", "env", "timeout", "xargs", "nice", "nohup", "sudo", "command", "watch",
-                     "time", "exec", "eval", "do", "then", "else", "elif", "if", "while", "until", "{",
+                     "stdbuf", "caffeinate", "time", "exec", "eval", "do", "then", "else", "elif", "if", "while", "until", "{",
                      "!"];
-def is_wrapper_word($x): (wrapper_words | index($x)) != null;
+def is_wrapper_word($x): (wrapper_words | index($x | last_part)) != null;
 
 # For every word, the wrapper word it follows within its command (null before any), which owns
 # the options read after it. One pass.
 def wrapper_owners:
-  [foreach .[] as $x (null; if $x | is_sep then null elif is_wrapper_word($x) then $x else . end)];
+  [foreach .[] as $x (null; if $x | is_sep then null elif is_wrapper_word($x) then $x | last_part else . end)];
 
 # For every index (already known to be in command position), the index of the real command word:
 # skips any run of assignments and wrapper words (with the wrapper's own options, and `timeout`'s
@@ -521,12 +528,13 @@ def detect_git($w; $t; $i; $n):
 # is already part of the scan under way, which reads its flags as the first call's. Without that
 # bound, every `gh api` mentioned after a quoted separator -- a line of a heredoc body in an
 # unsure command, say, where every separator is soft -- would scan again to the same end, a cost
-# quadratic in how many there are. A real call that a command-position table can see is never
-# inside another call's scan: a separator followed by a command start, wherever any of the tables
-# puts it (past assignments, wrapper words and their options, and reserved words: `do gh api`,
-# `{ gh api`, `sh -c "gh api ..."`), ends the earlier scan, so the call after it is scanned in
-# full; and a field the earlier scan picks up past its crossing, with a `gh` or `api` word between
-# the two, counts as a write even under its own `-X GET`.
+# quadratic in how many there are. A separator followed by a command start where git's and gh's
+# own command table puts it (past assignments, wrapper words and reserved words: `do gh api`,
+# `{ gh api`) ends the earlier scan, so the call after it is scanned in full. A later call that
+# only the wrapper-options table reads as a command (`sh -c "gh api ..."`, `/usr/bin/env gh api`,
+# `stdbuf -oL gh api`) stays inside the earlier scan instead, and its write flags count there: a
+# field, `--input` or non-GET method past the crossing, with a `gh` or `api` word between the two,
+# is a write even under the earlier call's own `-X GET` or GraphQL read.
 # What the bound costs is a mention's flags past its own next separator (`echo gh api --jq '.a |
 # .b' -f x=y` inside a script whose first call is a GraphQL read) counting only toward the call
 # whose scan they fall in.
@@ -550,14 +558,14 @@ def write_tool_names: ["release.sh", "prune-merged.sh", "land-prs.sh", "update-p
 # soft separator followed by one, so glued calls inside one quoted `bash -c "..."` are each
 # scanned once rather than each to the end of the string.
 #
-# The command word can be where any of the command-position tables puts it (see `command_words`):
-# git's and gh's options (`cw`), the wrapper's own (`cw2`, where the script after `sh -c`/`bash -c`
-# is a command of its own), and, when the reading is unsure, the word-by-word ones (`.tp`).
+# The command word is where git's and gh's own command table puts it (`cw`), and, when the reading
+# is unsure, the word-by-word one too (`.tp`). The wrapper-options table (`cw2`) is not read here:
+# after a quoted separator inside a call's own argument (`--jq '.x; sh -c git'`) it would end the
+# call's scan before its later flags. A call that only `cw2` sees as a command start (the script
+# after `sh -c "..."`, `/usr/bin/env gh api ...`) stays inside the earlier scan, where its write
+# flags count as late (see `gh_api_method`).
 def command_positions($t; $j):
-  [$t.cw[$j] // $j]
-  + (if $t.cw2 == null then [] else [$t.cw2[$j] // $j] end)
-  + (if $t.tp == null then []
-     else [$t.tp.cw[$j] // $j] + (if $t.tp.cw2 == null then [] else [$t.tp.cw2[$j] // $j] end) end);
+  [$t.cw[$j] // $j] + (if $t.tp == null then [] else [$t.tp.cw[$j] // $j] end);
 def starts_command($w; $t; $j; $n):
   any(command_positions($t; $j)[];
       . < $n
@@ -568,13 +576,18 @@ def starts_command($w; $t; $j; $n):
 # inside the same quoted string, and taking it would turn this call's write into a read. For the
 # same reason a field past a soft separator with a `gh` or `api` word between the two
 # (`late_field`), which may be another call's flag, counts as a write even under a GET; a field
-# right after a quoted `--jq '.a | .b'` is still this call's and reads. A GraphQL read's fields past
-# a soft separator are its variables, next to a multi-line query, and read.
+# right after a quoted `--jq '.a | .b'` is still this call's and reads, and so does a GraphQL
+# read's variable after one. A non-GET method in the same place is late too, so under a GraphQL
+# read, whose own method is always POST, a late field or method is a write. The word `api` inside
+# a `--jq` filter's own string (`select(test("api"))`) reads as another call's too, so a field after
+# it denies: a false deny, the safe direction.
 def gh_api_method($m):
-  if (.crossed_at != null) and (($m | ascii_downcase) == "get") then . else .method = $m end;
+  if (.crossed_at != null) and (($m | ascii_downcase) == "get") then .
+  else .method = $m | (if .other_call then .late_field = true else . end) end;
 
 def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
-  {i: $start, method: null, field: false, late_field: false, other_call: false, endpoint: null,
+  {i: $start, method: null, field: false, late_field: false, other_call: false,
+   endpoint: null,
    merge_type: false,
    query_visible: false, query_hidden: false, crossed_at: null, cont: false}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
@@ -585,7 +598,8 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
       | ($w[$s.i + 1] // null) as $nx
       | ($nx != null and (($nx | is_sep) | not)) as $has_value
       | (if $x | startswith("-") then .cont = false else . end)
-      | if $x == "\u0001" then .crossed_at = (.crossed_at // .i) | .cont = true | .i += 1
+      | if $x == "\u0001" then
+          .crossed_at = (.crossed_at // .i) | .cont = true | .i += 1
         elif $x | IN("-X", "--method") then
           (if $has_value then gh_api_method($nx) | .i += 2 else .method = "" | .i += 1 end)
         elif $x | startswith("--method=") then gh_api_method($x | ltrimstr("--method=")) | .i += 1
@@ -624,6 +638,7 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
       (if $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
        then {next: $r.resume, reason: "gh api graphql with a query not written inline"}
+       elif $r.late_field then {next: $r.resume, reason: "gh api"}
        else {next: $r.resume, reason: null} end)
     elif $is_get and ($r.late_field | not) then {next: $r.resume, reason: null}
     elif ($r.method != null) or $r.field then

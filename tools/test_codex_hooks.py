@@ -703,6 +703,16 @@ class CodexHooksTest(unittest.TestCase):
         )
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        for command in (
+            "gh api graphql -f query='{viewer{login}}' | /usr/bin/env gh api repos/o/r/issues/1/comments "
+            "--jq '.a | .b' -f body=x; echo $(true)",
+            "gh api repos/o/r/issues/1/comments --jq '.x; sh -c git' -X POST",
+            "/usr/bin/env tools/prune-merged.sh x",
+        ):
+            with self.subTest(command=command[:50]):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
         output = self.call_raw(command="gh api -X GET search/issues --jq '.items[] | .number' -f q='repo:a/b is:open'")
         self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
 

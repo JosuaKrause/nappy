@@ -860,16 +860,20 @@ assert_guard "git -C \"\" grep -I -> allow" allow 'git -C "" grep -I x'
 
 # A `git` whose options swallow the next word (`-c`, `-C`, a `>` redirect) can swallow another
 # `git`, so in a chain of them the run of options from every `git` reaches the end of the chain.
-# Each check here is a chain like that: at about 10 KB, ending in a search only reading 3 sees
-# (all three readings run to the end), and at the 32 KB bound, ending in a guarded search that
+# Each check here is a chain like that: at 10 KB, ending in a search only reading 3 sees (all
+# three readings run to the end), and at 16 KB and the 32 KB bound, ending in a guarded search that
 # allows. The guard reads the options from one table built once, so every chain is decided in
-# about the time of one pass.
+# about the time of one pass. A walk from every `git` takes most of the 10-second timeout on the
+# 10 KB chains and runs jq out of memory on the longer ones, which denies what should allow.
 chain_c_10k="$(printf 'git -c %.0s' $(seq 1 1420))"
+chain_c_16k="$(printf 'git -c %.0s' $(seq 1 2330))"
 chain_c_32k="$(printf 'git -c %.0s' $(seq 1 4675))"
 chain_redirect_10k="$(printf 'git > %.0s' $(seq 1 1660))"
 chain_redirect_32k="$(printf 'git > %.0s' $(seq 1 5455))"
 assert_guard_timed "10 KB of git -c git -c ..., then a git grep only reading 3 catches -> deny" deny \
     "${chain_c_10k}; git -C \"/x y\" grep -i foo -- docs/"
+assert_guard_timed "16 KB of git -c git -c ..., then a guarded git grep -> allow" allow \
+    "${chain_c_16k}; git grep -I x"
 assert_guard_timed "32 KB of git -c git -c ..., then a guarded git grep -> allow" allow \
     "${chain_c_32k}; git grep -I x"
 assert_guard_timed "10 KB of git > git > ..., then a git grep only reading 3 catches -> deny" deny \
@@ -1472,6 +1476,29 @@ assert_write_guard "a GraphQL read piped into sh -c \"gh api ... -f body=x\" -> 
     "gh api graphql -f query='{viewer{login}}' | sh -c \"gh api repos/o/r/issues/1/comments --jq '.a | .b' -f body=x\"; echo \$(true)"
 assert_write_guard "a GraphQL read piped into bash -c \"gh api ... -X POST\" -> deny" deny \
     "gh api graphql -f query='{viewer{login}}' | bash -c \"gh api repos/o/r/issues/1/comments --jq '.a | .b' -X POST\"; echo \$(true)"
+# A later call that only the wrapper-options table reads as a command stays inside a GraphQL
+# read's scan, and its late field is a write there, as under a GET; a GraphQL read's own variable
+# after a quoted --jq pipe still reads.
+assert_write_guard "a GraphQL read piped into /usr/bin/env gh api ... -f body=x -> deny" deny \
+    "gh api graphql -f query='{viewer{login}}' | /usr/bin/env gh api repos/o/r/issues/1/comments --jq '.a | .b' -f body=x; echo \$(true)"
+assert_write_guard "a GraphQL read piped into stdbuf -oL gh api ... -f body=x -> deny" deny \
+    "gh api graphql -f query='{viewer{login}}' | stdbuf -oL gh api repos/o/r/issues/1/comments --jq '.a | .b' -f body=x; echo \$(true)"
+assert_write_guard "a GraphQL read's own variable after a quoted --jq pipe -> allow" allow \
+    "gh api graphql -f query='query(\$n:Int!){a}' --jq '.data | .repository' -F n=398"
+# A quoted separator inside a call's own argument ends its scan only where git's and gh's own
+# command table sees a command start, so the call's later write flag is still read.
+assert_write_guard "gh api --jq '.x; sh -c git' -X POST -> deny" deny \
+    "gh api repos/o/r/issues/1/comments --jq '.x; sh -c git' -X POST"
+# A wrapper written as a path, and stdbuf, leave the pushing script in command position.
+assert_write_guard "/usr/bin/env tools/prune-merged.sh -> deny" deny '/usr/bin/env tools/prune-merged.sh x'
+assert_write_guard "stdbuf -oL tools/prune-merged.sh -> deny" deny 'stdbuf -oL tools/prune-merged.sh x'
+assert_write_guard "/usr/bin/sudo -u root tools/prune-merged.sh -> deny" deny \
+    '/usr/bin/sudo -u root tools/prune-merged.sh x'
+assert_write_guard "/usr/bin/env cat tools/release.sh, a read -> allow" allow '/usr/bin/env cat tools/release.sh'
+# Accepted: the word api inside a --jq filter's own string reads as another call, so a GET's
+# field after it denies.
+assert_write_guard "a GET whose --jq holds the word api, then a field -> deny (accepted false deny)" deny \
+    "gh api -X GET search/code --jq '.items[] | .path | select(test(\"api\"))' -f q=x"
 # A field after a quoted --jq '.a | .b' is still the GET call's own and reads; only a field with a
 # gh or api word between the separator and it may be another call's.
 assert_write_guard "gh api -X GET with a field after a quoted --jq pipe -> allow" allow \
