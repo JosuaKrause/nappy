@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M175 — A row states what it costs, and the cost table is checked in · asked for 2026-09-20
 

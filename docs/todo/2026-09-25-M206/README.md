@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M206 — The title screen after a game over is the right way up · found 2026-09-25
 

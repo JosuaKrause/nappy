@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M221 — A failed day leaves no chalk mark behind · found 2026-09-26
 

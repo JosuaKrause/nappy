@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M218 — The burning building burns · found 2026-09-26
 
