@@ -22,7 +22,9 @@ saw it on seed 61400 and asked for the roof instead. Its pictures stay in the PR
 **Choices open to overturn**, made where the queue was silent: a power station's fenced yard never
 extends a roof (its hall can); a building can extend its roof over one neighbour while its own
 front is covered by another; a step between two differently tall extended columns gets the same
-cap as a step down to an uncovered one, which no sampled seed produced.
+cap as a step down to an uncovered one, which no sampled seed produced. The yard guard has no
+picture because no city can show it: the station's lot is its whole block, so the lot north of it
+is across a street and never covered, and none of the 40 seeds `61400 + 977·i` has one.
 
 **Settled: an extended roof carries furniture too.** The first build kept vents, tanks and ducts
 off the extension so no seed's furniture would move. Asked why (PLAYTEST-144, 17), the player:
@@ -46,9 +48,17 @@ own. Furnished extended roofs went from 45 to 147, and 51 carry a unit on the ex
 own out-of-bounds default (`CityMap.tile_at()` reads a tile past the map's edge as `BUILDING`)
 marks such a column covered too, with no lot on the other side for `_assign_roof_extensions()` to
 extend a roof from (`tile_to_index.get(south, -1)`, `if front_index < 0: continue`) — so it draws
-no facade and stays blank, the one column this rule leaves with nothing covering it. In every
+no facade and stays blank, the one column this rule leaves with nothing covering it: the dark
+background shows where the wall would be. In every
 seed sampled this only ever happens where the front faces a cul-de-sac's dead end that runs to the
 map's own boundary. Asked whether to keep this or drop it (treat such a column as reachable
 instead, since nothing genuinely stands in front of it): "keep the special case for dead ends."
 
-Evidence: `docs/evidence/m203-back-front-windows-2026-09-25/`, seed 61400, before and after.
+Evidence: `docs/evidence/m203-back-front-windows-2026-09-25/`, seed 61400, before and after; and
+`docs/evidence/m203-roof-cases-2026-09-27/`, one before/after pair per roof case (PLAYTEST-144,
+statement 17: "The roof cases are judged on pictures"), before being `main` without M203 or M216,
+each from `tools/shot.sh <out.png> <s> --seed <n> --invincible --no-save --press key:4 0.5` plus
+the flags named: seed 84848 `--spawn square` (a roof two rows deep of its own carrying a unit on
+its extension), seed 72147 `--spawn signal --walk 0.35n --zoom 0.75` (a building extending its
+roof north while its own front is covered, between two more of the same), seed 73124
+`--spawn edge:s` (a front against the map's edge).

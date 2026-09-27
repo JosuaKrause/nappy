@@ -2135,8 +2135,8 @@ Top-down camera with a fake vertical extrusion:
   facing a cul-de-sac's dead end at the map's boundary, in every seed sampled) reads covered the
   same way — the map edge is `BUILDING` by the same out-of-bounds default a tile lookup elsewhere
   in the lattice already uses — but has no lot on the other side to extend a roof from, so it stays
-  blank rather than either drawing a facade or growing one: the special case for a dead end at the
-  edge is kept on purpose.
+  blank, the dark background showing where the wall would be, rather than either drawing a facade
+  or growing one: the special case for a dead end at the edge is kept on purpose.
 - **A courtyard's roof turns its corners as one roof, outer and inner alike, with no parapet in the
   middle of it and one colour.** A single-block or apartment-complex courtyard is cut into up to
   four rectangles around its hole (`CityGenerator._build_block()`'s `COURTYARD` branch,
