@@ -27,12 +27,24 @@
 #   command and the words after the redirect stay in the invocation. For the
 #   first two readings, `${IFS}` and `$IFS` also become a space and `$'`/`$"` a plain quote, so
 #   `git${IFS}grep` and `g$'i't` read as they run.
-# - A text over 32 KB that holds both words is denied without being read further. Every reading
-#   is linear, but the three together cost most on dense text of short words, where each word is
-#   a step of its own: about 1.2 seconds at 32 KB of `git` on a line each, the slowest text
-#   measured, against the hook's 10-second timeout, so a loaded machine still finishes in time.
-#   Past the bound a real command holding both words is rare (a heredoc writing a large file), and
-#   the way out is to write the text to a file first.
+# - A text over `too_long` (32 KB) skips every pass below and is decided by one regex test
+#   instead: a backslash, a newline, a quote character or `$` may stand between any two letters of
+#   `git` or of `grep`, the same skip github-write-guard.sh's own over-the-bound search uses for
+#   its write-tool names, so `g\it`, `g"i"t` and `g$'i't` still read as the word; a command holding
+#   both words anywhere denies, one holding neither allows. The length is checked before anything
+#   else because building the text the readings below work on (dropping backslashes and quote
+#   marks, folding `${IFS}`) is itself a pass over the whole command: on dense runs of the
+#   characters it drops it takes seconds per megabyte, so an unbounded command would run the hook
+#   past its 10-second timeout, and a timed-out hook lets the command through, in Claude Code and
+#   in Codex alike. A real command over 32 KB holding both words is rare (a heredoc writing a large
+#   file), and the way out is to write the text to a file first. Past `hard_cap` (1 MB, matching
+#   github-write-guard.sh's own bound) the deny message just names the larger bound; the regex
+#   deciding it is the same either side of it, and a single regex search is linear in the input
+#   with no second pass over it, so this decides in well under a second whatever the input's size.
+# - At or under 32 KB, the text below is read in full. Every reading is linear, but the three
+#   together cost most on dense text of short words, where each word is a step of its own: about
+#   1.2 seconds at 32 KB of `git` on a line each, the slowest text measured, against the hook's
+#   10-second timeout, so a loaded machine still finishes in time.
 # - The text is then read three ways, and a match in any one of them denies:
 #   1. every backslash and quote mark deleted, as bash's quote removal does, so `g"i"t`, `g\it`,
 #      `"git" grep` and `git -C "$root" grep` read as they run;
@@ -240,25 +252,42 @@ def findings:
         end)
   | .out;
 
+# Past `too_long`, none of the passes below run at all: one regex test decides instead, as the
+# header says, since `$raw`, `$bare` and `$flat` are each a pass over a command of unbounded
+# length. A command holding neither word, however the shell would have joined, quoted or expanded
+# its letters, cannot be a `git ... grep` invocation at all, so it allows. Past `hard_cap` the
+# message only names the larger bound; the decision is the same regex either side of it.
+def too_long: 32768;
+def hard_cap: 1048576;
+def skip: "[\\\\\n\"'$]*";
+def obscured($word): ($word | split("") | join(skip));
+def over_bound_verdict($label):
+  if (test(obscured("git"); "i") and test(obscured("grep"); "i"))
+  then "(the whole command: over \($label) and holding both words, not read further; write the long text to a file first, then run a short command)"
+  else empty
+  end;
+
 if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
-  | (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
-  # `${IFS}` and `$IFS` are word breaks, and `$'...'`/`$"..."` are quotes, for readings 1 and 2.
-  | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$'"; "'") | swap("$\""; "\"")) as $bare
-  | ($bare | drop("\\") | drop("\"") | drop("'") | ascii_downcase) as $flat
-  # Every match needs both words, so most commands stop here.
-  | if ($flat | contains("git") and contains("grep")) | not then empty
-    elif ($raw | length) > 32768 then
-      "(the whole command: over 32 KB and holding both words, too long to read in full inside the hook's timeout; write the long text to a file first, then run a short command)"
+  | if length > hard_cap then over_bound_verdict("1 MB")
+    elif length > too_long then over_bound_verdict("32 KB")
     else
-      ($bare | drop("\\") | swap("\","; "\" ") | swap("',"; "' ")) as $unescaped
-      | first(
-          ($unescaped | drop("\"") | drop("'") | plain_words | findings),
-          ($unescaped | swap("\""; " ") | swap("'"; " ") | plain_words | findings),
-          ($raw | quoted_words | findings)
-          | select(length > 0))
-      | join("; ")
+      (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
+      # `${IFS}` and `$IFS` are word breaks, and `$'...'`/`$"..."` are quotes, for readings 1 and 2.
+      | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$'"; "'") | swap("$\""; "\"")) as $bare
+      | ($bare | drop("\\") | drop("\"") | drop("'") | ascii_downcase) as $flat
+      # Every match needs both words, so most commands stop here.
+      | if ($flat | contains("git") and contains("grep")) | not then empty
+        else
+          ($bare | drop("\\") | swap("\","; "\" ") | swap("',"; "' ")) as $unescaped
+          | first(
+              ($unescaped | drop("\"") | drop("'") | plain_words | findings),
+              ($unescaped | swap("\""; " ") | swap("'"; " ") | plain_words | findings),
+              ($raw | quoted_words | findings)
+              | select(length > 0))
+          | join("; ")
+        end
     end
 end
 JQ

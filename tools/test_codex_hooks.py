@@ -318,6 +318,34 @@ class CodexHooksTest(unittest.TestCase):
         assert allowed is not None
         self.assertNotIn("permissionDecision", allowed["hookSpecificOutput"])
 
+    def test_git_grep_guard_over_the_bound_is_one_fast_regex(self) -> None:
+        # Past too_long (32 KB), a backslash, a quote mark or $ between the letters of git/grep
+        # still reads as the word, so an obscured pair over the bound denies, through the adapter
+        # the same as directly; naming only "git" (no "grep" anywhere) allows.
+        padding = "a" * 40000
+        output = self.call_raw(command=f"echo '{padding}'; g\\it status; g\"r\"ep foo")
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        text = self.call(tool="Bash", command=f"echo '{padding}'; git status")
+        self.assertIn("committing", text)
+        # Over hard_cap (1 MB) the same regex still decides, named with the larger bound.
+        output = self.call_raw(command="echo '" + "a" * 1100000 + '\'; g\\it status; g"r"ep foo')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        # At or under 1 MB, the guard used to build its whole $raw/$bare/$flat text before any
+        # length was checked, which on these two shapes (dense in the characters those passes
+        # drop, not in git/grep) was measured at a few seconds each; timed alone (the adapter also
+        # runs github-write-guard.sh, whose cost is its own) it now decides in well under a second.
+        guard = self.root / ".claude/hooks/git-grep-guard.sh"
+        for command in ("echo " + "a'" * 500000, "echo " + "x\\\n" * 330000):
+            with self.subTest(command=command[:20]):
+                payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+                started = time.monotonic()
+                result = subprocess.run([str(guard)], input=payload, text=True, capture_output=True)
+                self.assertLess(time.monotonic() - started, 1.5)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), "")
+
     def test_github_write_guard_denies_an_unwrapped_git_push(self) -> None:
         output = self.call_raw(command="git push origin main")
         assert output is not None
