@@ -1,8 +1,12 @@
 <!-- She is nearly crying, and a crying baby is a lost day. The same waves as baby_fuss.svg —
      one vocabulary, one motif — but three of them and red: more of it *and* a colour change, so
      the escalation survives being read at a glance and does not depend on hue alone. The same
-     rule alert_close.svg is built to. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="26" viewBox="0 0 24 26">
+     rule alert_close.svg is built to. The artwork sits 2px in from the left, top and right; its
+     registration line is y=28, 7px above the canvas bottom, and only the bottom of the lowest
+     wave falls below it. Stroller.INDICATOR_BOTTOM_PADDING holds the same 7, so the line, not the
+     canvas edge, lands on the cue's anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="35" viewBox="0 0 28 35">
+  <g transform="translate(2 2)">
   <g fill="none" stroke="#221f28" stroke-width="7" stroke-linecap="round">
     <path d="M4 6 q4 -6 8 0 t8 0"/>
     <path d="M4 15 q4 -6 8 0 t8 0"/>
@@ -12,5 +16,6 @@
     <path d="M4 6 q4 -6 8 0 t8 0"/>
     <path d="M4 15 q4 -6 8 0 t8 0"/>
     <path d="M4 24 q4 -6 8 0 t8 0"/>
+  </g>
   </g>
 </svg>

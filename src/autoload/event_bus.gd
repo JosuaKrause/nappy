@@ -34,13 +34,14 @@ signal day_ended(day: int, result: GameEnums.DayResult)
 signal run_restarted(day: int)
 signal run_ended(ending: GameEnums.Ending)
 ## `main._on_day_finished()`'s own answer to *what* ended a crying or hard-fail day, fired
-## immediately before `day_ended` above so `VisitCounter` can send `nappy-day-N-<cause>` beside the
-## `nappy-day-N-lost-*` that already exists. `cause` is already the full suffix —
-## `instant-car`, `instant-charging-dog`, `noise-homeless-yeller`, `noise-crowd`, `noise-self`, and
-## so on — built where the moment happened rather than re-derived here, since `VisitCounter` only
-## ever listens. Never fired for `WON` or `LOST_TIMEOUT`, which the existing `lost-timeout` name
-## already says everything about. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The
-## page counts visits".
+## immediately before `day_ended` above so `VisitCounter` can fold it into the one event that day's
+## end sends — `nappy-day-N-lost-crying-<cause>` / `nappy-day-N-lost-hard-fail-<cause>` rather than
+## a `nappy-day-N-lost-*` beside a second event of its own. `cause` is the raw source, unprefixed —
+## `car`, `charging-dog`, `homeless-yeller`, `crowd`, `self`, and so on — built where the moment
+## happened rather than re-derived here, since `VisitCounter` only ever listens; see
+## `VisitCounter._loss_event_suffix()` for where the two join. Never fired for `WON` or
+## `LOST_TIMEOUT`, which the existing `lost-timeout` name already says everything about. Listen-only,
+## for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal day_lost_to(day: int, cause: String)
 
 # ------------------------------------------------------------------- events ---

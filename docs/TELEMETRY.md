@@ -59,31 +59,37 @@ must not touch gameplay" invariant the run log keeps. It calls the page's own
 `window.goatcounter.count({path, title, event: true})` (see
 [GoatCounter's own docs](https://www.goatcounter.com/help/events)), one call per event and one
 event every time its moment happens, each name starting `nappy-`, the prefix
-`tools/goatcounter.sh` reads by, and short, lowercase and hyphenated — `nappy-day-6-lost-crying`,
-PLAYTEST-132's own shape for it. Counts only: no seed, no position, no time, nothing that could
-tell one visitor from another or from their own next visit.
+`tools/goatcounter.sh` reads by, and short, lowercase and hyphenated — `nappy-day-6-lost-crying-crowd`,
+PLAYTEST-132's own request for "how a day is lost" folded into one name with its cause. Counts
+only: no seed, no position, no time, nothing that could tell one visitor from another or from
+their own next visit.
 
 The events:
 
 - `nappy-run-fresh` / `nappy-run-resumed-day-N` — a run begun fresh, or resumed from the save, and
   on which day.
 - `nappy-day-N-began` — each day begun. A nerve-bought retry begins it again for the day it repeats.
-- `nappy-day-N-won` / `nappy-day-N-lost-crying` / `nappy-day-N-lost-timeout` /
-  `nappy-day-N-lost-hard-fail` — each day's end, named straight off `GameEnums.DayResult`'s own
-  keys rather than a second copy of the game's loss causes.
-- `nappy-day-N-instant-<what>` / `nappy-day-N-noise-<what>` — beside the pair above, what a
-  hard-fail or crying loss actually was, emitted by `main._on_day_finished()` as
-  `EventBus.day_lost_to` just before `day_ended`. A hard fail names the row that struck her —
-  `instant-car` for the one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
-  `Crowd._strike()`), otherwise `instant-<id>` off whichever row's own `is_lethal_at()` fired
+- `nappy-day-N-won` / `nappy-day-N-lost-timeout` — a day's end that names nothing further: a win
+  needs no cause and a timeout's own name already says everything about a clock that ran out.
+- `nappy-day-N-lost-crying-<source>` / `nappy-day-N-lost-hard-fail-<what>` — a lost day's own name,
+  one event folding in what actually did it rather than a second event beside it. The cause is
+  emitted by `main._on_day_finished()` as `EventBus.day_lost_to` just before `day_ended`, and
+  `VisitCounter` holds it until `day_ended` fires and folds it onto the loss kind
+  (`VisitCounter._loss_event_suffix()`). A hard fail names the row that struck her — `car` for the
+  one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
+  `Crowd._strike()`), otherwise the id off whichever row's own `is_lethal_at()` fired
   (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
-  caught `charging_dog` is `instant-charging-dog`. A crying loss names whichever source landed the
-  most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she cried: a
-  catalogue id (`EventInstance.landed()`), `crowd` for walkers or `traffic` for cars
+  caught `charging_dog` is `lost-hard-fail-charging-dog`. A crying loss names whichever source
+  landed the most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she
+  cried: a catalogue id (`EventInstance.landed()`), `crowd` for walkers or `traffic` for cars
   (`CrowdAgent.landed()`, told apart by `CrowdAgent.kind`), or `self` for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
   own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
-  present, falling back to `self` when there is none (`main._crying_cause_suffix()`).
+  present, falling back to `self` when there is none (`main._crying_cause_suffix()`). A
+  `LOST_CRYING`/`LOST_HARD_FAIL` day this counter never got a cause for — reachable only where
+  something drives `day_ended` without first driving `day_lost_to` for the same day, which nothing
+  in `main.gd`'s own wiring does — still sends the bare `lost-crying` / `lost-hard-fail` rather than
+  nothing.
 - `nappy-day-3-seen-fire` — the first frame the burning building is on screen, whether or not the
   warning for the fire engine it summons can be put up yet
   (`EventManager._summon_what_has_been_sighted()`).
@@ -98,7 +104,7 @@ The events:
   `nappy-day-N-dog-shaken` or `nappy-day-N-dog-outlasted` follows once the chase is over without
   catching her — whether she ran it off or its own clock simply ran out
   (`EventInstance._be_done()`, `EventInstance.gave_up`). A caught chase is
-  `nappy-day-N-instant-charging-dog` instead, off the pair above, and never also sends
+  `nappy-day-N-lost-hard-fail-charging-dog` instead, off the pair above, and never also sends
   `dog-outlasted`.
 - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
   actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
