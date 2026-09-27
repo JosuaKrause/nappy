@@ -165,7 +165,9 @@ the contract a caller keeps is the **cues** skill, "Drawing through `Sprites`".
 **Y-sorting compares origins**, so a thing whose mass extends away from its own origin sorts wrong.
 **Before reaching for a better comparison, ask whether the two things can ever legitimately be on
 opposite sides of each other.** Buildings cannot — no lot tile is walkable — so they are a layer of
-their own and sort against nothing.
+their own and sort against nothing. The one thing a building has that rises over walkable ground,
+a power station's stack, is therefore not part of the building: it is an entity of its own in
+`Entities`, sorted at its foot.
 
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw (the
 city ground) is fine, but anything animated must call `queue_redraw()` itself.
