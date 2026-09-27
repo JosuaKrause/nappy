@@ -58,7 +58,9 @@ Evidence: `docs/evidence/m203-back-front-windows-2026-09-25/`, seed 61400, befor
 `docs/evidence/m203-roof-cases-2026-09-27/`, one before/after pair per roof case (PLAYTEST-144,
 statement 17: "The roof cases are judged on pictures"), before being `main` without M203 or M216,
 each from `tools/shot.sh <out.png> <s> --seed <n> --invincible --no-save --press key:4 0.5` plus
-the flags named: seed 84848 `--spawn square` (a roof two rows deep of its own carrying a unit on
+the flags named: seed 61400 `--spawn signal --walk 0.35n3.13w --zoom 0.6` (the first pair's
+front again, its covering roof two rows deep of its own and now carrying a unit), seed 84848
+`--spawn square` (a roof two rows deep of its own carrying a unit on
 its extension), seed 72147 `--spawn signal --walk 0.35n --zoom 0.75` (a building extending its
 roof north while its own front is covered, between two more of the same), seed 73124
 `--spawn edge:s` (a front against the map's edge).
