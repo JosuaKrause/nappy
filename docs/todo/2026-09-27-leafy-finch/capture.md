@@ -11,4 +11,4 @@ The script runs under the agent's own GitHub identity (`tools/agent-identity.py 
 lack the issues permission, adding it is the player's to do in GitHub's own settings.
 
 **Proposed, not asked for:** the script's name, `tools/capture.sh`, and that it shares one entry
-point with the inbox script of the item beside this one if that reads simpler.
+point with the inbox script of `inbox-skill.md` if that reads simpler.

@@ -33,8 +33,8 @@ briefed from a stale queue.
 > session is cleared. (a) is just overhead that slows things down which is not great (c) I don't
 > think I have had that happen yet"
 
-2. **The player's words are at risk until they are written somewhere safe**, and today that means
-   a branch and a PR the agent may not reach before the session is cleared. → leafy-finch.
+2. **The player's words are at risk until an agent writes them down**, and a session can be
+   cleared before it does. → leafy-finch.
 3. **The overhead of a queue PR slows the work down.** → leafy-finch.
 
 ## The options

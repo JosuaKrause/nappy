@@ -6,11 +6,10 @@ denies every `gh` write verb unless the command runs through `tools/agent-identi
 that wrapper, and an issue write typed by an agent as a bare `gh` command, wrapped or not, stays
 denied. The hook's own header comment lists what counts as a write, and changes with it.
 
-The guard also denies a read, or a file write, when a write command's words appear only as text.
-On 2026-09-27 it refused a `grep` whose search pattern named the issue command, and a heredoc
-writing this entry's own files because their prose named it. A command word inside a quoted
-argument or a heredoc body that is not run is not in command position, and the guard stops
-treating it as one where it can tell.
+The guard also denies a read, or a file write, when a write command's words appear only as text:
+a `grep` whose search pattern names the issue command, or a heredoc whose prose names it. A
+command word inside a quoted argument or a heredoc body that is not run is not in command
+position, and the guard stops treating it as one where it can tell.
 
 The Codex adapter, `tools/codex-hooks.py`, runs the same hook on Codex's Bash calls; this item
 checks whether the adapter or `tools/test_codex_hooks.py` needs to change and changes them in the

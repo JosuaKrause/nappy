@@ -15,3 +15,6 @@ that touches `src/` can never skip the suite.
 The classification's flags — queue-only, docs-only and touches-code — come from the first job
 described in the entry's `README.md`, and the **verify** and **committing** skills say what `test`
 means on each kind of PR.
+
+**Proposed, not asked for:** which CI steps count as heavy and which as light, as listed above;
+the player's ask is that "only the heavy game checking tests should be skipped".
