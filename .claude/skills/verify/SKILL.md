@@ -41,19 +41,25 @@ covers it depends on the window in front: an ordinary opaque window over it does
 shows through may not. A capture that only waited for the render loop's next frame would wait for
 ever there, and the run would end on `[Main] a rig's own wall-clock limit ... passed` however
 often it was retried.
-`AutoScreenshot.drawn_frame()` (`src/dev/auto_screenshot.gd`) is what every capture waits on —
-`shot.sh`'s still, `--quit-when-still`, and the telemetry's stills and `snapshot_burst` bursts — and
-when the window cannot be drawn it draws that frame on demand with `RenderingServer.force_draw()`.
-The still is the same picture an uncovered window gives, and its `[AutoScreenshot] wrote` line ends
-"(window not visible, so this frame was drawn on demand)".
+`AutoScreenshot.drawn_frame()` (`src/dev/auto_screenshot.gd`) is what every capture under `src/`
+waits on — `shot.sh`'s still, `--quit-when-still`, and the telemetry's stills and `snapshot_burst`
+bursts, which `tests/test_auto_screenshot.gd` holds by failing on a bare wait for the render loop's
+frame anywhere under `src/` — and when the window cannot be drawn it draws that frame on demand
+with `RenderingServer.force_draw()`. Of the probes, `tests/probes/scenery_animation_runtime.gd`
+waits on it too, and `scenery_shader_warmup_runtime.gd` keeps the render loop's own frame on
+purpose, since the engine's warmup draw is what it measures, so it wants its window in view. A
+forced still shows the same frame an uncovered window gives — the same scene and moment, not a
+pixel-identical file, since two ordinary runs of one seed already differ — and its
+`[AutoScreenshot] wrote` line ends "(window not visible, so this frame was drawn on demand)".
 
 **So a capture needs a display server from the machine, and not a visible window.** Covered and
 minimized windows are the two cases photographed through the forced frame; another Space and a
 locked screen go through the same test and the same path but have not been photographed that way.
 A display that sleeps with the window visible keeps drawing. **`caffeinate -d -u` is not a remedy
-for a capture**: it keeps the display from idle-sleeping and marks the user active, which neither
-uncovers a window nor stops a covered one from being skipped, and nothing about a capture needs it —
-its one relevant effect is keeping a display from sleeping into a locked screen.
+for a covered window**: it keeps the display from idle-sleeping and marks the user active, which
+neither uncovers a window nor stops a covered one from being skipped. What it does guard is the
+one case not yet photographed — a display sleeping into a locked screen — so a long capture run
+may still keep it on.
 
 **When a capture still fails, the line it ends on says which failure it is.**
 

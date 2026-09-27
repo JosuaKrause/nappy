@@ -473,7 +473,8 @@ func _capture() -> void:
 const FORCED_FRAME_NOTE := " (window not visible, so this frame was drawn on demand)"
 
 ## Returns once the viewport texture holds a frame drawn since the call, and whether that frame had
-## to be forced. Every capture waits here rather than on `RenderingServer.frame_post_draw` alone.
+## to be forced. Every capture under `src/` waits here rather than on `RenderingServer.frame_post_draw`
+## alone, which `tests/test_auto_screenshot.gd` holds.
 ##
 ## **A window that cannot be seen is not drawn at all.** On macOS the main loop skips its draw step
 ## whenever no window of the process is visible by the system's own occlusion test — fully covered
@@ -487,7 +488,9 @@ const FORCED_FRAME_NOTE := " (window not visible, so this frame was drawn on dem
 ## on demand with `RenderingServer.force_draw()`, which renders every viewport into its texture —
 ## the one a capture reads — and emits `frame_post_draw` like any other frame. It is forced from
 ## `process_frame`, before this frame's scripts run, so it shows the state the skipped draw would
-## have shown. `swap_buffers` is off because there is nothing on screen to present to.
+## have shown. `swap_buffers` is off because there is nothing on screen to present to. Its frame
+## step is 0, so shader `TIME` and particles do not advance on a forced frame — nothing the game
+## draws uses either.
 ##
 ## A coroutine: callers write `await AutoScreenshot.drawn_frame(get_tree())`. Never called headless —
 ## the null display server can draw nothing, forced or not, which is `can_photograph()`'s question.

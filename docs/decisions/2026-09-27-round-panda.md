@@ -34,17 +34,21 @@ healthy throughout.
   image.
 - The real game, `tools/shot.sh out.png 3 --seed 4242 --walk 3s`: on `main`, covered, it ended on
   the wall-clock limit (and on one uncovered attempt did too, with whatever was frontmost in front
-  of it); with the change, covered, it wrote the picture, identical to an uncovered one of the same
-  seed, and a covered `--press snapshot_burst 1` burst completed with all 36 frames.
+  of it); with the change, covered, it wrote the picture, showing the same frame as an uncovered one of the
+  same seed (not pixel-identical: in the review, two ordinary runs of that seed already differed by
+  about 8.9k pixels, and forced against ordinary by 13–14k), and a covered `--press snapshot_burst 1` burst completed with all 36 frames.
 
 Another Space and a locked screen fall under the same occlusion test by macOS's own definition and
 were not photographed that way.
 
-**What was decided.** Every capture waits on `AutoScreenshot.drawn_frame()` instead of a bare
-`frame_post_draw`: each `process_frame` it checks `DisplayServer.window_can_draw()`, and when that
-is false forces one draw with `RenderingServer.force_draw(false)`. `shot.sh`'s still,
-`--quit-when-still`, and the telemetry's stills and bursts all go through it. A still taken this way
-says so on its `[AutoScreenshot] wrote` line. The verify skill says what a capture needs from the
+**What was decided.** Every capture under `src/` waits on `AutoScreenshot.drawn_frame()` instead
+of a bare `frame_post_draw`: each `process_frame` it checks `DisplayServer.window_can_draw()`, and
+when that is false forces one draw with `RenderingServer.force_draw(false)`. `shot.sh`'s still,
+`--quit-when-still`, and the telemetry's stills and bursts all go through it, and
+`tests/test_auto_screenshot.gd` fails on a bare wait anywhere under `src/`. Of the probes,
+`scenery_animation_runtime.gd` uses it; `scenery_shader_warmup_runtime.gd` keeps the render loop's
+own frame, because the engine's warmup draw is what it measures. A still taken this way says so on
+its `[AutoScreenshot] wrote` line. The verify skill says what a capture needs from the
 machine (a display server, not a visible window), what `caffeinate -d -u` does and does not do,
 and which line a remaining failure ends on.
 
@@ -55,6 +59,7 @@ and which line a remaining failure ends on.
   nothing for another Space, a minimized window or a locked screen.
 - **`caffeinate -d -u` as the remedy.** It keeps the display awake and marks the user active; it
   neither uncovers a window nor makes a covered one drawable, which is why it helped only when it
-  happened to coincide with the window being in view.
+  happened to coincide with the window being in view. It still guards the one case not
+  photographed, a display sleeping into a locked screen.
 - **Only a clearer timeout message.** The frame can be drawn, so the capture is fixed rather than
   explained.

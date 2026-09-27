@@ -42,6 +42,8 @@ func run(t) -> void:
 	_test_a_pursuit_stops_the_script_from_resuming(t)
 	_test_a_pursuit_reverses_an_angled_step_too(t)
 	_test_a_headless_run_has_nothing_to_photograph(t)
+	_test_the_scan_finds_a_bare_wait_on_the_render_loop(t)
+	_test_no_capture_under_src_waits_on_the_render_loop_alone(t)
 
 # --------------------------------------------------------------- photographing ---
 
@@ -357,3 +359,56 @@ func _test_a_pursuit_reverses_an_angled_step_too(t) -> void:
 	Input.action_release("move_down")
 	Input.action_release("run")
 	node.free()
+
+# ------------------------------------------------------------ a hidden window ---
+
+## The line a capture must not wait on by itself: on macOS a window nobody can see is not drawn, so
+## this signal never comes and the rig ends on its wall-clock limit with no picture.
+## `AutoScreenshot.drawn_frame()` is the wait that draws the frame on demand instead.
+const _BARE_RENDER_LOOP_WAIT := "await RenderingServer.frame_post_draw"
+
+## The lines of `source` that wait on `_BARE_RENDER_LOOP_WAIT`, comments aside. Pure over a string
+## so the scan itself is checked against a line that must be found, not only against a tree that
+## happens to have none.
+static func _bare_render_loop_waits(source: String) -> PackedStringArray:
+	var found := PackedStringArray()
+	for line in source.split("\n"):
+		var code := line.strip_edges()
+		if code.begins_with("#"):
+			continue
+		if code.contains(_BARE_RENDER_LOOP_WAIT):
+			found.append(code)
+	return found
+
+## Every `.gd` file under `directory`, recursively.
+static func _scripts_under(directory: String) -> PackedStringArray:
+	var scripts := PackedStringArray()
+	var dir := DirAccess.open(directory)
+	if dir == null:
+		return scripts
+	for file in dir.get_files():
+		if file.ends_with(".gd"):
+			scripts.append(directory.path_join(file))
+	for child in dir.get_directories():
+		scripts.append_array(_scripts_under(directory.path_join(child)))
+	return scripts
+
+func _test_the_scan_finds_a_bare_wait_on_the_render_loop(t) -> void:
+	var reintroduced := "func _capture() -> void:\n\tawait RenderingServer.frame_post_draw\n"
+	t.check(_bare_render_loop_waits(reintroduced).size() == 1,
+		"the scan finds a capture that waits on the render loop's own frame")
+	t.check(_bare_render_loop_waits("\t## await RenderingServer.frame_post_draw\n").is_empty(),
+		"a doc comment naming the wait is not a wait")
+
+## Every capture under `src/` waits through `drawn_frame()`, so a hidden rig still photographs.
+func _test_no_capture_under_src_waits_on_the_render_loop_alone(t) -> void:
+	var scripts := _scripts_under("res://src")
+	t.check(scripts.has("res://src/dev/auto_screenshot.gd"),
+		"there were scripts to scan (%d), the capture's own among them" % scripts.size())
+	t.check(FileAccess.get_file_as_string("res://src/dev/auto_screenshot.gd")
+			.contains("static func drawn_frame("), "the wait a capture uses instead exists")
+	for path in scripts:
+		var waits := _bare_render_loop_waits(FileAccess.get_file_as_string(path))
+		t.check(waits.is_empty(),
+			"%s waits on RenderingServer.frame_post_draw alone, which never comes while the " % path
+			+ "window is hidden -- await AutoScreenshot.drawn_frame(get_tree()) instead")
