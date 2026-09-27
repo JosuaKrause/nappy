@@ -1018,6 +1018,23 @@ else
     fail "400 glued gh api calls took $((SECONDS - dense_gh_start)) seconds, past half the hook's 10-second timeout"
 fi
 
+# The same inside one quoted string, where every separator is soft: each call's scan stops at the
+# next soft separator that starts a git/gh command, so this stays linear too. And a long quoted
+# commit message, read one character at a time for its quotes, stays linear in its length.
+quoted_gh_api="$(for _ in $(seq 1 400); do printf "gh api x --jq '.a|.b'; echo hi; "; done)"
+long_message="$(head -c 60000 /dev/zero | tr '\0' 'a')"
+quoted_gh_start=$SECONDS
+assert_write_guard "400 glued gh api calls inside bash -c, ending in a write -> deny" deny \
+    "bash -c \"${quoted_gh_api}gh api repos/o/r -X POST\""
+assert_write_guard "a 60000-character quoted commit message, wrapped -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m '${long_message}'"
+checks=$((checks + 1))
+if [ $((SECONDS - quoted_gh_start)) -lt 5 ]; then
+    echo "ok   quoted glued calls and a long quoted message are decided in under 5 seconds"
+else
+    fail "quoted glued calls and a long message took $((SECONDS - quoted_gh_start)) seconds"
+fi
+
 # A flag before the endpoint is how gh itself accepts a write (-X/--method/-f/-F/--input), so the
 # scan starts right after "api"; and an endpoint or flag value ending in /gh or /git is part of
 # the call, not the start of a new command.
@@ -1123,6 +1140,34 @@ assert_write_guard "gh api graphql, a fragment with arguments before a mutation 
     "gh api graphql -f query='fragment F on X { y(z:1) } mutation { a }'"
 assert_write_guard "gh api graphql, a multi-line query with no mutation -> allow" allow \
     $'gh api graphql -f \'query=query {\n  viewer { login }\n}\''
+# A separator inside quotes is part of that argument, not the end of the command: a quoted
+# `--jq '.a | .b'`, a `(` in an inline query or a `;` in a body never hides a write flag after it.
+assert_write_guard "gh api with a piped --jq before -f -> deny" deny \
+    "gh api repos/o/r/issues --jq '.html_url | ascii_downcase' -f title=x"
+assert_write_guard "gh api graphql, --input after an inline query containing ( -> deny" deny \
+    "gh api graphql -f query='query(\$id: ID!) { node(id: \$id) { id } }' --input body.json"
+assert_write_guard "gh api with a quoted ; in a --jq before -f -> deny" deny \
+    "gh api repos/o/r/issues/1/comments --jq '.id; .url' -f body=x"
+assert_write_guard "gh api -X POST with a quoted ; in the body -> deny" deny \
+    "gh api -X POST repos/o/r/issues/1/comments -f body='done; thanks'"
+assert_write_guard "gh api -X GET with a quoted ; in a field -> allow" allow \
+    "gh api -X GET search/issues -f q='is:open; label:x'"
+assert_write_guard "gh api read with a piped --jq -> allow" allow \
+    "gh api repos/o/r/issues --jq '.[] | .title'"
+assert_write_guard "gh api graphql, an inline query with arguments and variables -> allow" allow \
+    "gh api graphql -f query='query(\$id: ID!) { node(id: \$id) { id } }' -f id=x"
+assert_write_guard "a GET after a quoted separator never turns a write into a read -> deny" deny \
+    "gh api repos/o/r/issues -f body='see (docs)' -X GET"
+# A quoted separator still starts the next command inside bash -c or \$(...), so a write there is
+# still seen, and the wrapper's exemption covers the whole quoted script it runs.
+assert_write_guard "bash -c with gh api then gh pr merge, unwrapped -> deny" deny \
+    'bash -c "gh api repos/o/r; gh pr merge 1"'
+assert_write_guard "bash -c with gh api, echo, then git push, unwrapped -> deny" deny \
+    'bash -c "gh api repos/o/r --jq .a; echo hi; git push"'
+assert_write_guard "wrapped bash -c running git status then git push -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- bash -c "git status; git push"'
+assert_write_guard "wrapped command, then an unquoted ; and a bare git push -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-coder -- echo done; git push'
 assert_write_guard "a REST write whose field value contains the word graphql -> deny" deny \
     "gh api -X POST repos/o/r/issues/1/comments -f body='use graphql' -f query=x"
 assert_write_guard "gh api with a full graphql URL as the endpoint, inline query -> allow" allow \

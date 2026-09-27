@@ -75,7 +75,12 @@
 # cheaper than the failure mode of a miss (a post lands under the player's own account again,
 # which is the whole thing this rule exists to stop). So this reads the command's raw text, quotes
 # and backslashes stripped before it is split into words, and a mention (a write's name inside an
-# echo, a commit message, a code comment) denies exactly like a real invocation would. The one
+# echo, a commit message, a code comment) denies exactly like a real invocation would. Quotes are
+# still read for one thing first: a separator inside them (`--jq '.a | .b'`, `-f body='a; b'`, a
+# `(` in an inline GraphQL query) is soft -- it still splits words, so a command inside `bash -c
+# "..."` is still found, but it neither ends a `gh api` call's flags, so a write flag after the
+# quoted argument is seen, nor ends the wrapper's exemption, so `run <role> -- bash -c "a; b"`
+# covers the whole script it runs. The one
 # case this does not close is the wrapper's own shape appearing whole inside a mention (a comment
 # that quotes a full `tools/agent-identity.py run claude-coder -- git push` line reads, to this
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
@@ -95,18 +100,46 @@ def swap($c; $r): split($c) | join($r);
 def last_part: (split("/") | last // "") | ltrimstr("$") | ascii_downcase;
 def named($name): last_part == $name;
 
+# A separator character (`;`, `&`, `|`, `(`, `)`, a backtick, a newline) that sits inside single
+# quotes, double quotes or a `$'...'` string, or right behind a backslash, is "soft": it becomes
+# the one-character word U+0001 instead of itself. One pass over the characters, tracking which
+# quote is open (0 none, 1 single, 2 double, 3 `$'...'`, where a backslash escapes as it does
+# outside quotes and in double quotes, but not in single quotes).
+def sep_codepoints: [59, 38, 124, 40, 41, 96, 10];
+def mark_soft_separators:
+  [foreach explode[] as $c ({q: 0, esc: false, prev: null, emit: []};
+      (if (.esc or .q != 0) and ((sep_codepoints | index($c)) != null) then [32, 1, 32] else [$c] end)
+        as $out
+      | if .esc then .esc = false | .emit = $out
+        elif $c == 92 and .q != 1 then .esc = true | .emit = [$c]
+        elif .q == 0 and $c == 39 then .q = (if .prev == 36 then 3 else 1 end) | .emit = [$c]
+        elif .q == 0 and $c == 34 then .q = 2 | .emit = [$c]
+        elif (.q == 1 or .q == 3) and $c == 39 then .q = 0 | .emit = [$c]
+        elif .q == 2 and $c == 34 then .q = 0 | .emit = [$c]
+        else .emit = $out
+        end
+      | .prev = $c;
+      .emit[])]
+  | implode;
+
 # Quotes and backslashes are dropped before the split (mentions read like invocations, on
 # purpose -- see the header). `,`, `[` and `]` join whitespace as word breaks (a Python argument
 # list, `subprocess.run(["git", "push"])`, must not hide the words inside its brackets); `;`, `&`,
 # `|`, `(`, `)`, a backtick and a newline are words of their own, each ending a chain of commands.
+# Inside quotes they are soft separators instead (`mark_soft_separators`): still a word break
+# every detector stops at, so a command inside `bash -c "..."` or `$(...)` is still seen, but not
+# the end of a `gh api` call's own flags (`detect_gh_api`) or of a wrapper's exemption
+# (`findings`), since a quoted `--jq '.a | .b'` or `-f body='a; b'` is one argument.
 def words:
-  drop("\\") | drop("\"") | drop("'")
+  mark_soft_separators
+  | drop("\\") | drop("\"") | drop("'")
   | swap("\t"; " ") | swap(","; " ") | swap("["; " ") | swap("]"; " ")
   | swap(";"; " ; ") | swap("&"; " & ") | swap("|"; " | ")
   | swap("("; " ( ") | swap(")"; " ) ") | swap("`"; " ` ") | swap("\n"; " \n ")
   | split(" ") | map(select(length > 0));
 
-def is_sep: IN(";", "&", "|", "(", ")", "`", "\n");
+def is_sep: IN(";", "&", "|", "(", ")", "`", "\n", "\u0001");
+def is_hard_sep: IN(";", "&", "|", "(", ")", "`", "\n");
 
 # Global options taking a separate argument -- git's, gh's and agent-identity.py run's own
 # --repo alike, one small list, fail-safe: an option not on it is skipped as one word, so an
@@ -209,10 +242,10 @@ def detect_git($w; $i; $n):
 # A `graphql` call always POSTs, so its own rule is different: it reads only when its query text
 # is visible on the command line (a `query=` field whose value is written inline) and no word from
 # the start of the call to the end of the whole command contains `mutation`. The check runs to the
-# end of the command, not to the call's own next separator, because a quoted query is split like
-# any other text: its newlines and parentheses are separators here, so a query whose first line is
-# a comment (`query=# resolve` then `mutation { ... }` on the next line) or a fragment written
-# before the mutation would otherwise be cut off at a line the scan never reads. Where the last
+# end of the command rather than over the call's own scanned words, so a quoted multi-line query
+# (a first line that is a comment, `query=# resolve` then `mutation { ... }`, or a fragment written
+# before the mutation) is covered even where a line inside it begins with a word the scan takes
+# for the start of another command and stops at. Where the last
 # word containing `mutation` sits is found once per command (`findings`' `$lm`), so this costs
 # nothing per call. A later, unrelated `mutation` in the same command makes a false deny, the safe
 # direction. A query read from a file (`-F query=@q.graphql`), from a shell
@@ -255,18 +288,38 @@ def gh_api_field_value($v):
       else .query_visible = true end
   else . end;
 
+def write_tool_names: ["release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"];
+
+# Whether the command that would start at index $j (past any assignment or wrapper word) is one
+# this hook detects: git, gh, the identity wrapper or a pushing script. A `gh api` scan stops at a
+# soft separator followed by one, so glued calls inside one quoted `bash -c "..."` are each
+# scanned once rather than each to the end of the string.
+def starts_command($w; $j; $n):
+  (command_word($w; $j; $n)) as $k
+  | ($k < $n)
+    and ($w[$k] | last_part as $lp
+         | ($lp | IN("git", "gh", "agent-identity.py")) or ((write_tool_names | index($lp)) != null));
+
+# Records a method; past a soft separator, a GET is ignored, since it may belong to another command
+# inside the same quoted string, and taking it would turn this call's write into a read.
+def gh_api_method($m):
+  if (.crossed_at != null) and (($m | ascii_downcase) == "get") then . else .method = $m end;
+
 def detect_gh_api($w; $start; $n; $lm):
   {i: $start, method: null, field: false, endpoint: null, merge_type: false,
-   query_visible: false, query_hidden: false}
-  | until(.i >= $n or ($w[.i] | is_sep);
+   query_visible: false, query_hidden: false, crossed_at: null, cont: false}
+  | (until(.i >= $n or ($w[.i] | is_hard_sep)
+          or (($w[.i] == "\u0001") and starts_command($w; .i + 1; $n));
       . as $s
       | ($w[$s.i]) as $x
       | ($w[$s.i + 1] // null) as $nx
       | ($nx != null and (($nx | is_sep) | not)) as $has_value
-      | if $x | IN("-X", "--method") then
-          (if $has_value then .method = $nx | .i += 2 else .method = "" | .i += 1 end)
-        elif $x | startswith("--method=") then .method = ($x | ltrimstr("--method=")) | .i += 1
-        elif $x | test("^(?i)-X=?.+") then .method = ($x | sub("^(?i)-X=?"; "")) | .i += 1
+      | (if $x | startswith("-") then .cont = false else . end)
+      | if $x == "\u0001" then .crossed_at = (.crossed_at // .i) | .cont = true | .i += 1
+        elif $x | IN("-X", "--method") then
+          (if $has_value then gh_api_method($nx) | .i += 2 else .method = "" | .i += 1 end)
+        elif $x | startswith("--method=") then gh_api_method($x | ltrimstr("--method=")) | .i += 1
+        elif $x | test("^(?i)-X=?.+") then gh_api_method($x | sub("^(?i)-X=?"; "")) | .i += 1
         elif $x | gh_api_field_flag then
           .field = true
           | (if $has_value then gh_api_field_value($nx) | .i += 2 else .i += 1 end)
@@ -279,22 +332,23 @@ def detect_gh_api($w; $start; $n; $lm):
         elif $x | gh_api_value_flag then (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("-") then .i += 1
         else
-          (if .endpoint == null then .endpoint = $x else . end)
+          (if (.endpoint == null) and (.cont | not) then .endpoint = $x else . end)
           | (if ($x | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) or ($x | test("(?i)/contents/"))
                 or ($x | test("(?i)/git/refs(/|$)"))
              then .merge_type = true else . end)
           | .i += 1
-        end) as $r
+        end)
+  | .resume = (.crossed_at // .i)) as $r
   | (($r.method != null) and (($r.method | ascii_downcase) == "get")) as $is_get
   | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
-      (if $lm >= $start then {next: $r.i, reason: "gh api graphql mutation"}
+      (if $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
-       then {next: $r.i, reason: "gh api graphql with a query not written inline"}
-       else {next: $r.i, reason: null} end)
-    elif $is_get then {next: $r.i, reason: null}
+       then {next: $r.resume, reason: "gh api graphql with a query not written inline"}
+       else {next: $r.resume, reason: null} end)
+    elif $is_get then {next: $r.resume, reason: null}
     elif ($r.method != null) or $r.field then
-      {next: $r.i, reason: (if $r.merge_type then "gh api merge-type" else "gh api" end)}
-    else {next: $r.i, reason: null}
+      {next: $r.resume, reason: (if $r.merge_type then "gh api merge-type" else "gh api" end)}
+    else {next: $r.resume, reason: null}
     end;
 
 # Every `gh` noun writes unless its verb is on one shared list of reads (`view`, `list`, `status`,
@@ -340,7 +394,6 @@ def detect_gh($w; $i; $n; $lm):
 # is literally `push` (see its usage); `land-prs.sh` and `update-pr.sh` both skip every GitHub
 # write under `--dry-run`; `prune-merged.sh` has no dry-run shape and is a write whenever it runs
 # at all.
-def write_tool_names: ["release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"];
 def script_is_write($w; $base; $start; $n):
   ({j: $start, push: false, dry: false}
    | until(.j >= $n or ($w[.j] | is_sep);
@@ -403,7 +456,8 @@ def findings($w):
       | (detect_wrapper($w; $state.i; $n)) as $wrap
       | ($state.i == $state.cmd_word_index) as $cmd_pos
       | if $x | is_sep then
-          $state | .wrap_from = null | .wrap_role = null
+          $state
+          | (if $x | is_hard_sep then .wrap_from = null | .wrap_role = null else . end)
           | .cmd_word_index = (command_word($w; $state.i + 1; $n)) | .i += 1
         elif $wrap != null then
           $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role

@@ -394,6 +394,22 @@ class CodexHooksTest(unittest.TestCase):
                 assert output is not None
                 self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_github_write_guard_sees_a_write_flag_after_a_quoted_separator(self) -> None:
+        # A quoted `|`, `(` or `;` belongs to its argument, so the flags after it are still read.
+        for command in (
+            "gh api repos/o/r/issues --jq '.html_url | ascii_downcase' -f title=x",
+            "gh api graphql -f query='query($id: ID!) { node(id: $id) { id } }' --input body.json",
+            "gh api repos/o/r/issues/1/comments --jq '.id; .url' -f body=x",
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_github_write_guard_allows_a_read_with_a_piped_jq(self) -> None:
+        text = self.call(tool="Bash", command="gh api repos/o/r/issues --jq '.[] | .title'")
+        self.assertIn("committing", text)
+
     def test_github_write_guard_denies_a_graphql_body_from_input(self) -> None:
         output = self.call_raw(command="gh api graphql --input payload.json")
         assert output is not None
