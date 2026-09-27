@@ -108,9 +108,8 @@ tools/agent-identity.py status claude-reviewer` (**using-tools**) says so; when 
 command that posts the review runs through `uv run python tools/agent-identity.py run
 claude-reviewer -- <command>` instead of running it directly, so the comments show as
 `claude-reviewer[bot]` rather than the player reviewing themself. When it does not (not created
-yet, not installed, or a cloud session), the review posts through the player's own account exactly
-as before — nothing about the verdict living in the review's text, or GitHub's own buttons staying
-unused, changes either way.
+yet, not installed, or a cloud session), the review posts through the player's own account. Either
+way the verdict lives in the review's text and GitHub's own buttons stay unused.
 
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.

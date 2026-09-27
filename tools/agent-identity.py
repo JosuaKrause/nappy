@@ -36,11 +36,11 @@ The repository is <owner>/<repo>, parsed from `git remote get-url origin` (an ht
 ssh git@github.com: URL, or a proxy-style URL whose path ends in /<owner>/<repo>, .git optional on
 each); --repo OWNER/REPO overrides it.
 
-**In a Claude Code cloud session, only `create` can work.** The session's own proxy allows only
+**In a Claude Code cloud session, none of the three works.** The session's own proxy allows only
 repository-scoped GitHub API endpoints under the session's own authorization -- a bare
 `GET /users/octocat` there answers "This GitHub API path is not available: sessions are bound to
 their configured repositories" -- `gh` is not installed, and there is no browser to run the
-manifest flow's confirm page in. So `status` and `run` are expected to fail in that environment,
+manifest flow's confirm page in. So all three are expected to fail in that environment,
 and the "not configured" message says identities are set up on the player's own machine.
 """
 

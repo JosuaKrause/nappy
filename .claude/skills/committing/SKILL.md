@@ -17,9 +17,9 @@ for that piece of work runs through `uv run python tools/agent-identity.py run <
 instead of running it directly — Claude Code as `claude-coder`, Codex as `codex-coder` — so the
 commit, the push and the pull request all show as `<role>[bot]` rather than as the player talking
 to themself. When `status` reports the role not usable (not created yet, not installed on the
-repository, or a cloud session, where only `create` can work — see `tools/agent-identity.py`'s own
-module docstring), the work goes through the player's own account exactly as it did before, and the
-attribution lines this session was given stay on the commit and the PR description.
+repository, or a cloud session, where none of the tool works — see `tools/agent-identity.py`'s own
+module docstring), the work goes through the player's own account, with the attribution lines the
+session gives on the commit and the PR description.
 
 ## Pushing
 
