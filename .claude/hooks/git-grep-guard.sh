@@ -27,13 +27,29 @@
 #   command and the words after the redirect stay in the invocation. For the
 #   first two readings, `${IFS}` and `$IFS` also become a space and `$'`/`$"` a plain quote, so
 #   `git${IFS}grep` and `g$'i't` read as they run.
-# - A text over 32 KB that holds both words is denied without being read further. Every reading
-#   is linear, but the three together cost most on dense text of short words, where each word is
-#   a step of its own: about 1.2 seconds at 32 KB of `git` on a line each, the slowest text
-#   measured, against the hook's 10-second timeout, so a loaded machine still finishes in time.
-#   Past the bound a real command holding both words is rare (a heredoc writing a large file), and
-#   the way out is to write the text to a file first.
-# - The text is then read three ways, and a match in any one of them denies:
+# - A text over `too_long` (32 KB) skips every pass below and is decided by one regex test
+#   instead: a backslash-newline pair, a lone backslash, a quote character or `$` may stand
+#   between any two letters of `git` or of `grep`, so `g\it`, `g"i"t`, `g$'i't` and a word split by
+#   a line continuation still read as the word; a command holding both words anywhere denies, one
+#   holding neither allows. A newline on its own is not skipped, since the shell joins two lines
+#   only at a backslash: prose with a line ending in `g` before one starting with `it` holds no
+#   `git`. The length is checked before anything else because building the text the readings
+#   below work on (dropping backslashes and quote marks, folding `${IFS}`) is itself a pass over
+#   the whole command that costs seconds per megabyte on dense runs of the characters it drops,
+#   and a hook that runs past its 10-second timeout lets the command through, in Claude Code and
+#   in Codex alike. A real command over 32 KB holding both words is rare (a heredoc writing a
+#   large file), and the way out is to write the text to a file first. Past `hard_cap` (1 MB) the
+#   command is denied without the regex, as github-write-guard.sh denies every command past the
+#   same size, so past it neither guard reads the command at all.
+# - At or under 32 KB, the text is read in full, and no reading costs more than a few passes over
+#   it: one pass over the characters, and over the words one table of where each word's run of
+#   git options ends, built by pointer doubling (a pass over the words for each doubling of the
+#   longest run) rather than walked from each `git` (`-c` swallows the next word, so in `git -c
+#   git -c git ...` a walk from every `git` would run to the end of the chain, a cost quadratic in
+#   its length). The densest texts of short words, where every word is a step of its own and all
+#   four readings run to the end, are decided in about a second, well inside the hook's 10-second
+#   timeout even on a loaded machine.
+# - The text is then read four ways, and a match in any one of them denies:
 #   1. every backslash and quote mark deleted, as bash's quote removal does, so `g"i"t`, `g\it`,
 #      `"git" grep` and `git -C "$root" grep` read as they run;
 #   2. every backslash deleted and every quote mark turned into a space, so a word glued onto a
@@ -43,7 +59,14 @@
 #      argument with a space stays one word (`git -C "/a b" grep`, `-c "x=bold red"`), a quoted
 #      pattern such as `"gcc -I"` is not read as the `-I` flag, a quoted `'>'` or `'<'` is a
 #      pathspec entry rather than a redirect, and a quoted `')'`, `'|'` or `\;` is an argument
-#      rather than the end of the command.
+#      rather than the end of the command;
+#   4. a quoted script read as a script: quote marks and backslashes deleted as in reading 1, so the
+#      words inside `bash -c '...'` stand out, but each word remembers which shell word it came
+#      from, and which quoted word inside the script, so an option's argument is skipped whole at
+#      the option's own level (`bash -c 'git -C "/x y" grep x'`, `bash -c "git -c 'a=b c' grep x"`,
+#      `\"...\"` inside double quotes too) and a quoted pattern inside the script (`"gcc -I"`) is
+#      not the `-I` flag. It runs only on a text holding a quote mark or a backslash, since without
+#      one it is reading 1 again.
 #   In the first two readings a comma right after a quote mark splits words, which is how a Python
 #   list (`["git", "grep", ...]`) reads; a comma anywhere else does not, so prose such as "git,
 #   grep" is not an invocation. In the third reading every unquoted comma splits.
@@ -70,8 +93,10 @@
 # (`git -c alias.g=grep g ...`), a `git` or `grep` assembled by an expansion (`$(echo gi)t`,
 # `$G` with G=git, any variable but IFS), an encoded command, a command kept in a file the command
 # runs (`bash x.sh`, `python3 x.py`), an attributes file or `--attr-source` tree that marks the
-# binaries as text (which voids `-I`), and a global option git adds later that takes a separate
-# argument. Accepted false denies: a mention (`[git] grep` in prose and a path ending in
+# binaries as text (which voids `-I`), a global option git adds later that takes a separate
+# argument, and a third level of quoting (an escaped quote inside a quoted string inside a quoted
+# script, `python3 -c 'os.system("git -C \"/x y\" grep x")'`), whose argument is not grouped.
+# Accepted false denies: a mention (`[git] grep` in prose and a path ending in
 # `/git-grep` included), a line ending in `git` followed by a line starting with `grep`, a text-only pathspec
 # that also carries an exclusion (`-- '*.md' ':!x.md'`), any long pathspec magic (`:(glob)*.md`,
 # whose parentheses split it in the first two readings), and any command the jq program fails on.
@@ -86,11 +111,12 @@ set -uo pipefail
 
 # ------------------------------------------------------------------------------ the check (jq) ---
 # Prints the unguarded invocations it finds, joined by "; ", and nothing when there is none. Every
-# step is a literal split/join, one foreach over the characters, or a walk over an array of words,
-# never a regex over the whole text and never an append to an array held in a reduce's state: jq's
-# match, scan and gsub cost the length of the text per match, jq copies a state array on each
-# append, and bash 3.2's arrays cost their length per lookup, any of which makes a long heredoc
-# outrun the hook's timeout.
+# step is a literal split/join, one foreach over the characters, or a pass over an array of words,
+# never an append to an array held in a reduce's state and never a walk that can start again from
+# every word: jq's match, scan and gsub cost the length of the text per match, jq copies a state
+# array that is read while it is updated, and bash 3.2's arrays cost their length per lookup, any
+# of which makes a long heredoc outrun the hook's timeout. The one regex over the whole text is
+# the over-bound test, a single search.
 read -r -d '' check_program <<'JQ'
 def drop($c): split($c) | join("");
 def swap($c; $r): split($c) | join($r);
@@ -111,7 +137,8 @@ def plain_words:
 # the reading quadratic in the number of words; a `null` after the last character flushes the last
 # word.
 def flush:
-  if .cur != "" then
+  # An empty quoted word (`-C ""`) is still a word: git reads it as an argument.
+  if .cur != "" or .quoted then
     .emit += [if .quoted and ((.cur[0:3] | test("^[0-9]{0,2}[<>]")) or (.cur | IN(";", "&", "|", "(", ")", "`")))
               then "\u0001" + .cur else .cur end]
     | .cur = ""
@@ -135,6 +162,47 @@ def quoted_words:
         else .cur += $c end;
       .emit[])
    | if . == "\n" then . else swap("\n"; " ") end];
+
+# Reading 4 reads a quoted script's own words: quote marks and backslashes are dropped as in
+# reading 1, so the words inside `bash -c '...'` are split out, but whitespace inside quotes (or
+# behind a backslash) becomes glue, U+0004, rather than a break, and U+0005 inside a second level of
+# quotes within the first (a `"..."` inside `'...'`, a `'...'` or `\"...\"` inside `"..."`).
+# `leveled_parts` then splits at the glue and gives each part a level (0 the first part of a shell
+# word, 1 a later part of it, 2 a later part inside the second level of quotes), so
+# `bash -c 'git -C "/x y" grep x'` skips `"/x y"` whole as `-C`'s argument and reaches `grep`.
+# Every opening quote also leaves U+0006, dropped from any part that has other characters, so an
+# empty quoted word (`-C ""`) is still a word, and a second-level quoted argument that starts with
+# a space (`bash -c "git -c ' x=1' grep x"`) still starts a word of its own level.
+def glued_text:
+  [foreach explode[] as $c ({q: 0, iq: false, esc: false, emit: []};
+     (if .iq then 5 else 4 end) as $g
+     | if .esc then
+         .esc = false
+         | .emit = (if $c == 32 or $c == 9 then [$g] else [$c] end)
+         | (if .q == 2 and $c == 34 then .iq = (.iq | not) | .emit += [6] else . end)
+       elif $c == 92 and .q != 1 then .esc = true | .emit = []
+       elif .q == 0 then
+         (if $c == 39 then .q = 1 | .emit = [6] elif $c == 34 then .q = 2 | .emit = [6]
+          else .emit = [$c] end)
+       elif (.q == 1 and $c == 39) or (.q == 2 and $c == 34) then .q = 0 | .iq = false | .emit = []
+       elif (.q == 1 and $c == 34) or (.q == 2 and $c == 39) then .iq = (.iq | not) | .emit = [6]
+       elif $c == 32 or $c == 9 then .emit = [$g]
+       else .emit = [$c] end;
+     .emit[])]
+  | implode;
+def placeholder_or_word:
+  if contains("\u0006") then (drop("\u0006") | if . == "" then "\u0006" else . end) else . end;
+def leveled_parts:
+  [.[]
+   | if (contains("\u0004") or contains("\u0005") or contains("\u0006")) | not then {w: ., c: 0}
+     else
+       [split("\u0004") | to_entries[] | .key as $j
+        | [.value | split("\u0005")[] | placeholder_or_word | select(length > 0)]
+        | to_entries[]
+        | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end)}]
+       | (if length > 0 then .[0].c = 0 else . end)
+       | .[]
+     end];
 
 # `git` / `grep` in any case, as a path or not, a leading `$` ignored.
 def last_part: (split("/") | last // "") | ltrimstr("$") | ascii_downcase;
@@ -187,19 +255,53 @@ def takes_argument:
   IN("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env",
      "--attr-source");
 
-# From the index after `git`, the index of the first word that is not one of git's own options (with
-# a separate argument where it takes one), a redirect, a newline, or the `)`/backtick closing
-# `$(which git)`. An unrecognised `-` option is skipped too, so an unfamiliar one cannot hide
-# `grep`; the same skip keeps `git log --grep=foo` safe.
-def after_options($w):
-  until(. >= ($w | length)
-        or ($w[.] as $x
-            | ($x | startswith("-")) or ($x | IN("\n", ")", "`")) or ($x | redirect_width) > 0
-            | not);
-    $w[.] as $x
-    | if $x | takes_argument then . + 2
-      elif ($x | startswith("-")) or ($x | IN("\n", ")", "`")) then . + 1
-      else . + ($x | redirect_width) end);
+# Follows every pointer in an array of forward pointers to its end: each entry is the index it
+# points at, one that points at itself is an end, and the last entry is the array's own end. Each
+# pass replaces a pointer with its pointer's pointer, which halves every remaining chain, so it
+# takes a number of passes logarithmic in the longest chain and each pass is one read of the
+# array; a walk from each start instead costs the length of the text for each start.
+def resolve: until(. as $p | all(range(length); $p[$p[.]] == $p[.]); . as $p | map($p[.]));
+
+# For every index in the word array (and one past its end), the index of the first word from there
+# on that is not one of git's own options (with a separate argument where it takes one), a
+# redirect, a newline, or the `)`/backtick closing `$(which git)`. An unrecognised `-` option is
+# skipped too, so an unfamiliar one cannot hide `grep`; the same skip keeps `git log --grep=foo`
+# safe. It is a table built once rather than a walk from each `git`, because `-c` swallows the next
+# word: in `git -c git -c git ...` the walk from every `git` runs to the end of the chain, and a
+# walk per `git` costs the square of the chain's length.
+#
+# With levels (`$lv`, reading 4 only), an option and its argument are each skipped as a whole word
+# at the option's own level, so `-C "/x y"` inside a quoted script is two words, not three.
+def word_ends($lv):
+  ($lv | length) as $n
+  | [foreach range($n - 1; -1; -1) as $p ({z: $n, o: $n, out: null};
+       .out = {z, o}
+       | (if $lv[$p] == 0 then .z = $p else . end)
+       | (if $lv[$p] <= 1 then .o = $p else . end);
+       .out)]
+  | reverse;
+def options_table($lv):
+  . as $w
+  | length as $n
+  | (if $lv == null then null else word_ends($lv) end) as $ends
+  | def word_end($l; $p):
+      if $ends == null or $p >= $n then $p + 1
+      elif $l == 0 then $ends[$p].z elif $l == 1 then $ends[$p].o else $p + 1 end;
+    [range($n) as $i
+     | $w[$i] as $x
+     | ($lv[$i] // 0) as $l
+     | (if ($x | startswith("-")) then (if $x | takes_argument then 2 else 1 end)
+        elif $x | IN("\n", ")", "`") then 0
+        elif ($x | contains("<") or contains(">")) then ($x | redirect_width)
+        else -1 end) as $width
+     | if $width < 0 then $i
+       elif $width == 0 then $i + 1
+       else word_end($l; $i) as $e
+         | (if $width == 2 and $e < $n then word_end($l; $e) else $e end)
+       end
+     | if . > $n then $n else . end]
+    + [$n]
+  | resolve;
 
 # True when a `--` pathspec is present and every entry, redirects aside, is a text glob.
 def text_only($specs):
@@ -222,43 +324,70 @@ def unguarded($tail):
 # A path to git's own `git-grep` program (`$(git --exec-path)/git-grep`) is `git grep` in one word;
 # the bare word `git-grep`, with no `/`, stays a mention.
 def is_git_grep_path: contains("/") and last_part == "git-grep";
-def findings:
+def findings($lv):
   . as $w
   | ($w | length) as $n
+  | ($w | options_table($lv)) as $after_options
   | {i: 0, out: []}
   | until(.i >= $n;
       (if $w[.i] | is_git_grep_path then .i
        elif $w[.i] | is_git then
-         (.i + 1 | after_options($w)) | if . < $n and ($w[.] | is_grep) then . else null end
+         $after_options[.i + 1] | if . < $n and ($w[.] | is_grep) then . else null end
        else null end) as $j
       | if $j == null then .i += 1
         else ($j + 1 | until(. >= $n or ($w[.] | is_sep); . + 1)) as $k
-          | (if unguarded($w[$j + 1:$k])
+          # In reading 4 a later part of a quoted argument (`"gcc -I"`) is never an option.
+          | (if unguarded(if $lv == null then $w[$j + 1:$k]
+                          else [range($j + 1; $k) | select($lv[.] <= $lv[$j]) | $w[.]] end)
              then .out += [[["git"] + $w[$j:$k] | .[] | swap("\n"; " ")] | join(" ")]
              else . end)
           | .i = $k
         end)
   | .out;
 
+# Past `too_long`, none of the passes below run at all: one regex test decides instead, as the
+# header says, since `$raw`, `$bare` and `$flat` are each a pass over a command of unbounded
+# length. A command holding neither word, however the shell would have joined, quoted or expanded
+# its letters, cannot be a `git ... grep` invocation at all, so it allows. Between two letters the
+# regex skips a backslash-newline pair, a lone backslash, a quote mark and a `$`, never a newline
+# on its own: the shell joins two lines only at a backslash, so a line ending in `g` before a line
+# starting with `it` is two words. Past `hard_cap` nothing is read at all and the command is
+# denied, as github-write-guard.sh denies it.
+def too_long: 32768;
+def hard_cap: 1048576;
+def skip: "(?:\\\\\n|[\\\\\"'$])*";
+def obscured($word): ($word | split("") | join(skip));
+def over_bound_verdict:
+  if (test(obscured("git"); "i") and test(obscured("grep"); "i"))
+  then "(the whole command: over 32 KB and holding both words, not read further; write the long text to a file first, then run a short command)"
+  else empty
+  end;
+
 if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
-  | (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
-  # `${IFS}` and `$IFS` are word breaks, and `$'...'`/`$"..."` are quotes, for readings 1 and 2.
-  | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$'"; "'") | swap("$\""; "\"")) as $bare
-  | ($bare | drop("\\") | drop("\"") | drop("'") | ascii_downcase) as $flat
-  # Every match needs both words, so most commands stop here.
-  | if ($flat | contains("git") and contains("grep")) | not then empty
-    elif ($raw | length) > 32768 then
-      "(the whole command: over 32 KB and holding both words, too long to read in full inside the hook's timeout; write the long text to a file first, then run a short command)"
+  | if length > hard_cap
+    then "(the whole command: over 1 MB, not read at all; write the long text to a file first, then run a short command)"
+    elif length > too_long then over_bound_verdict
     else
-      ($bare | drop("\\") | swap("\","; "\" ") | swap("',"; "' ")) as $unescaped
-      | first(
-          ($unescaped | drop("\"") | drop("'") | plain_words | findings),
-          ($unescaped | swap("\""; " ") | swap("'"; " ") | plain_words | findings),
-          ($raw | quoted_words | findings)
-          | select(length > 0))
-      | join("; ")
+      (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
+      # `${IFS}` and `$IFS` are word breaks, and `$'...'`/`$"..."` are quotes, for readings 1 and 2.
+      | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$'"; "'") | swap("$\""; "\"")) as $bare
+      | ($bare | drop("\\") | drop("\"") | drop("'") | ascii_downcase) as $flat
+      # Every match needs both words, so most commands stop here.
+      | if ($flat | contains("git") and contains("grep")) | not then empty
+        else
+          ($bare | drop("\\") | swap("\","; "\" ") | swap("',"; "' ")) as $unescaped
+          | first(
+              ($unescaped | drop("\"") | drop("'") | plain_words | findings(null)),
+              ($unescaped | swap("\""; " ") | swap("'"; " ") | plain_words | findings(null)),
+              ($raw | quoted_words | findings(null)),
+              # Reading 4 differs from reading 1 only where there is a quote or a backslash.
+              ($bare | select(test("['\"\\\\]")) | glued_text | plain_words | leveled_parts
+               | (map(.c)) as $lv | map(.w) | findings($lv))
+              | select(length > 0))
+          | join("; ")
+        end
     end
 end
 JQ
