@@ -5,6 +5,17 @@ session handover across agents. each have their own threads to work on. let's re
 file from github". Earlier the same evening, on a line recording a session's merge permission:
 "remove that bit altogether -- this is not something that should go into a checked in handoff".)*
 
+**Where it came from.** *(2026-09-26: "the original idea behind HANDOFF in PRs was so multiple
+agents could work on the same PR. the HANDOFF was supposed to be deleted before a PR gets merged. I
+guess one PR accidentally left it in and different agents started writing their own handoffs in
+it".)* It was a per-branch scratch file, meant to be deleted before the work merged. It was added
+once, in `4c581acc` on 2026-08-26 ("Handoff notes so a cold session can pick this up", on
+`feature/asset-pipeline`), and reached `main` through that branch's local merge `b9be54f8`
+("Merge feature/asset-pipeline: M12a ground tiles and handoff notes"). That was before work came in
+through GitHub pull requests, the first of which, #1, opened on 2026-09-05. No later change added
+it again. After that merge, sessions treated it as a standing document: they rewrote it, ended
+sessions by writing it, and later made it the entry point `CLAUDE.md` sent every session to.
+
 **What was done.** `docs/HANDOFF.md` is deleted. Nothing checked in says where a session stopped:
 the pick-up state is read live from `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh` and the
 items under `docs/review/`, and a session's end writes only the git-ignored
