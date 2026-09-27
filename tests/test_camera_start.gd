@@ -9,7 +9,7 @@ extends RefCounted
 ## `main._ready()` itself, either side of `await _warm_the_pictures()`.
 ##
 ## `t.add_child(main)` runs `_ready()` synchronously up to its first suspension — the first
-## `await get_tree().process_frame` inside `_warm_the_halo_shader()` — and hands control back
+## `await get_tree().process_frame` inside `_warm_the_canvas_shaders()` — and hands control back
 ## here exactly at that point, which is the state a real first frame would draw from. Resuming by
 ## hand with `t.get_tree().process_frame.emit()`, the same way `tests/test_pause.gd` resumes a
 ## coroutine waiting on the same signal, finishes the boot without a real frame ever elapsing:

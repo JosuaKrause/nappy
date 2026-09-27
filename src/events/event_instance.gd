@@ -848,8 +848,11 @@ static func has_a_spread(def: EventDef) -> bool:
 ## `_spread_vertical` together pick the texture, with no field on the def.
 ##
 ## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst
-## main's fountain, each alternated off `_idle_stepping()` by `_draw_body()`. The fallen tree has
-## nothing that moves and answers its one picture either way.
+## main's fountain. On screen the two are `EventScenery` layers built by `_build_scenery()`, and
+## `_update_scenery()` alternates their frame off its own `_idle_stepping()` call; `_draw_body()`
+## only picks `frame_b` here when it draws the whole scene itself, which happens on the halo's own
+## canvas (`canvas != self`) or before `_build_scenery()` has run (`_scenery == null`). The fallen
+## tree has nothing that moves and answers its one picture either way.
 static func _wide_scene_texture(look: EventDef.Look, vertical: bool, frame_b := false) -> String:
 	match look:
 		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
@@ -1077,6 +1080,7 @@ var _stationary_vehicle_side := true
 ## negative, which makes this starting value one no key can ever equal: the first tick of an
 ## instance's life always asks for its own draw rather than relying on a coincidence.
 var _picture := Vector4i(-1, 0, 0, 0)
+var _scenery: EventScenery
 
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
@@ -1242,6 +1246,30 @@ func _ready() -> void:
 	if def.flock_size > 0:
 		_build_the_flock()
 	_build_halo()
+	_build_scenery()
+
+## The whole A/B sources remain the badge and halo pictures. The visible scene is instead
+## retained in painter-order layers behind this node's caret and ahead of its halo.
+func _build_scenery() -> void:
+	if def.look not in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
+		return
+	var picture := _wide_scene_texture(def.look, _spread_vertical)
+	var half := maxf(11.0, def.obstructs_radius)
+	var size := _native_size(picture)
+	var thickness := size.x if _spread_vertical else size.y
+	_scenery = EventScenery.new()
+	_scenery.configure(picture, _spread_extent(half * 2.0, thickness),
+			_wide_scene_anchor(_spread_vertical, half), _wide_scene_shadow(picture))
+	add_child(_scenery)
+	_update_scenery()
+
+func _update_scenery() -> void:
+	if _scenery == null:
+		return
+	_scenery.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	var period := CAR_ACCIDENT_SMOKE_PERIOD if def.look == EventDef.Look.CAR_ACCIDENT \
+			else BURST_MAIN_SPLASH_PERIOD
+	_scenery.set_frame(_idle_stepping(period))
 
 ## Where this instance's body was left standing when its pursuer walked out of it, in world space,
 ## or `Vector2.INF` while the two are still the same place. See `EventDef.body_stays_behind`.
@@ -2409,6 +2437,8 @@ func _finish() -> void:
 	if is_finished:
 		return
 	is_finished = true
+	if _scenery != null:
+		_scenery.hide()
 	_invalidate_contribution_cache()
 
 # ------------------------------------------------------------------ emission ---
@@ -2854,6 +2884,7 @@ func will_be_lethal(player_position: Vector2) -> bool:
 ## a never-settling state — a van that has finished taking its victim — is still a change the
 ## comparison can see.
 func _redraw_if_the_picture_changed() -> void:
+	_update_scenery()
 	var key := _picture_key()
 	var changed := key != _picture
 	_picture = key
@@ -2930,8 +2961,8 @@ func _picture_key() -> Vector4i:
 	# **Only the looks that actually read an idle timer carry one.** `_idle_stepping()` is a
 	# function of the clock alone and knows nothing about the row asking, so handing it to every
 	# instance would flip every seal's key twice a second for an animation it does not have — the
-	# gate would then be paying its whole cost and buying nothing. The crash, the burst main and
-	# the steam are the three that do have one, each on its own period.
+	# gate would then be paying its whole cost and buying nothing. Smoke and fountain phases
+	# belong to their own small layers, while the steam is already a cloud-only picture.
 	var idle := false
 	if def.look == EventDef.Look.CAFE:
 		idle = _idle_stepping(SITTER_IDLE_PERIOD)
@@ -2939,10 +2970,6 @@ func _picture_key() -> Vector4i:
 		idle = _idle_stepping(BUSKER_STRUM_PERIOD)
 	elif def.look == EventDef.Look.POSTER_CREW:
 		idle = _idle_stepping(POSTER_CREW_PASTE_PERIOD)
-	elif def.look == EventDef.Look.CAR_ACCIDENT:
-		idle = _idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)
-	elif def.look == EventDef.Look.BURST_MAIN:
-		idle = _idle_stepping(BURST_MAIN_SPLASH_PERIOD)
 	elif def.look == EventDef.Look.STEAM:
 		idle = _idle_stepping(STEAM_BILLOW_PERIOD)
 	var flags := 0
@@ -3572,11 +3599,13 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.FALLEN_TREE:
 			_draw_wide_scene(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), canvas)
 		EventDef.Look.CAR_ACCIDENT:
-			_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical,
-					_idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
+			if canvas != self or _scenery == null:
+				_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical,
+						_idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
 		EventDef.Look.BURST_MAIN:
-			_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical,
-					_idle_stepping(BURST_MAIN_SPLASH_PERIOD)), canvas)
+			if canvas != self or _scenery == null:
+				_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical,
+						_idle_stepping(BURST_MAIN_SPLASH_PERIOD)), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_draw_spread(COLLAPSED_FRONTAGE, "", canvas)
 		EventDef.Look.SCAFFOLDING:

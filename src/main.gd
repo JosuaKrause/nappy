@@ -372,12 +372,12 @@ func _ready() -> void:
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
-	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_halo_shader()`
+	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_canvas_shaders()`
 	# awaits below draw the ground the title screen and the day itself will, rather than the
 	# world's default identity transform — see `_new_boot_camera()`'s own doc. Freed once
 	# `_start_day()` has put her camera in the same place for real.
 	var boot_camera := _new_boot_camera(_city.map.doorstep_world_position())
-	await _warm_the_halo_shader(boot_camera.global_position)
+	await _warm_the_canvas_shaders(boot_camera.global_position)
 
 	_player = _make_player()
 	_city.add_entity(_player)
@@ -573,15 +573,15 @@ func _ready_escape() -> void:
 	# frame between the two for a page to arrive in. The rule the moment exists for is satisfied
 	# here instead, at the one point in the sequence where nobody is watching a frame.
 	_hold_every_page_a_day_draws(AtlasLibrary.MOMENT_ESCAPE, ESCAPE_ONLY_GROUPS)
-	# The second boot entry point the halo's shader warm-up has to reach, since the epilogue draws
-	# its own halo and is reached without ever passing through `_ready()`'s own call above. This
+	# The second boot entry point the canvas-shader warm-up has to reach, since the epilogue draws
+	# its own halo and can later reach the same shoreline without passing through `_ready()`'s call. This
 	# path awaits the same way `_ready()` does before anything of the world exists — neither
 	# `_interior` nor `_city` is built yet, whichever section this run opens on — so it needs the
-	# same boot camera for `_warm_the_halo_shader()`'s probe to have a screen to draw on; world
+	# same boot camera for `_warm_the_canvas_shaders()`'s probes to have a screen to draw on; world
 	# origin is as good as any other point, since nothing is in the tree yet to show a wrong
 	# corner of.
 	var boot_camera := _new_boot_camera(Vector2.ZERO)
-	await _warm_the_halo_shader(boot_camera.global_position)
+	await _warm_the_canvas_shaders(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
 	_release_shaped_hud()
@@ -1360,7 +1360,7 @@ func _world_now() -> Node2D:
 	return _interior
 
 ## A plain camera made current before either boot path's own player exists, so the two frames
-## `_warm_the_halo_shader()` awaits below draw `ground` — the doorstep, in `_ready()`'s case —
+## `_warm_the_canvas_shaders()` awaits below draw `ground` — the doorstep, in `_ready()`'s case —
 ## rather than the world's default identity transform, whose origin sits at the top-left of
 ## whatever is in the tree under it.
 ##
@@ -1425,19 +1425,21 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 func _exit_tree() -> void:
 	AtlasLibrary.release_the_loading_moments()
 
-## Gets the Compatibility renderer to compile the halo's shader program before a real halo ever
-## draws with it. **Godot 4.7 has no precompile call for this renderer** — `RenderingServer`'s own
+## Gets the Compatibility renderer to compile the halo and shoreline shader programs before their
+## first real drawings. **Godot 4.7 has no precompile call for this renderer** — `RenderingServer`'s own
 ## pipeline cache is a Forward+/Mobile (RenderingDevice) feature, and the engine's own proposal
 ## tracker still carries "Add shader precompilation to the Compatibility rendering method" as an
-## open request — so the only lever left is a real draw call: a throwaway `Node2D` draws one
-## transparent pixel with `EntityHalo.shared_material()` and is freed the frame after.
+## open request — so the only lever left is a real draw call. Two throwaway `Node2D`s draw the
+## halo material and the actual water atlas region through `SceneryWater.material_for()`, then are
+## freed after the frame reaches the renderer. Their shader outputs are transparent, so the boot
+## cannot flash either probe even though both sit inside the visible canvas.
 ##
 ## **At `ground`, not off in the distance.** A canvas item outside the camera's visible rect is
 ## culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
 ## off-screen `CrowdAgent` costs nothing per frame — and a culled draw would compile nothing,
 ## defeating the whole pass. `ground` is the boot camera's own `global_position` (see
-## `_new_boot_camera()`, made current by both boot paths before this is ever
-## called), so a probe placed there sits exactly at that camera's own screen centre — on screen
+## `_new_boot_camera()`, made current by both boot paths before this is ever called), so probes
+## placed there sit exactly at that camera's own screen centre — on screen
 ## regardless of zoom or viewport size. Fully transparent (`halo_colour`'s instance uniform
 ## default, never set here) makes it imperceptible regardless: the GLSL program compiles from the
 ## material and the draw call alone, never from the pixels it happens to write.
@@ -1446,18 +1448,32 @@ func _exit_tree() -> void:
 ## `DaySummary._acknowledge_and_continue()` confirms this directly against `RenderingServer`'s own
 ## `frame_pre_draw`/`frame_post_draw` — so a single await would free the probe before its queued
 ## draw ever reached the renderer, and the shader would still compile late, on the first real halo.
-func _warm_the_halo_shader(ground: Vector2) -> void:
-	var probe := Node2D.new()
-	probe.name = "HaloWarm"
-	probe.global_position = ground
-	probe.material = EntityHalo.shared_material()
-	probe.draw.connect(func() -> void: probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.WHITE))
-	add_child(probe)
-	_pauses_with_the_game(probe)
-	probe.queue_redraw()
+func _warm_the_canvas_shaders(ground: Vector2) -> void:
+	var halo_probe := Node2D.new()
+	halo_probe.name = "HaloWarm"
+	halo_probe.global_position = ground
+	halo_probe.material = EntityHalo.shared_material()
+	halo_probe.draw.connect(func() -> void:
+		halo_probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.WHITE))
+	add_child(halo_probe)
+	_pauses_with_the_game(halo_probe)
+	halo_probe.queue_redraw()
+
+	var water_texture := AtlasLibrary.region(&"tiles/water") as AtlasTexture
+	var water_probe := Node2D.new()
+	water_probe.name = "WaterWarm"
+	water_probe.global_position = ground
+	water_probe.material = SceneryWater.material_for(water_texture)
+	water_probe.draw.connect(func() -> void:
+		water_probe.draw_texture_rect(water_texture,
+				Rect2(Vector2.ZERO, water_texture.get_size()), false, Color.TRANSPARENT))
+	add_child(water_probe)
+	_pauses_with_the_game(water_probe)
+	water_probe.queue_redraw()
 	await get_tree().process_frame
 	await get_tree().process_frame
-	probe.queue_free()
+	halo_probe.queue_free()
+	water_probe.queue_free()
 
 ## The one thing `?debug=1` (or `--debug`) adds beyond the readout itself: a fixed note, for the
 ## whole session, that nothing removes — not the `4` key, not a press, not `_open_the_title()`
@@ -1608,7 +1624,7 @@ func _add_touch_controls() -> void:
 ## the same question every frame instead means the decision cannot go stale between calls.
 ##
 ## **Guarded against a real boot-time race.** `_ready()` sets `process_mode = PROCESS_MODE_ALWAYS`
-## on this node before its own `await _warm_the_halo_shader()` — two awaited frames in which the
+## on this node before its own `await _warm_the_canvas_shaders()` — two awaited frames in which the
 ## engine still calls `_process()` on an ALWAYS node, and `_process()` asks this same question
 ## every frame (see above). `_player`, `_touch_controls` and `_hud` are not built until after that
 ## await returns, so a frame drawn during it would otherwise call this on all three while they are

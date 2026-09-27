@@ -40,6 +40,8 @@ src/
 	block_layout.gd       one block's carves, also fixed at generation
 	city_state.gd         run-scoped: how far along each arc the run has got
 	building.gd           one lot, assembled from 32px facade and roof tiles
+	scenery_layer.gd      retained static furniture or small alternating scenery parts
+	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
@@ -68,6 +70,8 @@ src/
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
 	event_def.gd          authored event data
+	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
+	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, lifetime, telegraph, emission; every picture
 	                       it draws is a region of the baked `events` page, by path
 	event_catalogue.gd    every event, defined in code
@@ -181,7 +185,9 @@ art/                      the authoring pictures, behind a .gdignore: the engine
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
 assets/                   what the engine still reads at runtime, and only that
-  shaders/                the excitement halo's silhouette rim
+  shaders/                the excitement halo's silhouette rim and the shared south-water ripple;
+                          both boot paths issue real transparent canvas draws before play because
+                          Compatibility has no shader-precompile call
   atlases/membership.json which picture belongs on which atlas page, with each group's
                           lifetime, its padding kind and the consumers that read it. "members"
                           is what both bake modes carry, "members_png" and "members_svg" what
@@ -211,6 +217,9 @@ tools/
   cost_table.gd           the survey itself, run headless as a scene (needs the Tuning autoload)
   lint.sh                 the governed docs, for sentences that go stale on their own
   pycheck.sh              ruff, mypy and the unit tests for the Python here
+  split-scenes.py         regenerate or check the pipe/crash static and moving SVG spans,
+                          runtime registration and atlas membership; evidence metadata is an
+                          explicit output rather than an ordinary regeneration side effect
   run.sh                  play; rebuilds the import cache first when a pull left it stale
   shot.sh                 render the game to a PNG
   telemetry.sh            show a run log; stats.sh aggregates them

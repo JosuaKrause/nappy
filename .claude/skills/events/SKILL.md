@@ -218,6 +218,17 @@ A bob driven by **distance covered** rather than by time, so what shows is the m
 stopped thing is still and a fast thing bobs faster. A sprite cannot swing its own legs, so a bob is
 what there is.
 
+## A partially animated scene has separate pixel owners
+
+When only part of an event picture moves, the stationary scene stays in retained static layers and
+the moving pixels live in separately registered layers. The owner's picture key stays stable when
+only those details swap. Static art may overlap a moving crop where it supplies the background a
+phase uncovers or foreground occlusion that belongs above it; the rule forbids duplicate moving
+pixels, not overlap between the layers' rectangles or opaque pixels. Preserve source painter order,
+orientation, halo and badge sources, collision and the authored clock. Compare every composited
+phase with the complete source rather than treating a difference mask or a crop rectangle as proof
+of correct separation.
+
 ## The day is planned whole; only the world near the player is built
 
 Every guarantee is stated over a **day** — one usable park, two distinct routes to two distinct calm
