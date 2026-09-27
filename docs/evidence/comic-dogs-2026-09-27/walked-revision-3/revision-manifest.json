@@ -1,0 +1,217 @@
+{
+  "overrides": [
+    {
+      "name": "dog_b",
+      "raw": "dog_b.png",
+      "raw_sha256": "3b35be57144abf427cc11ea763b668641b4c85b1dd1dc57bc05a77cb92d69ad8",
+      "raw_size": [
+        1519,
+        1035
+      ],
+      "raw_to_a_plane_scale": 0.21066491112574062,
+      "a_crop_size": [
+        320,
+        218
+      ],
+      "b_torso_offset": [
+        -1,
+        1
+      ],
+      "torso_landmarks": {
+        "a": [
+          [
+            49,
+            77
+          ],
+          [
+            108,
+            90
+          ],
+          [
+            232,
+            104
+          ]
+        ],
+        "b": [
+          [
+            50,
+            77
+          ],
+          [
+            110,
+            88
+          ],
+          [
+            232,
+            104
+          ]
+        ]
+      },
+      "native_size": [
+        26,
+        20
+      ],
+      "a_crop_to_native_scale": 0.0779816513761468,
+      "native_fitted_size": [
+        25,
+        17
+      ],
+      "native_position": [
+        1,
+        3
+      ]
+    },
+    {
+      "name": "dog_front_diagonal_b",
+      "raw": "dog_front_diagonal_b-from-a.png",
+      "raw_sha256": "6794f4c12262ce7f0a53992692da5290d84c0cb27060efb9b1b4bb10ffe4d2ac",
+      "raw_size": [
+        1396,
+        1127
+      ],
+      "raw_to_a_plane_scale": 0.2335243553008596,
+      "a_crop_size": [
+        326,
+        263
+      ],
+      "b_torso_offset": [
+        0,
+        -1
+      ],
+      "torso_landmarks": {
+        "a": [
+          [
+            47,
+            82
+          ],
+          [
+            85,
+            107
+          ],
+          [
+            231,
+            140
+          ]
+        ],
+        "b": [
+          [
+            47,
+            86
+          ],
+          [
+            86,
+            108
+          ],
+          [
+            231,
+            139
+          ]
+        ]
+      },
+      "native_size": [
+        38,
+        28
+      ],
+      "a_crop_to_native_scale": 0.08333333333333333,
+      "native_fitted_size": [
+        27,
+        22
+      ],
+      "native_position": [
+        7,
+        6
+      ]
+    },
+    {
+      "name": "dog_back_diagonal_b",
+      "raw": "dog_back_diagonal_b-connected.png",
+      "raw_sha256": "365357478d3c62611290ba23ffb01dfbf9bf3988f6c2a70c655846a4961af22e",
+      "raw_size": [
+        1380,
+        1140
+      ],
+      "raw_to_a_plane_scale": 0.24130434782608695,
+      "a_crop_size": [
+        333,
+        275
+      ],
+      "b_torso_offset": [
+        -2,
+        0
+      ],
+      "torso_landmarks": {
+        "a": [
+          [
+            57,
+            122
+          ],
+          [
+            81,
+            106
+          ],
+          [
+            263,
+            105
+          ]
+        ],
+        "b": [
+          [
+            58,
+            123
+          ],
+          [
+            85,
+            105
+          ],
+          [
+            264,
+            104
+          ]
+        ]
+      },
+      "native_size": [
+        38,
+        28
+      ],
+      "a_crop_to_native_scale": 0.08243727598566308,
+      "native_fitted_size": [
+        27,
+        23
+      ],
+      "native_position": [
+        6,
+        5
+      ]
+    }
+  ],
+  "outputs": {
+    "candidates/dog_b.png": "0cc2a33b356b52a3f7914e2362f4805f52f1cf0c9989e252c0ad8dd9cde1f189",
+    "candidates/dog_back_diagonal_b.png": "ba3ebfae8826e908dac6a42d7477ee1bcdaf5be6c5f750169e0a064b409782fe",
+    "candidates/dog_front_diagonal_b.png": "08301522938665d5dd12028d39297e2feb8359b9ec1d883e0e222f77023c34fb",
+    "registered/dog_b.png": "c3742f073bc784164bf69238d915a6649a2599a829ebd4ce9f1a1a2239b77b12",
+    "registered/dog_back_diagonal_b.png": "9ca90bc265af0aec63465b2b64b4f3255b1714c1229573c01a17ac491a6502fe",
+    "registered/dog_front_diagonal_b.png": "8ded029a7c582ed6f5f529e0b46316bca69cc2a13a50447f9d4051a2cc70f7e4",
+    "review/all-facings-1x.gif": "62c1eea2296e752a3ac316669831732d557c2ab683119da38092fff153b0e168",
+    "review/all-facings-1x.png": "92ad9b6ada11c2e50aca710131a628fcfaff75909f69542755442f9f71b0723d",
+    "review/all-facings-2x.gif": "b6cabfa89adb2952c37589da12d4e958740595b20f37cc82ab4a6b30fccefcd1",
+    "review/all-facings-2x.png": "78b25447ec88ed50da189b92bf2e2b0df7866949b7dbf2d319ff1b527b5ded9c",
+    "review/all-facings-6x.gif": "be49e4dee7f030ea3fa49227f3663c0c51632a80e01addfa42375ce9514086bf",
+    "review/all-facings-6x.png": "0ba049b58271727b1156e08882a8b02f80e1b875e0031c836a96e6a39723d1ff",
+    "review/dog-joint-trace.png": "c4be3cea292bbea62094333fe84c944af8b32903d0797e5f7f6ead9f26880f49",
+    "review/dog-torso-loop.gif": "17468d3e1f6402873a98fcf946f6b9d17e1f8cac32375d5212632dc9187674ad",
+    "review/dog-torso-marks.png": "513147b0605c009f9fbdca887b148dfd6ec5d952797c118931477c31f70d819b",
+    "review/dog-torso-pair.png": "421eb1ec26618314177a43c26f0c7447b68ebf3405b68b245d94f79f48ef246a",
+    "review/dog_back_diagonal-joint-trace.png": "d9c02e302b4f6e8bfb499c0e48fc7e64a0aa490a5fb21ad90afe4b92a36cd402",
+    "review/dog_back_diagonal-torso-loop.gif": "0f22de5a1f1ccee6c809c8ec3d1ace421f3cf3a6c2c38534382ff1951c12b0d0",
+    "review/dog_back_diagonal-torso-marks.png": "7efebe51b13a85c77b822d2cc99fb5bb1b25b798b3d27f72d461656273ef5733",
+    "review/dog_back_diagonal-torso-pair.png": "0ee4d4fe34f74b3b4f52450c59d606980c058d5a69d74fcc3378a376ef2cee8f",
+    "review/dog_front_diagonal-joint-trace.png": "a08cd68d6e197a594c480d6b7a6ecef11b0181efc2edbe2abb5e839483c466f7",
+    "review/dog_front_diagonal-torso-loop.gif": "1cde099bd0447db205017fe109a796260558304bab4a90c4b07e5cf787536cce",
+    "review/dog_front_diagonal-torso-marks.png": "210b72a2f6f36355609278dd3df692c95cc1471fdf8320bd9be23caf6113f228",
+    "review/dog_front_diagonal-torso-pair.png": "6becb8d29eec4cfc9923230c27d42a8f650e4f6ae9a2f8f5b3d188f937dbbfc0"
+  },
+  "frozen_inputs": {
+    "input-manifest.json": "95e6dfdaa9924fb93d5eaa31f00b2c175b1d4c4f21e794b07e4b127476f95f70",
+    "refinement-input-manifest.json": "27ba80176c6725ce431e9126aed8cf3020269c41df304579abf9bf45d4ca93e9"
+  }
+}

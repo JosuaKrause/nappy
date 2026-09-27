@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "inputs": [
+    {
+      "path": "art/illustrated/svg-transfer/tiles/sidewalk.png",
+      "sha256": "24f92f984df664c2687785e22c465f98ee4d5433bc17f82aec19a114b3917ade",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/DIAGONAL-REFINEMENT.md",
+      "sha256": "4c6b790a72b5f7cd108d92029faade2984c5b9d62173d8700b4c5439cb862a65",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/FRONT-CONTINUITY.md",
+      "sha256": "a7e20fbfd95195b7643be4709e1877a1533ff4d5b969faebcab5d979c8ba4611",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/FRONT-FROM-A.md",
+      "sha256": "f668d50d325f8c0704bce3d9d2fac94f86182c7978eb3c2ce869aa22ac25519a",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/FRONT-GUIDED.md",
+      "sha256": "fa29292d0399c48e4f8cd0af4720ace62cf28af505d5a240b15b27ff790ef264",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/PROMPTS.md",
+      "sha256": "b0a3430ab28b96b35260f5f03fd2277133c00c344850b7295ecc368b8d989793",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/front-thigh-guide.png",
+      "sha256": "7f5e2ca576f7b87167f27b4c36cd8a94efd5786106f29fa706cd373298f11f0d",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/pose-guide.py",
+      "sha256": "bf1aa5f8e09595a706151bed6c92026040b3c99c12d0d42b2e8e1fc3d88ca5b4",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_b.png",
+      "sha256": "3b35be57144abf427cc11ea763b668641b4c85b1dd1dc57bc05a77cb92d69ad8",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_back_diagonal_b-connected.png",
+      "sha256": "365357478d3c62611290ba23ffb01dfbf9bf3988f6c2a70c655846a4961af22e",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_back_diagonal_b.png",
+      "sha256": "75753db58eb461db354dc44127254297dda083585966d76e38e956870b652b39",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_front_diagonal_b-from-a.png",
+      "sha256": "6794f4c12262ce7f0a53992692da5290d84c0cb27060efb9b1b4bb10ffe4d2ac",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_front_diagonal_b.png",
+      "sha256": "bc528a6bfeb8670fb4f50d6dcec3e83a9264d14b3fe66e988e64f9877560911e",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/front-guided-hook.png",
+      "sha256": "1185ac5ed5e3be1e6024169b2618a92b830565a5b68011cdfbe43af871fe4971",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/front-lost-haunch-line.png",
+      "sha256": "5c51278b1c3ae003d4a2e1d172cb91e1a6ac2e3597d908066a55ea777e9cef9d",
+      "role": "refinement_generation_or_reference"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/front-refinement-hook.png",
+      "sha256": "b447e56c1c8c48e9c152738a3e00ef2a5c4b29a691e6569131528beb3dc35516",
+      "role": "refinement_generation_or_reference"
+    }
+  ]
+}

@@ -1,12 +1,18 @@
 # Walked-dog gait correction
 
+**This proposal is rejected.** The player identifies sliding leg attachments in
+[coral-goose, fixed leg attachments](../../../playtests/2026-09-27-coral-goose.md).
+[The current fixed-joint comparison](../walked-revision-3/README.md) preserves this pass's raw
+outputs, candidates and manifests unchanged. Four paws and changed contact positions alone
+do not demonstrate articulation from fixed hips and shoulders.
+
 This preview-only correction answers the player's report that the normal dog's E/W and SE/SW
 hind legs did not move and that NE/NW lost a leg. It supplies exactly three B-frame overrides:
 `dog_b`, `dog_front_diagonal_b`, and `dog_back_diagonal_b`. Every walked A frame, both front/back
 cardinal pairs, and every accepted charging-dog artifact remain the first-pass bytes. Nothing is
 installed under `art/` and runtime behavior does not change.
 
-## Current proposal
+## Retained rejected proposal
 
 - [Current walked-dog A/B loop](review/current-walked-a-b.gif) shows all eight runtime facings;
   [its static sheet](review/current-walked-a-b-sheet.png) exposes both frames at once.
@@ -20,12 +26,12 @@ installed under `art/` and runtime behavior does not change.
   [Attempt 1](raw/attempt-1.png) is preserved because it was shown; it remains rejected because its
   rear paws stayed clustered and its back-diagonal B still read as three legs.
 
-The selected B frames show four connected limbs in all three projections. Their near hind leg
+The selected B frames show four visible paws in all three projections. Their near hind leg
 advances under the body while the far hind leg extends back, producing a visible opposite contact
-from A; the front pair uses the other diagonal. The back-diagonal B keeps two hind and two front
-legs readable rather than collapsing the far leg into the silhouette. Small head, torso and outer
-contour differences remain between the preserved A art and generated B art, and the sheets leave
-that drift visible for review.
+from A; the front pair uses the other diagonal. These contact changes do not prove anatomical
+ownership or stable attachments. Head, torso and outer contour differences remain between the
+preserved A art and generated B art, and independent silhouette fitting changes their body
+registration. The sheets preserve these defects as rejected evidence.
 
 ## Generation authority
 
