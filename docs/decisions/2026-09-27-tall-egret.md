@@ -126,8 +126,10 @@ false denies in those commands only, such as a wrapped `bash -c "a; b"` next to 
 wrapped heredoc commit or PR body that names `git push`, so the deny message of a wrapped command
 points at a body file (`git commit -F`, `--body-file`). And since a hook that runs past its
 10-second timeout lets the command through in both Claude Code and Codex, a command over 64 KB
-that names git, gh or a pushing script is denied without being read; the longest pull request
-body in the repository is about a third of that.
+is not read for the shell at all: one in which `git`, `gh` or a pushing script's name appears
+anywhere, with backslashes, newlines and quotes skipped, is denied, and one over 1 MB is denied
+outright. That check is a single regex search, decided in well under a second at the cap. The
+longest pull request body in the repository is about a third of 64 KB.
 
 **Accepted gaps.** The write guard is a guardrail against an agent's own ordinary mistake, not a
 security boundary against a deliberately adversarial shape. Five gaps exist, each probed against

@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from typing import Any
@@ -504,6 +505,31 @@ class CodexHooksTest(unittest.TestCase):
         output = self.call_raw(command=f"echo '{long_text}'; gi\\\nt push")
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_github_write_guard_over_the_bound_is_one_dumb_fast_search(self) -> None:
+        # Over 64 KB, backslashes, newlines and quotes are skipped wherever they fall, so no mix of
+        # joined and unjoined lines hides a name; over 1 MB nothing is read and every command denies.
+        padding = "x" * 70000
+        for command in (
+            f"echo {padding}\necho x\\\\\ngi\\\nt push",
+            f"echo {padding}; 'g'\"i\"t push",
+            "echo " + "a" * 1100000,
+        ):
+            with self.subTest(command=command[-40:]):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        # Just under the cap, the guard itself (timed alone: the adapter also runs git-grep-guard.sh,
+        # whose cost is its own) decides in well under a second and allows what names nothing.
+        guard = self.root / ".claude/hooks/github-write-guard.sh"
+        for command in ("echo " + "a'" * 500000, "echo " + "x\\\n" * 330000):
+            with self.subTest(command=command[:20]):
+                payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+                started = time.monotonic()
+                result = subprocess.run([str(guard)], input=payload, text=True, capture_output=True)
+                self.assertLess(time.monotonic() - started, 1.5)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), "")
 
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
         command = (

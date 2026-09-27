@@ -1304,16 +1304,42 @@ assert_write_guard_reason "that deny names the bound" \
     "uv run python tools/agent-identity.py run claude-coder -- git commit -m '${over_bound}'" "over 64 KB"
 assert_write_guard "a 70 KB command naming no git, gh or pushing script -> allow" allow \
     "echo '${over_bound}'"
-assert_write_guard "a 70 KB command naming g\\it -> deny (read as the split reads it)" deny \
+assert_write_guard "a 70 KB command naming g\\it -> deny (a backslash is skipped)" deny \
     "echo '${over_bound}'; g\\it push"
-assert_write_guard "a 70 KB command naming gi\\<newline>t -> deny (joined as the pass joins it)" deny \
+assert_write_guard "a 70 KB command naming gi\\<newline>t -> deny (a backslash-newline is skipped)" deny \
     "echo '${over_bound}'; gi\\
 t push"
+assert_write_guard "a 70 KB command, an escaped backslash, then gi\\<newline>t push -> deny" deny \
+    "echo '${over_bound}'
+echo x\\\\
+gi\\
+t push"
+assert_write_guard "a 70 KB command naming g, i and t split by quotes -> deny" deny \
+    "echo '${over_bound}'; 'g'\"i\"t push"
 checks=$((checks + 1))
 if [ $((SECONDS - bound_start)) -lt 3 ]; then
     echo "ok   commands over the bound are decided at once"
 else
     fail "commands over the bound took $((SECONDS - bound_start)) seconds; the bound should decide them at once"
+fi
+
+# Over 1 MB nothing is read: every command is denied at once. Up to that cap, the over-bound
+# search stays one linear regex, so the densest input just under it is decided in well under a
+# second; SECONDS counts whole seconds, so the four checks share one bound.
+over_cap="$(head -c 1100000 /dev/zero | tr '\0' 'a')"
+near_cap_quotes="$(head -c 1000000 /dev/zero | tr '\0' "'" | sed "s/''/a'/g")"
+near_cap_lines="$(yes 'x\' | head -n 330000)"
+cap_start=$SECONDS
+assert_write_guard "a 1.1 MB command naming nothing -> deny (over the hard cap)" deny "echo '${over_cap}'"
+assert_write_guard_reason "that deny says the command was not read" "echo '${over_cap}'" "over 1 MB"
+assert_write_guard "1 MB of a' naming nothing -> allow, decided quickly" allow "echo ${near_cap_quotes}"
+assert_write_guard "1 MB of backslash-newlines naming nothing -> allow, decided quickly" allow \
+    "echo ${near_cap_lines}"
+checks=$((checks + 1))
+if [ $((SECONDS - cap_start)) -lt 3 ]; then
+    echo "ok   four commands near or over the 1 MB cap are decided in under 3 seconds together"
+else
+    fail "four commands near or over the 1 MB cap took $((SECONDS - cap_start)) seconds"
 fi
 dense_under_bound="$(head -c 65000 /dev/zero | tr '\0' ';')"
 dense_under_start=$SECONDS

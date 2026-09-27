@@ -118,8 +118,9 @@
 # the mention after it reads as an unwrapped write. When the denied command holds a wrapper, the
 # deny message says so and points at a body file (`git commit -F file`, `--body-file file`, `gh api
 # -F body=@file`), which the hook never reads. A command over 64 KB that names git, gh or a
-# pushing script is denied without being read at all (`too_long`, below), since a hook that runs
-# past its timeout lets the command through in both Claude Code and Codex. The one
+# pushing script anywhere, even inside another word, is denied without being read, and one over
+# 1 MB is denied outright (`too_long` and `hard_cap`, below), since a hook that runs past its
+# timeout lets the command through in both Claude Code and Codex. The one
 # case this does not close is the wrapper's own shape appearing whole inside a mention (a comment
 # that quotes a full `tools/agent-identity.py run claude-coder -- git push` line reads, to this
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
@@ -576,25 +577,36 @@ def findings($w; $unsure):
         end)
   | {out, reviewer_push, wrapped};
 
-# A command longer than this is not read at all: the character pass and the word scans are linear,
-# but a dense 200 KB heredoc commit takes several seconds, and a hook that runs past its 10-second
-# timeout does not block the call in either Claude Code or Codex -- it fails open. 64 KB is about
-# three times the longest pull request body this repository has, and even at its densest (a separator
-# on every character) is decided in about a quarter of the timeout. Over it, a command that can name a write at all (the words `git` or `gh`, or a
-# pushing script, once quotes and backslashes are dropped as the split drops them, looked for both
-# with every backslash-newline joined and with none joined, since the pass joins some and not
-# others -- no detector can fire without one) is denied outright with the hint to put the long text in a file; one that
-# names none of them cannot write and is allowed.
+# A command longer than `too_long` is not read at all: the character pass and the word scans are
+# linear, but a dense 200 KB heredoc commit takes several seconds, and a hook that runs past its
+# 10-second timeout does not block the call in either Claude Code or Codex -- it fails open. 64 KB
+# is about three times the longest pull request body this repository has, and even at its densest
+# (a separator on every character) is decided in about a quarter of the timeout.
+#
+# Over it, the check is deliberately dumb and fast rather than a reading of the shell: with every
+# backslash, newline and quote character taken out (however the shell would have joined or
+# quoted them), a command in which `git`, `gh` or a pushing script's name appears anywhere, even
+# inside another word, is denied with the hint to put the long text in a file; one in which none
+# appears cannot name a write and is allowed. The characters are skipped by the regex itself
+# (`[\\\n"']*` between every two letters of a name) rather than removed from a copy, so the
+# check is one linear regex search. Over `hard_cap` (1 MB) a command is denied without even that,
+# so the hook's own cost stays well under a second whatever it is given.
 def too_long: 65536;
+def hard_cap: 1048576;
 def names_a_write_tool:
-  "(?i)(^|[^a-z0-9_.-])(git|gh)([^a-z0-9_.-]|$)|(release|prune-merged|land-prs|update-pr)\\.sh";
+  "[\\\\\n\"']*" as $skip
+  | "(?i)" + (["git", "gh", "release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"]
+             | map(split("") | map(if . == "." then "\\." else . end) | join($skip))
+             | join("|"));
 
 if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
-  | if length > too_long then
-      if (drop("\\\n") | drop("\\") | drop("\"") | drop("'") | test(names_a_write_tool))
-         or (drop("\\") | drop("\"") | drop("'") | test(names_a_write_tool))
+  | if length > hard_cap then
+      {out: ["the whole command: over 1 MB, not read at all"],
+       reviewer_push: false, wrapped: false, too_long: true}
+    elif length > too_long then
+      if test(names_a_write_tool)
       then {out: ["the whole command: over 64 KB and naming git, gh or a pushing script"],
             reviewer_push: false, wrapped: false, too_long: true}
       else empty end
@@ -633,9 +645,10 @@ file_hint="Write the text to a file first and pass the file (git commit -F file,
 create/comment --body-file file, gh api -F body=@file or --input file), then run a short command."
 
 if [ "$too_long" = "true" ]; then
-	reason="This command is over 64 KB and names git, gh or a pushing tools/ script, so the write \
-guard denies it without reading it: a hook that cannot finish inside its timeout would let the \
-command through unchecked. $file_hint See .claude/hooks/github-write-guard.sh."
+	reason="The write guard denies this command without reading it ($flagged): over 64 KB, a \
+command that names git, gh or a pushing tools/ script anywhere is denied, and over 1 MB any command \
+is, because a hook that cannot finish inside its timeout would let the command through unchecked. \
+$file_hint See .claude/hooks/github-write-guard.sh."
 elif [ "$reviewer_push" = "true" ]; then
 	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
 but reviewers never push or merge -- only a coder identity does. Wrap it in \
