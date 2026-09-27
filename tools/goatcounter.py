@@ -14,9 +14,9 @@ counting, each path starting `nappy-`, to the game's own site, `nappy.goatcounte
 API (`GET /api/v0/stats/hits`), groups them the way the names are shaped, and prints the result for
 a person or an assistant to read. The page visit is counted on the same site, under the path
 `nappy.josuakrause.com/`, which GoatCounter stores and `--raw` lists as `/nappy.josuakrause.com`;
-the site keeps sessions for it, so its count is visitors. `josuakrause.goatcounter.com` holds only the page visits and events from before the page
-counted everything on the game's own site; `--site` with that site's API URL, and that site's key
-in `GOATCOUNTER_TOKEN`, reads that history.
+the site keeps sessions for it, so its count is visitors. `josuakrause.goatcounter.com` holds only
+the page visits and events from before the page counted everything on the game's own site; `--site`
+with that site's API URL, and that site's key in `GOATCOUNTER_TOKEN`, reads that history.
 
 The API key is a read-only token from the GoatCounter site's own Settings -> API page, passed only
 through the environment variable `GOATCOUNTER_TOKEN` -- never as a command-line flag, since a flag
