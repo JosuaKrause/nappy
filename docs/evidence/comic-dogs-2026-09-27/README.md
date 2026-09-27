@@ -6,6 +6,10 @@ atlas, or alter runtime behavior. The player acceptance gate remains open.
 
 ## Current proposal
 
+- [Three walked-dog poses](walked-revision-5/README.md) extends the selected family with five
+  unbound SVG sources: opposite side/diagonal steps and neutral cardinal poses. Their source
+  review precedes generation of the missing illustrations; existing selected images stay frozen.
+
 - [Walked-dog authored-geometry correction](walked-revision-4/README.md) supplies three B-frame
   overrides with actual gathered hind-leg contours and changed foreleg reach. Its
   [enlarged all-facing loop](walked-revision-4/review/all-facings-6x.gif),
