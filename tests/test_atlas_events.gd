@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_every_picture_the_events_can_draw_is_on_the_events_page(t)
 	_test_every_look_a_row_can_carry_has_pictures_on_the_page(t)
 	_test_every_badge_silhouette_is_on_the_page(t)
+	_test_both_dog_families_draw_their_accepted_transfers(t)
 	_test_the_manager_holds_one_reference_for_its_own_life(t)
 	_test_a_manager_freed_mid_day_still_gives_its_page_back(t)
 	AtlasLibrary.reset_for_tests()
@@ -134,6 +135,22 @@ func _test_every_badge_silhouette_is_on_the_page(t) -> void:
 				"'%s' badge draws %s from the '%s' page"
 				% [def.id, icon.get_file(), EventInstance.ATLAS_GROUP])
 	t.check(checked > 0, "some row offered a badge silhouette to check (%d)" % checked)
+
+## Both dog families draw the comic pictures the player accepted *(2026-09-27, dotted-panda: "the
+## graphics should be used in game")*: every picture the normal dog (the dog walker's and the loose
+## dog's) and the charging dog can draw has its transfer PNG beside its SVG, so the default bake —
+## every release and every CI run — bakes the PNG. `tests/test_atlas_library.gd` holds each baked
+## region to its own PNG pixel for pixel; this holds that there is a PNG to hold it to.
+func _test_both_dog_families_draw_their_accepted_transfers(t) -> void:
+	var pictures: Dictionary = {}
+	for look: EventDef.Look in [EventDef.Look.LOOSE_DOG, EventDef.Look.CHARGING_DOG]:
+		for picture in EventInstance.family_sources(look):
+			pictures[picture] = true
+	t.check(pictures.size() == 25,
+			"the two dog families draw fifteen and ten pictures (%d)" % pictures.size())
+	for picture: String in pictures.keys():
+		var transfer := AtlasLibrary.illustrated_path_for("art/%s.svg" % picture)
+		t.check(FileAccess.file_exists(transfer), "%s is drawn from %s" % [picture, transfer])
 
 # ------------------------------------------------------------- the lifetime ---
 

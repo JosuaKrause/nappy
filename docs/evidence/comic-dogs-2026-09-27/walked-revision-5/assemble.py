@@ -27,6 +27,23 @@ LEG_TOP={'dog':145,'dog_front_diagonal':187,'dog_back_diagonal':207,'dog_front':
 REGISTRATION={'dog':(1.0,(0,0)), 'dog_front_diagonal':(320/308,(-9,-9)),
               'dog_back_diagonal':(327/325,(-2,-2)), 'dog_front':(166/154,(-7,-9)),
               'dog_back':(157/149,(-2,-4))}
+# The player's one seam, on the side dog's opposite step (dog_c) and nowhere else: "the step 2
+# image hind leg can you just remove the black line between the body and the leg -- make it part
+# of the pipeline of the image generation so it stays reproducible"; "the lighter hind leg"; "not
+# the darker one since that one actually needs the line" (2026-09-27, on PR 406). This is the
+# player's explicit request for this seam, not a general permission to repaint limbs.
+# `box` is inclusive registered-plane pixels (x0, y0, x1, y1) and bounds every pixel changed: the
+# columns strictly inside the lighter (near) hind leg's own two side outlines, and the rows of the
+# body's bottom outline above it. In each column the one contiguous run of outline pixels (luma
+# below SEAM_OUTLINE_LUMA), widened by its one-pixel antialiased fringe, is replaced by a straight
+# vertical blend from the opaque body pixel just above it to the opaque leg pixel just below. In
+# the box's rows the darker (far) hind leg and its outline lie left of x=92, so the box never
+# reaches them.
+# `native` is the inclusive native-canvas footprint (x0, y0, x1, y1) that takes the re-downsampled
+# opened artwork; every other native pixel keeps the unopened downsample byte for byte, so the
+# darker leg's native pixels are untouched as well.
+SEAM={'dog':{'box':(93,136,115,145),'native':(8,13,9,14)}}
+SEAM_OUTLINE_LUMA=70
 
 
 def sha(p:Path)->str:
@@ -100,6 +117,75 @@ def family()->None:
         sheet.save(HERE/'review'/f'all-facings-{scale}x.png')
 
 
+def luma(p:tuple[int,...])->float:
+    return 0.299*p[0]+0.587*p[1]+0.114*p[2]
+
+
+def open_seam(name:str,im:Image.Image)->Image.Image:
+    """The registered artwork with the player's one seam opened (see SEAM); unchanged elsewhere."""
+    if name not in SEAM:return im
+    x0,y0,x1,y1=SEAM[name]['box'];out=im.copy();src=im.load();dst=out.load()
+    for x in range(x0,x1+1):
+        dark=[y for y in range(y0,y1+1) if luma(src[x,y])<SEAM_OUTLINE_LUMA]
+        if not dark or dark!=list(range(dark[0],dark[-1]+1)):
+            raise SystemExit(f'seam column {x} has no single outline run: {dark}')
+        top,bottom=dark[0]-1,dark[-1]+1
+        above,below=src[x,top-1],src[x,bottom+1]
+        if top<y0 or bottom>y1 or above[3]<250 or below[3]<250:
+            raise SystemExit(f'seam column {x} is not bounded by opaque body and leg in the box')
+        span=bottom+1-(top-1)
+        for y in range(top,bottom+1):
+            t=(y-(top-1))/span
+            dst[x,y]=tuple(round(above[i]+(below[i]-above[i])*t) for i in range(4))
+    return out
+
+
+def downsample(name:str,im:Image.Image)->Image.Image:
+    original=next(x for x in json.loads((BASE/'candidate-manifest.json').read_text())['families'][0]['cells'] if x['name']==name)
+    s=original['shared_pair_scale'];size=(round(im.width*s),round(im.height*s))
+    native=Image.new('RGBA',tuple(original['native_size']))
+    native.alpha_composite(im.resize(size,Image.Resampling.LANCZOS),tuple(original['candidate_position']))
+    return native
+
+
+def seam_native(name:str,before:Image.Image,after:Image.Image)->Image.Image:
+    """The unopened native downsample with only SEAM's native footprint taken from the opened one."""
+    if name not in SEAM:return before
+    x0,y0,x1,y1=SEAM[name]['native'];native=before.copy()
+    native.paste(after.crop((x0,y0,x1+1,y1+1)),(x0,y0))
+    changed=[(x,y) for y in range(native.height) for x in range(native.width) if native.getpixel((x,y))!=before.getpixel((x,y))]
+    if not changed or any(not(x0<=x<=x1 and y0<=y<=y1) for x,y in changed):
+        raise SystemExit(f'seam changed {changed}, not inside its native footprint')
+    return native
+
+
+def seam_review(name:str,raw_registered:Image.Image,registered:Image.Image,before:Image.Image,native:Image.Image)->None:
+    """Before/after crops of the seam: native 1x and 4x, the registered hind legs, and a diff."""
+    x0,y0,x1,y1=SEAM[name]['box']
+    changed=Image.new('RGBA',native.size,(0,0,0,0))
+    for y in range(native.height):
+        for x in range(native.width):
+            if before.getpixel((x,y))!=native.getpixel((x,y)):changed.putpixel((x,y),(230,40,40,255))
+    for scale in (1,4):
+        panel=Image.new('RGBA',((native.width+4)*3*scale+4,native.height*scale+18),PAPER)
+        d=ImageDraw.Draw(panel);d.text((2,2),'before | after | changed',fill='black')
+        for i,im in enumerate((before,native,changed)):
+            panel.alpha_composite(im.resize((im.width*scale,im.height*scale),Image.Resampling.NEAREST),(4+i*(native.width+4)*scale,16))
+        panel.convert('RGB').save(HERE/'review'/f'{name}-seam-before-after-{scale}x.png')
+    crop=(30,100,170,218)
+    diff=Image.new('RGBA',registered.size,(0,0,0,0));dd=diff.load();a=raw_registered.load();b=registered.load()
+    for y in range(registered.height):
+        for x in range(registered.width):
+            if a[x,y]!=b[x,y]:dd[x,y]=(230,40,40,255)
+    frames=[]
+    for im in (raw_registered,registered,diff):
+        f=Image.new('RGBA',registered.size,PAPER);f.alpha_composite(im);frames.append(f.crop(crop).resize(((crop[2]-crop[0])*4,(crop[3]-crop[1])*4),Image.Resampling.NEAREST))
+    sheet=Image.new('RGB',(frames[0].width*3+16,frames[0].height+24),PAPER[:3]);d=ImageDraw.Draw(sheet)
+    for i,(frame,label) in enumerate(zip(frames,('registered before','registered after','changed pixels (all inside the box)'))):
+        sheet.paste(frame.convert('RGB'),(i*(frame.width+8),24));d.text((i*(frame.width+8)+3,5),label,fill='black')
+    sheet.save(HERE/'review'/f'{name}-seam-registered-4x.png')
+
+
 def build()->None:
     frozen()
     for folder in ('registered','candidates','review'):(HERE/folder).mkdir(exist_ok=True)
@@ -110,13 +196,15 @@ def build()->None:
         multiplier,offset=REGISTRATION[name]
         factor=a.width/raw.width*multiplier
         scaled=raw.resize((round(raw.width*factor),round(raw.height*factor)),Image.Resampling.LANCZOS)
-        im=Image.new('RGBA',a.size);im.alpha_composite(scaled,offset)
+        unopened=Image.new('RGBA',a.size);unopened.alpha_composite(scaled,offset)
+        im=open_seam(name,unopened)
         im.save(HERE/'registered'/f'{name}_c.png',optimize=True)
-        original=next(x for x in mapping if x['name']==name);s=original['shared_pair_scale']
-        size=(round(a.width*s),round(a.height*s));native=Image.new('RGBA',tuple(original['native_size']))
-        native.alpha_composite(im.resize(size,Image.Resampling.LANCZOS),tuple(original['candidate_position']))
+        original=next(x for x in mapping if x['name']==name)
+        before=downsample(name,unopened)
+        native=seam_native(name,before,downsample(name,im))
         native.save(HERE/'candidates'/f'{name}_c.png',optimize=True)
-        records.append({'name':name+'_c','selected_raw':SELECTED[name],'raw_size':list(raw.size),'raw_sha256':sha(HERE/'raw'/SELECTED[name]),'a_crop_size':list(a.size),'raw_to_a_scale':factor,'torso_canvas_multiplier':multiplier,'torso_offset':offset,'inherited_a_transform':original})
+        if name in SEAM:seam_review(name,unopened,im,before,native)
+        records.append({'name':name+'_c','selected_raw':SELECTED[name],'raw_size':list(raw.size),'raw_sha256':sha(HERE/'raw'/SELECTED[name]),'a_crop_size':list(a.size),'raw_to_a_scale':factor,'torso_canvas_multiplier':multiplier,'torso_offset':offset,'inherited_a_transform':original,**({'player_seam':SEAM[name],'seam_outline_luma':SEAM_OUTLINE_LUMA} if name in SEAM else {})})
         review(name)
     if len(NAMES)==5:family()
     outputs=sorted(p for folder in ('registered','candidates','review') for p in (HERE/folder).iterdir() if p.is_file())

@@ -68,7 +68,22 @@
           358
         ],
         "crop": "crops/dog/dog.png"
-      }
+      },
+      "player_seam": {
+        "box": [
+          93,
+          136,
+          115,
+          145
+        ],
+        "native": [
+          8,
+          13,
+          9,
+          14
+        ]
+      },
+      "seam_outline_luma": 70
     },
     {
       "name": "dog_front_diagonal_c",
@@ -354,25 +369,28 @@
   "outputs": {
     "candidates/dog_back_c.png": "769ba8a5c77833a3f978c775574e25018a7a163fa71851e9efd2201ae4646eae",
     "candidates/dog_back_diagonal_c.png": "e48e1cd4fcbdd6e32e3ba60913dc43aca3238f39e88ea809e1ff6e358be226de",
-    "candidates/dog_c.png": "62cef4e938a30e378de13e07e3c6a060d4dc85dd1074068a0bd690abc32a0fed",
+    "candidates/dog_c.png": "1f162ad047ae18c63eaae54bc7362318bc2577ca135180f708e915bac886f8cf",
     "candidates/dog_front_c.png": "6227dd50c38a23777c803a24d924f6627c919118861ae3fafc486dcf9738c43f",
     "candidates/dog_front_diagonal_c.png": "c0f0ed8264fcad1838eb279ff5f47110d9c2e6ae4e7acea4c67ab81a1a1b6f1d",
     "registered/dog_back_c.png": "02aa242ecfa85543f01d062768d594640a895f53cc35f6a4746f405a3eff0fb5",
     "registered/dog_back_diagonal_c.png": "63a590eb1d8e418b02e64989af2a05e435ec7c622ab64911b493a1d3325e3a91",
-    "registered/dog_c.png": "73e2826313e28f5616c5ea25240d107ba8815110b6b0a44a3814bda16c1b1293",
+    "registered/dog_c.png": "44409b6cd0aebaba08d99f53d4471a309ba083d41c67c95ee7b1af82107cbd79",
     "registered/dog_front_c.png": "94701be58a351b64a8a3e67d2d384cb22b468ef4ac1a398fea6c16d6d910cd12",
     "registered/dog_front_diagonal_c.png": "409eea26547c1ed0b8575a1c422d7b5f716dfe6a13c9034177e87d6b50e90ad8",
-    "review/all-facings-1x.gif": "9a86234b73650b4f6f8148d02aadb0879fc0670c23277d9d1a7c395dbd1eecc1",
-    "review/all-facings-1x.png": "891240360f12646122fa59b7e498627556dd93340aa31afeb3754cd285d77088",
-    "review/all-facings-2x.gif": "ad20b33cc4ed5f0d66cd731366a06d046aca8ff76ade793423a1d54655edab2a",
-    "review/all-facings-2x.png": "1986458eb67bb7cbd041be441f143cbf80a9b6119026bde8a5a54f0887e5b64c",
-    "review/all-facings-6x.gif": "da3907b705e9a1fa5da9868e3e58ef41140825319e6c0856db7b42109f592909",
-    "review/all-facings-6x.png": "269d3d7f965178f1b1559aac0630007a859f57ec1b5061e7840a2c3e3f667f02",
-    "review/dog-body-four-beats.gif": "32c8ef54a8cbb9f89d54a5267acd32101bf1d3747277f1e34307717ddc239349",
-    "review/dog-body-three-poses.png": "578deb33da2d6313eef7530614a08ceeddf1383d4a9a38124e20d48a689853ba",
+    "review/all-facings-1x.gif": "d21de8b4a24413b4e5f07cb8b00d7933e3e86a78016c9056f35d3976e23d10f8",
+    "review/all-facings-1x.png": "d54c00b65d3f9b239948baaaf430bd487147c79c5ce29b1c244e5ae32934b2fb",
+    "review/all-facings-2x.gif": "e441cc09a7b3d204de9984314343e649482e200121e94218648bd69b161905a0",
+    "review/all-facings-2x.png": "28a56f49560768fd5c181e97000c2499687a12f8d8e4add76d069bbee025255a",
+    "review/all-facings-6x.gif": "3f0304aa94724e2fdc52127428d81d3036acc66cb39dd23888678f0285798deb",
+    "review/all-facings-6x.png": "63b351a3169d712bc32e9a26cf9384a93011fdb919b27290fba654774d2883a5",
+    "review/dog-body-four-beats.gif": "d56e7ae5fe0b1a31d7f293910bba5834decfa3d0f503a95272322159233e545e",
+    "review/dog-body-three-poses.png": "0c398e4fbe2f38bcc8a5f889161dc234b53549a8c079da34cad5f2b054981d08",
     "review/dog-leg-silhouette-four-beats.gif": "fa0afa46563f70a2f9f4d7d790884ce1ae84ec0208249e2a210592e6e0ee10b4",
     "review/dog-leg-silhouette-three-poses.png": "c11f59318baff12b35f738250e210a64f1448556ddbf479ca5001d3d4f80304b",
-    "review/dog-source-c.png": "9e80b44b889806cbbad198a5b77535060fbff9d3cca6d324c42a0cfe8c4046ee",
+    "review/dog-seam-before-after-1x.png": "181f0af5260e806269ba81c0080dbd96fbc3dfe4c21e721c54d08dbf9af8324e",
+    "review/dog-seam-before-after-4x.png": "5069e4221907e7c29620ce846855edc54f726f855a2efe6bfecaa9505900d68c",
+    "review/dog-seam-registered-4x.png": "40068951d79e04ee349c32a2a3117dbbbc41b98e4a17f2731ccb4ff730a7dcb4",
+    "review/dog-source-c.png": "f8906f8c320b762d06ee2e5d4a40484c8b00bb40c2d27d69598aa19aa122035a",
     "review/dog_back-body-four-beats.gif": "adb07530b5eb6c619a4301fb086e65d8a044a3ea915ea4acb335120f6c15eddd",
     "review/dog_back-body-three-poses.png": "02b297c7e81766a1d972365e4a94c300e1769be859a633089be394b474ea34fe",
     "review/dog_back-leg-silhouette-four-beats.gif": "f962288cd1db32a63505adbe3fe8d0a49c1b4aa1cc84b5c85e3126077a88a3aa",

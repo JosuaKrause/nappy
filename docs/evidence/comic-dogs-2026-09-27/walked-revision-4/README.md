@@ -1,8 +1,8 @@
 # Authored leg geometry preview
 
 This proposal changes only the side and diagonal B frames. The authored SVG B supplies each
-pose; the frozen A crop supplies the body and character identity. This is evidence only;
-visual acceptance remains open. No runtime asset, binding or behavior changes.
+pose; the frozen A crop supplies the body and character identity. These three B frames are the
+normal dog's rest pictures, and `../install.py` installs them.
 
 ## Review
 

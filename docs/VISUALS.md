@@ -94,7 +94,8 @@ group record, or a picture listed twice in the mode being baked, fails the bake 
 the wrapper first — `tools/check.sh`, `tools/test.sh`, `tools/run.sh`, `tools/shot.sh` and
 `tools/export-web.sh`, and `tools/serve-web.sh` through the export — so nothing has to be
 remembered. It compares the recorded hashes against the tree without starting the engine, and
-bakes only when a source has moved or the mode on disk is not the mode asked for. The two that
+bakes only when a source has moved, an illustrated PNG has appeared beside an SVG the last default
+bake drew from its own raster, or the mode on disk is not the mode asked for. The two that
 open a window repair the way they already repair a stale import cache: through `tools/check.sh`,
 which bakes *and* imports, since a freshly baked page is a file a windowed run would otherwise
 draw the previous import of.

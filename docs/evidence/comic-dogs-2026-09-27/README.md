@@ -1,17 +1,34 @@
-# Comic dog SVG-to-PNG preview
+# Comic dog SVG-to-PNG transfer
 
-This is the first preview-only transfer of the walked dog and charging dog from their authored
-SVG families into comic PNG candidates. It does not install any candidate under `art/`, change an
-atlas, or alter runtime behavior. The player acceptance gate remains open.
+This folder transfers the walked dog and the charging dog from their authored SVG families into
+comic PNGs. The player accepted both families for the game on 2026-09-27 (playtest dotted-panda:
+"the graphics should be used in game"), with further comments to come. `install.py` copies each
+accepted candidate byte for byte to `art/illustrated/svg-transfer/events/<name>.png` and verifies
+the installed pictures against them:
 
-## Current proposal
+```sh
+uv run python docs/evidence/comic-dogs-2026-09-27/install.py install
+uv run python docs/evidence/comic-dogs-2026-09-27/install.py verify
+```
+
+| Pictures | Accepted candidates |
+|---|---|
+| Normal dog, every a picture and the front and back b | `candidates/dog/` |
+| Normal dog, side and diagonal b (the rest) | `walked-revision-4/candidates/` |
+| Normal dog, every c | `walked-revision-5/candidates/` |
+| Charging dog, all ten | `candidates/charging-dog/` |
+
+[In-game bursts](in-game/README.md) show both families walking in the game.
+
+## The selected family
 
 - [Three walked-dog poses](walked-revision-5/README.md) extends the selected family with five
   reviewed unbound SVG sources and their generated illustrations: opposite side/diagonal steps
   and neutral cardinal poses. [All-facing loops](walked-revision-5/review/all-facings-6x.gif)
   show step, rest, opposite step, rest; [native-size evidence](walked-revision-5/review/all-facings-1x.gif)
   and [three-pose sheets](walked-revision-5/review/all-facings-6x.png) show every mirrored facing.
-  Existing selected images stay frozen; appearance acceptance and runtime installation remain open.
+  Existing selected images stay frozen. Its side opposite step carries the player's one seam
+  correction, [with its crops](walked-revision-5/README.md#the-players-seam-on-the-side-opposite-step).
 - [Walked-dog authored-geometry correction](walked-revision-4/README.md) supplies three B-frame
   resting images retained by the three-pose family. Its original two-frame
   [enlarged all-facing loop](walked-revision-4/review/all-facings-6x.gif),
@@ -32,8 +49,7 @@ atlas, or alter runtime behavior. The player acceptance gate remains open.
   [charging-dog raw output](raw/charging-dog-grid.png) preserve the generator's first useful
   results unchanged.
 
-Every GIF in this evidence folder is an assembled pose comparison, not a capture or proof of live
-movement. The correction remains an evidence candidate and has no runtime binding.
+Every GIF outside `in-game/` is an assembled pose comparison, not a capture of live movement.
 
 Both raw grids contain ten visible cells in the requested five-view by two-stride order and carry
 real alpha, with no floor, checkerboard, halo, leash, or cast shadow. The walked dog retains its
@@ -41,8 +57,8 @@ tan-and-cream coat, soft ears, raised tail, and blue collar. The charging dog re
 black-and-tan identity, pinned ears, raised hackles, low head, red jaw, and white teeth. The source
 and candidate comparisons were inspected at native size, game scale, and 6× enlargement.
 
-The first attempt is useful for judging the proposed comic rendering, but it is not ready to bind.
-Stride B changes head and body placement in the walked side and diagonal views, and changes the
+The first attempt judged the proposed comic rendering; its walked side and diagonal B frames are
+superseded, and every other frame of it is installed. Stride B changes head and body placement in the walked side and diagonal views, and changes the
 charging silhouette in the side and diagonal views. The generated figures are also taller or
 deeper than the SVG proportions in some views. Proportion-preserving registration therefore makes
 some native candidates smaller than the source figure. The comparison sheets and GIFs leave those
@@ -70,8 +86,8 @@ output is 2094×751 RGBA with SHA-256
 
 [candidate-manifest.json](candidate-manifest.json) maps every SVG to its extracted crop and native
 candidate, with the raw grid cell and visible bounds, source and candidate hashes, native canvas,
-registration box, shared A/B scale, placement, and final alpha bounds. The `candidates/` files are
-evidence candidates only; none is a runtime asset.
+registration box, shared A/B scale, placement, and final alpha bounds. `install.py` installs the
+accepted `candidates/` files, all but the three superseded walked side and diagonal B frames.
 
 [input-manifest.json](input-manifest.json) is the separate, authoritative provenance boundary. It
 freezes the hashes and roles of all twenty SVGs, both raw generations, forty saved source rasters,

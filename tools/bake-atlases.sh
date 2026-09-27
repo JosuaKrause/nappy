@@ -16,7 +16,8 @@
 # member picture, each illustrated PNG it used, the membership file and the two scripts that
 # decide the layout -- so the check is one pass of hashlib over a few hundred files, tens of
 # milliseconds, cheap enough to pay on every run of every tool. Launching Godot to ask would cost
-# a second and a half and defeat the point.
+# a second and a half and defeat the point. A default bake is also stale when an illustrated PNG
+# has appeared beside an SVG it baked from, since that PNG has no recorded hash to disagree with.
 #
 # A page no current group names counts as staleness too. Folding one group into another leaves
 # its page on disk, where every input hash still agrees and nothing says otherwise -- and because
@@ -164,12 +165,28 @@ for relative, digest in sorted(manifest.get("inputs", {}).items()):
     if actual != digest:
         changed.append(relative)
 
-if missing or changed:
+# A transfer that arrived beside a picture the last bake took from its SVG. It was never an input,
+# so no recorded hash can notice it, yet a default bake would take it: every SVG the last bake
+# read is asked whether its illustrated PNG now exists. The path rule is
+# AtlasLibrary.illustrated_path_for()'s, restated because this runs without the engine.
+added = []
+if wanted_mode == "png":
+    inputs = manifest.get("inputs", {})
+    for relative in sorted(inputs):
+        if not relative.startswith("art/") or not relative.endswith(".svg"):
+            continue
+        transfer = "art/illustrated/svg-transfer/" + relative[len("art/"):-len(".svg")] + ".png"
+        if transfer not in inputs and os.path.exists(os.path.join(root, transfer)):
+            added.append(transfer)
+
+if missing or changed or added:
     parts = []
     if changed:
         parts.append("%d changed (%s)" % (len(changed), ", ".join(changed[:3])))
     if missing:
         parts.append("%d gone (%s)" % (len(missing), ", ".join(missing[:3])))
+    if added:
+        parts.append("%d new transfers (%s)" % (len(added), ", ".join(added[:3])))
     print("sources moved: " + "; ".join(parts))
     sys.exit(1)
 sys.exit(0)
