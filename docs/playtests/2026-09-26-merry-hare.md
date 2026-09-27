@@ -4,9 +4,9 @@
 
 > btw separate topic. the icons above the player seem to be cut off at the edge -- maybe we should increase the bounding box?
 
-The report concerns the player indicators. Whether the clipping follows the icons' own edges or
-the screen edge is being clarified. Increasing image bounds is the player's proposed remedy;
-the cause needs to be established before choosing the smallest correction.
+The report concerns the player indicators. The first message left open whether the clipping was
+at the icons' own edges or at the screen edge; increasing image bounds is the player's proposed
+remedy.
 
 > at the very least the triple ~ symbol in ui.png has its bottom cut off
 

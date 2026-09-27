@@ -147,8 +147,10 @@ const ALERT_CLOSE := "props/alert_close"
 const BABY_ZZZ := "props/baby_zzz"
 const BABY_FUSS := "props/baby_fuss"
 const BABY_CRY := "props/baby_cry"
-## Canvas added below each baby's original source bounds. `Sprites.draw_standing()` grounds an
-## image on its full canvas bottom, so this keeps each visible glyph at its established world anchor.
+## How far above its canvas bottom each baby cue's registration line sits. Only the outline of
+## the lowest stroke falls below that line. `Sprites.draw_standing()` grounds an image on its
+## canvas bottom, so the cue is drawn this much lower and the line, not the canvas edge, lands
+## on the cue's anchor. Each SVG carries the same number in its own header.
 const INDICATOR_BOTTOM_PADDING := {
 	BABY_ZZZ: 2.0,
 	BABY_FUSS: 3.0,
@@ -1042,8 +1044,8 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	Sprites.draw_standing(self, AtlasLibrary.region(StringName(path)),
 			_indicator_anchor(path, pram_offset + Vector2(aside, -baby_cue_lift() + breath)))
 
-## Compensates the bottom-only part of an indicator's SVG canvas expansion. Horizontal padding is
-## symmetric, so its bottom-center registration remains unchanged without a horizontal offset.
+## The draw anchor that puts a cue's registration line (`INDICATOR_BOTTOM_PADDING` above its
+## canvas bottom) on `at`. The left and right margins are equal, so x needs nothing.
 func _indicator_anchor(path: String, at: Vector2) -> Vector2:
 	return at + Vector2(0.0, float(INDICATOR_BOTTOM_PADDING.get(path, 0.0)))
 

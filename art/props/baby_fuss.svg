@@ -3,8 +3,10 @@
      not a gauge — a second excitement meter drawn over the pram would be the HUD moved, not a
      cue. Amber, the vocabulary's "about to be a problem" colour; the shape is what keeps it
      from being confused with the exclamation mark, which is amber for the same reason. -->
-<!-- The canvas adds 2px left/top/right and 3px below the original canvas. Stroller offsets its
-     bottom-center anchor by that lower margin so the visible glyph remains registered over the pram. -->
+<!-- The artwork sits 2px in from the left, top and right; its registration line is y=22, 3px
+     above the canvas bottom, and only the lower wave's outline falls below it.
+     Stroller.INDICATOR_BOTTOM_PADDING holds the same 3, so the line, not the canvas edge, lands
+     on the cue's anchor. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="25" viewBox="0 0 26 25">
   <g transform="translate(2 2)">
   <g fill="none" stroke="#221f28" stroke-width="7" stroke-linecap="round">
