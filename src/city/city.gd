@@ -16,8 +16,15 @@ extends WorldContext
 ##
 ## The fix is not a better comparison, it is that **the comparison is meaningless**: buildings
 ## tile their lots exactly and no lot tile is walkable (`tests/test_generator.gd` asserts both),
-## so nothing can ever legitimately stand behind one. Two things that can never be on opposite
-## sides of each other have no business being sorted against each other.
+## and a building's drawing stays inside its own lot, so nothing can ever legitimately stand
+## behind one. Two things that can never be on opposite sides of each other have no business
+## being sorted against each other.
+##
+## **The power station's two stacks are the exception, so they are not part of the building.**
+## Each rises 192px from a foot on the hall's roof, well past the lot's north edge and into the
+## street beyond it, where she can stand behind it. So each is a `Building.StationStack` in
+## `Entities`, at its foot (`Building.stack_feet()`), and sorts against her like any other entity:
+## drawn over whatever stands north of its foot and under whatever stands south of it.
 
 ## Wall height per district, in whole tiles. Heights are quantised because the facade is
 ## assembled from 32px tiles now; a float height would mean a stretched tile. Clamped
@@ -614,6 +621,13 @@ func _spawn_buildings() -> void:
 		# boundary stacking the way the eye expects.
 		_buildings_layer.add_child(building)
 		_buildings.append(building)
+		# The one part of a building drawn among the entities — see the note at the top of this file.
+		var feet := building.stack_feet()
+		for i in feet.size():
+			var stack := Building.StationStack.new()
+			stack.name = "StationStack%d" % i
+			stack.position = building.position + feet[i]
+			_entities.add_child(stack)
 
 ## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
 ## `rect`'s own front row — one row below its south edge, the row a passer-by would stand on — is
@@ -1304,7 +1318,8 @@ func _spawn_boundary() -> void:
 		body.add_child(shape)
 		add_child(body)
 
-## Adds a node to the y-sorted layer, where it will sort against buildings and props.
+## Adds a node to the y-sorted layer, where it sorts against the props, the power station's stacks
+## and every other entity — never against a building, which is a layer of its own beneath them.
 func add_entity(node: Node) -> void:
 	_entities.add_child(node)
 
