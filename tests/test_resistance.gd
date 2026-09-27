@@ -21,7 +21,7 @@ func run(t) -> void:
 	_test_walking_away_leaves_it_untouched(t)
 	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
 	_test_a_perform_contact_rides_on_its_instance(t)
-	_test_the_notes_handover_costs_a_real_dwell_not_an_instant_touch(t)
+	_test_the_notes_handover_completes_at_his_inner_radius_not_reach(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
@@ -236,13 +236,10 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 	t.check(not contact.is_done, "out of reach of where the rider is now")
 
 	# The rider moves; the contact follows it rather than staying where it started. Index 2's own
-	# handover_dwell_seconds (M205) means reaching it is not instant any more -- see the dedicated
-	# dwell tests below -- so this drives enough ticks to actually clear it, which is still "once
-	# she reaches wherever the rider has gone", only over the dwell rather than in one tick.
+	# `completes_at_inner_radius` (M205) still completes on the first tick she is in reach -- it
+	# only changes which radius that reach is measured against, not whether it is instant.
 	instance.position = Vector2.ZERO
-	var ticks := ceili(Tuning.NOTE_HANDOVER_DWELL_SECONDS / STEP) + 1
-	for _i in ticks:
-		contact._physics_process(STEP)
+	contact._physics_process(STEP)
 	t.check(contact.is_done, "and completes once she reaches wherever the rider has gone")
 
 	contact.free()
@@ -252,10 +249,14 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 ## M205, "the note costs, and the ordinary day" -- fails before the fix: the old code completed
 ## the instant `ContactPoint.REACH` (36px) was reached, which sits inside a rider's 45px
 ## `inner_radius`, so a note handed over on the way past landed only the last few pixels of his
-## full-strength field before he left. Pins three things about `handover_dwell_seconds` at once:
-## it does not fire on the first tick, brushing the radius and stepping back out does not bank
-## time toward a later approach, and continuous dwelling for the whole of it does complete.
-func _test_the_notes_handover_costs_a_real_dwell_not_an_instant_touch(t) -> void:
+## full-strength field before he left. A fork proposed fixing that with a dwell -- standing
+## inside `inner_radius` for a couple of seconds before it completes -- and the player rejected
+## it outright: "the player should stand for 2.5s? no way. the moment the player touches the
+## inner circle it counts as delivered." So this pins the simpler fix instead: day 6's note
+## completes on the very first tick she is within his `inner_radius`, even short of `REACH`,
+## while an ordinary step at the identical distance does not complete at all, and stepping short
+## of `inner_radius` altogether does not complete either.
+func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t) -> void:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -269,45 +270,50 @@ func _test_the_notes_handover_costs_a_real_dwell_not_an_instant_touch(t) -> void
 	t.add_child(instance)
 	instance.set_process(false)
 
-	var contact := ContactPoint.new()
 	var step := ResistanceSteps.by_index(2)
-	t.check(step.handover_dwell_seconds > 0.0,
-			"day 6's note is the step this dwell exists for")
-	contact.ride(step, instance, Vector2.ZERO)
-	t.add_child(contact)
-	contact.set_physics_process(false)
-	player.global_position = Vector2.ZERO
+	t.check(step.completes_at_inner_radius, "day 6's note is the one step this applies to")
+	t.check(ContactPoint.REACH < instance.def.inner_radius,
+			"the case this test distinguishes -- REACH sits inside inner_radius -- or the checks " +
+			"below prove nothing")
 
-	contact._physics_process(STEP)
-	t.check(not contact.is_done, "one tick, even standing exactly on him, is not a handover")
+	# Between REACH (36px) and inner_radius (45px): outside the ordinary REACH check, but inside
+	# the wider circle the note actually uses.
+	var between := (ContactPoint.REACH + instance.def.inner_radius) * 0.5
+	player.global_position = Vector2.RIGHT * between
 
-	# Half the dwell, then she steps back out past his inner_radius and returns: the partial dwell
-	# does not survive the break.
-	var half_ticks := int(round((step.handover_dwell_seconds * 0.5) / STEP))
-	for _i in half_ticks:
-		contact._physics_process(STEP)
-	t.check(not contact.is_done, "half the dwell is still not a handover")
+	var note_contact := ContactPoint.new()
+	note_contact.ride(step, instance, Vector2.ZERO)
+	t.add_child(note_contact)
+	note_contact.set_physics_process(false)
+	note_contact._physics_process(STEP)
+	t.check(note_contact.is_done,
+			"one tick inside inner_radius completes it, even though REACH alone would not have")
+	note_contact.free()
 
-	player.global_position = Vector2.ONE * (instance.def.inner_radius + 5.0)
-	contact._physics_process(STEP)
-	t.check(not contact.is_done, "stepping outside his inner_radius does not complete it either")
-	player.global_position = Vector2.ZERO
-	contact._physics_process(STEP)
-	# One tick back in is not the whole dwell again from scratch -- confirm the clock actually
-	# reset rather than merely paused, by running out only the remainder a *paused* clock would
-	# have needed and checking it still is not done.
-	for _i in (half_ticks - 2):
-		contact._physics_process(STEP)
-	t.check(not contact.is_done,
-			"stepping out reset the dwell -- the remainder of the first attempt is not enough")
+	# The identical distance, on an ordinary step that never sets `completes_at_inner_radius`:
+	# REACH is what it checks, and this distance sits outside it.
+	var ordinary_step := ResistanceSteps.Step.new()
+	t.check(not ordinary_step.completes_at_inner_radius,
+			"a bare Step defaults to the ordinary REACH check")
+	var ordinary_contact := ContactPoint.new()
+	ordinary_contact.ride(ordinary_step, instance, Vector2.ZERO)
+	t.add_child(ordinary_contact)
+	ordinary_contact.set_physics_process(false)
+	ordinary_contact._physics_process(STEP)
+	t.check(not ordinary_contact.is_done,
+			"the same distance does not complete an ordinary step's REACH check")
+	ordinary_contact.free()
 
-	# Now the whole dwell, uninterrupted.
-	var ticks := ceili(step.handover_dwell_seconds / STEP) + 1
-	for _i in ticks:
-		contact._physics_process(STEP)
-	t.check(contact.is_done, "a full, continuous dwell inside his inner_radius completes it")
+	# Outside inner_radius altogether: too far for the note either.
+	player.global_position = Vector2.RIGHT * (instance.def.inner_radius + 5.0)
+	var outside_contact := ContactPoint.new()
+	outside_contact.ride(step, instance, Vector2.ZERO)
+	t.add_child(outside_contact)
+	outside_contact.set_physics_process(false)
+	outside_contact._physics_process(STEP)
+	t.check(not outside_contact.is_done, "outside inner_radius, the note is not delivered either")
+	outside_contact.free()
 
-	contact.free()
 	instance.free()
 	player.free()
 
@@ -1099,11 +1105,9 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 
 		var completed: Array[int] = []
 		director._contact.completed.connect(func(index: int) -> void: completed.append(index))
-		# Step 2's own handover_dwell_seconds (M205) means standing on the retargeted contact
-		# takes the same dwell an ordinary approach would, not one tick.
-		var ticks := ceili(Tuning.NOTE_HANDOVER_DWELL_SECONDS / STEP) + 1
-		for _i in ticks:
-			director._contact._physics_process(STEP)
+		# Step 2's own `completes_at_inner_radius` (M205) still fires on the first tick she is
+		# standing on the retargeted contact, exactly as an ordinary REACH-based step would.
+		director._contact._physics_process(STEP)
 		t.check(completed == [2], "touching the retargeted contact completes step 2 itself")
 
 		player.free()

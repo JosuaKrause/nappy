@@ -1,9 +1,9 @@
 extends RefCounted
 ## Measurement probe for M205, "the note costs, and the ordinary day": what day 6's note handover
-## (`ResistanceSteps.by_index(2)`, the perform riding `homeless_yeller`) actually costs, before and
-## after `ResistanceSteps.Step.handover_dwell_seconds`. Not a suite -- prints numbers rather than
-## asserting only relationships -- so it lives under `tests/probes/`, where the runner never
-## discovers it, and runs only by name:
+## (`ResistanceSteps.by_index(2)`, the perform riding `homeless_yeller`) actually costs, with
+## `ResistanceSteps.Step.completes_at_inner_radius` on and off. Not a suite -- prints numbers
+## rather than asserting only relationships -- so it lives under `tests/probes/`, where the runner
+## never discovers it, and runs only by name:
 ##
 ##     tools/test.sh probes/m205_note_handover.gd
 ##
@@ -15,13 +15,23 @@ extends RefCounted
 ## pulse, the same reason `M174Pass` does: starting at one instant of his beat prices whichever
 ## phase the sample happened to land on rather than the row.
 ##
-## **"Before" (`dwelling = false`)** stops the walk, and the sum, the instant `ContactPoint.REACH`
-## (36px) is reached -- the old code's own trigger, which sits inside his 45px `inner_radius`, so
-## the old handover only ever charged the last few pixels of the approach. **"After" (`dwelling =
-## true`)** keeps going past that point, now requiring a continuous `Tuning.
-## NOTE_HANDOVER_DWELL_SECONDS` inside `inner_radius` before it stops -- the same condition
-## `ContactPoint._physics_process()` checks, walked here rather than driven through a real node so
-## many phases run in milliseconds rather than real seconds.
+## **Both stops are instant -- only the radius differs.** *(2026-09-26, the player, given a fork
+## that proposed a dwell inside `inner_radius` first: "the player should stand for 2.5s? no way.
+## the moment the player touches the inner circle it counts as delivered.")* **"REACH" stops the
+## walk, and the sum, the instant `ContactPoint.REACH`** (36px) is reached -- the old code's own
+## trigger, which sits inside his 45px `inner_radius`, so the old handover only ever charged the
+## last few pixels of the approach. **"inner_radius" stops instead the instant she is within
+## `inner_radius`** -- the fix `ContactPoint._physics_process()` actually ships.
+##
+## **Measured: this changes what the handover is tied to, not how much it costs.** REACH (36px)
+## sits *inside* inner_radius (45px), so stopping at inner_radius actually ends the approach a
+## few pixels earlier, not later -- `4.7` at REACH vs `4.1` at inner_radius, both awake, as of
+## this tree (re-run rather than trust these). Both sit well under the `11.1` an ordinary pass
+## costs. What the fix buys is not a bigger number: it is tying the handover to a fact about the
+## row itself (his own full-strength field) instead of `REACH`, a fixed plumbing constant every
+## task's contact shares regardless of what it rides on. The gap to an ordinary pass is left
+## open, reported rather than re-litigated -- the player already answered the mechanism question
+## this probe was built to measure.
 
 const STEP := 1.0 / 60.0
 const PHASE_SAMPLES := 8
@@ -29,42 +39,44 @@ const LEAD := 500.0
 
 func run(t) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
-	var before_awake := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
-	var before_asleep := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING,
+	var reach_awake := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
+	var reach_asleep := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING,
 			Tuning.SLEEPING_SENSITIVITY)
-	var after_awake := _handover_net_averaged(def, true, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
-	var after_asleep := _handover_net_averaged(def, true, Tuning.EXCITEMENT_DECAY_WALKING,
+	var inner_awake := _handover_net_averaged(def, true, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
+	var inner_asleep := _handover_net_averaged(def, true, Tuning.EXCITEMENT_DECAY_WALKING,
 			Tuning.SLEEPING_SENSITIVITY)
 	# The ordinary full pass -- "what walking past him costs" -- is `M174Pass`'s own 0px figure,
 	# the same simulation `docs/COSTS.md`'s "the pass — awake"/"the pass — asleep" rows are
-	# generated from (11.1 awake, -3.2 asleep as of this tree; re-run rather than trust the number).
+	# generated from (re-run rather than trust a number quoted here).
 	var pass_awake := M174Pass.pass_net_averaged(def, 0.0, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var pass_asleep := M174Pass.pass_net_averaged(def, 0.0, Tuning.EXCITEMENT_DECAY_WALKING,
 			Tuning.SLEEPING_SENSITIVITY)
 
 	print("\n== homeless_yeller : the note handover ==")
-	print("  %12s | %10s %10s" % ["", "awake", "asleep"])
-	print("  %12s | %10.1f %10.1f" % ["before", before_awake, before_asleep])
-	print("  %12s | %10.1f %10.1f" % ["after", after_awake, after_asleep])
-	print("  %12s | %10.1f %10.1f" % ["ordinary pass", pass_awake, pass_asleep])
+	print("  %14s | %10s %10s" % ["", "awake", "asleep"])
+	print("  %14s | %10.1f %10.1f" % ["at REACH", reach_awake, reach_asleep])
+	print("  %14s | %10.1f %10.1f" % ["at inner_radius", inner_awake, inner_asleep])
+	print("  %14s | %10.1f %10.1f" % ["ordinary pass", pass_awake, pass_asleep])
 
-	t.check(before_awake < pass_awake * 0.5,
-			"before the fix, an instant handover at REACH landed well under an ordinary pass (%.1f < %.1f)"
-			% [before_awake, pass_awake * 0.5])
-	t.check(after_awake >= pass_awake,
-			"after the fix, the handover's own dwell costs at least an ordinary pass (%.1f >= %.1f)"
-			% [after_awake, pass_awake])
+	t.check(reach_awake < pass_awake,
+			("an instant handover at REACH lands under an ordinary pass (%.1f < %.1f) -- the bug " +
+			"this row exists to pin") % [reach_awake, pass_awake])
+	# inner_radius (45px) sits outside REACH (36px), so stopping there ends the approach a few
+	# pixels earlier, not later -- this is not a bigger number than REACH's, and is not asserted
+	# to be one; see the class doc for what the fix actually buys instead.
+	t.check(inner_awake > 0.0,
+			"the handover still lands something rather than nothing (%.1f)" % inner_awake)
 
-func _handover_net_averaged(def: EventDef, dwelling: bool, decay: float,
+func _handover_net_averaged(def: EventDef, at_inner_radius: bool, decay: float,
 		sensitivity: float) -> float:
 	var total := 0.0
 	var phase_span: float = def.pulse_period if def.pulse_period > 0.0 else 1.0
 	for i in PHASE_SAMPLES:
-		total += _handover_net(def, dwelling, decay, sensitivity,
+		total += _handover_net(def, at_inner_radius, decay, sensitivity,
 				phase_span * float(i) / float(PHASE_SAMPLES))
 	return total / PHASE_SAMPLES
 
-func _handover_net(def: EventDef, dwelling: bool, decay: float, sensitivity: float,
+func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivity: float,
 		phase_delay: float) -> float:
 	var path := PackedVector2Array([Vector2(-4000.0, 0.0), Vector2(4000.0, 0.0)])
 	var instance := EventInstance.new()
@@ -79,11 +91,9 @@ func _handover_net(def: EventDef, dwelling: bool, decay: float, sensitivity: flo
 	var her_pos: Vector2 = instance.global_position + Vector2(LEAD, 0.0)
 	var incoming_sum := 0.0
 	var decay_sum := 0.0
-	var dwell_seconds := 0.0
-	# Long enough to close LEAD at WALK_SPEED and then dwell out the full requirement, with a
-	# margin: overrunning costs nothing since both sums stop the moment either stopping rule fires.
-	var steps := int(ceil((LEAD / Tuning.WALK_SPEED) / STEP)) \
-			+ int(ceil(Tuning.NOTE_HANDOVER_DWELL_SECONDS / STEP)) + 240
+	# Long enough to close LEAD at WALK_SPEED with a margin -- overrunning costs nothing since both
+	# sums stop the moment either stopping rule fires.
+	var steps := int(ceil((LEAD / Tuning.WALK_SPEED) / STEP)) + 240
 	for _i in steps:
 		instance._process(STEP)
 		var to_instance: Vector2 = instance.global_position - her_pos
@@ -93,16 +103,9 @@ func _handover_net(def: EventDef, dwelling: bool, decay: float, sensitivity: flo
 		if distance <= def.outer_radius:
 			incoming_sum += instance.contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
-		if not dwelling:
-			if distance <= ContactPoint.REACH:
-				break
-			continue
-		if distance <= def.inner_radius:
-			dwell_seconds += STEP
-			if dwell_seconds >= Tuning.NOTE_HANDOVER_DWELL_SECONDS:
-				break
-		else:
-			dwell_seconds = 0.0
+		var stop_radius := def.inner_radius if at_inner_radius else ContactPoint.REACH
+		if distance <= stop_radius:
+			break
 
 	instance.free()
 	return incoming_sum - decay_sum

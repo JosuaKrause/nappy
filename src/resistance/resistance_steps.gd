@@ -73,12 +73,14 @@ class Step extends RefCounted:
 	var header := ""
 	## True for the one perform step that makes the pram heavier for the rest of the day.
 	var applies_package_weight := false
-	## Seconds `ContactPoint` makes her stand continuously within the rider's own `inner_radius`
-	## before this perform step completes, instead of the instant `ContactPoint.REACH` (36px) is
-	## reached. 0 for every step but day 6's note (M205, "the note costs, and the ordinary day"):
-	## `Tuning.NOTE_HANDOVER_DWELL_SECONDS` for that one. See that constant's own doc for why an
-	## instant handover was cheaper than an ordinary pass.
-	var handover_dwell_seconds := 0.0
+	## True only for day 6's note (M205, "the note costs, and the ordinary day"). `ContactPoint`
+	## completes this step the instant she is within the rider's own `inner_radius` (45px, his
+	## full-strength field) rather than the generic `ContactPoint.REACH` (36px) every other step
+	## uses — still instant, not a dwell: a fork proposed making her stand there for a couple of
+	## seconds first, and the player rejected it outright: "the player should stand for 2.5s? no
+	## way. the moment the player touches the inner circle it counts as delivered." False for
+	## every other step, which always uses `REACH` regardless of the rider's own geometry.
+	var completes_at_inner_radius := false
 
 static var _all: Array[Step] = []
 
@@ -258,11 +260,11 @@ static func _build() -> Array[Step]:
 	# Day 6 · a note for the man shouting — any of them. He is the group's lookout, and the cost
 	# is the approach: several homeless_yeller rows are already live, and the one carrying the
 	# contact looks exactly like the rest of them. A local rather than inline in the array below
-	# so `handover_dwell_seconds` can be set on it — see that field's own doc.
+	# so `completes_at_inner_radius` can be set on it — see that field's own doc.
 	var note_for_a_stranger := _perform(2, "A note for a stranger", 6, "homeless_yeller",
 			[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], false,
 			TargetKind.EVENT, false, "the one who won't stop shouting")
-	note_for_a_stranger.handover_dwell_seconds = Tuning.NOTE_HANDOVER_DWELL_SECONDS
+	note_for_a_stranger.completes_at_inner_radius = true
 
 	return [
 		_mark(1, "A chalk mark", 6, "Give it to the one who won't stop shouting."),

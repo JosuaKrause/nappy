@@ -35,10 +35,6 @@ var _pulse := 0.0
 ## clear an obstruction sits at a learnable spot rather than a re-rolled one.
 var _rider: EventInstance
 var _rider_offset := Vector2.ZERO
-## Seconds she has stood continuously inside `_rider.def.inner_radius`, for a step whose
-## `handover_dwell_seconds` is not 0 — see that field's own doc. Reset the instant she steps back
-## outside it, so a brush that does not commit cannot bank time toward a later, separate approach.
-var _dwell_seconds := 0.0
 
 func _enter_tree() -> void:
 	AtlasLibrary.acquire(ATLAS_GROUP)
@@ -80,20 +76,18 @@ func _physics_process(delta: float) -> void:
 		if not _player:
 			return
 	var distance := global_position.distance_to(_player.global_position)
-	# M205, "the note costs, and the ordinary day": a step whose handover has a dwell (day 6's
-	# note, so far the only one — see `ResistanceSteps.Step.handover_dwell_seconds`'s own doc) does
-	# not complete the instant `REACH` is reached. `REACH` (36px) sits inside a rider's own
-	# `inner_radius` for every row that rides one, so an instant handover always landed less than
-	# an ordinary pass costs; standing inside the full-strength field for a real stretch is what
-	# makes it cost at least that. Reset rather than paused the moment she steps back outside the
-	# radius, so ducking in and out cannot bank a handover out of several separate brushes.
-	if _rider and step and step.handover_dwell_seconds > 0.0:
+	# M205, "the note costs, and the ordinary day": day 6's note (the only step with
+	# `ResistanceSteps.Step.completes_at_inner_radius` set -- see that field's own doc)
+	# completes the instant she is within the rider's own `inner_radius` (45px, his
+	# full-strength field) rather than the generic `REACH` (36px) every other step uses.
+	# `REACH` sits inside a rider's own `inner_radius`, so the generic check always landed
+	# only the last few pixels of an approach; the player, offered a fork that would have
+	# made her stand in this wider circle for a while first, rejected it outright: "the
+	# player should stand for 2.5s? no way. the moment the player touches the inner circle
+	# it counts as delivered."
+	if _rider and step and step.completes_at_inner_radius:
 		if distance <= _rider.def.inner_radius:
-			_dwell_seconds += delta
-			if _dwell_seconds >= step.handover_dwell_seconds:
-				_complete()
-		else:
-			_dwell_seconds = 0.0
+			_complete()
 	elif distance <= REACH:
 		_complete()
 	queue_redraw()
