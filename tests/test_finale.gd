@@ -532,8 +532,9 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 		var body: Label = main._summary.get_node("Root/Center/Lines/Body")
 		t.check(title.text == MAIN_SCRIPT.finale_hint_for(section),
 				"section %d: titled with the section's own name ('%s')" % [section, title.text])
-		t.check(body.text.contains("nerve"),
-				"section %d: and carrying the nerve line ('%s')" % [section, body.text])
+		t.check(body.text.contains("Nerves left: %s" % NerveDisplay.stars(nerves)),
+				"section %d: and carrying the nerve line, as stars ('%s')"
+						% [section, body.text])
 		t.check(not finale.is_running(),
 				"section %d: with nothing counting down behind it" % section)
 

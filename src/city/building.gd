@@ -14,7 +14,9 @@ extends StaticBody2D
 ## above. The mass extends a whole block north of the origin y-sort compares, so on its own a
 ## building draws in front of everything on the pavement beside it wherever the two also overlap in
 ## x. What is true is the stronger thing, and it is why the answer lives in `city.gd` rather than
-## here: nothing can ever legitimately be *behind* a building, so nothing sorts against one.
+## here: nothing can ever legitimately be *behind* a building's lot, so nothing sorts against one.
+## The one thing a building owns that rises past its lot is the power station's stacks, and they
+## are not drawn here: each is a `StationStack` in the entities' own depth order.
 ##
 ##      lot top ─▶ ┌──────────┐  roof   y = -depth .. -height
 ##                 ├──────────┤
@@ -140,7 +142,8 @@ const NEIGHBOR_WINDOW_SEALED := &"buildings/window_boarded_sealed"
 # street it was built across, with the front door on its facade and two stacks on its roof, and a
 # fenced transformer yard over its other block, drawn as ground with the yard's upright things
 # standing on it rather than as wall and roof. The collision is the whole lot either way — the
-# yard is fenced, not walkable.
+# yard is fenced, not walkable. The stacks alone are not drawn by the building: they rise past the
+# lot's north edge and stand in the entities' own depth order (`StationStack`).
 
 const POWER_STATION_DOOR := &"buildings/power_station_door"
 const POWER_STATION_STACK := &"buildings/power_station_stack"
@@ -154,8 +157,8 @@ const POWER_STATION_CLERESTORY := &"buildings/power_station_clerestory"
 ## out with everything else.
 const POWER_STATION_CLERESTORY_LIT := &"buildings/power_station_clerestory_lit"
 ## Where the two stacks stand on the hall's roof, as a column counted from the hall's own west end
-## and a roof row counted from the south — back to front, so the nearer one is drawn over the
-## farther one's foot. Taste, open to overturn.
+## and a roof row counted from the south. Taste, open to overturn. Which one is drawn over the
+## other's foot is the `Entities` layer's y-sort, like everything else in it — see `StationStack`.
 const _STACK_CELLS: Array[Vector2i] = [Vector2i(9, 2), Vector2i(4, 1)]
 
 ## Share of a storefront cell that gets the sloped-awning variant instead of the plain one.
@@ -1023,24 +1026,36 @@ func _hall_cols() -> Vector2i:
 		return Vector2i(station_yard_cols.y, cols)
 	return Vector2i(0, station_yard_cols.x)
 
-## The power station's own parts, after the hall's wall and roof: the yard over its block, then the
-## stacks on the hall's roof. The yard picture's lines run off its west edge towards the hall, so a
-## yard west of the hall is drawn mirrored — through `Sprites.draw_standing`, the one place that
-## mirrors, anchored at the yard's own bottom centre on the lot's south edge.
-func _draw_power_station(wall_rows: int, hall: Vector2i, canvas: CanvasItem = self) -> void:
-	if station_yard_cols.y > 0:
-		var yard := AtlasLibrary.region(POWER_STATION_YARD)
-		var left := _cell(station_yard_cols.x, 0).x
-		var foot := Vector2(left + station_yard_cols.y * TILE * 0.5, 0.0)
-		var mirrored := station_yard_cols.x < hall.x
-		Sprites.draw_standing(canvas, yard, foot, Vector2.ZERO, mirrored)
-	var stack := AtlasLibrary.region(POWER_STATION_STACK)
+## The power station's yard over its block, after the hall's wall and roof. The yard picture's
+## lines run off its west edge towards the hall, so a yard west of the hall is drawn mirrored —
+## through `Sprites.draw_standing`, the one place that mirrors, anchored at the yard's own bottom
+## centre on the lot's south edge. The stacks are not drawn here: they rise past the lot's north
+## edge, so they stand in `City`'s y-sorted layer instead (`stack_feet()`, `StationStack`).
+func _draw_station_yard(hall: Vector2i, canvas: CanvasItem = self) -> void:
+	if station_yard_cols.y <= 0:
+		return
+	var yard := AtlasLibrary.region(POWER_STATION_YARD)
+	var left := _cell(station_yard_cols.x, 0).x
+	var foot := Vector2(left + station_yard_cols.y * TILE * 0.5, 0.0)
+	var mirrored := station_yard_cols.x < hall.x
+	Sprites.draw_standing(canvas, yard, foot, Vector2.ZERO, mirrored)
+
+## Where the power station's stacks stand, in this building's own coordinates: the foot of each, at
+## its roof cell's bottom centre (`_STACK_CELLS`, clamped to the hall and its roof). Empty for every
+## other building. Read once by `City._spawn_buildings()`, which stands a `StationStack` on each
+## foot in its `Entities` layer; it reads nothing but the exports `City` sets before that.
+func stack_feet() -> Array[Vector2]:
+	var feet: Array[Vector2] = []
+	if not power_station:
+		return feet
+	var hall := _hall_cols()
+	var wall_rows := wall_tiles()
 	var roof_rows := roof_tiles()
 	for cell in _STACK_CELLS:
 		var col := hall.x + mini(cell.x, hall.y - hall.x - 1)
 		var row := mini(cell.y, roof_rows - 1)
-		var at := _cell(col, wall_rows + row)
-		Sprites.draw_standing(canvas, stack, at + Vector2(TILE * 0.5, TILE))
+		feet.append(_cell(col, wall_rows + row) + Vector2(TILE * 0.5, TILE))
+	return feet
 
 ## Top-left corner of a cell, counting rows northward from the ground line.
 func _cell(col: int, row: int) -> Vector2:
@@ -1390,7 +1405,7 @@ func _new_roof_layer() -> SceneryLayer:
 	return layer
 
 func _draw_station_layer() -> void:
-	_draw_power_station(wall_tiles(), _hall_cols(), _station_layer)
+	_draw_station_yard(_hall_cols(), _station_layer)
 
 func _furniture_texture(kind: int) -> StringName:
 	match kind:
@@ -1412,3 +1427,23 @@ func _furniture_texture(kind: int) -> StringName:
 			return VENT_STACK
 		_:
 			return WATER_TANK
+
+## One of the power station's stacks, standing in `City`'s y-sorted `Entities` layer at its foot
+## (`Building.stack_feet()`) rather than drawn with the building beneath every entity. A stack is
+## the one part of a building that rises past its lot's north edge — 192px tall from a foot a few
+## tiles south of that edge, so it reaches well into the street north of it — so she walks where it
+## should hide her, and the building layer would draw her over it. *(PLAYTEST-143: "the chimneys of the
+## power plant render behind the player. they should be in front.")* In the entities' own depth
+## order it hides whatever stands north of its foot and is drawn under whatever stands south of it.
+## No walkable ground lies south of a foot within a stack's own width, since the foot is on the
+## hall's roof, so in practice it is in front of everything its picture reaches. It acquires the
+## `buildings` atlas group itself, since it lives outside the building that otherwise holds it.
+class StationStack extends Node2D:
+	func _enter_tree() -> void:
+		AtlasLibrary.acquire(&"buildings")
+
+	func _exit_tree() -> void:
+		AtlasLibrary.release(&"buildings")
+
+	func _draw() -> void:
+		Sprites.draw_standing(self, AtlasLibrary.region(Building.POWER_STATION_STACK), Vector2.ZERO)

@@ -66,12 +66,14 @@ may still keep it on.
 - `[AutoScreenshot] nothing to photograph: this run is headless` — no display server; see "a
   screenshot cannot be taken at all without a display" below. No retry will change it.
 - `[Main] a rig's own wall-clock limit ... passed` with no `[AutoScreenshot] wrote` line — the run
-  never reached its capture in time, which a hidden window does not cause. Check that no other
-  Godot process was running beside it (one at a time on this machine), read the run back with
+  never reached its capture in time, which a hidden window does not cause. Read the run back with
   `./tools/telemetry.sh` to see how far it got, and run it once more. A second identical failure is
   a bug in the rig or the capture path to report with that log, not bad luck to retry past.
 - `shot.sh: killed Godot after ...` — the game's own limit did not fire either: the process
   stopped running, which is a hang to report, not a capture problem.
+
+**Several rigs may run at once**, windowed or headless, from different worktrees: each is its own
+Godot process with its own window, and parallel agents capture side by side.
 
 **A rig never pauses on focus, unlike the game itself, and now never hears a real key or pointer
 press at all while it drives a run.** The game opens the pause screen on

@@ -13,6 +13,7 @@ const BASE_SEED := 7_140
 ## How many of those cities the day-14 sweep plans a whole day for — a tree, the region plan, the
 ## closures and the seals each — which is seconds a city rather than a quarter of one.
 const DAY_SEEDS := 10
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 var _maps: Array[CityMap] = []
 
@@ -27,6 +28,7 @@ func run(t) -> void:
 	_test_the_door_is_reached_on_its_day_through_a_region_door(t)
 	_test_no_other_day_is_bent_toward_it(t)
 	_test_an_older_save_with_the_station_block_advanced_still_loads(t)
+	_test_the_stacks_stand_in_the_entities_depth_order(t)
 
 # ------------------------------------------------------------------ generation ---
 
@@ -276,3 +278,60 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t) -> void:
 			break
 	t.check(solid, "the station's mass is still solid after the repaint")
 	t.check(not state.calm_blocks(map.block_plans).is_empty(), "the city still has calm ground")
+
+# --------------------------------------------------------------------- drawing ---
+
+## PLAYTEST-143: "the chimneys of the power plant render behind the player. they should be in
+## front." A stack rises past the station's lot into the street north of it, so it stands in the
+## city's y-sorted `Entities` layer at its own foot, where the engine draws it over anything whose
+## origin is north of that foot and under anything south of it — never in the `Buildings` layer,
+## which is drawn beneath every entity. Asked of a real city, since the wiring is `City`'s.
+func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(BASE_SEED))
+	var entities: Node2D = city.get_node("Entities")
+	var buildings: Node2D = city.get_node("Buildings")
+	t.check(entities.y_sort_enabled and entities.z_index > buildings.z_index,
+			"Entities is the y-sorted layer above the buildings")
+	var station: Building = null
+	for child in buildings.get_children():
+		if child is Building and (child as Building).power_station:
+			station = child
+	t.check(station != null, "the city has a power station building")
+	if station == null:
+		city.free()
+		return
+	var stacks: Array[Node2D] = []
+	for child in entities.get_children():
+		if child is Building.StationStack:
+			stacks.append(child)
+	var feet := station.stack_feet()
+	t.check(feet.size() == 2 and stacks.size() == feet.size(),
+			"one stack in Entities per foot on the hall's roof (%d stacks, %d feet)"
+			% [stacks.size(), feet.size()])
+	var in_buildings := 0
+	for node in buildings.find_children("*", "Node2D", true, false):
+		if node is Building.StationStack:
+			in_buildings += 1
+	t.check(in_buildings == 0, "no stack is left in the building layer (%d)" % in_buildings)
+	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+	var height := float(AtlasLibrary.native_size(Building.POWER_STATION_STACK).y)
+	for i in mini(stacks.size(), feet.size()):
+		var stack := stacks[i]
+		var foot := station.position + feet[i]
+		t.check(stack.position.is_equal_approx(foot),
+				"stack %d stands at its foot %s (%s)" % [i, foot, stack.position])
+		t.check(lot.has_point(foot) and foot.y - height < lot.position.y,
+				"stack %d's foot is on the lot and its picture rises past the lot's north edge" % i)
+		# The case the player saw: walkable ground under the picture, past the lot's north edge and
+		# so north of the foot, where she stands behind the stack and the y-sort draws it over her.
+		var behind := 0
+		var y := lot.position.y - Tuning.TILE_SIZE * 0.5
+		while y > foot.y - height:
+			if city.map.is_walkable(city.map.world_to_tile(Vector2(foot.x, y))):
+				behind += 1
+			y -= Tuning.TILE_SIZE
+		t.check(behind > 0, "stack %d's picture reaches walkable ground behind it (%d tiles)"
+				% [i, behind])
+	city.free()
