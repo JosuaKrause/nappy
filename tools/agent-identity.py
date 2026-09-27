@@ -111,7 +111,9 @@ _CODER_PERMISSIONS: dict[str, str] = {
     "issues": "write",
     "workflows": "write",
     "checks": "read",
-    "actions": "read",
+    # write, not read: a coder identity's own gh run rerun/gh workflow run needs it, wrapped
+    # through run <role> -- like any other write. Nothing else here is widened.
+    "actions": "write",
     "metadata": "read",
 }
 

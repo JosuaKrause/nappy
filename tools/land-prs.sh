@@ -42,6 +42,14 @@
 # tools/prune-merged.sh owns its own push, HTTPS fallback included -- so there is no push path here
 # to give one.
 #
+# Every gh pr merge is a GitHub write and mints its own fresh token through the caller's own agent
+# identity (tools/lib_agent_role.sh's `agent_run`), rather than relying on the one token this
+# script itself may have been wrapped in: a single installation token lives one hour, this script
+# defaults to 90 minutes per PR and can take a list, so a run past the hour must not have its later
+# merges or tools/prune-merged.sh's own branch delete fail with an expired token. Run this script
+# itself through `uv run python tools/agent-identity.py run <role> -- tools/land-prs.sh ...`, which
+# sets NAPPY_AGENT_ROLE for `agent_run` to read back; it refuses to merge with that unset.
+#
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
 
@@ -141,6 +149,9 @@ fi
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root" || exit 1
 
+# shellcheck source=tools/lib_agent_role.sh
+source "$root/tools/lib_agent_role.sh"
+
 refuse() {
     echo "refusing: $*" >&2
     exit 1
@@ -155,7 +166,7 @@ stop() {
 # Fails closed: unless GitHub confirms auto-merge is off, the message says it could not be.
 stop_with_auto_merge_off() {
     local n="$1" msg="$2" off
-    gh pr merge "$n" --disable-auto >/dev/null 2>&1 || true
+    agent_run gh pr merge "$n" --disable-auto >/dev/null 2>&1 || true
     if off="$(gh pr view "$n" --json autoMergeRequest -q '.autoMergeRequest == null' 2>/dev/null)" \
             && [[ "$off" == true ]]; then
         stop "$msg -- auto-merge is off; have any change to it reviewed (pr-review) before landing it again"
@@ -279,14 +290,14 @@ for n in "${prs[@]}"; do
             # enablePullRequestAutoMerge refuses a PR in this state ("Pull request is in clean
             # status"), so there is nothing to wait for; merge it directly.
             echo "already clean -- merging directly (squash)"
-            merge_out="$(gh pr merge "$n" --squash 2>&1)" \
+            merge_out="$(agent_run gh pr merge "$n" --squash 2>&1)" \
                 || refuse "PR #$n: gh pr merge --squash failed: $merge_out"
         else
             echo "enabling auto-merge (squash)"
-            if ! merge_out="$(gh pr merge "$n" --squash --auto 2>&1)"; then
+            if ! merge_out="$(agent_run gh pr merge "$n" --squash --auto 2>&1)"; then
                 if [[ "$merge_out" == *"is in clean status"* ]]; then
                     echo "auto-merge refused because the PR is already clean -- merging directly (squash)"
-                    merge_out="$(gh pr merge "$n" --squash 2>&1)" \
+                    merge_out="$(agent_run gh pr merge "$n" --squash 2>&1)" \
                         || refuse "PR #$n: gh pr merge --squash failed: $merge_out"
                 else
                     refuse "PR #$n: gh pr merge --squash --auto failed: $merge_out"

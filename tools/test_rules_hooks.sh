@@ -38,15 +38,26 @@
 #   - 31 KB of the densest text, ending in a git grep only the third reading sees, is read in
 #     full in under half the hook's 10-second timeout, and a command over
 #     32 KB holding both words is denied at once without being read
-#   - github-write-guard.sh denies an unwrapped git push/commit, a GitHub-writing gh pr/issue/
-#     release verb, a gh api call with a non-GET method or -f/-F/--input, and a tools/ script that
-#     pushes or posts internally (release.sh, prune-merged.sh, land-prs.sh, update-pr.sh), each as
-#     a real invocation and as a mention (an echo, a commit message); a read (git status/log/fetch/
-#     diff, gh pr view/list/checks/diff/status, gh issue/release list/view, a GET gh api) allows,
-#     and so does the same write wrapped in tools/agent-identity.py run <role> -- ..., with or
-#     without uv run python in front and with or without run's own --repo before the role -- but
-#     only a write inside that wrapper's own -- ... span, never one before it or on a different
-#     ;/&/|/newline-separated command
+#   - github-write-guard.sh denies an unwrapped git push and every commit-making git verb (commit,
+#     cherry-pick, revert, am, and merge/rebase unless they carry --abort/--no-commit/--ff-only),
+#     any gh noun's verb unless it is on the shared read list (view, list, status, diff, checks,
+#     checkout, search) -- gh pr's own former write list, gh issue/release's own fail-safe, and
+#     now every other noun too (workflow run, run rerun/cancel, repo edit, label/secret/variable/
+#     cache/gist writes) -- a gh api call with a non-GET method or -f/-F/--input (attached or not:
+#     --field=, --raw-field=, --input=, -XPOST, -X=POST, a lowercase method), and a tools/ script
+#     that pushes or posts internally (release.sh only with its own push argument, land-prs.sh and
+#     update-pr.sh only without their own --dry-run, prune-merged.sh always) in command position
+#     only -- never where its name is merely a read's argument (cat, sed, git log/diff/show --,
+#     rg); each as a real invocation and as a mention (an echo, a commit message) alike. A flag
+#     between a gh noun and its own verb (gh pr -R O/R merge, gh pr --repo O/R comment) does not
+#     skip the check. A read (git status/log/fetch/diff, gh pr view/list/checks/diff/status/
+#     checkout, gh issue/release list/view, gh browse, a GET gh api) allows, and so does the same
+#     write wrapped in tools/agent-identity.py run <role> -- ..., with or without uv run python in
+#     front and with or without run's own --repo before the role -- but only a write inside that
+#     wrapper's own -- ... span, never one before it or on a different ;/&/|/newline-separated
+#     command, and never a git push or a pushing tools/ script when the wrapping role is a
+#     reviewer (claude-reviewer/codex-reviewer): reviewers never push, whatever GitHub's own
+#     contents:write permission allows -- only a coder identity does
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -828,7 +839,8 @@ assert_write_guard "gh api with -X POST -> deny" deny 'gh api repos/o/r/issues -
 assert_write_guard "gh api with --method POST -> deny" deny 'gh api repos/o/r/issues --method POST'
 assert_write_guard "gh -R O/R pr create, gh's own global option before the noun -> deny" deny \
     'gh -R O/R pr create --title x --body y'
-assert_write_guard "tools/release.sh, a script that pushes internally -> deny" deny 'tools/release.sh'
+assert_write_guard "tools/release.sh patch push, its own write shape -> deny" deny \
+    'tools/release.sh patch push'
 assert_write_guard "tools/prune-merged.sh, deletes the remote branch -> deny" deny \
     'tools/prune-merged.sh mybranch'
 assert_write_guard "./tools/land-prs.sh, merges the PR -> deny" deny './tools/land-prs.sh 391'
@@ -837,6 +849,54 @@ assert_write_guard "a mention (an echo naming gh pr merge) -> deny, same call as
     'echo "remember to run gh pr merge 391 after review"'
 assert_write_guard "a mention inside a commit message -> deny" deny \
     'git commit -m "documents why git push needs a wrapper now"'
+
+# An adversarial review of PR #391 (against 3e44c3a8) found four real bypasses and fixed them:
+# a flag between `gh <noun>` and its own verb skipping the verb lookup, `gh pr` missing several
+# write verbs, `gh api`'s attached-value flag forms, and every other `gh` noun besides pr/issue/
+# release/api being out of scope entirely. Each is checked here on its own.
+assert_write_guard "gh pr -R O/R merge, a flag between the noun and its verb -> deny" deny \
+    'gh pr -R JosuaKrause/nappy merge 391'
+assert_write_guard "gh pr --repo O/R comment, the long flag form -> deny" deny \
+    'gh pr --repo JosuaKrause/nappy comment 391 -b hi'
+assert_write_guard "gh pr -R O/R review --approve -> deny" deny 'gh pr -R o/r review 391 --approve'
+assert_write_guard "gh pr revert, a write verb the old list missed -> deny" deny 'gh pr revert 391'
+assert_write_guard "gh pr update-branch, pushes a merge commit to the PR branch -> deny" deny \
+    'gh pr update-branch 391'
+assert_write_guard "gh pr lock -> deny" deny 'gh pr lock 391'
+assert_write_guard "gh pr unlock -> deny" deny 'gh pr unlock 391'
+assert_write_guard "gh pr checkout is local-only -> allow" allow 'gh pr checkout 391'
+assert_write_guard "gh api --field=k=v, attached long flag -> deny" deny \
+    'gh api repos/x/y --field=body=1'
+assert_write_guard "gh api --raw-field=k=v, attached long flag -> deny" deny \
+    'gh api repos/x/y --raw-field=body=1'
+assert_write_guard "gh api --input=file, attached long flag -> deny" deny \
+    'gh api repos/x/y --input=review.json'
+assert_write_guard "gh api -XPOST, attached short flag -> deny" deny 'gh api repos/x/y -XPOST'
+assert_write_guard "gh api -Xpost, a lowercase attached method -> deny" deny 'gh api repos/x/y -Xpost'
+assert_write_guard "gh api -X=POST -> deny" deny 'gh api repos/x/y -X=POST'
+assert_write_guard "gh workflow run, every gh noun writes by default now -> deny" deny \
+    'gh workflow run build.yml'
+assert_write_guard "gh run rerun -> deny" deny 'gh run rerun 123'
+assert_write_guard "gh run cancel -> deny" deny 'gh run cancel 123'
+assert_write_guard "gh repo edit -> deny" deny 'gh repo edit --description x'
+assert_write_guard "gh label create -> deny" deny 'gh label create bug'
+assert_write_guard "gh secret set -> deny" deny 'gh secret set FOO'
+assert_write_guard "gh variable set -> deny" deny 'gh variable set FOO'
+assert_write_guard "gh cache delete -> deny" deny 'gh cache delete 1'
+assert_write_guard "gh gist create -> deny" deny 'gh gist create file.txt'
+
+# The same review found the commit-creating git verbs besides commit itself: merge (without
+# --no-commit/--ff-only/--abort), cherry-pick, revert, am, and rebase (without --abort) all set
+# the player as the committer of a real commit and need the wrapper too.
+assert_write_guard "git merge, a real merge commit -> deny" deny 'git merge origin/main'
+assert_write_guard "git merge --no-ff --no-commit, merging-main's own shape -> allow" allow \
+    'git merge --no-ff --no-commit origin/main'
+assert_write_guard "git merge --abort -> allow" allow 'git merge --abort'
+assert_write_guard "git rebase, sets the player as committer -> deny" deny 'git rebase origin/main'
+assert_write_guard "git rebase --abort -> allow" allow 'git rebase --abort'
+assert_write_guard "git cherry-pick -> deny" deny 'git cherry-pick abc123'
+assert_write_guard "git revert -> deny" deny 'git revert abc123'
+assert_write_guard "git am -> deny" deny 'git am patch.mbox'
 
 assert_write_guard "git status -> allow" allow 'git status'
 assert_write_guard "git log -> allow" allow 'git log --oneline'
@@ -855,10 +915,30 @@ assert_write_guard "gh api, explicit GET -> allow" allow 'gh api repos/o/r --met
 assert_write_guard "gh api, no method or fields, defaults to GET -> allow" allow 'gh api repos/o/r'
 assert_write_guard "gh --repo O/R pr view, gh's own global option before a read -> allow" allow \
     'gh --repo O/R pr view 391'
-assert_write_guard "gh workflow run, out of this guard's scope -> allow" allow 'gh workflow run build.yml'
+assert_write_guard "gh browse opens a local browser, no GitHub write -> allow" allow 'gh browse 391'
+assert_write_guard "gh run view, gh repo view, gh label/secret list -> allow" allow 'gh run view 123'
+assert_write_guard "gh repo view -> allow" allow 'gh repo view'
+assert_write_guard "gh label list -> allow" allow 'gh label list'
+assert_write_guard "gh secret list -> allow" allow 'gh secret list'
 assert_write_guard "a read-only tools/ script -> allow" allow 'tools/agent-status.sh'
 assert_write_guard "checking status is not itself a write -> allow" allow \
     'uv run python tools/agent-identity.py status claude-coder'
+assert_write_guard "a read of a write-script's own name (cat) -> allow, no write happens" allow \
+    'cat tools/release.sh'
+assert_write_guard "a read of a write-script's own name (sed) -> allow" allow \
+    'sed -n 1,40p tools/update-pr.sh'
+assert_write_guard "a read of a write-script's own name (git log --) -> allow" allow \
+    'git log -- tools/land-prs.sh'
+assert_write_guard "a read of a write-script's own name (git diff --) -> allow" allow \
+    'git diff main -- tools/prune-merged.sh'
+assert_write_guard "a read of a write-script's own name (git show) -> allow" allow \
+    'git show HEAD:tools/release.sh'
+assert_write_guard "tools/release.sh with no push argument is a dry run -> allow" allow \
+    'tools/release.sh patch'
+assert_write_guard "tools/land-prs.sh --dry-run -> allow, no GitHub write happens" allow \
+    'tools/land-prs.sh --dry-run'
+assert_write_guard "tools/update-pr.sh --dry-run -> allow, no GitHub write happens" allow \
+    'tools/update-pr.sh --dry-run 315'
 
 assert_write_guard "wrapped git push, uv run python in front -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- git push origin main'
@@ -910,6 +990,23 @@ assert_write_guard "a tool that runs no shell is not read -> allow" allow 'git p
 # call, since nothing here tells a mention from an invocation except by matching words.
 assert_write_guard "a mention that quotes the whole wrapped shape -> allow (accepted false allow)" allow \
     'echo "a comment that fully quotes: tools/agent-identity.py run claude-coder -- git push"'
+
+# A review of this hook found detect_gh_api's own scan ran to the next separator or the end of
+# the command, so many `gh api ...` calls glued together with no separator between them (no ; & |
+# or newline) made each one rescan the rest of the text: 800 repeats measured at 9.4s of the
+# hook's 10s timeout, and a timed-out hook lets the command through. Stopping the scan at the next
+# git/gh word too (detect_gh_api's own `until` condition) bounds it. 400 repeats of `gh api x `
+# (3.6 KB, denser than a real command would ever be) must still decide in well under the timeout.
+dense_gh_api="$(printf 'gh api x ' 2>/dev/null; for _ in $(seq 1 400); do printf 'gh api x '; done)"
+dense_gh_start=$SECONDS
+assert_write_guard "400 glued gh api calls, ending in a write -> deny, decided quickly" deny \
+    "${dense_gh_api}gh api repos/o/r -X POST"
+checks=$((checks + 1))
+if [ $((SECONDS - dense_gh_start)) -lt 5 ]; then
+    echo "ok   400 glued gh api calls are decided in under 5 seconds"
+else
+    fail "400 glued gh api calls took $((SECONDS - dense_gh_start)) seconds, past half the hook's 10-second timeout"
+fi
 
 echo
 echo "$checks checks, $failures failures"

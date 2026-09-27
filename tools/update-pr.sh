@@ -37,6 +37,12 @@
 # Unset (the default) leaves it off, since a human running this script by hand should not sign
 # the commit as Claude.
 #
+# The commit and each push attempt are GitHub writes and mint their own fresh installation token
+# through the caller's own agent identity (tools/lib_agent_role.sh's `agent_run`): run this script
+# itself through `uv run python tools/agent-identity.py run <role> -- tools/update-pr.sh ...`,
+# which sets NAPPY_AGENT_ROLE for `agent_run` to read back; it refuses to commit or push with that
+# unset. `--dry-run` never reaches either and needs no wrapper.
+#
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
 
@@ -105,6 +111,9 @@ fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root" || exit 1
+
+# shellcheck source=tools/lib_agent_role.sh
+source "$root/tools/lib_agent_role.sh"
 
 refuse() {
     echo "refusing: $*" >&2
@@ -285,11 +294,13 @@ if [[ -n "${UPDATE_PR_CLAUDE:-}" ]]; then
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 fi
 
-git -C "$target_dir" commit --quiet -m "$commit_msg" || refuse "git commit failed"
+agent_run git -C "$target_dir" commit --quiet -m "$commit_msg" || refuse "git commit failed"
 echo "committed $(git -C "$target_dir" rev-parse --short HEAD) on $branch"
 
 # ---- push, SSH first, HTTPS via gh's credential helper if SSH is refused ---------------------
-if git -C "$target_dir" push --quiet "$remote" "HEAD:refs/heads/$branch"; then
+# Each push mints its own fresh installation token (tools/lib_agent_role.sh's `agent_run`) rather
+# than relying on the one this script may itself have been wrapped in.
+if agent_run git -C "$target_dir" push --quiet "$remote" "HEAD:refs/heads/$branch"; then
     echo "pushed to $remote/$branch"
 else
     echo "SSH push failed; falling back to HTTPS via gh's credential helper" >&2
@@ -299,7 +310,7 @@ else
         *.git) ;;
         *) https_url="$https_url.git" ;;
     esac
-    git -C "$target_dir" -c credential.helper= -c credential.helper='!gh auth git-credential' \
+    agent_run git -C "$target_dir" -c credential.helper= -c credential.helper='!gh auth git-credential' \
         push --quiet "$https_url" "HEAD:refs/heads/$branch" \
         || refuse "push failed over both SSH and HTTPS ($https_url)"
     echo "pushed to $https_url refs/heads/$branch"

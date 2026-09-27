@@ -9,8 +9,9 @@ want to create nappy-claude-coder, nappy-claude-reviewer, nappy-codex-code, and
 nappy-codex-reviewer for now" — read as `nappy-codex-coder`, the name already in use · once the
 four identities existed: "once that is done I want to make it mandatory for each agent to use
 their respective identity when interacting with github. a reviewer app will be allowed to approve
-pull requests" — enforced on writes only, and with no fallback to the player's account when a role
-is not usable.)*
+pull requests"; asked on which commands and what an agent does when its identity is unusable, the
+player answered "writes only" and chose the option "Stop and tell me" — it never posts as the
+player instead, on any command.)*
 
 **What was decided.** Each agent role posts on GitHub as a GitHub App of its own, so a pull
 request shows the player, `nappy-claude-coder[bot]`, `nappy-claude-reviewer[bot]`,
@@ -61,7 +62,21 @@ proxy that serves only repository-scoped endpoints under the session's own autho
 (`GET /users/octocat` answered "This GitHub API path is not available: sessions are bound to their
 configured repositories"), `gh` is not installed and there is no browser. So identities work on
 the player's machine, in Claude Code and Codex alike, and a cloud session still stops rather than
-posting as the player. The four apps are created and installed on `JosuaKrause/nappy`, `status`
-reports all four usable, and each has posted its own comment on a pull request as its own bot; the
-manifest and token paths otherwise are exercised by mocked tests only, since this container cannot
-reach GitHub's API.
+posting as the player. The manifest exchange's own error paths (a rejected code, a network error)
+are exercised by mocked tests only, since no container here can reach GitHub's API to provoke them
+for real.
+
+**Live, on the player's machine.** The four apps are created and installed on `JosuaKrause/nappy`,
+and `status` reports all four usable. Each has posted its own comment on a pull request as its own
+bot. `run claude-coder -- git commit`/`git push` records and pushes as `nappy-claude-coder[bot]` —
+`git log` shows it as both author and committer with the session's own `Co-Authored-By` trailer
+kept, and `gh api repos/JosuaKrause/nappy/events` shows the push event's actor as
+`nappy-claude-coder[bot]`, over HTTPS even though `origin` is an SSH remote. The reviewer apps have
+`contents: write` live (probe PR #392, since closed and deleted), and a reviewer app's own APPROVE
+was verified there to satisfy a required approval. `main` carries two rulesets now: the original
+one (a pull request required, the `test` check green) is unchanged and nobody bypasses it; a
+second, "main approvals", requires one approving review, does not require thread resolution, and
+lets repository admins (the player) bypass it when merging their own PR. Both rulesets, and a
+GitHub App's own permissions, are changed in GitHub's settings by the player — no bot identity can
+make either change, so `github-write-guard.sh`'s deny message and **committing** both say an admin
+action is the player's to do directly, never something to wrap and retry.

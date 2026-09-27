@@ -15,8 +15,9 @@ directory. The system, developer and user instructions take precedence over repo
 Codex finds the skills through `.agents/skills`, a link to `.claude/skills`, and runs the same
 hook scripts through `.codex/hooks.json` and the adapter `tools/codex-hooks.py`: it loads the rules
 for every path a patch touches, rename destinations included, lints each edited doc, denies an
-unbounded `git grep` on Codex's own Bash calls the same way Claude Code's does, and reloads
-the startup rules on session start, resume, compaction and subagent start. **A change to a hook
+unbounded `git grep` and a GitHub write outside an agent's own identity on Codex's own Bash calls
+the same way Claude Code's does, and reloads the startup rules on session start, resume,
+compaction and subagent start. **A change to a hook
 script under `.claude/hooks/` or to the hooks in `.claude/settings.json` checks whether the
 adapter and its tests need to change — a new tool name, payload field or hook event — and updates
 them in the same PR when they do** *(2026-09-26: "okay, yes this is important to keep up to

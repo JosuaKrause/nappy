@@ -24,10 +24,18 @@
 # `origin/main` -- a tag on a commit the remote has never seen deploys something nobody can check
 # out -- and every refusal fires whether or not `push` was given, so the dry run tells the truth
 # about whether the real thing would work.
+#
+# The tag push is a GitHub write and runs through the caller's own agent identity
+# (tools/lib_agent_role.sh's `agent_run`, minting a fresh token for it): run this script itself
+# through `uv run python tools/agent-identity.py run <role> -- tools/release.sh <part> push`,
+# which sets NAPPY_AGENT_ROLE for `agent_run` to read back; it refuses to push with that unset.
 set -uo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR" || exit 1
+
+# shellcheck source=tools/lib_agent_role.sh
+source "$PROJECT_DIR/tools/lib_agent_role.sh"
 
 usage() {
     cat <<'EOF'
@@ -228,7 +236,7 @@ git tag -a "$NEXT" "$TARGET_SHA" -m "$NEXT"
 #
 # The tag is left in place on failure rather than deleted: it is annotated, it is what a retry
 # pushes, and deleting the thing the operator just asked for is the worse of the two surprises.
-if ! git push origin "$NEXT"; then
+if ! agent_run git push origin "$NEXT"; then
     echo "" >&2
     echo "PUSH REJECTED -- $NEXT exists locally and NOTHING has been published." >&2
     echo "The tag is still here; retry with 'git push origin $NEXT' once the reason above is" >&2

@@ -331,9 +331,11 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
     def test_github_write_guard_allows_the_wrapped_form_and_still_reminds(self) -> None:
+        # codex-coder, not claude-coder: this is Codex's own adapter, and the guard accepts any
+        # role either way, but a reader copying the example should see the one Codex actually uses.
         text = self.call(
             tool="Bash",
-            command="uv run python tools/agent-identity.py run claude-coder -- git push origin main",
+            command="uv run python tools/agent-identity.py run codex-coder -- git push origin main",
         )
         self.assertIn("committing", text)
 

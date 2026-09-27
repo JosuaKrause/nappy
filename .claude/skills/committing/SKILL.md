@@ -13,21 +13,26 @@ the current session** — see "Merging".
 **A coding agent commits, pushes and opens its pull request as its own GitHub identity, and only
 that identity — never the player's.** *(2026-09-26, once the four identities existed: "I want to
 make it mandatory for each agent to use their respective identity when interacting with github",
-enforced on writes; asked whether a role that is not usable falls back to the player's account:
-"no fallback to the player's account".)* Claude Code's orchestrator and every implementation agent
-it spawns commit as `claude-coder`; Codex's do the same as `codex-coder`. `uv run python
-tools/agent-identity.py status <role>` (**using-tools**) says whether the role is usable; every
-git and `gh` command for that piece of work then runs through `uv run python
-tools/agent-identity.py run <role> -- <command>` instead of running it directly, so the commit,
-the push and the pull request all show as `<role>[bot]` rather than as the player talking to
-themself. **When `status` reports the role not usable (not created yet, not installed on the
-repository, or a cloud session — see `tools/agent-identity.py`'s own module docstring), the
-session stops there and tells the player, rather than committing, pushing or opening the pull
-request under the player's own account.** A `PreToolUse` Bash hook
-(`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a `git push`, a `git
-commit`, a GitHub-writing `gh pr`/`gh issue`/`gh release`/`gh api` call, or one of the `tools/`
-scripts that pushes or posts internally, unless the same command is wrapped in `run <role> --`, so
-the rule holds even when a session forgets it; a read stays unguarded.
+enforced on writes; asked what an agent does when its identity is unusable, the player chose "Stop
+and tell me" — it never posts as the player instead.)* Claude Code's orchestrator and every
+implementation agent it spawns commit as `claude-coder`; Codex's do the same as `codex-coder`. `uv
+run python tools/agent-identity.py status <role>` (**using-tools**) says whether the role is
+usable; every command that **writes** to GitHub for that piece of work — a commit, a push, a `gh`
+post — then runs through `uv run python tools/agent-identity.py run <role> -- <command>` instead of
+running it directly, so the commit, the push and the pull request all show as `<role>[bot]` rather
+than as the player talking to themself. A read (`git status`, `gh pr view`, ...) runs unwrapped;
+minting a token for one is wasted work the player never asked for. **When `status` reports the
+role not usable (not created yet, not installed on the repository, or a cloud session — see
+`tools/agent-identity.py`'s own module docstring), the session stops there and tells the player,
+rather than committing, pushing or opening the pull request under the player's own account.** A
+`PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
+`git push`, a commit-making git verb (`commit`, `cherry-pick`, `revert`, `am`, and `merge`/`rebase`
+unless they carry `--abort`/`--no-commit`/`--ff-only`), a GitHub-writing `gh` call (every noun, not
+only `pr`/`issue`/`release`), or one of the `tools/` scripts that pushes or posts internally, in
+command position, unless the same command is wrapped in `run <role> --`, so the rule holds even
+when a session forgets it; a read stays unguarded. **An admin action no bot identity can
+perform** — changing a repository ruleset, a GitHub App's own permissions — **is the player's to
+do directly, in GitHub's own settings, never something to wrap and retry.**
 
 **The commit still carries the session's own attribution trailer.** `run` changes who git says
 authored and committed the change (the bot's name and noreply address), not what the message
@@ -253,9 +258,11 @@ for it.
 retired.** It refuses unless the pull request is MERGED and the local tip is its merged head, then
 removes the branch's worktree (never with `--force`, so git refuses a dirty one), the local branch
 and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
-whose worktree is gone. Run it from the main checkout. **Use it rather than the bare commands**:
-Claude Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as
-destructive however the check came out, and `.claude/settings.json` allows this script by name
+whose worktree is gone. Run it from the main checkout, through `uv run python
+tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` — its own remote
+delete is a write, so `github-write-guard.sh` denies it bare. **Use it rather than the bare
+commands**: Claude Code's auto-mode classifier refuses `git worktree remove` and `git branch -D`
+as destructive however the check came out, and `.claude/settings.json` allows this script by name
 because it cannot delete anything the check did not clear.
 
 **A PR stacked on another is retargeted to `main` before its base branch goes.** The repository

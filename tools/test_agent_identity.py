@@ -51,6 +51,17 @@ class RoleTableTests(unittest.TestCase):
                 self.assertEqual(permissions["contents"], "write")
                 self.assertEqual(permissions["workflows"], "write")
 
+    def test_coder_roles_have_actions_write_so_a_wrapped_run_rerun_works(self) -> None:
+        for role in ("claude-coder", "codex-coder"):
+            with self.subTest(role=role):
+                self.assertEqual(agent_identity.ROLES[role].permissions["actions"], "write")
+
+    def test_reviewer_roles_keep_actions_read(self) -> None:
+        # Nothing but coder's own actions permission is widened.
+        for role in ("claude-reviewer", "codex-reviewer"):
+            with self.subTest(role=role):
+                self.assertEqual(agent_identity.ROLES[role].permissions["actions"], "read")
+
     def test_reviewer_has_contents_write_and_no_workflows(self) -> None:
         # contents is write, not read: a reviewer's own APPROVE needs it to satisfy a
         # required-approval ruleset (see _REVIEWER_PERMISSIONS's own comment) -- but
