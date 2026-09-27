@@ -8,7 +8,8 @@ description: How every pull request is reviewed before it may merge — adversar
 **Every pull request goes through an adversarial review before it is ready to merge.**
 *(2026-09-26: "also all PRs must go through a (adversarial) review before ready to be merged.")*
 No exception for size or kind: a one-line fix, a docs PR filing a playtest, a hook, the
-orchestrator's own queue moves. **Ready to merge** means a review by a reviewer that did not write
+orchestrator's own queue moves, though a queue update's review is a narrow one (see "A queue update
+is reviewed narrowly and merged first"). **Ready to merge** means a review by a reviewer that did not write
 the change has posted the verdict *ready* on the PR, against the PR's current head. Green CI and an
 author's report of "done and verified" are inputs to the review, never a substitute for it.
 
@@ -144,3 +145,43 @@ orchestrator already knows is contested. It asks for this skill's order (semanti
 one review posted on the PR, and a report back: the verdict, each finding with its severity, and the
 review's URL. Sonnet is enough for a small or mechanical PR; a PR that carries a design decision, a
 drawing, or a change to the rules is reviewed by a stronger model.
+
+
+## A queue update is reviewed narrowly and merged first
+
+*(2026-09-27: "Task list updates should have priority and could use a weaker review agent (or no
+review at all if you think that is safe)" · "Yeah we still need a review but only to check that it
+doesn't touch code or [mess] anything up" · "Write it down how it makes sense. You might see some
+gaps that I missed".)*
+
+**A queue update is a PR whose diff stays inside `docs/todo/`, `docs/review/` and
+`docs/playtests/`**: filing a playtest, filing or rewording an entry or an item, moving a band. It
+is merged ahead of other work, since every brief is written from the queue on `origin/main`
+(**orchestrating**) and a filing left open is a brief written from the older text. A diff that
+also touches anything else, a skill or `CLAUDE.md` included, is not a queue update and gets the
+full review above; the orchestrator's queue move on a PR that builds the work is reviewed with
+that PR.
+
+**Its review is Haiku's, and it asks only whether the PR touches code or breaks anything:**
+
+- **Nothing outside the three folders.** `git diff --stat origin/main...<branch>` names no other
+  path. Three dots: the PR's own change from where it branched. Two dots compare the branch with
+  today's `main`, so everything merged since shows up reversed and reads as the PR undoing it.
+- **No existing playtest file is changed.** A playtest is a primary source and is never rewritten
+  (`CLAUDE.md`), so a queue update only adds one.
+- **Nothing open disappears unaccounted for.** A deleted item file or entry folder is either
+  finished work, whose record already exists under `docs/decisions/`, or a drop the player agreed
+  to, quoted in the PR. A deleted review item names the playtest that covered it
+  (**playtest-feedback**). A deletion with neither is how an ask is lost, and it is the one thing
+  this review is for.
+- **The queue still reads.** `./tools/lint.sh` passes, and `tools/queue.sh` prints every entry the
+  PR touched in the band the description says.
+
+The semantic questions at the top of this skill are not asked of it: whether a filing states the
+player's ask faithfully is the filer's job under **playtest-feedback**, and the review of the PR
+that builds the entry reads the player's own words again.
+
+**It is still a review.** Merging needs one approving review (**committing**), and a bot's approval
+is the only one the orchestrator can get without the player. A push after the approval gets the
+same narrow check on its delta. Going first changes the order, not the permission: merging still
+needs the player's go-ahead in the current session.

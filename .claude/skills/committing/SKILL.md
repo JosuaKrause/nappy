@@ -34,6 +34,15 @@ drift from it. **An admin action no bot identity can perform** — changing a re
 GitHub App's own permissions — **is the player's to do directly, in GitHub's own settings, never
 something to wrap and retry.**
 
+**Inside an isolated agent worktree, Claude Code's permission check can refuse the `uv run`
+form of the wrapper; the same wrapper run by the worktree's own interpreter,
+`.venv/bin/python tools/agent-identity.py run <role> -- <command>`, is the fallback.**
+*(2026-09-27: "Yes document the fallback".)* It is the same script with the same token and the
+same identity, and `github-write-guard.sh` accepts it as wrapped. A worktree with no `.venv` yet
+gets one from `uv sync`. The fallback changes only how the wrapper is started: when it is refused
+too, or `status` reports the role not usable, the agent stops and reports, as above, and never
+runs the command bare.
+
 **The commit still carries the session's own attribution trailer.** `run` changes who git says
 authored and committed the change (the bot's name and noreply address), not what the message
 says: the `Co-Authored-By` line the session's own instructions ask for is added exactly as it
