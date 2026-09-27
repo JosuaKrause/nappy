@@ -104,13 +104,16 @@ fi
 if [[ -n "$priority" && "$kind" != todo ]]; then
     fail_usage "--priority is for a queue entry, not a $kind"
 fi
-# The band set is tools/queue.sh's, read from it rather than copied here.
-bands="$(sed -n 's/^BANDS="\(.*\)"$/\1/p' "$root/tools/queue.sh" 2>/dev/null)"
-[[ -n "$bands" ]] || { echo "new-name.sh: no BANDS line in $root/tools/queue.sh" >&2; exit 1; }
-case " $bands " in
-    *" ${priority:-later} "*) ;;
-    *) fail_usage "unknown --priority: $priority (one of: $bands)" ;;
-esac
+# The band set is tools/queue.sh's, read from it rather than copied here, and only for a queue
+# entry: filing a playtest, a decision or a review item never depends on the queue's script.
+if [[ "$kind" == todo ]]; then
+    bands="$(sed -n 's/^BANDS="\(.*\)"$/\1/p' "$root/tools/queue.sh" 2>/dev/null)"
+    [[ -n "$bands" ]] || { echo "new-name.sh: no BANDS line in $root/tools/queue.sh" >&2; exit 1; }
+    case " $bands " in
+        *" ${priority:-later} "*) ;;
+        *) fail_usage "unknown --priority: $priority (one of: $bands)" ;;
+    esac
+fi
 if [[ -z "$day" ]]; then
     day="$(date +%Y-%m-%d)"
 fi

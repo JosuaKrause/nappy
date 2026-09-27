@@ -536,6 +536,17 @@ check_that "new-name.sh --priority writes the band it names" \
     '[[ "$made" == 2026-09-30-busy-wren && "$(head -n 1 "$names_repo/docs/todo/$made/README.md")" == "priority: now" ]]'
 rm -rf "$names_repo/docs/todo/2026-09-30-busy-wren"
 printf 'badger\notter\n' > "$names_repo/tools/names/animals.txt"
+mv "$names_repo/tools/queue.sh" "$work_dir/queue.sh.aside"
+lint_in_names_repo docs/todo/2026-09-26-M210/README.md
+status=$?
+check_that "lint.sh counts a missing queue.sh as a hit rather than skipping the band check" '[[ $status -ne 0 ]]'
+printf 'otter\nwren\n' > "$names_repo/tools/names/animals.txt"
+made="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-30 playtest "Filed without the queue" 2>/dev/null)"
+check_that "new-name.sh files a playtest with queue.sh missing, since only an entry needs the bands" \
+    '[[ "$made" == 2026-09-30-busy-wren && -s "$names_repo/docs/playtests/$made.md" ]]'
+rm -f "$names_repo/docs/playtests/2026-09-30-busy-wren.md"
+printf 'badger\notter\n' > "$names_repo/tools/names/animals.txt"
+mv "$work_dir/queue.sh.aside" "$names_repo/tools/queue.sh"
 
 # ----------------------------------------------------- queue.sh orders the entries by their bands ---
 # A scratch queue: two `now` entries, which print newest first; two old `next` entries under one
