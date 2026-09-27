@@ -2,6 +2,8 @@ class_name EventScenery
 extends Node2D
 ## A wide scene's static vector spans and cropped moving details, in their source painter order.
 ## The event keeps its simulation clock and cues; only these small moving layers change phase.
+## `EventManager` owns the events atlas page for its whole tree lifetime, including every scenery
+## child and every streamed instance; a standalone fixture acquires that page around this node.
 
 var moving_layers: Array[SceneryLayer] = []
 var static_layers: Array[SceneryLayer] = []
@@ -10,9 +12,6 @@ var _extent: Vector2
 var _anchor: Vector2
 var _shadow: String
 var _frame_b := false
-
-func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"events")
 
 func _ready() -> void:
 	_build()
@@ -24,7 +23,6 @@ func _exit_tree() -> void:
 		layer.free()
 	moving_layers.clear()
 	static_layers.clear()
-	AtlasLibrary.release(&"events")
 	request_ready()
 
 func configure(picture: String, extent: Vector2, anchor: Vector2, shadow: String) -> void:
