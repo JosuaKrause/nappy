@@ -112,7 +112,14 @@
 # a `;` up to the next git, gh, wrapper or pushing-script command, so a write flag after a quoted
 # `|` is still seen). Both are the stricter reading, and both cost false denies in exactly those
 # commands: `run <role> -- bash -c "a; b"` beside a `$(...)` is denied, and so is a `gh api` read
-# piped into a command that takes `-f`, `-F`, `-X` or `--input` (`| grep -F x`). The one
+# piped into a command that takes `-f`, `-F`, `-X` or `--input` (`| grep -F x`). So is a wrapped
+# heredoc commit or PR body whose text names a write (a line such as "run `git push` through the
+# wrapper"): the heredoc makes the command unsure, its first newline ends the wrapper's reach, and
+# the mention after it reads as an unwrapped write. When the denied command holds a wrapper, the
+# deny message says so and points at a body file (`git commit -F file`, `--body-file file`, `gh api
+# -F body=@file`), which the hook never reads. A command over 64 KB that names git, gh or a
+# pushing script is denied without being read at all (`too_long`, below), since a hook that runs
+# past its timeout lets the command through in both Claude Code and Codex. The one
 # case this does not close is the wrapper's own shape appearing whole inside a mention (a comment
 # that quotes a full `tools/agent-identity.py run claude-coder -- git push` line reads, to this
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
@@ -147,6 +154,13 @@ def named($name): last_part == $name;
 # character after the last closes the pass: it leaves U+0003 behind when a quote or an escape is
 # still open, which makes the whole reading unsure (see the header).
 #
+# A backslash-newline joins two lines only where the shell joins them: outside quotes, in double
+# quotes and in `$'...'` (where it stays a soft separator, the safer reading), never after an
+# escaped backslash (`echo C:\\` then a newline is two commands) and never in a comment or in
+# single quotes (a comment ending in `\` still ends at its newline). A joined newline emits
+# nothing, and the characters before the backslash stay the ones a `#` or a `$'` looks back at,
+# so `a\` newline `#x` is the word `a#x`, not a comment.
+#
 # An unquoted, unescaped `#` that starts a word (nothing, whitespace or `;`/`&`/`|`/`(`/`)`/a
 # newline before it) opens a comment that the next newline closes, as the shell reads it: quotes
 # and backslashes inside it change nothing, so an apostrophe in `# the player's words` never opens
@@ -158,7 +172,7 @@ def word_edge_codepoints: [32, 9, 10, 34, 39];
 def comment_start_codepoints: [32, 9, 10, 59, 38, 124, 40, 41];
 def mark_soft_separators:
   [foreach (explode + [3])[] as $c
-      ({q: 0, esc: false, prev: null, prev_esc: false, p2: null, p3: null, emit: []};
+      ({q: 0, esc: false, prev: null, prev_esc: false, p2: null, p3: null, joined: false, emit: []};
       .prev as $prev
       | .esc as $escaped
       | (if .q == 4 then [$c]
@@ -171,6 +185,7 @@ def mark_soft_separators:
          and (((word_edge_codepoints + sep_codepoints) | index($c)) != null)) as $quoted_dashes
       | if $c == 3 then .emit = (if .esc or (.q | IN(1, 2, 3)) then [3] else [] end)
         elif .q == 4 then (if $c == 10 then .q = 0 else . end) | .emit = $out
+        elif .esc and $c == 10 and .q != 3 then .esc = false | .emit = [] | .joined = true
         elif .esc then .esc = false | .emit = $out
         elif $c == 92 and .q != 1 then .esc = true | .emit = [$c]
         elif .q == 0 and $c == 35
@@ -184,7 +199,8 @@ def mark_soft_separators:
         else .emit = $out
         end
       | (if $quoted_dashes then .emit = [2] + .emit else . end)
-      | .p3 = .p2 | .p2 = .prev | .prev = $c | .prev_esc = $escaped;
+      | if .joined then .joined = false | .prev = .p2 | .p2 = .p3 | .p3 = null | .prev_esc = false
+        else .p3 = .p2 | .p2 = .prev | .prev = $c | .prev_esc = $escaped end;
       .emit[])]
   | implode;
 
@@ -526,7 +542,7 @@ def is_merge_like($reason):
 def findings($w; $unsure):
   ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
-  | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false,
+  | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,
      cmd_word_index: (command_word($w; 0; $n)), out: [], reviewer_push: false}
   | until(.i >= $n;
       . as $state
@@ -540,6 +556,7 @@ def findings($w; $unsure):
           | .cmd_word_index = (command_word($w; $state.i + 1; $n)) | .i += 1
         elif $wrap != null then
           $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role | .wrap_inner = $wrap.inner
+          | .wrapped = true
           | .cmd_word_index = (command_word($w; $wrap.next; $n)) | .i += 1
         else
           (detect_git($w; $state.i; $n) // detect_gh($w; $state.i; $n; $lm)
@@ -557,19 +574,39 @@ def findings($w; $unsure):
                | .i = $hit.next)
             end
         end)
-  | {out, reviewer_push};
+  | {out, reviewer_push, wrapped};
+
+# A command longer than this is not read at all: the character pass and the word scans are linear,
+# but a dense 200 KB heredoc commit takes several seconds, and a hook that runs past its 10-second
+# timeout does not block the call in either Claude Code or Codex -- it fails open. 64 KB is about
+# three times the longest pull request body this repository has, and even at its densest (a separator
+# on every character) is decided in about a quarter of the timeout. Over it, a command that can name a write at all (the words `git` or `gh`, or a
+# pushing script, once quotes and backslashes are dropped as the split drops them -- no detector
+# can fire without one) is denied outright with the hint to put the long text in a file; one that
+# names none of them cannot write and is allowed.
+def too_long: 65536;
+def names_a_write_tool:
+  "(?i)(^|[^a-z0-9_.-])(git|gh)([^a-z0-9_.-]|$)|(release|prune-merged|land-prs|update-pr)\\.sh";
 
 if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
-  | (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
-  | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ")) as $bare
-  | ($bare | mark_soft_separators) as $marked
-  | (($marked | contains("\u0003")) or ($bare | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
-  | ($marked | drop("\u0003") | split_words
-     | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
-  | (findings($w; $unsure)) as $result
-  | if ($result.out | length) == 0 then empty else $result end
+  | if length > too_long then
+      if (drop("\\") | drop("\"") | drop("'") | test(names_a_write_tool))
+      then {out: ["the whole command: over 64 KB and naming git, gh or a pushing script"],
+            reviewer_push: false, wrapped: false, too_long: true}
+      else empty end
+    else
+      (swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
+      | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ")) as $bare
+      | ($bare | mark_soft_separators) as $marked
+      | (($marked | contains("\u0003"))
+         or ($bare | drop("\\\n") | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
+      | ($marked | drop("\u0003") | split_words
+         | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
+      | (findings($w; $unsure)) as $result
+      | if ($result.out | length) == 0 then empty else $result end
+    end
 end
 
 JQ
@@ -578,14 +615,26 @@ command -v jq >/dev/null 2>&1 || exit 0
 if ! result=$(jq -c "$check_program" 2>/dev/null); then
 	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
 	reviewer_push=false
+	wrapped=false
+	too_long=false
 elif [ -z "$result" ]; then
 	exit 0
 else
 	flagged=$(printf '%s' "$result" | jq -r '.out | join("; ")')
 	reviewer_push=$(printf '%s' "$result" | jq -r '.reviewer_push')
+	wrapped=$(printf '%s' "$result" | jq -r '.wrapped')
+	too_long=$(printf '%s' "$result" | jq -r '.too_long // false')
 fi
 
-if [ "$reviewer_push" = "true" ]; then
+# The hint for a long text: a file the command reads is not text the hook has to read.
+file_hint="Write the text to a file first and pass the file (git commit -F file, gh pr \
+create/comment --body-file file, gh api -F body=@file or --input file), then run a short command."
+
+if [ "$too_long" = "true" ]; then
+	reason="This command is over 64 KB and names git, gh or a pushing tools/ script, so the write \
+guard denies it without reading it: a hook that cannot finish inside its timeout would let the \
+command through unchecked. $file_hint See .claude/hooks/github-write-guard.sh."
+elif [ "$reviewer_push" = "true" ]; then
 	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
 but reviewers never push or merge -- only a coder identity does. Wrap it in \
 'uv run python tools/agent-identity.py run claude-coder -- <command>' (or codex-coder) instead. \
@@ -605,6 +654,12 @@ the role not usable, stop and tell the player rather than running this directly.
 no bot identity can make (a repository ruleset, a GitHub App's own permissions) is the player's to \
 do directly in GitHub's own settings, never something to wrap and retry. See committing and \
 pr-review, and .claude/hooks/github-write-guard.sh for the current list of what counts as a write."
+	if [ "$wrapped" = "true" ]; then
+		reason="$reason If this command is already wrapped, the write named here is probably a \
+mention in text the hook reads as commands: a heredoc or \$(...) body (a commit message, a PR \
+body) makes every separator end the wrapper's reach, so a later line that names a write reads as \
+unwrapped. $file_hint"
+	fi
 fi
 
 jq -n --arg reason "$reason" '{

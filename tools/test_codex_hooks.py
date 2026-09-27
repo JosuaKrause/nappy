@@ -473,6 +473,46 @@ class CodexHooksTest(unittest.TestCase):
         text = self.call(tool="Bash", command=heredoc_commit('Fix the "can\'t push" error') + f"\n{wrap} git push")
         self.assertIn("committing", text)
 
+    def test_github_write_guard_joins_lines_only_where_the_shell_does(self) -> None:
+        # An escaped backslash or a comment ending in a backslash leaves the newline a separator.
+        for command in (
+            "echo C:\\\\\ngit push",
+            "uv run python tools/agent-identity.py run codex-coder -- git fetch # note \\\ngit push",
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        text = self.call(tool="Bash", command="uv run python tools/agent-identity.py run codex-coder -- git \\\npush")
+        self.assertIn("committing", text)
+
+    def test_github_write_guard_denies_a_long_command_without_reading_it(self) -> None:
+        # A hook past its timeout lets the command through, so over 64 KB a command naming git or
+        # gh is denied at once, with the hint to use a file.
+        long_text = "a" * 70000
+        output = self.call_raw(
+            command=f"uv run python tools/agent-identity.py run codex-coder -- git commit -m '{long_text}'"
+        )
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("over 64 KB", specific["permissionDecisionReason"])
+        self.assertIn("git commit -F file", specific["permissionDecisionReason"])
+        text = self.call(tool="Bash", command=f"echo '{long_text}'")
+        self.assertIn("committing", text)
+
+    def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
+        command = (
+            "uv run python tools/agent-identity.py run codex-coder -- gh pr create --title t --body "
+            "\"$(cat <<'EOF'\nRun `git push` through the wrapper.\nEOF\n)\""
+        )
+        output = self.call_raw(command=command)
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("If this command is already wrapped", specific["permissionDecisionReason"])
+        self.assertIn("--body-file", specific["permissionDecisionReason"])
+
     def test_github_write_guard_allows_a_read_with_a_piped_jq(self) -> None:
         text = self.call(tool="Bash", command="gh api repos/o/r/issues --jq '.[] | .title'")
         self.assertIn("committing", text)

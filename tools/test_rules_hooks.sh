@@ -1256,6 +1256,75 @@ assert_write_guard "a wrapped bash -c \"a; git push\" beside a \$(...) -> deny (
     'uv run python tools/agent-identity.py run claude-coder -- bash -c "git status; git push"; echo $(date)'
 assert_write_guard "a gh api read in \$(...), no write flag -> allow" allow \
     'N=$(gh api repos/o/r/issues --jq length); echo $N'
+
+# $1 label  $2 command  $3 text the deny reason must contain
+assert_write_guard_reason() {
+    checks=$((checks + 1))
+    local raw
+    raw=$(printf '%s' "$2" | jq -Rs '{tool_name:"Bash", tool_input:{command:.}}' \
+        | "$root/.claude/hooks/github-write-guard.sh" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')
+    case "$raw" in
+        *"$3"*) echo "ok   $1" ;;
+        *) fail "$1: the deny reason lacks '$3': $raw" ;;
+    esac
+}
+
+# A wrapped heredoc body that names a write is a false deny, and its message says why and points
+# at a body file rather than claiming the command is unwrapped and stopping there.
+wrapped_heredoc_pr="uv run python tools/agent-identity.py run claude-coder -- gh pr create --title t --body \"\$(cat <<'EOF'
+Run \`git push\` through the wrapper.
+EOF
+)\""
+assert_write_guard "a wrapped heredoc PR body naming git push -> deny (unsure, the safe direction)" deny \
+    "$wrapped_heredoc_pr"
+assert_write_guard_reason "that deny says the command may already be wrapped" "$wrapped_heredoc_pr" \
+    "If this command is already wrapped"
+assert_write_guard_reason "that deny points at a body file" "$wrapped_heredoc_pr" "--body-file"
+assert_write_guard_reason "an unwrapped push gets the plain reason" 'git push' "outside any agent identity"
+
+# A backslash-newline joins lines only where the shell joins them: never after an escaped
+# backslash, never at the end of a comment.
+assert_write_guard "echo C:\\\\, then a newline and git push -> deny" deny $'echo C:\\\\\ngit push'
+assert_write_guard "a wrapped fetch, a comment ending in a backslash, then git push -> deny" deny \
+    $'uv run python tools/agent-identity.py run claude-coder -- git fetch # note \\\ngit push'
+assert_write_guard "git, a continued line, push, unwrapped -> deny" deny $'git \\\npush'
+assert_write_guard "a wrapped git, a continued line, push -> allow" allow \
+    $'uv run python tools/agent-identity.py run claude-coder -- git \\\npush'
+assert_write_guard "a wrapped commit continued onto a second line -> allow" allow \
+    $'uv run python tools/agent-identity.py run claude-coder -- git commit -m x \\\n  --amend'
+
+# Over 64 KB, a command naming git, gh or a pushing script is denied without being read, so the
+# hook never runs past its timeout (a timed-out hook lets the command through); one naming none
+# of them cannot write and is allowed. Just under the bound, the densest text is still read.
+over_bound="$(head -c 70000 /dev/zero | tr '\0' 'a')"
+bound_start=$SECONDS
+assert_write_guard "a wrapped 70 KB commit message -> deny (over the bound)" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m '${over_bound}'"
+assert_write_guard_reason "that deny names the bound" \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m '${over_bound}'" "over 64 KB"
+assert_write_guard "a 70 KB command naming no git, gh or pushing script -> allow" allow \
+    "echo '${over_bound}'"
+assert_write_guard "a 70 KB command naming g\\it -> deny (read as the split reads it)" deny \
+    "echo '${over_bound}'; g\\it push"
+checks=$((checks + 1))
+if [ $((SECONDS - bound_start)) -lt 3 ]; then
+    echo "ok   commands over the bound are decided at once"
+else
+    fail "commands over the bound took $((SECONDS - bound_start)) seconds; the bound should decide them at once"
+fi
+dense_under_bound="$(head -c 65000 /dev/zero | tr '\0' ';')"
+dense_under_start=$SECONDS
+assert_write_guard "64 KB of separators in a heredoc, then git push -> deny" deny \
+    "cat <<EOF
+${dense_under_bound}
+EOF
+git push"
+checks=$((checks + 1))
+if [ $((SECONDS - dense_under_start)) -lt 5 ]; then
+    echo "ok   the densest command under the bound is decided in under 5 seconds"
+else
+    fail "the densest command under the bound took $((SECONDS - dense_under_start)) seconds"
+fi
 assert_write_guard "wrapped command, then an unquoted ; and a bare git push -> deny" deny \
     'uv run python tools/agent-identity.py run claude-coder -- echo done; git push'
 assert_write_guard "a REST write whose field value contains the word graphql -> deny" deny \

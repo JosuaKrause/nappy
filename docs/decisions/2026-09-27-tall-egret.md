@@ -122,7 +122,12 @@ more model of the shell to get wrong. Instead the character pass models only pla
 backslashes and `#` comments, and any command holding `$(`, a backtick, `${`, `<<` or `$$'`, or one
 the pass ends inside a quote, is read unsure. There every separator ends a wrapper's exemption, and
 a `gh api` call's flag scan runs past every separator, the stricter reading both ways. The cost is
-false denies in those commands only, such as a wrapped `bash -c "a; b"` next to a `$(...)`.
+false denies in those commands only, such as a wrapped `bash -c "a; b"` next to a `$(...)`. One of them is a
+wrapped heredoc commit or PR body that names `git push`, so the deny message of a wrapped command
+points at a body file (`git commit -F`, `--body-file`). And since a hook that runs past its
+10-second timeout lets the command through in both Claude Code and Codex, a command over 64 KB
+that names git, gh or a pushing script is denied without being read; the longest pull request
+body in the repository is about a third of that.
 
 **Accepted gaps.** The write guard is a guardrail against an agent's own ordinary mistake, not a
 security boundary against a deliberately adversarial shape. Five gaps exist, each probed against
