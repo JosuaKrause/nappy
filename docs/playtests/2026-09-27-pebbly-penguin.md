@@ -10,3 +10,13 @@
 
    This overturns `docs/MECHANICS.md`'s "Nerves never regenerate — this is what makes an early bad
    day matter", by the player: a day she wins gives back one nerve, never past the starting five.
+
+2. **Why.**
+
+   > "that way you can recover from a bad single day without being in a tight spot towards the end
+   > of the game"
+
+3. **The escape.**
+
+   > "escape doesn't have nerves" · "escape has no nerves was already preexisting you should have it
+   > in your records"
