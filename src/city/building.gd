@@ -1286,12 +1286,14 @@ func _build_roof_furniture() -> void:
 	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
 
 ## The cells a roof unit may stand on, in the fixed order `_build_roof_furniture()` shuffles:
-## column by column, each from row 1 up to one short of that column's own top, extension
-## included, leaving out any extension cell `roof_cell_edges()` gives a lip. Empty for a roof under
-## three columns wide or whose tallest column is under three rows deep, which has no interior
-## cell at all. The rows below `roof_tiles()` take no lip check, since no step or seam lip reaches
-## them, so a building with nothing to cover keeps exactly the pool, and the roll, it has without
-## an extension.
+## row by row from row 1, each row west to east over the interior columns, keeping a cell only
+## below its own column's top (extension included) and leaving out any extension cell
+## `roof_cell_edges()` gives a lip. Empty for a roof under three columns wide or whose tallest
+## column is under three rows deep, which has no interior cell at all. **The order is
+## load-bearing:** the shuffle permutes positions, so a building with nothing to cover lands its
+## units where an unextended roof always has only because its pool is the same cells in the same
+## row-major order. The rows below `roof_tiles()` take no lip check, since no step or seam lip
+## reaches them.
 func roof_interior_cells() -> Array[Vector2i]:
 	var interior: Array[Vector2i] = []
 	var roof_rows := roof_tiles()
@@ -1301,9 +1303,10 @@ func roof_interior_cells() -> Array[Vector2i]:
 		tallest = maxi(tallest, roof_rows + _extension_rows(col))
 	if tallest < 3 or cols < 3:
 		return interior
-	for col in range(1, cols - 1):
-		var col_rows := roof_rows + _extension_rows(col)
-		for row in range(1, col_rows - 1):
+	for row in range(1, tallest - 1):
+		for col in range(1, cols - 1):
+			if row >= roof_rows + _extension_rows(col) - 1:
+				continue
 			if row >= roof_rows and roof_cell_edges(col, row) != 0:
 				continue
 			interior.append(Vector2i(col, row))

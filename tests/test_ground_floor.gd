@@ -59,6 +59,7 @@ func run(t) -> void:
 	_test_setting_an_extension_late_rebuilds_the_roof_furniture(t)
 	_test_a_shallow_roof_carries_furniture_on_its_extension(t)
 	_test_the_furniture_pool_is_exactly_the_lip_free_interior(t)
+	_test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t)
 	_test_covered_columns_move_no_storefront_roll(t)
 	_test_the_door_only_lands_on_a_reachable_column(t)
 	_test_a_fully_covered_front_has_no_door(t)
@@ -815,8 +816,9 @@ func _test_a_shallow_roof_carries_furniture_on_its_extension(t) -> void:
 	bare.free()
 	covering.free()
 
-## The furniture pool is exactly the lip-free interior: every cell from row 1 up to one short of
-## its column's own top, on every column but the two ends, whose `roof_cell_edges()` is 0. Asked
+## The furniture pool is exactly the lip-free interior, row by row: every cell from row 1 up to one
+## short of its column's own top, on every column but the two ends, whose `roof_cell_edges()` is 0
+## (the fixture's tallest extension is 4 rows). Asked
 ## of a stepped extension on a shallow roof and a deep one, so each has step cells beside a
 ## shorter column to leave out, and every unit rolled lands inside the pool.
 func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
@@ -828,8 +830,10 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 		building.roof_extension_rows = extension
 		var expected: Array[Vector2i] = []
 		var lipped := 0
-		for col in range(1, building.columns() - 1):
-			for row in range(1, building.roof_tiles() + building._extension_rows(col) - 1):
+		for row in range(1, building.roof_tiles() + 4 - 1):
+			for col in range(1, building.columns() - 1):
+				if row >= building.roof_tiles() + building._extension_rows(col) - 1:
+					continue
 				if building.roof_cell_edges(col, row) == 0:
 					expected.append(Vector2i(col, row))
 				else:
@@ -844,6 +848,49 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 				t.check(expected.has(cell + Vector2i(step, 0)),
 						"roof of %d rows: a unit at %s stands inside the pool" % [roof, cell])
 		building.free()
+
+## A roof with nothing to cover lands its units on exactly the cells `main` rolls for it: its pool
+## is the interior in row-major order, the order the shuffle has always permuted, so an extension
+## elsewhere in the city moves no other roof's furniture. Every unextended roof of the sweep is
+## asked for that order, and two roofs of seed 61400 are pinned to the layout `main` rolls for
+## them (cell, then `_Furniture` kind), which a pool built in any other order breaks.
+func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -> void:
+	var main_layouts := {
+		Vector2i(6, 6): [[Vector2i(5, 2), 8], [Vector2i(2, 2), 8], [Vector2i(2, 1), 0]],
+		Vector2i(34, 6): [[Vector2i(2, 2), 8], [Vector2i(1, 2), 0], [Vector2i(4, 1), 8],
+				[Vector2i(6, 1), 8]],
+	}
+	var pinned := 0
+	var ordered := 0
+	for i in SWEEP_SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i * 977)
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(map)
+		for building: Building in city.buildings():
+			if building.roof_extension_rows.any(func(e: int) -> bool: return e > 0):
+				continue
+			var expected: Array[Vector2i] = []
+			if building.roof_tiles() >= 3 and building.columns() >= 3:
+				for row in range(1, building.roof_tiles() - 1):
+					for col in range(1, building.columns() - 1):
+						expected.append(Vector2i(col, row))
+			t.check(building.roof_interior_cells() == expected,
+					"seed %d: the unextended roof at %s offers its interior row by row"
+					% [map.seed_used, building.lot.position])
+			ordered += 1
+			if map.seed_used == BASE_SEED and main_layouts.has(building.lot.position):
+				var layout: Array = []
+				for unit: Dictionary in building._roof_furniture:
+					layout.append([unit["cell"], unit["kind"]])
+				t.check(layout == main_layouts[building.lot.position],
+						"seed %d: the roof at %s carries main's layout %s (got %s)"
+						% [map.seed_used, building.lot.position,
+						main_layouts[building.lot.position], layout])
+				pinned += 1
+		city.free()
+	t.check(ordered > 0, "the sweep met unextended roofs to ask (%d)" % ordered)
+	t.check(pinned == 2, "both pinned roofs of seed %d were found (%d)" % [BASE_SEED, pinned])
 
 ## `_build_front()`'s own `front:` stream — the storefront bag, the awning and ambient-shutter
 ## rolls — reads nothing about `covered_ground_cols`, so two otherwise-identical fronts, one fully
@@ -962,12 +1009,12 @@ func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_
 ## the covered building's own `wall_tiles()` — enough roof to reach exactly the world row the
 ## covered building's own roof already starts at, never more and never less. `has_point()` over
 ## every building's own `lot` rather than a spatial index, since the whole set is small and this
-## only runs once per seed. A south tile past the map's own edge is covered too
-## (`_covered_ground_cols()`'s own out-of-bounds default) but belongs to no lot — the map's own
-## boundary, not a building — so those columns are skipped rather than checked, the same tolerance
-## `_assign_roof_extensions()` itself already has.
+## only runs once per seed. A front facing the map's own edge is never covered, although
+## `CityMap.tile_at()` reads a tile past the edge as `BUILDING`: no lot stands there to extend a
+## roof from, so it keeps its facade, and no covered column's south tile is ever off the map.
 func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t) -> void:
 	var checked := 0
+	var edge_fronts := 0
 	for i in SWEEP_SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 977)
 		var city: City = CITY_SCENE.instantiate()
@@ -977,18 +1024,19 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 		for building: Building in buildings:
 			if building.power_station or building.covered_ground_cols.is_empty():
 				continue
+			if building.lot.end.y >= map.size.y:
+				edge_fronts += 1
+				t.check(not building.covered_ground_cols.has(true),
+						"seed %d: a front facing the map's edge at %s keeps its facade"
+						% [map.seed_used, building.lot.position])
 			for col in building.covered_ground_cols.size():
 				if not building.covered_ground_cols[col]:
 					continue
 				var south := Vector2i(building.lot.position.x + col,
 						building.lot.position.y + building.lot.size.y)
+				t.check(map.in_bounds(south),
+						"seed %d: a covered column's south tile is on the map" % map.seed_used)
 				if not map.in_bounds(south):
-					# `_covered_ground_cols()`'s own out-of-bounds default (`CityMap.tile_at()`
-					# reads a tile past the map's own edge as `BUILDING`) marks this column covered
-					# too, with no lot on the other side to extend a roof from — the map's own
-					# boundary, not a building. `_assign_roof_extensions()` tolerates exactly this
-					# (`tile_to_index.get(south, -1)`, `if front_index < 0: continue`), so nothing
-					# more is asked of this column here either.
 					continue
 				var front: Building = null
 				for candidate: Building in buildings:
@@ -1008,6 +1056,7 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 				checked += 1
 		city.free()
 	t.check(checked > 0, "the sweep met at least one real covered column to check the extension's own wiring on (%d)" % checked)
+	t.check(edge_fronts > 0, "the sweep met a front facing the map's edge (%d)" % edge_fronts)
 
 ## `City._assign_roof_extensions()`'s own courtyard wiring: a covered column's extension is
 ## seamless exactly when the covered building and the covering building were both cut from the same

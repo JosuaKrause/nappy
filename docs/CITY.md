@@ -2050,10 +2050,14 @@ Top-down camera with a fake vertical extrusion:
   that column's own top, extension included, so a building whose own roof is too shallow for an
   interior cell carries units once its extension gives it one. A fixed seed gives the same roof
   on every run, and a building providing cover rolls its layout over its larger roof, so it is a
-  different shuffle from the one it would have with nothing to cover. The vent is the one thing
-  on a roof that moves: it swaps between its two rotor frames on a timer of its own, and nothing else up there is animated. Furniture is
-  painted by retained children of `Building`, above its own roof tiles and inside the layer of buildings
-  under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
+  different shuffle from the one it would have with nothing to cover. The cells are listed row by
+  row before the shuffle (`Building.roof_interior_cells()`), which is what keeps a roof with
+  nothing to cover on the layout it has without any extension in the city: the shuffle permutes
+  positions, so any other order moves its units. The vent is the one thing on a roof that moves:
+  it swaps between its two rotor frames on a timer of its own, and nothing else up there is
+  animated. Furniture is painted by retained children of `Building`, above its own roof tiles and
+  inside the layer of buildings under the entities — never the y-sorted layer a street prop or
+  the player draws in — so a unit
   is never compared against anything on the pavement. Static furniture batches interleave with
   separate six-pixel rotor layers in the original painter order; each 1.4-second tick changes
   only those rotor layers, leaving the facade, roof tiles and housing draw lists intact.
@@ -2131,12 +2135,11 @@ Top-down camera with a fake vertical extrusion:
   same "the roll still runs, only the result is dropped" way her own building already drops one
   (below) — no picture exists for a platform or brackets reaching a column nobody can stand in
   front of. Her own building is never asked: `City._spawn_buildings()` computes this only for a
-  front that is not hers. A column whose south neighbour runs past the map's own edge (a front
-  facing a cul-de-sac's dead end at the map's boundary, in every seed sampled) reads covered the
-  same way — the map edge is `BUILDING` by the same out-of-bounds default a tile lookup elsewhere
-  in the lattice already uses — but has no lot on the other side to extend a roof from, so it stays
-  blank, the dark background showing where the wall would be, rather than either drawing a facade
-  or growing one: the special case for a dead end at the edge is kept on purpose.
+  front that is not hers. A front facing the map's own edge is an ordinary front and keeps its
+  facade — windows, storefronts and door: `_covered_ground_cols()` never counts a column whose
+  south tile is off the map as covered, although `CityMap.tile_at()` reads such a tile as
+  `BUILDING`, because no lot stands there to extend a roof from, and a column left with no facade
+  and nothing covering it shows the dark background where its wall would be.
 - **A courtyard's roof turns its corners as one roof, outer and inner alike, with no parapet in the
   middle of it and one colour.** A single-block or apartment-complex courtyard is cut into up to
   four rectangles around its hole (`CityGenerator._build_block()`'s `COURTYARD` branch,

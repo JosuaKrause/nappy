@@ -23,8 +23,10 @@ saw it on seed 61400 and asked for the roof instead. Its pictures stay in the PR
 extends a roof (its hall can); a building can extend its roof over one neighbour while its own
 front is covered by another; a step between two differently tall extended columns gets the same
 cap as a step down to an uncovered one, which no sampled seed produced. The yard guard has no
-picture because no city can show it: the station's lot is its whole block, so the lot north of it
-is across a street and never covered, and none of the 40 seeds `61400 + 977·i` has one.
+picture because no seed tried has a column it applies to: none in the 40 seeds `61400 + 977·i`,
+and in the 200 seeds `500000 + 7919·i` the 14 covered columns standing over a power station are
+all over its hall, none over its yard. One of them, seed 1917501 (a dead end's wall `[118,14]`
+2×6 over the hall's columns 0–1), is the picture of the hall extending its own roof.
 
 **Settled: an extended roof carries furniture too.** The first build kept vents, tanks and ducts
 off the extension so no seed's furniture would move. Asked why (PLAYTEST-144, 17), the player:
@@ -36,23 +38,28 @@ found two loose ends in that change, both closed: the `roof_extension_rows` sett
 so a value set after the building entered the tree left the furniture stale (it now rebuilds), and
 an extension cell beside a shorter column, where the step's side lip is drawn, was in the pool
 against the rule that a unit never sits on a cell a roof's own lips draw (it is now left out,
-through `Building.roof_cell_edges()`; the unextended rows are the pool they always were). The
+through `Building.roof_cell_edges()`). The
 review of 16c99ae8 found the gate in front of the pool still read the building's own roof depth
 (`roof_tiles() < 3`), so a covering roof two rows deep of its own stayed bare however deep its
 extension. The gate now reads the tallest column, extension included
 (`Building.roof_interior_cells()`). Over the 12 seeds `61400 + 977·i`, 277 buildings extend a
 roof; 135 of them have a lip-free cell on the extension, 107 of those under three rows of their
 own. Furnished extended roofs went from 45 to 147, and 51 carry a unit on the extension itself.
+The review of 4771dc08 found the pool listed column by column where `main` lists it row by row;
+the shuffle permutes positions, so 435 of 466 furnished roofs with nothing to cover (six seeds)
+had their units on other cells than on `main`, against every claim that nothing else moved. The
+pool is listed row by row again, up to the tallest column, keeping a cell only below its own
+column's top. On the six seeds `61400 + 977·i`, all 825 buildings with nothing to cover (468 of
+them furnished) now carry exactly `main`'s layout, and a test pins two of seed 61400's roofs to it.
 
-**Settled: a column against the map's edge stays the special case.** `_covered_ground_cols()`'s
-own out-of-bounds default (`CityMap.tile_at()` reads a tile past the map's edge as `BUILDING`)
-marks such a column covered too, with no lot on the other side for `_assign_roof_extensions()` to
-extend a roof from (`tile_to_index.get(south, -1)`, `if front_index < 0: continue`) — so it draws
-no facade and stays blank, the one column this rule leaves with nothing covering it: the dark
-background shows where the wall would be. In every
-seed sampled this only ever happens where the front faces a cul-de-sac's dead end that runs to the
-map's own boundary. Asked whether to keep this or drop it (treat such a column as reachable
-instead, since nothing genuinely stands in front of it): "keep the special case for dead ends."
+**Settled: a front facing the map's edge keeps its facade.** `CityMap.tile_at()` reads a tile
+past the map's edge as `BUILDING`, so a front whose south tile is off the map first read as
+covered, with no lot on the other side to extend a roof from: it drew no facade and left the dark
+background where its wall was. Asked, before any picture of it existed, whether to keep that or
+treat the column as reachable: "keep the special case for dead ends." (2026-09-26). Shown seed
+73124's before/after, the facade on `main` becoming a near-black rectangle: "Keep its facade"
+(2026-09-27). `_covered_ground_cols()` now never counts a column whose south tile is off the map,
+so such a front is an ordinary front — windows, storefronts and door, as on `main`.
 
 Evidence: `docs/evidence/m203-back-front-windows-2026-09-25/`, seed 61400, before and after; and
 `docs/evidence/m203-roof-cases-2026-09-27/`, one before/after pair per roof case (PLAYTEST-144,
@@ -63,4 +70,5 @@ front again, its covering roof two rows deep of its own and now carrying a unit)
 `--spawn square` (a roof two rows deep of its own carrying a unit on
 its extension), seed 72147 `--spawn signal --walk 0.35n --zoom 0.75` (a building extending its
 roof north while its own front is covered, between two more of the same), seed 73124
-`--spawn edge:s` (a front against the map's edge).
+`--spawn edge:s` (a front against the map's edge, which keeps its facade), seed 1917501
+`--spawn power_station` (the station's hall extending its roof to a dead end's wall).
