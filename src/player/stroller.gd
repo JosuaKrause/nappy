@@ -147,6 +147,13 @@ const ALERT_CLOSE := "props/alert_close"
 const BABY_ZZZ := "props/baby_zzz"
 const BABY_FUSS := "props/baby_fuss"
 const BABY_CRY := "props/baby_cry"
+## Canvas added below each baby's original source bounds. `Sprites.draw_standing()` grounds an
+## image on its full canvas bottom, so this keeps each visible glyph at its established world anchor.
+const INDICATOR_BOTTOM_PADDING := {
+	BABY_ZZZ: 2.0,
+	BABY_FUSS: 3.0,
+	BABY_CRY: 7.0,
+}
 
 ## The baked `AtlasLibrary` groups everything she draws comes from.
 ##
@@ -1033,7 +1040,12 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	# home stops being read. The urgent two flash instead.
 	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH
 	Sprites.draw_standing(self, AtlasLibrary.region(StringName(path)),
-			pram_offset + Vector2(aside, -baby_cue_lift() + breath))
+			_indicator_anchor(path, pram_offset + Vector2(aside, -baby_cue_lift() + breath)))
+
+## Compensates the bottom-only part of an indicator's SVG canvas expansion. Horizontal padding is
+## symmetric, so its bottom-center registration remains unchanged without a horizontal offset.
+func _indicator_anchor(path: String, at: Vector2) -> Vector2:
+	return at + Vector2(0.0, float(INDICATOR_BOTTOM_PADDING.get(path, 0.0)))
 
 ## *This spot is about to be bad; move* — or, doubled and red, *it is bad now.* Drawn over the
 ## player rather than over the thing that is coming, because "there is a car on this road" is
