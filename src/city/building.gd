@@ -194,6 +194,8 @@ const AMBIENT_SHUTTER_SHARE := 0.3
 const VENT_HOUSING := &"props/industrial_vent_housing"
 const VENT_ROTOR := &"props/industrial_vent_rotor"
 const VENT_ROTOR_B := &"props/industrial_vent_rotor_b"
+## Registration of both cropped rotor sources in the complete 32px housing canvas.
+const VENT_ROTOR_RECT := Rect2(21, 19, 6, 6)
 const HVAC_A := &"props/roof_hvac_unit"
 const HVAC_B := &"props/roof_hvac_unit_b"
 const DUCT_STRAIGHT := &"props/roof_duct_straight"
@@ -1104,7 +1106,7 @@ func _build_roof_layers() -> void:
 			var rotor := _new_roof_layer()
 			rotor.frame_b = _vent_frame_b
 			rotor.append(AtlasLibrary.region(VENT_ROTOR),
-					Rect2(top_left + Vector2(21, 19), Vector2(6, 6)),
+					Rect2(top_left + VENT_ROTOR_RECT.position, VENT_ROTOR_RECT.size),
 					AtlasLibrary.region(VENT_ROTOR_B))
 			_rotor_layers.append(rotor)
 			layer = _new_roof_layer()

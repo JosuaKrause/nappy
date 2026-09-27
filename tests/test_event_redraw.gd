@@ -30,7 +30,7 @@ func run(t) -> void:
 	_test_asking_for_the_key_does_not_freeze_the_caret(t)
 	_test_the_buskers_strum_moves_the_key_without_him_moving(t)
 	_test_the_cafe_sitters_lean_moves_the_key(t)
-	_test_the_smoke_the_water_and_the_steam_move_the_key(t)
+	_test_separated_details_keep_the_owner_key_stable(t)
 	_test_a_waiting_robber_turning_to_face_her_moves_the_key(t)
 	_test_a_chatting_mother_moves_her_key_while_frozen(t)
 	_test_a_raised_boom_moves_the_gates_key(t)
@@ -274,7 +274,7 @@ func _test_the_cafe_sitters_lean_moves_the_key(t) -> void:
 ## The crash's smoke, the burst main's fountain and the basement vent's steam alternate two frames
 ## off `_idle_stepping()` while standing perfectly still. The cloud-only steam moves its owner's
 ## key; the other two scenes keep theirs stable because their small detail layers own each swap.
-func _test_the_smoke_the_water_and_the_steam_move_the_key(t) -> void:
+func _test_separated_details_keep_the_owner_key_stable(t) -> void:
 	var periods := {
 		"car_accident": EventInstance.CAR_ACCIDENT_SMOKE_PERIOD,
 		"burst_water_main": EventInstance.BURST_MAIN_SPLASH_PERIOD,
