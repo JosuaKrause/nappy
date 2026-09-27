@@ -15,11 +15,11 @@ from PIL import Image, ImageDraw
 HERE = Path(__file__).resolve().parent
 BASE = HERE.parent
 ROOT = HERE.parents[3]
-NAMES = ('dog',)
+NAMES = ('dog', 'dog_front_diagonal', 'dog_back_diagonal')
 PAPER = (238, 235, 228, 255)
 # Same crop-plane scale as A; registration uses fixed body features, never feet.
-OFFSETS = {'dog': (0, 0)}
-LEG_TOP = {'dog': 145}
+OFFSETS = {'dog': (0, 0), 'dog_front_diagonal': (0, 0), 'dog_back_diagonal': (0, 0)}
+LEG_TOP = {'dog': 145, 'dog_front_diagonal': 187, 'dog_back_diagonal': 207}
 MANIFEST_SHA = 'd3cc2c2953c8b568913a9f52ee6b3536a2ceda266034fbd8ac94ead1ee3c4a2e'
 
 
@@ -31,7 +31,10 @@ def frozen() -> None:
     path = HERE / 'input-manifest.json'
     if MANIFEST_SHA and sha(path) != MANIFEST_SHA:
         raise SystemExit('authoritative input manifest changed')
-    for item in json.loads(path.read_text())['inputs']:
+    extra = HERE / 'diagonal-input-manifest.json'
+    if sha(extra) != '99af6224c220765c109fd101a19f2c0ba5556a31490932b7ce6aa5f80b4f62d6':
+        raise SystemExit('authoritative diagonal input manifest changed')
+    for item in json.loads(path.read_text())['inputs'] + json.loads(extra.read_text())['inputs']:
         source = ROOT / item['path']
         if not source.is_file() or sha(source) != item['sha256']:
             raise SystemExit(f"frozen input changed or missing: {item['path']}")

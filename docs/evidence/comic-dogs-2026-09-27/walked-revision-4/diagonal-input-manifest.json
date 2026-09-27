@@ -1,0 +1,16 @@
+{
+  "inputs": [
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/raw/dog_front_diagonal_b.png",
+      "sha256": "7f98580f732931e7dee5490df46de7c644dad8ad75925de97dad60ea1a02c1fe"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/raw/dog_back_diagonal_b.png",
+      "sha256": "68d6ea985326b7075a70fa3c2a08c30dc1f6aa83e17267a4e05788997ad2e61c"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/DIAGONAL-PROMPTS.md",
+      "sha256": "cfb938105b39b1748b18d914fed21ef294b7ca7cfe808ea857aa605cdff33b02"
+    }
+  ]
+}

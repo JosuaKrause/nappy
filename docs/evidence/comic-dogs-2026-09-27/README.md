@@ -6,13 +6,14 @@ atlas, or alter runtime behavior. The player acceptance gate remains open.
 
 ## Current proposal
 
-- [Walked-dog fixed-joint correction](walked-revision-3/README.md) supplies three B-frame overrides
-  with continuous thighs from the original haunches and torso-based placement. Its
-  [enlarged all-facing loop](walked-revision-3/review/all-facings-6x.gif),
-  [native-size loop](walked-revision-3/review/all-facings-1x.gif) and
-  [static A/B sheet](walked-revision-3/review/all-facings-6x.png) preserve every A and cardinal frame.
-  Appearance acceptance remains open; small head/outline differences and brighter back-diagonal
-  B shading remain visible.
+- [Walked-dog authored-geometry correction](walked-revision-4/README.md) supplies three B-frame
+  overrides with actual gathered hind-leg contours and changed foreleg reach. Its
+  [enlarged all-facing loop](walked-revision-4/review/all-facings-6x.gif),
+  [native-size loop](walked-revision-4/review/all-facings-1x.gif) and
+  [static A/B sheet](walked-revision-4/review/all-facings-6x.png) preserve every A and cardinal frame.
+  Separate color-free leg silhouettes expose geometry without relying on shading changes.
+  Appearance acceptance remains open; the linked record discloses displacement, ground-height
+  and body-redraw differences.
 - [Charging-dog source/candidate comparison](review-charging-dog.png) shows the same coverage for
   the charging family, whose appearance the player accepted. Its
   [A/B comparison](pose-comparison-charging-dog.gif) remains unchanged.
@@ -21,6 +22,8 @@ atlas, or alter runtime behavior. The player acceptance gate remains open.
   static hind legs and disappearing diagonal leg.
 - [Revision 2](walked-revision-2/README.md) remains rejected evidence: its changing contact points
   do not establish stable leg attachments relative to the torso.
+- [Revision 3](walked-revision-3/README.md) remains rejected evidence: plausible fixed roots and
+  swapped near/far shading do not establish the requested leg geometry.
 - [Walked-dog raw output](raw/walked-dog-grid.png) and
   [charging-dog raw output](raw/charging-dog-grid.png) preserve the generator's first useful
   results unchanged.

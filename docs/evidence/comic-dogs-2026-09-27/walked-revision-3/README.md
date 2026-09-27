@@ -1,9 +1,12 @@
 # Walked-dog fixed-joint correction
 
-This evidence proposal replaces only `dog_b`, `dog_front_diagonal_b` and `dog_back_diagonal_b`.
-The legs exchange reach through continuous thighs from the original haunches and forelegs from
-the original shoulders. Every first-pass walked A/cardinal frame and pursuing-dog artifact remains
-byte-identical. No runtime asset, atlas or drawing code changes.
+This rejected proposal covers only `dog_b`, `dog_front_diagonal_b` and `dog_back_diagonal_b`.
+The player's verdict in [tall-moose, changed leg geometry](../../../playtests/2026-09-27-tall-moose.md)
+is: "you still just recolor the same leg in the same position. that is not correct!"
+Plausible fixed roots and reassigned light/dark limb identities do not establish the requested
+movement. [Revision 4](../walked-revision-4/README.md) is the current proposal. These artifacts
+remain unchanged as evidence; every first-pass walked A/cardinal and pursuing frame is preserved.
+No runtime asset, atlas or drawing code changes.
 
 ## Review
 
@@ -28,11 +31,10 @@ byte-identical. No runtime asset, atlas or drawing code changes.
 
 These are synthetic frame comparisons, not gameplay captures. The native side is only 26×20 and
 the diagonals 38×28; individual joint bends cannot be judged there alone. Enlarged source pairs
-establish limb continuity while the reduced sheets check that legs and reach remain readable.
-The selected pairs have no clear sliding attachment or disappearing leg in the independent
-anatomy review. Appearance acceptance remains the player's: the back-diagonal B has brighter coat
-and collar shading, and small head, ear, tail and outline differences remain. The PNGs are not
-pixel-identical outside the legs, and passing file-integrity checks does not approve their look.
+show the proposed anatomy while the reduced sheets expose its native read. The apparent
+near/far exchange and inferred pivot labels do not prove that the same limb changes its contour
+and footprint correctly. Brighter back-diagonal B coat/collar shading and small head, ear,
+tail and outline differences are also visible. File-integrity checks do not approve appearance.
 
 ## Generation and selection
 
