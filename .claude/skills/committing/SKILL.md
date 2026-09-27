@@ -83,8 +83,9 @@ a background agent, not a polling loop in the orchestrating session.
 **Several PRs can merge in a row without re-greening each one.** Two rulesets guard `main`. The
 `main` ruleset requires a pull request and the `test` check — the doc lint, the boot check and the
 full suite, run on the merge result. The `main approvals` ruleset requires one approving review,
-from a reviewer bot or the player; repository admins (the player) may bypass it when merging a pull
-request, and resolving the review threads is not required. So green CI alone is not the gate.
+from a reviewer bot or the player; repository admins (the player) may bypass it on any pull request
+they merge, not only their own, and resolving the review threads is not required (a convention, not
+a gate — see above). So green CI alone is not the gate.
 Neither ruleset requires a branch to be up to date with `main`
 (`strict_required_status_checks_policy` is off), so an approved PR whose `test` check is green
 merges after `main` has moved under it as long as the merge is still clean; a conflict still blocks
@@ -115,7 +116,13 @@ and prints what it would do. It acts only when given a second literal `push` arg
 refuses a dirty tree, any branch but `main`, a `main` that is not level with `origin/main`, and a
 commit that already carries the newest `v*` tag — every refusal fires in the dry run too, so the
 dry run tells the truth about whether the real thing would work. Semver, and **`major` is reserved
-for a change that breaks or fundamentally alters the game**.
+for a change that breaks or fundamentally alters the game**. An agent's own `push` run goes through
+`uv run python tools/agent-identity.py run claude-coder -- tools/release.sh <part> push` (Codex the
+same as `codex-coder`) — "Who a commit and a pull request are from" is why, and
+`.claude/hooks/github-write-guard.sh` denies the bare form. The player's own run at their own
+terminal is unwrapped either way (`tools/lib_agent_role.sh`'s `agent_run` only wraps when
+`NAPPY_AGENT_ROLE` is set); the player's own go-ahead above is what release still needs regardless
+of who types the command.
 
 **A fix on `main` is not a fix on the site**, and that is the sentence to keep in mind before
 telling anybody the page is well. The site serves whatever the newest tag points at, so `git tag
