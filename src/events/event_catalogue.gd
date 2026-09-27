@@ -817,14 +817,24 @@ static func _fire_truck() -> EventDef:
 ## chose that day)"*. A set piece sited anywhere in the city is a day-3 that can pass without a
 ## fire in it and without an engine, which is the one authored beat of act I spent on nothing.
 ##
-## **The telegraph is no longer an arrival's warning; it is how long she has once it is in
-## view.** A fire that was already burning when she turned the corner has no approach to
-## telegraph — what would be damped is a thing that has already started — so the 2.2s below
-## buys the same escape the ordinary contract always has
-## (`(outer_radius - inner_radius) / WALK_SPEED` = 2.17s, `Tuning.validate_event()`), read now as
-## the moment she notices rather than the moment it arrives. The pulse, the obstruction (30px,
-## five flames) and the `burnt_shell` scar are unchanged: a place she finds still burns and still
-## blocks the way through, whichever way she came upon it.
+## **The fire itself has no field and costs nothing to stand beside or walk through: "the fire
+## goes on the building. the challenge is the fire truck not the fire" (PLAYTEST-144, statement
+## 12).** `intensity` is 0.0, and it carries no `obstructs_radius` either — a shape with none is the
+## established way to say "a look that does not obstruct" (`EventDef.solid()`'s own doc) — so
+## `EventInstance._draw_fire()` paints the flames (and the smoke above them) on the facade of the
+## building it stands against rather than leaving a body on the sidewalk, and `draws_body_shadow`
+## is off so nothing casts a shadow at the ground point nobody is standing on either: the sidewalk
+## in front of the fire stays clear. `inner_radius`/`outer_radius` (60/260) and the 2.2s telegraph
+## are unchanged — the fairness contract (`Tuning.validate_event()`) checks every row's geometry the
+## same way whether or not the field behind it emits anything
+## (`(outer_radius - inner_radius) / WALK_SPEED` = 2.17s), and `EventScheduler.WalkSiting.
+## _still_leaves_a_park_reachable()` still treats the same disc as ground a site has to leave her a
+## way round. The `burnt_shell` scar is unchanged: a place she finds still burns and still leaves a
+## shell, whichever way she came upon it — only the burning itself stopped being a thing that can
+## catch her. **The finale's own fire, inside the building on the last night, puts the field and the
+## obstruction back on a duplicate of this row** (`InteriorEvents._indoor_fire()`,
+## `src/finale/interior_events.gd`), because in there the fire is the hazard and there is no truck
+## to call.
 static func _burning_building() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burning_building"
@@ -836,14 +846,15 @@ static func _burning_building() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
 	def.sited_on_her_way = true
-	def.intensity = 18.0
+	def.intensity = 0.0
 	def.inner_radius = 60.0
 	def.outer_radius = 260.0
 	def.telegraph_time = 2.2
-	def.pulse_period = 3.0
-	# Five flames spanning ±31px, and you do not walk through a burning building. Not lethal by
-	# decision — what ends a day is in act III — so the body is simply the fire.
-	def.solid(GroundShape.point(30.0))
+	# A shape with no `obstructs_radius`: `EventDef.validate()` requires a shape wherever there is a
+	# look to draw, but nothing stands here for it to be solid at the width of, and no shadow to
+	# draw either — see `draws_body_shadow` below.
+	def.shape = GroundShape.point(30.0)
+	def.draws_body_shadow = false
 	def.scar_id = "burnt_shell"
 	def.spawns_on_sight = "fire_truck"
 	def.cost = 4

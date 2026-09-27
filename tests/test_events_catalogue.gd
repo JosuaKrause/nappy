@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_every_other_row_is_one_body(t)
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
+	_test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t)
 
 
 const _SPREAD_LOOKS: Array[EventDef.Look] = [
@@ -632,3 +633,21 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 				"'%s' draws %s, which nothing else draws (else '%s')"
 				% [def.id, icon.get_file(), seen.get(icon, "")])
 		seen[icon] = def.id
+
+## **The street fire has no field and no body — the fire truck it calls in is the danger, not the
+## fire** (PLAYTEST-144, statement 12: "the fire goes on the building. the challenge is the fire
+## truck not the fire"). The finale's own fire, indoors, needs both back: there is no truck to call
+## in a stairwell, and closing the shaft it stands in is the whole point of it there.
+## `InteriorEvents._indoor_fire()` is the duplicate that puts them back.
+func _test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t) -> void:
+	var street := EventCatalogue.by_id("burning_building")
+	t.check(street != null, "the catalogue still carries the street fire")
+	if not street:
+		return
+	t.check(street.intensity <= 0.0, "it costs nothing of its own to stand beside")
+	t.check(street.obstructs_radius <= 0.0, "and nothing to walk through")
+
+	var indoors := InteriorEvents._indoor_fire()
+	t.check(indoors.id == "burning_building", "the indoor fire is a duplicate of the same row")
+	t.check(indoors.intensity > 0.0, "but the finale's own copy still costs the meter")
+	t.check(indoors.obstructs_radius > 0.0, "and still closes the shaft it stands in")

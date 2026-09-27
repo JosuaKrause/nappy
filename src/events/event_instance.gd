@@ -3896,17 +3896,47 @@ func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void
 			false, {}, false, feet)
 	_view_sector = kept
 
-## Flames scaled by what the event is currently emitting, so a fire visibly roars.
+## How far each flame stands from the row's own centre line, and how tall the short and the tall
+## one of each alternating pair reach before the flicker scales them — climbing a good part of an
+## ordinary building's own wall (two to three tiles, `city.gd`'s own `_HEIGHT_TILES`) rather than
+## sitting at ankle height. The implementer's own choice, open to overturn: no field here reads the
+## actual building's height, so a one-tile sliver burns under flames taller than its own roofline.
+const _FIRE_SPREAD := 14.0
+const _FIRE_WIDTH := 22.0
+const _FIRE_HEIGHT := 60.0
+const _FIRE_HEIGHT_TALL := 26.0
+## The smoke sits above the tallest flame reaches at rest, not above wherever the flicker happens
+## to have it this frame — an anchor that rode the flicker would hop a couple of pixels every beat.
+const _SMOKE_SIZE := Vector2(40.0, 60.0)
+
+## The flames (and the smoke above them) are drawn against the wall this row stands at
+## (`_wall_offset()`), so the building reads as burning rather than the sidewalk in front of it —
+## *"the fire goes on the building. the challenge is the fire truck not the fire"* (PLAYTEST-144,
+## statement 12). `burning_building` carries no body of its own to draw a shadow under any more,
+## only the picture.
 func _draw_fire(canvas: CanvasItem = self) -> void:
-	var strength := 1.0
-	if def.intensity > 0.0:
-		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
-	_draw_body_shadow(canvas)
+	var against_the_wall := _wall_offset()
 	for i in 5:
-		var offset := (i - 2.0) * 11.0
+		var offset := (i - 2.0) * _FIRE_SPREAD
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
-		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		Sprites.draw_standing(canvas, _drawn(FLAME), Vector2(offset, 0.0), Vector2(18.0, height))
+		var height := (_FIRE_HEIGHT + i % 2 * _FIRE_HEIGHT_TALL) * flicker
+		Sprites.draw_standing(canvas, _drawn(FLAME), against_the_wall + Vector2(offset, 0.0),
+				Vector2(_FIRE_WIDTH, height))
+	var billowing := _idle_stepping(STEAM_BILLOW_PERIOD)
+	Sprites.draw_standing(canvas, _drawn(STEAM_B if billowing else STEAM),
+			against_the_wall + Vector2(0.0, -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL)), _SMOKE_SIZE)
+
+## How far the fire's own drawing sits from where the row was sited, toward the wall it stands
+## against — `CityMap.pavement_inward()` read the same way `_hut_doorway()` reads it, since these
+## nodes' local axes never rotate. The row's own siting already stands it a half-tile short of the
+## true wall (`EventScheduler._band_offset_of()`, `AGAINST_THE_BUILDING`), so this is exactly that
+## half-tile, closing the gap onto the frontage. `Vector2.ZERO` with no map, the harmless default a
+## data-level rig gets: the flames stay where they are drawn with no wall to reach for.
+func _wall_offset() -> Vector2:
+	if not _map:
+		return Vector2.ZERO
+	var inward := _map.pavement_inward(_map.world_to_tile(global_position))
+	return Vector2(inward) * (Tuning.TILE_SIZE * 0.5)
 
 ## A point `offset` along whichever axis `_spread_vertical` says this instance spreads on — local X
 ## by default, local Y on an east-west street. See `_spread_is_vertical`.

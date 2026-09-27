@@ -34,7 +34,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | busker               |  friction |      19.3 |              — |           — |         45.0 |        190.0 |           2.0 |          7.0 |          4.8 |         — |              34.7 |
 | construction         |      wall |       0.0 |              — |           — |         46.0 |        200.0 |           2.0 |            — |            — |         — |             -26.1 |
 | fire_truck           |      wall |      26.0 |              — |           — |         70.0 |        340.0 |           2.0 |            — |            — |     190.0 |              97.0 |
-| burning_building     | set_piece |      18.0 |              — |           — |         60.0 |        260.0 |           2.0 |          3.0 |          4.5 |         — |              41.7 |
+| burning_building     | set_piece |       0.0 |              — |           — |         60.0 |        260.0 |           2.0 |            — |            — |         — |             -33.9 |
 | burnt_shell          |  friction |       2.5 |              — |           — |         24.0 |         78.0 |           2.0 |            — |            — |         — |              -6.9 |
 | loose_dog            |      none |      39.0 |              — |           — |         30.0 |        140.0 |           2.0 |          2.2 |          9.8 |     132.0 |              69.3 |
 | market_stall         |      wall |      14.0 |              — |           — |         38.0 |         64.0 |           2.0 |          8.0 |          3.5 |         — |               8.5 |
@@ -92,7 +92,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | busker               |       6.1 |       6.1 |       6.0 |       5.5 |       4.3 |      -0.3 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | construction         |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | fire_truck           |      20.0 |      20.0 |      20.0 |      20.0 |      19.7 |      17.7 |      14.0 |       1.1 |      -6.0 |      -6.0 |
-| burning_building     |       5.2 |       5.2 |       5.2 |       5.2 |       4.8 |       3.0 |      -0.3 |      -6.0 |      -6.0 |      -6.0 |
+| burning_building     |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | burnt_shell          |      -3.5 |      -3.5 |      -4.1 |      -5.7 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | loose_dog            |      18.4 |      18.4 |      17.6 |      14.3 |       8.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | market_stall         |       2.8 |       2.8 |       0.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -150,7 +150,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | busker               |       0.6 |       0.6 |       0.6 |       0.4 |      -0.3 |      -2.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | construction         |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | fire_truck           |       8.3 |       8.3 |       8.3 |       8.3 |       8.1 |       7.0 |       5.0 |      -2.1 |      -6.0 |      -6.0 |
-| burning_building     |       0.2 |       0.2 |       0.2 |       0.2 |      -0.1 |      -1.1 |      -2.8 |      -6.0 |      -6.0 |      -6.0 |
+| burning_building     |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | burnt_shell          |      -4.6 |      -4.6 |      -4.9 |      -5.9 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | loose_dog            |       7.4 |       7.4 |       7.0 |       5.2 |       2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | market_stall         |      -1.2 |      -1.2 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -208,7 +208,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | busker               |         — |      12.0 |      11.2 |       7.1 |      -0.1 |
 | construction         |         — |     -25.9 |     -25.5 |     -23.9 |     -20.9 |
 | fire_truck           |      31.6 |      31.5 |      31.2 |      29.5 |      26.4 |
-| burning_building     |         — |      13.2 |      12.7 |      10.2 |       5.4 |
+| burning_building     |     -33.9 |     -33.8 |     -33.5 |     -32.3 |     -30.1 |
 | burnt_shell          |         — |      -6.3 |      -5.9 |       0.0 |       0.0 |
 | loose_dog            |      23.8 |      23.3 |      21.7 |      13.8 |       2.0 |
 | market_stall         |         — |       2.5 |       1.3 |       0.0 |       0.0 |
@@ -266,7 +266,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | busker               |         — |      -4.5 |      -4.8 |      -6.2 |      -8.7 |
 | construction         |         — |     -25.9 |     -25.5 |     -23.9 |     -20.9 |
 | fire_truck           |      10.9 |      10.8 |      10.7 |       9.9 |       8.4 |
-| burning_building     |         — |      -7.9 |      -8.1 |      -9.0 |     -10.6 |
+| burning_building     |     -33.9 |     -33.8 |     -33.5 |     -32.3 |     -30.1 |
 | burnt_shell          |         — |      -7.9 |      -7.2 |       0.0 |       0.0 |
 | loose_dog            |       9.7 |       9.5 |       8.7 |       4.8 |      -0.7 |
 | market_stall         |         — |      -2.2 |      -2.2 |       0.0 |       0.0 |
