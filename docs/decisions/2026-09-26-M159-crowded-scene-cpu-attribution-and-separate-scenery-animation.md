@@ -43,7 +43,7 @@ scenery changes, controlled before/after evidence and the wider phone/optimizati
 The player extends the separation to "the water fountain in the broken pipe texture or the smoke
 cloud from the car accident", requiring "only animate the small bits not the entire texture".
 They then say "write that down as a plan for now" and "with the whole analysis". The
-[separate-animation plan](../todo/2026-09-19-M159/separate-scenery-animation-from-static-ground.md) records all four cases and the
+[separate-animation contract](../evidence/m159-scenery-animation-2026-09-26/CONTRACT.md) records all four cases and the
 analysis. No implementation starts and no further measurements run until they resume the work.
 This replaces the implementation go-ahead above with a plan-only checkpoint. M100's existing
 water/smoke two-frame behavior and periods remain the visual contract; separating the pictures
@@ -69,3 +69,56 @@ the counter remains a no-op on native debug runs. Both sets of records retain th
 The merges are automatic, without conflict resolutions. Import/boot, doc lint and the combined
 visit-counter/scenery-animation checks pass. Visual and controlled performance evidence remain
 required before any claim that the animation optimization is effective.
+
+### Separate animation and controlled result
+
+The player clarifies that animated pixels are removed from the static sprite, moving parts get
+their own sprites, and the city block's static drawing never animates. Roof vents, south water,
+broken-pipe spray and crash smoke implement that separation. The original artwork, orientation,
+registration, shadow, collision, phase timing and foreground overlap are preserved. Runtime
+fixtures cover both event orientations, pause/resume and static-owner redraw invariants; the
+waterfront burst covers the actual bridge and bulkhead. Requested GIFs are embedded in PR #385
+with commit-pinned links. The [report](../evidence/m159-scenery-animation-2026-09-26/README.md)
+retains original bursts, rejected fixture attempts, source extraction and comparison evidence.
+
+Roof housing and furniture stay stationary; only the registered 6×6 rotor changes. Water owns a
+separate surface and is absent from both static ground cells and the composed ground sheet.
+Pipe/smoke SVG spans separate unchanged backgrounds from tightly cropped moving parts, preserving
+painter order. Complete event pictures remain available for halo tracing and badges; this adds
+375,408 base RGBA8 bytes to the event atlas. Atlas regions clear/rebind over removal/re-entry.
+Independent early review found and corrected the retained-region lifetime problem and obsolete
+full vent atlas entries, then the unused water source in the static sheet. The water regression
+compares a complete independently derived south-band set with explicit bridge exclusions.
+
+**Choices open to visual review:** water uses the existing artwork with a pausable shader ripple,
+up to 0.65px horizontally and 0.35px vertically, at angular rates of 0.7 and 0.5 radians/second.
+Separate source rasterization/compositing differs by at most one alpha level and three
+premultiplied-color levels in RGBA8. A transparent texel around moving SVG crop bounds preserves
+edge coverage. No new illustrated artwork is generated.
+
+The [native comparison](../evidence/m159-scenery-animation-2026-09-26/native/README.md) retains
+three alternating before/after pairs and one profiler-disabled pair, all accepted over identical
+five-second warmups and six-second active windows, with byte-identical collectors and the same
+main updates. Full-building draws fall from 180 to zero in every profiled window. Peak atlas
+lookups fall from 5,357–5,388 to 171–187 per frame; window totals fall from 60,868–64,039 to
+40,766–43,112. Baseline building drawing peaks at 8.809–10.066 ms inclusive; the replacement
+small-part callbacks peak at 0.026–0.040 ms. The fixture proves small parts actually advance.
+
+Whole-frame results are mixed. Profiled median pairs are 12.260→13.294, 12.901→11.914 and
+14.789→12.964 ms. The separate profiler-disabled callback-interval median is 10.963→10.999 ms;
+p95 rises slightly, while p99/max fall. One disabled pair is descriptive, not proof of a stable
+tail improvement. The evidence establishes reduced redraw work, not a general FPS, phone,
+browser or GPU gain. The arterial run does not isolate per-event spray/smoke speedups; their
+fixture establishes drawing ownership instead. Import/boot, affected suites, source parity,
+runtime invariants, lint and whitespace checks pass; full-suite CI and final review are separate
+gates. No PR merge or release is authorized.
+
+The player accepts a progress checkpoint: "I mean it's good progress for now we can push that"
+and asks to include the latest findings. They ask for the next hypotheses to be queued, then
+authorize marking the PR ready for review once pushed. Three items are filed under M159:
+event-shape classification caching, reuse of identical danger predictions, and reuse/lazy
+preparation of static visuals. Current after profiles still spend about 0.605–0.614 ms self time
+on `has_a_spread()` over 759–764 calls/frame, with 2,640–2,653 crowd contribution queries/frame.
+These support investigation; call counts do not establish identical inputs or hitch causation.
+Lazy preparation must measure the actual shared-sheet/draw-command architecture, preserve eager
+gameplay state and avoid first-visible-frame loading. No proposed follow-up is implemented here.

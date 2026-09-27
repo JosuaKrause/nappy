@@ -1,9 +1,9 @@
-**Separate scenery animation from static drawing.**
+**Scenery separation contract and original crowded-scene analysis.**
 
 **Implementation is authorized.** The player resumes on 2026-09-26: "main updated again -- read
 your brief and let's start with the animation optimization". Start with the measured roof-vent
 redraw, then carry the same separation through water, pipe spray and crash smoke.
-This is the next implementation contract for M159, a slow frame names the frame that was slow.
+This preserves the implementation contract for M159, a slow frame names the frame that was slow.
 The player's complete instructions are in [Sunny lynx](../../playtests/2026-09-26-sunny-lynx.md).
 The [full measurement report](../../evidence/entity-performance-2026-09-26/README.md) holds the raw
 streams, analysis outputs, commands, engine identity, rejection records and provenance.
@@ -17,6 +17,9 @@ building or event picture. The named cases are roof vents, the frozen water sout
 the fountain in the broken-pipe scene and the smoke from the car accident.
 
 The retained analysis below supplies the baseline and preservation contract for implementation.
+The [implementation report](README.md) and [controlled comparison](native/README.md) describe
+the resulting separation and its measured limits. The figures and source explanation below are
+the original investigation, retained as provenance rather than measurements of the final code.
 
 ## Measured scene and method
 
@@ -141,7 +144,7 @@ insufficient when a puff or spray uncovers pixels. Retain exact offsets after ti
 keep the animated asset genuinely small rather than storing another whole-scene transparent
 canvas. Composite each phase over the base to verify alignment, coverage and appearance.
 
-## Implementation proposal for when work resumes
+## Implementation contract
 
 1. Audit the named drawing paths and any comparable scenery animation, recording which static
    draw list each phase invalidates. Start with the measured building spike. Keep scene generation,
@@ -198,5 +201,5 @@ and waterfront scenes because the arterial baseline does not isolate those effec
 
 Do not claim mobile stutter is solved from native results. Phone/browser confirmation and the
 wider M159 optimization/atlas questions remain open. Run import/boot, the focused affected
-suites and doc lint when implementation resumes; full-suite verification remains CI's.
+suites and doc lint for implementation; full-suite verification remains CI's.
 Independent semantic and code review is required before any merge, which still needs permission.

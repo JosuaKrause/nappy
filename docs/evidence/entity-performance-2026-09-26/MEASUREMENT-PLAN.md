@@ -1,8 +1,9 @@
 # Crowded-scene frame profiling
 
-**The measurement record is retained; the current follow-up is plan only.** The player asks to
-write down the [separate-animation plan and full analysis](../../todo/2026-09-19-M159/separate-scenery-animation-from-static-ground.md).
-Do not start implementation or additional measurements until the player resumes them.
+**This retains the original crowded-scene profiling method.** The
+[separation contract and full analysis](../m159-scenery-animation-2026-09-26/CONTRACT.md) and
+[controlled implementation comparison](../m159-scenery-animation-2026-09-26/native/README.md)
+carry the animation follow-up and its measurement limits.
 This is the measurement method for M159, a slow frame names the frame that was slow. The source is
 [Sunny lynx, measure the work in a crowded scene](../../playtests/2026-09-26-sunny-lynx.md).
 
