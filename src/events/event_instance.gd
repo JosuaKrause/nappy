@@ -3543,7 +3543,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
-			_draw_spread(RUBBLE, "", canvas)
+			# Drawn on the building it stands against instead (`City._mark_the_burnt_frontage()`,
+			# `Building.Condition.BURNT`) — the body is still the `GroundShape` `has_a_spread()`
+			# and the corner-placement rule read, but no picture and no shadow ever go down for it
+			# (`draws_body_shadow` is off): nothing stands on the sidewalk here to draw.
+			pass
 		EventDef.Look.LOOSE_DOG:
 			_draw_loose_dog(canvas)
 		EventDef.Look.STALL:

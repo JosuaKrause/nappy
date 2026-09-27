@@ -835,6 +835,17 @@ static func _fire_truck() -> EventDef:
 ## obstruction back on a duplicate of this row** (`InteriorEvents._indoor_fire()`,
 ## `src/finale/interior_events.gd`), because in there the fire is the hazard and there is no truck
 ## to call.
+##
+## **It always catches on a wall the city actually draws, since the building itself has to be shown
+## burnt afterwards** (`City._mark_the_burnt_frontage()`, `Building.Condition.BURNT`) — *"the
+## building is what needs to be burnt, not an object next to the building"*. `AGAINST_THE_BUILDING`
+## only ever sites against an east-or-west wall (`EventScheduler._wants_this_side()`'s default
+## branch), which is real ground but never a wall `building.gd` draws a facade on — every building
+## is extruded south, from its own lot's south edge (`Building`'s own class doc). `AT_THE_FRONT`,
+## "the one face of a building the city draws" (`EventDef.Pavement`'s own doc), is a placement
+## choice for this row rather than the crew-pasting convention it usually serves: nothing else about
+## it asks for `pastes_a_front`. A proposal, open to overturn if a fire that can also catch on the
+## un-drawn walls turns out to matter more than a burnt shell with a real facade behind it.
 static func _burning_building() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burning_building"
@@ -844,7 +855,7 @@ static func _burning_building() -> EventDef:
 	def.first_day = 3
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
-	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
+	def.pavement_side = EventDef.Pavement.AT_THE_FRONT
 	def.sited_on_her_way = true
 	def.intensity = 0.0
 	def.inner_radius = 60.0
@@ -860,15 +871,18 @@ static func _burning_building() -> EventDef:
 	def.cost = 4
 	return def
 
-## What is left the next morning, and every morning after. Cordoned off, never repaired.
-## Almost silent — it is a reminder rather than a hazard, and it is on the same corner on
-## day 12 as it was on day 4.
+## What is left the next morning, and every morning after — cordoned off, never repaired, and
+## carried by the building rather than by an object of its own on the sidewalk in front of it:
+## `City._mark_the_burnt_frontage()` forces the one `Building` behind the scar to
+## `Building.Condition.BURNT` (blackened, roofless, windows gone), and `EventInstance` draws
+## nothing here at all — *"the building is what needs to be burnt, not an object next to the
+## building"*. Almost silent — it is a reminder rather than a hazard, and it is on the same corner
+## on day 12 as it was on day 4.
 ##
 ## **Silent and solid are not the same claim**, and reading "not an obstacle" as "no body" is how a
 ## burnt-out building becomes a thing you can stand inside. What it costs the meter is 2.5/s and
-## what it costs the route is a corner. `_draw_spread` draws the cordon at exactly the width of the
-## body, so this number is also how wide it looks: at 36 it is a shell, where a person's 11 would
-## draw a two-barrier sliver.
+## what it costs the route is a corner: the body (`GroundShape.band(36.0)`) is unchanged, a barrier
+## nobody ever sees drawn, since the building it stands against carries the picture instead.
 ##
 ## **Radii derived from the body.** Both lose the segment's own `half_length` (12, from `band(36)`)
 ## so the along-axis reach is unchanged: `inner_radius` 30 → 18, `outer_radius` 90 → 78. 18 falls
@@ -886,6 +900,7 @@ static func _burnt_shell() -> EventDef:
 	def.outer_radius = 78.0
 	def.telegraph_time = 0.7
 	def.solid(GroundShape.band(36.0))
+	def.draws_body_shadow = false
 	return def
 
 # ----------------------------------------- Act I: variety, and two with teeth ---

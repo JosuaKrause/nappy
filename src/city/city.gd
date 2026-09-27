@@ -163,6 +163,10 @@ const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## presence already answers "sealed as of this dawn" for every day after the one it was added on,
 ## and the moment it happens on its own day is `seal_home_door()`'s, called live.
 const SEALED_DOOR_SCAR := "sealed_door"
+## `GameState.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
+## `scar_id`), read by `_mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
+## `SEALED_DOOR_SCAR` above.
+const BURNT_FRONTAGE_SCAR := "burnt_shell"
 ## The street door sprite `_spawn_home()` built, kept so `seal_home_door()` can swap its texture
 ## live, the moment day 10's raid actually arrives, instead of waiting for a day that never
 ## rebuilds it — `build()` runs once for the whole run (see the class doc).
@@ -1099,6 +1103,37 @@ func _dress_blocks(state: CityState) -> void:
 		building.condition = _condition_for(
 				state.purpose_of(map.block_plans, _block_of(building.lot)))
 		building.day = _day
+	_mark_the_burnt_frontage()
+
+## Forces the one `Building` behind day 3's fire to `Building.Condition.BURNT`, overriding
+## whatever its own block's purpose just set above — *"the building is what needs to be burnt, not
+## an object next to the building"*. The block's purpose is unmoved (this building's block may still
+## be ordinary `RESIDENTIAL`, `COMMERCIAL` ground the arc never touches); only the one frontage the
+## fire actually reached shows it, which `Building.Condition.BURNT`'s own rendering already does in
+## full (blackened, roofless, windows gone) for the unrelated, scheduled `BURNT_OUT` block purpose
+## above — this reuses the same look for a different, per-building reason.
+##
+## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
+## about the run (`GameState.scars`) answers which `Building` it is, once, rather than a field
+## carried on the building itself. `burning_building` only ever catches on a wall this file actually
+## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
+## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.
+## _wants_this_side()`'s `AT_THE_FRONT` case checks) is always a real lot.
+##
+## Idempotent, like every other per-day override here: `Building.condition`'s own setter is a no-op
+## once it already says `BURNT`, so calling this from every `_dress_blocks()` pass — the ordinary
+## day and the finale's own dressing alike — costs nothing once the frontage is found, and finds
+## nothing before day 4, when the scar does not exist yet.
+func _mark_the_burnt_frontage() -> void:
+	for scar in GameState.scars:
+		if String(scar["id"]) != BURNT_FRONTAGE_SCAR:
+			continue
+		var wall_tile := map.world_to_tile(scar["position"] as Vector2) + Vector2i.UP
+		for building in _buildings:
+			if building.lot.has_point(wall_tile):
+				building.condition = Building.Condition.BURNT
+				return
+		return
 
 ## **One block's buildings, shown as what the block is now**, during the day rather than at dawn —
 ## day 11's market, boarded up ahead of her while she cannot see it (`ResistanceHappenings`). The

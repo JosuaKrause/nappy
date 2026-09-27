@@ -4,6 +4,7 @@ extends RefCounted
 
 const SEED := 4242
 const STEP := 1.0 / 60.0
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 var _map: CityMap
 
@@ -12,6 +13,7 @@ func run(t) -> void:
 	_test_acts_are_gated_by_day(t)
 	_test_a_protest_grows(t)
 	_test_scars_outlive_the_day_that_made_them(t)
+	_test_the_scarred_building_shows_burnt(t)
 	_test_a_park_stays_reachable_every_day(t)
 	_test_act_tints_differ(t)
 
@@ -99,6 +101,54 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 				t.close_to(plan.position.distance_to(where), 0.0,
 						"and it is on the same corner", 1.0)
 
+	GameState.scars = saved
+	GameState.day = saved_day
+
+## **The building the scar stands against shows burnt — never an object of its own on the
+## sidewalk in front of it** (`EventInstance` draws nothing at all for `burnt_shell` any more):
+## *"the building is what needs to be burnt, not an object next to the building"*.
+## `City._mark_the_burnt_frontage()` is the lookup, the shape of `board_neighbor_window()`/
+## `_home_door_building()` — a fixed fact about the run (the scar) answers which `Building` it is.
+func _test_the_scarred_building_shows_burnt(t) -> void:
+	var saved := GameState.scars.duplicate(true)
+	var saved_day := GameState.day
+	GameState.day = 4
+	GameState.scars = []
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	t.check(city._buildings.size() >= 2,
+			"seed %d: the city has at least two buildings to tell apart" % SEED)
+	if city._buildings.size() < 2:
+		city.free()
+		GameState.scars = saved
+		GameState.day = saved_day
+		return
+
+	var scarred: Building = city._buildings[0]
+	var untouched: Building = city._buildings[1]
+	t.check(scarred.condition == Building.Condition.LIVED_IN,
+			"the building starts out lived-in, before any scar")
+
+	# The sidewalk tile directly south of the scarred building's own south-west corner —
+	# `EventCatalogue._burning_building()`'s `AT_THE_FRONT` placement always sites one tile south
+	# of the wall it catches on, the same geometry `_mark_the_burnt_frontage()` reverses.
+	var wall_tile := scarred.lot.position + Vector2i(0, scarred.lot.size.y - 1)
+	var scar_tile := wall_tile + Vector2i.DOWN
+	GameState.add_scar("burnt_shell", city.map.tile_to_world(scar_tile))
+
+	city._mark_the_burnt_frontage()
+	t.check(scarred.condition == Building.Condition.BURNT,
+			"the building behind the scar is forced to Condition.BURNT")
+	t.check(untouched.condition == Building.Condition.LIVED_IN,
+			"a different building in the same city is untouched")
+
+	city._mark_the_burnt_frontage()
+	t.check(scarred.condition == Building.Condition.BURNT,
+			"calling it again, as every day's own dressing does, is a no-op rather than an error")
+
+	city.free()
 	GameState.scars = saved
 	GameState.day = saved_day
 
