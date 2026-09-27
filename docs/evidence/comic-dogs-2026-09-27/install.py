@@ -101,11 +101,7 @@ def verify() -> None:
             raise SystemExit(f"not installed: {installed}")
         if installed.read_bytes() != candidate.read_bytes():
             raise SystemExit(f"{installed} differs from its accepted candidate {candidate}")
-    stray = sorted(
-        p.name
-        for p in RUNTIME.glob("*dog*.png")
-        if p.stem not in MAPPING
-    )
+    stray = sorted(p.name for p in RUNTIME.glob("*dog*.png") if p.stem not in MAPPING)
     if stray:
         raise SystemExit(f"installed dog pictures with no accepted candidate: {stray}")
     print(f"{len(MAPPING)} dog pictures installed, each identical to its accepted candidate")

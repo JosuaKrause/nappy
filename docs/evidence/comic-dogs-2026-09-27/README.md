@@ -18,7 +18,8 @@ uv run python docs/evidence/comic-dogs-2026-09-27/install.py verify
 | Normal dog, every c | `walked-revision-5/candidates/` |
 | Charging dog, all ten | `candidates/charging-dog/` |
 
-[In-game bursts](in-game/README.md) show both families walking in the game.
+[In-game bursts](../m109-comic-dogs-in-game-2026-09-27/README.md) show both families walking in the
+game.
 
 ## The selected family
 
