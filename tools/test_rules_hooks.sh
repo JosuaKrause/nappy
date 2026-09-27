@@ -823,6 +823,11 @@ assert_guard "bash -c '...' whose only -I is inside a quoted pattern -> deny" de
     "bash -c 'git grep \"gcc -I\" x'"
 assert_guard "bash -c '...' with a quoted -C argument and a real -I -> allow" allow \
     "bash -c 'git -C \"/x y\" grep -I x'"
+# An empty quoted -C argument is still git's argument (-C "" stays in the current directory).
+assert_guard "git -C \"\" grep -> deny" deny 'git -C "" grep x'
+assert_guard "git -C '' grep -> deny" deny "git -C '' grep x"
+assert_guard "bash -c 'git -C \"\" grep x' -> deny" deny "bash -c 'git -C \"\" grep x'"
+assert_guard "git -C \"\" grep -I -> allow" allow 'git -C "" grep -I x'
 
 # $1 label  $2 expected  $3 command: assert_guard, plus a check that the hook decided it in under
 # 5 seconds, half its 10-second timeout.
@@ -1482,8 +1487,40 @@ else
     fail "the densest command under the bound took $((SECONDS - dense_under_start)) seconds"
 fi
 # An option's argument is skipped as one shell word, however it is quoted, escaped or joined by a
-# comma, so a quoted argument with a space in it no longer shifts the subcommand onto a later
-# word: the push after it is read as the push, and wrapped it still allows.
+# comma, so a quoted argument with a space in it is skipped whole and the word after it is the
+# subcommand: the push after it is read as the push, and wrapped it still allows. An empty quoted
+# argument is still a word, and a second-level quoted argument that starts with a space is still
+# the option's whole argument.
+assert_write_guard "git -C \"\" push (an empty quoted argument) -> deny" deny 'git -C "" push'
+assert_write_guard "git -C '' push -> deny" deny "git -C '' push"
+assert_write_guard "wrapped git -C \"\" push -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git -C "" push'
+assert_write_guard "echo \"\", then git status -> allow" allow 'echo ""; git status'
+assert_write_guard "bash -c \"git -c ' x=1' push\" -> deny" deny "bash -c \"git -c ' x=1' push\""
+assert_write_guard "bash -c \"git -C ' /tmp/x' commit\" -> deny" deny "bash -c \"git -C ' /tmp/x' commit -m m\""
+
+# A reserved word (do, then, else, {, !, if, while, until) or time/exec in front of a command
+# leaves it in command position, so a gh api call after one is a call of its own and scanned in
+# full; a field after a quoted separator counts as a write even under an earlier -X GET; and an
+# assignment whose value names a pushing script is not that script.
+gh_loop="gh api -X GET repos/o/r/issues --jq '.[].number' > ids; for n in \$(cat ids); do gh api repos/o/r/issues/\$n/comments --jq '.id | tostring' -f body=ping; done"
+assert_write_guard "a GET, then a for loop whose do posts a comment -> deny" deny "$gh_loop"
+assert_write_guard "the same loop inside bash -c '...' -> deny" deny \
+    "bash -c 'gh api -X GET repos/o/r/issues --jq \".[].number\" > ids; for n in \$(cat ids); do gh api repos/o/r/issues/\$n/comments --jq \".id | tostring\" -f body=ping; done'"
+assert_write_guard "a GraphQL read piped into { gh api ... -f body=x; } -> deny" deny \
+    "gh api graphql -f query='{viewer{login}}' | { gh api repos/o/r/issues/1/comments --jq '.a | .b' -f body=x; }; echo \$(true)"
+assert_write_guard "if ...; then gh api ... -f body=x; fi -> deny" deny \
+    "if true; then gh api repos/o/r/issues/1/comments --jq '.a | .b' -f body=x; fi; echo \$(true)"
+assert_write_guard "an unsure command assigning a pushing script's path, then sed on it -> allow" allow \
+    'echo $(date); p=tools/prune-merged.sh; sed -n 1,5p "$p"'
+assert_write_guard "time tools/prune-merged.sh -> deny" deny 'time tools/prune-merged.sh x'
+assert_write_guard "exec tools/prune-merged.sh -> deny" deny 'exec tools/prune-merged.sh x'
+assert_write_guard "exec -a name tools/prune-merged.sh -> deny" deny 'exec -a name tools/prune-merged.sh x'
+assert_write_guard "sudo -iu root tools/prune-merged.sh (a cluster ending in -u) -> deny" deny \
+    'sudo -iu root tools/prune-merged.sh x'
+assert_write_guard "time cat tools/release.sh, a read -> allow" allow 'time cat tools/release.sh'
+assert_write_guard "wrapped time tools/prune-merged.sh -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- time tools/prune-merged.sh x'
 assert_write_guard "git -C \"/x y\" push -> deny" deny 'git -C "/x y" push'
 assert_write_guard "git -c 'a=b c' push -> deny" deny "git -c 'a=b c' push"
 assert_write_guard "git -c k=a,b push (the shell does not split on a comma) -> deny" deny 'git -c k=a,b push'

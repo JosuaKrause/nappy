@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Adapt Codex lifecycle/tool payloads to the shared Claude hooks."""
 
+import contextlib
 import hashlib
 import json
 import os
@@ -19,43 +20,13 @@ SKILLS = ROOT / ".claude/skills"
 # so the two guards a shell command goes through share a budget that ends short of that, leaving
 # the rest for the interpreter's own start and the reply. A guard still running when it ends is
 # killed, and the command is denied: a command the guards could not read in time is exactly the
-# one a timed-out hook would let through unread.
+# one a timed-out hook would let through unread. Any other way a guard can fail -- a non-zero
+# exit, a reply that is not JSON, an error starting or killing it -- denies the same way, since an
+# adapter that crashes exits non-zero and Codex lets that call through too.
 GUARD_BUDGET_SECONDS = 8.0
 
 
-def run_guard(script: Path, payload: str, deadline: float) -> Optional[dict[str, Any]]:
-    """Run one guard hook; its parsed reply, None for an allow, or a deny once the deadline passes.
-
-    The guard runs in a session of its own so that a timeout kills its jq too: jq holds the
-    guard's stdout open, so killing bash alone would leave the read waiting for jq to finish.
-    """
-    remaining = deadline - time.monotonic()
-    if remaining > 0:
-        proc = subprocess.Popen(
-            ["bash", str(script)],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            start_new_session=True,
-        )
-        try:
-            stdout, stderr = proc.communicate(payload, timeout=remaining)
-        except subprocess.TimeoutExpired:
-            os.killpg(proc.pid, signal.SIGKILL)
-            proc.communicate()
-        else:
-            if proc.returncode != 0:
-                raise subprocess.CalledProcessError(proc.returncode, proc.args, stdout, stderr)
-            if not stdout.strip():
-                return None
-            output: dict[str, Any] = json.loads(stdout)
-            return output
-    reason = (
-        f"{script.name} did not finish inside the shell guards' {GUARD_BUDGET_SECONDS:.0f}-second share "
-        "of Codex's 10-second hook timeout, so this command is denied unread rather than let through. "
-        "Write any long text to a file first and pass the file, then run a short command."
-    )
+def guard_deny(reason: str) -> dict[str, Any]:
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -63,6 +34,50 @@ def run_guard(script: Path, payload: str, deadline: float) -> Optional[dict[str,
             "permissionDecisionReason": reason,
         }
     }
+
+
+def run_guard(script: Path, payload: str, deadline: float) -> Optional[dict[str, Any]]:
+    """Run one guard hook; its parsed reply, None for an allow, or a deny when it cannot answer.
+
+    The guard runs in a session of its own so that a timeout kills its jq too: jq holds the
+    guard's stdout open, so killing bash alone would leave the read waiting for jq to finish.
+    """
+    try:
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            proc = subprocess.Popen(
+                ["bash", str(script)],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                start_new_session=True,
+            )
+            try:
+                stdout, stderr = proc.communicate(payload, timeout=remaining)
+            except subprocess.TimeoutExpired:
+                # The group may already be gone, or hold only an unreaped zombie, which macOS
+                # answers with EPERM rather than ESRCH; the deny below stands either way.
+                with contextlib.suppress(OSError):
+                    os.killpg(proc.pid, signal.SIGKILL)
+                proc.communicate()
+            else:
+                if proc.returncode != 0:
+                    raise subprocess.CalledProcessError(proc.returncode, proc.args, stdout, stderr)
+                if not stdout.strip():
+                    return None
+                output: dict[str, Any] = json.loads(stdout)
+                return output
+    except Exception as error:
+        return guard_deny(
+            f"{script.name} failed ({type(error).__name__}: {error}), so this command is denied unread "
+            "rather than let through."
+        )
+    return guard_deny(
+        f"{script.name} did not finish inside the shell guards' {GUARD_BUDGET_SECONDS:.0f}-second share "
+        "of Codex's 10-second hook timeout, so this command is denied unread rather than let through. "
+        "Write any long text to a file first and pass the file, then run a short command."
+    )
 
 
 def main() -> None:

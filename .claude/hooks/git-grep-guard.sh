@@ -137,7 +137,8 @@ def plain_words:
 # the reading quadratic in the number of words; a `null` after the last character flushes the last
 # word.
 def flush:
-  if .cur != "" then
+  # An empty quoted word (`-C ""`) is still a word: git reads it as an argument.
+  if .cur != "" or .quoted then
     .emit += [if .quoted and ((.cur[0:3] | test("^[0-9]{0,2}[<>]")) or (.cur | IN(";", "&", "|", "(", ")", "`")))
               then "\u0001" + .cur else .cur end]
     | .cur = ""
@@ -169,31 +170,36 @@ def quoted_words:
 # `leveled_parts` then splits at the glue and gives each part a level (0 the first part of a shell
 # word, 1 a later part of it, 2 a later part inside the second level of quotes), so
 # `bash -c 'git -C "/x y" grep x'` skips `"/x y"` whole as `-C`'s argument and reaches `grep`.
+# Every opening quote also leaves U+0006, dropped from any part that has other characters, so an
+# empty quoted word (`-C ""`) is still a word, and a second-level quoted argument that starts with
+# a space (`bash -c "git -c ' x=1' grep x"`) still starts a word of its own level.
 def glued_text:
   [foreach explode[] as $c ({q: 0, iq: false, esc: false, emit: []};
      (if .iq then 5 else 4 end) as $g
      | if .esc then
          .esc = false
          | .emit = (if $c == 32 or $c == 9 then [$g] else [$c] end)
-         | (if .q == 2 and $c == 34 then .iq = (.iq | not) else . end)
+         | (if .q == 2 and $c == 34 then .iq = (.iq | not) | .emit += [6] else . end)
        elif $c == 92 and .q != 1 then .esc = true | .emit = []
        elif .q == 0 then
-         (if $c == 39 then .q = 1 | .emit = [] elif $c == 34 then .q = 2 | .emit = []
+         (if $c == 39 then .q = 1 | .emit = [6] elif $c == 34 then .q = 2 | .emit = [6]
           else .emit = [$c] end)
        elif (.q == 1 and $c == 39) or (.q == 2 and $c == 34) then .q = 0 | .iq = false | .emit = []
-       elif (.q == 1 and $c == 34) or (.q == 2 and $c == 39) then .iq = (.iq | not) | .emit = []
+       elif (.q == 1 and $c == 34) or (.q == 2 and $c == 39) then .iq = (.iq | not) | .emit = [6]
        elif $c == 32 or $c == 9 then .emit = [$g]
        else .emit = [$c] end;
      .emit[])]
   | implode;
+def placeholder_or_word:
+  if contains("\u0006") then (drop("\u0006") | if . == "" then "\u0006" else . end) else . end;
 def leveled_parts:
   [.[]
-   | if (contains("\u0004") or contains("\u0005")) | not then {w: ., c: 0}
+   | if (contains("\u0004") or contains("\u0005") or contains("\u0006")) | not then {w: ., c: 0}
      else
        [split("\u0004") | to_entries[] | .key as $j
-        | .value | split("\u0005") | to_entries[]
+        | [.value | split("\u0005")[] | placeholder_or_word | select(length > 0)]
+        | to_entries[]
         | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end)}]
-       | map(select(.w | length > 0))
        | (if length > 0 then .[0].c = 0 else . end)
        | .[]
      end];

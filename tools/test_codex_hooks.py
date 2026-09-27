@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise Codex payloads through the real shared hooks in isolated fixtures."""
 
+import importlib.util
 import json
 import os
 import shutil
@@ -11,6 +12,7 @@ import time
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 SOURCE = Path(__file__).resolve().parent.parent
 
@@ -642,6 +644,54 @@ class CodexHooksTest(unittest.TestCase):
         specific = output["hookSpecificOutput"]
         self.assertEqual(specific["permissionDecision"], "deny")
         self.assertIn("github-write-guard.sh did not finish", specific["permissionDecisionReason"])
+
+    def test_a_guard_that_fails_denies_rather_than_crashes_the_adapter(self) -> None:
+        # An adapter that raises exits non-zero, which Codex does not treat as a deny, so every way
+        # a guard can fail -- a non-zero exit, a reply that is not JSON -- denies instead.
+        guard = self.root / ".claude/hooks/github-write-guard.sh"
+        for body, error in (("exit 3\n", "CalledProcessError"), ("echo not-json\n", "JSONDecodeError")):
+            with self.subTest(error=error):
+                guard.write_text("#!/usr/bin/env bash\n" + body)
+                output = self.call_raw(command="git status")
+                assert output is not None
+                specific = output["hookSpecificOutput"]
+                self.assertEqual(specific["permissionDecision"], "deny")
+                self.assertIn(error, specific["permissionDecisionReason"])
+
+    def test_a_kill_that_raises_still_denies(self) -> None:
+        # macOS answers killpg on a group holding only an unreaped zombie with EPERM; the timeout's
+        # deny stands however the kill fails.
+        spec = importlib.util.spec_from_file_location("codex_hooks", self.root / "tools/codex-hooks.py")
+        assert spec is not None and spec.loader is not None
+        adapter = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(adapter)
+        script = self.base / "slow.sh"
+        script.write_text("#!/usr/bin/env bash\nsleep 2\n")
+
+        def refuse(pid: int, sig: int) -> None:
+            raise PermissionError(1, "Operation not permitted")
+
+        with mock.patch.object(adapter.os, "killpg", refuse):
+            output = adapter.run_guard(script, "{}", time.monotonic() + 0.3)
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("did not finish", output["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_commands_after_a_reserved_word_and_empty_arguments_are_read(self) -> None:
+        # A command after `do`, `then`, `{`, `time` or `exec` starts a command of its own, so a
+        # write there is scanned in full; a field after a quoted separator counts even under an
+        # earlier GET; an empty quoted -C argument is still the argument; and an assignment whose
+        # value names a pushing script is not that script.
+        loop = (
+            "gh api -X GET repos/o/r/issues --jq '.[].number' > ids; for n in $(cat ids); do "
+            "gh api repos/o/r/issues/$n/comments --jq '.id | tostring' -f body=ping; done"
+        )
+        for command in (loop, 'git -C "" push', "git -C '' grep x", "time tools/prune-merged.sh x"):
+            with self.subTest(command=command[:40]):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        output = self.call_raw(command='echo $(date); p=tools/prune-merged.sh; sed -n 1,5p "$p"')
+        self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
 
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
         command = (
