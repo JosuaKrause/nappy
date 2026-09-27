@@ -103,6 +103,15 @@ commit it was given against.** A review with nothing to say still says so, and w
 The reviewer never approves or requests changes through GitHub's buttons and never merges: the
 verdict is in the review's text, and merging is **committing**'s, under its permission rule.
 
+**The review posts as `claude-reviewer` when that identity is usable.** `uv run python
+tools/agent-identity.py status claude-reviewer` (**using-tools**) says so; when it does, the `gh`
+command that posts the review runs through `uv run python tools/agent-identity.py run
+claude-reviewer -- <command>` instead of running it directly, so the comments show as
+`claude-reviewer[bot]` rather than the player reviewing themself. When it does not (not created
+yet, not installed, or a cloud session), the review posts through the player's own account exactly
+as before — nothing about the verdict living in the review's text, or GitHub's own buttons staying
+unused, changes either way.
+
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.
 

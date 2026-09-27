@@ -8,6 +8,19 @@ description: The git workflow for this repo — one branch per work item, one co
 **Manage local branches and commits autonomously. Merging a PR requires explicit permission in
 the current session** — see "Merging".
 
+## Who a commit and a pull request are from
+
+**A coding agent commits, pushes and opens its pull request as its own GitHub identity when one is
+usable, and as the player's account otherwise.** `uv run python tools/agent-identity.py status
+<role>` (**using-tools**) says which: when it reports the role usable, every git and `gh` command
+for that piece of work runs through `uv run python tools/agent-identity.py run <role> -- <command>`
+instead of running it directly — Claude Code as `claude-coder`, Codex as `codex-coder` — so the
+commit, the push and the pull request all show as `<role>[bot]` rather than as the player talking
+to themself. When `status` reports the role not usable (not created yet, not installed on the
+repository, or a cloud session, where only `create` can work — see `tools/agent-identity.py`'s own
+module docstring), the work goes through the player's own account exactly as it did before, and the
+attribution lines this session was given stay on the commit and the PR description.
+
 ## Pushing
 
 **Always push branch work and create or update its pull request before ending the session.**
