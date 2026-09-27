@@ -321,16 +321,15 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 ## always; above it he is scenery; between them which side she approaches from decides whether he
 ## wakes.
 ##
-## `away_from` is set only when this guard is replacing one whose mark just moved — see
-## `_move_the_mark()`. A moved mark sits up to `NOTICE_RADIUS` (400px) from her, and a
-## bearing drawn from the full circle could land him toward her at as little as ~224px
-## (400 − 176, the band's own far edge) — on screen, appearing out of nothing. Restricted to
-## the half-circle facing away from her instead, the worst case — perpendicular to the away
-## direction — puts him at `sqrt(400² + 176²)` ≈ 437px, past the 367px half-diagonal that
-## makes a point off screen at this zoom (see `NOTICE_RADIUS`'s own doc), so he is never
-## drawn appearing from nothing.
-func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
-		away_from: Vector2 = Vector2.INF) -> void:
+## **Which side wakes him is no longer a coin flip: he always stands toward the far mouth of his
+## own alley from `at`** (`_far_alley_mouth()`), never toward the near one — M213, the player's
+## own words: *"the rubber in the alley with the mark is too close to the mark. It's impossible
+## to get the mark on most days. Let's always place the river at the other end of the alley"*
+## ("rubber"/"river" are dictation for *robber*, PLAYTEST-142 statement 5). `Vector2.INF` when
+## `at` is not on any alley this city built — every other guarded contact (a door, a mast's foot,
+## a swing, the burnt shell, a roadblock) — and the bearing falls back to the whole circle, as
+## before M213.
+func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2) -> void:
 	if day < TRAP_FIRST_DAY:
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
@@ -338,7 +337,8 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 		return
 	var min_distance := robbery.inner_radius + ContactPoint.REACH
 	var max_distance := robbery.pursues_within + ContactPoint.REACH
-	var guard_at := _draw_guard_position(rng, at, away_from, min_distance, max_distance,
+	var toward := _far_alley_mouth(at)
+	var guard_at := _draw_guard_position(rng, at, toward, min_distance, max_distance,
 			_walled_alleys())
 	if guard_at == Vector2.INF:
 		# **No trap is better than a trap in a wall.** `TRAP_DRAW_LIMIT` bearings found nowhere
@@ -558,17 +558,18 @@ func _a_clear_run(from: Vector2, to: Vector2) -> bool:
 ## home-block tile is kept as a fallback in case the budget runs out first. `Vector2.INF` when
 ## `TRAP_DRAW_LIMIT` draws found neither — see the caller for what that means.
 ##
-## `away_from` is set only when this guard is replacing one whose mark just moved — see
-## `_move_the_mark()`. A moved mark sits up to `NOTICE_RADIUS` (400px) from her, and a bearing
-## drawn from the full circle could land him toward her at as little as ~224px (400 − 176, the
-## band's own far edge) — on screen, appearing out of nothing. Restricted to the half-circle
-## facing away from her instead, the worst case — perpendicular to the away direction — puts him
-## at `sqrt(400² + 176²)` ≈ 437px, past the 367px half-diagonal that makes a point off screen at
-## this zoom (see `NOTICE_RADIUS`'s own doc), so he is never drawn appearing from nothing.
+## `toward` is `_far_alley_mouth(at)` for a chalk mark's own guard (M213) — the mouth of `at`'s
+## alley farther from it — or `Vector2.INF` for every other guarded contact, which draws from the
+## whole circle exactly as a mark's own guard did before M213. When it is set, the bearing is
+## drawn from the half-circle facing it rather than the far one: a walk in from the alley's near
+## mouth to the mark and back stays outside his `pursues_within` reach on the geometry alone,
+## where a bearing toward the near mouth routinely put him on that same walk. "It's fine if the
+## Robert doesn't get triggered every time" (PLAYTEST-144, statement 11; "Robert" is dictation for
+## *robber*) — this is a bias in his favor, not a guarantee against him.
 ##
 ## `walled_alleys` defaults empty for the bare-map rigs several tests in `tests/test_resistance.gd`
 ## drive with no `_city` — see `_walled_alleys()`, which is what the real caller passes.
-func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, away_from: Vector2,
+func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
 		min_distance: float, max_distance: float,
 		walled_alleys: Array[Rect2i] = []) -> Vector2:
 	var fallback := Vector2.INF
@@ -578,11 +579,11 @@ func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, away_from: Ve
 		# consequence otherwise looks like bad luck with the event scheduler.
 		var distance := rng.randf_range(min_distance, max_distance)
 		var angle: float
-		if away_from == Vector2.INF:
+		if toward == Vector2.INF:
 			angle = rng.randf() * TAU
 		else:
-			var facing_away := (at - away_from).angle()
-			angle = facing_away + rng.randf_range(-PI / 2.0, PI / 2.0)
+			var facing_toward := (toward - at).angle()
+			angle = facing_toward + rng.randf_range(-PI / 2.0, PI / 2.0)
 		var candidate := at + Vector2.RIGHT.rotated(angle) * distance
 		var tile := _map.world_to_tile(candidate)
 		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
@@ -593,6 +594,45 @@ func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, away_from: Ve
 		if fallback == Vector2.INF:
 			fallback = candidate
 	return fallback
+
+## The mark's own alley, as `[nearer, farther]` — the two ends of its long axis relative to `at` —
+## or `[]` when `at`'s own tile is not inside any alley this city built (a bare-point task's
+## contact, or a rig with no `_map`). `CityMap.alley_rects` is one `Rect2i` per through-alley
+## (`CityGenerator._alley_rect()`), always `ALLEY_WIDTH_TILES` (2) wide and the rest of the lot
+## long, so the long axis — the one whose ends are its two mouths — is whichever of the rect's own
+## dimensions is not that width.
+func _alley_ends(at: Vector2) -> Array[Vector2]:
+	var ends: Array[Vector2] = []
+	if not _map:
+		return ends
+	var tile := _map.world_to_tile(at)
+	for rect in _map.alley_rects:
+		if not rect.has_point(tile):
+			continue
+		var a: Vector2
+		var b: Vector2
+		if rect.size.y >= rect.size.x:
+			a = _map.tile_to_world(Vector2i(tile.x, rect.position.y))
+			b = _map.tile_to_world(Vector2i(tile.x, rect.end.y - 1))
+		else:
+			a = _map.tile_to_world(Vector2i(rect.position.x, tile.y))
+			b = _map.tile_to_world(Vector2i(rect.end.x - 1, tile.y))
+		if at.distance_to(a) <= at.distance_to(b):
+			ends.append(a)
+			ends.append(b)
+		else:
+			ends.append(b)
+			ends.append(a)
+		return ends
+	return ends
+
+## The mouth of `at`'s own alley that is farther from it — see `_alley_ends()` — or `Vector2.INF`
+## when `at` is on no alley this city built. M213, "the robber guarding a chalk mark always spawns
+## at the alley's other end from the mark": `_maybe_set_a_trap()` draws his bearing toward this
+## point rather than from the whole circle.
+func _far_alley_mouth(at: Vector2) -> Vector2:
+	var ends := _alley_ends(at)
+	return ends[1] if not ends.is_empty() else Vector2.INF
 
 ## Clear of any obstruction the rider carries, in a direction the day's own RNG chose — a
 ## fixed offset rather than a re-rolled one, so a contact that has to clear a body sits at a
@@ -1322,7 +1362,7 @@ func _track_sight_and_reposition(delta: float) -> void:
 	var nearest := _nearest_alley_within(here)
 	if nearest == Vector2.INF:
 		return
-	_move_the_mark(nearest, here)
+	_move_the_mark(nearest)
 
 ## The nearest `ALLEY` tile to `here` that is not closed, is walkable, and is not held, on the
 ## home block, inside a walled-off crossing alley, standing on a solid event body, or sealed off
@@ -1379,7 +1419,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 ## Moves an unseen mark to the alley she has just come near, and moves its guard with it —
 ## retiring the one standing over the old spot rather than leaving a robber with nothing
 ## left to guard.
-func _move_the_mark(new_world: Vector2, here: Vector2) -> void:
+func _move_the_mark(new_world: Vector2) -> void:
 	var old_tile := _map.world_to_tile(_contact.global_position)
 	var new_tile := _map.world_to_tile(new_world)
 	_contact.global_position = new_world
@@ -1388,7 +1428,7 @@ func _move_the_mark(new_world: Vector2, here: Vector2) -> void:
 	if _guard and is_instance_valid(_guard):
 		_city.events.retire(_guard)
 		_guard = null
-	_maybe_set_a_trap(_day, _rng, new_world, here)
+	_maybe_set_a_trap(_day, _rng, new_world)
 
 ## A warning delivered late is not a warning. The contact is gone for the rest of the run.
 func _expire(message: String) -> void:

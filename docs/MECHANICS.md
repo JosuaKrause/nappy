@@ -1210,7 +1210,9 @@ swept across the camera on the way to somewhere else. Until then, walking more t
 alley tile within that radius of her instead — the alley's own mouth, on the path rather
 than off it — skipping an alley a completed step's mark already stood at as long as some
 other one is still in reach. Its guard moves with it, at the same 66–176px band from
-wherever it lands.
+wherever it lands, and always toward the far mouth of that alley from the mark rather than
+the near one, so entering and leaving from the mark's own end is the side likelier to leave
+him asleep.
 
 Neither the mark nor its guard is ever offered ground she cannot reach that day: a held
 segment, a sealed alley, or the ground behind a region wall's band — including a crossing
