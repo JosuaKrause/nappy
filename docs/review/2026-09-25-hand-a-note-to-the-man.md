@@ -9,4 +9,11 @@ the different picture and loss line change the answer?**
 On a street where he starts to her side rather than above or below her — about a fifth to a
 quarter of handovers, depending on the row (`tests/probes/m137_trap_arrival.gd`) — walking directly
 away from the handover outlasts him. **Does that read as a fair escape, or as the badge lying about
-what she can outwalk?** Record is `docs/decisions/2026-09-13-M137.md`, the trap comes to her.
+what she can outwalk?**
+
+Since M205, the man she just left keeps shouting — and charging her — for 2.5s after the handover,
+longer than the robber's own 2.0s notice, so both are live at once: standing still, the robber
+catches her (about 2.2s) before the man would have stopped shouting on his own. **Does the robber
+closing in while the man is still shouting at her read as one cost or as two things landing on top
+of each other, more than a walker should have to answer at once?** Record is
+`docs/decisions/2026-09-13-M137.md`, the trap comes to her.

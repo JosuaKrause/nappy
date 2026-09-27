@@ -19,8 +19,10 @@
 # review list are one file per thing, so two pull requests adding to them no longer meet in one
 # file; a branch still on the old single files is converted with tools/convert-queue-edits.py. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
 # `./tools/check.sh` (every one of the three has to pass), commits a message naming the three
-# revisions and the resolution, and pushes to the branch's own remote — over SSH first, falling
-# back to HTTPS through gh's own credential helper when SSH is refused.
+# revisions and the resolution, and pushes to the branch's own remote — attempted first over
+# `origin`'s own configured transport (HTTPS too, under `run`'s own token, once `insteadOf`
+# rewrites the SSH form; the invoking user's own login, SSH typically, without `run`), falling back
+# to HTTPS through gh's own credential helper, as the same identity, if that attempt is refused.
 #
 # It never touches the pull request itself: no `gh pr merge`, no enabling auto-merge. The semantic
 # review of the merge — whether the result actually reconciles both sides' intent, per the
@@ -34,8 +36,18 @@
 # reason and exits non-zero.
 #
 # UPDATE_PR_CLAUDE=1 appends the repository's Claude co-author trailer to the commit message.
-# Unset (the default) leaves it off, since a human running this script by hand should not sign
-# the commit as Claude.
+# Unset (the default) leaves it off, since it names a specific assistant and this script's own
+# commit and push already carry whichever identity ran it (the player's own, or an agent's under
+# `run` -- see below).
+#
+# **Running this by hand at your own terminal is fine, and unwrapped.** Every GitHub call (the
+# origin fetch, the PR-to-branch lookup, the commit, each push attempt) runs through the caller's
+# own agent identity when one is set (tools/lib_agent_role.sh's `agent_run`, minting each one a
+# fresh token): run this script itself through `uv run python tools/agent-identity.py run <role> --
+# tools/update-pr.sh ...`, which sets NAPPY_AGENT_ROLE for `agent_run` to read back. With that
+# unset -- a human running it directly, not through an agent's own wrapped call -- `agent_run`
+# calls gh/git directly instead, exactly as this script always did. `--dry-run` never reaches a
+# write and needs no wrapper either way.
 #
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
@@ -48,9 +60,12 @@ Merges origin/main into a pull request's branch: fetches, finds the branch's wor
 scratch one under $TMPDIR), merges with --no-ff --no-commit, and aborts naming the files on any
 conflict. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
 `./tools/check.sh`, commits a message naming the branch tip, main tip, merge base and the
-resolution, and pushes (HTTPS fallback if SSH is refused). Never merges the pull request itself
-and never enables auto-merge; says so in its own output, alongside the files main changed since
-the merge base, since that review is the merger's.
+resolution, and pushes it: first over origin's own configured transport (HTTPS with the bot's
+token under tools/agent-identity.py run, whatever origin uses -- SSH, say -- with your own login
+without it), then, if that is refused, once more over HTTPS through gh's credential helper, as the
+same identity. Never merges the pull request itself and never enables auto-merge; says so in its
+own output, alongside the files main changed since the merge base, since that review is the
+merger's.
 
   --dry-run    Fetch and report what would conflict (via git merge-tree --write-tree), without
                creating, checking out or otherwise touching any worktree. Exits 0 for a clean
@@ -106,6 +121,9 @@ fi
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root" || exit 1
 
+# shellcheck source=tools/lib_agent_role.sh
+source "$root/tools/lib_agent_role.sh"
+
 refuse() {
     echo "refusing: $*" >&2
     exit 1
@@ -123,12 +141,12 @@ worktree_of() {
 }
 
 echo "fetching $remote ..."
-git fetch --quiet "$remote" || refuse "git fetch $remote failed"
+agent_run git fetch --quiet "$remote" || refuse "git fetch $remote failed"
 
 # ---- resolve the target to a branch name --------------------------------------------------
 if [[ "$target" =~ ^[0-9]+$ ]]; then
     command -v gh >/dev/null 2>&1 || refuse "gh is required to resolve PR #$target to a branch name"
-    branch="$(gh pr view "$target" --json headRefName -q .headRefName 2>/dev/null)" \
+    branch="$(agent_run gh pr view "$target" --json headRefName -q .headRefName 2>/dev/null)" \
         || refuse "gh pr view $target failed -- is #$target a real, open pull request?"
     [[ -n "$branch" ]] || refuse "gh pr view $target returned no branch name"
 else
@@ -285,23 +303,30 @@ if [[ -n "${UPDATE_PR_CLAUDE:-}" ]]; then
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 fi
 
-git -C "$target_dir" commit --quiet -m "$commit_msg" || refuse "git commit failed"
+agent_run git -C "$target_dir" commit --quiet -m "$commit_msg" || refuse "git commit failed"
 echo "committed $(git -C "$target_dir" rev-parse --short HEAD) on $branch"
 
-# ---- push, SSH first, HTTPS via gh's credential helper if SSH is refused ---------------------
-if git -C "$target_dir" push --quiet "$remote" "HEAD:refs/heads/$branch"; then
+# ---- push, over origin's own configured transport first, gh's own HTTPS credential helper next -
+# Each push mints its own fresh installation token (tools/lib_agent_role.sh's `agent_run`) rather
+# than relying on the one this script may itself have been wrapped in. Under `run`, the first
+# attempt already goes out over HTTPS with that token (`insteadOf` rewrites an SSH `origin`), and
+# the second is the same bot over an explicit HTTPS URL. Without a role, the first attempt uses
+# `origin`'s own transport and the invoking user's login for it (SSH, typically), and the second
+# is that same user over HTTPS through gh's own credential helper. Either way the second attempt
+# changes the transport, never the identity.
+if agent_run git -C "$target_dir" push --quiet "$remote" "HEAD:refs/heads/$branch"; then
     echo "pushed to $remote/$branch"
 else
-    echo "SSH push failed; falling back to HTTPS via gh's credential helper" >&2
+    echo "push over origin's own transport failed; falling back to HTTPS via gh's credential helper" >&2
     origin_url="$(git -C "$target_dir" remote get-url "$remote")"
     https_url="$(printf '%s' "$origin_url" | sed -E 's#^git@([^:]+):#https://\1/#')"
     case "$https_url" in
         *.git) ;;
         *) https_url="$https_url.git" ;;
     esac
-    git -C "$target_dir" -c credential.helper= -c credential.helper='!gh auth git-credential' \
+    agent_run git -C "$target_dir" -c credential.helper= -c credential.helper='!gh auth git-credential' \
         push --quiet "$https_url" "HEAD:refs/heads/$branch" \
-        || refuse "push failed over both SSH and HTTPS ($https_url)"
+        || refuse "push failed over both origin's own transport and gh's credential helper ($https_url)"
     echo "pushed to $https_url refs/heads/$branch"
 fi
 

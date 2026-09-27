@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_walking_away_leaves_it_untouched(t)
 	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
 	_test_a_perform_contact_rides_on_its_instance(t)
+	_test_the_notes_handover_completes_at_his_inner_radius_not_reach(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
@@ -225,6 +226,7 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 	_player = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	_player.add_child(camera)
 	t.add_child(_player)
 	_player.set_physics_process(false)
@@ -243,7 +245,9 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 	contact._physics_process(STEP)
 	t.check(not contact.is_done, "out of reach of where the rider is now")
 
-	# The rider moves; the contact follows it rather than staying where it started.
+	# The rider moves; the contact follows it rather than staying where it started. Index 2's own
+	# `completes_at_inner_radius` (M205) still completes on the first tick she is in reach -- it
+	# only changes which radius that reach is measured against, not whether it is instant.
 	instance.position = Vector2.ZERO
 	contact._physics_process(STEP)
 	t.check(contact.is_done, "and completes once she reaches wherever the rider has gone")
@@ -251,6 +255,77 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 	contact.free()
 	instance.free()
 	_player.free()
+
+## M205, "the note costs, and the ordinary day" -- fails before the fix: the old code completed
+## the instant `ContactPoint.REACH` (36px) was reached, which sits inside a rider's 45px
+## `inner_radius`, so a note handed over on the way past landed only the last few pixels of his
+## full-strength field before he left. A fork proposed fixing that with a dwell -- standing
+## inside `inner_radius` for a couple of seconds before it completes -- and the player rejected
+## it outright: "the player should stand for 2.5s? no way. the moment the player touches the
+## inner circle it counts as delivered." So this pins the simpler fix instead: day 6's note
+## completes on the very first tick she is within his `inner_radius`, even short of `REACH`,
+## while an ordinary step at the identical distance does not complete at all, and stepping short
+## of `inner_radius` altogether does not complete either.
+func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t) -> void:
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	player.add_child(camera)
+	t.add_child(player)
+	player.set_physics_process(false)
+
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
+	t.add_child(instance)
+	instance.set_process(false)
+
+	var step := ResistanceSteps.by_index(2)
+	t.check(step.completes_at_inner_radius, "day 6's note is the one step this applies to")
+	t.check(ContactPoint.REACH < instance.def.inner_radius,
+			"the case this test distinguishes -- REACH sits inside inner_radius -- or the checks " +
+			"below prove nothing")
+
+	# Between REACH (36px) and inner_radius (45px): outside the ordinary REACH check, but inside
+	# the wider circle the note actually uses.
+	var between := (ContactPoint.REACH + instance.def.inner_radius) * 0.5
+	player.global_position = Vector2.RIGHT * between
+
+	var note_contact := ContactPoint.new()
+	note_contact.ride(step, instance, Vector2.ZERO)
+	t.add_child(note_contact)
+	note_contact.set_physics_process(false)
+	note_contact._physics_process(STEP)
+	t.check(note_contact.is_done,
+			"one tick inside inner_radius completes it, even though REACH alone would not have")
+	note_contact.free()
+
+	# The identical distance, on an ordinary step that never sets `completes_at_inner_radius`:
+	# REACH is what it checks, and this distance sits outside it.
+	var ordinary_step := ResistanceSteps.Step.new()
+	t.check(not ordinary_step.completes_at_inner_radius,
+			"a bare Step defaults to the ordinary REACH check")
+	var ordinary_contact := ContactPoint.new()
+	ordinary_contact.ride(ordinary_step, instance, Vector2.ZERO)
+	t.add_child(ordinary_contact)
+	ordinary_contact.set_physics_process(false)
+	ordinary_contact._physics_process(STEP)
+	t.check(not ordinary_contact.is_done,
+			"the same distance does not complete an ordinary step's REACH check")
+	ordinary_contact.free()
+
+	# Outside inner_radius altogether: too far for the note either.
+	player.global_position = Vector2.RIGHT * (instance.def.inner_radius + 5.0)
+	var outside_contact := ContactPoint.new()
+	outside_contact.ride(step, instance, Vector2.ZERO)
+	t.add_child(outside_contact)
+	outside_contact.set_physics_process(false)
+	outside_contact._physics_process(STEP)
+	t.check(not outside_contact.is_done, "outside inner_radius, the note is not delivered either")
+	outside_contact.free()
+
+	instance.free()
+	player.free()
 
 func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 	var instance := EventInstance.new()
@@ -1048,6 +1123,8 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 
 		var completed: Array[int] = []
 		director._contact.completed.connect(func(index: int) -> void: completed.append(index))
+		# Step 2's own `completes_at_inner_radius` (M205) still fires on the first tick she is
+		# standing on the retargeted contact, exactly as an ordinary REACH-based step would.
 		director._contact._physics_process(STEP)
 		t.check(completed == [2], "touching the retargeted contact completes step 2 itself")
 
@@ -1102,8 +1179,14 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 		director._contact._physics_process(STEP)
 		t.check(completed == [2], "the step completes on the second look-alike, the one she hands it to")
 		t.check(director._rider == second, "whose contact it is")
+		# He does not leave the instant she hands it over (M205): he keeps shouting, and charging
+		# her, for `NOTE_HANDOVER_LINGER_SECONDS` first.
+		t.check(not second.is_leaving and not first.is_leaving and not seeded.is_leaving,
+				"nobody leaves the instant she hands it over — he keeps shouting first")
+		director._process(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
 		t.check(second.is_leaving and not first.is_leaving and not seeded.is_leaving,
-				"and he is the one who leaves; the one she walked past keeps shouting")
+				"and once he has lingered that long, he is the one who leaves; the one she walked " +
+				"past keeps shouting")
 
 		player.free()
 		director.free())
@@ -1312,8 +1395,12 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 								"seed %d: the same handover sends him from the same place"
 								% seed_value, 0.01)
 					starts.append(start)
-				t.check(rider.is_leaving,
-						"seed %d: the man she handed it to leaves, as before" % seed_value)
+				# He does not leave the instant she hands it over (M205): he keeps shouting, and
+				# charging her, for `NOTE_HANDOVER_LINGER_SECONDS` first — unaffected by the
+				# robber's own clock, which is all this loop has advanced.
+				t.check(not rider.is_leaving,
+						"seed %d: the man she handed it to keeps shouting, not leaving instantly"
+						% seed_value)
 				player.free()
 				director.free())
 		GameState.completed_resistance_alley_tiles = saved_tiles
@@ -1660,6 +1747,9 @@ func _test_starting_a_day_resets_the_package_flag(t) -> void:
 ## The look-alike she never reached is a second live `homeless_yeller`, spawned directly rather
 ## than waiting for the scheduler to place one, so the test does not depend on the seed placing a
 ## second one that day.
+## Split into two moments (M205, "he keeps shouting for a bit"): the instant the note changes
+## hands, and once `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` has actually elapsed. He does
+## not leave the first moment — he stays and keeps shouting, still charging her, until the second.
 func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 	_with_clean_run(func() -> void:
 		var director := _director_on_the_yeller_perform(t)
@@ -1673,10 +1763,23 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 
 		director._on_contact_completed(2)
 
-		t.check(rider.is_leaving, "the one she reached stops shouting and leaves")
+		t.check(not rider.is_leaving,
+				"the one she reached keeps shouting the instant the note is handed over")
+		t.check(rider.contribution_at(rider.global_position) > 0.0,
+				"and still charges her, since he has not started leaving yet")
+		t.check(not decoy.is_leaving and decoy.contribution_at(decoy.global_position) > 0.0,
+				"a look-alike she never reached is left exactly alone, still shouting")
+
+		director._process(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS - STEP)
+		t.check(not rider.is_leaving,
+				"and still hasn't, a frame short of the full linger")
+
+		director._process(2.0 * STEP)
+		t.check(rider.is_leaving,
+				"and stops shouting and leaves once he has lingered that long")
 		t.close_to(rider.contribution_at(rider.global_position), 0.0,
 				"and contributes nothing to the meter the same frame", 0.001)
-		t.check(not decoy.is_leaving, "a look-alike she never reached is left exactly alone")
+		t.check(not decoy.is_leaving, "a look-alike she never reached is still left exactly alone")
 		t.check(decoy.contribution_at(decoy.global_position) > 0.0,
 				"still shouting, still emitting")
 
@@ -1796,7 +1899,11 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 				"touching it activates the yeller perform the same day")
 		var rider: EventInstance = attempt._rider
 		attempt._on_contact_completed(2)
-		t.check(rider != null and rider.is_leaving, "completing it sends the rider away")
+		t.check(rider != null and not rider.is_leaving,
+				"completing it keeps him shouting first, not sent away yet")
+		attempt._process(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
+		t.check(rider != null and rider.is_leaving,
+				"and sends him away once he has lingered that long")
 		attempt.free()
 
 		t.check(GameState.finish_day(GameEnums.DayResult.LOST_CRYING),

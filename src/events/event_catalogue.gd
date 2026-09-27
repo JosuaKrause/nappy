@@ -1952,10 +1952,15 @@ static func _alley_robbery() -> EventDef:
 ## chase` are the two pursuers whose chase is longer than `Tuning.PURSUIT_TIME`, and
 ## `tests/test_events_costs.gd` names both as such.
 ##
-## What that leaves her: standing still, he lunges from his stand-off about 1.6s after he appears
-## and reaches her about 0.6s later; walking into him, the lunge comes sooner and still at his
-## stand-off; walking directly away, he closes at 38px/s and catches her about 7.5s after he
-## appeared, half a second inside his chase.
+## What that leaves her: the man she just left keeps shouting, and charging her, for
+## `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205) — longer
+## than this row's own 2.0s notice, so his field is still live for the whole of it whichever way
+## she answers. Standing still, he lunges from his stand-off about 1.6s after he appears and
+## reaches her about 0.6s later, before the man would have stopped shouting on his own; walking
+## into him, the lunge comes sooner and still at his stand-off; walking directly away, he closes
+## at 38px/s and catches her about 7.4s after he appeared; running for `PURSUIT_SHAKEN_OFF` shakes
+## him off. Whether shouting-plus-chasing at once is more than a walker should answer is
+## `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here.
 ##
 ## **His own look, `ROBBER_GIVING_CHASE`, drawing the alley robber's own pictures**, the way
 ## `door_guard` draws a roadblock's guard: he never waits, so it is only ever the lunge, and the

@@ -95,13 +95,44 @@ records what was decided about it.
 
 Each comment carries what a finding needs to be acted on without the reviewer present: what is
 wrong, a concrete case where it fails or misleads, and what the fix is where one is clear. Post the
-inline comments as **one** review (event COMMENT) with a short summary rather than one comment per
-finding; a finding with no line to hang on — a missing doc, a missing test, a missing picture —
-goes in the summary. **The summary ends with the verdict, *ready* or *not ready*, and the head
-commit it was given against.** A review with nothing to say still says so, and what it checked.
+inline comments as **one** review with a short summary rather than one comment per finding; a
+finding with no line to hang on — a missing doc, a missing test, a missing picture — goes in the
+summary. **The summary ends with the verdict, *ready* or *not ready*, and the head commit it was
+given against.** A review with nothing to say still says so, and what it checked.
 
-The reviewer never approves or requests changes through GitHub's buttons and never merges: the
-verdict is in the review's text, and merging is **committing**'s, under its permission rule.
+**The review's GitHub event follows the verdict**: APPROVE when it is *ready*, REQUEST_CHANGES
+when it is *not ready*, and COMMENT for an interim or partial review that gives neither verdict
+yet. *(2026-09-26, the player, once the four identities existed: "a reviewer app will be allowed
+to approve pull requests".)* The verdict still lives in the review's own text either way — the
+event is what GitHub shows beside it, not a replacement for writing it out. **The reviewer still
+never merges**: merging is **committing**'s, under its permission rule, whatever the review's
+event says.
+
+**A reviewer bot's APPROVE counts toward `main`'s required approval** (**committing** says what
+that requires), the same as the player's own.
+
+**A review thread is resolved only by whoever opened it** — a reviewer bot resolves its own
+threads once satisfied, a thread the player opened is the player's to resolve; the author of a fix
+replies on the thread and never resolves it. *(2026-09-26, the player: "also add a note that only
+whoever raised a concern can resolve it, too.")* **It is a convention, not a gate**: an unresolved
+thread blocks neither an approval nor a merge, and no ruleset requires thread resolution.
+*(2026-09-26: "but dont enforce that resolving all comments is required for approval. resolving is
+more of a gentlement's agreement".)*
+
+**The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review
+as `claude-reviewer`, a Codex review as `codex-reviewer` — never the player's own account. `uv run
+python tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer`
+(**using-tools**) says whether the role is usable; the `gh` command that posts the review then
+runs through `uv run python tools/agent-identity.py run claude-reviewer -- <command>` (or
+`codex-reviewer`) instead of running it directly, so the comments and the review event show as
+`claude-reviewer[bot]` or `codex-reviewer[bot]`. **When the role is not usable (not created yet,
+not installed, or a cloud session), the review stops there and is reported to the player instead —
+it is never posted as the player.** *(2026-09-26, asked what an agent does when its identity is
+unusable, the player chose "Stop and tell me".)* The same `PreToolUse` hook that makes committing's
+rule mechanical (`.claude/hooks/github-write-guard.sh`) covers `gh pr review` too, denying it
+unless it is wrapped in `run <role> --`. **An admin action no bot identity can perform** (a
+repository ruleset, a GitHub App's own permissions) **is the player's to do directly, never
+something to wrap and retry.**
 
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.

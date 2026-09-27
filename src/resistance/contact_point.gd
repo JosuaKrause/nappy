@@ -75,7 +75,20 @@ func _physics_process(delta: float) -> void:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:
 			return
-	if global_position.distance_to(_player.global_position) <= REACH:
+	var distance := global_position.distance_to(_player.global_position)
+	# M205, "the note costs, and the ordinary day": day 6's note (the only step with
+	# `ResistanceSteps.Step.completes_at_inner_radius` set -- see that field's own doc)
+	# completes the instant she is within the rider's own `inner_radius` (45px, his
+	# full-strength field) rather than the generic `REACH` (36px) every other step uses.
+	# `REACH` sits inside a rider's own `inner_radius`, so the generic check always landed
+	# only the last few pixels of an approach; the player, offered a fork that would have
+	# made her stand in this wider circle for a while first, rejected it outright: "the
+	# player should stand for 2.5s? no way. the moment the player touches the inner circle
+	# it counts as delivered."
+	if _rider and step and step.completes_at_inner_radius:
+		if distance <= _rider.def.inner_radius:
+			_complete()
+	elif distance <= REACH:
 		_complete()
 	queue_redraw()
 
