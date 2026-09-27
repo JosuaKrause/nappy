@@ -1,0 +1,6 @@
+<!-- Registered crop from burst_water_main_vertical, painter-order span. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="21" height="15" viewBox="15 114 21 15" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"><defs>
+    <clipPath id="burst-v-board">
+      <rect x="4" y="6" width="12" height="13" rx="1" />
+    </clipPath>
+  </defs><path d="M17 118 C18 121 19 124 21 126 M33 116 C34 119 34 122 33 125" fill="none" stroke="#74b3d6" stroke-width="0.8" /></svg>

@@ -3,6 +3,8 @@ extends RefCounted
 
 func run(t) -> void:
 	_test_roof_rotors(t)
+	_test_event_parts(t)
+	_test_water_ownership(t)
 
 func _test_roof_rotors(t) -> void:
 	var building := Building.new()
@@ -31,7 +33,79 @@ func _test_roof_rotors(t) -> void:
 		t.check(not is_instance_valid(layer), "rebuild releases every superseded roof layer")
 	for rotor in building._rotor_layers:
 		t.check(rotor.frame_b, "rebuilding the roof preserves the current phase")
+	var old_rotor: WeakRef = weakref(building._rotor_layers[0]._textures[0])
+	t.remove_child(building)
+	t.check(building._roof_layers.is_empty(), "tree exit releases every cached roof region")
+	if not AtlasLibrary.is_acquired(&"buildings"):
+		t.check(old_rotor.get_ref() == null, "the last building retains no atlas texture after exit")
+	t.add_child(building)
+	t.check(not building._rotor_layers.is_empty() and building._rotor_layers[0].frame_b,
+			"reentry acquires fresh regions and preserves the animation phase")
 	building.footprint = Vector2(32, 32)
 	t.check(building._rotor_layers.is_empty() and not building.is_processing(),
 			"a roof without vents releases them and stops its animation callback")
 	building.free()
+
+func _test_event_parts(t) -> void:
+	AtlasLibrary.acquire(&"events")
+	for id: String in ["car_accident", "burst_water_main"]:
+		for vertical: bool in [false, true]:
+			var instance := EventInstance.new()
+			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
+			instance._spread_vertical = vertical
+			t.add_child(instance)
+			instance._process(instance.def.telegraph_time + 0.01)
+			var scenery := instance._scenery
+			t.check(scenery != null and not scenery.moving_layers.is_empty(),
+					"%s/%s has independently moving detail" % [id, vertical])
+			var body := instance._obstruction
+			var centers := instance.solid_part_centres()
+			var key := instance._picture_key()
+			var initial: bool = scenery.moving_layers[0].frame_b
+			var period := EventInstance.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
+					else EventInstance.BURST_MAIN_SPLASH_PERIOD
+			instance._process(period * 0.5)
+			for layer in scenery.moving_layers:
+				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
+			for layer in scenery.static_layers:
+				t.check(not layer.frame_b, "stationary surroundings retain their phase")
+			t.check(instance._picture_key() == key, "animation leaves the static event key alone")
+			t.check(instance._obstruction == body and instance.solid_part_centres() == centers,
+					"animation preserves both collision resource and placement")
+			instance._finish()
+			t.check(not scenery.visible, "a finished event hides every scenery layer")
+			t.remove_child(instance)
+			t.check(scenery.moving_layers.is_empty() and scenery.static_layers.is_empty(),
+					"detaching the event releases retained atlas regions")
+			t.add_child(instance)
+			t.check(not scenery.moving_layers.is_empty(), "reentry rebinds event scenery regions")
+			instance.free()
+			t.check(not is_instance_valid(scenery), "removing an event releases its scenery")
+	AtlasLibrary.release(&"events")
+
+func _test_water_ownership(t) -> void:
+	var packed: PackedScene = load("res://scenes/world/city.tscn")
+	var city: City = packed.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(4242))
+	var water := city._south_water
+	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
+	for tile in water.cells:
+		t.check(city._ground.get_cell_source_id(tile) == -1,
+				"animated water has no duplicate pixel owner in the static TileMap")
+		t.check(city._border_source(tile.x, tile.y, City.OUTSIDE_DEPTH_TILES) == GroundTiles.WATER,
+				"water respects the border's corner and bridge ownership")
+	var cells := water.cells.duplicate()
+	water._process(0.25)
+	t.check(water.elapsed > 0.0 and water.cells == cells,
+			"ripple time advances without repainting any ground cell")
+	city._ground.remove_child(water)
+	t.check(water._texture == null and water.material == null,
+			"detaching water releases its atlas region and shader material")
+	city._ground.add_child(water)
+	t.check(water._texture != null and water.elapsed > 0.0,
+			"reentry rebinds the water region without resetting its clock")
+	city._paint_ground()
+	t.check(not is_instance_valid(water), "repaint releases the prior water and material")
+	t.check(city._south_water.cells == cells, "repaint preserves the shoreline and bridge gap")
+	city.free()

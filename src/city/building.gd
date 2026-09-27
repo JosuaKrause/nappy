@@ -191,8 +191,6 @@ const AMBIENT_SHUTTER_SHARE := 0.3
 # tiles and inside the Buildings layer, so a roof unit never enters the y-sorted comparison the
 # class doc's own warning is about.
 
-const VENT_A := &"props/industrial_vent"
-const VENT_B := &"props/industrial_vent_b"
 const VENT_HOUSING := &"props/industrial_vent_housing"
 const VENT_ROTOR := &"props/industrial_vent_rotor"
 const VENT_ROTOR_B := &"props/industrial_vent_rotor_b"
@@ -446,11 +444,14 @@ func _enter_tree() -> void:
 	AtlasLibrary.acquire(&"buildings")
 
 func _exit_tree() -> void:
+	_clear_roof_layers()
 	AtlasLibrary.release(&"buildings")
+	request_ready()
 
 func _ready() -> void:
-	_collision = CollisionShape2D.new()
-	add_child(_collision)
+	if _collision == null:
+		_collision = CollisionShape2D.new()
+		add_child(_collision)
 	_rebuild()
 
 func _process(delta: float) -> void:
@@ -1086,13 +1087,9 @@ static func _shuffle(cells: Array[Vector2i], rng: RandomNumberGenerator) -> void
 ## Static spans and small rotors share the authored furniture order. Child layers inherit the
 ## building's pause mode and stay in its Buildings layer, never y-sorted against street actors.
 func _build_roof_layers() -> void:
-	for layer in _roof_layers:
-		layer.free()
-	_roof_layers.clear()
-	_rotor_layers.clear()
-	if _station_layer != null:
-		_station_layer.free()
-		_station_layer = null
+	_clear_roof_layers()
+	if _roof_furniture.is_empty() and not power_station:
+		return
 	var layer := _new_roof_layer()
 	for entry in _roof_furniture:
 		var cell: Vector2i = entry["cell"]
@@ -1100,7 +1097,7 @@ func _build_roof_layers() -> void:
 		var at := _cell(cell.x, wall_tiles() + cell.y)
 		var anchor := at + Vector2(TILE * span * 0.5, TILE)
 		var vent: bool = entry["kind"] == _Furniture.VENT
-		var texture := AtlasLibrary.region(VENT_HOUSING if vent else _furniture_texture(entry["kind"]))
+		var texture := AtlasLibrary.region(_furniture_texture(entry["kind"]))
 		var top_left := anchor - Vector2(texture.get_width() * 0.5, texture.get_height())
 		layer.append(texture, Rect2(top_left, texture.get_size()))
 		if vent:
@@ -1116,6 +1113,15 @@ func _build_roof_layers() -> void:
 		add_child(_station_layer)
 		_station_layer.draw.connect(_draw_station_layer)
 
+func _clear_roof_layers() -> void:
+	for layer in _roof_layers:
+		layer.free()
+	_roof_layers.clear()
+	_rotor_layers.clear()
+	if _station_layer != null:
+		_station_layer.free()
+		_station_layer = null
+
 func _new_roof_layer() -> SceneryLayer:
 	var layer := SceneryLayer.new()
 	_roof_layers.append(layer)
@@ -1128,7 +1134,7 @@ func _draw_station_layer() -> void:
 func _furniture_texture(kind: int) -> StringName:
 	match kind:
 		_Furniture.VENT:
-			return VENT_B if _vent_frame_b else VENT_A
+			return VENT_HOUSING
 		_Furniture.HVAC_A:
 			return HVAC_A
 		_Furniture.HVAC_B:

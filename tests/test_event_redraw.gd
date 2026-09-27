@@ -272,9 +272,8 @@ func _test_the_cafe_sitters_lean_moves_the_key(t) -> void:
 	instance.free()
 
 ## The crash's smoke, the burst main's fountain and the basement vent's steam alternate two frames
-## off `_idle_stepping()` while standing perfectly still, so every frame swap has to be a key change
-## or the gate freezes the scene on whichever frame it drew first. Walked over the steam's whole
-## blow (its instance is one blow and then finishes) and over three periods of each seal.
+## off `_idle_stepping()` while standing perfectly still. The cloud-only steam moves its owner's
+## key; the other two scenes keep theirs stable because their small detail layers own each swap.
 func _test_the_smoke_the_water_and_the_steam_move_the_key(t) -> void:
 	var periods := {
 		"car_accident": EventInstance.CAR_ACCIDENT_SMOKE_PERIOD,
@@ -305,7 +304,10 @@ func _test_the_smoke_the_water_and_the_steam_move_the_key(t) -> void:
 			key = now_key
 		t.check(instance.position == start, "%s did not move at all" % id)
 		t.check(swaps >= 2, "%s swapped frames at least twice while live (%d)" % [id, swaps])
-		t.check(silent_swaps == 0, "and every one of %s's swaps moved the key" % id)
+		if id == "basement_steam":
+			t.check(silent_swaps == 0, "every cloud-only steam swap moves its owner's key")
+		else:
+			t.check(silent_swaps == swaps, "%s's small-detail swaps leave its owner key alone" % id)
 		instance.free()
 	# The crash's two frames stand on the same ground contacts, so the second frame keeps the shadow.
 	for vertical in [false, true]:
