@@ -1,0 +1,188 @@
+{
+  "animated": true,
+  "arguments": [
+    "tests/probes/scenery_animation_runtime.tscn"
+  ],
+  "context": "Synthetic layout of production nodes; roof 1.7x, horizontal scenes 2x, vertical 1.6x, water 1.3x",
+  "draw_counts": {
+    "building_static": 0,
+    "burst_water_main_motion": 72,
+    "burst_water_main_owner": 0,
+    "burst_water_main_static": 0,
+    "car_accident_motion": 10,
+    "car_accident_owner": 0,
+    "car_accident_static": 0,
+    "roof_rotor": 2,
+    "roof_static": 0,
+    "water_surface": 0
+  },
+  "duration_seconds": 2.962977,
+  "engine": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "frames": [
+    {
+      "elapsed_seconds": 0.013998,
+      "file": "frame-000.png"
+    },
+    {
+      "elapsed_seconds": 0.0972749999999998,
+      "file": "frame-001.png"
+    },
+    {
+      "elapsed_seconds": 0.18137,
+      "file": "frame-002.png"
+    },
+    {
+      "elapsed_seconds": 0.264239,
+      "file": "frame-003.png"
+    },
+    {
+      "elapsed_seconds": 0.347598,
+      "file": "frame-004.png"
+    },
+    {
+      "elapsed_seconds": 0.430367,
+      "file": "frame-005.png"
+    },
+    {
+      "elapsed_seconds": 0.51445,
+      "file": "frame-006.png"
+    },
+    {
+      "elapsed_seconds": 0.597301,
+      "file": "frame-007.png"
+    },
+    {
+      "elapsed_seconds": 0.680909,
+      "file": "frame-008.png"
+    },
+    {
+      "elapsed_seconds": 0.764481,
+      "file": "frame-009.png"
+    },
+    {
+      "elapsed_seconds": 0.847401,
+      "file": "frame-010.png"
+    },
+    {
+      "elapsed_seconds": 0.93066,
+      "file": "frame-011.png"
+    },
+    {
+      "elapsed_seconds": 1.014335,
+      "file": "frame-012.png"
+    },
+    {
+      "elapsed_seconds": 1.097497,
+      "file": "frame-013.png"
+    },
+    {
+      "elapsed_seconds": 1.180403,
+      "file": "frame-014.png"
+    },
+    {
+      "elapsed_seconds": 1.264184,
+      "file": "frame-015.png"
+    },
+    {
+      "elapsed_seconds": 1.347494,
+      "file": "frame-016.png"
+    },
+    {
+      "elapsed_seconds": 1.430753,
+      "file": "frame-017.png"
+    },
+    {
+      "elapsed_seconds": 1.514311,
+      "file": "frame-018.png"
+    },
+    {
+      "elapsed_seconds": 1.597475,
+      "file": "frame-019.png"
+    },
+    {
+      "elapsed_seconds": 1.681031,
+      "file": "frame-020.png"
+    },
+    {
+      "elapsed_seconds": 1.764379,
+      "file": "frame-021.png"
+    },
+    {
+      "elapsed_seconds": 1.847725,
+      "file": "frame-022.png"
+    },
+    {
+      "elapsed_seconds": 1.930826,
+      "file": "frame-023.png"
+    },
+    {
+      "elapsed_seconds": 2.013974,
+      "file": "frame-024.png"
+    },
+    {
+      "elapsed_seconds": 2.097615,
+      "file": "frame-025.png"
+    },
+    {
+      "elapsed_seconds": 2.181423,
+      "file": "frame-026.png"
+    },
+    {
+      "elapsed_seconds": 2.264838,
+      "file": "frame-027.png"
+    },
+    {
+      "elapsed_seconds": 2.349107,
+      "file": "frame-028.png"
+    },
+    {
+      "elapsed_seconds": 2.431123,
+      "file": "frame-029.png"
+    },
+    {
+      "elapsed_seconds": 2.513884,
+      "file": "frame-030.png"
+    },
+    {
+      "elapsed_seconds": 2.597901,
+      "file": "frame-031.png"
+    },
+    {
+      "elapsed_seconds": 2.680795,
+      "file": "frame-032.png"
+    },
+    {
+      "elapsed_seconds": 2.764898,
+      "file": "frame-033.png"
+    },
+    {
+      "elapsed_seconds": 2.847962,
+      "file": "frame-034.png"
+    },
+    {
+      "elapsed_seconds": 2.931024,
+      "file": "frame-035.png"
+    }
+  ],
+  "paused_clocks_held": true,
+  "reason": "frame_cap",
+  "resumed_clocks": [
+    1.117147,
+    5.35057,
+    5.35057
+  ],
+  "schema_version": 1,
+  "static_held": true,
+  "status": "complete",
+  "target_fps": 12
+}

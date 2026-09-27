@@ -43,8 +43,23 @@ registration and source composition; runtime bursts establish animation and sort
 
 ## Verification status
 
-This is implementation checkpoint evidence. Runtime GIFs, pause/resume drawing observations and
-controlled native before/after timing are still pending. The focused tests exercise ownership,
+`scenery-parts.gif` shows an enlarged synthetic fixture of production nodes, including both
+event orientations. `waterfront.gif` shows the actual south shore, fixed bulkhead and bridge
+(seed 4242, day 1, `--spawn edge:s --walk 0.1s7p --invincible --no-save`). Both retain 36 frames
+and their real timestamps; `burst-gif.py` quantizes timestamp boundaries to GIF centiseconds.
+The whole waterfront run retains its original directory name. These are visual review artifacts,
+not timing benchmarks. The water ripple is a proposal for human review.
+
+The fixture's complete burst records zero building/static-roof/event-owner/event-static/water
+draw callbacks during capture, two rotor callbacks, 72 pipe-motion callbacks and ten smoke-motion
+callbacks across both axes. All animation clocks hold while paused and advance after resuming.
+Its two rejected launches establish no visual or timing result: the first fails script parsing
+on an untyped diagnostic bool before capture; the second fails a no-vent precondition and its
+partial frames/log remain in `rejected-fixture-no-vent`. Full headless fixture construction passes
+before the final retry. Captures use code checkpoint 224e1022 plus the fixture source; the static
+water-source cleanup is not part of the waterfront launch's loaded source.
+
+Controlled native before/after timing is still pending. The focused tests exercise ownership,
 phase changes, static scene keys, unchanged collisions, water/ground separation, repaint and
 resource release/reentry. A headless check does not establish actual draw callback counts.
 
