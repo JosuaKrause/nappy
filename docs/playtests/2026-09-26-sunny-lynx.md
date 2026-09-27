@@ -80,3 +80,22 @@ identical danger predictions, and reuse/lazy preparation of static visuals ahead
 These are proposals to measure, not claims that their mechanisms are chosen or their gains proven.
 
 > "and mark the PR ready to review once everything is pushed"
+
+## Visual approval and review corrections
+
+> "look at the review and let's discuss how to tackle each item"
+
+The assistant proposes fixing water-shader first-draw warmup and standalone atlas fixtures,
+renaming the misleading redraw test, replacing weak assertions without banning valid layer
+overlap, centralizing rotor registration, moving the source generator into tools, normalizing
+the original evidence folder's name, reducing unrelated handoff changes, and writing the general
+partial-animation rule into current documentation and authoring skills. The remaining café,
+street-musician and poster-crew cases are proposed as an explicit follow-up audit for this
+checkpoint. The assistant asks for the actual source of the visual approval reported by another
+reviewer, rather than treating permission to push as appearance approval.
+
+> "I approve every visual change. I said it to the other agent. Saying it here again so you can record it. other than that I agree with your assessments"
+
+The approval covers the separated roof vent, pipe spray, crash smoke and water ripple shown in
+the PR. The appearance review closes. The player accepts the correction plan and the explicit
+follow-up audit; phone/browser performance remains a separate measurement question.

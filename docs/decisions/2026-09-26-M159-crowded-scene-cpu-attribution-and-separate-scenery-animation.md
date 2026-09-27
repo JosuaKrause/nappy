@@ -148,3 +148,12 @@ passes 3,093 checks; import/boot and whitespace checks pass. This is a focused r
 No artwork, draw geometry, animation clock or gameplay changes. The archived timings remain
 measurements of `0fed117c`; the final reference-count correction affects stream-in/out and is
 not remeasured, so those results are not presented as fresh measurements of the final head.
+
+The player then explicitly approved every visual change: "I approve every visual change. I said
+it to the other agent. Saying it here again so you can record it. other than that I agree with
+your assessments" ([Sunny lynx](../playtests/2026-09-26-sunny-lynx.md)). This approves the water
+ripple and separated vent, spray and smoke; the appearance review closes. Earlier proposal
+wording above records how the design was introduced, not an outstanding request for approval.
+Phone/browser performance remains unverified. The player also accepts the review correction
+plan and an explicit follow-up audit of the café, street musician and poster crew rather than
+silently claiming that all partially animated sprites have been migrated.
