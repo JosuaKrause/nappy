@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M226 — The pursuing dog keeps its day-3 timing, and the other warnings fit it · asked for 2026-09-26
 
