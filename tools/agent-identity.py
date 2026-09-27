@@ -23,8 +23,10 @@ place the role table lives, so a later role is one row. Three subcommands:
         Mints a token for <role> and os.execvpe()s <command> with it: GH_TOKEN/GITHUB_TOKEN set to
         the installation token, GIT_AUTHOR_NAME/GIT_COMMITTER_NAME set to "<slug>[bot]",
         GIT_AUTHOR_EMAIL/GIT_COMMITTER_EMAIL set to the noreply address GitHub attributes to that
-        bot, and NAPPY_AGENT_ROLE set to the role. The literal `--` is required; everything after
-        it is the command, unvalidated.
+        bot, NAPPY_AGENT_ROLE set to the role, and git's own HTTPS auth (GIT_CONFIG_COUNT/KEY_n/
+        VALUE_n) pointed at the same token for this one child process, so a push authenticates as
+        the bot even when the remote is an SSH URL (see build_run_environment's own docstring).
+        The literal `--` is required; everything after it is the command, unvalidated.
 
 Configuration lives under $NAPPY_AGENTS_DIR, or ~/.config/nappy-agents if that is unset: one
 <role>.json (app_id, slug, bot_id, name, html_url) and one <role>.pem per role. The directory is
@@ -615,9 +617,40 @@ def run_manifest_flow(
 # --------------------------------------------------------------------------------------- run's env ---
 
 
+def git_https_auth_config(token: str, base_env: Mapping[str, str]) -> dict[str, str]:
+    """`GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_n`/`GIT_CONFIG_VALUE_n` that make git talk to GitHub over
+    HTTPS with `token`, for this one child process only -- appended after any `GIT_CONFIG_COUNT`
+    `base_env` already carries, never clobbering it. Needed because `origin` here is an SSH remote
+    (`git@github.com:JosuaKrause/nappy.git`): without this, `run`'s own git identity is the bot but
+    a push still authenticates with the player's own SSH key. Two `url.<base>.insteadOf` entries
+    redirect both SSH forms `origin` may use (`git@github.com:owner/repo.git` and
+    `ssh://git@github.com/owner/repo.git`) to the HTTPS remote, and one `http.<base>.extraheader`
+    carries the installation token as a Basic `Authorization` header (the same header curl sends
+    for `x-access-token:<token>`, base64-encoded) -- so nothing writes the token into a URL git
+    might echo in a log or an error, and nothing touches a git config file on disk.
+    """
+    try:
+        start = int(base_env.get("GIT_CONFIG_COUNT", "0"))
+    except ValueError:
+        start = 0
+    basic = base64.b64encode(f"x-access-token:{token}".encode()).decode("ascii")
+    entries = [
+        ("url.https://github.com/.insteadOf", "git@github.com:"),
+        ("url.https://github.com/.insteadOf", "ssh://git@github.com/"),
+        ("http.https://github.com/.extraheader", f"AUTHORIZATION: basic {basic}"),
+    ]
+    config: dict[str, str] = {"GIT_CONFIG_COUNT": str(start + len(entries))}
+    for offset, (key, value) in enumerate(entries):
+        index = start + offset
+        config[f"GIT_CONFIG_KEY_{index}"] = key
+        config[f"GIT_CONFIG_VALUE_{index}"] = value
+    return config
+
+
 def build_run_environment(role: str, config: RoleConfig, token: str, base_env: Mapping[str, str]) -> dict[str, str]:
     """`base_env` plus what `run` adds: the token under both names GitHub tooling looks for it
-    under, the bot's git identity, and the role for anything downstream that wants to know it.
+    under, the bot's git identity, the same token wired into git's own HTTPS auth for this child
+    process (see `git_https_auth_config`), and the role for anything downstream that wants to know it.
     """
     identity = bot_identity(config)
     noreply = bot_noreply_email(config)
@@ -633,6 +666,7 @@ def build_run_environment(role: str, config: RoleConfig, token: str, base_env: M
             "NAPPY_AGENT_ROLE": role,
         }
     )
+    env.update(git_https_auth_config(token, base_env))
     return env
 
 

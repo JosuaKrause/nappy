@@ -98,6 +98,12 @@ Every agent prompt contains, explicitly:
   touch. The agent starts cold; everything it needs must be named, not assumed.
 - **The branch name** (`feature/<thing>`), and the committing rules restated: one commit per item,
   messages that explain why, docs move in the same commit as the code.
+- **Which GitHub identity the agent commits, pushes and opens its pull request as** —
+  `claude-coder` for a Claude Code implementation agent, `claude-reviewer` for a Claude Code review
+  agent, `codex-coder`/`codex-reviewer` the same in Codex — since **committing** and **pr-review**
+  make this mandatory and an agent with no role named has nothing to check `status` against. If
+  `status` reports the role not usable, the brief's own instruction is to stop and report back
+  rather than falling back to a direct call.
 - **Commit and push after each item, and before starting any run that takes longer than a few
   minutes.** A WIP message is fine — **committing** already says a messy branch commit is fine.
   A usage limit or an API error kills the agent without warning, and the committed-and-pushed

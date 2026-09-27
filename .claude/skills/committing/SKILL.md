@@ -10,16 +10,29 @@ the current session** — see "Merging".
 
 ## Who a commit and a pull request are from
 
-**A coding agent commits, pushes and opens its pull request as its own GitHub identity when one is
-usable, and as the player's account otherwise.** `uv run python tools/agent-identity.py status
-<role>` (**using-tools**) says which: when it reports the role usable, every git and `gh` command
-for that piece of work runs through `uv run python tools/agent-identity.py run <role> -- <command>`
-instead of running it directly — Claude Code as `claude-coder`, Codex as `codex-coder` — so the
-commit, the push and the pull request all show as `<role>[bot]` rather than as the player talking
-to themself. When `status` reports the role not usable (not created yet, not installed on the
-repository, or a cloud session, where none of the tool works — see `tools/agent-identity.py`'s own
-module docstring), the work goes through the player's own account, with the attribution lines the
-session gives on the commit and the PR description.
+**A coding agent commits, pushes and opens its pull request as its own GitHub identity, and only
+that identity — never the player's.** *(2026-09-26, once the four identities existed: "I want to
+make it mandatory for each agent to use their respective identity when interacting with github",
+enforced on writes; asked whether a role that is not usable falls back to the player's account:
+"no fallback to the player's account".)* Claude Code's orchestrator and every implementation agent
+it spawns commit as `claude-coder`; Codex's do the same as `codex-coder`. `uv run python
+tools/agent-identity.py status <role>` (**using-tools**) says whether the role is usable; every
+git and `gh` command for that piece of work then runs through `uv run python
+tools/agent-identity.py run <role> -- <command>` instead of running it directly, so the commit,
+the push and the pull request all show as `<role>[bot]` rather than as the player talking to
+themself. **When `status` reports the role not usable (not created yet, not installed on the
+repository, or a cloud session — see `tools/agent-identity.py`'s own module docstring), the
+session stops there and tells the player, rather than committing, pushing or opening the pull
+request under the player's own account.** A `PreToolUse` Bash hook
+(`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a `git push`, a `git
+commit`, a GitHub-writing `gh pr`/`gh issue`/`gh release`/`gh api` call, or one of the `tools/`
+scripts that pushes or posts internally, unless the same command is wrapped in `run <role> --`, so
+the rule holds even when a session forgets it; a read stays unguarded.
+
+**The commit still carries the session's own attribution trailer.** `run` changes who git says
+authored and committed the change (the bot's name and noreply address), not what the message
+says: the `Co-Authored-By` line the session's own instructions ask for is added exactly as it
+always was.
 
 ## Pushing
 

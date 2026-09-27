@@ -272,6 +272,51 @@ class RunEnvironmentTests(unittest.TestCase):
         self.assertEqual(base, {"EXISTING": "kept"})  # untouched
         self.assertEqual(env["EXISTING"], "kept")
 
+    def test_wires_the_git_https_auth_config_in_too(self) -> None:
+        # origin here is an SSH remote, so run's own git identity being the bot is not enough --
+        # a push must also authenticate as the bot, not the player's own SSH key.
+        config: Any = {"app_id": "1", "slug": "nappy-claude-coder", "bot_id": 1, "name": "n", "html_url": "h"}
+        env = agent_identity.build_run_environment("claude-coder", config, "ghs_tok", {})
+        self.assertEqual(env["GIT_CONFIG_COUNT"], "3")
+        self.assertEqual(env["GIT_CONFIG_VALUE_0"], "git@github.com:")
+        self.assertEqual(env["GIT_CONFIG_VALUE_1"], "ssh://git@github.com/")
+        self.assertIn("AUTHORIZATION: basic ", env["GIT_CONFIG_VALUE_2"])
+
+
+class GitHttpsAuthConfigTests(unittest.TestCase):
+    def test_the_exact_three_entries_the_brief_names(self) -> None:
+        config = agent_identity.git_https_auth_config("ghs_tok", {})
+        self.assertEqual(config["GIT_CONFIG_COUNT"], "3")
+        self.assertEqual(config["GIT_CONFIG_KEY_0"], "url.https://github.com/.insteadOf")
+        self.assertEqual(config["GIT_CONFIG_VALUE_0"], "git@github.com:")
+        self.assertEqual(config["GIT_CONFIG_KEY_1"], "url.https://github.com/.insteadOf")
+        self.assertEqual(config["GIT_CONFIG_VALUE_1"], "ssh://git@github.com/")
+        self.assertEqual(config["GIT_CONFIG_KEY_2"], "http.https://github.com/.extraheader")
+        basic = base64.b64encode(b"x-access-token:ghs_tok").decode("ascii")
+        self.assertEqual(config["GIT_CONFIG_VALUE_2"], f"AUTHORIZATION: basic {basic}")
+
+    def test_appends_after_an_existing_git_config_count_rather_than_clobbering_it(self) -> None:
+        base = {"GIT_CONFIG_COUNT": "2", "GIT_CONFIG_KEY_0": "x", "GIT_CONFIG_VALUE_0": "y"}
+        config = agent_identity.git_https_auth_config("tok", base)
+        self.assertEqual(config["GIT_CONFIG_COUNT"], "5")
+        self.assertEqual(config["GIT_CONFIG_KEY_2"], "url.https://github.com/.insteadOf")
+        self.assertEqual(config["GIT_CONFIG_KEY_4"], "http.https://github.com/.extraheader")
+        # This function only adds its own three -- the caller's own existing entries are its to
+        # keep, and are not repeated in what this returns.
+        self.assertNotIn("GIT_CONFIG_KEY_0", config)
+        self.assertNotIn("GIT_CONFIG_KEY_1", config)
+
+    def test_an_unparseable_existing_count_is_treated_as_zero_rather_than_raising(self) -> None:
+        config = agent_identity.git_https_auth_config("tok", {"GIT_CONFIG_COUNT": "not-a-number"})
+        self.assertEqual(config["GIT_CONFIG_COUNT"], "3")
+        self.assertIn("GIT_CONFIG_KEY_0", config)
+
+    def test_the_token_is_never_written_into_a_url(self) -> None:
+        config = agent_identity.git_https_auth_config("ghs_supersecret", {})
+        for key, value in config.items():
+            if key.endswith("_VALUE_0") or key.endswith("_VALUE_1"):
+                self.assertNotIn("ghs_supersecret", value)
+
 
 class ConfigFilePermissionsTests(unittest.TestCase):
     def test_directory_is_0700_and_pem_is_0600(self) -> None:

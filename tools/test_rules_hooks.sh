@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh and git-grep-guard.sh
-# directly, feeding them the same synthetic hook JSON on stdin the harness would, under a private
-# TMPDIR so no run of this script ever touches a real session's markers.
+# Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh, git-grep-guard.sh and
+# github-write-guard.sh directly, feeding them the same synthetic hook JSON on stdin the harness
+# would, under a private TMPDIR so no run of this script ever touches a real session's markers.
 #
 #   tools/test_rules_hooks.sh
 #
@@ -38,6 +38,15 @@
 #   - 31 KB of the densest text, ending in a git grep only the third reading sees, is read in
 #     full in under half the hook's 10-second timeout, and a command over
 #     32 KB holding both words is denied at once without being read
+#   - github-write-guard.sh denies an unwrapped git push/commit, a GitHub-writing gh pr/issue/
+#     release verb, a gh api call with a non-GET method or -f/-F/--input, and a tools/ script that
+#     pushes or posts internally (release.sh, prune-merged.sh, land-prs.sh, update-pr.sh), each as
+#     a real invocation and as a mention (an echo, a commit message); a read (git status/log/fetch/
+#     diff, gh pr view/list/checks/diff/status, gh issue/release list/view, a GET gh api) allows,
+#     and so does the same write wrapped in tools/agent-identity.py run <role> -- ..., with or
+#     without uv run python in front and with or without run's own --repo before the role -- but
+#     only a write inside that wrapper's own -- ... span, never one before it or on a different
+#     ;/&/|/newline-separated command
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -53,10 +62,10 @@ usage() {
     cat <<'EOF'
 usage: tools/test_rules_hooks.sh [--help|-h]
 
-Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh and git-grep-guard.sh
-with synthetic hook JSON on stdin, under a private TMPDIR, and asserts the per-agent marker
-keying, the compaction/resume reset, every path added to the skill mapping, the lint-docs.sh
-governed set, and every git-grep-guard.sh deny/allow shape.
+Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh, git-grep-guard.sh and
+github-write-guard.sh with synthetic hook JSON on stdin, under a private TMPDIR, and asserts the
+per-agent marker keying, the compaction/resume reset, every path added to the skill mapping, the
+lint-docs.sh governed set, and every git-grep-guard.sh and github-write-guard.sh deny/allow shape.
 Takes no arguments besides --help/-h.
 
   tools/test_rules_hooks.sh
@@ -774,6 +783,118 @@ if [ $((SECONDS - huge_start)) -lt 3 ]; then
 else
     fail "the 200 KB commands took $((SECONDS - huge_start)) seconds; the length bound should decide them at once"
 fi
+
+# ---------------------------------------------------------------- github-write-guard.sh ---------
+# Prints "deny" or "allow" for one synthetic command through github-write-guard.sh, as the tool
+# named by $2 (Bash when omitted). Same shape as guard_decision above, for the other hook.
+write_guard_decision() {
+    local cmd="$1" tool="${2:-Bash}" raw
+    raw=$(printf '%s' "$cmd" | jq -Rs --arg t "$tool" '{tool_name:$t, tool_input:{command:.}}' \
+        | "$root/.claude/hooks/github-write-guard.sh")
+    if [ -z "$raw" ]; then
+        printf 'allow'
+    else
+        printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'
+    fi
+}
+
+# $1 label  $2 expected ("deny" or "allow")  $3 command  $4 tool name (Bash when omitted)
+assert_write_guard() {
+    checks=$((checks + 1))
+    local got
+    got="$(write_guard_decision "$3" "${4:-Bash}")"
+    if [ "$got" = "$2" ]; then
+        echo "ok   $1"
+    else
+        fail "$1: expected $2, got $got for: $3"
+    fi
+}
+
+assert_write_guard "git push, unwrapped -> deny" deny 'git push origin main'
+assert_write_guard "git commit, unwrapped -> deny" deny 'git commit -m "x"'
+assert_write_guard "git -C dir commit, a global option before the subcommand -> deny" deny \
+    'git -C /path/to/repo commit --quiet -m "msg"'
+assert_write_guard "gh pr create -> deny" deny 'gh pr create --title x --body y'
+assert_write_guard "gh pr comment -> deny" deny 'gh pr comment 391 --body hi'
+assert_write_guard "gh pr merge -> deny" deny 'gh pr merge 391 --squash'
+assert_write_guard "gh pr edit -> deny" deny 'gh pr edit 391 --title x'
+assert_write_guard "gh pr review -> deny" deny 'gh pr review 391 --approve --body ready'
+assert_write_guard "gh pr close/reopen/ready -> deny" deny 'gh pr close 391'
+assert_write_guard "gh issue comment, an unlisted issue write verb -> deny" deny 'gh issue comment 5 --body hi'
+assert_write_guard "gh release create -> deny" deny 'gh release create v1.0'
+assert_write_guard "gh api with -f -> deny (a field turns it into a POST)" deny \
+    'gh api repos/o/r/pulls -f title=x'
+assert_write_guard "gh api with -X POST -> deny" deny 'gh api repos/o/r/issues -X POST'
+assert_write_guard "gh api with --method POST -> deny" deny 'gh api repos/o/r/issues --method POST'
+assert_write_guard "gh -R O/R pr create, gh's own global option before the noun -> deny" deny \
+    'gh -R O/R pr create --title x --body y'
+assert_write_guard "tools/release.sh, a script that pushes internally -> deny" deny 'tools/release.sh'
+assert_write_guard "tools/prune-merged.sh, deletes the remote branch -> deny" deny \
+    'tools/prune-merged.sh mybranch'
+assert_write_guard "./tools/land-prs.sh, merges the PR -> deny" deny './tools/land-prs.sh 391'
+assert_write_guard "tools/update-pr.sh, commits and pushes -> deny" deny 'tools/update-pr.sh 391'
+assert_write_guard "a mention (an echo naming gh pr merge) -> deny, same call as git-grep-guard's" deny \
+    'echo "remember to run gh pr merge 391 after review"'
+assert_write_guard "a mention inside a commit message -> deny" deny \
+    'git commit -m "documents why git push needs a wrapper now"'
+
+assert_write_guard "git status -> allow" allow 'git status'
+assert_write_guard "git log -> allow" allow 'git log --oneline'
+assert_write_guard "git fetch -> allow" allow 'git fetch origin'
+assert_write_guard "git diff -> allow" allow 'git diff --check'
+assert_write_guard "gh pr view -> allow" allow 'gh pr view 391'
+assert_write_guard "gh pr list -> allow" allow 'gh pr list'
+assert_write_guard "gh pr checks -> allow" allow 'gh pr checks 391'
+assert_write_guard "gh pr diff -> allow" allow 'gh pr diff 391'
+assert_write_guard "gh pr status -> allow" allow 'gh pr status'
+assert_write_guard "gh issue list/view -> allow" allow 'gh issue list'
+assert_write_guard "gh issue view -> allow" allow 'gh issue view 5'
+assert_write_guard "gh release list/view -> allow" allow 'gh release list'
+assert_write_guard "gh release view -> allow" allow 'gh release view v1.0'
+assert_write_guard "gh api, explicit GET -> allow" allow 'gh api repos/o/r --method GET'
+assert_write_guard "gh api, no method or fields, defaults to GET -> allow" allow 'gh api repos/o/r'
+assert_write_guard "gh --repo O/R pr view, gh's own global option before a read -> allow" allow \
+    'gh --repo O/R pr view 391'
+assert_write_guard "gh workflow run, out of this guard's scope -> allow" allow 'gh workflow run build.yml'
+assert_write_guard "a read-only tools/ script -> allow" allow 'tools/agent-status.sh'
+assert_write_guard "checking status is not itself a write -> allow" allow \
+    'uv run python tools/agent-identity.py status claude-coder'
+
+assert_write_guard "wrapped git push, uv run python in front -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git push origin main'
+assert_write_guard "wrapped git push, bare python3 in front -> allow" allow \
+    'python3 tools/agent-identity.py run claude-coder -- git push -u origin my-branch'
+assert_write_guard "wrapped git push, no interpreter in front at all -> allow" allow \
+    'tools/agent-identity.py run claude-coder -- git push'
+assert_write_guard "wrapped git push, run's own --repo before the role -> allow" allow \
+    'uv run python tools/agent-identity.py run --repo O/R claude-coder -- git push'
+assert_write_guard "wrapped gh pr comment, as claude-reviewer -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh pr comment 391 --body hi'
+assert_write_guard "wrapped gh pr review --approve, as claude-reviewer -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh pr review 391 --approve --body ready'
+assert_write_guard "wrapped tools/ script -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- tools/release.sh'
+
+# A write before the wrapper, or on a different command joined only by a separator, is not
+# covered by it: the wrapper's own exemption starts at its literal -- and ends at the next
+# ;/&/|/newline, never earlier or later.
+assert_write_guard "a write before the wrapper in the same line -> deny" deny \
+    'git push; uv run python tools/agent-identity.py run claude-coder -- echo hi'
+assert_write_guard "run without the literal -- is no wrapper at all -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-coder git push'
+assert_write_guard "a write on the next line after an unrelated wrapped call -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-coder -- echo hi
+git push'
+
+# Monitor is guarded the same way Bash is; a tool that runs no shell is not read at all.
+assert_write_guard "a Monitor script with an unwrapped git push -> deny" deny 'git push origin main' Monitor
+assert_write_guard "a tool that runs no shell is not read -> allow" allow 'git push origin main' Read
+
+# The one accepted hole this design does not close, matching git-grep-guard.sh's own "accepted
+# holes" section: a mention that quotes the wrapper's own shape whole reads like a real wrapped
+# call, since nothing here tells a mention from an invocation except by matching words.
+assert_write_guard "a mention that quotes the whole wrapped shape -> allow (accepted false allow)" allow \
+    'echo "a comment that fully quotes: tools/agent-identity.py run claude-coder -- git push"'
 
 echo
 echo "$checks checks, $failures failures"

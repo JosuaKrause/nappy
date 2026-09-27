@@ -72,6 +72,17 @@ whatever never puts `grep` as its own word right after `git` and its options: `g
 `git-grep` for a mention; for a search, add `-I`, restrict the pathspec (`-- '*.md' '*.gd'
 '*.sh'`), or use `rg` on the checkout.
 
+**A GitHub write outside an agent's own identity is denied the same way.**
+`.claude/hooks/github-write-guard.sh`, the other `PreToolUse` hook on every `Bash`/`Monitor` call
+(and Codex's, through `tools/codex-hooks.py`), denies a `git push`, a `git commit`, a
+GitHub-writing `gh pr`/`gh issue`/`gh release` verb, a `gh api` call with a non-GET method or
+`-f`/`-F`/`--input`, or one of the `tools/` scripts that pushes or posts internally
+(`tools/release.sh`, `tools/prune-merged.sh`, `tools/land-prs.sh`, `tools/update-pr.sh`) — as a
+real invocation and as a mention alike, the same call `git-grep-guard.sh` makes — unless the same
+command is wrapped in `tools/agent-identity.py run <role> -- <command>`; see **committing**'s
+"Who a commit and a pull request are from" for why that is mandatory now. A read (`git status`,
+`gh pr view/list/checks`, ...) is unguarded.
+
 ## A manual sequence done a second time becomes a script
 
 `CLAUDE.md` states the rule, with the player's words. What it means here: when the same manual

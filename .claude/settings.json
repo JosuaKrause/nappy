@@ -39,6 +39,12 @@
             "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/git-grep-guard.sh\"",
             "timeout": 10,
             "statusMessage": "Checking for an unbounded git grep"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/github-write-guard.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking for a GitHub write outside an agent identity"
           }
         ]
       }

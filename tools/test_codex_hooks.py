@@ -317,6 +317,38 @@ class CodexHooksTest(unittest.TestCase):
         assert allowed is not None
         self.assertNotIn("permissionDecision", allowed["hookSpecificOutput"])
 
+    def test_github_write_guard_denies_an_unwrapped_git_push(self) -> None:
+        output = self.call_raw(command="git push origin main")
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["hookEventName"], "PreToolUse")
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("agent-identity.py run", specific["permissionDecisionReason"])
+
+    def test_github_write_guard_denies_an_unwrapped_gh_pr_comment(self) -> None:
+        output = self.call_raw(command='gh pr comment 391 --body "hi"')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_github_write_guard_allows_the_wrapped_form_and_still_reminds(self) -> None:
+        text = self.call(
+            tool="Bash",
+            command="uv run python tools/agent-identity.py run claude-coder -- git push origin main",
+        )
+        self.assertIn("committing", text)
+
+    def test_github_write_guard_allows_a_read(self) -> None:
+        text = self.call(tool="Bash", command="gh pr view 391")
+        self.assertIn("committing", text)
+
+    def test_github_write_guard_runs_after_git_grep_guard_denies_first(self) -> None:
+        # Both guards run in order; an unbounded git grep denies before github-write-guard.sh is
+        # ever reached, so its reason -- not a GitHub-write one -- is what comes back.
+        output = self.call_raw(command='git grep -n -i "foo" origin/main -- docs/')
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("-I", output["hookSpecificOutput"]["permissionDecisionReason"])
+
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(
             command="*** Update File: ../outside/src/events/a.gd\n*** Update File: /tmp/outside/src/city/b.gd\n"
