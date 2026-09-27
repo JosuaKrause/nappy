@@ -56,7 +56,8 @@ The three cases where the orchestrating session implements directly, and they ar
   orchestrator's context fills with implementation detail that an agent would have held instead,
   and the next design decision is taken with less room to take it in.
 - **It is the queue or the archive.** `TODO.md` and the entries under `docs/todo/`, the review
-  items, the records under `docs/decisions/` and the playtests are the orchestrator's, always — see "What the orchestrator keeps".
+  items, the records under `docs/decisions/` and the playtests are the orchestrator's, always —
+  see "What the orchestrator keeps".
 
 **Everything else is an agent's**, and a milestone that is not ready for one is a milestone whose
 queue entry is not finished yet. That is the same test the **playtest-feedback** rules already impose:

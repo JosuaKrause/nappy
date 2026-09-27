@@ -168,8 +168,9 @@ of decisions.md — that information is rarely relevant when working on the code
 comes in to play when planning things out, so we don't attempt approaches again that we already
 ruled out.")* A ticked box, a "Done:" paragraph, a branch name or a status word in a heading is a
 quest log wherever it stands: `TODO.md` and the entries under `docs/todo/` hold open work only,
-`REVIEW.md` and the items under `docs/review/` hold what waits on a person only, and what was done — with its measurement and its rejected options — is
-retrievable on demand from the records under `docs/decisions/` and nowhere else.
+`REVIEW.md` and the items under `docs/review/` hold what waits on a person only, and what was
+done — with its measurement and its rejected options — is retrievable on demand from the records
+under `docs/decisions/` and nowhere else.
 
 The playtest files under `docs/playtests/` are the exception and are never rewritten. They are
 primary sources: a player's own words on a date.

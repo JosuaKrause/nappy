@@ -116,7 +116,7 @@ github".)* The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, 
 the items under `docs/review/` answer it at the moment they are asked — and what a document would
 have said about it is stale the moment another thread merges. So the session's end writes nothing
 checked in about itself: the durable part of what it learned is already in a skill, a doc, an
-entry, a review item or a record by step 5, and the rest is the restart prompt below.
+entry, a review item or a record by the steps above, and the rest is the restart prompt below.
 `tools/decisions.sh handoff` has the reasons.
 
 ### 8. End with a fresh-context restart prompt

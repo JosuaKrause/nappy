@@ -41,11 +41,14 @@ conflicts under the **merging-main** skill before enabling auto-merge. **Squash-
 (`gh pr merge <n> --squash`) and retire the branch (see "Branches"). A dependent wait belongs to
 a background agent, not a polling loop in the orchestrating session.
 
-**Several PRs can merge in a row without re-greening each one.** `main`'s ruleset requires a pull
-request and the `test` check — the doc lint, the boot check and the full suite, run on the merge
-result — but not that a branch be up to date with `main` (`strict_required_status_checks_policy`
-is off), so a PR whose `test` check is green merges after `main` has moved under it as long as the
-merge is still clean; a conflict still blocks it and is resolved on the branch. **What that trades
+**Several PRs can merge in a row without re-greening each one.** Two rulesets guard `main`. The
+`main` ruleset requires a pull request and the `test` check — the doc lint, the boot check and the
+full suite, run on the merge result. The `main approvals` ruleset requires one approving review,
+from a reviewer bot or the player; repository admins (the player) may bypass it when merging a
+pull request, and resolving the review threads is not required. So green CI alone is not the
+gate. Neither ruleset requires a branch to be up to date with `main`
+(`strict_required_status_checks_policy` is off), so an approved PR whose `test` check is green
+merges after `main` has moved under it as long as the merge is still clean; a conflict still blocks it and is resolved on the branch. **What that trades
 away is real**: the check ran on that branch's merge result, not on the one it actually gets, so a
 semantic conflict between two PRs that touch different files passes both gates and lands broken.
 Watch `main`'s own CI run after a batch rather than assuming the last green PR spoke for it;

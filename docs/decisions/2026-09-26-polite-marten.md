@@ -40,8 +40,10 @@ was roughly five things:
 **Why it went.** Each agent and each host works its own threads, and a session only ever needs the
 state of the threads it picks up, which the live commands give exactly. A checked-in handoff
 conflicted across pull requests: M223's count found it the third most conflicted file in the
-month before, and on the day it went, PR #385 rewrote its session section while a merge of `main`
-discarded the version `main` had just written, so one side's state was silently lost either way.
+month before, and on the day it went, a merge of `main` into PR #385's branch replaced the
+365-line handoff `main` had just written with the branch's own 61 lines. A review noticed, and the
+player then chose #385's version on purpose ("I prefer codex's version of the handoff"); but
+whichever side of such a merge wins, the other side's session state goes unless somebody notices.
 It went stale by design — it was true only at the moment the last session ended and false after
 the next merge — and it put session state (which PRs were open, who had permission to merge) into
 `main`'s history, where it reads as a standing fact. **The session-cleanup rule that only the
