@@ -46,6 +46,8 @@ func run(t) -> void:
 	_test_nearer_focus_is_picked_on_each_half(t)
 	_test_is_on_a_focus_catches_the_stop_radius_around_either_point(t)
 	_test_a_touch_aims_from_the_nearer_focus_not_from_her(t)
+	_test_current_heading_matches_a_press_through_either_focus(t)
+	_test_current_heading_reads_zero_while_detained(t)
 	_test_a_press_at_a_focus_centre_stops_her_on_touch(t)
 	_test_a_touch_near_her_own_position_no_longer_stops_her(t)
 	_test_a_mouse_click_still_aims_from_her_not_a_focus(t)
@@ -619,8 +621,8 @@ func _test_a_keyboard_press_resets_a_clicked_heading(t) -> void:
 	t.check(pressed.is_equal_approx(Vector2.RIGHT),
 			("the key's own direction alone, not the click's north added to the key's east "
 			+ "(got %s)") % pressed)
-	t.check(not controls._walking,
-			"the drawn focus knob reads as stopped, not still pointing at the stale click")
+	t.check(TouchControls.current_heading().is_equal_approx(Vector2.RIGHT),
+			"the drawn focus knob reads the key's own heading now, not the stale click's north")
 
 	Input.action_release(&"move_right")
 	controls.queue_free()
@@ -685,6 +687,58 @@ func _test_a_touch_aims_from_the_nearer_focus_not_from_her(t) -> void:
 
 	controls.queue_free()
 	rig.free()
+
+## **Both focal points show the heading she is walking, whichever side set it.** *(2026-09-27,
+## playtest olive-koala statement 6: "the onscreen controls should show the selected direction on
+## both sides always. when using hands and when using the keyboard".)* `_draw_focus_circles()` reads
+## `current_heading()` for the offset it draws on both circles at once — there is one heading locked
+## in, not one per focus — so a press aimed through either one has to move it the same way
+## `Input.is_action_pressed()` already shows the underlying press moved.
+func _test_current_heading_matches_a_press_through_either_focus(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
+	var controls := _controls(t)
+	controls._mode = ControlsMode.Mode.JOYSTICK
+
+	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
+	t.check(TouchControls.current_heading().is_equal_approx(Vector2.LEFT),
+			"a press west of the left focus is what both circles now show")
+
+	controls._on_tap(TouchControls.FOCUS_RIGHT + Vector2(0.0, -150.0), 1.0)
+	t.check(TouchControls.current_heading().is_equal_approx(Vector2.UP),
+			"and a press above the right focus, the same way, off the right one")
+
+	controls.queue_free()
+	rig.free()
+
+## **Zero while she is detained, even with a key still held.** Found in review of #412:
+## `current_heading()` did not gate on `Stroller.is_detained()`, so a key held through a
+## conversation or a capture kept swinging both knobs toward it even though
+## `Stroller._physics_process()` itself already ignores `Input.get_vector()` for exactly that
+## reason (`_detained_for > 0.0`) — the one thing `current_heading()`'s own doc promises never
+## happens, disagreeing with what she is actually doing. A bare `Stroller.new()` is enough:
+## `detain()` and `is_detained()` touch only `_detained_for`, no `@onready` node this rig — never
+## added to the tree — would have nothing to resolve.
+func _test_current_heading_reads_zero_while_detained(t) -> void:
+	var stroller := Stroller.new()
+	# A clean slate rather than trusting whatever the previous test left pressed: this test
+	# presses `move_right` directly, on its own, rather than through `set_direction()` (which
+	# resets both axes itself), so it is the one test in this file that would otherwise read
+	# whatever a neighbour's own leftover diagonal happened to be.
+	for action in [&"move_left", &"move_right", &"move_up", &"move_down"]:
+		Input.action_release(action)
+	Input.action_press(&"move_right")
+
+	t.check(TouchControls.current_heading().is_equal_approx(Vector2.RIGHT),
+			"not detained, so the held key is what both circles would draw, same as everywhere else")
+	t.check(TouchControls.current_heading(stroller).is_equal_approx(Vector2.RIGHT),
+			"and passing a rig that says it is not detained changes nothing")
+
+	stroller.detain(5.0)
+	t.check(TouchControls.current_heading(stroller).is_equal_approx(Vector2.ZERO),
+			"detained, so both circles read stopped no matter what is still held")
+
+	Input.action_release(&"move_right")
+	stroller.free()
 
 func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
