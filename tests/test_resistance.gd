@@ -66,6 +66,7 @@ func run(t) -> void:
 	_test_the_burnt_shell_task_rides_the_recorded_scar(t)
 	_test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
 	_test_the_door_task_sits_at_a_region_door(t)
+	_test_a_completed_marks_own_contact_and_guard_are_freed(t)
 	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_day_twelves_park_is_forced_open_whatever_its_state(t)
@@ -2220,6 +2221,51 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 				on_a_door = true
 				break
 		t.check(on_a_door, "exactly at one of today's own region doors")
+
+		director.free())
+
+## M221, "a failed day leaves no chalk mark behind" — reproduced by touching a mark whose very
+## next step is itself a guarded task (day 9's door: `_begin_step()` runs a second time in the
+## same `_on_contact_completed()` call, and the guarded-perform shape is shared by every task day
+## but the man shouting's and the van's). Before the fix, `_begin_step()` overwrote `_contact`
+## with the perform's own `ContactPoint` and `_maybe_set_a_trap()` overwrote `_guard` with the
+## perform's own guard, both without freeing what they replaced — **the two nodes this entry asks
+## which they are**: the mark's own touched `ContactPoint`, still standing on the ground long after
+## the day that placed it, and the mark's own `alley_robbery`, left running with nothing left to
+## guard. A day that is then failed and retried repeats this every time it reaches the mark again,
+## which is the accumulation the player reported.
+func _test_a_completed_marks_own_contact_and_guard_are_freed(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var closure_state := CityState.new()
+		closure_state.begin_day(_city.map.block_plans, 9)
+		_city.start_day(closure_state, 9, _rng(9, "closures"))
+		_city.events.start_day(9, _rng(9, "events"), [], _city.map.doorstep_world_position())
+
+		var director := _director(t)
+		director.start_day(9, _rng(9, "resistance"), 300.0)
+		var mark_contact: ContactPoint = director._contact
+		var mark_guard: EventInstance = director._guard
+		t.check(mark_contact != null, "day 9's mark has its own contact before it is touched")
+
+		director._on_contact_completed(7)
+		t.check(director.current_step() != null and director.current_step().index == 8,
+				"touching it activates the door perform the same day")
+
+		t.check(mark_contact.is_queued_for_deletion(),
+				"the mark's own touched ContactPoint — the node this entry asks about — is freed")
+		t.check(director._contact != mark_contact,
+				"the perform's own contact replaces it rather than reusing it")
+
+		if mark_guard:
+			t.check(mark_guard.is_finished,
+					"the mark's own guard — the other node this entry asks about — is retired, " +
+					"not left standing with nothing left to guard")
+			# By reference, not by counting every live `alley_robbery` in the city: `first_day` 8
+			# lets the ordinary scheduler roll one of its own on this same day, unrelated to either
+			# guard, so a global count would conflate the two sources.
+			t.check(director._guard != mark_guard,
+					"the door's own guard, if any, is a fresh instance rather than the mark's own")
 
 		director.free())
 

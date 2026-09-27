@@ -248,6 +248,14 @@ func _begin_step(step: ResistanceSteps.Step) -> void:
 		_step = null
 		return
 
+	# The step this replaces — a completed mark's own touched `ContactPoint`, still standing where
+	# `_on_contact_completed()` activates today's perform right behind it — is never referenced
+	# again once this function returns, and nothing else ever freed it (M221, "a failed day leaves
+	# no chalk mark behind": found still on the ground, touched, in an alley long after the day
+	# that placed it). `_clear()` only ever disposes of whichever `ContactPoint` this field points
+	# to *now*, so the one dropped here has to go before it is dropped.
+	if _contact and is_instance_valid(_contact):
+		_contact.queue_free()
 	_contact = ContactPoint.new()
 	if neighbor:
 		_rider = neighbor
@@ -329,12 +337,22 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 ## `at` is not on any alley this city built — every other guarded contact (a door, a mast's foot,
 ## a swing, the burnt shell, a roadblock) — and the bearing falls back to the whole circle, as
 ## before M213.
+##
+## **Retires whatever guard this replaces first.** Called again for the same day's own perform
+## step right behind the mark's own `_begin_step()` (`_on_contact_completed()`'s same-day
+## activation) or for a relocated mark's fresh guard (`_move_the_mark()`), and until M221 neither
+## caller ever freed the one this overwrites — "a failed day leaves no chalk mark behind" found it
+## standing on, still touched, long after the day that placed it. One retirement here covers every
+## caller instead of each repeating it.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2) -> void:
 	if day < TRAP_FIRST_DAY:
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	if not robbery:
 		return
+	if _guard and is_instance_valid(_guard):
+		_city.events.retire(_guard)
+	_guard = null
 	var min_distance := robbery.inner_radius + ContactPoint.REACH
 	var max_distance := robbery.pursues_within + ContactPoint.REACH
 	var toward := _far_alley_mouth(at)
@@ -1417,17 +1435,14 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 	return nearest if nearest != Vector2.INF else nearest_any
 
 ## Moves an unseen mark to the alley she has just come near, and moves its guard with it —
-## retiring the one standing over the old spot rather than leaving a robber with nothing
-## left to guard.
+## `_maybe_set_a_trap()` retires the one standing over the old spot itself (M221) rather than
+## leaving a robber with nothing left to guard.
 func _move_the_mark(new_world: Vector2) -> void:
 	var old_tile := _map.world_to_tile(_contact.global_position)
 	var new_tile := _map.world_to_tile(new_world)
 	_contact.global_position = new_world
 	Telemetry.note("contact", "step %d moved to %s: never seen at %s" % [
 		_step.index, TelemetryLog.tile(new_tile), TelemetryLog.tile(old_tile)])
-	if _guard and is_instance_valid(_guard):
-		_city.events.retire(_guard)
-		_guard = null
 	_maybe_set_a_trap(_day, _rng, new_world)
 
 ## A warning delivered late is not a warning. The contact is gone for the rest of the run.
