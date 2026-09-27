@@ -8,11 +8,13 @@ and registration inputs. Inspect detail and animation consistency at gameplay sc
 
 The pursuing dog's appearance is accepted in
 [velvet-dolphin, the dog's leg motion](../../playtests/2026-09-27-velvet-dolphin.md).
-The walked dog's side and diagonal strides need fixed shoulder and hip attachments, as required
-in [coral-goose, fixed leg attachments](../../playtests/2026-09-27-coral-goose.md). Articulate the
-legs from those joints instead of shifting their attachments along the torso. Confirm hind-leg
-exchange in E/W and SE/SW and continuous four-leg anatomy in NE/NW before
-[the next dog review](../../review/2026-09-10-M109.md). Their
+The walked dog's fixed-joint side and diagonal proposal awaits
+[the next dog review](../../review/2026-09-10-M109.md), against
+[coral-goose, fixed leg attachments](../../playtests/2026-09-27-coral-goose.md). Its
+[native and enlarged comparisons](../../evidence/comic-dogs-2026-09-27/walked-revision-3/README.md)
+show the continuous haunch-to-thigh connections and hind-leg exchange while preserving A frames.
+Obtain appearance acceptance, including the brighter back-diagonal B coat and remaining contour
+differences. Their
 [generation recipe](../../evidence/comic-dogs-2026-09-27/README.md) preserves the sources,
 raw outputs, native candidates, comparisons and synthetic stride loops; the
 [batch record](../../decisions/2026-09-10-M109.md) records the extraction decisions. Resolve
