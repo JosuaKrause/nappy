@@ -30,10 +30,13 @@ omitted entirely, and so is the compare link when there is no previous tag to co
 carrying its own `.gdignore` (`art/.gdignore`, `tools/.gdignore`, `docs/.gdignore` exclude those
 three trees from the import pass entirely) or a path `export_presets.cfg`'s own `exclude_filter`
 names. So `assets/`, `scenes/`, `project.godot` and `icon.png` ship inside the `.pck`, and `src/`'s
-own `.gd` files compile into it. `art/` carries a `.gdignore` and never reaches the `.pck`, but
-`.github/workflows/deploy.yml`'s "Publish the social card image" step copies `art/social-card.png`
-straight into `build/web/` beside it, so a change under `art/` still reaches the published site --
-it is grouped as Game for that reason, not because Godot packs it. Everything else --
+own `.gd` files compile into it. `art/` itself carries a `.gdignore` and never reaches the `.pck`
+as source, but `tools/export-web.sh` runs `tools/bake-atlases.sh` before exporting, which bakes
+every picture `assets/atlases/membership.json` names -- `art/buildings/*.svg`, `art/events/*.svg`,
+`art/props/*.svg` and the rest -- into `assets/atlases/baked/`, and that directory is what actually
+ships inside the `.pck`. So a change under `art/` reaches the build as the baked atlases' own
+source; `.github/workflows/deploy.yml`'s "Publish the social card image" step, which copies
+`art/social-card.png` straight into `build/web/`, is a second, narrower reason. Everything else --
 `tools/`, `tests/`, `docs/`, `.claude/`, `.github/`, `.codex/`, the repository's own top-level
 tooling files (`pyproject.toml`, `uv.lock`, `.python-version`), `README.md`, the license files --
 is Tooling and docs.

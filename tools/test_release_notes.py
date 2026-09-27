@@ -166,6 +166,29 @@ class ReleaseNotesTests(unittest.TestCase):
         with self.assertRaises(rn.ReleaseNotesError):
             self.notes("not-a-tag")
 
+    def test_first_parent_excludes_a_merged_side_branchs_own_commits(self) -> None:
+        """Pins `commit_range`'s own `--first-parent` flag: dropping it from the `git log` call
+        would leave every existing test passing (they all build a linear history), but it would
+        leak a merged side branch's own commits into the notes. `main` here never carries a merge
+        commit itself (the repository disallows one), but `commit_range` reads whatever tag it is
+        given, so the flag still has to hold if an old tag is ever backfilled."""
+        self.commit("src/a.gd", "root game commit (#1)")
+        self.tag("v0.0.0")
+        self.git("checkout", "-q", "-b", "feature")
+        self.commit("src/side.gd", "side branch commit (#9)")
+        self.git("checkout", "-q", "main")
+        self.commit("src/main.gd", "main line commit (#10)")
+        self.git("merge", "-q", "--no-ff", "-m", "Merge feature branch (#11)", "feature")
+        self.tag("v0.1.0")
+
+        out = self.notes("v0.1.0")
+        self.assertIn("main line commit (#10)", out, "the first-parent line's own commit must be listed")
+        self.assertNotIn(
+            "side branch commit (#9)",
+            out,
+            "a commit reachable only through the merge's second parent must not be listed",
+        )
+
     # ------------------------------------------------------------------------------ grouping ---
 
     def test_game_tooling_grouping_and_omitted_empty_section(self) -> None:

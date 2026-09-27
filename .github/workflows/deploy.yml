@@ -195,8 +195,16 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      # The runner image's own python3 is not the pinned toolchain -- python-tooling pins Python
+      # 3.14 and runs every repository script through `uv run python`, the same as ci.yml's
+      # `gates` job does for its own Python steps.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
       - name: Compute the release notes
-        run: python3 tools/release-notes.py "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /tmp/release-notes.md
+        run: uv run --quiet python tools/release-notes.py "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /tmp/release-notes.md
 
       # Idempotent: a re-run of this workflow on a tag that already has a release (a manual
       # "re-run jobs", say) edits that release's notes instead of failing on "already exists" --
