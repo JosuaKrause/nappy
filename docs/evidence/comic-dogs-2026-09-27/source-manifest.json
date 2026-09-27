@@ -1,0 +1,284 @@
+{
+  "families": [
+    {
+      "family": "dog",
+      "grid": "source-grid-dog.png",
+      "grid_size": [
+        1294,
+        464
+      ],
+      "cells": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "name": "dog",
+          "source": "art/events/dog.svg",
+          "source_sha256": "d183479a4af9b65e605a50332397ecedbe90b64221cbe4e0758ac3421d1e8f5c",
+          "native_size": [
+            26,
+            20
+          ]
+        },
+        {
+          "cell": [
+            0,
+            1
+          ],
+          "name": "dog_b",
+          "source": "art/events/dog_b.svg",
+          "source_sha256": "cebfdee30a1e184055a8ef3a8673f54a2120b2a25eabe6dc1ca903967c23b072",
+          "native_size": [
+            26,
+            20
+          ]
+        },
+        {
+          "cell": [
+            1,
+            0
+          ],
+          "name": "dog_front",
+          "source": "art/events/dog_front.svg",
+          "source_sha256": "1ee6d6e8c6b8f401dcaa15269a8bb316f36e20417691dfa8b83cb5d95c384114",
+          "native_size": [
+            30,
+            28
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "name": "dog_front_b",
+          "source": "art/events/dog_front_b.svg",
+          "source_sha256": "20948dfb8f6f4cc70550f150ec9ef93db9ec9ff362d49516f5aabfab000995e8",
+          "native_size": [
+            30,
+            28
+          ]
+        },
+        {
+          "cell": [
+            2,
+            0
+          ],
+          "name": "dog_front_diagonal",
+          "source": "art/events/dog_front_diagonal.svg",
+          "source_sha256": "5abe648bb24e18d312022053078587dd227156c117d024feed8b38def69d9d16",
+          "native_size": [
+            38,
+            28
+          ]
+        },
+        {
+          "cell": [
+            2,
+            1
+          ],
+          "name": "dog_front_diagonal_b",
+          "source": "art/events/dog_front_diagonal_b.svg",
+          "source_sha256": "ea09839c3d8e459b97847751459750c55b668a09c602f87ca3fa9968e686e411",
+          "native_size": [
+            38,
+            28
+          ]
+        },
+        {
+          "cell": [
+            3,
+            0
+          ],
+          "name": "dog_back_diagonal",
+          "source": "art/events/dog_back_diagonal.svg",
+          "source_sha256": "cb23d16b8e9fd37251bbec24a2961d7fa84bfb2782c45be4be23e762f0813f52",
+          "native_size": [
+            38,
+            28
+          ]
+        },
+        {
+          "cell": [
+            3,
+            1
+          ],
+          "name": "dog_back_diagonal_b",
+          "source": "art/events/dog_back_diagonal_b.svg",
+          "source_sha256": "35cef2725d825d07a1f853fa684d9ad045216484d33380c49b8d70e4a60d437a",
+          "native_size": [
+            38,
+            28
+          ]
+        },
+        {
+          "cell": [
+            4,
+            0
+          ],
+          "name": "dog_back",
+          "source": "art/events/dog_back.svg",
+          "source_sha256": "5af4d9830236cf067ff42e4752e12c77bec1fec6984ebf7b259e1ac18adcc91c",
+          "native_size": [
+            30,
+            28
+          ]
+        },
+        {
+          "cell": [
+            4,
+            1
+          ],
+          "name": "dog_back_b",
+          "source": "art/events/dog_back_b.svg",
+          "source_sha256": "09e838805302dca92f6516e2f9378e968ad66f5abab361535fad1eeacf776c29",
+          "native_size": [
+            30,
+            28
+          ]
+        }
+      ]
+    },
+    {
+      "family": "charging-dog",
+      "grid": "source-grid-charging-dog.png",
+      "grid_size": [
+        1294,
+        464
+      ],
+      "cells": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "name": "charging_dog",
+          "source": "art/events/charging_dog.svg",
+          "source_sha256": "e87b6bcbf885f9a61f79638e286c6e78503866486fe501b3e4054857241656ba",
+          "native_size": [
+            40,
+            22
+          ]
+        },
+        {
+          "cell": [
+            0,
+            1
+          ],
+          "name": "charging_dog_b",
+          "source": "art/events/charging_dog_b.svg",
+          "source_sha256": "92816032e9755e9af8adde073e15be1ad51e804a9450e9b4df46ddde19b3c9fd",
+          "native_size": [
+            40,
+            22
+          ]
+        },
+        {
+          "cell": [
+            1,
+            0
+          ],
+          "name": "charging_dog_front",
+          "source": "art/events/charging_dog_front.svg",
+          "source_sha256": "4acbf541f83329d8ba082589c57958995c267f0b93bc0f7e7e39589d1a838eec",
+          "native_size": [
+            30,
+            28
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "name": "charging_dog_front_b",
+          "source": "art/events/charging_dog_front_b.svg",
+          "source_sha256": "7d095e8f65af4e2bfd0cc512e3e2863ce231db6a9c79c4f4418a26e368cd706c",
+          "native_size": [
+            30,
+            28
+          ]
+        },
+        {
+          "cell": [
+            2,
+            0
+          ],
+          "name": "charging_dog_front_diagonal",
+          "source": "art/events/charging_dog_front_diagonal.svg",
+          "source_sha256": "934f185f962113a516359cb63d662ed58796a32d011f80dcaa22c0a45156cf36",
+          "native_size": [
+            38,
+            28
+          ]
+        },
+        {
+          "cell": [
+            2,
+            1
+          ],
+          "name": "charging_dog_front_diagonal_b",
+          "source": "art/events/charging_dog_front_diagonal_b.svg",
+          "source_sha256": "fff274702becf61c16b7cd67b01f638477eda3deecb9a964b065d0aa354e1270",
+          "native_size": [
+            38,
+            28
+          ]
+        },
+        {
+          "cell": [
+            3,
+            0
+          ],
+          "name": "charging_dog_back_diagonal",
+          "source": "art/events/charging_dog_back_diagonal.svg",
+          "source_sha256": "0fc9176de0bde691733bb01c7385cc22adc5c3ee11edbd00393d3b47dcbf9ffe",
+          "native_size": [
+            38,
+            28
+          ]
+        },
+        {
+          "cell": [
+            3,
+            1
+          ],
+          "name": "charging_dog_back_diagonal_b",
+          "source": "art/events/charging_dog_back_diagonal_b.svg",
+          "source_sha256": "6df33a037e23d115af01cae545effb2c63649f445eb961b361e78fc0eb48b4b3",
+          "native_size": [
+            38,
+            28
+          ]
+        },
+        {
+          "cell": [
+            4,
+            0
+          ],
+          "name": "charging_dog_back",
+          "source": "art/events/charging_dog_back.svg",
+          "source_sha256": "ad9503d5f97ec3c9fb88dadfbfe1f969418b88d0d3e43c769a8c5f2f75b6d99d",
+          "native_size": [
+            30,
+            28
+          ]
+        },
+        {
+          "cell": [
+            4,
+            1
+          ],
+          "name": "charging_dog_back_b",
+          "source": "art/events/charging_dog_back_b.svg",
+          "source_sha256": "b15914325fa751cadb86d2eb9633284330bcc1f8463f8e9dec3b32f6b22ebc1b",
+          "native_size": [
+            30,
+            28
+          ]
+        }
+      ]
+    }
+  ]
+}
