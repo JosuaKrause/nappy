@@ -402,10 +402,15 @@ instead. Neither scheme is tied to a touchscreen or a mouse: either can be picke
 Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
 disagree. A mouse aims from her own world position, and a click within a generous radius of that
 position stops her. A real touch instead aims from whichever of two fixed points on the screen is
-nearer the press — drawn as a ring with a knob at the currently-held direction, so what is locked in
-can be read off the glass without watching her — and is stopped by a press on either point or by one
-in a band down the screen's own middle, never by a press near her own position: the camera keeps her
-at the middle of the screen, so that ground is the band's own.
+nearer the press — drawn as a ring with a knob at the heading she is actually walking, so what she
+is walking can be read off the glass without watching her — and is stopped by a press on either
+point or by one in a band down the screen's own middle, never by a press near her own position: the
+camera keeps her at the middle of the screen, so that ground is the band's own. **Both rings always
+show that same heading**, whichever one a press aimed through, and also while the keyboard is what
+is actually steering her: the knob reads the walk's own input state directly rather than only
+`Joystick`'s own last press, so a real key overriding a stale click shows up on both circles the
+instant it does. `Tap` draws nothing to update, having only her own position to aim from rather
+than two fixed points to keep in agreement.
 
 The pause button, top right, is shown on every device once a day — or a section of the escape, the
 run's own ending — is actually running: a real `InputEventAction` for `pause` through
