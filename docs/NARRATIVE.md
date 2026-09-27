@@ -174,9 +174,9 @@ the resistance*, narrowed to a task with exactly one place to be.
   is further off. Whichever look-alike she chose for the man shouting, the price is the same, and
   it is paid on the way out rather than guarded at one spot she could avoid by choosing another.
   *(2026-09-13: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
-  yeller so it runs towards her from offscreen." PLAYTEST-144, statement 15, on a semantic review
-  that had widened this to every task riding on a row: "After the van (day 7) a guard chases her;
-  after the man shouting, the robber, which is fine only if he starts off screen.")* Every other
+  yeller so it runs towards her from offscreen." PLAYTEST-144, statement 15: "After the van (day 7)
+  a guard chases her; after the man shouting, the robber, which is fine only if he starts off
+  screen.")* Every other
   task that rides on something in the street or sits on a bare point — the burnt shell, a
   roadblock, the district door, a mast's foot, the swing, the last night's front door — keeps a
   robber waiting near it, as a mark does; the neighbor's has neither, since they are walking home

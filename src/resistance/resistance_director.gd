@@ -122,9 +122,9 @@ var _seen_dwell := 0.0
 ## The `alley_robbery` standing by the current mark, from `TRAP_FIRST_DAY`. Tracked so a
 ## move can retire it and `_maybe_set_a_trap` a fresh one near wherever the mark goes.
 var _guard: EventInstance
-## The `robber_giving_chase` today's handed-over task set on her (`_set_the_trap_on_her()`), or
-## null before a task is handed over. Nothing here steers him — he chases on his own — so this is
-## kept only so what was set can be read back.
+## The `robber_giving_chase` or `van_guard_giving_chase` today's handed-over task set on her
+## (`_set_the_trap_on_her()`), or null before a task is handed over. Nothing here steers him — he
+## chases on his own — so this is kept only so what was set can be read back.
 var _trap: EventInstance
 ## The RNG `start_day()` was handed, kept rather than re-drawn so a guard spawned later —
 ## when the mark moves, or when the mark's own touch activates today's perform step — still
@@ -336,23 +336,25 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 ## (`task_event_id` "homeless_yeller") and the van (`"delivery_van"`), the two tasks named at the
 ## keyboard — *"spawn the robber in pursuing mode offscreen when she interacts with the yeller"*
 ## for the first, PLAYTEST-144 statement 15 for the second: "After the van (day 7) a guard chases
-## her; after the man shouting, the robber, which is fine only if he starts off screen." A
-## semantic review of this PR (github.com/JosuaKrause/nappy/pull/362#pullrequestreview-5326113448)
-## had widened this to every perform step whose contact rides on a row — the burnt shell and a
-## roadblock besides — which nobody had asked for; the player's answer sends those two back to
-## their waiting guard, the smallest reading. **Not the neighbor**, whose task has never been
-## guarded — they are walking home, and a guard at the spot they set out from would guard nothing
-## — and never a chalk mark, a bare-point task, the burnt shell, a roadblock or the last night,
-## whose robber still waits at the contact (`_maybe_set_a_trap()`).
+## her; after the man shouting, the robber, which is fine only if he starts off screen." An earlier
+## cut of this PR had widened this to every perform step whose contact rides on a row — the burnt
+## shell and a roadblock besides — which nobody had asked for; a semantic review of this PR
+## (github.com/JosuaKrause/nappy/pull/362#pullrequestreview-5326113448) caught it, and the player's
+## answer sends those two back to their waiting guard, the smallest reading. **Not the neighbor**,
+## whose task has never been guarded — they are walking home, and a guard at the spot they set out
+## from would guard nothing — and never a chalk mark, a bare-point task, the burnt shell, a
+## roadblock or the last night, whose robber still waits at the contact (`_maybe_set_a_trap()`).
 static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 	return step != null and step.task_event_id in ["homeless_yeller", "delivery_van"]
 
-## Which catalogue row `_set_the_trap_on_her()` spawns for the current step's own task: the alley
-## robber for the man shouting, the roadblock's own guard for the van. Only ever asked once
-## `sets_a_trap_on_her(_step)` is already true, so every other `task_event_id` would be a bug
-## reaching here rather than a real third case.
-func _trap_row_id() -> String:
-	return "van_guard_giving_chase" if _step and _step.task_event_id == "delivery_van" \
+## Which catalogue row `_set_the_trap_on_her()` spawns for `step`'s own task: the alley robber for
+## the man shouting, the roadblock's own guard for the van. Only ever asked once
+## `sets_a_trap_on_her(step)` is already true, so every other `task_event_id` would be a bug
+## reaching here rather than a real third case. Takes the completed step its caller already holds
+## rather than reading `_step`, so it names the right row by construction rather than by the
+## coincidence that `_step` has not yet advanced when a perform step's own handover calls it.
+func _trap_row_id(step: ResistanceSteps.Step) -> String:
+	return "van_guard_giving_chase" if step and step.task_event_id == "delivery_van" \
 			else "robber_giving_chase"
 
 ## **The trap comes to her.** *(2026-09-13, the player: "maybe spawn the robber in pursuing mode
@@ -369,10 +371,10 @@ func _trap_row_id() -> String:
 ## From `TRAP_FIRST_DAY`, like the guard. Where she is, or the contact she has just touched when
 ## no player is in the tree (a bare director in a rig): she is within `ContactPoint.REACH` of it.
 ## Nothing is spawned when `_draw_arrival_position()` finds no ground, which the run log says.
-func _set_the_trap_on_her() -> void:
+func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 	if _day < TRAP_FIRST_DAY or not _city or not _city.events:
 		return
-	var def := EventCatalogue.by_id(_trap_row_id())
+	var def := EventCatalogue.by_id(_trap_row_id(step))
 	if not def:
 		return
 	var her := _player_position()
@@ -412,13 +414,21 @@ func _set_the_trap_on_her() -> void:
 ##
 ## **A clear run at her is what decides it**, since he chases in a straight line
 ## (`EventInstance._chase()`), sliding along whatever wall is in the way: a start behind a building
-## is a man stuck against its back wall while the badge says he is coming. On about one handover in
-## five there is no clear run from above or below — she is on a street that runs sideways, with no
-## crossing street near enough — and **then he comes along her own street**, straight left or right
-## at `beside_distance()` (about 466px), past the badge line sideways. From there walking directly
-## away outlasts his notice and chase, which is the price of a start the wider view needs;
+## is a man stuck against its back wall while the badge says he is coming. On a minority of
+## handovers there is no clear run from above or below — she is on a street that runs sideways,
+## with no crossing street near enough — and **then he comes along her own street**, straight left
+## or right at `beside_distance()` (about 466px), past the badge line sideways. From there walking
+## directly away outlasts his notice and chase, which is the price of a start the wider view needs;
 ## standing still or walking into him is still caught. Only when neither has a clear run does the
-## first legal start of all of them stand in, and then he may never reach her.
+## first legal start of all of them stand in, and then he may never reach her — measured at 1 in
+## 200 seeds for `robber_giving_chase`, never for `van_guard_giving_chase`
+## (`tests/probes/m137_trap_arrival.gd`).
+##
+## **Measured over 200 seeds each with `tests/probes/m137_trap_arrival.gd`**, one handover per
+## seed: the beside fallback fires for `robber_giving_chase` 40 times in 200 (20.0%) and for
+## `van_guard_giving_chase` 54 times in 200 (27.0%) — the guard's narrower 120px field (against the
+## robber's 200px) leaves a tighter vertical cone (`arrival_cone()`), so fewer of its bearings clear
+## a wall along the way.
 func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef) -> Array:
 	var walled_alleys := _walled_alleys()
 	var cone := arrival_cone(def)
@@ -1395,9 +1405,10 @@ func _on_contact_completed(step_index: int) -> void:
 	# reached the swing, and stays taken — see `ResistanceHappenings.take_the_park()`.
 	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		_happenings.take_the_park()
-	# And the price of a task that rode on a row: a robber comes for her from off screen.
+	# The man shouting and the van send a pursuer after her from off screen; every other task
+	# that rides on a row keeps its guard waiting at the contact instead (`_begin_step()`).
 	if step and sets_a_trap_on_her(step):
-		_set_the_trap_on_her()
+		_set_the_trap_on_her(step)
 	if not (step and step.needs_goal):
 		return
 

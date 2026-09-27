@@ -1151,10 +1151,10 @@ func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t) -> void:
 		t.check(director._trap == null, "and nobody is sent after her before the handover")
 		director.free())
 
-## *(PLAYTEST-144, statement 15, the player's answer to a semantic review of PR #362 that had
-## widened the trap to every row-riding task: "Of 11 ... the burnt shell and the roadblock go back
-## to their waiting guard as the smallest reading".)* Both are guarded exactly where they wait,
-## like a chalk mark, and handing either over sends nobody after her.
+## *(PLAYTEST-144, statement 15, the player's answer once a semantic review caught an earlier cut
+## of this PR widening the trap to every row-riding task: "Of 11 ... the burnt shell and the
+## roadblock go back to their waiting guard as the smallest reading".)* Both are guarded exactly
+## where they wait, like a chalk mark, and handing either over sends nobody after her.
 func _test_the_burnt_shell_and_the_roadblock_keep_a_waiting_guard(t) -> void:
 	_build_city(t)
 	var saved_scars := GameState.scars.duplicate()
@@ -1162,13 +1162,15 @@ func _test_the_burnt_shell_and_the_roadblock_keep_a_waiting_guard(t) -> void:
 	_with_clean_run(func() -> void:
 		var director := _director(t)
 		director.start_day(8, _rng(8, "resistance"), 300.0)
+		var guard_before_the_perform: EventInstance = director._guard
 		director._on_contact_completed(5)
 		var step := director.current_step()
 		t.check(step != null and step.index == 6, "the burnt-shell perform is active")
 		t.check(not ResistanceDirector.sets_a_trap_on_her(step),
 				"the burnt shell's trap does not come to her")
-		t.check(director._guard != null and is_instance_valid(director._guard),
-				"it is guarded where it waits, like a mark")
+		t.check(director._guard != null and is_instance_valid(director._guard)
+				and director._guard != guard_before_the_perform,
+				"it is guarded where it waits, like a mark, with a fresh guard for this step")
 		director._on_contact_completed(6)
 		t.check(director._trap == null, "and handing it over sends nobody after her")
 		director.free())
@@ -1178,13 +1180,15 @@ func _test_the_burnt_shell_and_the_roadblock_keep_a_waiting_guard(t) -> void:
 	_with_clean_run(func() -> void:
 		var director := _director(t)
 		director.start_day(13, _rng(13, "resistance"), 300.0)
+		var guard_before_the_perform: EventInstance = director._guard
 		director._on_contact_completed(15)
 		var step := director.current_step()
 		t.check(step != null and step.index == 16, "the roadblock perform is active")
 		t.check(not ResistanceDirector.sets_a_trap_on_her(step),
 				"the roadblock's trap does not come to her")
-		t.check(director._guard != null and is_instance_valid(director._guard),
-				"it is guarded where it waits, like a mark")
+		t.check(director._guard != null and is_instance_valid(director._guard)
+				and director._guard != guard_before_the_perform,
+				"it is guarded where it waits, like a mark, with a fresh guard for this step")
 		director._on_contact_completed(16)
 		t.check(director._trap == null, "and handing it over sends nobody after her")
 		director.free())
@@ -1342,7 +1346,8 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 				var start := guard.global_position
 				# Above or below her at `Tuning.TRAP_ARRIVAL_DISTANCE` by preference; on a street
 				# that runs sideways with no clear run above or below (`_draw_arrival_position()`'s
-				# own doc: about one handover in five), he comes along her own street instead, at
+				# own doc: measured at 27.0% of 200 seeds for this row, `tests/probes/
+				# m137_trap_arrival.gd`), he comes along her own street instead, at
 				# `beside_distance()` — either is a legal draw, so this checks for whichever the
 				# real city actually gave him rather than assuming the common case.
 				var dist := start.distance_to(her)

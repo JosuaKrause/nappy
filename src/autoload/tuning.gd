@@ -1847,6 +1847,20 @@ const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
 ## stand-off at `pursue_speed - WALK_SPEED` — 38px/s against the day-3 dog. Every extra pixel of
 ## stand-off therefore costs 1/38 s of chase, which is why a **narrower** stand-off is what buys a
 ## shorter one.
+##
+## **Two rows carve out this ceiling rather than fall below it: `robber_giving_chase` and
+## `van_guard_giving_chase` run `duration` at `PURSUIT_TIME × 2` (6.0s) each**, and
+## `tests/test_events_costs.gd` names both as the exception to every other pursuer's own ceiling.
+## The trade is the opposite one from the paragraph above: PLAYTEST-140 found a long telegraph
+## itself the problem ("12.9s is a long warning to the point where nothing really happens
+## anymore"), so both rows spend the budget as a short notice (`PURSUIT_MIN_NOTICE` plus a stated
+## margin) and a long chase instead of a long notice and this row's own 3.0s — the doubled chase is
+## what still catches a player who walks away the instant either appears. "A six-second chase is
+## most of the meter" still applies to a player who does neither — walks toward it, stands still,
+## or keeps walking away without ever running — since none of those answers reaches
+## `PURSUIT_SHAKEN_OFF` before either row's own catch; it does not apply to a player who runs, who
+## sheds the chase in `PURSUIT_SHAKEN_OFF`'s own 0.35s of opening gap same as any other pursuer, and
+## is the trade the task these two rows guard was sent to make (PLAYTEST-144, statement 15).
 const PURSUIT_TIME := 3.0
 
 ## And the least a pursuer's speed may differ from either of hers.
