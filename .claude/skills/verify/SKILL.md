@@ -256,3 +256,31 @@ that file's own header and M172, a suite that fails to parse fails the test run,
 **The way to see a genuine hang is to stop piping the run into `tail`** — `tail` prints nothing
 until EOF, so a hung run and a silent one look identical. Redirect to a file and read it; the
 message is usually on line four.
+
+**`tools/test.sh runner_fixtures/unparseable_suite.gd` stages that fixture as a real `.gd` for the
+one process and removes it on exit**, and CI requires that run to fail within seconds, so a
+runner that hangs on a broken suite again is a red check rather than a stuck job.
+
+## An engine error is a failed run, whatever the checks say
+
+**`tools/test.sh` exits non-zero when Godot's output carries `ERROR:`, `SCRIPT ERROR` or `Parse
+Error`** — the words `check.sh` already fails a boot on — in a filtered, serial, single-shard or
+locally sharded run alike, and shows the offending lines. Godot prints those and still exits 0,
+and the runner counts only failed `check()` calls, so the exit code alone would pass them. So a
+test that feeds the game bad input on purpose has to reach a code path that reports it by return
+value: `JSON.new().parse()` rather than the static `JSON.parse_string()`, which prints.
+`tests/runner_fixtures/engine_error.gd` raises one on purpose, runs only when named, and CI
+requires it to go red.
+
+## `check.sh` puts back what its import pass rewrites
+
+**The import pass rewrites two files that have nothing to do with the check.** It turns runs of
+spaces into tabs in `docs/ARCHITECTURE.md`'s file tree, and it makes the editor rewrite
+`project.godot`, which loses more than whitespace: every `;` comment is stripped and a setting can
+go outright, `window/stretch/aspect="keep"` among them, which is load-bearing for the presentation.
+`check.sh` records whether each was clean before it ran and reverts it afterwards if it was,
+printing which file it reverted; the revert runs from an `EXIT` trap, so it also happens when the
+check fails. **A file you had already edited is left alone and named**, since reverting it would
+delete real work to fix a whitespace bug; read it with `git diff`. `tools/export-web.sh` stamps
+`project.godot` with the build's version and commit for the export's duration and puts it back
+from a copy on every exit, so the editor's rewrite never survives an export either.

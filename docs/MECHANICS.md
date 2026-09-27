@@ -385,7 +385,13 @@ changes it; a double press sets the direction and holds **run** until the next p
 releases it, the same deliberate act **Shift** is rather than a gradient a thumb could cross by
 accident. Held down and moved, the pointer keeps re-aiming continuously until it lifts. There is no
 partial-strength walk on any input path: every press or motion event presses a full-speed unit
-vector, so the only two speeds in the game are the walk and the run.
+vector, so the only two speeds in the game are the walk and the run. *(2026-09-06, playtest 27:
+"there is no way to walk slowly -- that is intentional -- there should only ever be one speed (plus
+a second via running)".)* Every pursuit's speed band and lead time is stated against
+`Tuning.WALK_SPEED` as *the* walking speed, so a slower walk would make each of them wrong, and
+`tests/test_touch.gd` holds the rule for every input path. **A press is a heading, never a
+destination**: a tap that walked her to a point would pathfind, and a tap that pathfinds hands the
+route decision to the game.
 
 The two schemes differ only in where that press is measured from. **Tap** aims from wherever she is
 standing, the way a mouse always has, and a press within a generous radius of her stops her.

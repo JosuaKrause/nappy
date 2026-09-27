@@ -53,7 +53,8 @@ func _test_every_building_region_is_baked_on_its_group(t) -> void:
 		Building.ROOF_EDGE_E, Building.WINDOW_DARK, Building.WINDOW_LIT,
 		Building.WINDOW_TALL_DARK, Building.WINDOW_TALL_LIT, Building.WINDOW_SHUTTERED_DARK,
 		Building.WINDOW_SHUTTERED_LIT, Building.FIRE_ESCAPE_A, Building.FIRE_ESCAPE_B,
-		Building.CIVIC_PORTICO, Building.VENT_A, Building.VENT_B, Building.HVAC_A,
+		Building.CIVIC_PORTICO, Building.VENT_HOUSING, Building.VENT_ROTOR,
+		Building.VENT_ROTOR_B, Building.HVAC_A,
 		Building.HVAC_B, Building.DUCT_STRAIGHT, Building.DUCT_CORNER, Building.SKYLIGHT_A,
 		Building.SKYLIGHT_B, Building.VENT_STACK, Building.WATER_TANK,
 	]

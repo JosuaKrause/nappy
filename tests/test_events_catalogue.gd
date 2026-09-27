@@ -227,8 +227,8 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
 ## belongs at the kerb" — so `_centred_on_the_pavement_band()` must leave them flush against it
 ## rather than re-centring them onto the pavement band the way `construction` is. A kerb-parked
 ## `VEHICLE_BODY` (44px across) still has to leave a gap to the frontage narrower than the pram, or
-## the row stops being an obstacle: `docs/HANDOFF.md`'s own reading of that placement is that the
-## gap "is intended and is also the exact shape of 'no line to walk.'"
+## the row stops being an obstacle: `docs/EVENTS.md`'s `delivery_van` row reads that placement as
+## "a **wall** by physical fit", and the gap is the exact shape of "no line to walk."
 func _test_a_kerbed_body_still_pins_the_frontage(t) -> void:
 	var kerb_edge := Tuning.TILE_SIZE * 0.5
 	var band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
@@ -499,6 +499,9 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
 	var map := CityMap.new()
 	var crash := EventCatalogue.by_id("car_accident")
+	# This fixture puts a live scenery-bearing instance in the tree without an EventManager, whose
+	# tree lifetime owns the events page in the game. Mirror that owner explicitly around the rig.
+	AtlasLibrary.acquire(EventInstance.ATLAS_GROUP)
 	t.check(crash.solid_parts.size() == 2, "a crash is two cars, so it puts down two bodies")
 	t.check(crash.solid_reach() < crash.obstructs_radius,
 			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
@@ -534,6 +537,7 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
 				"while the middle of the road, where the cars are, is still shut on a %s street"
 				% street)
 		instance.free()
+	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
 
 ## Where each of an instance's solid pieces sits along its own spread axis, in px from the scene's
 ## centre.

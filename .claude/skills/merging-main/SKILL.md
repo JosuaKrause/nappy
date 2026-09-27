@@ -163,5 +163,5 @@ not a substitute for the semantic review.
 
 Commit the reviewed merge and update the authorized PR. Report the three-way resolutions, any
 renaming map, the conversion's plan, semantic checks, verification and any unresolved decisions.
-Put historical reasoning and mappings in the branch's decision record; keep the queue limited to
-open work, and leave `HANDOFF.md` to the end of the session.
+Put historical reasoning and mappings in the branch's decision record, and keep the queue
+limited to open work.

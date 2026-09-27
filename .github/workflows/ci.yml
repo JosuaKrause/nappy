@@ -22,8 +22,8 @@ on:
 # A new push to a pull request cancels that pull request's older runs: only the newest head can
 # merge, so a run on a superseded commit answers a question nobody is asking and holds nine
 # runners while it does. A push to main is grouped by its own commit instead, so no run on main is
-# ever cancelled by the next merge -- HANDOFF.md's advice to watch main's own run after a batch of
-# merges depends on every merge commit getting its full run.
+# ever cancelled by the next merge -- the committing skill's advice to watch main's own run after
+# a batch of merges depends on every merge commit getting its full run.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true

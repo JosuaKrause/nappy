@@ -56,8 +56,8 @@ The three cases where the orchestrating session implements directly, and they ar
   orchestrator's context fills with implementation detail that an agent would have held instead,
   and the next design decision is taken with less room to take it in.
 - **It is the queue or the archive.** `TODO.md` and the entries under `docs/todo/`, the review
-  items, `HANDOFF.md`, the records under `docs/decisions/` and the playtests are the
-  orchestrator's, always — see "What the orchestrator keeps".
+  items, the records under `docs/decisions/` and the playtests are the orchestrator's, always —
+  see "What the orchestrator keeps".
 
 **Everything else is an agent's**, and a milestone that is not ready for one is a milestone whose
 queue entry is not finished yet. That is the same test the **playtest-feedback** rules already impose:
@@ -111,7 +111,7 @@ Every agent prompt contains, explicitly:
   session can see that and pick it up, rather than the state living only as uncommitted edits in
   a worktree that somebody has to find and diff by hand.
 - **A scope fence**: the files it may touch, and the files it must not — always including
-  `docs/TODO.md`, `docs/todo/`, `docs/review/`, `docs/decisions/`, `docs/HANDOFF.md` and the
+  `docs/TODO.md`, `docs/todo/`, `docs/review/`, `docs/decisions/` and the
   playtests (queue maintenance and
   archiving belong to the orchestrator), plus anything another live agent owns. Two agents editing
   one file is a merge conflict scheduled in advance; when a shared file is unavoidable, tell each

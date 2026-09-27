@@ -1977,7 +1977,8 @@ an invisible wall.
   water, no buildings; east and west a fence, then grass going into forest; north scree and then
   mountainside. It is the land rather than a ring of frontages dressing the edge.
   `City._paint_outside_the_map` is the whole of it — ground rather than objects, outside the map,
-  where no tile, route or event can reach.
+  where no tile, route or event can reach. Water has its own animated surface, absent from the
+  static ground sheet and TileMap; the bulkhead and bridge remain in the static ground.
 - **A band runs the full width of the map, and there is nothing at a corner.** North and south own
   the corners outright, so the mountain and the water run the whole way across and the fence, grass
   and forest are what is left in between. **Giving a corner to whichever side it is further out of
@@ -2045,9 +2046,11 @@ Top-down camera with a fake vertical extrusion:
   already draw — so nothing overhangs the silhouette, and how many a roof carries scales with how
   many interior cells it has. The vent is the one thing on a roof that moves: it swaps between its
   two rotor frames on a timer of its own, and nothing else up there is animated. Furniture is
-  painted by `Building._draw()` itself, above its own roof tiles and inside the layer of buildings
+  painted by retained children of `Building`, above its own roof tiles and inside the layer of buildings
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
-  is never compared against anything on the pavement.
+  is never compared against anything on the pavement. Static furniture batches interleave with
+  separate six-pixel rotor layers in the original painter order; each 1.4-second tick changes
+  only those rotor layers, leaving the facade, roof tiles and housing draw lists intact.
 - **A front is district and block purpose, read the same way a roof's furniture is.** A
   multi-story building's ground floor never shows a window: it is shops or blank wall — the wall
   texture and its own plinth — with the entrance, the civic portico and the fire escape exactly

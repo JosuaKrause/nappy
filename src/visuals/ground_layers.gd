@@ -61,7 +61,8 @@ const _COLOR_MATCH_TOLERANCE := 0.03
 
 # ------------------------------------------------------------------ the build ---
 
-## Duplicates `authored` and gives every source its picture, composed out of the baked page.
+## Duplicates `authored` and gives every static source its picture from the baked page.
+## Water stays atlas-only, drawn by SceneryWater outside this composed static sheet.
 ##
 ## **In a default bake a composed source's picture is its composition or nothing.** The page of a
 ## default bake carries the layers and only those whole tiles the recipe composes nothing for
@@ -91,6 +92,10 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 				% MANIFEST_PATH + "no whole tile to draw instead, so the ground cannot be composed")
 		return null
 	var result := authored.duplicate(true) as TileSet
+	# Water belongs to its animated surface. Keep its baked region available to that owner,
+	# but do not copy its pixels or source into the static ground's composed sheet.
+	if result.has_source(GroundTiles.WATER):
+		result.remove_source(GroundTiles.WATER)
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	# Built once and shared by both grass sources, exactly as the authored TileSet shares one
 	# picture between two source ids — `_upload_one_sheet` places a shared image once. An `--svg`

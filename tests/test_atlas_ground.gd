@@ -238,13 +238,15 @@ func _test_the_ground_is_one_composed_sheet(t) -> void:
 	t.check(size.x <= AtlasLibrary.MAX_ATLAS_SIDE and size.y <= AtlasLibrary.MAX_ATLAS_SIDE,
 			"the composed ground fits the %dpx phone-safe canvas side (%s)"
 			% [AtlasLibrary.MAX_ATLAS_SIDE, size])
-	# The authored ids all survive with their authored geometry, and the route-kerb twins are on
+	# Static authored ids survive with their geometry, and the route-kerb twins are on
 	# top of them — asked with `has_source()` first, so a missing id fails by name here instead of
 	# printing an engine error the runner never counts (M163).
 	var lost: Array[String] = []
 	var reshaped: Array[String] = []
 	for index in AUTHORED_GROUND.get_source_count():
 		var id := AUTHORED_GROUND.get_source_id(index)
+		if id == GroundTiles.WATER:
+			continue
 		if not composed.has_source(id):
 			lost.append(str(id))
 			continue
@@ -256,7 +258,7 @@ func _test_the_ground_is_one_composed_sheet(t) -> void:
 				or after.separation != before.separation:
 			reshaped.append("%d (%s/%s against %s/%s)" % [id, after.texture_region_size,
 					after.separation, before.texture_region_size, before.separation])
-	t.check(lost.is_empty(), "composing keeps every authored source id (%s lost)"
+	t.check(lost.is_empty(), "composing keeps every static authored source id (%s lost)"
 			% ", ".join(lost.slice(0, 5)))
 	t.check(reshaped.is_empty(), "composing keeps every source's authored cell geometry (%s)"
 			% ", ".join(reshaped.slice(0, 5)))
@@ -268,8 +270,10 @@ func _test_the_ground_is_one_composed_sheet(t) -> void:
 	t.check(twins == GroundTiles.ROUTE_KERB_SOURCES.size(),
 			"every route-kerb source has its tinted twin registered (%d of %d)"
 			% [twins, GroundTiles.ROUTE_KERB_SOURCES.size()])
-	t.check(composed.get_source_count() == AUTHORED_GROUND.get_source_count() + twins,
-			"the composed TileSet is the authored sources plus their twins and nothing else (%d against %d + %d)"
+	t.check(not composed.has_source(GroundTiles.WATER) and AtlasLibrary.has_region(&"tiles/water"),
+			"water stays available in its atlas without a static composed source")
+	t.check(composed.get_source_count() == AUTHORED_GROUND.get_source_count() - 1 + twins,
+			"the composed TileSet excludes water and adds route twins (%d against %d - 1 + %d)"
 			% [composed.get_source_count(), AUTHORED_GROUND.get_source_count(), twins])
 
 # -------------------------------------------------------------- the pixels ---
