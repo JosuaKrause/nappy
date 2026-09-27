@@ -99,3 +99,17 @@ python3 docs/evidence/m159-scenery-animation-2026-09-26/summarize-native.py /abs
 
 The output directory must be new, so existing evidence cannot be overwritten. The runner stops
 after any rejected capture and retains its reason instead of continuing a blind launch loop.
+
+## Final CI reconciliation
+
+The timing runs measure source `0fed117cb0b30f1fcd554c7b7256a9a510c14922`. A subsequent
+correction, `c753b3d1641e92978f01a46458906961fdae148a`, removes redundant events-page
+acquire/release calls from each `EventScenery`; `EventManager` already owns that page for its
+tree lifetime. This changes stream-in/out reference-count work, not drawing or animation cadence.
+The timing runs are retained at their original source identity; there is no new measurement of
+the corrected final head. Main's later `27d80a55` merge changes docs/tool help, not game code.
+
+The same correction makes the southern-camera coverage test count actual independent water
+cells alongside static ground. Both failures reproduce before the fix. Afterwards,
+`tools/test.sh camera_start main atlas_events scenery_animation event_redraw atlas_leaf_consumers`
+passes 3,093 checks, and `tools/check.sh` passes. Full-suite verification remains CI's.

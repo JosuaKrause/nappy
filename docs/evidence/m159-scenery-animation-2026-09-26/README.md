@@ -81,3 +81,11 @@ not displaced geometry or missing underlying surfaces. The event atlas grows fro
 765×1024 pixels (375,408 additional base RGBA8 bytes), because unchanged halo/badge rendering
 still consumes the complete scenes alongside the new cropped parts. The building atlas remains
 332×576 and the baked ground atlas remains 172×308; no atlas-memory saving is claimed.
+
+Final CI reconciliation removes redundant events-page references from `EventScenery` and updates
+the southern-camera coverage assertion to include the actual water surface. The event manager
+owns the shared page throughout its tree lifetime. Both failures reproduce before correction;
+the combined camera/main/atlas-events/scenery/event-redraw/atlas-consumer focused run passes
+3,093 checks after it, and import/boot passes. Artwork, draw geometry and timing are unchanged.
+The [native report](native/README.md#final-ci-reconciliation) identifies the measured source and
+the later ownership fix separately; no new timing results are claimed for that fix.

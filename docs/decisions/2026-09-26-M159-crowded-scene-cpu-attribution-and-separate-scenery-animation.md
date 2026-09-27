@@ -136,3 +136,15 @@ CI on the preceding source checkpoint exposed two integration assumptions outsid
 selected suites: southern camera coverage counted only static ground tiles, and event-atlas
 ownership expected one page reference while separated moving layers added another. These
 failures require reconciliation on this PR before its final independent readiness verdict.
+
+Correction `c753b3d1` removes `EventScenery`'s redundant acquire/release calls: `EventManager`
+already holds the events page across its full tree lifetime, covering streamed children and
+day clears. The camera coverage failure belongs to `test_main.gd`, not `test_camera_start.gd`;
+its zero-unpainted assertion now counts actual water-surface cells alongside static TileMap cells.
+Before the correction, `tools/test.sh camera_start atlas_events` reproduces three ownership
+failures, and `tools/test.sh main` reproduces both southern-corner coverage failures. Afterwards,
+`tools/test.sh camera_start main atlas_events scenery_animation event_redraw atlas_leaf_consumers`
+passes 3,093 checks; import/boot and whitespace checks pass. This is a focused run, not full CI.
+No artwork, draw geometry, animation clock or gameplay changes. The archived timings remain
+measurements of `0fed117c`; the final reference-count correction affects stream-in/out and is
+not remeasured, so those results are not presented as fresh measurements of the final head.
