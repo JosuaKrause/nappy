@@ -27,6 +27,24 @@ classification caching, identical danger-prediction reuse, and reuse/lazy prepar
 visuals before they enter view. Their mechanisms are proposals to measure. No further optimization
 pass is selected for implementation at this checkpoint.
 
+## Other pickup threads
+
+Run the queue for current priority; its immediate entries are M227, Codex as a Claude Code
+sub-agent; M226, pursuing-dog timing and the other warnings; and M223, the queue/review overhaul.
+Other sessions' open work stays separate from this animation checkpoint.
+
+PR #362, the trap comes to her, needs its decision identity reconciled with M137's queue
+identity and its record checked against the event doc's trap variants. PR #365, courtyard roofs
+and furniture, needs its M216 queue closure and visual evidence reviewed; the map-edge front
+case still needs a design answer. PR #379, the man shouting, carries the proposed standing
+handover and the unresolved report of zero charge. Inspect each live PR and its own brief before
+resuming any of them.
+
+The spent-park follow-up remains a plan with an unrun regression start; its queue item is
+M129, a spent park is closed. The post-release counter readback belongs to
+[the counter review item](review/2026-09-26-after-the-next-release-read-the.md):
+a path beginning `/nappy` counts site access and a name beginning `nappy-` counts a game metric.
+
 ## Work safely across sessions
 
 Inspect `tools/agent-status.sh` and the current briefs under `.claude/briefs/` before touching

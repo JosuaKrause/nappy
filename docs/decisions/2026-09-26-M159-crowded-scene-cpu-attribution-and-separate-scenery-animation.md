@@ -122,3 +122,17 @@ on `has_a_spread()` over 759–764 calls/frame, with 2,640–2,653 crowd contrib
 These support investigation; call counts do not establish identical inputs or hitch causation.
 Lazy preparation must measure the actual shared-sheet/draw-command architecture, preserve eager
 gameplay state and avoid first-visible-frame loading. No proposed follow-up is implemented here.
+
+The final review checkpoint merged main `27d80a55` into `74c89bae` from base `3d3f2c96`.
+Only `HANDOFF.md` conflicted: main carried other sessions' pickup state and an outdated plan-only
+description of this PR; the branch carried the completed animation checkpoint. The resolution
+kept the current animation state and retained the other open PRs, spent-park plan and counter
+readback as separate pickup threads. Main's independent queue/playtest records stayed distinct.
+Its GoatCounter edits clarified stored path spelling in help/docstrings, without changing
+runtime code; telemetry docs and the review item agree on `/nappy` visits versus `nappy-` metrics.
+No gameplay source or measurement collector changed in this merge.
+
+CI on the preceding source checkpoint exposed two integration assumptions outside the locally
+selected suites: southern camera coverage counted only static ground tiles, and event-atlas
+ownership expected one page reference while separated moving layers added another. These
+failures require reconciliation on this PR before its final independent readiness verdict.
