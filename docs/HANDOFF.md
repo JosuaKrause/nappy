@@ -321,12 +321,10 @@ checks and worktrees can move independently of this file.
     and evidence are under `docs/evidence/m159-scenery-animation-2026-09-26/`; the original
     profiling evidence is under `docs/evidence/m159-entity-performance-2026-09-26/`. M159 retains
     the broader partial-sprite audit, prediction/classification investigations and lazy visual
-    preparation. No merge or release is authorized in this session.
+    preparation.
 - **Branch `fix/spent-park-followup`, no PR**: M129's item "a fence carried into the next days keeps
   two calm areas on the route tree" holds the plan; the branch has only an unrun start of its
   regression test. The player: "plan the fix but we need to focus on other tasks right now".
-- **Merge permission**: no merge or release is authorized in this session. Read current-session
-  instructions before merging any PR; earlier sessions' permissions do not carry over.
 - `.claude/briefs/` holds the brief of every branch worked this session, with every amendment;
   start fresh agents from them rather than resuming this session's.
 

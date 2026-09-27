@@ -193,6 +193,9 @@ the earlier controlled timings retain their original source identity.
 
 The original profiling folder is renamed to `m159-entity-performance-2026-09-26` to carry its
 queue entry. Live links move with it; raw summary path fields retain the capture-time spelling,
-and the report documents that mapping. The handoff restores unrelated guidance from main while
-updating this PR's pickup state. The player's explicit visual approval closes the appearance
-item. The correction work leaves the queue; final independent review and CI remain PR gates.
+and the report documents that mapping. `docs/HANDOFF.md` keeps this PR's own pickup state rather
+than main's restored version: the player chose it explicitly, "I prefer codex's version of the
+handoff." Its session-specific merge/release-permission sentences are removed regardless, per the
+player: "remove that bit altogether -- this is not something that should go into a checked in
+handoff." The player's explicit visual approval closes the appearance item. The correction work
+leaves the queue; final independent review and CI remain PR gates.

@@ -609,9 +609,12 @@ answers it for a `SIDEWALK` one, with no second lookup for either. A junction (b
 coordinates inside a corridor band) and ground off any corridor at all (a square, a park, a
 courtyard) both keep the default lay along local X: neither has one street to be wrong about.
 
-The fallen tree, car accident and burst water main each use one complete street scene.
-`EventInstance._draw_wide_scene()` fits the scene to the obstructed span. On an east–west street,
-its vertical image (and its shadow, for the two of the three that draw one — see
+The fallen tree, car accident and burst water main each use one complete street scene picture,
+fitted to the obstructed span. The fallen tree draws it every frame through
+`EventInstance._draw_wide_scene()`; the crash and burst main draw it on screen through a separate
+`EventScenery` layer that `_build_scenery()` fits with the same measurements, and
+`_draw_wide_scene()` itself runs for those two only on the halo's own canvas. On an east–west
+street, its vertical image (and its shadow, for the two of the three that draw one — see
 `draws_body_shadow` above) is centred on the event's ground point; the bottom-centred anchor
 used for an upright person would shift the whole scene onto the northern pavement.
 

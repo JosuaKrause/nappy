@@ -848,8 +848,11 @@ static func has_a_spread(def: EventDef) -> bool:
 ## `_spread_vertical` together pick the texture, with no field on the def.
 ##
 ## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst
-## main's fountain, each alternated off `_idle_stepping()` by `_draw_body()`. The fallen tree has
-## nothing that moves and answers its one picture either way.
+## main's fountain. On screen the two are `EventScenery` layers built by `_build_scenery()`, and
+## `_update_scenery()` alternates their frame off its own `_idle_stepping()` call; `_draw_body()`
+## only picks `frame_b` here when it draws the whole scene itself, which happens on the halo's own
+## canvas (`canvas != self`) or before `_build_scenery()` has run (`_scenery == null`). The fallen
+## tree has nothing that moves and answers its one picture either way.
 static func _wide_scene_texture(look: EventDef.Look, vertical: bool, frame_b := false) -> String:
 	match look:
 		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
