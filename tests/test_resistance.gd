@@ -15,6 +15,7 @@ const RULE_SEEDS := 3
 
 func run(t) -> void:
 	_test_step_table(t)
+	_test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t)
 	_test_step_selection(t)
 	_test_the_finale_needs_the_legwork(t)
 	_test_touching_completes_a_pickup(t)
@@ -131,6 +132,20 @@ func _test_step_table(t) -> void:
 			"there are more built perform steps than the goal needs, so one task can be missed")
 	t.check(steps[steps.size() - 1].needs_goal, "the finale is the last step")
 	t.check(steps[steps.size() - 1].day == Tuning.RUN_LENGTH_DAYS, "and it is on the last day")
+
+## rosy-raven, "day 8's task text is short" — *"yeah, day 8th hint needs to be fixed. it's too
+## long"* (olive-koala, statement 3; the same 79-character line
+## `docs/todo/2026-09-09-M100/day-8s-mark-line-runs-off.md` already found running off the HUD's
+## own teaching line, which does not wrap). A relationship rather than a literal, since the exact
+## wording is this branch's own choice, not the player's: about as long as day 6's own mark, the
+## item's own reference for "short", and still saying where to take it.
+func _test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t) -> void:
+	var day6 := ResistanceSteps.by_index(1).brief
+	var day8 := ResistanceSteps.by_index(5).brief
+	t.check(day8.length() <= day6.length() * 1.5,
+			"day 8's mark (%d chars, %s) is about as long as day 6's (%d chars), not the old 79"
+			% [day8.length(), day8, day6.length()])
+	t.check("burnt building" in day8, "and it still says where to take it")
 
 func _test_step_selection(t) -> void:
 	var none: Array[int] = []
@@ -3307,6 +3322,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 			city.free()
 		GameState.completed_resistance_alley_tiles = saved_tiles
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
+
 
 ## Cities whose narrow targets the day's own seals and bodies could ring, found by
 ## `tests/probes/m181_resistance_targets.gd`'s wide run: each had a last-night destination cut off
