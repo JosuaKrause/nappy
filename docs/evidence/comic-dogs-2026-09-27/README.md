@@ -1,0 +1,103 @@
+# Comic dog SVG-to-PNG preview
+
+This is the first preview-only transfer of the walked dog and charging dog from their authored
+SVG families into comic PNG candidates. It does not install any candidate under `art/`, change an
+atlas, or alter runtime behavior. The player acceptance gate remains open.
+
+## Current proposal
+
+- [Walked-dog source/candidate comparison](review-dog.png) shows native and game-scale candidates,
+  6× enlargements, and all eight runtime facings, including the three west mirrors.
+- [Charging-dog source/candidate comparison](review-charging-dog.png) shows the same coverage for
+  the charging family.
+- [Walked-dog A/B comparison](pose-comparison-dog.gif) and
+  [charging-dog A/B comparison](pose-comparison-charging-dog.gif) alternate the two extracted
+  poses. These GIFs are assembled pose comparisons, not captures or proof of live movement.
+- [Walked-dog raw output](raw/walked-dog-grid.png) and
+  [charging-dog raw output](raw/charging-dog-grid.png) preserve the generator's first useful
+  results unchanged.
+
+Both raw grids contain ten visible cells in the requested five-view by two-stride order and carry
+real alpha, with no floor, checkerboard, halo, leash, or cast shadow. The walked dog retains its
+tan-and-cream coat, soft ears, raised tail, and blue collar. The charging dog retains its dark
+black-and-tan identity, pinned ears, raised hackles, low head, red jaw, and white teeth. The source
+and candidate comparisons were inspected at native size, game scale, and 6× enlargement.
+
+The first attempt is useful for judging the proposed comic rendering, but it is not ready to bind.
+Stride B changes head and body placement in the walked side and diagonal views, and changes the
+charging silhouette in the side and diagonal views. The generated figures are also taller or
+deeper than the SVG proportions in some views. Proportion-preserving registration therefore makes
+some native candidates smaller than the source figure. The comparison sheets and GIFs leave those
+differences visible.
+
+## Authority and mapping
+
+The twenty SVG files in [sources.txt](sources.txt) define identity, projection, pose, canvas,
+bottom-center ground registration, and stride pairing. [source-manifest.json](source-manifest.json)
+records every source path, SHA-256, native size, and grid cell. The two approved style references,
+`docs/style-references/graphics-reference-urban-01.jpeg` and
+`docs/style-references/graphics-reference-cardinal.jpeg`, supply comic line, shaped color and
+shadow language only. They do not supply identity, projection, layout, interface, annotations, or
+scenery.
+
+[PROMPTS.md](PROMPTS.md) preserves the exact prompts and reference roles sent to Codex's built-in
+`image_gen`. One call produced each family. The built-in tool exposes no model selector or model
+version in this workflow. Generation is nondeterministic; the retained raw PNGs are the fixed
+inputs for every reproducible step after it.
+
+The raw walked-dog output is 1983×793 RGBA with SHA-256
+`36b57216012e7c63398128bcd4bac717b946ac17cb5995495afc5bc92a923486`. The raw charging-dog
+output is 2094×751 RGBA with SHA-256
+`a674ad5a021b939ad90a40c91769cbd8dab7521dfddef8cb44e8bd96ec0ee793`.
+
+[candidate-manifest.json](candidate-manifest.json) maps every SVG to its extracted crop and native
+candidate, with the raw grid cell and visible bounds, source and candidate hashes, native canvas,
+registration box, shared A/B scale, placement, and final alpha bounds. The `candidates/` files are
+evidence candidates only; none is a runtime asset.
+
+## Extraction and registration
+
+Each raw sheet uses inspected column and row boundaries recorded in `assemble.py`, because the
+generator spaces the five views unevenly. Within each selected cell, alpha above 10 locates the
+object and a two-pixel pad keeps its antialiased edge; the crop then preserves the original alpha
+unchanged. This avoids both low-alpha dust expanding a crop and a neighboring dog leaking across a
+uniform cell boundary. The threshold selects the framing box only and never rewrites artwork alpha.
+
+The two strides for one authored view use one scale derived from the larger raw width and height
+and the union of both SVG source alpha bounds. Each retains its own proportions, is centered
+horizontally and bottom-aligned inside that shared target, then downsampled with Lanczos onto the
+source's native canvas. The process applies no SVG alpha mask and does no pixel painting. Internal
+A/B proportion and landmark drift remains in the candidates instead of being normalized away.
+
+`assemble.py` also builds the comparison sheets and the two-frame GIFs. The game-scale rows use the
+illustrated sidewalk and road textures and nearest-neighbor enlargement, matching the game's 2×
+camera scale. The enlarged rows use a checker only in the review sheet to expose transparency; it
+is not present in any candidate.
+
+## Rebuild
+
+Run from the repository root. A fresh worktree runs the import check first so Godot has its class
+registry:
+
+```sh
+./tools/check.sh
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
+  --script docs/evidence/comic-dogs-2026-09-27/render-svgs.gd -- \
+  docs/evidence/comic-dogs-2026-09-27/sources.txt . \
+  docs/evidence/comic-dogs-2026-09-27/source-renders
+uv run python docs/evidence/comic-dogs-2026-09-27/assemble.py source-grids
+```
+
+Use the built-in generator with the local reference paths and exact prompts in `PROMPTS.md`, then
+preserve its raw outputs under `raw/` with the filenames and hashes above. Rebuild and verify every
+deterministic derivative:
+
+```sh
+uv run python docs/evidence/comic-dogs-2026-09-27/assemble.py candidates
+uv run python docs/evidence/comic-dogs-2026-09-27/assemble.py verify
+```
+
+The retained recipe ran with Godot 4.7.2 (`ed1daf0bf`), Python 3.14.7, and Pillow 12.3.0.
+`verify` checks all twenty source hashes, all twenty source-to-candidate mappings, exact native
+candidate dimensions, actual transparent and visible alpha, and both comparison sheets and pose
+comparisons.
