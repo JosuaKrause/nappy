@@ -193,6 +193,9 @@ const AMBIENT_SHUTTER_SHARE := 0.3
 
 const VENT_A := &"props/industrial_vent"
 const VENT_B := &"props/industrial_vent_b"
+const VENT_HOUSING := &"props/industrial_vent_housing"
+const VENT_ROTOR := &"props/industrial_vent_rotor"
+const VENT_ROTOR_B := &"props/industrial_vent_rotor_b"
 const HVAC_A := &"props/roof_hvac_unit"
 const HVAC_B := &"props/roof_hvac_unit_b"
 const DUCT_STRAIGHT := &"props/roof_duct_straight"
@@ -426,11 +429,14 @@ var _door_col := 0
 ## before near ones without re-sorting every frame — the same back-to-front order a unit taller
 ## than one tile (the water tank) needs to lie correctly over whatever is in the row behind it.
 var _roof_furniture: Array[Dictionary] = []
-## Whether any roof unit this building rolled is the animated vent, so `_process` only runs — and
-## `queue_redraw()` only fires on a timer — for the buildings that have something moving on them.
+## Only the small rotor layers redraw on the vent timer. Static batches between rotors keep
+## the back-to-front furniture order, including a taller unit overlapping a vent behind it.
 var _has_vent := false
 var _vent_frame_b := false
 var _vent_timer := 0.0
+var _roof_layers: Array[SceneryLayer] = []
+var _rotor_layers: Array[SceneryLayer] = []
+var _station_layer: Node2D
 
 ## Acquires the `buildings` atlas group rather than `_ready()`, so a building added and removed
 ## from the tree more than once stays paired with `_exit_tree()` — `_ready()` only ever runs the
@@ -453,7 +459,8 @@ func _process(delta: float) -> void:
 		return
 	_vent_timer = 0.0
 	_vent_frame_b = not _vent_frame_b
-	queue_redraw()
+	for rotor in _rotor_layers:
+		rotor.frame_b = _vent_frame_b
 
 func _rebuild() -> void:
 	if not is_inside_tree():
@@ -473,6 +480,7 @@ func _rebuild() -> void:
 	_build_front()
 	_build_entrance()
 	_build_roof_furniture()
+	_build_roof_layers()
 	set_process(_has_vent)
 	queue_redraw()
 
@@ -781,9 +789,8 @@ func _draw() -> void:
 			if col == hall.y - 1:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_E), at)
 
-	_draw_roof_furniture(wall_rows)
-	if power_station:
-		_draw_power_station(wall_rows, hall)
+	if _station_layer != null:
+		_station_layer.queue_redraw()
 
 ## The power station hall's own facade in place of the ordinary wall, windows and ground floor —
 ## industrial rather than a block of flats: steel cladding, a hazard-striped ground course, and a
@@ -832,20 +839,20 @@ func _hall_cols() -> Vector2i:
 ## stacks on the hall's roof. The yard picture's lines run off its west edge towards the hall, so a
 ## yard west of the hall is drawn mirrored — through `Sprites.draw_standing`, the one place that
 ## mirrors, anchored at the yard's own bottom centre on the lot's south edge.
-func _draw_power_station(wall_rows: int, hall: Vector2i) -> void:
+func _draw_power_station(wall_rows: int, hall: Vector2i, canvas: CanvasItem = self) -> void:
 	if station_yard_cols.y > 0:
 		var yard := AtlasLibrary.region(POWER_STATION_YARD)
 		var left := _cell(station_yard_cols.x, 0).x
 		var foot := Vector2(left + station_yard_cols.y * TILE * 0.5, 0.0)
 		var mirrored := station_yard_cols.x < hall.x
-		Sprites.draw_standing(self, yard, foot, Vector2.ZERO, mirrored)
+		Sprites.draw_standing(canvas, yard, foot, Vector2.ZERO, mirrored)
 	var stack := AtlasLibrary.region(POWER_STATION_STACK)
 	var roof_rows := roof_tiles()
 	for cell in _STACK_CELLS:
 		var col := hall.x + mini(cell.x, hall.y - hall.x - 1)
 		var row := mini(cell.y, roof_rows - 1)
 		var at := _cell(col, wall_rows + row)
-		Sprites.draw_standing(self, stack, at + Vector2(TILE * 0.5, TILE))
+		Sprites.draw_standing(canvas, stack, at + Vector2(TILE * 0.5, TILE))
 
 ## Top-left corner of a cell, counting rows northward from the ground line.
 func _cell(col: int, row: int) -> Vector2:
@@ -1076,16 +1083,47 @@ static func _shuffle(cells: Array[Vector2i], rng: RandomNumberGenerator) -> void
 		cells[i] = cells[j]
 		cells[j] = tmp
 
-## Paints every roof unit, back to front (`_build_roof_furniture` sorted them), above the roof
-## tiles this same `_draw()` call has just finished — see the class doc for why nothing here may
-## ever be y-sorted against the street: this is still the one `_draw()` the Buildings layer calls.
-func _draw_roof_furniture(wall_rows: int) -> void:
+## Static spans and small rotors share the authored furniture order. Child layers inherit the
+## building's pause mode and stay in its Buildings layer, never y-sorted against street actors.
+func _build_roof_layers() -> void:
+	for layer in _roof_layers:
+		layer.free()
+	_roof_layers.clear()
+	_rotor_layers.clear()
+	if _station_layer != null:
+		_station_layer.free()
+		_station_layer = null
+	var layer := _new_roof_layer()
 	for entry in _roof_furniture:
 		var cell: Vector2i = entry["cell"]
 		var span: int = entry["span"]
-		var at := _cell(cell.x, wall_rows + cell.y)
+		var at := _cell(cell.x, wall_tiles() + cell.y)
 		var anchor := at + Vector2(TILE * span * 0.5, TILE)
-		Sprites.draw_standing(self, AtlasLibrary.region(_furniture_texture(entry["kind"])), anchor)
+		var vent: bool = entry["kind"] == _Furniture.VENT
+		var texture := AtlasLibrary.region(VENT_HOUSING if vent else _furniture_texture(entry["kind"]))
+		var top_left := anchor - Vector2(texture.get_width() * 0.5, texture.get_height())
+		layer.append(texture, Rect2(top_left, texture.get_size()))
+		if vent:
+			var rotor := _new_roof_layer()
+			rotor.frame_b = _vent_frame_b
+			rotor.append(AtlasLibrary.region(VENT_ROTOR),
+					Rect2(top_left + Vector2(21, 19), Vector2(6, 6)),
+					AtlasLibrary.region(VENT_ROTOR_B))
+			_rotor_layers.append(rotor)
+			layer = _new_roof_layer()
+	if power_station:
+		_station_layer = Node2D.new()
+		add_child(_station_layer)
+		_station_layer.draw.connect(_draw_station_layer)
+
+func _new_roof_layer() -> SceneryLayer:
+	var layer := SceneryLayer.new()
+	_roof_layers.append(layer)
+	add_child(layer)
+	return layer
+
+func _draw_station_layer() -> void:
+	_draw_power_station(wall_tiles(), _hall_cols(), _station_layer)
 
 func _furniture_texture(kind: int) -> StringName:
 	match kind:
