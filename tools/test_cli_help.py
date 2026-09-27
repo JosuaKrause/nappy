@@ -45,6 +45,7 @@ ENTRY_POINTS = (
     "split-scenes.py",
     "migrate-queue.py",
     "convert-queue-edits.py",
+    "release-notes.py",
 )
 
 SOUND_FILES = (

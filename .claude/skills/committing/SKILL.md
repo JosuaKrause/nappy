@@ -110,11 +110,21 @@ and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge com
 `.github/workflows/ci.yml` runs lint, check and the full suite, sharded, on every push to `main`
 and every pull request — a new push to a pull request cancels that pull request's older runs, and
 a run on `main` is never cancelled. `.github/workflows/deploy.yml` fires on a `v*` tag and nothing
-else: verify, boot check, export, upload, publish, in that order. **The deploy does not run the
-suite again.** The `version tags` ruleset requires the `test` check on the commit a tag points at,
-so a tag on a red or untested commit cannot be pushed, and the deploy's first job asks the API for
-that check's outcome and refuses to build without it — the same read `tools/release.sh` waits on
-before it tags.
+else: verify, boot check, export, upload, publish, then the GitHub release, in that order. **The
+deploy does not run the suite again.** The `version tags` ruleset requires the `test` check on the
+commit a tag points at, so a tag on a red or untested commit cannot be pushed, and the deploy's
+first job asks the API for that check's outcome and refuses to build without it — the same read
+`tools/release.sh` waits on before it tags.
+
+**The release's notes are generated, not written.** The deploy's last job runs `tools/release-notes.py
+<tag>` — deterministic from git alone, no model and no network call to compute — and publishes its
+Markdown as the tag's GitHub Release (`gh release create --notes-file`, or `gh release edit` when a
+release for that tag already exists, so a re-run of the deploy is idempotent). One bullet per
+commit's own subject line on `main`'s first-parent history, grouped into a Game and a Tooling and
+docs section by what each commit changed. A patch tag (`vX.Y.Z`, `Z>0`) covers everything since the
+previous tag; a minor tag (`vX.Y.0`) covers everything since the previous `.0` tag, folding in every
+patch between them, and a major tag is treated the same way. `tools/release.sh`'s dry run previews
+the same notes before anything is tagged.
 
 **Publishing is a separate, deliberate act, and it needs its own go-ahead from the player in the
 current session**; merge permission is not release permission. Completed work may be pushed

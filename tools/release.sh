@@ -43,9 +43,10 @@ usage() {
     cat <<'EOF'
 usage: tools/release.sh [--help|-h] <major|minor|patch> [push]
 
-Bumps the latest version tag by the given part and prints the plan. Add the literal word
-"push" to actually tag and push, once every refusal (dirty tree, wrong branch, main not level
-with origin/main, checks not green) passes.
+Bumps the latest version tag by the given part and prints the plan, including the notes
+tools/release-notes.py would publish for it. Add the literal word "push" to actually tag and
+push, once every refusal (dirty tree, wrong branch, main not level with origin/main, checks not
+green) passes.
 
   tools/release.sh patch
   tools/release.sh patch push
@@ -147,6 +148,18 @@ esac
 
 echo "current: $CURRENT"
 echo "next:    $NEXT  ($PART)"
+
+# `tools/release-notes.py` needs no tag to exist yet -- `--commit` gives it the commit NEXT would
+# point at, which is exactly TARGET_SHA -- so the dry run can preview the notes deploy.yml's own
+# release job would publish, cheaply and before anything is tagged. Read-only, so it runs
+# unwrapped even under an agent identity; only the tag and the push below are writes.
+echo ""
+if command -v uv >/dev/null 2>&1; then
+    echo "notes for $NEXT:"
+    uv run --quiet python "$PROJECT_DIR/tools/release-notes.py" "$NEXT" --commit "$TARGET_SHA"
+else
+    echo "notes:   uv not found -- see .claude/skills/python-tooling/SKILL.md" >&2
+fi
 
 # How the `test` check on the commit about to be tagged is doing, as one word: success, failure,
 # pending (running, or not all of them finished), none (no test run has registered yet), or

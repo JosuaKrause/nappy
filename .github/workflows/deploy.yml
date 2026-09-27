@@ -174,3 +174,49 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # The native form of a release: a GitHub Release on the tag, published only once the site
+  # itself is live, from `tools/release-notes.py` -- deterministic from git alone, no model and
+  # no network call to compute. `contents: write` is scoped to this job alone; the workflow-level
+  # permissions above stay exactly as narrow as they were before this job existed.
+  release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # Full history and every tag, unlike `build`'s partial clone above: tools/release-notes.py's
+      # own `git tag --merged` and `git log --first-parent` walk back through every earlier
+      # release tag and every commit between them, not just the one this workflow tagged.
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          fetch-depth: 0
+          fetch-tags: true
+
+      # The runner image's own python3 is not the pinned toolchain -- python-tooling pins Python
+      # 3.14 and runs every repository script through `uv run python`, the same as ci.yml's
+      # `gates` job does for its own Python steps.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Compute the release notes
+        run: uv run --quiet python tools/release-notes.py "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /tmp/release-notes.md
+
+      # Idempotent: a re-run of this workflow on a tag that already has a release (a manual
+      # "re-run jobs", say) edits that release's notes instead of failing on "already exists" --
+      # `gh release create` has no flag of its own for that, so this checks first.
+      - name: Publish or update the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --notes-file /tmp/release-notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --title "$GITHUB_REF_NAME" --notes-file /tmp/release-notes.md --verify-tag
+          fi
