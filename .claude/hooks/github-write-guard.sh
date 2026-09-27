@@ -124,10 +124,12 @@
 # a `;` up to the next git, gh, wrapper or pushing-script command, so a write flag after a quoted
 # `|` is still seen). Both are the stricter reading, and both cost false denies in exactly those
 # commands: `run <role> -- bash -c "a; b"` beside a `$(...)` is denied, and so is a `gh api` read
-# piped into a command that takes `-f`, `-F`, `-X` or `--input` (`| grep -F x`), an explicit GET
-# included, since a field past a soft separator counts as a write even under a GET. So is a wrapped
-# heredoc commit or PR body whose text names a write (a line such as "run `git push` through the
-# wrapper"): the heredoc makes the command unsure, its first newline ends the wrapper's reach, and
+# with no explicit GET piped into a command that takes `-f`, `-F`, `-X` or `--input` (`| grep -F
+# x`). So is a line of heredoc prose that starts with a reserved word, `time`, `exec` or `eval` and
+# then a pushing script's path (`if tools/land-prs.sh is named, it is read.`): every newline of an
+# unsure command is a separator, and the word after a reserved word is read in command position.
+# So is a wrapped heredoc commit or PR body whose text names a write (a line such as "run `git
+# push` through the wrapper"): the heredoc makes the command unsure, its first newline ends the wrapper's reach, and
 # the mention after it reads as an unwrapped write. When the denied command holds a wrapper, the
 # deny message says so and points at a body file (`git commit -F file`, `--body-file file`, `gh api
 # -F body=@file`), which the hook never reads. A command over 64 KB that names git, gh or a
@@ -519,10 +521,12 @@ def detect_git($w; $t; $i; $n):
 # is already part of the scan under way, which reads its flags as the first call's. Without that
 # bound, every `gh api` mentioned after a quoted separator -- a line of a heredoc body in an
 # unsure command, say, where every separator is soft -- would scan again to the same end, a cost
-# quadratic in how many there are. A real call is never inside another call's scan: a separator
-# followed by a command start (past assignments, wrapper words and reserved words, `do gh api`,
-# `{ gh api`, `then gh api`) ends the earlier scan, so the call after it is scanned in full, and a
-# field the earlier scan picks up past its crossing counts as a write even under its own `-X GET`.
+# quadratic in how many there are. A real call that a command-position table can see is never
+# inside another call's scan: a separator followed by a command start, wherever any of the tables
+# puts it (past assignments, wrapper words and their options, and reserved words: `do gh api`,
+# `{ gh api`, `sh -c "gh api ..."`), ends the earlier scan, so the call after it is scanned in
+# full; and a field the earlier scan picks up past its crossing, with a `gh` or `api` word between
+# the two, counts as a write even under its own `-X GET`.
 # What the bound costs is a mention's flags past its own next separator (`echo gh api --jq '.a |
 # .b' -f x=y` inside a script whose first call is a GraphQL read) counting only toward the call
 # whose scan they fall in.
@@ -545,21 +549,33 @@ def write_tool_names: ["release.sh", "prune-merged.sh", "land-prs.sh", "update-p
 # this hook detects: git, gh, the identity wrapper or a pushing script. A `gh api` scan stops at a
 # soft separator followed by one, so glued calls inside one quoted `bash -c "..."` are each
 # scanned once rather than each to the end of the string.
+#
+# The command word can be where any of the command-position tables puts it (see `command_words`):
+# git's and gh's options (`cw`), the wrapper's own (`cw2`, where the script after `sh -c`/`bash -c`
+# is a command of its own), and, when the reading is unsure, the word-by-word ones (`.tp`).
+def command_positions($t; $j):
+  [$t.cw[$j] // $j]
+  + (if $t.cw2 == null then [] else [$t.cw2[$j] // $j] end)
+  + (if $t.tp == null then []
+     else [$t.tp.cw[$j] // $j] + (if $t.tp.cw2 == null then [] else [$t.tp.cw2[$j] // $j] end) end);
 def starts_command($w; $t; $j; $n):
-  (command_word($t; $j)) as $k
-  | ($k < $n)
-    and ($w[$k] | last_part as $lp
-         | ($lp | IN("git", "gh", "agent-identity.py")) or ((write_tool_names | index($lp)) != null));
+  any(command_positions($t; $j)[];
+      . < $n
+      and ($w[.] | last_part as $lp
+           | ($lp | IN("git", "gh", "agent-identity.py")) or ((write_tool_names | index($lp)) != null)));
 
 # Records a method; past a soft separator, a GET is ignored, since it may belong to another command
 # inside the same quoted string, and taking it would turn this call's write into a read. For the
-# same reason a field past a soft separator (`late_field`) counts as a write even under a GET; a
-# GraphQL read's fields past one are its variables, next to a multi-line query, and read.
+# same reason a field past a soft separator with a `gh` or `api` word between the two
+# (`late_field`), which may be another call's flag, counts as a write even under a GET; a field
+# right after a quoted `--jq '.a | .b'` is still this call's and reads. A GraphQL read's fields past
+# a soft separator are its variables, next to a multi-line query, and read.
 def gh_api_method($m):
   if (.crossed_at != null) and (($m | ascii_downcase) == "get") then . else .method = $m end;
 
 def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
-  {i: $start, method: null, field: false, late_field: false, endpoint: null, merge_type: false,
+  {i: $start, method: null, field: false, late_field: false, other_call: false, endpoint: null,
+   merge_type: false,
    query_visible: false, query_hidden: false, crossed_at: null, cont: false}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
           or ($bounded and ($w[.i] | is_sep))
@@ -575,24 +591,27 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
         elif $x | startswith("--method=") then gh_api_method($x | ltrimstr("--method=")) | .i += 1
         elif $x | test("^(?i)-X=?.+") then gh_api_method($x | sub("^(?i)-X=?"; "")) | .i += 1
         elif $x | gh_api_field_flag then
-          .field = true | .late_field = (.late_field or .crossed_at != null)
+          .field = true | .late_field = (.late_field or .other_call)
           | (if $has_value then gh_api_field_value($nx) | .i += 2 else .i += 1 end)
         elif $x | test("^--(field|raw-field)=") then
-          .field = true | .late_field = (.late_field or .crossed_at != null)
+          .field = true | .late_field = (.late_field or .other_call)
           | gh_api_field_value($x | sub("^--(field|raw-field)="; "")) | .i += 1
         elif $x | test("^-[fF].+") then
-          .field = true | .late_field = (.late_field or .crossed_at != null)
+          .field = true | .late_field = (.late_field or .other_call)
           | gh_api_field_value($x | .[2:]) | .i += 1
         elif $x == "--input" then
-          .field = true | .late_field = (.late_field or .crossed_at != null) | .query_hidden = true
+          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true
           | (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("--input=") then
-          .field = true | .late_field = (.late_field or .crossed_at != null) | .query_hidden = true
+          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true
           | .i += 1
         elif $x | gh_api_value_flag then (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("-") then .i += 1
         else
           (if (.endpoint == null) and (.cont | not) then .endpoint = $x else . end)
+          # Past a crossing, a `gh` or `api` word may start another call's flags.
+          | (if .crossed_at != null and ($x | last_part | IN("gh", "api")) then .other_call = true
+             else . end)
           | (if ($x | contains("/"))
                 and (($x | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) or ($x | test("(?i)/contents/"))
                      or ($x | test("(?i)/git/refs(/|$)")))
@@ -755,6 +774,7 @@ def findings($w; $levels; $unsure):
        | .cw2 = (if $owners == null then null
                  else $w | command_table($w | options_table(null; $owners); null) end)
      else null end) as $tp
+  | ($t | .tp = $tp) as $t
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,
      cmd_words: command_words($t; $tp; 0), out: [], reviewer_push: false, scanned_to: -1}
   | until(.i >= $n;

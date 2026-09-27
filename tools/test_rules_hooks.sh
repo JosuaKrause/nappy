@@ -140,6 +140,42 @@ fail() {
     failures=$((failures + 1))
 }
 
+# The time in seconds, to the millisecond: bash 3.2's own $SECONDS counts whole seconds, which
+# turns a 5-second bound into one that can fail from 4.0 s.
+now() { perl -MTime::HiRes=time -e 'printf "%.3f\n", time'; }
+
+# $1 label  $2 decision function (guard_decision or write_guard_decision)  $3 expected decision
+# $4 command  $5 bound in seconds (default 8)
+#
+# Asserts the decision and that the hook reached it inside the bound. A timing check guards two
+# things: a hook that runs past its 10-second timeout lets the command through, and a reading that
+# walks again from every word costs the square of the command's length. The default bound, 8
+# seconds, keeps the first with a margin, and a run past a bound is timed once more before it
+# fails, since a loaded machine slows one run by well under twice while a quadratic walk is slower
+# by ten times or more on both.
+assert_decided_in_time() {
+    local label="$1" decide="$2" want="$3" cmd="$4" bound="${5:-8}" started secs got try
+    for try in 1 2; do
+        started=$(now)
+        got="$("$decide" "$cmd")"
+        secs=$(perl -e 'printf "%.2f", $ARGV[1] - $ARGV[0]' "$started" "$(now)")
+        perl -e 'exit($ARGV[0] < $ARGV[1] ? 0 : 1)' "$secs" "$bound" && break
+    done
+    checks=$((checks + 2))
+    if [ "$got" = "$want" ]; then
+        echo "ok   $label"
+    else
+        fail "$label: expected $want, got $got"
+    fi
+    if perl -e 'exit($ARGV[0] < $ARGV[1] ? 0 : 1)' "$secs" "$bound"; then
+        echo "ok   $label: decided in ${secs}s, under ${bound}s"
+    else
+        fail "$label: took ${secs}s on its second try too, past ${bound}s"
+    fi
+}
+assert_guard_timed() { assert_decided_in_time "$1" guard_decision "$2" "$3" "${4:-8}"; }
+assert_write_guard_timed() { assert_decided_in_time "$1" write_guard_decision "$2" "$3" "${4:-8}"; }
+
 # Prints the sorted, comma-joined, deduplicated list of skill names project-rules.sh injected for
 # one Edit of $3 (a path relative to $root), for session $1 and agent $2 ("" for the main session).
 project_rules_skills() {
@@ -797,16 +833,9 @@ assert_guard "a tool that runs no shell is not read -> allow" allow \
 # only the third, quote-honouring reading can see: the first two split "/x y" into two words and
 # never reach `grep`, so all three readings run to the end.
 dense_body="$(printf 'git\n%.0s' $(seq 1 8000))"
-dense_start=$SECONDS
-assert_guard "31 KB of short words, then a git grep only reading 3 catches -> deny" deny \
+assert_guard_timed "31 KB of short words, then a git grep only reading 3 catches -> deny" deny \
     "$dense_body
 git -C \"/x y\" grep -i foo -- docs/"
-checks=$((checks + 1))
-if [ $((SECONDS - dense_start)) -lt 5 ]; then
-    echo "ok   the 31 KB dense command is read in full in under 5 seconds"
-else
-    fail "the 31 KB dense command took $((SECONDS - dense_start)) seconds, past half the hook's 10-second timeout"
-fi
 assert_guard "the same invocation alone is caught only by reading 3 -> deny" deny \
     'git -C "/x y" grep -i foo -- docs/'
 
@@ -828,19 +857,6 @@ assert_guard "git -C \"\" grep -> deny" deny 'git -C "" grep x'
 assert_guard "git -C '' grep -> deny" deny "git -C '' grep x"
 assert_guard "bash -c 'git -C \"\" grep x' -> deny" deny "bash -c 'git -C \"\" grep x'"
 assert_guard "git -C \"\" grep -I -> allow" allow 'git -C "" grep -I x'
-
-# $1 label  $2 expected  $3 command: assert_guard, plus a check that the hook decided it in under
-# 5 seconds, half its 10-second timeout.
-assert_guard_timed() {
-    local started=$SECONDS
-    assert_guard "$1" "$2" "$3"
-    checks=$((checks + 1))
-    if [ $((SECONDS - started)) -lt 5 ]; then
-        echo "ok   $1: decided in under 5 seconds"
-    else
-        fail "$1: took $((SECONDS - started)) seconds, past half the hook's 10-second timeout"
-    fi
-}
 
 # A `git` whose options swallow the next word (`-c`, `-C`, a `>` redirect) can swallow another
 # `git`, so in a chain of them the run of options from every `git` reaches the end of the chain.
@@ -869,17 +885,10 @@ assert_guard_timed "32 KB of bash -c 'git -C \"a b\" ...', then a guarded git gr
 # Past 32 KB, a text holding both words is denied without being read, even when the one
 # git grep in it is guarded; a long text without both words still allows at once.
 huge_body="$(printf 'Lorem ipsum dolor sit amet, "quoted words", '"'"'more'"'"'; x | y (z) [w]\n%.0s' $(seq 1 3200))"
-huge_start=$SECONDS
-assert_guard "a 200 KB command with only a guarded git grep -> deny (too long to read in full)" deny \
-    "echo \"$huge_body\"; git grep -I -n foo -- '*.md'"
-assert_guard "a 200 KB command without both words -> allow" allow \
-    "echo \"$huge_body\"; git status"
-checks=$((checks + 1))
-if [ $((SECONDS - huge_start)) -lt 3 ]; then
-    echo "ok   both 200 KB commands are decided in under 3 seconds"
-else
-    fail "the 200 KB commands took $((SECONDS - huge_start)) seconds; the length bound should decide them at once"
-fi
+assert_guard_timed "a 200 KB command with only a guarded git grep -> deny (too long to read in full)" deny \
+    "echo \"$huge_body\"; git grep -I -n foo -- '*.md'" 2
+assert_guard_timed "a 200 KB command without both words -> allow" allow \
+    "echo \"$huge_body\"; git status" 2
 
 # Past 32 KB (too_long), one regex decides instead of building $raw/$bare/$flat over the whole
 # text: a backslash-newline pair, a lone backslash, a quote mark or $ between the letters of
@@ -912,21 +921,14 @@ EOF"
 over_cap="$(head -c 1100000 /dev/zero | tr '\0' 'a')"
 near_cap_quotes="$(head -c 1000000 /dev/zero | tr '\0' "'" | sed "s/''/a'/g")"
 near_cap_lines="$(yes 'x\' | head -n 330000)"
-cap_start=$SECONDS
-assert_guard "over 1 MB, obscured g\\\\it and g\"r\"ep -> deny" deny \
-    "echo '${over_cap}'; g\\it status; g\"r\"ep foo"
-assert_guard "over 1 MB, naming neither word -> deny, not read at all" deny \
-    "echo '${over_cap}'"
-assert_guard "1 MB of a', naming neither word -> allow, decided quickly" allow \
-    "echo ${near_cap_quotes}"
-assert_guard "1 MB of backslash-newlines, naming neither word -> allow, decided quickly" allow \
-    "echo ${near_cap_lines}"
-checks=$((checks + 1))
-if [ $((SECONDS - cap_start)) -lt 3 ]; then
-    echo "ok   four commands at or over the 1 MB cap are decided in under 3 seconds together"
-else
-    fail "four commands at or over the 1 MB cap took $((SECONDS - cap_start)) seconds"
-fi
+assert_guard_timed "over 1 MB, obscured g\\\\it and g\"r\"ep -> deny" deny \
+    "echo '${over_cap}'; g\\it status; g\"r\"ep foo" 2
+assert_guard_timed "over 1 MB, naming neither word -> deny, not read at all" deny \
+    "echo '${over_cap}'" 2
+assert_guard_timed "1 MB of a', naming neither word -> allow, decided quickly" allow \
+    "echo ${near_cap_quotes}" 2
+assert_guard_timed "1 MB of backslash-newlines, naming neither word -> allow, decided quickly" allow \
+    "echo ${near_cap_lines}" 2
 
 # ---------------------------------------------------------------- github-write-guard.sh ---------
 # Prints "deny" or "allow" for one synthetic command through github-write-guard.sh, as the tool
@@ -1131,49 +1133,28 @@ assert_write_guard "a mention that quotes the whole wrapped shape -> allow (acce
 # git/gh word too (detect_gh_api's own `until` condition) bounds it. 400 repeats of `gh api x `
 # (3.6 KB, denser than a real command would ever be) must still decide in well under the timeout.
 dense_gh_api="$(printf 'gh api x ' 2>/dev/null; for _ in $(seq 1 400); do printf 'gh api x '; done)"
-dense_gh_start=$SECONDS
-assert_write_guard "400 glued gh api calls, ending in a write -> deny, decided quickly" deny \
+assert_write_guard_timed "400 glued gh api calls, ending in a write -> deny, decided quickly" deny \
     "${dense_gh_api}gh api repos/o/r -X POST"
-checks=$((checks + 1))
-if [ $((SECONDS - dense_gh_start)) -lt 5 ]; then
-    echo "ok   400 glued gh api calls are decided in under 5 seconds"
-else
-    fail "400 glued gh api calls took $((SECONDS - dense_gh_start)) seconds, past half the hook's 10-second timeout"
-fi
 
 # The same inside one quoted string, where every separator is soft: each call's scan stops at the
 # next soft separator that starts a git/gh command, so this stays linear too. And a long quoted
 # commit message, read one character at a time for its quotes, stays linear in its length.
 quoted_gh_api="$(for _ in $(seq 1 400); do printf "gh api x --jq '.a|.b'; echo hi; "; done)"
 long_message="$(head -c 60000 /dev/zero | tr '\0' 'a')"
-quoted_gh_start=$SECONDS
-assert_write_guard "400 glued gh api calls inside bash -c, ending in a write -> deny" deny \
+assert_write_guard_timed "400 glued gh api calls inside bash -c, ending in a write -> deny" deny \
     "bash -c \"${quoted_gh_api}gh api repos/o/r -X POST\""
-assert_write_guard "a 60000-character quoted commit message, wrapped -> allow" allow \
+assert_write_guard_timed "a 60000-character quoted commit message, wrapped -> allow" allow \
     "uv run python tools/agent-identity.py run claude-coder -- git commit -m '${long_message}'"
-checks=$((checks + 1))
-if [ $((SECONDS - quoted_gh_start)) -lt 5 ]; then
-    echo "ok   quoted glued calls and a long quoted message are decided in under 5 seconds"
-else
-    fail "quoted glued calls and a long message took $((SECONDS - quoted_gh_start)) seconds"
-fi
 
 # An unsure command (here a heredoc) reads every separator as soft for a gh api call's flags, so
 # each call's scan runs to the next git/gh command rather than to its own pipe; 400 glued calls
 # with a pipe and a plain command between them still stay linear.
 unsure_gh_api="$(for _ in $(seq 1 400); do printf 'gh api x --jq .a | head -1; echo hi; '; done)"
-unsure_gh_start=$SECONDS
-assert_write_guard "400 glued gh api reads beside a heredoc, ending in a write -> deny" deny \
+assert_write_guard_timed "400 glued gh api reads beside a heredoc, ending in a write -> deny" deny \
     "cat <<EOF
 x
 EOF
 ${unsure_gh_api}gh api repos/o/r -X POST"
-checks=$((checks + 1))
-if [ $((SECONDS - unsure_gh_start)) -lt 5 ]; then
-    echo "ok   400 glued gh api calls in an unsure command are decided in under 5 seconds"
-else
-    fail "400 glued gh api calls in an unsure command took $((SECONDS - unsure_gh_start)) seconds"
-fi
 
 # A flag before the endpoint is how gh itself accepts a write (-X/--method/-f/-F/--input), so the
 # scan starts right after "api"; and an endpoint or flag value ending in /gh or /git is part of
@@ -1227,14 +1208,7 @@ assert_write_guard "git pull --rebase, rewrites the player as committer -> deny"
 assert_write_guard "git pull --ff-only -> allow, the only shape with no commit of its own" allow \
     'git pull --ff-only'
 dense_merge="$(for _ in $(seq 1 800); do printf 'git merge x '; done)"
-dense_merge_start=$SECONDS
-assert_write_guard "800 glued git merge calls -> deny, decided quickly" deny "$dense_merge"
-checks=$((checks + 1))
-if [ $((SECONDS - dense_merge_start)) -lt 5 ]; then
-    echo "ok   800 glued git merge calls are decided in under 5 seconds"
-else
-    fail "800 glued git merge calls took $((SECONDS - dense_merge_start)) seconds, past half the hook's 10-second timeout"
-fi
+assert_write_guard_timed "800 glued git merge calls -> deny, decided quickly" deny "$dense_merge"
 
 # Command position missed an assignment before the script, and a wrapper word's own option or
 # positional argument (timeout's own duration).
@@ -1420,72 +1394,51 @@ assert_write_guard "a wrapped commit continued onto a second line -> allow" allo
 # hook never runs past its timeout (a timed-out hook lets the command through); one naming none
 # of them cannot write and is allowed. Just under the bound, the densest text is still read.
 over_bound="$(head -c 70000 /dev/zero | tr '\0' 'a')"
-bound_start=$SECONDS
-assert_write_guard "a wrapped 70 KB commit message -> deny (over the bound)" deny \
-    "uv run python tools/agent-identity.py run claude-coder -- git commit -m '${over_bound}'"
+assert_write_guard_timed "a wrapped 70 KB commit message -> deny (over the bound)" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m '${over_bound}'" 2
 assert_write_guard_reason "that deny names the bound" \
     "uv run python tools/agent-identity.py run claude-coder -- git commit -m '${over_bound}'" "over 64 KB"
-assert_write_guard "a 70 KB command naming no git, gh or pushing script -> allow" allow \
-    "echo '${over_bound}'"
-assert_write_guard "a 70 KB command naming g\\it -> deny (a backslash is skipped)" deny \
-    "echo '${over_bound}'; g\\it push"
-assert_write_guard "a 70 KB command naming gi\\<newline>t -> deny (a backslash-newline is skipped)" deny \
+assert_write_guard_timed "a 70 KB command naming no git, gh or pushing script -> allow" allow \
+    "echo '${over_bound}'" 2
+assert_write_guard_timed "a 70 KB command naming g\\it -> deny (a backslash is skipped)" deny \
+    "echo '${over_bound}'; g\\it push" 2
+assert_write_guard_timed "a 70 KB command naming gi\\<newline>t -> deny (a backslash-newline is skipped)" deny \
     "echo '${over_bound}'; gi\\
-t push"
-assert_write_guard "a 70 KB command, an escaped backslash, then gi\\<newline>t push -> deny" deny \
+t push" 2
+assert_write_guard_timed "a 70 KB command, an escaped backslash, then gi\\<newline>t push -> deny" deny \
     "echo '${over_bound}'
 echo x\\\\
 gi\\
-t push"
-assert_write_guard "a 70 KB command, lines ending in g and starting with it -> allow" allow \
+t push" 2
+assert_write_guard_timed "a 70 KB command, lines ending in g and starting with it -> allow" allow \
     "cat <<EOF
 ${over_bound} drawing
 item
-EOF"
-assert_write_guard "a 70 KB command naming g, i and t split by quotes -> deny" deny \
-    "echo '${over_bound}'; 'g'\"i\"t push"
-assert_write_guard "a 70 KB command naming g\$''it (an empty \$'' string) -> deny" deny \
-    "echo '${over_bound}'; g\$''it push"
-assert_write_guard "a 70 KB command naming g\$\"\"it (an empty \$\"\" string) -> deny" deny \
-    "echo '${over_bound}'; g\$\"\"it push"
-checks=$((checks + 1))
-if [ $((SECONDS - bound_start)) -lt 3 ]; then
-    echo "ok   commands over the bound are decided at once"
-else
-    fail "commands over the bound took $((SECONDS - bound_start)) seconds; the bound should decide them at once"
-fi
+EOF" 2
+assert_write_guard_timed "a 70 KB command naming g, i and t split by quotes -> deny" deny \
+    "echo '${over_bound}'; 'g'\"i\"t push" 2
+assert_write_guard_timed "a 70 KB command naming g\$''it (an empty \$'' string) -> deny" deny \
+    "echo '${over_bound}'; g\$''it push" 2
+assert_write_guard_timed "a 70 KB command naming g\$\"\"it (an empty \$\"\" string) -> deny" deny \
+    "echo '${over_bound}'; g\$\"\"it push" 2
 
 # Over 1 MB nothing is read: every command is denied at once. Up to that cap, the over-bound
 # search stays one linear regex, so the densest input just under it is decided in well under a
-# second; SECONDS counts whole seconds, so the four checks share one bound.
+# second.
 over_cap="$(head -c 1100000 /dev/zero | tr '\0' 'a')"
 near_cap_quotes="$(head -c 1000000 /dev/zero | tr '\0' "'" | sed "s/''/a'/g")"
 near_cap_lines="$(yes 'x\' | head -n 330000)"
-cap_start=$SECONDS
-assert_write_guard "a 1.1 MB command naming nothing -> deny (over the hard cap)" deny "echo '${over_cap}'"
+assert_write_guard_timed "a 1.1 MB command naming nothing -> deny (over the hard cap)" deny "echo '${over_cap}'" 2
 assert_write_guard_reason "that deny says the command was not read" "echo '${over_cap}'" "over 1 MB"
-assert_write_guard "1 MB of a' naming nothing -> allow, decided quickly" allow "echo ${near_cap_quotes}"
-assert_write_guard "1 MB of backslash-newlines naming nothing -> allow, decided quickly" allow \
-    "echo ${near_cap_lines}"
-checks=$((checks + 1))
-if [ $((SECONDS - cap_start)) -lt 3 ]; then
-    echo "ok   four commands near or over the 1 MB cap are decided in under 3 seconds together"
-else
-    fail "four commands near or over the 1 MB cap took $((SECONDS - cap_start)) seconds"
-fi
+assert_write_guard_timed "1 MB of a' naming nothing -> allow, decided quickly" allow "echo ${near_cap_quotes}" 2
+assert_write_guard_timed "1 MB of backslash-newlines naming nothing -> allow, decided quickly" allow \
+    "echo ${near_cap_lines}" 2
 dense_under_bound="$(head -c 65000 /dev/zero | tr '\0' ';')"
-dense_under_start=$SECONDS
-assert_write_guard "64 KB of separators in a heredoc, then git push -> deny" deny \
+assert_write_guard_timed "64 KB of separators in a heredoc, then git push -> deny" deny \
     "cat <<EOF
 ${dense_under_bound}
 EOF
 git push"
-checks=$((checks + 1))
-if [ $((SECONDS - dense_under_start)) -lt 5 ]; then
-    echo "ok   the densest command under the bound is decided in under 5 seconds"
-else
-    fail "the densest command under the bound took $((SECONDS - dense_under_start)) seconds"
-fi
 # An option's argument is skipped as one shell word, however it is quoted, escaped or joined by a
 # comma, so a quoted argument with a space in it is skipped whole and the word after it is the
 # subcommand: the push after it is read as the push, and wrapped it still allows. An empty quoted
@@ -1513,6 +1466,25 @@ assert_write_guard "if ...; then gh api ... -f body=x; fi -> deny" deny \
     "if true; then gh api repos/o/r/issues/1/comments --jq '.a | .b' -f body=x; fi; echo \$(true)"
 assert_write_guard "an unsure command assigning a pushing script's path, then sed on it -> allow" allow \
     'echo $(date); p=tools/prune-merged.sh; sed -n 1,5p "$p"'
+# A call in the script after sh -c or bash -c starts a command too, whichever command-position
+# table sees it, so it ends a GraphQL read's scan and is scanned in full.
+assert_write_guard "a GraphQL read piped into sh -c \"gh api ... -f body=x\" -> deny" deny \
+    "gh api graphql -f query='{viewer{login}}' | sh -c \"gh api repos/o/r/issues/1/comments --jq '.a | .b' -f body=x\"; echo \$(true)"
+assert_write_guard "a GraphQL read piped into bash -c \"gh api ... -X POST\" -> deny" deny \
+    "gh api graphql -f query='{viewer{login}}' | bash -c \"gh api repos/o/r/issues/1/comments --jq '.a | .b' -X POST\"; echo \$(true)"
+# A field after a quoted --jq '.a | .b' is still the GET call's own and reads; only a field with a
+# gh or api word between the separator and it may be another call's.
+assert_write_guard "gh api -X GET with a field after a quoted --jq pipe -> allow" allow \
+    "gh api -X GET search/issues --jq '.items[] | .number' -f q='repo:a/b is:open'"
+assert_write_guard "gh api --method GET with a field after a quoted --jq pipe -> allow" allow \
+    "gh api --method GET repos/o/r/issues --jq 'map(.number) | length' -f state=open"
+# An accepted false deny: in an unsure command every newline is a separator, so a line of heredoc
+# prose that starts with a reserved word and then a pushing script's path reads as that script
+# in command position.
+assert_write_guard "heredoc prose: 'if tools/land-prs.sh is named' -> deny (accepted false deny)" deny \
+    "cat > m.txt <<'EOF'
+if tools/land-prs.sh is named, it is read.
+EOF"
 assert_write_guard "time tools/prune-merged.sh -> deny" deny 'time tools/prune-merged.sh x'
 assert_write_guard "exec tools/prune-merged.sh -> deny" deny 'exec tools/prune-merged.sh x'
 assert_write_guard "exec -a name tools/prune-merged.sh -> deny" deny 'exec -a name tools/prune-merged.sh x'
@@ -1566,19 +1538,6 @@ assert_write_guard "timeout -s KILL 60 tools/land-prs.sh --dry-run -> allow" all
     'timeout -s KILL 60 tools/land-prs.sh --dry-run 1'
 assert_write_guard "wrapped bash -c 'tools/prune-merged.sh x' -> allow" allow \
     "uv run python tools/agent-identity.py run claude-coder -- bash -c 'tools/prune-merged.sh x'"
-
-# $1 label  $2 expected  $3 command: assert_write_guard, plus a check that the hook decided it in
-# under 5 seconds, half its 10-second timeout.
-assert_write_guard_timed() {
-    local started=$SECONDS
-    assert_write_guard "$1" "$2" "$3"
-    checks=$((checks + 1))
-    if [ $((SECONDS - started)) -lt 5 ]; then
-        echo "ok   $1: decided in under 5 seconds"
-    else
-        fail "$1: took $((SECONDS - started)) seconds, past half the hook's 10-second timeout"
-    fi
-}
 
 # Every shape here makes a walk from each word that starts one run to the end of the command, so
 # reading it word by word would cost the square of its length: `-c`/`-C`/`-R` swallowing the next

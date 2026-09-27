@@ -693,6 +693,19 @@ class CodexHooksTest(unittest.TestCase):
         output = self.call_raw(command='echo $(date); p=tools/prune-merged.sh; sed -n 1,5p "$p"')
         self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
 
+    def test_a_call_after_sh_c_starts_a_command_and_a_get_field_after_jq_reads(self) -> None:
+        # The script after `sh -c` is a command of its own, so a call there ends a GraphQL read's
+        # scan and is scanned in full; a field right after a quoted `--jq '.a | .b'` is still the
+        # GET call's own.
+        output = self.call_raw(
+            command="gh api graphql -f query='{viewer{login}}' | sh -c \"gh api repos/o/r/issues/1/comments "
+            "--jq '.a | .b' -f body=x\"; echo $(true)"
+        )
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        output = self.call_raw(command="gh api -X GET search/issues --jq '.items[] | .number' -f q='repo:a/b is:open'")
+        self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
+
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
         command = (
             "uv run python tools/agent-identity.py run codex-coder -- gh pr create --title t --body "
