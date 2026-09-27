@@ -8,12 +8,15 @@ and registration inputs. Inspect detail and animation consistency at gameplay sc
 
 The pursuing dog's appearance is accepted in
 [velvet-dolphin, the dog's leg motion](../../playtests/2026-09-27-velvet-dolphin.md).
-The walked dog's [authored leg geometry proposal](../../evidence/comic-dogs-2026-09-27/walked-revision-4/README.md)
-awaits [appearance review](../../review/2026-09-10-M109.md), against
-[tall-moose, leg geometry rather than shading](../../playtests/2026-09-27-tall-moose.md) and
-[coral-goose, fixed attachments](../../playtests/2026-09-27-coral-goose.md). Color-free comparisons
-show changed leg contours and gathered footprints while full-body pairs expose the attachments.
-Obtain acceptance of the actual motion and remaining differences in reach, shading and paw height.
+Complete three normal-dog poses per facing: resting, one leg forward, and the opposite leg
+forward, as requested in [teal-marmot, three dog poses](../../playtests/2026-09-27-teal-marmot.md).
+Preserve the existing two pictures; add the missing opposite step in side/diagonal views and
+the neutral pose in front/back views, which already have alternating steps. Author and review
+each new SVG source before generating its PNG. Keep fixed body attachments and actual geometry
+changes required by [tall-moose](../../playtests/2026-09-27-tall-moose.md) and
+[coral-goose](../../playtests/2026-09-27-coral-goose.md). Proposed preview sequence: step, rest,
+opposite step, rest. Show all facings, clean and color-free, before appearance acceptance and
+runtime installation verification.
 Their
 [generation recipe](../../evidence/comic-dogs-2026-09-27/README.md) preserves the sources,
 raw outputs, native candidates, comparisons and synthetic stride loops; the
