@@ -5,7 +5,7 @@ add a todo item for that". The hypothesis is repeated future-threat calculations
 selection, redraw decisions and warnings. It is a candidate for reducing steady CPU work,
 not an established cause of every remaining hitch. See
 [Sunny lynx](../../playtests/2026-09-26-sunny-lynx.md) and the
-[crowded-scene measurement report](../../evidence/entity-performance-2026-09-26/README.md).
+[crowded-scene measurement report](../../evidence/m159-entity-performance-2026-09-26/README.md).
 
 **Proposed, not yet a chosen implementation:** identify queries with identical inputs and share
 their results within the frame. Read every caller before choosing a cache boundary: source

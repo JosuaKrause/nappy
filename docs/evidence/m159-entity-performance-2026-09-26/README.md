@@ -1,5 +1,10 @@
 # Crowded-scene CPU attribution, September 26, 2026
 
+This historical capture is stored under its M159 queue entry. Raw summary path fields retain
+the capture-time `docs/evidence/entity-performance-2026-09-26/` prefix; those files now live
+under `docs/evidence/m159-entity-performance-2026-09-26/`. Raw data and manifest hashes are
+unchanged by the relocation. The observations below describe the measured checkpoint.
+
 The steady script workload is dominated by crowd updates and predictive danger cues. The
 largest measured frames also contain a separate spike: synchronized building redraws for vent
 animation. These are native desktop measurements with diagnostic overhead, not phone results

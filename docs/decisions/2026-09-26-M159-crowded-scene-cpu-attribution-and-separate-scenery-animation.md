@@ -4,7 +4,7 @@
 without requiring desktop stutter reproduction or phone access. The player explicitly resumes
 measurements and authorizes a draft PR after pausing the first investigation.
 
-The [measurement record](../evidence/entity-performance-2026-09-26/README.md) preserves the native
+The [measurement record](../evidence/m159-entity-performance-2026-09-26/README.md) preserves the native
 Godot profiler stream, population/movement observations, analysis, launch commands, engine
 identity and rejected trials. The accepted rendered window is six active seconds after five
 seconds of warmup: 200 walkers and 34 cars active, typically 18 walkers and 7 cars in view,
@@ -157,3 +157,42 @@ wording above records how the design was introduced, not an outstanding request 
 Phone/browser performance remains unverified. The player also accepts the review correction
 plan and an explicit follow-up audit of the café, street musician and poster crew rather than
 silently claiming that all partially animated sprites have been migrated.
+
+### Review corrections and rendered warmup
+
+The twelve-item review of `74c89bae` prompted corrections on the same PR. Water surfaces now
+reuse one preloaded shader while retaining independent material uniforms and clocks. Both
+ordinary and escape startup draw the halo and a real water atlas region on camera before play.
+Transparency is supplied as draw vertex color, preserving the Compatibility renderer's draw
+submission; setting node modulation alpha to zero was rejected because it can cull the draw.
+Standalone event-catalogue fixtures acquire their own atlas page, while gameplay keeps the event
+manager's sole ownership. Static-frame assertions, smoke/spray redraw naming and rotor crop
+registration are corrected; the crop is checked against both authored SVG view boxes.
+
+The maintained source generator and crop helper live under `tools/`, with help, argument
+rejection before I/O, a non-writing check mode, explicit metadata regeneration and CLI coverage.
+Generated headers identify SVG sources as editable and crop metadata as derived. All 28 SVG
+geometry bodies remain byte-identical; atlas membership and historical layer/provenance records
+are unchanged. The parity probe requires a new output directory rather than overwriting archived
+evidence. The graphics docs and SVG/event authoring skills now state the partial-animation
+contract, including legitimate foreground/background overlap. The café, street musician and
+poster crew remain in the agreed audit; the contract is not a claim that this audit is complete.
+
+Import/boot and the focused event-catalogue, atlas-events, scenery-animation, event-redraw,
+camera-start, main and atlas-consumer suites pass 4,142 checks with no failures. The parity probe
+passes eight checks; Python tooling, CLI checks, generator parity, lint and whitespace checks
+pass. These are focused local checks, not a substitute for the PR's full-suite CI.
+
+The [retained dual-boot capture](../evidence/m159-scenery-animation-2026-09-26/rendered-warmup-2026-09-26/README.md)
+uses Godot 4.7.2, Compatibility/OpenGL3 and an Apple M2. Both real boot branches keep the halo
+and water warmup nodes live through `frame_post_draw` and complete a visible boot frame. The
+existing waterfront burst supplies the approved shoreline appearance. An earlier windowed
+attempt produced zero burst frames and establishes nothing. The successful capture is evidence
+of rendered warmup, not a measurement of compilation duration, hitch elimination or phone speed;
+the earlier controlled timings retain their original source identity.
+
+The original profiling folder is renamed to `m159-entity-performance-2026-09-26` to carry its
+queue entry. Live links move with it; raw summary path fields retain the capture-time spelling,
+and the report documents that mapping. The handoff restores unrelated guidance from main while
+updating this PR's pickup state. The player's explicit visual approval closes the appearance
+item. The correction work leaves the queue; final independent review and CI remain PR gates.

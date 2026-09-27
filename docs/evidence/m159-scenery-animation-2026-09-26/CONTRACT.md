@@ -5,7 +5,7 @@ your brief and let's start with the animation optimization". Start with the meas
 redraw, then carry the same separation through water, pipe spray and crash smoke.
 This preserves the implementation contract for M159, a slow frame names the frame that was slow.
 The player's complete instructions are in [Sunny lynx](../../playtests/2026-09-26-sunny-lynx.md).
-The [full measurement report](../../evidence/entity-performance-2026-09-26/README.md) holds the raw
+The [full measurement report](../../evidence/m159-entity-performance-2026-09-26/README.md) holds the raw
 streams, analysis outputs, commands, engine identity, rejection records and provenance.
 
 ## What the player asks for
