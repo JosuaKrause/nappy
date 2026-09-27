@@ -1,4 +1,4 @@
-priority: later
+priority: now
 after: 2026-09-13-M137
 
 ## M213 — The chalk mark's robber stands at the far end of its alley · asked for 2026-09-26

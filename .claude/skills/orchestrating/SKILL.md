@@ -103,7 +103,8 @@ Every agent prompt contains, explicitly:
   agent, `codex-coder`/`codex-reviewer` the same in Codex — since **committing** and **pr-review**
   make this mandatory and an agent with no role named has nothing to check `status` against. If
   `status` reports the role not usable, the brief's own instruction is to stop and report back
-  rather than falling back to a direct call.
+  rather than falling back to a direct call. The brief names **committing**'s `.venv/bin/python`
+  form of the wrapper as the fallback for a worktree whose permission check refuses `uv run`.
 - **Commit and push after each item, and before starting any run that takes longer than a few
   minutes.** A WIP message is fine — **committing** already says a messy branch commit is fine.
   A usage limit or an API error kills the agent without warning, and the committed-and-pushed
