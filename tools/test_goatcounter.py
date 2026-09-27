@@ -160,9 +160,11 @@ class ClassifyTests(unittest.TestCase):
             goatcounter.classify("day-6-lost-crying"),
             goatcounter.Classified("day", "day-6-lost-crying", 6, "lost-crying"),
         )
+        # classify() only splits off the day number -- it does not know or care that the rest is
+        # a lost-* shape; split_losses() is what reads that further, downstream in format_text.
         self.assertEqual(
-            goatcounter.classify("day-14-instant-charging-dog"),
-            goatcounter.Classified("day", "day-14-instant-charging-dog", 14, "instant-charging-dog"),
+            goatcounter.classify("day-14-lost-hard-fail-charging-dog"),
+            goatcounter.Classified("day", "day-14-lost-hard-fail-charging-dog", 14, "lost-hard-fail-charging-dog"),
         )
 
     def test_other_shape(self) -> None:
@@ -204,6 +206,59 @@ class GroupHitsTests(unittest.TestCase):
         hits = [hit("nappy-day-2-began", 10, 1), hit("nappy-day-2-began", 5, 1)]
         grouped = goatcounter.group_hits(hits, "nappy-")
         self.assertEqual(grouped["days"], {2: {"began": 15}})
+
+
+class SplitLossesTests(unittest.TestCase):
+    """`split_losses()` is the pure function `format_text` folds a day's own `lost-*` keys through --
+    VisitCounter._loss_event_suffix()'s shape, `lost-crying-<cause>` / `lost-hard-fail-<cause>` /
+    `lost-timeout` (never a cause), plus the old two-event shape's bare `lost-crying` /
+    `lost-hard-fail` (no cause, one playthrough, from before the fold).
+    """
+
+    def test_splits_causes_under_their_own_kind_and_sums_a_subtotal_per_kind(self) -> None:
+        bucket = {
+            "began": 20,
+            "won": 12,
+            "lost-crying-traffic": 2,
+            "lost-crying-alley-robbery": 2,
+            "lost-hard-fail-car": 1,
+            "lost-hard-fail-alley-robbery": 3,
+            "lost-timeout": 2,
+        }
+        split = goatcounter.split_losses(bucket)
+        self.assertEqual(split.totals, {"crying": 4, "hard-fail": 4, "timeout": 2})
+        self.assertEqual(
+            split.causes,
+            {"crying": {"traffic": 2, "alley-robbery": 2}, "hard-fail": {"car": 1, "alley-robbery": 3}},
+        )
+        self.assertEqual(
+            split.consumed,
+            {
+                "lost-crying-traffic",
+                "lost-crying-alley-robbery",
+                "lost-hard-fail-car",
+                "lost-hard-fail-alley-robbery",
+                "lost-timeout",
+            },
+        )
+        # "began" and "won" are never a loss and are left for the caller's own leftover pass.
+        self.assertNotIn("began", split.consumed)
+        self.assertNotIn("won", split.consumed)
+
+    def test_the_old_bare_shape_folds_into_its_kind_subtotal_with_no_cause_line_of_its_own(self) -> None:
+        # One playthrough's own old two-event shape (per the player: "the old version only affects
+        # one playthrough") -- no special handling beyond still being listed, which the subtotal
+        # already does.
+        split = goatcounter.split_losses({"began": 5, "lost-crying": 3})
+        self.assertEqual(split.totals, {"crying": 3})
+        self.assertEqual(split.causes, {})
+        self.assertIn("lost-crying", split.consumed)
+
+    def test_a_kind_with_no_hits_at_all_is_simply_absent(self) -> None:
+        split = goatcounter.split_losses({"began": 5, "won": 5})
+        self.assertEqual(split.totals, {})
+        self.assertEqual(split.causes, {})
+        self.assertEqual(split.consumed, set())
 
 
 class FormatTextTests(unittest.TestCase):
@@ -282,6 +337,46 @@ class FormatTextTests(unittest.TestCase):
         payload = json.loads(json.dumps(goatcounter.to_jsonable(grouped)))
         self.assertEqual(payload["days"]["1"]["began"], 3)
         self.assertEqual(payload["run_level"]["run-fresh"], 1)
+
+    def test_losses_group_under_one_lost_heading_with_a_subtotal_per_kind_and_the_causes_under_it(
+        self,
+    ) -> None:
+        hits = [
+            hit("nappy-day-7-began", 20, 1),
+            hit("nappy-day-7-won", 12, 2),
+            hit("nappy-day-7-lost-crying-traffic", 2, 3),
+            hit("nappy-day-7-lost-crying-alley-robbery", 2, 4),
+            hit("nappy-day-7-lost-hard-fail-car", 1, 5),
+            hit("nappy-day-7-lost-hard-fail-alley-robbery", 3, 6),
+            hit("nappy-day-7-lost-timeout", 2, 7),
+        ]
+        grouped = goatcounter.group_hits(hits, "nappy-")
+        text = goatcounter.format_text(grouped, site="s", start=self.start, end=self.end, prefix="nappy-")
+        day_block = text.split("Day 7:")[1].split("\n\n")[0]
+        lines = [line for line in day_block.splitlines() if line.strip()]
+        # One "Lost:" heading, not a lost-crying line beside a lost-hard-fail line of its own --
+        # the double counting the player asked to see gone.
+        self.assertEqual(sum(1 for line in lines if line.strip().startswith("Lost:")), 1)
+        self.assertIn("Lost: 10 (50.0% of began)", "\n".join(lines))
+        self.assertIn("nappy-day-7-lost-crying: 4 (20.0% of began)", "\n".join(lines))
+        self.assertIn("nappy-day-7-lost-hard-fail: 4 (20.0% of began)", "\n".join(lines))
+        self.assertIn("nappy-day-7-lost-timeout: 2 (10.0% of began)", "\n".join(lines))
+        self.assertIn("nappy-day-7-lost-crying-traffic: 2 (10.0% of began)", "\n".join(lines))
+        self.assertIn("nappy-day-7-lost-crying-alley-robbery: 2 (10.0% of began)", "\n".join(lines))
+        self.assertIn("nappy-day-7-lost-hard-fail-car: 1 (5.0% of began)", "\n".join(lines))
+        self.assertIn("nappy-day-7-lost-hard-fail-alley-robbery: 3 (15.0% of began)", "\n".join(lines))
+        # The heading sorts among won and everything else by its own total (10), same as any other
+        # entry -- here behind won (12) and ahead of nothing else in this fixture.
+        self.assertLess(lines.index(line_with(lines, "won")), lines.index(line_with(lines, "Lost:")))
+
+    def test_the_old_bare_shape_is_still_listed_folded_into_its_kind_subtotal(self) -> None:
+        # One playthrough's own old two-event shape (per the player: "the old version only affects
+        # one playthrough") -- no cause line of its own, but not dropped either.
+        hits = [hit("nappy-day-2-began", 5, 1), hit("nappy-day-2-lost-crying", 3, 2)]
+        grouped = goatcounter.group_hits(hits, "nappy-")
+        text = goatcounter.format_text(grouped, site="s", start=self.start, end=self.end, prefix="nappy-")
+        self.assertIn("Lost: 3 (60.0% of began)", text)
+        self.assertIn("nappy-day-2-lost-crying: 3 (60.0% of began)", text)
 
 
 class FetchHitsTests(unittest.TestCase):

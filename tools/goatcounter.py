@@ -91,6 +91,14 @@ RETRY_BACKOFF_SECONDS = 2.0
 RUN_LEVEL_PREFIXES = ("run-", "ending-", "escape-", "controls-")
 DAY_RE = re.compile(r"^day-(\d+)-(.+)$")
 
+# A lost day's own name, VisitCounter._loss_event_suffix()'s own shape: the kind
+# (crying/hard-fail/timeout) with its cause folded on, unprefixed -- lost-crying-traffic,
+# lost-hard-fail-car, lost-timeout (never a cause). The old two-event shape's bare lost-crying /
+# lost-hard-fail (no cause -- one playthrough, from before this fold) matches with group(2) empty,
+# which is exactly the "still listed, no special handling" the funnel owes it: it folds into the
+# kind's own subtotal with no cause line of its own.
+LOST_RE = re.compile(r"^lost-(crying|hard-fail|timeout)(?:-(.+))?$")
+
 # One HTTP request as {query params} -> decoded JSON body; a real fetcher talks to GoatCounter,
 # a test fetcher is a closure over canned pages. Kept as a callable so fetch_hits and the grouping
 # below never need to know which.
@@ -465,6 +473,46 @@ def _sorted_desc(items: dict[str, int]) -> list[tuple[str, int]]:
     return sorted(items.items(), key=lambda pair: (-pair[1], pair[0]))
 
 
+def _pct_suffix(count: int, began: int | None) -> str:
+    """`count` as "(N.N% of began)", or "" when the day carries no began count to divide by."""
+    return f" ({count / began * 100:.1f}% of began)" if began else ""
+
+
+class SplitLosses(NamedTuple):
+    """A day's bucket, split into its losses: `totals` is the subtotal per kind
+    (crying/hard-fail/timeout), `causes` is the per-cause count under each kind (empty for a kind
+    whose only hits were the old, causeless shape), and `consumed` is every bucket key already
+    accounted for, so the caller's own leftover pass does not print one of them a second time.
+    """
+
+    totals: dict[str, int]
+    causes: dict[str, dict[str, int]]
+    consumed: set[str]
+
+
+def split_losses(bucket: dict[str, int]) -> SplitLosses:
+    """`bucket`'s own `lost-*` keys, split by `LOST_RE` into a subtotal per kind and the per-cause
+    counts under it. The old two-event shape's bare `lost-crying` / `lost-hard-fail` (no cause --
+    one playthrough, from before VisitCounter folded the cause on) matches with no cause group, so
+    it folds into the kind's subtotal with no cause line of its own -- "still listed" without
+    needing a second rule.
+    """
+    totals: dict[str, int] = {}
+    causes: dict[str, dict[str, int]] = {}
+    consumed: set[str] = set()
+    for name, count in bucket.items():
+        match = LOST_RE.match(name)
+        if not match:
+            continue
+        kind, cause = match.group(1), match.group(2)
+        totals[kind] = totals.get(kind, 0) + count
+        if cause:
+            causes.setdefault(kind, {})
+            causes[kind][cause] = causes[kind].get(cause, 0) + count
+        consumed.add(name)
+    return SplitLosses(totals, causes, consumed)
+
+
 def format_text(grouped: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str) -> str:
     lines = [f"GoatCounter events for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})"]
     lines.append(
@@ -490,13 +538,26 @@ def format_text(grouped: dict[str, Any], *, site: str, start: datetime, end: dat
         began = bucket.get("began")
         if began is not None:
             lines.append(f"  {prefix}day-{day}-began: {began}")
-        rest = {name: count for name, count in bucket.items() if name != "began"}
-        for name, count in _sorted_desc(rest):
-            if began:
-                percent = count / began * 100
-                lines.append(f"  {prefix}day-{day}-{name}: {count} ({percent:.1f}% of began)")
-            else:
-                lines.append(f"  {prefix}day-{day}-{name}: {count}")
+
+        totals, causes, consumed = split_losses(bucket)
+        lost_total = sum(totals.values())
+        rest = {name: count for name, count in bucket.items() if name != "began" and name not in consumed}
+        # "lost" is a synthetic heading, not a real path GoatCounter ever sent -- it stands in for
+        # every lost-* key folded under it, sorted into the same count-descending order as won and
+        # everything else the day sent.
+        display: dict[str, int] = dict(rest)
+        if lost_total:
+            display["lost"] = lost_total
+        for name, count in _sorted_desc(display):
+            if name != "lost":
+                lines.append(f"  {prefix}day-{day}-{name}: {count}{_pct_suffix(count, began)}")
+                continue
+            lines.append(f"  Lost: {lost_total}{_pct_suffix(lost_total, began)}")
+            for kind, kind_count in _sorted_desc(totals):
+                lines.append(f"    {prefix}day-{day}-lost-{kind}: {kind_count}{_pct_suffix(kind_count, began)}")
+                for cause, cause_count in _sorted_desc(causes.get(kind, {})):
+                    suffix = _pct_suffix(cause_count, began)
+                    lines.append(f"      {prefix}day-{day}-lost-{kind}-{cause}: {cause_count}{suffix}")
 
     other: dict[str, int] = grouped["other"]
     if other:
