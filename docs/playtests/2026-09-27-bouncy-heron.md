@@ -1,9 +1,12 @@
 # Playtest bouncy-heron — The queue stays in the repository, Issues become the inbox, and CI takes the mechanical checks
 
 2026-09-27. Said in conversation, a discussion of whether the queue and the feedback should move
-from the repository to GitHub Issues. The player's words are quoted in full; what the assistant
-proposed and the player accepted is stated after each quote, since the player's closing answer
-accepts every proposal they did not change (statement 12).
+from the repository to GitHub Issues. The player's words are quoted in full. Before each quote
+stands what the assistant had just said, as far as the quote answers it: every label the player
+uses — (a), (b), (c), "your categories", "capture", "the CI for issue transcription" — is defined
+there, since the quote alone does not say what it points at. The player's answer after the list
+accepts every proposal of the assistant's they did not change, so those proposals are written out
+in full here.
 
 ## The question
 
@@ -11,12 +14,27 @@ accepts every proposal they did not change (statement 12).
 > overhead from just managing tasks and feedback. the alternative would be to make use of github
 > issues. what are the pros and cons of each? let's discuss"
 
-The assistant laid out both sides: the repository keeps the queue and the code in one commit, is
-read offline by every agent, loads its rules through the path hooks and is linted; Issues file and
-close without a PR, notify, and can be written from a phone, but lose the review a queue update
-gets, the rule hooks and the diff history. It asked which pain was largest: (a) waiting on and
-approving queue PRs, (b) not being able to file or triage from outside a session, (c) agents
-briefed from a stale queue.
+The assistant measured the overhead (11 of the last 50 commits on `main` touched only the queue,
+the review items or the playtests, and each went through a branch, a PR, a Haiku review and the
+player's go-ahead) and laid out both sides. **For the repository:** the queue and the code change
+in one commit, so a PR that finishes an item deletes it and writes its record together; every
+agent reads the queue offline; editing `docs/todo/` or `docs/review/` loads the
+**playtest-feedback** rules by hook; `tools/lint.sh` enforces the bands and `after:` lines; the
+narrow review catches an open item deleted with no record; one grep searches the queue and the
+records together. **For Issues:** filing, re-banding and closing need no PR; labels and GitHub's
+own "blocked by" links could replace the bands and `after:` lines; a review item assigned to the
+player notifies them and can be answered from a phone; "Closes #N" closes an issue when its PR
+merges. **Against Issues:** closing one is a click nobody reviews, no hook loads a rule on an
+issue edit, every agent needs GitHub access through its bot identity, the search splits in two,
+and moving 38 entries and about 118 review items means rewriting the queue tools, the lint and
+about six skills. It proposed three ways forward — stay in the repository and let CI merge a
+queue-only PR on green; move everything to Issues; or move only the review items to Issues — and
+recommended the first. It asked which pain was largest:
+
+- **(a)** waiting on and approving queue PRs;
+- **(b)** not being able to file or triage from outside a session;
+- **(c)** agents briefed from a stale queue, since every brief is written from `origin/main` and a
+  filing not yet merged is missing from it.
 
 > "one pro is also that items get reviewed when they enter the queue which in theory can reduce
 > miscommunication or misinterpreted statements which was a big problem before. spending time
@@ -27,15 +45,45 @@ briefed from a stale queue.
    spent at filing to catch a misread statement is worth more than the cleanup it saves. →
    leafy-finch.
 
+The assistant agreed and dropped the move to Issues. It noted that GitHub does keep an issue's
+past versions, but nobody reviews an edit before it lands and a past version can be deleted. It
+then pointed out that the review a queue update gets today does not check what the player cares
+about: the pr-review skill's narrow review checks only the paths, that no playtest file was
+rewritten, that no open item was deleted without a record or an agreed drop, and the lint, and
+says outright that "whether a filing states the player's ask faithfully is the filer's job". It
+proposed moving those mechanical checks into CI and spending the review on faithfulness instead,
+and asked whether that review should be Sonnet's or stay Haiku's.
+
 > "how would the automated narrow review work?"
+
+The assistant described it: a CI step lists the PR's changed files; if every one is under
+`docs/todo/`, `docs/review/` or `docs/playtests/`, the PR is a queue update and the checks run —
+playtest files only added, a deleted item accounted for by a record on `main` or a `Dropped:` line
+in the description quoting the player, a deleted review item named by a playtest file, the lint
+passing — and a queue-only PR skips the Godot checks and the eight suite shards, which run today
+on every PR. It asked two things: whether a `Dropped:` quote must appear verbatim in a playtest
+file (its pick), and whether to skip the suite on queue-only PRs (its pick: yes).
 
 > "(b) is an issue since I have to hope that the agent gets to write a comment down before a
 > session is cleared. (a) is just overhead that slows things down which is not great (c) I don't
 > think I have had that happen yet"
 
+This answers the question of the first reply: (b) is not being able to file or triage from
+outside a session, (a) is waiting on and approving queue PRs, (c) is agents briefed from a stale
+queue.
+
 2. **The player's words are at risk until an agent writes them down**, and a session can be
    cleared before it does. → leafy-finch.
 3. **The overhead of a queue PR slows the work down.** → leafy-finch.
+
+The assistant proposed **Issues as an inbox, not as the queue**: the player writes a note as an
+issue at any time; in a session, an agent's first act on feedback is to open such an issue with
+the player's words, in one call; filing then works as today — the note copied into a playtest
+file, the queue entries filed, and the PR saying "Closes #N". It proposed a CI check that a
+playtest file in a PR carrying "Closes #N" contains that issue's body word for word, a hook that
+reminds the agent on every message to capture feedback first, a script `tools/capture.sh` for
+the capture, and a decision record saying Issues were weighed as the queue and adopted as the
+inbox only.
 
 ## The options
 
@@ -51,16 +99,37 @@ briefed from a stale queue.
 > previous wording like when I'm formulating a task today. so let's recap and list out the options
 > first"
 
-The assistant answered that the narrow review of a queue update does not check faithfulness
-today: the pr-review skill leaves it to the filer, and it is checked only when the PR that builds
-the entry is reviewed. It proposed classifying a PR by the files it changes, never by its title,
-and listed the options this file's statements settle.
-
 4. **Faithfulness means another agent checks that the player's wording in the playtest file and
    the work scheduled in the queue match.** → leafy-finch.
 5. **Issues are the inbox, not the queue.** The player records thoughts there and tells the agent;
    the agent batches them into the queue. An inbox note is edited in place until it is right,
    which is better than several lines each correcting the last. → leafy-finch.
+
+The assistant answered that faithfulness is not checked when a filing is its own PR, only later
+when the PR that builds the entry is reviewed. It answered that CI tells PRs apart **by the files
+they change, never by the title**, which the agent writes: a first job sets three flags —
+**queue-only** (every file under `docs/todo/`, `docs/review/` or `docs/playtests/`),
+**docs-only** (every file Markdown or under `docs/`, except `docs/TELEMETRY.md`, `docs/COSTS.md`
+and `docs/ARCHITECTURE.md`, which the Godot checks read) and **touches-code** (anything under
+`src/` or `tests/`) — and the workflow always runs, because a path filter on the workflow would
+leave the required `test` check waiting forever. These three flags are "your categories" below.
+It then listed the options:
+
+- **A.** Skip the Godot suite on docs-only PRs.
+- **B.** CI runs the narrow review's mechanical checks on queue-only PRs.
+- **C.** A PR touching code must also delete or rewrite a `docs/todo/` file and add or change a
+  `docs/decisions/` record, with a `No queue item: <reason>` escape line the reviewer judges.
+- **D.** A faithfulness review on every filing PR; Sonnet or Haiku.
+- **E.** Issues as the inbox — an `inbox` label and an issue template; the agent copies a note's
+  current text and the player's comments into a playtest file and closes the issues with the
+  filing PR; after filing, a later thought is a new note; optionally, the CI check that the
+  playtest file holds the issue's text word for word ("the CI for issue transcription").
+- **F.** In-session capture — `tools/capture.sh` opens an inbox issue with the player's words in
+  one call, and a hook on every message the player sends reminds the agent to capture first.
+- **G.** Fix the GitHub write guard, which denied a `grep` because its search pattern contained
+  the issue command's words.
+
+It suggested building A alone first, then B, C and D together, then E, F and G.
 
 ## The list
 
@@ -92,10 +161,14 @@ and listed the options this file's statements settle.
 
 > "everything that you suggested that I didn't explicitly change is accepted"
 
-Asked which model runs the faithfulness check, since point 3 leans on Haiku and point 7 accepts
-Sonnet, the player chose **"Sonnet now"**. Asked whether the standing rule that a finished item
-needs both its file deleted and its decision record written stays, with CI checking only the
-queue, the player answered:
+The assistant asked two questions. **First:** point 3 says Haiku should be enough and point 7
+says "we can go from haiku to sonnet, sure" — which model runs the faithfulness check? The options
+were "Haiku now, Sonnet if Haiku misses misreadings" and "Sonnet now"; the player chose **"Sonnet
+now"**. **Second:** point 5 read as CI requiring a `docs/todo/` change on a code PR and allowing,
+not requiring, a `docs/decisions/` change, while the committing skill's standing rule (2026-09-09)
+counts an item resolved only when its file is gone *and* its record is written — should that rule
+stay, with the reviewer enforcing the record? The options were "keep the rule, CI checks the queue
+only", "CI requires both" and "records become optional". The player answered:
 
 > "okay if the standing rule is both then let's do that. what I want is a CI check that does what
 > the reviewer currently does automatically. we should get as close as possible to that. the
@@ -107,10 +180,7 @@ queue, the player answered:
    current text into a playtest file and files the queue entries in one PR; the player chooses
    when a batch becomes that PR, and may edit an issue until the PR merges. → leafy-finch.
 7. **A PR whose changed files are all docs skips the heavy Godot checks, and only those.** The
-   light checks still run. The categories are the assistant's: queue-only (every file under
-   `docs/todo/`, `docs/review/` or `docs/playtests/`), docs-only (every file Markdown or under
-   `docs/`, except `docs/TELEMETRY.md`, `docs/COSTS.md` and `docs/ARCHITECTURE.md`, which the Godot
-   checks read), and touches-code (anything under `src/` or `tests/`). → leafy-finch.
+   light checks still run. The categories are the three flags above. → leafy-finch.
 8. **The review of a queue update checks faithfulness, and it is Sonnet's.** A reviewer flags;
    it does not resolve. → leafy-finch.
 9. **CI checks what can be checked automatically, as close as possible to everything the
@@ -118,16 +188,26 @@ queue, the player answered:
    verifies the correctness of what CI checked; CI is a help. → leafy-finch.
 10. **A PR that changes code must also change the queue and the decision records**, since the
     standing rule is that a finished item's file is deleted and its record written, both. The
-    assistant's escape for a PR with no queue item, a `No queue item: <reason>` line the reviewer
-    judges, is accepted. → leafy-finch.
+    `No queue item: <reason>` escape line of option C is accepted. → leafy-finch.
 11. **No PR merges with a handoff file in it.** One may be pushed while the PR is being made; it
     is removed before the PR is done. → leafy-finch.
-12. **CI checks that an inbox issue is transcribed word for word into the playtest file.** →
-    leafy-finch.
+12. **CI checks that an inbox issue is transcribed word for word into the playtest file** (option
+    E's optional check). → leafy-finch.
 13. **An agent captures the player's words into the inbox with a script, by its own judgment.**
-    There is no hook recording every message: "I don't want my entire conversation recorded. an
-    agent has better judgement there." → leafy-finch.
+    Option F's script is kept and its hook is dropped: "I don't want my entire conversation
+    recorded. an agent has better judgement there." → leafy-finch.
 14. **The GitHub write guard lets an issue write through a script, under the agent's own
     identity, and still denies an agent's direct `gh issue`.** → leafy-finch.
 15. **The work is filed as a queue entry by today's workflow, and built once that PR merges.** →
     leafy-finch.
+
+## The filing's own record
+
+> "for things like "(b) is an issue since I have to hope that the agent gets to write a comment
+> down before a" you need to also include what (b) meant at the time. if you just record my side
+> then important context is lost"
+
+16. **A playtest file records the assistant's side as far as the player's words answer it**: the
+    question, the options with their labels, the proposal a "yes" accepts. A label the player uses
+    is defined where it is quoted. → **playtest-feedback**, "Write it down with all of its
+    detail, before doing anything about it".

@@ -42,6 +42,14 @@ reader loses the half with the measurement in it.
 player's own words, and every specific they gave — before a line of code is written.** Then it
 becomes a queue entry, and only then does it get implemented.
 
+**Words said in conversation are recorded with what they answered.** *(2026-09-27: "you need to
+also include what (b) meant at the time. if you just record my side then important context is
+lost".)* Before each quote the playtest file states the assistant's side as far as the quote
+answers it: the question asked, the options with their labels, the proposal a "yes" accepts. Every
+label the player uses — "(b)", "option C", "your categories" — is defined where it is quoted,
+since the quote alone does not say what it points at, and a reader of the file has not seen the
+conversation.
+
 **A new playtest, a new queue entry, a new decision and a new review item are named, never
 numbered.** *(2026-09-26: "that numbering should be for everything that currently has a strict
 sequential number".)* `tools/new-name.sh <kind> "<title>"` draws `<date>-<adjective>-<animal>`,
