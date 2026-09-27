@@ -41,3 +41,9 @@ reviewed together and three tooling PRs were open.
 5. **Its band.**
 
    > "File that for now too"
+
+6. **Which day.** Asked whether "the day that you made it to" is the day the run ended on or the
+   last day completed:
+
+   > "Yes the last day played. Not the last day completed. So if you die on the first day it says
+   > 1 and not 0"
