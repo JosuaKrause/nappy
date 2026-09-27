@@ -1,3 +1,5 @@
+priority: later
+
 ## M219 — On a pedestrian street a blocked walker turns round · found 2026-09-26
 
 > "on the pedestrian street people don't turn around when their path is blocked so they accumulate

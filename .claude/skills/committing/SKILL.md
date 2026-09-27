@@ -1,6 +1,6 @@
 ---
 name: committing
-description: The git workflow for this repo — one branch per work item, one commit per queue item, what a commit message must explain, what a PR files in the queue and the records, and when to merge and delete. Load this BEFORE committing, branching, merging or writing a commit message.
+description: The git workflow for this repo — one branch per work item, one commit per queue item, what a commit message must explain, what a PR files in the queue and the records, when to merge and delete, and how a release is cut. Load this BEFORE committing, branching, merging, cutting a release or writing a commit message.
 ---
 
 # Git workflow
@@ -40,6 +40,55 @@ When merging is explicitly authorized, check mergeability and let CI gate the me
 conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**
 (`gh pr merge <n> --squash`) and retire the branch (see "Branches"). A dependent wait belongs to
 a background agent, not a polling loop in the orchestrating session.
+
+**Several PRs can merge in a row without re-greening each one.** Two rulesets guard `main`. The
+`main` ruleset requires a pull request and the `test` check — the doc lint, the boot check and the
+full suite, run on the merge result. The `main approvals` ruleset requires one approving review,
+from a reviewer bot or the player; repository admins (the player) may bypass it when merging a pull
+request, and resolving the review threads is not required. So green CI alone is not the gate.
+Neither ruleset requires a branch to be up to date with `main`
+(`strict_required_status_checks_policy` is off), so an approved PR whose `test` check is green
+merges after `main` has moved under it as long as the merge is still clean; a conflict still blocks
+it and is resolved on the branch. **What that trades away is real**: the check ran on that branch's
+merge result, not on the one it actually gets, so a semantic conflict between two PRs that touch
+different files passes both gates and lands broken. Watch `main`'s own CI run after a batch rather
+than assuming the last green PR spoke for it; `tools/land-prs.sh` names that run when it finishes,
+and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge commit gets one.
+
+## Releasing
+
+**A push is a check and a tag is a release.** `https://nappy.josuakrause.com/` serves the game.
+`.github/workflows/ci.yml` runs lint, check and the full suite, sharded, on every push to `main`
+and every pull request — a new push to a pull request cancels that pull request's older runs, and
+a run on `main` is never cancelled. `.github/workflows/deploy.yml` fires on a `v*` tag and nothing
+else: verify, boot check, export, upload, publish, in that order. **The deploy does not run the
+suite again.** The `version tags` ruleset requires the `test` check on the commit a tag points at,
+so a tag on a red or untested commit cannot be pushed, and the deploy's first job asks the API for
+that check's outcome and refuses to build without it — the same read `tools/release.sh` waits on
+before it tags.
+
+**Publishing is a separate, deliberate act, and it needs its own go-ahead from the player in the
+current session**; merge permission is not release permission. Completed work may be pushed
+without asking, since pushing `main` publishes nothing.
+
+**Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag
+and prints what it would do. It acts only when given a second literal `push` argument, and it
+refuses a dirty tree, any branch but `main`, a `main` that is not level with `origin/main`, and a
+commit that already carries the newest `v*` tag — every refusal fires in the dry run too, so the
+dry run tells the truth about whether the real thing would work. Semver, and **`major` is reserved
+for a change that breaks or fundamentally alters the game**.
+
+**A fix on `main` is not a fix on the site**, and that is the sentence to keep in mind before
+telling anybody the page is well. The site serves whatever the newest tag points at, so `git tag
+--list 'v*'` and `tools/release.sh`'s own dry run are what say whether a given commit is out there.
+A release has carried a game-ending bug before (`tools/decisions.sh M73`).
+
+**A browser fetches a new release whole.** The export publishes `index.js`, `index.wasm` and
+`index.pck` under a directory named for the release tag, because GitHub Pages sends
+`Cache-Control: max-age=600` on everything with no header surface to change it, and under fixed
+names each file's ten minutes would run independently, pairing a fresh `index.html` with the
+previous release's `index.pck` (`tools/decisions.sh M80`). So a report of a stale build is worth
+believing rather than explaining away.
 
 ## The squash commit is the pull request's title and description
 
@@ -81,12 +130,17 @@ touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`
 the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
 `tools/new-name.sh decision --entry <name> "<title>"`, which takes `-2` and on when the entry
 already has one); **when that was the entry's last item, the entry's folder goes in the same PR**,
-and its link in `TODO.md`'s order with it, because the queue holds open work only and the entry
-stops being open the moment the PR merges.
+because the queue holds open work only and the entry stops being open the moment the PR merges.
+Another entry's `after:` line naming it stays as it is: the record is what makes the wait count
+as over (`tools/queue.sh` prints it as `<name>, closed`, and the lint accepts it), so closing an
+entry never edits a second one, and the end-of-session pass (**session-cleanup**) deletes the
+line.
 
-**`docs/HANDOFF.md` is not a PR's.** *(2026-09-26: "handoff only at the end of a session".)* It is
-written once, at the end of a session, by the **session-cleanup** pass, which reads the tree as it
-then stands; a PR that edited it would meet every other open PR in the same file.
+**The queue's order is each entry's band line**, the first lines of its `README.md`
+(`priority: now|next|later|parked`, then any `after:` lines), and `tools/queue.sh` prints it.
+Setting or moving a band is the orchestrator's (**orchestrating**) and edits that one file, so it
+meets another PR only when both change the same entry; there is no shared order list for a PR to
+edit.
 
 **Why:** a PR is reviewed once, against a tree where the reason for each doc edit is visible in the
 same diff. Deferred, the reason is gone and only somebody who already knows what changed can tell
@@ -95,8 +149,8 @@ their own doc debt is how three files come to carry three different answers to o
 the pass that untangles it is a milestone rather than a review comment.
 
 **The test is the same one the docs rule uses:** if `main` at the squashed commit would hand a fresh
-reader a sentence that is no longer true, the PR is not finished — `HANDOFF.md` excepted, which the
-session's end rewrites. Read the entry's own folder before proposing, not after.
+reader a sentence that is no longer true, the PR is not finished. Read the entry's own folder
+before proposing, not after.
 
 **And every doc the change owes is in the PR before it merges. This is a hard requirement.**
 *(2026-09-09: "why do you keep updating handoffs and todos *after* a PR has landed? the updates
@@ -116,13 +170,6 @@ rejected options — is filed under `docs/decisions/`, both on the branch. A PR 
 sits open in the queue is not finished, however green its checks are; if the item is only partly
 built, the PR either finishes it or rewrites the item's file on the branch to hold exactly what is
 still open, with the built half filed as a decision.
-
-**And no handoff mentions it any more, since the work is done.** *(2026-09-09: "and there may be no
-mention of it in any handoff still … since the work is done".)* `HANDOFF.md` holds the pick-up
-state and nothing else, so a merged item has no line there — not a "built and unwalked" bullet, not
-a distrust entry written for it, not its name. What a player should go and look at is a queue
-item, a decision record, or a review item under `docs/review/`, never a sentence in the handoff
-about work that is finished; the session's end writes the handoff with that in mind.
 
 **And work that only a person can judge adds its review item in the same PR**: a file
 `docs/review/<entry name>.md`, made with `tools/new-name.sh review --entry <name> "<title>"`, which

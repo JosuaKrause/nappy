@@ -40,7 +40,8 @@ fire for a sub-agent's tool calls too, which is what ran the command. A hook add
 only mentions the words (`echo "git grep"`, a commit message, `rg "git grep"`). The build denies
 them, because every reading that let a mention through also let through a real call hidden in
 quoted code or a heredoc, and a missed call costs a machine while a false deny costs a rewrite.
-Open to overturn.
+Open to overturn; the player keeps it for now, a mention written as one hyphenated word
+*(2026-09-26, [2026-09-26-curly-quail](../playtests/2026-09-26-curly-quail.md), statement 5)*.
 
 **Tried and rejected on the way**, each found by a review: a tokenizer with a closed list of
 boundary words (a newline or an unknown wrapper ended a command early); a quote-opaque parse that

@@ -1,0 +1,95 @@
+{
+  "prefix": "docs/evidence/entity-performance-2026-09-26/rejected/entity-rendered-2",
+  "accepted": false,
+  "rejections": [
+    "truncated window",
+    "northward net movement below 450 pixels; expected about 552",
+    "player travels less than 50 pixels in measured window",
+    "no moving cars",
+    "rendered frame counter advances on fewer than 95% of measured frames"
+  ],
+  "frames": 0,
+  "profile_frames": 2103,
+  "profiler_enabled": true,
+  "physics_alignment_mismatches": [],
+  "unique_function_signatures": 1583,
+  "missing_profile_frames": [],
+  "population": {
+    "walkers": null,
+    "cars": null,
+    "visible_walkers": null,
+    "visible_cars": null,
+    "events": null,
+    "visible_events": null
+  },
+  "player_path_pixels": 0,
+  "northward_net_pixels": 0,
+  "north_input_held": null,
+  "draws_per_process_frame": {},
+  "moving_cars_per_frame": null,
+  "ticks_per_frame": {},
+  "callback_interval_ms": null,
+  "observer_ms": null,
+  "compiler_warnings": 154,
+  "errors": [],
+  "environment": {
+    "adapter": "Apple M2",
+    "columns": [
+      "frame",
+      "physics_frame",
+      "drawn_frame",
+      "stamp_usec",
+      "elapsed_usec",
+      "running",
+      "paused",
+      "player_x",
+      "player_y",
+      "counts",
+      "moved_cars",
+      "observer_usec"
+    ],
+    "count_columns": [
+      "walkers",
+      "cars",
+      "visible_walkers",
+      "visible_cars",
+      "events",
+      "visible_events"
+    ],
+    "display": "macOS",
+    "engine": {
+      "build": "official",
+      "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "hex": 263938,
+      "major": 4,
+      "minor": 7,
+      "patch": 2,
+      "status": "stable",
+      "string": "4.7.2-stable (official)",
+      "timestamp": 0
+    },
+    "graph": false,
+    "physics_hz": 30,
+    "processor": "Apple M2",
+    "profiler_max_functions": 16384,
+    "readout": true,
+    "render_on_main_thread": true,
+    "renderer": "gl_compatibility",
+    "telemetry": false,
+    "viewport": [
+      1280.0,
+      720.0
+    ],
+    "warmup_usec": 5000000,
+    "window_usec": 6000000
+  },
+  "functions": {},
+  "native_ms": {
+    "frame_main_loop_wall": null,
+    "process_and_render_submit": null,
+    "worst_physics_tick_in_frame": null,
+    "script_self_sum": null
+  },
+  "emitted_functions_per_frame": null,
+  "most_expensive_frames": []
+}

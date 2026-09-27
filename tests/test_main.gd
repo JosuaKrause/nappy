@@ -353,9 +353,18 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 	main._status = Label.new()
 	main._title = TitleScreen.new()
 
+	var chosen: Array = []
+	var record := func(mode: int, by_key: bool) -> void: chosen.append([mode, by_key])
+	EventBus.controls_chosen.connect(record)
 	main._on_title_start(ControlsMode.Mode.JOYSTICK)
 	t.check(main._touch_controls._mode == ControlsMode.Mode.JOYSTICK,
 			"pressing the joystick button on the title screen sets that mode on the one control reader")
+	main._on_title_start(ControlsMode.Mode.TAP, true)
+	EventBus.controls_chosen.disconnect(record)
+	t.check(main._touch_controls._mode == ControlsMode.Mode.TAP,
+			"a key begins the run in tap mode")
+	t.check(chosen == [[ControlsMode.Mode.JOYSTICK, false], [ControlsMode.Mode.TAP, true]],
+			"and the counter hears which input began each run, a key as a key")
 
 	main._status.free()
 	main._title.free()
@@ -669,8 +678,8 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 ## headless suite steps. The check instead does the same arithmetic Godot's own clamp does —
 ## `position` held inside `limit_left..limit_right` less half the visible view, `Stroller.
 ## CAMERA_LOOK_AHEAD` added on top the way `_camera.offset` is, unclamped — for the worst-case
-## glance at each of the four corners, and reads the real painted `TileMapLayer` cell by cell
-## rather than re-deriving what should be there.
+## glance at each of the four corners, and reads the actual static `TileMapLayer` cells plus the
+## independently drawn south-water cells rather than re-deriving what should be there.
 func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
@@ -703,7 +712,9 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 		var unpainted := 0
 		for y in range(lo.y, hi.y + 1):
 			for x in range(lo.x, hi.x + 1):
-				if city._ground.get_cell_source_id(Vector2i(x, y)) < 0:
+				var cell := Vector2i(x, y)
+				if city._ground.get_cell_source_id(cell) < 0 \
+						and not city._south_water.cells.has(cell):
 					unpainted += 1
 		t.check(unpainted == 0,
 				"corner %s: every cell the window can show is painted (%d unpainted of %d)"

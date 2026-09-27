@@ -1,3 +1,5 @@
+priority: next
+
 ## M99 — The corridor's density after the sealing · rewritten 2026-09-09
 
 Rewritten from M50. M64 superseded M50's gradient at both ends — off the path is *closed*, on it the

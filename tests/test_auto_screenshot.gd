@@ -29,7 +29,13 @@ func run(t) -> void:
 	_test_letters_are_shorthand_for_four_bearings(t)
 	_test_a_malformed_script_parses_to_nothing(t)
 	_test_a_script_can_mix_letters_and_angles(t)
+	_test_a_decimal_duration_parses_a_fractional_second(t)
+	_test_a_second_decimal_point_is_malformed(t)
+	_test_the_stand_still_letter_presses_nothing(t)
+	_test_an_uppercase_letter_marks_a_running_step(t)
 	_test_a_script_presses_one_action_at_a_time_in_order(t)
+	_test_a_running_step_presses_and_releases_the_run_action(t)
+	_test_a_stand_still_step_presses_nothing_and_releases_nothing(t)
 	_test_an_angled_step_presses_both_axes_at_fractional_strength(t)
 	_test_an_angled_step_releases_both_axes_when_it_ends(t)
 	_test_a_script_lets_go_of_the_last_action_when_it_ends(t)
@@ -131,6 +137,53 @@ func _test_a_malformed_script_parses_to_nothing(t) -> void:
 	t.check(AutoScreenshot._parse_script("3@x@").is_empty(),
 			"a non-digit between the '@'s is not a bearing either")
 
+## The three shapes M204 (the trailer) added to the walk script, so a shot's path can turn on a
+## street rather than only on a whole second: a decimal duration, `p` standing still, and an
+## uppercase letter running instead of walking. See `_parse_script()`'s own doc for why each exists.
+
+## `1.7w` — a duration may carry a decimal point, since a whole second is 92px of street and a
+## turn wants finer placing than that.
+func _test_a_decimal_duration_parses_a_fractional_second(t) -> void:
+	var steps := AutoScreenshot._parse_script("1.7w")
+	t.check(steps.size() == 1, "1.7w is one step (got %d)" % steps.size())
+	if steps.size() != 1:
+		return
+	t.check(steps[0]["direction"] == Vector2.LEFT and is_equal_approx(steps[0]["seconds"], 1.7),
+			"1.7 seconds west (got %s)" % steps[0])
+
+## A second decimal point in the same duration is malformed, the same as every other way a step can
+## fail to parse — the whole script refuses rather than guessing which point was meant.
+func _test_a_second_decimal_point_is_malformed(t) -> void:
+	t.check(AutoScreenshot._parse_script("1.5.5s").is_empty(),
+			"a duration with two decimal points has no single number to read")
+
+## `0.6p` — she stops, sees the wrong street for what it is, and turns, with nothing pressed, the
+## same as a player letting go. `direction` is `Vector2.ZERO` rather than a fifth vocabulary word,
+## so the same `_hold_direction()`/`_release_direction()` pair a lettered step uses presses nothing
+## for it.
+func _test_the_stand_still_letter_presses_nothing(t) -> void:
+	var steps := AutoScreenshot._parse_script("0.6p")
+	t.check(steps.size() == 1, "0.6p is one step (got %d)" % steps.size())
+	if steps.size() != 1:
+		return
+	t.check(steps[0]["direction"] == Vector2.ZERO and is_equal_approx(steps[0]["seconds"], 0.6),
+			"0.6 seconds standing still (got %s)" % steps[0])
+
+## `2S` — that direction at a run, `run` marked on the step so `_start_step()` holds the `run`
+## action for its duration. The lower-case letter beside it stays a walk, so the same script can
+## mix the two.
+func _test_an_uppercase_letter_marks_a_running_step(t) -> void:
+	var steps := AutoScreenshot._parse_script("2S3e")
+	t.check(steps.size() == 2, "2S3e is two steps (got %d)" % steps.size())
+	if steps.size() != 2:
+		return
+	t.check(steps[0]["direction"] == Vector2.DOWN and is_equal_approx(steps[0]["seconds"], 2.0)
+			and bool(steps[0].get("run", false)),
+			"two seconds south at a run (got %s)" % steps[0])
+	t.check(steps[1]["direction"] == Vector2.RIGHT and not bool(steps[1].get("run", false)),
+			"then three seconds east at a walk — the lower-case letter beside it unaffected (got %s)"
+			% steps[1])
+
 ## A script can mix the old vocabulary and the new one in the same string, in the same
 ## left-to-right order — `docs/TODO.md`'s own requirement for where the angled step lands.
 func _test_a_script_can_mix_letters_and_angles(t) -> void:
@@ -172,6 +225,40 @@ func _test_a_script_presses_one_action_at_a_time_in_order(t) -> void:
 	t.check(Input.is_action_pressed("move_right"), "and the second step's action takes over")
 
 	Input.action_release("move_down")
+	Input.action_release("move_right")
+	node.free()
+
+## An uppercase step (`2S`) holds `run` for its own duration and lets go once a walking step
+## follows it — a running step followed by a walking one slows back down rather than running on,
+## the exact behaviour `_advance_script()`'s own doc names.
+func _test_a_running_step_presses_and_releases_the_run_action(t) -> void:
+	var node := _script_rig("2S3e")
+	node._ready()
+	t.check(Input.is_action_pressed("move_down"), "the running step presses its direction")
+	t.check(Input.is_action_pressed("run"), "and holds run for its own duration")
+
+	node._process(2.1)
+	t.check(Input.is_action_pressed("move_right"), "the walking step after it takes over")
+	t.check(not Input.is_action_pressed("run"), "and run lets go, since the next step only walks")
+
+	Input.action_release("move_down")
+	Input.action_release("move_right")
+	Input.action_release("run")
+	node.free()
+
+## `0.6p` presses no `move_*` action for its duration — `_hold_direction(Vector2.ZERO)` sets both
+## axes to zero rather than skipping the step, so the release that follows is the same call every
+## other step's end already uses.
+func _test_a_stand_still_step_presses_nothing_and_releases_nothing(t) -> void:
+	var node := _script_rig("0.6p2e")
+	node._ready()
+	t.check(not Input.is_action_pressed("move_down") and not Input.is_action_pressed("move_up")
+			and not Input.is_action_pressed("move_left") and not Input.is_action_pressed("move_right"),
+			"standing still presses no move_* action at all")
+
+	node._process(0.7)
+	t.check(Input.is_action_pressed("move_right"), "the step after it takes over as normal")
+
 	Input.action_release("move_right")
 	node.free()
 

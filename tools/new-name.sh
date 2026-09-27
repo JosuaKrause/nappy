@@ -3,6 +3,7 @@
 # folder with a heading and the date, and prints the name.
 #
 #   tools/new-name.sh todo "The brief is the coming day's"         # docs/todo/<name>/README.md
+#   tools/new-name.sh todo --priority next "Stars for nerves"       # the same, in band `next`
 #   tools/new-name.sh decision --entry busy-badger "What was built" # docs/decisions/<entry>.md
 #   tools/new-name.sh review --entry busy-badger "Walk day 6"       # docs/review/<entry>.md
 #   tools/new-name.sh playtest "Stars for nerves"                   # docs/playtests/<name>.md
@@ -18,6 +19,10 @@
 # name, its two words, or an old entry's milestone number (M210). One drawn without `--entry` gets
 # a new pair, and its heading ends "· not from an entry", which tools/lint.sh reads.
 #
+# A queue entry's README.md opens with its band line, `priority: later` unless `--priority` names
+# another band, then a blank line and the heading, so a new entry passes tools/lint.sh as written;
+# tools/queue.sh holds the band set and prints the order the bands give.
+#
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
 
@@ -25,21 +30,27 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 usage() {
     cat <<'EOF'
-usage: tools/new-name.sh [--help|-h] [--date YYYY-MM-DD] [--entry NAME] <kind> "<title>"
+usage: tools/new-name.sh [--help|-h] [--date YYYY-MM-DD] [--entry NAME] [--priority BAND]
+                         <kind> "<title>"
 
 Makes a name <date>-<adjective>-<animal> unused across docs/todo, docs/decisions, docs/review and
 docs/playtests, writes the thing it names with a heading and the date, and prints the name.
 
-  kind        todo       docs/todo/<name>/README.md, the entry's context file
+  kind        todo       docs/todo/<name>/README.md, the entry's context file, opening with its
+                         band line (`priority: later` unless --priority says otherwise)
               decision   docs/decisions/<name>.md
               review     docs/review/<name>.md
               playtest   docs/playtests/<name>.md
   --entry N   decision and review only: take the name of entry N (its full name, its two words,
               or an old entry's milestone number such as M210) instead of a new one, with -2, -3
               and on when that file exists
+  --priority B
+              todo only: the entry's band, now, next, later or parked (default: later);
+              tools/queue.sh prints the queue in the order the bands give
   --date D    the date in the name and the heading (default: today)
 
   tools/new-name.sh todo "The brief is the coming day's"
+  tools/new-name.sh todo --priority next "Stars for nerves"
   tools/new-name.sh review --entry busy-badger "Walk day 6 with the new brief"
 EOF
 }
@@ -55,6 +66,7 @@ kind=""
 title=""
 entry=""
 day=""
+priority=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
@@ -64,6 +76,9 @@ while [[ $# -gt 0 ]]; do
         --entry)
             [[ $# -ge 2 ]] || fail_usage "--entry needs a value"
             entry="$2"; shift 2 ;;
+        --priority)
+            [[ $# -ge 2 ]] || fail_usage "--priority needs a value"
+            priority="$2"; shift 2 ;;
         -*) fail_usage "unknown option: $1" ;;
         *)
             if [[ -z "$kind" ]]; then
@@ -85,6 +100,19 @@ esac
 [[ -n "$title" ]] || fail_usage "no title given"
 if [[ -n "$entry" && "$kind" != decision && "$kind" != review ]]; then
     fail_usage "--entry is for a decision or a review item, not a $kind"
+fi
+if [[ -n "$priority" && "$kind" != todo ]]; then
+    fail_usage "--priority is for a queue entry, not a $kind"
+fi
+# The band set is tools/queue.sh's, read from it rather than copied here, and only for a queue
+# entry: filing a playtest, a decision or a review item never depends on the queue's script.
+if [[ "$kind" == todo ]]; then
+    bands="$(sed -n 's/^BANDS="\(.*\)"$/\1/p' "$root/tools/queue.sh" 2>/dev/null)"
+    [[ -n "$bands" ]] || { echo "new-name.sh: no BANDS line in $root/tools/queue.sh" >&2; exit 1; }
+    case " $bands " in
+        *" ${priority:-later} "*) ;;
+        *) fail_usage "unknown --priority: $priority (one of: $bands)" ;;
+    esac
 fi
 if [[ -z "$day" ]]; then
     day="$(date +%Y-%m-%d)"
@@ -178,7 +206,8 @@ case "$kind" in
         dir="$root/docs/todo/$base"
         [[ -e "$dir" ]] && { echo "new-name.sh: $dir already exists" >&2; exit 1; }
         mkdir -p "$dir"
-        printf '# %s — %s · filed %s\n\n' "$words" "$title" "$day" > "$dir/README.md"
+        printf 'priority: %s\n\n# %s — %s · filed %s\n\n' "${priority:-later}" "$words" "$title" "$day" \
+            > "$dir/README.md"
         name="$base"
         written="docs/todo/$base/README.md"
         ;;

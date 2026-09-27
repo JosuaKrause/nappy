@@ -1,3 +1,5 @@
+priority: next
+
 ## M100 — Small, real, and nobody's · consolidated 2026-09-09
 
 The small items, the polish list and the open design questions, consolidated into one milestone on
@@ -16,6 +18,14 @@ a capsule. Shape-derived bodies do not alone establish that apparent gaps can be
 the live body and picture's footprint still need comparison with the debug layers. The directional
 artwork, the player's perpendicular burnt-car correction and the rendered evidence are in
 `DECISIONS.md`, "SVG artwork and upcoming milestone assets".
+
+**The prepared drawings this entry binds are integration checks within it, not separate
+implementations of the same feature**: compare `alley_draft.svg` in context before deciding whether
+it replaces the live alley, and bind the sound arcs (`art/events/sound_pulse.svg`, the sound-lines
+item) with their event timing. Reuse the available assets; their placement, timing and gameplay
+decisions remain open. Source canvases, anchors and review sheets belong to `GRAPHICS.md`, and
+runtime use is verified in the caller. The visual review is recorded in `DECISIONS.md`, "SVG
+artwork and upcoming milestone assets".
 
 **Whether the `INDUSTRIAL` and `CIVIC` districts read differently at a glance is a question in
 `REVIEW.md`**: their roof furniture and fronts are placed per district (`DECISIONS.md`, M106), and

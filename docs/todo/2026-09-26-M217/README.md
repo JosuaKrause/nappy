@@ -1,3 +1,5 @@
+priority: later
+
 ## M217 — Nerves are stars on every screen · asked for 2026-09-26
 
 > "why are nerves sometimes stars and sometimes numbers? it should be consistent throughout

@@ -39,7 +39,11 @@ extends CanvasLayer
 ## `space` and every direction key still begin the run outright — see `_unhandled_input()`'s own
 ## doc for why that always chooses `Mode.TAP`.
 
-signal start_requested(mode: ControlsMode.Mode)
+## `mode` is the aiming origin the run begins in; `by_key` says a key began it rather than one of
+## the two buttons. The two are separate because a key begins the run in `Mode.TAP`, and the
+## counter reports a key player as a key player, never as the tap mode a key falls back to
+## (`VisitCounter`'s `controls-keys`).
+signal start_requested(mode: ControlsMode.Mode, by_key: bool)
 signal quit_requested()
 
 ## The instant `main._restart_run()` last asked for a scene reload, or `-INF` before the first one
@@ -204,7 +208,10 @@ func close() -> void:
 ## buttons begins it in whichever mode that button names. *(2026-09-07: "using awsd or arrow keys
 ## will start the game with tap mode".)* Read as *the keyboard is a desktop and a desktop is a
 ## mouse* — the same reasoning that makes `TAP` the mouse mode at all: a player pressing `space` or
-## an arrow has told this screen nothing about a thumb either. `Q` leaves, **except on the web**,
+## an arrow has told this screen nothing about a thumb either. The run still says a key began it
+## (`start_requested`'s `by_key`), so the counter can tell a key player from a tap player
+## (PLAYTEST-143: "is telemetry currently correctly identifying when a player plays with keys?").
+## `Q` leaves, **except on the web**,
 ## where `QuitOption.available()` is false and the key is not handled at all — nothing on screen
 ## ever named it (see `open()`'s own doc), so there is no sentence to keep in step with the gate.
 ## `Esc` is deliberately not handled: `main` will not open the pause over this, because a pause
@@ -231,7 +238,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("ui_accept") or _is_a_walk_key(event):
 		get_viewport().set_input_as_handled()
-		_begin(ControlsMode.Mode.TAP)
+		_begin(ControlsMode.Mode.TAP, true)
 		return
 	if _handle_mode_button_press(event):
 		return
@@ -333,7 +340,7 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, button: ModeButton) -> void
 ## buttons, all funnelled through here so the restart guard is asked exactly once regardless of
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
-func _begin(mode: ControlsMode.Mode) -> void:
+func _begin(mode: ControlsMode.Mode, by_key := false) -> void:
 	if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 		return
-	start_requested.emit(mode)
+	start_requested.emit(mode, by_key)

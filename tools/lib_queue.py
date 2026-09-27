@@ -78,6 +78,8 @@ none of it should be read as current. The open work is [TODO.md](TODO.md) and th
 [review/](review/).
 """
 
+# The old single-file TODO.md's header, verbatim: a strict migration refuses a header that differs
+# from it, so it still names the files that layout had beside it, `HANDOFF.md` among them.
 OLD_TODO_HEADER = """\
 # TODO
 
@@ -104,8 +106,7 @@ entry's record is written to [decisions/](decisions/) under the same name, in th
 Search the records (`tools/decisions.sh <noun>`) before designing anything. No ticked boxes, no
 "Done:" paragraphs, no branch names or status words in headings, here or in an entry.
 
-`tools/new-name.sh todo "<title>"` makes a new entry's folder and prints its name. Read
-[HANDOFF.md](HANDOFF.md) first for the state of the tree.
+`tools/new-name.sh todo "<title>"` makes a new entry's folder and prints its name.
 
 Each entry is one git branch, squash-merged to `main` through its pull request. An item somebody
 is mid-way through says so in its own text.
@@ -841,9 +842,9 @@ def is_old_format(texts: dict[str, str]) -> bool:
 def git_first_dates(rev: str, cwd: str | None = None) -> DateLookup:
     """A `DateLookup` answering with the author date of the commit that first wrote the line's text.
 
-    Not the commit that last touched it, which is what `git blame` gives: a record moved from
-    `HANDOFF.md` into `DECISIONS.md`, or an entry whose heading was reworded in place, would take
-    the date of the move. The history of every top-level `docs/*.md` reachable from `rev` is read
+    Not the commit that last touched it, which is what `git blame` gives: a record moved into
+    `DECISIONS.md` from another top-level doc, or an entry whose heading was reworded in place,
+    would take the date of the move. The history of every top-level `docs/*.md` reachable from `rev` is read
     once, oldest first, and a text's first addition anywhere in it is its date; a line never seen
     added (which only a history rewrite could cause) falls back to `git blame`.
     """

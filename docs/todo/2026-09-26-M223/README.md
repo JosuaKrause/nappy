@@ -1,3 +1,5 @@
+priority: now
+
 ## M223 — One file per queue entry and per decision, named by date and two words · asked for 2026-09-26
 
 > "Split every file where appropriate. Even the review file. We overhaul all items that are

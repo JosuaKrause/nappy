@@ -2616,11 +2616,12 @@ func _test_the_park_closes_in_front_of_her_and_stays_taken(t) -> void:
 	GameState.day = saved_day
 
 ## Day 13: the column. The convoys start that morning; the column is `Tuning.COLUMN_TRUCKS` trucks
-## in one lane of the main road, coming toward the point level with her from far enough up the road
-## that their telegraph is over before their field reaches her, and the rear one stops out of her
-## sight — beyond her, or short of her where nothing beyond will do — on a street rather than a
-## junction, where its barricade still leaves her a way home; the trucks ahead of it leave nothing. It comes once she nears the main road, or at
-## `Tuning.COLUMN_BY` wherever she is, and once.
+## in one lane of the main road, warned of first: its badge goes up with no truck in the world, its
+## place in the lane just off screen level with her, and the trucks arrive there once the row's
+## telegraph is over, coming toward the point level with her. The rear one stops out of her sight —
+## beyond her, or short of her where nothing beyond will do — on a street rather than a junction,
+## where its barricade still leaves her a way home; the trucks ahead of it leave nothing. It comes
+## once she nears the main road, or at `Tuning.COLUMN_BY` wherever she is, and once.
 func _test_the_column_comes_down_the_main_road(t) -> void:
 	var convoy := EventCatalogue.by_id("military_convoy")
 	t.check(convoy.first_day == ResistanceHappenings.COLUMN_DAY,
@@ -2643,11 +2644,31 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		var her := Vector2(spine - Tuning.STREET_WIDTH * 0.5 * Tuning.TILE_SIZE + Tuning.TILE_SIZE,
 				map.size.y * Tuning.TILE_SIZE * 0.5)
 		happenings.tick(STEP, her, Vector2.ZERO, Callable())
+		t.check(happenings.column.is_empty(),
+				"near it, the column's warning goes up with no truck in the world yet")
+		var warning := _warning_for(_city.events, "military_convoy")
+		t.check(warning != null, "and its badge has somewhere to point")
+		var lead := Tuning.offscreen_lead(Vector2.UP, convoy.speed + Tuning.WALK_SPEED,
+				convoy.offscreen_notice)
+		if warning:
+			t.check(CrowdLanes.corridor_at(warning.place.x) == _city.map.main_road,
+					"pointing up the main road")
+			# She walks a block along the road while it is coming: the place keeps its distance.
+			var was := absf(warning.place.y - her.y)
+			her.y += CityMap.period() * Tuning.TILE_SIZE * 0.5
+			_city.events._run_the_warnings(STEP, her)
+			t.close_to(absf(warning.place.y - her.y), was,
+					"and it moves with her rather than coming sooner", 1.0)
+		# The rest of the warning, frame by frame, the way `EventManager._physics_process` runs it.
+		var pointed := warning.place if warning else Vector2.INF
+		while warning and _city.events.pending_warnings().has(warning) \
+				and warning.shown < convoy.telegraph_time + 5.0:
+			pointed = warning.place
+			_city.events._run_the_warnings(STEP, her)
 		var trucks := happenings.column
 		t.check(trucks.size() == Tuning.COLUMN_TRUCKS,
-				"near it, a column of %d trucks comes (%d)" % [Tuning.COLUMN_TRUCKS, trucks.size()])
-		var lead := Tuning.outlasting_telegraph_lead(Vector2.UP, convoy.speed + Tuning.WALK_SPEED,
-				convoy.telegraph_time, Tuning.OFFSCREEN_NOTICE, convoy.field_reach())
+				"once the warning is over, a column of %d trucks comes (%d)"
+				% [Tuning.COLUMN_TRUCKS, trucks.size()])
 		var edge := minf(her.y, map.size.y * Tuning.TILE_SIZE - her.y) - Tuning.TILE_SIZE
 		var leaving := 0
 		for i in trucks.size():
@@ -2668,6 +2689,26 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 				t.check(StreetNetwork.segment_containing(map.world_to_tile(stop)) != null,
 						"on a street, not a junction")
 		t.check(leaving == 1, "one barricade's worth, from the rear truck (%d)" % leaving)
+		# **Where the front truck is created and how long after the badge it can reach her, on the
+		# real siting.** Its forward reach (395px) is deeper than the view is from her, so standing
+		# by its road she may be inside its field from its first frame: what she is owed is the
+		# warning before it existed, at least the row's own minimum (`EventDef.minimum_telegraph()`),
+		# from the badge to the first frame its field reaches her.
+		if warning and not trucks.is_empty():
+			var front := trucks[0]
+			t.check(PendingWarning.is_off_screen(front.global_position - her,
+					warning.closing_speed(), warning.def.offscreen_notice)
+					and front.global_position.distance_to(pointed) < 1.0,
+					"its front truck is created just off screen, where the badge pointed")
+			var to_reach := 0.0
+			while front.contribution_at(her) <= 0.0 and to_reach < 10.0:
+				front.player_at = her
+				front._process(STEP)
+				to_reach += STEP
+			t.check(warning.shown + to_reach + 0.001 >= warning.def.minimum_telegraph(),
+					("and from the badge to the earliest its field reaches her is %.2fs, at least "
+					% (warning.shown + to_reach))
+					+ "the %.2fs it is owed" % warning.def.minimum_telegraph())
 		happenings.tick(STEP, her, Vector2.ZERO, Callable())
 		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
 		for truck in trucks:
@@ -2676,6 +2717,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		director.start_day(ResistanceHappenings.COLUMN_DAY, _rng(13, "resistance"), 300.0)
 		happenings._elapsed = Tuning.COLUMN_BY
 		happenings.tick(STEP, far_from_it, Vector2.ZERO, Callable())
+		_city.events._run_the_warnings(convoy.telegraph_time + STEP, far_from_it)
 		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,
 				"at COLUMN_BY it comes wherever she is")
 		for truck in happenings.column:
@@ -2683,6 +2725,13 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		director.free())
 	GameState.city_state = saved_state
 	GameState.day = saved_day
+
+## The warning `events` has up for the row `id`, or null.
+func _warning_for(events: EventManager, id: String) -> PendingWarning:
+	for warning in events.pending_warnings():
+		if warning.def.id == id:
+			return warning
+	return null
 
 # ----------------------------------------------------------------- red arrow ---
 
