@@ -206,9 +206,10 @@ city that morning, the same words whichever way the day before it went.
 
 **A finished task is shown by the world and never by text.** A touched mark changes to its own
 touched picture, which is all a mark needs; nothing is written on the HUD, and there is no
-counter, no objective marker and no log. The note for a stranger answers the same way: the
-moment she hands it to him, the man she reached stops shouting and walks away, on foot, until he
-is out of sight — the same departure any finished event takes, not a word on screen. The
+counter, no objective marker and no log. The note for a stranger answers almost the same way: once
+she has handed it over, the man she reached keeps shouting for a couple of seconds, still charging
+her the whole time, then stops and walks away, on foot, until he is out of sight — the same
+departure any finished event takes, not a word on screen. The
 look-alikes she never reached carry on shouting exactly as before.
 
 A chalk mark the player has not actually noticed — stood near, on screen, long enough that
