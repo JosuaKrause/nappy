@@ -1,0 +1,86 @@
+{
+  "overrides": [
+    {
+      "name": "dog_b",
+      "raw_sha256": "8f4b3a9671d05c51e34b7e5e34ccdacd4264784ed5ecf8780df0131e1cdd97c5",
+      "raw_size": [
+        1520,
+        1035
+      ],
+      "a_crop_size": [
+        320,
+        218
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "inherited_a_transform": {
+        "name": "dog",
+        "source": "art/events/dog.svg",
+        "source_sha256": "d183479a4af9b65e605a50332397ecedbe90b64221cbe4e0758ac3421d1e8f5c",
+        "candidate": "candidates/dog/dog.png",
+        "candidate_sha256": "99c9f9b7dd156d34d08d59181e2744975924a2cde661d288025c413ef15f7e3c",
+        "native_size": [
+          26,
+          20
+        ],
+        "source_pair_union_bounds": [
+          1,
+          3,
+          26,
+          20
+        ],
+        "shared_pair_scale": 0.0779816513761468,
+        "candidate_position": [
+          1,
+          3
+        ],
+        "candidate_alpha_bounds": [
+          1,
+          3,
+          26,
+          20
+        ],
+        "grid_cell": [
+          0,
+          0
+        ],
+        "grid_bounds": [
+          0,
+          0,
+          450,
+          397
+        ],
+        "meaningful_alpha_bounds_in_cell": [
+          58,
+          142,
+          374,
+          356
+        ],
+        "crop_bounds_in_cell": [
+          56,
+          140,
+          376,
+          358
+        ],
+        "crop": "crops/dog/dog.png"
+      }
+    }
+  ],
+  "outputs": {
+    "candidates/dog_b.png": "69b2a657929b993b2b4f0433140945b2bff648f9ddc18b8a109cc354b7c48b39",
+    "registered/dog_b.png": "d66ae6db78cd5115008a4fbb37b09025ace92c35fa4b38556361890d435176c5",
+    "review/all-facings-1x.gif": "d7bfe22b4bd11627a4203af5f03876effde5a40788584ad5e4e87760de8518ba",
+    "review/all-facings-1x.png": "26d6fc91090324daf977bbd88b18efcff62d1422deb1540e8f8022e5cd0ff303",
+    "review/all-facings-2x.gif": "ba9a9e547b1f5f368cc98b992ae457569a7e489b8e3113e8aceaa55493ccc182",
+    "review/all-facings-2x.png": "c2a429410b40771e16bbf2a3ba99c88057f61d9d3de89f48b148e6315380df8d",
+    "review/all-facings-6x.gif": "e907959f0b7e7fc9ab11ff9e94b6f15f52867cb81ef95f72901e967146fbb968",
+    "review/all-facings-6x.png": "664a8b2184cbb976353350b613e8b5353629a6ebd10a18748709f7c250da4d4d",
+    "review/dog-body-loop.gif": "2dce3470b12f52429b05cb7572fb44f5354abc4d79e479d8f87d3dfc4258453a",
+    "review/dog-body-pair.png": "e328b7c432413a5637f9d8eb71307a946f6e13492fd00490daa6866865aec132",
+    "review/dog-leg-silhouette-loop.gif": "e81f8a56133f94975da567a6e07ef6f41560f90b8231bde1ad5421cb692d8a15",
+    "review/dog-leg-silhouette-overlay.png": "3768474d3788fbf4d9b7a07bb808b4820fbd72974ca0dca2e4007e99350c2f41",
+    "review/dog-leg-silhouette-pair.png": "159c9e7914bb96722f8bdcc808b42698c9755e3e4f7bfd3cc3b60257494424b3"
+  }
+}

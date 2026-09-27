@@ -14,6 +14,13 @@ image: an A/B label or a front-diagonal filename cannot establish its contact or
 Check western mirrors too. A same-clothing donor can supply useful leg artwork across character
 or carrying states, but its view, proportions and ownership must fit the target.
 
+Read the authored A/B source geometry before naming a phase: a gathered pose is not an
+opposite contact. Supply the original B pose alongside the frozen A body when correcting a
+generated B. Follow each limb from the same anatomical root through its changing joints and
+paw; never relabel near/far limbs to make existing footprints appear to move. Compare the
+registered leg contours with coat colors removed as well as in color. Shading swaps, paw
+counts, repeated inferred pivots and whole-body difference scores do not establish leg motion.
+
 Prefer the original large artwork for cropping and generated normalization. Mask along the
 garment contour rather than assuming a horizontal row separates coat and legs. A longer coat
 can hide anatomy the target's shorter jacket exposes; that region needs a coherent transition.
