@@ -135,7 +135,15 @@ def commit_range(since: str | None, until: str, *, cwd: Path) -> list[tuple[str,
 
 
 def changed_paths(commit_hash: str, *, cwd: Path) -> list[str]:
-    output = run_git(["diff-tree", "--no-commit-id", "--name-only", "-r", commit_hash], cwd=cwd)
+    """The paths `commit_hash` changed. Plain `git diff-tree -r` prints nothing for a merge commit
+    (it needs `-m --first-parent` to diff against the first parent instead of showing no combined
+    diff) or for the repository's own root commit (it needs `--root` to be diffed against the
+    empty tree instead of being treated as having no parent to diff against at all) -- either gap
+    would sort that commit as Tooling regardless of what it actually changed."""
+    output = run_git(
+        ["diff-tree", "--root", "-m", "--first-parent", "--no-commit-id", "--name-only", "-r", commit_hash],
+        cwd=cwd,
+    )
     return [line for line in output.splitlines() if line]
 
 

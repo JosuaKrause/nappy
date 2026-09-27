@@ -78,6 +78,7 @@ class ReleaseNotesTests(unittest.TestCase):
         self.tag("v0.0.0")
         out = self.notes("v0.0.0")
         self.assertIn("root game commit (#1)", out)
+        self.assertIn("## Game", out, "the root commit has no parent to diff against without --root")
         self.assertNotIn("Full Changelog", out, "the first tag has no previous tag to compare against")
 
     def test_patch_covers_only_since_the_previous_tag(self) -> None:
@@ -187,6 +188,16 @@ class ReleaseNotesTests(unittest.TestCase):
             "side branch commit (#9)",
             out,
             "a commit reachable only through the merge's second parent must not be listed",
+        )
+        # A merge commit's own diff is empty without -m --first-parent, which would sort it as
+        # Tooling regardless of what its second parent brought in (here, src/side.gd). Sliced on
+        # the Tooling header rather than just checked with assertIn: Game always prints first, so
+        # a bare "comes before" check would pass even with the merge commit filed under Tooling.
+        game_section = out.split("## Tooling and docs", 1)[0]
+        self.assertIn(
+            "Merge feature branch (#11)",
+            game_section,
+            "the merge commit itself must be classified as Game, not Tooling",
         )
 
     # ------------------------------------------------------------------------------ grouping ---
