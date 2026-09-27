@@ -1,0 +1,77 @@
+{
+  "new_poses": [
+    {
+      "name": "dog_c",
+      "raw_size": [
+        1519,
+        1035
+      ],
+      "raw_sha256": "66a008ee2a136db6e309b81eed752edffc71f26b86b087a051f3d703f6964756",
+      "a_crop_size": [
+        320,
+        218
+      ],
+      "raw_to_a_scale": 0.21066491112574062,
+      "inherited_a_transform": {
+        "name": "dog",
+        "source": "art/events/dog.svg",
+        "source_sha256": "d183479a4af9b65e605a50332397ecedbe90b64221cbe4e0758ac3421d1e8f5c",
+        "candidate": "candidates/dog/dog.png",
+        "candidate_sha256": "99c9f9b7dd156d34d08d59181e2744975924a2cde661d288025c413ef15f7e3c",
+        "native_size": [
+          26,
+          20
+        ],
+        "source_pair_union_bounds": [
+          1,
+          3,
+          26,
+          20
+        ],
+        "shared_pair_scale": 0.0779816513761468,
+        "candidate_position": [
+          1,
+          3
+        ],
+        "candidate_alpha_bounds": [
+          1,
+          3,
+          26,
+          20
+        ],
+        "grid_cell": [
+          0,
+          0
+        ],
+        "grid_bounds": [
+          0,
+          0,
+          450,
+          397
+        ],
+        "meaningful_alpha_bounds_in_cell": [
+          58,
+          142,
+          374,
+          356
+        ],
+        "crop_bounds_in_cell": [
+          56,
+          140,
+          376,
+          358
+        ],
+        "crop": "crops/dog/dog.png"
+      }
+    }
+  ],
+  "outputs": {
+    "candidates/dog_c.png": "62cef4e938a30e378de13e07e3c6a060d4dc85dd1074068a0bd690abc32a0fed",
+    "registered/dog_c.png": "73e2826313e28f5616c5ea25240d107ba8815110b6b0a44a3814bda16c1b1293",
+    "review/dog-body-four-beats.gif": "32c8ef54a8cbb9f89d54a5267acd32101bf1d3747277f1e34307717ddc239349",
+    "review/dog-body-three-poses.png": "578deb33da2d6313eef7530614a08ceeddf1383d4a9a38124e20d48a689853ba",
+    "review/dog-leg-silhouette-four-beats.gif": "fa0afa46563f70a2f9f4d7d790884ce1ae84ec0208249e2a210592e6e0ee10b4",
+    "review/dog-leg-silhouette-three-poses.png": "c11f59318baff12b35f738250e210a64f1448556ddbf479ca5001d3d4f80304b",
+    "review/dog-source-c.png": "9e80b44b889806cbbad198a5b77535060fbff9d3cca6d324c42a0cfe8c4046ee"
+  }
+}

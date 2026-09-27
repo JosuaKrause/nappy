@@ -32,9 +32,18 @@ the final L is the toe. Near/far shading and painter order remain attached to th
 `source-review.py` checks that substituting only these paths reconstructs each C SVG exactly
 below its explanatory comment; every body path, material, canvas and leg root remains unchanged.
 
-New SVGs precede illustration generation and require independent source review. No newly
-generated illustration is selected yet. The original SVGs and illustrated resting/step poses
-are inputs, not files to rewrite.
+The new SVGs precede illustration generation and pass independent source review. The original
+SVGs and illustrated resting/step poses are inputs, not files to rewrite. The first illustrated
+side proposal is visible as a [three-pose sheet](review/dog-body-three-poses.png) and
+[four-beat loop](review/dog-body-four-beats.gif). Other new illustrations are pending.
+Exact prompts and reference roles are preserved in [PROMPTS.md](PROMPTS.md); an initial side
+attempt with incorrect foreleg ownership is retained as the refinement's dependency, while
+`raw/dog_c.png` supplies the selected side C.
+
+`assemble.py` freezes every prior image artifact and recipe, all SVG sources, the reviewed
+source sheet/rasters, `source-review.py`, its manifest and the side raw inputs before writes.
+Source authoring commands below record the pre-generation stage; the saved source artifacts
+are authoritative inputs to illustration assembly, not hashes to refresh after generation.
 
 ## Source reproduction
 
