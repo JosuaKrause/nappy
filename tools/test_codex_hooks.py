@@ -383,6 +383,17 @@ class CodexHooksTest(unittest.TestCase):
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_github_write_guard_denies_a_multiline_graphql_mutation_after_a_comment(self) -> None:
+        # The quoted query's newline splits it here, so the mutation sits past the first line.
+        for query in (
+            '# Resolve the thread\nmutation { resolveReviewThread(input:{threadId:"x"}) { thread { id } } }',
+            'fragment F on PullRequest { id }\nmutation { mergePullRequest(input:{pullRequestId:"x"}) { id } }',
+        ):
+            with self.subTest(query=query):
+                output = self.call_raw(command=f"gh api graphql -f 'query={query}'")
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
     def test_github_write_guard_denies_a_graphql_body_from_input(self) -> None:
         output = self.call_raw(command="gh api graphql --input payload.json")
         assert output is not None

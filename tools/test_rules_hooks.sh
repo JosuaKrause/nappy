@@ -1113,6 +1113,16 @@ assert_write_guard "gh api graphql -f query=\$Q, a shell variable -> deny" deny 
     'gh api graphql -f query=$Q'
 assert_write_guard "gh api graphql -f query=\$(cat f), a command substitution -> deny" deny \
     'gh api graphql -f query=$(cat m.graphql)'
+# A quoted query spans lines and parentheses, which split it into several commands here, so the
+# check for "mutation" runs to the end of the whole command rather than stopping at the first.
+assert_write_guard "gh api graphql, a comment line then a mutation on the next -> deny" deny \
+    $'gh api graphql -f \'query=# Resolve the thread\nmutation { resolveReviewThread(input:{threadId:"x"}) { thread { id } } }\''
+assert_write_guard "gh api graphql, a fragment then a mutation on the next line -> deny" deny \
+    $'gh api graphql -f \'query=fragment F on PullRequest { id }\nmutation { mergePullRequest(input:{pullRequestId:"x"}) { clientMutationId } }\''
+assert_write_guard "gh api graphql, a fragment with arguments before a mutation -> deny" deny \
+    "gh api graphql -f query='fragment F on X { y(z:1) } mutation { a }'"
+assert_write_guard "gh api graphql, a multi-line query with no mutation -> allow" allow \
+    $'gh api graphql -f \'query=query {\n  viewer { login }\n}\''
 assert_write_guard "a REST write whose field value contains the word graphql -> deny" deny \
     "gh api -X POST repos/o/r/issues/1/comments -f body='use graphql' -f query=x"
 assert_write_guard "gh api with a full graphql URL as the endpoint, inline query -> allow" allow \

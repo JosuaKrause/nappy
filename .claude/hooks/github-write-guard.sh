@@ -207,8 +207,15 @@ def detect_git($w; $i; $n):
 # for it.
 #
 # A `graphql` call always POSTs, so its own rule is different: it reads only when its query text
-# is visible on the command line (a `query=` field whose value is written inline) and no word of
-# the call contains `mutation`. A query read from a file (`-F query=@q.graphql`), from a shell
+# is visible on the command line (a `query=` field whose value is written inline) and no word from
+# the start of the call to the end of the whole command contains `mutation`. The check runs to the
+# end of the command, not to the call's own next separator, because a quoted query is split like
+# any other text: its newlines and parentheses are separators here, so a query whose first line is
+# a comment (`query=# resolve` then `mutation { ... }` on the next line) or a fragment written
+# before the mutation would otherwise be cut off at a line the scan never reads. Where the last
+# word containing `mutation` sits is found once per command (`findings`' `$lm`), so this costs
+# nothing per call. A later, unrelated `mutation` in the same command makes a false deny, the safe
+# direction. A query read from a file (`-F query=@q.graphql`), from a shell
 # variable or a command substitution (`query=$Q`, `query=$(cat q.graphql)`), a whole body from
 # `--input`, or no `query=` field at all cannot be checked for the word, so each counts as a write.
 #
@@ -248,25 +255,21 @@ def gh_api_field_value($v):
       else .query_visible = true end
   else . end;
 
-def detect_gh_api($w; $start; $n):
-  {i: $start, method: null, field: false, endpoint: null, merge_type: false, mutation: false,
+def detect_gh_api($w; $start; $n; $lm):
+  {i: $start, method: null, field: false, endpoint: null, merge_type: false,
    query_visible: false, query_hidden: false}
   | until(.i >= $n or ($w[.i] | is_sep);
       . as $s
       | ($w[$s.i]) as $x
       | ($w[$s.i + 1] // null) as $nx
       | ($nx != null and (($nx | is_sep) | not)) as $has_value
-      | (if $x | test("(?i)mutation") then .mutation = true else . end)
       | if $x | IN("-X", "--method") then
           (if $has_value then .method = $nx | .i += 2 else .method = "" | .i += 1 end)
         elif $x | startswith("--method=") then .method = ($x | ltrimstr("--method=")) | .i += 1
         elif $x | test("^(?i)-X=?.+") then .method = ($x | sub("^(?i)-X=?"; "")) | .i += 1
         elif $x | gh_api_field_flag then
           .field = true
-          | (if $has_value
-             then (if $nx | test("(?i)mutation") then .mutation = true else . end)
-                  | gh_api_field_value($nx) | .i += 2
-             else .i += 1 end)
+          | (if $has_value then gh_api_field_value($nx) | .i += 2 else .i += 1 end)
         elif $x | test("^--(field|raw-field)=") then
           .field = true | gh_api_field_value($x | sub("^--(field|raw-field)="; "")) | .i += 1
         elif $x | test("^-[fF].+") then .field = true | gh_api_field_value($x | .[2:]) | .i += 1
@@ -284,7 +287,7 @@ def detect_gh_api($w; $start; $n):
         end) as $r
   | (($r.method != null) and (($r.method | ascii_downcase) == "get")) as $is_get
   | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
-      (if $r.mutation then {next: $r.i, reason: "gh api graphql mutation"}
+      (if $lm >= $start then {next: $r.i, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
        then {next: $r.i, reason: "gh api graphql with a query not written inline"}
        else {next: $r.i, reason: null} end)
@@ -306,7 +309,7 @@ def detect_gh_api($w; $start; $n):
 # separator itself, so it never becomes part of a denial reason.
 def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "watch", "download", "clone", "token"];
 def read_only_nouns: ["browse", "search"];
-def detect_gh($w; $i; $n):
+def detect_gh($w; $i; $n; $lm):
   if ($w[$i] | named("gh")) | not then null
   else
     (after_options($w; $i + 1)) as $noun_i
@@ -314,7 +317,7 @@ def detect_gh($w; $i; $n):
       else
         ($w[$noun_i]) as $noun
         | if read_only_nouns | index($noun) then null
-          elif $noun == "api" then detect_gh_api($w; $noun_i + 1; $n)
+          elif $noun == "api" then detect_gh_api($w; $noun_i + 1; $n; $lm)
           else
             (after_options($w; $noun_i + 1)) as $verb_i
             | if ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
@@ -392,6 +395,7 @@ def is_merge_like($reason):
 # it already scanned.
 def findings($w):
   ($w | length) as $n
+  | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
   | {i: 0, wrap_from: null, wrap_role: null, cmd_word_index: (command_word($w; 0; $n)), out: [], reviewer_push: false}
   | until(.i >= $n;
       . as $state
@@ -405,7 +409,7 @@ def findings($w):
           $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role
           | .cmd_word_index = (command_word($w; $wrap.next; $n)) | .i += 1
         else
-          (detect_git($w; $state.i; $n) // detect_gh($w; $state.i; $n)
+          (detect_git($w; $state.i; $n) // detect_gh($w; $state.i; $n; $lm)
            // detect_tool($w; $state.i; $n; $cmd_pos)) as $hit
           | if $hit == null then $state | .i += 1
             elif $hit.reason == null then $state | .i = $hit.next
