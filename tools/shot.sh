@@ -131,6 +131,8 @@ case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 # not a game one: an unfocused or covered window throttles the whole main loop -- not only drawing
 # -- to about once a second on this Mac, which is what let `--after` run for minutes without
 # firing; disabling vsync keeps the loop running at its own pace regardless of focus or occlusion.
+# Running is not drawing: a covered window is still not drawn, so the capture draws its own frame
+# on demand (`AutoScreenshot.drawn_frame()`, src/dev/auto_screenshot.gd).
 # See docs/DECISIONS.md, M195, "a rig's window takes no focus, hears no stray key, and always
 # closes" for the reproduction this fixes.
 #

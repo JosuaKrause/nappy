@@ -55,8 +55,8 @@ extends Node
 ## released from a hut, waved off a chat or let off a curb needs the whole of `_seconds` again
 ## rather than being caught the instant she can move — see `_feed()`'s own note.
 ##
-## **Reuses `AutoScreenshot`'s own `_capture()`** — the headless guard, the wait for
-## `RenderingServer.frame_post_draw`, the save, the stdout line and the quit — through
+## **Reuses `AutoScreenshot`'s own `_capture()`** — the headless guard, the wait for a drawn
+## frame (`AutoScreenshot.drawn_frame()`), the save, the stdout line and the quit — through
 ## `AutoScreenshot.immediate()`, rather than a second writer of the same picture. This file owns
 ## only the stillness heuristic and where the picture goes.
 ##

@@ -305,8 +305,10 @@ func current_log() -> TelemetryLog:
 # Three constraints, and the first is the one the whole file is built on:
 #
 # - **It must not touch gameplay.** A capture reads the viewport after the frame is drawn and writes
-#   a file. It draws nothing, it changes no state, and it takes no RNG. The `await` is on
-#   `RenderingServer.frame_post_draw`, which is where a frame that already exists becomes readable.
+#   a file. It changes no state and it takes no RNG. The `await` is `AutoScreenshot.drawn_frame()`,
+#   which returns after `RenderingServer.frame_post_draw`, where a drawn frame becomes readable; the
+#   one thing it may draw is that frame, on demand, when the window is hidden and the render loop is
+#   drawing none — a picture of the state as it is, not a change to it.
 # - **The heuristic is the log's own.** There is no fixed interval. A shot is taken on the entries a
 #   reader already stops at — a day lost, a chase, a lethal cue — because those are exactly the lines
 #   that raise the question a picture answers. See `TelemetryObserver`.
@@ -457,7 +459,7 @@ func _capture_burst(token: int) -> void:
 		if finish_reason != "":
 			_finish_burst(token, finish_reason)
 			return
-		await RenderingServer.frame_post_draw
+		await AutoScreenshot.drawn_frame(get_tree())
 		if not _burst_is_current(token):
 			return
 		elapsed = float(Time.get_ticks_usec() - started_usec) / 1000000.0
@@ -591,7 +593,7 @@ func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 ## consumers — which is the shape of a rule ("telemetry never touches gameplay") quietly becoming
 ## untrue.
 func _capture(path: String) -> void:
-	await RenderingServer.frame_post_draw
+	await AutoScreenshot.drawn_frame(get_tree())
 	var viewport := get_viewport()
 	if not viewport:
 		return

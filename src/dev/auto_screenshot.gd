@@ -199,7 +199,7 @@ static func from_command_line() -> AutoScreenshot:
 ## A capture that fires on the very next frame rather than after a timed `--after` wait — what
 ## `StillWatch` (`src/dev/still_watch.gd`, `--quit-when-still`) hands off to the moment its own
 ## heuristic fires, so that trigger goes through this file's one `_capture()` — the headless
-## guard, the `frame_post_draw` wait, the save, the stdout line and the quit — rather than a second
+## guard, the `drawn_frame()` wait, the save, the stdout line and the quit — rather than a second
 ## writer of the same picture. `_seconds_to_wait` of `0.0` means the very first `_process()` tick
 ## already satisfies `_elapsed >= _seconds_to_wait`, so nothing here duplicates the wait/capture
 ## branch already at the bottom of `_process()`.
@@ -448,22 +448,60 @@ func _turn_and_run() -> void:
 ##
 ## There is nothing to save either way — a headless viewport has no texture — so the only thing the
 ## await could ever buy is the wait itself.
+##
+## A window that exists but is not being drawn is the other half, and `drawn_frame()` below is what
+## answers it.
 func _capture() -> void:
 	if not can_photograph(DisplayServer.get_name()):
 		printerr("[AutoScreenshot] nothing to photograph: this run is headless, so no frame is " +
 				"ever drawn and %s cannot be written. tools/shot.sh needs a display." % _path)
 		get_tree().quit(1)
 		return
-	# The viewport texture is only valid once the frame has actually been drawn.
-	await RenderingServer.frame_post_draw
+	var forced: bool = await drawn_frame(get_tree())
 	var image := get_viewport().get_texture().get_image()
 	var error := image.save_png(_path)
 	if error != OK:
 		printerr("[AutoScreenshot] could not write %s (error %d)" % [_path, error])
 	else:
-		print("[AutoScreenshot] wrote %s (%dx%d) after %.1fs"
-				% [_path, image.get_width(), image.get_height(), _elapsed])
+		print("[AutoScreenshot] wrote %s (%dx%d) after %.1fs%s"
+				% [_path, image.get_width(), image.get_height(), _elapsed,
+				FORCED_FRAME_NOTE if forced else ""])
 	get_tree().quit()
+
+## What the success line adds when the picture came from a forced draw rather than the render loop,
+## so a still taken from a hidden window says so.
+const FORCED_FRAME_NOTE := " (window not visible, so this frame was drawn on demand)"
+
+## Returns once the viewport texture holds a frame drawn since the call, and whether that frame had
+## to be forced. Every capture waits here rather than on `RenderingServer.frame_post_draw` alone.
+##
+## **A window that cannot be seen is not drawn at all.** On macOS the main loop skips its draw step
+## whenever no window of the process is visible by the system's own occlusion test — fully covered
+## by another app's opaque window or minimized, and by that test's definition also on another Space
+## or behind a locked screen — while processing and physics carry on in real time. So a bare
+## `await frame_post_draw` in a covered rig waits for a signal that never comes, the walk and the
+## clock run on, and the rig ends on its own wall-clock limit with no picture. A rig's window takes
+## no focus, so whatever the operator has in front of it is enough to cover it.
+##
+## So each frame this checks `DisplayServer.window_can_draw()`, and when it is false draws one frame
+## on demand with `RenderingServer.force_draw()`, which renders every viewport into its texture —
+## the one a capture reads — and emits `frame_post_draw` like any other frame. It is forced from
+## `process_frame`, before this frame's scripts run, so it shows the state the skipped draw would
+## have shown. `swap_buffers` is off because there is nothing on screen to present to.
+##
+## A coroutine: callers write `await AutoScreenshot.drawn_frame(get_tree())`. Never called headless —
+## the null display server can draw nothing, forced or not, which is `can_photograph()`'s question.
+static func drawn_frame(tree: SceneTree) -> bool:
+	var state := {"drawn": false}
+	var on_drawn := func() -> void: state["drawn"] = true
+	RenderingServer.frame_post_draw.connect(on_drawn, CONNECT_ONE_SHOT)
+	var forced := false
+	while not state["drawn"]:
+		await tree.process_frame
+		if not state["drawn"] and not DisplayServer.window_can_draw():
+			RenderingServer.force_draw(false)
+			forced = true
+	return forced
 
 ## Whether a run driving the display server called `display_name` has a frame to photograph.
 ##
