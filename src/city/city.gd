@@ -619,16 +619,15 @@ func _spawn_buildings() -> void:
 ## `rect`'s own front row — one row below its south edge, the row a passer-by would stand on — is
 ## `GameEnums.TileType.BUILDING` rather than walkable ground. `map.is_walkable()` is the fixed
 ## lattice fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
-## `is_open()`'s per-day closures, so this is computed once here rather than in `start_day()`. A
-## south tile past the map's own edge is never covered, although `CityMap.tile_at()` reads it as
-## `BUILDING`: no lot stands there to extend a roof from, so a front facing the map's boundary is an
-## ordinary front and keeps its facade rather than leaving a hole where its wall would be.
+## `is_open()`'s per-day closures, so this is computed once here rather than in `start_day()`. This
+## is the candidate set only: `_assign_roof_extensions()` keeps a column covered only where a roof
+## actually reaches it, so a south tile past the map's own edge (`CityMap.tile_at()` reads it as
+## `BUILDING`) or a power station's yard leaves its front's facade standing.
 func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 	var result: Array[bool] = []
 	var south_row := rect.position.y + rect.size.y
 	for col in rect.size.x:
-		var south := Vector2i(rect.position.x + col, south_row)
-		result.append(map.in_bounds(south) and not map.is_walkable(south))
+		result.append(not map.is_walkable(Vector2i(rect.position.x + col, south_row)))
 	return result
 
 ## `Building.roof_extension_rows`, `roof_extension_seamless` and `seamless_cover_cols` for every
@@ -641,7 +640,14 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## starts at, edge to edge. A power
 ## station's yard columns (`_hall_cols()`, read after `_dress_the_power_station()` above has set
 ## `power_station`) are skipped since no roof stands there to extend — the yard is fenced ground,
-## not a building mass; a column a yard would cover is left blank, roof and facade alike.
+## not a building mass.
+##
+## **A front column draws no facade only where a roof actually covers it.** Once every extension
+## is placed, each building's `covered_ground_cols` is narrowed to the columns an extension
+## reached; a column nothing covers — a yard's, a tile past the map's edge, any south tile no lot
+## owns — keeps its facade, since a column with neither a facade nor a roof over it shows the dark
+## background where its wall would be (the player, shown one: "Keep its facade"). Nothing reads
+## `covered_ground_cols` before this, so the door and every other roll see only the final answer.
 ##
 ## **Seamless when both rectangles are cut from the same courtyard lot.** A single-block or
 ## apartment-complex courtyard is cut into up to four rectangles around its hole
@@ -674,6 +680,12 @@ func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int
 		falses.fill(false)
 		seamless.append(falses)
 		seamless_below.append(falses.duplicate())
+	var reached: Array[Array] = []
+	for building in buildings:
+		var none: Array[bool] = []
+		none.resize(building.covered_ground_cols.size())
+		none.fill(false)
+		reached.append(none)
 	for i in buildings.size():
 		var back := buildings[i]
 		if back.covered_ground_cols.is_empty():
@@ -695,6 +707,8 @@ func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int
 					continue
 			var front_extension: Array[int] = extensions[front_index]
 			front_extension[local_col] = back.wall_tiles()
+			var back_reached: Array[bool] = reached[i]
+			back_reached[col] = true
 			if courtyard_of[i] >= 0 and courtyard_of[i] == courtyard_of[front_index] \
 					and back.roof_tiles() > 0:
 				var front_seamless: Array[bool] = seamless[front_index]
@@ -705,6 +719,8 @@ func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int
 		buildings[i].roof_extension_rows = extensions[i]
 		buildings[i].roof_extension_seamless = seamless[i]
 		buildings[i].seamless_cover_cols = seamless_below[i]
+		if buildings[i].covered_ground_cols != reached[i]:
+			buildings[i].covered_ground_cols = reached[i]
 
 ## Gives every piece of one courtyard lot the tint of its first piece (`Building.tint_variant`), so
 ## the rectangles a courtyard is cut into read as the one building they are rather than as three

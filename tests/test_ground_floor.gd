@@ -60,6 +60,7 @@ func run(t) -> void:
 	_test_a_shallow_roof_carries_furniture_on_its_extension(t)
 	_test_the_furniture_pool_is_exactly_the_lip_free_interior(t)
 	_test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t)
+	_test_a_column_nothing_covers_keeps_its_facade(t)
 	_test_covered_columns_move_no_storefront_roll(t)
 	_test_the_door_only_lands_on_a_reachable_column(t)
 	_test_a_fully_covered_front_has_no_door(t)
@@ -892,6 +893,52 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -
 	t.check(ordered > 0, "the sweep met unextended roofs to ask (%d)" % ordered)
 	t.check(pinned == 2, "both pinned roofs of seed %d were found (%d)" % [BASE_SEED, pinned])
 
+## A front column draws no facade only where a roof actually covers it (the player, shown a front
+## with neither: "Keep its facade"). No seed has a front over a power station's yard, so the case
+## is built directly and handed to `City._assign_roof_extensions()`: a front whose west two
+## columns face the yard and east two face the hall, and a second front facing a tile no lot owns.
+## The yard columns and the unowned ones end uncovered; the hall columns stay covered and the hall
+## extends its roof over exactly those.
+func _test_a_column_nothing_covers_keeps_its_facade(t) -> void:
+	var over_yard := Building.new()
+	over_yard.footprint = Vector2(4 * Building.TILE, 6 * Building.TILE)
+	over_yard.height = 96.0
+	var station := Building.new()
+	station.footprint = Vector2(8 * Building.TILE, 8 * Building.TILE)
+	station.height = 128.0
+	station.power_station = true
+	station.station_yard_cols = Vector2i(0, 2)
+	var over_nothing := Building.new()
+	over_nothing.footprint = Vector2(2 * Building.TILE, 6 * Building.TILE)
+	over_nothing.height = 96.0
+	var candidates: Array[bool] = [true, true, true, true]
+	over_yard.covered_ground_cols = candidates
+	var pair: Array[bool] = [true, true]
+	over_nothing.covered_ground_cols = pair
+	var city: City = CITY_SCENE.instantiate()
+	city.map = CityMap.new()
+	var rects: Array[Rect2i] = [Rect2i(0, 0, 4, 6), Rect2i(0, 6, 8, 8), Rect2i(10, 0, 2, 6)]
+	city.map.building_rects = rects
+	var buildings: Array[Building] = [over_yard, station, over_nothing]
+	var courtyard_of: Array[int] = [-1, -1, -1]
+	t.check(station._hall_cols() == Vector2i(2, 8), "fixture: the station's yard is its west two columns")
+	city._assign_roof_extensions(buildings, courtyard_of)
+	var expected_cover: Array[bool] = [false, false, true, true]
+	t.check(over_yard.covered_ground_cols == expected_cover,
+			"columns facing the yard keep their facade; columns facing the hall are covered (%s)"
+			% [over_yard.covered_ground_cols])
+	var w := over_yard.wall_tiles()
+	var expected_extension: Array[int] = [0, 0, w, w, 0, 0, 0, 0]
+	t.check(station.roof_extension_rows == expected_extension,
+			"the hall extends its roof over exactly the covered columns (%s)" % [station.roof_extension_rows])
+	var none: Array[bool] = [false, false]
+	t.check(over_nothing.covered_ground_cols == none,
+			"a front facing a tile no lot owns keeps its facade (%s)" % [over_nothing.covered_ground_cols])
+	city.free()
+	over_yard.free()
+	station.free()
+	over_nothing.free()
+
 ## `_build_front()`'s own `front:` stream — the storefront bag, the awning and ambient-shutter
 ## rolls — reads nothing about `covered_ground_cols`, so two otherwise-identical fronts, one fully
 ## covered and one not, roll it identically; only whether a pair actually draws
@@ -1009,9 +1056,9 @@ func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_
 ## the covered building's own `wall_tiles()` — enough roof to reach exactly the world row the
 ## covered building's own roof already starts at, never more and never less. `has_point()` over
 ## every building's own `lot` rather than a spatial index, since the whole set is small and this
-## only runs once per seed. A front facing the map's own edge is never covered, although
-## `CityMap.tile_at()` reads a tile past the edge as `BUILDING`: no lot stands there to extend a
-## roof from, so it keeps its facade, and no covered column's south tile is ever off the map.
+## only runs once per seed. **No column anywhere is left with neither a facade nor a covering
+## roof:** every covered column's south tile belongs to a lot whose roof reaches it, so a front
+## facing the map's own edge, where no lot stands, keeps its facade.
 func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t) -> void:
 	var checked := 0
 	var edge_fronts := 0
@@ -1022,7 +1069,7 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 		city.build(map)
 		var buildings := city.buildings()
 		for building: Building in buildings:
-			if building.power_station or building.covered_ground_cols.is_empty():
+			if building.covered_ground_cols.is_empty():
 				continue
 			if building.lot.end.y >= map.size.y:
 				edge_fronts += 1
@@ -1044,14 +1091,14 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 						front = candidate
 						break
 				t.check(front != null,
-						"seed %d: a covered column's own south tile, in bounds, belongs to some building's lot"
+						"seed %d: a column with no facade has a lot south of it to cover it"
 						% map.seed_used)
 				if front == null:
 					continue
 				var local_col := south.x - front.lot.position.x
 				var extension := front._extension_rows(local_col)
 				t.check(extension == building.wall_tiles(),
-						"seed %d: the covering front's own roof reaches exactly the covered front's own roof line (%d rows expected, got %d)"
+						"seed %d: no column is left with neither a facade nor a covering roof (%d rows expected, got %d)"
 						% [map.seed_used, building.wall_tiles(), extension])
 				checked += 1
 		city.free()

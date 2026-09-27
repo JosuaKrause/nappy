@@ -341,8 +341,9 @@ enum Condition {
 		queue_redraw()
 
 ## Per-column: true where the tile directly south of this front's own ground row is another
-## building rather than walkable ground, so nobody can ever stand in front of that column
-## (`docs/CITY.md`, "A front is district and block purpose"). Set by `City._spawn_buildings()`,
+## building rather than walkable ground, so nobody can ever stand in front of that column, and that
+## building's roof reaches up to cover it (`docs/CITY.md`, "A front is district and block
+## purpose"); a column nothing covers stays false and keeps its facade. Set by `City`,
 ## read off `CityMap.is_walkable()` — the fixed lattice fact, never `is_open()`'s per-day closures,
 ## since "no purpose change may move a walkable tile" (the **city** skill) — so a covered column
 ## stays covered for the whole run and never for her own building, which `_spawn_buildings()` never

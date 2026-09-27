@@ -2123,8 +2123,8 @@ Top-down camera with a fake vertical extrusion:
   ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never from
   anything drawn and never from a day's own closures — a covered column stays covered for the whole
   run, the same fixed fact `CityMap.building_rects` already is. A power station's yard is fenced
-  ground with no roof to extend, so a column it would have covered is simply left blank, roof and
-  facade alike. A partly covered front keeps every other column's ordinary ground floor untouched:
+  ground with no roof to extend, so a column facing it keeps its facade (below). A partly covered
+  front keeps every other column's ordinary ground floor untouched:
   its storefront span only lands
   where both of its own two columns are reachable, its entrance door is re-placed onto whichever
   reachable column the same tiering that already keeps it off a fire escape still offers (never
@@ -2135,11 +2135,13 @@ Top-down camera with a fake vertical extrusion:
   same "the roll still runs, only the result is dropped" way her own building already drops one
   (below) — no picture exists for a platform or brackets reaching a column nobody can stand in
   front of. Her own building is never asked: `City._spawn_buildings()` computes this only for a
-  front that is not hers. A front facing the map's own edge is an ordinary front and keeps its
-  facade — windows, storefronts and door: `_covered_ground_cols()` never counts a column whose
-  south tile is off the map as covered, although `CityMap.tile_at()` reads such a tile as
-  `BUILDING`, because no lot stands there to extend a roof from, and a column left with no facade
-  and nothing covering it shows the dark background where its wall would be.
+  front that is not hers. **A column draws no facade only where a roof actually covers it**
+  (following the player's "Keep its facade"): `City._assign_roof_extensions()` keeps a column
+  covered only where an extension reached it, so a column nothing covers — one facing the map's
+  own edge (`CityMap.tile_at()` reads a tile past it as `BUILDING`), a power station's yard, or
+  any south tile no lot owns — is an ordinary column with its windows, storefronts and door. A
+  column with neither a facade nor a roof over it would show the dark background where its wall
+  would be, and no column is left that way.
 - **A courtyard's roof turns its corners as one roof, outer and inner alike, with no parapet in the
   middle of it and one colour.** A single-block or apartment-complex courtyard is cut into up to
   four rectangles around its hole (`CityGenerator._build_block()`'s `COURTYARD` branch,

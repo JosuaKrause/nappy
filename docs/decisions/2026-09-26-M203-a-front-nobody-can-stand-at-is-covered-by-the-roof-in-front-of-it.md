@@ -20,7 +20,7 @@ providing cover, which rolls over its larger roof (below).
 saw it on seed 61400 and asked for the roof instead. Its pictures stay in the PR's history.
 
 **Choices open to overturn**, made where the queue was silent: a power station's fenced yard never
-extends a roof (its hall can); a building can extend its roof over one neighbour while its own
+extends a roof (its hall can), so a front facing it keeps its facade; a building can extend its roof over one neighbour while its own
 front is covered by another; a step between two differently tall extended columns gets the same
 cap as a step down to an uncovered one, which no sampled seed produced. The yard guard has no
 picture because no seed tried has a column it applies to: none in the 40 seeds `61400 + 977·i`,
@@ -58,8 +58,13 @@ covered, with no lot on the other side to extend a roof from: it drew no facade 
 background where its wall was. Asked, before any picture of it existed, whether to keep that or
 treat the column as reachable: "keep the special case for dead ends." (2026-09-26). Shown seed
 73124's before/after, the facade on `main` becoming a near-black rectangle: "Keep its facade"
-(2026-09-27). `_covered_ground_cols()` now never counts a column whose south tile is off the map,
-so such a front is an ordinary front — windows, storefronts and door, as on `main`.
+(2026-09-27). The answer is built as a rule rather than a list of exceptions, and that
+generalization is open to overturn: a front column draws no facade only where a roof extension
+actually covers it. `City._assign_roof_extensions()` narrows `covered_ground_cols` to the columns
+an extension reached, so a column facing the map's edge, a power station's yard or any south
+tile no lot owns keeps its windows, storefronts and door, as on `main`. On the pictured seeds the
+only columns this uncovers are ones facing the map's edge, so no picture changed with the
+generalization.
 
 Evidence: `docs/evidence/m203-back-front-windows-2026-09-25/`, seed 61400, before and after; and
 `docs/evidence/m203-roof-cases-2026-09-27/`, one before/after pair per roof case (PLAYTEST-144,
