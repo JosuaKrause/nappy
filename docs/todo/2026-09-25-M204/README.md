@@ -1,3 +1,5 @@
+priority: later
+
 ## M204 — A trailer, rendered from the game by a script · asked for 2026-09-25
 
 > "the trailer will be a set of paths in pre determined seeds with fixed events so we can

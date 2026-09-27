@@ -51,8 +51,14 @@ The playtests that already have a number keep it, and so do the entries and reco
 already have one.
 
 - **A playtest** is `docs/playtests/<name>.md`.
-- **A queue entry** is a folder, `docs/todo/<name>/`, linked from `TODO.md`'s order. Its
-  `README.md` holds the player's words, the playtest links and the context. **Each item is a file
+- **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's
+  band, `priority: now|next|later|parked`, and an `after: <entry folder>` line for each entry it
+  truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
+  order list to edit *(2026-09-26: "a priority system?", brisk-heron, statement 13)*.
+  `tools/new-name.sh todo` writes `priority: later` unless `--priority` names the band the
+  player's words give; a band the player did not name is the filer's proposal and the report
+  says so. The rest of the `README.md` holds the player's words, the playtest links and the
+  context. **Each item is a file
   of its own** beside it, under a short descriptive name (`stack-in-front.md`), written in full
   prose with no checkbox *(2026-09-26: "that way completing a task is just deleting the file and no
   awkward - [ ] is necessary. the item can be written in full")*; an item somebody is mid-way

@@ -109,3 +109,10 @@ and `TODO.md` keeps only its header:
     agreed to. → M223.
 14. **Within `now`, the newest entry comes first**; within the other bands, the oldest. Said with a
     "maybe", so the build shows it and the player can turn it back. → M223.
+
+Shown the order the built command prints:
+
+> "let's move M226 and M227 to now"
+
+15. **M226 (the pursuing dog keeps its day-3 timing) and M227 (Codex as a sub-agent) are in `now`.**
+    → M223.

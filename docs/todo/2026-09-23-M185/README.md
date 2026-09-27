@@ -1,3 +1,5 @@
+priority: later
+
 ## M185 — A ground floor is blank wall or shops · asked for 2026-09-23
 
 > "Yes, the home block should have fixed visuals. That way we can craft a convincing house that

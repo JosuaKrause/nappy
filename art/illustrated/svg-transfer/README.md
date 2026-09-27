@@ -33,5 +33,5 @@ overhead bollard cap and rooftop equipment use the source mappings and extractio
 `docs/evidence/comic-city-props-2026-09-12/`.
 
 SVG-first authoring followed by style transfer is the approved workflow. Every PNG asset needs
-a corresponding SVG authored and reviewed first. M108, eight-direction entity graphics, and
-M109, convert the SVG catalogue to PNG, hold the remaining catalogue work in `docs/TODO.md`.
+a corresponding SVG authored and reviewed first. M109, convert the SVG catalogue to PNG, holds
+the remaining catalogue work in its entry, `docs/todo/2026-09-10-M109/`.

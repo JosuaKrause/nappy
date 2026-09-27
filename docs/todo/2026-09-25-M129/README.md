@@ -1,3 +1,6 @@
+priority: later
+after: 2026-09-26-M223
+
 ## M129 — A path through the city never has to cost · one route in five still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable

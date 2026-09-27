@@ -32,7 +32,7 @@ it is not.
 | [docs/NARRATIVE.md](docs/NARRATIVE.md) | Act structure, side content, endings — **spoilers** |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Code layout, autoloads, signals |
 | [docs/TELEMETRY.md](docs/TELEMETRY.md) | What a run writes down, and how to read it |
-| [docs/TODO.md](docs/TODO.md) | The queue: open work only, in order; each entry is a folder under `docs/todo/`, each item a file |
+| [docs/TODO.md](docs/TODO.md) | The queue: open work only; each entry is a folder under `docs/todo/` whose `README.md` opens with its priority band, each item a file, and `tools/queue.sh` prints the order |
 | [docs/REVIEW.md](docs/REVIEW.md) | What waits on a person; each thing to try is a file under `docs/review/` |
 | `docs/playtests/` | One file per playtest, a player's own words on a date. Primary sources, never rewritten |
 
