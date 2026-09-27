@@ -101,8 +101,13 @@ player — no bot identity can make either change, so `github-write-guard.sh`'s 
 retry.
 
 **Accepted gaps.** The write guard is a guardrail against an agent's own ordinary mistake, not a
-security boundary against a deliberately adversarial shape: a path segment or endpoint deliberately
-named to look like `gh`/`git`, and a script setting `NAPPY_AGENT_ROLE` itself to spoof a different
-identity than the one it was actually run as, are left as gaps rather than chased, since closing
-them against a genuinely adversarial actor (not merely an agent's own typo) costs real complexity
-for a threat this tool was never meant to hold against.
+security boundary against a deliberately adversarial shape. One is live: a comment or a commit
+message that quotes the wrapper's own shape whole (for example `# see: tools/agent-identity.py run
+claude-coder -- git push` inside an echo) reads, to the guard, like a real wrapped call, so the
+write inside it is exempt rather than denied — closing it would mean telling a mention from a real
+invocation apart, the same parsing problem `git-grep-guard.sh` accepts rather than chases. Two
+gaps a review once raised no longer have a live instance: a `gh`/`git`-named path segment or
+endpoint no longer bypasses the scan (the "stop early" shortcut that caused it is gone), and a
+GraphQL mutation whose text is not visible on the command line — a file, a shell variable, a
+command substitution, or the whole body from `--input` — is now a write regardless of whether the
+word "mutation" itself appears.

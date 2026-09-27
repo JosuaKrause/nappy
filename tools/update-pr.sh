@@ -60,7 +60,8 @@ Merges origin/main into a pull request's branch: fetches, finds the branch's wor
 scratch one under $TMPDIR), merges with --no-ff --no-commit, and aborts naming the files on any
 conflict. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
 `./tools/check.sh`, commits a message naming the branch tip, main tip, merge base and the
-resolution, and pushes (HTTPS fallback if SSH is refused). Never merges the pull request itself
+resolution, and pushes it (a second, different-identity HTTPS attempt if the first is refused).
+Never merges the pull request itself
 and never enables auto-merge; says so in its own output, alongside the files main changed since
 the merge base, since that review is the merger's.
 
@@ -303,13 +304,16 @@ fi
 agent_run git -C "$target_dir" commit --quiet -m "$commit_msg" || refuse "git commit failed"
 echo "committed $(git -C "$target_dir" rev-parse --short HEAD) on $branch"
 
-# ---- push, SSH first, HTTPS via gh's credential helper if SSH is refused ---------------------
+# ---- push, over origin's own configured transport first, gh's own HTTPS credential helper next -
 # Each push mints its own fresh installation token (tools/lib_agent_role.sh's `agent_run`) rather
-# than relying on the one this script may itself have been wrapped in.
+# than relying on the one this script may itself have been wrapped in. Under `run`, the first
+# attempt already goes out over HTTPS with that token (`insteadOf` rewrites an SSH `origin`); the
+# second attempt is a different HTTPS identity (gh's own credential helper), for whichever
+# identity -- the bot's or the player's own -- the first one was not.
 if agent_run git -C "$target_dir" push --quiet "$remote" "HEAD:refs/heads/$branch"; then
     echo "pushed to $remote/$branch"
 else
-    echo "SSH push failed; falling back to HTTPS via gh's credential helper" >&2
+    echo "push over origin's own transport failed; falling back to HTTPS via gh's credential helper" >&2
     origin_url="$(git -C "$target_dir" remote get-url "$remote")"
     https_url="$(printf '%s' "$origin_url" | sed -E 's#^git@([^:]+):#https://\1/#')"
     case "$https_url" in
@@ -318,7 +322,7 @@ else
     esac
     agent_run git -C "$target_dir" -c credential.helper= -c credential.helper='!gh auth git-credential' \
         push --quiet "$https_url" "HEAD:refs/heads/$branch" \
-        || refuse "push failed over both SSH and HTTPS ($https_url)"
+        || refuse "push failed over both origin's own transport and gh's credential helper ($https_url)"
     echo "pushed to $https_url refs/heads/$branch"
 fi
 

@@ -11,10 +11,9 @@
 #
 # **The bar this holds itself to: a guardrail, not a security boundary.** It stops an agent's
 # ordinary GitHub writes from going out as the player by mistake -- every shape an agent would
-# plausibly type is fixed. It does not chase a deliberately adversarial shape meant to evade it: a
-# path segment or endpoint named to look like `gh`/`git` on purpose, or a script setting
-# `NAPPY_AGENT_ROLE` itself to pick a different identity than the one it was actually run as, are
-# accepted gaps (see `docs/decisions/2026-09-27-tall-egret.md`), not bugs to close.
+# plausibly type is fixed. It does not chase a deliberately adversarial shape meant to evade it --
+# see the one accepted gap below, and `docs/decisions/2026-09-27-tall-egret.md`'s own "Accepted
+# gaps" paragraph.
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
 # unless they carry `--abort`/`--quit`; `merge`/`rebase` unless `--abort`/`--no-commit`/
@@ -152,9 +151,9 @@ def command_word($w; $i; $n):
 # branch, ...) is a read or a local-only change.
 #
 # The scan for one of those flags returns where it stopped either way (the next separator, or the
-# end of the command), so the caller can skip past everything already read rather than re-checking
-# it one word at a time -- the fix for a quadratic blowup many `git merge x` calls glued with no
-# separator caused (800 repeats took 7.7s of the hook's 10s timeout before this fix).
+# end of the command), so the caller skips past everything already read rather than re-checking it
+# one word at a time: many `git merge x` calls glued with no separator would each otherwise rescan
+# the rest of the text, a cost quadratic in how many there are.
 def segment_scan($w; $start; $n; $flags):
   {j: $start, found: false}
   | until(.j >= $n or ($w[.j] | is_sep);
@@ -188,25 +187,38 @@ def detect_git($w; $i; $n):
   end;
 
 # `gh api`'s own writes: an explicit non-GET method (`-X`/`--method`, attached or not, any case:
-# `-XPOST`, `-X=POST`, `--method=post`), or any of -f/-F/--input/--raw-field/--field (attached or
-# not: `-fk=v`, `--field=k=v`) -- which is what turns a call into a POST even with no `--method` at
-# all, wherever the flag falls relative to the endpoint (`gh api -X PUT repos/o/r/pulls/1/merge`
-# is exactly how gh itself accepts it, and denying it needs the scan to start right after `api`,
-# not after skipping the flag the way a stray `after_options` before the call used to). A GraphQL
-# call (the endpoint is literally `graphql`) is a write only if some word in the call contains
-# `mutation` -- a query-only call also goes through `-f`, but reads.
+# `-XPOST`, `-X=POST`, `--method=post`), ignored when the method is GET even with a field present
+# (gh sends `-f`/`-F` as query parameters under `-X GET`, not a request body); or any of
+# `-f`/`-F`/`--input`/`--raw-field`/`--field` (attached or not: `-fk=v`, `--field=k=v`) -- which is
+# what turns a call into a POST even with no `--method` at all, wherever the flag falls relative to
+# the endpoint (`gh api -X PUT repos/o/r/pulls/1/merge` is exactly how gh itself accepts it, so the
+# scan starts right after `api` itself rather than past its options). A `graphql` endpoint is a
+# write when its own visible query text contains `mutation`, or when that text is not visible at
+# all -- read from a file (`query=@file`), a shell variable or a command substitution
+# (`query=$Q`, `query=$(cat f)`), or the whole request body from `--input` -- since none of those
+# can be checked for the word at all. A `/merges?`/`/update-branch` endpoint (with an optional
+# trailing slash or query string) or a `PUT`/`DELETE` to `/contents/` counts as a merge-type write
+# (`is_merge_like`, below), the same as `gh pr merge`/`update-branch`.
 #
 # The scan runs to the next separator or the end of the command either way, win or lose, so the
-# caller can skip past everything already read: many `gh api ...` calls glued with no separator
-# used to make each one rescan the rest of the text (800 repeats took 9.4s of the hook's 10s
-# timeout before this fix), and a "stop early on the next git/gh word" patch that tried to bound it
-# wrongly stopped early on any endpoint or flag value merely ending in `/gh` or `/git` too.
+# caller skips past everything already read: many `gh api ...` calls glued with no separator would
+# each otherwise rescan the rest of the text, a cost quadratic in how many there are. It never
+# stops early on a bare `git`/`gh` word either, so an endpoint or flag value merely ending in `/gh`
+# or `/git` is read in full rather than mistaken for the start of a new invocation.
 def detect_gh_api($w; $start; $n):
-  {i: $start, method: null, field: false, endpoint: null, mutation: false}
+  {i: $start, method: null, field: false, endpoint: null, mutation: false, unverifiable: false}
   | until(.i >= $n or ($w[.i] | is_sep);
       . as $s
       | ($w[$s.i]) as $x
       | ($s.mutation or ($x | test("(?i)mutation"))) as $mut
+      # A graphql query whose body is not visible here -- read from a file (`query=@file`), from a
+      # shell variable or a command substitution (`query=$Q`, `query=$(cat f)`), or the whole
+      # request body from `--input` -- cannot be checked for the word "mutation" at all, so it
+      # counts as one whether or not that word actually appears.
+      | ($s.unverifiable
+         or ($x | test("(?i)^query=@"))
+         or ($x | test("(?i)^query=\\$"))
+         or ($x | test("^--input(=|$)"))) as $unverif
       | (if $x | IN("-X", "--method") then $s | .method = ($w[$s.i + 1] // "") | .i += 2
          elif $x | startswith("--method=") then $s | .method = ($x | ltrimstr("--method=")) | .i += 1
          elif $x | test("^(?i)-X=?.+") then $s | .method = ($x | sub("^(?i)-X=?"; "")) | .i += 1
@@ -216,13 +228,21 @@ def detect_gh_api($w; $start; $n):
          elif ($s.endpoint == null) and (($x | startswith("-")) | not) then $s | .endpoint = $x | .i += 1
          else $s | .i += 1
          end) as $next
-      | $next | .mutation = $mut) as $r
+      | $next | .mutation = $mut | .unverifiable = $unverif) as $r
   | (($r.endpoint // "") | test("(?i)(^|/)graphql$")) as $is_graphql
+  | (($r.endpoint // "") | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) as $is_merge_endpoint
+  | (($r.method // "" | ascii_downcase | IN("put", "delete")) and ($r.endpoint // "" | test("(?i)/contents/"))) as $is_contents_write
   | if $is_graphql then
-      (if $r.mutation then {next: $r.i, reason: "gh api graphql mutation"} else {next: $r.i, reason: null} end)
+      (if $r.mutation or $r.unverifiable
+       then {next: $r.i, reason: "gh api graphql mutation"} else {next: $r.i, reason: null} end)
+    elif $is_merge_endpoint or $is_contents_write then
+      {next: $r.i, reason: "gh api merge-type"}
     else
-      (if (($r.method != null) and (($r.method | ascii_downcase) != "get")) or $r.field
-       then {next: $r.i, reason: (if ($r.endpoint // "" | test("(?i)/merge$")) then "gh api .../merge" else "gh api" end)}
+      # An explicit GET reads even with a field: gh sends "-f"/"-F" as query parameters under
+      # -X GET, not a request body, which is what the player's own "writes only" means here.
+      (if ($r.method != null) and (($r.method | ascii_downcase) == "get") then {next: $r.i, reason: null}
+       elif (($r.method != null) and (($r.method | ascii_downcase) != "get")) or $r.field
+       then {next: $r.i, reason: "gh api"}
        else {next: $r.i, reason: null}
        end)
     end;
@@ -313,7 +333,7 @@ def detect_wrapper($w; $i; $n):
 def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
 def is_push_like($reason): ($reason == "git push") or ($reason | startswith("tools/"));
 def is_merge_like($reason):
-  ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason | endswith("/merge"));
+  ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type");
 
 # One pass over the word array: a separator resets the current command's exemption and recomputes
 # command position for the next word (`command_word`, from right after the separator); the wrapper

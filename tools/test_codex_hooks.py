@@ -376,6 +376,27 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(specific["permissionDecision"], "deny")
         self.assertIn("never push or merge", specific["permissionDecisionReason"])
 
+    def test_github_write_guard_denies_a_graphql_query_from_a_file(self) -> None:
+        # A review found this passing unwrapped: the query's own text is not on the command line,
+        # so it cannot be checked for "mutation" at all.
+        output = self.call_raw(command="gh api graphql -F query=@resolve.graphql -F id=PRRT_x")
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_github_write_guard_allows_an_explicit_get_with_a_field(self) -> None:
+        text = self.call(tool="Bash", command="gh api -X GET search/issues -f q=foo")
+        self.assertIn("committing", text)
+
+    def test_github_write_guard_denies_a_reviewers_update_branch_api_call(self) -> None:
+        output = self.call_raw(
+            command="uv run python tools/agent-identity.py run codex-reviewer -- "
+            "gh api -X PUT repos/o/r/pulls/1/update-branch"
+        )
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("never push or merge", specific["permissionDecisionReason"])
+
     def test_github_write_guard_runs_after_git_grep_guard_denies_first(self) -> None:
         # Both guards run in order; an unbounded git grep denies before github-write-guard.sh is
         # ever reached, so its reason -- not a GitHub-write one -- is what comes back.

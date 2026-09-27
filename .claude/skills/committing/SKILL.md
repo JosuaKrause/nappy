@@ -26,13 +26,13 @@ role not usable (not created yet, not installed on the repository, or a cloud se
 `tools/agent-identity.py`'s own module docstring), the session stops there and tells the player,
 rather than committing, pushing or opening the pull request under the player's own account.** A
 `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
-`git push`, a commit-making git verb (`commit`, `cherry-pick`, `revert`, `am`, and `merge`/`rebase`
-unless they carry `--abort`/`--no-commit`/`--ff-only`), a GitHub-writing `gh` call (every noun, not
-only `pr`/`issue`/`release`), or one of the `tools/` scripts that pushes or posts internally, in
-command position, unless the same command is wrapped in `run <role> --`, so the rule holds even
-when a session forgets it; a read stays unguarded. **An admin action no bot identity can
-perform** — changing a repository ruleset, a GitHub App's own permissions — **is the player's to
-do directly, in GitHub's own settings, never something to wrap and retry.**
+`git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
+that pushes or posts internally, in command position, unless the same command is wrapped in `run
+<role> --`, so the rule holds even when a session forgets it; a read stays unguarded — the hook's
+own header comment carries the current, exact list, rather than a second copy of it here that can
+drift from it. **An admin action no bot identity can perform** — changing a repository ruleset, a
+GitHub App's own permissions — **is the player's to do directly, in GitHub's own settings, never
+something to wrap and retry.**
 
 **The commit still carries the session's own attribution trailer.** `run` changes who git says
 authored and committed the change (the bot's name and noreply address), not what the message

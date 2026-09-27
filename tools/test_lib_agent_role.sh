@@ -82,10 +82,28 @@ export UV_LOG
 cat > "$stub_bin/uv" <<'STUB'
 #!/usr/bin/env bash
 set -uo pipefail
-# $1=run $2=python $3=<agent-identity.py path> $4=run $5=<role> $6=--  then the wrapped command.
-shift 2  # drop "run python"
+# uv's own argv: run [--quiet] [--project DIR] python <agent-identity.py path> run <role> -- <cmd...>
+# A real uv without --quiet/--project can write its own diagnostic noise to stderr (a
+# VIRTUAL_ENV-does-not-match warning, a first-run "Creating virtual environment..." notice) --
+# this stub reproduces exactly that failure mode when either flag is missing, so a test capturing
+# combined stdout+stderr the way tools/land-prs.sh's own `agent_run gh pr view ... 2>&1` does would
+# see it and fail if agent_run ever stopped passing them.
+has_quiet=0
+has_project=0
+for arg in "$@"; do
+    [ "$arg" = "--quiet" ] && has_quiet=1
+    [ "$arg" = "--project" ] && has_project=1
+done
+if [ "$has_quiet" -eq 0 ] || [ "$has_project" -eq 0 ]; then
+    echo "warning: a real uv would print noise here without --quiet/--project" >&2
+fi
+# Skips uv's own flags rather than assuming a fixed position, so a flag agent_run adds or drops
+# does not need a matching change here.
+shift 1  # drop uv's own "run"
+while [ "$1" != "python" ]; do shift; done
+shift 1  # drop "python"
 shift 1  # drop the agent-identity.py path -- the shape is asserted by the words around it, not the path
-shift 1  # drop the literal "run"
+shift 1  # drop agent-identity.py's own "run"
 role="$1"; shift
 shift 1  # drop the literal "--"
 {
@@ -140,6 +158,21 @@ if printf '%s' "$logged" | grep -q '^role=claude-coder$' && printf '%s' "$logged
     ok "agent_run re-wraps through agent-identity.py run claude-coder -- touch ..."
 else
     fail "agent_run's own re-wrap did not look right: $logged"
+fi
+
+# A caller that captures agent_run's combined stdout+stderr (tools/land-prs.sh's own
+# `agent_run gh pr view ... 2>&1`, parsed as JSON) must not see uv's own diagnostic noise mixed in
+# -- the stub uv reproduces that noise whenever --quiet/--project are missing from its own argv.
+checks=$((checks + 1))
+combined="$(bash -c '
+    source "'"$root"'/tools/lib_agent_role.sh"
+    export NAPPY_AGENT_ROLE=claude-coder
+    agent_run echo "{\"ok\": true}"
+' 2>&1)"
+if [ "$combined" = '{"ok": true}' ]; then
+    ok "agent_run passes --quiet --project, so a caller's combined stdout+stderr stays clean"
+else
+    fail "agent_run's own uv call let noise through: $combined"
 fi
 
 # --------------------------------------------------------- end to end: tools/prune-merged.sh -----

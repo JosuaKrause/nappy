@@ -19,19 +19,24 @@
 # CLAUDE.md's mandatory-identity rule is "for each agent", and `.claude/hooks/github-write-guard.sh`
 # is what makes an *agent's* own unwrapped call to one of these scripts fail; a human typing
 # `tools/release.sh minor push` themself is not that call, and gets exactly what running it always
-# got: their own `gh`/git login. See tools/update-pr.sh's own header for the corrected comment
-# this used to carry the other way around.
+# got: their own `gh`/git login.
 #
 # Not a script of its own -- `source` it (matching tools/lib_dev_flags.sh's own convention). Needs
-# no PROJECT_DIR or root variable from the caller: it finds tools/agent-identity.py from its own
-# location, which is where every caller keeps it too.
-_agent_identity_py="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/agent-identity.py"
+# no PROJECT_DIR or root variable from the caller: it finds this checkout's own root, and
+# tools/agent-identity.py under it, from its own location.
+_agent_role_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+_agent_identity_py="$_agent_role_root/tools/agent-identity.py"
 
 # Runs "$@" through the caller's own agent identity, minting it a fresh installation token, when
-# NAPPY_AGENT_ROLE is set; runs "$@" directly, unwrapped, when it is not.
+# NAPPY_AGENT_ROLE is set; runs "$@" directly, unwrapped, when it is not. `--quiet` and `--project`
+# keep `uv`'s own stdout/stderr out of the wrapped command's: without them, a warning such as
+# `VIRTUAL_ENV=... does not match the project environment path` or a first-run "Creating virtual
+# environment..." notice lands on the same stderr a caller may be parsing as JSON (land-prs.sh's
+# own `gh pr view ... 2>&1`), and `--project` also keeps the result independent of the caller's
+# current directory.
 agent_run() {
     if [ -n "${NAPPY_AGENT_ROLE:-}" ]; then
-        uv run python "$_agent_identity_py" run "$NAPPY_AGENT_ROLE" -- "$@"
+        uv run --quiet --project "$_agent_role_root" python "$_agent_identity_py" run "$NAPPY_AGENT_ROLE" -- "$@"
     else
         "$@"
     fi

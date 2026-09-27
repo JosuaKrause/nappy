@@ -1103,6 +1103,49 @@ assert_write_guard "wrapped gh pr comment as claude-reviewer still allows (not m
 assert_write_guard "wrapped gh pr merge as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh pr merge 1'
 
+# A review of bba7e39c found a Medium regression: a GraphQL query whose text is not visible on the
+# command line (a file, a shell variable, a command substitution, or the whole body from --input)
+# passed unwrapped, since only a literal "mutation" substring was checked for.
+assert_write_guard "gh api graphql -F query=@file, unverifiable -> deny" deny \
+    'gh api graphql -F query=@resolve.graphql -F id=PRRT_x'
+assert_write_guard "gh api graphql --input, unverifiable -> deny" deny \
+    'gh api graphql --input payload.json'
+assert_write_guard "gh api graphql -f query=\$Q, a shell variable -> deny" deny \
+    'gh api graphql -f query=$Q'
+assert_write_guard "gh api graphql -f query=\$(cat f), a command substitution -> deny" deny \
+    'gh api graphql -f query=$(cat m.graphql)'
+assert_write_guard "gh api graphql, a visible query with no mutation -> allow" allow \
+    'gh api graphql -f query=query{me{login}}'
+assert_write_guard "gh api graphql, a visible mutation -> deny" deny \
+    'gh api graphql -f query=mutation{resolveReviewThread(x:1){id}}'
+
+# Low, non-blocking: an explicit GET sends -f/-F as query parameters, not a request body, so it
+# reads regardless of a field being present.
+assert_write_guard "gh api -X GET with a field -> allow" allow \
+    "gh api -X GET search/issues -f q='repo:o/r is:open'"
+assert_write_guard "gh api --method GET with a field -> allow" allow \
+    'gh api --method GET repos/o/r -f x=1'
+assert_write_guard "gh api -X POST with a field still denies" deny \
+    'gh api -X POST repos/o/r/issues -f title=x'
+
+# Low, non-blocking: a reviewer role's merge-type refusal only covered gh pr's own verbs and an
+# endpoint ending exactly in /merge -- widened to /merges, /update-branch, a trailing slash or
+# query string, and a PUT/DELETE to /contents/.
+assert_write_guard "wrapped gh api .../update-branch as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X PUT repos/o/r/pulls/1/update-branch'
+assert_write_guard "wrapped gh api .../merges (plural) as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X POST repos/o/r/merges -f base=a -f head=b'
+assert_write_guard "wrapped gh api PUT .../contents/x as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X PUT repos/o/r/contents/x'
+assert_write_guard "wrapped gh api .../merge/ (trailing slash) as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X PUT repos/o/r/pulls/1/merge/'
+assert_write_guard "wrapped gh api .../merge?x=1 (query string) as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X PUT repos/o/r/pulls/1/merge?x=1'
+assert_write_guard "wrapped gh api POST .../comments as claude-reviewer still allows" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X POST repos/o/r/issues/1/comments -f body=hi'
+assert_write_guard "wrapped gh api PUT .../merge as claude-coder still allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- gh api -X PUT repos/o/r/pulls/1/merge'
+
 echo
 echo "$checks checks, $failures failures"
 if [ "$failures" -gt 0 ]; then
