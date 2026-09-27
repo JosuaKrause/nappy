@@ -53,6 +53,10 @@ const STANDING_PROPS: Array[StringName] = [&"props/garbage_sack", &"props/garbag
 ## flat under the tree, so a transparent pixel in it would show the paving through the soil.
 const OPAQUE_PROP := &"props/tree_pit"
 
+## The baby cues drawn over the pram (`Baby.Cue`, `Stroller._draw_baby_cue()`). Each canvas is
+## wider than its outlined glyph, so no stroke is cut off at the canvas edge.
+const BABY_CUES: Array[StringName] = [&"props/baby_zzz", &"props/baby_fuss", &"props/baby_cry"]
+
 ## Whether this tree carries the default bake, which is the only one the transfer rules are about.
 var _transfer_rules := false
 
@@ -65,6 +69,7 @@ func run(t) -> void:
 	_test_ground_tiles_cover_their_cell(t)
 	_test_ground_components_keep_their_canvas(t)
 	_test_props_keep_the_placement_their_callers_draw_on(t)
+	_test_baby_cues_keep_a_transparent_border(t)
 
 # ------------------------------------------------------------------- the rig ---
 
@@ -206,6 +211,30 @@ func _test_props_keep_the_placement_their_callers_draw_on(t) -> void:
 	t.check(pit != null, "%s is a baked region" % OPAQUE_PROP)
 	if pit != null:
 		t.check(_is_opaque(pit), "%s covers its full opaque canvas, since it is ground" % OPAQUE_PROP)
+
+## Catches a canvas cropped back into its own outline, the clipping the player saw on the
+## triple wave: the outermost row and column of each baby cue's baked image carry no part of
+## the stroke. The anchor offset is not held here; each SVG's header states it beside
+## `Stroller.INDICATOR_BOTTOM_PADDING`.
+func _test_baby_cues_keep_a_transparent_border(t) -> void:
+	for name in BABY_CUES:
+		var image := _region_image(name)
+		t.check(image != null, "%s is a baked region" % name)
+		if image == null:
+			continue
+		var width := image.get_width()
+		var height := image.get_height()
+		var clear := true
+		for x in width:
+			if image.get_pixel(x, 0).a > 0.01 or image.get_pixel(x, height - 1).a > 0.01:
+				clear = false
+				break
+		if clear:
+			for y in height:
+				if image.get_pixel(0, y).a > 0.01 or image.get_pixel(width - 1, y).a > 0.01:
+					clear = false
+					break
+		t.check(clear, "%s keeps its outermost row and column transparent" % name)
 
 # ----------------------------------------------------------------- the pixels ---
 
