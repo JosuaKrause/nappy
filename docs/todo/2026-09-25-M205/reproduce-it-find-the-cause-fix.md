@@ -24,5 +24,6 @@ he charges her; `?layers=1` turns on `DebugLayers`' fields layer, the real outli
 event's field, so his own field is visible directly rather than only through the halo. His own
 halo rim lighting is the ordinary on-screen cue (`ExcitementHalo.select_sources()` decides which
 sources get one) and needs no flag. `contribution_at()` itself is code, not something either page
-shows — if none of the above isolates his own contribution, add a temporary `print()` or
-`Telemetry.note()` there before repeating the run.
+shows — if none of the above isolates his own contribution, add a temporary `print()` (to the
+browser console; `Telemetry.note()` writes nothing on a release export, gated behind
+`DevFlags.enabled()`) there before repeating the run.
