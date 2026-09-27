@@ -136,6 +136,23 @@ const ENTRANCE_DOOR_INDUSTRIAL := &"buildings/entrance_door_industrial"
 ## as `WINDOW_DARK`, drawn over whichever window picture `neighbor_window_col` already has so the
 ## front's own lintel and sill stay. `City.board_neighbor_window()` is the only setter.
 const NEIGHBOR_WINDOW_SEALED := &"buildings/window_boarded_sealed"
+## **A burnt building is drawn burnt, not only dark**: *"the *building* is what needs to be burnt"*
+## (olive-koala, statement 4). Under `Condition.BURNT` every window of every style is the burnt-out
+## one (black to the back of the room, glass in shards, soot over the lintel), an entrance door is
+## the burnt doorway boarded shut, a storefront pair is the gutted shop, and the front parapet is
+## the charred, broken coping — each in its intact picture's own canvas and registration, drawn
+## where the intact one would be. The wall and roof keep their own tinted fills: the wall drained
+## to ash (`Palette.burnt_wall()`) so the soot shows black on it, the roof blackened
+## (`Palette.burnt()`).
+const WINDOW_BURNT := &"buildings/window_burnt"
+const ENTRANCE_DOOR_BURNT := &"buildings/entrance_door_burnt"
+const STOREFRONT_BURNT := &"buildings/storefront_burnt"
+## The charred parapet comes as two pictures broken in different places, drawn on alternate
+## columns, so a long front does not repeat one bite every tile.
+const ROOF_EDGE_S_BURNT: Array[StringName] = [
+	&"buildings/roof_edge_s_burnt",
+	&"buildings/roof_edge_s_burnt_b",
+]
 
 # ------------------------------------------------------------- power station ---
 # The power station is a big building drawn as two parts: a hall over its door block and the
@@ -285,7 +302,7 @@ const VENT_FRAME_INTERVAL := 1.4
 enum Condition {
 	LIVED_IN, ## Lights on after dark, as generated.
 	BOARDED,  ## Nobody home. Every window dark.
-	BURNT,    ## Blackened, roofless, windows gone.
+	BURNT,    ## Burnt out: blackened, windows and doors gone, the parapet charred — see `WINDOW_BURNT`.
 }
 
 ## Whether this building is the city's power station — see the section above, and
@@ -824,8 +841,10 @@ func entrance_door_col() -> int:
 	return _door_col
 
 ## The door picture for this front's district: steel on an `INDUSTRIAL` block, the plain one on
-## every other.
+## every other — and on a burnt building, whatever its district, the burnt doorway boarded shut.
 func _entrance_door_texture() -> StringName:
+	if condition == Condition.BURNT:
+		return ENTRANCE_DOOR_BURNT
 	if district == GameEnums.BlockPurpose.INDUSTRIAL:
 		return ENTRANCE_DOOR_INDUSTRIAL
 	return ENTRANCE_DOOR
@@ -880,7 +899,7 @@ func _draw() -> void:
 	var wall_colour := Palette.building_wall(tint)
 	var roof_colour := Palette.building_roof(tint)
 	if condition == Condition.BURNT:
-		wall_colour = Palette.burnt(wall_colour)
+		wall_colour = Palette.burnt_wall(wall_colour)
 		roof_colour = Palette.burnt(roof_colour)
 
 	# The columns the wall and roof are drawn over: all of them, except a power station's yard.
@@ -943,7 +962,7 @@ func _draw() -> void:
 			draw_texture(AtlasLibrary.region(ROOF), at, roof_colour)
 			var edges := roof_cell_edges(col, row)
 			if edges & ROOF_EDGE_BIT_S:
-				draw_texture(AtlasLibrary.region(ROOF_EDGE_S), at)
+				draw_texture(AtlasLibrary.region(_front_parapet_texture(col)), at)
 			if edges & ROOF_EDGE_BIT_N:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
 			if edges & ROOF_EDGE_BIT_W:
@@ -982,6 +1001,13 @@ func roof_cell_edges(col: int, row: int) -> int:
 	if col == hall.y - 1 or row >= roof_rows + _extension_rows(col + 1):
 		edges |= ROOF_EDGE_BIT_E
 	return edges
+
+## The front parapet over column `col`: the charred one on a burnt building, alternating between
+## its two pictures column by column, and the ordinary one everywhere else.
+func _front_parapet_texture(col: int) -> StringName:
+	if condition == Condition.BURNT:
+		return ROOF_EDGE_S_BURNT[posmod(col, ROOF_EDGE_S_BURNT.size())]
+	return ROOF_EDGE_S
 
 ## The power station hall's own facade in place of the ordinary wall, windows and ground floor —
 ## industrial rather than a block of flats: steel cladding, a hazard-striped ground course, and a
@@ -1066,7 +1092,8 @@ func _cell(col: int, row: int) -> Vector2:
 ## draw call skipping the windows. The second column returns `null` because its partner already
 ## paints both cells; an odd final column stays `WALL_BASE`.
 ##
-## A `BOARDED` block shutters every one of its own storefronts outright. Short of that, a shop
+## A `BURNT` building's pairs are all the gutted shop, and a `BOARDED` block shutters every one of
+## its own storefronts outright. Short of either, a shop
 ## still shutters early once `Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE` has passed the
 ## cell's own fixed roll — the city's services failing ahead of any one block's arc, which is why
 ## this reads `condition` and `day` as two separate questions rather than one.
@@ -1079,6 +1106,8 @@ func _ground_floor_texture(col: int) -> StringName:
 		return &"" if _pair_is_storefront(col - 1) else WALL_BASE
 	if not _pair_is_storefront(col):
 		return WALL_BASE
+	if condition == Condition.BURNT:
+		return STOREFRONT_BURNT
 	var store := col / 2
 	var index: int = _storefront_variant[store]
 	var ambient_shutter := _storefront_shutter_severity[store] < Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE
@@ -1182,6 +1211,8 @@ func _civic_entrance_cols() -> Array[int]:
 ## `_lit()` already answers false off `LIVED_IN`; an ordinary `SHUTTERED` building lights up like
 ## any other.
 func _window_texture(index: int) -> StringName:
+	if condition == Condition.BURNT:
+		return WINDOW_BURNT
 	var style := _WindowStyle.SHUTTERED if condition == Condition.BOARDED else _window_style
 	match style:
 		_WindowStyle.SHUTTERED:

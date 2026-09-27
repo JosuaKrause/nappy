@@ -1,0 +1,40 @@
+<!-- A burnt-out front entrance: the same stone surround and hood as entrance_door.svg, smoked
+     black, with the doors burnt away and three charred planks nailed across the black doorway
+     where somebody has shut it since. Soot has licked up over the hood to the top of the canvas.
+     One facade column wide, transparent round the surround so the building's own burnt wall
+     shows; the same 32x36 canvas and ground anchor (16,36) as entrance_door.svg, so it stands
+     exactly where the door it replaces stood. Building.Condition.BURNT draws it in place of
+     either entrance door. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="36" viewBox="0 0 32 36" shape-rendering="geometricPrecision" stroke="#1c1718" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Soot over the hood, in tongues. -->
+  <path d="M5 6 C4.6 3.6 6 2 7.4 0.4 C8 1.8 8.8 2.4 9.8 1.8 C10.4 0.8 11 0 11.6 0 H20.8 C21.6 1.2 22.4 1.8 23.2 1.4 C24 0.6 24.4 0 24.6 0 C26.4 1.6 27.4 3.6 27 6 Z" fill="#0d0b0c" fill-opacity="0.8" stroke="none"/>
+  <!-- The surround, smoked. -->
+  <rect x="4.5" y="5" width="23" height="28" fill="#5a534d"/>
+  <path d="M5.3 5.8 H26.7" fill="none" stroke="#6f675f" stroke-width="0.9"/>
+  <path d="M4.5 5 H27.5 V16 C24 14 21 18 16 15.6 C11 13.2 8 17 4.5 15 Z" fill="#0d0b0c" fill-opacity="0.5" stroke="none"/>
+  <!-- The doorway, black, the doors gone. -->
+  <path d="M7 7 H25 V33 H7 Z" fill="#0f0d0e"/>
+  <path d="M8 8 H24 V32.6 H8 Z" fill="#1b1618" stroke="none"/>
+  <path d="M8 26 C11 25.2 14 26.6 17 25.8 C20 25 22 26.2 24 25.6 V32.6 H8 Z" fill="#231d1c" stroke="none"/>
+  <!-- A charred scrap of the fanlight's frame, and a shard. -->
+  <path d="M8 8 H24 V9.2 H13.4 L12.6 10.4 L11.8 9.2 H8 Z" fill="#2c2321" stroke-width="0.5"/>
+  <path d="M23.6 9.4 L23.6 12 L22.2 10.2 Z" fill="#8c9aa0" fill-opacity="0.8" stroke-width="0.4"/>
+  <!-- Three planks across the doorway, nailed to the surround, their shadows on the dark. -->
+  <path d="M5.4 14.4 L26.6 13.2 L26.6 14.2 L5.4 15.4 Z M5.4 21.8 L26.6 22.4 L26.6 23.4 L5.4 22.8 Z M5.4 29 L26.6 28.6 L26.6 29.6 L5.4 30 Z" fill="#000000" fill-opacity="0.45" stroke="none"/>
+  <path d="M5 10.8 L27 9.6 L27 13.4 L5 14.6 Z" fill="#6b5a48"/>
+  <path d="M5 18.2 L27 18.8 L27 22.6 L5 22 Z" fill="#5f4f3f"/>
+  <path d="M5 25.4 L27 25 L27 28.8 L5 29.2 Z" fill="#685746"/>
+  <path d="M5 10.8 L8.6 10.6 L9.2 12.4 L8.4 14.4 L5 14.6 Z M23.4 18.7 L27 18.8 L27 22.6 L22.8 22.5 L23.8 20.6 Z M5 25.4 L7.8 25.4 L8.4 27.2 L7.6 29.2 L5 29.2 Z" fill="#2c2321" stroke="none"/>
+  <path d="M9.6 12.3 L25.8 11.4 M6.4 20.4 L21.8 20.8 M9.4 27.2 L25.8 26.9" fill="none" stroke="#4a3d31" stroke-width="0.4" stroke-opacity="0.9"/>
+  <path d="M6.2 12.6 h0.1 M25.8 11.4 h0.1 M6.2 20.2 h0.1 M25.8 20.8 h0.1 M6.2 27.4 h0.1 M25.8 26.9 h0.1" fill="none" stroke="#1c1718" stroke-width="1.1"/>
+  <!-- The hood, blackened, cracked at one end. -->
+  <path d="M1.8 2.6 H30.2 V5.4 H1.8 Z" fill="#524b46"/>
+  <path d="M3 0.8 H29 L30.2 2.6 H1.8 Z" fill="#625a53"/>
+  <path d="M1.8 2.6 H14 C15 3.4 14.2 4.6 15 5.4 H1.8 Z" fill="#0d0b0c" fill-opacity="0.4" stroke="none"/>
+  <path d="M25.2 2.7 L25.8 4 L25.2 5.3" fill="none" stroke="#141112" stroke-width="0.6"/>
+  <path d="M4.5 5.4 H27.5" fill="none" stroke="#0d0b0c" stroke-width="0.9" stroke-opacity="0.5"/>
+  <!-- The step, smoked. -->
+  <path d="M3 32.2 H29 L30.4 34.2 H1.6 Z" fill="#6a635b"/>
+  <path d="M1.6 34.2 H30.4 V35.6 H1.6 Z" fill="#524c46"/>
+  <path d="M1 35.6 H31" fill="none" stroke="#2e2a28" stroke-width="0.9"/>
+</svg>

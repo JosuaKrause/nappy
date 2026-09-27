@@ -1,0 +1,24 @@
+<!-- The front parapet of a burnt building, where the roof meets the top of the front wall: the
+     coping charred black and broken, a bite gone out of it and its stones ragged, with char
+     darkening the roof behind it toward the edge the fire came over. The same registration as
+     roof_edge_s.svg, whose place it takes: the outline along the wall head on the bottom row,
+     translucent above it so the roof's own tint shows through. Seamless across: the char is a
+     band with no edge of its own, and the coping meets itself at the same height on both sides.
+     roof_edge_s_burnt_b.svg is the same parapet broken in other places; Building.Condition.BURNT
+     draws the two on alternate columns in place of roof_edge_s.svg, so a long front does not
+     repeat one bite every tile. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="none">
+  <defs>
+    <linearGradient id="char" x1="0" y1="10" x2="0" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0d0b0c" stop-opacity="0"/>
+      <stop offset="0.6" stop-color="#0d0b0c" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#0d0b0c" stop-opacity="0.75"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="10" width="32" height="18" fill="url(#char)"/>
+  <path d="M0 28 H5.4 L6 27.2 L7.2 27.6 L8 28 H12.6 L13.4 29.2 L14.6 30 L17.6 30.2 L18.8 29 L19.4 28 H32 V31 H0 Z" fill="#3b3432"/>
+  <path d="M0 28.6 H5.2 M8.4 28.6 H12.4 M19.6 28.6 H32" fill="none" stroke="#5e5550" stroke-width="0.7"/>
+  <path d="M13.4 29.2 L14.6 30 L17.6 30.2 L18.8 29" fill="none" stroke="#141112" stroke-width="0.7" stroke-linejoin="round"/>
+  <path d="M3 28 L3.6 30.8 M26 28 L25.4 30.8" fill="none" stroke="#141112" stroke-width="0.5"/>
+  <rect x="0" y="31" width="32" height="1" fill="#1c1718"/>
+</svg>

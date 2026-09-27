@@ -199,6 +199,13 @@ static func building_wall(variant: int) -> Color:
 static func burnt(colour: Color) -> Color:
 	return colour.lerp(Color("2e2a2c"), 0.72)
 
+## A burnt building's front wall: drained to ash rather than blackened outright, so the soot over
+## its burnt-out windows and door (`Building.WINDOW_BURNT`, `ENTRANCE_DOOR_BURNT`) is black against
+## it. A wall as dark as the soot hides the one mark that says the building burned, and reads as a
+## building merely left dark. The roof above it keeps `burnt()`.
+static func burnt_wall(colour: Color) -> Color:
+	return colour.lerp(Color("5b5550"), 0.62)
+
 # --------------------------------------------------------------- the crowd ---
 # Walkers and cars are drawn as a near-white body plus a full-colour trim overlay, the same
 # split the buildings use, so ninety people are not one silhouette in one colour.

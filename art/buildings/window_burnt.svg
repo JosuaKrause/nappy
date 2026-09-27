@@ -1,0 +1,39 @@
+<!-- A burnt-out window: the fire went out through it. The casements and glass are gone and the
+     opening is black to the back of the room; a charred stub of the frame hangs from the head
+     and a few pale shards of glass are still caught in the corners. Soot has licked up out of
+     the opening in three tongues over the cracked, blackened lintel to the top of the cell, and
+     the sill is smoked. Not modulated by the building colour, like every window: drawn over the
+     burnt wall's own darkened brick. Registers exactly with window_dark.svg, with the opening,
+     lintel and sill where that window has them; the soot is the one thing that reaches past the
+     lintel, up to y 0, where the brick of the row above meets this one. Everything else stays
+     between y 2 and 30, so the two-pixel lift over a storefront or a door keeps it in its row.
+     Building.Condition.BURNT draws it in place of every window style. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#1c1718" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <!-- The soot: a wide smudge over the whole head of the opening, then three tongues. -->
+  <path d="M5.8 11 C5 8.4 6.2 6 7.6 4.2 C8.2 5.6 9 6.2 10 5.6 C10 3 11.2 1 12.4 0 H20.2 C21 1.2 21.4 2.4 21.6 4 C22.6 3.2 23.4 1.8 23.8 0.4 C25.6 2.6 26.8 6.2 26.2 11 Z" fill="#141112" fill-opacity="0.6" stroke="none"/>
+  <path d="M8.6 10.4 C8 8.2 8.8 6.6 10 5.8 C10.6 6.8 11.4 7.2 12.2 6.4 C12.2 4 13.2 1.8 14.6 0 H16.4 C16.6 1.8 17.2 3.2 18 4.4 C18.8 3.4 19.4 2.2 19.6 1 C21.4 3 23.4 6.4 23.4 10.4 Z" fill="#0d0b0c" fill-opacity="0.85" stroke="none"/>
+  <!-- The lintel, blackened and cracked through. -->
+  <path d="M8 4.8 H24 V7.8 H8 Z" fill="#4d4642"/>
+  <path d="M8.7 5.6 H14.2 M17.6 5.6 H23.3" fill="none" stroke="#6b635c" stroke-width="0.6"/>
+  <path d="M8 4.8 H15.6 C16.4 6 15.4 6.8 16.2 7.8 H8 Z" fill="#0d0b0c" fill-opacity="0.45" stroke="none"/>
+  <path d="M15.8 4.9 L16.4 6.1 L15.8 7 L16.3 7.7" fill="none" stroke="#141112" stroke-width="0.6"/>
+  <!-- The opening, black to the back of the room. -->
+  <path d="M9.4 7.6 H22.6 V24 H9.4 Z" fill="#0f0d0e"/>
+  <path d="M10.4 8.6 H21.6 V23.2 H10.4 Z" fill="#1b1618" stroke="none"/>
+  <path d="M10.4 18.6 C13 17.8 15.6 19.2 18.2 18.4 C19.6 18 20.8 18.6 21.6 18.2 V23.2 H10.4 Z" fill="#231d1c" stroke="none"/>
+  <!-- What is left of the frame: a charred stub hanging from the head, a scrap of the jamb. -->
+  <path d="M9.6 8 H22.4 V9.2 H17.4 L16.6 10 L15.6 9.2 H9.6 Z" fill="#2c2321" stroke-width="0.5"/>
+  <path d="M15.4 9.2 L16.6 9.4 L16.2 13.6 L15.2 15.8 L14.8 13.2 Z" fill="#2c2321" stroke-width="0.5"/>
+  <path d="M9.8 9.2 H11 V14.6 L10.4 16.4 L9.8 15 Z" fill="#2c2321" stroke-width="0.5"/>
+  <path d="M15.6 10.4 L15.4 13" fill="none" stroke="#5a3a2c" stroke-width="0.4"/>
+  <!-- Shards of glass still caught in the corners. -->
+  <path d="M21.6 9.2 L21.6 13.4 L20.2 11.2 L19.4 12 L18.8 9.2 Z" fill="#8c9aa0" fill-opacity="0.85" stroke-width="0.4"/>
+  <path d="M11 22.8 L11 19.6 L12.2 21.4 L13.4 20.4 L14 22.8 Z" fill="#8c9aa0" fill-opacity="0.8" stroke-width="0.4"/>
+  <path d="M21.6 22.8 L21.6 20.8 L20.6 22.8 Z" fill="#8c9aa0" fill-opacity="0.75" stroke-width="0.4"/>
+  <path d="M20.2 10 L21 12" fill="none" stroke="#c9d3d6" stroke-width="0.4" stroke-opacity="0.8"/>
+  <!-- The sill, smoked, and its shadow on the brick. -->
+  <path d="M8.6 25.6 H25 V26.8 H8.6 Z" fill="#0d0b0c" fill-opacity="0.35" stroke="none"/>
+  <path d="M8.4 23.8 H23.6 L24.6 24.8 V25.8 H7.4 V24.8 Z" fill="#5c5550"/>
+  <path d="M8.2 24.6 H13.6 M18.4 24.6 H23.8" fill="none" stroke="#7a726a" stroke-width="0.6"/>
+  <path d="M11.2 24 H20.4 L20.8 25.6 H10.8 Z" fill="#0d0b0c" fill-opacity="0.4" stroke="none"/>
+</svg>
