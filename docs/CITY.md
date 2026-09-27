@@ -2042,9 +2042,13 @@ Top-down camera with a fake vertical extrusion:
 - **A roof carries furniture, seeded per building from its block's own starting purpose**
   (`Building.district`) — vents, HVAC boxes and a straight-and-corner duct run on `INDUSTRIAL`,
   skylights on `CIVIC`, mostly water tanks with the odd vent on `RESIDENTIAL` and `COMMERCIAL`.
-  Every unit sits on an interior cell — never the perimeter row or column a roof's own edge tiles
-  already draw — so nothing overhangs the silhouette, and how many a roof carries scales with how
-  many interior cells it has. The vent is the one thing on a roof that moves: it swaps between its
+  Every unit sits on an interior cell — never a cell a roof's own edge tiles already draw, which
+  is the perimeter row and column and, on a roof extended over a covered front (below), the step
+  where an extended column stands beside a shorter one — so nothing overhangs the silhouette, and
+  how many a roof carries scales with how many interior cells it has. An extended roof carries
+  furniture as the rest of it does, rolled from the same seed: a fixed seed gives the same roof on
+  every run, and a building providing cover rolls its layout over its larger roof, so it is a
+  different shuffle from the one it would have with nothing to cover. The vent is the one thing on a roof that moves: it swaps between its
   two rotor frames on a timer of its own, and nothing else up there is animated. Furniture is
   painted by retained children of `Building`, above its own roof tiles and inside the layer of buildings
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
@@ -2105,9 +2109,9 @@ Top-down camera with a fake vertical extrusion:
   she can actually stand on. The building standing there instead draws its own roof deeper to meet
   it: extended north by exactly the covered building's own `wall_tiles()` (`Building.
   roof_extension_rows`), enough to reach the world row the covered building's roof already starts
-  at, edge to edge, with a parapet cap (`ROOF_EDGE_N`) where the two meet and a step cap
-  (`ROOF_EDGE_W`/`ROOF_EDGE_E`) wherever the extended roof sits beside a shorter column, covered or
-  not — roof meets roof, and nothing is drawn where the covered front's wall would have been.
+  at, edge to edge, in its own colour, with a parapet cap (`ROOF_EDGE_N`) where the two meet —
+  except between two pieces of one courtyard, below — and a step cap (`ROOF_EDGE_W`/`ROOF_EDGE_E`)
+  wherever the extended roof sits beside a shorter column, covered or not — roof meets roof, and nothing is drawn where the covered front's wall would have been.
   Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's own
   ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never from
   anything drawn and never from a day's own closures — a covered column stays covered for the whole
@@ -2130,17 +2134,24 @@ Top-down camera with a fake vertical extrusion:
   in the lattice already uses — but has no lot on the other side to extend a roof from, so it stays
   blank rather than either drawing a facade or growing one: the special case for a dead end at the
   edge is kept on purpose.
-- **A courtyard's own inner corners turn as one roof, never a parapet in the middle of it.** A
-  single-block or apartment-complex courtyard is cut into up to four rectangles around its hole
-  (`CityGenerator._build_block()`'s `COURTYARD` branch, `_subtract_all()`), each its own `Building`
-  — so where one piece's front is covered by another at the seam around the hole, that is the same
-  wall-meets-roof relationship the bullet above already extends a roof to fill, but the two pieces
-  are physically one building's roof rather than a front covering a genuinely separate one behind
-  it. `City._assign_roof_extensions()` marks that extension seamless (`Building.
-  roof_extension_seamless`) wherever both rectangles were cut from the same courtyard lot
-  (`map.lot_rect(block)`), and a seamless extension skips the `ROOF_EDGE_N` cap at its own top and
-  lets the covered piece's own roof continue right above it — the ordinary front-and-back case
-  (two genuinely separate buildings) still caps there, since that step is the real, visible one.
+- **A courtyard's roof turns its corners as one roof, outer and inner alike, with no parapet in the
+  middle of it and one colour.** A single-block or apartment-complex courtyard is cut into up to
+  four rectangles around its hole (`CityGenerator._build_block()`'s `COURTYARD` branch,
+  `_subtract_all()`), each its own `Building` — so where one piece's front is covered by another,
+  that is the same wall-meets-roof relationship the bullet above already extends a roof to fill,
+  but the two pieces are physically one building's roof rather than a front covering a genuinely
+  separate one behind it. `City._assign_roof_extensions()` marks both sides of such a seam wherever
+  both rectangles were cut from the same courtyard lot (`map.lot_rect(block)`): the covering
+  piece's column (`Building.roof_extension_seamless`) draws no `ROOF_EDGE_N` at its extension's
+  top, and the covered piece's column (`Building.seamless_cover_cols`) draws no `ROOF_EDGE_S` on
+  its first roof row, so the two roofs run into each other with no lip on either side.
+  `Building.roof_cell_edges()` is the one place a roof cell's lips are decided. A covered piece
+  with no roof rows of its own is the one courtyard seam that still caps, since nothing of its own
+  carries on above the extension. Every piece of the lot takes the first piece's tint
+  (`Building.tint_variant`, wall and roof alike), since four tints read as four buildings; the
+  tint is a field of its own rather than a shared `variant`, which seeds every other roll a
+  building makes. The ordinary front-and-back case (two genuinely separate buildings) keeps both
+  lips and its own colour, since that step is the real, visible one.
 - **Posters go on that blank wall and nowhere else, one row to a front** (`PosterWalls`). A cell
   carries one only if the sidewalk tile in front of it is the north sidewalk of an east-west
   street — the front is a lot's south face, the one face the city draws — so a lot facing an

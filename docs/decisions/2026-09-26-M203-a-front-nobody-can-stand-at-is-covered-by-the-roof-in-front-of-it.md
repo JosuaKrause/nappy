@@ -13,7 +13,8 @@ its roof reaches the covered building's roof line in its own colour, with a `ROO
 top and a `ROOF_EDGE_W`/`ROOF_EDGE_E` step cap wherever a neighbouring column is shorter. The door,
 storefronts, portico and fire escape land only on reachable columns, as M185 (a ground floor is
 blank wall or shops) already required. `covered_ground_cols` decides what is drawn, never what is
-rolled, so no seed's rolls move.
+rolled, so no front's rolls move. The one roll that does change is the roof furniture of a building
+providing cover, which rolls over its larger roof (below).
 
 **Offered and rejected.** A row of windows on a covered ground floor, the first pass: the player
 saw it on seed 61400 and asked for the roof instead. Its pictures stay in the PR's history.
@@ -21,8 +22,19 @@ saw it on seed 61400 and asked for the roof instead. Its pictures stay in the PR
 **Choices open to overturn**, made where the queue was silent: a power station's fenced yard never
 extends a roof (its hall can); a building can extend its roof over one neighbour while its own
 front is covered by another; a step between two differently tall extended columns gets the same
-cap as a step down to an uncovered one, which no sampled seed produced; roof furniture (vents,
-tanks, ducts) stays on the building's own roof and is not carried onto the extension.
+cap as a step down to an uncovered one, which no sampled seed produced.
+
+**Settled: an extended roof carries furniture too.** The first build kept vents, tanks and ducts
+off the extension so no seed's furniture would move. Asked why (PLAYTEST-144, 17), the player:
+"You can just use rng when extending too the while prices is deterministic so a fixed seed will
+still produce the same results." `Building._build_roof_furniture()`'s pool now spans each column's
+extended height, so a covering building's whole layout is a different shuffle from the one it had
+(the pool grows before the shuffle), and the same on every run of a seed. The review of 00284bdb
+found two loose ends in that change, both closed: the `roof_extension_rows` setter only redrew,
+so a value set after the building entered the tree left the furniture stale (it now rebuilds), and
+an extension cell beside a shorter column, where the step's side lip is drawn, was in the pool
+against the rule that a unit never sits on a cell a roof's own lips draw (it is now left out,
+through `Building.roof_cell_edges()`; the unextended rows are the pool they always were).
 
 **Settled: a column against the map's edge stays the special case.** `_covered_ground_cols()`'s
 own out-of-bounds default (`CityMap.tile_at()` reads a tile past the map's edge as `BUILDING`)
