@@ -1863,14 +1863,14 @@ const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
 ## before the doubled duration's extra seconds even begin.
 ##
 ## **What the doubling buys is seconds 5–8 of his life**, and a walker pays for that time in his
-## field rather than in a sprint she never has to make. From the beside start (Fork 2 in the
-## decision record), the guard's 120px field never reaches a walker who left the moment he
-## appeared — his ~476px start closes to only ~172px over the whole 8.0s — and the robber's
-## 200px field reaches her only for about the last second, at its weak far edge. From the usual
-## `TRAP_ARRIVAL_DISTANCE` (313px) start above or below her, though — the rarer beside start is
-## the exception, not the rule — she is inside the robber's field from about 3s onward: a 3.0s
-## chase, every other pursuer's own ceiling, would have freed her at 5.0s, well before his 30px
-## catch at 7.4s, so the doubled 6.0s chase is what makes her keep paying his field until she
+## field, and, from the usual start, with the short sprint that sheds him. From the beside start
+## (Fork 2 in the decision record), the guard's 120px field never reaches a walker who left the
+## moment he appeared — his ~476px start closes to only ~172px over the whole 8.0s — and the
+## robber's 200px field reaches her only for about the last second, at its weak far edge. From
+## the usual `TRAP_ARRIVAL_DISTANCE` (313px) start above or below her, though — the rarer beside
+## start is the exception, not the rule — she is inside the robber's field from about 3s onward:
+## a 3.0s chase, every other pursuer's own ceiling, would have freed her at 5.0s, well before his
+## 30px catch at 7.4s, so the doubled 6.0s chase is what makes her keep paying his field until she
 ## runs, and then pay the sprint cost above to shed him before the catch.
 const PURSUIT_TIME := 3.0
 
