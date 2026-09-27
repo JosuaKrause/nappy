@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_a_boundarys_structures_charge_as_one(t)
 	_test_a_corner_of_two_doors_is_one_toll(t)
 	_test_she_is_never_drawn_at_the_place_she_went_in(t)
+	_test_the_release_resets_interpolation_after_showing_her_again(t)
 	_test_the_ground_she_is_let_out_onto_is_survivable(t)
 	_test_the_run_that_killed_her_five_times(t)
 	_test_a_stroller_stopped_against_the_hut_is_detained(t)
@@ -828,6 +829,68 @@ func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 			% [stroller.global_position, entry])
 	t.check((stroller.global_position - centre).dot(axis) < 0.0,
 			"on the side the release put her, not the one she walked in from")
+
+	hut.free()
+	stroller.free()
+	manager.free()
+
+## **The other half of the same bug, one layer down.** *(2026-09-27, playtest crisp-ferret: "the
+## flicker when exiting a hut is still there btw. it's shorter now but it still happens"; "the
+## position of the player is at its original position a frame before the player teleports".)* The
+## test above proves the *state* — `visible` and `global_position` — lands correctly and together,
+## which is everything a GDScript-level check can see. What it cannot see is Godot's own physics
+## interpolation, which draws her between her last two physics-tick transforms — frozen at the
+## door for the whole hold — and only honours a `reset_physics_interpolation()` call made while she
+## is visible, silently dropping one made while she is hidden. `_release_finished_door_detentions()`
+## calls `Stroller.teleport_to()` (whose own reset lands while she is still hidden) one line before
+## `Stroller.show_after_inspection()`, so before `show_after_inspection()` gained a reset of its
+## own, the *only* reset the release ever made was the one Godot discards — which reads exactly as
+## the report: the first frame drawn after she reappears still blends from the door.
+##
+## `tests/stroller_interpolation_spy.gd` is the hook: swapped onto a real `Stroller` in place of
+## its own script, it records whether `visible` was already `true` whenever a genuine
+## `NOTIFICATION_RESET_PHYSICS_INTERPOLATION` reaches the node — the one signal a headless suite
+## can read without a physics tick or a drawn frame to wait for.
+func _test_the_release_resets_interpolation_after_showing_her_again(t) -> void:
+	var manager := _manager(t)
+	# Not `_real_stroller(t)`: the script has to be swapped **before** the scene ever enters the
+	# tree, or `_ready()` has already run against the genuine `Stroller` script and every
+	# `@onready` var — `_camera` among them — is reset to null rather than carried over, since
+	# swapping a running node's script does not replay `NOTIFICATION_READY`.
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var stroller: Stroller = scene.instantiate()
+	stroller.set_script(load("res://tests/stroller_interpolation_spy.gd"))
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	t.check(stroller.get_node_or_null("Camera2D") != null,
+			"the spy script still ran the scene's own `_ready()`, camera included")
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(7400.0, 7400.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	stroller.global_position = centre + axis * 60.0 + Vector2(0.0, 16.0)
+	# Entering the tree sends its own reset — there is no prior tick yet for a brand-new node to
+	# interpolate from — which is not the release this test is about.
+	stroller.reset_seen_while_hidden = false
+	stroller.reset_seen_while_visible = false
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting() and not stroller.visible, "she goes in for the hold")
+	t.check(not stroller.reset_seen_while_hidden and not stroller.reset_seen_while_visible,
+			"and going in resets nothing of hers — only the camera's own focus moves — so there is "
+			+ "nothing yet for the release below to be the first of")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	t.check(not hut.is_chatting() and stroller.visible, "the hold ends and she is shown again")
+	t.check(stroller.reset_seen_while_hidden,
+			"`teleport_to()`'s own reset still runs while she is hidden, one line before "
+			+ "`show_after_inspection()` — Godot delivers it, even though it does nothing")
+	t.check(stroller.reset_seen_while_visible,
+			"and a reset reaches her again after `visible` is already true — the one Godot does "
+			+ "not silently drop, which `show_after_inspection()` is what has to make")
 
 	hut.free()
 	stroller.free()

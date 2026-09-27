@@ -535,9 +535,23 @@ func is_detained() -> bool:
 func hide_for_inspection() -> void:
 	visible = false
 
-## The other half, called the frame the hold ends.
+## The other half, called the frame the hold ends, the frame after `teleport_to()` has already put
+## her on the far side — see that function's own doc for why the two are split across a physics
+## and a drawn frame the way they are, and why the order here is "moved, then shown".
+##
+## **Godot skips a `reset_physics_interpolation()` call made while a node is hidden.** She has sat
+## at the door, not moving, for the whole hold, so the interpolated pair a hidden `Node2D` still
+## carries underneath is her position going in, twice over — and `teleport_to()`'s own call to
+## `reset_physics_interpolation()`, made one line before `show_after_inspection()` while she is
+## still invisible, is silently a no-op against that pair rather than the collapse it reads as.
+## The first frame drawn once `visible` goes back to `true` therefore still interpolates from the
+## door: shorter than the un-hidden slide this whole mechanism exists to prevent, since the second
+## half of the pair is already the far side, but a visible blend through the door rather than a
+## clean arrival on it. **So the reset that matters is this one, made after `visible` is already
+## `true`** — which is also the point `teleport_to()`'s own reset silently could not reach.
 func show_after_inspection() -> void:
 	visible = true
+	reset_physics_interpolation()
 
 ## Where her camera is actually drawing from, in world space.
 ##
