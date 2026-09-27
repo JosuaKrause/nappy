@@ -13,15 +13,14 @@ extends RefCounted
 ## for it, and `_column_under_door()` is the overlap test. A geometry fact, not a roll, so it moves
 ## no RNG stream — only which of `_draws_window_at()`'s already-computed answers gets painted where.
 ##
-## M203's rule reaches the same columns for the opposite reason: where the tile directly south of a
+## A covered column reaches the same columns for the opposite reason: where the tile directly south of a
 ## non-home front's own column is another building rather than walkable ground
 ## (`Building.covered_ground_cols`, another geometry fact `City._spawn_buildings()` hands over, read
 ## off `CityMap.is_walkable()`), that column draws no facade at all — no wall, no window at any
 ## floor, no storefront, no blank-wall plinth, no door, no portico, no fire escape. The building
 ## that covers it draws its own roof further north instead, up to exactly the covered building's
 ## own roof line (`Building.roof_extension_rows`, `City._assign_roof_extensions()`) — roof meets
-## roof, replacing a row of windows the player turned down on the first pictures (PLAYTEST-138
-## statement 3). Every roll still runs exactly as far as it always has (`_pair_is_storefront()`,
+## roof, so nothing is drawn on a wall nobody can stand in front of. Every roll still runs exactly as far as it always has (`_pair_is_storefront()`,
 ## `_portico_is_drawn()`, `_door_col_from()`'s own covered filter, the fire escape's drop in
 ## `_build_front()`); only which of the answers gets painted, or in the door's case which reachable
 ## column it re-places onto, changes. `roof_extension_rows` itself is pure geometry, not a roll.
@@ -55,6 +54,8 @@ func run(t) -> void:
 	_test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t)
 	_test_roof_extension_rows_reads_back_per_column(t)
 	_test_extension_is_seamless_reads_back_per_column(t)
+	_test_roof_cell_edges_on_both_sides_of_a_seamless_seam_and_an_ordinary_one(t)
+	_test_setting_an_extension_late_rebuilds_the_roof_furniture(t)
 	_test_covered_columns_move_no_storefront_roll(t)
 	_test_the_door_only_lands_on_a_reachable_column(t)
 	_test_a_fully_covered_front_has_no_door(t)
@@ -62,13 +63,14 @@ func run(t) -> void:
 	_test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_instead(t)
 	_test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t)
 	_test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t)
+	_test_the_real_sweep_keeps_roof_furniture_off_every_lip(t)
 	_test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
 
 # ------------------------------------------------------------------- fixtures ---
 
 ## One `Building`, built the way `City._spawn_buildings()` builds one — the exports set, then
 ## `add_child()`, which is what fires `_ready()` and rolls `_build_windows()`/`_build_front()`.
-## `covered` is `Building.covered_ground_cols` (M203), empty by default — the same "nothing in
+## `covered` is `Building.covered_ground_cols`, empty by default — the same "nothing in
 ## front of it" a real front with clear sidewalk south of it reads as.
 static func _new_building(t, district: int, footprint: Vector2, height: float, is_home := false,
 		position := Vector2.ZERO, covered: Array[bool] = []) -> Building:
@@ -658,7 +660,7 @@ func _test_the_flower_pot_varies_within_one_escape(t) -> void:
 		building.free()
 	t.check(mixed_seen > 0, "the sweep met an escape whose balconies do not all show the same pot roll (%d)" % mixed_seen)
 
-# ------------------------------------------------------------------- M203: covered columns ---
+# ------------------------------------------------------------------------ covered columns ---
 
 ## The rule stated directly: a covered column draws no facade at all — not even the window row
 ## the first, superseded pass drew there — and an uncovered column of the same front is unaffected
@@ -673,7 +675,7 @@ func _test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t)
 	t.check(building.wall_tiles() >= 2, "the fixture is genuinely multi-story")
 	for col in building.columns():
 		t.check(not building._draws_window_at(0, col),
-				"column %d: no ground-floor window is drawn, covered or not (M203 moved this to the roof instead)" % col)
+				"column %d: no ground-floor window is drawn, covered or not" % col)
 		for row in range(1, building.wall_tiles()):
 			t.check(building._draws_window_at(row, col),
 					"column %d row %d: an upper floor still draws its own window regardless of coverage" % [col, row])
@@ -703,7 +705,7 @@ func _test_roof_extension_rows_reads_back_per_column(t) -> void:
 	t.check(building._extension_rows(-1) == 0, "a negative index reads as 0 too")
 	building.free()
 
-## `roof_extension_seamless` (M216) is a fixture-settable geometry fact, the same shape
+## `roof_extension_seamless` is a fixture-settable geometry fact, the same shape
 ## `roof_extension_rows` already is: empty by default (an ordinary front, no courtyard sibling to
 ## be seamless with), `_extension_is_seamless()` reads it back per column, and an index past the
 ## end reads false, the same "nobody told this building about one" convention every other
@@ -718,6 +720,73 @@ func _test_extension_is_seamless_reads_back_per_column(t) -> void:
 	t.check(not building._extension_is_seamless(4), "an index past the end reads false")
 	t.check(not building._extension_is_seamless(-1), "a negative index reads false too")
 	building.free()
+
+## `Building.roof_cell_edges()` is what `_draw()` paints, so asking it is asking the picture. A front
+## five rows deep with two wall rows has three roof rows of its own; columns 1 and 2 extend two rows
+## further north, column 1 seamlessly (into another piece of its own courtyard) and column 2 into a
+## separate building. The covered piece's first roof row is asked on both kinds of seam as well.
+func _test_roof_cell_edges_on_both_sides_of_a_seamless_seam_and_an_ordinary_one(t) -> void:
+	var front := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
+			Vector2(4 * Building.TILE, 5 * Building.TILE), 64.0)
+	t.check(front.roof_tiles() == 3, "the fixture front has three roof rows of its own")
+	front.roof_extension_rows = [0, 2, 2, 0]
+	front.roof_extension_seamless = [false, true, false, false]
+	var top := front.roof_tiles() + 2 - 1
+	var n := Building.ROOF_EDGE_BIT_N
+	var s := Building.ROOF_EDGE_BIT_S
+	var w := Building.ROOF_EDGE_BIT_W
+	var e := Building.ROOF_EDGE_BIT_E
+	t.check((front.roof_cell_edges(1, top) & n) == 0,
+			"the covering side of a seamless seam draws no north lip at the extension's top")
+	t.check((front.roof_cell_edges(2, top) & n) != 0,
+			"the covering side of an ordinary seam still caps its extension with a north lip")
+	t.check((front.roof_cell_edges(0, front.roof_tiles() - 1) & n) != 0,
+			"an unextended column still caps its own roof")
+	t.check((front.roof_cell_edges(1, front.roof_tiles()) & w) != 0,
+			"an extended column steps down beside a shorter neighbour with a side lip")
+	t.check((front.roof_cell_edges(1, front.roof_tiles()) & e) == 0,
+			"two equally extended columns side by side draw no lip between them")
+	t.check((front.roof_cell_edges(2, front.roof_tiles()) & e) != 0,
+			"the other end of the extension steps down too")
+	for col in front.columns():
+		t.check((front.roof_cell_edges(col, 0) & s) != 0,
+				"column %d: a front covering something keeps its own front lip" % col)
+	t.check(front.roof_cell_edges(0, front.roof_tiles()) == 0, "a cell past a column's roof is no roof")
+	front.free()
+
+	var covered: Array[bool] = [true, true]
+	var back := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL,
+			Vector2(2 * Building.TILE, 4 * Building.TILE), 64.0, false, Vector2.ZERO, covered)
+	back.seamless_cover_cols = [true, false]
+	t.check((back.roof_cell_edges(0, 0) & s) == 0,
+			"the covered side of a seamless seam draws no front lip: its roof carries on south")
+	t.check((back.roof_cell_edges(1, 0) & s) != 0,
+			"the covered side of an ordinary seam keeps its front lip over the roof in front")
+	back.free()
+
+## The roof furniture reads `roof_extension_rows`, so a value set after the building is in the tree
+## rolls the same roof as one set before it — the setter rebuilds rather than only redrawing.
+func _test_setting_an_extension_late_rebuilds_the_roof_furniture(t) -> void:
+	var footprint := Vector2(6 * Building.TILE, 7 * Building.TILE)
+	var at := Vector2(4321.0, 8765.0)
+	var early := Building.new()
+	early.district = GameEnums.BlockPurpose.INDUSTRIAL
+	early.footprint = footprint
+	early.height = 64.0
+	early.position = at
+	early.roof_extension_rows = [0, 4, 4, 4, 4, 0]
+	t.add_child(early)
+	var late := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, footprint, 64.0, false, at)
+	late.roof_extension_rows = [0, 4, 4, 4, 4, 0]
+	t.check(late._roof_furniture == early._roof_furniture,
+			"an extension set after entering the tree rolls the same furniture as one set before")
+	var on_extension := 0
+	for unit: Dictionary in early._roof_furniture:
+		if (unit["cell"] as Vector2i).y >= early.roof_tiles():
+			on_extension += 1
+	t.check(on_extension > 0, "the fixture's furniture reaches onto the extension (%d)" % on_extension)
+	early.free()
+	late.free()
 
 ## `_build_front()`'s own `front:` stream — the storefront bag, the awning and ambient-shutter
 ## rolls — reads nothing about `covered_ground_cols`, so two otherwise-identical fronts, one fully
@@ -825,7 +894,7 @@ func _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_
 	t.check(not covered_civic._portico_is_drawn(),
 			"the portico does not draw once its own column is covered")
 	t.check(covered_civic.entrance_door_col() >= 0,
-			"once the portico's column is covered and dropped, the front gets its own door instead (M203)")
+			"once the portico's column is covered and dropped, the front gets its own door instead")
 	t.check(covered_civic.entrance_door_col() != entrance_cols[0],
 			"the door does not land on the covered portico column")
 	covered_civic.free()
@@ -883,15 +952,19 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 		city.free()
 	t.check(checked > 0, "the sweep met at least one real covered column to check the extension's own wiring on (%d)" % checked)
 
-## `City._assign_roof_extensions()`'s own courtyard wiring (M216): a covered column's extension is
+## `City._assign_roof_extensions()`'s own courtyard wiring: a covered column's extension is
 ## seamless exactly when the covered building and the covering building were both cut from the same
 ## courtyard lot — a single-block courtyard's own `map.lot_rect(block)`, or an apartment complex's
 ## (`_build_block()`'s shared `COURTYARD` branch cuts both the same way, `_subtract_all()` around
 ## the hole). Recomputes the courtyard-lot membership independently here, the same way the roof-
 ## extension sweep above recomputes "front" independently rather than trusting `_assign_roof_
 ## extensions()`'s own bookkeeping — so this only passes if the wiring is actually right, not merely
-## self-consistent. Every OTHER covered column (M203's ordinary front-and-back case, two genuinely
+## self-consistent. Every OTHER covered column (an ordinary front and back, two genuinely
 ## separate buildings) must NOT be seamless, or a real parapet step would silently vanish there too.
+## A covered piece with no roof of its own is the one courtyard seam that still caps, since nothing
+## of its own carries on above the extension. Each seam is also asked what it *draws*, through
+## `Building.roof_cell_edges()`, on both sides: no lip on either side of a seamless one, a lip on
+## both sides of an ordinary one — and both pieces of a courtyard seam carry the same roof tint.
 func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t) -> void:
 	var checked_courtyard := 0
 	var checked_ordinary := 0
@@ -930,13 +1003,30 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 					if courtyard_lots[lot_index].encloses(front.lot):
 						front_lot = lot_index
 				var same_courtyard := back_lot >= 0 and back_lot == front_lot
+				var expect_seamless := same_courtyard and building.roof_tiles() > 0
 				var local_col := south.x - front.lot.position.x
 				var seamless := front._extension_is_seamless(local_col)
-				t.check(seamless == same_courtyard,
+				t.check(seamless == expect_seamless,
 						("seed %d: a covering front's extension is seamless exactly when it shares " +
 						"a courtyard lot with the column it covers (expected %s, got %s)")
-						% [map.seed_used, same_courtyard, seamless])
+						% [map.seed_used, expect_seamless, seamless])
 				if same_courtyard:
+					t.check(front.tint_variant >= 0 and front.tint_variant == building.tint_variant,
+							"seed %d: two pieces of one courtyard lot share one tint (%d, %d)"
+							% [map.seed_used, front.tint_variant, building.tint_variant])
+				var extension := front._extension_rows(local_col)
+				if extension <= 0 or building.roof_tiles() <= 0:
+					continue
+				var top := front.roof_tiles() + extension - 1
+				var cap_drawn := (front.roof_cell_edges(local_col, top) & Building.ROOF_EDGE_BIT_N) != 0
+				var lip_drawn := (building.roof_cell_edges(col, 0) & Building.ROOF_EDGE_BIT_S) != 0
+				t.check(cap_drawn != expect_seamless,
+						"seed %d: the covering piece's extension top draws a north lip exactly off a seamless seam"
+						% map.seed_used)
+				t.check(lip_drawn != expect_seamless,
+						"seed %d: the covered piece's first roof row draws a front lip exactly off a seamless seam"
+						% map.seed_used)
+				if expect_seamless:
 					checked_courtyard += 1
 				else:
 					checked_ordinary += 1
@@ -946,11 +1036,39 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 	t.check(checked_courtyard > 0,
 			"the sweep met at least one courtyard seam to check seamlessness on (%d)" % checked_courtyard)
 
+## No roof unit on any real building sits on a cell whose own lips are drawn, extended or not — the
+## rule every roof keeps, asked of the extension too, where a taller column steps down beside a
+## shorter one. The power station's hall is left out: its own yard edge is a lip the ordinary
+## interior bound was never measured against.
+func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t) -> void:
+	var checked := 0
+	var on_extension := 0
+	for i in SWEEP_SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i * 977)
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(map)
+		for building: Building in city.buildings():
+			if building.power_station:
+				continue
+			for unit: Dictionary in building._roof_furniture:
+				var cell: Vector2i = unit["cell"]
+				for step in int(unit["span"]):
+					var at := cell + Vector2i(step, 0)
+					t.check(building.roof_cell_edges(at.x, at.y) == 0,
+							"seed %d: a roof unit at %s sits on a cell with no lip" % [map.seed_used, at])
+					checked += 1
+					if at.y >= building.roof_tiles():
+						on_extension += 1
+		city.free()
+	t.check(checked > 0, "the sweep met roof units to check (%d)" % checked)
+	t.check(on_extension > 0, "the sweep met at least one roof unit on an extension (%d)" % on_extension)
+
 # --------------------------------------------------------------------- the sweep ---
 
 ## Every accessor cell a real building offers is plain wall (`_ground_floor_texture()` says
 ## `WALL_BASE`) and never one of `_civic_entrance_cols()`'s own columns while the portico actually
-## draws (M203: a portico dropped for a covered column frees the other one it straddled, which
+## draws (a portico dropped for a covered column frees the other one it straddled, which
 ## `_portico_is_drawn()` says) — the same two contracts
 ## `_test_the_accessor_returns_ground_floor_non_window_non_entrance_cells` pins on fixtures, asked
 ## again of whatever the generator actually builds.
@@ -974,7 +1092,7 @@ func _check_accessor_invariant(t, building: Building, seed_used: int) -> void:
 
 ## Full `City` scenes across a spread of seeds — the only path that exercises
 ## `City._spawn_buildings()`'s own wiring of `is_home_building`, `door_world_x_range` and
-## `covered_ground_cols` (M203) off `CityMap.home_block`, `map.home_rect` and `map.is_walkable()`,
+## `covered_ground_cols` off `CityMap.home_block`, `map.home_rect` and `map.is_walkable()`,
 ## rather than a fixture set directly.
 func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 	var checked_non_home := 0
@@ -1000,7 +1118,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 			if building.is_home_building:
 				checked_home += 1
 				t.check(building.covered_ground_cols.is_empty(),
-						"seed %d: her own building is never told about a covered column (M203)" % map.seed_used)
+						"seed %d: her own building is never told about a covered column" % map.seed_used)
 				t.check(building._fire_escape_cols.is_empty(),
 						"seed %d: her own building never carries a fire escape, wired the real way through City._spawn_buildings()"
 						% map.seed_used)
@@ -1024,10 +1142,8 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 				continue
 			var any_covered := false
 			for col in building.columns():
-				# Never a window, covered or not: the row-of-windows pass this replaced is what used to
-				# draw one on a covered column; the roof extension that replaces it draws nothing on the
-				# wall at all (M203, `docs/DECISIONS.md`, "A front nobody can stand at is covered by the
-				# roof in front of it").
+				# Never a window, covered or not: a covered column draws nothing on the wall at all,
+				# since the roof in front of it reaches up to meet this building's own roof.
 				t.check(not building._draws_window_at(0, col),
 						"seed %d: no ground-floor column of a building that is not her own draws a window, covered or not (district %d)"
 						% [map.seed_used, building.district])
@@ -1086,6 +1202,6 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 	t.check(checked_doors > 0, "the sweep built a front with an entrance door (%d)" % checked_doors)
 	t.check(checked_escapes > 0, "the sweep built a front with a fire escape (%d)" % checked_escapes)
 	t.check(checked_covered_columns > 0,
-			"the sweep met at least one real covered ground-floor column (%d, M203)" % checked_covered_columns)
+			"the sweep met at least one real covered ground-floor column (%d)" % checked_covered_columns)
 	t.check(checked_fully_covered_fronts > 0,
-			"the sweep met at least one real fully covered front (%d, M203)" % checked_fully_covered_fronts)
+			"the sweep met at least one real fully covered front (%d)" % checked_fully_covered_fronts)

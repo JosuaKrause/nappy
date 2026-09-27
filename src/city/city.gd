@@ -599,12 +599,15 @@ func _spawn_buildings() -> void:
 	# Coverage and the roof extension it needs both read every lot's own `wall_tiles()`, fixed by
 	# the exports above alone, so both run before any of them enters the tree — see
 	# `_covered_ground_cols()` and `_assign_roof_extensions()`. Never asked of her own building
-	# (`covered_ground_cols` stays empty) — "her own building is unchanged" (M203), and the home
-	# block's own doorstep already exempts it from the route-redundancy guarantee the same way.
+	# (`covered_ground_cols` stays empty) — her own building's front is the one the player knows
+	# as home and stays as it is, and the home block's own doorstep already exempts it from the
+	# route-redundancy guarantee the same way.
 	for i in buildings.size():
 		if not buildings[i].is_home_building:
 			buildings[i].covered_ground_cols = _covered_ground_cols(map.building_rects[i])
-	_assign_roof_extensions(buildings)
+	var courtyard_of := _courtyard_lot_of(map.building_rects)
+	_assign_roof_extensions(buildings, courtyard_of)
+	_share_courtyard_tint(buildings, courtyard_of)
 	for building in buildings:
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block
@@ -614,8 +617,7 @@ func _spawn_buildings() -> void:
 
 ## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
 ## `rect`'s own front row — one row below its south edge, the row a passer-by would stand on — is
-## `GameEnums.TileType.BUILDING` rather than walkable ground (M203, `docs/DECISIONS.md`, "A front
-## nobody can stand at is covered by the roof in front of it"). `map.is_walkable()` is the fixed
+## `GameEnums.TileType.BUILDING` rather than walkable ground. `map.is_walkable()` is the fixed
 ## lattice fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
 ## `is_open()`'s per-day closures, so this is computed once here rather than in `start_day()`. A
 ## south tile past the map's own edge reads as `BUILDING` too (`CityMap.tile_at()`'s own
@@ -627,8 +629,8 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 		result.append(not map.is_walkable(Vector2i(rect.position.x + col, south_row)))
 	return result
 
-## `Building.roof_extension_rows`/`roof_extension_seamless` for every building in `buildings`
-## (parallel to `map.building_rects`, M203/M216): wherever a building's own `covered_ground_cols`
+## `Building.roof_extension_rows`, `roof_extension_seamless` and `seamless_cover_cols` for every
+## building in `buildings` (parallel to `map.building_rects`): wherever a building's own `covered_ground_cols`
 ## marks a column covered, the tile directly south of it belongs to some other lot's rect — the
 ## one whose roof now has to reach up to meet the covered building's own roof — found by a tile
 ## lookup over every rect rather than a spatial search, since the whole set is small and built once
@@ -639,25 +641,27 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## not a building mass; the rare column a yard would have covered is simply left blank, roof and
 ## facade alike.
 ##
-## **Seamless when both rectangles are cut from the same courtyard lot** (M216). A single-block or
+## **Seamless when both rectangles are cut from the same courtyard lot.** A single-block or
 ## apartment-complex courtyard is cut into up to four rectangles around its hole
 ## (`CityGenerator._build_block()`'s own `COURTYARD` branch, `_subtract_all()`), each its own
 ## `Building` — so a covered seam between two of them is two pieces of one physical building, not
-## a front covering a genuinely separate one behind it, and the extension that fills it should read
-## as the *same* roof continuing rather than stopping in a parapet. `_courtyard_lot_of()` maps each
-## building index to whichever courtyard's own `map.lot_rect(block)` encloses it (or -1), computed
-## once here rather than per column, and two extensions in the same lot are marked seamless —
-## `Building._draw()` is what actually withholds the cap.
-func _assign_roof_extensions(buildings: Array[Building]) -> void:
+## a front covering a genuinely separate one behind it, and the extension that fills it reads as
+## the *same* roof continuing rather than stopping in a parapet. `courtyard_of` maps each building
+## index to whichever courtyard's own `map.lot_rect(block)` encloses it, or -1
+## (`_courtyard_lot_of()`). Both sides of a seamless seam are marked — the covering piece's column
+## in `roof_extension_seamless`, the covered piece's in `seamless_cover_cols` — and
+## `Building.roof_cell_edges()` withholds both lips there. A covered piece with no roof rows at all
+## is never seamless: nothing of its own carries on above the extension, so the extension caps.
+func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var tile_to_index := {}
 	for i in map.building_rects.size():
 		var rect: Rect2i = map.building_rects[i]
 		for x in rect.size.x:
 			for y in rect.size.y:
 				tile_to_index[Vector2i(rect.position.x + x, rect.position.y + y)] = i
-	var courtyard_of := _courtyard_lot_of(map.building_rects)
 	var extensions: Array[Array] = []
 	var seamless: Array[Array] = []
+	var seamless_below: Array[Array] = []
 	for building in buildings:
 		var zeros: Array[int] = []
 		zeros.resize(building.columns())
@@ -667,6 +671,7 @@ func _assign_roof_extensions(buildings: Array[Building]) -> void:
 		falses.resize(building.columns())
 		falses.fill(false)
 		seamless.append(falses)
+		seamless_below.append(falses.duplicate())
 	for i in buildings.size():
 		var back := buildings[i]
 		if back.covered_ground_cols.is_empty():
@@ -688,12 +693,30 @@ func _assign_roof_extensions(buildings: Array[Building]) -> void:
 					continue
 			var front_extension: Array[int] = extensions[front_index]
 			front_extension[local_col] = back.wall_tiles()
-			if courtyard_of[i] >= 0 and courtyard_of[i] == courtyard_of[front_index]:
+			if courtyard_of[i] >= 0 and courtyard_of[i] == courtyard_of[front_index] \
+					and back.roof_tiles() > 0:
 				var front_seamless: Array[bool] = seamless[front_index]
 				front_seamless[local_col] = true
+				var back_seamless: Array[bool] = seamless_below[i]
+				back_seamless[col] = true
 	for i in buildings.size():
 		buildings[i].roof_extension_rows = extensions[i]
 		buildings[i].roof_extension_seamless = seamless[i]
+		buildings[i].seamless_cover_cols = seamless_below[i]
+
+## Gives every piece of one courtyard lot the tint of its first piece (`Building.tint_variant`), so
+## the rectangles a courtyard is cut into read as the one building they are rather than as three
+## or four neighbours. A tint rather than a shared `variant`, which would share every other roll the
+## building makes too. `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_rects`.
+func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int]) -> void:
+	var first_variant := {}
+	for i in buildings.size():
+		var lot := courtyard_of[i]
+		if lot < 0:
+			continue
+		if not first_variant.has(lot):
+			first_variant[lot] = buildings[i].variant
+		buildings[i].tint_variant = first_variant[lot]
 
 ## Which courtyard lot (an index into the courtyards found on `map`, or -1) each of `rects` was cut
 ## from — single-block and apartment-complex courtyards alike, `map.zone_rects` or not, since both
