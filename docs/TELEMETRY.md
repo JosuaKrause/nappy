@@ -20,7 +20,11 @@ kinds of hit:
 - **The page visit keeps the site's sessions**, so a person reloading the page within
   GoatCounter's session window is one visitor. `count.js` counts it on load, once the tab is
   visible, under the path the head's path function gives it: the page's host and path alone,
-  `nappy.josuakrause.com/`, the same path the visits on `josuakrause.goatcounter.com` carry. The
+  `nappy.josuakrause.com/`, the same path the visits on `josuakrause.goatcounter.com` carry;
+  GoatCounter stores a page's path with one leading slash and none trailing, so it is listed as
+  `/nappy.josuakrause.com`. On the counter a path starting `/nappy` is a visit to the site and a name
+  starting `nappy-` is a game metric *(2026-09-26: "`/nappy` is for site access `nappy-` is for
+  metrics")*. The
   hit also carries the page title, the referrer, the screen width and the query string, from which
   GoatCounter reads campaign parameters such as `ref` and `utm_source`.
 - **Every game event opts out of the sessions**, so it counts every time it is sent: a day lost
