@@ -232,18 +232,34 @@ def is_hard_sep: IN(";", "&", "|", "(", ")", "`", "\n");
 # Global options taking a separate argument -- git's, gh's and agent-identity.py run's own
 # --repo alike, one small list, fail-safe: an option not on it is skipped as one word, so an
 # unfamiliar flag can never hide the word after it (the same call git-grep-guard.sh's
-# after_options makes for git).
+# options_table makes for git).
 def takes_argument:
   IN("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env",
      "--attr-source", "-R", "--repo", "--hostname");
 
-# From index $i, the index of the first word in $w that is not a leading `-`-prefixed option (or
-# that option's own separate argument).
-def after_options($w; $i):
-  {i: $i}
-  | until(.i >= ($w | length) or (($w[.i] | startswith("-")) | not);
-      if $w[.i] | takes_argument then .i += 2 else .i += 1 end)
-  | .i;
+# Follows every pointer in an array of forward pointers to its end: each entry is the index it
+# points at, one that points at itself is an end, and the last entry is the array's own end. Each
+# pass replaces a pointer with its pointer's pointer, which halves every remaining chain, so it
+# takes a number of passes logarithmic in the longest chain and each pass is one read of the
+# array. The walks below (a run of options, a run of assignments and wrapper words) are tables
+# built this way once per command rather than walked again from every word that starts one: `-c`
+# swallows the next word, so in `git -c git -c git ...` or `; env -c ; env -c ...` a walk from
+# every start runs to the end of the chain, a cost quadratic in its length.
+def resolve: until(. as $p | all(range(length); $p[$p[.]] == $p[.]); . as $p | map($p[.]));
+
+# For every index in the word array (and one past its end), the index of the first word from there
+# on that is not a leading `-`-prefixed option (or that option's own separate argument).
+def options_table:
+  . as $w
+  | length as $n
+  | [range($n) as $i
+     | $w[$i] as $x
+     | if ($x | startswith("-")) | not then $i
+       elif $x | takes_argument then ([$i + 2, $n] | min)
+       else $i + 1 end]
+  + [$n]
+  | resolve;
+def after_options($t; $i): $t.ao[$i] // $i;
 
 # A word shaped like a shell assignment (`FOO=1`, `NAPPY_AGENT_ROLE=x`) -- these precede a real
 # command without ending "command position" the way any other word would.
@@ -257,22 +273,24 @@ def is_assignment: test("^[A-Za-z_][A-Za-z0-9_]*=");
 def wrapper_words: ["bash", "sh", "env", "timeout", "xargs", "nice", "nohup", "sudo", "command", "watch"];
 def is_wrapper_word($x): (wrapper_words | index($x)) != null;
 
-# From index $i (already known to be in command position), the index of the real command word:
+# For every index (already known to be in command position), the index of the real command word:
 # skips any run of assignments and wrapper words (with the wrapper's own options, and `timeout`'s
 # own duration argument), so `FOO=1 tools/release.sh`, `env FOO=1 tools/prune-merged.sh`, `timeout
 # 60 tools/land-prs.sh` and `bash -x tools/prune-merged.sh` all land on the script name, not on the
-# assignment, the option or the duration.
-def command_word($w; $i; $n):
-  {i: $i, go: true}
-  | until((.i >= $n) or (.go | not);
-      ($w[.i]) as $x
-      | if $x | is_assignment then .i += 1
-        elif is_wrapper_word($x) then
-          (after_options($w; .i + 1)) as $after
-          | .i = (if ($x | last_part) == "timeout" and $after < $n then $after + 1 else $after end)
-        else .go = false
-        end)
-  | .i;
+# assignment, the option or the duration. A table, like `options_table`.
+def command_table($ao):
+  . as $w
+  | length as $n
+  | [range($n) as $i
+     | $w[$i] as $x
+     | if ($x | contains("=")) and ($x | is_assignment) then $i + 1
+       elif is_wrapper_word($x) then
+         ($ao[$i + 1] // $n) as $after
+         | (if ($x | last_part) == "timeout" and $after < $n then $after + 1 else $after end)
+       else $i end]
+  + [$n]
+  | resolve;
+def command_word($t; $i): $t.cw[$i] // $i;
 
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
@@ -291,10 +309,10 @@ def segment_scan($w; $start; $n; $flags):
       . as $s | .found = (.found or (($flags | index($w[$s.j])) != null)) | .j += 1)
   | {"end": .j, found: .found};
 
-def detect_git($w; $i; $n):
+def detect_git($w; $t; $i; $n):
   if ($w[$i] | named("git")) | not then null
   else
-    (after_options($w; $i + 1)) as $sub
+    (after_options($t; $i + 1)) as $sub
     | if ($sub >= $n) or ($w[$sub] | is_sep) then null
       else
         ($w[$sub]) as $subcmd
@@ -363,6 +381,16 @@ def detect_git($w; $i; $n):
 # how many there are. It never stops early on a bare `git`/`gh` word either, so an endpoint or
 # flag value merely ending in `/gh` or `/git` is read in full rather than mistaken for the start of
 # a new invocation.
+#
+# A scan that ran past a soft separator hands back where it crossed, so the caller still reads
+# every word after the crossing for a write of its own; a `gh api` among those words is then
+# scanned only up to its own next separator (`$bounded`), soft or hard, since everything past that
+# is already part of the scan under way, which reads its flags as the first call's. Without that
+# bound, every `gh api` mentioned after a quoted separator -- a line of a heredoc body in an
+# unsure command, say, where every separator is soft -- would scan again to the same end, a cost
+# quadratic in how many there are. The price is a mention's flags past its own next separator
+# (`echo gh api --jq '.a | .b' -f x=y` inside a script whose first call is a GET) counting only
+# toward the call whose scan they fall in.
 def gh_api_field_flag: IN("-f", "-F", "--raw-field", "--field");
 def gh_api_value_flag: IN("-H", "--header", "--hostname", "-p", "--preview", "-q", "--jq", "-t",
   "--template", "--cache");
@@ -382,8 +410,8 @@ def write_tool_names: ["release.sh", "prune-merged.sh", "land-prs.sh", "update-p
 # this hook detects: git, gh, the identity wrapper or a pushing script. A `gh api` scan stops at a
 # soft separator followed by one, so glued calls inside one quoted `bash -c "..."` are each
 # scanned once rather than each to the end of the string.
-def starts_command($w; $j; $n):
-  (command_word($w; $j; $n)) as $k
+def starts_command($w; $t; $j; $n):
+  (command_word($t; $j)) as $k
   | ($k < $n)
     and ($w[$k] | last_part as $lp
          | ($lp | IN("git", "gh", "agent-identity.py")) or ((write_tool_names | index($lp)) != null));
@@ -393,11 +421,12 @@ def starts_command($w; $j; $n):
 def gh_api_method($m):
   if (.crossed_at != null) and (($m | ascii_downcase) == "get") then . else .method = $m end;
 
-def detect_gh_api($w; $start; $n; $lm):
+def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   {i: $start, method: null, field: false, endpoint: null, merge_type: false,
    query_visible: false, query_hidden: false, crossed_at: null, cont: false}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
-          or (($w[.i] == "\u0001") and starts_command($w; .i + 1; $n));
+          or ($bounded and ($w[.i] | is_sep))
+          or (($w[.i] == "\u0001") and starts_command($w; $t; .i + 1; $n));
       . as $s
       | ($w[$s.i]) as $x
       | ($w[$s.i + 1] // null) as $nx
@@ -421,8 +450,9 @@ def detect_gh_api($w; $start; $n; $lm):
         elif $x | startswith("-") then .i += 1
         else
           (if (.endpoint == null) and (.cont | not) then .endpoint = $x else . end)
-          | (if ($x | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) or ($x | test("(?i)/contents/"))
-                or ($x | test("(?i)/git/refs(/|$)"))
+          | (if ($x | contains("/"))
+                and (($x | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) or ($x | test("(?i)/contents/"))
+                     or ($x | test("(?i)/git/refs(/|$)")))
              then .merge_type = true else . end)
           | .i += 1
         end)
@@ -437,7 +467,8 @@ def detect_gh_api($w; $start; $n; $lm):
     elif ($r.method != null) or $r.field then
       {next: $r.resume, reason: (if $r.merge_type then "gh api merge-type" else "gh api" end)}
     else {next: $r.resume, reason: null}
-    end;
+    end
+  | .scan_end = (if $r.crossed_at == null then null else $r.i end);
 
 # Every `gh` noun writes unless its verb is on one shared list of reads (`view`, `list`, `status`,
 # `diff`, `checks`, `checkout` -- `gh pr`'s own local-only checkout -- `watch`, `download`,
@@ -451,17 +482,17 @@ def detect_gh_api($w; $start; $n; $lm):
 # separator itself, so it never becomes part of a denial reason.
 def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "watch", "download", "clone", "token"];
 def read_only_nouns: ["browse", "search"];
-def detect_gh($w; $i; $n; $lm):
+def detect_gh($w; $t; $i; $n; $lm; $bounded):
   if ($w[$i] | named("gh")) | not then null
   else
-    (after_options($w; $i + 1)) as $noun_i
+    (after_options($t; $i + 1)) as $noun_i
     | if ($noun_i >= $n) or ($w[$noun_i] | is_sep) then null
       else
         ($w[$noun_i]) as $noun
         | if read_only_nouns | index($noun) then null
-          elif $noun == "api" then detect_gh_api($w; $noun_i + 1; $n; $lm)
+          elif $noun == "api" then detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded)
           else
-            (after_options($w; $noun_i + 1)) as $verb_i
+            (after_options($t; $noun_i + 1)) as $verb_i
             | if ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
               else
                 ($w[$verb_i]) as $verb
@@ -482,23 +513,28 @@ def detect_gh($w; $i; $n; $lm):
 # is literally `push` (see its usage); `land-prs.sh` and `update-pr.sh` both skip every GitHub
 # write under `--dry-run`; `prune-merged.sh` has no dry-run shape and is a write whenever it runs
 # at all.
-def script_is_write($w; $base; $start; $n):
-  ({j: $start, push: false, dry: false}
-   | until(.j >= $n or ($w[.j] | is_sep);
-       $w[.j] as $y
-       | if $y == "push" then .push = true | .j += 1
-         elif $y == "--dry-run" then .dry = true | .j += 1
-         else .j += 1 end)) as $scan
+#
+# Whether a `push` or a `--dry-run` follows before the next separator is read from a table built
+# in one pass from the end of the command, rather than scanned again from each script name: a
+# wrapper starts a new command position, so `tools/release.sh ... run <role> -- tools/release.sh
+# ...` repeated would otherwise scan to the separator from every one of them.
+def script_table:
+  [foreach (reverse | .[]) as $y ({push: false, dry: false};
+     if $y | is_sep then {push: false, dry: false}
+     else .push = (.push or $y == "push") | .dry = (.dry or $y == "--dry-run") end)]
+  | reverse;
+def script_is_write($t; $base; $start):
+  ($t.sw[$start] // {push: false, dry: false}) as $scan
   | if $base == "release.sh" then $scan.push
     elif ($base == "land-prs.sh") or ($base == "update-pr.sh") then ($scan.dry | not)
     else true
     end;
-def detect_tool($w; $i; $n; $cmd_pos):
+def detect_tool($w; $t; $i; $cmd_pos):
   if $cmd_pos | not then null
   else
     ($w[$i] | last_part) as $base
     | if (write_tool_names | index($base)) == null then null
-      elif script_is_write($w; $base; $i + 1; $n) then {next: ($i + 1), reason: ("tools/" + $base)}
+      elif script_is_write($t; $base; $i + 1) then {next: ($i + 1), reason: ("tools/" + $base)}
       else null
       end
   end;
@@ -509,9 +545,9 @@ def detect_tool($w; $i; $n; $cmd_pos):
 # command and exempt (a reviewer role's own push or merge aside -- see reviewer_roles below), and
 # whether that `--` sat inside quotes (`inner`: the wrapper is part of a quoted script, so its
 # exemption ends at the script's own next separator -- see mark_soft_separators).
-def detect_wrapper($w; $i; $n):
+def detect_wrapper($w; $t; $i; $n):
   if ($w[$i] | named("agent-identity.py")) and ($w[$i + 1] == "run") then
-    (after_options($w; $i + 2)) as $role_i
+    (after_options($t; $i + 2)) as $role_i
     | if ($role_i < $n) and ($w[$role_i + 1] | IN("--", "--\u0002")) then
         {next: ($role_i + 2), role: $w[$role_i], inner: ($w[$role_i + 1] != "--")}
       else null end
@@ -539,33 +575,40 @@ def is_merge_like($reason):
 # three detectors, and a hit before the exemption (or with none active) is a finding -- as is a
 # push- or merge-like hit inside a reviewer's own wrapper. A hit with no reason (a gh api/git
 # command read as safe) is not a finding, but its own `next` still lets the pass skip everything
-# it already scanned.
+# it already scanned. `scanned_to` is where the last `gh api` scan that crossed a soft separator
+# ended: a `gh api` before it is scanned bounded (see `detect_gh_api`). Every run of options,
+# assignments and wrapper words, and every script's `push`/`--dry-run`, is read from the tables in
+# `$t`, built once, so no word is walked from more than once however the command is built.
 def findings($w; $unsure):
   ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
+  | ($w | options_table) as $ao
+  | {ao: $ao, cw: ($w | command_table($ao)), sw: ($w | script_table)} as $t
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,
-     cmd_word_index: (command_word($w; 0; $n)), out: [], reviewer_push: false}
+     cmd_word_index: (command_word($t; 0)), out: [], reviewer_push: false, scanned_to: -1}
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
-      | (detect_wrapper($w; $state.i; $n)) as $wrap
+      | (detect_wrapper($w; $t; $state.i; $n)) as $wrap
       | ($state.i == $state.cmd_word_index) as $cmd_pos
       | if $x | is_sep then
           $state
           | (if $unsure or ($x | is_hard_sep) or .wrap_inner
              then .wrap_from = null | .wrap_role = null | .wrap_inner = false else . end)
-          | .cmd_word_index = (command_word($w; $state.i + 1; $n)) | .i += 1
+          | .cmd_word_index = (command_word($t; $state.i + 1)) | .i += 1
         elif $wrap != null then
           $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role | .wrap_inner = $wrap.inner
           | .wrapped = true
-          | .cmd_word_index = (command_word($w; $wrap.next; $n)) | .i += 1
+          | .cmd_word_index = (command_word($t; $wrap.next)) | .i += 1
         else
-          (detect_git($w; $state.i; $n) // detect_gh($w; $state.i; $n; $lm)
-           // detect_tool($w; $state.i; $n; $cmd_pos)) as $hit
+          (detect_git($w; $t; $state.i; $n)
+           // detect_gh($w; $t; $state.i; $n; $lm; $state.i < $state.scanned_to)
+           // detect_tool($w; $t; $state.i; $cmd_pos)) as $hit
           | if $hit == null then $state | .i += 1
-            elif $hit.reason == null then $state | .i = $hit.next
+            elif $hit.reason == null then $state | .i = $hit.next | .scanned_to = ($hit.scan_end // .scanned_to)
             else
               ($state
+               | .scanned_to = ($hit.scan_end // .scanned_to)
                | if (.wrap_from != null) and ($state.i >= .wrap_from) then
                    (if (is_push_like($hit.reason) or is_merge_like($hit.reason))
                        and ((reviewer_roles | index($state.wrap_role)) != null)

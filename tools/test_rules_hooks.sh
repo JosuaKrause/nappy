@@ -38,6 +38,8 @@
 #   - 31 KB of the densest text, ending in a git grep only the third reading sees, is read in
 #     full in under half the hook's 10-second timeout, and a command over
 #     32 KB holding both words is denied at once without being read
+#   - a chain of git words whose options swallow the next one (git -c git -c ..., git > git > ...),
+#     at 10 KB and at the 32 KB bound, is decided in under half the timeout too
 #   - past 32 KB (too_long), an obscured pair (g\it, g"r"ep) still denies and "git" alone (no
 #     "grep" anywhere) allows, both decided by one regex rather than by building the whole text
 #     three times over; past 1 MB (hard_cap) the same regex decides, and the two shapes that used
@@ -72,7 +74,11 @@
 #     only a coder identity pushes or merges by those routes. Every
 #     scan (gh api's, a git verb's abort-flag check) runs to the next separator or the end of the
 #     command either way, so many such calls glued with no separator between them stay linear
-#     rather than quadratic.
+#     rather than quadratic, and so do the shapes where a walk from each word would reach the end
+#     of the command (git -c git -c ..., ; env -c ; env -c ..., gh pr -R gh -R ..., a pushing
+#     script rewrapped before each repeat, a heredoc naming gh api on every line), at 16 KB and at
+#     the 64 KB bound; a gh api mentioned inside another call's scan still denies on a write flag
+#     of its own before its next separator.
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -795,6 +801,38 @@ fi
 assert_guard "the same invocation alone is caught only by reading 3 -> deny" deny \
     'git -C "/x y" grep -i foo -- docs/'
 
+# $1 label  $2 expected  $3 command: assert_guard, plus a check that the hook decided it in under
+# 5 seconds, half its 10-second timeout.
+assert_guard_timed() {
+    local started=$SECONDS
+    assert_guard "$1" "$2" "$3"
+    checks=$((checks + 1))
+    if [ $((SECONDS - started)) -lt 5 ]; then
+        echo "ok   $1: decided in under 5 seconds"
+    else
+        fail "$1: took $((SECONDS - started)) seconds, past half the hook's 10-second timeout"
+    fi
+}
+
+# A `git` whose options swallow the next word (`-c`, `-C`, a `>` redirect) can swallow another
+# `git`, so in a chain of them the run of options from every `git` reaches the end of the chain.
+# Each check here is a chain like that: at about 10 KB, ending in a search only reading 3 sees
+# (all three readings run to the end), and at the 32 KB bound, ending in a guarded search that
+# allows. The guard reads the options from one table built once, so every chain is decided in
+# about the time of one pass.
+chain_c_10k="$(printf 'git -c %.0s' $(seq 1 1420))"
+chain_c_32k="$(printf 'git -c %.0s' $(seq 1 4675))"
+chain_redirect_10k="$(printf 'git > %.0s' $(seq 1 1660))"
+chain_redirect_32k="$(printf 'git > %.0s' $(seq 1 5455))"
+assert_guard_timed "10 KB of git -c git -c ..., then a git grep only reading 3 catches -> deny" deny \
+    "${chain_c_10k}; git -C \"/x y\" grep -i foo -- docs/"
+assert_guard_timed "32 KB of git -c git -c ..., then a guarded git grep -> allow" allow \
+    "${chain_c_32k}; git grep -I x"
+assert_guard_timed "10 KB of git > git > ..., then a git grep only reading 3 catches -> deny" deny \
+    "${chain_redirect_10k}; git -C \"/x y\" grep -i foo -- docs/"
+assert_guard_timed "32 KB of git > git > ..., then a guarded git grep -> allow" allow \
+    "${chain_redirect_32k}; git grep -I x"
+
 # Past 32 KB, a text holding both words is denied without being read, even when the one
 # git grep in it is guarded; a long text without both words still allows at once.
 huge_body="$(printf 'Lorem ipsum dolor sit amet, "quoted words", '"'"'more'"'"'; x | y (z) [w]\n%.0s' $(seq 1 3200))"
@@ -1398,6 +1436,57 @@ if [ $((SECONDS - dense_under_start)) -lt 5 ]; then
 else
     fail "the densest command under the bound took $((SECONDS - dense_under_start)) seconds"
 fi
+# $1 label  $2 expected  $3 command: assert_write_guard, plus a check that the hook decided it in
+# under 5 seconds, half its 10-second timeout.
+assert_write_guard_timed() {
+    local started=$SECONDS
+    assert_write_guard "$1" "$2" "$3"
+    checks=$((checks + 1))
+    if [ $((SECONDS - started)) -lt 5 ]; then
+        echo "ok   $1: decided in under 5 seconds"
+    else
+        fail "$1: took $((SECONDS - started)) seconds, past half the hook's 10-second timeout"
+    fi
+}
+
+# Every shape here makes a walk from each word that starts one run to the end of the command, so
+# reading it word by word would cost the square of its length: `-c`/`-C`/`-R` swallowing the next
+# `git` or `gh`, `env -c` swallowing the `;` after it, a wrapper restarting command position before
+# each pushing script, and a heredoc (every separator soft) mentioning `gh api` on every line. The
+# runs are read from tables built once and a mentioned `gh api` is scanned only to its own next
+# separator, so each is decided in about the time of one pass, at 16 KB and at the 64 KB bound.
+w_chain_git_16k="$(printf 'git -c %.0s' $(seq 1 2330))"
+w_chain_git_64k="$(printf 'git -c %.0s' $(seq 1 9340))"
+w_chain_env_64k="$(printf '; env -c %.0s' $(seq 1 7270))"
+w_chain_gh_64k="gh pr $(printf -- '-R gh %.0s' $(seq 1 10900))"
+w_chain_tool_64k="$(printf 'tools/release.sh tools/agent-identity.py run claude-coder -- %.0s' $(seq 1 1072))"
+w_mentions_16k="$(printf 'we call gh api here and there\n%.0s' $(seq 1 530))"
+w_mentions_64k="$(printf 'we call gh api here and there\n%.0s' $(seq 1 2170))"
+assert_write_guard_timed "16 KB of git -c git -c ..., then git push -> deny" deny \
+    "${w_chain_git_16k}; git push origin main"
+assert_write_guard_timed "64 KB of git -c git -c ..., then git push -> deny" deny \
+    "${w_chain_git_64k}; git push origin main"
+assert_write_guard_timed "64 KB of ; env -c ; env -c ..., then git push -> deny" deny \
+    "${w_chain_env_64k}; git push origin main"
+assert_write_guard_timed "64 KB of gh pr -R gh -R gh ..., then git push -> deny" deny \
+    "${w_chain_gh_64k}; git push origin main"
+assert_write_guard_timed "64 KB of release.sh without push, each rewrapped -> allow" allow \
+    "${w_chain_tool_64k}echo done"
+assert_write_guard_timed "a 16 KB heredoc naming gh api on every line -> allow" allow \
+    "cat <<EOF
+${w_mentions_16k}
+EOF"
+assert_write_guard_timed "a 64 KB heredoc naming gh api on every line -> allow" allow \
+    "cat <<EOF
+${w_mentions_64k}
+EOF"
+# A gh api mentioned inside another call's scan is still read up to its own next separator, so a
+# write flag of its own there denies, and one past that separator still counts toward the first
+# call's scan.
+assert_write_guard "a GET call, then a gh api mention with its own -f in a quoted script -> deny" deny \
+    "bash -c \"gh api -X GET x | jq .; echo gh api -f a=b y\""
+assert_write_guard "a REST call, a quoted pipe, a gh api mention, then -X POST -> deny" deny \
+    "gh api repos/o/r --jq '.a | \"gh api\"' -X POST"
 assert_write_guard "wrapped command, then an unquoted ; and a bare git push -> deny" deny \
     'uv run python tools/agent-identity.py run claude-coder -- echo done; git push'
 assert_write_guard "a REST write whose field value contains the word graphql -> deny" deny \

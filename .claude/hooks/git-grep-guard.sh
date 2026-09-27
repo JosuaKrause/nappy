@@ -41,10 +41,14 @@
 #   github-write-guard.sh's own bound) the deny message just names the larger bound; the regex
 #   deciding it is the same either side of it, and a single regex search is linear in the input
 #   with no second pass over it, so this decides in well under a second whatever the input's size.
-# - At or under 32 KB, the text below is read in full. Every reading is linear, but the three
-#   together cost most on dense text of short words, where each word is a step of its own: about
-#   1.2 seconds at 32 KB of `git` on a line each, the slowest text measured, against the hook's
-#   10-second timeout, so a loaded machine still finishes in time.
+# - At or under 32 KB, the text is read in full, and no reading costs more than a few passes over
+#   it: one pass over the characters, and over the words one table of where each word's run of
+#   git options ends, built by pointer doubling (a pass over the words for each doubling of the
+#   longest run) rather than walked from each `git` (`-c` swallows the next word, so in `git -c
+#   git -c git ...` a walk from every `git` would run to the end of the chain, a cost quadratic in
+#   its length). The densest texts of short words, where every word is a step of its own and all
+#   three readings run to the end, are decided in under a second, well inside the hook's
+#   10-second timeout even on a loaded machine.
 # - The text is then read three ways, and a match in any one of them denies:
 #   1. every backslash and quote mark deleted, as bash's quote removal does, so `g"i"t`, `g\it`,
 #      `"git" grep` and `git -C "$root" grep` read as they run;
@@ -98,11 +102,12 @@ set -uo pipefail
 
 # ------------------------------------------------------------------------------ the check (jq) ---
 # Prints the unguarded invocations it finds, joined by "; ", and nothing when there is none. Every
-# step is a literal split/join, one foreach over the characters, or a walk over an array of words,
-# never a regex over the whole text and never an append to an array held in a reduce's state: jq's
-# match, scan and gsub cost the length of the text per match, jq copies a state array on each
-# append, and bash 3.2's arrays cost their length per lookup, any of which makes a long heredoc
-# outrun the hook's timeout.
+# step is a literal split/join, one foreach over the characters, or a pass over an array of words,
+# never an append to an array held in a reduce's state and never a walk that can start again from
+# every word: jq's match, scan and gsub cost the length of the text per match, jq copies a state
+# array that is read while it is updated, and bash 3.2's arrays cost their length per lookup, any
+# of which makes a long heredoc outrun the hook's timeout. The one regex over the whole text is
+# the over-bound test, a single search.
 read -r -d '' check_program <<'JQ'
 def drop($c): split($c) | join("");
 def swap($c; $r): split($c) | join($r);
@@ -199,19 +204,32 @@ def takes_argument:
   IN("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env",
      "--attr-source");
 
-# From the index after `git`, the index of the first word that is not one of git's own options (with
-# a separate argument where it takes one), a redirect, a newline, or the `)`/backtick closing
-# `$(which git)`. An unrecognised `-` option is skipped too, so an unfamiliar one cannot hide
-# `grep`; the same skip keeps `git log --grep=foo` safe.
-def after_options($w):
-  until(. >= ($w | length)
-        or ($w[.] as $x
-            | ($x | startswith("-")) or ($x | IN("\n", ")", "`")) or ($x | redirect_width) > 0
-            | not);
-    $w[.] as $x
-    | if $x | takes_argument then . + 2
-      elif ($x | startswith("-")) or ($x | IN("\n", ")", "`")) then . + 1
-      else . + ($x | redirect_width) end);
+# Follows every pointer in an array of forward pointers to its end: each entry is the index it
+# points at, one that points at itself is an end, and the last entry is the array's own end. Each
+# pass replaces a pointer with its pointer's pointer, which halves every remaining chain, so it
+# takes a number of passes logarithmic in the longest chain and each pass is one read of the
+# array; a walk from each start instead costs the length of the text for each start.
+def resolve: until(. as $p | all(range(length); $p[$p[.]] == $p[.]); . as $p | map($p[.]));
+
+# For every index in the word array (and one past its end), the index of the first word from there
+# on that is not one of git's own options (with a separate argument where it takes one), a
+# redirect, a newline, or the `)`/backtick closing `$(which git)`. An unrecognised `-` option is
+# skipped too, so an unfamiliar one cannot hide `grep`; the same skip keeps `git log --grep=foo`
+# safe. It is a table built once rather than a walk from each `git`, because `-c` swallows the next
+# word: in `git -c git -c git ...` the walk from every `git` runs to the end of the chain, and a
+# walk per `git` costs the square of the chain's length.
+def options_table:
+  . as $w
+  | length as $n
+  | [range($n) as $i
+     | $w[$i] as $x
+     | if $x | takes_argument then $i + 2
+       elif ($x | startswith("-")) or ($x | IN("\n", ")", "`")) then $i + 1
+       elif ($x | contains("<") or contains(">")) then $i + ($x | redirect_width)
+       else $i end
+     | if . > $n then $n else . end]
+  + [$n]
+  | resolve;
 
 # True when a `--` pathspec is present and every entry, redirects aside, is a text glob.
 def text_only($specs):
@@ -237,11 +255,12 @@ def is_git_grep_path: contains("/") and last_part == "git-grep";
 def findings:
   . as $w
   | ($w | length) as $n
+  | ($w | options_table) as $after_options
   | {i: 0, out: []}
   | until(.i >= $n;
       (if $w[.i] | is_git_grep_path then .i
        elif $w[.i] | is_git then
-         (.i + 1 | after_options($w)) | if . < $n and ($w[.] | is_grep) then . else null end
+         $after_options[.i + 1] | if . < $n and ($w[.] | is_grep) then . else null end
        else null end) as $j
       | if $j == null then .i += 1
         else ($j + 1 | until(. >= $n or ($w[.] | is_sep); . + 1)) as $k

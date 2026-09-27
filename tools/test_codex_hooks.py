@@ -561,6 +561,36 @@ class CodexHooksTest(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.strip(), "")
 
+    def test_both_guards_decide_chains_of_swallowing_options_well_inside_the_budget(self) -> None:
+        # The adapter runs git-grep-guard.sh and then github-write-guard.sh on the same command,
+        # under the one 10-second budget Codex gives the hook, so the two costs add up. In a chain
+        # of `git -c git -c ...` every git's run of options reaches the end of the chain, and both
+        # guards read those runs from a table built once, so the whole call stays well inside the
+        # budget: at about 10 KB with a guarded search (which the search guard allows, so the
+        # write guard reads the command too) and an unwrapped push at the end; at the search
+        # guard's 32 KB bound, read in full by both and allowed; at the write guard's 64 KB bound
+        # (past the search guard's, where one regex finds no second word and allows), with and
+        # without a push; and a heredoc naming gh api on every line.
+        unit = "git -c "
+        line = "we call gh api here and there\n"
+        cases = []
+        for size, tail, expected in (
+            (10000, "; git grep -I x; git push origin main", "deny"),
+            (32700, "; git grep -I x", None),
+            (65400, "; git push origin main", "deny"),
+            (65400, "; echo done", None),
+        ):
+            cases.append((unit * ((size - len(tail)) // len(unit)) + tail, expected))
+        cases.append(("cat <<EOF\n" + line * 2170 + "EOF", None))
+        for command, expected in cases:
+            with self.subTest(size=len(command), expected=expected):
+                started = time.monotonic()
+                output = self.call_raw(command=command)
+                self.assertLess(time.monotonic() - started, 5.0)
+                # An allowed call prints the shell reminder once per session, then nothing.
+                decision = (output or {}).get("hookSpecificOutput", {}).get("permissionDecision")
+                self.assertEqual(decision, expected)
+
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
         command = (
             "uv run python tools/agent-identity.py run codex-coder -- gh pr create --title t --body "
