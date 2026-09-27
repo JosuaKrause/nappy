@@ -138,16 +138,17 @@ func _test_the_pause_says_where_the_run_stands(t) -> void:
 	t.get_tree().paused = false
 	pause.open()
 	var line: String = pause._standing.text
-	t.check(line.contains("7") and line.contains("3"),
-			"the pause says which day it is and how many nerves are left ('%s')" % line)
+	t.check(line.contains("7") and line.contains("***"),
+			"the pause says which day it is and how many nerves are left, as stars ('%s')" % line)
 	pause.close()
 
-	# The last one reads as itself rather than as a number, because that is the one that changes
-	# what a player does next.
+	# A single nerve is one star, drawn through the same `NerveDisplay.stars()` every other screen
+	# reads the count through — never a digit and never the word.
 	GameState.nerves = 1
 	pause.open()
-	t.check(pause._standing.text.contains("last nerve"),
-			"and the last one says so ('%s')" % pause._standing.text)
+	t.check(pause._standing.text.contains(NerveDisplay.stars(1))
+				and not pause._standing.text.contains("1 nerve"),
+			"and the last one is one star, not a number ('%s')" % pause._standing.text)
 	pause.close()
 
 	GameState.day = day
@@ -1050,12 +1051,12 @@ func _test_the_summary_hint_matches_the_platform(t) -> void:
 	t.add_child(summary)
 
 	summary._touch = false
-	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	t.check(summary._hint.text == "",
 			"the hint says nothing, even on a keyboard-and-mouse desktop ('%s')" % summary._hint.text)
 
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	t.check(summary._hint.text == "", "the touch hint says nothing either — the buttons say it now")
 	t.check(summary._buttons.visible, "and the continue/restart pair is what shows instead")
 
@@ -1079,7 +1080,7 @@ func _test_an_ending_has_no_continue_button(t) -> void:
 	t.add_child(summary)
 	summary._touch = true
 
-	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	t.check(summary._continue_column.visible, "an ordinary day summary still offers continue")
 
 	summary.show_ending(GameEnums.Ending.BAD)
@@ -1089,7 +1090,7 @@ func _test_an_ending_has_no_continue_button(t) -> void:
 
 	# The row returns to its ordinary shape once a fresh run's own day summary shows — the flag
 	# belongs to the screen currently up, not to whatever was up last.
-	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	t.check(summary._continue_column.visible,
 			"and a later day summary is not left thinking it is still an ending")
 
@@ -1108,7 +1109,7 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 	summary.continued.connect(func() -> void: continued[0] += 1)
 
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	# See `_test_the_restart_button_is_a_hold` for why the rect is set directly rather than read
 	# straight after showing — `Container` sorting is a frame behind either way.
 	summary._restart_button.position = Vector2(500.0, 400.0)
@@ -1129,7 +1130,7 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 	# A touch elsewhere on the same screen still means continue, exactly as before this button
 	# existed — acknowledged two frames ahead of itself, see `_test_a_tap_advances_every_screen`
 	# for why both are emitted manually rather than awaited, and why it is two and not one.
-	summary.show_day(2, GameEnums.DayResult.WON, "", 3)
+	summary.show_day(GameEnums.DayResult.WON, "", 3)
 	summary._unhandled_input(_touch_at(Vector2(20.0, 20.0), true))
 	t.check(continued[0] == 0, "not yet — the press is acknowledged first")
 	t.get_tree().process_frame.emit()
@@ -1151,7 +1152,7 @@ func _test_a_real_touch_on_the_continue_button_reaches_the_summary(t) -> void:
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
 
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	summary._continue_button.position = Vector2(300.0, 400.0)
 	summary._continue_button.size = Vector2(92.0, 92.0)
 
@@ -1181,7 +1182,7 @@ func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t) -> vo
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
 
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 
@@ -1222,7 +1223,7 @@ func _test_a_continue_press_flashes_before_it_is_acted_on(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
 	summary._touch = true
-	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	# See `_test_the_restart_button_is_a_hold` for why the rect is set directly rather than read
 	# straight after showing — a stale, pre-layout rect at the origin would otherwise swallow the
 	# (20, 20) touch below as a restart-button press instead of letting it reach the catch-all.
@@ -1303,7 +1304,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
-	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	# See above: kept off the origin for the same reason.
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
@@ -1365,7 +1366,7 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
-	summary.show_day(1, GameEnums.DayResult.WON, "", 5)
+	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var carried_on := [0]

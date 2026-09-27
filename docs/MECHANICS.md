@@ -1226,15 +1226,22 @@ Running out is a day loss. The timer is shown as a light-level shift rather than
 with an explicit clock in the HUD corner, `m:ss` through `GameState.format_clock_seconds()`.
 
 The summary between days (`DaySummary.show_day()`) names the same clock at the instant the day
-ended, one line under its title: a won day reads *"She fell asleep after 1:24."*, a lost day
-reads its own reason with the clock worked into it — *"She started crying after 1:24. There is
-no settling her now."* for a crying loss, the reason then the clock as its own sentence for a
-hard fail — and a day lost to running out of daylight shows only its reason, since dusk already
-is the whole day and printing the day's own length back would only repeat it.
+ended, as its own title: a won day reads *"She fell asleep after 1:24."*, a lost day reads its
+own reason with the clock worked into it — *"She started crying after 1:24. There is no settling
+her now."* for a crying loss, the reason then the clock as its own sentence for a hard fail —
+and a day lost to running out of daylight shows only its reason, since dusk already is the whole
+day and printing the day's own length back would only repeat it.
 `GameState.format_clock_seconds()` is the shared `m:ss` formatter the HUD clock and this line
 both read through, so the two can never disagree; the ending screen's *"Time played"* line stays
 on `GameState.format_clock()`'s millisecond form, over the whole run rather than one day — see
 "The run clock" below.
+
+**Everything below that one line is the coming day's, not the day that just ended.** The day
+number, the nerves carried into it and the morning's own line (`_DAY_BRIEF`, below) all read off
+`GameState.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
+today again (a loss with nerves left retries the same day) — never off the day that just ended.
+The day brief a resumed run opens on (`DaySummary.show_day_brief()`) is built the same way, since
+it is the same screen showing what a load already charged rather than what a day just did.
 
 ## The run clock
 
@@ -1404,6 +1411,12 @@ she took, to the millisecond, which is the only number that screen carries.
 
 The run-level health bar. Starts at 5. Every lost day costs one. At 0 the run ends with the
 bad ending. Nerves never regenerate — this is what makes an early bad day matter.
+
+**Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
+debug header, the day brief, the day summary, the finale brief and the pause screen all read the
+count through `NerveDisplay.stars()` (`src/ui/nerve_display.gd`), a star per nerve and `-` for
+none, so a sixth screen that shows nerves has one function to match rather than a number to
+invent.
 
 **Five is a number to be measured, not derived**, and nobody has played a run against it: the run
 log's `nerve` entries are what say where they went. What makes it hard to reason about from first

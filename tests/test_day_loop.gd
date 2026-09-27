@@ -29,6 +29,9 @@ func run(t) -> void:
 	_test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t)
 	_test_the_day_brief_shows_the_days_own_line(t)
 	_test_the_summary_shows_when_the_day_ended(t)
+	_test_the_summary_shows_the_coming_days_number(t)
+	_test_nerves_are_stars_never_numbers(t)
+	_test_the_day_7_brief_breaks_before_the_same_face(t)
 	_test_a_lost_day_gives_the_resistance_back(t)
 	_test_a_lost_day_gives_back_what_it_burned(t)
 	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
@@ -413,12 +416,12 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 	t.add_child(summary)
 
 	var expected: String = summary._DAY_BRIEF[6]
-	summary.show_day(6, GameEnums.DayResult.LOST_CRYING, "She would not settle.", 2)
+	summary.show_day(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 2)
 	t.check(summary._brief.text == expected,
 			"the morning's own line for the calendar day, whichever DayResult this is")
 	t.check(summary._brief.visible, "and the label showing it is actually on screen")
 
-	summary.show_day(6, GameEnums.DayResult.WON, "", 3)
+	summary.show_day(GameEnums.DayResult.WON, "", 3)
 	t.check(summary._brief.text == expected, "and it reads exactly the same the second time")
 
 	summary.free()
@@ -432,36 +435,119 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 ## that"*. `elapsed_seconds` is a known value here (84.0, `1:24`) rather than anything a rig walks
 ## to, since what is under test is the phrasing `show_day()` builds from it, not the capture in
 ## `main._on_day_finished()`.
+##
+## **`_title`, not `_body`**: the one line about the day that ended is the screen's own title,
+## with everything under it — `_body`'s "Day N of N" and its nerve line, `_brief`'s morning
+## line — about the day that is coming instead. See `show_day()`'s own doc.
 func _test_the_summary_shows_when_the_day_ended(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
-	summary.show_day(4, GameEnums.DayResult.WON, "", 3, 84.0)
-	t.check("She fell asleep after 1:24." in summary._body.text,
-			"a won day names the clock it ended on ('%s')" % summary._body.text)
+	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
+	t.check(summary._title.text == "She fell asleep after 1:24.",
+			"a won day names the clock it ended on ('%s')" % summary._title.text)
 
-	summary.show_day(4, GameEnums.DayResult.LOST_CRYING,
+	summary.show_day(GameEnums.DayResult.LOST_CRYING,
 			"She started crying. There is no settling her now.", 2, 84.0)
-	t.check("She started crying after 1:24. There is no settling her now." in summary._body.text,
+	t.check(summary._title.text == "She started crying after 1:24. There is no settling her now.",
 			"a crying loss reads the clock into its own first sentence ('%s')"
-					% summary._body.text)
+					% summary._title.text)
 
-	summary.show_day(4, GameEnums.DayResult.LOST_HARD_FAIL,
+	summary.show_day(GameEnums.DayResult.LOST_HARD_FAIL,
 			"It never slowed down. You were in the road.", 1, 84.0)
-	t.check("It never slowed down. You were in the road. After 1:24." in summary._body.text,
+	t.check(summary._title.text == "It never slowed down. You were in the road. After 1:24.",
 			"a hard fail keeps its own sentence whole, with the clock following it ('%s')"
-					% summary._body.text)
+					% summary._title.text)
 
-	summary.show_day(4, GameEnums.DayResult.LOST_TIMEOUT, "Dusk. You are still out.", 3, 180.0)
-	t.check("Dusk. You are still out." in summary._body.text,
-			"a timeout still shows its own reason ('%s')" % summary._body.text)
-	t.check(not "3:00" in summary._body.text,
+	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "Dusk. You are still out.", 3, 180.0)
+	t.check(summary._title.text == "Dusk. You are still out.",
+			"a timeout still shows its own reason ('%s')" % summary._title.text)
+	t.check(not "3:00" in summary._title.text,
 			"and the day's own length is not printed back at it, since dusk already is the whole "
-			+ "day ('%s')" % summary._body.text)
+			+ "day ('%s')" % summary._title.text)
 
 	summary.free()
 	t.get_tree().paused = saved_paused
+
+## The day number `show_day()` prints is `GameState.day` — the day about to start — never
+## the day that just ended. A win has already moved `GameState.day` on by the time `show_day()`
+## runs (`main._on_day_finished()` calls `GameState.finish_day()` first), so day 4's own win shows
+## day 5; a loss with nerves left leaves `GameState.day` on the day being retried, so it shows the
+## same day again, with the retry line naming it too.
+func _test_the_summary_shows_the_coming_days_number(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var saved_day := GameState.day
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	GameState.day = 5
+	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
+	t.check("Day 5 of %d" % Tuning.RUN_LENGTH_DAYS in summary._body.text,
+			"a win shows the day it moved on to, not the day it left ('%s')" % summary._body.text)
+	t.check(not "Day 4" in summary._body.text, "never the day that just ended")
+
+	GameState.day = 4
+	summary.show_day(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 2, 84.0)
+	t.check("Day 4 of %d" % Tuning.RUN_LENGTH_DAYS in summary._body.text,
+			"a retry shows the same day again ('%s')" % summary._body.text)
+	t.check("You try day 4 again." in summary._body.text, "and says so")
+
+	summary.free()
+	t.get_tree().paused = saved_paused
+	GameState.day = saved_day
+
+## Nerves are stars everywhere they show, never a digit — on a win as much as a loss, since the
+## count carried into the coming day matters whichever way the last one went — and on the day
+## brief a resumed run opens on too, the first day's own brief included.
+func _test_nerves_are_stars_never_numbers(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
+	t.check("Nerves left: ***" in summary._body.text,
+			"a win shows the nerves it carries into the coming day too ('%s')" % summary._body.text)
+
+	summary.show_day(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 1, 84.0)
+	t.check("Nerves left: *" in summary._body.text and not "1 nerve" in summary._body.text,
+			"a single nerve is one star, never the word or the digit ('%s')" % summary._body.text)
+
+	summary.show_day_brief(1, 4)
+	t.check(summary._title.text == "Day 1 of %d" % Tuning.RUN_LENGTH_DAYS,
+			"the first day's own brief pins the number too ('%s')" % summary._title.text)
+	t.check("Nerves left: ****" in summary._body.text,
+			"and the day brief draws nerves as stars ('%s')" % summary._body.text)
+
+	summary.show_finale_brief("Escape the building", 2)
+	t.check("Nerves left: **" in summary._body.text,
+			"and so does the finale's own brief ('%s')" % summary._body.text)
+
+	summary.free()
+	t.get_tree().paused = saved_paused
+
+## The day 7 brief breaks its line before "The same face is on most of them." rather than
+## wherever the label's own autowrap would land it.
+func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var saved_day := GameState.day
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	var lines: PackedStringArray = summary._DAY_BRIEF[7].split("\n")
+	t.check(lines.size() == 2, "day 7's brief is exactly two lines ('%s')" % summary._DAY_BRIEF[7])
+	t.check(lines[1] == "The same face is on most of them.",
+			"and the second line is exactly the sentence that must start its own line ('%s')"
+					% summary._DAY_BRIEF[7])
+
+	GameState.day = 7
+	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
+	t.check(summary._brief.text == summary._DAY_BRIEF[7],
+			"the day summary shows the same forced break ('%s')" % summary._brief.text)
+
+	summary.free()
+	t.get_tree().paused = saved_paused
+	GameState.day = saved_day
 
 # ------------------------------------------------------- the resistance's own day ---
 

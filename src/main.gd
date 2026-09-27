@@ -2007,8 +2007,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	if _hands_over_to_the_escape(result):
 		GameState.escape_section = FinaleController.Section.BUILDING
 		_save_now(false)
-		_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves,
-				elapsed_seconds)
+		_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 		return
 	_run_over = not GameState.finish_day(result)
 	# The end-of-day write — one of the two moments a run is saved. Skipped when the run just
@@ -2016,7 +2015,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# save, and writing here would resurrect a file naming a run that is over.
 	if not _run_over:
 		_save_now(false)
-	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves, elapsed_seconds)
+	_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 
 ## Whether the day that just ended is the one the escape follows: **won, the last day, and every
 ## task complete**. *"After completing all tasks"*, and what that already means in this game is

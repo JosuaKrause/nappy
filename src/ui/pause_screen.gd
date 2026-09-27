@@ -119,8 +119,10 @@ var _was_paused := false
 ## across fourteen days is a listener that will not be.
 func _show_where_the_run_stands() -> void:
 	var nerves := GameState.nerves
-	_standing.text = "Day %d of %d     ·     %s" % [GameState.day, Tuning.RUN_LENGTH_DAYS,
-			"last nerve" if nerves == 1 else "%d nerves left" % nerves]
+	# Stars, drawn through `NerveDisplay.stars()` — the same text the HUD, the day brief and the
+	# day summary all read the count through, never a digit.
+	_standing.text = "Day %d of %d     ·     Nerves left: %s" % [GameState.day,
+			Tuning.RUN_LENGTH_DAYS, NerveDisplay.stars(nerves)]
 
 func open() -> void:
 	visible = true
