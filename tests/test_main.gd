@@ -809,7 +809,7 @@ func _test_focus_lost_does_nothing_on_the_title(t) -> void:
 ## already asking for the player's attention.
 func _test_focus_lost_does_nothing_over_the_day_summary(t) -> void:
 	var main := _build_focus_pause_main(t)
-	main._summary.show_day(3, GameEnums.DayResult.WON, "", 3)
+	main._summary.show_day(GameEnums.DayResult.WON, "", 3)
 	t.check(main._summary.is_showing(), "the day summary is up")
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(),
@@ -820,7 +820,7 @@ func _test_focus_lost_does_nothing_over_the_day_summary(t) -> void:
 ## show_ending()` — so it is covered by the same `is_showing()` guard rather than a case of its own.
 func _test_focus_lost_does_nothing_over_the_ending(t) -> void:
 	var main := _build_focus_pause_main(t)
-	main._summary.show_ending(GameEnums.Ending.GOOD)
+	main._summary.show_ending(GameEnums.Ending.GOOD, GameState.day)
 	t.check(main._summary.is_showing(), "the ending screen is up")
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "focus loss does not open a second screen over the ending")
