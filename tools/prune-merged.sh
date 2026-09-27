@@ -16,10 +16,12 @@
 # Being that narrow is what lets `.claude/settings.json` allow this script outright, where Claude
 # Code's auto-mode classifier refuses a bare `git worktree remove` or `git branch -D`.
 #
-# The remote branch delete is a GitHub write and runs through the caller's own agent identity
-# (tools/lib_agent_role.sh's `agent_run`, minting a fresh token for it): run this script itself
-# through `uv run python tools/agent-identity.py run <role> -- tools/prune-merged.sh ...`, which
-# sets NAPPY_AGENT_ROLE for `agent_run` to read back; it refuses to push with that unset.
+# Every GitHub call (gh pr view, git ls-remote, and the remote branch delete itself) runs through
+# the caller's own agent identity when one is set (tools/lib_agent_role.sh's `agent_run`, minting
+# each one a fresh token): run this script itself through `uv run python tools/agent-identity.py
+# run <role> -- tools/prune-merged.sh ...`, which sets NAPPY_AGENT_ROLE for `agent_run` to read
+# back. Run bare, with NAPPY_AGENT_ROLE unset, it calls gh/git directly instead -- exactly what a
+# human running it by hand at their own terminal already got.
 #
 # Bash 3.2-safe, like the rest of tools/ — see tools/lint.sh's own header.
 set -uo pipefail
@@ -74,7 +76,7 @@ for branch in "${branches[@]}"; do
         failed=1
         continue
     fi
-    if ! pr="$(gh pr view "$branch" --json state,headRefOid,number \
+    if ! pr="$(agent_run gh pr view "$branch" --json state,headRefOid,number \
             -q '.state + " " + .headRefOid + " " + (.number | tostring)' 2>/dev/null)"; then
         echo "skip $branch: no pull request found for it" >&2
         failed=1
@@ -119,7 +121,7 @@ for branch in "${branches[@]}"; do
 
     git branch -D "$branch" >/dev/null && echo "deleted $branch (was ${tip:0:8}, PR #$number merged)"
 
-    remote_tip="$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)"
+    remote_tip="$(agent_run git ls-remote --heads origin "refs/heads/$branch" | cut -f1)"
     if [[ -n "$remote_tip" ]]; then
         if [[ "$remote_tip" == "$merged_head" ]]; then
             agent_run git push --quiet origin --delete "$branch" && echo "deleted origin/$branch"

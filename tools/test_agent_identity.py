@@ -291,38 +291,45 @@ class RunEnvironmentTests(unittest.TestCase):
         # a push must also authenticate as the bot, not the player's own SSH key.
         config: Any = {"app_id": "1", "slug": "nappy-claude-coder", "bot_id": 1, "name": "n", "html_url": "h"}
         env = agent_identity.build_run_environment("claude-coder", config, "ghs_tok", {})
-        self.assertEqual(env["GIT_CONFIG_COUNT"], "3")
+        self.assertEqual(env["GIT_CONFIG_COUNT"], "4")
         self.assertEqual(env["GIT_CONFIG_VALUE_0"], "git@github.com:")
         self.assertEqual(env["GIT_CONFIG_VALUE_1"], "ssh://git@github.com/")
-        self.assertIn("AUTHORIZATION: basic ", env["GIT_CONFIG_VALUE_2"])
+        self.assertEqual(env["GIT_CONFIG_VALUE_2"], "")
+        self.assertIn("AUTHORIZATION: basic ", env["GIT_CONFIG_VALUE_3"])
 
 
 class GitHttpsAuthConfigTests(unittest.TestCase):
-    def test_the_exact_three_entries_the_brief_names(self) -> None:
+    def test_the_exact_four_entries_this_writes(self) -> None:
+        # Four, not three: an empty http.<base>.extraheader resets any accumulated value before
+        # the real one is set, every time (see the function's own docstring on why).
         config = agent_identity.git_https_auth_config("ghs_tok", {})
-        self.assertEqual(config["GIT_CONFIG_COUNT"], "3")
+        self.assertEqual(config["GIT_CONFIG_COUNT"], "4")
         self.assertEqual(config["GIT_CONFIG_KEY_0"], "url.https://github.com/.insteadOf")
         self.assertEqual(config["GIT_CONFIG_VALUE_0"], "git@github.com:")
         self.assertEqual(config["GIT_CONFIG_KEY_1"], "url.https://github.com/.insteadOf")
         self.assertEqual(config["GIT_CONFIG_VALUE_1"], "ssh://git@github.com/")
         self.assertEqual(config["GIT_CONFIG_KEY_2"], "http.https://github.com/.extraheader")
+        self.assertEqual(config["GIT_CONFIG_VALUE_2"], "")
+        self.assertEqual(config["GIT_CONFIG_KEY_3"], "http.https://github.com/.extraheader")
         basic = base64.b64encode(b"x-access-token:ghs_tok").decode("ascii")
-        self.assertEqual(config["GIT_CONFIG_VALUE_2"], f"AUTHORIZATION: basic {basic}")
+        self.assertEqual(config["GIT_CONFIG_VALUE_3"], f"AUTHORIZATION: basic {basic}")
 
     def test_appends_after_an_existing_git_config_count_rather_than_clobbering_it(self) -> None:
         base = {"GIT_CONFIG_COUNT": "2", "GIT_CONFIG_KEY_0": "x", "GIT_CONFIG_VALUE_0": "y"}
         config = agent_identity.git_https_auth_config("tok", base)
-        self.assertEqual(config["GIT_CONFIG_COUNT"], "5")
+        self.assertEqual(config["GIT_CONFIG_COUNT"], "6")
         self.assertEqual(config["GIT_CONFIG_KEY_2"], "url.https://github.com/.insteadOf")
         self.assertEqual(config["GIT_CONFIG_KEY_4"], "http.https://github.com/.extraheader")
-        # This function only adds its own three -- the caller's own existing entries are its to
+        self.assertEqual(config["GIT_CONFIG_VALUE_4"], "")
+        self.assertEqual(config["GIT_CONFIG_KEY_5"], "http.https://github.com/.extraheader")
+        # This function only adds its own four -- the caller's own existing entries are its to
         # keep, and are not repeated in what this returns.
         self.assertNotIn("GIT_CONFIG_KEY_0", config)
         self.assertNotIn("GIT_CONFIG_KEY_1", config)
 
     def test_an_unparseable_existing_count_is_treated_as_zero_rather_than_raising(self) -> None:
         config = agent_identity.git_https_auth_config("tok", {"GIT_CONFIG_COUNT": "not-a-number"})
-        self.assertEqual(config["GIT_CONFIG_COUNT"], "3")
+        self.assertEqual(config["GIT_CONFIG_COUNT"], "4")
         self.assertIn("GIT_CONFIG_KEY_0", config)
 
     def test_the_token_is_never_written_into_a_url(self) -> None:
@@ -330,6 +337,30 @@ class GitHttpsAuthConfigTests(unittest.TestCase):
         for key, value in config.items():
             if key.endswith("_VALUE_0") or key.endswith("_VALUE_1"):
                 self.assertNotIn("ghs_supersecret", value)
+
+    def test_a_nested_run_resets_the_outer_extraheader_rather_than_stacking_it(self) -> None:
+        # The regression a review found: without the empty-value reset, an inner run's own
+        # extraheader was appended after an outer run's, and git sent both -- an expired outer
+        # token first, then the fresh inner one, over the same request.
+        outer = agent_identity.git_https_auth_config("outer_stale_token", {})
+        inner = agent_identity.git_https_auth_config("inner_fresh_token", outer)
+        merged = {**outer, **inner}
+        count = int(merged["GIT_CONFIG_COUNT"])
+        values = [merged[f"GIT_CONFIG_VALUE_{i}"] for i in range(count)]
+        # The last extraheader-shaped entry is the fresh token; an empty entry sits directly
+        # before it, resetting whatever the outer run had already set.
+        extraheader_indices = [
+            i for i in range(count) if merged[f"GIT_CONFIG_KEY_{i}"] == "http.https://github.com/.extraheader"
+        ]
+        self.assertEqual(values[extraheader_indices[-1] - 1], "")
+        self.assertIn("inner_fresh_token", self._decode(values[extraheader_indices[-1]]))
+        self.assertNotIn("outer_stale_token", self._decode(values[extraheader_indices[-1]]))
+
+    @staticmethod
+    def _decode(header_value: str) -> str:
+        # "AUTHORIZATION: basic <base64>" -> the decoded "x-access-token:<token>" text.
+        encoded = header_value.split(" ", 2)[-1]
+        return base64.b64decode(encoded + "=" * (-len(encoded) % 4)).decode()
 
 
 class ConfigFilePermissionsTests(unittest.TestCase):

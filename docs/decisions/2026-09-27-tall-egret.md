@@ -29,27 +29,43 @@ The keys stay in `~/.config/nappy-agents/`, outside the repository. The reviewer
 `contents: write`, not read: a live probe (throwaway PR #392, into a probe branch under a
 temporary ruleset requiring one approval) found a reviewer's own APPROVE left the PR
 REVIEW_REQUIRED/BLOCKED under `contents: read`, and the reviewer app was refused
-`resolveReviewThread` (FORBIDDEN) either way; `codex-coder`'s own APPROVE, with `contents: write`,
-made the PR APPROVED/CLEAN. The permission changed, but a reviewer identity still never pushes:
-`.claude/hooks/github-write-guard.sh` denies `git push` and the pushing `tools/` scripts when the
+`resolveReviewThread` (FORBIDDEN) under that same permission; `codex-coder`'s own APPROVE, with
+`contents: write`, made the PR APPROVED/CLEAN, and with `contents: write` live a reviewer resolves
+its own threads too (verified: nine of `claude-reviewer`'s own threads on PR #391, each returning
+`isResolved: true`). The permission changed, but a reviewer identity still never pushes or merges:
+`.claude/hooks/github-write-guard.sh` denies `git push`, the pushing `tools/` scripts, and a
+merge-type write (`gh pr merge`/`update-branch`, a `gh api` endpoint ending in `/merge`) when the
 wrapping role is `claude-reviewer`/`codex-reviewer`, whatever GitHub's own permission allows —
-coders push instead.
+coders push and merge instead.
 
 **Using their own identity is mandatory, and enforced on writes.** committing and pr-review say
 which role does what: Claude Code's orchestrator and its implementation agents commit as
-`claude-coder`, its review agents as `claude-reviewer`; Codex the same as `codex-coder` /
-`codex-reviewer`. When `status` says a role is not usable, the session stops and tells the player
-instead of posting as them — there is no fallback to the player's account any more. A `PreToolUse`
-Bash hook (`.claude/hooks/github-write-guard.sh`) makes the rule mechanical rather than only
-remembered: it denies a `git push`, a `git commit`, a GitHub-writing `gh pr`/`gh issue`/`gh
-release`/`gh api` call, or one of the `tools/` scripts that pushes or posts internally
-(`tools/release.sh`, `tools/prune-merged.sh`, `tools/land-prs.sh`, `tools/update-pr.sh`), unless
-the same command runs through `tools/agent-identity.py run <role> -- ...`; a read (`git status`,
-`gh pr view`, ...) stays unguarded. The reviewer's own review now carries GitHub's verdict too:
-APPROVE when the verdict is *ready*, REQUEST_CHANGES when it is *not ready*, COMMENT for an
-interim or partial review — it still never merges, which stays committing's call under its
-permission rule. Merging now also needs one approving review, from a reviewer bot or the player
-(the player exempt on their own PRs), in addition to the green `test` check.
+`claude-coder` (with `actions: write` too, live, so a wrapped `gh run rerun`/`gh workflow run` can
+work — nothing else is widened), its review agents as `claude-reviewer`; Codex the same as
+`codex-coder`/`codex-reviewer`. When `status` says a role is not usable, the session stops and
+tells the player instead of posting as them — there is no fallback to the player's account any
+more. A `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes the rule mechanical
+rather than only remembered: it denies a `git push`; a commit-making git verb (`commit`, and
+`cherry-pick`/`revert`/`am`/`merge`/`rebase`/`pull` past their own abort-like or safe flag); any
+`gh` noun's write verb (every noun, not only `pr`/`issue`/`release`); a `gh api` call with a
+non-GET method/field or a GraphQL mutation; or one of the `tools/` scripts that pushes or posts
+internally (`tools/release.sh`, `tools/prune-merged.sh`, `tools/land-prs.sh`,
+`tools/update-pr.sh`), only in command position — unless the same command runs through
+`tools/agent-identity.py run <role> -- ...` (the hook's own header comment carries the exact,
+current list, rather than a second copy of it here that can drift from it); a read (`git status`,
+`gh pr view`, ...) stays unguarded. Each of those four scripts routes every one of its own GitHub
+calls, reads included, through a fresh token this way too (`tools/lib_agent_role.sh`'s
+`agent_run`), rather than relying on the one token the whole script may itself have been wrapped
+in, since a run past the one-hour token's life must not have a later read 401 or a later write
+fail; run without `NAPPY_AGENT_ROLE` set (a human at their own terminal, not an agent), a script
+calls `gh`/`git` directly, exactly as it always did. The reviewer's own review now carries GitHub's
+verdict too: APPROVE when the verdict is *ready*, REQUEST_CHANGES when it is *not ready*, COMMENT
+for an interim or partial review — it still never merges, which stays committing's call under its
+permission rule. Merging now also needs one approving review, from a reviewer bot or the player —
+the live `main approvals` ruleset exempts the player (a repository admin) on any PR they merge, not
+only their own — in addition to the green `test` check. **A review thread is resolved only by
+whoever opened it**, a convention and not a gate: it blocks neither an approval nor a merge, and
+the live ruleset does not require thread resolution.
 
 **Rejected.** *Machine users* (second GitHub accounts): GitHub's terms allow one free machine
 account per person, which is one identity where four were asked for, and each brings an email and
@@ -75,8 +91,18 @@ kept, and `gh api repos/JosuaKrause/nappy/events` shows the push event's actor a
 `contents: write` live (probe PR #392, since closed and deleted), and a reviewer app's own APPROVE
 was verified there to satisfy a required approval. `main` carries two rulesets now: the original
 one (a pull request required, the `test` check green) is unchanged and nobody bypasses it; a
-second, "main approvals", requires one approving review, does not require thread resolution, and
-lets repository admins (the player) bypass it when merging their own PR. Both rulesets, and a
-GitHub App's own permissions, are changed in GitHub's settings by the player — no bot identity can
-make either change, so `github-write-guard.sh`'s deny message and **committing** both say an admin
-action is the player's to do directly, never something to wrap and retry.
+second, "main approvals", requires one approving review, does not require thread resolution
+(`required_review_thread_resolution: false`), and lets repository admins (the player) bypass it on
+any PR they merge, not only their own. `require_extra_approval_for_unattributed_changes`, an
+unintended default on that second ruleset, is now `false` too, matching the original ruleset's own
+setting. Both rulesets, and a GitHub App's own permissions, are changed in GitHub's settings by the
+player — no bot identity can make either change, so `github-write-guard.sh`'s deny message and
+**committing** both say an admin action is the player's to do directly, never something to wrap and
+retry.
+
+**Accepted gaps.** The write guard is a guardrail against an agent's own ordinary mistake, not a
+security boundary against a deliberately adversarial shape: a path segment or endpoint deliberately
+named to look like `gh`/`git`, and a script setting `NAPPY_AGENT_ROLE` itself to spoof a different
+identity than the one it was actually run as, are left as gaps rather than chased, since closing
+them against a genuinely adversarial actor (not merely an agent's own typo) costs real complexity
+for a threat this tool was never meant to hold against.

@@ -25,10 +25,12 @@
 # out -- and every refusal fires whether or not `push` was given, so the dry run tells the truth
 # about whether the real thing would work.
 #
-# The tag push is a GitHub write and runs through the caller's own agent identity
-# (tools/lib_agent_role.sh's `agent_run`, minting a fresh token for it): run this script itself
-# through `uv run python tools/agent-identity.py run <role> -- tools/release.sh <part> push`,
-# which sets NAPPY_AGENT_ROLE for `agent_run` to read back; it refuses to push with that unset.
+# Every GitHub call (the origin fetch, the check-runs read, the tag push itself) runs through the
+# caller's own agent identity when one is set (tools/lib_agent_role.sh's `agent_run`, minting each
+# one a fresh token): run this script itself through `uv run python tools/agent-identity.py run
+# <role> -- tools/release.sh <part> push`, which sets NAPPY_AGENT_ROLE for `agent_run` to read
+# back. Run bare, with NAPPY_AGENT_ROLE unset, it calls gh/git directly instead -- exactly what a
+# human running it by hand at their own terminal already got.
 set -uo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -93,7 +95,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
     exit 1
 fi
 
-git fetch origin main --quiet
+agent_run git fetch origin main --quiet
 TARGET_SHA="$(git rev-parse origin/main)"
 HEAD_SHA="$(git rev-parse HEAD)"
 if [[ "$HEAD_SHA" != "$TARGET_SHA" ]]; then
@@ -164,9 +166,9 @@ CHECK_WAIT_SECONDS=1800
 check_state() {
     command -v gh >/dev/null 2>&1 || { echo unavailable; return; }
     local repo state
-    repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)"
+    repo="$(agent_run gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)"
     [[ -n "$repo" ]] || { echo unavailable; return; }
-    state="$(gh api "repos/$repo/commits/$TARGET_SHA/check-runs" --jq '
+    state="$(agent_run gh api "repos/$repo/commits/$TARGET_SHA/check-runs" --jq '
         [.check_runs[] | select(.name == "test")] as $t
         | if ($t | length) == 0 then "none"
           elif ($t | any(.status == "completed" and

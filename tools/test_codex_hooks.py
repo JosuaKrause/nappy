@@ -355,6 +355,27 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(specific["permissionDecision"], "deny")
         self.assertIn("reviewers never push", specific["permissionDecisionReason"])
 
+    def test_github_write_guard_denies_a_gh_api_flag_before_the_endpoint(self) -> None:
+        # The High regression a review found in 88b660f9: a flag before the endpoint used to skip
+        # the guard entirely, since the scan started after skipping leading options.
+        output = self.call_raw(command="gh api -X PUT repos/o/r/pulls/1/merge")
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_github_write_guard_allows_a_graphql_query_but_denies_a_mutation(self) -> None:
+        text = self.call(tool="Bash", command="gh api graphql -f query=query{me{login}}")
+        self.assertIn("committing", text)
+        output = self.call_raw(command="gh api graphql -f query=mutation{resolveReviewThread(x:1){id}}")
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_github_write_guard_denies_a_reviewers_merge_too(self) -> None:
+        output = self.call_raw(command="uv run python tools/agent-identity.py run codex-reviewer -- gh pr merge 1")
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("never push or merge", specific["permissionDecisionReason"])
+
     def test_github_write_guard_runs_after_git_grep_guard_denies_first(self) -> None:
         # Both guards run in order; an unbounded git grep denies before github-write-guard.sh is
         # ever reached, so its reason -- not a GitHub-write one -- is what comes back.

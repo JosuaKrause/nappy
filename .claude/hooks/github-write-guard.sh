@@ -9,32 +9,50 @@
 # remembering it is not a rule -- this is the mechanical half, denying the direct call so the
 # wrapped one is the only one that works.
 #
-# A "write" is `git push`; a commit-making git verb (`commit` -- its authorship is exactly what
-# the wrapper sets -- `cherry-pick`, `revert`, `am` always, `merge`/`rebase` unless they carry
-# `--abort`/`--no-commit`/`--ff-only`, which make no commit of their own); any `gh` noun's verb
-# that is not on one short, shared read list (`view`, `list`, `status`, `diff`, `checks`,
-# `checkout`, `search`) -- every noun, not only `pr`/`issue`/`release`, so `gh workflow run`, `gh
-# run rerun`, `gh repo edit`, `gh label create`, `gh secret set`, `gh variable set`, `gh cache
-# delete` and `gh gist create` all write and are caught the same fail-safe way an unknown verb is;
-# `gh api` with a non-GET method or `-f`/`-F`/`--input`/`--raw-field`/`--field`, attached or not;
-# or one of the `tools/*.sh` scripts whose own body pushes or posts (`tools/release.sh`,
-# `tools/prune-merged.sh`, `tools/land-prs.sh`, `tools/update-pr.sh` -- found with `rg` for `git
-# push|git commit|gh pr |gh issue |gh release|gh api` over `tools/*.sh`; a script that only reads,
-# such as `tools/agent-status.sh`'s `gh pr view`, is not on this list), and only when its name is
-# in command position (the first word of a command, or right after `bash`/`sh`/`env`/`timeout`/
-# `xargs`/`nice`/`nohup`/`sudo`/`command`/`watch`) -- reading the file (`cat`, `sed`, `git log
-# --`/`diff --`/`show`, `rg`) never denies -- and, for `release.sh`, only with its own `push`
-# argument, for `land-prs.sh`/`update-pr.sh`, only without their own `--dry-run`.
-# Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
-# issue/release list/view`, `gh browse`, a GET `gh api`) stay unguarded.
+# **The bar this holds itself to: a guardrail, not a security boundary.** It stops an agent's
+# ordinary GitHub writes from going out as the player by mistake -- every shape an agent would
+# plausibly type is fixed. It does not chase a deliberately adversarial shape meant to evade it: a
+# path segment or endpoint named to look like `gh`/`git` on purpose, or a script setting
+# `NAPPY_AGENT_ROLE` itself to pick a different identity than the one it was actually run as, are
+# accepted gaps (see `docs/decisions/2026-09-27-tall-egret.md`), not bugs to close.
 #
-# **A reviewer identity (`claude-reviewer`, `codex-reviewer`) never pushes, wrapped or not.** Its
-# GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a required-approval
-# ruleset -- see `_REVIEWER_PERMISSIONS`'s own comment in `tools/agent-identity.py`), so GitHub
-# itself would let it push; this tool still refuses, on the theory that reviewing and coding stay
-# two identities even where GitHub's permission model would allow one to do both. So `git push` and
-# the pushing `tools/*.sh` scripts are denied even inside `run claude-reviewer --`/`run
-# codex-reviewer --`, with a message naming the coder identity to use instead.
+# A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
+# unless they carry `--abort`/`--quit`; `merge`/`rebase` unless `--abort`/`--no-commit`/
+# `--ff-only`; `pull` unless `--ff-only`, the only shape that cannot make a commit of its own);
+# any `gh` noun's verb that is not on one short, shared read list (`view`, `list`, `status`,
+# `diff`, `checks`, `checkout`, `watch`, `download`, `clone`, `token`) -- every noun, not only
+# `pr`/`issue`/`release`, so `gh workflow run`, `gh run rerun`, `gh repo edit`, `gh label create`,
+# `gh secret set`, `gh variable set`, `gh cache delete` and `gh gist create` all write and are
+# caught the same fail-safe way an unknown verb is (`gh browse` and `gh search` are read nouns
+# whole, with no verb of their own to check); `gh api` with a non-GET method or
+# `-f`/`-F`/`--input`/`--raw-field`/`--field`, attached or not, wherever the flag falls relative to
+# the endpoint -- a GraphQL call (`gh api graphql`) is a write only if the call contains the word
+# `mutation`, since a query-only call also goes through `-f` but reads; or one of the `tools/*.sh`
+# scripts whose own body pushes or posts (`tools/release.sh`, `tools/prune-merged.sh`,
+# `tools/land-prs.sh`, `tools/update-pr.sh` -- found with `rg` for `git push|git commit|gh pr |gh
+# issue |gh release|gh api` over `tools/*.sh`; a script that only reads, such as
+# `tools/agent-status.sh`'s `gh pr view`, is not on this list), and only when its name is in
+# command position (the first word of a command, past any `NAME=value` assignment or a wrapper
+# word's own options -- `bash`/`sh`/`env`/`timeout`/`xargs`/`nice`/`nohup`/`sudo`/`command`/`watch`,
+# `timeout` alone also taking one bare duration -- never where its name is merely a read's argument
+# (`cat`, `sed`, `git log --`/`diff --`/`show`, `rg`)), and, for `release.sh`, only with its own
+# `push` argument, for `land-prs.sh`/`update-pr.sh`, only without their own `--dry-run`.
+# Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
+# issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
+# search`, `gh browse`, a GET `gh api`, a GraphQL query with no `mutation`) stay unguarded.
+#
+# **A reviewer identity (`claude-reviewer`, `codex-reviewer`) never pushes or merges, wrapped or
+# not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a
+# required-approval ruleset, and so does resolving its own review threads -- see
+# `_REVIEWER_PERMISSIONS`'s own comment in `tools/agent-identity.py`), so GitHub itself would let
+# it push or merge; this tool still refuses, on the theory that reviewing and coding stay two
+# identities even where GitHub's permission model would allow one to do both. So `git push`, the
+# pushing `tools/*.sh` scripts, `gh pr merge`, `gh pr update-branch` and a `gh api` call whose
+# endpoint ends in `/merge` are all denied even inside `run claude-reviewer --`/`run
+# codex-reviewer --`, with a message naming the coder identity to use instead. A role this hook
+# does not recognise as a reviewer is not specially blocked here either way:
+# `tools/agent-identity.py` itself refuses to mint a token for a name outside its own `ROLE_NAMES`,
+# which is the actual enforcement for an unknown or misspelled role.
 #
 # The escape is `tools/agent-identity.py run <role> -- <command>`, with or without a `uv run
 # python` (or bare `python`/`python3`) in front, and with or without `run`'s own `--repo
@@ -97,32 +115,73 @@ def after_options($w; $i):
       if $w[.i] | takes_argument then .i += 2 else .i += 1 end)
   | .i;
 
+# A word shaped like a shell assignment (`FOO=1`, `NAPPY_AGENT_ROLE=x`) -- these precede a real
+# command without ending "command position" the way any other word would.
+def is_assignment: test("^[A-Za-z_][A-Za-z0-9_]*=");
+
+# Words that hand a command to something else to run, carrying "command position" forward past
+# themselves and their own options: `bash`/`sh` run a script file, `env`/`timeout`/`xargs`/`nice`/
+# `nohup`/`sudo`/`command`/`watch` run the word after their own options -- `timeout` alone also
+# takes one bare positional word (the duration) before its command, which `after_options` does not
+# skip on its own since it is not `-`-prefixed.
+def wrapper_words: ["bash", "sh", "env", "timeout", "xargs", "nice", "nohup", "sudo", "command", "watch"];
+def is_wrapper_word($x): (wrapper_words | index($x)) != null;
+
+# From index $i (already known to be in command position), the index of the real command word:
+# skips any run of assignments and wrapper words (with the wrapper's own options, and `timeout`'s
+# own duration argument), so `FOO=1 tools/release.sh`, `env FOO=1 tools/prune-merged.sh`, `timeout
+# 60 tools/land-prs.sh` and `bash -x tools/prune-merged.sh` all land on the script name, not on the
+# assignment, the option or the duration.
+def command_word($w; $i; $n):
+  {i: $i, go: true}
+  | until((.i >= $n) or (.go | not);
+      ($w[.i]) as $x
+      | if $x | is_assignment then .i += 1
+        elif is_wrapper_word($x) then
+          (after_options($w; .i + 1)) as $after
+          | .i = (if ($x | last_part) == "timeout" and $after < $n then $after + 1 else $after end)
+        else .go = false
+        end)
+  | .i;
+
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
-# user's own name -- commit, cherry-pick, revert and am always; merge and rebase only when they
-# are not the abort/no-op shape (`git merge --abort`/`--no-commit`/`--ff-only` and `git rebase
-# --abort` make no commit of their own; merging-main's own `--no-ff --no-commit` + a later `git
-# commit` is still covered, by that later `git commit`). Everything else (status, log, diff,
-# fetch, branch, ...) is a read or a local-only change.
-def commit_making_verbs: ["commit", "cherry-pick", "revert", "am"];
-def segment_has_any($w; $start; $n; $flags):
+# user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
+# abort-like or safe flag (`--abort`/`--quit` for cherry-pick/revert/am, `--abort`/`--no-commit`/
+# `--ff-only` for merge, `--abort` for rebase, `--ff-only` for pull, which is the only shape of
+# `git pull` that cannot make a commit of its own). Everything else (status, log, diff, fetch,
+# branch, ...) is a read or a local-only change.
+#
+# The scan for one of those flags returns where it stopped either way (the next separator, or the
+# end of the command), so the caller can skip past everything already read rather than re-checking
+# it one word at a time -- the fix for a quadratic blowup many `git merge x` calls glued with no
+# separator caused (800 repeats took 7.7s of the hook's 10s timeout before this fix).
+def segment_scan($w; $start; $n; $flags):
   {j: $start, found: false}
-  | until(.j >= $n or ($w[.j] | is_sep) or .found;
-      . as $s | .found = (($flags | index($w[$s.j])) != null) | .j += 1)
-  | .found;
+  | until(.j >= $n or ($w[.j] | is_sep);
+      . as $s | .found = (.found or (($flags | index($w[$s.j])) != null)) | .j += 1)
+  | {"end": .j, found: .found};
+
 def detect_git($w; $i; $n):
   if ($w[$i] | named("git")) | not then null
   else
     (after_options($w; $i + 1)) as $sub
-    | if $sub >= $n then null
+    | if ($sub >= $n) or ($w[$sub] | is_sep) then null
       else
         ($w[$sub]) as $subcmd
         | if $subcmd == "push" then {next: ($sub + 1), reason: "git push"}
-          elif commit_making_verbs | index($subcmd) then {next: ($sub + 1), reason: ("git " + $subcmd)}
+          elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
+          elif $subcmd | IN("cherry-pick", "revert", "am") then
+            (segment_scan($w; $sub + 1; $n; ["--abort", "--quit"])) as $sc
+            | {next: $sc.end, reason: (if $sc.found then null else ("git " + $subcmd) end)}
           elif $subcmd == "merge" then
-            if segment_has_any($w; $sub + 1; $n; ["--abort", "--no-commit", "--ff-only"])
-            then null else {next: ($sub + 1), reason: "git merge"} end
+            (segment_scan($w; $sub + 1; $n; ["--abort", "--no-commit", "--ff-only"])) as $sc
+            | {next: $sc.end, reason: (if $sc.found then null else "git merge" end)}
           elif $subcmd == "rebase" then
-            if segment_has_any($w; $sub + 1; $n; ["--abort"]) then null else {next: ($sub + 1), reason: "git rebase"} end
+            (segment_scan($w; $sub + 1; $n; ["--abort"])) as $sc
+            | {next: $sc.end, reason: (if $sc.found then null else "git rebase" end)}
+          elif $subcmd == "pull" then
+            (segment_scan($w; $sub + 1; $n; ["--ff-only"])) as $sc
+            | {next: $sc.end, reason: (if $sc.found then null else "git pull" end)}
           else null
           end
       end
@@ -131,68 +190,86 @@ def detect_git($w; $i; $n):
 # `gh api`'s own writes: an explicit non-GET method (`-X`/`--method`, attached or not, any case:
 # `-XPOST`, `-X=POST`, `--method=post`), or any of -f/-F/--input/--raw-field/--field (attached or
 # not: `-fk=v`, `--field=k=v`) -- which is what turns a call into a POST even with no `--method` at
-# all. The scan stops at the next `git`/`gh` word too, not only at a separator, so a run of many
-# `gh api ...` calls glued together with no separator between them (measured: 800 repeats took
-# 9.4s of the hook's 10s timeout before this bound existed) stays linear rather than quadratic --
-# the same reason `git-grep-guard.sh` bounds its own scan.
+# all, wherever the flag falls relative to the endpoint (`gh api -X PUT repos/o/r/pulls/1/merge`
+# is exactly how gh itself accepts it, and denying it needs the scan to start right after `api`,
+# not after skipping the flag the way a stray `after_options` before the call used to). A GraphQL
+# call (the endpoint is literally `graphql`) is a write only if some word in the call contains
+# `mutation` -- a query-only call also goes through `-f`, but reads.
+#
+# The scan runs to the next separator or the end of the command either way, win or lose, so the
+# caller can skip past everything already read: many `gh api ...` calls glued with no separator
+# used to make each one rescan the rest of the text (800 repeats took 9.4s of the hook's 10s
+# timeout before this fix), and a "stop early on the next git/gh word" patch that tried to bound it
+# wrongly stopped early on any endpoint or flag value merely ending in `/gh` or `/git` too.
 def detect_gh_api($w; $start; $n):
-  {i: $start, method: null, field: false}
-  | until(.i >= $n or ($w[.i] | is_sep) or ($w[.i] | named("gh")) or ($w[.i] | named("git"));
-      $w[.i] as $x
-      | if $x | IN("-X", "--method") then .method = ($w[.i + 1] // "") | .i += 2
-        elif $x | startswith("--method=") then .method = ($x | ltrimstr("--method=")) | .i += 1
-        elif $x | test("^(?i)-X=?.+") then .method = ($x | sub("^(?i)-X=?"; "")) | .i += 1
-        elif $x | IN("-f", "-F", "--input", "--raw-field", "--field") then .field = true | .i += 1
-        elif $x | test("^--(field|raw-field|input)=") then .field = true | .i += 1
-        elif $x | test("^-[fF].+") then .field = true | .i += 1
-        else .i += 1
-        end) as $r
-  | if (($r.method != null) and (($r.method | ascii_downcase) != "get")) or $r.field
-    then {next: $r.i, reason: "gh api"}
-    else null
+  {i: $start, method: null, field: false, endpoint: null, mutation: false}
+  | until(.i >= $n or ($w[.i] | is_sep);
+      . as $s
+      | ($w[$s.i]) as $x
+      | ($s.mutation or ($x | test("(?i)mutation"))) as $mut
+      | (if $x | IN("-X", "--method") then $s | .method = ($w[$s.i + 1] // "") | .i += 2
+         elif $x | startswith("--method=") then $s | .method = ($x | ltrimstr("--method=")) | .i += 1
+         elif $x | test("^(?i)-X=?.+") then $s | .method = ($x | sub("^(?i)-X=?"; "")) | .i += 1
+         elif $x | IN("-f", "-F", "--input", "--raw-field", "--field") then $s | .field = true | .i += 1
+         elif $x | test("^--(field|raw-field|input)=") then $s | .field = true | .i += 1
+         elif $x | test("^-[fF].+") then $s | .field = true | .i += 1
+         elif ($s.endpoint == null) and (($x | startswith("-")) | not) then $s | .endpoint = $x | .i += 1
+         else $s | .i += 1
+         end) as $next
+      | $next | .mutation = $mut) as $r
+  | (($r.endpoint // "") | test("(?i)(^|/)graphql$")) as $is_graphql
+  | if $is_graphql then
+      (if $r.mutation then {next: $r.i, reason: "gh api graphql mutation"} else {next: $r.i, reason: null} end)
+    else
+      (if (($r.method != null) and (($r.method | ascii_downcase) != "get")) or $r.field
+       then {next: $r.i, reason: (if ($r.endpoint // "" | test("(?i)/merge$")) then "gh api .../merge" else "gh api" end)}
+       else {next: $r.i, reason: null}
+       end)
     end;
 
-# Every `gh` noun writes unless its verb is on one short, shared list of reads: `view`, `list`,
-# `status`, `diff`, `checks`, `checkout` (`gh pr`'s own local-only checkout) and `search`. This is
-# the same fail-safe `gh issue`/`gh release` already used, generalised to the whole of `gh` --
-# `workflow run`, `run rerun`/`cancel`/`delete`, `repo edit`, `label create`, `secret set`,
-# `variable set`, `cache delete`, `gist create`, ... all write and are caught the same way a verb
-# this list has never heard of is: denied, not read as a pass. `gh browse` opens a local browser
-# with no GitHub write of its own and is never denied; `gh api` is `detect_gh_api`'s.
-def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "search"];
+# Every `gh` noun writes unless its verb is on one shared list of reads (`view`, `list`, `status`,
+# `diff`, `checks`, `checkout` -- `gh pr`'s own local-only checkout -- `watch`, `download`,
+# `clone`, `token`): every noun, not only `pr`/`issue`/`release`, so `gh workflow run`, `gh run
+# rerun`/`cancel`, `gh repo edit`, `gh label`/`secret`/`variable`/`cache`/`gist` writes all deny
+# too, the same fail-safe way a verb this list has never heard of does. `gh browse` and `gh
+# search` (a noun whose own verbs -- `prs`, `issues`, `repos`, `code`, `commits` -- are never on
+# the shared list) are read nouns whole, with no verb of their own to check; `gh api` is
+# `detect_gh_api`'s. A noun or verb position that lands on a separator or the end of the command
+# (`gh status | head`, `gh --version && gh auth status`) has no noun/verb there at all, not the
+# separator itself, so it never becomes part of a denial reason.
+def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "watch", "download", "clone", "token"];
+def read_only_nouns: ["browse", "search"];
 def detect_gh($w; $i; $n):
   if ($w[$i] | named("gh")) | not then null
   else
     (after_options($w; $i + 1)) as $noun_i
-    | if $noun_i >= $n then null
+    | if ($noun_i >= $n) or ($w[$noun_i] | is_sep) then null
       else
         ($w[$noun_i]) as $noun
-        | if $noun == "browse" then null
-          elif $noun == "api" then detect_gh_api($w; (after_options($w; $noun_i + 1)); $n)
+        | if read_only_nouns | index($noun) then null
+          elif $noun == "api" then detect_gh_api($w; $noun_i + 1; $n)
           else
             (after_options($w; $noun_i + 1)) as $verb_i
-            | ($w[$verb_i]) as $verb
-            | if $verb == null then null
-              elif $verb | ascii_downcase | IN(generic_reads[]) then null
-              else {next: ($verb_i + 1), reason: ("gh " + $noun + " " + $verb)}
+            | if ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
+              else
+                ($w[$verb_i]) as $verb
+                | if $verb | ascii_downcase | IN(generic_reads[]) then null
+                  else {next: ($verb_i + 1), reason: ("gh " + $noun + " " + $verb)}
+                  end
               end
           end
       end
   end;
 
-# Words that hand a command to something else to run, carrying "command position" forward to the
-# word right after them: `bash`/`sh` run a script file, `env`/`timeout`/`xargs`/`nice`/`nohup`/
-# `sudo`/`command`/`watch` run the word after their own options.
-def wrapper_words: ["bash", "sh", "env", "timeout", "xargs", "nice", "nohup", "sudo", "command", "watch"];
-
 # A `tools/*.sh` entry point whose own body pushes or posts without saying so in the words this
 # hook can see (see the header's own list and how it was found) -- guarded only in command
-# position (the first word of a command, or right after one of `wrapper_words`), never where its
-# name is merely a read's argument (`cat tools/release.sh`, `git log -- tools/land-prs.sh`, `git
-# show HEAD:tools/release.sh`, `rg ... tools/update-pr.sh`). `release.sh` only tags and pushes when
-# its own second positional argument is literally `push` (see its usage); `land-prs.sh` and
-# `update-pr.sh` both skip every GitHub write under `--dry-run`; `prune-merged.sh` has no dry-run
-# shape and is a write whenever it runs at all.
+# position (`command_word` above: the first word of a command, past any assignment or wrapper
+# word, or right after that literal `--`), never where its name is merely a read's argument (`cat
+# tools/release.sh`, `git log -- tools/land-prs.sh`, `git show HEAD:tools/release.sh`, `rg ...
+# tools/update-pr.sh`). `release.sh` only tags and pushes when its own second positional argument
+# is literally `push` (see its usage); `land-prs.sh` and `update-pr.sh` both skip every GitHub
+# write under `--dry-run`; `prune-merged.sh` has no dry-run shape and is a write whenever it runs
+# at all.
 def write_tool_names: ["release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"];
 def script_is_write($w; $base; $start; $n):
   ({j: $start, push: false, dry: false}
@@ -218,7 +295,7 @@ def detect_tool($w; $i; $n; $cmd_pos):
 # `tools/agent-identity.py run [--repo OWNER/REPO] <role> -- ...`, with or without a `uv run
 # python`/`python3` in front (irrelevant here -- only the three words right after `run` matter):
 # the role and the index right after that literal `--`, everything from which is the wrapped
-# command and exempt (a reviewer role's own push aside -- see reviewer_may_push below).
+# command and exempt (a reviewer role's own push or merge aside -- see reviewer_roles below).
 def detect_wrapper($w; $i; $n):
   if ($w[$i] | named("agent-identity.py")) and ($w[$i + 1] == "run") then
     (after_options($w; $i + 2)) as $role_i
@@ -226,43 +303,53 @@ def detect_wrapper($w; $i; $n):
   else null
   end;
 
-# A reviewer identity never pushes through this tool, whatever GitHub's own permission allows
-# (contents:write, since a reviewer's APPROVE needs it -- see _REVIEWER_PERMISSIONS's own
-# comment): a coder identity is the one that pushes. Reviewer roles are named, not pattern-matched
-# on "-reviewer", so a role this list does not know fails safe (denied like an unwrapped write).
+# A reviewer identity never pushes or merges through this tool, whatever GitHub's own permission
+# allows (contents:write, since a reviewer's APPROVE needs it -- see _REVIEWER_PERMISSIONS's own
+# comment): a coder identity is the one that pushes and merges. Reviewer roles are named, not
+# pattern-matched on "-reviewer": a role this list does not know (a typo, a role the brief never
+# named) is not specially blocked here -- `tools/agent-identity.py` itself refuses to mint a token
+# for a name outside its own ROLE_NAMES, which is the actual enforcement for an unknown role, not
+# this check.
 def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
 def is_push_like($reason): ($reason == "git push") or ($reason | startswith("tools/"));
+def is_merge_like($reason):
+  ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason | endswith("/merge"));
 
-# One pass over the word array: a separator resets the current command's exemption; the wrapper
-# pattern sets where its own command's exemption starts (and which role it names); anything else
-# is checked against the three detectors, and a hit before the exemption (or with none active) is
-# a finding -- as is a push-like hit inside a reviewer's own wrapper.
+# One pass over the word array: a separator resets the current command's exemption and recomputes
+# command position for the next word (`command_word`, from right after the separator); the wrapper
+# pattern sets where its own command's exemption starts (and which role it names), and recomputes
+# command position for the wrapped command the same way; anything else is checked against the
+# three detectors, and a hit before the exemption (or with none active) is a finding -- as is a
+# push- or merge-like hit inside a reviewer's own wrapper. A hit with no reason (a gh api/git
+# command read as safe) is not a finding, but its own `next` still lets the pass skip everything
+# it already scanned.
 def findings($w):
   ($w | length) as $n
-  | {i: 0, wrap_from: null, wrap_role: null, cmd_pos: true, out: [], reviewer_push: false}
+  | {i: 0, wrap_from: null, wrap_role: null, cmd_word_index: (command_word($w; 0; $n)), out: [], reviewer_push: false}
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
       | (detect_wrapper($w; $state.i; $n)) as $wrap
-      | (if $x | is_sep then true
-         elif ($state.i + 1) == $state.wrap_from then true
-         elif $state.cmd_pos and ((wrapper_words | index($x | last_part)) != null) then true
-         else false end) as $next_cmd_pos
-      | if $x | is_sep then $state | .wrap_from = null | .wrap_role = null | .cmd_pos = $next_cmd_pos | .i += 1
+      | ($state.i == $state.cmd_word_index) as $cmd_pos
+      | if $x | is_sep then
+          $state | .wrap_from = null | .wrap_role = null
+          | .cmd_word_index = (command_word($w; $state.i + 1; $n)) | .i += 1
         elif $wrap != null then
-          $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role | .cmd_pos = $next_cmd_pos | .i += 1
+          $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role
+          | .cmd_word_index = (command_word($w; $wrap.next; $n)) | .i += 1
         else
           (detect_git($w; $state.i; $n) // detect_gh($w; $state.i; $n)
-           // detect_tool($w; $state.i; $n; $state.cmd_pos)) as $hit
-          | if $hit == null then $state | .cmd_pos = $next_cmd_pos | .i += 1
+           // detect_tool($w; $state.i; $n; $cmd_pos)) as $hit
+          | if $hit == null then $state | .i += 1
+            elif $hit.reason == null then $state | .i = $hit.next
             else
               ($state
                | if (.wrap_from != null) and ($state.i >= .wrap_from) then
-                   (if (is_push_like($hit.reason)) and ((reviewer_roles | index($state.wrap_role)) != null)
+                   (if (is_push_like($hit.reason) or is_merge_like($hit.reason))
+                       and ((reviewer_roles | index($state.wrap_role)) != null)
                     then .out += [$hit.reason] | .reviewer_push = true
                     else . end)
                  else .out += [$hit.reason] end
-               | .cmd_pos = $next_cmd_pos
                | .i = $hit.next)
             end
         end)
@@ -277,6 +364,7 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   | (findings($w)) as $result
   | if ($result.out | length) == 0 then empty else $result end
 end
+
 JQ
 
 command -v jq >/dev/null 2>&1 || exit 0
@@ -292,17 +380,21 @@ fi
 
 if [ "$reviewer_push" = "true" ]; then
 	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
-but reviewers never push -- only a coder identity does. Wrap it in \
+but reviewers never push or merge -- only a coder identity does. Wrap it in \
 'uv run python tools/agent-identity.py run claude-coder -- <command>' (or codex-coder) instead. \
 See committing and pr-review."
 else
-	reason="This command writes to GitHub ($flagged) outside any agent identity. Every git push, git \
-commit, GitHub-writing gh pr/issue/release/api call, and pushing/posting tools/ script runs \
-through 'uv run python tools/agent-identity.py run <role> -- <command>' instead -- claude-coder or \
-claude-reviewer in Claude Code, codex-coder or codex-reviewer in Codex -- never directly. Check \
-first with 'uv run python tools/agent-identity.py status <role>'; if it reports the role not \
-usable, stop and tell the player rather than running this directly. See committing and pr-review, \
-and .claude/hooks/github-write-guard.sh for what counts as a write."
+	reason="This command writes to GitHub ($flagged) outside any agent identity. A write is a git \
+push; a commit-making git verb (commit, cherry-pick/revert/am, merge/rebase past --abort, pull \
+past --ff-only); any gh noun's write verb (every noun, not only pr/issue/release), gh api with a \
+non-GET method/field or a GraphQL mutation; or a pushing/posting tools/ script in command \
+position. It runs through 'uv run python tools/agent-identity.py run <role> -- <command>' instead \
+-- claude-coder or claude-reviewer in Claude Code, codex-coder or codex-reviewer in Codex -- never \
+directly. Check first with 'uv run python tools/agent-identity.py status <role>'; if it reports \
+the role not usable, stop and tell the player rather than running this directly. An admin action \
+no bot identity can make (a repository ruleset, a GitHub App's own permissions) is the player's to \
+do directly in GitHub's own settings, never something to wrap and retry. See committing and \
+pr-review, and .claude/hooks/github-write-guard.sh for the current list of what counts as a write."
 fi
 
 jq -n --arg reason "$reason" '{

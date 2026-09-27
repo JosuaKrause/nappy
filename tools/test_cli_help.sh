@@ -626,7 +626,7 @@ git init -q --bare -b main "$guard_origin"
 git init -q -b main "$guard_repo"
 guard_git() { git -C "$guard_repo" -c user.name=t -c user.email=t@example.com "$@"; }
 mkdir -p "$guard_repo/tools" "$guard_repo/docs"
-cp "$root/tools/update-pr.sh" "$root/tools/lib_old_queue.sh" "$guard_repo/tools/"
+cp "$root/tools/update-pr.sh" "$root/tools/lib_old_queue.sh" "$root/tools/lib_agent_role.sh" "$guard_repo/tools/"
 printf '# Decisions\n\n## M1 — Old record\n\nText.\n' > "$guard_repo/docs/DECISIONS.md"
 printf '# TODO\n\n## The order\n' > "$guard_repo/docs/TODO.md"
 printf '# Review\n\nWhat waits.\n\n- **Look at it.**\n' > "$guard_repo/docs/REVIEW.md"

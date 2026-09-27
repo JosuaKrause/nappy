@@ -38,26 +38,35 @@
 #   - 31 KB of the densest text, ending in a git grep only the third reading sees, is read in
 #     full in under half the hook's 10-second timeout, and a command over
 #     32 KB holding both words is denied at once without being read
-#   - github-write-guard.sh denies an unwrapped git push and every commit-making git verb (commit,
-#     cherry-pick, revert, am, and merge/rebase unless they carry --abort/--no-commit/--ff-only),
-#     any gh noun's verb unless it is on the shared read list (view, list, status, diff, checks,
-#     checkout, search) -- gh pr's own former write list, gh issue/release's own fail-safe, and
-#     now every other noun too (workflow run, run rerun/cancel, repo edit, label/secret/variable/
-#     cache/gist writes) -- a gh api call with a non-GET method or -f/-F/--input (attached or not:
-#     --field=, --raw-field=, --input=, -XPOST, -X=POST, a lowercase method), and a tools/ script
-#     that pushes or posts internally (release.sh only with its own push argument, land-prs.sh and
-#     update-pr.sh only without their own --dry-run, prune-merged.sh always) in command position
-#     only -- never where its name is merely a read's argument (cat, sed, git log/diff/show --,
-#     rg); each as a real invocation and as a mention (an echo, a commit message) alike. A flag
-#     between a gh noun and its own verb (gh pr -R O/R merge, gh pr --repo O/R comment) does not
-#     skip the check. A read (git status/log/fetch/diff, gh pr view/list/checks/diff/status/
-#     checkout, gh issue/release list/view, gh browse, a GET gh api) allows, and so does the same
-#     write wrapped in tools/agent-identity.py run <role> -- ..., with or without uv run python in
-#     front and with or without run's own --repo before the role -- but only a write inside that
-#     wrapper's own -- ... span, never one before it or on a different ;/&/|/newline-separated
-#     command, and never a git push or a pushing tools/ script when the wrapping role is a
-#     reviewer (claude-reviewer/codex-reviewer): reviewers never push, whatever GitHub's own
-#     contents:write permission allows -- only a coder identity does
+#   - github-write-guard.sh denies an unwrapped git push and every commit-making git verb (commit;
+#     cherry-pick/revert/am unless --abort/--quit; merge/rebase unless --abort/--no-commit/
+#     --ff-only; pull unless --ff-only), any gh noun's verb unless it is on the shared read list
+#     (view, list, status, diff, checks, checkout, watch, download, clone, token) -- every noun,
+#     not only pr/issue/release (workflow run, run rerun/cancel, repo edit, label/secret/variable/
+#     cache/gist writes all deny too; browse and search are read nouns whole) -- a gh api call with
+#     a non-GET method or -f/-F/--input (attached or not, wherever the flag falls relative to the
+#     endpoint: --field=, --raw-field=, --input=, -XPOST, -X=POST, a lowercase method, a flag
+#     before the endpoint the way gh itself accepts it) or a GraphQL mutation (a query-only
+#     GraphQL call reads even through -f), and a tools/ script that pushes or posts internally
+#     (release.sh only with its own push argument, land-prs.sh and update-pr.sh only without their
+#     own --dry-run, prune-merged.sh always) in command position only -- past an assignment or a
+#     wrapper word's own options/duration, never where its name is merely a read's argument (cat,
+#     sed, git log/diff/show --, rg); each as a real invocation and as a mention (an echo, a commit
+#     message) alike. A flag between a gh noun and its own verb (gh pr -R O/R merge, gh pr --repo
+#     O/R comment) does not skip the check, and neither does a noun/verb landing on a separator
+#     (gh status | head) or an endpoint/value merely ending in /gh or /git. A read (git status/
+#     log/fetch/diff, gh pr view/list/checks/diff/status/checkout, gh issue/release list/view, gh
+#     search, gh browse, a GET gh api, a GraphQL query with no mutation) allows, and so does the
+#     same write wrapped in tools/agent-identity.py run <role> -- ..., with or without uv run
+#     python in front and with or without run's own --repo before the role -- but only a write
+#     inside that wrapper's own -- ... span, never one before it or on a different
+#     ;/&/|/newline-separated command, and never a git push, a pushing tools/ script or a
+#     merge-type gh write (gh pr merge/update-branch, a gh api endpoint ending in /merge) when the
+#     wrapping role is a reviewer (claude-reviewer/codex-reviewer): reviewers never push or merge,
+#     whatever GitHub's own contents:write permission allows -- only a coder identity does. Every
+#     scan (gh api's, a git verb's abort-flag check) runs to the next separator or the end of the
+#     command either way, so many such calls glued with no separator between them stay linear
+#     rather than quadratic.
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -1007,6 +1016,92 @@ if [ $((SECONDS - dense_gh_start)) -lt 5 ]; then
 else
     fail "400 glued gh api calls took $((SECONDS - dense_gh_start)) seconds, past half the hook's 10-second timeout"
 fi
+
+# A review of 8021ba74 found a High regression in 88b660f9: a gh api flag before the endpoint
+# (exactly how gh itself accepts -X/--method/-f/-F/--input) skipped the guard entirely, since the
+# scan started after skipping leading options instead of right after "api". It also found the
+# "stop early on the next git/gh word" fix for the quadratic scan wrongly stopped early on any
+# endpoint or flag value merely ending in /gh or /git.
+assert_write_guard "gh api -X PUT .../merge, flag before the endpoint -> deny (the regression)" deny \
+    'gh api -X PUT repos/o/r/pulls/1/merge'
+assert_write_guard "gh api --method=PUT .../merge, flag before the endpoint -> deny" deny \
+    'gh api --method=PUT repos/o/r/pulls/1/merge'
+assert_write_guard "gh api -XPUT .../merge, attached flag before the endpoint -> deny" deny \
+    'gh api -XPUT repos/o/r/pulls/1/merge'
+assert_write_guard "gh api --method DELETE, flag before the endpoint -> deny" deny \
+    'gh api --method DELETE repos/o/r/git/refs/heads/foo'
+assert_write_guard "gh api -f before the endpoint -> deny" deny \
+    'gh api -f body=hi repos/o/r/issues/1/comments'
+assert_write_guard "gh api --input before the endpoint -> deny" deny \
+    'gh api --input review.json repos/o/r/pulls/1/reviews'
+assert_write_guard "gh api --paginate -X DELETE, another flag before the write flag -> deny" deny \
+    'gh api --paginate -X DELETE repos/o/r/x'
+assert_write_guard "an endpoint ending in /gh does not stop the scan early -> deny" deny \
+    'gh api repos/o/r/pulls/1/merge --jq x/gh -X PUT'
+assert_write_guard "a branch literally named gh does not stop the scan early -> deny" deny \
+    'gh api repos/o/r/git/refs/heads/gh -X DELETE'
+
+# Reads the read list wrongly denied.
+assert_write_guard "gh search prs, search is a read noun with no verb of its own -> allow" allow \
+    'gh search prs --repo x foo'
+assert_write_guard "gh search issues -> allow" allow 'gh search issues foo'
+assert_write_guard "gh run watch -> allow" allow 'gh run watch 123'
+assert_write_guard "gh run download -> allow" allow 'gh run download 1'
+assert_write_guard "gh release download -> allow" allow 'gh release download v1'
+assert_write_guard "gh repo clone -> allow" allow 'gh repo clone o/r'
+assert_write_guard "gh auth token -> allow" allow 'gh auth token'
+assert_write_guard "a GraphQL query (no mutation) -> allow, even though -f makes it a POST" allow \
+    "gh api graphql -f query=query{me{login}}"
+assert_write_guard "a GraphQL mutation -> deny" deny \
+    "gh api graphql -f query=mutation{resolveReviewThread(x:1){clientMutationId}}"
+assert_write_guard "gh status | head, a noun with no verb before a separator -> allow" allow \
+    'gh status | head'
+assert_write_guard "gh --version && gh auth status -> allow, not the garbled (gh & &) reason" allow \
+    'gh --version && gh auth status'
+
+# git verbs: aborts pass, git pull is guarded, and the quadratic cost that moved to git merge/
+# rebase detection is fixed the same way the gh api one is.
+assert_write_guard "git cherry-pick --abort -> allow" allow 'git cherry-pick --abort'
+assert_write_guard "git revert --abort -> allow" allow 'git revert --abort'
+assert_write_guard "git am --abort -> allow" allow 'git am --abort'
+assert_write_guard "git cherry-pick --quit -> allow" allow 'git cherry-pick --quit'
+assert_write_guard "git pull, can make a merge commit -> deny" deny 'git pull'
+assert_write_guard "git pull origin main -> deny" deny 'git pull origin main'
+assert_write_guard "git pull --rebase, rewrites the player as committer -> deny" deny 'git pull --rebase'
+assert_write_guard "git pull --ff-only -> allow, the only shape with no commit of its own" allow \
+    'git pull --ff-only'
+dense_merge="$(for _ in $(seq 1 800); do printf 'git merge x '; done)"
+dense_merge_start=$SECONDS
+assert_write_guard "800 glued git merge calls -> deny, decided quickly" deny "$dense_merge"
+checks=$((checks + 1))
+if [ $((SECONDS - dense_merge_start)) -lt 5 ]; then
+    echo "ok   800 glued git merge calls are decided in under 5 seconds"
+else
+    fail "800 glued git merge calls took $((SECONDS - dense_merge_start)) seconds, past half the hook's 10-second timeout"
+fi
+
+# Command position missed an assignment before the script, and a wrapper word's own option or
+# positional argument (timeout's own duration).
+assert_write_guard "FOO=1 tools/release.sh patch push -> deny" deny 'FOO=1 tools/release.sh patch push'
+assert_write_guard "env FOO=1 tools/prune-merged.sh -> deny" deny 'env FOO=1 tools/prune-merged.sh mybranch'
+assert_write_guard "timeout 60 tools/land-prs.sh -> deny, past timeout's own duration" deny \
+    'timeout 60 tools/land-prs.sh 1'
+assert_write_guard "bash -x tools/prune-merged.sh -> deny, past bash's own option" deny \
+    'bash -x tools/prune-merged.sh mybranch'
+assert_write_guard "an assignment inside a real wrapper still allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- env FOO=1 tools/release.sh patch push'
+
+# A reviewer is refused a merge-type write too, not only a push.
+assert_write_guard "wrapped gh pr merge as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh pr merge 1'
+assert_write_guard "wrapped gh pr update-branch as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh pr update-branch 1'
+assert_write_guard "wrapped gh api .../merge as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X PUT repos/o/r/pulls/1/merge'
+assert_write_guard "wrapped gh pr comment as claude-reviewer still allows (not merge-like)" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh pr comment 1 --body hi'
+assert_write_guard "wrapped gh pr merge as claude-coder still allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr merge 1'
 
 echo
 echo "$checks checks, $failures failures"

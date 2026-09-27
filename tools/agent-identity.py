@@ -120,10 +120,13 @@ _CODER_PERMISSIONS: dict[str, str] = {
 _REVIEWER_PERMISSIONS: dict[str, str] = {
     # contents is write, not read: a live probe (throwaway PR #392, a temporary ruleset requiring
     # one approval) found a reviewer app's own APPROVE left the PR REVIEW_REQUIRED/BLOCKED under
-    # contents:read, and the app was refused resolveReviewThread (FORBIDDEN) either way; contents:write
-    # made the APPROVE satisfy the ruleset. The write guard (.claude/hooks/github-write-guard.sh)
-    # still refuses a git push, or one of the tools/ scripts that pushes, when the wrapping role is
-    # a reviewer -- reviewers never push through this tool, whatever the GitHub permission allows.
+    # contents:read, and the app was refused resolveReviewThread (FORBIDDEN) under that same
+    # permission; contents:write made the APPROVE satisfy the ruleset, and with it a reviewer also
+    # resolves its own review threads (verified live). The write guard
+    # (.claude/hooks/github-write-guard.sh) still refuses a git push, one of the tools/ scripts that
+    # pushes, or a merge-type write (gh pr merge/update-branch, a gh api endpoint ending in /merge)
+    # when the wrapping role is a reviewer -- reviewers never push or merge through this tool,
+    # whatever the GitHub permission allows.
     "contents": "write",
     "pull_requests": "write",
     "issues": "write",
@@ -636,6 +639,15 @@ def git_https_auth_config(token: str, base_env: Mapping[str, str]) -> dict[str, 
     carries the installation token as a Basic `Authorization` header (the same header curl sends
     for `x-access-token:<token>`, base64-encoded) -- so nothing writes the token into a URL git
     might echo in a log or an error, and nothing touches a git config file on disk.
+
+    An empty `http.<base>.extraheader` entry is written immediately before the real one, every
+    time, because git *accumulates* same-named `http.extraHeader` values rather than replacing
+    them: a nested `run` (a script minting its own fresh token while it is itself running inside an
+    outer `run`) would otherwise send the outer, possibly-stale token's header *and* the inner,
+    fresh one on the same request -- measured against a header-logging server as two
+    `Authorization` values arriving in one request. Git documents the empty-value entry as
+    resetting the accumulated list, so this leaves exactly the fresh header, whether or not a
+    caller's `base_env` carried one already.
     """
     try:
         start = int(base_env.get("GIT_CONFIG_COUNT", "0"))
@@ -645,6 +657,7 @@ def git_https_auth_config(token: str, base_env: Mapping[str, str]) -> dict[str, 
     entries = [
         ("url.https://github.com/.insteadOf", "git@github.com:"),
         ("url.https://github.com/.insteadOf", "ssh://git@github.com/"),
+        ("http.https://github.com/.extraheader", ""),
         ("http.https://github.com/.extraheader", f"AUTHORIZATION: basic {basic}"),
     ]
     config: dict[str, str] = {"GIT_CONFIG_COUNT": str(start + len(entries))}

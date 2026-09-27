@@ -42,13 +42,16 @@
 # tools/prune-merged.sh owns its own push, HTTPS fallback included -- so there is no push path here
 # to give one.
 #
-# Every gh pr merge is a GitHub write and mints its own fresh token through the caller's own agent
-# identity (tools/lib_agent_role.sh's `agent_run`), rather than relying on the one token this
-# script itself may have been wrapped in: a single installation token lives one hour, this script
-# defaults to 90 minutes per PR and can take a list, so a run past the hour must not have its later
-# merges or tools/prune-merged.sh's own branch delete fail with an expired token. Run this script
-# itself through `uv run python tools/agent-identity.py run <role> -- tools/land-prs.sh ...`, which
-# sets NAPPY_AGENT_ROLE for `agent_run` to read back; it refuses to merge with that unset.
+# Every GitHub call -- the wait loop's own gh pr view/gh pr checks, git fetch/git pull, and every
+# gh pr merge -- mints its own fresh token through the caller's own agent identity
+# (tools/lib_agent_role.sh's `agent_run`), rather than relying on the one token this script itself
+# may have been wrapped in: a single installation token lives one hour, this script defaults to 90
+# minutes per PR and can take a list, so a run past the hour must not have its later reads 401 or
+# its later merges and tools/prune-merged.sh's own branch delete fail with an expired token. Run
+# this script itself through `uv run python tools/agent-identity.py run <role> --
+# tools/land-prs.sh ...`, which sets NAPPY_AGENT_ROLE for `agent_run` to read back. Run bare, with
+# NAPPY_AGENT_ROLE unset, it calls gh/git directly instead -- exactly what a human running it by
+# hand at their own terminal already got.
 #
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
@@ -167,7 +170,7 @@ stop() {
 stop_with_auto_merge_off() {
     local n="$1" msg="$2" off
     agent_run gh pr merge "$n" --disable-auto >/dev/null 2>&1 || true
-    if off="$(gh pr view "$n" --json autoMergeRequest -q '.autoMergeRequest == null' 2>/dev/null)" \
+    if off="$(agent_run gh pr view "$n" --json autoMergeRequest -q '.autoMergeRequest == null' 2>/dev/null)" \
             && [[ "$off" == true ]]; then
         stop "$msg -- auto-merge is off; have any change to it reviewed (pr-review) before landing it again"
     fi
@@ -202,7 +205,7 @@ source "$root/tools/lib_old_queue.sh"
 # Fetches main and the PR's head into a ref of its own, removed again afterwards.
 pr_old_queue_edits() {
     local n="$1" ref="refs/land-prs/pr-$1" out=""
-    if git fetch --quiet origin main "+refs/pull/$n/head:$ref" 2>/dev/null; then
+    if agent_run git fetch --quiet origin main "+refs/pull/$n/head:$ref" 2>/dev/null; then
         out="$(old_queue_edits "$ref" "refs/remotes/origin/main")"
         git update-ref -d "$ref"
     else
@@ -219,7 +222,7 @@ pr_field() { jq -r ".$2" <<<"$1"; }
 # the header comment for why this is every check rather than gh pr checks --required.
 red_checks() {
     local n="$1" checks_json
-    checks_json="$(gh pr checks "$n" --json name,state,bucket,link 2>/dev/null)"
+    checks_json="$(agent_run gh pr checks "$n" --json name,state,bucket,link 2>/dev/null)"
     [[ -z "$checks_json" || "$checks_json" == "null" ]] && return 0
     jq -r '.[] | select(.bucket == "fail" or .bucket == "cancel") | "\(.name)  \(.link)"' <<<"$checks_json"
 }
@@ -230,7 +233,7 @@ if [[ "$dry_run" -eq 1 ]]; then
     for n in "${prs[@]}"; do
         echo
         echo "== PR #$n =="
-        if ! pr_json="$(gh pr view "$n" --json state,mergeable,mergeStateStatus,url,headRefName,title 2>&1)"; then
+        if ! pr_json="$(agent_run gh pr view "$n" --json state,mergeable,mergeStateStatus,url,headRefName,title 2>&1)"; then
             echo "  gh pr view $n failed: $pr_json" >&2
             continue
         fi
@@ -266,7 +269,7 @@ echo "plan: land ${#prs[@]} PR(s) in this order: ${prs[*]}"
 for n in "${prs[@]}"; do
     echo
     echo "== PR #$n =="
-    pr_json="$(gh pr view "$n" --json state,mergeable,mergeStateStatus,url,headRefName 2>&1)" \
+    pr_json="$(agent_run gh pr view "$n" --json state,mergeable,mergeStateStatus,url,headRefName 2>&1)" \
         || refuse "gh pr view $n failed: $pr_json"
     state="$(pr_field "$pr_json" state)"
     url="$(pr_field "$pr_json" url)"
@@ -313,7 +316,7 @@ for n in "${prs[@]}"; do
             stop_with_auto_merge_off "$n" "PR #$n: timed out after ${timeout_min}m waiting for it to merge"
         fi
 
-        pr_json="$(gh pr view "$n" --json state,mergeable,url 2>&1)" \
+        pr_json="$(agent_run gh pr view "$n" --json state,mergeable,url 2>&1)" \
             || refuse "PR #$n: gh pr view failed: $pr_json"
         state="$(pr_field "$pr_json" state)"
         mergeable="$(pr_field "$pr_json" mergeable)"
@@ -341,10 +344,10 @@ $failing"
     done
 
     echo "fast-forwarding main"
-    git pull --ff-only origin main \
+    agent_run git pull --ff-only origin main \
         || refuse "git pull --ff-only failed after PR #$n merged -- resolve main by hand before continuing"
 
-    branch="$(gh pr view "$n" --json headRefName -q .headRefName 2>/dev/null)"
+    branch="$(agent_run gh pr view "$n" --json headRefName -q .headRefName 2>/dev/null)"
     if [[ -n "$branch" ]]; then
         if ! ./tools/prune-merged.sh "$branch"; then
             echo "warning: tools/prune-merged.sh $branch reported a problem (see output above) -- PR #$n is merged; cleanup is incomplete, continuing to the next PR" >&2
@@ -358,7 +361,7 @@ echo
 echo "main's own CI run on the last merge is the check that these PRs are not wrong together --" \
     "a semantic conflict between two that touch different files passes each one's own gate and" \
     "only shows up there. Watch it."
-run_url="$(gh run list --branch main --limit 1 --json url -q '.[0].url' 2>/dev/null)"
+run_url="$(agent_run gh run list --branch main --limit 1 --json url -q '.[0].url' 2>/dev/null)"
 if [[ -n "$run_url" ]]; then
     echo "  $run_url"
 fi

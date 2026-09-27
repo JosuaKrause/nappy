@@ -19,8 +19,10 @@
 # review list are one file per thing, so two pull requests adding to them no longer meet in one
 # file; a branch still on the old single files is converted with tools/convert-queue-edits.py. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
 # `./tools/check.sh` (every one of the three has to pass), commits a message naming the three
-# revisions and the resolution, and pushes to the branch's own remote — over SSH first, falling
-# back to HTTPS through gh's own credential helper when SSH is refused.
+# revisions and the resolution, and pushes to the branch's own remote — attempted first over
+# `origin`'s own configured transport (HTTPS too, under `run`'s own token, once `insteadOf`
+# rewrites the SSH form), falling back to HTTPS through gh's own credential helper if that attempt
+# is refused.
 #
 # It never touches the pull request itself: no `gh pr merge`, no enabling auto-merge. The semantic
 # review of the merge — whether the result actually reconciles both sides' intent, per the
@@ -34,14 +36,18 @@
 # reason and exits non-zero.
 #
 # UPDATE_PR_CLAUDE=1 appends the repository's Claude co-author trailer to the commit message.
-# Unset (the default) leaves it off, since a human running this script by hand should not sign
-# the commit as Claude.
+# Unset (the default) leaves it off, since it names a specific assistant and this script's own
+# commit and push already carry whichever identity ran it (the player's own, or an agent's under
+# `run` -- see below).
 #
-# The commit and each push attempt are GitHub writes and mint their own fresh installation token
-# through the caller's own agent identity (tools/lib_agent_role.sh's `agent_run`): run this script
-# itself through `uv run python tools/agent-identity.py run <role> -- tools/update-pr.sh ...`,
-# which sets NAPPY_AGENT_ROLE for `agent_run` to read back; it refuses to commit or push with that
-# unset. `--dry-run` never reaches either and needs no wrapper.
+# **Running this by hand at your own terminal is fine, and unwrapped.** Every GitHub call (the
+# origin fetch, the PR-to-branch lookup, the commit, each push attempt) runs through the caller's
+# own agent identity when one is set (tools/lib_agent_role.sh's `agent_run`, minting each one a
+# fresh token): run this script itself through `uv run python tools/agent-identity.py run <role> --
+# tools/update-pr.sh ...`, which sets NAPPY_AGENT_ROLE for `agent_run` to read back. With that
+# unset -- a human running it directly, not through an agent's own wrapped call -- `agent_run`
+# calls gh/git directly instead, exactly as this script always did. `--dry-run` never reaches a
+# write and needs no wrapper either way.
 #
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
@@ -132,12 +138,12 @@ worktree_of() {
 }
 
 echo "fetching $remote ..."
-git fetch --quiet "$remote" || refuse "git fetch $remote failed"
+agent_run git fetch --quiet "$remote" || refuse "git fetch $remote failed"
 
 # ---- resolve the target to a branch name --------------------------------------------------
 if [[ "$target" =~ ^[0-9]+$ ]]; then
     command -v gh >/dev/null 2>&1 || refuse "gh is required to resolve PR #$target to a branch name"
-    branch="$(gh pr view "$target" --json headRefName -q .headRefName 2>/dev/null)" \
+    branch="$(agent_run gh pr view "$target" --json headRefName -q .headRefName 2>/dev/null)" \
         || refuse "gh pr view $target failed -- is #$target a real, open pull request?"
     [[ -n "$branch" ]] || refuse "gh pr view $target returned no branch name"
 else
