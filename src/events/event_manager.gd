@@ -930,7 +930,7 @@ func _is_on_screen(world_position: Vector2) -> bool:
 	return absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y
 
 ## Warns of the row `source.spawns_on_sight` names, coming along `at`'s own street to `at` — `at`
-## is a sidewalk point (`burning_building` is placed `AGAINST_THE_BUILDING`), so the along-street
+## is a sidewalk point (`burning_building` is placed `AT_THE_FRONT`), so the along-street
 ## axis is `CityMap.pavement_inward()` turned a quarter turn, the construction
 ## `EventDirector._onto_her_side()` uses for the same reason: it is the corridor's own axis, not
 ## whichever way she happens to be facing. Which end it comes from is a coin flip on the day's own
@@ -994,9 +994,9 @@ func _road_left(from: Vector2, heading: Vector2) -> float:
 ## engine parks at, and nothing would ever say so.
 ##
 ## `CityMap.pavement_inward` points away from the carriageway, into the block she is walking beside,
-## so the road is the other way; `AGAINST_THE_BUILDING` puts `at` on the sidewalk tile touching the
-## building, the far tile of the two-tile band (`Tuning.SIDEWALK_WIDTH`) from the kerb, and the near
-## edge of the carriageway is that many tiles further in `-inward`.
+## so the road is the other way; `burning_building`'s `AT_THE_FRONT` puts `at` on the sidewalk tile
+## touching the building's front, the far tile of the two-tile band (`Tuning.SIDEWALK_WIDTH`) from
+## the kerb, and the near edge of the carriageway is that many tiles further in `-inward`.
 static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 	var inward := map.pavement_inward(map.world_to_tile(at))
 	if inward == Vector2i.ZERO:

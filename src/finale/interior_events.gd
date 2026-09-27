@@ -180,17 +180,20 @@ func _place_the_fire(rng: RandomNumberGenerator) -> void:
 ## `burning_building` outdoors carries no field and no body of its own — the fire truck it calls in
 ## is the danger, not the fire, and `EventInstance._draw_fire()` paints it on a building's own
 ## facade rather than leaving anything standing on the sidewalk. Neither of those belongs to the
-## finale: there is no truck to call in a stairwell, and the point of *this* fire is exactly what
-## the outdoor row gave up — it costs the meter while it burns and it closes the shaft it stands
-## in, which `tests/test_interior.gd`'s `_test_the_building_shows_what_the_city_shows` and
-## `_test_the_fire_closes_one_stairwell_and_leaves_the_other` both measure. So the duplicate puts
-## the field and the body back, sized and rated exactly as the outdoor row was before it dropped
-## them: a 30px body (the same "5 flames spanning ±31px" the fire has always drawn) and 18.0
-## intensity over its unchanged 60–260px field.
+## finale: there is no truck to call in a stairwell, and the point of *this* fire is that it costs
+## the meter while it burns and closes the shaft it stands in, which `tests/test_interior.gd`'s
+## `_test_the_building_shows_what_the_city_shows` and
+## `_test_the_fire_closes_one_stairwell_and_leaves_the_other` both measure. So the duplicate is the
+## whole hazard: a 30px body (five flames spanning ±31px) that casts its shadow, 18.0 intensity over
+## the row's 60–260px field, and a 3s pulse, so it breathes between a quarter of that and all of it
+## (11.25/s on average) and its flames, which `_draw_fire()` scales by what it is emitting, visibly
+## roar and die back with it.
 static func _indoor_fire() -> EventDef:
 	var variant := _without_its_aftermath(EventCatalogue.by_id(_FIRE_ID))
 	variant.solid(GroundShape.point(30.0))
 	variant.intensity = 18.0
+	variant.pulse_period = 3.0
+	variant.draws_body_shadow = true
 	return variant
 
 ## The masked man, at the foot of the stairwell the fire did not take, running its whole height.

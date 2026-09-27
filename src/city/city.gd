@@ -1109,16 +1109,17 @@ func _dress_blocks(state: CityState) -> void:
 ## whatever its own block's purpose just set above — *"the building is what needs to be burnt, not
 ## an object next to the building"*. The block's purpose is unmoved (this building's block may still
 ## be ordinary `RESIDENTIAL`, `COMMERCIAL` ground the arc never touches); only the one frontage the
-## fire actually reached shows it, which `Building.Condition.BURNT`'s own rendering already does in
-## full (blackened, roofless, windows gone) for the unrelated, scheduled `BURNT_OUT` block purpose
-## above — this reuses the same look for a different, per-building reason.
+## fire actually reached shows it, in the look `Building.Condition.BURNT` draws (windows black and
+## broken under soot, the door boarded, the parapet charred) for the scheduled `BURNT_OUT` block
+## purpose above too — the same look for a different, per-building reason.
 ##
 ## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
 ## about the run (`GameState.scars`) answers which `Building` it is, once, rather than a field
 ## carried on the building itself. `burning_building` only ever catches on a wall this file actually
 ## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
 ## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.
-## _wants_this_side()`'s `AT_THE_FRONT` case checks) is always a real lot.
+## _wants_this_side()`'s `AT_THE_FRONT` case checks, on the map and `BUILDING`) is always a real
+## lot. `tests/test_acts.gd` checks that over every site the fire can be given.
 ##
 ## Idempotent, like every other per-day override here: `Building.condition`'s own setter is a no-op
 ## once it already says `BURNT`, so calling this from every `_dress_blocks()` pass — the ordinary

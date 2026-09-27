@@ -104,11 +104,15 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 	GameState.scars = saved
 	GameState.day = saved_day
 
-## **The building the scar stands against shows burnt — never an object of its own on the
-## sidewalk in front of it** (`EventInstance` draws nothing at all for `burnt_shell` any more):
-## *"the building is what needs to be burnt, not an object next to the building"*.
-## `City._mark_the_burnt_frontage()` is the lookup, the shape of `board_neighbor_window()`/
-## `_home_door_building()` — a fixed fact about the run (the scar) answers which `Building` it is.
+## **The fire only catches where there is a building to burn, and burns on that building alone.**
+## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's
+## `Building`s directly north of it — never the edge of the world, which `CityMap.tile_at()` reads
+## as `BUILDING` — and the flames drawn there (`EventInstance._flames_across()`) stay inside that
+## building's own facade, including at a site on the first or last column of its lot.
+##
+## **Then the dawn after it shows that building burnt** — *"the building is what needs to be burnt,
+## not an object next to the building"* — through `City.start_day()`, the way a real morning
+## reaches `City._mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
 func _test_the_scarred_building_shows_burnt(t) -> void:
 	var saved := GameState.scars.duplicate(true)
 	var saved_day := GameState.day
@@ -118,39 +122,78 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	t.check(city._buildings.size() >= 2,
-			"seed %d: the city has at least two buildings to tell apart" % SEED)
-	if city._buildings.size() < 2:
+
+	var sites := {}
+	for tile in EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+			city.map, {}):
+		sites[tile] = true
+	t.check(sites.size() > 100,
+			"seed %d: there are fronts for the fire to catch on (%d)" % [SEED, sites.size()])
+	var nothing_behind: Array[Vector2i] = []
+	var spilled: Array[Vector2i] = []
+	var at_a_lot_end := 0
+	for tile: Vector2i in sites:
+		var behind := _building_at(city, tile + Vector2i.UP)
+		if not behind:
+			nothing_behind.append(tile)
+			continue
+		if tile.x == behind.lot.position.x or tile.x == behind.lot.end.x - 1:
+			at_a_lot_end += 1
+		var at := city.map.tile_to_world(tile)
+		var facade := city.map.tile_rect_to_world(behind.lot)
+		for flame in EventInstance._flames_across(EventInstance._facade_span_at(city.map, at)):
+			if at.x + flame.x - flame.y * 0.5 < facade.position.x - 0.01 \
+					or at.x + flame.x + flame.y * 0.5 > facade.end.x + 0.01:
+				spilled.append(tile)
+				break
+	t.check(nothing_behind.is_empty(),
+			"every front the fire can catch on has a building behind it (%d do not, first %s)"
+			% [nothing_behind.size(), nothing_behind.slice(0, 3)])
+	t.check(at_a_lot_end > 0,
+			"and some of them stand at a lot's end, where flames could spill over (%d)" % at_a_lot_end)
+	t.check(spilled.is_empty(),
+			"the flames stay on the burning building's own facade (%d spill over, first %s)"
+			% [spilled.size(), spilled.slice(0, 3)])
+
+	var site: Vector2i = sites.keys()[sites.size() / 2]
+	var scarred := _building_at(city, site + Vector2i.UP)
+	t.check(scarred != null, "the fire's site has a building behind it")
+	if not scarred:
 		city.free()
 		GameState.scars = saved
 		GameState.day = saved_day
 		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = SEED
+	city.start_day(CityState.new(), 4, rng)
+	t.check(_burnt_count(city) == 0, "no building is burnt before any fire has left a scar")
 
-	var scarred: Building = city._buildings[0]
-	var untouched: Building = city._buildings[1]
-	t.check(scarred.condition == Building.Condition.LIVED_IN,
-			"the building starts out lived-in, before any scar")
-
-	# The sidewalk tile directly south of the scarred building's own south-west corner —
-	# `EventCatalogue._burning_building()`'s `AT_THE_FRONT` placement always sites one tile south
-	# of the wall it catches on, the same geometry `_mark_the_burnt_frontage()` reverses.
-	var wall_tile := scarred.lot.position + Vector2i(0, scarred.lot.size.y - 1)
-	var scar_tile := wall_tile + Vector2i.DOWN
-	GameState.add_scar("burnt_shell", city.map.tile_to_world(scar_tile))
-
-	city._mark_the_burnt_frontage()
+	GameState.add_scar("burnt_shell", city.map.tile_to_world(site))
+	city.start_day(CityState.new(), 4, rng)
 	t.check(scarred.condition == Building.Condition.BURNT,
-			"the building behind the scar is forced to Condition.BURNT")
-	t.check(untouched.condition == Building.Condition.LIVED_IN,
-			"a different building in the same city is untouched")
-
-	city._mark_the_burnt_frontage()
-	t.check(scarred.condition == Building.Condition.BURNT,
-			"calling it again, as every day's own dressing does, is a no-op rather than an error")
+			"the dawn after the fire, the building behind its scar is drawn burnt")
+	t.check(_burnt_count(city) == 1, "and no other building is (%d are)" % _burnt_count(city))
+	city.start_day(CityState.new(), 5, rng)
+	t.check(scarred.condition == Building.Condition.BURNT and _burnt_count(city) == 1,
+			"and every dawn after that, the same one")
 
 	city.free()
 	GameState.scars = saved
 	GameState.day = saved_day
+
+## The one `Building` whose lot holds `tile`, or null.
+func _building_at(city: City, tile: Vector2i) -> Building:
+	for building in city._buildings:
+		if building.lot.has_point(tile):
+			return building
+	return null
+
+func _burnt_count(city: City) -> int:
+	var burnt := 0
+	for building in city._buildings:
+		if building.condition == Building.Condition.BURNT:
+			burnt += 1
+	return burnt
 
 func _contains(planned: Array, id: String) -> bool:
 	for plan in planned:

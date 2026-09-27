@@ -1668,11 +1668,14 @@ burnt-out block.
 
 **The one building the fire actually touched is shown burnt regardless of its block's own
 purpose or arc.** `City._mark_the_burnt_frontage()` reads the `burnt_shell` scar's position, finds
-the single `Building` whose facade it stands against, and forces that one building's own
-`Building.Condition` to `BURNT` — the same blackened, roofless look `BURNT_OUT` gives a whole
-block, reused here for one frontage a scar names rather than for a block purpose an arc reached.
-`burning_building` only ever catches on a wall `building.gd` actually draws
-(`EventDef.Pavement.AT_THE_FRONT`), so there is always a real facade behind the scar to blacken.
+the single `Building` whose facade it stands against, and sets that one building's own
+`Building.Condition` to `BURNT` — the look `BURNT_OUT` gives every building of a block (windows
+black and broken under soot, the door boarded, the parapet charred, the wall drained to ash),
+here for one frontage a scar names rather than for a block purpose an arc reached. It runs at
+every dawn, after the block dressing, so the building is burnt from the morning after the fire
+for the rest of the run. `burning_building` only ever catches on a wall `building.gd` actually
+draws (`EventDef.Pavement.AT_THE_FRONT`, the frontage lane of a north sidewalk, and only where the
+tile behind it is on the map), so there is always a real facade behind the scar to burn.
 
 Causes fire during the day; the city presents the result the **next morning**.
 `CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is

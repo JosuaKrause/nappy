@@ -3171,7 +3171,7 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## declares no parts; two patches under two cars for the one row that does, so the ground under a
 ## crash is dark where the cars are and lit where the picture leaves a way through.
 ##
-## `def.draws_body_shadow` opts a row out entirely — `burst_water_main` alone today — leaving its
+## `def.draws_body_shadow` opts a row out entirely (its own doc names which) — leaving its
 ## body and its picture untouched: this is the one function that puts a shadow patch down, so
 ## refusing here is the whole of "no shadow" rather than a special case at each call site.
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
@@ -3380,6 +3380,7 @@ static func steam_grate() -> AtlasTexture:
 ## Every picture a row with this look can draw, as repository paths.
 ##
 ## Read straight off `_draw_body()`'s own arms: if a branch there can reach a picture, it is here.
+## A look whose arm draws nothing in the street (`BURNT_SHELL`) lists its badge silhouette instead.
 ## Not read by the live draw path, which has the path already in hand — this is the one place
 ## "everything a look can draw" is enumerable, which is what a completeness check against
 ## `assets/atlases/membership.json` wants (`tests/test_atlas_events.gd`), the same role
@@ -3410,8 +3411,10 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.FIRE_ENGINE:
 			_collect_views(sources, [FIRE_ENGINE_BY_VIEW, FIRE_ENGINE_WHEELS_BY_VIEW])
 		EventDef.Look.BURNING_BUILDING:
-			_collect(sources, [FLAME])
+			_collect(sources, [FLAME, STEAM, STEAM_B])
 		EventDef.Look.BURNT_SHELL:
+			# Nothing in the street — the building behind it is drawn burnt instead — so its one
+			# picture is its badge silhouette (`icon_for()`).
 			_collect(sources, [RUBBLE])
 		EventDef.Look.LOOSE_DOG:
 			_collect_views(sources, [DOG_BY_VIEW, DOG_BY_VIEW_B])
@@ -3544,9 +3547,8 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
 			# Drawn on the building it stands against instead (`City._mark_the_burnt_frontage()`,
-			# `Building.Condition.BURNT`) — the body is still the `GroundShape` `has_a_spread()`
-			# and the corner-placement rule read, but no picture and no shadow ever go down for it
-			# (`draws_body_shadow` is off): nothing stands on the sidewalk here to draw.
+			# `Building.Condition.BURNT`): nothing stands on the sidewalk here, so no picture and no
+			# shadow go down for it. The row's shape is only what its field is measured from.
 			pass
 		EventDef.Look.LOOSE_DOG:
 			_draw_loose_dog(canvas)
@@ -3900,11 +3902,12 @@ func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void
 			false, {}, false, feet)
 	_view_sector = kept
 
-## How far each flame stands from the row's own centre line, and how tall the short and the tall
-## one of each alternating pair reach before the flicker scales them — climbing a good part of an
-## ordinary building's own wall (two to three tiles, `city.gd`'s own `_HEIGHT_TILES`) rather than
-## sitting at ankle height. The implementer's own choice, open to overturn: no field here reads the
-## actual building's height, so a one-tile sliver burns under flames taller than its own roofline.
+## How far apart the flames on a facade stand, how wide each is, and how tall the short and the
+## tall one of each alternating pair reach before the flicker scales them — climbing a good part of
+## an ordinary building's own wall (two to three tiles, `city.gd`'s own `_HEIGHT_TILES`) rather
+## than sitting at ankle height. The implementer's own choice, open to overturn: no field here reads
+## the actual building's height, so a one-tile sliver burns under flames taller than its own
+## roofline.
 const _FIRE_SPREAD := 14.0
 const _FIRE_WIDTH := 22.0
 const _FIRE_HEIGHT := 60.0
@@ -3913,29 +3916,88 @@ const _FIRE_HEIGHT_TALL := 26.0
 ## to have it this frame — an anchor that rode the flicker would hop a couple of pixels every beat.
 const _SMOKE_SIZE := Vector2(40.0, 60.0)
 
-## The flames (and the smoke above them) are drawn against the wall this row stands at
-## (`_wall_offset()`), so the building reads as burning rather than the sidewalk in front of it —
-## *"the fire goes on the building. the challenge is the fire truck not the fire"* (PLAYTEST-144,
-## statement 12). `burning_building` carries no body of its own to draw a shadow under any more,
-## only the picture.
+## The burning facade's west and east ends in this instance's local x, `_facade_span_at()`'s answer
+## for where it stands, worked out on the first draw: a sited fire never moves.
+var _fire_facade := Vector2.INF
+
+## Two fires share one look. **A fire with a body burns where it stands**: the finale's stairwell
+## fire (`InteriorEvents._indoor_fire()`), which is the hazard there. **A fire with none burns on
+## the facade of the building its row stands against**: the street fire, *"the fire goes on the
+## building. the challenge is the fire truck not the fire"* (PLAYTEST-144, statement 12), which
+## has no body and no shadow to draw, only the picture.
 func _draw_fire(canvas: CanvasItem = self) -> void:
+	if def.obstructs_radius > 0.0:
+		_draw_fire_where_it_stands(canvas)
+		return
+	if _fire_facade == Vector2.INF:
+		_fire_facade = _facade_span_at(_map, global_position)
 	var against_the_wall := _wall_offset()
-	for i in 5:
-		var offset := (i - 2.0) * _FIRE_SPREAD
+	var flames := _flames_across(_fire_facade)
+	var centre := 0.0
+	for i in flames.size():
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
 		var height := (_FIRE_HEIGHT + i % 2 * _FIRE_HEIGHT_TALL) * flicker
-		Sprites.draw_standing(canvas, _drawn(FLAME), against_the_wall + Vector2(offset, 0.0),
-				Vector2(_FIRE_WIDTH, height))
+		Sprites.draw_standing(canvas, _drawn(FLAME), against_the_wall + Vector2(flames[i].x, 0.0),
+				Vector2(flames[i].y, height))
+		centre += flames[i].x / flames.size()
 	var billowing := _idle_stepping(STEAM_BILLOW_PERIOD)
+	var smoke := Vector2(minf(_SMOKE_SIZE.x, _fire_facade.y - _fire_facade.x), _SMOKE_SIZE.y)
 	Sprites.draw_standing(canvas, _drawn(STEAM_B if billowing else STEAM),
-			against_the_wall + Vector2(0.0, -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL)), _SMOKE_SIZE)
+			against_the_wall + Vector2(centre, -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL)), smoke)
+
+## Flames scaled by what the event is currently emitting, so a fire visibly roars, over the body's
+## own shadow: five flames 11px apart, spanning the ±31px the 30px body is half of.
+func _draw_fire_where_it_stands(canvas: CanvasItem) -> void:
+	var strength := 1.0
+	if def.intensity > 0.0:
+		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
+	_draw_body_shadow(canvas)
+	for i in 5:
+		var offset := (i - 2.0) * 11.0
+		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
+		var height := (34.0 + i % 2 * 14.0) * strength * flicker
+		Sprites.draw_standing(canvas, _drawn(FLAME), Vector2(offset, 0.0), Vector2(18.0, height))
+
+## The facade a fire sited at `at` burns on, as its west and east ends in local x measured from
+## `at`: the lot (`CityMap.building_rects`, one per `Building`) holding the tile the sidewalk's
+## `pavement_inward()` points at. With no map or no lot there, the flames' own unclamped span, so
+## a data-level rig draws them as they are.
+static func _facade_span_at(map: CityMap, at: Vector2) -> Vector2:
+	var reach := 2.0 * _FIRE_SPREAD + _FIRE_WIDTH * 0.5
+	var unclamped := Vector2(-reach, reach)
+	if not map:
+		return unclamped
+	var tile := map.world_to_tile(at)
+	var inward := map.pavement_inward(tile)
+	if inward == Vector2i.ZERO:
+		return unclamped
+	for rect in map.building_rects:
+		if rect.has_point(tile + inward):
+			var world := map.tile_rect_to_world(rect)
+			return Vector2(world.position.x - at.x, world.end.x - at.x)
+	return unclamped
+
+## The five flames across `facade` (`_facade_span_at()`'s answer), each as its centre's local x and
+## its width. **Every flame stays inside the burning building's own facade**: a site at the end of
+## its lot moves the row of flames along the facade until the last one's edge meets the building's
+## own end rather than burning a tile of the neighbor's, and a facade narrower than the flames'
+## whole span squeezes them to fit. Centred on the site wherever the facade allows it.
+static func _flames_across(facade: Vector2) -> PackedVector2Array:
+	var reach := 2.0 * _FIRE_SPREAD + _FIRE_WIDTH * 0.5
+	var squeeze := minf(1.0, (facade.y - facade.x) / (2.0 * reach))
+	var centre := clampf(0.0, facade.x + reach * squeeze, facade.y - reach * squeeze)
+	var flames := PackedVector2Array()
+	for i in 5:
+		flames.append(Vector2(centre + (i - 2.0) * _FIRE_SPREAD * squeeze, _FIRE_WIDTH * squeeze))
+	return flames
 
 ## How far the fire's own drawing sits from where the row was sited, toward the wall it stands
 ## against — `CityMap.pavement_inward()` read the same way `_hut_doorway()` reads it, since these
-## nodes' local axes never rotate. The row's own siting already stands it a half-tile short of the
-## true wall (`EventScheduler._band_offset_of()`, `AGAINST_THE_BUILDING`), so this is exactly that
-## half-tile, closing the gap onto the frontage. `Vector2.ZERO` with no map, the harmless default a
-## data-level rig gets: the flames stay where they are drawn with no wall to reach for.
+## nodes' local axes never rotate. A row with no body is never moved off the centre of the tile it
+## was sited on (`setup()` centres only a body on its pavement band), and the frontage lane's tile
+## centre is half a tile from the wall, so this is that half tile, closing the gap onto the
+## frontage. `Vector2.ZERO` with no map, the harmless default a data-level rig gets: the flames stay
+## where they are drawn with no wall to reach for.
 func _wall_offset() -> Vector2:
 	if not _map:
 		return Vector2.ZERO

@@ -33,7 +33,13 @@ func run(t) -> void:
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t)
+	_test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t)
 
+
+## The rows whose picture is drawn on the building they stand against rather than on the sidewalk
+## they are sited on: the fire on its facade (`EventInstance._draw_fire()`), and the burnt building
+## it leaves (`City._mark_the_burnt_frontage()`).
+const _DRAWN_ON_A_BUILDING: Array[String] = ["burning_building", "burnt_shell"]
 
 const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.ROADBLOCK,
@@ -190,12 +196,12 @@ func _test_as_warned_first_carries_solid_parts_too(t) -> void:
 ## `PARK` and `ALLEY` are wide open and carry no bound here; a tile type with no clearance defined is
 ## skipped rather than treated as a failure.
 ##
-## **Blind spot, not a hole this test can close:** `burnt_shell` and `barricade` carry no
-## `def.placement` of their own — both are scars/spawns sited wherever `burning_building` /
-## `military_convoy` stopped rather than placed by `def.placement` — so the loop below never sees
-## them and a future regression on either row's `obstructs_radius` would pass silently. Checked by
-## hand instead: both actually land on `ROAD` (their spawning row's own placement), and 36px /
-## 62px both sit inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
+## **Blind spot, not a hole this test can close:** `barricade` carries no `def.placement` of its
+## own — it is a spawn sited wherever `military_convoy` stopped rather than placed by
+## `def.placement` — so the loop below never sees it and a future regression on its
+## `obstructs_radius` would pass silently. Checked by hand instead: it lands on `ROAD` (its
+## spawning row's own placement), and 62px sits inside `_CARRIAGEWAY_SPREAD_CLEARANCE`.
+## (`burnt_shell`, the other row with no placement, has no body to fit.)
 ##
 ## **The same blind spot covers every seal-only row** (`fallen_tree`, `car_accident`,
 ## `skip`, `scaffolding`, `burst_water_main`, `moving_van`, `burnt_out_car`,
@@ -636,9 +642,10 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 
 ## **The street fire has no field and no body — the fire truck it calls in is the danger, not the
 ## fire** (PLAYTEST-144, statement 12: "the fire goes on the building. the challenge is the fire
-## truck not the fire"). The finale's own fire, indoors, needs both back: there is no truck to call
-## in a stairwell, and closing the shaft it stands in is the whole point of it there.
-## `InteriorEvents._indoor_fire()` is the duplicate that puts them back.
+## truck not the fire"). The finale's own fire, indoors, is the whole hazard again: there is no
+## truck to call in a stairwell, and closing the shaft it stands in is the point of it there. It
+## breathes, the way the row's pulse makes it, so what it costs over a stay is under its peak, and a
+## fire with a body casts that body's shadow. `InteriorEvents._indoor_fire()` is the duplicate.
 func _test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t) -> void:
 	var street := EventCatalogue.by_id("burning_building")
 	t.check(street != null, "the catalogue still carries the street fire")
@@ -651,3 +658,22 @@ func _test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t) -> voi
 	t.check(indoors.id == "burning_building", "the indoor fire is a duplicate of the same row")
 	t.check(indoors.intensity > 0.0, "but the finale's own copy still costs the meter")
 	t.check(indoors.obstructs_radius > 0.0, "and still closes the shaft it stands in")
+	t.check(indoors.pulse_period > 0.0,
+			"and it breathes, so it costs less over a stay than at its peak")
+	t.check(indoors.draws_body_shadow, "and its body casts a shadow")
+
+## **A row drawn on a building stands nothing on the sidewalk**: no body and no shadow where the
+## row is sited, since its picture is on the building behind it. `docs/EVENTS.md`, "Solid things
+## are solid": *"a body that disagrees with the picture is a lie about where she can walk,
+## whichever way it lies"*, and an invisible body in front of day 8's burnt building is exactly that
+## (olive-koala, statement 4: *"the *building* is what needs to be burnt *not* an object next to the
+## building!"*).
+func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t) -> void:
+	for id in _DRAWN_ON_A_BUILDING:
+		var def := EventCatalogue.by_id(id)
+		t.check(def != null, "the catalogue carries '%s'" % id)
+		if not def:
+			continue
+		t.check(def.obstructs_radius <= 0.0 and def.solid_reach() <= 0.0,
+				"'%s' has no body on the sidewalk (obstructs %.0f)" % [id, def.obstructs_radius])
+		t.check(not def.draws_body_shadow, "and casts no shadow there")

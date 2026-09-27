@@ -257,11 +257,12 @@ func solid_reach() -> float:
 	return furthest
 
 ## Whether `EventInstance._draw_body_shadow()` puts anything down for this row at all. `true` for
-## every row but `burst_water_main`, whose picture is a crater sunk into the road rather than an
-## object standing on it — a shadow under a hole would read as a mound. **The body and the
-## collision are untouched**: this governs the shadow patch alone, the same way `IMPACT_CRATER`
-## is "the only look with no shadow, because it *is* a shadow" without needing a body of its own to
-## turn off.
+## every row but three. `burst_water_main`'s picture is a crater sunk into the road rather than an
+## object standing on it — a shadow under a hole would read as a mound. `burning_building` and
+## `burnt_shell` are drawn on the building they stand against, so nothing stands on the sidewalk to
+## cast one. **The body and the collision are untouched**: this governs the shadow patch alone, the
+## same way `IMPACT_CRATER` is "the only look with no shadow, because it *is* a shadow" without
+## needing a body of its own to turn off.
 @export var draws_body_shadow := true
 
 ## Day gating, 1-based and inclusive. `last_day = 0` means it never expires.
@@ -691,9 +692,10 @@ enum Pavement {
 	## Against the frontage, with a building wall behind it. Where a lorry backs in.
 	AGAINST_THE_BUILDING,
 	## The frontage lane of an east-west street's north sidewalk, in front of the south face of the
-	## lot behind it — the one face of a building the city draws. Where a poster crew pastes. Never
-	## a row's own `pavement_side`: `EventScheduler.WalkSiting` asks it for a row that
-	## `pastes_a_front`.
+	## lot behind it — the one face of a building the city draws. Where a fire catches, so the
+	## building it burns is the one drawn burnt afterwards (`burning_building`'s own
+	## `pavement_side`), and where a poster crew pastes (`EventScheduler.WalkSiting` asks it for a
+	## row that `pastes_a_front`).
 	AT_THE_FRONT,
 }
 

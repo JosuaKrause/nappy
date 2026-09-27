@@ -293,11 +293,9 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 		if def.obstructs_radius <= 0.0:
 			continue
 		# A `ONE_SHOT` is a set piece, not asked the friction-or-wall question at all
-		# (`EventScheduler._role_for` answers it before the cost or physical clause ever runs).
-		# `burning_building` no longer needs this exemption to reach the loop's own end: it carries
-		# no body at all (no obstacle and no danger of its own — the fire truck it calls in is the
-		# danger), so `obstructs_radius <= 0.0` above already sends it past. The exemption still
-		# matters for whichever `ONE_SHOT` next stands solid against a wall.
+		# (`EventScheduler._role_for` answers it before the cost or physical clause ever runs), so a
+		# solid one on a sidewalk is exempt here. `burning_building` carries no body (the fire truck
+		# it calls in is the danger, not the fire), so the check above already passes it over.
 		if def.kind == GameEnums.EventKind.ONE_SHOT:
 			continue
 		solid_on_a_sidewalk += 1

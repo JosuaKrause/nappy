@@ -1909,10 +1909,13 @@ static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 ## would have to reverse into sideways is not one it can be drawn reversing into, and half the
 ## pavements in the city are still eligible.
 ##
-## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on, and is asked only
-## by `WalkSiting` for a row that `pastes_a_front`, through `side`: the row's own `pavement_side`
-## is what the dawn roll reads. `side` is typed `int` for the cross-script enum reason the **godot**
-## skill names; `-1` means the row's own.
+## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on: `burning_building`'s
+## own `pavement_side`, since the building it catches on is drawn burnt afterwards, and what
+## `WalkSiting` asks, through `side`, for a row that `pastes_a_front`. **The tile behind has to be
+## on the map as well as read `BUILDING`**, because `CityMap.tile_at()` reads anything off the map
+## as `BUILDING`: without the bounds check the north sidewalk of the map's northmost street, with
+## nothing behind it but the edge of the world, passes as a front. `side` is typed `int` for the
+## cross-script enum reason the **godot** skill names; `-1` means the row's own.
 static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i, side: int = -1) -> bool:
 	var wanted := def.pavement_side if side < 0 else side
 	if wanted == EventDef.Pavement.ANY:
@@ -1921,7 +1924,8 @@ static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i, side: 
 	if inward == Vector2i.ZERO:
 		return false
 	if wanted == EventDef.Pavement.AT_THE_FRONT:
-		return inward == Vector2i.UP and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
+		return inward == Vector2i.UP and map.in_bounds(tile + inward) \
+				and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
 	if wanted == EventDef.Pavement.AT_THE_KERB:
 		# The kerb lane is the one whose *road* side is actually road: on a two-tile pavement
 		# that is the inner of the two, and asking the tiles rather than the offset keeps it true
