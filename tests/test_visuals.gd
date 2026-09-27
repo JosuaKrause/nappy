@@ -53,10 +53,8 @@ const STANDING_PROPS: Array[StringName] = [&"props/garbage_sack", &"props/garbag
 ## flat under the tree, so a transparent pixel in it would show the paving through the soil.
 const OPAQUE_PROP := &"props/tree_pit"
 
-## The baby cues drawn over the pram (`Baby.Cue`, `Stroller._draw_baby_cue()`). Each one's canvas
-## carries a transparent margin around its outline, wide enough that `Stroller.INDICATOR_BOTTOM_PADDING`
-## can register the cue below its own bottom stroke — a margin a crop back to the outline would
-## silently remove without changing the outline itself.
+## The baby cues drawn over the pram (`Baby.Cue`, `Stroller._draw_baby_cue()`). Each canvas is
+## wider than its outlined glyph, so no stroke is cut off at the canvas edge.
 const BABY_CUES: Array[StringName] = [&"props/baby_zzz", &"props/baby_fuss", &"props/baby_cry"]
 
 ## Whether this tree carries the default bake, which is the only one the transfer rules are about.
@@ -214,9 +212,10 @@ func _test_props_keep_the_placement_their_callers_draw_on(t) -> void:
 	if pit != null:
 		t.check(_is_opaque(pit), "%s covers its full opaque canvas, since it is ground" % OPAQUE_PROP)
 
-## Catches a canvas cropped back into its own outline: the outermost row and column of each baby
-## cue's baked image carry no part of the stroke, which is exactly the margin
-## `Stroller.INDICATOR_BOTTOM_PADDING` registers the cue against.
+## Catches a canvas cropped back into its own outline, the clipping the player saw on the
+## triple wave: the outermost row and column of each baby cue's baked image carry no part of
+## the stroke. The anchor offset is not held here; each SVG's header states it beside
+## `Stroller.INDICATOR_BOTTOM_PADDING`.
 func _test_baby_cues_keep_a_transparent_border(t) -> void:
 	for name in BABY_CUES:
 		var image := _region_image(name)

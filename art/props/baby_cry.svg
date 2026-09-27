@@ -2,8 +2,8 @@
      one vocabulary, one motif — but three of them and red: more of it *and* a colour change, so
      the escalation survives being read at a glance and does not depend on hue alone. The same
      rule alert_close.svg is built to. The artwork sits 2px in from the left, top and right; its
-     registration line is y=28, 7px above the canvas bottom, and only the lowest wave's outline
-     falls below it. Stroller.INDICATOR_BOTTOM_PADDING holds the same 7, so the line, not the
+     registration line is y=28, 7px above the canvas bottom, and only the bottom of the lowest
+     wave falls below it. Stroller.INDICATOR_BOTTOM_PADDING holds the same 7, so the line, not the
      canvas edge, lands on the cue's anchor. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="35" viewBox="0 0 28 35">
   <g transform="translate(2 2)">

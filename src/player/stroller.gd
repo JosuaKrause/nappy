@@ -147,7 +147,7 @@ const ALERT_CLOSE := "props/alert_close"
 const BABY_ZZZ := "props/baby_zzz"
 const BABY_FUSS := "props/baby_fuss"
 const BABY_CRY := "props/baby_cry"
-## How far above its canvas bottom each baby cue's registration line sits. Only the outline of
+## How far above its canvas bottom each baby cue's registration line sits. Only the bottom of
 ## the lowest stroke falls below that line. `Sprites.draw_standing()` grounds an image on its
 ## canvas bottom, so the cue is drawn this much lower and the line, not the canvas edge, lands
 ## on the cue's anchor. Each SVG carries the same number in its own header.
