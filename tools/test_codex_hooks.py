@@ -500,6 +500,10 @@ class CodexHooksTest(unittest.TestCase):
         self.assertIn("git commit -F file", specific["permissionDecisionReason"])
         text = self.call(tool="Bash", command=f"echo '{long_text}'")
         self.assertIn("committing", text)
+        # A backslash-newline the pass would join still counts as the word it joins into.
+        output = self.call_raw(command=f"echo '{long_text}'; gi\\\nt push")
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
         command = (

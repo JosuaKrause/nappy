@@ -1306,6 +1306,9 @@ assert_write_guard "a 70 KB command naming no git, gh or pushing script -> allow
     "echo '${over_bound}'"
 assert_write_guard "a 70 KB command naming g\\it -> deny (read as the split reads it)" deny \
     "echo '${over_bound}'; g\\it push"
+assert_write_guard "a 70 KB command naming gi\\<newline>t -> deny (joined as the pass joins it)" deny \
+    "echo '${over_bound}'; gi\\
+t push"
 checks=$((checks + 1))
 if [ $((SECONDS - bound_start)) -lt 3 ]; then
     echo "ok   commands over the bound are decided at once"

@@ -581,8 +581,9 @@ def findings($w; $unsure):
 # timeout does not block the call in either Claude Code or Codex -- it fails open. 64 KB is about
 # three times the longest pull request body this repository has, and even at its densest (a separator
 # on every character) is decided in about a quarter of the timeout. Over it, a command that can name a write at all (the words `git` or `gh`, or a
-# pushing script, once quotes and backslashes are dropped as the split drops them -- no detector
-# can fire without one) is denied outright with the hint to put the long text in a file; one that
+# pushing script, once quotes and backslashes are dropped as the split drops them, looked for both
+# with every backslash-newline joined and with none joined, since the pass joins some and not
+# others -- no detector can fire without one) is denied outright with the hint to put the long text in a file; one that
 # names none of them cannot write and is allowed.
 def too_long: 65536;
 def names_a_write_tool:
@@ -592,7 +593,8 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
   | if length > too_long then
-      if (drop("\\") | drop("\"") | drop("'") | test(names_a_write_tool))
+      if (drop("\\\n") | drop("\\") | drop("\"") | drop("'") | test(names_a_write_tool))
+         or (drop("\\") | drop("\"") | drop("'") | test(names_a_write_tool))
       then {out: ["the whole command: over 64 KB and naming git, gh or a pushing script"],
             reviewer_push: false, wrapped: false, too_long: true}
       else empty end
