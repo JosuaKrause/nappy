@@ -35,6 +35,8 @@ func run(t) -> void:
 	_test_a_corner_of_two_doors_is_one_toll(t)
 	_test_she_is_never_drawn_at_the_place_she_went_in(t)
 	_test_the_release_resets_interpolation_after_showing_her_again(t)
+	_test_a_day_boundary_mid_hold_resets_interpolation_after_showing_her_again(t)
+	_test_entering_a_hold_resets_the_cameras_interpolation_too(t)
 	_test_the_ground_she_is_let_out_onto_is_survivable(t)
 	_test_the_run_that_killed_her_five_times(t)
 	_test_a_stroller_stopped_against_the_hut_is_detained(t)
@@ -840,15 +842,16 @@ func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 ## test above proves the *state* — `visible` and `global_position` — lands correctly and together,
 ## which is everything a GDScript-level check can see. What it cannot see is Godot's own physics
 ## interpolation, which draws her between her last two physics-tick transforms — frozen at the
-## door for the whole hold — and only honours a `reset_physics_interpolation()` call made while she
-## is visible, silently dropping one made while she is hidden. `_release_finished_door_detentions()`
-## calls `Stroller.teleport_to()` (whose own reset lands while she is still hidden) one line before
-## `Stroller.show_after_inspection()`, so before `show_after_inspection()` gained a reset of its
-## own, the *only* reset the release ever made was the one Godot discards — which reads exactly as
-## the report: the first frame drawn after she reappears still blends from the door.
+## door for the whole hold — and only honours a `reset_physics_interpolation()` call made while
+## `is_visible_in_tree()` is true, silently dropping one made while she — or an ancestor — is
+## hidden. `_release_finished_door_detentions()` calls `Stroller.teleport_to()` (whose own reset is
+## a documented no-op while she is still hidden — see `Stroller._reset_interpolation_if_shown()`)
+## one line before `Stroller.show_after_inspection()`, so before `show_after_inspection()` gained a
+## reset of its own, the release never made one that could land — which reads exactly as the
+## report: the first frame drawn after she reappears still blends from the door.
 ##
 ## `tests/stroller_interpolation_spy.gd` is the hook: swapped onto a real `Stroller` in place of
-## its own script, it records whether `visible` was already `true` whenever a genuine
+## its own script, it records whether `is_visible_in_tree()` already read `true` whenever a genuine
 ## `NOTIFICATION_RESET_PHYSICS_INTERPOLATION` reaches the node — the one signal a headless suite
 ## can read without a physics tick or a drawn frame to wait for.
 func _test_the_release_resets_interpolation_after_showing_her_again(t) -> void:
@@ -885,12 +888,100 @@ func _test_the_release_resets_interpolation_after_showing_her_again(t) -> void:
 
 	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not hut.is_chatting() and stroller.visible, "the hold ends and she is shown again")
-	t.check(stroller.reset_seen_while_hidden,
-			"`teleport_to()`'s own reset still runs while she is hidden, one line before "
-			+ "`show_after_inspection()` — Godot delivers it, even though it does nothing")
+	t.check(not stroller.reset_seen_while_hidden,
+			"`_reset_interpolation_if_shown()` guards `teleport_to()`'s own call, so no reset is "
+			+ "even attempted while she is still hidden — nothing here for Godot to discard")
 	t.check(stroller.reset_seen_while_visible,
-			"and a reset reaches her again after `visible` is already true — the one Godot does "
-			+ "not silently drop, which `show_after_inspection()` is what has to make")
+			"and a reset reaches her once `visible` is already true — the one that actually lands, "
+			+ "which `show_after_inspection()` is what has to make")
+
+	hut.free()
+	stroller.free()
+	manager.free()
+
+## **A day boundary can land mid-hold, and `reset_at()` had the same ordering mistake
+## `show_after_inspection()` was just fixed for** — *(pr-review on #413: "`reset_at()` ...
+## has the identical ordering mistake ... Line 814's `reset_physics_interpolation()` runs on the
+## body itself before `visible = true` ... exactly the call order this PR just finished proving is
+## a silent no-op".)* `main._on_summary_continued()` dismisses the day summary and starts the next
+## day in the same frame, with no fade between them, so a hold still running when a day's clock
+## ran out reaches this exact path live. Same rig and the same spy as the test above; `reset_at()`
+## rather than a release is what is driven, from inside a live hold so there is a stale
+## interpolated pair for it to actually collapse.
+func _test_a_day_boundary_mid_hold_resets_interpolation_after_showing_her_again(t) -> void:
+	var manager := _manager(t)
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var stroller: Stroller = scene.instantiate()
+	stroller.set_script(load("res://tests/stroller_interpolation_spy.gd"))
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(7600.0, 7600.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	stroller.global_position = centre + axis * 60.0 + Vector2(0.0, 16.0)
+	stroller.reset_seen_while_hidden = false
+	stroller.reset_seen_while_visible = false
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting() and not stroller.visible,
+			"she goes in for the hold, same as the release test above")
+	stroller.reset_seen_while_visible = false
+
+	# The day ends mid-hold: `reset_at()` is what a fresh day calls, hold or no hold.
+	stroller.reset_at(Vector2(9000.0, 9000.0))
+	t.check(stroller.visible, "reset_at() always shows her again, mid-hold or not")
+	t.check(stroller.reset_seen_while_visible,
+			"and a reset reaches her once `visible` is already true — `reset_at()`'s own call, "
+			+ "moved after its `visible = true` the same way `show_after_inspection()`'s was")
+
+	hut.free()
+	stroller.free()
+	manager.free()
+
+## **The same bug, one call earlier: `focus_camera_on()`'s own reset, on the `Camera2D` riding
+## under a body a hold has already hidden.** *(pr-review on #413: "the engine's skip condition is
+## `is_visible_in_tree()` ... an ancestor's `visible = false` is enough to make the camera's reset
+## a no-op too, the same as the body's ... worth either a quick visual check or a note for why it
+## doesn't apply".)* Checked concretely rather than argued: `EventInstance._enter_inspection()`
+## calls `hide_for_inspection()` then `focus_camera_on()`, in that order, and a plain `Camera2D.
+## reset_physics_interpolation()` at that point *is* a no-op — `is_visible_in_tree()` walks the
+## real parent chain regardless of `Camera2D.top_level`. `Stroller._force_reset_camera_
+## interpolation()` is the fix, entirely inside this file: it toggles `visible` true for the one
+## synchronous call the reset needs and back, since `EventInstance`'s own call order is not this
+## file's to change.
+##
+## `tests/camera_interpolation_spy.gd` is the same hook as the body's, swapped onto the real
+## `Camera2D` child instead.
+func _test_entering_a_hold_resets_the_cameras_interpolation_too(t) -> void:
+	var manager := _manager(t)
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var stroller: Stroller = scene.instantiate()
+	var camera := stroller.get_node("Camera2D") as Camera2D
+	camera.set_script(load("res://tests/camera_interpolation_spy.gd"))
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(7800.0, 7800.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	stroller.global_position = centre + axis * 60.0 + Vector2(0.0, 16.0)
+	# `add_child()` and `make_current()` both send their own reset before the hold is what this
+	# test is about.
+	camera.reset_seen_while_visible_in_tree = false
+	camera.reset_seen_while_hidden_in_tree = false
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting() and not stroller.visible, "she goes in for the hold")
+	t.check(camera.reset_seen_while_visible_in_tree,
+			"and the camera's own reset, forced through `_force_reset_camera_interpolation()`, "
+			+ "still lands while `is_visible_in_tree()` reads true for the one call it needs to")
 
 	hut.free()
 	stroller.free()
