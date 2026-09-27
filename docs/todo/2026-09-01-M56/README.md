@@ -1,3 +1,7 @@
+priority: next
+after: 2026-09-09-M99
+after: 2026-09-09-M100
+
 ## M56 — The resistance is noticed
 
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**

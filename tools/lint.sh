@@ -18,11 +18,14 @@
 # which are history and primary sources and are allowed to say what was true then, and
 # docs/evidence/README.md, whose job is filenames that embed hashes.
 #
-# Three checks are about the queue's layout rather than a sentence, and run on the history too:
+# Four checks are about the queue's layout rather than a sentence, and run on the history too:
 # a name (<date>-<word>-<word>) used for two different things across docs/todo, docs/decisions,
 # docs/review and docs/playtests; a checkbox anywhere under
-# docs/todo/, where finishing an item deletes its file; and a link in docs/TODO.md to an entry
-# folder that does not exist.
+# docs/todo/, where finishing an item deletes its file; a link in docs/TODO.md to an entry
+# folder that does not exist; and an entry's band line, which tools/queue.sh --check judges (no
+# `priority:` line opening its README.md, a band outside now/next/later/parked, an `after:` naming
+# neither an open entry nor a closed one's record, an `after:` cycle, a band line below the opening
+# block), so the band set lives in that one script.
 #
 # A hit is `file:line: label`, and a nonzero exit if there is at least one. The marker
 # `lint-allow` inside an HTML comment on the same line is a deliberate exception and is not
@@ -43,8 +46,9 @@ count, a ticked box, a status marker anywhere in the doc) and every tracked SVG 
 XML. With no arguments, scans the whole governed set (AGENTS.md, CLAUDE.md, README.md, every
 .claude/skills/*/SKILL.md, every docs/*.md except DECISIONS.md, and every file under docs/todo/
 and docs/review/). Also checks the queue's layout: a name used for two things across docs/todo,
-docs/decisions, docs/review and docs/playtests, a checkbox under docs/todo/, and a link in
-docs/TODO.md to an entry folder that does not exist. Given file arguments, scans only those --
+docs/decisions, docs/review and docs/playtests, a checkbox under docs/todo/, a link in
+docs/TODO.md to an entry folder that does not exist, and every entry's band line (through
+tools/queue.sh --check). Given file arguments, scans only those --
 how the PostToolUse hook calls it after an edit -- and runs the layout check each one belongs to.
 A named file that does not exist is an error, not a silent skip.
 
@@ -224,6 +228,28 @@ lint_duplicate_names() {
     )
 }
 
+# Every entry's band line, as tools/queue.sh --check judges it: that script owns the band set and
+# the order, so the rules are written once. A missing queue.sh is a hit, not a skipped check.
+lint_bands() {
+    local out status
+    if [[ ! -x tools/queue.sh ]]; then
+        echo "tools/lint.sh: tools/queue.sh is needed to check the entries' band lines and was not found" >&2
+        hits=$((hits + 1))
+        return
+    fi
+    out="$(./tools/queue.sh --check 2>&1)"
+    status=$?
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        printf '%s\n' "$line"
+        hits=$((hits + 1))
+    done <<< "$out"
+    if [[ "$status" -ne 0 && -z "$out" ]]; then
+        echo "tools/lint.sh: tools/queue.sh --check failed without naming a line" >&2
+        hits=$((hits + 1))
+    fi
+}
+
 layout_names=0
 layout_order=0
 for f in "${files[@]}"; do
@@ -301,6 +327,7 @@ if [[ $# -eq 0 || "$layout_names" -eq 1 ]]; then
 fi
 if [[ $# -eq 0 || "$layout_order" -eq 1 ]]; then
     lint_order_links
+    lint_bands
 fi
 
 if [[ "$hits" -gt 0 ]]; then

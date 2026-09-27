@@ -71,9 +71,9 @@ static func day_length(day: int) -> float:
 ## `--spawn <target>` drops the player onto a tile type or next to something live, so the
 ## WorldContext answers can be checked without walking across the city to find one. The targets are
 ## `park`, `alley`, `square`, `playground`, `arterial`, `closure[:n]`, `zone[:n]`, `landmark`,
-## `power_station`, `signal`, `edge[:s|e|w]`, `precinct`, `corner[:nw|ne|sw|se]`, `contact` and
-## `event[:id]`; anything else warns and starts her on the doorstep — `for_spawn_target` below is
-## the one list, one branch per target.
+## `power_station`, `signal`, `edge[:s|e|w]`, `precinct`, `corner[:nw|ne|sw|se]`, `contact`,
+## `door[:n]` and `event[:id]`; anything else warns and starts her on the doorstep —
+## `for_spawn_target` below is the one list, one branch per target.
 static func spawn_position(city: City, resistance: ResistanceDirector) -> Vector2:
 	return for_spawn_target(DevFlags.spawn_target(), city, resistance)
 
@@ -223,6 +223,26 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 			return city.map.home_world_position()
 		# Off to one side, so the chalk mark is not hidden under the pram.
 		return contact + Vector2(70.0, 30.0)
+	# A region-wall checkpoint's own hut, stood back a few tiles on the approach side so a
+	# `--walk` in `facing`'s own direction closes the distance toward it — the trailer's
+	# "walking towards a gatehouse" shot. Doors exist only from `Tuning.REGION_WALL_FIRST_DAY`;
+	# `door:<n>` picks which one of the day's, the way `closure:<n>` and `zone:<n>` already do.
+	# `checkpoint_gate` (the boom over the road) and `checkpoint_post` (an alley mouth) are
+	# skipped: the hut is the picture, standing on the pavement rather than the carriageway.
+	if target.begins_with("door"):
+		var huts: Array[EventScheduler.Planned] = []
+		var plan := city.region_plan()
+		if plan:
+			for body in plan.door_bodies:
+				if body.def.id == "checkpoint_hut":
+					huts.append(body)
+		if huts.is_empty():
+			push_warning("no region-wall checkpoint on day %d (doors start on day %d)"
+					% [GameState.day, Tuning.REGION_WALL_FIRST_DAY])
+			return city.map.home_world_position()
+		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
+		var hut: EventScheduler.Planned = huts[which]
+		return nearest_walkable(city.map, hut.position - hut.facing * Tuning.TILE_SIZE * 4.0)
 
 	var wanted: int = {
 		"park": GameEnums.TileType.PARK,

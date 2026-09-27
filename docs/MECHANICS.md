@@ -385,7 +385,13 @@ changes it; a double press sets the direction and holds **run** until the next p
 releases it, the same deliberate act **Shift** is rather than a gradient a thumb could cross by
 accident. Held down and moved, the pointer keeps re-aiming continuously until it lifts. There is no
 partial-strength walk on any input path: every press or motion event presses a full-speed unit
-vector, so the only two speeds in the game are the walk and the run.
+vector, so the only two speeds in the game are the walk and the run. *(2026-09-06, playtest 27:
+"there is no way to walk slowly -- that is intentional -- there should only ever be one speed (plus
+a second via running)".)* Every pursuit's speed band and lead time is stated against
+`Tuning.WALK_SPEED` as *the* walking speed, so a slower walk would make each of them wrong, and
+`tests/test_touch.gd` holds the rule for every input path. **A press is a heading, never a
+destination**: a tap that walked her to a point would pathfind, and a tap that pathfinds hands the
+route decision to the game.
 
 The two schemes differ only in where that press is measured from. **Tap** aims from wherever she is
 standing, the way a mouse always has, and a press within a generous radius of her stops her.
@@ -930,7 +936,9 @@ outcomes* rather than the same outcome at two prices:
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
 | Bounded | gives up after `PURSUIT_TIME`, **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
 
-Its telegraph is the **approach**, the way a fire engine's is. A pursuer that stands still while it
+Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
+telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge badge
+with nothing in the world until its telegraph is spent). A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
@@ -1140,12 +1148,17 @@ escape_distance = outer_radius − inner_radius     for anything at or below wal
                 = outer_radius                    for anything FASTER than walking
 ```
 
-The split matters. A stationary event, or one slower than the player (a dog walker at
-32 px/s), only has to be walked away from, so clearing the falloff band is enough. Something
-faster than the player — a fire engine at 190 px/s — cannot be outwalked at all; it sweeps
-its entire outer radius along the street, and the only escape is getting off its line. So
-it must give enough warning to clear the *full* radius. That is why the fire engine's
-telegraph is 4 seconds and not the 2.9 the band rule would have allowed.
+The split matters for a row that is in the world while it telegraphs, not a row without a badge of
+its own — the map-placed `military_convoy` has a badge that rises as it comes and still keeps this
+split, because it exists and telegraphs in the world rather than being warned first. A stationary
+event, or one slower than the player (a dog walker at 32 px/s), only has to be walked away from, so
+clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
+radius along the street, and the only escape is getting off its line, so it must give enough
+warning to clear the *full* radius. A row warned of before it exists is held to a different floor
+instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) from its screen-edge badge to the earliest
+it can reach her, since its place follows her and there is no field to walk out of during the
+badge. The fire engine, warned first this way, is created with its field already on her when she
+is on its street; its `telegraph_time` is 6.27s, well past that floor.
 
 `Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
 the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.

@@ -81,6 +81,9 @@ func distance_from_station(at: Vector2) -> float:
 ## says so for whatever listens, when there was a mast to stop.
 func go_dark() -> void:
 	is_dark = true
+	# `VisitCounter`'s own "blackout" — every go-dark, unlike `city_went_quiet` below, which only
+	# fires when there was a mast to silence. See docs/TELEMETRY.md, "The page counts visits".
+	EventBus.city_gone_dark.emit()
 	for building in _buildings:
 		building.powered = false
 	if _city.signals:

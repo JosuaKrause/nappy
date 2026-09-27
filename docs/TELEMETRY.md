@@ -10,49 +10,130 @@ what actually happens to a person playing, and nobody should have to have an opi
 
 ## The page counts visits
 
-**The published page counts its loads with GoatCounter, and that is separate from the run log.**
-The export's `<head>` (`html/head_include` in `export_presets.cfg`) loads GoatCounter's
-`count.js`, which sends one hit per page load to `josuakrause.goatcounter.com`: a path made of the
-page's host and path alone (so this game's loads stay apart from the rest of that site), the page
-title, the referrer, the screen width and the query string in a field of its own, from which GoatCounter
-reads campaign parameters such as `ref` and `utm_source`. Its server sees the browser's
-user agent and derives a country from the address, as any request does. It sets no cookie and
-stores nothing on the device, which is why the page shows no consent banner, and a visitor is never followed across
-days or sites. **A page carrying `?debug=1` never loads `count.js`**, so neither its load nor anything played on
-it is counted (PLAYTEST-132: "anything with debug doesn't get tracked"). `count.js` ignores
-`localhost` and private network addresses, so `tools/serve-web.sh`
-and a phone on the same Wi-Fi count nothing. `--no-telemetry` does not reach it: it is the page
-counting a load, not the game recording a run, and nothing the game itself does is sent.
+**The published page counts with GoatCounter on one site, `nappy.goatcounter.com`, and that is
+separate from the run log.** *(2026-09-26: "would it simplify things if all telemetry only went to
+nappy?" · "okay, I can turn session back on and you opt out for everything except
+/nappy.josuakrause.com/".)* The export's `<head>` (`html/head_include` in `export_presets.cfg`)
+loads GoatCounter's `count.js` with that site as its endpoint, and the one script carries both
+kinds of hit:
 
-**The game counts how far a run gets, as the same kind of anonymous GoatCounter hit.**
+- **The page visit keeps the site's sessions**, so a person reloading the page within
+  GoatCounter's session window is one visitor. `count.js` counts it on load, once the tab is
+  visible, under the path the head's path function gives it: the page's host and path alone,
+  `nappy.josuakrause.com/`, the same path the visits on `josuakrause.goatcounter.com` carry;
+  GoatCounter stores a page's path with one leading slash and none trailing, so it is listed as
+  `/nappy.josuakrause.com`. On the counter a path starting `/nappy` is a visit to the site and a name
+  starting `nappy-` is a game metric *(2026-09-26: "`/nappy` is for site access `nappy-` is for
+  metrics")*. The
+  hit also carries the page title, the referrer, the screen width and the query string, from which
+  GoatCounter reads campaign parameters such as `ref` and `utm_source`.
+- **Every game event opts out of the sessions**, so it counts every time it is sent: a day lost
+  three times in an evening is three `lost-*`, where a session would have counted it once
+  (PLAYTEST-143: "no, even current run wouldn't work if the player dies multiple times on the same
+  day"). `VisitCounter` passes `no_session: true` on every `count()` call, which `count.js` sends
+  as the hit's `ns` parameter; each event names its own path, so the path function never touches
+  one.
+
+`josuakrause.goatcounter.com` holds only the page visits and events from before the page counted
+everything on the game's own site.
+
+The server sees the browser's user agent and derives a country from the address, as any request
+does. GoatCounter sets no cookie and stores nothing on the device, which is why the page shows no
+consent banner, and a visitor is never followed across days or sites. **A page carrying
+`?debug=1` loads none of it**, so neither its visit nor anything played on it is counted
+(PLAYTEST-132: "anything with debug doesn't get tracked"). `count.js` itself ignores `localhost`,
+private network addresses, `file:`, a page inside a frame, a prerendered page and a browser that
+has opted out through GoatCounter's own `#toggle-goatcounter` (`skipgc` in its local storage), and
+flags a browser driven by WebDriver as a bot, which GoatCounter does not count, so
+`tools/serve-web.sh` and a phone on the same Wi-Fi count nothing. `--no-telemetry` does not reach
+it: it switches off the run log, and the counter writes none.
+
+`tools/goatcounter.sh` reads the site back with its read-only API key in `GOATCOUNTER_TOKEN`: the
+events as a funnel, and the page visit among every path under `--raw`. Its `--site` option and the
+old site's key read that site's history.
+
+**The game counts how far a run gets, as anonymous GoatCounter events.**
 `VisitCounter` (`src/autoload/visit_counter.gd`) is an autoload that only listens — every method
 answers an `EventBus` signal, decides nothing, and changes nothing about play, the same "telemetry
 must not touch gameplay" invariant the run log keeps. It calls the page's own
 `window.goatcounter.count({path, title, event: true})` (see
-[GoatCounter's own docs](https://www.goatcounter.com/help/events)), one call per event, each name
-starting `nappy-` so it can never collide with an event the marketing site sends through the same
-account, and short, lowercase and hyphenated — `nappy-day-6-lost-crying`, PLAYTEST-132's own shape
-for it. Counts only: no seed, no position, no time, nothing that could tell one visitor from
-another or from their own next visit.
+[GoatCounter's own docs](https://www.goatcounter.com/help/events)), one call per event and one
+event every time its moment happens, each name starting `nappy-`, the prefix
+`tools/goatcounter.sh` reads by, and short, lowercase and hyphenated — `nappy-day-6-lost-crying-crowd`,
+PLAYTEST-132's own request for "how a day is lost" folded into one name with its cause. Counts
+only: no seed, no position, no time, nothing that could tell one visitor from another or from
+their own next visit.
 
 The events:
 
 - `nappy-run-fresh` / `nappy-run-resumed-day-N` — a run begun fresh, or resumed from the save, and
   on which day.
 - `nappy-day-N-began` — each day begun. A nerve-bought retry begins it again for the day it repeats.
-- `nappy-day-N-won` / `nappy-day-N-lost-crying` / `nappy-day-N-lost-timeout` /
-  `nappy-day-N-lost-hard-fail` — each day's end, named straight off `GameEnums.DayResult`'s own
-  keys rather than a second copy of the game's loss causes.
+- `nappy-day-N-won` / `nappy-day-N-lost-timeout` — a day's end that names nothing further: a win
+  needs no cause and a timeout's own name already says everything about a clock that ran out.
+- `nappy-day-N-lost-crying-<source>` / `nappy-day-N-lost-hard-fail-<what>` — a lost day's own name,
+  one event folding in what actually did it rather than a second event beside it. The cause is
+  emitted by `main._on_day_finished()` as `EventBus.day_lost_to` just before `day_ended`, and
+  `VisitCounter` holds it until `day_ended` fires and folds it onto the loss kind
+  (`VisitCounter._loss_event_suffix()`). A hard fail names the row that struck her — `car` for the
+  one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
+  `Crowd._strike()`), otherwise the id off whichever row's own `is_lethal_at()` fired
+  (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
+  caught `charging_dog` is `lost-hard-fail-charging-dog`. A crying loss names whichever source
+  landed the most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she
+  cried: a catalogue id (`EventInstance.landed()`), `crowd` for walkers or `traffic` for cars
+  (`CrowdAgent.landed()`, told apart by `CrowdAgent.kind`), or `self` for her own running and
+  standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
+  own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
+  present, falling back to `self` when there is none (`main._crying_cause_suffix()`). A
+  `LOST_CRYING`/`LOST_HARD_FAIL` day this counter never got a cause for — reachable only where
+  something drives `day_ended` without first driving `day_lost_to` for the same day, which nothing
+  in `main.gd`'s own wiring does — still sends the bare `lost-crying` / `lost-hard-fail` rather than
+  nothing.
+- `nappy-day-3-seen-fire` — the first frame the burning building is on screen, whether or not the
+  warning for the fire engine it summons can be put up yet
+  (`EventManager._summon_what_has_been_sighted()`).
+- `nappy-day-3-fire-unmet` — a won day 3 on which the fire was never met and was lit off her path
+  at dusk (`EventManager.light_what_she_never_met()`).
+- `nappy-day-14-blackout` — the city goes dark, whether or not a mast was silenced
+  (`Blackout.go_dark()`; `city_went_quiet` fires only when there was one to silence).
+- `nappy-escape-city` — the building is behind her and the city section begins
+  (`main._on_escape_exit_requested()`). Once per attempt at the *building* section; a retry of the
+  city section alone (`FinaleController.restart_section()`) never repeats it.
+- `nappy-day-N-dog-chased` — `charging_dog` starts chasing her (`EventInstance._chase()`).
+  `nappy-day-N-dog-shaken` or `nappy-day-N-dog-outlasted` follows once the chase is over without
+  catching her — whether she ran it off or its own clock simply ran out
+  (`EventInstance._be_done()`, `EventInstance.gave_up`). A caught chase is
+  `nappy-day-N-lost-hard-fail-charging-dog` instead, off the pair above, and never also sends
+  `dog-outlasted`.
+- `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
+  actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
+  on screen for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
+  mark/task split reads `ResistanceSteps.Step.is_pickup` off the resistance's own data.
+- `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each perform step done, and each a day
+  ended without: a perform step reached but not finished. A chalk mark sends `mark-*` above
+  instead.
+- `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn
+  (`PosterWalls._tear()`), every mother who stops her to chat, and every time a checkpoint holds
+  her (`EventManager._check_detentions()`, once per catch).
+- `nappy-day-N-poster-pursuit` — a tear whose marble sends a patrol after her, beside that tear's
+  own `poster-torn` (`EventManager.send_a_patrol()`). A marble drawn while a patrol is already on
+  its way is that same patrol and sends nothing more, and nothing is sent during the escape.
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
   return to the title after an ending already reported through `nappy-ending-*`.
-- `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each task done, and each task a day ended
-  without: a chalk mark never reached, or a perform step reached but not finished, both counted the
-  moment the day they belong to ends.
 - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: the fresh handover
   from a won day 14, either section lost on any attempt, or the tunnel or the bridge reached.
-- `nappy-controls-joystick` / `nappy-controls-tap` — which control scheme was picked on the title
-  screen, cheap to answer and its own small piece of "how far people get".
+- `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — which button began
+  the run on the title screen, or `keys` when a key did (`space` or a walking key, which begins the
+  run in tap mode; the name comes from the input that began it, not the mode it falls back to),
+  cheap to answer and its own small piece of "how far people get".
+
+Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
+`event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,
+`resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent` — is listen-only: it rolls no RNG and
+changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
+existing `escape_*` signals already use.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
 things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
@@ -371,7 +452,7 @@ name the question it answers, or it is a metric and does not belong.
 | `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
-| `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, day 3's fire sited or moved on the branch she is walking, or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
+| `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, day 3's fire sited or moved on the branch she is walking, or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
 | `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (`player_at`, its own age), and that is what lets a data-level rig assert it with no map or city behind it |
 | `chat` | `EventManager` | A detention conversation started — which one, where, and how long it holds her. Written whenever `detain_seconds` fires, not only for `chatting_mother`, so a redetaining door's own toll is on this line too; what it costs the meter is on the line as well, since a sleeping baby pays nothing and an awake one pays `Tuning.CHAT_EXCITEMENT` |
 | `checkpoint` | `EventManager` | A region door's toll paid — where she was held, how long, and which side she came out on. Written on release rather than on capture, since "released on the north side" is the fact a reader wants and the teleport is what makes it true. **And a door she walked through instead** — which body's line she crossed on foot, heading where, and whether the boom was up: a crossing under a raised boom that skipped the toll, detected rather than guessed (docs/EVENTS.md, "Checkpoints"), so a trace can say whether the player took the dash and a rig run can be held to never taking it |

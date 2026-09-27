@@ -1,0 +1,46 @@
+{
+  "adapter": "Apple M2",
+  "arguments": [
+    "res://tests/probes/scenery_shader_warmup_runtime.tscn"
+  ],
+  "display_server": "macOS",
+  "elapsed_wall_seconds": 2.594,
+  "engine": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "escape": {
+    "complete": true,
+    "frame": "escape-boot.png",
+    "warm_nodes_present_at_frame_post_draw": true,
+    "warm_nodes_present_before_frame": true
+  },
+  "ordinary": {
+    "complete": true,
+    "frame": "ordinary-boot.png",
+    "warm_nodes_present_at_frame_post_draw": true,
+    "warm_nodes_present_before_frame": true
+  },
+  "rendering_driver": "opengl3",
+  "rendering_method": "gl_compatibility",
+  "schema_version": 1,
+  "status": "complete",
+  "user_arguments": [
+    "--no-save",
+    "--no-telemetry",
+    "--seed",
+    "4242",
+    "--spawn",
+    "edge:s",
+    "--no-title",
+    "--start-escape=city",
+    "--invincible"
+  ]
+}

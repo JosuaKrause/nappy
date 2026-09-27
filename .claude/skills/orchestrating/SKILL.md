@@ -56,8 +56,8 @@ The three cases where the orchestrating session implements directly, and they ar
   orchestrator's context fills with implementation detail that an agent would have held instead,
   and the next design decision is taken with less room to take it in.
 - **It is the queue or the archive.** `TODO.md` and the entries under `docs/todo/`, the review
-  items, `HANDOFF.md`, the records under `docs/decisions/` and the playtests are the
-  orchestrator's, always — see "What the orchestrator keeps".
+  items, the records under `docs/decisions/` and the playtests are the orchestrator's, always —
+  see "What the orchestrator keeps".
 
 **Everything else is an agent's**, and a milestone that is not ready for one is a milestone whose
 queue entry is not finished yet. That is the same test the **playtest-feedback** rules already impose:
@@ -105,7 +105,7 @@ Every agent prompt contains, explicitly:
   session can see that and pick it up, rather than the state living only as uncommitted edits in
   a worktree that somebody has to find and diff by hand.
 - **A scope fence**: the files it may touch, and the files it must not — always including
-  `docs/TODO.md`, `docs/todo/`, `docs/review/`, `docs/decisions/`, `docs/HANDOFF.md` and the
+  `docs/TODO.md`, `docs/todo/`, `docs/review/`, `docs/decisions/` and the
   playtests (queue maintenance and
   archiving belong to the orchestrator), plus anything another live agent owns. Two agents editing
   one file is a merge conflict scheduled in advance; when a shared file is unavoidable, tell each
@@ -221,7 +221,9 @@ merging is what collides — so parallelism is planned at the file level, before
   read its entry's folder on `origin/main`; a brief built from a stale entry produces work that
   contradicts a decision the player has already recorded, and the contradiction is only found at
   review. If `main` has moved, merge it into the branch before the next agent commit rather than
-  after the last one.
+  after the last one. **What is next is `tools/queue.sh` run on that checkout**: it prints the
+  queue from each entry's band line (`priority:` and `after:`, the first lines of its
+  `README.md`), and setting or moving a band is the orchestrator's one-line edit to that entry.
 - **The merge order** when agents run in parallel — overlapping areas run sequentially instead;
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
@@ -285,9 +287,12 @@ of interruption it was.")*
 
 1. **Run `tools/agent-status.sh` before touching anything.** It covers every worktree's branch,
    uncommitted files, how far it is ahead of and behind its own upstream (another session may have
-   pushed to it), its PR's CI state, its brief file, and its agent's warm/cold verdict in one pass.
-   What it cannot show is where an agent stopped inside an item — for that, read its transcript's
-   last tool calls, the file `agent-status.sh` named.
+   pushed to it), its PR's CI state, its brief file, and its credited agent's warm/cold verdict in
+   one pass — across this checkout and any other local clone of the repo it is told about or finds
+   from Codex's own session history, each block naming which one it is in, with a warning when the
+   same branch is checked out in more than one. What it cannot show is where an agent stopped
+   inside an item — for that, read its transcript's last tool calls, the file `agent-status.sh`
+   named.
 2. **Take the pause's kind from the player.** If they have not said, it is long when the
    agent's last request is older than the cache window less five minutes (see "A finished agent
    is not resumed after it has gone cold"), and brief otherwise.

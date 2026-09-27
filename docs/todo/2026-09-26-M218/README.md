@@ -1,3 +1,5 @@
+priority: later
+
 ## M218 — The burning building burns · found 2026-09-26
 
 > "the fire of the burning building is on the street -- the building itself is not burning"

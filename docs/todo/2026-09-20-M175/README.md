@@ -1,3 +1,5 @@
+priority: later
+
 ## M175 — A row states what it costs, and the cost table is checked in · asked for 2026-09-20
 
 > "is there a better way than having four numbers to control what actually happens? we adjust

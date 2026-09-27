@@ -38,7 +38,12 @@ what was tried and rejected, or what a number used to be, that is the records un
 `docs/decisions/`, one file each, fetched on demand with `tools/decisions.sh <noun>`
 ([docs/DECISIONS.md](docs/DECISIONS.md) says how). Nothing outside them describes a past state.
 
-Read [docs/HANDOFF.md](docs/HANDOFF.md) for where to pick up, then [docs/TODO.md](docs/TODO.md).
+**Where to pick up is read from the live state, not from a checked-in document.** Fetch
+(`git fetch --prune`), then `gh pr list` for the open pull requests, `tools/agent-status.sh` for
+the agent worktrees and their briefs, and `tools/queue.sh` for the queue's order
+([docs/TODO.md](docs/TODO.md) says how an entry's band sets it); the items under `docs/review/`
+are what waits on a person. A local, git-ignored `.claude/restart-prompt.md`, when there is one,
+is the last session's note to the next (**session-cleanup**).
 
 ---
 
@@ -73,6 +78,7 @@ is the moment somebody is about to touch the file.
 | `src/telemetry/**`, `src/autoload/telemetry.gd` | **telemetry** |
 | `src/autoload/tuning.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
+| `tools/synthesize-sfx.py`, any `*.wav`, `*.ogg`, `*.flac` or `*.mp3` | **sound-effects** |
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify** |
 | `docs/playtests/*.md`, `docs/TODO.md`, `docs/todo/**`, `docs/review/**` | **playtest-feedback** |
@@ -103,7 +109,7 @@ rather than a place:
 |---|---|
 | run a sequence of shell commands by hand — git/gh housekeeping, checking on agents, verification, a capture, a build | **using-tools** |
 | respond to a playtest or a design instruction, *before* any file is touched | **playtest-feedback** |
-| commit, branch, merge, or write a commit message | **committing** |
+| commit, branch, merge, cut a release, or write a commit message | **committing** |
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |
 | **end a session** | **session-cleanup** |
@@ -162,9 +168,9 @@ of decisions.md — that information is rarely relevant when working on the code
 comes in to play when planning things out, so we don't attempt approaches again that we already
 ruled out.")* A ticked box, a "Done:" paragraph, a branch name or a status word in a heading is a
 quest log wherever it stands: `TODO.md` and the entries under `docs/todo/` hold open work only,
-`HANDOFF.md` holds the pick-up state only, `REVIEW.md` and the items under `docs/review/` hold what
-waits on a person only, and what was done — with its measurement and its rejected options — is
-retrievable on demand from the records under `docs/decisions/` and nowhere else.
+`REVIEW.md` and the items under `docs/review/` hold what waits on a person only, and what was
+done — with its measurement and its rejected options — is retrievable on demand from the records
+under `docs/decisions/` and nowhere else.
 
 The playtest files under `docs/playtests/` are the exception and are never rewritten. They are
 primary sources: a player's own words on a date.

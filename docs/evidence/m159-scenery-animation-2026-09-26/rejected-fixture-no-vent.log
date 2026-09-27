@@ -1,0 +1,12 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.1 Metal - 90.5 - Compatibility - Using Device: Apple - Apple M2
+
+SCRIPT ERROR: Assertion failed.
+          at: _ready (res://tests/probes/scenery_animation_runtime.gd:38)
+          GDScript backtrace (most recent call first):
+              [0] _ready (res://tests/probes/scenery_animation_runtime.gd:38)
+SCRIPT ERROR: Invalid access to property or key 'elapsed' on a base object of type 'Nil'.
+          at: _finish (res://tests/probes/scenery_animation_runtime.gd:109)
+          GDScript backtrace (most recent call first):
+              [0] _finish (res://tests/probes/scenery_animation_runtime.gd:109)
+              [1] _process (res://tests/probes/scenery_animation_runtime.gd:94)

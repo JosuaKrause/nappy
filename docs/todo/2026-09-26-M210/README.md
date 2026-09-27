@@ -1,3 +1,5 @@
+priority: later
+
 ## M210 — The brief between two days is the coming day's · asked for 2026-09-26
 
 > "the day brief is inconsistent it say she fell asleep but really it's the day brief for the next
