@@ -32,12 +32,13 @@ REVIEW_REQUIRED/BLOCKED under `contents: read`, and the reviewer app was refused
 `resolveReviewThread` (FORBIDDEN) under that same permission; `codex-coder`'s own APPROVE, with
 `contents: write`, made the PR APPROVED/CLEAN, and with `contents: write` live a reviewer resolves
 its own threads too (verified: nine of `claude-reviewer`'s own threads on PR #391, each returning
-`isResolved: true`). The permission changed, but a reviewer identity still never pushes or merges:
-`.claude/hooks/github-write-guard.sh` denies `git push`, the pushing `tools/` scripts, and a
-merge-type write (`gh pr merge`/`update-branch`, a `gh api` write to an endpoint ending in
-`/merge`, `/merges` or `/update-branch`, or to a `/contents/` path) when the
-wrapping role is `claude-reviewer`/`codex-reviewer`, whatever GitHub's own permission allows —
-coders push and merge instead.
+`isResolved: true`). The permission changed, but a reviewer identity is still refused the named
+push and merge routes: `.claude/hooks/github-write-guard.sh` denies `git push`, the pushing
+`tools/` scripts, and a merge-type write (`gh pr merge`/`update-branch`, a `gh api` write to an
+endpoint ending in `/merge`, `/merges` or `/update-branch`, or to a `/contents/` or `/git/refs`
+path) when the wrapping role is `claude-reviewer`/`codex-reviewer`, whatever GitHub's own
+permission allows — coders push and merge instead. A GraphQL mutation is not refused by name,
+which is the fourth accepted gap below.
 
 **Using their own identity is mandatory, and enforced on writes.** committing and pr-review say
 which role does what: Claude Code's orchestrator and its implementation agents commit as
@@ -60,13 +61,14 @@ calls, reads included, through a fresh token this way too (`tools/lib_agent_role
 `agent_run`), rather than relying on the one token the whole script may itself have been wrapped
 in, since a run past the one-hour token's life must not have a later read 401 or a later write
 fail; run without `NAPPY_AGENT_ROLE` set (a human at their own terminal, not an agent), a script
-calls `gh`/`git` directly, exactly as it always did. `.claude/settings.json`'s two allow rules for
-`tools/prune-merged.sh` name the wrapped line, `uv run python tools/agent-identity.py run
-claude-coder -- tools/prune-merged.sh` and its `codex-coder` twin, rather than the bare script:
-the hook denies the bare form, and a Claude Code allow rule is a literal prefix match on the
-command's text, so a rule for the bare script never matched what an agent must now type. The
-player, asked whether to move them: *"can you add it?"* Codex's approvals are its own sandbox's
-and are not read from this file. The reviewer's own review now carries GitHub's
+calls `gh`/`git` directly, exactly as it always did. `.claude/settings.json`'s allow rule for
+`tools/prune-merged.sh` names the wrapped line, `uv run python tools/agent-identity.py run
+claude-coder -- tools/prune-merged.sh`, rather than the bare script: the hook denies the bare
+form, and a Claude Code allow rule is a literal prefix match on the command's text, so a rule for
+the bare script never matched what an agent must now type. The player, asked whether to move the
+rules: *"can you add it?"* There is no `codex-coder` rule: Codex's approvals are its own
+sandbox's and are not read from this file, and Claude Code runs as `claude-coder`, so such a rule
+would only pre-approve Claude Code running as Codex's identity. The reviewer's own review now carries GitHub's
 verdict too: APPROVE when the verdict is *ready*, REQUEST_CHANGES when it is *not ready*, COMMENT
 for an interim or partial review — it still never merges, which stays committing's call under its
 permission rule. Merging now also needs one approving review, from a reviewer bot or the player —
@@ -109,7 +111,7 @@ player — no bot identity can make either change, so `github-write-guard.sh`'s 
 retry.
 
 **Accepted gaps.** The write guard is a guardrail against an agent's own ordinary mistake, not a
-security boundary against a deliberately adversarial shape. Three gaps exist, each probed against
+security boundary against a deliberately adversarial shape. Four gaps exist, each probed against
 the hook with a JSON payload:
 
 - **The wrapper's shape inside a mention exempts what follows it.** The guard reads raw text with
@@ -126,4 +128,9 @@ the hook with a JSON payload:
   agent that wraps a push in `run claude-coder --` (or nests that inside its own `run
   claude-reviewer --`), or a script that sets `NAPPY_AGENT_ROLE=claude-coder` itself, goes out as
   the coder. Which agent uses which role is the skills' rule; the hook enforces only that some
-  bot identity is used, and that a reviewer role never pushes or merges.
+  bot identity is used, and that a reviewer role is refused the named push and merge routes.
+- **A GraphQL mutation under a reviewer role is allowed.** `run claude-reviewer -- gh api graphql
+  -f query='mutation { mergePullRequest(input:{pullRequestId:"x"}) { clientMutationId } }'`, and
+  the same with `enablePullRequestAutoMerge`, pass. A reviewer needs one mutation,
+  `resolveReviewThread`, to resolve its own threads, so mutations cannot be refused wholesale, and
+  the guard does not keep a list of GraphQL mutation names.

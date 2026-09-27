@@ -13,8 +13,9 @@
 # ordinary GitHub writes from going out as the player by mistake -- every shape an agent would
 # plausibly type is fixed. It does not chase a deliberately adversarial shape meant to evade it:
 # the wrapper's shape inside a mention (below), a write through a client other than git, gh or the
-# pushing scripts (`curl` with `gh auth token`, an MCP tool), and a command naming a role that is
-# not the running agent's own are accepted gaps, each with an example in
+# pushing scripts (`curl` with `gh auth token`, an MCP tool), a command naming a role that is not
+# the running agent's own, and a GraphQL merge mutation under a reviewer role are accepted gaps,
+# each with an example in
 # `docs/decisions/2026-09-27-tall-egret.md`'s "Accepted gaps" paragraph.
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
@@ -45,16 +46,19 @@
 # search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
 # `mutation`) stay unguarded.
 #
-# **A reviewer identity (`claude-reviewer`, `codex-reviewer`) never pushes or merges, wrapped or
-# not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a
+# **A reviewer identity (`claude-reviewer`, `codex-reviewer`) is refused the named push and merge
+# routes, wrapped or not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a
 # required-approval ruleset, and so does resolving its own review threads -- see
 # `_REVIEWER_PERMISSIONS`'s own comment in `tools/agent-identity.py`), so GitHub itself would let
 # it push or merge; this tool still refuses, on the theory that reviewing and coding stay two
 # identities even where GitHub's permission model would allow one to do both. So `git push`, the
 # pushing `tools/*.sh` scripts, `gh pr merge`, `gh pr update-branch` and a `gh api` write whose
 # endpoint ends in `/merge`, `/merges` or `/update-branch` (with an optional trailing `/` or
-# `?query`) or goes to a `/contents/` path are all denied even inside `run claude-reviewer --`/`run
-# codex-reviewer --`, with a message naming the coder identity to use instead. A role this hook
+# `?query`) or goes to a `/contents/` or `/git/refs` path are all denied even inside `run
+# claude-reviewer --`/`run codex-reviewer --`, with a message naming the coder identity to use
+# instead. A GraphQL mutation is not refused by name: `resolveReviewThread`, which a reviewer
+# needs, is one, so `mergePullRequest` or `enablePullRequestAutoMerge` under a reviewer role is an
+# accepted gap. A role this hook
 # does not recognise as a reviewer is not specially blocked here either way:
 # `tools/agent-identity.py` itself refuses to mint a token for a name outside its own `ROLE_NAMES`,
 # which is the actual enforcement for an unknown or misspelled role.
@@ -208,13 +212,21 @@ def detect_git($w; $i; $n):
 # variable or a command substitution (`query=$Q`, `query=$(cat q.graphql)`), a whole body from
 # `--input`, or no `query=` field at all cannot be checked for the word, so each counts as a write.
 #
+# Whether a call is GraphQL is decided by its endpoint alone, the first word that is neither a
+# flag nor a flag's value, so a field value that merely contains the word `graphql` never turns a
+# REST write into a GraphQL read. Quotes are stripped before the split, so a query with spaces
+# written before the endpoint leaves its later words to be taken for the endpoint and the call is
+# denied -- the safe direction; writing the endpoint first (`gh api graphql -f query=...`) reads.
+#
 # A write whose endpoint ends in `/merge`, `/merges` or `/update-branch` (an optional trailing `/`
-# or `?query` included), or that goes to a `/contents/` path, is a merge-type write
+# or `?query` included), or that goes to a `/contents/` or `/git/refs` path, is a merge-type write
 # (`is_merge_like`, below): the API form of `gh pr merge`/`update-branch`, a merge commit on a
-# branch, or a commit made through the contents API. These patterns are checked against every
-# non-option word of the call rather than a single parsed endpoint, since a header value such as
-# `-H 'Accept: application/vnd.github+json'` splits into two words and would otherwise be taken
-# for the endpoint.
+# branch, a commit made through the contents API, or a branch created, moved or deleted through
+# the git refs API. These patterns are checked against every non-option word of the call rather
+# than the endpoint alone, since a header value such as `-H 'Accept: application/vnd.github+json'`
+# splits into two words and would otherwise hide the real endpoint; the cost is a false deny for a
+# reviewer whose comment body mentions such a path, which the deny message answers with
+# `--input`.
 #
 # The scan runs to the next separator or the end of the command either way, win or lose, and a
 # flag's value is consumed only when it is not itself a separator, so the caller skips past
@@ -237,7 +249,7 @@ def gh_api_field_value($v):
   else . end;
 
 def detect_gh_api($w; $start; $n):
-  {i: $start, method: null, field: false, graphql: false, merge_type: false, mutation: false,
+  {i: $start, method: null, field: false, endpoint: null, merge_type: false, mutation: false,
    query_visible: false, query_hidden: false}
   | until(.i >= $n or ($w[.i] | is_sep);
       . as $s
@@ -264,13 +276,14 @@ def detect_gh_api($w; $start; $n):
         elif $x | gh_api_value_flag then (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("-") then .i += 1
         else
-          (if $x | test("(?i)(^|/)graphql$") then .graphql = true else . end)
+          (if .endpoint == null then .endpoint = $x else . end)
           | (if ($x | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) or ($x | test("(?i)/contents/"))
+                or ($x | test("(?i)/git/refs(/|$)"))
              then .merge_type = true else . end)
           | .i += 1
         end) as $r
   | (($r.method != null) and (($r.method | ascii_downcase) == "get")) as $is_get
-  | if $r.graphql then
+  | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
       (if $r.mutation then {next: $r.i, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
        then {next: $r.i, reason: "gh api graphql with a query not written inline"}
@@ -436,7 +449,9 @@ if [ "$reviewer_push" = "true" ]; then
 	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
 but reviewers never push or merge -- only a coder identity does. Wrap it in \
 'uv run python tools/agent-identity.py run claude-coder -- <command>' (or codex-coder) instead. \
-See committing and pr-review."
+If this is a comment or review whose own text only mentions a path such as /merge, /contents/ or \
+/git/refs, send the body from a file with --input (or -F body=@file) so its words are not read as \
+the endpoint. See committing and pr-review."
 else
 	reason="This command writes to GitHub ($flagged) outside any agent identity. A write is a git \
 push; a commit-making git verb (commit, cherry-pick/revert/am, merge/rebase past --abort, pull \

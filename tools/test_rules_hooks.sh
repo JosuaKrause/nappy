@@ -61,9 +61,10 @@
 #     python in front and with or without run's own --repo before the role -- but only a write
 #     inside that wrapper's own -- ... span, never one before it or on a different
 #     ;/&/|/newline-separated command, and never a git push, a pushing tools/ script or a
-#     merge-type gh write (gh pr merge/update-branch, a gh api endpoint ending in /merge) when the
-#     wrapping role is a reviewer (claude-reviewer/codex-reviewer): reviewers never push or merge,
-#     whatever GitHub's own contents:write permission allows -- only a coder identity does. Every
+#     merge-type gh write (gh pr merge/update-branch, a gh api write to /merge, /merges,
+#     /update-branch, /contents/ or /git/refs) when the wrapping role is a reviewer
+#     (claude-reviewer/codex-reviewer), whatever GitHub's own contents:write permission allows --
+#     only a coder identity pushes or merges by those routes. Every
 #     scan (gh api's, a git verb's abort-flag check) runs to the next separator or the end of the
 #     command either way, so many such calls glued with no separator between them stay linear
 #     rather than quadratic.
@@ -1017,12 +1018,10 @@ else
     fail "400 glued gh api calls took $((SECONDS - dense_gh_start)) seconds, past half the hook's 10-second timeout"
 fi
 
-# A review of 8021ba74 found a High regression in 88b660f9: a gh api flag before the endpoint
-# (exactly how gh itself accepts -X/--method/-f/-F/--input) skipped the guard entirely, since the
-# scan started after skipping leading options instead of right after "api". It also found the
-# "stop early on the next git/gh word" fix for the quadratic scan wrongly stopped early on any
-# endpoint or flag value merely ending in /gh or /git.
-assert_write_guard "gh api -X PUT .../merge, flag before the endpoint -> deny (the regression)" deny \
+# A flag before the endpoint is how gh itself accepts a write (-X/--method/-f/-F/--input), so the
+# scan starts right after "api"; and an endpoint or flag value ending in /gh or /git is part of
+# the call, not the start of a new command.
+assert_write_guard "gh api -X PUT .../merge, flag before the endpoint -> deny" deny \
     'gh api -X PUT repos/o/r/pulls/1/merge'
 assert_write_guard "gh api --method=PUT .../merge, flag before the endpoint -> deny" deny \
     'gh api --method=PUT repos/o/r/pulls/1/merge'
@@ -1114,13 +1113,25 @@ assert_write_guard "gh api graphql -f query=\$Q, a shell variable -> deny" deny 
     'gh api graphql -f query=$Q'
 assert_write_guard "gh api graphql -f query=\$(cat f), a command substitution -> deny" deny \
     'gh api graphql -f query=$(cat m.graphql)'
+assert_write_guard "a REST write whose field value contains the word graphql -> deny" deny \
+    "gh api -X POST repos/o/r/issues/1/comments -f body='use graphql' -f query=x"
+assert_write_guard "gh api with a full graphql URL as the endpoint, inline query -> allow" allow \
+    "gh api https://api.github.com/graphql -f query='{viewer{login}}'"
 assert_write_guard "gh api graphql -fquery=@file, attached -> deny" deny \
     'gh api graphql -fquery=@q.graphql'
 assert_write_guard "gh api graphql with no query field -> deny" deny \
     'gh api graphql'
 assert_write_guard "gh api graphql, a visible query with no mutation -> allow" allow \
     'gh api graphql -f query=query{me{login}}'
-assert_write_guard "gh api graphql, a visible query with spaces, field before the endpoint -> allow" allow \
+assert_write_guard "gh api graphql, a visible query with spaces, endpoint first -> allow" allow \
+    "gh api graphql -f query='query { viewer { login } }'"
+assert_write_guard "gh api graphql, a visible query with no spaces, field before the endpoint -> allow" allow \
+    "gh api -f query='query{viewer{login}}' graphql"
+# The endpoint is the first word that is neither a flag nor a flag's value, and quotes are
+# stripped before the split, so a spaced query before the endpoint leaves its later words to be
+# taken for the endpoint: a false deny, in the safe direction, answered by writing the endpoint
+# first.
+assert_write_guard "gh api graphql, a spaced query before the endpoint -> deny (safe direction)" deny \
     "gh api -f query='query { viewer { login } }' graphql"
 assert_write_guard "gh api graphql --raw-field=query=..., attached and visible -> allow" allow \
     'gh api graphql --raw-field=query={viewer{login}}'
@@ -1165,6 +1176,14 @@ assert_write_guard "gh api with a split -H value before -X PATCH -> deny" deny \
     'gh api -H "Accept: application/vnd.github+json" -X PATCH repos/o/r/issues/1'
 assert_write_guard "gh api -X with a separator for its value does not swallow the next command" deny \
     'uv run python tools/agent-identity.py run claude-coder -- gh api repos/o/r -X ; git push'
+assert_write_guard "wrapped gh api PATCH .../git/refs/heads/x (moves a branch) as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X PATCH repos/o/r/git/refs/heads/feature -f sha=abc'
+assert_write_guard "wrapped gh api DELETE .../git/refs/heads/x as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api -X DELETE repos/o/r/git/refs/heads/feature'
+assert_write_guard "wrapped GET .../git/refs/heads/main as claude-reviewer -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api repos/o/r/git/refs/heads/main'
+assert_write_guard "wrapped reply whose body comes from a file, as claude-reviewer -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh api repos/o/r/pulls/1/comments/5/replies -F body=@reply.md'
 assert_write_guard "wrapped gh api PUT .../merge as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh api -X PUT repos/o/r/pulls/1/merge'
 

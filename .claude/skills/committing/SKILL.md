@@ -311,11 +311,12 @@ tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` �
 delete is a write, so `github-write-guard.sh` denies it bare (Codex runs the same line with
 `codex-coder`). **Use it rather than the bare commands**: Claude Code's auto-mode classifier
 refuses `git worktree remove` and `git branch -D` as destructive however the check came out, and
-`.claude/settings.json` allows exactly that wrapped line, for `claude-coder` and `codex-coder`,
-because the script cannot delete anything the check did not clear. The allow rules are prefix
-matches on the command's text, so the line has to be spelled as above: `./tools/…`, a different
-role, or anything else in front of `tools/prune-merged.sh` is not covered and goes to the
-classifier.
+`.claude/settings.json` allows exactly that wrapped `claude-coder` line, because the script
+cannot delete anything the check did not clear. The allow rule is a prefix match on the command's
+text, so the line has to be spelled as above: `./tools/…`, a different role, or anything else in
+front of `tools/prune-merged.sh` is not covered and goes to the classifier. There is no
+`codex-coder` rule: Codex does not read this file (its approvals are its own sandbox's), and
+Claude Code never runs as `codex-coder`.
 
 **A PR stacked on another is retargeted to `main` before its base branch goes.** The repository
 deletes a merged head branch on GitHub by itself; for a branch deleted by hand (`git push

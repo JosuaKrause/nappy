@@ -124,9 +124,10 @@ _REVIEWER_PERMISSIONS: dict[str, str] = {
     # permission; contents:write made the APPROVE satisfy the ruleset, and with it a reviewer also
     # resolves its own review threads (verified live). The write guard
     # (.claude/hooks/github-write-guard.sh) still refuses a git push, one of the tools/ scripts that
-    # pushes, or a merge-type write (gh pr merge/update-branch, a gh api endpoint ending in /merge)
-    # when the wrapping role is a reviewer -- reviewers never push or merge through this tool,
-    # whatever the GitHub permission allows.
+    # pushes, or a merge-type write (gh pr merge/update-branch, a gh api write to /merge, /merges,
+    # /update-branch, /contents/ or /git/refs) when the wrapping role is a reviewer, whatever the
+    # GitHub permission allows. A GraphQL mutation is not refused by name, since resolveReviewThread
+    # is one (see the tall-egret record's accepted gaps).
     "contents": "write",
     "pull_requests": "write",
     "issues": "write",
