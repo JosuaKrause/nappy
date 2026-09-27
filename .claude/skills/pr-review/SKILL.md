@@ -164,7 +164,9 @@ that PR.
 
 **Its review is Haiku's, and it asks only whether the PR touches code or breaks anything:**
 
-- **Nothing outside the three folders.** `git diff --stat origin/main...` names no other path.
+- **Nothing outside the three folders.** `git diff --stat origin/main...<branch>` names no other
+  path. Three dots: the PR's own change from where it branched. Two dots compare the branch with
+  today's `main`, so everything merged since shows up reversed and reads as the PR undoing it.
 - **No existing playtest file is changed.** A playtest is a primary source and is never rewritten
   (`CLAUDE.md`), so a queue update only adds one.
 - **Nothing open disappears unaccounted for.** A deleted item file or entry folder is either
