@@ -20,9 +20,10 @@ providing cover, which rolls over its larger roof (below).
 saw it on seed 61400 and asked for the roof instead. Its pictures stay in the PR's history.
 
 **Choices open to overturn**, made where the queue was silent: a power station's fenced yard never
-extends a roof (its hall can), so a front facing it keeps its facade; a building can extend its roof over one neighbour while its own
-front is covered by another; a step between two differently tall extended columns gets the same
-cap as a step down to an uncovered one, which no sampled seed produced. The yard guard has no
+extends a roof (its hall can), so a front facing it keeps its facade; a building can extend its
+roof over one neighbour while its own front is covered by another; a step between two
+differently tall extended columns gets the same cap as a step down to an uncovered one, which no
+sampled seed produced. The yard guard has no
 picture because no seed tried has a column it applies to: none in the 40 seeds `61400 + 977·i`,
 and in the 200 seeds `500000 + 7919·i` the 14 covered columns standing over a power station are
 all over its hall, none over its yard. One of them, seed 1917501 (a dead end's wall `[118,14]`
@@ -58,9 +59,10 @@ covered, with no lot on the other side to extend a roof from: it drew no facade 
 background where its wall was. Asked, before any picture of it existed, whether to keep that or
 treat the column as reachable: "keep the special case for dead ends." (2026-09-26). Shown seed
 73124's before/after, the facade on `main` becoming a near-black rectangle: "Keep its facade"
-(2026-09-27). The answer is built as a rule rather than a list of exceptions, and that
-generalization is open to overturn: a front column draws no facade only where a roof extension
-actually covers it. `City._assign_roof_extensions()` narrows `covered_ground_cols` to the columns
+(2026-09-27). Offered the plan to make that the general rule, so no front is left with neither a
+facade nor a roof: "Yeah fix all gaps." (2026-09-27). That answer is the rule's source, and the
+rule stays open to overturn: a front column draws no facade only where a roof extension actually
+covers it. `City._assign_roof_extensions()` narrows `covered_ground_cols` to the columns
 an extension reached, so a column facing the map's edge, a power station's yard or any south
 tile no lot owns keeps its windows, storefronts and door, as on `main`. On the pictured seeds the
 only columns this uncovers are ones facing the map's edge, so no picture changed with the
