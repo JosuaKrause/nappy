@@ -4,5 +4,5 @@ you get through *this* gate"" (statement 10). The mark's text names *this* door,
 door" as if any would do, so a mark she reached by crossing one door still sends her to a
 particular one. The mark's placement stays as it is.
 
-**Proposed, not asked for:** "Can a stroller get through this door?" as the text, one line like the
-other marks.
+The text is the player's: "Cross at this district door. See if they let you through." *("it could
+be "Cross at this district door"" · ""See if they let you through"")*

@@ -73,6 +73,10 @@ building M210, M213, M215 and M218. Every statement here is a bug report and is 
     > "I think the wording is just off -- it shouldn't be "find out if you can get through some
     > gate" it should be more towards "can you get through *this* gate""
 
+    Then, on the words:
+
+    > "it could be "Cross at this district door"" · ""See if they let you through""
+
     Statements 8 to 10 are filed as [downy-otter](../todo/2026-09-27-downy-otter/README.md).
 
 11. **Where playtest notes go in the queue.**
