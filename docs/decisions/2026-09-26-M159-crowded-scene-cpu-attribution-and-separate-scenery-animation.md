@@ -48,3 +48,24 @@ analysis. No implementation starts and no further measurements run until they re
 This replaces the implementation go-ahead above with a plan-only checkpoint. M100's existing
 water/smoke two-frame behavior and periods remain the visual contract; separating the pictures
 does not authorize deleting their motion, redrawing a different scene, or changing event costs.
+
+### Implementation resumption and main integration
+
+The player resumes: "main updated again -- read your brief and let's start with the animation
+optimization", then "pull the latest from the optimization branch". They explicitly authorize
+committing/pushing and incorporating the next main update. These instructions end the plan-only
+pause; they do not authorize merging the PR or publishing a release.
+
+The branch is fast-forwarded to `322642ce`, then main `830b9fb8` is merged from base `25ad5497`.
+Main's warning lifecycle, visit counters, recording tools and priority-band queue are retained
+alongside the independent profiling records, probes and animation contract. The probe's existing
+arterial movement flags remain valid; historical measurements are not represented as measurements
+of the merged source. Import/boot, doc lint and the frame-trace/dev-rig suites pass.
+
+After the roof implementation checkpoint `d8948e14`, main `3d3f2c96` is merged from base
+`830b9fb8`. That main change routes visits and session-free game events through one counter site;
+the branch separates roof furniture drawing. They touch separate implementation paths, and
+the counter remains a no-op on native debug runs. Both sets of records retain their identities.
+The merges are automatic, without conflict resolutions. Import/boot, doc lint and the combined
+visit-counter/scenery-animation checks pass. Visual and controlled performance evidence remain
+required before any claim that the animation optimization is effective.

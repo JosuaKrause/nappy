@@ -6,11 +6,12 @@ extends Node
 ## **A different thing from `Telemetry`, the run log.** This never writes a file and never reads
 ## one back — it only calls the page's own `window.goatcounter.count()`, which the page's `<head>`
 ## loads `count.js` for (`export_presets.cfg`'s `html/head_include`) with the game's own site,
-## `nappy.goatcounter.com`, as its endpoint. That site keeps no sessions, so every event sent
+## `nappy.goatcounter.com`, as its endpoint. That site keeps sessions for the page visit, which
+## `count.js` counts on load, and every event here opts out of them with `no_session`, so it
 ## counts every time it is sent — a day lost three times in an evening is three `lost-*` — while
-## the page visit goes to `josuakrause.goatcounter.com` as its own hit, where a visit stays a
-## unique visitor (PLAYTEST-143: "use this for nappy stats. for the site visit stat use the old
-## account"). Off the web, on a debug build, or behind `?debug=1`, it is a silent no-op — see
+## the visit stays one visitor ("okay, I can turn session back on and you opt out for everything
+## except /nappy.josuakrause.com/"). Off the web, on a debug build, or behind `?debug=1`, it is a
+## silent no-op — see
 ## `_may_ever_send()`. `count.js` loading asynchronously is not one of those: an event asked for
 ## before it has finished loading is queued and sent the moment it appears — see `_pending` — and
 ## only a `count.js` genuinely never loading (missing or blocked) leaves that queue unsent.
@@ -158,16 +159,28 @@ func _flush_pending(present: bool) -> void:
 	for queued_name in queued:
 		_dispatch(queued_name)
 
-## Calls `window.goatcounter.count({path, title, event: true})` for `name` — see
-## https://www.goatcounter.com/help/events and /help/js. Wrapped in the page's own `try`/`catch`
-## as well as the caller's own `_goatcounter_present()` check, so a third-party script's own
-## internals throwing never becomes an engine error on this side — "a missing or failing
-## window.goatcounter must never raise or print an engine error".
+## Sends `name` through the page's own `count.js` — see `_count_call()` for the call.
 func _dispatch(name: String) -> void:
-	var payload := JSON.stringify(name)
-	JavaScriptBridge.eval(
-			"try { window.goatcounter.count({path: %s, title: %s, event: true}); } catch (e) {}"
-			% [payload, payload])
+	JavaScriptBridge.eval(_count_call(name))
+
+## What `window.goatcounter.count()` is given for `name` — see
+## https://www.goatcounter.com/help/events and /help/js. `path` is the event's own name, which
+## also keeps the page's path function (the head's `goatcounter.path`, for the visit alone) off
+## it, since `count.js` reads that only when a call names no path. **`no_session` on every
+## event**: the site keeps sessions for the page visit, and a path hit again inside one session
+## is not counted again, so without it a day lost three times would read as one `lost-*`.
+## `count.js` sends it as the hit's `ns` parameter, and GoatCounter counts a hit carrying it as a
+## visit of its own.
+static func _count_options(name: String) -> Dictionary:
+	return {"path": name, "title": name, "event": true, "no_session": true}
+
+## The one line of script `_dispatch()` evaluates for `name`: `count()` with `_count_options()`,
+## wrapped in the page's own `try`/`catch` as well as the caller's own `_goatcounter_present()`
+## check, so a third-party script's own internals throwing never becomes an engine error on this
+## side — "a missing or failing window.goatcounter must never raise or print an engine error".
+static func _count_call(name: String) -> String:
+	return ("try { window.goatcounter.count(%s); } catch (e) {}"
+			% JSON.stringify(_count_options(name)))
 
 # --------------------------------------------------------------- event names ---
 # Pure functions, each testable without a web page, a save or a run behind it.
@@ -297,8 +310,8 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 		return
 	_send_event(_day_event_name(GameState.day, "dog-shaken" if shaken_off else "dog-outlasted"))
 
-## Every tear, not the first of an attempt: the game's site keeps no sessions so that each one is
-## counted (PLAYTEST-143: "we need a telemetry item for ripping posters").
+## Every tear, not the first of an attempt: every event opts out of the site's sessions so that
+## each one is counted (PLAYTEST-143: "we need a telemetry item for ripping posters").
 func _on_poster_torn() -> void:
 	_send_event(_day_event_name(GameState.day, "poster-torn"))
 

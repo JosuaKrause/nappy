@@ -27,16 +27,19 @@ usage: tools/goatcounter.sh [--help|-h] [--days N] [--start DATE] [--end DATE]
 
 Prints the nappy- GoatCounter event counts as a per-day funnel for a date range, reading the API
 key from GOATCOUNTER_TOKEN (never accepted as a flag). The site read is the game's own,
-nappy.goatcounter.com, which keeps no sessions, so every count is every time the event was sent;
---site reads another. Default range is the last 30 days; --days,
---start and --end (YYYY-MM-DD or RFC3339) narrow it. --json prints the result as JSON instead of
-plain text. --raw prints every path and its count for the range, unfiltered by --prefix -- events
-and page loads alike. --check proves the key works with GET /api/v0/stats/total (needs only "Read
-statistics", the one permission every read-only key has) and reports its permissions too if
-GET /api/v0/me allows it -- GET /api/v0/me is optional extra information, and a 403/404 from it
-does not fail the check, since the statistics call already proved the key works; never prints the
-key. GoatCounter's API is reached only through this script; a question it cannot yet answer gets a
-new flag here rather than a one-off curl or web request.
+nappy.goatcounter.com, which counts the page visit as nappy.josuakrause.com/ with sessions, so
+its count is visitors, and every event without them, so an event's count is attempts: every time
+it was sent. --site reads another; josuakrause.goatcounter.com holds only the visits and events
+from before the page counted everything on the game's site. Default range is the last 30 days;
+--days, --start and --end (YYYY-MM-DD or RFC3339) narrow it. --json prints the result as JSON
+instead of plain text. --raw prints every path and its count for the range, unfiltered by
+--prefix -- events and the page visit alike. --check proves the key works with
+GET /api/v0/stats/total (needs only "Read statistics", the one permission every read-only key
+has) and reports its permissions too if GET /api/v0/me allows it -- GET /api/v0/me is optional
+extra information, and a 403/404 from it does not fail the check, since the statistics call
+already proved the key works; never prints the key. GoatCounter's API is reached only through
+this script; a question it cannot yet answer gets a new flag here rather than a one-off curl or
+web request.
 
   tools/goatcounter.sh
   tools/goatcounter.sh --days 7
