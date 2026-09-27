@@ -908,16 +908,23 @@ func _draw_pause_button() -> void:
 ## **What is drawn is the heading she is actually walking, not only this node's own last press.**
 ## *(2026-09-27, playtest olive-koala statement 6: "the onscreen controls should show the selected
 ## direction on both sides always. when using hands and when using the keyboard".)* The knob's
-## offset is `current_heading()`, read straight off `Input.get_vector()` — the same call
+## offset is `current_heading(_rig)`, read straight off `Input.get_vector()` — the same call
 ## `Stroller._physics_process()` makes off these four actions — rather than off `_direction`, this
 ## node's own locked-in press: a real key overriding a stale click (`_yield_to_the_keyboard()`)
 ## changes what `Input.get_vector()` reports immediately, with nothing routed through this file at
 ## all, so reading it fresh here is what makes a keyboard-set heading show up on both circles
-## exactly as a fresh press would, rather than reading as centred while she visibly walks. Read
-## identically off either circle: there is one heading locked in, not one per focus, so the two
-## always agree. Centred (no offset) reads as *stopped*; a knob toward the rim reads as *walking
-## that way*; brighter and larger while `run` is held, since a hold on the run action is as much a
-## part of "what is locked in" as the heading is.
+## exactly as a fresh press would, rather than reading as centred while she visibly walks. `_rig` is
+## fetched here the same lazy way `_on_tap()`/`set_direction()` already do, since a mode can be set
+## to `JOYSTICK` and drawn before any press has ever asked for the player group. Read identically off
+## either circle: there is one heading locked in, not one per focus, so the two always agree.
+## Centred (no offset) reads as *stopped*; a knob toward the rim reads as *walking that way*;
+## brighter and larger while `run` is held, since a hold on the run action is as much a part of
+## "what is locked in" as the heading is.
+##
+## **And centred while she is detained**, a conversation or a capture, even with a key still held —
+## `current_heading()`'s own doc has the reasoning; a key kept down through one used to swing the
+## knob toward it while she stood locked in place, disagreeing with the one thing she was actually
+## doing.
 ##
 ## **Primitives, not an SVG, and that is the cues rule's own exception rather than a violation of
 ## it.** A knob whose offset is a continuous function of the current heading cannot be a static
@@ -925,10 +932,12 @@ func _draw_pause_button() -> void:
 ## same call made there: "a fill that is not a drawing of anything is not a picture." This ring and
 ## its knob are that shape, not a glyph's.
 func _draw_focus_circles() -> void:
+	if not _rig:
+		_rig = get_tree().get_first_node_in_group("player") as Node2D
 	var running := Input.is_action_pressed(&"run")
 	var knob_radius := _FOCUS_KNOB_RADIUS * (1.3 if running else 1.0)
 	var knob_colour := Color(1.0, 1.0, 1.0, 1.0 if running else 0.8)
-	var offset := current_heading() * (STOP_RADIUS * 0.6)
+	var offset := current_heading(_rig) * (STOP_RADIUS * 0.6)
 	for focus in [FOCUS_LEFT, FOCUS_RIGHT]:
 		draw_arc(focus, STOP_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.35), 2.0, true)
 		draw_circle(focus + offset, knob_radius, knob_colour)
@@ -941,5 +950,17 @@ func _draw_focus_circles() -> void:
 ## could disagree with it — `.normalized()` on top guarantees a unit vector or exactly
 ## `Vector2.ZERO`, matching `heading_to()`'s own convention, rather than trusting whatever length a
 ## diagonal keyboard press or a partial controller strength happens to produce.
-static func current_heading() -> Vector2:
+##
+## **Zero while `rig` is detained, the same door `Stroller._physics_process()` itself reads
+## first.** *(Found in review of #412: a key held through a conversation or a capture used to swing
+## both knobs toward it even though `_detained_for > 0.0` already makes her stand still — the read
+## would have disagreed with her own physics, the one thing this function's doc above promises it
+## never does.)* `rig` is untyped `Node2D` rather than `Stroller`, matching `_rig`'s own doc: this
+## suite's own test rigs are a bare `Node2D` with no `is_detained()` of their own, so `has_method()`
+## is the check rather than a cast that would just fail on them, and a rig with nothing to ask
+## answers "not detained" — the only sound default for something that cannot be captured at all.
+## `null` (a screen with no player in it, or a caller that does not care) answers the same way.
+static func current_heading(rig: Node2D = null) -> Vector2:
+	if rig != null and rig.has_method(&"is_detained") and bool(rig.call(&"is_detained")):
+		return Vector2.ZERO
 	return Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down").normalized()
