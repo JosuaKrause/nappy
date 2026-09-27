@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M205 — The man shouting charges the meter again · found 2026-09-25
 

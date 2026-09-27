@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M210 — The brief between two days is the coming day's · asked for 2026-09-26
 

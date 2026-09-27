@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M217 — Nerves are stars on every screen · asked for 2026-09-26
 
