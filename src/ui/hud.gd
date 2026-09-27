@@ -341,13 +341,23 @@ func _on_contact_available(step: int) -> void:
 ## reason, and a task is one day). A completed pickup's own `brief` words flash on the same
 ## teaching line day 1's walking lesson uses — the one place text already appears over the
 ## world — for `TEACH_SECONDS`; a completed perform step or the finale says nothing here, since a
-## finished task is shown by the world and never by text (M182). `_refresh_resistance()` still
-## runs for every completion, pickup or perform, so the persistent status line picks up the
-## perform step's own header the moment `_begin_step()` activates it a frame later.
+## finished task is shown by the world and never by text (M182).
+##
+## **`_contact_step` is cleared here, not left for the next contact to overwrite** (fluffy-alpaca,
+## "the bottom left text with the current task should disappear when the task is complete" —
+## *"this is not an onscreen text that shows up so it fits the rule still. but it is helpful as
+## indication that the task was completed correctly"*): a perform step's own completion, or the
+## finale's, is the last `_begin_step()` of the day, so nothing else was ever going to overwrite
+## `_resistance_label`'s "somewhere out there" line, and it kept naming an already-finished task
+## for the rest of the day. `_refresh_resistance()` still runs for every completion, pickup or
+## perform, so a pickup's own follow-up perform (`_begin_step()` activating it a frame later,
+## through `_on_contact_available()`) still overwrites this blank the moment it fires — the
+## momentary blank in between is not a line the player is meant to read anything into.
 func _on_resistance_step_completed(step_index: int) -> void:
 	var step := ResistanceSteps.by_index(step_index)
 	if step and step.is_pickup and step.brief != "":
 		_say(step.brief, TEACH_SECONDS)
+	_contact_step = 0
 	_refresh_resistance()
 
 ## Deliberately terse. There is no quest log — the subquest is chalk on a wall.
