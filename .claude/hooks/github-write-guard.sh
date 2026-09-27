@@ -87,11 +87,32 @@
 # `run <role> -- bash -c "a; b"` covers the whole script it runs. A wrapper inside the quotes is
 # told apart by its quoted `--`, and its exemption ends at the next separator, soft or hard; a
 # wrapper inside a script that an outer wrapper already covers (`run <role> -- bash -c "run
-# <role> -- a; b"`) is then a false deny for `b`, the safe direction. So is a heredoc body with an
-# odd number of apostrophes: the heredoc is not tracked, so the quote it opens stays open and a
-# later wrapper on another line reads as an inner one, whose exemption ends at the next separator.
-# A `--` spelled with escapes inside the quotes (`\"--\"`, `\-\-`) is not marked, so that
-# wrapper reads as an outer one -- an accepted gap (see the list above). The one
+# <role> -- a; b"`) is then a false deny for `b`, the safe direction. A `--` spelled with escapes
+# inside the quotes (`\"--\"`, `\-\-`) is not marked, so that wrapper reads as an outer one -- an
+# accepted gap (see the list above).
+#
+# **The quote reading only ever narrows what a separator ends, and only where it can vouch for
+# itself.** A separator read as soft is one a wrapper's exemption runs past, so a misread quote is
+# a false allow: the next line's unwrapped write rides the wrapper. The character pass models
+# exactly four of the shell's quoting states -- single quotes, double quotes, `$'...'` after an
+# unescaped `$`, and a `#` comment -- plus the backslash, and switches between them on exactly the
+# characters the shell switches on, so a command built from those alone has no misread path. Every
+# other construct that changes how quotes are read is not modelled, and its mere presence anywhere
+# in the command, quoted or not, makes the reading unsure: `$(` (so also `$((`), whose body inside
+# `"..."` starts a fresh quoting context; a backtick, with its own backslash rules; `${`, whose word
+# inside `"..."` can hold quotes of its own; `<<`, a heredoc body where quotes mean nothing (or a
+# here-string); and `$$'`, where the pass cannot tell `$$` then `'...'` from `$` then `$'...'`. So
+# is a command the pass finishes with a quote or an escape still open, since a command the shell
+# accepts ends with its quotes closed. The simpler rule -- any of those anywhere -- is chosen over
+# "`$(` or a backtick inside double quotes" because it needs no argument about what the shell does
+# inside each of them: a heredoc commit message, `"$(...)"` and `${VAR}` are all simply not read
+# for quotes. An unsure command is read as if every separator were hard for the exemption (a
+# wrapper covers only up to the next `;`, `&`, `|`, `(`, `)`, backtick or newline, quoted or not),
+# and as if every separator were soft for a `gh api` call's flags (its scan runs on past a pipe or
+# a `;` up to the next git, gh, wrapper or pushing-script command, so a write flag after a quoted
+# `|` is still seen). Both are the stricter reading, and both cost false denies in exactly those
+# commands: `run <role> -- bash -c "a; b"` beside a `$(...)` is denied, and so is a `gh api` read
+# piped into a command that takes `-f`, `-F`, `-X` or `--input` (`| grep -F x`). The one
 # case this does not close is the wrapper's own shape appearing whole inside a mention (a comment
 # that quotes a full `tools/agent-identity.py run claude-coder -- git push` line reads, to this
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
@@ -118,11 +139,13 @@ def named($name): last_part == $name;
 # claude-coder -- git fetch; git push"`) is told apart from one standing outside it (`run
 # claude-coder -- bash -c "..."`): the shell ends the inner wrapper's reach at the script's own
 # `;`, `&&` or newline, and `findings` ends its exemption there too. One pass over the characters,
-# tracking which quote is open (0 none, 1 single, 2 double, 3 `$'...'`, where a backslash escapes
-# as it does outside quotes and in double quotes, but not in single quotes, and `\n` is a newline,
-# so a soft separator; 4 a `#` comment) and the two characters before the last, so a `--` is marked
-# when the character that ends it arrives: the two before are `-`, the one before those starts a
-# word, and a quote is still open.
+# tracking which quote is open (0 none, 1 single, 2 double, 3 `$'...'`, opened only by a `$` that
+# is not itself escaped, where a backslash escapes as it does outside quotes and in double quotes,
+# but not in single quotes, and `\n` is a newline, so a soft separator; 4 a `#` comment) and the
+# two characters before the last, so a `--` is marked when the character that ends it arrives: the
+# two before are `-`, the one before those starts a word, and a quote is still open. One sentinel
+# character after the last closes the pass: it leaves U+0003 behind when a quote or an escape is
+# still open, which makes the whole reading unsure (see the header).
 #
 # An unquoted, unescaped `#` that starts a word (nothing, whitespace or `;`/`&`/`|`/`(`/`)`/a
 # newline before it) opens a comment that the next newline closes, as the shell reads it: quotes
@@ -134,8 +157,10 @@ def sep_codepoints: [59, 38, 124, 40, 41, 96, 10];
 def word_edge_codepoints: [32, 9, 10, 34, 39];
 def comment_start_codepoints: [32, 9, 10, 59, 38, 124, 40, 41];
 def mark_soft_separators:
-  [foreach explode[] as $c ({q: 0, esc: false, prev: null, p2: null, p3: null, emit: []};
+  [foreach (explode + [3])[] as $c
+      ({q: 0, esc: false, prev: null, prev_esc: false, p2: null, p3: null, emit: []};
       .prev as $prev
+      | .esc as $escaped
       | (if .q == 4 then [$c]
          elif .esc and .q == 3 and $c == 110 then [32, 1, 32]
          elif (.esc or .q != 0) and ((sep_codepoints | index($c)) != null) then [32, 1, 32]
@@ -144,20 +169,22 @@ def mark_soft_separators:
       | ((.esc | not) and .q != 0 and .q != 4 and .prev == 45 and .p2 == 45
          and ($p3 == null or ((word_edge_codepoints | index($p3)) != null))
          and (((word_edge_codepoints + sep_codepoints) | index($c)) != null)) as $quoted_dashes
-      | if .q == 4 then (if $c == 10 then .q = 0 else . end) | .emit = $out
+      | if $c == 3 then .emit = (if .esc or (.q | IN(1, 2, 3)) then [3] else [] end)
+        elif .q == 4 then (if $c == 10 then .q = 0 else . end) | .emit = $out
         elif .esc then .esc = false | .emit = $out
         elif $c == 92 and .q != 1 then .esc = true | .emit = [$c]
         elif .q == 0 and $c == 35
              and ($prev == null or ((comment_start_codepoints | index($prev)) != null))
         then .q = 4 | .emit = [$c]
-        elif .q == 0 and $c == 39 then .q = (if .prev == 36 then 3 else 1 end) | .emit = [$c]
+        elif .q == 0 and $c == 39 then
+          .q = (if .prev == 36 and (.prev_esc | not) then 3 else 1 end) | .emit = [$c]
         elif .q == 0 and $c == 34 then .q = 2 | .emit = [$c]
         elif (.q == 1 or .q == 3) and $c == 39 then .q = 0 | .emit = [$c]
         elif .q == 2 and $c == 34 then .q = 0 | .emit = [$c]
         else .emit = $out
         end
       | (if $quoted_dashes then .emit = [2] + .emit else . end)
-      | .p3 = .p2 | .p2 = .prev | .prev = $c;
+      | .p3 = .p2 | .p2 = .prev | .prev = $c | .prev_esc = $escaped;
       .emit[])]
   | implode;
 
@@ -171,10 +198,11 @@ def mark_soft_separators:
 # `-f body='a; b'` is one argument, nor of the exemption of a wrapper standing outside the quotes
 # (`findings`), since `run <role> -- bash -c "a; b"` runs the whole script as that role. A wrapper
 # found through a quoted `--` (U+0002, above) is inside the script, and its exemption ends at the
-# next separator, soft or hard.
-def words:
-  mark_soft_separators
-  | swap("$'"; "'")
+# next separator, soft or hard. The `$'` and `$"` openers lose their `$` only here, after the
+# pass, which needs to see it. When the reading is unsure (the header), every separator becomes
+# soft for the scans and `findings` ends every exemption at any of them.
+def split_words:
+  swap("$'"; "'") | swap("$\""; "\"")
   | drop("\\") | drop("\"") | drop("'")
   | swap("\t"; " ") | swap(","; " ") | swap("["; " ") | swap("]"; " ")
   | swap(";"; " ; ") | swap("&"; " & ") | swap("|"; " | ")
@@ -486,7 +514,8 @@ def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type");
 
 # One pass over the word array: a hard separator resets the current command's exemption, and so
-# does a soft one when the wrapper stood inside quotes (`inner`); any separator recomputes
+# does a soft one when the wrapper stood inside quotes (`inner`) or the reading is `$unsure` (every
+# separator is soft then, and every one ends the exemption); any separator recomputes
 # command position for the next word (`command_word`, from right after the separator); the wrapper
 # pattern sets where its own command's exemption starts (and which role it names), and recomputes
 # command position for the wrapped command the same way; anything else is checked against the
@@ -494,7 +523,7 @@ def is_merge_like($reason):
 # push- or merge-like hit inside a reviewer's own wrapper. A hit with no reason (a gh api/git
 # command read as safe) is not a finding, but its own `next` still lets the pass skip everything
 # it already scanned.
-def findings($w):
+def findings($w; $unsure):
   ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false,
@@ -506,7 +535,7 @@ def findings($w):
       | ($state.i == $state.cmd_word_index) as $cmd_pos
       | if $x | is_sep then
           $state
-          | (if ($x | is_hard_sep) or .wrap_inner
+          | (if $unsure or ($x | is_hard_sep) or .wrap_inner
              then .wrap_from = null | .wrap_role = null | .wrap_inner = false else . end)
           | .cmd_word_index = (command_word($w; $state.i + 1; $n)) | .i += 1
         elif $wrap != null then
@@ -534,9 +563,12 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
   | (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
-  | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$\""; "\"")) as $bare
-  | ($bare | words) as $w
-  | (findings($w)) as $result
+  | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ")) as $bare
+  | ($bare | mark_soft_separators) as $marked
+  | (($marked | contains("\u0003")) or ($bare | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
+  | ($marked | drop("\u0003") | split_words
+     | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
+  | (findings($w; $unsure)) as $result
   | if ($result.out | length) == 0 then empty else $result end
 end
 

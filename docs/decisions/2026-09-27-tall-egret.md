@@ -110,6 +110,20 @@ player — no bot identity can make either change, so `github-write-guard.sh`'s 
 **committing** both say an admin action is the player's to do directly, never something to wrap and
 retry.
 
+**The guard reads quotes only where it can vouch for its reading.** Reading a separator inside
+quotes as part of its argument (a `--jq '.a | .b'`, a `-f body='a; b'`) stopped a quoted `|` from
+hiding the write flag after it. The same reading lets a wrapper's exemption run past a quoted
+separator, so every quote it misreads turns the next line's forgotten `git push` into a push as the
+player. Three review rounds in a row each found such misreads: a wrapper inside a `bash -c` script, an
+apostrophe in a `#` comment, a `\'` in a `$'...'` string, and then the heredoc commit message
+(`-m "$(cat <<'EOF' … "can't" … EOF)"`), where `$(` inside double quotes starts a fresh quoting
+context. A stack of quoting contexts with heredoc tracking was considered and rejected: it is one
+more model of the shell to get wrong. Instead the character pass models only plain quotes, `$'...'`,
+backslashes and `#` comments, and any command holding `$(`, a backtick, `${`, `<<` or `$$'`, or one
+the pass ends inside a quote, is read unsure. There every separator ends a wrapper's exemption, and
+a `gh api` call's flag scan runs past every separator, the stricter reading both ways. The cost is
+false denies in those commands only, such as a wrapped `bash -c "a; b"` next to a `$(...)`.
+
 **Accepted gaps.** The write guard is a guardrail against an agent's own ordinary mistake, not a
 security boundary against a deliberately adversarial shape. Five gaps exist, each probed against
 the hook with a JSON payload:

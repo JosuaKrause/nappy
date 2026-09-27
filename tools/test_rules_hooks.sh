@@ -1035,6 +1035,23 @@ else
     fail "quoted glued calls and a long message took $((SECONDS - quoted_gh_start)) seconds"
 fi
 
+# An unsure command (here a heredoc) reads every separator as soft for a gh api call's flags, so
+# each call's scan runs to the next git/gh command rather than to its own pipe; 400 glued calls
+# with a pipe and a plain command between them still stay linear.
+unsure_gh_api="$(for _ in $(seq 1 400); do printf 'gh api x --jq .a | head -1; echo hi; '; done)"
+unsure_gh_start=$SECONDS
+assert_write_guard "400 glued gh api reads beside a heredoc, ending in a write -> deny" deny \
+    "cat <<EOF
+x
+EOF
+${unsure_gh_api}gh api repos/o/r -X POST"
+checks=$((checks + 1))
+if [ $((SECONDS - unsure_gh_start)) -lt 5 ]; then
+    echo "ok   400 glued gh api calls in an unsure command are decided in under 5 seconds"
+else
+    fail "400 glued gh api calls in an unsure command took $((SECONDS - unsure_gh_start)) seconds"
+fi
+
 # A flag before the endpoint is how gh itself accepts a write (-X/--method/-f/-F/--input), so the
 # scan starts right after "api"; and an endpoint or flag value ending in /gh or /git is part of
 # the call, not the start of a new command.
@@ -1208,6 +1225,37 @@ assert_write_guard "bash -c \$'git status\\ngit push', unwrapped -> deny" deny \
     $'bash -c $\'git status\\ngit push\''
 assert_write_guard "wrapped bash -c \$'git status\\ngit push' -> allow" allow \
     $'uv run python tools/agent-identity.py run claude-coder -- bash -c $\'git status\\ngit push\''
+# A command holding $(, a backtick, ${, << or $$', or one the pass ends inside a quote, is read
+# unsure: every separator ends a wrapper's exemption, whatever the quotes around it seem to say.
+# The heredoc commit is how Claude Code writes every commit, so each body shape that leaves the
+# pass misreading a quote is checked, with the forgotten push on the next line and after ;.
+heredoc_commit() {
+    printf '%s' "uv run python tools/agent-identity.py run claude-coder -- git commit -m \"\$(cat <<'EOF'
+$1
+EOF
+)\""
+}
+for heredoc_body in "Fix the \"can't push\" error" 'the "x" thing' "\"can't\" and \"won't\"" \
+    "it's and it's" 'a lone " here'; do
+    assert_write_guard "a wrapped heredoc commit ($heredoc_body), then a newline and git push -> deny" \
+        deny "$(heredoc_commit "$heredoc_body")"$'\ngit push'
+    assert_write_guard "a wrapped heredoc commit ($heredoc_body), then ; git push -> deny" \
+        deny "$(heredoc_commit "$heredoc_body")"'; git push'
+done
+assert_write_guard "a wrapped heredoc commit, then a wrapped push -> allow" allow \
+    "$(heredoc_commit "Fix the \"can't push\" error")"$'\nuv run python tools/agent-identity.py run claude-coder -- git push'
+assert_write_guard "a wrapped commit with \"\$(printf ... \"it's\")\", then ; git push -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m \"\$(printf '%s' \"it's\")\"; git push"
+assert_write_guard "an escaped \\\$'...\\'..., then a newline and git push -> deny" deny \
+    $'uv run python tools/agent-identity.py run claude-coder -- echo \\$\'it\\\'s\ngit push'
+assert_write_guard "\$\$'...\\'...' then ; git push, wrapped at the start -> deny" deny \
+    $'uv run python tools/agent-identity.py run claude-coder -- echo $$\'a\\\'; git push; echo \''
+assert_write_guard "a heredoc, then gh api with a piped --jq before -f -> deny" deny \
+    $'cat <<\'EOF\'\nit\'s\nEOF\ngh api repos/o/r/issues --jq \'.a | b\' -f title=x'
+assert_write_guard "a wrapped bash -c \"a; git push\" beside a \$(...) -> deny (unsure, the safe direction)" deny \
+    'uv run python tools/agent-identity.py run claude-coder -- bash -c "git status; git push"; echo $(date)'
+assert_write_guard "a gh api read in \$(...), no write flag -> allow" allow \
+    'N=$(gh api repos/o/r/issues --jq length); echo $N'
 assert_write_guard "wrapped command, then an unquoted ; and a bare git push -> deny" deny \
     'uv run python tools/agent-identity.py run claude-coder -- echo done; git push'
 assert_write_guard "a REST write whose field value contains the word graphql -> deny" deny \

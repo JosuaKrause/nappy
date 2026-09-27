@@ -446,6 +446,33 @@ class CodexHooksTest(unittest.TestCase):
         text = self.call(tool="Bash", command=f"{wrap} git push # it's pushed")
         self.assertIn("committing", text)
 
+    def test_github_write_guard_reads_a_heredoc_commit_unsure(self) -> None:
+        # A heredoc or a `$(` inside quotes is a quoting context the pass does not model, so every
+        # separator ends the wrapper's exemption there; the forgotten push after it is denied.
+        wrap = "uv run python tools/agent-identity.py run codex-coder --"
+
+        def heredoc_commit(body: str) -> str:
+            return f"{wrap} git commit -m \"$(cat <<'EOF'\n{body}\nEOF\n)\""
+
+        bodies = (
+            'Fix the "can\'t push" error',
+            'the "x" thing',
+            '"can\'t" and "won\'t"',
+            "it's and it's",
+            'a lone " here',
+        )
+        commands = [heredoc_commit(body) + sep + "git push" for body in bodies for sep in ("\n", "; ")]
+        commands.append(f'{wrap} git commit -m "$(printf \'%s\' "it\'s")"; git push')
+        commands.append("cat <<'EOF'\nit's\nEOF\ngh api repos/o/r/issues --jq '.a | b' -f title=x")
+        commands.append("gh api repos/o/r/issues --jq '.a | b' -f title=x")
+        for command in commands:
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        text = self.call(tool="Bash", command=heredoc_commit('Fix the "can\'t push" error') + f"\n{wrap} git push")
+        self.assertIn("committing", text)
+
     def test_github_write_guard_allows_a_read_with_a_piped_jq(self) -> None:
         text = self.call(tool="Bash", command="gh api repos/o/r/issues --jq '.[] | .title'")
         self.assertIn("committing", text)
