@@ -15,5 +15,4 @@ else"); this statement extends it to events, by the player. Today a day's events
 dawn by a weighted roll over the whole city (`EventScheduler`), with a few `AHEAD_OF_PLAYER` plans
 placed later out of where she walks. Day 6's task, a note for the man shouting, relies on several
 `homeless_yeller` rows already being live, and the player rarely meets one after the first mark.
-How far the bag reaches, and what "the next three events" counts, is asked back before this is
-briefed.
+The bags reach the events placed on her route only (the player's answer, 2026-09-27).

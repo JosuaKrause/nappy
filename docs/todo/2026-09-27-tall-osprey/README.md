@@ -8,5 +8,5 @@ priority: now
 (`outer_radius`, where the meter starts to feel him), the 140px at which he notices her and gives
 chase (`pursues_within`), and his 30px catch (`inner_radius`, a `hard_fail`). The chalk mark's
 guard uses the same row, and `ResistanceDirector` places him between his catch plus a contact's
-reach and his `pursues_within` plus that reach from the mark. Which of these "capture zone" means
-is asked back before this is built.
+reach and his `pursues_within` plus that reach from the mark. "Capture zone" is the catch (the
+player's answer, 2026-09-27).
