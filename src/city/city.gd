@@ -630,11 +630,11 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 	return result
 
 ## `Building.roof_extension_rows`, `roof_extension_seamless` and `seamless_cover_cols` for every
-## building in `buildings` (parallel to `map.building_rects`): wherever a building's own `covered_ground_cols`
-## marks a column covered, the tile directly south of it belongs to some other lot's rect — the
-## one whose roof now has to reach up to meet the covered building's own roof — found by a tile
-## lookup over every rect rather than a spatial search, since the whole set is small and built once
-## per run. The extension at that column is exactly the covered building's own `wall_tiles()`:
+## building in `buildings` (parallel to `map.building_rects`): wherever a building's own
+## `covered_ground_cols` marks a column covered, the tile directly south of it belongs to some
+## other lot's rect — the one whose roof now has to reach up to meet the covered building's own
+## roof — found by a tile lookup over every rect rather than a spatial search, since the whole set
+## is small and built once per run. The extension at that column is exactly the covered building's own `wall_tiles()`:
 ## precisely enough rows to reach the world row its roof already starts at, edge to edge. A power
 ## station's yard columns (`_hall_cols()`, read after `_dress_the_power_station()` above has set
 ## `power_station`) are skipped since no roof stands there to extend — the yard is fenced ground,

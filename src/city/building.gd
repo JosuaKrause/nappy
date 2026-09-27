@@ -1239,38 +1239,30 @@ func _draw_fire_escape() -> void:
 # ------------------------------------------------------------- roof furniture ---
 
 ## Rolls this building's roof units, once per `_rebuild()` rather than once per frame — the same
-## contract `_build_windows()` already keeps. Nothing is placed on a roof too shallow to have an
-## interior cell at all (`roof_tiles() < 3` or `columns() < 3`), which most `INDUSTRIAL` and
-## `CIVIC` roofs are not, and most single-tile-deep slivers are.
+## contract `_build_windows()` already keeps — over the cells `roof_interior_cells()` offers.
+## Nothing is placed on a roof too shallow to have an interior cell at all: one under three
+## columns wide, or whose tallest column, extension included, is under three rows deep.
 ##
-## **An extended roof carries furniture too** (`roof_extension_rows`): a column's interior runs
-## from row 1 up to one short of whatever row that column's own roof tops out at, extended or not,
-## so a unit can land on the extension as anywhere else on the roof. The roll is still keyed on
-## `variant` and position alone, so a fixed seed gives the same roof every time — but a covering
-## building's pool is larger than its unextended roof's, so its whole layout is a different
-## shuffle from the one the same building would have with nothing to cover. A unit never sits on a
-## cell the roof's own lips already draw: the perimeter, as on every roof, and on the extension any
-## cell `roof_cell_edges()` gives a lip, which is where a taller column steps down beside a shorter
-## one. The unextended rows need no such check, since no step reaches below `roof_tiles()`, which
-## keeps a building with nothing to cover on exactly the pool it has always rolled.
+## **An extended roof carries furniture too** (`roof_extension_rows`): the pool reaches onto the
+## extension as anywhere else on the roof, so a building whose own roof is too shallow for an
+## interior cell carries units once its extension gives it one. The roll is keyed on `variant` and
+## position alone, so a fixed seed gives the same roof every time — but a covering building's pool
+## is larger than its unextended roof's, so its whole layout is a different shuffle from the one
+## the same building would have with nothing to cover. A unit never sits on a cell the roof's own
+## lips already draw: the perimeter, as on every roof, and on the extension any cell
+## `roof_cell_edges()` gives a lip, which is where a taller column steps down beside a shorter one.
 func _build_roof_furniture() -> void:
 	_roof_furniture.clear()
 	_has_vent = false
 	var roof_rows := roof_tiles()
 	var cols := columns()
-	if roof_rows < 3 or cols < 3:
-		return
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, [])
 	var density: float = _FURNITURE_DENSITY.get(district, 0.0)
 	if kinds.is_empty() or density <= 0.0:
 		return
-	var interior: Array[Vector2i] = []
-	for col in range(1, cols - 1):
-		var col_rows := roof_rows + _extension_rows(col)
-		for row in range(1, col_rows - 1):
-			if row >= roof_rows and roof_cell_edges(col, row) != 0:
-				continue
-			interior.append(Vector2i(col, row))
+	var interior := roof_interior_cells()
+	if interior.is_empty():
+		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("roof:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
 	_shuffle(interior, rng)
@@ -1292,6 +1284,30 @@ func _build_roof_furniture() -> void:
 	# Farthest (highest row) first, so the roof layers paint back to front without
 	# re-sorting on every redraw.
 	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
+
+## The cells a roof unit may stand on, in the fixed order `_build_roof_furniture()` shuffles:
+## column by column, each from row 1 up to one short of that column's own top, extension
+## included, leaving out any extension cell `roof_cell_edges()` gives a lip. Empty for a roof under
+## three columns wide or whose tallest column is under three rows deep, which has no interior
+## cell at all. The rows below `roof_tiles()` take no lip check, since no step or seam lip reaches
+## them, so a building with nothing to cover keeps exactly the pool, and the roll, it has without
+## an extension.
+func roof_interior_cells() -> Array[Vector2i]:
+	var interior: Array[Vector2i] = []
+	var roof_rows := roof_tiles()
+	var cols := columns()
+	var tallest := roof_rows
+	for col in cols:
+		tallest = maxi(tallest, roof_rows + _extension_rows(col))
+	if tallest < 3 or cols < 3:
+		return interior
+	for col in range(1, cols - 1):
+		var col_rows := roof_rows + _extension_rows(col)
+		for row in range(1, col_rows - 1):
+			if row >= roof_rows and roof_cell_edges(col, row) != 0:
+				continue
+			interior.append(Vector2i(col, row))
+	return interior
 
 ## `INDUSTRIAL` only: a straight duct run and, where there is a second interior row to turn into,
 ## one elbow continuing it — "a duct run laid as a straight-and-corner chain" rather than loose

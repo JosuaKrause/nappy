@@ -2046,10 +2046,12 @@ Top-down camera with a fake vertical extrusion:
   is the perimeter row and column and, on a roof extended over a covered front (below), the step
   where an extended column stands beside a shorter one — so nothing overhangs the silhouette, and
   how many a roof carries scales with how many interior cells it has. An extended roof carries
-  furniture as the rest of it does, rolled from the same seed: a fixed seed gives the same roof on
-  every run, and a building providing cover rolls its layout over its larger roof, so it is a
-  different shuffle from the one it would have with nothing to cover. The vent is the one thing on a roof that moves: it swaps between its
-  two rotor frames on a timer of its own, and nothing else up there is animated. Furniture is
+  furniture as the rest of it does, rolled from the same seed: each column's interior runs up to
+  that column's own top, extension included, so a building whose own roof is too shallow for an
+  interior cell carries units once its extension gives it one. A fixed seed gives the same roof
+  on every run, and a building providing cover rolls its layout over its larger roof, so it is a
+  different shuffle from the one it would have with nothing to cover. The vent is the one thing
+  on a roof that moves: it swaps between its two rotor frames on a timer of its own, and nothing else up there is animated. Furniture is
   painted by retained children of `Building`, above its own roof tiles and inside the layer of buildings
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
   is never compared against anything on the pavement. Static furniture batches interleave with
@@ -2111,7 +2113,8 @@ Top-down camera with a fake vertical extrusion:
   roof_extension_rows`), enough to reach the world row the covered building's roof already starts
   at, edge to edge, in its own colour, with a parapet cap (`ROOF_EDGE_N`) where the two meet —
   except between two pieces of one courtyard, below — and a step cap (`ROOF_EDGE_W`/`ROOF_EDGE_E`)
-  wherever the extended roof sits beside a shorter column, covered or not — roof meets roof, and nothing is drawn where the covered front's wall would have been.
+  wherever the extended roof sits beside a shorter column, covered or not — roof meets roof, and
+  nothing is drawn where the covered front's wall would have been.
   Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's own
   ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never from
   anything drawn and never from a day's own closures — a covered column stays covered for the whole
