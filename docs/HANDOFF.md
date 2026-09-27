@@ -16,14 +16,14 @@ through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the 
 **Start with `git fetch --prune` and `gh pr list`.** Open pull requests may await review, checks or
 merge permission. Resolve conflicts with `main` under the **merging-main** rules. A PR stays open
 unless the user explicitly authorizes merging in the current session; enabling auto-merge and
-delegating a merge require the same permission. Use `TODO.md` for the next
-implementation and `REVIEW.md` for the questions a playtest should cover; the player's original
+delegating a merge require the same permission. Run `tools/queue.sh` for the order of the queue under
+`docs/todo/`, and read `docs/review/` for the questions a playtest should cover; the player's original
 reports and reference instructions live in `docs/playtests/`.
 
 **Every branch is work in progress; nothing is parked on one.** The sealing measurement probes,
 `tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where
 the runner does not discover them: they print rather than assert, they are the instrument the
-per-street density figures in `TODO.md` were read with, and `tools/test.sh probes/m64_density.gd`
+per-street density figures in M99's record (`tools/decisions.sh M99`) were read with, and `tools/test.sh probes/m64_density.gd`
 runs one by name.
 
 **Work reaches `main` through a pull request and nothing else.** `main`'s ruleset requires one, plus
@@ -207,8 +207,8 @@ replacement on the page where one exists and the SVG's raster where none does;
 runtime selects a mode. The authoring sources live in `art/`, which the engine ignores.
 The existing drawing transforms and animation remain in charge.
 Read [VISUALS.md](VISUALS.md) for reference roles and where the pictures live, and
-M109, convert the SVG catalogue to PNG, in
-[TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
+M109, convert the SVG catalogue to PNG, in its entry
+[todo/2026-09-10-M109/](todo/2026-09-10-M109/) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
 Compare each character's directions, gait frames and state variants as one family; the
 illustrated-PNG skill describes the identity references and extraction checks that keep them aligned.
 
@@ -217,21 +217,7 @@ continue button and a held restart that acknowledges the press before the day it
 frame; the export publishes `index.js`, `index.wasm` and `index.pck` under a directory named for the
 release tag, so Pages' unchangeable `Cache-Control: max-age=600` can no longer serve a **mixed**
 build; and the shared card is opaque and declares its dimensions. The record is in `DECISIONS.md`
-under M76 and M80. **Follow `TODO.md`'s own order for what is next.**
-
-**The two milestones at the front of that order both overturn something on purpose, and each entry
-says who did the overturning.** **M88** gives the two control schemes back to the player as a choice
-— *asked for one scheme chosen nowhere on 2026-09-06 · overturned on 2026-09-07* — which is M82's
-central decision going the other way, and the pieces it needs are recovered from that commit rather
-than rewritten. **M89 and M92** draw a soft halo around whatever is currently charging the meter,
-which the **cues** rule has refused since the vocabulary was written: *no circles around entities,
-nothing draws a field.* That reasoning is about **danger** and it stands; the halo answers a question
-the vocabulary never had an answer to — *which of the six things around her is pushing the number
-up, and how much has each one actually cost her.* Its colour and its transparency both read the
-points a source put on the meter over the last five seconds, traced from the meter's own sum —
-colour linear to red at 40, transparency on a curve that makes a single point visible — and every
-walker and car is a candidate on the same terms as an event. The numbers were set against one
-played session on the branch and one capture each; the record is in `DECISIONS.md` under M92.
+under M76 and M80. **Follow the order `tools/queue.sh` prints for what is next.**
 
 **The rule playtest 27 raised alongside the joystick is now also enforced by a test**: *"there is no
 way to walk slowly — that is intentional — there should only ever be one speed (plus a second via
@@ -256,7 +242,7 @@ crowd on it, a full meter in a little over twenty-five seconds. The lever that g
 **walking decay** and not the crowd's radii, which are untouched — `DECISIONS.md`, M117, excitement
 decays visibly on quiet ground, has the before-and-after and the ceiling the number is up against.
 Whether it *reads* as recovery rather than merely measuring as it is a question for a person, and
-it is in `REVIEW.md`.
+it is under `docs/review/`.
 
 **Playtest 22's findings are built and unwalked underneath that** — the sealing that closes the city
 off the path, the trunk that keeps the doorstep joined to it, the ban on routing along the main
@@ -278,7 +264,7 @@ day's route tree grows on it, and `ClosurePlanner` refuses a calm area's access 
 longer what answers *can she get there today*.
 
 Two of the queue's milestones carry state worth knowing before picking them up; their place in the
-order is `TODO.md`'s.
+order is the band in their own entry.
 
 - **M56 — the resistance is noticed.** What remains is its measurement against the nerves, which
   waits until act III is reached.
@@ -288,7 +274,7 @@ the walk over the plan: where she went, which stretches she ran, and which event
 her, against the corridor the day expected her to take. `docs/TELEMETRY.md` says what it draws.
 Playtest 20's evidence is fourteen of them, one day and one dusk map for all seven days of a run —
 read alongside the run's own log, they are what turned "barriers don't work" into the specific,
-citable numbers now in `TODO.md` (the day-4 `charging_dog` killing her in 0.8s against every other
+citable numbers in [PLAYTEST-20](playtests/PLAYTEST-20.md) (the day-4 `charging_dog` killing her in 0.8s against every other
 encounter's 1.5s; the chalk mark going unfound on all four days it existed, `resistance 0/4`). **A
 rig can walk a route now**, so a picture of a specific route is cheap: `--walk` takes a script of
 timed steps — `--walk 3s15e` is three seconds south then fifteen east, and `--walk 3@45@2e` is three
@@ -306,76 +292,58 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## Where the last session stopped, 2026-09-26
 
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
-checks and worktrees can move independently of this file. The player's order, from
-[PLAYTEST-144](playtests/PLAYTEST-144.md): the `git grep` hook, then M223, then M225 and a
-release; nothing else is picked up before those. At the end of the session the player tabled
-everything else: "let's table work that is not immediately important. we can let the agents
-finish what they have but we can pick up the prs later".
+checks and worktrees can move independently of this file.
 
-- **HIGH PRIORITY: these three, in this order, and nothing else until they are done.** Each
-  step waits for the one before it:
-  1. **PR #377, the `git grep` guard.** Its latest push answers review 5326484007 and has had no
-     review yet. Review it under **pr-review**, merge, then tell the player to approve the hook
-     in `/hooks`; it does not run until they do.
-  2. **PR #382, M223, queue entries, items, decisions and review items as files** (draft,
-     worktree `queue-as-files`). PLAYTEST-144 and M223's entry are on `main` now, so its next
-     step is the one its brief names: merge `origin/main`, re-run `tools/migrate-queue.py` on the
-     result, restore M223's own decision file, remove M223's entry folder, lint, mark ready,
-     review, merge. Then every open PR's old-format queue edits are converted with
-     `tools/convert-queue-edits.py`.
-  3. **PR #368, M225, the counter's asks**, taken over from the stopped cloud session. The brief
-     is written and waits for M223. Then review, merge, and cut a release so traffic reaches the
-     new GoatCounter site.
-- **STOPPED, not to be continued yet.** Each of these is committed and pushed at a safe point,
-  and none gets an agent, a review or a merge until the player picks it up again. They are listed
-  only so their state is known:
-  - **#370, M204 and M214, the trailer's tools**: reviewed ready and CI green at its head; the
-    first to merge. M204 stays queued for the player's notes on the cut.
-  - **#372, M207, the cyclist's warning**: not ready; its record must name how raising the
-    cyclist's intensity reshaped his cost with distance (dearer close in, free past about 60px).
-  - **#362, M137, the trap comes to her**: built (a chasing guard after the van; the robber after
-    the man shouting starts off screen; the burnt shell and roadblock keep a waiting guard, open
-    to the player), needs its decision record, description and review.
-  - **#379, M205, the man shouting** (draft): handing over the note now needs a 2.5s stand inside
-    his inner field (the orchestrator's proposal, marked so), costing about 20 points awake. His
-    zero charge on an ordinary day did not reproduce in any test or full boot; the PR names two
-    suspects (the halo's cap of eight sources at a busy crosswalk, and his own warning window).
-    Not reviewed.
-  - **#365, M203 and M216, roofs**: built and green (a courtyard block's roof turns its corners;
-    roof furniture rolls on an extended roof too). No pictures yet: every rig walk to a courtyard
-    hit a parked vehicle or a closure on the way, and `tests/probes/m216_evidence.gd` computes
-    seeds and walks for the stills. A front facing the map's edge happens only on a cul-de-sac's
-    dead-end wall, never on a real block front; that goes to the player before the special case is
-    kept or dropped. The PR description predates M216.
-- **Merge permission**: the player said "if you reviewed all PRs and they are ready you can
-  merge" in the session that stopped; a new session confirms it before using it. A release needs
-  its own go-ahead, which the player gave for after M225.
-- `.claude/briefs/` holds a brief per open branch with every amendment; start fresh agents from
-  them rather than resuming this session's.
+- **The player's order is done**: the `git grep` guard, the queue as files (M223), every open PR
+  converted, the counter's asks (M225, with all counting on `nappy.goatcounter.com`) and the
+  release that carries them, v0.19.0. "then we can do regular work again." The queue is what
+  `tools/queue.sh` prints; its `now` band is M227 (Codex works as a sub-agent of a Claude Code
+  session, in a worktree), M226 (the pursuing dog keeps its day-3 timing, and the other warnings
+  fit it) and M223's open item (the overhaul of every entry and review item).
+- **After the release**: read the counter back as `docs/review/2026-09-26-after-the-next-release-read-the.md`
+  says. The page visit is listed as `/nappy.josuakrause.com`; a path starting `/nappy` is a visit, a
+  name starting `nappy-` is a game metric.
+- **Open pull requests, all on the queue-as-files layout, none reviewed for its own work yet**:
+  - **#362, M137, the trap comes to her**: built. Its record is named
+    `2026-09-25-M137-the-contact-…`; `tools/queue.sh` counts an entry closed only through a record
+    named for it, so rename it `2026-09-13-M137.md` (`tools/new-name.sh decision --entry M137`
+    writes that name) or M213's `after:` on M137 fails the lint once it merges. Its conversion
+    review also flagged the record and `docs/EVENTS.md` disagreeing on which trap variants use the
+    robber's chase.
+  - **#365, M203 and M216, roofs**: built and green; it has to delete M216's queue folder, which is
+    still open on `main`. No pictures yet (`tests/probes/m216_evidence.gd` computes seeds and walks).
+    A front facing the map's edge happens only on a cul-de-sac's dead end; that goes to the player
+    before the special case is kept or dropped.
+  - **#379, M205, the man shouting** (draft): the note handover's 2.5s stand is the orchestrator's
+    proposal; his zero charge on an ordinary day did not reproduce. Not reviewed.
+  - **#385, the scenery animation plan** (draft, plan only): its plan is M159's item
+    `separate-scenery-animation-from-static-ground.md` and its measurements are in
+    `docs/evidence/entity-performance-2026-09-26/`.
+- **Branch `fix/spent-park-followup`, no PR**: M129's item "a fence carried into the next days keeps
+  two calm areas on the route tree" holds the plan; the branch has only an unrun start of its
+  regression test. The player: "plan the fix but we need to focus on other tasks right now".
+- **Merge permission**: the player said "merge the PRs as needed" in this session; a new session
+  confirms it before using it. A release needs its own go-ahead.
+- `.claude/briefs/` holds the brief of every branch worked this session, with every amendment;
+  start fresh agents from them rather than resuming this session's.
 
-## The queue, as prioritised on 2026-09-09
+## The queue
 
-**`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** Playtest
-66's four milestones are all built and released (`DECISIONS.md`, M119 to M122); what only a walk
-can judge about them is in `REVIEW.md`. M56 has only
-its measurement against the nerves left, and that waits for act III. The debug view (`1` to `5` in a debug build, `--layers 1,3` for
-a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow, a body or the day's routes is checked by
-eye, and every one of the three is derived from the object's own `GroundShape` — one apiece for
-everything but the car crash, which is solid in two pieces because its picture is two cars with
-gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M99 (the corridor's density
-after the sealing) and M100 (the small work, the polish and the open design questions,
-consolidated). M96 (the teaching day and the dog after it) and M97 (calm areas that hold) are
-both done (`DECISIONS.md`, M96, the day ends crying only after a push at the top; M97, calm areas
-that hold is closed).
-Reaching act III — which M56's measurement against the nerves needs — waits until
-that batch is done. SVG-to-PNG
-style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
-in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
-The crowd goes round every solid body it meets, not only a seal (`DECISIONS.md`, M110), and a
-car follows an arc through a turn with its heading
-continuous throughout (`DECISIONS.md`, M111), drawn through side, diagonal and end views on the
-way (`DECISIONS.md`, M108, the crowd car), and a street about-face crosses the kerb by design
-(`DECISIONS.md`, M111, the kerb overhang stays).
+**`tools/queue.sh` prints the order, from the band each entry carries** (`now`, `next`, `later`,
+`parked`, in its `README.md`'s opening lines); the player moves an entry by changing its band.
+Playtest 66's four milestones are built and released (`DECISIONS.md`, M119 to M122); what only a
+walk can judge about them is under `docs/review/`. M56 has only its measurement against the nerves
+left, and that waits for act III, after M99 (the corridor's density after the sealing) and M100
+(the small work, the polish and the open design questions). The debug view (`1` to `5` in a debug
+build, `--layers 1,3` for a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow, a
+body or the day's routes is checked by eye, and every one of them is derived from the object's own
+`GroundShape` — one apiece for everything but the car crash, which is solid in two pieces
+(`DECISIONS.md`, M118). SVG-to-PNG style transfer (M109) is Codex's parallel track; prepared artwork
+and its source-review sheets are listed in `GRAPHICS.md`, and M100's entry carries the art that waits
+for its gameplay owner. The crowd goes round every solid body it meets (`DECISIONS.md`, M110), and a
+car follows an arc through a turn with its heading continuous throughout (`DECISIONS.md`, M111),
+drawn through side, diagonal and end views (`DECISIONS.md`, M108, the crowd car); a street
+about-face crosses the kerb by design (`DECISIONS.md`, M111, the kerb overhang stays).
 
 ## What to distrust
 

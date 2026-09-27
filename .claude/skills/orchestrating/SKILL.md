@@ -293,9 +293,12 @@ of interruption it was.")*
 
 1. **Run `tools/agent-status.sh` before touching anything.** It covers every worktree's branch,
    uncommitted files, how far it is ahead of and behind its own upstream (another session may have
-   pushed to it), its PR's CI state, its brief file, and its agent's warm/cold verdict in one pass.
-   What it cannot show is where an agent stopped inside an item — for that, read its transcript's
-   last tool calls, the file `agent-status.sh` named.
+   pushed to it), its PR's CI state, its brief file, and its credited agent's warm/cold verdict in
+   one pass — across this checkout and any other local clone of the repo it is told about or finds
+   from Codex's own session history, each block naming which one it is in, with a warning when the
+   same branch is checked out in more than one. What it cannot show is where an agent stopped
+   inside an item — for that, read its transcript's last tool calls, the file `agent-status.sh`
+   named.
 2. **Take the pause's kind from the player.** If they have not said, it is long when the
    agent's last request is older than the cache window less five minutes (see "A finished agent
    is not resumed after it has gone cold"), and brief otherwise.
