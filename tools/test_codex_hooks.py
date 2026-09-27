@@ -428,6 +428,24 @@ class CodexHooksTest(unittest.TestCase):
         )
         self.assertIn("committing", text)
 
+    def test_github_write_guard_reads_a_comment_and_an_ansi_c_string_as_the_shell_does(self) -> None:
+        # An apostrophe in a `#` comment opens no quote, so the wrapper still ends at the newline;
+        # a `$'...'` string keeps its own escapes (`\'` stays inside it, `\n` is a newline).
+        wrap = "uv run python tools/agent-identity.py run codex-coder --"
+        for command in (
+            f'{wrap} git commit -m "Fix the ask"  # the player\'s words\ngit push',
+            f"{wrap} git commit -m x # it's fine; git push",
+            f"{wrap} git commit -m $'Don\\'t break'\ngit push",
+            f"{wrap} git commit -m $'Don\\'t break'; git push",
+            "bash -c $'git status\\ngit push'",
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        text = self.call(tool="Bash", command=f"{wrap} git push # it's pushed")
+        self.assertIn("committing", text)
+
     def test_github_write_guard_allows_a_read_with_a_piped_jq(self) -> None:
         text = self.call(tool="Bash", command="gh api repos/o/r/issues --jq '.[] | .title'")
         self.assertIn("committing", text)

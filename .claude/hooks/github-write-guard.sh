@@ -14,8 +14,9 @@
 # plausibly type is fixed. It does not chase a deliberately adversarial shape meant to evade it:
 # the wrapper's shape inside a mention (below), a write through a client other than git, gh or the
 # pushing scripts (`curl` with `gh auth token`, an MCP tool), a command naming a role that is not
-# the running agent's own, and a GraphQL merge mutation under a reviewer role are accepted gaps,
-# each with an example in
+# the running agent's own, a GraphQL merge mutation under a reviewer role, and a wrapper inside a
+# quoted script whose `--` is spelled with escapes (`\"--\"`, `\-\-`) are accepted gaps, each with
+# an example in
 # `docs/decisions/2026-09-27-tall-egret.md`'s "Accepted gaps" paragraph.
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
@@ -86,7 +87,11 @@
 # `run <role> -- bash -c "a; b"` covers the whole script it runs. A wrapper inside the quotes is
 # told apart by its quoted `--`, and its exemption ends at the next separator, soft or hard; a
 # wrapper inside a script that an outer wrapper already covers (`run <role> -- bash -c "run
-# <role> -- a; b"`) is then a false deny for `b`, the safe direction. The one
+# <role> -- a; b"`) is then a false deny for `b`, the safe direction. So is a heredoc body with an
+# odd number of apostrophes: the heredoc is not tracked, so the quote it opens stays open and a
+# later wrapper on another line reads as an inner one, whose exemption ends at the next separator.
+# A `--` spelled with escapes inside the quotes (`\"--\"`, `\-\-`) is not marked, so that
+# wrapper reads as an outer one -- an accepted gap (see the list above). The one
 # case this does not close is the wrapper's own shape appearing whole inside a mention (a comment
 # that quotes a full `tools/agent-identity.py run claude-coder -- git push` line reads, to this
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
@@ -114,21 +119,37 @@ def named($name): last_part == $name;
 # claude-coder -- bash -c "..."`): the shell ends the inner wrapper's reach at the script's own
 # `;`, `&&` or newline, and `findings` ends its exemption there too. One pass over the characters,
 # tracking which quote is open (0 none, 1 single, 2 double, 3 `$'...'`, where a backslash escapes
-# as it does outside quotes and in double quotes, but not in single quotes) and the two characters
-# before the last, so a `--` is marked when the character that ends it arrives: the two before are
-# `-`, the one before those starts a word, and a quote is still open.
+# as it does outside quotes and in double quotes, but not in single quotes, and `\n` is a newline,
+# so a soft separator; 4 a `#` comment) and the two characters before the last, so a `--` is marked
+# when the character that ends it arrives: the two before are `-`, the one before those starts a
+# word, and a quote is still open.
+#
+# An unquoted, unescaped `#` that starts a word (nothing, whitespace or `;`/`&`/`|`/`(`/`)`/a
+# newline before it) opens a comment that the next newline closes, as the shell reads it: quotes
+# and backslashes inside it change nothing, so an apostrophe in `# the player's words` never opens
+# a quote that would soften every later separator and stretch a wrapper's exemption to the end of
+# the command. Its words are still split and read, so a write named in a comment denies as a
+# mention, and a separator in it stays hard (`# fine; git push` after a wrapped command denies).
 def sep_codepoints: [59, 38, 124, 40, 41, 96, 10];
 def word_edge_codepoints: [32, 9, 10, 34, 39];
+def comment_start_codepoints: [32, 9, 10, 59, 38, 124, 40, 41];
 def mark_soft_separators:
   [foreach explode[] as $c ({q: 0, esc: false, prev: null, p2: null, p3: null, emit: []};
-      (if (.esc or .q != 0) and ((sep_codepoints | index($c)) != null) then [32, 1, 32] else [$c] end)
-        as $out
+      .prev as $prev
+      | (if .q == 4 then [$c]
+         elif .esc and .q == 3 and $c == 110 then [32, 1, 32]
+         elif (.esc or .q != 0) and ((sep_codepoints | index($c)) != null) then [32, 1, 32]
+         else [$c] end) as $out
       | .p3 as $p3
-      | ((.esc | not) and .q != 0 and .prev == 45 and .p2 == 45
+      | ((.esc | not) and .q != 0 and .q != 4 and .prev == 45 and .p2 == 45
          and ($p3 == null or ((word_edge_codepoints | index($p3)) != null))
          and (((word_edge_codepoints + sep_codepoints) | index($c)) != null)) as $quoted_dashes
-      | if .esc then .esc = false | .emit = $out
+      | if .q == 4 then (if $c == 10 then .q = 0 else . end) | .emit = $out
+        elif .esc then .esc = false | .emit = $out
         elif $c == 92 and .q != 1 then .esc = true | .emit = [$c]
+        elif .q == 0 and $c == 35
+             and ($prev == null or ((comment_start_codepoints | index($prev)) != null))
+        then .q = 4 | .emit = [$c]
         elif .q == 0 and $c == 39 then .q = (if .prev == 36 then 3 else 1 end) | .emit = [$c]
         elif .q == 0 and $c == 34 then .q = 2 | .emit = [$c]
         elif (.q == 1 or .q == 3) and $c == 39 then .q = 0 | .emit = [$c]
@@ -153,6 +174,7 @@ def mark_soft_separators:
 # next separator, soft or hard.
 def words:
   mark_soft_separators
+  | swap("$'"; "'")
   | drop("\\") | drop("\"") | drop("'")
   | swap("\t"; " ") | swap(","; " ") | swap("["; " ") | swap("]"; " ")
   | swap(";"; " ; ") | swap("&"; " & ") | swap("|"; " | ")
@@ -512,7 +534,7 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
   | (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
-  | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$'"; "'") | swap("$\""; "\"")) as $bare
+  | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$\""; "\"")) as $bare
   | ($bare | words) as $w
   | (findings($w)) as $result
   | if ($result.out | length) == 0 then empty else $result end

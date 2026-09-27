@@ -111,7 +111,7 @@ player — no bot identity can make either change, so `github-write-guard.sh`'s 
 retry.
 
 **Accepted gaps.** The write guard is a guardrail against an agent's own ordinary mistake, not a
-security boundary against a deliberately adversarial shape. Four gaps exist, each probed against
+security boundary against a deliberately adversarial shape. Five gaps exist, each probed against
 the hook with a JSON payload:
 
 - **The wrapper's shape inside a mention exempts what follows it.** The guard reads raw text with
@@ -134,3 +134,9 @@ the hook with a JSON payload:
   the same with `enablePullRequestAutoMerge`, pass. A reviewer needs one mutation,
   `resolveReviewThread`, to resolve its own threads, so mutations cannot be refused wholesale, and
   the guard does not keep a list of GraphQL mutation names.
+- **A wrapper inside a quoted script, with its `--` spelled through escapes, covers the rest of
+  the script.** `bash -c "uv run python tools/agent-identity.py run claude-coder \"--\" git fetch;
+  git push"` and the same with `\-\-` pass, though the script's shell runs that `git push` as the
+  player. The guard marks a `--` inside quotes so a wrapper there ends at the script's own next
+  separator, and it recognizes a `--` by the plain characters around it; nobody types an escaped
+  `--` by accident.

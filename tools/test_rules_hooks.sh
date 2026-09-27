@@ -1184,6 +1184,30 @@ assert_write_guard "bash -c, a reviewer's wrapper inside the script, then ; git 
     'bash -c "uv run python tools/agent-identity.py run claude-reviewer -- gh pr view 1; git push"'
 assert_write_guard "a wrapped commit whose quoted message holds -- and ; git push -> allow" allow \
     "uv run python tools/agent-identity.py run claude-coder -- git commit -m 'a -- b; git push'"
+# A `#` comment ends at the newline and its apostrophes open no quote, so a wrapper's exemption
+# still ends at that newline; a separator inside the comment is hard, so a write named after it
+# denies as a mention.
+assert_write_guard "a wrapped commit, a comment with an apostrophe, then git push -> deny" deny \
+    $'uv run python tools/agent-identity.py run claude-coder -- git commit -m "Fix the ask"  # the player\'s words\ngit push'
+assert_write_guard "a wrapped commit, a comment with won't, then gh pr create -> deny" deny \
+    $'uv run python tools/agent-identity.py run claude-coder -- git commit -m "Fix"  # won\'t push yet\ngh pr create --title x --body y'
+assert_write_guard "cd, a wrapped commit, a comment with an apostrophe, then git push -> deny" deny \
+    $'cd /x && uv run python tools/agent-identity.py run claude-coder -- git commit -m x  # player\'s fix\ngit push origin HEAD'
+assert_write_guard "a wrapped commit, then a comment holding ; git push -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m x # it's fine; git push"
+assert_write_guard "a wrapped push with a comment holding an apostrophe -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- git push # it's pushed"
+assert_write_guard "a comment, then a wrapped push on the next line -> allow" allow \
+    $'# the player\'s fix\nuv run python tools/agent-identity.py run claude-coder -- git push'
+# A $'...' string keeps its own escapes: \' does not close it, and \n is a newline.
+assert_write_guard "a wrapped commit with \$'...\\'...', then a newline and git push -> deny" deny \
+    $'uv run python tools/agent-identity.py run claude-coder -- git commit -m $\'Don\\\'t break\'\ngit push'
+assert_write_guard "a wrapped commit with \$'...\\'...', then ; git push -> deny" deny \
+    $'uv run python tools/agent-identity.py run claude-coder -- git commit -m $\'Don\\\'t break\'; git push'
+assert_write_guard "bash -c \$'git status\\ngit push', unwrapped -> deny" deny \
+    $'bash -c $\'git status\\ngit push\''
+assert_write_guard "wrapped bash -c \$'git status\\ngit push' -> allow" allow \
+    $'uv run python tools/agent-identity.py run claude-coder -- bash -c $\'git status\\ngit push\''
 assert_write_guard "wrapped command, then an unquoted ; and a bare git push -> deny" deny \
     'uv run python tools/agent-identity.py run claude-coder -- echo done; git push'
 assert_write_guard "a REST write whose field value contains the word graphql -> deny" deny \
