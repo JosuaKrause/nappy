@@ -17,5 +17,12 @@ kind CI publishes) builds `build/web/`; `cd build/web && python3 -m http.server 
 the same command `tools/serve-web.sh` runs, so no COOP/COEP headers are needed (its preset has
 threads off); then open `http://localhost:8060/index.html?debug=1` — a release export answers the
 dev-flag query only with `?debug=1` present (`tools/serve-web.sh --help`). Walk beside a live
-`homeless_yeller` there, reading his `contribution_at()`, `ExcitementHalo.select_sources()` and the
-meter's own rate in the browser while it happens.
+`homeless_yeller` there with `?debug=1&layers=1` in the URL: the developer readout (key `4`,
+already on once `?debug=1` is present) prints the meter's own `incoming`, `decay` and `net` lines
+in points/second (`_baby.last_incoming`/`last_decay` in `main.gd`), which is what answers whether
+he charges her; `?layers=1` turns on `DebugLayers`' fields layer, the real outline of every live
+event's field, so his own field is visible directly rather than only through the halo. His own
+halo rim lighting is the ordinary on-screen cue (`ExcitementHalo.select_sources()` decides which
+sources get one) and needs no flag. `contribution_at()` itself is code, not something either page
+shows — if none of the above isolates his own contribution, add a temporary `print()` or
+`Telemetry.note()` there before repeating the run.
