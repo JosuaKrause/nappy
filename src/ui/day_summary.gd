@@ -65,7 +65,10 @@ const _DAY_BRIEF := {
 	5: "They put up masts at the intersections overnight.",
 	6: "A curfew was announced today. There is not as much time. There are rumors of chalk "
 			+ "messages in alleys.",
-	7: "There are more posters than yesterday. The same face is on most of them.",
+	# The line breaks before the second sentence rather than wherever the label's own autowrap
+	# would otherwise land it — a short, standalone claim reads better set apart from the first
+	# sentence than run into it by whatever the label's own width happens to allow.
+	7: "There are more posters than yesterday.\nThe same face is on most of them.",
 	8: "A van took someone from the next street before it was light.",
 	9: "They have closed the districts off from each other. There are huts at the crossings.",
 	10: "The stores on the square are boarded up.",
@@ -73,13 +76,6 @@ const _DAY_BRIEF := {
 	12: "They are fencing off the parks.",
 	13: "There are army trucks on the main road.",
 	14: "The last night.",
-}
-
-const _DAY_TITLE := {
-	GameEnums.DayResult.WON: "She's asleep.",
-	GameEnums.DayResult.LOST_CRYING: "Not tonight.",
-	GameEnums.DayResult.LOST_TIMEOUT: "Too late.",
-	GameEnums.DayResult.LOST_HARD_FAIL: "The day ends here.",
 }
 
 const _ENDING_TITLE := {
@@ -170,7 +166,9 @@ func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
 	_note.text = lost_note
 	_note.visible = lost_note != ""
 	_title.text = "Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]
-	_body.text = "last nerve" if nerves == 1 else "%d nerves left" % nerves
+	# Stars, through the same `NerveDisplay.stars()` the HUD, the day summary and the pause screen
+	# all read the count through — never a digit.
+	_body.text = "Nerves left: %s" % NerveDisplay.stars(nerves)
 	_brief.text = _DAY_BRIEF.get(day, "")
 	_brief.visible = _brief.text != ""
 	_hint.text = ""
@@ -181,39 +179,42 @@ func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
 ## anything about the next day can touch either field, and hands it here alongside the reason.
 ## Defaults to `0.0` only so the handful of test call sites that do not care about the clock (the
 ## pause and resume rig in `tests/test_pause.gd`) do not all need an argument they never read.
-func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int,
+##
+## **Everything but the one line about the day that ended is the coming day's.** The morning a
+## player reads this screen for is the one about to start, not the one just walked, so `_title`
+## carries only the one exception — the clock the day ended on, worded by `_elapsed_line()` below
+## — while `_body` and `_brief` both read `GameState.day` rather than a `finished_day` argument,
+## which this function no longer takes: a win has already moved `GameState.day` on by the time
+## this runs (`main._on_day_finished()` calls `GameState.finish_day()` before this), and a loss
+## leaves it exactly on the day being retried, so nothing this screen shows still needs the day
+## that ended passed in separately from `GameState.day` — `_elapsed_line()` below reads only
+## `result` and `reason`, neither of which is a day number.
+func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 		elapsed_seconds: float = 0.0) -> void:
-	# A lost *day* is not the end of a run — there are nerves left, and the screen says so two lines
-	# down. The heading belongs to the screen that ends the run and to nothing else.
 	_heading.hide()
 	_showing_ending = false
 	# Never carried from a day brief this same day might have opened on — this is a real day's own
 	# result, not the load-time note a brief shows instead of one.
 	_note.visible = false
-	_title.text = _DAY_TITLE.get(result, "The day ends.")
-	var lines: Array[String] = ["Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]]
-	lines.append("")
-	lines.append(_elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds)))
-	lines.append("")
+	# The one line about the day that just ended — see this function's own doc for why it moved
+	# here rather than staying a line inside `_body`.
+	_title.text = _elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds))
 	var retrying := result != GameEnums.DayResult.WON and nerves > 0
-	if result == GameEnums.DayResult.WON:
-		lines.append("You got her home.")
-	else:
-		lines.append("Nerves left: %s" % ("*".repeat(nerves) if nerves > 0 else "none"))
+	var lines: Array[String] = ["Day %d of %d" % [GameState.day, Tuning.RUN_LENGTH_DAYS]]
+	lines.append("")
+	# The state she carries into the coming day, shown on a win as much as a loss, and drawn as
+	# stars — never a digit — the way every other screen that shows the count now does.
+	lines.append("Nerves left: %s" % NerveDisplay.stars(nerves))
 	# The calendar does not move on a loss, so the screen says so rather than leaving the player
 	# to notice tomorrow that it is still today.
 	if retrying:
-		lines.append("You try day %d again." % day)
+		lines.append("You try day %d again." % GameState.day)
 	# The tally is the only place the subquest is ever spelled out. In the world it is chalk on
 	# a wall.
 	if GameState.has_joined_resistance():
 		lines.append("")
 		lines.append(_resistance_tally_line())
 	_body.text = "\n".join(lines)
-	# `GameState.day` rather than the `day` parameter (which is `finished_day`, the day that just
-	# ended): `GameState.finish_day()` has already run by the time `main._on_day_finished()` calls
-	# this, so on a win `day` moves on to the day this screen is the brief for while a loss leaves
-	# it exactly where a retry needs it — see `_DAY_BRIEF`'s own doc.
 	_brief.text = _DAY_BRIEF.get(GameState.day, "")
 	_brief.visible = _brief.text != ""
 	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
@@ -269,15 +270,24 @@ func _resistance_tally_line() -> String:
 ## `Esc` and `Q`, so a finished run becomes a cycle between two screens with closing the window as
 ## the only way out. Space dismisses every other screen in the game, so it is the key this one owes
 ## rather than a new one.
-func show_ending(ending: GameEnums.Ending) -> void:
+##
+## `day` is the last day played, not the last day completed — a run that loses its last nerve on
+## day 1 names day 1, not 0. It is shown only on the `BAD` ending — the only one that can end
+## mid-day: `NEUTRAL` and `GOOD` are reached by finishing day 14, and every caller already has the
+## number this needs, since `GameState.day` is never advanced past the day a run ends on
+## (`GameState.finish_day()` ends the run before it would move the calendar) or past the day a
+## load spent the last nerve on.
+func show_ending(ending: GameEnums.Ending, day: int) -> void:
 	_heading.text = _ENDING_HEADING.get(ending, "THE END")
 	_heading.show()
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
 	# The one place `GameState.play_seconds` is ever shown — never during play, on every ending
 	# alike. `GameState.format_clock()` is the shared formatter so this line and the finale's own
 	# clock, once that is built, never carry two copies of the same format string.
-	_body.text = "%s\n\nTime played: %s" \
-			% [_ENDING_BODY.get(ending, ""), GameState.format_clock(GameState.play_seconds)]
+	var day_line := "\nYou made it to day %d." % day if ending == GameEnums.Ending.BAD else ""
+	_body.text = "%s\n\nTime played: %s%s" \
+			% [_ENDING_BODY.get(ending, ""), GameState.format_clock(GameState.play_seconds),
+					day_line]
 	_hint.text = ""
 	# The ending is not a day summary and has no morning line of its own to show.
 	_brief.visible = false
@@ -332,7 +342,9 @@ func show_finale_brief(hint: String, nerves: int) -> void:
 	_showing_ending = false
 	_note.visible = false
 	_title.text = hint
-	_body.text = "last nerve" if nerves == 1 else "%d nerves left" % nerves
+	# Stars, through the same `NerveDisplay.stars()` every screen that shows a nerve count now
+	# reads through — never a digit.
+	_body.text = "Nerves left: %s" % NerveDisplay.stars(nerves)
 	_brief.visible = false
 	_hint.text = ""
 	_present()
