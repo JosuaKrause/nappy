@@ -69,6 +69,7 @@ func run(t) -> void:
 	_test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
 	_test_the_door_task_sits_at_a_region_door(t)
 	_test_a_completed_marks_own_contact_and_guard_are_freed(t)
+	_test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t)
 	_test_the_door_task_never_borders_the_home_block(t)
 	_test_the_swing_task_sits_at_an_open_playground(t)
 	_test_day_twelves_park_is_forced_open_whatever_its_state(t)
@@ -2341,6 +2342,46 @@ func _test_a_completed_marks_own_contact_and_guard_are_freed(t) -> void:
 					"the door's own guard, if any, is a fresh instance rather than the mark's own")
 
 		director.free())
+
+## velvet-plover, "a mark she has read is gone from every alley" — *"the mark now shows in all
+## alleys -- once it is checked it shouldn't appear anywhere else."* Shares M221's own cause
+## rather than brisk-wombat's: a run that plays several ordinary task days in a row, none of them
+## failed or retried, still activated `_begin_step()` a second time every day (the pickup's own
+## mark, then the perform it unlocks), and until M221's fix that second call overwrote `_contact`
+## without freeing the mark it replaced — so a run several task days in, with none of them lost,
+## already carried one leftover touched mark per day played, scattered across whichever alleys
+## the days' own draws had used. `_test_a_completed_marks_own_contact_and_guard_are_freed` (M221)
+## pins the single-day mechanism directly; this counts live marks across three ordinary days in a
+## row to show the run-wide claim ("no alley shows it") holds too, with no further production
+## change needed.
+func _test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		# Day 6's mark is index 1, day 7's is 3, day 8's is 5 (`_test_step_selection`'s own
+		# numbering) — each is a pickup, activated and then completed in turn.
+		for entry in [[6, 1], [7, 3], [8, 5]]:
+			var day: int = entry[0]
+			var mark_index: int = entry[1]
+			director.start_day(day, _rng(day, "resistance"), 300.0)
+			var before := _live_chalk_marks()
+			t.check(before == 1, "day %d: exactly one mark stands before it is read (%d)"
+					% [day, before])
+			director._on_contact_completed(mark_index)
+			var after := _live_chalk_marks()
+			t.check(after == 0, "day %d: reading it leaves none behind (%d)" % [day, after])
+		director.free())
+
+## Every live, not-yet-freed `ContactPoint` under `_city` whose own step is a pickup — the chalk
+## mark's own shape, since a perform's contact rides invisibly on its rider and draws nothing
+## (`ContactPoint._draw()`) and so is never "a mark shown in an alley" in the player's sense.
+func _live_chalk_marks() -> int:
+	var count := 0
+	for child in _city.find_children("*", "", true, false):
+		if child is ContactPoint and child.step != null and child.step.is_pickup \
+				and not child.is_queued_for_deletion():
+			count += 1
+	return count
 
 ## `allow_held` (`docs/DECISIONS.md`, M181) skips `is_held_at()` outright, and `is_held_at()` is
 ## the half of "nothing on the home block" that covers the streets around it, not just the lot
