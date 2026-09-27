@@ -2,8 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "permissions": {
     "allow": [
-      "Bash(./tools/prune-merged.sh:*)",
-      "Bash(tools/prune-merged.sh:*)"
+      "Bash(uv run python tools/agent-identity.py run claude-coder -- tools/prune-merged.sh:*)"
     ]
   },
   "hooks": {
@@ -39,6 +38,12 @@
             "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/git-grep-guard.sh\"",
             "timeout": 10,
             "statusMessage": "Checking for an unbounded git grep"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/github-write-guard.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking for a GitHub write outside an agent identity"
           }
         ]
       }

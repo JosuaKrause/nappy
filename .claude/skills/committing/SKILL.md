@@ -8,6 +8,37 @@ description: The git workflow for this repo — one branch per work item, one co
 **Manage local branches and commits autonomously. Merging a PR requires explicit permission in
 the current session** — see "Merging".
 
+## Who a commit and a pull request are from
+
+**A coding agent commits, pushes and opens its pull request as its own GitHub identity, and only
+that identity — never the player's.** *(2026-09-26, once the four identities existed: "I want to
+make it mandatory for each agent to use their respective identity when interacting with github",
+enforced on writes; asked what an agent does when its identity is unusable, the player chose "Stop
+and tell me" — it never posts as the player instead.)* Claude Code's orchestrator and every
+implementation agent it spawns commit as `claude-coder`; Codex's do the same as `codex-coder`. `uv
+run python tools/agent-identity.py status <role>` (**using-tools**) says whether the role is
+usable; every command that **writes** to GitHub for that piece of work — a commit, a push, a `gh`
+post — then runs through `uv run python tools/agent-identity.py run <role> -- <command>` instead of
+running it directly, so the commit, the push and the pull request all show as `<role>[bot]` rather
+than as the player talking to themself. A read (`git status`, `gh pr view`, ...) runs unwrapped;
+minting a token for one is wasted work the player never asked for. **When `status` reports the
+role not usable (not created yet, not installed on the repository, or a cloud session — see
+`tools/agent-identity.py`'s own module docstring), the session stops there and tells the player,
+rather than committing, pushing or opening the pull request under the player's own account.** A
+`PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
+`git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
+that pushes or posts internally, in command position, unless the same command is wrapped in `run
+<role> --`, so the rule holds even when a session forgets it; a read stays unguarded — the hook's
+own header comment carries the current, exact list, rather than a second copy of it here that can
+drift from it. **An admin action no bot identity can perform** — changing a repository ruleset, a
+GitHub App's own permissions — **is the player's to do directly, in GitHub's own settings, never
+something to wrap and retry.**
+
+**The commit still carries the session's own attribution trailer.** `run` changes who git says
+authored and committed the change (the bot's name and noreply address), not what the message
+says: the `Co-Authored-By` line the session's own instructions ask for is added exactly as it
+always was.
+
 ## Pushing
 
 **Always push branch work and create or update its pull request before ending the session.**
@@ -36,6 +67,14 @@ too; a merge of `main` whose result is Git's own needs no second review (**pr-re
 *(2026-09-26: "all PRs must go through a (adversarial) review before ready to be merged.")*
 Merge permission and green CI do not replace it.
 
+**Merging needs one approving review, from a reviewer bot or the player, in addition to the green
+`test` check** — the live `main approvals` ruleset exempts the player (a repository admin) from the
+approval rule on *any* PR they merge, not only their own. A reviewer bot's own APPROVE (posted as
+`claude-reviewer`/`codex-reviewer`, under **pr-review**) counts the same as the player's.
+
+**A review thread is resolved only by whoever opened it, and that is a convention, not a gate**
+(**pr-review** says who and why): an open thread never blocks an approval or a merge on its own.
+
 When merging is explicitly authorized, check mergeability and let CI gate the merge. Resolve
 conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**
 (`gh pr merge <n> --squash`) and retire the branch (see "Branches"). A dependent wait belongs to
@@ -44,8 +83,9 @@ a background agent, not a polling loop in the orchestrating session.
 **Several PRs can merge in a row without re-greening each one.** Two rulesets guard `main`. The
 `main` ruleset requires a pull request and the `test` check — the doc lint, the boot check and the
 full suite, run on the merge result. The `main approvals` ruleset requires one approving review,
-from a reviewer bot or the player; repository admins (the player) may bypass it when merging a pull
-request, and resolving the review threads is not required. So green CI alone is not the gate.
+from a reviewer bot or the player; repository admins (the player) may bypass it on any pull request
+they merge, not only their own, and resolving the review threads is not required (a convention, not
+a gate — see above). So green CI alone is not the gate.
 Neither ruleset requires a branch to be up to date with `main`
 (`strict_required_status_checks_policy` is off), so an approved PR whose `test` check is green
 merges after `main` has moved under it as long as the merge is still clean; a conflict still blocks
@@ -76,7 +116,13 @@ and prints what it would do. It acts only when given a second literal `push` arg
 refuses a dirty tree, any branch but `main`, a `main` that is not level with `origin/main`, and a
 commit that already carries the newest `v*` tag — every refusal fires in the dry run too, so the
 dry run tells the truth about whether the real thing would work. Semver, and **`major` is reserved
-for a change that breaks or fundamentally alters the game**.
+for a change that breaks or fundamentally alters the game**. An agent's own `push` run goes through
+`uv run python tools/agent-identity.py run claude-coder -- tools/release.sh <part> push` (Codex the
+same as `codex-coder`) — "Who a commit and a pull request are from" is why, and
+`.claude/hooks/github-write-guard.sh` denies the bare form. The player's own run at their own
+terminal is unwrapped either way (`tools/lib_agent_role.sh`'s `agent_run` only wraps when
+`NAPPY_AGENT_ROLE` is set); the player's own go-ahead above is what release still needs regardless
+of who types the command.
 
 **A fix on `main` is not a fix on the site**, and that is the sentence to keep in mind before
 telling anybody the page is well. The site serves whatever the newest tag points at, so `git tag
@@ -260,10 +306,17 @@ for it.
 retired.** It refuses unless the pull request is MERGED and the local tip is its merged head, then
 removes the branch's worktree (never with `--force`, so git refuses a dirty one), the local branch
 and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
-whose worktree is gone. Run it from the main checkout. **Use it rather than the bare commands**:
-Claude Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as
-destructive however the check came out, and `.claude/settings.json` allows this script by name
-because it cannot delete anything the check did not clear.
+whose worktree is gone. Run it from the main checkout, through `uv run python
+tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` — its own remote
+delete is a write, so `github-write-guard.sh` denies it bare (Codex runs the same line with
+`codex-coder`). **Use it rather than the bare commands**: Claude Code's auto-mode classifier
+refuses `git worktree remove` and `git branch -D` as destructive however the check came out, and
+`.claude/settings.json` allows exactly that wrapped `claude-coder` line, because the script
+cannot delete anything the check did not clear. The allow rule is a prefix match on the command's
+text, so the line has to be spelled as above: `./tools/…`, a different role, or anything else in
+front of `tools/prune-merged.sh` is not covered and goes to the classifier. There is no
+`codex-coder` rule: Codex does not read this file (its approvals are its own sandbox's), and
+Claude Code never runs as `codex-coder`.
 
 **A PR stacked on another is retargeted to `main` before its base branch goes.** The repository
 deletes a merged head branch on GitHub by itself; for a branch deleted by hand (`git push

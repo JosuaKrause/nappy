@@ -86,23 +86,28 @@ def main() -> None:
             run_hook("project-rules.sh", "Agent")
         elif tool in ("Bash", "exec_command", "shell", "shell_command"):
             if kind == "PreToolUse":
-                # The same guard Claude Code runs on every Bash call: a git grep with
+                # The same two guards Claude Code runs on every Bash call: a git grep with
                 # neither -I nor a text-only pathspec can grow without bound (see
-                # .claude/hooks/git-grep-guard.sh's own header). Checked before the
+                # .claude/hooks/git-grep-guard.sh's own header), and a git push/commit, a
+                # GitHub-writing gh call, or a tools/ script that pushes or posts, run outside
+                # tools/agent-identity.py run <role> -- ... (see .claude/hooks/github-write-guard.sh's
+                # own header) -- Codex's coding and review agents are bound by the same
+                # committing/pr-review mandate as Claude Code's. Checked before the
                 # shell-reminder below, and on a deny nothing else about this call is
                 # printed -- Codex accepts the same permissionDecision JSON Claude Code does.
                 # Codex reports every shell call as `Bash` with `tool_input.command`, a string
                 # (measured with Codex CLI 0.157.1). An argument list (["bash", "-lc", "..."])
-                # is passed on too, and the guard joins it with spaces, so an unexpected shape
+                # is passed on too, and each guard joins it with spaces, so an unexpected shape
                 # is checked rather than skipped. `cmd` is read when `command` is absent only as
                 # a fail-safe: it is the argument name of the tool the model calls, and no
                 # Codex hook payload has been seen to carry it.
                 command = args.get("command") or args.get("cmd")
                 if isinstance(command, (str, list)) and command:
-                    guard = run_hook("git-grep-guard.sh", "Bash", extra_input={"command": command})
-                    if guard and guard.get("hookSpecificOutput", {}).get("permissionDecision") == "deny":
-                        print(json.dumps(guard))
-                        return
+                    for guard_script in ("git-grep-guard.sh", "github-write-guard.sh"):
+                        guard = run_hook(guard_script, "Bash", extra_input={"command": command})
+                        if guard and guard.get("hookSpecificOutput", {}).get("permissionDecision") == "deny":
+                            print(json.dumps(guard))
+                            return
                 # Arbitrary scripts can compute their paths. Preserve selective
                 # loading instead of dumping all skills on a read-only command.
                 marker = state / "shell-reminder"
