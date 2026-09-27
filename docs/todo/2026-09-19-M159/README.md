@@ -1,3 +1,5 @@
+priority: later
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded

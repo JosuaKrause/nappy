@@ -115,6 +115,7 @@ var _day := 1
 ## The scene's TileSet is the immutable source for every daily repaint. Reusing the Ground layer's
 ## current TileSet would feed a prior day's composed grass atlas back into the compositor.
 var _authored_ground_tile_set: TileSet
+var _south_water: SceneryWater
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
 ## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
@@ -1322,20 +1323,31 @@ func _composed_ground_tile_set() -> TileSet:
 ## portal's opening (`CityEdge.TUNNEL_DEPTH_TILES`), because past the mouth the road is inside the
 ## mountain and what is on top of it is rock.
 ##
-## Nothing here is walkable and none of it has a `GameEnums.TileType`: this paints the **tilemap**
+## Nothing here is walkable and none of it has a `GameEnums.TileType`: this paints the tilemap
+## and the separate animated water surface,
 ## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
 ## tile for tile. The boundary wall is still what stops her.
 func _paint_outside_the_map() -> void:
 	var depth := OUTSIDE_DEPTH_TILES
+	var water_cells: Array[Vector2i] = []
 	for y in range(-depth, map.size.y + depth):
 		for x in range(-depth, map.size.x + depth):
 			if x >= 0 and x < map.size.x and y >= 0 and y < map.size.y:
 				continue
 			var source := _border_source(x, y, depth)
+			if source == GroundTiles.WATER:
+				water_cells.append(Vector2i(x, y))
+				continue
 			if source >= 0:
 				var tile := Vector2i(x, y)
 				_ground.set_cell(tile, source,
 						GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
+	if _south_water != null:
+		_south_water.free()
+	_south_water = SceneryWater.new()
+	_south_water.name = "SouthWater"
+	_ground.add_child(_south_water)
+	_south_water.configure(water_cells)
 
 ## Which border tile belongs at an outside cell. Each side is written as *what you meet, in order,
 ## walking away from the last kerb*, and how far out of the city a tile is is what indexes it.

@@ -1,0 +1,74 @@
+{
+  "burst_water_main": {
+    "alpha_at": [
+      84,
+      16
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 671,
+    "premultiplied_max": 0.011764720082283
+  },
+  "burst_water_main_b": {
+    "alpha_at": [
+      83,
+      16
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 680,
+    "premultiplied_max": 0.011764720082283
+  },
+  "burst_water_main_vertical": {
+    "alpha_at": [
+      5,
+      76
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 743,
+    "premultiplied_max": 0.0117647051811218
+  },
+  "burst_water_main_vertical_b": {
+    "alpha_at": [
+      5,
+      76
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 735,
+    "premultiplied_max": 0.0117647051811218
+  },
+  "car_accident": {
+    "alpha_at": [
+      0,
+      0
+    ],
+    "alpha_max": 0.0,
+    "changed_pixels": 55,
+    "premultiplied_max": 0.00382929620170813
+  },
+  "car_accident_b": {
+    "alpha_at": [
+      0,
+      0
+    ],
+    "alpha_max": 0.0,
+    "changed_pixels": 55,
+    "premultiplied_max": 0.00382929620170813
+  },
+  "car_accident_vertical": {
+    "alpha_at": [
+      41,
+      64
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 66,
+    "premultiplied_max": 0.00392156839370728
+  },
+  "car_accident_vertical_b": {
+    "alpha_at": [
+      41,
+      64
+    ],
+    "alpha_max": 0.00392156839370728,
+    "changed_pixels": 69,
+    "premultiplied_max": 0.00784313678741455
+  }
+}

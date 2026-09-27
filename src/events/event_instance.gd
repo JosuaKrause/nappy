@@ -848,8 +848,11 @@ static func has_a_spread(def: EventDef) -> bool:
 ## `_spread_vertical` together pick the texture, with no field on the def.
 ##
 ## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst
-## main's fountain, each alternated off `_idle_stepping()` by `_draw_body()`. The fallen tree has
-## nothing that moves and answers its one picture either way.
+## main's fountain. On screen the two are `EventScenery` layers built by `_build_scenery()`, and
+## `_update_scenery()` alternates their frame off its own `_idle_stepping()` call; `_draw_body()`
+## only picks `frame_b` here when it draws the whole scene itself, which happens on the halo's own
+## canvas (`canvas != self`) or before `_build_scenery()` has run (`_scenery == null`). The fallen
+## tree has nothing that moves and answers its one picture either way.
 static func _wide_scene_texture(look: EventDef.Look, vertical: bool, frame_b := false) -> String:
 	match look:
 		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
@@ -900,6 +903,11 @@ var def: EventDef
 var path: PackedVector2Array = PackedVector2Array()
 
 var age := 0.0
+## Whether this was created where a warning pointed, once that warning was over
+## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` reads it to carry
+## the warning's badge on to the thing itself until it comes into view, and `resume()` reads it to
+## tell a fresh instance from one streamed back in.
+var came_under_a_warning := false
 var is_finished := false
 
 ## A mast that has been reached and silenced — `EventManager.silence_mast()`/`silence_all_masts()`
@@ -1072,6 +1080,7 @@ var _stationary_vehicle_side := true
 ## negative, which makes this starting value one no key can ever equal: the first tick of an
 ## instance's life always asks for its own draw rather than relying on a coincidence.
 var _picture := Vector4i(-1, 0, 0, 0)
+var _scenery: EventScenery
 
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
@@ -1115,8 +1124,9 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 ## kerb and `reversing_lorry` belongs against the building — re-centring either would undo the one
 ## thing `pavement_side` exists to do. Both stay exactly where `EventScheduler._build_placement`
 ## put them, still measured against the same 64px band: a kerbed `VEHICLE_BODY` (44px) leaves a
-## 26px gap to the frontage, narrower than the 28px pram, which is `docs/HANDOFF.md`'s own reading
-## of that placement — a van at the kerb is *also* "no line to walk," on purpose.
+## 26px gap to the frontage, narrower than the 28px pram, which is how `docs/EVENTS.md`'s
+## `delivery_van` row reads that placement — a **wall** by physical fit, so a van at the kerb is
+## *also* "no line to walk," on purpose.
 static func _centred_on_the_pavement_band(map: CityMap, at: Vector2) -> Vector2:
 	var tile := map.world_to_tile(at)
 	if map.pavement_inward(tile) == Vector2i.ZERO:
@@ -1236,6 +1246,30 @@ func _ready() -> void:
 	if def.flock_size > 0:
 		_build_the_flock()
 	_build_halo()
+	_build_scenery()
+
+## The whole A/B sources remain the badge and halo pictures. The visible scene is instead
+## retained in painter-order layers behind this node's caret and ahead of its halo.
+func _build_scenery() -> void:
+	if def.look not in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
+		return
+	var picture := _wide_scene_texture(def.look, _spread_vertical)
+	var half := maxf(11.0, def.obstructs_radius)
+	var size := _native_size(picture)
+	var thickness := size.x if _spread_vertical else size.y
+	_scenery = EventScenery.new()
+	_scenery.configure(picture, _spread_extent(half * 2.0, thickness),
+			_wide_scene_anchor(_spread_vertical, half), _wide_scene_shadow(picture))
+	add_child(_scenery)
+	_update_scenery()
+
+func _update_scenery() -> void:
+	if _scenery == null:
+		return
+	_scenery.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	var period := CAR_ACCIDENT_SMOKE_PERIOD if def.look == EventDef.Look.CAR_ACCIDENT \
+			else BURST_MAIN_SPLASH_PERIOD
+	_scenery.set_frame(_idle_stepping(period))
 
 ## Where this instance's body was left standing when its pursuer walked out of it, in world space,
 ## or `Vector2.INF` while the two are still the same place. See `EventDef.body_stays_behind`.
@@ -1641,6 +1675,12 @@ var _last_range := INF
 ## `resume()`'s own `from_noticed_at`, so a notice made before an instance left the world is not
 ## made twice.
 var _noticed_at := INF
+## Whether `EventBus.pursuit_began` has already been sent for this instance's own chase — a row
+## with no `pursues_within` at all (`is_waiting()` never true) starts chasing on its very first
+## `_chase()` call rather than on a `_noticed_at` transition, so this is stated over "have I told
+## `VisitCounter` yet" rather than re-derived from `_noticed_at`. See `EventBus.pursuit_began`'s own
+## doc.
+var _pursuit_began_reported := false
 ## True once she has come close enough during the telegraph for the thing to start, which ends the
 ## telegraph there and then. **The start is fired by her, not by a clock**, and two rows want it
 ## for the same reason at two distances.
@@ -1708,6 +1748,12 @@ func _chase(delta: float) -> void:
 			# was looking down the alley is now looking at you.
 			_heading = toward.normalized()
 		return
+	if not _pursuit_began_reported:
+		_pursuit_began_reported = true
+		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
+		# out of `is_waiting()` or (a row with no `pursues_within` at all) this chase's first frame.
+		# See docs/TELEMETRY.md, "The page counts visits".
+		EventBus.pursuit_began.emit(def.id)
 	_heading = toward.normalized()
 	# From what ends her day, not from where the field's core ends: the same `lethal_reach()`
 	# `Tuning.validate_pursuit()` states the contract over. Every row but `roadblock` has no
@@ -1935,6 +1981,16 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	age = from_age
 	_path_travelled = from_travelled
 	_noticed_at = from_noticed_at
+	# A resume restores an instance already past age 0 (the guard above), and a pursuer streamed
+	# back in still `is_waiting()` given the restored `_noticed_at` is the one case that has not
+	# begun chasing yet — every other pursuer streamed back in, including a `pursues_within <= 0.0`
+	# row that never waits at all, was already chasing before it streamed out. Stated over the
+	# restored value rather than over `is_waiting()` itself, which this assignment runs ahead of.
+	# **A row created where its warning pointed is not streamed back in**: `EventManager.
+	# spawn_warned()` sets `came_under_a_warning` before calling this only to spend a telegraph
+	# the warning already ran, and it has chased nothing yet.
+	_pursuit_began_reported = not came_under_a_warning \
+			and not (def.pursues_within > 0.0 and from_noticed_at == INF)
 	# A stride never starts mid-cycle, the same reason `setup()` resets it — a resumed instance is
 	# a fresh object (see this function's own doc), so this is normally already true, but the rule
 	# is stated at both entry points rather than left to rely on that.
@@ -2252,6 +2308,13 @@ const LEAVING_GIVES_UP := 6.0
 func _be_done(may_park := true) -> void:
 	if is_finished or is_leaving or is_parked:
 		return
+	if def.pursues and _pursuit_began_reported:
+		# `VisitCounter`'s own "dog-shaken"/"dog-outlasted" — a pursuit that had actually begun is
+		# over without catching her, `gave_up` telling which of the two ways. A catch never reaches
+		# here: it ends the day through `_check_hard_fails()`'s own `hard_fail_triggered` instead,
+		# and this instance is never asked to finish after that. See `EventBus.pursuit_ended`'s own
+		# doc.
+		EventBus.pursuit_ended.emit(def.id, gave_up)
 	if def.stops_where_it_arrives and may_park:
 		is_parked = true
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
@@ -2374,6 +2437,8 @@ func _finish() -> void:
 	if is_finished:
 		return
 	is_finished = true
+	if _scenery != null:
+		_scenery.hide()
 	_invalidate_contribution_cache()
 
 # ------------------------------------------------------------------ emission ---
@@ -2819,6 +2884,7 @@ func will_be_lethal(player_position: Vector2) -> bool:
 ## a never-settling state — a van that has finished taking its victim — is still a change the
 ## comparison can see.
 func _redraw_if_the_picture_changed() -> void:
+	_update_scenery()
 	var key := _picture_key()
 	var changed := key != _picture
 	_picture = key
@@ -2895,8 +2961,8 @@ func _picture_key() -> Vector4i:
 	# **Only the looks that actually read an idle timer carry one.** `_idle_stepping()` is a
 	# function of the clock alone and knows nothing about the row asking, so handing it to every
 	# instance would flip every seal's key twice a second for an animation it does not have — the
-	# gate would then be paying its whole cost and buying nothing. The crash, the burst main and
-	# the steam are the three that do have one, each on its own period.
+	# gate would then be paying its whole cost and buying nothing. Smoke and fountain phases
+	# belong to their own small layers, while the steam is already a cloud-only picture.
 	var idle := false
 	if def.look == EventDef.Look.CAFE:
 		idle = _idle_stepping(SITTER_IDLE_PERIOD)
@@ -2904,10 +2970,6 @@ func _picture_key() -> Vector4i:
 		idle = _idle_stepping(BUSKER_STRUM_PERIOD)
 	elif def.look == EventDef.Look.POSTER_CREW:
 		idle = _idle_stepping(POSTER_CREW_PASTE_PERIOD)
-	elif def.look == EventDef.Look.CAR_ACCIDENT:
-		idle = _idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)
-	elif def.look == EventDef.Look.BURST_MAIN:
-		idle = _idle_stepping(BURST_MAIN_SPLASH_PERIOD)
 	elif def.look == EventDef.Look.STEAM:
 		idle = _idle_stepping(STEAM_BILLOW_PERIOD)
 	var flags := 0
@@ -3537,11 +3599,13 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.FALLEN_TREE:
 			_draw_wide_scene(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), canvas)
 		EventDef.Look.CAR_ACCIDENT:
-			_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical,
-					_idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
+			if canvas != self or _scenery == null:
+				_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical,
+						_idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
 		EventDef.Look.BURST_MAIN:
-			_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical,
-					_idle_stepping(BURST_MAIN_SPLASH_PERIOD)), canvas)
+			if canvas != self or _scenery == null:
+				_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical,
+						_idle_stepping(BURST_MAIN_SPLASH_PERIOD)), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_draw_spread(COLLAPSED_FRONTAGE, "", canvas)
 		EventDef.Look.SCAFFOLDING:

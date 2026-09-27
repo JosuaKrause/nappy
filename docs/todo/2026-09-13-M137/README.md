@@ -1,3 +1,5 @@
+priority: later
+
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
 
 > "not the first yeller she reaches but the first yeller she interacts with. so the task is

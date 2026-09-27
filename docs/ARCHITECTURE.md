@@ -40,6 +40,8 @@ src/
 	block_layout.gd       one block's carves, also fixed at generation
 	city_state.gd         run-scoped: how far along each arc the run has got
 	building.gd           one lot, assembled from 32px facade and roof tiles
+	scenery_layer.gd      retained static furniture or small alternating scenery parts
+	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
@@ -68,6 +70,8 @@ src/
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
 	event_def.gd          authored event data
+	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
+	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, lifetime, telegraph, emission; every picture
 	                       it draws is a region of the baked `events` page, by path
 	event_catalogue.gd    every event, defined in code
@@ -78,6 +82,8 @@ src/
 	                       answers total_excitement_at
 	event_director.gd     sites what the day budgeted and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
+	pending_warning.gd    a screen-edge warning up before its thing exists: the place it
+	                       holds just off screen on the thing's own ground, and its clock
   day/
 	day_controller.gd     the clock, the two phases, the four ways a day ends
   resistance/
@@ -179,7 +185,9 @@ art/                      the authoring pictures, behind a .gdignore: the engine
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
 assets/                   what the engine still reads at runtime, and only that
-  shaders/                the excitement halo's silhouette rim
+  shaders/                the excitement halo's silhouette rim and the shared south-water ripple;
+                          both boot paths issue real transparent canvas draws before play because
+                          Compatibility has no shader-precompile call
   atlases/membership.json which picture belongs on which atlas page, with each group's
                           lifetime, its padding kind and the consumers that read it. "members"
                           is what both bake modes carry, "members_png" and "members_svg" what
@@ -209,6 +217,9 @@ tools/
   cost_table.gd           the survey itself, run headless as a scene (needs the Tuning autoload)
   lint.sh                 the governed docs, for sentences that go stale on their own
   pycheck.sh              ruff, mypy and the unit tests for the Python here
+  split-scenes.py         regenerate or check the pipe/crash static and moving SVG spans,
+                          runtime registration and atlas membership; evidence metadata is an
+                          explicit output rather than an ordinary regeneration side effect
   run.sh                  play; rebuilds the import cache first when a pull left it stale
   shot.sh                 render the game to a PNG
   telemetry.sh            show a run log; stats.sh aggregates them
@@ -403,14 +414,16 @@ The run. Owns `run_seed`, `day`, `nerves`, `resistance_progress`, `consumed_one_
 Handles day transitions and ending selection. Serialisable for save/continue.
 
 ### `VisitCounter`
-Sends anonymous GoatCounter events for how far a run gets — see docs/TELEMETRY.md, "The page
-counts visits". Only listens: every method answers an `EventBus` signal (`run_begun`, `day_ended`,
-`run_restarted`, `escape_begun`/`escape_lost`/`escape_out`, `controls_chosen`, and three signals a
-day already had — `day_started`, `run_ended`, `resistance_step_completed`/`_failed`/
-`_contact_available`), decides nothing and writes nothing back. Sends only on a released web build
-with `?debug=1` unasked and `window.goatcounter.count` actually present —
-`VisitCounter._should_send()` is the pure gate, and `tests/test_visit_counter.gd` drives its
-truth table and its event-name builders directly.
+Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and
+met — see docs/TELEMETRY.md, "The page counts visits" for the full event list. Only listens: every
+method answers an `EventBus` signal — `run_begun`, `day_started`/`day_ended`, `day_lost_to`,
+`run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
+`resistance_step_completed`/`_step_failed`/`_mark_seen`, `event_sighted`, `event_lit_unmet`,
+`city_gone_dark`, `pursuit_began`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
+`player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`, and
+`controls_chosen` — decides nothing and writes nothing back. Sends only on a released web build
+with `?debug=1` unasked and `window.goatcounter.count` actually present — `VisitCounter._should_send()` is the pure gate, and
+`tests/test_visit_counter.gd` drives its truth table and its event-name builders directly.
 
 ## WorldContext
 

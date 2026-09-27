@@ -1,3 +1,5 @@
+priority: next
+
 ## M125 — The test suite is slow again · asked for 2026-09-13
 
 > "Also the tests are slow again, too. Tests that only restate numbers in tables etc can be

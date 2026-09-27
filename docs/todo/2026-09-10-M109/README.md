@@ -1,3 +1,5 @@
+priority: next
+
 ### M109 — Convert the SVG catalogue to PNG
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in

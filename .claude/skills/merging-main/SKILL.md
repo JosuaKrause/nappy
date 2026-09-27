@@ -55,6 +55,12 @@ add/add conflict on the folder's `README.md`, and the second takes a new name th
 typed by hand counts as taken like any other. The milestone numbers and
 `PLAYTEST-NN` files that already exist keep their numbers, and no new thing takes a number.
 
+**The queue's order is each entry's band line.** Both sides
+moving the same entry between bands conflict on that `README.md`'s first line; which band holds
+is a question for the orchestrator, never a side picked to clear the marker. A side that closed
+an entry merges cleanly beside the other side's `after:` naming it, and needs nothing: the closed
+entry's record makes the wait count as over, and the end-of-session pass deletes the line.
+
 **One case still collides: a branch from before the queue was files** that filed a new entry
 `M<n>` or a new `PLAYTEST-NN.md` the old way, when `main` has a different record under the same
 number. Keep `main`'s record and number intact; give the branch's record a name from
@@ -157,5 +163,5 @@ not a substitute for the semantic review.
 
 Commit the reviewed merge and update the authorized PR. Report the three-way resolutions, any
 renaming map, the conversion's plan, semantic checks, verification and any unresolved decisions.
-Put historical reasoning and mappings in the branch's decision record; keep the queue limited to
-open work, and leave `HANDOFF.md` to the end of the session.
+Put historical reasoning and mappings in the branch's decision record, and keep the queue
+limited to open work.

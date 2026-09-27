@@ -86,3 +86,33 @@ those conversions refuse:
 11. **M223's overhaul comes after the open PRs' conversion and before M225**: the orchestrator's
     ordering, agreed to by the player. → M223, the queue's order.
 12. **M225, the telemetry, comes once everything is updated.** → the queue's order.
+
+## The order without a shared list
+
+Told that PRs can still conflict, and that `docs/TODO.md`'s order list is a line every PR adding or
+closing an entry edits:
+
+> "what's the point of any of this if there is still a centralized TODO.md ordering list? can we
+> think of a better solution there? a priority system?"
+
+Offered three ways (a priority band in each entry and a command that prints the order; the list
+kept but edited only at a session's end; dependency links alone), with the first recommended: each
+entry's `README.md` names a band from a short fixed set (`now`, `next`, `later`, `parked`), entries
+within a band sort by their date name unless one says `after: <entry>`, a command prints the order,
+and `TODO.md` keeps only its header:
+
+> "1 sounds good with. only change I would do is for "now" do reverse chronological maybe?"
+
+13. **The queue has no shared order list.** Each entry carries its own priority band and, where one
+    thing truly waits on another, an `after:` link; a command computes the order from the folders,
+    and `TODO.md` keeps only its header. The bands and the command are the orchestrator's proposal,
+    agreed to. → M223.
+14. **Within `now`, the newest entry comes first**; within the other bands, the oldest. Said with a
+    "maybe", so the build shows it and the player can turn it back. → M223.
+
+Shown the order the built command prints:
+
+> "let's move M226 and M227 to now"
+
+15. **M226 (the pursuing dog keeps its day-3 timing) and M227 (Codex as a sub-agent) are in `now`.**
+    → M223.

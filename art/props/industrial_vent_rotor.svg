@@ -1,0 +1,4 @@
+<!-- Rotor A, cropped from (21, 19) in the 32px vent source. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="21 19 6 6" shape-rendering="geometricPrecision" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M24 20V24 M22 22H26" stroke="#3f4447" stroke-width="0.7"/>
+</svg>

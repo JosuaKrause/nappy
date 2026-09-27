@@ -181,7 +181,7 @@ _rig_quit_table() {
         | awk 'NF==2'
 }
 
-# The value beside $1 ("margin", "ceiling" or "kill_grace") in RIG_QUIT_SECONDS.
+# The value beside $1 ("margin", "ceiling", "kill_grace" or "movie_slowdown") in RIG_QUIT_SECONDS.
 _rig_quit_constant() {
     local name="$1"
     awk -v n="$name" '$1==n {print $2; found=1} END {exit !found}' < <(_rig_quit_table)
@@ -228,6 +228,42 @@ rig_kill_after_seconds() {
         if (deadline < margin) deadline = margin
         if (deadline > ceiling) deadline = ceiling
         total = deadline + grace
+        printf "%d\n", (total == int(total)) ? total : int(total) + 1
+    }'
+}
+
+# The same kill wait for a rig Godot's movie writer is recording (`--write-movie`, which
+# tools/record.sh and tools/trailer.sh launch with), given the dev flags being forwarded. Under the
+# writer the game counts its own deadline -- the same script-plus-margin-under-a-ceiling one -- in
+# game seconds rather than wall seconds (`main._process()`), so this stretches that deadline by
+# `movie_slowdown` (`DevFlags.RIG_MOVIE_SLOWDOWN`, the wall seconds a recorded game second may
+# take) and adds the same kill grace.
+rig_kill_after_movie_seconds() {
+    local margin ceiling grace slowdown day_length after=""
+    margin="$(_rig_quit_constant margin)"
+    ceiling="$(_rig_quit_constant ceiling)"
+    grace="$(_rig_quit_constant kill_grace)"
+    slowdown="$(_rig_quit_constant movie_slowdown)"
+    day_length=""
+    local -a args=("$@")
+    local n=${#args[@]} i=0
+    while (( i < n )); do
+        case "${args[$i]}" in
+            --after) after="${args[$((i + 1))]:-}" ;;
+            --day-length) day_length="${args[$((i + 1))]:-}" ;;
+        esac
+        i=$(( i + 1 ))
+    done
+    if [[ -z "$day_length" ]]; then
+        day_length="$(_tuning_day_length_seconds)"
+    fi
+    awk -v after="$after" -v day_length="$day_length" -v margin="$margin" \
+            -v ceiling="$ceiling" -v grace="$grace" -v slowdown="$slowdown" 'BEGIN {
+        script = (after != "") ? after + 0 : day_length + 0
+        deadline = script + margin
+        if (deadline < margin) deadline = margin
+        if (deadline > ceiling) deadline = ceiling
+        total = deadline * slowdown + grace
         printf "%d\n", (total == int(total)) ? total : int(total) + 1
     }'
 }
