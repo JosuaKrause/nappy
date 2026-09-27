@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Survey every agent worktree, in this checkout and in every other local clone of the same repo:
 # what is on disk, how it stands with its own remote, its pull request's CI state, its brief, and
-# whether its credited agent is still warm enough to resume. A clone is this checkout (Claude
-# Code's own transcripts credit its worktrees) or another one Codex has worked in (its own session
-# history credits those) -- see "Codex" below for how the second kind is found and read. Also
-# warns when a worktree kept changing well after its credited agent's transcript did -- the sign
+# whether its credited agent is still warm enough to resume. Each clone's own evidence decides
+# how it is credited and labelled -- a Claude Code transcripts directory for it, a Codex session
+# naming it, or both -- never which clone the script happens to run from, so the same survey
+# reads the same way run from any clone (see "Codex" below for how a Codex session is found and
+# read, and projects_dir_for below for a clone's own transcripts directory). Also warns when a
+# worktree kept changing well after its credited agent's transcript did -- the sign
 # of a replacement started into it without its `agent:` line being updated (see the orchestrating
 # skill's "An agent that died mid-task is replaced in its own worktree") -- and when the same
 # branch is checked out in more than one clone, since that is two hosts possibly working one PR.
@@ -49,13 +51,15 @@ usage() {
 usage: tools/agent-status.sh [--help|-h] [--no-fetch]
 
 Prints one block per agent worktree, across this checkout and every other local clone of the same
-repo (see AGENT_STATUS_CLONES and CODEX_HOME below): its clone and host, path, branch and
-uncommitted file count; how far it is ahead/behind its own upstream; its pull request's number,
-state, draft flag and CI rollup; its brief file if one exists; its credited agent -- a Claude Code
-transcript for this checkout's own worktrees, a Codex session for another clone's -- with the
-agent's id or nickname, its age and a warm/cold verdict (Codex also gets "active"); a warning if
-the worktree changed well after that agent's last transcript write; and a warning if the same
-branch is checked out in more than one clone.
+repo (see AGENT_STATUS_CLONES and CODEX_HOME below): its clone and host label (from that clone's
+own evidence -- a Claude Code transcripts directory, a Codex session naming it, or both -- never
+from which clone is running the script), path, branch and uncommitted file count; how far it is
+ahead/behind its own upstream; its pull request's number, state, draft flag and CI rollup; its
+brief file if one exists; its credited agent -- that clone's own Claude Code transcript if one
+matches this worktree, else a Codex session -- with the agent's id or nickname, its age and a
+warm/cold verdict (Codex also gets "active"); a warning if the worktree changed well after that
+agent's last transcript write; and a warning if the same branch is checked out in more than one
+clone.
 
 --no-fetch skips the `git fetch` in every clone surveyed and reports ahead/behind against
 whatever was last fetched.
@@ -356,18 +360,24 @@ worktrees_for_clone() {
     '
 }
 
-# Every session's transcript directory for this checkout: ~/.claude/projects/<slug>, where <slug>
-# is the main checkout's absolute path with every "/" turned into "-". Derived, never hard-coded,
-# so this still works from anybody else's home directory. Claude Code transcripts credit only this
-# checkout's own worktrees -- another clone's are Codex's, credited above.
-slug="${main_checkout//\//-}"
-projects_dir="$HOME/.claude/projects/$slug"
+# Every clone's own transcript directory is ~/.claude/projects/<slug>, where <slug> is that
+# clone's own absolute path with every "/" turned into "-" -- a clone's own, never the running
+# checkout's, so a clone this script is not currently running from still gets its own worktrees'
+# transcripts (a bug found in review of #393: labelling and crediting used to key off
+# `$main_checkout`, the checkout the script happened to run from, so running it from the Codex
+# clone flipped every label and dropped every Claude credit).
+projects_dir_for() {
+    local slug="${1//\//-}"
+    printf '%s' "$HOME/.claude/projects/$slug"
+}
 
 # The agent-<id>.meta.json next to a transcript carries "worktreePath" only for a worktree-isolated
-# spawn; a replacement agent started without isolation has none. $1 is the worktree's own realpath.
+# spawn; a replacement agent started without isolation has none. $1 is the clone, $2 the
+# worktree's own realpath.
 agent_id_from_meta() {
-    local wt="$1" best_id="" best_mtime=-1
-    [[ -d "$projects_dir" ]] || return 0
+    local clone="$1" wt="$2" best_id="" best_mtime=-1 pdir
+    pdir="$(projects_dir_for "$clone")"
+    [[ -d "$pdir" ]] || return 0
     local meta
     while IFS= read -r meta; do
         local mp
@@ -384,14 +394,16 @@ agent_id_from_meta() {
             best_id="${best_id#agent-}"
             best_id="${best_id%.meta.json}"
         fi
-    done < <(find "$projects_dir" -mindepth 3 -maxdepth 3 -type f -name 'agent-*.meta.json' -path '*/subagents/*' 2>/dev/null)
+    done < <(find "$pdir" -mindepth 3 -maxdepth 3 -type f -name 'agent-*.meta.json' -path '*/subagents/*' 2>/dev/null)
     printf '%s' "$best_id"
 }
 
+# $1 is the clone, $2 the agent id.
 transcript_for_id() {
-    local id="$1"
-    [[ -z "$id" || ! -d "$projects_dir" ]] && return 0
-    find "$projects_dir" -mindepth 3 -maxdepth 3 -type f -name "agent-$id.jsonl" -path '*/subagents/*' 2>/dev/null | head -1
+    local clone="$1" id="$2" pdir
+    pdir="$(projects_dir_for "$clone")"
+    [[ -z "$id" || ! -d "$pdir" ]] && return 0
+    find "$pdir" -mindepth 3 -maxdepth 3 -type f -name "agent-$id.jsonl" -path '*/subagents/*' 2>/dev/null | head -1
 }
 
 # The newest of HEAD's committer time and the mtimes of its uncommitted files (deleted paths
@@ -448,6 +460,29 @@ def rollup:
 [ (.number|tostring), .state, (.isDraft|tostring), rollup ] | @tsv
 '
 
+# -------------------------------------------------------------------------- clone host labels ---
+# The `clone:` line's host label is evidence, never which clone the script happens to run from --
+# a Claude Code transcripts directory exists for it, a Codex session names it, or (rarely) both.
+# $1 is the clone.
+clone_has_claude_transcripts() {
+    [[ -d "$(projects_dir_for "$1")" ]]
+}
+
+# Whether Codex's own session history names clone $1 as a `cwd` anywhere: a worktree under it
+# (from codex_hit_worktrees, already cached) or the clone root itself, plain or `file://`-prefixed
+# (a session that ran there without a worktree -- this happens; see the header comment).
+clone_has_codex_sessions() {
+    local clone="$1" wt
+    while IFS= read -r wt; do
+        case "$wt" in
+            "$clone"/.claude/worktrees/*) return 0 ;;
+        esac
+    done < <(codex_hit_worktrees)
+    [[ -d "$codex_sessions_dir" ]] && command -v rg >/dev/null 2>&1 || return 1
+    rg -q --fixed-strings "\"cwd\":\"$clone\"" "$codex_sessions_dir" 2>/dev/null && return 0
+    rg -q --fixed-strings "\"cwd\":\"file://$clone\"" "$codex_sessions_dir" 2>/dev/null
+}
+
 # ---------------------------------------------------------------------------- collect entries ---
 # clone<TAB>path<TAB>branch, one per worktree, across the main checkout and every other clone --
 # gathered before any block is printed, so a branch checked out in more than one clone can be
@@ -460,6 +495,26 @@ clones_to_survey=("$main_checkout")
 if [[ "${#other_clones[@]}" -gt 0 ]]; then
     clones_to_survey+=("${other_clones[@]}")
 fi
+
+# "clone<TAB>label" lines, one per surveyed clone -- computed once per clone rather than once per
+# worktree, since clone_has_codex_sessions scans Codex's whole session history.
+clone_labels_tsv=""
+for clone in "${clones_to_survey[@]}"; do
+    has_claude=0; has_codex=0
+    clone_has_claude_transcripts "$clone" && has_claude=1
+    clone_has_codex_sessions "$clone" && has_codex=1
+    if   [[ "$has_claude" -eq 1 && "$has_codex" -eq 1 ]]; then label="claude, codex"
+    elif [[ "$has_claude" -eq 1 ]]; then label="claude"
+    elif [[ "$has_codex" -eq 1 ]]; then label="codex"
+    else label="no known agent activity"
+    fi
+    clone_labels_tsv+="$clone"$'\t'"$label"$'\n'
+done
+
+clone_label_for() {
+    printf '%s' "$clone_labels_tsv" | awk -F'\t' -v k="$1" '$1 == k { print $2; exit }'
+}
+
 for clone in "${clones_to_survey[@]}"; do
     clone_main="$(main_checkout_of "$clone")"
     while IFS=$'\t' read -r path branch; do
@@ -491,9 +546,8 @@ for entry in "${all_entries[@]}"; do
     IFS=$'\t' read -r clone path branch <<<"$entry"
 
     [[ "$first" -eq 1 ]] && first=0 || echo
-    host="claude"; [[ "$clone" != "$main_checkout" ]] && host="codex"
     echo "== $path =="
-    echo "clone:       $clone — $host"
+    echo "clone:       $clone — $(clone_label_for "$clone")"
     echo "branch:      $branch"
 
     uncommitted="$(git -C "$path" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
@@ -529,29 +583,31 @@ for entry in "${all_entries[@]}"; do
     wt_real="$(cd "$path" 2>/dev/null && pwd -P)"
     credit_mtime=""
     credit_label=""
+    agent_line=""
     now="$(date +%s)"
 
-    if [[ "$host" == "claude" ]]; then
-        agent_id=""
-        if [[ -f "$brief_file" ]]; then
-            agent_id="$(awk -F': ' '/^agent: /{id=$2} END{print id}' "$brief_file")"
-        fi
-        [[ -z "$agent_id" ]] && agent_id="$(agent_id_from_meta "$wt_real")"
+    # Credit whichever tool's own evidence exists for this worktree -- never gated by the clone's
+    # own label or by which checkout is running the script (see the header comment on
+    # projects_dir_for): try this clone's own Claude Code transcripts first, then Codex's.
+    agent_id=""
+    if [[ -f "$brief_file" ]]; then
+        agent_id="$(awk -F': ' '/^agent: /{id=$2} END{print id}' "$brief_file")"
+    fi
+    [[ -z "$agent_id" ]] && agent_id="$(agent_id_from_meta "$clone" "$wt_real")"
 
-        transcript=""
-        [[ -n "$agent_id" ]] && transcript="$(transcript_for_id "$agent_id")"
+    transcript=""
+    [[ -n "$agent_id" ]] && transcript="$(transcript_for_id "$clone" "$agent_id")"
 
-        if [[ -z "$transcript" ]]; then
-            echo "agent:       transcript not found"
-        else
-            mtime="$(mtime_of "$transcript")"
-            age_min=$(( (now - mtime) / 60 ))
-            if [[ "$age_min" -lt "$WARM_MINUTES" ]]; then verdict="warm"; else verdict="cold"; fi
-            echo "agent:       $agent_id — last write ${age_min}m ago — $verdict"
-            credit_mtime="$mtime"
-            credit_label="$agent_id"
-        fi
-    else
+    if [[ -n "$transcript" ]]; then
+        mtime="$(mtime_of "$transcript")"
+        age_min=$(( (now - mtime) / 60 ))
+        if [[ "$age_min" -lt "$WARM_MINUTES" ]]; then verdict="warm"; else verdict="cold"; fi
+        agent_line="$agent_id — last write ${age_min}m ago — $verdict"
+        credit_mtime="$mtime"
+        credit_label="$agent_id"
+    fi
+
+    if [[ -z "$agent_line" ]]; then
         codex_result="$(codex_credit_for "$wt_real" "$branch")"
         if [[ -n "$codex_result" ]]; then
             IFS=$'\t' read -r c_nick c_mtime c_note <<<"$codex_result"
@@ -562,12 +618,16 @@ for entry in "${all_entries[@]}"; do
             fi
             note_suffix=""
             [[ -n "$c_note" ]] && note_suffix=" ($c_note)"
-            echo "agent:       $c_nick — last write ${age_min}m ago — $verdict$note_suffix"
+            agent_line="$c_nick — last write ${age_min}m ago — $verdict$note_suffix"
             credit_mtime="$c_mtime"
             credit_label="$c_nick"
-        else
-            echo "agent:       no codex session found"
         fi
+    fi
+
+    if [[ -n "$agent_line" ]]; then
+        echo "agent:       $agent_line"
+    else
+        echo "agent:       no agent found (no Claude Code transcript, no Codex session)"
     fi
 
     # Stale ownership: the worktree kept changing well after the credited agent's last write (or
