@@ -221,8 +221,8 @@ class FormatTextTests(unittest.TestCase):
         self.assertIn("2026-09-26T00:00:00Z", text)
 
     def test_a_note_says_counts_are_attempts_not_visitors(self) -> None:
-        # The game's site keeps no sessions, so one person losing day 6 twice and winning it on the
-        # third attempt sends began three times; the header says so before the first day's counts.
+        # Every event opts out of the site's sessions, so one person losing day 6 twice and winning it
+        # on the third attempt sends began three times; the header says so before the first day's counts.
         grouped = goatcounter.group_hits(
             [
                 hit("nappy-day-6-began", 1, 1),

@@ -10,37 +10,43 @@ what actually happens to a person playing, and nobody should have to have an opi
 
 ## The page counts visits
 
-**The published page counts with GoatCounter on two sites, and that is separate from the run
-log.** *(PLAYTEST-143: "use this for nappy stats. for the site visit stat use the old account".)*
+**The published page counts with GoatCounter on one site, `nappy.goatcounter.com`, and that is
+separate from the run log.** *(2026-09-26: "would it simplify things if all telemetry only went to
+nappy?" · "okay, I can turn session back on and you opt out for everything except
+/nappy.josuakrause.com/".)* The export's `<head>` (`html/head_include` in `export_presets.cfg`)
+loads GoatCounter's `count.js` with that site as its endpoint, and the one script carries both
+kinds of hit:
 
-- **The page load goes to `josuakrause.goatcounter.com`**, where sessions stay on, so a person
-  reloading the page within GoatCounter's session window is one visitor. The export's `<head>`
-  (`html/head_include` in `export_presets.cfg`) sends it as one image request to that site's
-  `/count` ([GoatCounter's pixel](https://www.goatcounter.com/help/pixel), requested from script
-  so it can carry what `count.js` would): a path made of the page's host and path alone (so this
-  game's loads stay apart from the rest of that site), the page title, the referrer, the screen
-  size and the query string in a field of its own, from which GoatCounter reads campaign
-  parameters such as `ref` and `utm_source`.
-- **The game's events go to `nappy.goatcounter.com`**, a site with sessions off, so every event
-  counts every time it is sent: a day lost three times in an evening is three `lost-*`, where a
-  session would have counted it once (PLAYTEST-143: "no, even current run wouldn't work if the
-  player dies multiple times on the same day"). The same `<head>` loads GoatCounter's `count.js`
-  with that site as its endpoint and `no_onload` set, so it counts no page load of its own and
-  only carries `VisitCounter`'s events.
+- **The page visit keeps the site's sessions**, so a person reloading the page within
+  GoatCounter's session window is one visitor. `count.js` counts it on load, once the tab is
+  visible, under the path the head's path function gives it: the page's host and path alone,
+  `nappy.josuakrause.com/`, the same path the visits on `josuakrause.goatcounter.com` carry. The
+  hit also carries the page title, the referrer, the screen width and the query string, from which
+  GoatCounter reads campaign parameters such as `ref` and `utm_source`.
+- **Every game event opts out of the sessions**, so it counts every time it is sent: a day lost
+  three times in an evening is three `lost-*`, where a session would have counted it once
+  (PLAYTEST-143: "no, even current run wouldn't work if the player dies multiple times on the same
+  day"). `VisitCounter` passes `no_session: true` on every `count()` call, which `count.js` sends
+  as the hit's `ns` parameter; each event names its own path, so the path function never touches
+  one.
 
-Either server sees the browser's user agent and derives a country from the address, as any
-request does. Neither sets a cookie or stores anything on the device, which is why the page shows
-no consent banner, and a visitor is never followed across days or sites. **A page carrying
-`?debug=1` runs none of it**, so neither its load nor anything played on it is counted
-(PLAYTEST-132: "anything with debug doesn't get tracked"). `count.js` ignores `localhost`,
-private network addresses, `file:` and a page inside a frame, and the page load's request skips
-the same pages and any browser driven by WebDriver, so `tools/serve-web.sh` and a phone on
-the same Wi-Fi count nothing. `--no-telemetry` does not reach either: it switches off the run
-log, and neither counter writes one.
+`josuakrause.goatcounter.com` holds only the page visits and events from before the page counted
+everything on the game's own site.
 
-`tools/goatcounter.sh` reads the events back from `nappy.goatcounter.com` with that site's
-read-only API key in `GOATCOUNTER_TOKEN`; its `--site` option and the other site's key read the
-page loads.
+The server sees the browser's user agent and derives a country from the address, as any request
+does. GoatCounter sets no cookie and stores nothing on the device, which is why the page shows no
+consent banner, and a visitor is never followed across days or sites. **A page carrying
+`?debug=1` loads none of it**, so neither its visit nor anything played on it is counted
+(PLAYTEST-132: "anything with debug doesn't get tracked"). `count.js` itself ignores `localhost`,
+private network addresses, `file:`, a page inside a frame, a prerendered page and a browser that
+has opted out through GoatCounter's own `#toggle-goatcounter` (`skipgc` in its local storage), and
+flags a browser driven by WebDriver as a bot, which GoatCounter does not count, so
+`tools/serve-web.sh` and a phone on the same Wi-Fi count nothing. `--no-telemetry` does not reach
+it: it switches off the run log, and the counter writes none.
+
+`tools/goatcounter.sh` reads the site back with its read-only API key in `GOATCOUNTER_TOKEN`: the
+events as a funnel, and the page visit among every path under `--raw`. Its `--site` option and the
+old site's key read that site's history.
 
 **The game counts how far a run gets, as anonymous GoatCounter events.**
 `VisitCounter` (`src/autoload/visit_counter.gd`) is an autoload that only listens — every method

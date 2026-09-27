@@ -12,9 +12,11 @@ Run it through the wrapper, which owns the environment:
 counting, each path starting `nappy-`, to the game's own site, `nappy.goatcounter.com` -- see
 `docs/TELEMETRY.md`, "The page counts visits". This reads them back through GoatCounter's own read
 API (`GET /api/v0/stats/hits`), groups them the way the names are shaped, and prints the result for
-a person or an assistant to read. The page visit itself is counted on `josuakrause.goatcounter.com`,
-a different site with a different key; `--site` with that site's API URL, and that site's key in
-`GOATCOUNTER_TOKEN`, reads it.
+a person or an assistant to read. The page visit is counted on the same site, under the path
+`nappy.josuakrause.com/`, which `--raw` lists; the site keeps sessions for it, so its count is
+visitors. `josuakrause.goatcounter.com` holds only the page visits and events from before the page
+counted everything on the game's own site; `--site` with that site's API URL, and that site's key
+in `GOATCOUNTER_TOKEN`, reads that history.
 
 The API key is a read-only token from the GoatCounter site's own Settings -> API page, passed only
 through the environment variable `GOATCOUNTER_TOKEN` -- never as a command-line flag, since a flag
@@ -34,18 +36,17 @@ carries the `Authorization` header across a redirect to any host.
 `GET /api/v0/stats/hits` answers `{hits: [...], more, total}`, paginated by repeating
 `exclude_paths=<path_id>` for every id already seen while `more` stays true (see
 `https://nappy.goatcounter.com/api.json`, the endpoint's own Swagger spec). `count` on each hit is
-"Number of visitors for the selected date range", the API's own wording -- and `nappy.goatcounter.com`
-keeps no sessions, so GoatCounter counts every hit as a visit ("If it's disabled every pageview
-counts as a 'visit'", its own help on sessions): a count is every time the event was sent, a retry
-by the same person included.
+"Number of visitors for the selected date range", the API's own wording. The page visit keeps the
+site's sessions, so its count is visitors; every event opts out of them (`count.js`'s `no_session`,
+sent as the hit's `ns` parameter), and GoatCounter counts a hit without a session as a visit of its
+own: an event's count is every time it was sent, a retry by the same person included.
 
 Grouping follows the shape `docs/TELEMETRY.md` documents rather than a hard-coded list of event
 names, since the catalogue keeps growing: a name is either run-level (`run-*`, `ending-*`,
 `escape-*`, `controls-*`), a day event (`day-<N>-<rest>`), or -- if it matches neither shape --
 printed anyway, at the end, rather than silently dropped. `--raw` skips the grouping and the
-`--prefix` filter and prints every path GoatCounter has for the range, events and page loads
-alike (the game's own site holds events only) -- what an assistant would otherwise reach for a
-hand-written request to answer.
+`--prefix` filter and prints every path GoatCounter has for the range, events and the page visit
+alike -- what an assistant would otherwise reach for a hand-written request to answer.
 
 `--check` proves the key works with `GET /api/v0/stats/total` for the last hour, which needs only
 the "Read statistics" permission -- the one every read-only key has. It then tries `GET /api/v0/me`
@@ -467,8 +468,9 @@ def _sorted_desc(items: dict[str, int]) -> list[tuple[str, int]]:
 def format_text(grouped: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str) -> str:
     lines = [f"GoatCounter events for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})"]
     lines.append(
-        "Counts are attempts, not visitors -- the game's site keeps no sessions, so an event counts "
-        "every time it was sent, and a day's began includes every retry of it."
+        "Counts are attempts, not visitors -- every event opts out of the site's sessions, so it counts "
+        "every time it was sent, and a day's began includes every retry of it. The page visit, counted "
+        "once per visitor, is under --raw."
     )
 
     run_level: dict[str, int] = grouped["run_level"]
@@ -558,7 +560,7 @@ def build_parser() -> argparse.ArgumentParser:
     mode.add_argument(
         "--raw",
         action="store_true",
-        help="print every path and its count for the range, unfiltered by --prefix -- events and page loads alike",
+        help="print every path and its count for the range, unfiltered by --prefix -- events and the page visit alike",
     )
     mode.add_argument(
         "--check",
