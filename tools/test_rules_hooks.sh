@@ -1166,6 +1166,24 @@ assert_write_guard "bash -c with gh api, echo, then git push, unwrapped -> deny"
     'bash -c "gh api repos/o/r --jq .a; echo hi; git push"'
 assert_write_guard "wrapped bash -c running git status then git push -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- bash -c "git status; git push"'
+# A wrapper written inside the quoted script reaches only to that script's own next separator, as
+# the shell running it does, so a write after the script's own ;, && or newline is the player's.
+assert_write_guard "bash -c, a wrapper inside the script, then ; and a bare git push -> deny" deny \
+    'bash -c "uv run python tools/agent-identity.py run claude-coder -- git fetch; git push"'
+assert_write_guard "bash -c, a wrapped commit inside the script, then && git push -> deny" deny \
+    "bash -c 'uv run python tools/agent-identity.py run claude-coder -- git commit -m x && git push'"
+assert_write_guard "sh -c, a wrapped read inside the script, then && gh pr merge -> deny" deny \
+    'sh -c "cd /tmp && uv run python tools/agent-identity.py run claude-coder -- gh pr view 1 && gh pr merge 1"'
+assert_write_guard "bash -lc, a wrapper inside the script, then a newline and git push -> deny" deny \
+    $'bash -lc "uv run python tools/agent-identity.py run codex-coder -- git status\ngit push"'
+assert_write_guard "bash -c, the whole script one wrapped git push -> allow" allow \
+    'bash -c "uv run python tools/agent-identity.py run claude-coder -- git push"'
+assert_write_guard "bash -c, a wrapped gh api write whose quoted body holds a ; -> allow" allow \
+    "bash -c \"uv run python tools/agent-identity.py run claude-coder -- gh api -X POST repos/o/r/issues -f body='x; y'\""
+assert_write_guard "bash -c, a reviewer's wrapper inside the script, then ; git push -> deny" deny \
+    'bash -c "uv run python tools/agent-identity.py run claude-reviewer -- gh pr view 1; git push"'
+assert_write_guard "a wrapped commit whose quoted message holds -- and ; git push -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m 'a -- b; git push'"
 assert_write_guard "wrapped command, then an unquoted ; and a bare git push -> deny" deny \
     'uv run python tools/agent-identity.py run claude-coder -- echo done; git push'
 assert_write_guard "a REST write whose field value contains the word graphql -> deny" deny \

@@ -406,6 +406,28 @@ class CodexHooksTest(unittest.TestCase):
                 assert output is not None
                 self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
+    def test_github_write_guard_ends_a_wrapper_inside_a_quoted_script_at_its_separator(self) -> None:
+        # The shell running the quoted script ends the wrapper's reach at the script's own `;`,
+        # `&&` or newline, so the write after it is the player's and is denied.
+        wrap = "uv run python tools/agent-identity.py run"
+        for command in (
+            f'bash -c "{wrap} codex-coder -- git fetch; git push"',
+            f"bash -c '{wrap} codex-coder -- git commit -m x && git push'",
+            f'sh -c "cd /tmp && {wrap} codex-coder -- gh pr view 1 && gh pr merge 1"',
+            f'bash -lc "{wrap} codex-coder -- git status\ngit push"',
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_github_write_guard_lets_a_wrapper_outside_the_quotes_cover_the_script(self) -> None:
+        text = self.call(
+            tool="Bash",
+            command='uv run python tools/agent-identity.py run codex-coder -- bash -c "git status; git push"',
+        )
+        self.assertIn("committing", text)
+
     def test_github_write_guard_allows_a_read_with_a_piped_jq(self) -> None:
         text = self.call(tool="Bash", command="gh api repos/o/r/issues --jq '.[] | .title'")
         self.assertIn("committing", text)

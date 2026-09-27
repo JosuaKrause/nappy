@@ -67,7 +67,10 @@
 # python` (or bare `python`/`python3`) in front, and with or without `run`'s own `--repo
 # OWNER/REPO` between `run` and `<role>`: everything at and after that literal `--`, up to the
 # next real command separator, is exempt. Nothing before the `--`, or in a different
-# `;`/`&`/`|`/newline-separated command on the same line, is.
+# `;`/`&`/`|`/newline-separated command on the same line, is. A wrapper written inside a quoted
+# script (`bash -c "... run claude-coder -- git fetch; git push"`) reaches only as far as the
+# shell running that script lets it, the script's own next `;`, `&&`, `|` or newline, so the
+# `git push` there is denied.
 #
 # **This prefers a false deny to a false allow**, the same call `git-grep-guard.sh` makes and for
 # the same reason: telling a mention from a real invocation is a parser that keeps having holes,
@@ -79,8 +82,11 @@
 # still read for one thing first: a separator inside them (`--jq '.a | .b'`, `-f body='a; b'`, a
 # `(` in an inline GraphQL query) is soft -- it still splits words, so a command inside `bash -c
 # "..."` is still found, but it neither ends a `gh api` call's flags, so a write flag after the
-# quoted argument is seen, nor ends the wrapper's exemption, so `run <role> -- bash -c "a; b"`
-# covers the whole script it runs. The one
+# quoted argument is seen, nor ends the exemption of a wrapper standing outside the quotes, so
+# `run <role> -- bash -c "a; b"` covers the whole script it runs. A wrapper inside the quotes is
+# told apart by its quoted `--`, and its exemption ends at the next separator, soft or hard; a
+# wrapper inside a script that an outer wrapper already covers (`run <role> -- bash -c "run
+# <role> -- a; b"`) is then a false deny for `b`, the safe direction. The one
 # case this does not close is the wrapper's own shape appearing whole inside a mention (a comment
 # that quotes a full `tools/agent-identity.py run claude-coder -- git push` line reads, to this
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
@@ -102,14 +108,25 @@ def named($name): last_part == $name;
 
 # A separator character (`;`, `&`, `|`, `(`, `)`, a backtick, a newline) that sits inside single
 # quotes, double quotes or a `$'...'` string, or right behind a backslash, is "soft": it becomes
-# the one-character word U+0001 instead of itself. One pass over the characters, tracking which
-# quote is open (0 none, 1 single, 2 double, 3 `$'...'`, where a backslash escapes as it does
-# outside quotes and in double quotes, but not in single quotes).
+# the one-character word U+0001 instead of itself. A `--` that is a whole word inside quotes
+# becomes `--` plus U+0002, so a wrapper written inside a quoted script (`bash -c "... run
+# claude-coder -- git fetch; git push"`) is told apart from one standing outside it (`run
+# claude-coder -- bash -c "..."`): the shell ends the inner wrapper's reach at the script's own
+# `;`, `&&` or newline, and `findings` ends its exemption there too. One pass over the characters,
+# tracking which quote is open (0 none, 1 single, 2 double, 3 `$'...'`, where a backslash escapes
+# as it does outside quotes and in double quotes, but not in single quotes) and the two characters
+# before the last, so a `--` is marked when the character that ends it arrives: the two before are
+# `-`, the one before those starts a word, and a quote is still open.
 def sep_codepoints: [59, 38, 124, 40, 41, 96, 10];
+def word_edge_codepoints: [32, 9, 10, 34, 39];
 def mark_soft_separators:
-  [foreach explode[] as $c ({q: 0, esc: false, prev: null, emit: []};
+  [foreach explode[] as $c ({q: 0, esc: false, prev: null, p2: null, p3: null, emit: []};
       (if (.esc or .q != 0) and ((sep_codepoints | index($c)) != null) then [32, 1, 32] else [$c] end)
         as $out
+      | .p3 as $p3
+      | ((.esc | not) and .q != 0 and .prev == 45 and .p2 == 45
+         and ($p3 == null or ((word_edge_codepoints | index($p3)) != null))
+         and (((word_edge_codepoints + sep_codepoints) | index($c)) != null)) as $quoted_dashes
       | if .esc then .esc = false | .emit = $out
         elif $c == 92 and .q != 1 then .esc = true | .emit = [$c]
         elif .q == 0 and $c == 39 then .q = (if .prev == 36 then 3 else 1 end) | .emit = [$c]
@@ -118,7 +135,8 @@ def mark_soft_separators:
         elif .q == 2 and $c == 34 then .q = 0 | .emit = [$c]
         else .emit = $out
         end
-      | .prev = $c;
+      | (if $quoted_dashes then .emit = [2] + .emit else . end)
+      | .p3 = .p2 | .p2 = .prev | .prev = $c;
       .emit[])]
   | implode;
 
@@ -128,8 +146,11 @@ def mark_soft_separators:
 # `|`, `(`, `)`, a backtick and a newline are words of their own, each ending a chain of commands.
 # Inside quotes they are soft separators instead (`mark_soft_separators`): still a word break
 # every detector stops at, so a command inside `bash -c "..."` or `$(...)` is still seen, but not
-# the end of a `gh api` call's own flags (`detect_gh_api`) or of a wrapper's exemption
-# (`findings`), since a quoted `--jq '.a | .b'` or `-f body='a; b'` is one argument.
+# the end of a `gh api` call's own flags (`detect_gh_api`), since a quoted `--jq '.a | .b'` or
+# `-f body='a; b'` is one argument, nor of the exemption of a wrapper standing outside the quotes
+# (`findings`), since `run <role> -- bash -c "a; b"` runs the whole script as that role. A wrapper
+# found through a quoted `--` (U+0002, above) is inside the script, and its exemption ends at the
+# next separator, soft or hard.
 def words:
   mark_soft_separators
   | drop("\\") | drop("\"") | drop("'")
@@ -418,11 +439,15 @@ def detect_tool($w; $i; $n; $cmd_pos):
 # `tools/agent-identity.py run [--repo OWNER/REPO] <role> -- ...`, with or without a `uv run
 # python`/`python3` in front (irrelevant here -- only the three words right after `run` matter):
 # the role and the index right after that literal `--`, everything from which is the wrapped
-# command and exempt (a reviewer role's own push or merge aside -- see reviewer_roles below).
+# command and exempt (a reviewer role's own push or merge aside -- see reviewer_roles below), and
+# whether that `--` sat inside quotes (`inner`: the wrapper is part of a quoted script, so its
+# exemption ends at the script's own next separator -- see mark_soft_separators).
 def detect_wrapper($w; $i; $n):
   if ($w[$i] | named("agent-identity.py")) and ($w[$i + 1] == "run") then
     (after_options($w; $i + 2)) as $role_i
-    | if ($role_i < $n) and ($w[$role_i + 1] == "--") then {next: ($role_i + 2), role: $w[$role_i]} else null end
+    | if ($role_i < $n) and ($w[$role_i + 1] | IN("--", "--\u0002")) then
+        {next: ($role_i + 2), role: $w[$role_i], inner: ($w[$role_i + 1] != "--")}
+      else null end
   else null
   end;
 
@@ -438,7 +463,8 @@ def is_push_like($reason): ($reason == "git push") or ($reason | startswith("too
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type");
 
-# One pass over the word array: a separator resets the current command's exemption and recomputes
+# One pass over the word array: a hard separator resets the current command's exemption, and so
+# does a soft one when the wrapper stood inside quotes (`inner`); any separator recomputes
 # command position for the next word (`command_word`, from right after the separator); the wrapper
 # pattern sets where its own command's exemption starts (and which role it names), and recomputes
 # command position for the wrapped command the same way; anything else is checked against the
@@ -449,7 +475,8 @@ def is_merge_like($reason):
 def findings($w):
   ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
-  | {i: 0, wrap_from: null, wrap_role: null, cmd_word_index: (command_word($w; 0; $n)), out: [], reviewer_push: false}
+  | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false,
+     cmd_word_index: (command_word($w; 0; $n)), out: [], reviewer_push: false}
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
@@ -457,10 +484,11 @@ def findings($w):
       | ($state.i == $state.cmd_word_index) as $cmd_pos
       | if $x | is_sep then
           $state
-          | (if $x | is_hard_sep then .wrap_from = null | .wrap_role = null else . end)
+          | (if ($x | is_hard_sep) or .wrap_inner
+             then .wrap_from = null | .wrap_role = null | .wrap_inner = false else . end)
           | .cmd_word_index = (command_word($w; $state.i + 1; $n)) | .i += 1
         elif $wrap != null then
-          $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role
+          $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role | .wrap_inner = $wrap.inner
           | .cmd_word_index = (command_word($w; $wrap.next; $n)) | .i += 1
         else
           (detect_git($w; $state.i; $n) // detect_gh($w; $state.i; $n; $lm)
