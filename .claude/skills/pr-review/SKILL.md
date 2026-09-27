@@ -144,3 +144,13 @@ orchestrator already knows is contested. It asks for this skill's order (semanti
 one review posted on the PR, and a report back: the verdict, each finding with its severity, and the
 review's URL. Sonnet is enough for a small or mechanical PR; a PR that carries a design decision, a
 drawing, or a change to the rules is reviewed by a stronger model.
+
+**A queue update goes first and takes the lightest reviewer.** *(2026-09-27: "Task list updates
+should have priority and could use a weaker review agent (or no review at all if you think that
+is safe)" · "Yeah we still need a review but only to check that it doesn't touch code or [mess]
+anything up".)* A PR that only files or moves queue entries, playtest files or review items is
+briefed and merged ahead of other work, so the queue on `main` is current before the next brief is
+written from it. Its review is Haiku's and is narrow: the diff touches nothing outside
+`docs/todo/`, `docs/playtests/`, `docs/review/` and `docs/decisions/`, deletes or rewrites nothing
+it was not meant to, and `./tools/lint.sh` passes. The semantic questions above are not asked of it.
+It is still a review, since merging needs one approving review (**committing**).
