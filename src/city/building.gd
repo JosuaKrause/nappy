@@ -29,6 +29,12 @@ extends StaticBody2D
 ## Fills are authored near-white and multiplied by the variant's colour; edges, plinth and
 ## windows are overlays drawn at full colour on top. That is why a corner cell needs no
 ## dedicated corner tile: it simply takes two edge overlays and the parapet turns.
+##
+## **A column with no walkable ground directly south of it draws no facade at all** —
+## `covered_ground_cols` — and whichever building stands there instead draws its own roof further
+## north to meet it, `roof_extension_rows` deep past its own lot's own north edge, so the two
+## roofs read as one continuous surface rather than a floating wall with nobody able to stand in
+## front of it. See each property's own doc.
 
 const TILE := float(Tuning.TILE_SIZE)
 
@@ -54,6 +60,11 @@ const ROOF_EDGE_N := &"buildings/roof_edge_n"
 const ROOF_EDGE_S := &"buildings/roof_edge_s"
 const ROOF_EDGE_W := &"buildings/roof_edge_w"
 const ROOF_EDGE_E := &"buildings/roof_edge_e"
+## The four parapet overlays as flags, the answer `roof_cell_edges()` gives for one roof cell.
+const ROOF_EDGE_BIT_N := 1
+const ROOF_EDGE_BIT_S := 2
+const ROOF_EDGE_BIT_W := 4
+const ROOF_EDGE_BIT_E := 8
 const WINDOW_DARK := &"buildings/window_dark"
 const WINDOW_LIT := &"buildings/window_lit"
 const WINDOW_TALL_DARK := &"buildings/window_tall_dark"
@@ -329,6 +340,103 @@ enum Condition {
 		door_world_x_range = value
 		queue_redraw()
 
+## Per-column: true where the tile directly south of this front's own ground row is another
+## building rather than walkable ground, so nobody can ever stand in front of that column, and that
+## building's roof reaches up to cover it (`docs/CITY.md`, "A front is district and block
+## purpose"); a column nothing covers stays false and keeps its facade. Set by `City`,
+## read off `CityMap.is_walkable()` — the fixed lattice fact, never `is_open()`'s per-day closures,
+## since "no purpose change may move a walkable tile" (the **city** skill) — so a covered column
+## stays covered for the whole run and never for her own building, which `_spawn_buildings()` never
+## asks this of. Sized to `columns()`, or empty for a front with nothing in front of it;
+## `_is_covered()` reads an index past the end as false, the same "nobody told this building about
+## one" convention `_windows`' own out-of-range read already uses. A geometry fact, not a roll, but
+## the door's own column depends on it (`_build_entrance()` filters covered columns out of every
+## tier), so the setter rebuilds rather than only redrawing — before `add_child()`, where `City`
+## already sets it, that is a no-op, the same way every other export setter here is. `_draw()`
+## skips a covered column's whole facade, wall and window alike — see `roof_extension_rows` for
+## what stands in its place.
+@export var covered_ground_cols: Array[bool] = []:
+	set(value):
+		covered_ground_cols = value
+		_rebuild()
+
+## Whether ground-floor column `col` is covered (`covered_ground_cols`), defaulting to false for an
+## index the array does not reach.
+func _is_covered(col: int) -> bool:
+	return covered_ground_cols[col] if col >= 0 and col < covered_ground_cols.size() else false
+
+## Per-column: how many extra roof rows this front draws north of its own lot, continuing its own
+## roof tiles and colour up to the roof line of whichever building stands north of it and covers
+## one of its columns — so a covered front's hidden facade reads as one roof meeting another,
+## never a patch. Set by `City._assign_roof_extensions()` for every building, hers included (a
+## building providing the cover is a fact about what stands north of it, not about whose front it
+## covers — the exemption in `covered_ground_cols` is the other side of this relationship). The
+## count at column `col` is exactly the covered building's own `wall_tiles()`: enough rows of roof
+## to reach the exact world row that building's own roof already starts at, so the two textures
+## meet edge to edge with no gap and no overlap. Sized to `columns()`, or empty for a front covering
+## nothing; `_extension_rows()` reads an index past the end as 0, the same convention
+## `_is_covered()` already uses. A geometry fact, not a roll, but the roof furniture's own pool
+## reaches onto the extension (`_build_roof_furniture()`), so the setter rebuilds rather than only
+## redrawing — before `add_child()`, where `City` already sets it, that is a no-op.
+@export var roof_extension_rows: Array[int] = []:
+	set(value):
+		roof_extension_rows = value
+		_rebuild()
+
+## Per-column: whether this front's own extension at that column reaches into another rectangle
+## of the *same* courtyard lot rather than a genuinely separate building. A single-block or
+## apartment-complex courtyard is cut into up to four rectangles around its hole
+## (`City._assign_roof_extensions()`'s own doc), each its own `Building`, but physically it is one
+## building with one roof that turns its corners — so where one piece's extension meets another
+## piece's roof, neither draws a lip: this piece withholds `ROOF_EDGE_N` at the extension's top,
+## and the covered piece withholds `ROOF_EDGE_S` at that column (`seamless_cover_cols`). Between
+## two separate buildings the extension still caps, since that lip is the real, visible step
+## between two roofs. Sized to `columns()`, or empty when nothing needs the distinction;
+## `_extension_is_seamless()` reads an index past the end as false, the same convention
+## `roof_extension_rows` and `covered_ground_cols` already use. Drawing only, so a redraw is all a
+## change needs.
+@export var roof_extension_seamless: Array[bool] = []:
+	set(value):
+		roof_extension_seamless = value
+		queue_redraw()
+
+## Per-column: true where this front's covered column is covered by another piece of the same
+## courtyard lot (the covered side of `roof_extension_seamless`), so the roof in front carries on
+## into this one and this column's first roof row draws no `ROOF_EDGE_S` lip. Set by
+## `City._assign_roof_extensions()`; empty for everything else, read as false past the end
+## (`_is_seamlessly_covered()`). Drawing only, so a redraw is all a change needs.
+@export var seamless_cover_cols: Array[bool] = []:
+	set(value):
+		seamless_cover_cols = value
+		queue_redraw()
+
+## The palette entry this building's wall and roof are tinted from, or -1 for its own `variant`.
+## `City` sets it so every piece of one courtyard lot carries the same colour, since the pieces are
+## one building and three tints read as three. A separate field rather than a shared `variant`,
+## because `variant` also seeds the windows, the front, the door, the fire escape and the roof
+## furniture, and sharing it would give every piece the same rolls as well as the same colour.
+## Drawing only, so a redraw is all a change needs.
+@export var tint_variant := -1:
+	set(value):
+		tint_variant = value
+		queue_redraw()
+
+## How many extra roof rows column `col` draws (`roof_extension_rows`), defaulting to 0 for an
+## index the array does not reach.
+func _extension_rows(col: int) -> int:
+	return roof_extension_rows[col] if col >= 0 and col < roof_extension_rows.size() else 0
+
+## Whether column `col`'s own extension is seamless (`roof_extension_seamless`), defaulting to
+## false for an index the array does not reach.
+func _extension_is_seamless(col: int) -> bool:
+	return roof_extension_seamless[col] if col >= 0 and col < roof_extension_seamless.size() \
+			else false
+
+## Whether column `col` is covered by another piece of its own courtyard lot
+## (`seamless_cover_cols`), defaulting to false for an index the array does not reach.
+func _is_seamlessly_covered(col: int) -> bool:
+	return seamless_cover_cols[col] if col >= 0 and col < seamless_cover_cols.size() else false
+
 ## The upper-floor column the neighbor's boarded window (`NEIGHBOR_WINDOW_SEALED`) draws over,
 ## from day 11 on, or -1 for every building but the one `City.board_neighbor_window()` picked: the
 ## one lot the door notch stands in front of, on its third floor — row index 3, since the ground
@@ -577,8 +685,11 @@ func _build_front() -> void:
 		# `RESIDENTIAL` front and then drops it the same way this front already drops one that is
 		# too short to carry it — she has a stair inside instead (the player, PLAYTEST-128.md:
 		# "the home building shouldn't have a fire escape (it has a double staircase inside)") — so
-		# `is_home_building` moves nothing else on this stream either.
-		if wall_tiles() >= FIRE_ESCAPE_MIN_WALL_ROWS and not is_home_building:
+		# `is_home_building` moves nothing else on this stream either. A covered column
+		# (`_is_covered()`) drops it the same way: no platform or brackets ever reach a
+		# column nobody can stand in front of, and no picture exists for a stair with nothing
+		# under its lowest landing, so the whole escape goes rather than only its ground floor.
+		if wall_tiles() >= FIRE_ESCAPE_MIN_WALL_ROWS and not is_home_building and not _is_covered(first_col):
 			_fire_escape_cols.append(first_col)
 	if not _fire_escape_cols.is_empty():
 		_build_fire_escape_extras(cols)
@@ -589,12 +700,24 @@ func _build_front() -> void:
 ## version should be chosen at random" and "a wide building front could support two fire escapes"
 ## (PLAYTEST-124.md statements 19 and 20). Read only once the first escape's own column is fixed, so
 ## the second escape's own gap check always has a first column to measure against.
+##
+## A second escape's own column can land on a covered one (`_is_covered()`) even where the
+## first did not, since the two are independent columns; dropped afterward, the same "roll still
+## runs, only the result is dropped" way `_build_front()` already drops a covered first column,
+## rather than reaching into `_roll_fire_escape_extras()`'s own candidate list to keep that pure
+## function's stream untouched by anything but its own four arguments.
 func _build_fire_escape_extras(cols: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("escape:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
 	var extras := _roll_fire_escape_extras(cols, _fire_escape_cols[0], fire_escape_landings(), rng)
-	_fire_escape_cols = extras["cols"]
-	_fire_escape_pots = extras["pots"]
+	var kept_cols: Array[int] = []
+	var kept_pots := {}
+	for col: int in extras["cols"]:
+		if not _is_covered(col):
+			kept_cols.append(col)
+			kept_pots[col] = extras["pots"][col]
+	_fire_escape_cols = kept_cols
+	_fire_escape_pots = kept_pots
 
 ## The pure roll behind `_build_fire_escape_extras()`, split out so a test can replay it against the
 ## same stream the way `_door_col_from()` already is. `first_col` is the column `_build_front()`'s
@@ -633,11 +756,12 @@ static func _roll_pots(landing_rows: Array[int], rng: RandomNumberGenerator) -> 
 ## columns by the time this runs, since `_rebuild()` calls `_build_front()` first, so a second
 ## escape is avoided the same way the first always was and the door's own roll — its tiering and
 ## how many values it draws from the `door:` stream — is unchanged on any front that still has zero
-## or one.
+## or one. `covered_ground_cols` is read the same way: it only narrows which columns the tiers
+## already offer, so a front with nothing in front of it rolls exactly as before.
 func _build_entrance() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("door:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
-	_door_col = _door_col_from(columns(), _fire_escape_cols, rng)
+	_door_col = _door_col_from(columns(), _fire_escape_cols, covered_ground_cols, rng)
 
 ## The door's column, rolled from the first non-empty tier: an interior column clear of every fire
 ## escape and both its neighbours, then any column clear of all of them, then any column but an
@@ -646,10 +770,19 @@ func _build_entrance() -> void:
 ## the same as before. The escapes' landings reach eight pixels into both neighbouring columns at
 ## the ground floor, so a door beside one would be half hidden; the corner columns come second only
 ## as the courtesy a fire escape pays `WALL_EDGE_W`/`WALL_EDGE_E`, since the door's own margin
-## clears the edge line. Static so a test can replay it against the same stream.
-static func _door_col_from(cols: int, escapes: Array[int], rng: RandomNumberGenerator) -> int:
+## clears the edge line. `covered` is excluded from every tier before any of them is even
+## built, the same as an escape's own column, so the door only ever *lands* on a reachable column
+## — re-placed onto whichever one the tiers still offer rather than simply dropped — without
+## spending a second `randi_range()` call: exactly one tier still yields exactly one call, whatever
+## it excludes. Returns -1 where every column is covered, escaped or otherwise excluded from all
+## three tiers — a front with no reachable column has no door. Static so a test can replay it
+## against the same stream.
+static func _door_col_from(cols: int, escapes: Array[int], covered: Array[bool],
+		rng: RandomNumberGenerator) -> int:
 	var tiers: Array[Array] = [[], [], []]
 	for col in cols:
+		if col < covered.size() and covered[col]:
+			continue
 		var clear := true
 		for escape in escapes:
 			if absi(col - escape) <= 1:
@@ -666,20 +799,24 @@ static func _door_col_from(cols: int, escapes: Array[int], rng: RandomNumberGene
 		if not tier.is_empty():
 			var picked: int = tier[rng.randi_range(0, tier.size() - 1)]
 			return picked
-	return 0
+	return -1
 
 ## The ground-floor column this front's entrance door stands in, or -1 for a front that has none:
 ## a multi-story front is a way in, and a front that already has one gets no second. A storefront
 ## is a commercial front's way in and the portico is a civic front's; her own building keeps its
 ## ground-floor windows and her own door is already cut into her block; a one-row facade keeps its
 ## windows and has no door; the power station draws its own. A commercial front too narrow for a
-## single complete storefront — one column — is the one commercial front that gets a door.
+## single complete storefront — one column — is the one commercial front that gets a door. Reading
+## whether the storefront or portico actually *draws* (`_has_visible_storefront()`,
+## `_portico_is_drawn()`) rather than only whether one was rolled matters: a front whose only way
+## in rolled entirely onto covered columns still needs its own door, on whatever reachable column
+## `_door_col` already is.
 func entrance_door_col() -> int:
 	if power_station or is_home_building or wall_tiles() < 2:
 		return -1
-	if district == GameEnums.BlockPurpose.CIVIC:
+	if district == GameEnums.BlockPurpose.CIVIC and _portico_is_drawn():
 		return -1
-	if district == GameEnums.BlockPurpose.COMMERCIAL and not _storefront_variant.is_empty():
+	if district == GameEnums.BlockPurpose.COMMERCIAL and _has_visible_storefront():
 		return -1
 	return _door_col
 
@@ -702,7 +839,10 @@ func _entrance_door_texture() -> StringName:
 ## `col` defaults to 0 for every caller that does not care, since it only matters where
 ## `is_home_building` and the door might actually overlap. Reads no RNG of its own —
 ## `_build_windows()` still rolls exactly the same `_windows` array and `_window_style` it always
-## has, so which upper windows are lit and the window style are unaffected by this rule.
+## has, so which upper windows are lit and the window style are unaffected by this rule. **Never
+## asked at all for a covered column (`_is_covered()`)**: `_draw()`'s own wall loop skips one
+## outright, facade and all, before this is ever called there — see the class doc's own section on
+## the roof extension that stands in its place.
 func _draws_window_at(row: int, col: int = 0) -> bool:
 	if row == 0 and is_home_building and _column_under_door(col):
 		return false
@@ -733,8 +873,9 @@ func _draw() -> void:
 	var cols := columns()
 	var wall_rows := wall_tiles()
 	var roof_rows := roof_tiles()
-	var wall_colour := Palette.building_wall(variant)
-	var roof_colour := Palette.building_roof(variant)
+	var tint := variant if tint_variant < 0 else tint_variant
+	var wall_colour := Palette.building_wall(tint)
+	var roof_colour := Palette.building_roof(tint)
 	if condition == Condition.BURNT:
 		wall_colour = Palette.burnt(wall_colour)
 		roof_colour = Palette.burnt(roof_colour)
@@ -745,6 +886,11 @@ func _draw() -> void:
 		_draw_station_facade(wall_rows, hall)
 	for row in (0 if power_station else wall_rows):
 		for col in range(hall.x, hall.y):
+			# A covered column's whole facade is skipped — wall, window and every edge — since nobody
+			# can ever stand in front of it; the roof loop below draws the front that covers it up to
+			# that front's own roof line instead.
+			if _is_covered(col):
+				continue
 			var at := _cell(col, row)
 			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
 			if _draws_window_at(row, col):
@@ -779,21 +925,60 @@ func _draw() -> void:
 	_draw_posters()
 	_draw_front_overlay()
 
-	for row in roof_rows:
+	# A covered column's own extension (`roof_extension_rows`) makes this roof taller than
+	# `roof_rows` there, continuing this same fill and colour north to meet the covered front's own
+	# roof, so the row bound is read per column rather than once for the whole building. Which lips
+	# each cell draws is `roof_cell_edges()`'s answer, the one place it is decided.
+	var max_rows := roof_rows
+	for col in range(hall.x, hall.y):
+		max_rows = maxi(max_rows, roof_rows + _extension_rows(col))
+	for row in max_rows:
 		for col in range(hall.x, hall.y):
+			if row >= roof_rows + _extension_rows(col):
+				continue
 			var at := _cell(col, wall_rows + row)
 			draw_texture(AtlasLibrary.region(ROOF), at, roof_colour)
-			if row == 0:
+			var edges := roof_cell_edges(col, row)
+			if edges & ROOF_EDGE_BIT_S:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_S), at)
-			if row == roof_rows - 1:
+			if edges & ROOF_EDGE_BIT_N:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
-			if col == hall.x:
+			if edges & ROOF_EDGE_BIT_W:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_W), at)
-			if col == hall.y - 1:
+			if edges & ROOF_EDGE_BIT_E:
 				draw_texture(AtlasLibrary.region(ROOF_EDGE_E), at)
 
 	if _station_layer != null:
 		_station_layer.queue_redraw()
+
+## Which parapet overlays roof cell (`col`, `row`) draws, as `ROOF_EDGE_BIT_*` flags, or 0 for a
+## cell that is not roof at all. Row 0 is the roof's front lip, directly above the wall, and a
+## column's roof runs `roof_tiles()` rows plus its own extension. `_draw()` draws exactly this, so
+## a test can ask what a seam looks like without rendering it.
+## - **S** on row 0, except where another piece of the same courtyard lot carries its roof on into
+##   this one (`_is_seamlessly_covered()`).
+## - **N** on a column's top row, except where that top is a seamless extension, which the covered
+##   piece's own roof carries on above.
+## - **W**/**E** on the building's own ends, and on a taller column's face wherever the
+##   neighbouring column's roof has already stopped: the step between an extended column and a
+##   shorter one, the same picture the building's true end uses, so a partly covered front reads
+##   as one roof with a step in it rather than a taller patch dropped beside a shorter one.
+func roof_cell_edges(col: int, row: int) -> int:
+	var hall := _hall_cols()
+	var roof_rows := roof_tiles()
+	var col_rows := roof_rows + _extension_rows(col)
+	if col < hall.x or col >= hall.y or row < 0 or row >= col_rows:
+		return 0
+	var edges := 0
+	if row == 0 and not _is_seamlessly_covered(col):
+		edges |= ROOF_EDGE_BIT_S
+	if row == col_rows - 1 and not (_extension_rows(col) > 0 and _extension_is_seamless(col)):
+		edges |= ROOF_EDGE_BIT_N
+	if col == hall.x or row >= roof_rows + _extension_rows(col - 1):
+		edges |= ROOF_EDGE_BIT_W
+	if col == hall.y - 1 or row >= roof_rows + _extension_rows(col + 1):
+		edges |= ROOF_EDGE_BIT_E
+	return edges
 
 ## The power station hall's own facade in place of the ordinary wall, windows and ground floor —
 ## industrial rather than a block of flats: steel cladding, a hazard-striped ground course, and a
@@ -871,31 +1056,72 @@ func _cell(col: int, row: int) -> Vector2:
 ## cell's own fixed roll — the city's services failing ahead of any one block's arc, which is why
 ## this reads `condition` and `day` as two separate questions rather than one.
 func _ground_floor_texture(col: int) -> StringName:
+	if _is_covered(col):
+		return &""
 	if _storefront_variant.is_empty():
 		return WALL_BASE
 	if col % 2 == 1:
-		return &""
-	var store := col / 2
-	if store >= _storefront_variant.size() or col + 1 >= columns():
+		return &"" if _pair_is_storefront(col - 1) else WALL_BASE
+	if not _pair_is_storefront(col):
 		return WALL_BASE
+	var store := col / 2
 	var index: int = _storefront_variant[store]
 	var ambient_shutter := _storefront_shutter_severity[store] < Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE
 	if condition == Condition.BOARDED or ambient_shutter:
 		return STOREFRONT_SHUTTERED_TEXTURES[index]
 	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[store] else STOREFRONT_TEXTURES[index]
 
+## Whether the two-column pair starting at even column `first` actually draws as a storefront: a
+## complete pair within `_storefront_variant`'s own range, inside the front's own width, and with
+## neither of its own two columns covered (`_is_covered()`) — a storefront's own two-column
+## span only ever lands on reachable columns, the same as the entrance door. The roll behind
+## `first` still ran in `_build_front()` regardless; this only says whether it gets painted.
+func _pair_is_storefront(first: int) -> bool:
+	if _storefront_variant.is_empty():
+		return false
+	var store := first / 2
+	if store >= _storefront_variant.size() or first + 1 >= columns():
+		return false
+	return not _is_covered(first) and not _is_covered(first + 1)
+
+## Whether this `COMMERCIAL` front's storefront draws anywhere at all — every rolled pair checked
+## through `_pair_is_storefront()`, since a storefront that rolled but landed entirely on covered
+## columns offers no way in after all, and `entrance_door_col()` reads this to decide whether
+## the front still needs its own door.
+func _has_visible_storefront() -> bool:
+	for store in _storefront_variant.size():
+		if _pair_is_storefront(store * 2):
+			return true
+	return false
+
+## Whether this `CIVIC` front's portico actually draws: every column of `_civic_entrance_cols()`
+## reachable, since one picture cannot show a door on one column and no facade at all on its
+## covered neighbour. `entrance_door_col()` reads this the same way it reads
+## `_has_visible_storefront()`.
+func _portico_is_drawn() -> bool:
+	if district != GameEnums.BlockPurpose.CIVIC:
+		return false
+	for col in _civic_entrance_cols():
+		if _is_covered(col):
+			return false
+	return true
+
 ## The ground-floor cells with nothing on them but the plain wall and its plinth — no window, no
 ## storefront, no civic entrance, no entrance door and not a column a fire escape stands against.
 ## Local space, one `Vector2(TILE, TILE)` rect per blank column, in
 ## the same top-left convention `_cell()` already uses for every draw call in this file. Empty for
 ## the power station (it draws its own front), her own building (the blank-wall rule's one
-## exception) and a one-row facade (not multi-story, so the rule never reaches it). Read by
+## exception) and a one-row facade (not multi-story, so the rule never reaches it). A covered column
+## is excluded too, but needs no check of its own here: `_ground_floor_texture()` already
+## answers `&""` rather than `WALL_BASE` for one, so the loop below leaves it out on its own. Read by
 ## `PosterWalls` — it is the ground a poster crew pastes on.
 func blank_ground_floor_cells() -> Array[Rect2]:
 	var result: Array[Rect2] = []
 	if power_station or is_home_building or wall_tiles() < 2:
 		return result
-	var entrance_cols := _civic_entrance_cols()
+	var entrance_cols: Array[int] = []
+	if _portico_is_drawn():
+		entrance_cols = _civic_entrance_cols()
 	var door_col := entrance_door_col()
 	for col in columns():
 		if entrance_cols.has(col) or col == door_col or _fire_escape_cols.has(col):
@@ -963,7 +1189,7 @@ func _draw_front_overlay() -> void:
 		Sprites.draw_standing(self, AtlasLibrary.region(_entrance_door_texture()), Vector2(door_x, 0.0))
 	if not _fire_escape_cols.is_empty():
 		_draw_fire_escape()
-	if district == GameEnums.BlockPurpose.CIVIC:
+	if _portico_is_drawn():
 		Sprites.draw_standing(self, AtlasLibrary.region(CIVIC_PORTICO), Vector2(0.0, 0.0))
 	if power_station:
 		var x := _cell(station_door_col, 0).x + TILE * CityMap.POWER_STATION_DOOR_TILES * 0.5
@@ -1014,24 +1240,30 @@ func _draw_fire_escape() -> void:
 # ------------------------------------------------------------- roof furniture ---
 
 ## Rolls this building's roof units, once per `_rebuild()` rather than once per frame — the same
-## contract `_build_windows()` already keeps. Nothing is placed on a roof too shallow to have an
-## interior cell at all (`roof_tiles() < 3` or `columns() < 3`), which most `INDUSTRIAL` and
-## `CIVIC` roofs are not, and most single-tile-deep slivers are.
+## contract `_build_windows()` already keeps — over the cells `roof_interior_cells()` offers.
+## Nothing is placed on a roof too shallow to have an interior cell at all: one under three
+## columns wide, or whose tallest column, extension included, is under three rows deep.
+##
+## **An extended roof carries furniture too** (`roof_extension_rows`): the pool reaches onto the
+## extension as anywhere else on the roof, so a building whose own roof is too shallow for an
+## interior cell carries units once its extension gives it one. The roll is keyed on `variant` and
+## position alone, so a fixed seed gives the same roof every time — but a covering building's pool
+## is larger than its unextended roof's, so its whole layout is a different shuffle from the one
+## the same building would have with nothing to cover. A unit never sits on a cell the roof's own
+## lips already draw: the perimeter, as on every roof, and on the extension any cell
+## `roof_cell_edges()` gives a lip, which is where a taller column steps down beside a shorter one.
 func _build_roof_furniture() -> void:
 	_roof_furniture.clear()
 	_has_vent = false
 	var roof_rows := roof_tiles()
 	var cols := columns()
-	if roof_rows < 3 or cols < 3:
-		return
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, [])
 	var density: float = _FURNITURE_DENSITY.get(district, 0.0)
 	if kinds.is_empty() or density <= 0.0:
 		return
-	var interior: Array[Vector2i] = []
-	for row in range(1, roof_rows - 1):
-		for col in range(1, cols - 1):
-			interior.append(Vector2i(col, row))
+	var interior := roof_interior_cells()
+	if interior.is_empty():
+		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("roof:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
 	_shuffle(interior, rng)
@@ -1053,6 +1285,33 @@ func _build_roof_furniture() -> void:
 	# Farthest (highest row) first, so the roof layers paint back to front without
 	# re-sorting on every redraw.
 	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
+
+## The cells a roof unit may stand on, in the fixed order `_build_roof_furniture()` shuffles:
+## row by row from row 1, each row west to east over the interior columns, keeping a cell only
+## below its own column's top (extension included) and leaving out any extension cell
+## `roof_cell_edges()` gives a lip. Empty for a roof under three columns wide or whose tallest
+## column is under three rows deep, which has no interior cell at all. **The order is
+## load-bearing:** the shuffle permutes positions, so a building with nothing to cover lands its
+## units where an unextended roof always has only because its pool is the same cells in the same
+## row-major order. The rows below `roof_tiles()` take no lip check, since no step or seam lip
+## reaches them.
+func roof_interior_cells() -> Array[Vector2i]:
+	var interior: Array[Vector2i] = []
+	var roof_rows := roof_tiles()
+	var cols := columns()
+	var tallest := roof_rows
+	for col in cols:
+		tallest = maxi(tallest, roof_rows + _extension_rows(col))
+	if tallest < 3 or cols < 3:
+		return interior
+	for row in range(1, tallest - 1):
+		for col in range(1, cols - 1):
+			if row >= roof_rows + _extension_rows(col) - 1:
+				continue
+			if row >= roof_rows and roof_cell_edges(col, row) != 0:
+				continue
+			interior.append(Vector2i(col, row))
+	return interior
 
 ## `INDUSTRIAL` only: a straight duct run and, where there is a second interior row to turn into,
 ## one elbow continuing it — "a duct run laid as a straight-and-corner chain" rather than loose

@@ -2042,19 +2042,30 @@ Top-down camera with a fake vertical extrusion:
 - **A roof carries furniture, seeded per building from its block's own starting purpose**
   (`Building.district`) — vents, HVAC boxes and a straight-and-corner duct run on `INDUSTRIAL`,
   skylights on `CIVIC`, mostly water tanks with the odd vent on `RESIDENTIAL` and `COMMERCIAL`.
-  Every unit sits on an interior cell — never the perimeter row or column a roof's own edge tiles
-  already draw — so nothing overhangs the silhouette, and how many a roof carries scales with how
-  many interior cells it has. The vent is the one thing on a roof that moves: it swaps between its
-  two rotor frames on a timer of its own, and nothing else up there is animated. Furniture is
-  painted by retained children of `Building`, above its own roof tiles and inside the layer of buildings
-  under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
+  Every unit sits on an interior cell — never a cell a roof's own edge tiles already draw, which
+  is the perimeter row and column and, on a roof extended over a covered front (below), the step
+  where an extended column stands beside a shorter one — so nothing overhangs the silhouette, and
+  how many a roof carries scales with how many interior cells it has. An extended roof carries
+  furniture as the rest of it does, rolled from the same seed: each column's interior runs up to
+  that column's own top, extension included, so a building whose own roof is too shallow for an
+  interior cell carries units once its extension gives it one. A fixed seed gives the same roof
+  on every run, and a building providing cover rolls its layout over its larger roof, so it is a
+  different shuffle from the one it would have with nothing to cover. The cells are listed row by
+  row before the shuffle (`Building.roof_interior_cells()`), which is what keeps a roof with
+  nothing to cover on the layout it has without any extension in the city: the shuffle permutes
+  positions, so any other order moves its units. The vent is the one thing on a roof that moves:
+  it swaps between its two rotor frames on a timer of its own, and nothing else up there is
+  animated. Furniture is painted by retained children of `Building`, above its own roof tiles and
+  inside the layer of buildings under the entities — never the y-sorted layer a street prop or
+  the player draws in — so a unit
   is never compared against anything on the pavement. Static furniture batches interleave with
   separate six-pixel rotor layers in the original painter order; each 1.4-second tick changes
   only those rotor layers, leaving the facade, roof tiles and housing draw lists intact.
 - **A front is district and block purpose, read the same way a roof's furniture is.** A
-  multi-story building's ground floor never shows a window: it is shops or blank wall — the wall
-  texture and its own plinth — with the entrance, the civic portico and the fire escape exactly
-  where they already stand. **Her own building is the one exception** and keeps its ground-floor
+  multi-story building's ground floor never shows a window on a column she can stand in front of:
+  it is shops or blank wall — the wall texture and its own plinth — with the entrance, the civic
+  portico and the fire escape exactly where they already stand. A column she cannot stand in front
+  of is the exception below. **Her own building is the other exception** and keeps its ground-floor
   windows, read off `CityMap.home_block` rather than off anything drawn — except the column(s) her
   own front door's footprint overlaps (`Building.door_world_x_range`), which draw plain wall
   instead, since a window behind a door she is standing in front of never showed anything. A
@@ -2099,6 +2110,56 @@ Top-down camera with a fake vertical extrusion:
   36px tall and rises four pixels into the row above, so every window on that row sits two
   pixels higher to keep its sill clear. The door's cell and a fire escape's are not blank wall:
   `Building.blank_ground_floor_cells()`, the cells a poster can go on, leaves them all out.
+- **A column with another building directly south of it draws no facade at all** — no shop, blank
+  wall, window, door, portico or fire escape — since every rule above only ever describes ground
+  she can actually stand on. The building standing there instead draws its own roof deeper to meet
+  it: extended north by exactly the covered building's own `wall_tiles()` (`Building.
+  roof_extension_rows`), enough to reach the world row the covered building's roof already starts
+  at, edge to edge, in its own colour, with a parapet cap (`ROOF_EDGE_N`) where the two meet —
+  except between two pieces of one courtyard, below — and a step cap (`ROOF_EDGE_W`/`ROOF_EDGE_E`)
+  wherever the extended roof sits beside a shorter column, covered or not — roof meets roof, and
+  nothing is drawn where the covered front's wall would have been.
+  Decided per column, from `CityMap.is_walkable()` on the tile directly south of the front's own
+  ground row (`Building.covered_ground_cols`, set once by `City._spawn_buildings()`), never from
+  anything drawn and never from a day's own closures — a covered column stays covered for the whole
+  run, the same fixed fact `CityMap.building_rects` already is. A power station's yard is fenced
+  ground with no roof to extend, so a column facing it keeps its facade (below). A partly covered
+  front keeps every other column's ordinary ground floor untouched:
+  its storefront span only lands
+  where both of its own two columns are reachable, its entrance door is re-placed onto whichever
+  reachable column the same tiering that already keeps it off a fire escape still offers (never
+  simply dropped while one is reachable), and its portico — one picture across the one or two
+  columns it straddles — is dropped whole rather than split the moment either is covered, so a
+  front left with no other way in still rolls its own door. A front with no reachable column at
+  all has no door either way. A fire escape whose own column is covered is dropped outright, the
+  same "the roll still runs, only the result is dropped" way her own building already drops one
+  (below) — no picture exists for a platform or brackets reaching a column nobody can stand in
+  front of. Her own building is never asked: `City._spawn_buildings()` computes this only for a
+  front that is not hers. **A column draws no facade only where a roof actually covers it**
+  (following the player's "Keep its facade"): `City._assign_roof_extensions()` keeps a column
+  covered only where an extension reached it, so a column nothing covers — one facing the map's
+  own edge (`CityMap.tile_at()` reads a tile past it as `BUILDING`), a power station's yard, or
+  any south tile no lot owns — is an ordinary column with its windows, storefronts and door. A
+  column with neither a facade nor a roof over it would show the dark background where its wall
+  would be, and no column is left that way.
+- **A courtyard's roof turns its corners as one roof, outer and inner alike, with no parapet in the
+  middle of it and one colour.** A single-block or apartment-complex courtyard is cut into up to
+  four rectangles around its hole (`CityGenerator._build_block()`'s `COURTYARD` branch,
+  `_subtract_all()`), each its own `Building` — so where one piece's front is covered by another,
+  that is the same wall-meets-roof relationship the bullet above already extends a roof to fill,
+  but the two pieces are physically one building's roof rather than a front covering a genuinely
+  separate one behind it. `City._assign_roof_extensions()` marks both sides of such a seam wherever
+  both rectangles were cut from the same courtyard lot (`map.lot_rect(block)`): the covering
+  piece's column (`Building.roof_extension_seamless`) draws no `ROOF_EDGE_N` at its extension's
+  top, and the covered piece's column (`Building.seamless_cover_cols`) draws no `ROOF_EDGE_S` on
+  its first roof row, so the two roofs run into each other with no lip on either side.
+  `Building.roof_cell_edges()` is the one place a roof cell's lips are decided. A covered piece
+  with no roof rows of its own is the one courtyard seam that still caps, since nothing of its own
+  carries on above the extension. Every piece of the lot takes the first piece's tint
+  (`Building.tint_variant`, wall and roof alike), since four tints read as four buildings; the
+  tint is a field of its own rather than a shared `variant`, which seeds every other roll a
+  building makes. The ordinary front-and-back case (two genuinely separate buildings) keeps both
+  lips and its own colour, since that step is the real, visible one.
 - **Posters go on that blank wall and nowhere else, one row to a front** (`PosterWalls`). A cell
   carries one only if the sidewalk tile in front of it is the north sidewalk of an east-west
   street — the front is a lot's south face, the one face the city draws — so a lot facing an
