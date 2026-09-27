@@ -1124,8 +1124,9 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 ## kerb and `reversing_lorry` belongs against the building — re-centring either would undo the one
 ## thing `pavement_side` exists to do. Both stay exactly where `EventScheduler._build_placement`
 ## put them, still measured against the same 64px band: a kerbed `VEHICLE_BODY` (44px) leaves a
-## 26px gap to the frontage, narrower than the 28px pram, which is `docs/HANDOFF.md`'s own reading
-## of that placement — a van at the kerb is *also* "no line to walk," on purpose.
+## 26px gap to the frontage, narrower than the 28px pram, which is how `docs/EVENTS.md`'s
+## `delivery_van` row reads that placement — a **wall** by physical fit, so a van at the kerb is
+## *also* "no line to walk," on purpose.
 static func _centred_on_the_pavement_band(map: CityMap, at: Vector2) -> Vector2:
 	var tile := map.world_to_tile(at)
 	if map.pavement_inward(tile) == Vector2i.ZERO:

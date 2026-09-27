@@ -10,8 +10,7 @@ Search the records (`tools/decisions.sh <noun>`) before designing anything. No t
 "Done:" paragraphs, no branch names or status words in headings, here or in an entry.
 
 `tools/new-name.sh todo "<title>"` makes a new entry's folder, its `README.md` opening with
-`priority: later` unless `--priority` names another band, and prints its name. Read
-[HANDOFF.md](HANDOFF.md) first for the state of the tree.
+`priority: later` unless `--priority` names another band, and prints its name.
 
 Each entry is one git branch, squash-merged to `main` through its pull request. An item somebody
 is mid-way through says so in its own text.
