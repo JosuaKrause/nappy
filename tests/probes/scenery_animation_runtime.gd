@@ -101,7 +101,7 @@ func _process(_delta: float) -> void:
 
 func _capture() -> void:
 	_capturing = true
-	await RenderingServer.frame_post_draw
+	await AutoScreenshot.drawn_frame(get_tree())
 	var elapsed := float(Time.get_ticks_usec() - _started) / 1000000.0 - 2.0
 	var filename := "frame-%03d.png" % _frames.size()
 	assert(get_viewport().get_texture().get_image().save_png(_output.path_join(filename)) == OK)

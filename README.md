@@ -127,6 +127,14 @@ carrying only flags like `--seed`/`--day` gets:
 arrives, which can beat `--after`'s own timer, so the combination is refused before Godot ever
 launches rather than risking a picture that is silently never written.
 
+**A rig's window is usually hidden, and its capture does not need it seen.** Handing focus back
+puts the window behind whatever the operator has in front, and on macOS a window no one can see —
+covered by another app's opaque window, or minimized (both measured); on another Space or behind a
+locked screen by the same occlusion test, though neither has been photographed — is not drawn at
+all while the game runs on. Every capture the game itself takes (`--screenshot`,
+`--quit-when-still`, and the run log's stills and `snapshot_burst` bursts) waits on `AutoScreenshot.drawn_frame()`, which draws its one frame on
+demand when the window cannot be drawn, and says so on the `[AutoScreenshot] wrote` line.
+
 | Flag | Effect |
 | --- | --- |
 | `--seed N` | Regenerate a specific city (also reachable, for a positive integer only, as a release web build's own `?debug=1&seed=N`) |

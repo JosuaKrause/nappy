@@ -62,6 +62,9 @@ func _run() -> void:
 func _observe_boot(main: Node, ready_member: StringName, filename: String) -> Dictionary:
 	var probes_before_draw := main.get_node_or_null("HaloWarm") != null \
 			and main.get_node_or_null("WaterWarm") != null
+	# The render loop's own frame, not `AutoScreenshot.drawn_frame()`, on purpose: what this probe
+	# measures is the engine's warmup draw, which a forced frame would stand in for. Run it with its
+	# window in view.
 	if DisplayServer.get_name() == "headless":
 		await get_tree().process_frame
 	else:
