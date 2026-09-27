@@ -1151,9 +1151,10 @@ func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t) -> void:
 		t.check(director._trap == null, "and nobody is sent after her before the handover")
 		director.free())
 
-## *(PLAYTEST-144: "the burnt shell and the roadblock go back to their waiting guard as the
-## smallest reading".)* Both are guarded exactly where they wait, like a chalk mark, and handing
-## either over sends nobody after her.
+## *(PLAYTEST-144, statement 18, its own reading rather than the player's words: "the burnt shell
+## and the roadblock go back to their waiting guard as the smallest reading", filed as "open to the
+## player".)* Both are guarded exactly where they wait, like a chalk mark, and handing either over
+## sends nobody after her.
 func _test_the_burnt_shell_and_the_roadblock_keep_a_waiting_guard(t) -> void:
 	_build_city(t)
 	var saved_scars := GameState.scars.duplicate()

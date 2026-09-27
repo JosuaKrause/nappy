@@ -1855,15 +1855,23 @@ const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
 ## telegraph itself the problem ("12.9s is a long warning to the point where nothing really happens
 ## anymore"), so both rows spend the budget as a short notice (`PURSUIT_MIN_NOTICE` plus a stated
 ## margin) and a long chase instead of a long notice and the 3.0s every other pursuer keeps — the
-## doubled chase is what still catches a player who walks away the instant either appears. The
-## sprint-cost concern two paragraphs up is not what the doubled chase spends: a player who runs
-## sheds it in `PURSUIT_SHAKEN_OFF`'s own 0.35s of opening gap, so the duration never becomes a
-## longer sprint, and a player who never runs pays no sprint cost at all — standing still he is
-## caught in about 2s (`_robber_giving_chase()`'s own doc), which loses the day rather than costing
-## meter. A walker who leaves the moment either appears is caught the same way, except from the far
-## rarer beside start (Fork 2 in the decision record). The only meter cost the doubled chase adds is
-## his field — intensity 16 within 200px for the robber, 18 within 120px for the guard — run for the
-## extra seconds on the player who walks away from that start and outlasts him.
+## doubled chase is what still catches a player who walks away the instant either appears. A
+## runner sheds either row in `PURSUIT_SHAKEN_OFF`'s own 0.35s of running, never before he is
+## `PURSUIT_MIN_NOTICE` (1.5s) old — the doubled duration buys nothing there, since the sprint
+## cost above is paid only by however long she actually runs. Standing still, he catches her in
+## about 2s (`_robber_giving_chase()`'s own doc), which loses the day rather than costing meter,
+## before the doubled duration's extra seconds even begin.
+##
+## **What the doubling buys is seconds 5–8 of his life**, and a walker pays for that time in his
+## field rather than in a sprint she never has to make. From the beside start (Fork 2 in the
+## decision record), the guard's 120px field never reaches a walker who left the moment he
+## appeared — his ~476px start closes to only ~172px over the whole 8.0s — and the robber's
+## 200px field reaches her only for about the last second, at its weak far edge. From the usual
+## `TRAP_ARRIVAL_DISTANCE` (313px) start above or below her, though — the rarer beside start is
+## the exception, not the rule — she is inside the robber's field from about 3s onward: a 3.0s
+## chase, every other pursuer's own ceiling, would have freed her at 5.0s, well before his 30px
+## catch at 7.4s, so the doubled 6.0s chase is what makes her keep paying his field until she
+## runs, and then pay the sprint cost above to shed him before the catch.
 const PURSUIT_TIME := 3.0
 
 ## And the least a pursuer's speed may differ from either of hers.

@@ -117,9 +117,8 @@ the convoy's 4.43s with a badge (120px/s is faster than one) — and the fairnes
 both like every row; restating the cues rule and the contract for what needs telegraphing, and what
 these do instead, is M226. The fire engine and day 13's column, which this build still warns first,
 stop telegraphing under that same later rule. **Do not add a row to this exception, and do not cite
-it as the reason
-something else is not warned first.** What stands in the way of it is `docs/EVENTS.md`,
-"Everything arrives from off screen".
+it as the reason something else is not warned first.** What stands in the way of it is
+`docs/EVENTS.md`, "Everything arrives from off screen".
 
 ## The contract is per event and the player experiences the sum
 
