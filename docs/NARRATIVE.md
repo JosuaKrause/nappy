@@ -127,11 +127,17 @@ is touched.
 ### Structure
 
 A task is one day: she touches the chalk mark, the task is announced there and then, and it is
-performed the same day. Every task day starts with a mark. Touching either — the mark or the
-task's own contact — is instant: there is no key to hold, and no standing still to pay for. Only
-completing the task itself grants **1 resistance progress**; the mark is the note, not the
-errand. Reaching `Tuning.RESISTANCE_GOAL` (five) tasks earns the chance at the good ending; the
-day-14 sabotage is the act on top of it — see "The finale" below.
+performed the same day. Every task day starts with a mark. Touching the mark is instant: there is
+no key to hold, and no standing still to pay for. So is every task's own contact — but day 6's
+note is the one exception to *where* the touch is measured from, not to *whether* it is instant:
+it completes the moment she reaches the man's own `inner_radius` (his full-strength field),
+rather than the ordinary, tighter reach every other contact uses. He does not leave the instant
+it changes hands: he stays and keeps shouting for a couple of seconds first, still charging her
+the whole time, so walking away from him afterward costs about what an ordinary pass past him
+does — asked how an instant handover should still cost something, the player answered: "he keeps
+shouting for a bit." Only completing the task itself grants **1 resistance progress**; the mark
+is the note, not the errand. Reaching `Tuning.RESISTANCE_GOAL` (five) tasks earns the chance at
+the good ending; the day-14 sabotage is the act on top of it — see "The finale" below.
 
 The first mark is on the day the curfew is announced, and a task day follows most days after
 that through the day before the last night:
@@ -200,9 +206,10 @@ city that morning, the same words whichever way the day before it went.
 
 **A finished task is shown by the world and never by text.** A touched mark changes to its own
 touched picture, which is all a mark needs; nothing is written on the HUD, and there is no
-counter, no objective marker and no log. The note for a stranger answers the same way: the
-moment she hands it to him, the man she reached stops shouting and walks away, on foot, until he
-is out of sight — the same departure any finished event takes, not a word on screen. The
+counter, no objective marker and no log. The note for a stranger answers almost the same way: once
+she has handed it over, the man she reached keeps shouting for a couple of seconds, still charging
+her the whole time, then stops and walks away, on foot, until he is out of sight — the same
+departure any finished event takes, not a word on screen. The
 look-alikes she never reached carry on shouting exactly as before.
 
 A chalk mark the player has not actually noticed — stood near, on screen, long enough that

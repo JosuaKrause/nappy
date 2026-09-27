@@ -73,6 +73,14 @@ class Step extends RefCounted:
 	var header := ""
 	## True for the one perform step that makes the pram heavier for the rest of the day.
 	var applies_package_weight := false
+	## True only for day 6's note (M205, "the note costs, and the ordinary day"). `ContactPoint`
+	## completes this step the instant she is within the rider's own `inner_radius` (45px, his
+	## full-strength field) rather than the generic `ContactPoint.REACH` (36px) every other step
+	## uses — still instant, not a dwell: a fork proposed making her stand there for a couple of
+	## seconds first, and the player rejected it outright: "the player should stand for 2.5s? no
+	## way. the moment the player touches the inner circle it counts as delivered." False for
+	## every other step, which always uses `REACH` regardless of the rider's own geometry.
+	var completes_at_inner_radius := false
 
 static var _all: Array[Step] = []
 
@@ -249,14 +257,18 @@ static func _finale(index: int, title: String, day: int, header: String) -> Step
 	return step
 
 static func _build() -> Array[Step]:
+	# Day 6 · a note for the man shouting — any of them. He is the group's lookout, and the cost
+	# is the approach: several homeless_yeller rows are already live, and the one carrying the
+	# contact looks exactly like the rest of them. A local rather than inline in the array below
+	# so `completes_at_inner_radius` can be set on it — see that field's own doc.
+	var note_for_a_stranger := _perform(2, "A note for a stranger", 6, "homeless_yeller",
+			[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], false,
+			TargetKind.EVENT, false, "the one who won't stop shouting")
+	note_for_a_stranger.completes_at_inner_radius = true
+
 	return [
-		# Day 6 · a note for the man shouting — any of them. He is the group's lookout, and
-		# the cost is the approach: several homeless_yeller rows are already live, and the one
-		# carrying the contact looks exactly like the rest of them.
 		_mark(1, "A chalk mark", 6, "Give it to the one who won't stop shouting."),
-		_perform(2, "A note for a stranger", 6, "homeless_yeller",
-				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], false,
-				TargetKind.EVENT, false, "the one who won't stop shouting"),
+		note_for_a_stranger,
 
 		# Day 7 · the package at a delivery_van's drop — one place, red arrow. From the group
 		# to the neighbor down the hall; carrying it makes the pram heavier for the rest of the
