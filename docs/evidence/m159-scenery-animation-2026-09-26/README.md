@@ -64,6 +64,11 @@ and their real timestamps; `burst-gif.py` quantizes timestamp boundaries to GIF 
 The whole waterfront run retains its original directory name. These are visual review artifacts,
 not timing benchmarks. The player approves the water ripple.
 
+The [rendered warmup run](rendered-warmup-2026-09-26/README.md) retains ordinary and escape boot
+frames from one Compatibility-renderer process. Its metadata records a rendered frame while both
+the halo and water warmup nodes remain live in each boot path. It proves the real draw reaches the
+renderer on both paths; it makes no frame-time or hitch claim.
+
 The fixture's complete burst records zero building/static-roof/event-owner/event-static/water
 draw callbacks during capture, two rotor callbacks, 72 pipe-motion callbacks and ten smoke-motion
 callbacks across both axes. All animation clocks hold while paused and advance after resuming.

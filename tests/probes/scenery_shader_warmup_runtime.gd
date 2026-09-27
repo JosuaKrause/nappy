@@ -38,7 +38,7 @@ func _run() -> void:
 	var ordinary := MAIN_SCENE.instantiate()
 	ordinary.set("_escape_scene_requested", false)
 	add_child(ordinary)
-	_result.ordinary = await _observe_boot(ordinary, &"_player", "ordinary-first-shore.png")
+	_result.ordinary = await _observe_boot(ordinary, &"_player", "ordinary-boot.png")
 	if not _result.ordinary.get("complete", false):
 		_fail("ordinary boot did not complete its rendered warmup")
 		return
@@ -50,7 +50,7 @@ func _run() -> void:
 	var escape := MAIN_SCENE.instantiate()
 	escape.set("_escape_scene_requested", true)
 	add_child(escape)
-	_result.escape = await _observe_boot(escape, &"_hud", "escape-city.png")
+	_result.escape = await _observe_boot(escape, &"_hud", "escape-boot.png")
 	if not _result.escape.get("complete", false):
 		_fail("escape boot did not complete its rendered warmup")
 		return
@@ -96,6 +96,7 @@ func _finish() -> void:
 	_result["adapter"] = RenderingServer.get_video_adapter_name()
 	_result["engine"] = Engine.get_version_info()
 	_result["arguments"] = Array(OS.get_cmdline_args())
+	_result["user_arguments"] = Array(OS.get_cmdline_user_args())
 	_result["elapsed_wall_seconds"] = float(Time.get_ticks_msec() - _started_msec) / 1000.0
 	var file := FileAccess.open(_output.path_join("capture.json"), FileAccess.WRITE)
 	if file == null:
