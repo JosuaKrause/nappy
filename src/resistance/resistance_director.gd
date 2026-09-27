@@ -344,6 +344,11 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 ## caller ever freed the one this overwrites — "a failed day leaves no chalk mark behind" found it
 ## standing on, still touched, long after the day that placed it. One retirement here covers every
 ## caller instead of each repeating it.
+##
+## **Never drawn within his own `pursues_within` of wherever she is standing right now**
+## (brisk-wombat, "a robber also appeared out of nowhere and instakilled me"): `_draw_guard_
+## position()`'s own new refusal, passed her current position and `pursues_within` here rather
+## than left to every caller — see that function's own doc.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2) -> void:
 	if day < TRAP_FIRST_DAY:
 		return
@@ -357,7 +362,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2) -> voi
 	var max_distance := robbery.pursues_within + ContactPoint.REACH
 	var toward := _far_alley_mouth(at)
 	var guard_at := _draw_guard_position(rng, at, toward, min_distance, max_distance,
-			_walled_alleys())
+			_walled_alleys(), _player_position(), robbery.pursues_within)
 	if guard_at == Vector2.INF:
 		# **No trap is better than a trap in a wall.** `TRAP_DRAW_LIMIT` bearings found nowhere
 		# walkable at all — every one of them a building, a held segment or the home block — so
@@ -587,9 +592,18 @@ func _a_clear_run(from: Vector2, to: Vector2) -> bool:
 ##
 ## `walled_alleys` defaults empty for the bare-map rigs several tests in `tests/test_resistance.gd`
 ## drive with no `_city` — see `_walled_alleys()`, which is what the real caller passes.
+##
+## **Never within `her_refuse_within` of `her`** (brisk-wombat, "a robber also appeared out of
+## nowhere and instakilled me" — the second half of the same report `_nearest_alley_within()`'s
+## own new refusal answers the first half of): nothing before this drew the band relative to
+## anything but `at`, so a guard could land inside his own `pursues_within` — or, worse, his
+## `inner_radius`, a `hard_fail` with no warning at all — of wherever she actually stands right
+## now, which a mark relocating into view (or simply a dawn placement near a wandering player)
+## could reach. `her` is `Vector2.INF` for a caller with nothing to keep away from (every bare-map
+## rig in `tests/test_resistance.gd` that calls this directly), which never rejects anything.
 func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
-		min_distance: float, max_distance: float,
-		walled_alleys: Array[Rect2i] = []) -> Vector2:
+		min_distance: float, max_distance: float, walled_alleys: Array[Rect2i] = [],
+		her: Vector2 = Vector2.INF, her_refuse_within: float = 0.0) -> Vector2:
 	var fallback := Vector2.INF
 	for _attempt in TRAP_DRAW_LIMIT:
 		# Hoisted so the draw can be written down. Which distance a mark got is the one random
@@ -603,6 +617,8 @@ func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vecto
 			var facing_toward := (toward - at).angle()
 			angle = facing_toward + rng.randf_range(-PI / 2.0, PI / 2.0)
 		var candidate := at + Vector2.RIGHT.rotated(angle) * distance
+		if her != Vector2.INF and candidate.distance_to(her) <= her_refuse_within:
+			continue
 		var tile := _map.world_to_tile(candidate)
 		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
 				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
@@ -1410,6 +1426,16 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## not in `GameState.completed_resistance_alley_tiles`, or the plain nearest eligible tile if
 ## avoiding them would leave nothing in reach at all — a relocation exists to keep the mark
 ## findable, and that guarantee outranks the avoidance.
+##
+## **Never a tile she can currently see** (brisk-wombat, "the mark and its robber never appear in
+## front of her" — *"I just had one appear out of nowhere while I was walking through an
+## alley"*): the nearest reachable alley to `here` is, by construction, wherever she is standing
+## or just beside it, which is on screen more often than not. Without this refusal the relocation
+## could — and, on the player's own report, did — plant the mark, and the guard
+## `_move_the_mark()` spawns beside it, directly in her path. `_sight` is the same rotation-aware
+## screen test every other placement in this class asks (`_track_sight_and_reposition`'s own
+## `noticing` check), skipped only when it is invalid — the bare-map rigs several tests in this
+## file drive with no camera wired up, where nothing is ever on screen anyway.
 func _nearest_alley_within(here: Vector2) -> Vector2:
 	var walled_alleys := _walled_alleys()
 	var used := GameState.completed_resistance_alley_tiles
@@ -1424,6 +1450,8 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 				or not _reachable_from_home(tile):
 			continue
 		var world := _map.tile_to_world(tile)
+		if _sight.is_valid() and _sight.call(world):
+			continue
 		var distance := here.distance_to(world)
 		if distance < nearest_any_distance:
 			nearest_any_distance = distance

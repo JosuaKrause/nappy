@@ -29,6 +29,8 @@ func run(t) -> void:
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
 	_test_a_mark_within_notice_radius_does_not_move(t)
 	_test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t)
+	_test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t)
+	_test_a_guard_never_lands_within_his_own_reach_of_her(t)
 	_test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t)
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
@@ -600,18 +602,21 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 
 ## M177, playtest 116's own day-6 shape: a mark on offer at (24,149), on screen from the doorstep
 ## at (80,84) — fifteen tiles away — moved to (65,83) two seconds in and was marked *seen* 0.4s
-## later, so a fifteen-tile-distant alley froze it for the rest of the day. Forcing `_sight` to
-## always answer true reproduces "on screen" without a viewport; standing at `far_alley` (beyond
-## `NOTICE_RADIUS`, so certainly beyond the far narrower `SEEN_DISTANCE`) reproduces the distance.
-## A single frame is enough to show the old bug is gone: the old rule pinned the mark on this exact
-## frame, and the new one still relocates it.
+## later, so a fifteen-tile-distant alley froze it for the rest of the day. `_sight` answering
+## true near `mark_at` alone reproduces "on screen" there without a viewport, while leaving
+## `far_alley` — the relocation target, over `NOTICE_RADIUS` away — answering false, the ground
+## `_nearest_alley_within()` needs to still offer a candidate since brisk-wombat's fix (never a
+## tile she can currently see, "the mark and its robber never appear in front of her"); standing
+## at `far_alley` (beyond `NOTICE_RADIUS`, so certainly beyond the far narrower `SEEN_DISTANCE`)
+## reproduces the distance. A single frame is enough to show the old bug is gone: the old rule
+## pinned the mark on this exact frame, and the new one still relocates it.
 func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
 		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var mark_at := director.contact_position()
-		director.set_sight(func(_p: Vector2) -> bool: return true)
+		director.set_sight(func(p: Vector2) -> bool: return p.distance_to(mark_at) < 100.0)
 
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
 		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
@@ -623,6 +628,74 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 
 		player.free()
 		director.free())
+
+## brisk-wombat, "the mark and its robber never appear in front of her" — the mark's own half:
+## *"I just had one appear out of nowhere while I was walking through an alley."* Reproduced:
+## `_nearest_alley_within()`'s own nearest candidate to `here` is, by construction, wherever she
+## is standing or right beside it, which is on screen more often than not — before this fix,
+## nothing there ever asked. `raw_nearest` is exactly what the old code would have returned (asked
+## with no `_sight` set at all, the same query with none of the refusals this test adds); hiding
+## only that one tile from `_sight` is what makes the assertion below fail against the old code —
+## it always answered `raw_nearest` — and pass against the fix, which has to find some other
+## candidate still in `NOTICE_RADIUS` instead.
+func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
+		var old_at := director.contact_position()
+
+		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at)
+		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
+		var player := _rig_player(t, far_alley)
+
+		var raw_nearest := director._nearest_alley_within(far_alley)
+		t.check(raw_nearest.distance_to(far_alley) < 0.5,
+				"with no screen test at all, the nearest reachable alley is the one she stands on")
+		director.set_sight(func(p: Vector2) -> bool: return p.distance_to(raw_nearest) < 0.5)
+
+		director._process(STEP)
+		var new_at := director.contact_position()
+		t.check(new_at.distance_to(old_at) > 0.5, "the mark actually moved")
+		t.check(new_at.distance_to(raw_nearest) > 0.5,
+				"but never to the one tile she could see it appear on")
+
+		player.free()
+		director.free())
+
+## brisk-wombat's other half: *"a robber also appeared out of nowhere and instakilled me."* A
+## guard's own band is drawn relative to the mark, never to her — before this fix, a mark
+## relocating right up to where she stands (or simply a dawn placement near a wandering player)
+## could put him inside his own `pursues_within`, or worse `inner_radius` (a `hard_fail` with no
+## warning), of wherever she actually is. Checked directly against `_draw_guard_position()`, the
+## shared draw every guarded contact uses, with `her` forced onto the mark itself — the closest a
+## real guard's own band ever gets to her.
+func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var checked := 0
+	for seed_value in [4242, 90210, 2295276695, 314159, 271828, 555555]:
+		var map := CityGenerator.generate(seed_value)
+		var director := ResistanceDirector.new()
+		director.setup(null, map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("guard-keeps-off-her:%d" % seed_value)
+		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
+			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
+				continue
+			var mark := map.tile_to_world(tile)
+			for _attempt in 3:
+				checked += 1
+				var guard_at := director._draw_guard_position(rng, mark, Vector2.INF,
+						min_distance, max_distance, [], mark, robbery.pursues_within)
+				if guard_at == Vector2.INF:
+					continue
+				t.check(guard_at.distance_to(mark) > robbery.pursues_within,
+						"seed %d: the guard for the mark at %s never lands within his own reach of her"
+						% [seed_value, tile])
+		director.free()
+	t.check(checked > 0, "some mark was actually checked (%d draws)" % checked)
 
 ## The other half of the same rule: near enough, for long enough, that walking away is a choice.
 func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> void:
