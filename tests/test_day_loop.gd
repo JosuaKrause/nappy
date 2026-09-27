@@ -416,7 +416,7 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
-	var expected: String = summary._DAY_BRIEF[6]
+	var expected := SentenceLines.break_for_label(summary._DAY_BRIEF[6], summary._brief)
 	summary.show_day(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 2)
 	t.check(summary._brief.text == expected,
 			"the morning's own line for the calendar day, whichever DayResult this is")
@@ -451,15 +451,15 @@ func _test_the_summary_shows_when_the_day_ended(t) -> void:
 
 	summary.show_day(GameEnums.DayResult.LOST_CRYING,
 			"She started crying. There is no settling her now.", 2, 84.0)
-	t.check(summary._title.text == "She started crying after 1:24. There is no settling her now.",
-			"a crying loss reads the clock into its own first sentence ('%s')"
-					% summary._title.text)
+	t.check(summary._title.text == "She started crying after 1:24.\nThere is no settling her now.",
+			"a crying loss reads the clock into its own first sentence, breaking the line after " +
+			"it ('%s')" % summary._title.text)
 
 	summary.show_day(GameEnums.DayResult.LOST_HARD_FAIL,
 			"It never slowed down. You were in the road.", 1, 84.0)
-	t.check(summary._title.text == "It never slowed down. You were in the road. After 1:24.",
-			"a hard fail keeps its own sentence whole, with the clock following it ('%s')"
-					% summary._title.text)
+	t.check(summary._title.text == "It never slowed down.\nYou were in the road. After 1:24.",
+			"a hard fail keeps its own sentence whole, with the clock following it, and breaks " +
+			"the line at whichever sentence end splits it most evenly ('%s')" % summary._title.text)
 
 	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "Dusk. You are still out.", 3, 180.0)
 	t.check(summary._title.text == "Dusk. You are still out.",
@@ -527,24 +527,23 @@ func _test_nerves_are_stars_never_numbers(t) -> void:
 	summary.free()
 	t.get_tree().paused = saved_paused
 
-## The day 7 brief breaks its line before "The same face is on most of them." rather than
-## wherever the label's own autowrap would land it.
+## The day 7 brief breaks its line before "The same face is on most of them." — `_DAY_BRIEF[7]` is
+## plain prose with no break of its own; `SentenceLines.break_for_label()` (see its own suite,
+## `tests/test_sentence_lines.gd`) is what puts one in, at the only sentence end there is to choose.
 func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var saved_day := GameState.day
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
-	var lines: PackedStringArray = summary._DAY_BRIEF[7].split("\n")
-	t.check(lines.size() == 2, "day 7's brief is exactly two lines ('%s')" % summary._DAY_BRIEF[7])
-	t.check(lines[1] == "The same face is on most of them.",
-			"and the second line is exactly the sentence that must start its own line ('%s')"
-					% summary._DAY_BRIEF[7])
-
 	GameState.day = 7
 	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
-	t.check(summary._brief.text == summary._DAY_BRIEF[7],
-			"the day summary shows the same forced break ('%s')" % summary._brief.text)
+	var lines: PackedStringArray = summary._brief.text.split("\n")
+	t.check(lines.size() == 2,
+			"day 7's brief is exactly two lines ('%s')" % summary._brief.text)
+	t.check(lines[1] == "The same face is on most of them.",
+			"and the second line is exactly the sentence that must start its own line ('%s')"
+					% summary._brief.text)
 
 	summary.free()
 	t.get_tree().paused = saved_paused

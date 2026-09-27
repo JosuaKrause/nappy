@@ -56,6 +56,10 @@ var _touch := TouchInput.available()
 ## `show_day_brief()` (a resumed run's own gate) and `show_day()` (the ordinary transition every
 ## other day reaches this screen through) — a static fact about the calendar day, never about
 ## what an attempt touched, so a lost day's own line reads exactly as it did this morning.
+##
+## Written as plain prose, one space between sentences and no `\n` of its own: `SentenceLines
+## .break_for_label()` breaks a multi-sentence entry onto more than one line only where `_brief`'s
+## own width needs it to, at whichever sentence end splits it most evenly.
 const _DAY_BRIEF := {
 	1: "She won't settle indoors. It is quiet in the park. Walk until she sleeps, then bring "
 			+ "her home.",
@@ -65,10 +69,7 @@ const _DAY_BRIEF := {
 	5: "They put up masts at the intersections overnight.",
 	6: "A curfew was announced today. There is not as much time. There are rumors of chalk "
 			+ "messages in alleys.",
-	# The line breaks before the second sentence rather than wherever the label's own autowrap
-	# would otherwise land it — a short, standalone claim reads better set apart from the first
-	# sentence than run into it by whatever the label's own width happens to allow.
-	7: "There are more posters than yesterday.\nThe same face is on most of them.",
+	7: "There are more posters than yesterday. The same face is on most of them.",
 	8: "A van took someone from the next street before it was light.",
 	9: "They have closed the districts off from each other. There are huts at the crossings.",
 	10: "The stores on the square are boarded up.",
@@ -100,16 +101,19 @@ const _ENDING_HEADING := {
 	GameEnums.Ending.GOOD: "THE END",
 }
 
+## Plain prose, one space between sentences: `show_ending()` breaks it onto more than one line
+## through `SentenceLines.break_for_label()`, the same helper `_DAY_BRIEF` and every other screen's
+## prose goes through, rather than a `\n` typed into each entry.
 const _ENDING_BODY := {
 	GameEnums.Ending.BAD:
-		"There is nothing left in you for another walk.\n"
+		"There is nothing left in you for another walk. "
 		+ "The city goes on without the two of you in it.",
 	GameEnums.Ending.NEUTRAL:
-		"She sleeps through most nights now.\n"
-		+ "The streets you learned to avoid are empty of everything worth avoiding.\n"
+		"She sleeps through most nights now. "
+		+ "The streets you learned to avoid are empty of everything worth avoiding. "
 		+ "Nobody is out.",
 	GameEnums.Ending.GOOD:
-		"The loudspeakers cut out mid-sentence.\n"
+		"The loudspeakers cut out mid-sentence. "
 		+ "For the first time since the masts went up, you walk home in the quiet.",
 }
 
@@ -163,14 +167,15 @@ func _refresh_buttons() -> void:
 func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
 	_heading.hide()
 	_showing_ending = false
-	_note.text = lost_note
+	_note.text = SentenceLines.break_for_label(lost_note, _note)
 	_note.visible = lost_note != ""
 	_title.text = "Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]
 	# Stars, through the same `NerveDisplay.stars()` the HUD, the day summary and the pause screen
 	# all read the count through — never a digit.
 	_body.text = "Nerves left: %s" % NerveDisplay.stars(nerves)
-	_brief.text = _DAY_BRIEF.get(day, "")
-	_brief.visible = _brief.text != ""
+	var brief_text: String = _DAY_BRIEF.get(day, "")
+	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
+	_brief.visible = brief_text != ""
 	_hint.text = ""
 	_present()
 
@@ -198,7 +203,8 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 	_note.visible = false
 	# The one line about the day that just ended — see this function's own doc for why it moved
 	# here rather than staying a line inside `_body`.
-	_title.text = _elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds))
+	_title.text = SentenceLines.break_for_label(
+			_elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds)), _title)
 	var retrying := result != GameEnums.DayResult.WON and nerves > 0
 	var lines: Array[String] = ["Day %d of %d" % [GameState.day, Tuning.RUN_LENGTH_DAYS]]
 	lines.append("")
@@ -215,8 +221,9 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 		lines.append("")
 		lines.append(_resistance_tally_line())
 	_body.text = "\n".join(lines)
-	_brief.text = _DAY_BRIEF.get(GameState.day, "")
-	_brief.visible = _brief.text != ""
+	var brief_text: String = _DAY_BRIEF.get(GameState.day, "")
+	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
+	_brief.visible = brief_text != ""
 	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
 	# carries on, but the continue/restart pair below already says what a tap does, and nothing
 	# left to say here does not name a key — see `PauseScreen._hint`'s own doc for the same call
@@ -285,9 +292,9 @@ func show_ending(ending: GameEnums.Ending, day: int) -> void:
 	# alike. `GameState.format_clock()` is the shared formatter so this line and the finale's own
 	# clock, once that is built, never carry two copies of the same format string.
 	var day_line := "\nYou made it to day %d." % day if ending == GameEnums.Ending.BAD else ""
+	var ending_body := SentenceLines.break_for_label(_ENDING_BODY.get(ending, ""), _body)
 	_body.text = "%s\n\nTime played: %s%s" \
-			% [_ENDING_BODY.get(ending, ""), GameState.format_clock(GameState.play_seconds),
-					day_line]
+			% [ending_body, GameState.format_clock(GameState.play_seconds), day_line]
 	_hint.text = ""
 	# The ending is not a day summary and has no morning line of its own to show.
 	_brief.visible = false
@@ -314,9 +321,9 @@ func show_finale(exit_kind: int, seconds: float) -> void:
 	_heading.show()
 	_title.text = "You are out."
 	_showing_ending = false
-	_body.text = "%s\n\nOut in: %s" % [
-		_FINALE_BODY.get(exit_kind, _FINALE_BODY[CityEdge.Kind.BRIDGE]),
-		GameState.format_clock(seconds)]
+	var finale_body := SentenceLines.break_for_label(
+			_FINALE_BODY.get(exit_kind, _FINALE_BODY[CityEdge.Kind.BRIDGE]), _body)
+	_body.text = "%s\n\nOut in: %s" % [finale_body, GameState.format_clock(seconds)]
 	_hint.text = ""
 	_brief.visible = false
 	_present()
@@ -341,7 +348,7 @@ func show_finale_brief(hint: String, nerves: int) -> void:
 	_heading.hide()
 	_showing_ending = false
 	_note.visible = false
-	_title.text = hint
+	_title.text = SentenceLines.break_for_label(hint, _title)
 	# Stars, through the same `NerveDisplay.stars()` every screen that shows a nerve count now
 	# reads through — never a digit.
 	_body.text = "Nerves left: %s" % NerveDisplay.stars(nerves)
@@ -350,13 +357,15 @@ func show_finale_brief(hint: String, nerves: int) -> void:
 	_present()
 
 ## What is behind her, and it is the same sentence either way: she is out, nobody is following,
-## and the city is still there. The two differ only in what she is standing on.
+## and the city is still there. The two differ only in what she is standing on. Plain prose, one
+## space between sentences: `show_finale()` breaks it through `SentenceLines.break_for_label()`,
+## the same helper the rest of this file's prose goes through, rather than a `\n` of its own.
 const _FINALE_BODY := {
 	CityEdge.Kind.TUNNEL:
-		"The mountain closes over the road behind you.\n"
+		"The mountain closes over the road behind you. "
 		+ "She does not wake.",
 	CityEdge.Kind.BRIDGE:
-		"The water is under you and the city is behind you.\n"
+		"The water is under you and the city is behind you. "
 		+ "She does not wake.",
 }
 
