@@ -2,10 +2,26 @@ extends SceneTree
 ## Crops separated vector spans with the runtime SVG parser and retains their registration.
 ## Invoked only by tools/split-scenes.py; its output directory is always a fresh staging folder.
 
+const USAGE := """usage: Godot --headless --script tools/split-scenes-crop.gd -- INPUT STAGING METADATA
+
+Crops the split-scene description in INPUT into the fresh STAGING directory and writes the
+derived registration to METADATA. This helper is normally invoked by tools/split-scenes.py.
+"""
+
 func _init() -> void:
 	var arguments := OS.get_cmdline_user_args()
-	assert(arguments.size() == 3,
-			"Pass the split description, staging directory and metadata output")
+	if arguments.size() == 1 and arguments[0] in ["--help", "-h"]:
+		print(USAGE)
+		quit()
+		return
+	var has_flag := false
+	for argument in arguments:
+		has_flag = has_flag or argument.begins_with("-")
+	if arguments.size() != 3 or has_flag:
+		printerr("split-scenes-crop.gd: expected INPUT STAGING METADATA")
+		printerr(USAGE)
+		quit(2)
+		return
 	var payload: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(arguments[0]))
 	var staging: String = arguments[1]
 	var metadata_path: String = arguments[2]

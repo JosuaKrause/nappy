@@ -143,7 +143,7 @@ func _draw() -> void:
 	for label: Array in [[Vector2(40, 80), "Roof vent · 1.7x"],
 			[Vector2(475, 110), "Broken pipe · 2x"], [Vector2(475, 305), "Crash smoke · 2x"],
 			[Vector2(935, 150), "Both vertical views · 1.6x"],
-			[Vector2(40, 478), "Existing water · ripple proposal · 1.3x"],
+			[Vector2(40, 478), "Approved shoreline ripple · 1.3x"],
 			[Vector2(475, 610), "Only small details change their drawing."],
 			[Vector2(475, 642), "Source artwork, timing and body geometry retained."]]:
 		draw_string(font, label[0], label[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 19)

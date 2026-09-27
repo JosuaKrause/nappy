@@ -1,9 +1,10 @@
 extends RefCounted
 ## Raster parity evidence for the authored whole scenes and their registered layer compositions.
 
-const OUTPUT := "res://docs/evidence/m159-scenery-animation-2026-09-26/"
-
 func run(t) -> void:
+	var output := OS.get_environment("SCENERY_COMPARISON_OUTPUT")
+	if not output.is_empty():
+		DirAccess.make_dir_recursive_absolute(output)
 	var results := {}
 	for stem: String in EventSceneryParts.LAYERS:
 		var preview: Image
@@ -30,10 +31,15 @@ func run(t) -> void:
 			preview.blit_rect(composite, Rect2i(Vector2i.ZERO, composite.get_size()),
 					Vector2i(original.get_width(), frame * original.get_height()))
 		preview.resize(preview.get_width() * 3, preview.get_height() * 3, Image.INTERPOLATE_NEAREST)
-		t.check(preview.save_png(OUTPUT + stem + "-parity.png") == OK, "save the parity preview")
-	var file := FileAccess.open(OUTPUT + "raster-parity.json", FileAccess.WRITE)
-	file.store_string(JSON.stringify(results, "  ") + "\n")
-	file.close()
+		if not output.is_empty():
+			t.check(preview.save_png(output.path_join(stem + "-parity.png")) == OK,
+					"save the parity preview")
+	if not output.is_empty():
+		var file := FileAccess.open(output.path_join("raster-parity.json"), FileAccess.WRITE)
+		t.check(file != null, "open the explicit comparison output")
+		if file != null:
+			file.store_string(JSON.stringify(results, "  ") + "\n")
+			file.close()
 
 func _svg(picture: String) -> Image:
 	var result := Image.new()

@@ -41,6 +41,15 @@ ordinary regeneration does not overwrite it. A new record is written only when a
 `--metadata-output <path>` is supplied. Source changes that alter the expected span structure abort
 extraction instead of silently assigning a different layout.
 
+The comparison probe performs its raster checks in memory during ordinary maintenance. To
+retain a new comparison, point it at a new output directory explicitly; it never rewrites this
+reviewed evidence folder by default:
+
+```sh
+SCENERY_COMPARISON_OUTPUT=/absolute/path/to/new-evidence \
+  ./tools/test.sh probes/scenery_animation_art.gd
+```
+
 Each `*-parity.png` shows original left and composition right, phase A above B, enlarged three
 times with nearest-neighbor filtering. `raster-parity.json` records the differences from
 separate RGBA8 rasterization/compositing, in alpha and premultiplied color. These sheets establish
