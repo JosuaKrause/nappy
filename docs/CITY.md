@@ -2124,7 +2124,23 @@ Top-down camera with a fake vertical extrusion:
   same "the roll still runs, only the result is dropped" way her own building already drops one
   (below) — no picture exists for a platform or brackets reaching a column nobody can stand in
   front of. Her own building is never asked: `City._spawn_buildings()` computes this only for a
-  front that is not hers.
+  front that is not hers. A column whose south neighbour runs past the map's own edge (a front
+  facing a cul-de-sac's dead end at the map's boundary, in every seed sampled) reads covered the
+  same way — the map edge is `BUILDING` by the same out-of-bounds default a tile lookup elsewhere
+  in the lattice already uses — but has no lot on the other side to extend a roof from, so it stays
+  blank rather than either drawing a facade or growing one: the special case for a dead end at the
+  edge is kept on purpose.
+- **A courtyard's own inner corners turn as one roof, never a parapet in the middle of it.** A
+  single-block or apartment-complex courtyard is cut into up to four rectangles around its hole
+  (`CityGenerator._build_block()`'s `COURTYARD` branch, `_subtract_all()`), each its own `Building`
+  — so where one piece's front is covered by another at the seam around the hole, that is the same
+  wall-meets-roof relationship the bullet above already extends a roof to fill, but the two pieces
+  are physically one building's roof rather than a front covering a genuinely separate one behind
+  it. `City._assign_roof_extensions()` marks that extension seamless (`Building.
+  roof_extension_seamless`) wherever both rectangles were cut from the same courtyard lot
+  (`map.lot_rect(block)`), and a seamless extension skips the `ROOF_EDGE_N` cap at its own top and
+  lets the covered piece's own roof continue right above it — the ordinary front-and-back case
+  (two genuinely separate buildings) still caps there, since that step is the real, visible one.
 - **Posters go on that blank wall and nowhere else, one row to a front** (`PosterWalls`). A cell
   carries one only if the sidewalk tile in front of it is the north sidewalk of an east-west
   street — the front is a lot's south face, the one face the city draws — so a lot facing an

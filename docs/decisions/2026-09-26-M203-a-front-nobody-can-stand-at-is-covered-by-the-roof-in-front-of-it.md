@@ -22,7 +22,15 @@ saw it on seed 61400 and asked for the roof instead. Its pictures stay in the PR
 extends a roof (its hall can); a building can extend its roof over one neighbour while its own
 front is covered by another; a step between two differently tall extended columns gets the same
 cap as a step down to an uncovered one, which no sampled seed produced; roof furniture (vents,
-tanks, ducts) stays on the building's own roof and is not carried onto the extension. A column
-against the map's edge counts as covered with nothing to extend from, and stays blank.
+tanks, ducts) stays on the building's own roof and is not carried onto the extension.
+
+**Settled: a column against the map's edge stays the special case.** `_covered_ground_cols()`'s
+own out-of-bounds default (`CityMap.tile_at()` reads a tile past the map's edge as `BUILDING`)
+marks such a column covered too, with no lot on the other side for `_assign_roof_extensions()` to
+extend a roof from (`tile_to_index.get(south, -1)`, `if front_index < 0: continue`) — so it draws
+no facade and stays blank, the one column this rule leaves with nothing covering it. In every
+seed sampled this only ever happens where the front faces a cul-de-sac's dead end that runs to the
+map's own boundary. Asked whether to keep this or drop it (treat such a column as reachable
+instead, since nothing genuinely stands in front of it): "keep the special case for dead ends."
 
 Evidence: `docs/evidence/m203-back-front-windows-2026-09-25/`, seed 61400, before and after.
