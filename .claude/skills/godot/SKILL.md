@@ -187,8 +187,12 @@ the arithmetic it guards.
 **This applies to every `##` docstring and every `#` comment, exactly as it applies to the docs.**
 A comment states what the thing **is** and **why**, never where it came from.
 
-- **No milestone numbers or entry names.** Not `(M39, playtest 10 finding 13: …)`, not "since M33",
-  not "for twelve milestones this was wrong", and not a queue entry's two words either.
+- **A citation carries the player's reason, or it goes.** A comment may quote the player's own words
+  with where they were said, `*(PLAYTEST-28, finding 4: "…")*` or `*(2026-09-13: "…")*`, because the
+  quote is the reason the code is the way it is, and that reason is current. *(2026-09-27, asked
+  whether the skill should allow it, since the code already carries many: "sure".)* A bare milestone
+  number or entry name with no quote (`(M39)`, "since M33", "for twelve milestones this was wrong")
+  is history, not a reason, and goes.
 - **No former values.** Not "it was 148 until M35", not "this used to be `(1−t)²`". Keep the
   *relationship* that makes the current number right — "above the 12.0/s decay on the ground it
   stands on" — and let the decision records under `docs/decisions/` hold the story.
