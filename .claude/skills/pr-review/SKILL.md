@@ -108,6 +108,10 @@ event is what GitHub shows beside it, not a replacement for writing it out. **Th
 never merges**: merging is **committing**'s, under its permission rule, whatever the review's
 event says.
 
+**A reviewer bot's APPROVE counts toward `main`'s required approval** (**committing** says what
+that requires), the same as the player's own; it resolves its own threads when a fix addresses
+them.
+
 **The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review
 as `claude-reviewer`, a Codex review as `codex-reviewer` — never the player's own account. `uv run
 python tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer`

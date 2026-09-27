@@ -62,6 +62,11 @@ too; a merge of `main` whose result is Git's own needs no second review (**pr-re
 *(2026-09-26: "all PRs must go through a (adversarial) review before ready to be merged.")*
 Merge permission and green CI do not replace it.
 
+**Merging needs one approving review, from a reviewer bot or the player, in addition to the green
+`test` check** — the player is exempt from the approval rule on their own PRs. A reviewer bot's
+own APPROVE (posted as `claude-reviewer`/`codex-reviewer`, under **pr-review**) counts the same as
+the player's.
+
 When merging is explicitly authorized, check mergeability and let CI gate the merge. Resolve
 conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**
 (`gh pr merge <n> --squash`) and retire the branch (see "Branches"). A dependent wait belongs to

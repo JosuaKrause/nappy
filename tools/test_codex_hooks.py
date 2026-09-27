@@ -341,6 +341,18 @@ class CodexHooksTest(unittest.TestCase):
         text = self.call(tool="Bash", command="gh pr view 391")
         self.assertIn("committing", text)
 
+    def test_github_write_guard_denies_a_reviewer_identitys_push(self) -> None:
+        # A reviewer never pushes through this tool, whatever GitHub's own contents:write
+        # permission allows -- same call the hook makes for Claude Code, confirmed through the
+        # adapter since nothing here is Codex-specific.
+        output = self.call_raw(
+            command="uv run python tools/agent-identity.py run codex-reviewer -- git push origin main"
+        )
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("reviewers never push", specific["permissionDecisionReason"])
+
     def test_github_write_guard_runs_after_git_grep_guard_denies_first(self) -> None:
         # Both guards run in order; an unbounded git grep denies before github-write-guard.sh is
         # ever reached, so its reason -- not a GitHub-write one -- is what comes back.

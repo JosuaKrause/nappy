@@ -116,7 +116,13 @@ _CODER_PERMISSIONS: dict[str, str] = {
 }
 
 _REVIEWER_PERMISSIONS: dict[str, str] = {
-    "contents": "read",
+    # contents is write, not read: a live probe (throwaway PR #392, a temporary ruleset requiring
+    # one approval) found a reviewer app's own APPROVE left the PR REVIEW_REQUIRED/BLOCKED under
+    # contents:read, and the app was refused resolveReviewThread (FORBIDDEN) either way; contents:write
+    # made the APPROVE satisfy the ruleset. The write guard (.claude/hooks/github-write-guard.sh)
+    # still refuses a git push, or one of the tools/ scripts that pushes, when the wrapping role is
+    # a reviewer -- reviewers never push through this tool, whatever the GitHub permission allows.
+    "contents": "write",
     "pull_requests": "write",
     "issues": "write",
     "checks": "read",

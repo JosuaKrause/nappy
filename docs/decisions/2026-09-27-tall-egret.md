@@ -25,7 +25,14 @@ player's SSH key: `run` also sets `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_n`/`GIT_CON
 its one child process, redirecting both SSH forms of the remote to the HTTPS one and carrying the
 token as a Basic `Authorization` header, never written to a config file or a URL git might echo.
 The keys stay in `~/.config/nappy-agents/`, outside the repository. The reviewer apps have
-read-only contents, so neither can push.
+`contents: write`, not read: a live probe (throwaway PR #392, into a probe branch under a
+temporary ruleset requiring one approval) found a reviewer's own APPROVE left the PR
+REVIEW_REQUIRED/BLOCKED under `contents: read`, and the reviewer app was refused
+`resolveReviewThread` (FORBIDDEN) either way; `codex-coder`'s own APPROVE, with `contents: write`,
+made the PR APPROVED/CLEAN. The permission changed, but a reviewer identity still never pushes:
+`.claude/hooks/github-write-guard.sh` denies `git push` and the pushing `tools/` scripts when the
+wrapping role is `claude-reviewer`/`codex-reviewer`, whatever GitHub's own permission allows —
+coders push instead.
 
 **Using their own identity is mandatory, and enforced on writes.** committing and pr-review say
 which role does what: Claude Code's orchestrator and its implementation agents commit as
@@ -40,7 +47,8 @@ the same command runs through `tools/agent-identity.py run <role> -- ...`; a rea
 `gh pr view`, ...) stays unguarded. The reviewer's own review now carries GitHub's verdict too:
 APPROVE when the verdict is *ready*, REQUEST_CHANGES when it is *not ready*, COMMENT for an
 interim or partial review — it still never merges, which stays committing's call under its
-permission rule.
+permission rule. Merging now also needs one approving review, from a reviewer bot or the player
+(the player exempt on their own PRs), in addition to the green `test` check.
 
 **Rejected.** *Machine users* (second GitHub accounts): GitHub's terms allow one free machine
 account per person, which is one identity where four were asked for, and each brings an email and

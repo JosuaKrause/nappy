@@ -51,11 +51,14 @@ class RoleTableTests(unittest.TestCase):
                 self.assertEqual(permissions["contents"], "write")
                 self.assertEqual(permissions["workflows"], "write")
 
-    def test_reviewer_has_contents_read_and_no_workflows(self) -> None:
+    def test_reviewer_has_contents_write_and_no_workflows(self) -> None:
+        # contents is write, not read: a reviewer's own APPROVE needs it to satisfy a
+        # required-approval ruleset (see _REVIEWER_PERMISSIONS's own comment) -- but
+        # github-write-guard.sh still refuses a reviewer identity's own git push regardless.
         for role in ("claude-reviewer", "codex-reviewer"):
             with self.subTest(role=role):
                 permissions = agent_identity.ROLES[role].permissions
-                self.assertEqual(permissions["contents"], "read")
+                self.assertEqual(permissions["contents"], "write")
                 self.assertNotIn("workflows", permissions)
 
     def test_every_role_can_read_and_write_pull_requests_and_issues(self) -> None:
@@ -81,7 +84,7 @@ class BuildManifestTests(unittest.TestCase):
     def test_reviewer_manifest_carries_the_reviewer_permissions(self) -> None:
         spec = agent_identity.ROLES["claude-reviewer"]
         manifest = agent_identity.build_manifest("claude-reviewer", spec, "O", "R", 1)
-        self.assertEqual(manifest["default_permissions"]["contents"], "read")
+        self.assertEqual(manifest["default_permissions"]["contents"], "write")
         self.assertNotIn("workflows", manifest["default_permissions"])
 
 

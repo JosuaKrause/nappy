@@ -875,6 +875,21 @@ assert_write_guard "wrapped gh pr review --approve, as claude-reviewer -> allow"
 assert_write_guard "wrapped tools/ script -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- tools/release.sh'
 
+# A reviewer identity never pushes through this tool, whatever GitHub's own permission allows
+# (contents:write, since a reviewer's own APPROVE needs it) -- only a coder identity does.
+assert_write_guard "wrapped git push as claude-reviewer -> deny, reviewers never push" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git push origin main'
+assert_write_guard "wrapped git push as codex-reviewer -> deny, reviewers never push" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- git push origin main'
+assert_write_guard "wrapped write-tool-script as claude-reviewer -> deny, reviewers never push" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- tools/release.sh patch push'
+assert_write_guard "wrapped git commit as claude-reviewer -> allow, only push is refused" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git commit -m x'
+assert_write_guard "wrapped git push as claude-coder still allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git push origin main'
+assert_write_guard "wrapped git push as codex-coder still allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- git push origin main'
+
 # A write before the wrapper, or on a different command joined only by a separator, is not
 # covered by it: the wrapper's own exemption starts at its literal -- and ends at the next
 # ;/&/|/newline, never earlier or later.

@@ -18,6 +18,14 @@
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks`, `gh issue
 # list/view/status`, `gh release list/view/download`, a GET `gh api`) stay unguarded.
 #
+# **A reviewer identity (`claude-reviewer`, `codex-reviewer`) never pushes, wrapped or not.** Its
+# GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a required-approval
+# ruleset -- see `_REVIEWER_PERMISSIONS`'s own comment in `tools/agent-identity.py`), so GitHub
+# itself would let it push; this tool still refuses, on the theory that reviewing and coding stay
+# two identities even where GitHub's permission model would allow one to do both. So `git push` and
+# the pushing `tools/*.sh` scripts are denied even inside `run claude-reviewer --`/`run
+# codex-reviewer --`, with a message naming the coder identity to use instead.
+#
 # The escape is `tools/agent-identity.py run <role> -- <command>`, with or without a `uv run
 # python` (or bare `python`/`python3`) in front, and with or without `run`'s own `--repo
 # OWNER/REPO` between `run` and `<role>`: everything at and after that literal `--`, up to the
@@ -144,37 +152,50 @@ def detect_tool($w; $i; $n):
 
 # `tools/agent-identity.py run [--repo OWNER/REPO] <role> -- ...`, with or without a `uv run
 # python`/`python3` in front (irrelevant here -- only the three words right after `run` matter):
-# the index right after that literal `--`, everything from which is the wrapped command and exempt.
+# the role and the index right after that literal `--`, everything from which is the wrapped
+# command and exempt (a reviewer role's own push aside -- see reviewer_may_push below).
 def detect_wrapper($w; $i; $n):
   if ($w[$i] | named("agent-identity.py")) and ($w[$i + 1] == "run") then
     (after_options($w; $i + 2)) as $role_i
-    | if ($role_i < $n) and ($w[$role_i + 1] == "--") then $role_i + 2 else null end
+    | if ($role_i < $n) and ($w[$role_i + 1] == "--") then {next: ($role_i + 2), role: $w[$role_i]} else null end
   else null
   end;
 
+# A reviewer identity never pushes through this tool, whatever GitHub's own permission allows
+# (contents:write, since a reviewer's APPROVE needs it -- see _REVIEWER_PERMISSIONS's own
+# comment): a coder identity is the one that pushes. Reviewer roles are named, not pattern-matched
+# on "-reviewer", so a role this list does not know fails safe (denied like an unwrapped write).
+def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
+def is_push_like($reason): ($reason == "git push") or ($reason | startswith("tools/"));
+
 # One pass over the word array: a separator resets the current command's exemption; the wrapper
-# pattern sets where its own command's exemption starts; anything else is checked against the
-# three detectors, and a hit before the exemption (or with none active) is a finding.
+# pattern sets where its own command's exemption starts (and which role it names); anything else
+# is checked against the three detectors, and a hit before the exemption (or with none active) is
+# a finding -- as is a push-like hit inside a reviewer's own wrapper.
 def findings($w):
   ($w | length) as $n
-  | {i: 0, wrap_from: null, out: []}
+  | {i: 0, wrap_from: null, wrap_role: null, out: [], reviewer_push: false}
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
-      | (detect_wrapper($w; $state.i; $n)) as $wrap_hit
-      | if $x | is_sep then $state | .wrap_from = null | .i += 1
-        elif $wrap_hit != null then
-          $state | .wrap_from = $wrap_hit | .i += 1
+      | (detect_wrapper($w; $state.i; $n)) as $wrap
+      | if $x | is_sep then $state | .wrap_from = null | .wrap_role = null | .i += 1
+        elif $wrap != null then
+          $state | .wrap_from = $wrap.next | .wrap_role = $wrap.role | .i += 1
         else
           (detect_git($w; $state.i; $n) // detect_gh($w; $state.i; $n) // detect_tool($w; $state.i; $n)) as $hit
           | if $hit == null then $state | .i += 1
             else
               ($state
-               | if (.wrap_from != null) and ($state.i >= .wrap_from) then . else .out += [$hit.reason] end
+               | if (.wrap_from != null) and ($state.i >= .wrap_from) then
+                   (if (is_push_like($hit.reason)) and ((reviewer_roles | index($state.wrap_role)) != null)
+                    then .out += [$hit.reason] | .reviewer_push = true
+                    else . end)
+                 else .out += [$hit.reason] end
                | .i = $hit.next)
             end
         end)
-  | .out;
+  | {out, reviewer_push};
 
 if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
@@ -182,24 +203,36 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   | (drop("\\\n") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
   | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ") | swap("$'"; "'") | swap("$\""; "\"")) as $bare
   | ($bare | words) as $w
-  | (findings($w)) as $flagged
-  | if ($flagged | length) == 0 then empty else ($flagged | join("; ")) end
+  | (findings($w)) as $result
+  | if ($result.out | length) == 0 then empty else $result end
 end
 JQ
 
 command -v jq >/dev/null 2>&1 || exit 0
-if ! flagged=$(jq -r "$check_program" 2>/dev/null); then
+if ! result=$(jq -c "$check_program" 2>/dev/null); then
 	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
+	reviewer_push=false
+elif [ -z "$result" ]; then
+	exit 0
+else
+	flagged=$(printf '%s' "$result" | jq -r '.out | join("; ")')
+	reviewer_push=$(printf '%s' "$result" | jq -r '.reviewer_push')
 fi
-[ -z "$flagged" ] && exit 0
 
-reason="This command writes to GitHub ($flagged) outside any agent identity. Every git push, git \
+if [ "$reviewer_push" = "true" ]; then
+	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
+but reviewers never push -- only a coder identity does. Wrap it in \
+'uv run python tools/agent-identity.py run claude-coder -- <command>' (or codex-coder) instead. \
+See committing and pr-review."
+else
+	reason="This command writes to GitHub ($flagged) outside any agent identity. Every git push, git \
 commit, GitHub-writing gh pr/issue/release/api call, and pushing/posting tools/ script runs \
 through 'uv run python tools/agent-identity.py run <role> -- <command>' instead -- claude-coder or \
 claude-reviewer in Claude Code, codex-coder or codex-reviewer in Codex -- never directly. Check \
 first with 'uv run python tools/agent-identity.py status <role>'; if it reports the role not \
 usable, stop and tell the player rather than running this directly. See committing and pr-review, \
 and .claude/hooks/github-write-guard.sh for what counts as a write."
+fi
 
 jq -n --arg reason "$reason" '{
   hookSpecificOutput: {
