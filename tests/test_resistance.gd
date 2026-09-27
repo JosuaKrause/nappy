@@ -1191,6 +1191,9 @@ func _test_starting_a_day_resets_the_package_flag(t) -> void:
 ## The look-alike she never reached is a second live `homeless_yeller`, spawned directly rather
 ## than waiting for the scheduler to place one, so the test does not depend on the seed placing a
 ## second one that day.
+## Split into two moments (M205, "he keeps shouting for a bit"): the instant the note changes
+## hands, and once `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` has actually elapsed. He does
+## not leave the first moment — he stays and keeps shouting, still charging her, until the second.
 func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 	_with_clean_run(func() -> void:
 		var director := _director_on_the_yeller_perform(t)
@@ -1204,10 +1207,23 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 
 		director._on_contact_completed(2)
 
-		t.check(rider.is_leaving, "the one she reached stops shouting and leaves")
+		t.check(not rider.is_leaving,
+				"the one she reached keeps shouting the instant the note is handed over")
+		t.check(rider.contribution_at(rider.global_position) > 0.0,
+				"and still charges her, since he has not started leaving yet")
+		t.check(not decoy.is_leaving and decoy.contribution_at(decoy.global_position) > 0.0,
+				"a look-alike she never reached is left exactly alone, still shouting")
+
+		director._process(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS - STEP)
+		t.check(not rider.is_leaving,
+				"and still hasn't, a frame short of the full linger")
+
+		director._process(2.0 * STEP)
+		t.check(rider.is_leaving,
+				"and stops shouting and leaves once he has lingered that long")
 		t.close_to(rider.contribution_at(rider.global_position), 0.0,
 				"and contributes nothing to the meter the same frame", 0.001)
-		t.check(not decoy.is_leaving, "a look-alike she never reached is left exactly alone")
+		t.check(not decoy.is_leaving, "a look-alike she never reached is still left exactly alone")
 		t.check(decoy.contribution_at(decoy.global_position) > 0.0,
 				"still shouting, still emitting")
 
@@ -1327,7 +1343,11 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 				"touching it activates the yeller perform the same day")
 		var rider: EventInstance = attempt._rider
 		attempt._on_contact_completed(2)
-		t.check(rider != null and rider.is_leaving, "completing it sends the rider away")
+		t.check(rider != null and not rider.is_leaving,
+				"completing it keeps him shouting first, not sent away yet")
+		attempt._process(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
+		t.check(rider != null and rider.is_leaving,
+				"and sends him away once he has lingered that long")
 		attempt.free()
 
 		t.check(GameState.finish_day(GameEnums.DayResult.LOST_CRYING),

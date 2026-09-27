@@ -88,6 +88,22 @@ const PICK_REACHABLE_REDRAW_LIMIT := 24
 ## qualified" — off the grid, since every real tile this director ever asks about is non-negative.
 const _NO_TILE := Vector2i(-1, -1)
 
+## How long the man shouting stays and keeps shouting after day 6's note is handed over, before
+## `_lingering_rider` actually leaves (M205, "the note costs, and the ordinary day" — the player,
+## asked whether an instant handover should still cost something: "he keeps shouting for a bit").
+## His field charges her exactly as any live `homeless_yeller`'s does for the whole delay, so
+## walking away from him afterward costs rather than being free the instant the note changes hands.
+##
+## **Chosen so the total plateaus near an ordinary pass, not so it is timed to hit one.** Walking
+## away from his `inner_radius` at `Tuning.WALK_SPEED` clears his `outer_radius` (210px, past which
+## `EventInstance.contribution_at()` answers zero) in a little over two seconds; this sits past
+## that clearing point with a margin, so the total lands wherever the field's own falloff already
+## plateaus rather than depending on catching an exact frame.
+## `tests/probes/m205_note_handover.gd` measures the plateau at ~11.1 points awake and ~-3.2 asleep
+## against an ordinary pass's own ~11.1/~-3.2 (`M174Pass.pass_net_averaged()` at 0px) — felt, open
+## to overturn against a played day rather than against that printout.
+const NOTE_HANDOVER_LINGER_SECONDS := 2.5
+
 var _city: City
 var _map: CityMap
 var _contact: ContactPoint
@@ -101,6 +117,11 @@ var _mast_id := ""
 ## The neighbor she did not reach, standing at her own door after the task expired — taken with the
 ## raid once she is not looking (`_take_the_neighbor_away()`). Null on every other day.
 var _taken_neighbor: EventInstance
+## Set only while a man shouting is lingering after the note is handed over — the delay before
+## `EventInstance.leave_for_a_completed_task()` actually runs (M205, "he keeps shouting for a
+## bit"). Null the rest of the time, including for every other kind of step.
+var _lingering_rider: EventInstance
+var _lingering_remaining := 0.0
 var _elapsed := 0.0
 var _day_length := 0.0
 var _expired := false
@@ -927,6 +948,8 @@ func _process(delta: float) -> void:
 	_happenings.tick(delta, _player_position(), _player_velocity(), _sight)
 	if _taken_neighbor:
 		_take_the_neighbor_away()
+	if _lingering_rider:
+		_tick_lingering_rider(delta)
 	if not _step or _expired or not _contact or _contact.is_done:
 		return
 	_elapsed += delta
@@ -950,6 +973,22 @@ func _process(delta: float) -> void:
 	if _elapsed / _day_length < _step.deadline_fraction:
 		return
 	_expire("expired at %.0f%% of the day" % (_step.deadline_fraction * 100.0))
+
+## Counts down `_lingering_rider`'s stay and calls `EventInstance.leave_for_a_completed_task()`
+## once `NOTE_HANDOVER_LINGER_SECONDS` is up — run every frame independently of `_step`/`_contact`,
+## since the note task is already complete and cleared by the time this fires. Freed or otherwise
+## finished early (the day ending under her) clears the wait rather than erroring on a dead
+## instance; nothing else needs telling, since a day that has ended has nothing left to charge.
+func _tick_lingering_rider(delta: float) -> void:
+	if not is_instance_valid(_lingering_rider) or _lingering_rider.is_finished:
+		_lingering_rider = null
+		return
+	_lingering_remaining -= delta
+	if _lingering_remaining > 0.0:
+		return
+	_lingering_rider.leave_for_a_completed_task()
+	Telemetry.note("contact", "he stops shouting and leaves")
+	_lingering_rider = null
 
 ## *Asked for a hidden contact among look-alikes · overturned on 2026-09-13* (`docs/NARRATIVE.md`,
 ## "The contact is whichever look-alike she reaches first"): *"we cannot expect the player to do
@@ -1177,9 +1216,17 @@ func _on_contact_completed(step_index: int) -> void:
 	# walks off screen, the same departure any finished event takes. Named by `task_event_id`
 	# rather than "any rider with a completed step", so this call site does not start silently
 	# giving the other perform steps a world-answer their own design has not chosen yet.
+	#
+	# He does not leave the instant she hands it over: he stays and keeps shouting for
+	# `NOTE_HANDOVER_LINGER_SECONDS` first, still charging her exactly as any live
+	# `homeless_yeller` does, so walking away from him afterward costs (M205, "he keeps shouting
+	# for a bit"). `_tick_lingering_rider()` actually calls `leave_for_a_completed_task()` once
+	# the delay is up.
 	if step and step.task_event_id == "homeless_yeller" and _rider and is_instance_valid(_rider):
-		_rider.leave_for_a_completed_task()
-		Telemetry.note("contact", "he took it and is leaving")
+		_lingering_rider = _rider
+		_lingering_remaining = NOTE_HANDOVER_LINGER_SECONDS
+		Telemetry.note("contact", "he took it; keeps shouting for %.1fs before he leaves"
+				% NOTE_HANDOVER_LINGER_SECONDS)
 	# Warned, the neighbor runs — away from her, and away from home.
 	if step and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR and _rider \
 			and is_instance_valid(_rider):
@@ -1208,6 +1255,8 @@ func _clear() -> void:
 	_contact = null
 	_rider = null
 	_mast_id = ""
+	_lingering_rider = null
+	_lingering_remaining = 0.0
 
 # ------------------------------------------------------------------ queries ---
 
