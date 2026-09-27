@@ -22,7 +22,6 @@ it is not.
 | Doc | Contents |
 | --- | --- |
 | [CLAUDE.md](CLAUDE.md) | How to work on this repo — an index; the rules are in `.claude/skills/`. Codex reads it too, through `.codex/config.toml` |
-| [docs/HANDOFF.md](docs/HANDOFF.md) | Where to pick up: the state of the tree and what is queued, written at the end of a session |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Where the history is — one file per decision under `docs/decisions/`, found with `tools/decisions.sh` |
 | [docs/DESIGN.md](docs/DESIGN.md) | Pillars, core loop, win/lose conditions |
 | [docs/MECHANICS.md](docs/MECHANICS.md) | Meters, movement, tuning constants |

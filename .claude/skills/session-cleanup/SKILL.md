@@ -1,6 +1,6 @@
 ---
 name: session-cleanup
-description: The end-of-session hygiene pass — make every document true again, move what is now history into a decision record, prune the queue and the review items, and write the handoff. Load this at the END of every session, before the final report, and whenever asked to tidy the docs.
+description: The end-of-session hygiene pass — make every document true again, move what is now history into a decision record, prune the queue and the review items, and write the local restart prompt. Load this at the END of every session, before the final report, and whenever asked to tidy the docs.
 ---
 
 # End-of-session cleanup
@@ -21,8 +21,6 @@ document states what is true now, keeps the reason and moves the incident to a d
 
 Check what the session touched, then check what claims things about it. The usual suspects:
 
-- **`docs/HANDOFF.md`** — the tree state and what is queued. No pull request edits it, so it is
-  wrong about everything that merged since the last session's end; step 7 rewrites it.
 - **`CLAUDE.md` and `.claude/skills/`** — did a rule change, or a file get renamed out from under
   one?
 - **The design docs** — `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`,
@@ -110,13 +108,16 @@ The items under `docs/review/` hold what waits on a person: **committing** says 
 playtest deletes one; close every item a playtest this session covered, and check both happened
 for this session's work.
 
-### 7. Leave the handoff true
+### 7. There is no checked-in handoff
 
-`docs/HANDOFF.md` is the last thing to write and the first thing the next session reads, and this
-pass is the only thing that writes it *(2026-09-26: "handoff only at the end of a session")*:
-pull requests do not, so rewrite it from the tree and the open pull requests as they stand. It says the
-tree state, what is queued in the order `tools/queue.sh` prints, and nothing else. **If it is wrong, everything downstream of it
-is wrong too.**
+**Nothing in the repository says where a session stopped.** *(2026-09-26: "we don't need session
+handover across agents. each have their own threads to work on. let's remove the handoff file from
+github".)* The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh` and
+the items under `docs/review/` answer it at the moment they are asked — and what a document would
+have said about it is stale the moment another thread merges. So the session's end writes nothing
+checked in about itself: the durable part of what it learned is already in a skill, a doc, an
+entry, a review item or a record by step 5, and the rest is the restart prompt below.
+`tools/decisions.sh handoff` has the reasons.
 
 ### 8. End with a fresh-context restart prompt
 
@@ -126,13 +127,19 @@ that git ignores, and never into the chat**: copying long text out of the CLI co
 *(2026-09-26: "make a note to not write the local handoff in the chat since CLI c&p is broken
 write it to a local file and don't check it in")*. Each handover overwrites the file, and the
 report in the chat names its path. Do not require the next session to have read this conversation or
-to resume an old agent transcript. The prompt tells it to fetch and inspect live PR state, then read
-`CLAUDE.md`, `docs/HANDOFF.md` and `docs/TODO.md`, run `tools/queue.sh`, and read the named
-work-item sources before acting.
+to resume an old agent transcript. The prompt tells it to fetch and inspect live PR state
+(`gh pr list`, `tools/agent-status.sh`), then read `CLAUDE.md` and `docs/TODO.md`, run
+`tools/queue.sh`, and read the named work-item sources before acting.
 
 Name every open thread by PR number and short title, branch or worktree when relevant, current
 checkpoint, exact next action, remaining gate and verification already completed. Restate the
-scope fences and merge authority that matter. If delegation should continue, say to start fresh
-agents with self-contained briefs rather than resuming the session's agents. Keep the prompt
-self-contained and current at the moment of handover; the final report may summarize it, but the
-file must stand on its own.
+scope fences that matter. If delegation should continue, say to start fresh agents with
+self-contained briefs rather than resuming the session's agents. Keep the prompt self-contained and
+current at the moment of handover; the final report may summarize it, but the file must stand on
+its own.
+
+**The restart prompt never records a merge or release permission.** *(2026-09-26, on a line
+recording one: "remove that bit altogether -- this is not something that should go into a checked
+in handoff".)* Permission is given in a session and ends with it (**committing**, "Merging"), so a
+sentence carrying it forward is either a grant nobody gave the next session or an invitation to
+act on one; the next session asks the player.

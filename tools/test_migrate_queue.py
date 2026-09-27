@@ -253,6 +253,8 @@ class TodoTests(unittest.TestCase):
     def test_the_order_names_entries_by_their_folders(self) -> None:
         todo = self.tree[q.TODO]
         self.assertTrue(todo.startswith(q.NEW_TODO_HEADER))
+        # No checked-in handoff exists to send a reader to, so the migrated header names none.
+        self.assertNotIn("HANDOFF.md", todo)
         self.assertIn("### [M4 — Inside the order](todo/2026-01-17-M4/)\n", todo)
         self.assertIn(
             q.NEW_ORDER_TAIL

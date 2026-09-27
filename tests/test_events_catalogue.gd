@@ -227,8 +227,8 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
 ## belongs at the kerb" — so `_centred_on_the_pavement_band()` must leave them flush against it
 ## rather than re-centring them onto the pavement band the way `construction` is. A kerb-parked
 ## `VEHICLE_BODY` (44px across) still has to leave a gap to the frontage narrower than the pram, or
-## the row stops being an obstacle: `docs/HANDOFF.md`'s own reading of that placement is that the
-## gap "is intended and is also the exact shape of 'no line to walk.'"
+## the row stops being an obstacle: `docs/EVENTS.md`'s `delivery_van` row reads that placement as
+## "a **wall** by physical fit", and the gap is the exact shape of "no line to walk."
 func _test_a_kerbed_body_still_pins_the_frontage(t) -> void:
 	var kerb_edge := Tuning.TILE_SIZE * 0.5
 	var band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
