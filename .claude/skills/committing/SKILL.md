@@ -32,11 +32,12 @@ triggered it".)* In Claude Code:
 - **`claude-reviewer`** posts every review and its findings, on either kind of pull request
   (**pr-review**).
 
-A pull request has no code changes — is docs-only — when every file it changes is Markdown or
-under `docs/`, except `docs/TELEMETRY.md`, `docs/COSTS.md` and `docs/ARCHITECTURE.md`, which the
-game's own checks read. The identity is chosen when the pull request is opened, from what it is
+A pull request has no code changes when CI calls it docs-only: `tools/ci_classify.py` decides that
+from the files it changes, and **verify**'s "What `test` means on each kind of pull request" says
+which files those are. The identity is chosen when the pull request is opened, from what it is
 going to contain. So the orchestrating session writes as `claude-coder` when it merges a code pull
-request, and a spawned agent writes as `claude-orchestrator` when it opens a docs-only one. **It is a convention, not a hard rule**
+request, and a spawned agent writes as `claude-orchestrator` when it opens a docs-only one. **It
+is a convention, not a hard rule**
 *(2026-09-27: "if a PR starts out as doc only and later code becomes part of it then identities
 will mix")*: a pull request that starts docs-only and later gains code keeps the orchestrator's
 earlier writes and takes the coder's from then on, and nothing — no hook, no CI check — compares a
