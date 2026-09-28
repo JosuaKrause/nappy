@@ -280,20 +280,20 @@ static func _build() -> Array[Step]:
 
 		# Day 8 · leave something at the burnt shell from day 3 — one place, red arrow. What she
 		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
-		# it came from rather than naming an "it" nothing showed. The
+		# it is, the stroller, rather than naming an "it" nothing showed, in one short sentence. The
 		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.scar_id` on
 		# `burning_building`); a run with no such scar falls back to an ordinary placement of
 		# the same row on a reachable sidewalk, the smallest honest stand-in — see
 		# `ResistanceDirector._begin_step()`.
 		_mark(5, "Another mark", 8,
-				"Something was left in the stroller in the night. Take it to the burnt building."),
+				"Take what's in the stroller to the burnt building."),
 		_perform(6, "The burnt shell", 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,
 				TargetKind.SCAR, false, "the burnt building"),
 
 		# Day 9 · cross a named region door — one place, red arrow. The districts close that
 		# morning (`Tuning.REGION_WALL_FIRST_DAY`) and this is the day she finds out whether a
 		# stroller gets through one.
-		_mark(7, "Another mark", 9, "Cross at the district door. Find out if it lets a stroller through."),
+		_mark(7, "Another mark", 9, "Cross at this district door. See if they let you through."),
 		_perform(8, "The crossing", 9, "", [], true, TargetKind.DOOR, false,
 				"the district door"),
 
