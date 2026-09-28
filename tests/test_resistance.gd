@@ -36,7 +36,8 @@ func run(t) -> void:
 	_test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t)
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
-	_test_the_guard_moves_with_the_mark_and_faces_the_alleys_far_end(t)
+	_test_the_guard_moves_with_the_mark_to_the_alleys_far_end(t)
+	_test_a_relocation_never_retires_a_guard_in_view_or_awake(t)
 	_test_the_guard_never_lands_inside_a_building(t)
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
 	_test_the_chalk_mark_guard_stands_at_the_alleys_far_end(t)
@@ -516,7 +517,7 @@ func _test_the_guard_is_seeded(t) -> void:
 				t.check(distance >= min_distance - 0.5,
 						"day %d's guard stands at least 66px from the mark" % day)
 				var far := director._far_alley_mouth(at)
-				t.check(far == Vector2.INF or guard.global_position.distance_to(far) <= 96.5,
+				t.check(far == Vector2.INF or guard.global_position.distance_to(far) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
 						"day %d's guard stands within reach of the alley's far mouth" % day)
 				_seen_guard_distances.append(distance)
 			director.free()
@@ -905,7 +906,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 ## a relocated mark's fresh guard follows the same rule as the dawn draw, standing at the far
 ## mouth of whichever alley the mark relocated to, or as near it as the alley allows, rather than
 ## in a band around the mark itself.
-func _test_the_guard_moves_with_the_mark_and_faces_the_alleys_far_end(t) -> void:
+func _test_the_guard_moves_with_the_mark_to_the_alleys_far_end(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
@@ -932,9 +933,49 @@ func _test_the_guard_moves_with_the_mark_and_faces_the_alleys_far_end(t) -> void
 		var guard: EventInstance = guards[0]
 		var far_mouth := director._far_alley_mouth(new_at)
 		t.check(far_mouth != Vector2.INF, "the relocated mark's own alley is found")
-		t.check(guard.global_position.distance_to(far_mouth) <= 96.5,
+		t.check(guard.global_position.distance_to(far_mouth) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
 				"the new guard stands at the alley's far mouth, not in a band around the mark")
 
+		player.free()
+		director.free())
+
+## A robber never vanishes where she can see him or out of a chase: an unread mark's relocation,
+## which retires the guard over the old spot, waits while any part of him is on her screen or he
+## is awake, and goes ahead once neither holds. She stands on an alley past `NOTICE_RADIUS` of the
+## mark, where the relocation would otherwise fire on the first frame.
+func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
+		var old_at := director.contact_position()
+		var guard: EventInstance = director._guard
+		t.check(guard != null, "day 6's mark is guarded")
+		if guard == null:
+			director.free()
+			return
+		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at)
+		var player := _rig_player(t, far_alley)
+
+		var feet := guard.global_position
+		director.set_sight(func(p: Vector2) -> bool: return p.distance_to(feet) < 40.0)
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(old_at) < 0.5,
+				"with him on her screen, the mark stays where it is")
+		t.check(not guard.is_finished, "and he is not retired in front of her")
+
+		director.set_sight(func(_p: Vector2) -> bool: return false)
+		guard._noticed_at = 0.0
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(old_at) < 0.5,
+				"off her screen but awake, the mark still stays where it is")
+		t.check(not guard.is_finished, "and he is not retired out of his chase")
+
+		guard._noticed_at = INF
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(old_at) > 0.5,
+				"asleep and out of her sight, the mark moves")
+		t.check(guard.is_finished, "and he is retired with it")
 		player.free()
 		director.free())
 

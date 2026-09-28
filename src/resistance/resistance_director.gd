@@ -371,14 +371,14 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 ## swing, the burnt shell, a roadblock) keeps a band between `inner_radius + ContactPoint.REACH`
 ## and `pursues_within + ContactPoint.REACH`, drawn from the whole circle around its own contact.
 ##
-## **Retires only the guard of the same kind this replaces**, so a perform step whose contact is
-## itself guarded (a door, a mast's foot, a swing, the burnt shell, a roadblock) never takes an
-## awake or chasing mark's guard out of the day the instant its own `_begin_step()` activates,
-## right behind the mark's own in the same `_on_contact_completed()` call: `_guard` (the mark's
-## own) and `_task_guard` (the perform step's) are separate fields, each retired only by whatever
-## replaces its own kind. The mark's own guard stands until the day ends however she leaves
-## him — `_move_the_mark()`'s relocation is the one thing that ever retires him early, and it
-## never runs while he is awake (`_track_sight_and_reposition()`'s own guard).
+## **Retires only the guard of the same kind this replaces.** `_guard` (the mark's own) and
+## `_task_guard` (the one a guarded task — a door, a mast's foot, a swing, the burnt shell, a
+## roadblock — stands at its own contact) are separate, so reading the mark, which activates the
+## task right behind it in the same `_on_contact_completed()` call, never takes the mark's guard
+## out of the day: he stays, asleep, awake or chasing, until the day ends. A relocation of an unread
+## mark (`_move_the_mark()`) is the one thing that retires him early, and it never runs while he is
+## awake or any part of him is on her screen (`_track_sight_and_reposition()`). A task's guard is
+## placed once a day and never replaced.
 ##
 ## **`her` and `on_screen_matters` are the caller's to give**, since only a caller placing a
 ## contact she is actually near has anything true to say about either. `_player_position()`
@@ -1550,13 +1550,12 @@ func _track_sight_and_reposition(delta: float) -> void:
 	_seen_dwell = 0.0
 	if not _player:
 		return
-	# A robber already awake and coming for her cannot lose his mark out from under him.
-	# Unreachable given the geometry above — he only wakes within `pursues_within` (140px) of
-	# the mark, and the mark only moves once she is beyond `NOTICE_RADIUS` (400px) of it, and
-	# 400 > 140 — but checked here rather than assumed, because a defect in that geometry
-	# would otherwise show up as a robber frozen over empty ground rather than as a test
-	# failure.
-	if _guard and is_instance_valid(_guard) and not _guard.is_waiting():
+	# A relocation retires the guard over the old spot (`_maybe_set_a_trap()`), and a robber never
+	# vanishes where she can see it or out of a chase: while he is awake — she can wake him at the
+	# alley's far end and run on past `NOTICE_RADIUS` of the mark — or any part of him is on her
+	# screen, the mark stays where it is and he stays with it.
+	if _guard and is_instance_valid(_guard) \
+			and (not _guard.is_waiting() or _guard_shows(_guard.global_position)):
 		return
 	var here := _player.global_position
 	if here.distance_to(at) <= NOTICE_RADIUS:
