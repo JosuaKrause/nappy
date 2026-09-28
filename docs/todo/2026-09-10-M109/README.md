@@ -1,4 +1,4 @@
-priority: next
+priority: now
 
 ### M109 — Convert the SVG catalogue to PNG
 

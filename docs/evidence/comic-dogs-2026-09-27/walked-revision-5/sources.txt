@@ -1,0 +1,5 @@
+art/events/dog_c.svg
+art/events/dog_front_diagonal_c.svg
+art/events/dog_back_diagonal_c.svg
+art/events/dog_front_c.svg
+art/events/dog_back_c.svg

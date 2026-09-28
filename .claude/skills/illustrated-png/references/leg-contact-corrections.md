@@ -14,6 +14,13 @@ image: an A/B label or a front-diagonal filename cannot establish its contact or
 Check western mirrors too. A same-clothing donor can supply useful leg artwork across character
 or carrying states, but its view, proportions and ownership must fit the target.
 
+Read the authored A/B source geometry before naming a phase: a gathered pose is not an
+opposite contact. Supply the original B pose alongside the frozen A body when correcting a
+generated B. Follow each limb from the same anatomical root through its changing joints and
+paw; never relabel near/far limbs to make existing footprints appear to move. Compare the
+registered leg contours with coat colors removed as well as in color. Shading swaps, paw
+counts, repeated inferred pivots and whole-body difference scores do not establish leg motion.
+
 Prefer the original large artwork for cropping and generated normalization. Mask along the
 garment contour rather than assuming a horizontal row separates coat and legs. A longer coat
 can hide anatomy the target's shorter jacket exposes; that region needs a coherent transition.
@@ -52,6 +59,21 @@ continuous. Check for a hard horizontal seam, doubled outline, abrupt leg-width 
 hand contact. Use generation for unresolved anatomy; retain accepted pixels for a local material
 or edge correction. The reproducible accepted example is
 `docs/evidence/male-player-2026-09-19/b-contact/whole-figure-color-2026-09-19/assemble.py`.
+
+## A seam the player names
+
+The one programmatic limb repaint in the dog families is a seam the player asked for by name:
+the black line between the body and the lighter hind leg in the side dog's opposite step,
+removed as a recipe step while the darker hind leg keeps its line *(2026-09-27, on PR 406: "the
+step 2 image hind leg can you just remove the black line between the body and the leg -- make it
+part of the pipeline of the image generation so it stays reproducible"; "not the darker one since
+that one actually needs the line")*. It is not a general permission. A seam like it is done only
+on the player's request for that seam, as a named step of the family's own recipe: a fixed box
+in the registered plane that bounds every changed pixel, a stated operation inside it, a build
+that stops when the artwork under the box is not the shape the step expects, a native footprint
+outside which every pixel stays byte for byte, and before/after crops with the changed pixels
+marked. `SEAM` in `docs/evidence/comic-dogs-2026-09-27/walked-revision-5/assemble.py` is the
+example.
 
 ## Freeze and review the complete family
 

@@ -444,6 +444,34 @@ const DOG_BY_VIEW_B := {
 	"front_diagonal": "events/dog_front_diagonal_b",
 	"back_diagonal": "events/dog_back_diagonal_b",
 }
+## The normal dog's third picture per view — the dog walker's and the loose dog's, not the charging
+## dog's — so it walks step, rest, opposite step, rest *(2026-09-27, teal-marmot: "the normal dog
+## should have three frames. we have the resting one now and one leg forward. now we need one
+## frame with the other leg forward")*. What a c picture *is* depends on the view, and
+## `dog_picture()` is the one place that says so.
+const DOG_BY_VIEW_C := {
+	"front": "events/dog_front_c",
+	"back": "events/dog_back_c",
+	"side": "events/dog_c",
+	"front_diagonal": "events/dog_front_diagonal_c",
+	"back_diagonal": "events/dog_back_diagonal_c",
+}
+
+## Which of the normal dog's three pictures a view draws on a beat of its four-beat walk: the
+## first step while `stepping` in the first half of the stride, the opposite step while `stepping`
+## in the second, and the rest pose whenever it is not stepping — between the two steps, and for
+## as long as it stands still. **The rest and the opposite step are different tables per view.**
+## The side and both diagonals rest on their b picture (legs gathered under the body) and take the
+## opposite step on c; front and back already alternate their diagonal leg pairs between a and b,
+## so their c picture is the square neutral stance and is their rest.
+static func dog_picture(view: String, stepping: bool, second_half: bool) -> String:
+	var cardinal := view == "front" or view == "back"
+	if not stepping:
+		return DOG_BY_VIEW_C[view] if cardinal else DOG_BY_VIEW_B[view]
+	if not second_half:
+		return DOG_BY_VIEW[view]
+	return DOG_BY_VIEW_B[view] if cardinal else DOG_BY_VIEW_C[view]
+
 const CHARGING_DOG_BY_VIEW := {
 	"front": "events/charging_dog_front",
 	"back": "events/charging_dog_back",
@@ -2984,6 +3012,10 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if is_suppressed_by_its_own_hold() else 0)
 	flags = flags * 2 + (1 if is_leaving else 0)
 	flags = flags * 2 + (1 if _gait_stepping() else 0)
+	# The normal dog alone tells its two steps apart (`dog_picture()`), so only its two looks carry
+	# the stride's half: every other family draws the same picture in both halves.
+	var three_pose_dog := def.look in [EventDef.Look.DOG_WALKER, EventDef.Look.LOOSE_DOG]
+	flags = flags * 2 + (1 if three_pose_dog and _gait_second_half() else 0)
 	flags = flags * 2 + (1 if _heading_is_west() else 0)
 	flags = flags * 2 + (1 if is_telegraphing() else 0)
 	flags = flags * 2 + (1 if is_waiting() else 0)
@@ -3102,6 +3134,16 @@ func _advance_gait(moved: float) -> void:
 ## it more than once — the main draw, then once per halo ring — always agrees with itself.
 func _gait_stepping() -> bool:
 	return _gait_moving and sin(_gait_phase * 2.0) > 0.0
+
+## Whether the stride is in its second half — the half a stepping normal dog takes its opposite
+## step in (`dog_picture()`). `_gait_stepping()` is true twice per turn of `_gait_phase`, once in
+## each half, so the two together split the turn into four equal beats: step, rest, opposite step,
+## rest, each `PI / 2 / GAIT_RATE` (17.5px) of ground. The dog therefore changes picture exactly
+## when the dog walker's own two frames swap, and a whole four-beat walk is 70px: a beat is 545ms
+## at the dog walker's 32px/s, close to the 450ms the pictures were reviewed at, and 132ms at the
+## loose dog's 132px/s, where the dog is running.
+func _gait_second_half() -> bool:
+	return _gait_phase >= PI
 
 ## The victim's own short scripted walk to the van (`VICTIM_STANDING_OFFSET` over
 ## `VICTIM_TAKEN_OVER` seconds, `_update_the_take()`) is a straight-line lerp on `age` rather than
@@ -3397,7 +3439,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.NEIGHBOR:
 			_collect_views(sources, [NEIGHBOR_BY_VIEW, NEIGHBOR_BY_VIEW_B])
 		EventDef.Look.DOG_WALKER:
-			_collect_views(sources, [PERSON_BY_VIEW, PERSON_BY_VIEW_B, DOG_BY_VIEW, DOG_BY_VIEW_B])
+			_collect_views(sources, [PERSON_BY_VIEW, PERSON_BY_VIEW_B, DOG_BY_VIEW, DOG_BY_VIEW_B,
+					DOG_BY_VIEW_C])
 		EventDef.Look.CAFE:
 			_collect_views(sources, [CAFE_SITTER_BY_VIEW, CAFE_SITTER_BY_VIEW_B])
 			_collect(sources, [CAFE_TABLE])
@@ -3414,7 +3457,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.BURNT_SHELL:
 			_collect(sources, [RUBBLE])
 		EventDef.Look.LOOSE_DOG:
-			_collect_views(sources, [DOG_BY_VIEW, DOG_BY_VIEW_B])
+			_collect_views(sources, [DOG_BY_VIEW, DOG_BY_VIEW_B, DOG_BY_VIEW_C])
 		EventDef.Look.STALL:
 			_collect(sources, [STALL])
 		EventDef.Look.LEAF_BLOWER:
@@ -3746,8 +3789,8 @@ func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	# same as `_draw_dog_walker`'s taut one.
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	var view := _select_view(_heading)
-	var by_view := DOG_BY_VIEW_B if _gait_stepping() else DOG_BY_VIEW
-	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	var dog := dog_picture(view, _gait_stepping(), _gait_second_half())
+	Sprites.draw_standing(canvas, _drawn(dog), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Every bird, drawn where it actually is.
@@ -4298,12 +4341,12 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	var view := _select_view(_heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	# One phase for the pair, so the walker's own legs and the dog's never disagree about which of
-	# them is mid-stride.
+	# them is mid-stride: the dog steps while he does and rests while he does.
 	var stepping := _gait_stepping()
 	var person_by_view := PERSON_BY_VIEW_B if stepping else PERSON_BY_VIEW
-	var dog_by_view := DOG_BY_VIEW_B if stepping else DOG_BY_VIEW
+	var dog := dog_picture(view, stepping, _gait_second_half())
 	Sprites.draw_standing(canvas, _drawn(person_by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, _drawn(dog_by_view[view]), to_the_dog, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _drawn(dog), to_the_dog, Vector2.ZERO, mirror)
 
 ## The van, and the bystander it is taking while there is one to draw.
 ##

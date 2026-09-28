@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "purpose": "Frozen first-pass crops and SVG renders used to compose the targeted image-generation references. There is no refresh command.",
+  "inputs": [
+    {
+      "role": "defective_target_crop",
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog.png",
+      "sha256": "14a910e8226f76d083dbf6bb570d27ba7a6597053cc6e5c1d0589ca3c867a26e"
+    },
+    {
+      "role": "authoritative_pose_raster",
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog@6.png",
+      "sha256": "c16b0bf1aeab1c4d30ed9ff008c1e48fedc0d847151c67f03d97a5c79b279a27"
+    },
+    {
+      "role": "defective_target_crop",
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_b.png",
+      "sha256": "8820d109f66717fc8b0310fab072734c12e196eab8ea535c5ddde9420bfd77b1"
+    },
+    {
+      "role": "authoritative_pose_raster",
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_b@6.png",
+      "sha256": "da34f0739535516fd6c250cb205388f62c9b8109b85895ed6f494598548f2f03"
+    },
+    {
+      "role": "defective_target_crop",
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_front_diagonal.png",
+      "sha256": "fdf9035a3b400a2efa6c9831397fe7984833e74809f44cf18218cc20a5d0fa36"
+    },
+    {
+      "role": "authoritative_pose_raster",
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front_diagonal@6.png",
+      "sha256": "da6eb87d8bba6f127612dae4927e50d7a6b6c20c684aa52c41bbdc0651296d51"
+    },
+    {
+      "role": "defective_target_crop",
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_front_diagonal_b.png",
+      "sha256": "49cd59cfaad84969b6d4944b53e7d0dd859e402b912250c15909855d66351641"
+    },
+    {
+      "role": "authoritative_pose_raster",
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front_diagonal_b@6.png",
+      "sha256": "a73af6e1f4b2213d28b514402735562b12b7da54783007b0a02af6376e478e91"
+    },
+    {
+      "role": "defective_target_crop",
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_back_diagonal.png",
+      "sha256": "b05519cb1bab51176dd07908ff08ad521a4c845ca651f76e79211f0787abb2dd"
+    },
+    {
+      "role": "authoritative_pose_raster",
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back_diagonal@6.png",
+      "sha256": "b8d4a693f01493593b9c0a718ea5023c56afed16e2854688f56a99f6acbd3619"
+    },
+    {
+      "role": "defective_target_crop",
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_back_diagonal_b.png",
+      "sha256": "f199cbec85e10755c6da53c11eb897bda16369913176bd006529fd70a3759981"
+    },
+    {
+      "role": "authoritative_pose_raster",
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back_diagonal_b@6.png",
+      "sha256": "61a235fd6898adddb1c1413f550d2a390cf2116edf0625493d4b3cd7c2e81e1f"
+    }
+  ]
+}

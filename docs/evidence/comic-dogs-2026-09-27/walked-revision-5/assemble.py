@@ -1,0 +1,229 @@
+"""Register C illustrations and assemble three-pose/four-beat preview evidence.
+
+Usage: uv run python assemble.py build|verify
+"""
+from __future__ import annotations
+import hashlib
+import json
+import sys
+from pathlib import Path
+from PIL import Image, ImageDraw
+
+HERE=Path(__file__).resolve().parent
+BASE=HERE.parent
+ROOT=HERE.parents[3]
+NAMES=('dog','dog_front_diagonal','dog_back_diagonal','dog_front','dog_back')
+SELECTED={n:f'{n}_c.png' for n in NAMES}
+SELECTED['dog_front_diagonal']='dog_front_diagonal_c-retracted.png'
+MANIFESTS={'input-manifest.json':'1dbd855ab6b59bd02aa53a5074999ed68fd29559cab01906c2fc668ad25d44a8',
+           'remaining-input-manifest.json':'2c16d766dd313babca16b8deeb424ddd963231df88e5107e59a1e72a7ac808c8',
+           'front-input-manifest.json':'38a4726b0785fda90f4447c1e79a572f0fe96c499b0b52eeddc6325c7411f700'}
+PAPER=(238,235,228,255)
+PHASES=(0,1,2,1)
+LEG_TOP={'dog':145,'dog_front_diagonal':187,'dog_back_diagonal':207,'dog_front':222,'dog_back':195}
+# Bounds of alpha>=128 in the stationary upper region, before this correction.
+# Diagonals: tail/head extremes through y170; cardinals: head/tail through y150.
+# No leg or paw extrema contribute to these measured scale/position corrections.
+REGISTRATION={'dog':(1.0,(0,0)), 'dog_front_diagonal':(320/308,(-9,-9)),
+              'dog_back_diagonal':(327/325,(-2,-2)), 'dog_front':(166/154,(-7,-9)),
+              'dog_back':(157/149,(-2,-4))}
+# The player's one seam, on the side dog's opposite step (dog_c) and nowhere else: "the step 2
+# image hind leg can you just remove the black line between the body and the leg -- make it part
+# of the pipeline of the image generation so it stays reproducible"; "the lighter hind leg"; "not
+# the darker one since that one actually needs the line" (2026-09-27, on PR 406). This is the
+# player's explicit request for this seam, not a general permission to repaint limbs.
+# `box` is inclusive registered-plane pixels (x0, y0, x1, y1) and bounds every pixel changed: the
+# columns strictly inside the lighter (near) hind leg's own two side outlines, and the rows of the
+# body's bottom outline above it. In each column the one contiguous run of outline pixels (luma
+# below SEAM_OUTLINE_LUMA), widened by its one-pixel antialiased fringe, is replaced by a straight
+# vertical blend from the opaque body pixel just above it to the opaque leg pixel just below. In
+# the box's rows the darker (far) hind leg and its outline lie left of x=92, so the box never
+# reaches them.
+# `native` is the inclusive native-canvas footprint (x0, y0, x1, y1) that takes the re-downsampled
+# opened artwork; every other native pixel keeps the unopened downsample byte for byte, so the
+# darker leg's native pixels are untouched as well.
+SEAM={'dog':{'box':(93,136,115,145),'native':(8,13,9,14)}}
+SEAM_OUTLINE_LUMA=70
+
+
+def sha(p:Path)->str:
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def frozen()->None:
+    for name,digest in MANIFESTS.items():
+        manifest=HERE/name
+        if sha(manifest)!=digest:
+            raise SystemExit('authoritative manifest changed: '+name)
+        for item in json.loads(manifest.read_text())['inputs']:
+            p=ROOT/item['path']
+            if not p.is_file() or sha(p)!=item['sha256']:
+                raise SystemExit('frozen input changed or missing: '+item['path'])
+
+
+def paths(name:str,native:bool)->list[Path]:
+    folder='candidates' if native else 'crops'
+    a=BASE/folder/'dog'/f'{name}.png'
+    c=HERE/('candidates' if native else 'registered')/f'{name}_c.png'
+    if name in ('dog_front','dog_back'):
+        return [a,c,BASE/folder/'dog'/f'{name}_b.png']
+    b=BASE/'walked-revision-4'/('candidates' if native else 'registered')/f'{name}_b.png'
+    return [a,b,c]
+
+
+def clean(im:Image.Image)->Image.Image:
+    p=Image.new('RGBA',im.size,PAPER);p.alpha_composite(im);return p.convert('RGB')
+
+
+def review(name:str)->None:
+    frames=[Image.open(p).convert('RGBA') for p in paths(name,False)]
+    w,h=frames[0].size
+    for tag,images in [('body',frames),('leg-silhouette',[i.crop((0,LEG_TOP[name],w,h)) for i in frames])]:
+        pictures=[]
+        for im in images:
+            if tag=='leg-silhouette':
+                mono=Image.new('RGBA',im.size,'black');mono.putalpha(im.getchannel('A').point(lambda a:255 if a>=128 else 0));im=mono
+            pictures.append(clean(im))
+        sheet=Image.new('RGB',(w*3,pictures[0].height+24),PAPER[:3]);draw=ImageDraw.Draw(sheet)
+        for i,picture in enumerate(pictures):
+            sheet.paste(picture,(i*w,24));draw.text((i*w+4,5),('step 1','rest','step 2')[i],fill='black')
+        sheet.save(HERE/'review'/f'{name}-{tag}-three-poses.png')
+        pictures[0].save(HERE/'review'/f'{name}-{tag}-four-beats.gif',save_all=True,append_images=[pictures[i] for i in PHASES[1:]],duration=450,loop=0,optimize=False)
+    native=Image.open(HERE/'candidates'/f'{name}_c.png').convert('RGBA')
+    source=Image.open(HERE/'source-renders/art/events'/f'{name}_c@6.png').convert('RGBA')
+    scale=6; candidate=native.resize((native.width*scale,native.height*scale),Image.Resampling.NEAREST)
+    panel=Image.new('RGBA',(source.width*2,source.height+24),PAPER)
+    panel.alpha_composite(source,(0,24));panel.alpha_composite(candidate,(source.width,24))
+    d=ImageDraw.Draw(panel);d.text((3,5),'reviewed source C',fill='black');d.text((source.width+3,5),'new illustration C',fill='black')
+    panel.convert('RGB').save(HERE/'review'/f'{name}-source-c.png')
+
+
+def family()->None:
+    entries=(('dog',False,'E'),('dog_front_diagonal',False,'SE'),('dog_front',False,'S'),('dog_front_diagonal',True,'SW'),('dog',True,'W'),('dog_back_diagonal',True,'NW'),('dog_back',False,'N'),('dog_back_diagonal',False,'NE'))
+    for scale in (1,2,6):
+        frames=[]
+        for phase,label in enumerate(('step 1','rest','step 2')):
+            panel=Image.new('RGBA',(sum(Image.open(paths(n,True)[phase]).width+12 for n,_,_ in entries)*scale+12,28*scale+46),PAPER)
+            d=ImageDraw.Draw(panel);d.text((5,3),f'{label} | {scale}x native | synthetic preview',fill='black');x=8
+            for name,mirror,direction in entries:
+                im=Image.open(paths(name,True)[phase]).convert('RGBA')
+                if mirror:im=im.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+                im=im.resize((im.width*scale,im.height*scale),Image.Resampling.NEAREST)
+                d.text((x,18),direction,fill='black');panel.alpha_composite(im,(x,panel.height-8-im.height));x+=im.width+12*scale
+            frames.append(panel.convert('RGB'))
+        frames[0].save(HERE/'review'/f'all-facings-{scale}x.gif',save_all=True,append_images=[frames[i] for i in PHASES[1:]],duration=450,loop=0,optimize=False)
+        sheet=Image.new('RGB',(frames[0].width,frames[0].height*3),PAPER[:3])
+        for i,frame in enumerate(frames):sheet.paste(frame,(0,i*frame.height))
+        sheet.save(HERE/'review'/f'all-facings-{scale}x.png')
+
+
+def luma(p:tuple[int,...])->float:
+    return 0.299*p[0]+0.587*p[1]+0.114*p[2]
+
+
+def open_seam(name:str,im:Image.Image)->Image.Image:
+    """The registered artwork with the player's one seam opened (see SEAM); unchanged elsewhere."""
+    if name not in SEAM:return im
+    x0,y0,x1,y1=SEAM[name]['box'];out=im.copy();src=im.load();dst=out.load()
+    for x in range(x0,x1+1):
+        dark=[y for y in range(y0,y1+1) if luma(src[x,y])<SEAM_OUTLINE_LUMA]
+        if not dark or dark!=list(range(dark[0],dark[-1]+1)):
+            raise SystemExit(f'seam column {x} has no single outline run: {dark}')
+        top,bottom=dark[0]-1,dark[-1]+1
+        above,below=src[x,top-1],src[x,bottom+1]
+        if top<y0 or bottom>y1 or above[3]<250 or below[3]<250:
+            raise SystemExit(f'seam column {x} is not bounded by opaque body and leg in the box')
+        span=bottom+1-(top-1)
+        for y in range(top,bottom+1):
+            t=(y-(top-1))/span
+            dst[x,y]=tuple(round(above[i]+(below[i]-above[i])*t) for i in range(4))
+    return out
+
+
+def downsample(name:str,im:Image.Image)->Image.Image:
+    original=next(x for x in json.loads((BASE/'candidate-manifest.json').read_text())['families'][0]['cells'] if x['name']==name)
+    s=original['shared_pair_scale'];size=(round(im.width*s),round(im.height*s))
+    native=Image.new('RGBA',tuple(original['native_size']))
+    native.alpha_composite(im.resize(size,Image.Resampling.LANCZOS),tuple(original['candidate_position']))
+    return native
+
+
+def seam_native(name:str,before:Image.Image,after:Image.Image)->Image.Image:
+    """The unopened native downsample with only SEAM's native footprint taken from the opened one."""
+    if name not in SEAM:return before
+    x0,y0,x1,y1=SEAM[name]['native'];native=before.copy()
+    native.paste(after.crop((x0,y0,x1+1,y1+1)),(x0,y0))
+    changed=[(x,y) for y in range(native.height) for x in range(native.width) if native.getpixel((x,y))!=before.getpixel((x,y))]
+    if not changed or any(not(x0<=x<=x1 and y0<=y<=y1) for x,y in changed):
+        raise SystemExit(f'seam changed {changed}, not inside its native footprint')
+    return native
+
+
+def seam_review(name:str,raw_registered:Image.Image,registered:Image.Image,before:Image.Image,native:Image.Image)->None:
+    """Before/after crops of the seam: native 1x and 4x, the registered hind legs, and a diff."""
+    x0,y0,x1,y1=SEAM[name]['box']
+    changed=Image.new('RGBA',native.size,(0,0,0,0))
+    for y in range(native.height):
+        for x in range(native.width):
+            if before.getpixel((x,y))!=native.getpixel((x,y)):changed.putpixel((x,y),(230,40,40,255))
+    for scale in (1,4):
+        panel=Image.new('RGBA',((native.width+4)*3*scale+4,native.height*scale+18),PAPER)
+        d=ImageDraw.Draw(panel);d.text((2,2),'before | after | changed',fill='black')
+        for i,im in enumerate((before,native,changed)):
+            panel.alpha_composite(im.resize((im.width*scale,im.height*scale),Image.Resampling.NEAREST),(4+i*(native.width+4)*scale,16))
+        panel.convert('RGB').save(HERE/'review'/f'{name}-seam-before-after-{scale}x.png')
+    crop=(30,100,170,218)
+    diff=Image.new('RGBA',registered.size,(0,0,0,0));dd=diff.load();a=raw_registered.load();b=registered.load()
+    for y in range(registered.height):
+        for x in range(registered.width):
+            if a[x,y]!=b[x,y]:dd[x,y]=(230,40,40,255)
+    frames=[]
+    for im in (raw_registered,registered,diff):
+        f=Image.new('RGBA',registered.size,PAPER);f.alpha_composite(im);frames.append(f.crop(crop).resize(((crop[2]-crop[0])*4,(crop[3]-crop[1])*4),Image.Resampling.NEAREST))
+    sheet=Image.new('RGB',(frames[0].width*3+16,frames[0].height+24),PAPER[:3]);d=ImageDraw.Draw(sheet)
+    for i,(frame,label) in enumerate(zip(frames,('registered before','registered after','changed pixels (all inside the box)'))):
+        sheet.paste(frame.convert('RGB'),(i*(frame.width+8),24));d.text((i*(frame.width+8)+3,5),label,fill='black')
+    sheet.save(HERE/'review'/f'{name}-seam-registered-4x.png')
+
+
+def build()->None:
+    frozen()
+    for folder in ('registered','candidates','review'):(HERE/folder).mkdir(exist_ok=True)
+    mapping=json.loads((BASE/'candidate-manifest.json').read_text())['families'][0]['cells'];records=[]
+    for name in NAMES:
+        a=Image.open(BASE/'crops/dog'/f'{name}.png').convert('RGBA')
+        raw=Image.open(HERE/'raw'/SELECTED[name]).convert('RGBA')
+        multiplier,offset=REGISTRATION[name]
+        factor=a.width/raw.width*multiplier
+        scaled=raw.resize((round(raw.width*factor),round(raw.height*factor)),Image.Resampling.LANCZOS)
+        unopened=Image.new('RGBA',a.size);unopened.alpha_composite(scaled,offset)
+        im=open_seam(name,unopened)
+        im.save(HERE/'registered'/f'{name}_c.png',optimize=True)
+        original=next(x for x in mapping if x['name']==name)
+        before=downsample(name,unopened)
+        native=seam_native(name,before,downsample(name,im))
+        native.save(HERE/'candidates'/f'{name}_c.png',optimize=True)
+        if name in SEAM:seam_review(name,unopened,im,before,native)
+        records.append({'name':name+'_c','selected_raw':SELECTED[name],'raw_size':list(raw.size),'raw_sha256':sha(HERE/'raw'/SELECTED[name]),'a_crop_size':list(a.size),'raw_to_a_scale':factor,'torso_canvas_multiplier':multiplier,'torso_offset':offset,'inherited_a_transform':original,**({'player_seam':SEAM[name],'seam_outline_luma':SEAM_OUTLINE_LUMA} if name in SEAM else {})})
+        review(name)
+    if len(NAMES)==5:family()
+    outputs=sorted(p for folder in ('registered','candidates','review') for p in (HERE/folder).iterdir() if p.is_file())
+    (HERE/'revision-manifest.json').write_text(json.dumps({'new_poses':records,'outputs':{p.relative_to(HERE).as_posix():sha(p) for p in outputs}},indent=2)+'\n')
+
+
+def verify()->None:
+    frozen();data=json.loads((HERE/'revision-manifest.json').read_text())
+    for rel,digest in data['outputs'].items():
+        if sha(HERE/rel)!=digest:raise SystemExit('changed derivative: '+rel)
+    for item in data['new_poses']:
+        im=Image.open(HERE/'candidates'/f"{item['name']}.png")
+        assert list(im.size)==item['inherited_a_transform']['native_size']
+        assert im.getchannel('A').getextrema()==(0,255)
+    print('Frozen existing family, source/raw inputs, native alpha/canvases and derivatives verified.')
+
+
+if __name__=='__main__':
+    if len(sys.argv)!=2 or sys.argv[1] not in ('build','verify','-h','--help'):raise SystemExit(__doc__)
+    if sys.argv[1]=='build':build()
+    elif sys.argv[1]=='verify':verify()
+    else:print(__doc__)

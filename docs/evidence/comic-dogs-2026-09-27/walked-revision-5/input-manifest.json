@@ -1,0 +1,928 @@
+{
+  "inputs": [
+    {
+      "path": "art/events/charging_dog.svg",
+      "sha256": "e87b6bcbf885f9a61f79638e286c6e78503866486fe501b3e4054857241656ba"
+    },
+    {
+      "path": "art/events/charging_dog_b.svg",
+      "sha256": "92816032e9755e9af8adde073e15be1ad51e804a9450e9b4df46ddde19b3c9fd"
+    },
+    {
+      "path": "art/events/charging_dog_back.svg",
+      "sha256": "ad9503d5f97ec3c9fb88dadfbfe1f969418b88d0d3e43c769a8c5f2f75b6d99d"
+    },
+    {
+      "path": "art/events/charging_dog_back_b.svg",
+      "sha256": "b15914325fa751cadb86d2eb9633284330bcc1f8463f8e9dec3b32f6b22ebc1b"
+    },
+    {
+      "path": "art/events/charging_dog_back_diagonal.svg",
+      "sha256": "0fc9176de0bde691733bb01c7385cc22adc5c3ee11edbd00393d3b47dcbf9ffe"
+    },
+    {
+      "path": "art/events/charging_dog_back_diagonal_b.svg",
+      "sha256": "6df33a037e23d115af01cae545effb2c63649f445eb961b361e78fc0eb48b4b3"
+    },
+    {
+      "path": "art/events/charging_dog_front.svg",
+      "sha256": "4acbf541f83329d8ba082589c57958995c267f0b93bc0f7e7e39589d1a838eec"
+    },
+    {
+      "path": "art/events/charging_dog_front_b.svg",
+      "sha256": "7d095e8f65af4e2bfd0cc512e3e2863ce231db6a9c79c4f4418a26e368cd706c"
+    },
+    {
+      "path": "art/events/charging_dog_front_diagonal.svg",
+      "sha256": "934f185f962113a516359cb63d662ed58796a32d011f80dcaa22c0a45156cf36"
+    },
+    {
+      "path": "art/events/charging_dog_front_diagonal_b.svg",
+      "sha256": "fff274702becf61c16b7cd67b01f638477eda3deecb9a964b065d0aa354e1270"
+    },
+    {
+      "path": "art/events/dog.svg",
+      "sha256": "d183479a4af9b65e605a50332397ecedbe90b64221cbe4e0758ac3421d1e8f5c"
+    },
+    {
+      "path": "art/events/dog_b.svg",
+      "sha256": "cebfdee30a1e184055a8ef3a8673f54a2120b2a25eabe6dc1ca903967c23b072"
+    },
+    {
+      "path": "art/events/dog_back.svg",
+      "sha256": "5af4d9830236cf067ff42e4752e12c77bec1fec6984ebf7b259e1ac18adcc91c"
+    },
+    {
+      "path": "art/events/dog_back_b.svg",
+      "sha256": "09e838805302dca92f6516e2f9378e968ad66f5abab361535fad1eeacf776c29"
+    },
+    {
+      "path": "art/events/dog_back_c.svg",
+      "sha256": "e173104a3ef1121e13dc7b945908a4c0870d363c54d97b15ff3896ce8e21311e"
+    },
+    {
+      "path": "art/events/dog_back_diagonal.svg",
+      "sha256": "cb23d16b8e9fd37251bbec24a2961d7fa84bfb2782c45be4be23e762f0813f52"
+    },
+    {
+      "path": "art/events/dog_back_diagonal_b.svg",
+      "sha256": "35cef2725d825d07a1f853fa684d9ad045216484d33380c49b8d70e4a60d437a"
+    },
+    {
+      "path": "art/events/dog_back_diagonal_c.svg",
+      "sha256": "8d6b1faa8a12516263b0278232117198fc3143b590ed99154d21ff1bf0a1b676"
+    },
+    {
+      "path": "art/events/dog_c.svg",
+      "sha256": "fb87441c02c9a7e5125c7be22e34763efd2b683b530fc5e678117f1287c9617a"
+    },
+    {
+      "path": "art/events/dog_front.svg",
+      "sha256": "1ee6d6e8c6b8f401dcaa15269a8bb316f36e20417691dfa8b83cb5d95c384114"
+    },
+    {
+      "path": "art/events/dog_front_b.svg",
+      "sha256": "20948dfb8f6f4cc70550f150ec9ef93db9ec9ff362d49516f5aabfab000995e8"
+    },
+    {
+      "path": "art/events/dog_front_c.svg",
+      "sha256": "345ed95f788171f1254a3124ba64222ee3834c86fc2c9d6309eca70d5004242a"
+    },
+    {
+      "path": "art/events/dog_front_diagonal.svg",
+      "sha256": "5abe648bb24e18d312022053078587dd227156c117d024feed8b38def69d9d16"
+    },
+    {
+      "path": "art/events/dog_front_diagonal_b.svg",
+      "sha256": "ea09839c3d8e459b97847751459750c55b668a09c602f87ca3fa9968e686e411"
+    },
+    {
+      "path": "art/events/dog_front_diagonal_c.svg",
+      "sha256": "f1f04a1440ef69899d7754e4846543facf0434a990f71b828c84001eb5353da6"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/assemble.py",
+      "sha256": "0be2f805c0f229642df027822cf4f085a21ff5341d7af0e6b81797b175afc5f3"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidate-manifest.json",
+      "sha256": "00b4bcda10237ca818cf89ada4534780118fc5375d71ace5a67f1157bd30b024"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog.png",
+      "sha256": "d4eb1a06b5cf960f04e0813fba0228631de8d28bcbc887e99fd646e98ce1e72e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_b.png",
+      "sha256": "621bf6903a123884d2b04918ff7a0545e535bfc3680fbfdfbc0281aee35c1d4e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_back.png",
+      "sha256": "76ff4110d0490c2d127e5b75e8be21181bede83f11407a91685db454ffae9727"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_back_b.png",
+      "sha256": "9eef95ace4e48a1bf1c9688f7791c8eb8f8d473f4b1206dd5e0bb22900653d32"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_back_diagonal.png",
+      "sha256": "bd8d85505e9638839491653b3cf6573425eb5fd5fbfd286c811ed510d631104e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_back_diagonal_b.png",
+      "sha256": "d3c6be57f5146ab6218e0e15c8bb85e125dbac10c80c3af4b069da02d21e1e80"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_front.png",
+      "sha256": "fbcfffc86f5f474e912eaf6eaf142a0da39d7c08d17aa5d0efc374c3737e24f4"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_front_b.png",
+      "sha256": "be7c3a1e9bdfd2fb52b75e692a5f0126b86a182d1c044e23aeb42450444ca1af"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_front_diagonal.png",
+      "sha256": "4d9475bf0a9733758d8a492871210f0d69c4ed22bd97f5cc13a40794e6ca5bd7"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/charging-dog/charging_dog_front_diagonal_b.png",
+      "sha256": "145dde80dbf67ec902b70d56a82bda57ff25601a044437f59f5e0607ef2e0b4d"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog.png",
+      "sha256": "99c9f9b7dd156d34d08d59181e2744975924a2cde661d288025c413ef15f7e3c"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_b.png",
+      "sha256": "11d45e4c6f92c827ab694d3791adeccf44b36a57642e6dd0d24efed751c8d6ce"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_back.png",
+      "sha256": "ce3a19ea0b1190108fca2ea23ae759b0fb3d9b053971bf62a7c1adee36f89319"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_back_b.png",
+      "sha256": "9bf16550668208647432f6548c9dca56b0d15e3e9dab331bdd88c6a9744b6a2b"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_back_diagonal.png",
+      "sha256": "ee214935477571cd99c8d182b157e822ff4405bf238bcbe4397e70715f01c712"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_back_diagonal_b.png",
+      "sha256": "bed042f08a9d4a281105f028418924e94f66cb6af318268c67e43dc2fc726050"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_front.png",
+      "sha256": "b6f407f1481df84fda7c06e164939e628efff61127f5aca40a51df4499d99062"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_front_b.png",
+      "sha256": "0176256656ca30e299e6f88067f9eb4e38f4e5150f18cc30db6cf77f7db93af8"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_front_diagonal.png",
+      "sha256": "8d9d1c227310637c45ba0f3824a570c77d1dd9bc3e0cf58218d42c1d836eb79d"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/candidates/dog/dog_front_diagonal_b.png",
+      "sha256": "f119fae361acb641ee7c94adce3d26d31b4801fe38f752ba01012cd98b7d8046"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog.png",
+      "sha256": "209952170104795e3308741ecdd7a6e92b9eb33d43054553010c05504b8c6986"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_b.png",
+      "sha256": "0009d02928f73f2fb97fb00cb23799da26d51265db38776cd8d8e85705897195"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_back.png",
+      "sha256": "c0c85f0807a85f9de00f41e5f5b4c859e1b9da2b4ff32b90df553e4da34b314b"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_back_b.png",
+      "sha256": "73628850c99f3dfd8357195a40275951b21f10cf3f3ea76ffdf0739138fc432f"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_back_diagonal.png",
+      "sha256": "ba477b7d323947caea0921520675643260e3b67ecf3517236a0368a0353121ae"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_back_diagonal_b.png",
+      "sha256": "870838cfb0f5e5074ebc2d12f756b08df68c8d0a472acd1777dc6fa0f895fecc"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_front.png",
+      "sha256": "800c4d910c914e6f6647073ac84ab26d7ec5b9c9446df17ce32f043a09fb9c60"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_front_b.png",
+      "sha256": "310ba495c269e4582cf234c1dc1829a7ec081fe26ec02f1a745caa65ea2f4976"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_front_diagonal.png",
+      "sha256": "09109f9488621036d7eeeca31c7578769c51d239aadf1359feff5585f34bbcbf"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/charging-dog/charging_dog_front_diagonal_b.png",
+      "sha256": "6db77c151a5b5f9954e1d0fb03fdd32486ac8d79a7bea93862498031cc303200"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog.png",
+      "sha256": "14a910e8226f76d083dbf6bb570d27ba7a6597053cc6e5c1d0589ca3c867a26e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_b.png",
+      "sha256": "8820d109f66717fc8b0310fab072734c12e196eab8ea535c5ddde9420bfd77b1"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_back.png",
+      "sha256": "94a4fb0e8118cee149cdf0b46ee4a6974162df8326f38032e25809ed49026d74"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_back_b.png",
+      "sha256": "0722e940304784c5990c614b118d25af6893f9088d094330f1f9e1c5addfdb05"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_back_diagonal.png",
+      "sha256": "b05519cb1bab51176dd07908ff08ad521a4c845ca651f76e79211f0787abb2dd"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_back_diagonal_b.png",
+      "sha256": "f199cbec85e10755c6da53c11eb897bda16369913176bd006529fd70a3759981"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_front.png",
+      "sha256": "e66f053d50cba3897fae0537215fa3082bc7267e408c992822ab3aa102c89c16"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_front_b.png",
+      "sha256": "c92c4aea2199d957957d19bcd6374f77332c8cf1b624c29cc1f97ba6af8b9555"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_front_diagonal.png",
+      "sha256": "fdf9035a3b400a2efa6c9831397fe7984833e74809f44cf18218cc20a5d0fa36"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/crops/dog/dog_front_diagonal_b.png",
+      "sha256": "49cd59cfaad84969b6d4944b53e7d0dd859e402b912250c15909855d66351641"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/input-manifest.json",
+      "sha256": "5f93533d5b6d7f70802380c086ec38610d96a4d0ad03585cdb456e09ecc0750a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/pose-comparison-charging-dog.gif",
+      "sha256": "259b9254bf9c4ed877d4204f2c4e369faf6fe10e6d363ab674631ddbb712ea04"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/pose-comparison-dog.gif",
+      "sha256": "c9e5bd64d1ed25d5418a8a8325f696270db3f38f890ac369f0090838e85caf15"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/raw/charging-dog-grid.png",
+      "sha256": "a674ad5a021b939ad90a40c91769cbd8dab7521dfddef8cb44e8bd96ec0ee793"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/raw/walked-dog-grid.png",
+      "sha256": "36b57216012e7c63398128bcd4bac717b946ac17cb5995495afc5bc92a923486"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/render-svgs.gd",
+      "sha256": "59aff8a9923550a94f3ef371e22b12fefa7a507fafbc26550b246d66d1afc506"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/review-charging-dog.png",
+      "sha256": "e9d5462f49d1075105607d93e0578f2c428eb588b573b08080cd0a843ee743be"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/review-dog.png",
+      "sha256": "bfafcf9b50a0b932dcebafc622eb7b91fe6077482332b494d90eb92a72b74b5c"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-grid-charging-dog.png",
+      "sha256": "d2d6f75a4c475c62d700e01ed001f02f2ed90f20705441dfe7ddde2f85280311"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-grid-dog.png",
+      "sha256": "a8ef7c0e708f35879fd241d84f1ea138d8897130c37a063d9af1df7e79357376"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-manifest.json",
+      "sha256": "53242cf6383eb015163516ecbf5302855e4c785128be5d928ab006e497594114"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog@1.png",
+      "sha256": "36d25c2c5b6cdac7c19d16b508b3d8af84e18f822c8c6f3699a06b577f2ccf7a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog@6.png",
+      "sha256": "b1f5bebb16116ae717a572a09b554b15eae0ad3ab44d506ceefb0f5c12141cc8"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_b@1.png",
+      "sha256": "d4f117f357c5b055248445eb411c54e4259499ff48595e7e010e90ec7beaf370"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_b@6.png",
+      "sha256": "212555753582a079b14b47e2cac1a5d8bdfb78a35a3f789039f6fdd3318d40a8"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_back@1.png",
+      "sha256": "82f911b6337c74754616a82d9b6aed95b7650f07302711ee515e193b41e2c28b"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_back@6.png",
+      "sha256": "5d748776dedd3bb623e21b94953796c5efcdc27b1eafb791d0c1b23addb4bd64"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_back_b@1.png",
+      "sha256": "8a5a503cbadd75c7658ed1bca320704481996741c33661655c81772251e3370c"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_back_b@6.png",
+      "sha256": "9ecf0a885f21a97c1f711bbea11b53b807dfc94f860f7c951a07231aa5fc28b0"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_back_diagonal@1.png",
+      "sha256": "c6fee97ee17fdde7d3c8d2284899406ff68dc2b19435ff2124997eb648828940"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_back_diagonal@6.png",
+      "sha256": "17f2b50b9dd316207f3e2d540d3f1eaef31211ba9b43b39cbd4ff40707388043"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_back_diagonal_b@1.png",
+      "sha256": "d9b7fcb28a514403f22124e3f506e0ff1444c9c6348384e3e8cf336d344f9b39"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_back_diagonal_b@6.png",
+      "sha256": "f8830f60ebf1911119640c494dab13c5377d0045906ef49cd174336eba2871fe"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_front@1.png",
+      "sha256": "f35351d5e52e748eb2b6acc572e132479ab17a9486faa8887d8b9783f8f9c81e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_front@6.png",
+      "sha256": "878437b1fcfcb9046c11af3dacfcb0152a6cd7e0ea5ecef64bea9bee1f9c62a6"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_front_b@1.png",
+      "sha256": "9395722d7224ea0e2ab1c9977c72da69d097d627c294364335e60af54bbe25a0"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_front_b@6.png",
+      "sha256": "ec17a2aa17ba0c999fc9d9dac371595b07df95985e286b231b8aff1011cacbb7"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_front_diagonal@1.png",
+      "sha256": "631ffd324f3d1af0fecd78cabeef95fbbb0e84e7e74d4f9f7ef82eadbae88900"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_front_diagonal@6.png",
+      "sha256": "ccbaed5ff143eb4380c2d9031ca9a38397f8e714aee2ec92f03e446bdc0f64e3"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_front_diagonal_b@1.png",
+      "sha256": "9a9e2ab3ccad7f1f108d39dcd9e858aea4b5705c36ff5141ef963f60b04dd08a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/charging_dog_front_diagonal_b@6.png",
+      "sha256": "dff677531b72ef11c68c9bebb96dc36329bf792e591356d5aa99aa18f2acdbe8"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog@1.png",
+      "sha256": "edbe4d7fa9cb5ccb608045070e502a1c3608d127fbc98e433b4cb3d81af379c6"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog@6.png",
+      "sha256": "c16b0bf1aeab1c4d30ed9ff008c1e48fedc0d847151c67f03d97a5c79b279a27"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_b@1.png",
+      "sha256": "eeed8474357779f4aeb9c7d4840bc399c57b97058991ed8ec0ffd6c41df4324a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_b@6.png",
+      "sha256": "da34f0739535516fd6c250cb205388f62c9b8109b85895ed6f494598548f2f03"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back@1.png",
+      "sha256": "f094839891a9d270de399c64c33411474a3a9917d93e821e21bdf86b6418a5f7"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back@6.png",
+      "sha256": "c063799e90a0415ae48da040484173c15f7b6b69e2cdc0caaaebc60c6d190476"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back_b@1.png",
+      "sha256": "df3cbc864ee7b4f9220aab38c412b4a88cbb676da8da9755b5aa46a417d1ccfe"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back_b@6.png",
+      "sha256": "bc9d16476d9082f8c369822fa789d94651ad4c9fd85c9be91d43b9dbe5793c43"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back_diagonal@1.png",
+      "sha256": "3173391a70b0cf0f98af4833a644e85fc844f1b457614f6346f35f6183810ec4"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back_diagonal@6.png",
+      "sha256": "b8d4a693f01493593b9c0a718ea5023c56afed16e2854688f56a99f6acbd3619"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back_diagonal_b@1.png",
+      "sha256": "2682326b4cbb967ed7c9ac719ace5b83f0f505060fd5c4defedbd26059b17239"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_back_diagonal_b@6.png",
+      "sha256": "61a235fd6898adddb1c1413f550d2a390cf2116edf0625493d4b3cd7c2e81e1f"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front@1.png",
+      "sha256": "2960c320c792319e390ad3aba1e470c18d9d06ff82c31d21b21548a75fc4d3e9"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front@6.png",
+      "sha256": "2d0187fc1e4ecded84181018ad933718ebf8aec79a43a600e8bf7f4981df0582"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front_b@1.png",
+      "sha256": "29d4cdeb4c4d73ecc33f709c97ac815078380d1d20b6e340684c9a6085651477"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front_b@6.png",
+      "sha256": "c5ed35e4250aba9267345f4a180c5c3066d40b5b99520c0af6d311b3e92ba667"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front_diagonal@1.png",
+      "sha256": "96f0b467913adf7ed0f5d7dcdcf0dbae26dce654936bd41a8284a2180ea9495b"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front_diagonal@6.png",
+      "sha256": "da6eb87d8bba6f127612dae4927e50d7a6b6c20c684aa52c41bbdc0651296d51"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front_diagonal_b@1.png",
+      "sha256": "498a53fc71f494976210a2cf580059f817566bfa473369674d3b2a8732830f4a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/source-renders/art/events/dog_front_diagonal_b@6.png",
+      "sha256": "a73af6e1f4b2213d28b514402735562b12b7da54783007b0a02af6376e478e91"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/sources.txt",
+      "sha256": "01a4c2a826ce296682786642f578dd61607209124671433055f2718e65f7390d"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/assemble.py",
+      "sha256": "9c99b67e82efeddcb196d5a5d7188dc802287cc513e034229bbec8b6036dfbc8"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/candidates/dog_b.png",
+      "sha256": "f7de2755b13f57a544bf74b4ef31820efd97239028f4e55f885feab403bc4847"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/candidates/dog_back_diagonal_b.png",
+      "sha256": "5cefff183154d86201f23fd86d95b37765fed01a3de9a09c1622dbe6ba06b123"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/candidates/dog_front_diagonal_b.png",
+      "sha256": "68d8d8e0dc7c476e980d913f4fe5efd08df5f59d5e9a5c8659da54c4606231a3"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/crops/dog_b.png",
+      "sha256": "8af4d03369c9adbaa027bedceec378d2f8a4ed036b0c368acfb6ee65345fed62"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/crops/dog_back_diagonal_b.png",
+      "sha256": "76c18cbb4fe6cb3b0e860d0ef645db058768788c531d497136dd59001b43587e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/crops/dog_front_diagonal_b.png",
+      "sha256": "d4f2a4c9cdf6166e4210c81d851132e11666a4678abaaa0dde4ad4e8c2aee39c"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/input-manifest.json",
+      "sha256": "191afc6f1c477132241b9150f774a5542711d5f87fb294b790c11f9d428e7fe7"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/inputs/authoritative-pose-grid.png",
+      "sha256": "769afd130e04b09f403f196fe5c8770ca8e1fd1069ca95c88e2fe27bac82c4ba"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/inputs/defective-target-grid.png",
+      "sha256": "bd9b805b0c3b0aa8dfc3b9c48f7ba1e95e7857e9637f94c862c81e57101ff899"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/raw/attempt-1.png",
+      "sha256": "5078a2518a4c9cf58f9fbcc5392454abe9f239da375266f5dd384bc16695ddaf"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/raw/attempt-2-b-frames.png",
+      "sha256": "7c3b47eed75c9abc1f68300ffca67b7af44aec44ffac84064bbba3c57bb0d0d2"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/affected-a-b-sheet.png",
+      "sha256": "9a88cd29437bc0987190868020d4f6302be4708cffc730ed342a6ddfbd4ebd7a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/affected-a-b.gif",
+      "sha256": "ccffdfd0d5ce25f1d7d81414890c9538e26e53d75a705bff2ca3eea86ee9a35a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/affected-high-resolution.png",
+      "sha256": "1b897211c992317c27cdd022502a6d39839761d11e8ff6fea7b89a4675f530b4"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/current-walked-a-b-sheet.png",
+      "sha256": "ad299fb9c9c8e9d227e63e0d60ef5ea4de6bd5250303b09bdaad82299670bed7"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/review/current-walked-a-b.gif",
+      "sha256": "8ea06358d55edaea30dfd7ec5fbd7ab6dceaefd3db95a8c717c7926277eabc00"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/revision-manifest.json",
+      "sha256": "84aea3c41d324af334726f9bec8895fb09b78c2a8c01cfbd33e6c6e3b8ac2f85"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-2/source-input-manifest.json",
+      "sha256": "bee3077372cb2b47efbcd2b1aec2aa9e2d598d518239b9a74fbacdf420d179c5"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/assemble.py",
+      "sha256": "bb474605a37123ea3a8a85fb72d7fca3bb6f8acf6496e87137f9ba8e460a6083"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/candidates/dog_b.png",
+      "sha256": "0cc2a33b356b52a3f7914e2362f4805f52f1cf0c9989e252c0ad8dd9cde1f189"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/candidates/dog_back_diagonal_b.png",
+      "sha256": "ba3ebfae8826e908dac6a42d7477ee1bcdaf5be6c5f750169e0a064b409782fe"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/candidates/dog_front_diagonal_b.png",
+      "sha256": "08301522938665d5dd12028d39297e2feb8359b9ec1d883e0e222f77023c34fb"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/front-thigh-guide.png",
+      "sha256": "7f5e2ca576f7b87167f27b4c36cd8a94efd5786106f29fa706cd373298f11f0d"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/input-manifest.json",
+      "sha256": "95e6dfdaa9924fb93d5eaa31f00b2c175b1d4c4f21e794b07e4b127476f95f70"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/pose-guide.py",
+      "sha256": "bf1aa5f8e09595a706151bed6c92026040b3c99c12d0d42b2e8e1fc3d88ca5b4"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_b.png",
+      "sha256": "3b35be57144abf427cc11ea763b668641b4c85b1dd1dc57bc05a77cb92d69ad8"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_back_diagonal_b-connected.png",
+      "sha256": "365357478d3c62611290ba23ffb01dfbf9bf3988f6c2a70c655846a4961af22e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_back_diagonal_b.png",
+      "sha256": "75753db58eb461db354dc44127254297dda083585966d76e38e956870b652b39"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_front_diagonal_b-from-a.png",
+      "sha256": "6794f4c12262ce7f0a53992692da5290d84c0cb27060efb9b1b4bb10ffe4d2ac"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/dog_front_diagonal_b.png",
+      "sha256": "bc528a6bfeb8670fb4f50d6dcec3e83a9264d14b3fe66e988e64f9877560911e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/front-guided-hook.png",
+      "sha256": "1185ac5ed5e3be1e6024169b2618a92b830565a5b68011cdfbe43af871fe4971"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/front-lost-haunch-line.png",
+      "sha256": "5c51278b1c3ae003d4a2e1d172cb91e1a6ac2e3597d908066a55ea777e9cef9d"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/raw/front-refinement-hook.png",
+      "sha256": "b447e56c1c8c48e9c152738a3e00ef2a5c4b29a691e6569131528beb3dc35516"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/refinement-input-manifest.json",
+      "sha256": "27ba80176c6725ce431e9126aed8cf3020269c41df304579abf9bf45d4ca93e9"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/registered/dog_b.png",
+      "sha256": "c3742f073bc784164bf69238d915a6649a2599a829ebd4ce9f1a1a2239b77b12"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/registered/dog_back_diagonal_b.png",
+      "sha256": "9ca90bc265af0aec63465b2b64b4f3255b1714c1229573c01a17ac491a6502fe"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/registered/dog_front_diagonal_b.png",
+      "sha256": "8ded029a7c582ed6f5f529e0b46316bca69cc2a13a50447f9d4051a2cc70f7e4"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/all-facings-1x.gif",
+      "sha256": "62c1eea2296e752a3ac316669831732d557c2ab683119da38092fff153b0e168"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/all-facings-1x.png",
+      "sha256": "92ad9b6ada11c2e50aca710131a628fcfaff75909f69542755442f9f71b0723d"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/all-facings-2x.gif",
+      "sha256": "b6cabfa89adb2952c37589da12d4e958740595b20f37cc82ab4a6b30fccefcd1"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/all-facings-2x.png",
+      "sha256": "78b25447ec88ed50da189b92bf2e2b0df7866949b7dbf2d319ff1b527b5ded9c"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/all-facings-6x.gif",
+      "sha256": "be49e4dee7f030ea3fa49227f3663c0c51632a80e01addfa42375ce9514086bf"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/all-facings-6x.png",
+      "sha256": "0ba049b58271727b1156e08882a8b02f80e1b875e0031c836a96e6a39723d1ff"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog-joint-trace.png",
+      "sha256": "c4be3cea292bbea62094333fe84c944af8b32903d0797e5f7f6ead9f26880f49"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog-torso-loop.gif",
+      "sha256": "17468d3e1f6402873a98fcf946f6b9d17e1f8cac32375d5212632dc9187674ad"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog-torso-marks.png",
+      "sha256": "513147b0605c009f9fbdca887b148dfd6ec5d952797c118931477c31f70d819b"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog-torso-pair.png",
+      "sha256": "421eb1ec26618314177a43c26f0c7447b68ebf3405b68b245d94f79f48ef246a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog_back_diagonal-joint-trace.png",
+      "sha256": "d9c02e302b4f6e8bfb499c0e48fc7e64a0aa490a5fb21ad90afe4b92a36cd402"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog_back_diagonal-torso-loop.gif",
+      "sha256": "0f22de5a1f1ccee6c809c8ec3d1ace421f3cf3a6c2c38534382ff1951c12b0d0"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog_back_diagonal-torso-marks.png",
+      "sha256": "7efebe51b13a85c77b822d2cc99fb5bb1b25b798b3d27f72d461656273ef5733"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog_back_diagonal-torso-pair.png",
+      "sha256": "0ee4d4fe34f74b3b4f52450c59d606980c058d5a69d74fcc3378a376ef2cee8f"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog_front_diagonal-joint-trace.png",
+      "sha256": "a08cd68d6e197a594c480d6b7a6ecef11b0181efc2edbe2abb5e839483c466f7"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog_front_diagonal-torso-loop.gif",
+      "sha256": "1cde099bd0447db205017fe109a796260558304bab4a90c4b07e5cf787536cce"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog_front_diagonal-torso-marks.png",
+      "sha256": "210b72a2f6f36355609278dd3df692c95cc1471fdf8320bd9be23caf6113f228"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/review/dog_front_diagonal-torso-pair.png",
+      "sha256": "6becb8d29eec4cfc9923230c27d42a8f650e4f6ae9a2f8f5b3d188f937dbbfc0"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/revision-manifest.json",
+      "sha256": "7e798f026d4991c85e91c9f2e5e6b8f850821bc90a08d6becac3bcbe9e10fd2a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-3/verify-rebuild.py",
+      "sha256": "0803f661d5d0f1012fb839179554c2b22f013ff4b57eb46323fe96f258b50a8e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/assemble.py",
+      "sha256": "9dd73e7db2f775b8033fc58f3b5373c3010b0942a3be5806a730125e2fc524f7"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/candidates/dog_b.png",
+      "sha256": "69b2a657929b993b2b4f0433140945b2bff648f9ddc18b8a109cc354b7c48b39"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/candidates/dog_back_diagonal_b.png",
+      "sha256": "72a3d0dab31206a30b69452cfd7b5ea48b92d63cec663d841968a5a51e51c056"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/candidates/dog_front_diagonal_b.png",
+      "sha256": "8a454d8cd59e61910927ada980d4796e212af49892c2a2ee28072128f3000b5e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/diagonal-input-manifest.json",
+      "sha256": "99af6224c220765c109fd101a19f2c0ba5556a31490932b7ce6aa5f80b4f62d6"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/input-manifest.json",
+      "sha256": "d3cc2c2953c8b568913a9f52ee6b3536a2ceda266034fbd8ac94ead1ee3c4a2e"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/raw/dog_b.png",
+      "sha256": "8f4b3a9671d05c51e34b7e5e34ccdacd4264784ed5ecf8780df0131e1cdd97c5"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/raw/dog_back_diagonal_b.png",
+      "sha256": "68d6ea985326b7075a70fa3c2a08c30dc1f6aa83e17267a4e05788997ad2e61c"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/raw/dog_front_diagonal_b.png",
+      "sha256": "7f98580f732931e7dee5490df46de7c644dad8ad75925de97dad60ea1a02c1fe"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/registered/dog_b.png",
+      "sha256": "d66ae6db78cd5115008a4fbb37b09025ace92c35fa4b38556361890d435176c5"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/registered/dog_back_diagonal_b.png",
+      "sha256": "dfa14dec0f7d6e8c55b2c1c76ffeccd687882d7b474578a41b84d48f788eddd4"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/registered/dog_front_diagonal_b.png",
+      "sha256": "f0b5a3ba3442afdec51a1d12151b132d50873689cf099810f9c4e94ab4fd352c"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/all-facings-1x.gif",
+      "sha256": "7d5c53b82d094d6259b75556452102f47867eb8cd8b2165945f958dc4cb973ff"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/all-facings-1x.png",
+      "sha256": "74a4f10418720e79891a3fdfef2aa507fec585c43c27b8d4a87bd6c8a9da420b"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/all-facings-2x.gif",
+      "sha256": "b6fd322b3f8502c0ff10bfe98186048b5681b3295091e1373aeb192b98e04390"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/all-facings-2x.png",
+      "sha256": "11323bee6558c139d8b68bd485fa9a8583503304a1239eb7257f580737332316"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/all-facings-6x.gif",
+      "sha256": "50b163c9881022b6f8742f46462ca3fc7db577c71e7ea81ab02520a869766aae"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/all-facings-6x.png",
+      "sha256": "845fedb048ae1f9a743f8a8f2cb2d90a172641f5cc5005c4856ed6395be9ba6a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog-body-loop.gif",
+      "sha256": "2dce3470b12f52429b05cb7572fb44f5354abc4d79e479d8f87d3dfc4258453a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog-body-pair.png",
+      "sha256": "e328b7c432413a5637f9d8eb71307a946f6e13492fd00490daa6866865aec132"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog-leg-silhouette-loop.gif",
+      "sha256": "e81f8a56133f94975da567a6e07ef6f41560f90b8231bde1ad5421cb692d8a15"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog-leg-silhouette-overlay.png",
+      "sha256": "3768474d3788fbf4d9b7a07bb808b4820fbd72974ca0dca2e4007e99350c2f41"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog-leg-silhouette-pair.png",
+      "sha256": "159c9e7914bb96722f8bdcc808b42698c9755e3e4f7bfd3cc3b60257494424b3"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_back_diagonal-body-loop.gif",
+      "sha256": "8dba57dbda97b7ebe8e681072c54c2a11b73e5265a16c38eace07a109d7c00bd"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_back_diagonal-body-pair.png",
+      "sha256": "a5069906461e1031c4fa8b5aa308b928b9f426b94dd6834f16fa0ee8d77553de"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_back_diagonal-leg-silhouette-loop.gif",
+      "sha256": "449ed75d879f3daa21058894dc858a739bd5bc78e9e5567dcbe0f75b09a16542"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_back_diagonal-leg-silhouette-overlay.png",
+      "sha256": "b25cb1e7bc088c6be49a9c32658960546db3f167a55b1649f7221dd37d830dab"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_back_diagonal-leg-silhouette-pair.png",
+      "sha256": "8558dd2958b13047398f6b03b333b4337116440bf4de27bfad44b73e3d4ebe7b"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_front_diagonal-body-loop.gif",
+      "sha256": "04299fe01b6132fad61f6637941a191ae895f74cb5b76abd3a2516021f6c82dd"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_front_diagonal-body-pair.png",
+      "sha256": "1ad92900f06e5ce3ae9dabb70da041ff6af4b81386f4cc8eafc9326cde48a0ec"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_front_diagonal-leg-silhouette-loop.gif",
+      "sha256": "155fdd92589e43c16719fbbbb8456d1ae32c5b5f79e16d0807d0e1317d0fbd79"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_front_diagonal-leg-silhouette-overlay.png",
+      "sha256": "2d53cd4f55c7f4d4e18465c8f777d844d87be3c61da33cc3c4008852cbc62ab4"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/review/dog_front_diagonal-leg-silhouette-pair.png",
+      "sha256": "759225fc092646bfb13e5198f0c70e934d9ef27f3bb3d9d5e590d540b7ace1ab"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/revision-manifest.json",
+      "sha256": "979fef7340c6ba8c20ff7f7434e5dd800755e5a20bb52268214c72c4dfdc55a6"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-4/verify-rebuild.py",
+      "sha256": "a7074ac514d96b9f674427711397c7f3dec0f151b6cfab927a106f1a989d0996"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/pose-paths.json",
+      "sha256": "2679101bcf9de7fb01df03415650ea75396878a2a50dd99bb603a915893d026f"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/raw/dog-c-front-ownership-attempt.png",
+      "sha256": "8d3bbb6ff65f65a0c4dc8fd25d03a13265ddc12d4ccb6ebd5453bb44df7044bd"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/raw/dog_c.png",
+      "sha256": "66a008ee2a136db6e309b81eed752edffc71f26b86b087a051f3d703f6964756"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-manifest.json",
+      "sha256": "f356a6b4c17f98c1039bd00be0ea64e7a9fff78c68daadc09267115921a48d41"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_back_c@1.png",
+      "sha256": "6c45eca12b15415158c7342100e92e69a43d32367982578555ebd52accdacb0d"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_back_c@6.png",
+      "sha256": "fa40b823f23f72dd0ae1be2c9626e16abda1698b4d34cb4f1f7ef0a37168baf7"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_back_diagonal_c@1.png",
+      "sha256": "756b66763489b904dd5e178f61525cfc13e244d825662a87d76a825d805e5511"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_back_diagonal_c@6.png",
+      "sha256": "7ebfaf5f72ba4999b0ebf15242c460b6841d11c3c92b2c01cf4edc78684f7e9a"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_c@1.png",
+      "sha256": "6b70399dac2c018a3bcd085c21f2f9b220e5f364b8853756266dfee9287fdc79"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_c@6.png",
+      "sha256": "018f6a584747cbba0fac66d5f4d4f26969ad1c6363da5d21509e095f29ffcc99"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_front_c@1.png",
+      "sha256": "76876ea07d7d3b7deb26b0243a14b91ce4acab004994c1e32fed2bdb173ec047"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_front_c@6.png",
+      "sha256": "7ab7ef3bcb5b5284316db5843d4f72142f1fcb2e85790e587f37c51e76fd26f3"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_front_diagonal_c@1.png",
+      "sha256": "81f1a84bf82b2dc3275dab08112d0624185a4d531c3b1aca2a40c65942c8c6a5"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-renders/art/events/dog_front_diagonal_c@6.png",
+      "sha256": "7c3c185668dec16ca381ed40acb86fb459624ba19592ba23b2e5fb2c37d72c24"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/source-review.py",
+      "sha256": "cfde67d7057cc35e5ee52f082a4aa920930324af9a63fcd62a35f305a2caef8d"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/sources.txt",
+      "sha256": "65951063da798c1a5f5f665498fbc010031ac8adbc7655fca64e8ab9a6985b69"
+    },
+    {
+      "path": "docs/evidence/comic-dogs-2026-09-27/walked-revision-5/three-pose-sources.png",
+      "sha256": "fc61606e55a870a2a82700e140081e01758874b28cb8016eb7f72bbe778e60e1"
+    },
+    {
+      "path": "docs/style-references/graphics-reference-cardinal.jpeg",
+      "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
+    },
+    {
+      "path": "docs/style-references/graphics-reference-urban-01.jpeg",
+      "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
+    }
+  ]
+}

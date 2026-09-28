@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_the_gate_stores_the_key_it_compared(t)
 	_test_a_striding_event_moves_its_key(t)
 	_test_a_bobbing_event_moves_its_key(t)
+	_test_the_normal_dogs_opposite_step_moves_its_key(t)
 	_test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t)
 	_test_the_marks_flash_is_in_the_key(t)
 	_test_the_caret_strength_is_in_the_key(t)
@@ -142,6 +143,29 @@ func _test_a_bobbing_event_moves_its_key(t) -> void:
 			"a walking event's lift moves the key on a tick where its stride frame did not")
 	t.check(absf(instance._current_bob()) > 0.0, "and the walker was actually bobbing")
 	instance.free()
+
+## The normal dog's first and opposite steps are both `_gait_stepping()` and can sit on the same
+## bob, so the half of the stride is its own term in the key (`EventInstance.dog_picture()`): two
+## states that differ in nothing else still draw different pictures and must not share a key. The
+## charging dog has one stepping picture per view, so the same two states are one key for it.
+func _test_the_normal_dogs_opposite_step_moves_its_key(t) -> void:
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
+	for id in ["dog_walker", "loose_dog", "charging_dog"]:
+		var instance := EventInstance.new()
+		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, route, Vector2.RIGHT)
+		instance._gait_moving = true
+		instance._gait_phase = PI * 0.25
+		var first_step := instance._picture_key()
+		instance._gait_phase = PI * 1.25
+		var opposite_step := instance._picture_key()
+		t.check(instance._gait_stepping(), "%s is on a step in both states" % id)
+		if id == "charging_dog":
+			t.check(first_step == opposite_step,
+					"the charging dog's two halves of a stride are one picture and one key")
+		else:
+			t.check(first_step != opposite_step,
+					"%s's first step and opposite step are two keys" % id)
+		instance.free()
 
 ## The crouch *is* the telegraph (`_draw_cat` swaps the whole family at `is_telegraphing()`), so the
 ## tick the dash starts has to move the key even though nothing about the cat has moved yet.
