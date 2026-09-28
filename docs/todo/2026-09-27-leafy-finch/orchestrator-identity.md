@@ -45,5 +45,15 @@ goes out as, by what it does, and the decision record that closes this entry nam
 the record it supersedes on this point. Like the other four identities, it does not work in a
 cloud session, where the session proxy serves only repository-scoped endpoints.
 
+**Its settings are worked out before the app is created** (statement 24: "we need to figure out
+the exact required settings before creating that account. last time we had to do two rounds of
+settings updates."). The PR that builds this item lists, for the player to confirm before they run
+`create`, the app's full permission set and every repository setting the role touches: the rows
+above, `.claude/settings.json`'s allow rule for retiring a branch (today a prefix match on `run
+claude-coder -- tools/prune-merged.sh`, so a retirement as `claude-orchestrator` needs a rule of
+its own), whether the `main approvals` ruleset or any other ruleset has to name the app, and what
+the inbox scripts need to close, reopen and label an issue. The player creates the app once, from
+that list.
+
 **Proposed, not asked for:** its permissions — the coder app's set without `workflows: write`,
 since a docs-only PR never changes a CI file; the alternative is the coder app's set unchanged.

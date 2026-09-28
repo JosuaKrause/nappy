@@ -7,12 +7,13 @@ now and the player's own comments on it, in order.
 note** (statement 19: "for now let's also require that inbox issues are created by me so random
 people opening github issues don't get their comments ingested into the queue"). The repository
 is public and the template's label goes on any issue opened with it, so the label alone admits
-anybody. An issue the capture script of `capture.md` opens as `claude-orchestrator` or
-`codex-coder`, holding the player's own words, counts as the player's (asked, the player answered
-"yes, otherwise the workflow wouldn't work"). So the script reads an issue's author and skips,
-with a line saying so, every issue opened by anyone but the player and those two identities, and
-every comment not written by the player. The transcription check of `transcription-ci.md` fails on
-a `Closes #N` whose issue has any other author.
+anybody, and the rule exists so that people outside the project never put work into the queue
+(statement 23). An issue the capture script of `capture.md` opens as `claude-orchestrator` or
+`codex-coder`, holding the player's own words and carrying the script's tag, counts as the
+player's (asked, the player answered "yes, otherwise the workflow wouldn't work", and chose "Yes,
+marked by the script"). So the script reads an issue's author and tag and skips, with a line
+saying so, every other issue, and every comment not written by the player. The transcription check
+of `transcription-ci.md` fails on a filed note with any other author.
 
 **A label on a note says which band its work is filed in** (statement 21: "also add to use labels
 for when a task should be queued, now, later, etc"). The queue's four bands — `now`, `next`,
@@ -24,11 +25,12 @@ one in what was captured.
 
 When the player asks for a batch to be filed, the agent copies each note's current text word for
 word into a playtest file (`tools/new-name.sh playtest`), files the queue entries from it exactly
-as **playtest-feedback** already says, and opens one PR whose description says `Closes #N` for
-every note in the batch, so merging closes them. The player may edit a note until the PR merges;
-an edit made after the copy is caught by the transcription check and the copy is redone. After the
-merge the playtest file is the record, and a later thought is a new note, not an edit to a closed
-one.
+as **playtest-feedback** already says, and opens one PR whose description names every note in the
+batch (`Filed from #N`, never `Closes #N`, which would leave the note open and editable until the
+merge). Right after pushing the PR, the orchestrator closes every note of the batch in one action
+(statement 22). The player edits a note until then; from then on the playtest file is the record,
+and a later thought is a new note, not an edit to a closed one. A filing PR that is abandoned
+reopens its notes.
 
 The skill says where to find the inbox at the start of a session, so **session-cleanup** lists the
 open notes in the restart prompt and `CLAUDE.md`'s "where to pick up" names the inbox beside the
@@ -38,4 +40,5 @@ commit.
 **Proposed, not asked for:** the label's name, `inbox`; that the player's comments on a note are
 copied with its body; that a filing PR carries a whole batch rather than one PR per note; the band
 labels' names (`band: now` and so on, so they read apart from any other label); that a note with
-two band labels is filed under neither and asked about.
+two band labels is filed under neither and asked about; that an abandoned filing PR reopens its
+notes.

@@ -9,7 +9,7 @@ priority: now
 > get as close as possible to that. the reviewer still needs to verify the correctness of those
 > changes anyway. the CI is only a help"
 
-[bouncy-heron](../../playtests/2026-09-27-bouncy-heron.md), statements 1 to 21, holds every word
+[bouncy-heron](../../playtests/2026-09-27-bouncy-heron.md), statements 1 to 24, holds every word
 of it. **The queue, the review items, the playtest files and the decision records stay in the
 repository**, because an entry is reviewed when it enters the queue and a misread statement is
 cheaper caught there than built (statement 1). **GitHub Issues become the player's inbox and
@@ -49,4 +49,7 @@ history, no path-triggered rules — and adopted as the inbox only.
 agent writes and can get wrong. A first job lists the changed files against where the branch
 started (`git diff --name-only origin/main...HEAD`) and sets flags the other jobs read. The
 workflow always runs: a path filter on the workflow itself would leave the `test` check that
-`main`'s ruleset requires waiting forever on a PR it skipped.
+`main`'s ruleset requires waiting forever on a PR it skipped. A check that reads the PR's
+description (`Dropped:`, `No queue item:`, `Filed from #N`) reads it through GitHub's API when it
+runs, not from the event that started the run, because editing a description starts no run: a
+description corrected after a red check is re-checked by re-running the job.

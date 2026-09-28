@@ -339,3 +339,46 @@ to statement 19, the player added:
 
 21. **The player sets a note's band with a label on the inbox issue**, and the entry filed from it
     opens with that band. → leafy-finch.
+
+## The filing's review
+
+The review of this filing, in the orchestrating session, raised four points. **First:** the
+transcription check and the `Dropped:` and `No queue item:` lines read the PR's description or an
+inbox issue, but CI starts a run on a push to the PR, never on an edit to its description or to
+an issue, so a note edited after a green check was never re-checked, and "a note edited after it
+was copied turns the check red" did not hold. **Second:** the check's accepted authors were stated
+in `inbox-skill.md` only, and any issue `codex-coder` opens, a capture or not, would count; asked
+whether a captured note counts as the player's, the options were "yes, marked by the script" (a
+tag only the capture script sets), "yes, any bot issue" and "no, only mine", and the player chose
+**"Yes, marked by the script"**. **Third:** `.claude/settings.json`'s allow rule for retiring a
+branch names `claude-coder` only, so the new identity was missing from the places a role must be
+known. **Fourth:** the PR's description was out of date. The player answered:
+
+> "I'm not sure I understand -- the CI run would run for every commit. what CI runs are you
+> talking about? a closes #N comment is handled by github directly and closes issues when a PR
+> merges automatically. that is a gap since an issue could change after it was transcribed. maybe
+> let's change the flow to close the issue upon *creating* the PR. so no deferred "Closes #N" but
+> a single action by the orchestrator after pushing the PR."
+
+> "the guard is meant to prevent external people from poisoning the queue. currently anybody on
+> the internet can create an issue. and that is good for bringing things to our attention but
+> shouldn't be an automatic call for action"
+
+> "we need to figure out the exact required settings before creating that account. last time we
+> had to do two rounds of settings updates."
+
+> "we will update that"
+
+22. **A note is closed when its filing PR is created, not when it merges.** The orchestrator
+    closes every note of the batch in one action right after pushing the PR; the description
+    carries no `Closes #N`. So a note cannot change after it was transcribed: until the PR exists
+    the player edits the note, and after it a later thought is a new note. This replaces "may edit
+    an issue until the PR merges" in statement 6. → leafy-finch.
+23. **The inbox's author rule exists to keep people outside the project from putting work into the
+    queue.** An issue anybody else opens is welcome as something to look at and is never an
+    automatic call for action. The filer's reading, which the player has not confirmed: an
+    author check (the player, or the capture script's identities) is what enforces this, since an
+    outsider cannot open an issue under those accounts, and the script's tag chosen above narrows
+    it further to captures. → leafy-finch.
+24. **The orchestrator identity's exact settings are worked out before the app is created**, so it
+    is created once, not corrected in a second round. → leafy-finch.
