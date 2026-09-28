@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ci_classify
 import ci_no_handoff
+import ci_queue_update
 import ci_telemetry_kinds
 import lib_ci
 from lib_ci import Change
@@ -203,6 +204,81 @@ class NoHandoffTests(unittest.TestCase):
 
     def test_other_additions_pass(self) -> None:
         self.assertEqual(ci_no_handoff.check([added("docs/playtests/x.md"), added("hand-off.md")]), [])
+
+
+ENTRY = "2026-09-27-leafy-finch"
+ITEM = f"docs/todo/{ENTRY}/capture.md"
+PLAYTESTS = {
+    "docs/playtests/2026-09-27-bouncy-heron.md": '> "let\'s drop the capture\n> script, it is not needed"\n',
+    "docs/playtests/2026-09-28-snowy-moose.md": "Answering [the review item](../decisions/2026-09-26-M215.md).\n",
+}
+
+
+class QueueUpdateTests(unittest.TestCase):
+    def check(self, changes: list[Change], description: str = "", records: tuple[str, ...] = ()) -> list[str]:
+        return ci_queue_update.check(changes, set(records), PLAYTESTS, description)
+
+    def test_adding_a_playtest_and_filing_an_entry_passes(self) -> None:
+        changes = [added("docs/playtests/2026-09-29-new.md"), added(ITEM), modified(f"docs/todo/{ENTRY}/README.md")]
+        self.assertEqual(self.check(changes), [])
+
+    def test_an_existing_playtest_changed_or_deleted_fails(self) -> None:
+        for change in (modified("docs/playtests/2026-09-27-bouncy-heron.md"), deleted("docs/playtests/old.md")):
+            with self.subTest(status=change.status):
+                failures = self.check([change])
+                self.assertEqual(len(failures), 1)
+                self.assertTrue(failures[0].startswith(change.path))
+
+    def test_a_deleted_item_with_its_entrys_record_on_the_base_passes(self) -> None:
+        self.assertEqual(self.check([deleted(ITEM)], records=(f"{ENTRY}.md",)), [])
+        self.assertEqual(self.check([deleted(ITEM)], records=(f"{ENTRY}-2.md",)), [])
+
+    def test_a_record_of_another_entry_does_not_count(self) -> None:
+        self.assertEqual(len(self.check([deleted(ITEM)], records=(f"{ENTRY}-lemur.md", "other.md"))), 1)
+
+    def test_a_deleted_item_with_nothing_to_account_for_it_fails_naming_it(self) -> None:
+        failures = self.check([deleted(ITEM)])
+        self.assertEqual(len(failures), 1)
+        self.assertTrue(failures[0].startswith(ITEM))
+        self.assertIn("Dropped:", failures[0])
+
+    def test_a_drop_quoting_the_player_passes_for_the_file_or_its_folder(self) -> None:
+        readme = f"docs/todo/{ENTRY}/README.md"
+        for named in (ITEM, f"docs/todo/{ENTRY}/", f"`docs/todo/{ENTRY}`"):
+            with self.subTest(named=named):
+                description = f'Filing.\n\n- Dropped: {named} — "let\'s drop the capture script, it is not needed"\n'
+                changes = [deleted(ITEM)] + ([deleted(readme)] if named != ITEM else [])
+                self.assertEqual(self.check(changes, description), [])
+
+    def test_a_drop_whose_words_are_not_in_a_playtest_fails(self) -> None:
+        description = f'Dropped: {ITEM} -- "drop the capture tool"'
+        failures = self.check([deleted(ITEM)], description)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("appear in no file", failures[0])
+
+    def test_a_drop_naming_nothing_deleted_or_not_in_the_form_fails(self) -> None:
+        self.assertEqual(len(self.check([], f'Dropped: {ITEM} — "it is not needed"')), 1)
+        failures = self.check([deleted(ITEM)], f"Dropped: {ITEM} because it is not needed")
+        self.assertEqual(len(failures), 2)
+        self.assertIn("does not have the form", failures[0])
+
+    def test_an_item_moved_to_another_entry_unchanged_is_not_a_disappearance(self) -> None:
+        changes = [deleted(ITEM, blob="e" * 40), added("docs/todo/2026-09-30-other/capture.md", blob="e" * 40)]
+        self.assertEqual(self.check(changes), [])
+
+    def test_a_deleted_review_item_needs_a_playtest_naming_it(self) -> None:
+        self.assertEqual(self.check([deleted("docs/review/2026-09-26-M215.md")]), [])
+        failures = self.check([deleted("docs/review/2026-09-27-leafy-lemur.md")])
+        self.assertEqual(len(failures), 1)
+        self.assertIn("2026-09-27-leafy-lemur", failures[0])
+
+    def test_the_summary_prints_the_queue_line_of_each_entry_touched(self) -> None:
+        changes = [added(ITEM), deleted("docs/todo/2026-09-01-gone/x.md")]
+        entries = ci_queue_update.touched_entries(changes)
+        self.assertEqual(entries, ["2026-09-01-gone", ENTRY])
+        summary = ci_queue_update.queue_summary(entries, [f"now     {ENTRY}  leafy-finch — Issues as the inbox"])
+        self.assertIn(f"now     {ENTRY}  leafy-finch", summary)
+        self.assertIn("2026-09-01-gone: no longer in the queue", summary)
 
 
 if __name__ == "__main__":

@@ -49,6 +49,7 @@ ENTRY_POINTS = (
     "ci_classify.py",
     "ci_telemetry_kinds.py",
     "ci_no_handoff.py",
+    "ci_queue_update.py",
 )
 
 SOUND_FILES = (

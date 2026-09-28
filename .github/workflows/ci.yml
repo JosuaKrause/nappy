@@ -147,6 +147,17 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         run: uv run python tools/ci_no_handoff.py --base "origin/${GITHUB_BASE_REF}"
 
+      # A queue update's mechanical checks, the ones the narrow review made by hand (pr-review, "A
+      # queue update is reviewed for faithfulness and merged first"): no playtest rewritten, nothing
+      # open deleted unaccounted for, and the queue's line for every entry touched in this job's
+      # summary. The reviewer still verifies what this checked.
+      - name: A queue update deletes nothing unaccounted for and rewrites no playtest
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.classify.outputs.queue_only == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_queue_update.py --base "origin/${GITHUB_BASE_REF}"
+
       # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
       # ship; without it that test skips and the converter is never actually exercised.
       - name: Install ffmpeg
