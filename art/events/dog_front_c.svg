@@ -1,5 +1,5 @@
-<!-- Unbound third pose for the walked/loose dog; no atlas or runtime binding.
-     Neutral square stance between the existing A/B steps.
+<!-- Third pose for the walked/loose dog: the front's neutral rest, drawn through
+     `EventInstance.dog_picture()`. Neutral square stance between the existing A/B steps.
      Body, limb roots, materials, canvas and bottom-center anchor match dog_front.svg.
      Only the articulated limb paths differ. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="28" viewBox="0 0 30 28" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">

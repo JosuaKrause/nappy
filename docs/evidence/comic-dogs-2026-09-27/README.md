@@ -50,7 +50,8 @@ game.
   [charging-dog raw output](raw/charging-dog-grid.png) preserve the generator's first useful
   results unchanged.
 
-Every GIF outside `in-game/` is an assembled pose comparison, not a capture of live movement.
+Every GIF in this folder is an assembled pose comparison, not a capture of live movement; the
+[in-game bursts](../m109-comic-dogs-in-game-2026-09-27/README.md) are the captures.
 
 Both raw grids contain ten visible cells in the requested five-view by two-stride order and carry
 real alpha, with no floor, checkerboard, halo, leash, or cast shadow. The walked dog retains its

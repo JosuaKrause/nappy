@@ -15,7 +15,7 @@ ROOT=HERE.parents[3]
 NAMES=('dog','dog_front_diagonal','dog_back_diagonal','dog_front','dog_back')
 SELECTED={n:f'{n}_c.png' for n in NAMES}
 SELECTED['dog_front_diagonal']='dog_front_diagonal_c-retracted.png'
-MANIFESTS={'input-manifest.json':'719b236413cf78f099ccd871c3aaca0420a0bc02e6e8dd3097a8eacadff6f9fc',
+MANIFESTS={'input-manifest.json':'1dbd855ab6b59bd02aa53a5074999ed68fd29559cab01906c2fc668ad25d44a8',
            'remaining-input-manifest.json':'2c16d766dd313babca16b8deeb424ddd963231df88e5107e59a1e72a7ac808c8',
            'front-input-manifest.json':'38a4726b0785fda90f4447c1e79a572f0fe96c499b0b52eeddc6325c7411f700'}
 PAPER=(238,235,228,255)
