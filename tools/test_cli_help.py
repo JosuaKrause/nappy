@@ -46,6 +46,12 @@ ENTRY_POINTS = (
     "migrate-queue.py",
     "convert-queue-edits.py",
     "release-notes.py",
+    "ci_classify.py",
+    "ci_telemetry_kinds.py",
+    "ci_no_handoff.py",
+    "ci_queue_update.py",
+    "ci_transcription.py",
+    "ci_code_pr_queue.py",
 )
 
 SOUND_FILES = (
