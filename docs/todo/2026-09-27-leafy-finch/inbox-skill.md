@@ -29,7 +29,8 @@ as **playtest-feedback** already says, and opens one PR whose description names 
 batch (`Filed from #N`, never `Closes #N`, which would leave the note open and editable until the
 merge). Right after pushing the PR, the orchestrator closes every note of the batch in one action
 (statement 22). The player edits a note until then; from then on the playtest file is the record,
-and a later thought is a new note, not an edit to a closed one. A filing PR that is abandoned
+and a later thought is a new note, not an edit to a closed one (option E's "after filing, a later
+thought is a new note", which the player accepted with the rest of the list). A filing PR that is abandoned
 reopens its notes.
 
 The skill says where to find the inbox at the start of a session, so **session-cleanup** lists the
