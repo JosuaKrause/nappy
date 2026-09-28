@@ -32,11 +32,12 @@ triggered it".)* In Claude Code:
 - **`claude-reviewer`** posts every review and its findings, on either kind of pull request
   (**pr-review**).
 
-A pull request has no code changes — is docs-only — when every file it changes is Markdown or
-under `docs/`, except `docs/TELEMETRY.md`, `docs/COSTS.md` and `docs/ARCHITECTURE.md`, which the
-game's own checks read. The identity is chosen when the pull request is opened, from what it is
+A pull request has no code changes when CI calls it docs-only: `tools/ci_classify.py` decides that
+from the files it changes, and **verify**'s "What `test` means on each kind of pull request" says
+which files those are. The identity is chosen when the pull request is opened, from what it is
 going to contain. So the orchestrating session writes as `claude-coder` when it merges a code pull
-request, and a spawned agent writes as `claude-orchestrator` when it opens a docs-only one. **It is a convention, not a hard rule**
+request, and a spawned agent writes as `claude-orchestrator` when it opens a docs-only one. **It
+is a convention, not a hard rule**
 *(2026-09-27: "if a PR starts out as doc only and later code becomes part of it then identities
 will mix")*: a pull request that starts docs-only and later gains code keeps the orchestrator's
 earlier writes and takes the coder's from then on, and nothing — no hook, no CI check — compares a
@@ -117,11 +118,13 @@ conflicts under the **merging-main** skill before enabling auto-merge. **Squash-
 a background agent, not a polling loop in the orchestrating session.
 
 **Several PRs can merge in a row without re-greening each one.** Two rulesets guard `main`. The
-`main` ruleset requires a pull request and the `test` check — the doc lint, the boot check and the
-full suite, run on the merge result. The `main approvals` ruleset requires one approving review,
-from a reviewer bot or the player; repository admins (the player) may bypass it on any pull request
-they merge, not only their own, and resolving the review threads is not required (a convention, not
-a gate — see above). So green CI alone is not the gate.
+`main` ruleset requires a pull request and the `test` check, run on the merge result — every
+consistency check and every test of the game, except on a docs-only pull request, where the game's
+tests are skipped and every consistency check still runs (**verify** says what each kind of pull
+request gets). The `main approvals` ruleset requires one approving review, from a reviewer bot or
+the player; repository admins (the player) may bypass it on any pull request they merge, not only
+their own, and resolving the review threads is not required (a convention, not a gate — see
+above). So green CI alone is not the gate.
 Neither ruleset requires a branch to be up to date with `main`
 (`strict_required_status_checks_policy` is off), so an approved PR whose `test` check is green
 merges after `main` has moved under it as long as the merge is still clean; a conflict still blocks
@@ -135,13 +138,15 @@ and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge com
 
 **A push is a check and a tag is a release.** `https://nappy.josuakrause.com/` serves the game.
 `.github/workflows/ci.yml` runs lint, check and the full suite, sharded, on every push to `main`
-and every pull request — a new push to a pull request cancels that pull request's older runs, and
-a run on `main` is never cancelled. `.github/workflows/deploy.yml` fires on a `v*` tag and nothing
-else: verify, boot check, export, upload, publish, then the GitHub release, in that order. **The
-deploy does not run the suite again.** The `version tags` ruleset requires the `test` check on the
-commit a tag points at, so a tag on a red or untested commit cannot be pushed, and the deploy's
-first job asks the API for that check's outcome and refuses to build without it — the same read
-`tools/release.sh` waits on before it tags.
+and every pull request but a docs-only one, which gets the consistency checks alone (**verify**)
+— a new push to a pull request cancels that pull request's older runs, and a run on `main` is never
+cancelled. A push to `main` is never docs-only, so the commit a tag points at has had every check.
+`.github/workflows/deploy.yml` fires on a `v*` tag and nothing else: verify, boot check, export,
+upload, publish, then the GitHub release, in that order. **The deploy does not run the suite
+again.** The `version tags` ruleset requires the `test` check on the commit a tag points at, so a
+tag on a red or untested commit cannot be pushed, and the deploy's first job asks the API for that
+check's outcome and refuses to build without it — the same read `tools/release.sh` waits on before
+it tags.
 
 **The release's notes are generated, not written.** The deploy's last job runs `tools/release-notes.py
 <tag>` — deterministic from git alone, no model and no network call to compute — and publishes its
