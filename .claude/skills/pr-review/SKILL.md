@@ -8,8 +8,8 @@ description: How every pull request is reviewed before it may merge — adversar
 **Every pull request goes through an adversarial review before it is ready to merge.**
 *(2026-09-26: "also all PRs must go through a (adversarial) review before ready to be merged.")*
 No exception for size or kind: a one-line fix, a docs PR filing a playtest, a hook, the
-orchestrator's own queue moves, though a queue update's review is a narrow one (see "A queue update
-is reviewed narrowly and merged first"). **Ready to merge** means a review by a reviewer that did not write
+orchestrator's own queue moves, though a queue update's review has a shape of its own (see "A queue
+update is reviewed for faithfulness and merged first"). **Ready to merge** means a review by a reviewer that did not write
 the change has posted the verdict *ready* on the PR, against the PR's current head. Green CI and an
 author's report of "done and verified" are inputs to the review, never a substitute for it.
 
@@ -121,8 +121,10 @@ thread blocks neither an approval nor a merge, and no ruleset requires thread re
 more of a gentlement's agreement".)*
 
 **The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review
-as `claude-reviewer`, a Codex review as `codex-reviewer` — never the player's own account. `uv run
-python tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer`
+as `claude-reviewer`, a Codex review as `codex-reviewer`, on a docs-only pull request as much as on
+one that changes code (the pull request's own writes are `claude-orchestrator`'s or
+`claude-coder`'s by what it contains, **committing** says which) — never the player's own
+account. `uv run python tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer`
 (**using-tools**) says whether the role is usable; the `gh` command that posts the review then
 runs through `uv run python tools/agent-identity.py run claude-reviewer -- <command>` (or
 `codex-reviewer`) instead of running it directly, so the comments and the review event show as
@@ -147,41 +149,58 @@ review's URL. Sonnet is enough for a small or mechanical PR; a PR that carries a
 drawing, or a change to the rules is reviewed by a stronger model.
 
 
-## A queue update is reviewed narrowly and merged first
+## A queue update is reviewed for faithfulness and merged first
 
 *(2026-09-27: "Task list updates should have priority and could use a weaker review agent (or no
-review at all if you think that is safe)" · "Yeah we still need a review but only to check that it
-doesn't touch code or [mess] anything up" · "Write it down how it makes sense. You might see some
-gaps that I missed".)*
+review at all if you think that is safe)" · "Write it down how it makes sense. You might see some
+gaps that I missed" · bouncy-heron, statement 4: "by faithfulness I meant having another agent
+review that the wording I used (in the playtest file) and the actual scheduled work (in the todo)
+matches" · statement 8, asked which model: "Sonnet now" · statement 9: "the reviewer still needs to
+verify the correctness of those changes anyway. the CI is only a help".)*
 
-**A queue update is a PR whose diff stays inside `docs/todo/`, `docs/review/` and
-`docs/playtests/`**: filing a playtest, filing or rewording an entry or an item, moving a band. It
-is merged ahead of other work, since every brief is written from the queue on `origin/main`
-(**orchestrating**) and a filing left open is a brief written from the older text. A diff that
-also touches anything else, a skill or `CLAUDE.md` included, is not a queue update and gets the
-full review above; the orchestrator's queue move on a PR that builds the work is reviewed with
-that PR.
+**A queue update is a PR whose every changed file is under `docs/todo/`, `docs/review/` or
+`docs/playtests/`**: filing a playtest, filing or rewording an entry or an item, moving a band. CI
+calls it queue-only (`tools/ci_classify.py`) and runs its mechanical checks before the review
+does. It is merged ahead of other work, since every brief is written from the queue on
+`origin/main` (**orchestrating**) and a filing left open is a brief written from the older text. A
+diff that also touches anything else, a skill or `CLAUDE.md` included, is not a queue update and
+gets the full review above; the orchestrator's queue move on a PR that builds the work is reviewed
+with that PR.
 
-**Its review is Haiku's, and it asks only whether the PR touches code or breaks anything:**
+**Its review is Sonnet's, and it asks whether the queue says what the player said.** For each
+entry or item the PR adds or rewords, the reviewer reads it beside the playtest statements it
+cites, in the playtest file itself, and asks:
 
-- **Nothing outside the three folders.** `git diff --stat origin/main...<branch>` names no other
-  path. Three dots: the PR's own change from where it branched. Two dots compare the branch with
-  today's `main`, so everything merged since shows up reversed and reads as the PR undoing it.
-- **No existing playtest file is changed.** A playtest is a primary source and is never rewritten
-  (`CLAUDE.md`), so a queue update only adds one.
-- **Nothing open disappears unaccounted for.** A deleted item file or entry folder is either
-  finished work, whose record already exists under `docs/decisions/`, or a drop the player agreed
-  to, quoted in the PR. A deleted review item names the playtest that covered it
-  (**playtest-feedback**). A deletion with neither is how an ask is lost, and it is the one thing
-  this review is for.
-- **The queue still reads.** `./tools/lint.sh` passes, and `tools/queue.sh` prints every entry the
-  PR touched in the band the description says.
+- **Does it claim anything the player's words do not say?**
+- **Does it drop a specific the player gave?** A number, a place, a case they described, a word
+  they chose.
+- **Does it reinterpret an answer that could be read two ways**, rather than asking?
+- **Is a mechanism or a band the player did not name marked as the filer's proposal**, under
+  "Proposed, not asked for:" (**playtest-feedback**)?
+- **Does it collide with a recorded decision without naming it?** `tools/decisions.sh <noun>` finds
+  the records about each thing the entry changes; an entry that replaces one quotes it.
 
-The semantic questions at the top of this skill are not asked of it: whether a filing states the
-player's ask faithfully is the filer's job under **playtest-feedback**, and the review of the PR
-that builds the entry reads the player's own words again.
+These five are the reviewer's reading of "the wording I used … and the actual scheduled work …
+matches", proposed at filing (leafy-finch) and open to the player's correction. A "yes" to the
+first, second, third or fifth, and a "no" to the fourth, is a finding. **A reviewer flags; it does not resolve**:
+it says what does not match and where, and the filer takes it back to the player or to the words.
+
+**It also verifies what CI checked, since a script sees that a thing exists, not what it says.**
+The `gates` job's queue update step (`tools/ci_queue_update.py`) fails on an existing playtest
+changed, on a deleted queue file with neither a record on `main` for its entry nor a `Dropped:
+<path> — "<the player's words>"` line in the description quoting a playtest verbatim, and on a
+deleted review item no playtest names; it puts `tools/queue.sh`'s line for every entry touched in
+the job's summary. The reviewer checks that the step ran (CI called the PR queue-only), and then
+what it could not:
+
+- **A record that exists covers the item deleted**: it says the item's work was built, not only
+  that the entry has a record.
+- **A drop's quote says what the drop claims**: the player's words let the item go, rather than
+  only mentioning it.
+- **A review item's playtest answers it**, rather than only naming it.
+- **Each entry sits in the band the description says**, from the job summary's lines.
 
 **It is still a review.** Merging needs one approving review (**committing**), and a bot's approval
 is the only one the orchestrator can get without the player. A push after the approval gets the
-same narrow check on its delta. Going first changes the order, not the permission: merging still
-needs the player's go-ahead in the current session.
+same review of its delta. Going first changes the order, not the permission: merging still needs
+the player's go-ahead in the current session.

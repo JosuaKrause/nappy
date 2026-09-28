@@ -14,7 +14,7 @@ place the role table lives, so a later role is one row. Three subcommands:
         --force. See the module's own "create" section below for the exact steps.
 
     status [<role>...]
-        For each role (all four with none given): configured or not, and if configured, mints an
+        For each role (every role with none given): configured or not, and if configured, mints an
         installation token (never printed) and reports the app's slug, bot id, whether it is
         installed on the repository, and the token's granted permissions. Exits non-zero if any
         requested role is not usable, naming what is missing and the command that fixes it.
@@ -38,11 +38,11 @@ The repository is <owner>/<repo>, parsed from `git remote get-url origin` (an ht
 ssh git@github.com: URL, or a proxy-style URL whose path ends in /<owner>/<repo>, .git optional on
 each); --repo OWNER/REPO overrides it.
 
-**In a Claude Code cloud session, none of the four works.** The session's own proxy allows only
+**In a Claude Code cloud session, no role works.** The session's own proxy allows only
 repository-scoped GitHub API endpoints under the session's own authorization -- a bare
 `GET /users/octocat` there answers "This GitHub API path is not available: sessions are bound to
 their configured repositories" -- `gh` is not installed, and there is no browser to run the
-manifest flow's confirm page in. So all four are expected to fail in that environment,
+manifest flow's confirm page in. So every role is expected to fail in that environment,
 and the "not configured" message says identities are set up on the player's own machine.
 """
 
@@ -136,10 +136,39 @@ _REVIEWER_PERMISSIONS: dict[str, str] = {
     "metadata": "read",
 }
 
+# claude-orchestrator makes every issue write and every write on a pull request with no code
+# changes, whichever session triggers it; claude-coder makes every write on a pull request that
+# changes code (the committing skill, "Who a commit and a pull request are from"). Each line says
+# which of those writes needs it; the set is the coder's, argued line by line rather than copied.
+_ORCHESTRATOR_PERMISSIONS: dict[str, str] = {
+    # a docs branch's commits pushed over HTTPS, the squash merge into main, the remote branch
+    # delete in tools/prune-merged.sh
+    "contents": "write",
+    # opening and editing a docs-only pull request, its comments, gh pr merge (and --auto)
+    "pull_requests": "write",
+    # the inbox: opening a captured note, commenting, labelling (and creating the labels), closing
+    # a filed batch's notes and reopening them when the filing PR is abandoned
+    "issues": "write",
+    # merging main into a docs branch pushes main's own workflow-file changes onto the branch,
+    # and GitHub refuses an app's push that changes a file under .github/workflows without it
+    "workflows": "write",
+    # gh pr checks, while a docs pull request's test check is awaited
+    "checks": "read",
+    # gh run rerun, when a filing PR's description is corrected after a red check: editing a
+    # description starts no run, so the check is re-run by hand
+    "actions": "write",
+    "metadata": "read",
+}
+
 # The one place the role table lives -- a later role is one row here and nowhere else.
 ROLES: dict[str, RoleSpec] = {
     "claude-coder": RoleSpec(
         "nappy-claude-coder", "Claude Code's own coding commits, pushes and pull requests.", _CODER_PERMISSIONS
+    ),
+    "claude-orchestrator": RoleSpec(
+        "nappy-claude-orchestrator",
+        "Claude Code's issue writes, and every write on a pull request with no code changes.",
+        _ORCHESTRATOR_PERMISSIONS,
     ),
     "claude-reviewer": RoleSpec(
         "nappy-claude-reviewer", "Claude's adversarial pull request reviews.", _REVIEWER_PERMISSIONS
@@ -812,6 +841,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=(
             "examples:\n"
             "  uv run python tools/agent-identity.py create claude-coder claude-reviewer codex-coder codex-reviewer\n"
+            "  uv run python tools/agent-identity.py create claude-orchestrator\n"
             "  uv run python tools/agent-identity.py status\n"
             "  uv run python tools/agent-identity.py run claude-coder -- git push\n"
         ),
@@ -835,7 +865,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Report whether each role is configured, installed, and usable.",
     )
     status.add_argument(
-        "roles", nargs="*", choices=ROLE_NAMES, metavar="ROLE", help=f"defaults to all four: {', '.join(ROLE_NAMES)}"
+        "roles", nargs="*", choices=ROLE_NAMES, metavar="ROLE", help=f"defaults to every role: {', '.join(ROLE_NAMES)}"
     )
     _add_repo_option(status)
 

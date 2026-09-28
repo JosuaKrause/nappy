@@ -7,10 +7,11 @@ conversation is not recorded as a whole ("I don't want my entire conversation re
 has better judgement there.").
 
 The script runs under the orchestrator's GitHub identity (`tools/agent-identity.py run <role>
---`): `claude-orchestrator` in Claude Code, from `orchestrator-identity.md`, and `codex-coder` in
+--`): `claude-orchestrator` in Claude Code, from [its record](../../decisions/2026-09-27-leafy-finch.md), and `codex-coder` in
 Codex, which has no orchestrator identity. Both apps carry `issues: write`. The script tags every
-issue it opens, and only a tagged issue from those identities counts as the player's note
-(`transcription-ci.md`; the player chose "Yes, marked by the script").
+issue it opens with the label `captured` (the name CI checks for; the label is created by the
+PR that builds this item), and only a tagged issue from those identities counts as the player's note
+([the check](../../decisions/2026-09-27-leafy-finch-2.md); the player chose "Yes, marked by the script").
 
 **Proposed, not asked for:** the script's name, `tools/capture.sh`, and that it shares one entry
 point with the inbox script of `inbox-skill.md` if that reads simpler.

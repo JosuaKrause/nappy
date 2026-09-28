@@ -119,9 +119,9 @@ Run these before committing. They are fast and they each catch a different class
 ```
 
 **The unfiltered `./tools/test.sh` is CI's job, not yours.** Every branch reaches `main` through a
-pull request, and `main`'s ruleset requires the `test` check — which runs the doc lint, the boot
-check and the full suite on the *merge result*. So the full run happens on exactly the tree that
-matters, on a machine that is not yours, whether or not anybody remembers to ask for it.
+pull request, and `main`'s ruleset requires the `test` check, run on the *merge result*. So the
+full run happens on exactly the tree that matters, on a machine that is not yours, whether or not
+anybody remembers to ask for it.
 
 **Which makes a local full run duplicated cost.** It is the slow thing in the loop by an order of
 magnitude, and what it buys is an answer minutes before the PR gives the same answer about a
@@ -134,6 +134,43 @@ apologise for.
   radius before you push a red PR for everyone to look at.
 - **CI came back red and you are iterating on the failure.** Reproducing locally beats pushing to
   ask a question.
+
+## What `test` means on each kind of pull request
+
+**What a green `test` says depends on the files the pull request changes**, sorted by
+`tools/ci_classify.py` in CI's first job, never by the title:
+
+- **On a pull request that touches `src/` or `tests/`, or anything that is not documentation**:
+  every check ran and passed — the repository's consistency checks and every test of the game.
+- **On a docs-only pull request** — every file Markdown or under `docs/`, none under `src/` or
+  `tests/`, none of `docs/TELEMETRY.md`, `docs/COSTS.md` or `docs/ARCHITECTURE.md`, which the
+  game's own checks read, and no `.gdignore`, which decides whether Godot imports `docs/` at all:
+  every consistency check ran and passed, and the game's tests were
+  skipped, since nothing they read changed. *(2026-09-27, bouncy-heron: "I mean all game tests
+  that are not checking doc consistencies etc.")* A pull request touching `src/` or `tests/` is
+  never docs-only, so it never skips them.
+- **On a queue update** — every file under `docs/todo/`, `docs/review/` or `docs/playtests/`: as
+  docs-only, plus the queue update's mechanical checks.
+
+**The two kinds of check are told apart by what a check is about, not by how long it takes.** A
+test of the game — the boot check, the two runner fixtures `tools/test.sh` must fail on, the full
+suite in shards — is skipped on a docs-only pull request. A check that the repository agrees with
+itself runs on every one, Godot or not: the doc lint, the CLI help test, the hook tests, the
+agent-role test, the Python gate, the telemetry table's check (`tools/ci_telemetry_kinds.py`), the
+cost table's check (`tools/cost-table.sh --check`, the one that needs Godot), and the pull
+request's own checks, which read its files and its description:
+
+- no file it adds is a handoff file (`tools/ci_no_handoff.py`);
+- every inbox note it names on a `Filed from #N` line is the player's and is copied word for word
+  into a playtest file it adds (`tools/ci_transcription.py`);
+- on a pull request touching code, it resolves a queue item and files a record, or says `No queue
+  item: <reason>` (`tools/ci_code_pr_queue.py`);
+- on a queue update, it rewrites no playtest and deletes nothing open unaccounted for
+  (`tools/ci_queue_update.py`).
+
+**A new check that compares a doc with the code goes where a docs-only pull request runs it** — a
+`tools/` script in CI's `gates` job, not an assertion inside a suite, which a docs-only pull
+request never runs.
 
 ## What each one cannot see
 

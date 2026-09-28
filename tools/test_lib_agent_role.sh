@@ -14,6 +14,8 @@
 #   - NAPPY_AGENT_ROLE set -> the stub `uv` is invoked as
 #     `uv run python <path-to-agent-identity.py> run "$NAPPY_AGENT_ROLE" -- <the command>`,
 #     never the bare command directly
+#   - NAPPY_AGENT_ROLE=claude-orchestrator -> re-wrapped as that same role, and the real
+#     agent-identity.py's run parser accepts it (stops at "not configured", not "invalid choice")
 #
 # Then, end to end through tools/prune-merged.sh with a stubbed `gh` (reporting a MERGED PR
 # matching the local tip) and the same stub `uv`, against a real throwaway git repo standing in
@@ -158,6 +160,41 @@ if printf '%s' "$logged" | grep -q '^role=claude-coder$' && printf '%s' "$logged
     ok "agent_run re-wraps through agent-identity.py run claude-coder -- touch ..."
 else
     fail "agent_run's own re-wrap did not look right: $logged"
+fi
+
+# claude-orchestrator, the role a docs-only pull request's and an issue's writes go out as, is
+# passed through the same way: agent_run names whatever role it was wrapped in, never a fixed one.
+rm -f "$marker"
+: > "$UV_LOG"
+bash -c '
+    source "'"$root"'/tools/lib_agent_role.sh"
+    export NAPPY_AGENT_ROLE=claude-orchestrator
+    agent_run touch "'"$marker"'"
+'
+checks=$((checks + 1))
+logged="$(cat "$UV_LOG")"
+if [ -e "$marker" ] && printf '%s' "$logged" | grep -q '^role=claude-orchestrator$'; then
+    ok "agent_run re-wraps through agent-identity.py run claude-orchestrator -- touch ..."
+else
+    fail "agent_run as claude-orchestrator: marker exists: $([ -e "$marker" ] && echo yes || echo no), log: $logged"
+fi
+
+# And the real agent-identity.py's run parser accepts the role agent_run hands it: with no config
+# for it, `run` stops at "not configured" (exit 1), not at argparse's "invalid choice" (exit 2).
+# The stub `uv` shadows the real one here, so the interpreter is the checkout's own .venv when it
+# exists and the host's python3 otherwise (CI runs this before it installs uv).
+empty_agents="$work_dir/no-agents"
+mkdir -p "$empty_agents"
+real_python="$root/.venv/bin/python"
+[ -x "$real_python" ] || real_python=python3
+checks=$((checks + 1))
+real_out="$(NAPPY_AGENTS_DIR="$empty_agents" "$real_python" "$root/tools/agent-identity.py" \
+    run --repo O/R claude-orchestrator -- true 2>&1)"
+real_rc=$?
+if [ "$real_rc" -eq 1 ] && printf '%s' "$real_out" | grep -q 'create claude-orchestrator'; then
+    ok "agent-identity.py run accepts claude-orchestrator (stops at not configured)"
+else
+    fail "agent-identity.py run claude-orchestrator: rc=$real_rc: $real_out"
 fi
 
 # A caller that captures agent_run's combined stdout+stderr (tools/land-prs.sh's own

@@ -1213,9 +1213,18 @@ enough, that walking past it rather than to it is a choice, not the instant its 
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
 alley tile within that radius of her instead — the alley's own mouth, on the path rather
-than off it — skipping an alley a completed step's mark already stood at as long as some
-other one is still in reach. Its guard moves with it, at the same 66–176px band from
-wherever it lands.
+than off it, and never where any part of the mark's picture, or of the guard standing at that
+alley's other end (or the courtyard's inner end, past a courtyard's passage), would be on her
+screen, so neither is ever planted in front of her —
+skipping an alley a completed step's mark already stood at as long as some other one is still
+in reach. Its guard moves with it, to the other end of that alley from wherever the mark lands
+(the courtyard's inner end, for a courtyard's passage), the same rule as at dawn
+(`docs/NARRATIVE.md`, "Risk"), and never within his own `pursues_within` of her or in view when
+he is placed — so entering a through-alley from the mark's own end, reading it and leaving the
+same way never wakes him. The mark does not move while its guard is awake or any part of him
+is on her screen, since the move retires him and he would vanish in front of her or out of a chase;
+once read, the mark never moves and its guard stays until the day ends. The guard a task stands at
+its own contact, placed the instant she reads its mark, is never placed in view of her either.
 
 Neither the mark nor its guard is ever offered ground she cannot reach that day: a held
 segment, a sealed alley, or the ground behind a region wall's band — including a crossing
