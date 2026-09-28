@@ -15,6 +15,12 @@ marked by the script"). So the script reads an issue's author and tag and skips,
 saying so, every other issue, and every comment not written by the player. The transcription check
 of `transcription-ci.md` fails on a filed note with any other author.
 
+**The labels are named in one schema**
+([dotted-quail](../../playtests/2026-09-27-dotted-quail.md), statement 2; the player created each
+on the repository): `inbox` marks a note, and `queue_<band>` names the band its work is filed in,
+one label per band: `queue_now`, `queue_next`, `queue_later`, `queue_parked`. The script reads a
+band label by that pattern, so a label outside it is never taken for a band.
+
 **A label on a note says which band its work is filed in** (statement 21: "also add to use labels
 for when a task should be queued, now, later, etc"). The queue's four bands — `now`, `next`,
 `later`, `parked`, which `tools/queue.sh` orders the queue by — each have a label the player puts
@@ -22,6 +28,14 @@ on a note, and the entry filed from it opens with that band. A note with no band
 as **playtest-feedback** says today: `now` for a note from playing, and for anything else a band
 the filer proposes and names in its report. The capture script takes a band when the player named
 one in what was captured.
+
+**Questions about a note are asked on its issue** ([dotted-quail](../../playtests/2026-09-27-dotted-quail.md),
+statement 1: "oh, also if you need more info you can also ask in the github issue. so by the time we queue a
+task most questions are already resolved"). An agent that reads a note and needs more from the
+player to file it faithfully posts the question as a comment on that issue, through the inbox
+script, and the player answers there. The player's answers are their own comments, so they are
+copied with the note, and each is recorded with the question it answers, as **playtest-feedback**
+asks for words said in conversation.
 
 When the player asks for a batch to be filed, the agent copies each note's current text word for
 word into a playtest file (`tools/new-name.sh playtest`), files the queue entries from it exactly
@@ -33,13 +47,17 @@ and a later thought is a new note, not an edit to a closed one (option E's "afte
 thought is a new note", which the player accepted with the rest of the list). A filing PR that is abandoned
 reopens its notes.
 
+**Issue #423 ("shadows are misplaced", `queue_next`) is its first real test**
+([dotted-quail](../../playtests/2026-09-27-dotted-quail.md), statement 3: "you can use this to test
+the implementation" · "as a first real test"): the PR that builds this item runs the new script on
+it and files it end to end, the playtest file, the entry and the note's closing.
+
 The skill says where to find the inbox at the start of a session, so **session-cleanup** lists the
 open notes in the restart prompt and `CLAUDE.md`'s "where to pick up" names the inbox beside the
 open PRs and the queue. A row for the script goes into the **using-tools** catalogue in the same
 commit.
 
-**Proposed, not asked for:** the label's name, `inbox`; that the player's comments on a note are
-copied with its body; that a filing PR carries a whole batch rather than one PR per note; the band
-labels' names (`band: now` and so on, so they read apart from any other label); that a note with
+**Proposed, not asked for:** that the player's comments on a note are
+copied with its body; that a filing PR carries a whole batch rather than one PR per note; that a note with
 two band labels is filed under neither and asked about; that an abandoned filing PR reopens its
-notes.
+notes; that the inbox script posts the question, under the same identity as a capture.
