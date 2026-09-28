@@ -165,13 +165,14 @@ the resistance*, narrowed to a task with exactly one place to be.
 ### Risk
 
 - **Every mark is guarded**, from the day the first one can appear. Its own robber stands at the
-  far mouth of the mark's own alley, or as near it as the alley allows — never merely leaning that
-  way from somewhere near the mark — so walking in from the mark's own end and back out is the
-  side that is likelier to leave him asleep, and the near end still wakes him if she strays past
-  his own trigger range. *(2026-09-26: "the rubber in the alley with the mark is too close to the
-  mark. It's impossible to get the mark on most days. Let's always place the river at the other
-  end of the alley" — "rubber"/"river" are dictation for *robber* — and, asked whether he may
-  then never wake at all, "stands at the far end even where he then never wakes".)* Every other
+  other end of the mark's own alley: past his own trigger range of the mark where the alley is
+  long enough for that, and on its far end where it is not. So walking in from the mark's own end,
+  reading it and walking back out never wakes him; walking on past the mark toward him can.
+  *(2026-09-26: "the rubber in the alley with the mark is too close to the mark. It's impossible to
+  get the mark on most days. Let's always place the river at the other end of the alley" —
+  "rubber"/"river" are dictation for *robber* — and, asked whether he may then never wake at all,
+  "stands at the far end even where he then never wakes".)* A mark is only ever in a through-alley,
+  never in the short passage into a courtyard, which has no other end for him to stand at. Every other
   guarded contact — a door, a mast's foot, a swing, the burnt shell, a roadblock — keeps a robber
   somewhere between 66px and 176px of it instead: inside that band touching it is death, always;
   above it he never wakes at all; between them, which side the player approaches from decides

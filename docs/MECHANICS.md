@@ -1212,13 +1212,13 @@ continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough
 enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
-alley tile within that radius of her instead — the alley's own mouth, on the path rather
+through-alley tile within that radius of her instead — the alley's own mouth, on the path rather
 than off it, and never a tile she can currently see, so it is never planted in front of her —
 skipping an alley a completed step's mark already stood at as long as some other one is still
-in reach. Its guard moves with it, standing at the far mouth of that alley from wherever the mark
-lands (or as near it as the alley allows) rather than in a band around the mark itself, and never
-within his own `pursues_within` of her or in view when he is placed — so entering and leaving from
-the mark's own end is the side likelier to leave him asleep.
+in reach. Its guard moves with it, to the other end of that alley from wherever the mark lands,
+the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within his own `pursues_within`
+of her or in view when he is placed — so entering from the mark's own end, reading it and leaving
+the same way never wakes him.
 
 Neither the mark nor its guard is ever offered ground she cannot reach that day: a held
 segment, a sealed alley, or the ground behind a region wall's band — including a crossing
