@@ -13,7 +13,7 @@ anybody, and the rule exists so that people outside the project never put work i
 player's (asked, the player answered "yes, otherwise the workflow wouldn't work", and chose "Yes,
 marked by the script"). So the script reads an issue's author and tag and skips, with a line
 saying so, every other issue, and every comment not written by the player. The transcription check
-of `transcription-ci.md` fails on a filed note with any other author.
+of [CI](../../decisions/2026-09-27-leafy-finch-2.md) fails on a filed note with any other author.
 
 **A label on a note says which band its work is filed in** (statement 21: "also add to use labels
 for when a task should be queued, now, later, etc"). The queue's four bands — `now`, `next`,
