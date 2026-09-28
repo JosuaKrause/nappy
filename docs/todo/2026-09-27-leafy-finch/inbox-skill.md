@@ -3,6 +3,16 @@ issues carrying an `inbox` label; an issue template gives the player a blank not
 already on it. The script lists the open inbox and prints one note in full: its body as it stands
 now and the player's own comments on it, in order.
 
+**For now, only an issue the player opened is an inbox note** (statement 19: "for now let's also
+require that inbox issues are created by me so random people opening github issues don't get
+their comments ingested into the queue"). The repository is public and the template's label goes
+on any issue opened with it, so the label alone admits anybody: the script reads an issue's author
+and skips, with a line saying so, every issue not opened by the player, and every comment not
+written by them. The transcription check of `transcription-ci.md` fails on a `Closes #N` whose
+issue the player did not open. The filer's reading, which the player has not confirmed: an issue
+the capture script of `capture.md` opens as `claude-orchestrator` or `codex-coder`, holding the
+player's own words, counts as the player's.
+
 When the player asks for a batch to be filed, the agent copies each note's current text word for
 word into a playtest file (`tools/new-name.sh playtest`), files the queue entries from it exactly
 as **playtest-feedback** already says, and opens one PR whose description says `Closes #N` for

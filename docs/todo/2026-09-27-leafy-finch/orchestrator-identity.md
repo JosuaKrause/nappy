@@ -35,9 +35,14 @@ docs-only PRs and issue writes stay `codex-coder`'s.
 The role is known everywhere a role is listed: the write guard `.claude/hooks/github-write-guard.sh`
 accepts it as a wrapping role, `tools/lib_agent_role.sh` (the helper the pushing scripts use to
 run under a role) accepts it, and their tests (`tools/test_rules_hooks.sh`,
-`tools/test_lib_agent_role.sh`, `tools/test_agent_identity.py`) cover it. The committing skill's
-"Who a commit and a pull request are from" and the orchestrating skill are rewritten to say which
-role a write goes out as, by what it does. Like the other four identities, it does not work in a
+`tools/test_lib_agent_role.sh`, `tools/test_agent_identity.py`) cover it. **This replaces a
+recorded decision:** the tall-egret record ("Each agent posts on GitHub as an app of its own")
+says "Claude Code's orchestrator and its implementation agents commit as `claude-coder`", and the
+committing skill's "Who a commit and a pull request are from" says "Claude Code's orchestrator and
+every implementation agent it spawns commit as `claude-coder`" — four apps in all, chosen by which
+session writes. The committing and orchestrating skills are rewritten to say which role a write
+goes out as, by what it does, and the decision record that closes this entry names tall-egret as
+the record it supersedes on this point. Like the other four identities, it does not work in a
 cloud session, where the session proxy serves only repository-scoped endpoints.
 
 **Proposed, not asked for:** its permissions — the coder app's set without `workflows: write`,

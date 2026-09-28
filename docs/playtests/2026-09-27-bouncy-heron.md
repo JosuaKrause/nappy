@@ -283,3 +283,19 @@ your go-ahead to merge." — the player added:
 18. **The split is a convention, not a hard rule.** A PR that starts docs-only and later gains
     code keeps the orchestrator's earlier writes and takes the coder's from then on, so its
     identities mix. Nothing checks a PR's authors against its classification. → leafy-finch.
+
+## Who may write to the inbox
+
+The inbox as filed is every open issue carrying the `inbox` label, which an issue template puts
+on a new note — for anyone who uses the template, since a public repository lets anybody open an
+issue — and the agent copies a note's body and the player's own comments into a playtest file.
+Unprompted, while the assistant was fixing the orchestrator item, the player added:
+
+> "for now let's also require that inbox issues are created by me so random people opening github
+> issues don't get their comments ingested into the queue"
+
+19. **For now, only an issue the player opened is an inbox note.** An issue anyone else opens is
+    never read into the queue, whatever its label, and neither is a comment by anyone but the
+    player. The filer's reading, not yet confirmed: an issue `claude-orchestrator` or `codex-coder`
+    opens with the capture script, holding the player's own words, counts as the player's, since
+    capture exists to put them there. → leafy-finch.
