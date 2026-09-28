@@ -23,6 +23,14 @@ as **playtest-feedback** says today: `now` for a note from playing, and for anyt
 the filer proposes and names in its report. The capture script takes a band when the player named
 one in what was captured.
 
+**Questions about a note are asked on its issue** ([dotted-quail](../../playtests/2026-09-27-dotted-quail.md),
+statement 1: "if you need more info you can also ask in the github issue. so by the time we queue a
+task most questions are already resolved"). An agent that reads a note and needs more from the
+player to file it faithfully posts the question as a comment on that issue, through the inbox
+script, and the player answers there. The player's answers are their own comments, so they are
+copied with the note, and each is recorded with the question it answers, as **playtest-feedback**
+asks for words said in conversation.
+
 When the player asks for a batch to be filed, the agent copies each note's current text word for
 word into a playtest file (`tools/new-name.sh playtest`), files the queue entries from it exactly
 as **playtest-feedback** already says, and opens one PR whose description names every note in the
@@ -42,4 +50,4 @@ commit.
 copied with its body; that a filing PR carries a whole batch rather than one PR per note; the band
 labels' names (`band: now` and so on, so they read apart from any other label); that a note with
 two band labels is filed under neither and asked about; that an abandoned filing PR reopens its
-notes.
+notes; that the inbox script posts the question, under the same identity as a capture.
