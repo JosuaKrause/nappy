@@ -75,7 +75,11 @@
 #     merge-type gh write (gh pr merge/update-branch, a gh api write to /merge, /merges,
 #     /update-branch, /contents/ or /git/refs) when the wrapping role is a reviewer
 #     (claude-reviewer/codex-reviewer), whatever GitHub's own contents:write permission allows --
-#     only a coder identity pushes or merges by those routes. Every
+#     only a coder identity or claude-orchestrator pushes or merges by those routes, and
+#     claude-orchestrator, a wrapping role like the coders, gets every write through (push, commit,
+#     gh pr create/merge, gh issue create/close/reopen/comment/edit, gh label create, gh run
+#     rerun, a pushing tools/ script); unwrapped, each of those still denies, and both deny
+#     messages name it. Every
 #     scan (gh api's, a git verb's abort-flag check) runs to the next separator or the end of the
 #     command either way, so many such calls glued with no separator between them stay linear
 #     rather than quadratic, and so do the shapes where a walk from each word would reach the end
@@ -1237,6 +1241,42 @@ assert_write_guard "wrapped gh pr comment as claude-reviewer still allows (not m
 assert_write_guard "wrapped gh pr merge as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh pr merge 1'
 
+# claude-orchestrator is a wrapping role, not a reviewer: it makes every issue write and every
+# write on a pull request with no code changes (committing, "Who a commit and a pull request are
+# from"), pushes and merges included, so each of those is let through wrapped and denied bare.
+orch="uv run python tools/agent-identity.py run claude-orchestrator --"
+assert_write_guard "wrapped git push as claude-orchestrator -> allow, not a reviewer" allow \
+    "$orch git push -u origin feature/docs"
+assert_write_guard "wrapped git commit as claude-orchestrator -> allow" allow \
+    "$orch git commit -F /tmp/msg"
+assert_write_guard "wrapped gh pr create as claude-orchestrator -> allow" allow \
+    "$orch gh pr create --draft --title t --body-file /tmp/body"
+assert_write_guard "wrapped gh pr merge as claude-orchestrator -> allow, not a reviewer" allow \
+    "$orch gh pr merge 1 --squash"
+assert_write_guard "wrapped gh api .../merge as claude-orchestrator -> allow, not a reviewer" allow \
+    "$orch gh api -X PUT repos/o/r/pulls/1/merge"
+assert_write_guard "wrapped gh issue create as claude-orchestrator -> allow" allow \
+    "$orch gh issue create --title t --body-file /tmp/note --label inbox"
+assert_write_guard "wrapped gh issue close as claude-orchestrator -> allow" allow \
+    "$orch gh issue close 12 --comment 'Filed in #13'"
+assert_write_guard "wrapped gh issue reopen as claude-orchestrator -> allow" allow \
+    "$orch gh issue reopen 12"
+assert_write_guard "wrapped gh issue edit --add-label as claude-orchestrator -> allow" allow \
+    "$orch gh issue edit 12 --add-label 'band: now'"
+assert_write_guard "wrapped gh label create as claude-orchestrator -> allow" allow \
+    "$orch gh label create inbox"
+assert_write_guard "wrapped gh run rerun as claude-orchestrator -> allow" allow \
+    "$orch gh run rerun 99 --failed"
+assert_write_guard "wrapped tools/prune-merged.sh as claude-orchestrator -> allow, not a reviewer" allow \
+    "$orch tools/prune-merged.sh feature/docs"
+assert_write_guard "wrapped tools/land-prs.sh as claude-orchestrator -> allow" allow \
+    "$orch tools/land-prs.sh 12"
+assert_write_guard "bare gh issue create -> deny, the orchestrator's writes are wrapped too" deny \
+    'gh issue create --title t --body-file /tmp/note --label inbox'
+assert_write_guard "bare gh issue close -> deny" deny 'gh issue close 12'
+assert_write_guard "a write after the orchestrator's wrapped command, on its own line -> deny" deny \
+    "$orch git fetch"$'\n''git push'
+
 # A GraphQL call reads only when its query is written inline and holds no "mutation": a query from
 # a file, a shell variable, a command substitution, the whole body from --input, or no query field
 # at all cannot be checked for the word, so each is a write.
@@ -1369,6 +1409,14 @@ assert_write_guard_reason() {
         *) fail "$1: the deny reason lacks '$3': $raw" ;;
     esac
 }
+
+# Both deny messages name the orchestrator identity, so an agent told "no" learns which role a
+# docs-only pull request's or an issue's write goes out as.
+assert_write_guard_reason "the unwrapped deny names claude-orchestrator" \
+    'gh issue create --title t --body x' "claude-orchestrator for an issue or a pull request with no code changes"
+assert_write_guard_reason "the reviewer deny names claude-orchestrator too" \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh pr merge 1' \
+    "or claude-orchestrator when the pull request has no code changes"
 
 # A wrapped heredoc body that names a write is a false deny, and its message says why and points
 # at a body file rather than claiming the command is unwrapped and stopping there.

@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Denies a command that writes to GitHub unless it runs through an agent's own identity.
 #
-# CLAUDE.md's committing/pr-review skills make this mandatory: a coding agent commits, pushes and
-# opens its pull request as its own GitHub identity (`claude-coder`/`codex-coder`), a review agent
-# posts its review as its own (`claude-reviewer`/`codex-reviewer`), and when `tools/agent-identity.py
-# status <role>` says a role is not usable, the session stops and tells the player rather than
+# CLAUDE.md's committing/pr-review skills make this mandatory: a write on a pull request that
+# changes code goes out as a coder identity (`claude-coder`/`codex-coder`), Claude Code's issue
+# writes and writes on a pull request with no code changes as `claude-orchestrator` (Codex's stay
+# `codex-coder`'s), a review as a reviewer identity (`claude-reviewer`/`codex-reviewer`), and
+# when `tools/agent-identity.py status <role>` says a role is not usable, the session stops and
+# tells the player rather than
 # falling back to a direct call under the player's own account. A rule that is only ever obeyed by
 # remembering it is not a rule -- this is the mechanical half, denying the direct call so the
 # wrapped one is the only one that works.
@@ -67,10 +69,13 @@
 # pushing `tools/*.sh` scripts, `gh pr merge`, `gh pr update-branch` and a `gh api` write whose
 # endpoint ends in `/merge`, `/merges` or `/update-branch` (with an optional trailing `/` or
 # `?query`) or goes to a `/contents/` or `/git/refs` path are all denied even inside `run
-# claude-reviewer --`/`run codex-reviewer --`, with a message naming the coder identity to use
+# claude-reviewer --`/`run codex-reviewer --`, with a message naming the identities to use
 # instead. A GraphQL mutation is not refused by name: `resolveReviewThread`, which a reviewer
 # needs, is one, so `mergePullRequest` or `enablePullRequestAutoMerge` under a reviewer role is an
-# accepted gap. A role this hook
+# accepted gap. Every other role is a wrapping role that pushes and merges: the coders
+# (`claude-coder`, `codex-coder`) on a pull request that changes code, and `claude-orchestrator` on
+# one with no code changes and on issues. Which of those a write goes out as is committing's
+# convention, never checked here. A role this hook
 # does not recognise as a reviewer is not specially blocked here either way:
 # `tools/agent-identity.py` itself refuses to mint a token for a name outside its own `ROLE_NAMES`,
 # which is the actual enforcement for an unknown or misspelled role.
@@ -738,7 +743,8 @@ def detect_wrapper($w; $t; $i; $n):
 
 # A reviewer identity never pushes or merges through this tool, whatever GitHub's own permission
 # allows (contents:write, since a reviewer's APPROVE needs it -- see _REVIEWER_PERMISSIONS's own
-# comment): a coder identity is the one that pushes and merges. Reviewer roles are named, not
+# comment): a coder identity, or claude-orchestrator on a pull request with no code changes, is the
+# one that pushes and merges. Reviewer roles are named, not
 # pattern-matched on "-reviewer": a role this list does not know (a typo, a role the brief never
 # named) is not specially blocked here -- `tools/agent-identity.py` itself refuses to mint a token
 # for a name outside its own ROLE_NAMES, which is the actual enforcement for an unknown role, not
@@ -923,8 +929,9 @@ is, because a hook that cannot finish inside its timeout would let the command t
 $file_hint See .claude/hooks/github-write-guard.sh."
 elif [ "$reviewer_push" = "true" ]; then
 	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
-but reviewers never push or merge -- only a coder identity does. Wrap it in \
-'uv run python tools/agent-identity.py run claude-coder -- <command>' (or codex-coder) instead. \
+but reviewers never push or merge. Wrap it in \
+'uv run python tools/agent-identity.py run claude-coder -- <command>' (or codex-coder) instead, \
+or claude-orchestrator when the pull request has no code changes. \
 If this is a comment or review whose own text only mentions a path such as /merge, /contents/ or \
 /git/refs, send the body from a file with --input (or -F body=@file) so its words are not read as \
 the endpoint. See committing and pr-review."
@@ -935,8 +942,9 @@ past --ff-only); any gh noun's write verb (every noun, not only pr/issue/release
 non-GET method or a field outside -X GET, or a GraphQL call whose query is a mutation or is not \
 written inline (a file, a variable, --input); or a pushing/posting tools/ script in command \
 position. It runs through 'uv run python tools/agent-identity.py run <role> -- <command>' instead \
--- claude-coder or claude-reviewer in Claude Code, codex-coder or codex-reviewer in Codex -- never \
-directly. Check first with 'uv run python tools/agent-identity.py status <role>'; if it reports \
+-- in Claude Code claude-coder for a pull request that changes code, claude-orchestrator for an \
+issue or a pull request with no code changes, claude-reviewer for a review; in Codex codex-coder, \
+or codex-reviewer for a review -- never directly. Check first with 'uv run python tools/agent-identity.py status <role>'; if it reports \
 the role not usable, stop and tell the player rather than running this directly. An admin action \
 no bot identity can make (a repository ruleset, a GitHub App's own permissions) is the player's to \
 do directly in GitHub's own settings, never something to wrap and retry. See committing and \
