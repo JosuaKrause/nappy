@@ -1,13 +1,25 @@
-**Claude Code's orchestrator gets a GitHub identity of its own, `claude-orchestrator`, and every
-docs-only PR and every issue write goes through it** (statement 17: "just a single one /
-claude-orchestrator" · "all doc only PRs and issue writes go through orchestrator"). A docs-only PR
-is one whose every changed file the CI classification of `skip-godot-on-docs.md` calls docs-only —
-a filing, a queue move, a review item, a skill or `CLAUDE.md` change — and its commits, its push
-and the PR itself are the orchestrator's. Every issue write is too: the inbox capture of
-`capture.md`, and the closing of notes by a filing PR. A PR that changes code stays
-`claude-coder`'s, as the committing skill says today. The identity is chosen when a PR is opened,
-from whether it is going to contain code changes ("if a PR is going to not contain code changes it
-probably would go through orchestrator").
+**Claude Code gets a GitHub identity for everything that is not code, `claude-orchestrator`, and
+a write's identity follows what the write does, not which session triggers it** (statement 17:
+"just a single one / claude-orchestrator" · "all doc only PRs and issue writes go through
+orchestrator" · "orchestrator should not concern itself with coding prs at all" · "for the
+purposes of github what matters is what they do. that is independent who actually triggered it").
+
+- **`claude-orchestrator`** makes every issue write — the inbox capture of `capture.md`, the
+  closing of notes by a filing PR — and every write on a PR that contains no code changes: its
+  commits, its push, the PR itself, its comments, its merge once the player has said go, and
+  retiring its branch with `tools/prune-merged.sh`.
+- **`claude-coder`** makes every write on a PR that changes code, including a queue move or a
+  decision record committed inside it, merging `main` into it, fixing its CI, merging it and
+  retiring its branch. The orchestrator identity never writes on such a PR.
+- **`claude-reviewer`** posts every review and its findings, on either kind of PR, as it does
+  today.
+
+Whether a PR contains code changes is the CI classification of `skip-godot-on-docs.md` applied to
+its changed files: a docs-only PR is the orchestrator's, any other the coder's. The identity is
+chosen when the PR is opened, from what it is going to contain ("if a PR is going to not contain
+code changes it probably would go through orchestrator"). The session is not the identity: the
+orchestrating session writes as `claude-coder` when it merges a code PR, and a spawned agent
+writes as `claude-orchestrator` when it opens a docs-only PR.
 
 It is one more row in the role table of `tools/agent-identity.py`, the script that creates each bot
 app and runs a command as it, with the app name `nappy-claude-orchestrator`; the player creates it
@@ -19,9 +31,9 @@ The role is known everywhere a role is listed: the write guard `.claude/hooks/gi
 accepts it as a wrapping role, `tools/lib_agent_role.sh` (the helper the pushing scripts use to
 run under a role) accepts it, and their tests (`tools/test_rules_hooks.sh`,
 `tools/test_lib_agent_role.sh`, `tools/test_agent_identity.py`) cover it. The committing skill's
-"Who a commit and a pull request are from" and the orchestrating skill say which role a PR is
-opened as. Like the other four identities, it does not work in a cloud session, where the session
-proxy serves only repository-scoped endpoints.
+"Who a commit and a pull request are from" and the orchestrating skill are rewritten to say which
+role a write goes out as, by what it does. Like the other four identities, it does not work in a
+cloud session, where the session proxy serves only repository-scoped endpoints.
 
 **Proposed, not asked for:** its permissions — the coder app's set without `workflows: write`,
 since a docs-only PR never changes a CI file; the alternative is the coder app's set unchanged.

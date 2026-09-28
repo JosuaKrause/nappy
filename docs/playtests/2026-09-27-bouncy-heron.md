@@ -242,10 +242,32 @@ it recommended dropping it.
 
 > "if a PR is going to not contain code changes it probably would go through orchestrator"
 
+Quoting option (2) back, the player asked "how does that compare to what I suggested? what is the
+difference?", and added:
+
+> "orchestrator should not concern itself with coding prs at all"
+
+The assistant answered that option (2) split the writes by which session acts, and the player's
+rule splits them by what the PR contains. Both give inbox captures, issue writes and a filing PR to
+the orchestrator. They differ on a queue move made inside a code PR, review findings posted on a
+code PR, merging a code PR, retiring its branch, merging `main` into it or fixing its CI — all the
+orchestrator's under (2), none of them under the player's rule — and on a docs-only PR written by
+a spawned agent, which (2) gave the coder and the player's rule gives the orchestrator. It read
+the new line as "the orchestrator identity never writes on a code PR", as against the orchestrating
+session no longer following code PRs at all, and asked which was meant.
+
+> "orchestrator/coder session and orchestrator/coder identity are not the same thing. for the
+> purposes of github what matters is what they do. that is independent who actually triggered
+> it"
+
 17. **There is one orchestrator identity, `claude-orchestrator`, for Claude Code only**; Codex has
-    none. **Every docs-only PR and every issue write goes through it** — neither option (1) nor
-    (2) as offered: a docs-only PR is one whose changed files the CI classification calls
-    docs-only, and a PR that changes code stays `claude-coder`'s. Which identity opens a PR is
-    decided when it is opened, from whether it is going to contain code changes. The player did
-    not answer whether the app drops `workflows: write`, so the assistant's recommendation to drop
-    it is filed as its proposal. → leafy-finch.
+    none. **A GitHub write's identity follows what the write does, not which session triggers
+    it.** Every issue write, and every write on a PR that contains no code changes — its
+    commits, its push, its comments, its merge, retiring its branch — goes out as
+    `claude-orchestrator`. The orchestrator identity never writes on a PR that changes code: those
+    writes are `claude-coder`'s, and a review's are `claude-reviewer`'s. Whether a PR contains
+    code changes is the CI classification of its changed files, decided when the PR is opened
+    from what it is going to contain. So the orchestrating session writes as `claude-coder` when
+    it merges a code PR, and a spawned agent writes as `claude-orchestrator` when it opens a
+    docs-only PR. The player did not answer whether the app drops `workflows: write`, so the
+    assistant's recommendation to drop it is filed as its proposal. → leafy-finch.
