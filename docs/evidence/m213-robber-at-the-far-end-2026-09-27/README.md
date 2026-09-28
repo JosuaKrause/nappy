@@ -1,27 +1,31 @@
 # M213 — the chalk mark's robber stands at the far end of its alley, 2026-09-27
 
-Two stills, `tools/shot.sh <name>.png 3 --seed <seed> --day <day> --spawn contact --invincible
---no-title`. `--spawn contact` stands her beside the day's own chalk mark; `--invincible` only
-freezes the clock and the meter so the shot is not racing a day loss. Retaken after the review of
-#414 found the first pass still drew from the old 66-176px band around the mark, only leaning
-toward the far end — `ResistanceDirector._draw_guard_position_near_far_mouth()` now stands him at
-the alley's own far mouth instead, or as near it as the alley allows.
+Three stills, `tools/shot.sh <name>.png <seconds> --seed <seed> --day 6 --spawn contact
+--invincible --no-title --no-save --zoom 0.75`. `--spawn contact` stands her about 38px from the
+day's chalk mark, on its near side; `--invincible` only freezes the clock and the meter so the shot
+is not racing a day loss; `--zoom 0.75` pulls the camera back so the whole alley is in frame. Each
+caption's distances are the run's own `run.log` lines.
 
-## `seed4242-day6.png`
+## `seed4242-day6.png` — before she reads it
 
-Seed 4242, day 6's mark: the readout's own `chalk mark guarded (far mouth): robber 200px away`
-(`run.log`) is this run's draw — past `pursues_within` (140px) plus `ContactPoint.REACH` (36px),
-so a walk in from the mark's own end stays outside his own trigger range. She stands at the top of
-a north-south alley, on the mark; the robber (the dark hooded figure, with his own glow) stands
-near the bottom edge of the frame, at the alley's far, southern mouth — the far end from her, past
-where the old band could ever have reached.
+1.5 seconds in, standing still. The mark is on the top tile of a north-south through-alley, (78,90),
+not yet touched (the plain circle and cross, beside her). The run drew its guard at the far end:
+`chalk mark guarded (far end): robber 200px away`, standing at (78,96), 183px from her. He is the
+hooded figure with his glow at the bottom of the alley, in the waiting posture: asleep, since she is
+outside his 140px `pursues_within`.
 
-## `seed555555-day6.png`
+## `seed4242-day6-read.png` — reading it, and he stays asleep
 
-Seed 555555, day 6's mark, a different city and a different alley (`chalk mark guarded (far
-mouth): robber 113px away`, `run.log`) — a shorter alley, inside `pursues_within` plus `REACH`
-even at the far mouth itself, which is the "as near it as the alley allows" case rather than the
-safe one the first still shows: the mark sits toward the alley's right-hand mouth and the robber
-(the hooded figure at the left) stands toward its far, left-hand one, the same far-mouth rule
-holding on a horizontal alley as the first still shows on a vertical one, even where the alley
-itself is too short to also clear his trigger range.
+The same run, with `--walk 0.4@290@0.35e7p` (a step west-northwest onto the mark, a step east so the
+pram no longer covers it, then standing), 7 seconds in. `step 1 completed` is in the log and the
+mark now shows `chalk_mark_touched.svg`, the green crossed-through picture, at the top of the alley.
+The robber is still at the far end in his waiting posture. The log has no notice or chase line for
+him.
+
+## `seed555555-day6.png` — an alley too short to put him past his range of the mark
+
+1.5 seconds in. The mark is at (93,66) and was read the moment she was placed (`step 1 completed`
+at 0.0), so the crossed picture sits under her. This alley runs from row 62 to row 69, and the mark
+is four tiles from its far end: `chalk mark guarded (far end): robber 128px away`, less than
+`pursues_within` (140px) plus `ContactPoint.REACH` (36px). So he stands on the far end tile itself,
+(93,62), at the top of the frame. She read it from the near side, 173px from him, and he is asleep.
