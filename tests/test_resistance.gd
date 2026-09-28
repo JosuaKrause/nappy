@@ -43,7 +43,7 @@ func run(t) -> void:
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
 	_test_the_chalk_mark_guard_stands_at_the_alleys_far_end(t)
 	_test_the_mark_is_reachable_from_its_own_end(t)
-	_test_a_mark_is_never_in_a_courtyard_passage(t)
+	_test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t)
 	_test_no_alley_robbery_stands_near_the_doorstep(t)
 	_test_playtest_55_seed_has_no_spawn_kill(t)
 	_test_a_walled_alley_escapes_no_other_check(t)
@@ -1242,48 +1242,89 @@ func _test_the_mark_is_reachable_from_its_own_end(t) -> void:
 			"same marks (%d of %d), so the walk tells the two apart")
 			% [band_rate * 100.0, band_asleep, checked])
 
-## M213's "always" holds for every mark because no mark is ever in a courtyard's passage — the
-## `ALLEY` ground with no far end to stand a robber at (`ResistanceDirector._through_alley_tiles()`).
-## Over six cities: the passages exist (so the sweep is not vacuous), no dawn draw of a mark lands
-## on one, and no relocation from beside one answers one.
-func _test_a_mark_is_never_in_a_courtyard_passage(t) -> void:
+## A mark in a courtyard's passage — the `ALLEY` ground with no far end of its own — has its robber
+## at the courtyard's inner end. *(2026-09-27, the player: "robber at inner end of the courtyard is
+## fine. I encountered it in game and it worked well for me. you just have to lure the robber out
+## first.")* Over six cities, for every passage tile: `_far_alley_mouth()` is the courtyard tile
+## farthest from the mark, found here independently from `CityMap.courtyard_rects`; the guard the
+## director draws stands inside that courtyard, within `FAR_END_REACH_IN` of that tile; and he is
+## never within his catch (`EventDef.lethal_reach()`) of any point she can touch the mark from,
+## `ContactPoint.REACH` around it. He may still wake as she reads it. Both the dawn draw and the
+## relocation reach passage tiles, so the sweep is not vacuous.
+func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void:
 	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
 	GameState.completed_resistance_alley_tiles = []
-	var mark_step := ResistanceSteps.by_index(1)
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
 	var passages := 0
-	var draws := 0
-	var relocations := 0
+	var guarded := 0
+	var drawn_in_a_passage := 0
+	var relocated_to_a_passage := 0
+	var mark_step := ResistanceSteps.by_index(1)
 	for seed_value in [4242, 90210, 2295276695, 314159, 271828, 555555]:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
 		director.setup(null, map)
 		var through := director._through_alley_tiles()
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("no-passage:%d" % seed_value)
-		for _draw in 20:
-			var at := director._place(mark_step, rng)
-			if at == Vector2.INF:
-				continue
-			draws += 1
-			t.check(map.world_to_tile(at) in through,
-					"seed %d: the mark drawn at %s is in a through-alley"
-					% [seed_value, map.world_to_tile(at)])
+		rng.seed = hash("courtyard-inner-end:%d" % seed_value)
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			if tile in through:
 				continue
 			passages += 1
-			var nearest := director._nearest_alley_within(map.tile_to_world(tile))
-			if nearest == Vector2.INF:
-				continue
-			relocations += 1
-			t.check(map.world_to_tile(nearest) in through,
-					"seed %d: a mark relocating from the passage at %s lands in a through-alley"
+			var mark := map.tile_to_world(tile)
+			var court := Rect2i()
+			for rect in map.courtyard_rects:
+				if _passage_leads_into(map, tile, rect):
+					court = rect
+			t.check(court.has_area(), "seed %d: the passage at %s leads into a courtyard"
 					% [seed_value, tile])
+			var farthest := -1.0
+			for y in range(court.position.y, court.end.y):
+				for x in range(court.position.x, court.end.x):
+					farthest = maxf(farthest, mark.distance_to(map.tile_to_world(Vector2i(x, y))))
+			var far := director._far_alley_mouth(mark)
+			t.check(far != Vector2.INF and absf(mark.distance_to(far) - farthest) < 0.5
+					and court.has_point(map.world_to_tile(far)),
+					"seed %d: the mark at %s has the courtyard's farthest tile as its inner end"
+					% [seed_value, tile])
+			var guard_at := director._draw_guard_position_near_far_mouth(rng, mark, far,
+					min_distance, max_distance, [], Vector2.INF, 0.0, false)
+			if guard_at == Vector2.INF:
+				continue
+			guarded += 1
+			t.check(court.has_point(map.world_to_tile(guard_at))
+					and guard_at.distance_to(far) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
+					"seed %d: the guard for the mark at %s stands at the courtyard's inner end"
+					% [seed_value, tile])
+			t.check(guard_at.distance_to(mark) - ContactPoint.REACH > robbery.lethal_reach(),
+					"seed %d: and no touch of the mark at %s lands her inside his %.0fpx catch"
+					% [seed_value, tile, robbery.lethal_reach()])
+			var nearest := director._nearest_alley_within(mark)
+			if nearest != Vector2.INF and map.world_to_tile(nearest) not in through:
+				relocated_to_a_passage += 1
+		for _draw in 40:
+			var at := director._place(mark_step, rng)
+			if at != Vector2.INF and map.world_to_tile(at) not in through:
+				drawn_in_a_passage += 1
 		director.free()
 	GameState.completed_resistance_alley_tiles = saved_tiles
-	t.check(passages > 0, "the cities have courtyard passages to keep marks out of (%d)" % passages)
-	t.check(draws > 0 and relocations > 0,
-			"marks were drawn (%d) and relocated (%d)" % [draws, relocations])
+	t.check(passages > 0 and guarded == passages,
+			"every courtyard passage mark is guarded (%d of %d)" % [guarded, passages])
+	t.check(drawn_in_a_passage > 0 and relocated_to_a_passage > 0,
+			"marks are drawn (%d) and relocated (%d) into courtyard passages"
+			% [drawn_in_a_passage, relocated_to_a_passage])
+
+## Whether the passage `tile` is on runs straight into `court` — the courtyard it opens onto.
+func _passage_leads_into(map: CityMap, tile: Vector2i, court: Rect2i) -> bool:
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var at := tile
+		while map.tile_at(at) == GameEnums.TileType.ALLEY:
+			at += step
+		if court.has_point(at):
+			return true
+	return false
 
 ## Walks her from `near` to `mark` and back out, in 8px steps, past a bare `alley_robbery` at
 ## `guard_at`, and answers whether he stayed asleep the whole way — the question

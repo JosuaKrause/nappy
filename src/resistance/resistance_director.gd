@@ -427,7 +427,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		_task_guard = _city.events.spawn_extra(robbery, guard_at)
 
 ## Where `_maybe_set_a_trap()` stands a guard for the contact at `at`, without spawning him:
-## `_draw_guard_position_near_far_mouth()` for a chalk mark on a through-alley, the whole-circle
+## `_draw_guard_position_near_far_mouth()` for a chalk mark, the whole-circle
 ## band `_draw_guard_position()` draws for every other guarded contact. `Vector2.INF` when no
 ## candidate qualifies. Split out so a rig can ask where he would stand.
 func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
@@ -716,8 +716,13 @@ const FAR_END_REACH_IN := 96.0
 ## near end always reaches the mark without waking him. "It's fine if the Robert doesn't get
 ## triggered every time" (PLAYTEST-144, statement 11; "Robert" is dictation for *robber*).
 ##
-## **Never within `min_distance` of the mark**, whatever the alley: inside that, touching the mark
-## is death. `Vector2.INF` then, and whenever every candidate is refused — the far end last of all,
+## **A mark in a courtyard's passage** has the courtyard's inner end as `far`, and the same rules:
+## an ordinary courtyard is four tiles square, so he is often inside `max_distance` there and may
+## wake as she reads the mark; she lures him out, as the player found in play.
+##
+## **Never within `min_distance` of the mark**, whatever the ground — `inner_radius`, his catch
+## (`EventDef.lethal_reach()`), plus `ContactPoint.REACH`: a touch from anywhere within reach of
+## the mark never lands her inside his catch. `Vector2.INF` then, and whenever every candidate is refused — the far end last of all,
 ## after `TRAP_DRAW_LIMIT` draws in from it.
 func _draw_guard_position_near_far_mouth(rng: RandomNumberGenerator, at: Vector2, far: Vector2,
 		min_distance: float, max_distance: float, walled_alleys: Array[Rect2i], her: Vector2,
@@ -778,11 +783,18 @@ func _mark_shows(at: Vector2) -> bool:
 func _guard_shows(feet: Vector2) -> bool:
 	return _box_shows(feet + GUARD_BODY_CENTRE, GUARD_HALF_EXTENT)
 
-## The mark's own alley, as `[nearer, farther]` — the end tiles of its long axis in the mark's own
-## column or row, ordered by distance from `at` — or `[]` when `at` is on no through-alley.
-## `CityMap.alley_rects` is one `Rect2i` per through-alley (`CityGenerator._alley_rect()`), always
-## `ALLEY_WIDTH_TILES` (2) wide and the rest of the lot long, so the long axis — the one whose ends
-## are its two mouths — is whichever of the rect's own dimensions is not that width.
+## The mark's own alley, as `[nearer, farther]`, or `[]` when `at` is on no `ALLEY` ground.
+##
+## **A through-alley** (`CityMap.alley_rects`, one `Rect2i` each from `CityGenerator._alley_rect()`,
+## always `ALLEY_WIDTH_TILES` (2) wide and the rest of the lot long): the end tiles of its long axis
+## in the mark's own column or row, ordered by distance from `at`.
+##
+## **A courtyard's passage** (`CityGenerator._passage_rect()`, the other `ALLEY` ground the city
+## builds: one tile wide, closed at the courtyard): `[its street end, the courtyard's inner end]` —
+## see `_courtyard_inner_end()`. The passage's own far end is within `inner_radius` plus
+## `ContactPoint.REACH` of a mark in it, so the robber stands in the courtyard beyond. *(2026-09-27,
+## the player: "robber at inner end of the courtyard is fine. I encountered it in game and it worked
+## well for me. you just have to lure the robber out first.")*
 func _alley_ends(at: Vector2) -> Array[Vector2]:
 	var ends: Array[Vector2] = []
 	if not _map:
@@ -806,16 +818,48 @@ func _alley_ends(at: Vector2) -> Array[Vector2]:
 			ends.append(b)
 			ends.append(a)
 		return ends
+	if _map.tile_at(tile) != GameEnums.TileType.ALLEY:
+		return ends
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var inner := tile
+		while _map.tile_at(inner + step) == GameEnums.TileType.ALLEY:
+			inner += step
+		if _map.tile_at(inner + step) != GameEnums.TileType.COURTYARD:
+			continue
+		var far := _courtyard_inner_end(at, inner + step)
+		if far == Vector2.INF:
+			continue
+		var street := tile
+		while _map.tile_at(street - step) == GameEnums.TileType.ALLEY:
+			street -= step
+		ends.append(_map.tile_to_world(street))
+		ends.append(far)
+		return ends
 	return ends
 
+## The courtyard's inner end from a mark at `at` in its passage: the centre of the courtyard tile
+## farthest from the mark, in the courtyard whose rect (`CityMap.courtyard_rects`) holds `entrance`,
+## the first courtyard tile past the passage — "as far from the mark as the courtyard allows".
+## Ties go to the first tile in row order, so the answer is the same every time it is asked.
+## `Vector2.INF` when no courtyard rect holds `entrance`.
+func _courtyard_inner_end(at: Vector2, entrance: Vector2i) -> Vector2:
+	for court in _map.courtyard_rects:
+		if not court.has_point(entrance):
+			continue
+		var farthest := Vector2.INF
+		var farthest_distance := -1.0
+		for y in range(court.position.y, court.end.y):
+			for x in range(court.position.x, court.end.x):
+				var world := _map.tile_to_world(Vector2i(x, y))
+				var distance := at.distance_to(world)
+				if distance > farthest_distance:
+					farthest_distance = distance
+					farthest = world
+		return farthest
+	return Vector2.INF
+
 ## Every `ALLEY` tile that lies in a through-alley, in `CityMap.tiles_of_type()`'s own order, built
-## once per map — the only ground a chalk mark is drawn on or relocated to. **Not a courtyard's
-## passage**, the other `ALLEY` ground the city builds (`CityGenerator._passage_rect()`): one tile
-## wide, one to a few tiles long and closed at the courtyard, it has no far end to stand a robber
-## at — any spot in it is within `inner_radius` plus `ContactPoint.REACH` of a mark in it, where
-## touching the mark is death — and a robber stood in the courtyard beyond would stand in a calm
-## area. So the player's "always place the robber at the other end of the alley" holds for every
-## mark because every mark is in an alley with another end.
+## once per map: the marks whose robber stands at the alley's far end rather than in a courtyard.
 func _through_alley_tiles() -> Array[Vector2i]:
 	if _through_alleys_of == _map:
 		return _through_alleys
@@ -828,10 +872,11 @@ func _through_alley_tiles() -> Array[Vector2i]:
 				break
 	return _through_alleys
 
-## The end of `at`'s own alley that is farther from it — see `_alley_ends()` — or `Vector2.INF`
-## when `at` is on no through-alley, which a chalk mark's own contact always is on and every other
-## guarded contact never is: `_maybe_set_a_trap()` stands a mark's guard there, or as near it as
-## the alley allows, rather than in a band around the mark.
+## Where a chalk mark's robber stands for the mark at `at` — the far end of a through-alley, or the
+## inner end of a courtyard past a passage (`_alley_ends()`) — or `Vector2.INF` when `at` is on no
+## `ALLEY` ground, which a mark never is and every other guarded contact always is:
+## `_maybe_set_a_trap()` stands a mark's guard there, or as near it as the ground allows, rather
+## than in a band around the mark.
 func _far_alley_mouth(at: Vector2) -> Vector2:
 	var ends := _alley_ends(at)
 	return ends[1] if not ends.is_empty() else Vector2.INF
@@ -932,10 +977,6 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 	if step.target_kind == ResistanceSteps.TargetKind.MAST:
 		return _place_at_a_mast(rng)
 	var candidates: Array[Vector2i] = []
-	if step.is_pickup:
-		# A chalk mark goes on a through-alley only — see `_through_alley_tiles()`.
-		candidates.append_array(_through_alley_tiles())
-		return _pick_reachable(candidates, rng)
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
 	return _pick_reachable(candidates, rng)
@@ -1569,14 +1610,14 @@ func _track_sight_and_reposition(delta: float) -> void:
 		return
 	_move_the_mark(nearest)
 
-## The nearest through-alley tile (`_through_alley_tiles()`) to `here` that is not closed, is
-## walkable, and is not held, on the home block, inside a walled-off crossing alley, standing on a
-## solid event body, or sealed off from home by the day's whole obstruction (see
+## The nearest `ALLEY` tile to `here` — a through-alley's or a courtyard passage's — that is not
+## closed, is walkable, and is not held, on the home block, inside a walled-off crossing alley,
+## standing on a solid event body, or sealed off from home by the day's whole obstruction (see
 ## `_pick_reachable`'s own doc — the relocation is the same placement question as the initial
 ## roll, asked again, and the same refusal has to hold or a mark could relocate into a sealed
 ## alley, a building or a pocket nothing can walk out of even though it is never placed there to
 ## start with), within `NOTICE_RADIUS` — or `Vector2.INF` if there is none. Linear over
-## `_through_alley_tiles()`, built once per map; there is one active mark at a time, so this runs
+## `CityMap.tiles_of_type()`, which is cached; there is one active mark at a time, so this runs
 ## once a frame at most.
 ##
 ## **`is_obstructed()` was missing here even after M188 added it to `_pick_reachable()` and
@@ -1616,7 +1657,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
 	var nearest_any_distance := NOTICE_RADIUS
-	for tile in _through_alley_tiles():
+	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
 		var unused := tile not in used
