@@ -88,7 +88,11 @@ or posts internally (`tools/release.sh`, `tools/prune-merged.sh`, `tools/land-pr
 request are from" for why that is mandatory now, and the hook's own header comment for the exact,
 current list of what it denies rather than a second copy of it here. A read (`git status`, `gh pr
 view/list/checks`, ...) is unguarded, and a reviewer identity is refused a merge-type write too,
-not only a push.
+not only a push. **A `gh issue` write is denied wrapped or not**: an agent writes an issue only
+through `tools/inbox.py` (**inbox**), which wraps its own writes. A write's words inside a quoted
+argument of a command that only prints, searches or stores it (`rg -n "gh issue comment"`,
+`git commit -m "..."`), or in a heredoc body such a command reads (`cat > brief.md <<'EOF'`), are
+text and do not count; the same words piped into a shell, or in a heredoc fed to one, still deny.
 
 ## A manual sequence done a second time becomes a script
 

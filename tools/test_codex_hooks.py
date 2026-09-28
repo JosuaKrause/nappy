@@ -716,10 +716,34 @@ class CodexHooksTest(unittest.TestCase):
         output = self.call_raw(command="gh api -X GET search/issues --jq '.items[] | .number' -f q='repo:a/b is:open'")
         self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
 
+    def test_github_write_guard_reads_a_heredoc_cat_prints_as_text(self) -> None:
+        # A heredoc body a text-only command reads is taken out before the reading, so a pull
+        # request body naming a write is allowed; a write after the heredoc still denies.
+        wrap = "uv run python tools/agent-identity.py run codex-coder --"
+        body = "\"$(cat <<'EOF'\nRun `git push` through the wrapper.\nEOF\n)\""
+        text = self.call(tool="Bash", command=f"{wrap} gh pr create --title t --body {body}")
+        self.assertIn("committing", text)
+        output = self.call_raw(command=f"{wrap} gh pr create --title t --body {body}\ngit push")
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        output = self.call_raw(command="rg -n 'gh issue comment' .claude/")
+        self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
+
+    def test_github_write_guard_denies_a_wrapped_issue_write_and_names_the_script(self) -> None:
+        # Codex's issue writes go through tools/inbox.py as codex-coder, never a direct gh issue.
+        output = self.call_raw(command="uv run python tools/agent-identity.py run codex-coder -- gh issue close 5")
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("only through tools/inbox.py", specific["permissionDecisionReason"])
+        text = self.call(tool="Bash", command="uv run python tools/inbox.py --role codex-coder close --pr 5")
+        self.assertIn("committing", text)
+
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
+        # A heredoc fed to anything but a text-only command (sed can run a command) keeps its body.
         command = (
             "uv run python tools/agent-identity.py run codex-coder -- gh pr create --title t --body "
-            "\"$(cat <<'EOF'\nRun `git push` through the wrapper.\nEOF\n)\""
+            "\"$(sed s/a/b/ <<'EOF'\nRun `git push` through the wrapper.\nEOF\n)\""
         )
         output = self.call_raw(command=command)
         assert output is not None
