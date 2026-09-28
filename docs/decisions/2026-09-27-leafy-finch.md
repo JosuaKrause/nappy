@@ -19,7 +19,10 @@ orchestrating, pr-review and using-tools skills say which role a write goes out 
 
 **This supersedes [tall-egret](2026-09-27-tall-egret.md) on one point**: tall-egret has Claude
 Code's orchestrator and its implementation agents commit as `claude-coder`, chosen by which
-session writes. Everything else in tall-egret stands.
+session writes. It also has Claude Code run as `claude-coder` alone, with one `.claude/settings.json`
+allow rule for retiring a branch; there are now two, one per role, the second added by the player
+by hand because Claude Code's auto-mode classifier refuses an agent writing that file. Everything
+else in tall-egret stands.
 
 **The app's settings were settled before it was created**, and the player confirmed them: the
 coder app's permission set, `workflows: write` included. The item proposed dropping it, since a

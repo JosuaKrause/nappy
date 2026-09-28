@@ -36,11 +36,8 @@ are written. `.claude/hooks/github-write-guard.sh`, the hook that denies a GitHu
 agent identity (the tall-egret record, "Each agent posts on GitHub as an app of its own"), changes
 for issue writes (statement 14), and the Codex adapter `tools/codex-hooks.py` and its tests change
 with it if the change needs a new tool name, payload field or hook event, as `CLAUDE.md` requires.
-The committing skill's "Who a commit and a pull request are from" says "Claude Code's
-orchestrator and every implementation agent it spawns commit as `claude-coder`", and the
-tall-egret record says "Claude Code's orchestrator and its implementation agents commit as
-`claude-coder`": the identity follows which session writes. Statement 17 replaces that with a
-fifth identity chosen by what the write does ([its record](../decisions/2026-09-27-leafy-finch.md)).
+Statement 17's fifth identity, chosen by what a write does, has its own
+[record](../decisions/2026-09-27-leafy-finch.md), which says what it supersedes in tall-egret.
 
 **The PR that closes this entry writes its decision record**, which also records that Issues were
 weighed as the queue itself and rejected — no review when an entry enters, edits with no reviewed
