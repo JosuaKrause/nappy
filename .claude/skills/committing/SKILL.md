@@ -93,8 +93,8 @@ a background agent, not a polling loop in the orchestrating session.
 `main` ruleset requires a pull request and the `test` check, run on the merge result — every
 consistency check and every test of the game, except on a docs-only pull request, where the game's
 tests are skipped and every consistency check still runs (**verify** says what each kind of pull
-request gets). The `main approvals` ruleset requires one approving review,
-from a reviewer bot or the player; repository admins (the player) may bypass it on any pull request
+request gets). The `main approvals` ruleset requires one approving review, from a reviewer bot or
+the player; repository admins (the player) may bypass it on any pull request
 they merge, not only their own, and resolving the review threads is not required (a convention, not
 a gate — see above). So green CI alone is not the gate.
 Neither ruleset requires a branch to be up to date with `main`
@@ -112,8 +112,8 @@ and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge com
 `.github/workflows/ci.yml` runs lint, check and the full suite, sharded, on every push to `main`
 and every pull request but a docs-only one, which gets the consistency checks alone (**verify**)
 — a new push to a pull request cancels that pull request's older runs, and a run on `main` is never
-cancelled. A push to `main` is never docs-only, so the commit a tag points at has had every check. `.github/workflows/deploy.yml` fires on a `v*` tag and nothing
-else: verify, boot check, export, upload, publish, then the GitHub release, in that order. **The
+cancelled. A push to `main` is never docs-only, so the commit a tag points at has had every check.
+`.github/workflows/deploy.yml` fires on a `v*` tag and nothing else: verify, boot check, export, upload, publish, then the GitHub release, in that order. **The
 deploy does not run the suite again.** The `version tags` ruleset requires the `test` check on the
 commit a tag points at, so a tag on a red or untested commit cannot be pushed, and the deploy's
 first job asks the API for that check's outcome and refuses to build without it — the same read
