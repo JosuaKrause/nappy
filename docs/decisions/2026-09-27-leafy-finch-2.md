@@ -36,7 +36,12 @@ entry's, so once one PR of an entry has filed its record, a queue-only PR can de
 of that entry with CI green. The faithfulness review is what catches it: it confirms the record
 actually covers the item deleted.
 
-**Open to overturn:** the label `captured` for a captured note (the orchestrator's choice); how
+A `.gdignore` anywhere makes a PR not docs-only, since it decides what Godot imports. A handoff
+file is one the PR adds whose own name starts with `handoff`, in any case; a name that only
+contains the word passes, by the player's call, since both past handoff files are gone and the
+review catches the rest.
+
+**Open to overturn:** the handoff rule's narrow form; the label `captured` for a captured note (the orchestrator's choice); how
 "verbatim" is normalised (quote markers dropped, whitespace runs collapsed, everything else counts);
 that only a note's body is checked, not the player's comments on it; the `Dropped:` line's accepted
 separators; that the playtest rule runs on queue-only PRs only; that the suites comparing code with
