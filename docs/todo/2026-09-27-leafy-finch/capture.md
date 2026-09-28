@@ -6,9 +6,9 @@ exists (statement 2). Which messages to capture is the agent's judgment: there i
 conversation is not recorded as a whole ("I don't want my entire conversation recorded. an agent
 has better judgement there.").
 
-The script runs under the agent's own GitHub identity (`tools/agent-identity.py run <role> --`,
-`claude-coder` or `codex-coder`). Whether those apps may create issues is checked first; if they
-lack the issues permission, adding it is the player's to do in GitHub's own settings.
+The script runs under the orchestrator's GitHub identity (`tools/agent-identity.py run <role>
+--`): `claude-orchestrator` in Claude Code, from `orchestrator-identity.md`, and `codex-coder` in
+Codex, which has no orchestrator identity. Both apps carry `issues: write`.
 
 **Proposed, not asked for:** the script's name, `tools/capture.sh`, and that it shares one entry
 point with the inbox script of `inbox-skill.md` if that reads simpler.

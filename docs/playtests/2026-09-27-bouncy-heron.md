@@ -213,3 +213,36 @@ only", "CI requires both" and "records become optional". The player answered:
     question, the options with their labels, the proposal a "yes" accepts. A label the player uses
     is defined where it is quoted. → **playtest-feedback**, "Write it down with all of its
     detail, before doing anything about it".
+
+## An orchestrator identity
+
+Reading the capture item's sentence "The script runs under the agent's own GitHub identity
+(`tools/agent-identity.py run <role> --`, `claude-coder` or `codex-coder`). Whether those apps may
+create issues is checked first; if they lack the issues permission, adding it is the player's to
+do in GitHub's own settings.", the player asked:
+
+> "maybe let's do an orchestrator identity?"
+
+The assistant answered that the permission is already settled — `tools/agent-identity.py` gives
+the coder and reviewer apps `issues: write` — so the question is who a write shows as. Today the
+orchestrator and every implementation agent it spawns post as `claude-coder`. It proposed two
+apps, `nappy-claude-orchestrator` and `nappy-codex-orchestrator`, one per host as the four existing
+apps are, each created by the player on their own machine, and asked which writes move to the new
+identity: **(1)** only issue writes, the inbox capture and the filing from it; or **(2)** everything
+the orchestrator does itself — inbox captures, filing PRs and queue moves, the review findings it
+posts, retiring a branch with `tools/prune-merged.sh`, and merges once the player has said go —
+leaving `claude-coder` to the implementation agents. It recommended (2), and asked whether the
+orchestrator's app drops `workflows: write`, since the orchestrator does not edit CI files itself;
+it recommended dropping it.
+
+> "just a single one
+> claude-orchestrator"
+
+> "all doc only PRs and issue writes go through orchestrator"
+
+17. **There is one orchestrator identity, `claude-orchestrator`, for Claude Code only**; Codex has
+    none. **Every docs-only PR and every issue write goes through it** — neither option (1) nor
+    (2) as offered: a docs-only PR is one whose changed files the CI classification calls
+    docs-only, and a PR that changes code stays `claude-coder`'s. The player did not answer
+    whether the app drops `workflows: write`, so the assistant's recommendation to drop it is
+    filed as its proposal. → leafy-finch.

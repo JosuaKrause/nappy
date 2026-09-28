@@ -9,14 +9,16 @@ priority: now
 > get as close as possible to that. the reviewer still needs to verify the correctness of those
 > changes anyway. the CI is only a help"
 
-[bouncy-heron](../../playtests/2026-09-27-bouncy-heron.md), statements 1 to 15, holds every word
+[bouncy-heron](../../playtests/2026-09-27-bouncy-heron.md), statements 1 to 17, holds every word
 of it. **The queue, the review items, the playtest files and the decision records stay in the
 repository**, because an entry is reviewed when it enters the queue and a misread statement is
 cheaper caught there than built (statement 1). **GitHub Issues become the player's inbox and
 nothing else**: a note there is safe the moment it is written, can be edited until it is filed,
 and an agent turns a batch of notes into one filing PR when the player asks (statements 5, 6).
 **CI takes every check a script can make**, a doc-only PR stops waiting on the Godot suite, and
-the review of a filing spends its time on faithfulness, on Sonnet (statements 7 to 12).
+the review of a filing spends its time on faithfulness, on Sonnet (statements 7 to 12). **Every
+docs-only PR and every issue write goes out as a new identity, `claude-orchestrator`**
+(statement 17).
 
 The band `now` is the filer's reading of "once that PR merges you can start implementing"
 (statement 15); the player named no band.
