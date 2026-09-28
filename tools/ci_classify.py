@@ -7,11 +7,14 @@ request gets is decided once, from its files, never from its title:
 - **queue-only**: every file is under `docs/todo/`, `docs/review/` or `docs/playtests/`. It gets
   the queue update's mechanical checks (`tools/ci_queue_update.py`), and is docs-only as well.
 - **docs-only**: every file is Markdown or under `docs/`, and none of it is under `src/` or
-  `tests/` or one of the three docs the game's own checks read -- `docs/TELEMETRY.md` (its table
-  of telemetry kinds is compared with the code), `docs/COSTS.md` (`tools/cost-table.sh --check`
-  regenerates it and compares) and `docs/ARCHITECTURE.md` (`tools/check.sh` watches it for the
-  import pass's rewrite). It skips every test of the game and runs every check of the
-  repository's own consistency.
+  `tests/` or one of the files under `docs/` the game itself reads -- `docs/TELEMETRY.md` (its
+  table of telemetry kinds is compared with the code), `docs/COSTS.md` (`tools/cost-table.sh
+  --check` regenerates it and compares), `docs/ARCHITECTURE.md` (`tools/check.sh` watches it for
+  the import pass's rewrite) and `docs/.gdignore`, which keeps Godot from importing `docs/` at
+  all, so an edit to it changes what the boot check and the suite load. A `.gdignore` anywhere is
+  read the same way. It skips every test of the game and runs every check of the repository's own
+  consistency. Nothing else under `docs/` reaches Godot: the scripts and scenes under
+  `docs/evidence/` are behind that `.gdignore` and run only when somebody names them by hand.
 - **touches-code**: some file is under `src/` or `tests/`. It is never docs-only, so a pull request
   that changes the game can never skip the game's tests, and it owes the queue its item
   (`tools/ci_code_pr_queue.py`).
@@ -34,8 +37,10 @@ import lib_ci
 
 QUEUE_FOLDERS = ("docs/todo", "docs/review", "docs/playtests")
 CODE_FOLDERS = ("src", "tests")
-# Markdown under docs/ that a check of the game reads, so a change to one runs everything.
-GAME_READS = ("docs/TELEMETRY.md", "docs/COSTS.md", "docs/ARCHITECTURE.md")
+# Files under docs/ that the game or a check of it reads, so a change to one runs everything.
+GAME_READS = ("docs/TELEMETRY.md", "docs/COSTS.md", "docs/ARCHITECTURE.md", "docs/.gdignore")
+# Godot's own marker for a folder it does not import, read wherever it stands.
+GODOT_IGNORE = ".gdignore"
 
 EPILOG = """\
 examples:
@@ -52,7 +57,9 @@ class Flags:
 
 
 def is_doc(path: str) -> bool:
-    return (path.lower().endswith(".md") or lib_ci.under(path, "docs")) and path not in GAME_READS
+    if path in GAME_READS or path.split("/")[-1] == GODOT_IGNORE:
+        return False
+    return path.lower().endswith(".md") or lib_ci.under(path, "docs")
 
 
 def classify(paths: list[str]) -> Flags:
@@ -67,8 +74,8 @@ def kind(path: str) -> str:
         return "code"
     if lib_ci.under(path, *QUEUE_FOLDERS):
         return "queue"
-    if path in GAME_READS:
-        return "read by the game's checks"
+    if path in GAME_READS or path.split("/")[-1] == GODOT_IGNORE:
+        return "read by the game"
     if is_doc(path):
         return "docs"
     return "other"
@@ -80,7 +87,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         description=(
             "Lists the files a branch changes since it left BASE and sorts it: queue-only (every file under"
             " docs/todo/, docs/review/ or docs/playtests/), docs-only (every file Markdown or under docs/,"
-            " none under src/ or tests/, and none of docs/TELEMETRY.md, docs/COSTS.md, docs/ARCHITECTURE.md)"
+            " none under src/ or tests/, none of docs/TELEMETRY.md, docs/COSTS.md, docs/ARCHITECTURE.md, and no"
+            " .gdignore)"
             " and touches-code (a file under src/ or tests/). Writes queue_only, docs_only and touches_code"
             " to GITHUB_OUTPUT when CI sets it, and prints them."
         ),

@@ -143,8 +143,9 @@ apologise for.
 - **On a pull request that touches `src/` or `tests/`, or anything that is not documentation**:
   every check ran and passed — the repository's consistency checks and every test of the game.
 - **On a docs-only pull request** — every file Markdown or under `docs/`, none under `src/` or
-  `tests/`, and none of `docs/TELEMETRY.md`, `docs/COSTS.md` or `docs/ARCHITECTURE.md`, which the
-  game's own checks read: every consistency check ran and passed, and the game's tests were
+  `tests/`, none of `docs/TELEMETRY.md`, `docs/COSTS.md` or `docs/ARCHITECTURE.md`, which the
+  game's own checks read, and no `.gdignore`, which decides whether Godot imports `docs/` at all:
+  every consistency check ran and passed, and the game's tests were
   skipped, since nothing they read changed. *(2026-09-27, bouncy-heron: "I mean all game tests
   that are not checking doc consistencies etc.")* A pull request touching `src/` or `tests/` is
   never docs-only, so it never skips them.

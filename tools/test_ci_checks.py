@@ -122,10 +122,20 @@ class ClassifyTests(unittest.TestCase):
             (False, True, False),
         )
 
-    def test_the_three_docs_the_game_reads_run_everything(self) -> None:
+    def test_the_files_under_docs_the_game_reads_run_everything(self) -> None:
+        self.assertIn("docs/.gdignore", ci_classify.GAME_READS)
         for path in ci_classify.GAME_READS:
             with self.subTest(path=path):
                 self.assertEqual(self.flags("docs/CITY.md", path), (False, False, False))
+
+    def test_a_gdignore_anywhere_runs_everything(self) -> None:
+        for path in ("docs/.gdignore", "docs/evidence/new-shots/.gdignore", ".gdignore"):
+            with self.subTest(path=path):
+                self.assertEqual(self.flags(path), (False, False, False))
+                self.assertEqual(ci_classify.kind(path), "read by the game")
+
+    def test_a_probe_behind_the_gdignore_is_still_docs(self) -> None:
+        self.assertEqual(self.flags("docs/evidence/grass-runtime-2026-09-12/runtime_probe.gd"), (False, True, False))
 
     def test_code_is_never_docs_only_even_as_markdown(self) -> None:
         self.assertEqual(self.flags("docs/CITY.md", "src/notes.md"), (False, False, True))
