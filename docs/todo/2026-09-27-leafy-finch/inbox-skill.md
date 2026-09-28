@@ -49,8 +49,11 @@ reopens its notes.
 
 **Issue #423 ("shadows are misplaced", `queue_next`) is its first real test**
 ([dotted-quail](../../playtests/2026-09-27-dotted-quail.md), statement 3: "you can use this to test
-the implementation" · "as a first real test"): the PR that builds this item runs the new script on
-it and files it end to end, the playtest file, the entry and the note's closing.
+the implementation" · "as a first real test"): once everything is merged, and when the player
+triggers it, the new script files it end to end as a filing PR of its own, the playtest file, the
+entry and the note's closing. The code PR that builds this item never files it
+([velvet-otter](../../playtests/2026-09-27-velvet-otter.md): "the test of 423 shouldn't happen in
+a code PR" · "I will trigger it when everything is merged").
 
 The skill says where to find the inbox at the start of a session, so **session-cleanup** lists the
 open notes in the restart prompt and `CLAUDE.md`'s "where to pick up" names the inbox beside the
