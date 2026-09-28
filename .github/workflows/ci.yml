@@ -1,23 +1,43 @@
-# The same gates a local commit rests on, plus the full suite split across parallel runners:
-#   gates    lint.sh, test_cli_help.sh, pycheck.sh, check.sh's boot check, cost-table.sh --check,
-#            then the two negative fixtures tools/test.sh must fail the gate on rather than hang
-#            or pass -- everything that needs no more than one process, run before the sharded
-#            suite rather than inside it.
-#   shards   the headless suite, one matrix job per shard, each running tools/test.sh --shard
-#            I/8 -- planned from tests/suite_costs.txt exactly as a local sharded run is.
-#   test     what main's ruleset actually requires (a check named exactly `test`): it needs both
-#            of the above and fails if either did, so the ruleset's own required-check name
-#            still means "everything passed" without the ruleset itself changing.
+# The same gates a local commit rests on, plus the full suite split across parallel runners, sorted
+# by what each check is about: a check of the repository's own consistency runs on every pull
+# request, and a test of the game runs on every pull request that is not docs-only.
+#   classify    sorts the pull request by the files it changes (tools/ci_classify.py) into
+#               queue-only, docs-only and touches-code, flags every later job reads. A push to main
+#               is none of them, so everything runs on it.
+#   gates       the repository's consistency, on every run, needing no Godot: lint.sh,
+#               test_cli_help.sh, test_rules_hooks.sh, test_lib_agent_role.sh, pycheck.sh, the
+#               telemetry table's check, and on a pull request the checks that read its files and
+#               its description.
+#   cost-table  cost-table.sh --check, the one consistency check that needs Godot, on every run:
+#               docs/COSTS.md against the code it is generated from.
+#   game        the game's own gates, skipped on a docs-only pull request: check.sh's boot check,
+#               then the two negative fixtures tools/test.sh must fail the gate on rather than hang
+#               or pass -- everything that needs no more than one process, run beside the sharded
+#               suite rather than inside it.
+#   shards      the headless suite, one matrix job per shard, each running tools/test.sh --shard
+#               I/8 -- planned from tests/suite_costs.txt exactly as a local sharded run is;
+#               skipped on a docs-only pull request.
+#   test        what main's ruleset actually requires (a check named exactly `test`): it fails if
+#               any job that ran failed, or if `game` or `shards` did not run on anything classify
+#               did not call docs-only, so the ruleset's own required-check name still means
+#               "everything this pull request owes passed" without the ruleset itself changing.
 # The Godot tools all honour GODOT=..., which is how CI points them at the downloaded Linux
-# binary instead of the macOS default path. uv and ffmpeg are installed only in `gates`, which is
-# the only job that runs the Python tooling; Godot is downloaded (or restored from cache) in
-# both `gates` and `shards`, since both boot the engine.
+# binary instead of the macOS default path. uv is installed in `classify` and `gates`, the jobs
+# that run the Python tooling, and ffmpeg only in `gates`; Godot is downloaded (or restored from
+# cache) in `cost-table`, `game` and `shards`, since each boots the engine.
 name: ci
 
 on:
   push:
     branches: [main]
   pull_request:
+
+# Read-only: a check reads the pull request's description and the issues it names through the API,
+# and writes nothing anywhere.
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
 
 # A new push to a pull request cancels that pull request's older runs: only the newest head can
 # merge, so a run on a superseded commit answers a question nobody is asking and holds nine
@@ -38,7 +58,41 @@ env:
   SHARD_COUNT: 8
 
 jobs:
+  # A pull request is sorted by its files, never by its title, which the agent writes and can get
+  # wrong. The workflow itself always runs -- a path filter on it would leave the `test` check the
+  # ruleset requires waiting forever on a pull request it skipped -- and the jobs after this one
+  # read these flags instead. `fetch-depth: 0` brings origin/<base>, so the diff runs from where
+  # the branch started (three dots); `filter: blob:none` keeps that to commits and trees, and the
+  # checkout is only tools/ and the files at the top, which is all this job reads.
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      queue_only: ${{ steps.classify.outputs.queue_only }}
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+      touches_code: ${{ steps.classify.outputs.touches_code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          fetch-depth: 0
+          sparse-checkout: |
+            tools
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Only a pull request is sorted: on a push to main this step is skipped, every flag is
+      # empty, and an empty docs_only is not "true", so everything runs.
+      - name: Sort the pull request by the files it changes
+        id: classify
+        if: github.event_name == 'pull_request'
+        run: uv run python tools/ci_classify.py --base "origin/${GITHUB_BASE_REF}"
+
   gates:
+    needs: classify
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -46,10 +100,12 @@ jobs:
       # content only for a path the sparse checkout below actually selects. That checkout excludes
       # docs/evidence/ (about 910 of the tree's 949 MB) and re-includes only the SVGs under it,
       # since tools/lint.sh's well-formedness check is the only thing this job reads there --
-      # see docs/DECISIONS.md, M201, a CI job does not download the evidence.
+      # see docs/DECISIONS.md, M201, a CI job does not download the evidence. `fetch-depth: 0`
+      # brings origin/<base>, which the pull request's own checks below diff against.
       - uses: actions/checkout@v4
         with:
           filter: blob:none
+          fetch-depth: 0
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /*
@@ -74,7 +130,10 @@ jobs:
 
       # The Python tooling: uv reads .python-version and uv.lock, so the interpreter and every
       # package are the ones the lockfile names rather than whatever the runner image ships.
+      # Installed even after a red step above, so the pull request's own checks at the end of this
+      # job still run and one push shows every failure at once.
       - name: Install uv
+        if: ${{ !cancelled() }}
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
@@ -86,6 +145,109 @@ jobs:
 
       - name: Check the Python tools
         run: ./tools/pycheck.sh
+
+      # The code's telemetry kinds against docs/TELEMETRY.md's table, read as text on both sides,
+      # so it needs no engine and runs on a docs-only pull request too.
+      # Needs only uv, installed above under the same condition, so it runs after a red step too.
+      - name: Every telemetry kind has a row in docs/TELEMETRY.md
+        if: ${{ !cancelled() }}
+        run: uv run python tools/ci_telemetry_kinds.py
+
+      # The pull request's own checks: what it adds and deletes, and what its description says.
+      # Each diffs from where the branch started (origin/<base>, three dots) and runs even when a
+      # step above went red. One that reads the description reads it through the API when it
+      # runs, since editing a description starts no run: a description fixed after a red check
+      # is re-checked by re-running this job.
+      - name: No file the pull request adds is a handoff file
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        run: uv run python tools/ci_no_handoff.py --base "origin/${GITHUB_BASE_REF}"
+
+      # A queue update's mechanical checks, made before its review reads it (pr-review, "A queue
+      # update is reviewed for faithfulness and merged first"): no playtest rewritten, nothing open
+      # deleted unaccounted for, and the queue's line for every entry touched in this job's
+      # summary. The reviewer still verifies what this checked.
+      - name: A queue update deletes nothing unaccounted for and rewrites no playtest
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.classify.outputs.queue_only == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_queue_update.py --base "origin/${GITHUB_BASE_REF}"
+
+      # Every inbox note the description files (`Filed from #N`) is the player's, or a capture
+      # carrying the `captured` label, and its body is copied word for word into a playtest file
+      # the pull request adds. Any kind of pull request may name a note, so it runs on every one.
+      - name: Every note the pull request files is the player's and is copied word for word
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_transcription.py --base "origin/${GITHUB_BASE_REF}"
+
+      # committing's "a work item never merges while its queue item is unresolved", made a check:
+      # a pull request touching src/ or tests/ also resolves a file under docs/todo/ and files one
+      # under docs/decisions/, or says `No queue item: <reason>` for the reviewer to judge.
+      - name: A pull request that changes code resolves its queue item and files its record
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.classify.outputs.touches_code == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_code_pr_queue.py --base "origin/${GITHUB_BASE_REF}"
+
+  # The one check of the repository's consistency that needs the engine, so it runs on every run
+  # with a Godot of its own, beside `gates` rather than after it. cost-table.sh bakes the atlases
+  # and runs the import pass itself, the same preamble tools/test.sh runs on a fresh shard.
+  cost-table:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Same partial clone as `shards` below: nothing here reads docs/evidence/.
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/evidence/
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -sSL -o ~/godot/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q ~/godot/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot-bin
+          chmod +x ~/godot/godot-bin
+
+      # docs/COSTS.md is generated from the same EventDef/EventInstance/Tuning code the game
+      # charges with -- a balance change that moved a row or a decay constant without
+      # regenerating the table fails here, and the output names every row and column that moved.
+      - name: Cost table is up to date
+        run: GODOT="$HOME/godot/godot-bin" ./tools/cost-table.sh --check
+
+  # The game's own gates. Skipped only on a pull request classify called docs-only, which by
+  # construction changes nothing under src/ or tests/.
+  game:
+    needs: classify
+    if: needs.classify.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Same partial clone as `shards` below: nothing here reads docs/evidence/.
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/evidence/
 
       - name: Cache Godot
         id: godot-cache
@@ -106,12 +268,6 @@ jobs:
 
       - name: Boot check
         run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
-
-      # docs/COSTS.md is generated from the same EventDef/EventInstance/Tuning code the game
-      # charges with -- a balance change that moved a row or a decay constant without
-      # regenerating the table fails here, and the output names every row and column that moved.
-      - name: Cost table is up to date
-        run: GODOT="$HOME/godot/godot-bin" ./tools/cost-table.sh --check
 
       # tests/runner_fixtures/engine_error.gd emits one push_error() sentinel while its own
       # check() still passes -- proof that tools/test.sh's classifier refuses a Godot engine
@@ -178,6 +334,8 @@ jobs:
           echo "OK: the fixture failed the gate fast, by name, with a summary line"
 
   shards:
+    needs: classify
+    if: needs.classify.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -187,9 +345,10 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
-      # Same partial clone as `gates` above, minus the SVG re-include: no suite `tools/test.sh`
-      # runs reads a file under docs/evidence/ -- it only appears in doc comments naming where a
-      # probe (never run in CI; see the verify skill) writes its own output. docs/DECISIONS.md, M201.
+      # Same partial clone as `gates` above, minus the full history and the SVG re-include: no
+      # suite `tools/test.sh` runs reads a file under docs/evidence/ -- it only appears in doc
+      # comments naming where a probe (never run in CI; see the verify skill) writes its own
+      # output. docs/DECISIONS.md, M201.
       - uses: actions/checkout@v4
         with:
           filter: blob:none
@@ -223,16 +382,43 @@ jobs:
         run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
 
   # main's ruleset requires a check named exactly `test`; this job is that check; renaming the
-  # job id would silently detach the ruleset from CI without editing the ruleset itself.
+  # job id would silently detach the ruleset from CI without editing the ruleset itself. It passes
+  # only when every job that ran passed, and `game` and `shards` may be skipped only on a pull
+  # request classify called docs-only -- one touching src/ or tests/ never is, so it can never pass
+  # here without the game's tests.
   test:
-    needs: [gates, shards]
+    needs: [classify, gates, cost-table, game, shards]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Every gate and every shard passed
+      - name: Every check that ran passed, and the game's tests ran unless the pull request is docs-only
+        env:
+          DOCS_ONLY: ${{ needs.classify.outputs.docs_only }}
+          CLASSIFY: ${{ needs.classify.result }}
+          GATES: ${{ needs.gates.result }}
+          COST_TABLE: ${{ needs.cost-table.result }}
+          GAME: ${{ needs.game.result }}
+          SHARDS: ${{ needs.shards.result }}
         run: |
-          if [[ "${{ needs.gates.result }}" != "success" || "${{ needs.shards.result }}" != "success" ]]; then
-            echo "gates: ${{ needs.gates.result }}, shards: ${{ needs.shards.result }}" >&2
-            exit 1
-          fi
+          echo "classify: $CLASSIFY, gates: $GATES, cost-table: $COST_TABLE, game: $GAME, shards: $SHARDS, docs-only: ${DOCS_ONLY:-false}"
+          failed=0
+          for pair in "classify=$CLASSIFY" "gates=$GATES" "cost-table=$COST_TABLE"; do
+            if [[ "${pair#*=}" != "success" ]]; then
+              echo "FAILED: ${pair%%=*} is ${pair#*=}, and it runs on every pull request" >&2
+              failed=1
+            fi
+          done
+          for pair in "game=$GAME" "shards=$SHARDS"; do
+            result="${pair#*=}"
+            if [[ "$result" == "success" ]]; then
+              continue
+            fi
+            if [[ "$result" == "skipped" && "$DOCS_ONLY" == "true" ]]; then
+              echo "${pair%%=*} skipped: a docs-only pull request runs no test of the game"
+              continue
+            fi
+            echo "FAILED: ${pair%%=*} is $result, and this is not a docs-only pull request" >&2
+            failed=1
+          done
+          exit "$failed"

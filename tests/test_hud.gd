@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_the_first_mark_is_never_named_but_later_ones_are(t)
 	_test_every_perform_steps_header_names_the_instruction_not_the_title(t)
 	_test_a_completed_step_puts_no_text_on_screen(t)
+	_test_the_task_line_clears_when_the_task_is_done(t)
 	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
 	_test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t)
 
@@ -455,6 +456,49 @@ func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
 	t.check(hud._teach.text == "", "a completed perform step puts no text on screen")
 
 	hud.free()
+
+## fluffy-alpaca, "the bottom left text with the current task should disappear when the task is
+## complete" — *"this is not an onscreen text that shows up so it fits the rule still. but it is
+## helpful as indication that the task was completed correctly because most tasks right now are
+## not clear about whether they have been completed."* Pinned for a mark and for a task, as the
+## item asks: a perform step's own completion is the day's last `_begin_step()`, so nothing else
+## ever overwrites `_resistance_label`'s "somewhere out there" line on its own, and clearing
+## `_contact_step` here is what stops it naming an already-finished task for the rest of the day.
+func _test_the_task_line_clears_when_the_task_is_done(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	var saved_progress := GameState.resistance_progress
+	# Day 6 already behind her, so the "first mark is never named" gate — the goal has been
+	# joined — is open for day 7's own mark (index 3) and perform (index 4) below.
+	GameState.completed_resistance_steps = [1, 2]
+	GameState.failed_resistance_steps = []
+	GameState.resistance_progress = 1
+
+	var hud := _hud(t)
+	hud._debug = false
+
+	# A mark: its own completion clears the line, and the perform it unlocks a moment later
+	# overwrites the blank with its own instruction — the same order `_begin_step()` fires them
+	# in during play.
+	hud._on_contact_available(3)
+	t.check(hud._resistance_label.text != "", "day 7's mark has its own line on screen")
+	GameState.complete_resistance_step(3, false)
+	t.check(hud._resistance_label.text == "",
+			"touching the mark clears the line before the perform it unlocks is announced")
+	hud._on_contact_available(4)
+	t.check(hud._resistance_label.text != "",
+			"and the perform's own instruction takes its place a moment later")
+
+	# A task: its own completion clears the line, and nothing follows to put it back, since it
+	# is the day's last contact.
+	GameState.complete_resistance_step(4, true)
+	t.check(hud._resistance_label.text == "",
+			"completing the task clears the line, with no further contact to overwrite it")
+
+	hud.free()
+	GameState.completed_resistance_steps = saved_completed
+	GameState.failed_resistance_steps = saved_failed
+	GameState.resistance_progress = saved_progress
 
 ## *(Playtest 25 finding 1, verified against the engine rather than inferred: `"%3.0f" % value`
 ## rounds to nearest, so 99.5 and everything above it already printed `100` while the day was

@@ -59,9 +59,9 @@ fi
 # The atlas bake and the import pass, the same preamble tools/test.sh runs before anything that
 # needs EventCatalogue's class_name to resolve -- a fresh checkout's .godot/ cache does not exist
 # until this runs once. No project.godot/ARCHITECTURE.md restore dance the way tools/check.sh
-# does: this runs after check.sh in the `gates` job and in a developer's own loop, by which point
-# .godot/ is already settled, and tools/test.sh's own import pass skips the same dance for the
-# same reason.
+# does: in a developer's own loop this runs after check.sh, by which point .godot/ is already
+# settled, and in CI it runs in the `cost-table` job on a checkout nothing reads afterwards, the
+# way tools/test.sh's own import pass runs on a shard and skips the same dance.
 "$PROJECT_DIR/tools/bake-atlases.sh" || exit 1
 "$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
 

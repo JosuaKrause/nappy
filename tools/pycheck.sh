@@ -68,6 +68,7 @@ run uv run python tools/test_migrate_queue.py
 run uv run python tools/test_convert_queue_edits.py
 run uv run python tools/test_release_notes.py
 run uv run python tools/test_inbox.py
+run uv run python tools/test_ci_checks.py
 
 if [[ $status -ne 0 ]]; then
     echo
