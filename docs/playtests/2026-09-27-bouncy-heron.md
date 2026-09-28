@@ -299,3 +299,24 @@ Unprompted, while the assistant was fixing the orchestrator item, the player add
     player. The filer's reading, not yet confirmed: an issue `claude-orchestrator` or `codex-coder`
     opens with the capture script, holding the player's own words, counts as the player's, since
     capture exists to put them there. → leafy-finch.
+
+## Which tests a docs-only PR skips
+
+The item `skip-godot-on-docs.md` read point 2 of the list as a split between heavy and light CI
+steps, and said so: "**Proposed, not asked for:** which CI steps count as heavy and which as light,
+as listed above; the player's ask is that "only the heavy game checking tests should be
+skipped"." Its list skipped the Godot download, the boot check, the cost table's check, the
+negative fixtures of `tools/test.sh` and the eight suite shards, and kept the doc lint, the CLI
+help test, the hook tests, the agent-role test and the Python gate. Quoting that line, the player
+answered:
+
+> "your emphasize is on the wrong word. only the "heavy game tests" not only the heavy "game
+> tests". I mean all game tests that are not checking doc consistencies etc. heavy here implies in
+> general that game tests are heavy. however, currently some tests are under regular tests that
+> only check the internal consistency of the repo (eg the handoff guard) those should still
+> happen"
+
+20. **A docs-only PR skips every test of the game, and runs every check of the repository's own
+    consistency, wherever that check lives today.** "Heavy" describes game tests in general, not
+    a subset of them. A test inside the Godot suite that checks the repository rather than the
+    game still runs on a docs-only PR. → leafy-finch.

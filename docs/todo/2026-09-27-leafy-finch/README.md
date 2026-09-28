@@ -9,7 +9,7 @@ priority: now
 > get as close as possible to that. the reviewer still needs to verify the correctness of those
 > changes anyway. the CI is only a help"
 
-[bouncy-heron](../../playtests/2026-09-27-bouncy-heron.md), statements 1 to 19, holds every word
+[bouncy-heron](../../playtests/2026-09-27-bouncy-heron.md), statements 1 to 20, holds every word
 of it. **The queue, the review items, the playtest files and the decision records stay in the
 repository**, because an entry is reviewed when it enters the queue and a misread statement is
 cheaper caught there than built (statement 1). **GitHub Issues become the player's inbox and
