@@ -143,15 +143,17 @@ func _test_step_table(t) -> void:
 ## long"* (olive-koala, statement 3; the same 79-character line
 ## `docs/todo/2026-09-09-M100/day-8s-mark-line-runs-off.md` already found running off the HUD's
 ## own teaching line, which does not wrap). A relationship rather than a literal, since the exact
-## wording is this branch's own choice, not the player's: about as long as day 6's own mark, the
-## item's own reference for "short", and still saying where to take it.
+## wording is not the player's: about as long as day 6's own mark, the item's own reference for
+## "short", one sentence, and still saying where the thing is and where to take it.
 func _test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t) -> void:
 	var day6 := ResistanceSteps.by_index(1).brief
 	var day8 := ResistanceSteps.by_index(5).brief
 	t.check(day8.length() <= day6.length() * 1.5,
-			"day 8's mark (%d chars, %s) is about as long as day 6's (%d chars), not the old 79"
+			"day 8's mark (%d chars, %s) is about as long as day 6's (%d chars)"
 			% [day8.length(), day8, day6.length()])
 	t.check("burnt building" in day8, "and it still says where to take it")
+	t.check("stroller" in day8, "and where what she takes is")
+	t.check(day8.count(".") == 1 and day8.ends_with("."), "in one sentence")
 
 func _test_step_selection(t) -> void:
 	var none: Array[int] = []
@@ -709,8 +711,8 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 ## later, so a fifteen-tile-distant alley froze it for the rest of the day. `_sight` answering
 ## true near `mark_at` alone reproduces "on screen" there without a viewport, while leaving
 ## `far_alley` — the relocation target, over `NOTICE_RADIUS` away — answering false, the ground
-## `_nearest_alley_within()` needs to still offer a candidate since brisk-wombat's fix (never a
-## tile she can currently see, "the mark and its robber never appear in front of her"); standing
+## `_nearest_alley_within()` needs to still offer a candidate (never a tile she can currently
+## see, brisk-wombat's "the mark and its robber never appear in front of her"); standing
 ## at `far_alley` (beyond `NOTICE_RADIUS`, so certainly beyond the far narrower `SEEN_DISTANCE`)
 ## reproduces the distance. A single frame is enough to show the old bug is gone: the old rule
 ## pinned the mark on this exact frame, and the new one still relocates it.
@@ -2613,15 +2615,14 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 
 		director.free())
 
-## M221, "a failed day leaves no chalk mark behind" — reproduced by touching a mark whose very
-## next step is itself a guarded task (day 9's door: `_begin_step()` runs a second time in the
-## same `_on_contact_completed()` call, and the guarded-perform shape is shared by every task day
-## but the man shouting's and the van's). The player, asked whether a read mark should vanish at
-## once or stay: "Stays crossed, until the day ends" — so the mark's own touched `ContactPoint`
-## and its guard both stay standing through the rest of the attempt (item 3 and item 4 of the
-## review of #414), and both are let go — the contact freed outright, the guard's own tracking
-## reference dropped — the moment the day is retried or a new one starts, which is what stops
-## either from piling up.
+## M221, "a failed day leaves no chalk mark behind", on a mark whose next step is itself a guarded
+## task (day 9's door: `_begin_step()` runs a second time in the same `_on_contact_completed()`
+## call, and every task day but the man shouting's and the van's has that shape). The player,
+## asked whether a read mark should vanish at once or stay: "Stays crossed, until the day ends" —
+## so the mark's own touched `ContactPoint` and its guard both stay standing through the rest of
+## the attempt, the task expiring included, and both are let go — the contact freed outright, the
+## guard's own tracking reference dropped — the moment the day is retried or a new one starts,
+## which is what stops either from piling up.
 func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
@@ -2674,10 +2675,10 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 		director.free())
 
 ## velvet-plover, "a mark she has read is gone from every alley" — *"the mark now shows in all
-## alleys -- once it is checked it shouldn't appear anywhere else."* The player has since decided
-## a read mark stays, crossed through, until the day ends rather than vanish at once, so this asks
-## the claim that still answers the report: at most one mark's own touched picture is ever
-## standing anywhere, across several ordinary days in a row, none of them failed or retried.
+## alleys -- once it is checked it shouldn't appear anywhere else."* A read mark stays, crossed
+## through, until the day ends (*"Stays crossed, until the day ends"*), so this asks what answers
+## the report: exactly one mark's touched picture is standing once she has read it, across several
+## ordinary days in a row, none of them failed or retried.
 func _test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:

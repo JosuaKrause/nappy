@@ -280,7 +280,7 @@ static func _build() -> Array[Step]:
 
 		# Day 8 · leave something at the burnt shell from day 3 — one place, red arrow. What she
 		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
-		# it came from rather than naming an "it" nothing showed. The
+		# it is, the stroller, rather than naming an "it" nothing showed, in one short sentence. The
 		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.scar_id` on
 		# `burning_building`); a run with no such scar falls back to an ordinary placement of
 		# the same row on a reachable sidewalk, the smallest honest stand-in — see
