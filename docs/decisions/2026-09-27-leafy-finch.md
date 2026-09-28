@@ -17,7 +17,7 @@ starts docs-only and gains code carries both. Codex has no counterpart; its docs
 role that is not a reviewer, so only their messages and tests changed. The committing,
 orchestrating, pr-review and using-tools skills say which role a write goes out as.
 
-**This supersedes [tall-egret](2026-09-27-tall-egret.md) on one point**: tall-egret has Claude
+**This supersedes [tall-egret](2026-09-27-tall-egret.md) on two points**: tall-egret has Claude
 Code's orchestrator and its implementation agents commit as `claude-coder`, chosen by which
 session writes. It also has Claude Code run as `claude-coder` alone, with one `.claude/settings.json`
 allow rule for retiring a branch; there are now two, one per role, the second added by the player
