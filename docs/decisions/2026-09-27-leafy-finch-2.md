@@ -31,6 +31,11 @@ claims).
 **Shown on real runs:** a docs-only scratch PR skipped the game's tests with `test` green, and went
 red and green again as its description was changed with no push; a code scratch PR ran every job.
 
+**A known gap, as filed:** the queue-update check accepts any record whose name starts with the
+entry's, so once one PR of an entry has filed its record, a queue-only PR can delete any other item
+of that entry with CI green. The faithfulness review is what catches it: it confirms the record
+actually covers the item deleted.
+
 **Open to overturn:** the label `captured` for a captured note (the orchestrator's choice); how
 "verbatim" is normalised (quote markers dropped, whitespace runs collapsed, everything else counts);
 that only a note's body is checked, not the player's comments on it; the `Dropped:` line's accepted
