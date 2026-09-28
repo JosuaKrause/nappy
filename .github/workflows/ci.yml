@@ -158,6 +158,16 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_queue_update.py --base "origin/${GITHUB_BASE_REF}"
 
+      # Every inbox note the description files (`Filed from #N`) is the player's, or a capture
+      # carrying the `captured` label, and its body is copied word for word into a playtest file
+      # the pull request adds. Any kind of pull request may name a note, so it runs on every one.
+      - name: Every note the pull request files is the player's and is copied word for word
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_transcription.py --base "origin/${GITHUB_BASE_REF}"
+
       # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
       # ship; without it that test skips and the converter is never actually exercised.
       - name: Install ffmpeg

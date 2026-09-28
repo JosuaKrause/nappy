@@ -22,6 +22,7 @@ import ci_classify
 import ci_no_handoff
 import ci_queue_update
 import ci_telemetry_kinds
+import ci_transcription
 import lib_ci
 from lib_ci import Change
 
@@ -279,6 +280,83 @@ class QueueUpdateTests(unittest.TestCase):
         summary = ci_queue_update.queue_summary(entries, [f"now     {ENTRY}  leafy-finch — Issues as the inbox"])
         self.assertIn(f"now     {ENTRY}  leafy-finch", summary)
         self.assertIn("2026-09-01-gone: no longer in the queue", summary)
+
+
+NOTE_BODY = (
+    "currently shadows are oval below objects. for most objects the oval spans the entire visual bounding box.\r\n\r\n"
+    "this does not read as shadow."
+)
+FILED_PLAYTEST = {
+    "docs/playtests/2026-09-29-new.md": (
+        '## Shadows\n\n> "currently shadows are oval below objects. for most objects the oval spans the\n'
+        '> entire visual bounding box.\n>\n> this does not read as shadow."\n\n1. **Shadows.** → x.\n'
+    )
+}
+
+
+def note(
+    number: int = 423, author: str = "JosuaKrause", labels: tuple[str, ...] = ("inbox",), body: str = NOTE_BODY
+) -> ci_transcription.Note:
+    return ci_transcription.Note(number=number, author=author, labels=labels, body=body, is_pull_request=False)
+
+
+class TranscriptionTests(unittest.TestCase):
+    def test_the_filed_lines_are_read_once_each_in_order(self) -> None:
+        description = (
+            "Files two notes.\n\n- Filed from #423\nFiled from #7 (shadows)\nnot Filed from #9\nFiled from #423\n"
+        )
+        self.assertEqual(ci_transcription.filed_numbers(description), [423, 7])
+
+    def test_the_players_note_copied_word_for_word_passes(self) -> None:
+        self.assertEqual(ci_transcription.check([note()], FILED_PLAYTEST), [])
+
+    def test_a_note_with_a_word_changed_fails_saying_where(self) -> None:
+        playtest = {path: text.replace("visual bounding", "visible bounding") for path, text in FILED_PLAYTEST.items()}
+        failures = ci_transcription.check([note()], playtest)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("first 14 of", failures[0])
+        self.assertIn("'visual bounding box.", failures[0])
+
+    def test_a_note_in_no_added_playtest_fails(self) -> None:
+        self.assertIn("adds no file", ci_transcription.check([note()], {})[0])
+
+    def test_a_note_anyone_else_opened_fails_whatever_its_labels(self) -> None:
+        failures = ci_transcription.check([note(author="someone", labels=("inbox", "captured"))], FILED_PLAYTEST)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("never filed", failures[0])
+
+    def test_a_captured_note_counts_only_with_the_label(self) -> None:
+        for bot in ci_transcription.CAPTURE_BOTS:
+            with self.subTest(bot=bot):
+                self.assertEqual(
+                    ci_transcription.check([note(author=bot, labels=("inbox", "captured"))], FILED_PLAYTEST), []
+                )
+                failures = ci_transcription.check([note(author=bot)], FILED_PLAYTEST)
+                self.assertIn("without the `captured` label", failures[0])
+
+    def test_another_bot_with_the_label_is_not_the_capture_script(self) -> None:
+        failures = ci_transcription.check(
+            [note(author="nappy-claude-coder[bot]", labels=("captured",))], FILED_PLAYTEST
+        )
+        self.assertEqual(len(failures), 1)
+
+    def test_a_pull_request_or_an_empty_note_fails(self) -> None:
+        pull = ci_transcription.Note(number=5, author="JosuaKrause", labels=(), body="x", is_pull_request=True)
+        self.assertIn("a pull request", ci_transcription.check([pull], FILED_PLAYTEST)[0])
+        self.assertIn("no body", ci_transcription.check([note(body=" \r\n")], FILED_PLAYTEST)[0])
+
+    def test_the_api_shape_is_read_whatever_the_state(self) -> None:
+        data: dict[str, object] = {
+            "user": {"login": "JosuaKrause", "type": "User"},
+            "labels": [{"name": "inbox"}, {"name": "queue_next"}],
+            "body": None,
+            "state": "closed",
+        }
+        read = ci_transcription.note_from_api(423, data)
+        self.assertEqual(
+            (read.author, read.labels, read.body, read.is_pull_request),
+            ("JosuaKrause", ("inbox", "queue_next"), "", False),
+        )
 
 
 if __name__ == "__main__":
