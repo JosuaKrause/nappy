@@ -6,4 +6,4 @@ Preserve the redrawn silhouette and true transparency instead of restoring primi
 Save original generation outputs, exact prompts, reference roles and reproducible extraction
 and registration inputs. Inspect detail and animation consistency at gameplay scale.
 
-Both dog families are transferred and drawn in the game ([their record](../../decisions/2026-09-10-M109-2.md)).
+The two dog families are outside this item ([their record](../../decisions/2026-09-10-M109-2.md)).
