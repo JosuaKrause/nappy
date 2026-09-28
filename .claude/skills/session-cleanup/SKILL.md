@@ -112,9 +112,10 @@ for this session's work.
 
 **Nothing in the repository says where a session stopped.** *(2026-09-26: "we don't need session
 handover across agents. each have their own threads to work on. let's remove the handoff file from
-github".)* The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh` and
-the items under `docs/review/` answer it at the moment they are asked — and what a document would
-have said about it is stale the moment another thread merges. So the session's end writes nothing
+github".)* The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh`, the
+inbox (`uv run python tools/inbox.py list`, **inbox**) and the items under `docs/review/` answer
+it at the moment they are asked — and what a document would have said about it is stale the
+moment another thread merges. So the session's end writes nothing
 checked in about itself: the durable part of what it learned is already in a skill, a doc, an
 entry, a review item or a record by the steps above, and the rest is the restart prompt below.
 `tools/decisions.sh handoff` has the reasons.
@@ -128,12 +129,15 @@ that git ignores, and never into the chat**: copying long text out of the CLI co
 write it to a local file and don't check it in")*. Each handover overwrites the file, and the
 report in the chat names its path. Do not require the next session to have read this conversation or
 to resume an old agent transcript. The prompt tells it to fetch and inspect live PR state
-(`gh pr list`, `tools/agent-status.sh`), then read `CLAUDE.md` and `docs/TODO.md`, run
-`tools/queue.sh`, and read the named work-item sources before acting.
+(`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run python tools/inbox.py list`), then
+read `CLAUDE.md` and `docs/TODO.md`, run `tools/queue.sh`, and read the named work-item sources
+before acting.
 
 Name every open thread by PR number and short title, branch or worktree when relevant, current
-checkpoint, exact next action, remaining gate and verification already completed. Restate the
-scope fences that matter. If delegation should continue, say to start fresh agents with
+checkpoint, exact next action, remaining gate and verification already completed. **List the
+open inbox notes** by issue number and title, as `tools/inbox.py list` prints them at the
+handover, so the next session knows what the player has written and nobody has filed yet
+(**inbox**). Restate the scope fences that matter. If delegation should continue, say to start fresh agents with
 self-contained briefs rather than resuming the session's agents. Keep the prompt self-contained and
 current at the moment of handover; the final report may summarize it, but the file must stand on
 its own.

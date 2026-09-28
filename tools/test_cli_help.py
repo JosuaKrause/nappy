@@ -46,6 +46,7 @@ ENTRY_POINTS = (
     "migrate-queue.py",
     "convert-queue-edits.py",
     "release-notes.py",
+    "inbox.py",
 )
 
 SOUND_FILES = (
