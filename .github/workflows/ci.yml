@@ -168,6 +168,16 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_transcription.py --base "origin/${GITHUB_BASE_REF}"
 
+      # committing's "a work item never merges while its queue item is unresolved", made a check:
+      # a pull request touching src/ or tests/ also resolves a file under docs/todo/ and files one
+      # under docs/decisions/, or says `No queue item: <reason>` for the reviewer to judge.
+      - name: A pull request that changes code resolves its queue item and files its record
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.classify.outputs.touches_code == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_code_pr_queue.py --base "origin/${GITHUB_BASE_REF}"
+
       # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
       # ship; without it that test skips and the converter is never actually exercised.
       - name: Install ffmpeg

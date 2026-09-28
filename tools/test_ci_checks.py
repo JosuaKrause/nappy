@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ci_classify
+import ci_code_pr_queue
 import ci_no_handoff
 import ci_queue_update
 import ci_telemetry_kinds
@@ -357,6 +358,49 @@ class TranscriptionTests(unittest.TestCase):
             (read.author, read.labels, read.body, read.is_pull_request),
             ("JosuaKrause", ("inbox", "queue_next"), "", False),
         )
+
+
+class CodePrQueueTests(unittest.TestCase):
+    CODE = modified("src/city/city.gd")
+
+    def test_a_pr_without_code_passes_with_nothing_to_owe(self) -> None:
+        self.assertEqual(ci_code_pr_queue.check([modified("docs/CITY.md"), modified("tools/lint.sh")], "")[0], [])
+
+    def test_code_with_its_item_resolved_and_its_record_filed_passes(self) -> None:
+        for todo in (deleted(f"docs/todo/{ENTRY}/capture.md"), modified(f"docs/todo/{ENTRY}/capture.md")):
+            for record in (added(f"docs/decisions/{ENTRY}.md"), modified(f"docs/decisions/{ENTRY}.md")):
+                with self.subTest(todo=todo.status, record=record.status):
+                    self.assertEqual(ci_code_pr_queue.check([self.CODE, todo, record], "")[0], [])
+
+    def test_code_missing_either_half_fails_naming_what_is_missing(self) -> None:
+        record = added(f"docs/decisions/{ENTRY}.md")
+        item = deleted(f"docs/todo/{ENTRY}/capture.md")
+        cases = (
+            ([self.CODE], ("deletes or rewrites no file", "adds or changes no file")),
+            ([self.CODE, record], ("deletes or rewrites no file",)),
+            ([self.CODE, item], ("adds or changes no file",)),
+            # Filing a new item, or deleting a record, is not what the rule asks for.
+            (
+                [modified("tests/test_x.gd"), added(f"docs/todo/{ENTRY}/new.md"), deleted("docs/decisions/x.md")],
+                ("deletes or rewrites no file", "adds or changes no file"),
+            ),
+        )
+        for changes, expected in cases:
+            with self.subTest(changes=[change.path for change in changes]):
+                failures, _ = ci_code_pr_queue.check(changes, "")
+                self.assertEqual(len(failures), 1)
+                for words in expected:
+                    self.assertIn(words, failures[0])
+
+    def test_the_escape_line_passes_and_carries_its_reason(self) -> None:
+        failures, passed = ci_code_pr_queue.check([self.CODE], "Fixes CI.\r\n\r\n- No queue item: a CI repair\r\n")
+        self.assertEqual(failures, [])
+        self.assertIn("a CI repair", passed)
+
+    def test_an_escape_with_no_reason_or_mid_sentence_does_not_count(self) -> None:
+        for description in ("No queue item:", "No queue item:   ", "There is No queue item: here"):
+            with self.subTest(description=description):
+                self.assertEqual(len(ci_code_pr_queue.check([self.CODE], description)[0]), 1)
 
 
 if __name__ == "__main__":
