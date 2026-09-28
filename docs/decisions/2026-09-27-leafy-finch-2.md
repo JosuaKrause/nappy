@@ -41,10 +41,11 @@ file is one the PR adds whose own name starts with `handoff`, in any case; a nam
 contains the word passes, by the player's call, since both past handoff files are gone and the
 review catches the rest.
 
-**Open to overturn:** the handoff rule's narrow form; the label `captured` for a captured note (the orchestrator's choice); how
-"verbatim" is normalised (quote markers dropped, whitespace runs collapsed, everything else counts);
-that only a note's body is checked, not the player's comments on it; the `Dropped:` line's accepted
-separators; that the playtest rule runs on queue-only PRs only; that the suites comparing code with
-assets (atlas, ground layers, scenery crops, dev flags, the render-loop scan) stay game tests; and
-that `docs/TELEMETRY.md` and `docs/COSTS.md` still count as not docs-only, though the moved
-telemetry check and the always-run cost table remove the reason for both.
+**Open to overturn:** the handoff rule's narrow form; the label `captured` for a captured note (the
+orchestrator's choice); how "verbatim" is normalised (quote markers dropped, whitespace runs
+collapsed, everything else counts); that only a note's body is checked, not the player's comments on
+it; the `Dropped:` line's accepted separators; that the playtest rule runs on queue-only PRs only;
+that the suites comparing code with assets (atlas, ground layers, scenery crops, dev flags, the
+render-loop scan) stay game tests; and that `docs/TELEMETRY.md` and `docs/COSTS.md` still count as
+not docs-only, though the moved telemetry check and the always-run cost table remove the reason for
+both.
