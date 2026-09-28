@@ -130,13 +130,26 @@ jobs:
 
       # The Python tooling: uv reads .python-version and uv.lock, so the interpreter and every
       # package are the ones the lockfile names rather than whatever the runner image ships.
-      # Installed even after a red step above, so the pull request's own checks below still run
-      # and one push shows every failure at once.
+      # Installed even after a red step above, so the pull request's own checks at the end of this
+      # job still run and one push shows every failure at once.
       - name: Install uv
         if: ${{ !cancelled() }}
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+
+      # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
+      # ship; without it that test skips and the converter is never actually exercised.
+      - name: Install ffmpeg
+        run: sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Check the Python tools
+        run: ./tools/pycheck.sh
+
+      # The code's telemetry kinds against docs/TELEMETRY.md's table, read as text on both sides,
+      # so it needs no engine and runs on a docs-only pull request too.
+      - name: Every telemetry kind has a row in docs/TELEMETRY.md
+        run: uv run python tools/ci_telemetry_kinds.py
 
       # The pull request's own checks: what it adds and deletes, and what its description says.
       # Each diffs from where the branch started (origin/<base>, three dots) and runs even when a
@@ -147,9 +160,9 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         run: uv run python tools/ci_no_handoff.py --base "origin/${GITHUB_BASE_REF}"
 
-      # A queue update's mechanical checks, the ones the narrow review made by hand (pr-review, "A
-      # queue update is reviewed for faithfulness and merged first"): no playtest rewritten, nothing
-      # open deleted unaccounted for, and the queue's line for every entry touched in this job's
+      # A queue update's mechanical checks, made before its review reads it (pr-review, "A queue
+      # update is reviewed for faithfulness and merged first"): no playtest rewritten, nothing open
+      # deleted unaccounted for, and the queue's line for every entry touched in this job's
       # summary. The reviewer still verifies what this checked.
       - name: A queue update deletes nothing unaccounted for and rewrites no playtest
         if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.classify.outputs.queue_only == 'true' }}
@@ -177,19 +190,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_code_pr_queue.py --base "origin/${GITHUB_BASE_REF}"
-
-      # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
-      # ship; without it that test skips and the converter is never actually exercised.
-      - name: Install ffmpeg
-        run: sudo apt-get install -y --no-install-recommends ffmpeg
-
-      - name: Check the Python tools
-        run: ./tools/pycheck.sh
-
-      # The code's telemetry kinds against docs/TELEMETRY.md's table, read as text on both sides,
-      # so it needs no engine and runs on a docs-only pull request too.
-      - name: Every telemetry kind has a row in docs/TELEMETRY.md
-        run: uv run python tools/ci_telemetry_kinds.py
 
   # The one check of the repository's consistency that needs the engine, so it runs on every run
   # with a Godot of its own, beside `gates` rather than after it. cost-table.sh bakes the atlases

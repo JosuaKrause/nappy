@@ -207,6 +207,10 @@ class NoHandoffTests(unittest.TestCase):
     def test_other_additions_pass(self) -> None:
         self.assertEqual(ci_no_handoff.check([added("docs/playtests/x.md"), added("hand-off.md")]), [])
 
+    def test_the_check_is_not_a_handoff_file_of_its_own(self) -> None:
+        self.assertEqual(ci_no_handoff.check([added("tools/ci_no_handoff.py")]), [])
+        self.assertEqual(len(ci_no_handoff.check([added("tools/ci_no_handoff.md")])), 1)
+
 
 ENTRY = "2026-09-27-leafy-finch"
 ITEM = f"docs/todo/{ENTRY}/capture.md"

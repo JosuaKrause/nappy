@@ -12,6 +12,9 @@ splits a rename into a deletion and an addition -- with `handoff` in any case in
 name of a folder it sits in. A file already on the base is never the pull request's to answer for,
 which leaves the existing records under `docs/decisions/` with the word in their names alone.
 
+The one exception is this script, whose own name carries the word: `NOT_HANDOFF` names it, so a
+pull request that adds or moves the check is not failed by it.
+
 It is a check of the repository, not of the game, so it runs on every pull request.
 """
 
@@ -33,8 +36,12 @@ examples:
 """
 
 
+# Files with the word in their names that are not handoff files: the check itself.
+NOT_HANDOFF = ("tools/ci_no_handoff.py",)
+
+
 def is_handoff(path: str) -> bool:
-    return any("handoff" in part.lower() for part in path.split("/"))
+    return path not in NOT_HANDOFF and any("handoff" in part.lower() for part in path.split("/"))
 
 
 def check(changes: list[Change]) -> list[str]:
