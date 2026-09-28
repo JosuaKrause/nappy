@@ -8,11 +8,13 @@ creating the PR -- it just needs to be cleaned up afterwards)"). So this fails a
 diff against where it started adds one, and goes green once it is gone.
 
 A handoff file is a file the pull request adds -- a rename's new name included, since the diff
-splits a rename into a deletion and an addition -- whose own name starts with `handoff` in any
-case: `HANDOFF.md`, `handoff-notes.md`. The word elsewhere in a name is a subject, not a handoff:
-a queue item about the rule (`no-handoff-file.md`), a decision record (`one-handoff-entry-point.md`),
-this script. The folders a file sits in are not read, since no handoff this repository has seen
-was a folder. A file already on the base is never the pull request's to answer for.
+splits a rename into a deletion and an addition -- whose own name contains `handoff` in any case:
+`HANDOFF.md`, `LUNA_HANDOFF.md`, `agent-handoff.md`. Under the queue's and the records' folders
+(`SUBJECT_FOLDERS`: `docs/todo/`, `docs/review/`, `docs/playtests/`, `docs/decisions/`) the word is
+a subject, not a handoff -- a queue item about the rule (`no-handoff-file.md`), a record
+(`one-handoff-entry-point.md`) -- and so it is in this script's own name. The folders a file sits
+in are not read, since no handoff this repository has seen was a folder. A file already on the
+base is never the pull request's to answer for.
 
 It is a check of the repository, not of the game, so it runs on every pull request.
 """
@@ -35,8 +37,14 @@ examples:
 """
 
 
+# Where a file named for handoffs is about them: the queue, the review items, the playtests, the records.
+SUBJECT_FOLDERS = ("docs/todo", "docs/review", "docs/playtests", "docs/decisions")
+# The check itself, whose name carries the word.
+THIS_CHECK = "tools/ci_no_handoff.py"
+
+
 def is_handoff(path: str) -> bool:
-    return path.split("/")[-1].lower().startswith("handoff")
+    return "handoff" in path.split("/")[-1].lower() and not lib_ci.under(path, *SUBJECT_FOLDERS) and path != THIS_CHECK
 
 
 def check(changes: list[Change]) -> list[str]:
@@ -52,9 +60,10 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/ci_no_handoff.py",
         description=(
-            "Fails if the branch adds, since it left BASE, a file whose name starts with `handoff` (any case),"
-            " such as HANDOFF.md or handoff-notes.md. A handoff file may be pushed while a pull request is being"
-            " made; it is removed before it merges."
+            "Fails if the branch adds, since it left BASE, a file whose name contains `handoff` (any case),"
+            " such as HANDOFF.md, LUNA_HANDOFF.md or agent-handoff.md, outside docs/todo/, docs/review/,"
+            " docs/playtests/ and docs/decisions/, where the word is a subject. A handoff file may be pushed"
+            " while a pull request is being made; it is removed before it merges."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
