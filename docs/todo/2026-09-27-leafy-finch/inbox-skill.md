@@ -15,11 +15,16 @@ marked by the script"). So the script reads an issue's author and tag and skips,
 saying so, every other issue, and every comment not written by the player. The transcription check
 of `transcription-ci.md` fails on a filed note with any other author.
 
+**The labels are named in one schema**
+([dotted-quail](../../playtests/2026-09-27-dotted-quail.md), statement 2; the player created each
+on the repository): `inbox` marks a note, and `queue_<band>` names the band its work is filed in,
+one label per band: `queue_now`, `queue_next`, `queue_later`, `queue_parked`. The script reads a
+band label by that pattern, so a label outside it is never taken for a band.
+
 **A label on a note says which band its work is filed in** (statement 21: "also add to use labels
 for when a task should be queued, now, later, etc"). The queue's four bands — `now`, `next`,
 `later`, `parked`, which `tools/queue.sh` orders the queue by — each have a label the player puts
-on a note, named `queue_now`, `queue_next`, `queue_later` and `queue_parked`
-([dotted-quail](../../playtests/2026-09-27-dotted-quail.md), statement 2: the player created them), and the entry filed from it opens with that band. A note with no band label is filed
+on a note, and the entry filed from it opens with that band. A note with no band label is filed
 as **playtest-feedback** says today: `now` for a note from playing, and for anything else a band
 the filer proposes and names in its report. The capture script takes a band when the player named
 one in what was captured.
@@ -52,7 +57,7 @@ open notes in the restart prompt and `CLAUDE.md`'s "where to pick up" names the 
 open PRs and the queue. A row for the script goes into the **using-tools** catalogue in the same
 commit.
 
-**Proposed, not asked for:** the label's name, `inbox`; that the player's comments on a note are
+**Proposed, not asked for:** that the player's comments on a note are
 copied with its body; that a filing PR carries a whole batch rather than one PR per note; that a note with
 two band labels is filed under neither and asked about; that an abandoned filing PR reopens its
 notes; that the inbox script posts the question, under the same identity as a capture.

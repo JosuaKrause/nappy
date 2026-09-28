@@ -18,8 +18,10 @@ said:
 > "I created an issue with inbox label and with priority I choose the convention of queue_now,
 > queue_next, queue_later, and queue_parked"
 
-2. **The band labels are `queue_now`, `queue_next`, `queue_later` and `queue_parked`**, and the
-   player has created them on the repository. They replace the filer's proposed `band: now` names.
+2. **The labels follow one schema: `inbox` marks a note, and `queue_<band>` sets its band** —
+   `queue_now`, `queue_next`, `queue_later` and `queue_parked`. The player has created all five on
+   the repository. They replace the filer's proposed `band: now` names, and settle `inbox`, which
+   was the filer's proposal too.
    → leafy-finch.
 
 The note is issue #423, "shadows are misplaced", labelled `inbox` and `queue_next`. The player
