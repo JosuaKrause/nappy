@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
+	_test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t)
 	_test_the_guard_is_seeded(t)
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
 	_test_a_mark_within_notice_radius_does_not_move(t)
@@ -445,6 +446,76 @@ func _director_on_the_van_perform(t) -> ResistanceDirector:
 	director.start_day(7, _rng(7, "resistance"), 300.0)
 	director._on_contact_completed(3)
 	return director
+
+## "Deterministic from the run seed and the day" (`ResistanceDirector`'s class doc) holds on a
+## retry too: `main.gd` starts the resistance before it resets her, so at dawn her position and the
+## camera are still the previous attempt's. Each day is started twice on the same city — once with
+## her at the doorstep and nothing on screen, once with her standing on the first attempt's own
+## contact, where a lost day often leaves her, and everything on screen — and the dawn guard, and
+## on day 9 the door and its guard that reading the mark then places with her at the same spot both
+## times, come out the same. Day 9 is a mark's own guard; day 14's front door is a task guarded
+## from dawn.
+func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var saved_progress := GameState.resistance_progress
+		var saved_sabotage := GameState.sabotage_done
+		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+		GameState.sabotage_done = false
+		for day in [9, Tuning.RUN_LENGTH_DAYS]:
+			var first := _attempt_the_day(t, day, _city.map.doorstep_world_position(), false)
+			var retry := _attempt_the_day(t, day, first[0], true)
+			t.check(first[0] != Vector2.INF and first[1] != Vector2.INF,
+					"day %d: the contact and its guard are placed (%s, %s)" % [day, first[0], first[1]])
+			for i in first.size():
+				t.check(first[i].distance_to(retry[i]) < 0.5 or first[i] == retry[i],
+						"day %d: draw %d comes out the same wherever the last attempt left her (%s, %s)"
+						% [day, i, first[i], retry[i]])
+		GameState.completed_resistance_alley_tiles = saved_tiles
+		GameState.resistance_progress = saved_progress
+		GameState.sabotage_done = saved_sabotage)
+
+## One attempt at `day` for the test above, with her standing at `her` and `_sight` answering
+## `seen` for every point when the day starts: `[contact, its guard]` at dawn, then on a mark's day
+## `[task contact, task guard]` once she reads it from the mark's own spot with nothing on screen.
+## `Vector2.INF` for a guard that was not placed.
+func _attempt_the_day(t, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
+	GameState.completed_resistance_steps = _completed_through(2 * (day - 6)) \
+			if day < Tuning.RUN_LENGTH_DAYS else _all_but_the_finale()
+	# A lost day gives back what the attempt recorded (`GameState.begin_day()`), the alley it read
+	# its mark in included.
+	GameState.completed_resistance_alley_tiles = []
+	var state := CityState.new()
+	GameState.city_state = state
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures"))
+	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+	var player := _rig_player(t, her)
+	var director := _director(t)
+	director.set_sight(func(_p: Vector2) -> bool: return seen)
+	director.start_day(day, _rng(day, "resistance"), 300.0)
+	var step := director.current_step()
+	var drawn: Array[Vector2] = [director.contact_position()]
+	var guard: EventInstance = director._guard if step and step.is_pickup else director._task_guard
+	drawn.append(guard.global_position if guard else Vector2.INF)
+	if step and step.is_pickup:
+		player.global_position = director.contact_position()
+		director.set_sight(func(_p: Vector2) -> bool: return false)
+		director._on_contact_completed(step.index)
+		drawn.append(director.contact_position())
+		var task_guard: EventInstance = director._task_guard
+		drawn.append(task_guard.global_position if task_guard else Vector2.INF)
+	player.free()
+	director.free()
+	return drawn
+
+func _all_but_the_finale() -> Array[int]:
+	var done: Array[int] = []
+	for step in ResistanceSteps.all():
+		if not step.needs_goal:
+			done.append(step.index)
+	return done
 
 ## The whole design rests on the run being learnable: the alley that was safe on day 9 has
 ## to be safe on day 9 every time you replay that run — and the same is true of a perform

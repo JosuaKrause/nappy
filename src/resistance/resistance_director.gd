@@ -233,7 +233,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 
 	var step := ResistanceSteps.for_day(day, GameState.completed_resistance_steps,
 			GameState.failed_resistance_steps, GameState.sabotage_available())
-	_begin_step(step)
+	_begin_step(step, true)
 
 ## Places `step`'s own contact and offers it — a mark at dawn, or the perform half it unlocks a
 ## moment after being touched (`_on_contact_completed()`), which is what makes a task one day
@@ -241,7 +241,10 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 ## its own place: a fresh rider (`EVENT`), the run's own recorded scar (`SCAR`, falling back to
 ## an ordinary placement of the same row when the run has none), or a bare point this director
 ## computes itself (`ResistanceSteps.sits_on_a_bare_point()`).
-func _begin_step(step: ResistanceSteps.Step) -> void:
+##
+## `at_dawn` is true from `start_day()` and false for the task a read mark activates, and decides
+## what the guard's draw is kept clear of — see the comment above `_maybe_set_a_trap()`'s call.
+func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	_step = step
 	if not _step:
 		return
@@ -318,16 +321,21 @@ func _begin_step(step: ResistanceSteps.Step) -> void:
 	# (`sets_a_trap_on_her()`), from wherever she did. Every other task that rides on a row — the
 	# burnt shell, a roadblock — keeps a guard waiting at the contact, exactly like a chalk mark.
 	#
-	# The mark's own guard (`_step.is_pickup`) is placed at dawn, before she is anywhere real
-	# (`main.gd` starts the resistance before resetting her) — `Vector2.INF`/`false` skips both
-	# her-position and on-screen checks, which a stale camera and a stale player position could
-	# not answer honestly. A perform step's own guard is placed the instant she reads the mark
-	# that unlocked it, live, so her position and the screen both matter here.
+	# **At dawn her position is not yet today's.** `main.gd` starts the resistance before it resets
+	# her, so `_player_position()` still answers where the previous attempt left her — often right
+	# beside this same mark, if its robber caught her — and the camera `_sight` asks is still
+	# there too. A candidate refused on either still spends its draws from `_rng`, which moves the
+	# guard and every later draw of the day, the task her reading the mark places included. So
+	# a dawn guard is kept clear of the doorstep, where the day starts her, and never asked about
+	# the screen: the day's draws follow from the run seed and the day alone, a retry included. A
+	# guard placed the instant she reads a mark asks her live position and the screen, which the
+	# route she walked decides.
 	if not neighbor and not sets_a_trap_on_her(_step):
-		if _step.is_pickup:
-			_maybe_set_a_trap(_day, _rng, at, true, Vector2.INF, false)
+		if at_dawn:
+			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _map.doorstep_world_position(),
+					false)
 		else:
-			_maybe_set_a_trap(_day, _rng, at, false, _player_position(), true)
+			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _player_position(), true)
 
 ## The live instance standing at the run's own recorded scar for `scar_id`, or null when the run
 ## never recorded one — a day 3 that never actually burned this run, or a fix for that landing on
@@ -380,14 +388,10 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 ## awake or any part of him is on her screen (`_track_sight_and_reposition()`). A task's guard is
 ## placed once a day and never replaced.
 ##
-## **`her` and `on_screen_matters` are the caller's to give**, since only a caller placing a
-## contact she is actually near has anything true to say about either. `_player_position()`
-## answers wherever she is *right now*, which at dawn is still where the previous attempt left
-## her — `main.gd` starts the resistance before resetting her — so a mark's own dawn placement
-## passes `Vector2.INF`/`false` for both, keeping the draw deterministic from the run seed and the
-## day alone; a perform step's own guard, placed the instant she reads the mark that unlocked it,
-## and `_move_the_mark()`'s relocation both pass her live position and `true`, since she is
-## genuinely there to be kept clear of and off screen from.
+## **`her` and `on_screen_matters` are the caller's to give**: at dawn the doorstep and `false`,
+## since her own position and the camera are still the previous attempt's (`_begin_step()`); in
+## the day, her live position and `true`, for a task's guard placed as she reads its mark and for
+## `_move_the_mark()`'s relocation.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_mark: bool,
 		her: Vector2, on_screen_matters: bool) -> void:
 	if day < TRAP_FIRST_DAY:
@@ -658,9 +662,9 @@ func _a_clear_run(from: Vector2, to: Vector2) -> bool:
 ## see, so both refusals are what keeps him off her — outside his own `pursues_within`, or worse
 ## his `inner_radius`, a `hard_fail` with no warning at all — and off screen, whichever contact
 ## `at` names. `her` is `Vector2.INF` and `on_screen_matters` is `false` for a caller with nothing
-## live to keep away from — every bare-map rig in `tests/test_resistance.gd` that calls this
-## directly, and a chalk mark's own dawn placement (see `_maybe_set_a_trap()`) — which never
-## rejects anything on either count.
+## to keep away from — the bare-map rigs in `tests/test_resistance.gd` that call this directly —
+## which never rejects anything on either count; a dawn placement passes the doorstep and `false`
+## (`_begin_step()`).
 func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
 		min_distance: float, max_distance: float, walled_alleys: Array[Rect2i] = [],
 		her: Vector2 = Vector2.INF, her_refuse_within: float = 0.0,
@@ -1671,7 +1675,7 @@ func _on_contact_completed(step_index: int) -> void:
 		# to flash the mark's own words — see `Hud._on_resistance_step_completed()`. Activating
 		# the perform half here, rather than waiting for a `start_day()` that will not come
 		# until tomorrow, is what makes the task the same day as the mark.
-		_begin_step(ResistanceSteps.by_index(step_index + 1))
+		_begin_step(ResistanceSteps.by_index(step_index + 1), false)
 		return
 	if step and step.applies_package_weight:
 		GameState.resistance_carrying_package = true
