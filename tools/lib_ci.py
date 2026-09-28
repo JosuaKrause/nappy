@@ -32,8 +32,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # The base a local run compares against when none is given; CI passes the PR's own base branch.
 DEFAULT_BASE = "origin/main"
 
-# A line of the description may carry a list marker before its keyword (`- Filed from #12`).
-LIST_MARKER = r"^[ \t]*(?:[-*+][ \t]+)?"
+# A line of the description may carry a list marker before its keyword (`- Filed from #12`,
+# `1. Filed from #12`).
+LIST_MARKER = r"^[ \t]*(?:(?:[-*+]|\d+[.)])[ \t]+)?"
 
 
 class CiError(Exception):

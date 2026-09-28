@@ -310,7 +310,28 @@ class TranscriptionTests(unittest.TestCase):
         description = (
             "Files two notes.\n\n- Filed from #423\nFiled from #7 (shadows)\nnot Filed from #9\nFiled from #423\n"
         )
-        self.assertEqual(ci_transcription.filed_numbers(description), [423, 7])
+        self.assertEqual(ci_transcription.filed_numbers(description), ([423, 7], []))
+
+    def test_a_numbered_list_marker_is_a_list_marker(self) -> None:
+        self.assertEqual(ci_transcription.filed_numbers("1. Filed from #12\n2) Filed from #13"), ([12, 13], []))
+
+    def test_a_near_miss_key_fails_loudly_rather_than_filing_nothing(self) -> None:
+        for line in (
+            "Filed from: #12",
+            "filed from #12",
+            "Filed from issue #12",
+            "- **Filed from** #12",
+            "1. Filed from #twelve",
+            "> Filed from #12",
+        ):
+            with self.subTest(line=line):
+                numbers, malformed = ci_transcription.filed_numbers(f"Filing.\n\n{line}\n")
+                self.assertEqual(numbers, [])
+                self.assertEqual(len(malformed), 1)
+                self.assertIn("does not have the form Filed from #N", malformed[0])
+
+    def test_prose_that_only_mentions_the_words_is_not_a_near_miss(self) -> None:
+        self.assertEqual(ci_transcription.filed_numbers("The notes this filed from the inbox.\n"), ([], []))
 
     def test_the_players_note_copied_word_for_word_passes(self) -> None:
         self.assertEqual(ci_transcription.check([note()], FILED_PLAYTEST), [])

@@ -20,7 +20,10 @@ such line (bouncy-heron, statements 12, 19 and 23):
 The issue is read through the API whatever its state, since the orchestrator closes a batch's notes
 right after pushing the filing pull request, and the description is read when the job runs, never
 from the event that started it, so a corrected description is re-checked by re-running the job. A
-pull request with no `Filed from` line passes with nothing to check.
+pull request with no `Filed from` line passes with nothing to check. A line that starts with the
+words "filed from" in any case but is not the form `Filed from #N` fails, the way a malformed
+`Dropped:` line fails `tools/ci_queue_update.py`, since a misspelled key would otherwise pass for a
+pull request that files nothing.
 """
 
 from __future__ import annotations
@@ -37,7 +40,12 @@ import lib_ci
 from lib_ci import Change
 
 PLAYTESTS = "docs/playtests"
-FILED = re.compile(lib_ci.LIST_MARKER + r"Filed from #(\d+)\b", re.MULTILINE)
+FILED = re.compile(lib_ci.LIST_MARKER + r"Filed from #(\d+)\b")
+# Any line that starts, after list markers, quote marks or emphasis, with the words "filed from" in
+# any case. One that `FILED` does not parse is a near miss (`Filed from: #12`, `filed from #12`,
+# `Filed from issue #12`) and fails, since a misspelled key would otherwise leave its note unchecked.
+FILED_ANY = re.compile(r"^\W*(?:\d+[.)]\W*)?filed\s+from\b", re.IGNORECASE)
+FILED_FORM = "Filed from #N"
 PLAYER = "JosuaKrause"
 # The capture script's identities: `claude-orchestrator` in Claude Code, `codex-coder` in Codex,
 # which has no orchestrator identity. A bot's login is its GitHub App's slug with `[bot]`.
@@ -61,14 +69,23 @@ class Note:
     is_pull_request: bool
 
 
-def filed_numbers(description: str) -> list[int]:
-    """Every `Filed from #N` line's N, once each, in order."""
+def filed_numbers(description: str) -> tuple[list[int], list[str]]:
+    """Every `Filed from #N` line's N, once each, in order, and a failure for each near miss."""
     numbers: list[int] = []
-    for match in FILED.finditer(description.replace("\r\n", "\n")):
+    malformed: list[str] = []
+    for line in description.replace("\r\n", "\n").split("\n"):
+        match = FILED.match(line)
+        if match is None:
+            if FILED_ANY.match(line):
+                malformed.append(
+                    f"the description's line {line.strip()!r} does not have the form {FILED_FORM},"
+                    " so the note it means is not checked"
+                )
+            continue
         number = int(match.group(1))
         if number not in numbers:
             numbers.append(number)
-    return numbers
+    return numbers, malformed
 
 
 def note_from_api(number: int, data: dict[str, object]) -> Note:
@@ -176,13 +193,12 @@ def main(argv: list[str]) -> int:
         return 2
     try:
         repo = args.repo or lib_ci.default_repo()
-        numbers = filed_numbers(lib_ci.pr_description(repo, number))
-        if not numbers:
+        numbers, failures = filed_numbers(lib_ci.pr_description(repo, number))
+        if not numbers and not failures:
             print("OK: the description names no note (no `Filed from #N` line), so there is nothing to check")
             return 0
         playtests = added_playtests(lib_ci.changed_files(args.base, args.head))
         notes: list[Note] = []
-        failures: list[str] = []
         for issue in numbers:
             try:
                 notes.append(note_from_api(issue, lib_ci.gh_api(f"repos/{repo}/issues/{issue}")))
@@ -192,7 +208,7 @@ def main(argv: list[str]) -> int:
         print(f"tools/ci_transcription.py: {error}", file=sys.stderr)
         return 1
     failures.extend(check(notes, playtests))
-    filed = ", ".join(f"#{issue}" for issue in numbers)
+    filed = ", ".join(f"#{issue}" for issue in numbers) or "no note"
     return lib_ci.report(
         "tools/ci_transcription.py", failures, f"{filed}: the player's, and copied word for word into a playtest file"
     )
