@@ -3698,21 +3698,22 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 		GameState.completed_resistance_alley_tiles = saved_tiles
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
 
-## downy-otter's sealed-alley claim, extended to the relocation path the dawn-only sweep above
-## cannot reach: `_nearest_alley_within()` asks `_reachable_from_home()` the same way `_pick_
-## reachable()` does, over `_ensure_reachability()`'s own flood, built once and cached the first
-## time either asks — this asks it again from many "here" positions scattered over real sidewalk
-## ground rather than only the doorstep, which is the path a mark relocating mid-walk actually
-## takes. Two seeds and a tenth of each city's sidewalk tiles, not the full sweep above: `_nearest_
-## alley_within()` is linear in the alley count per call, asked here many times over, which is the
-## same cost shape M125 already cut the mark sweep down for.
+## downy-otter, "a mark is never placed in an alley she cannot reach" (*"also a mark should never
+## be placed in an alley that is not reachable (ie sealed off)"*, olive-koala statement 9), on the
+## relocation path: `_nearest_alley_within()` asks `_reachable_from_home()` over the flood
+## `_ensure_reachability()` builds once and caches for the day. Asked here from every tenth
+## sidewalk tile of two cities, over every mark day, the way a mark relocating mid-walk is placed,
+## and every answer is checked two ways: against `_day_reachability()`, the same rule the director
+## keeps (every obstructing or lethal plan's disc and the day's closures), built afresh; and against
+## a plain walk from the doorstep over walkable ground minus `CityMap.closed_tiles`,
+## `soft_sealed_tiles` and `obstructed_tiles` — the per-tile record of where a body stands, a
+## second source the director's discs do not read. Two seeds and a tenth of the sidewalks keep the
+## cost down: `_nearest_alley_within()` is linear in the alley count per call.
 ##
-## A probe of mine (not committed) found the dawn check sound wherever it looked: over five cities
-## and days 6 to 12, every alley with a seal body at both mouths reads unreachable to the
-## director's own flood, and crossing-alley doors guarded by `checkpoint_post` read reachable, as a
-## door should. If this ever finds a relocation target the independent `_day_reachability()`
-## verifier calls unreachable, that is the gap still unexplained; if it does not, the claim holds
-## for this path too and the player's own report remains unreproduced by anything found so far.
+## **What this does not cover**: a region door counts as a way through, for the director and for
+## the tile walk alike, so a mark reachable only by crossing a district door passes here. Whether
+## that is "not reachable" in the player's sense is open (statement 8: *"the go through a door
+## task is silly when you have to go through a door to even reach the mark"*).
 func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 	var seeds: Array[int] = [4242, 2295276695]
 	var checked := 0
@@ -3745,6 +3746,14 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 			var blocked: Dictionary = reachability[1]
 			var reached: Dictionary = reachability[2]
 
+			var by_tiles := {}
+			for tiles: Dictionary in [city.map.closed_tiles, city.map.soft_sealed_tiles,
+					city.map.obstructed_tiles]:
+				for tile: Vector2i in tiles:
+					by_tiles[tile] = true
+			var walk := city.map.walk_field(
+					city.map.world_to_tile(city.map.doorstep_world_position()), by_tiles)
+
 			var sidewalks := city.map.tiles_of_type(GameEnums.TileType.SIDEWALK)
 			for i in sidewalks.size():
 				if i % 10 != 0:
@@ -3760,6 +3769,10 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 						("seed %d day %d: the alley a relocation from %s answers with is " +
 						"walkable, unobstructed and reachable from home, never sealed off")
 						% [seed_value, day, sidewalks[i]])
+				t.check(city.map.distance_at(walk, nearest_tile) >= 0,
+						("seed %d day %d: and a walk from the doorstep around every closure, seal " +
+						"and body reaches it (%s, from %s)")
+						% [seed_value, day, nearest_tile, sidewalks[i]])
 			director.free()
 		city.free()
 	t.check(checked > 0, "some relocation target was actually checked (%d)" % checked)
