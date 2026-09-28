@@ -785,15 +785,16 @@ def is_merge_like($reason):
 # `tools/agent-identity.py run <role> --`, never past a wrapper word (`bash`, `env`, `xargs`,
 # `timeout`, ...), which hands its arguments to something else to run. `git` counts only with a
 # subcommand that never runs an argument (`commit`, `log`, `show`, `tag`, ...: not `rebase
-# --exec`, `bisect run` or `submodule foreach`), `gh` with any noun but `alias` or `extension`,
-# whose arguments can be shell commands, `rg` only without `--pre`, which runs a preprocessor,
-# and a Python launcher (`uv run python`, `python3`, `.venv/bin/python`) only running
-# `tools/inbox.py`, which posts its standard input as an issue's text. The rest of the command
-# is read as before, so a write after the quoted argument's own `;`, `&&` or newline still denies.
+# --exec`, `bisect run`, `submodule foreach`, or `grep`, whose `-O` opens a pager command), `gh`
+# with any noun but `alias` or `extension`, whose arguments can be shell commands, and a Python
+# launcher (`uv run python`, `python3`, `.venv/bin/python`) only running `tools/inbox.py`, which
+# posts its standard input as an issue's text. None of them counts with an option that names a
+# program to run (`rg --pre`, `sort --compress-program`). The rest of the command is read as
+# before, so a write after the quoted argument's own `;`, `&&` or newline still denies.
 def text_only_words: ["echo", "printf", "grep", "egrep", "fgrep", "rg", "cat", "head", "tail", "wc", "sort",
                       "uniq", "tee", "jq", "cut", "tr"];
-def git_text_subcommands: ["commit", "log", "show", "tag", "notes", "grep", "diff", "status", "blame",
-                           "shortlog"];
+def git_text_subcommands: ["commit", "log", "show", "tag", "notes", "diff", "status", "blame", "shortlog"];
+def names_a_program($w; $j; $end): any(range($j; $end); $w[.] | test("^--(pre|compress-program)"));
 def text_only_scripts: ["inbox.py"];
 def is_python_word: last_part | test("^python[0-9.]*$");
 def past_assignments($w; $i; $end):
@@ -818,9 +819,9 @@ def text_only_at($w; $i; $end):
         and (past_dash_words($w; $j + 2; $end) as $p
              | $p < $end and ($w[$p] | is_python_word) and runs_text_only_script($w; past_dash_words($w; $p + 1; $end); $end))
       elif $w[$j] | is_python_word then runs_text_only_script($w; past_dash_words($w; $j + 1; $end); $end)
+      elif names_a_program($w; $j; $end) then false
       elif $c == "git" then $j + 1 < $end and ((git_text_subcommands | index($w[$j + 1])) != null)
       elif $c == "gh" then $j + 1 < $end and (($w[$j + 1] | IN("alias", "extension", "ext")) | not)
-      elif $c == "rg" then all(range($j; $end); ($w[.] | test("^--pre(=|$)")) | not)
       else (text_only_words | index($c)) != null
       end
     end;

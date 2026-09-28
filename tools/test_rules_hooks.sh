@@ -1335,6 +1335,10 @@ assert_write_guard "echo of a quoted git push piped into tee >(bash) -> deny, a 
 assert_write_guard "bash reading a process substitution that echoes git push -> deny" deny 'bash <(echo "git push")'
 assert_write_guard "rg --pre with a quoted git push -> deny, --pre runs a program" deny \
     "rg --pre 'sh' \"git push\" x"
+assert_write_guard "sort --compress-program naming a quoted git push -> deny, it runs a program" deny \
+    "sort --compress-program='sh -c \"git push\"' x"
+assert_write_guard "git grep -O with a quoted git push -> deny, -O opens a pager command" deny \
+    "git grep -I -O'sh -c \"git push\"' x -- '*.md'"
 assert_write_guard "bash -c \"echo 'git push' | sh\" -> deny, bash is not text-only" deny \
     "bash -c \"echo 'git push' | sh\""
 assert_write_guard "git submodule foreach with a quoted git push -> deny, foreach runs it" deny \
