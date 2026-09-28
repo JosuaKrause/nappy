@@ -24,7 +24,7 @@ the filer proposes and names in its report. The capture script takes a band when
 one in what was captured.
 
 **Questions about a note are asked on its issue** ([dotted-quail](../../playtests/2026-09-27-dotted-quail.md),
-statement 1: "if you need more info you can also ask in the github issue. so by the time we queue a
+statement 1: "oh, also if you need more info you can also ask in the github issue. so by the time we queue a
 task most questions are already resolved"). An agent that reads a note and needs more from the
 player to file it faithfully posts the question as a comment on that issue, through the inbox
 script, and the player answers there. The player's answers are their own comments, so they are
