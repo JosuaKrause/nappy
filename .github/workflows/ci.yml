@@ -148,7 +148,9 @@ jobs:
 
       # The code's telemetry kinds against docs/TELEMETRY.md's table, read as text on both sides,
       # so it needs no engine and runs on a docs-only pull request too.
+      # Needs only uv, installed above under the same condition, so it runs after a red step too.
       - name: Every telemetry kind has a row in docs/TELEMETRY.md
+        if: ${{ !cancelled() }}
         run: uv run python tools/ci_telemetry_kinds.py
 
       # The pull request's own checks: what it adds and deletes, and what its description says.

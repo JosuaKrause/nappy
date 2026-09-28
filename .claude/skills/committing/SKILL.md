@@ -94,9 +94,9 @@ a background agent, not a polling loop in the orchestrating session.
 consistency check and every test of the game, except on a docs-only pull request, where the game's
 tests are skipped and every consistency check still runs (**verify** says what each kind of pull
 request gets). The `main approvals` ruleset requires one approving review, from a reviewer bot or
-the player; repository admins (the player) may bypass it on any pull request
-they merge, not only their own, and resolving the review threads is not required (a convention, not
-a gate — see above). So green CI alone is not the gate.
+the player; repository admins (the player) may bypass it on any pull request they merge, not only
+their own, and resolving the review threads is not required (a convention, not a gate — see
+above). So green CI alone is not the gate.
 Neither ruleset requires a branch to be up to date with `main`
 (`strict_required_status_checks_policy` is off), so an approved PR whose `test` check is green
 merges after `main` has moved under it as long as the merge is still clean; a conflict still blocks
@@ -113,11 +113,12 @@ and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge com
 and every pull request but a docs-only one, which gets the consistency checks alone (**verify**)
 — a new push to a pull request cancels that pull request's older runs, and a run on `main` is never
 cancelled. A push to `main` is never docs-only, so the commit a tag points at has had every check.
-`.github/workflows/deploy.yml` fires on a `v*` tag and nothing else: verify, boot check, export, upload, publish, then the GitHub release, in that order. **The
-deploy does not run the suite again.** The `version tags` ruleset requires the `test` check on the
-commit a tag points at, so a tag on a red or untested commit cannot be pushed, and the deploy's
-first job asks the API for that check's outcome and refuses to build without it — the same read
-`tools/release.sh` waits on before it tags.
+`.github/workflows/deploy.yml` fires on a `v*` tag and nothing else: verify, boot check, export,
+upload, publish, then the GitHub release, in that order. **The deploy does not run the suite
+again.** The `version tags` ruleset requires the `test` check on the commit a tag points at, so a
+tag on a red or untested commit cannot be pushed, and the deploy's first job asks the API for that
+check's outcome and refuses to build without it — the same read `tools/release.sh` waits on before
+it tags.
 
 **The release's notes are generated, not written.** The deploy's last job runs `tools/release-notes.py
 <tag>` — deterministic from git alone, no model and no network call to compute — and publishes its
