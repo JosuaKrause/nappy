@@ -5,7 +5,9 @@ is one whose every changed file the CI classification of `skip-godot-on-docs.md`
 a filing, a queue move, a review item, a skill or `CLAUDE.md` change — and its commits, its push
 and the PR itself are the orchestrator's. Every issue write is too: the inbox capture of
 `capture.md`, and the closing of notes by a filing PR. A PR that changes code stays
-`claude-coder`'s, as the committing skill says today.
+`claude-coder`'s, as the committing skill says today. The identity is chosen when a PR is opened,
+from whether it is going to contain code changes ("if a PR is going to not contain code changes it
+probably would go through orchestrator").
 
 It is one more row in the role table of `tools/agent-identity.py`, the script that creates each bot
 app and runs a command as it, with the app name `nappy-claude-orchestrator`; the player creates it

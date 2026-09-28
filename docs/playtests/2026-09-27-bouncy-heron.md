@@ -240,9 +240,12 @@ it recommended dropping it.
 
 > "all doc only PRs and issue writes go through orchestrator"
 
+> "if a PR is going to not contain code changes it probably would go through orchestrator"
+
 17. **There is one orchestrator identity, `claude-orchestrator`, for Claude Code only**; Codex has
     none. **Every docs-only PR and every issue write goes through it** — neither option (1) nor
     (2) as offered: a docs-only PR is one whose changed files the CI classification calls
-    docs-only, and a PR that changes code stays `claude-coder`'s. The player did not answer
-    whether the app drops `workflows: write`, so the assistant's recommendation to drop it is
-    filed as its proposal. → leafy-finch.
+    docs-only, and a PR that changes code stays `claude-coder`'s. Which identity opens a PR is
+    decided when it is opened, from whether it is going to contain code changes. The player did
+    not answer whether the app drops `workflows: write`, so the assistant's recommendation to drop
+    it is filed as its proposal. → leafy-finch.
