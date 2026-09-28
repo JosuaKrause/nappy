@@ -304,15 +304,8 @@ whether it holds. The player answered:
     own words, is an inbox note.** An issue anyone else opens is never read into the queue,
     whatever its label, and neither is a comment by anyone but the player. → leafy-finch.
 
-A filed entry opens with one of the queue's four bands, `now`, `next`, `later` or `parked`, and
-**playtest-feedback** files a note from playing `now` unless the player names another band, and
-anything else in a band the filer proposes. While the assistant was recording the answer above,
-the player added:
-
-> "also add to use labels for when a task should be queued, now, later, etc"
-
-21. **The player sets a note's band with a label on the inbox issue**, and the entry filed from it
-    opens with that band. → leafy-finch.
+The player's "yes" came after the exchange of the next section, and is placed here with the
+statement it settles.
 
 ## Which tests a docs-only PR skips
 
@@ -334,3 +327,15 @@ answered:
     consistency, wherever that check lives today.** "Heavy" describes game tests in general, not
     a subset of them. A test inside the Godot suite that checks the repository rather than the
     game still runs on a docs-only PR. → leafy-finch.
+
+## A note's band
+
+A filed entry opens with one of the queue's four bands, `now`, `next`, `later` or `parked`, and
+**playtest-feedback** files a note from playing `now` unless the player names another band, and
+anything else in a band the filer proposes. While the assistant was recording the player's "yes"
+to statement 19, the player added:
+
+> "also add to use labels for when a task should be queued, now, later, etc"
+
+21. **The player sets a note's band with a label on the inbox issue**, and the entry filed from it
+    opens with that band. → leafy-finch.

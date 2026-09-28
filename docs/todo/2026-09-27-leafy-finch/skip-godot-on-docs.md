@@ -21,8 +21,9 @@ are consistency checks outside the suite; `tests/test_telemetry.gd`'s check that
 kind has a row in `docs/TELEMETRY.md`, and `tools/cost-table.sh --check`, are consistency checks
 that need Godot; the boot check, the negative fixtures of `tools/test.sh` and the rest of the
 suite shards test the game. The player's example, "the handoff guard", names no check that exists
-today — a search of `tests/`, `tools/` and `.claude/hooks/` finds none — so the filer reads it as
-the check of `no-handoff-file.md`, built as a consistency check; the player has not confirmed it.
+today — a search of `tests/`, `tools/`, `.claude/hooks/` and `.github/` finds none — so the filer
+reads it as the check of `no-handoff-file.md`, built as a consistency check; the player has not
+confirmed it.
 
 The `test` job, which is the check `main`'s ruleset requires by name, passes on a docs-only PR when
 every consistency check passed and the game's tests were skipped, and only on a PR the
