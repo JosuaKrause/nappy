@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t)
 	_test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t)
 	_test_a_guard_never_lands_within_his_own_reach_of_her(t)
+	_test_a_relocated_mark_and_its_guard_are_placed_off_screen(t)
 	_test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t)
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
@@ -727,6 +728,65 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 						% [seed_value, tile])
 		director.free()
 	t.check(checked > 0, "some mark was actually checked (%d draws)" % checked)
+
+## brisk-wombat, both halves: *"I just had one appear out of nowhere while I was walking through an
+## alley and then a robber also appeared out of nowhere and instakilled me."* She stands on every
+## other through-alley tile of two cities; the screen is the unrotated 640x360 world px around her
+## (`Tuning.VIEW_HALF_EXTENT`). Wherever `_nearest_alley_within()` relocates the mark, no part of
+## its 32px picture is on that screen, and the guard `_move_the_mark()` stands for it
+## (`_guard_position()`, as `_maybe_set_a_trap()` calls it for a relocation) exists and shows no
+## part of his 22x44px body on it either. The guard a task sets at its contact when she reads the
+## mark (`for_mark` false), asked of a contact just past the edge of her screen, never shows either.
+## Every box is measured here from the screen's own edges rather than through the director's
+## `_box_shows()`, so the test does not ask the code whether the code is right.
+func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
+	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+	GameState.completed_resistance_alley_tiles = []
+	var relocations := 0
+	var tasks := 0
+	for seed_value in [4242, 555555]:
+		var map := CityGenerator.generate(seed_value)
+		var director := ResistanceDirector.new()
+		director.setup(null, map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("off-screen:%d" % seed_value)
+		var through := director._through_alley_tiles()
+		for i in range(0, through.size(), 2):
+			var her := map.tile_to_world(through[i])
+			director.set_sight(func(p: Vector2) -> bool:
+				return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
+						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y)
+			var mark := director._nearest_alley_within(her)
+			if mark != Vector2.INF:
+				relocations += 1
+				t.check(not _box_on_screen(mark, Vector2(16.0, 16.0), her),
+						"seed %d: from %s, no part of the relocated mark at %s is on screen"
+						% [seed_value, through[i], map.world_to_tile(mark)])
+				var guard_at := director._guard_position(rng, mark, true, her, true)
+				t.check(guard_at != Vector2.INF,
+						"seed %d: the mark relocated to %s is guarded"
+						% [seed_value, map.world_to_tile(mark)])
+				if guard_at != Vector2.INF:
+					t.check(not _box_on_screen(guard_at + Vector2(0.0, -22.0),
+							Vector2(11.0, 22.0), her),
+							"seed %d: from %s, no part of the relocated mark's guard at %s is on screen"
+							% [seed_value, through[i], map.world_to_tile(guard_at)])
+			var contact := her + Vector2(Tuning.VIEW_HALF_EXTENT.x + 40.0, 0.0)
+			var task_guard := director._guard_position(rng, contact, false, her, true)
+			if task_guard != Vector2.INF:
+				tasks += 1
+				t.check(not _box_on_screen(task_guard + Vector2(0.0, -22.0), Vector2(11.0, 22.0),
+						her), "seed %d: a task's guard at %s is not on screen from %s"
+						% [seed_value, map.world_to_tile(task_guard), through[i]])
+		director.free()
+	GameState.completed_resistance_alley_tiles = saved_tiles
+	t.check(relocations > 0 and tasks > 0,
+			"marks were relocated (%d) and task guards drawn (%d)" % [relocations, tasks])
+
+## Whether a box `half` either side of `centre` overlaps the unrotated screen around `her`.
+func _box_on_screen(centre: Vector2, half: Vector2, her: Vector2) -> bool:
+	return absf(centre.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x + half.x \
+			and absf(centre.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y + half.y
 
 ## The other half of the same rule: near enough, for long enough, that walking away is a choice.
 func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> void:

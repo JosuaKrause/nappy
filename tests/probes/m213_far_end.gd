@@ -19,6 +19,10 @@ extends RefCounted
 ## `_nearest_alley_within()` and draws its guard exactly as `_maybe_set_a_trap()` does for a
 ## relocation. Counted: a relocated mark whose picture, or whose guard's body, shows on that
 ## screen, and a relocation that leaves the mark unguarded.
+##
+## **The task guards.** Days 8, 9, 11, 12 and 13 of the same six cities, on a real `City`: she
+## stands on the day's mark and reads it, and the guard the task stands at its own contact
+## (`_task_guard`) is counted when none is placed and when his body shows on her screen.
 
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]

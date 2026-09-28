@@ -639,9 +639,10 @@ func _a_clear_run(from: Vector2, to: Vector2) -> bool:
 ## placed inside a building": his lethal radius travels with him, so a bearing that lands him in
 ## a building is an invisible fatal spot rather than a cosmetic one.
 ##
-## **Used for every guarded contact but a chalk mark's own** (`toward` is always `Vector2.INF`
-## here, drawn from the whole circle: `_maybe_set_a_trap()` sends a mark's own guard to
-## `_draw_guard_position_near_far_mouth()` instead). An `ALLEY` tile by preference, since the
+## **Used for every guarded contact but a chalk mark's own**, drawn from the whole circle: the
+## director always passes `toward` as `Vector2.INF` (a rig may pass a point to lean the bearing to
+## the half-circle facing it), and `_guard_position()` sends a mark's own guard to
+## `_draw_guard_position_near_far_mouth()` instead. An `ALLEY` tile by preference, since the
 ## row's own placement is `ALLEY`, but not a requirement: the band this draws from can reach well
 ## past a two-tile-wide alley's own building line, so an alley hit is kept the moment it is found
 ## and any other walkable, unheld, off-the-home-block tile is kept as a fallback in case the
@@ -651,7 +652,7 @@ func _a_clear_run(from: Vector2, to: Vector2) -> bool:
 ## `walled_alleys` defaults empty for the bare-map rigs several tests in `tests/test_resistance.gd`
 ## drive with no `_city` — see `_walled_alleys()`, which is what the real caller passes.
 ##
-## **Never within `her_refuse_within` of `her`, and never somewhere `_is_visible()` calls seen**
+## **Never within `her_refuse_within` of `her`, and never where `_guard_shows()` calls him seen**
 ## (brisk-wombat, "a robber also appeared out of nowhere and instakilled me"): a candidate is
 ## drawn purely from the band around `at`, with no idea where she stands or what the camera can
 ## see, so both refusals are what keeps him off her — outside his own `pursues_within`, or worse
@@ -679,7 +680,7 @@ func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vecto
 		var candidate := at + Vector2.RIGHT.rotated(angle) * distance
 		if her != Vector2.INF and candidate.distance_to(her) <= her_refuse_within:
 			continue
-		if on_screen_matters and _is_visible(candidate):
+		if on_screen_matters and _guard_shows(candidate):
 			continue
 		var tile := _map.world_to_tile(candidate)
 		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
@@ -730,7 +731,7 @@ func _draw_guard_position_near_far_mouth(rng: RandomNumberGenerator, at: Vector2
 	for candidate in candidates:
 		if her != Vector2.INF and candidate.distance_to(her) <= her_refuse_within:
 			continue
-		if on_screen_matters and _is_visible(candidate):
+		if on_screen_matters and _guard_shows(candidate):
 			continue
 		var tile := _map.world_to_tile(candidate)
 		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
@@ -739,30 +740,39 @@ func _draw_guard_position_near_far_mouth(rng: RandomNumberGenerator, at: Vector2
 		return candidate
 	return Vector2.INF
 
-## The margin a plain `_sight.call(world)` misses: the chalk mark's own picture is 32px across in
-## the world (`art/props/chalk_mark.svg`, drawn centre-anchored), and the guard's own body is a
-## comparable width, so a point one pixel past `_sight`'s own edge still shows half of whatever
-## stands there. Sampled at the four points `SIGHT_MARGIN` out from `world` along each axis, in
-## addition to `world` itself, rather than passed to `DangerEdge.is_on_screen()`'s own `margin`
-## parameter directly: `_sight` is a bare `Callable` (a test may bind a single-argument lambda
-## that predates this margin and would error on a second one), and every caller already asks it
-## the same one-argument way.
-const SIGHT_MARGIN := 16.0
+## Half the chalk mark's own picture, around its centre: `chalk_mark.svg` is 32px square in the
+## world, drawn centre-anchored (`ContactPoint._draw_chalk()`).
+const MARK_HALF_EXTENT := Vector2(16.0, 16.0)
+## The waiting robber's body around his feet, where `EventInstance` stands him: his pictures are 22
+## by 44px, anchored at the middle of their bottom edge (`robber_waiting*.svg`), so the box is
+## centred half his height above his feet and grown a few pixels each way for his shadow.
+const GUARD_BODY_CENTRE := Vector2(0.0, -22.0)
+const GUARD_HALF_EXTENT := Vector2(14.0, 26.0)
 
-## Whether any part of a `SIGHT_MARGIN`-wide picture centred on `world` would be on screen right
-## now — see `SIGHT_MARGIN`'s own doc. `false`, never "unknown", when `_sight` is unset: the
-## bare-map rigs several tests in this file drive have no camera to ask, so nothing they place is
-## ever refused for being seen.
-func _is_visible(world: Vector2) -> bool:
+## Whether any part of a box `half` either side of `centre` is on screen right now: `_sight` asked
+## of the centre and the four corners. The screen is a rectangle far larger than either box and
+## only ever turned by quarter turns (`ScreenOrientation`), so a box that overlaps it has a corner
+## inside it. A bare centre test is what lets a picture whose centre is one pixel past the edge
+## show half of itself. The corners are asked through `_sight` itself rather than
+## `DangerEdge.is_on_screen()`'s own `margin`, which is in screen pixels and not in the world's.
+## `false` when `_sight` is unset: the bare-map rigs several tests in `tests/test_resistance.gd`
+## drive have no camera to ask, so nothing they place is ever refused for being seen.
+func _box_shows(centre: Vector2, half: Vector2) -> bool:
 	if not _sight.is_valid():
 		return false
-	if _sight.call(world):
-		return true
-	for offset in [Vector2(SIGHT_MARGIN, 0.0), Vector2(-SIGHT_MARGIN, 0.0),
-			Vector2(0.0, SIGHT_MARGIN), Vector2(0.0, -SIGHT_MARGIN)]:
-		if _sight.call(world + offset):
+	for corner: Vector2 in [centre, centre + half, centre - half, centre + Vector2(half.x, -half.y),
+			centre + Vector2(-half.x, half.y)]:
+		if _sight.call(corner):
 			return true
 	return false
+
+## Whether any part of a chalk mark's picture at `at` would be on screen right now.
+func _mark_shows(at: Vector2) -> bool:
+	return _box_shows(at, MARK_HALF_EXTENT)
+
+## Whether any part of a waiting robber standing at `feet` would be on screen right now.
+func _guard_shows(feet: Vector2) -> bool:
+	return _box_shows(feet + GUARD_BODY_CENTRE, GUARD_HALF_EXTENT)
 
 ## The mark's own alley, as `[nearer, farther]` — the end tiles of its long axis in the mark's own
 ## column or row, ordered by distance from `at` — or `[]` when `at` is on no through-alley.
@@ -1586,13 +1596,16 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## avoiding them would leave nothing in reach at all — a relocation exists to keep the mark
 ## findable, and that guarantee outranks the avoidance.
 ##
-## **Never a tile any part of the mark's own picture would show on** (brisk-wombat, "the mark and
-## its robber never appear in front of her" — *"I just had one appear out of nowhere while I was
-## walking through an alley"*): the nearest reachable alley to `here` is, by construction,
-## wherever she is standing or just beside it, which is on screen more often than not. `_is_
-## visible()` is the margin a bare centre-point test misses — a candidate one pixel past the edge
-## of the view still shows half of `chalk_mark.svg` — and answers `false` with no camera wired up,
-## the bare-map rigs several tests in this file drive.
+## **Never a tile any part of the mark's own picture would show on, nor one whose guard would
+## show** (brisk-wombat, "the mark and its robber never appear in front of her" — *"I just had one
+## appear out of nowhere while I was walking through an alley and then a robber also appeared out
+## of nowhere and instakilled me"*): the nearest reachable alley to `here` is, by construction,
+## wherever she is standing or just beside it, which is on screen more often than not. The mark's
+## picture is asked with its own size (`_mark_shows()`), and the far end of its alley, where
+## `_move_the_mark()` stands the guard or which it falls back to, with his (`_guard_shows()`), so a
+## relocation never lands where its guard could only be placed in view or not at all. Both are
+## asked only of a tile nearer than the best found so far, which keeps this cheap enough for every
+## frame.
 func _nearest_alley_within(here: Vector2) -> Vector2:
 	var walled_alleys := _walled_alleys()
 	var used := GameState.completed_resistance_alley_tiles
@@ -1601,19 +1614,24 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 	var nearest_any := Vector2.INF
 	var nearest_any_distance := NOTICE_RADIUS
 	for tile in _through_alley_tiles():
+		var world := _map.tile_to_world(tile)
+		var distance := here.distance_to(world)
+		var unused := tile not in used
+		# Nothing to gain: no nearer than the nearest tile at all, and either used or no nearer
+		# than the nearest unused one (`nearest_any_distance` is never above `nearest_distance`).
+		if distance >= nearest_any_distance and (not unused or distance >= nearest_distance):
+			continue
 		if _map.is_closed(tile) or not _map.is_walkable(tile) \
 				or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
 				or _map.is_in_walled_alley(tile, walled_alleys) or _map.is_obstructed(tile) \
 				or not _reachable_from_home(tile):
 			continue
-		var world := _map.tile_to_world(tile)
-		if _is_visible(world):
+		if _mark_shows(world) or _guard_shows(_far_alley_mouth(world)):
 			continue
-		var distance := here.distance_to(world)
 		if distance < nearest_any_distance:
 			nearest_any_distance = distance
 			nearest_any = world
-		if tile in used or distance >= nearest_distance:
+		if not unused or distance >= nearest_distance:
 			continue
 		nearest_distance = distance
 		nearest = world
