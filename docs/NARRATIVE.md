@@ -164,16 +164,20 @@ the resistance*, narrowed to a task with exactly one place to be.
 
 ### Risk
 
-- **Every mark is guarded**, from the day the first one can appear. A robber waits somewhere
-  between 66px and 176px of it — inside that band touching the mark is death, always; above
-  it he never wakes at all; between them, which side the player approaches from decides whether he
-  notices them, and he always stands toward the far end of the mark's own alley, never the near
-  one, so walking in from the mark's own end and back out is the side that is likelier to leave
-  him asleep. *(2026-09-26: "the rubber in the alley with the mark is too close to the mark. It's
-  impossible to get the mark on most days. Let's always place the river at the other end of the
-  alley" — "rubber"/"river" are dictation for *robber*.)* Seeded from the run and the day, so the
-  distance that was safe on day 9 of this run is safe on day 9 every time you replay it — the
-  pattern is learnable, which is the difference between risk and a coin flip.
+- **Every mark is guarded**, from the day the first one can appear. Its own robber stands at the
+  far mouth of the mark's own alley, or as near it as the alley allows — never merely leaning that
+  way from somewhere near the mark — so walking in from the mark's own end and back out is the
+  side that is likelier to leave him asleep, and the near end still wakes him if she strays past
+  his own trigger range. *(2026-09-26: "the rubber in the alley with the mark is too close to the
+  mark. It's impossible to get the mark on most days. Let's always place the river at the other
+  end of the alley" — "rubber"/"river" are dictation for *robber* — and, asked whether he may
+  then never wake at all, "stands at the far end even where he then never wakes".)* Every other
+  guarded contact — a door, a mast's foot, a swing, the burnt shell, a roadblock — keeps a robber
+  somewhere between 66px and 176px of it instead: inside that band touching it is death, always;
+  above it he never wakes at all; between them, which side the player approaches from decides
+  whether he notices them. Seeded from the run and the day, so the distance or the alley that was
+  safe on day 9 of this run is safe on day 9 every time you replay it — the pattern is learnable,
+  which is the difference between risk and a coin flip.
 - **Two tasks send someone after her rather than guarding where she finds them.** The man shouting
   and the van's package are not guarded at the contact. The moment she hands either over, someone
   is sent after her from off screen — usually from above or below her,

@@ -347,12 +347,13 @@ func _on_contact_available(step: int) -> void:
 ## "the bottom left text with the current task should disappear when the task is complete" —
 ## *"this is not an onscreen text that shows up so it fits the rule still. but it is helpful as
 ## indication that the task was completed correctly"*): a perform step's own completion, or the
-## finale's, is the last `_begin_step()` of the day, so nothing else was ever going to overwrite
-## `_resistance_label`'s "somewhere out there" line, and it kept naming an already-finished task
-## for the rest of the day. `_refresh_resistance()` still runs for every completion, pickup or
-## perform, so a pickup's own follow-up perform (`_begin_step()` activating it a frame later,
-## through `_on_contact_available()`) still overwrites this blank the moment it fires — the
-## momentary blank in between is not a line the player is meant to read anything into.
+## finale's, is the last `_begin_step()` of the day, so nothing else ever overwrites
+## `_resistance_label`'s "somewhere out there" line on its own, and clearing it here is what keeps
+## it from naming an already-finished task for the rest of the day. `_refresh_resistance()` still
+## runs for every completion, pickup or perform, so a pickup's own follow-up perform (`_begin_
+## step()` activating it a frame later, through `_on_contact_available()`) overwrites this blank
+## the moment it fires — the momentary blank in between is not a line the player is meant to read
+## anything into.
 func _on_resistance_step_completed(step_index: int) -> void:
 	var step := ResistanceSteps.by_index(step_index)
 	if step and step.is_pickup and step.brief != "":

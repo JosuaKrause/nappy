@@ -286,7 +286,7 @@ static func _build() -> Array[Step]:
 		# the same row on a reachable sidewalk, the smallest honest stand-in — see
 		# `ResistanceDirector._begin_step()`.
 		_mark(5, "Another mark", 8,
-				"Something was left for you. Take it to the burnt building."),
+				"Take what's in the stroller to the burnt building."),
 		_perform(6, "The burnt shell", 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,
 				TargetKind.SCAR, false, "the burnt building"),
 

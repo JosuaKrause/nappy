@@ -462,8 +462,8 @@ func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
 ## helpful as indication that the task was completed correctly because most tasks right now are
 ## not clear about whether they have been completed."* Pinned for a mark and for a task, as the
 ## item asks: a perform step's own completion is the day's last `_begin_step()`, so nothing else
-## was ever going to overwrite `_resistance_label`'s "somewhere out there" line, and it used to
-## keep naming an already-finished task for the rest of the day.
+## ever overwrites `_resistance_label`'s "somewhere out there" line on its own, and clearing
+## `_contact_step` here is what stops it naming an already-finished task for the rest of the day.
 func _test_the_task_line_clears_when_the_task_is_done(t) -> void:
 	var saved_completed := GameState.completed_resistance_steps.duplicate()
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
