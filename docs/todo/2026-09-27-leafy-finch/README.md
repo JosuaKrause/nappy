@@ -40,7 +40,7 @@ The committing skill's "Who a commit and a pull request are from" says "Claude C
 orchestrator and every implementation agent it spawns commit as `claude-coder`", and the
 tall-egret record says "Claude Code's orchestrator and its implementation agents commit as
 `claude-coder`": the identity follows which session writes. Statement 17 replaces that with a
-fifth identity chosen by what the write does (`orchestrator-identity.md`).
+fifth identity chosen by what the write does ([its record](../decisions/2026-09-27-leafy-finch.md)).
 
 **The PR that closes this entry writes its decision record**, which also records that Issues were
 weighed as the queue itself and rejected — no review when an entry enters, edits with no reviewed
