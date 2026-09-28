@@ -271,3 +271,15 @@ session no longer following code PRs at all, and asked which was meant.
     it merges a code PR, and a spawned agent writes as `claude-orchestrator` when it opens a
     docs-only PR. The player did not answer whether the app drops `workflows: write`, so the
     assistant's recommendation to drop it is filed as its proposal. → leafy-finch.
+
+Quoting the assistant's reading back — "the orchestrator identity never writes on a code PR. That
+means no commit, comment, merge or branch retirement. Those all go out as claude-coder or
+claude-reviewer. The orchestrating session still spawns the agents that do them, and still gets
+your go-ahead to merge." — the player added:
+
+> "this is also not a hard rule. if a PR starts out as doc only and later code becomes part of it
+> then identities will mix"
+
+18. **The split is a convention, not a hard rule.** A PR that starts docs-only and later gains
+    code keeps the orchestrator's earlier writes and takes the coder's from then on, so its
+    identities mix. Nothing checks a PR's authors against its classification. → leafy-finch.

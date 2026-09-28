@@ -21,6 +21,11 @@ code changes it probably would go through orchestrator"). The session is not the
 orchestrating session writes as `claude-coder` when it merges a code PR, and a spawned agent
 writes as `claude-orchestrator` when it opens a docs-only PR.
 
+**It is a convention, not a hard rule** (statement 18: "if a PR starts out as doc only and later
+code becomes part of it then identities will mix"). A PR that starts docs-only and later gains
+code keeps the orchestrator's earlier writes, and its later writes are the coder's. Nothing — no
+CI check, no hook — compares a PR's authors with its classification.
+
 It is one more row in the role table of `tools/agent-identity.py`, the script that creates each bot
 app and runs a command as it, with the app name `nappy-claude-orchestrator`; the player creates it
 on their own machine with `uv run python tools/agent-identity.py create claude-orchestrator`, since
