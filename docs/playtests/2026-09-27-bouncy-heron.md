@@ -294,11 +294,25 @@ Unprompted, while the assistant was fixing the orchestrator item, the player add
 > "for now let's also require that inbox issues are created by me so random people opening github
 > issues don't get their comments ingested into the queue"
 
-19. **For now, only an issue the player opened is an inbox note.** An issue anyone else opens is
-    never read into the queue, whatever its label, and neither is a comment by anyone but the
-    player. The filer's reading, not yet confirmed: an issue `claude-orchestrator` or `codex-coder`
-    opens with the capture script, holding the player's own words, counts as the player's, since
-    capture exists to put them there. → leafy-finch.
+The assistant filed its reading as unconfirmed — an issue `claude-orchestrator` or `codex-coder`
+opens with the capture script, holding the player's own words, counts as the player's — and asked
+whether it holds. The player answered:
+
+> "yes, otherwise the workflow wouldn't work"
+
+19. **For now, only an issue the player opened, or one the capture script opened with the player's
+    own words, is an inbox note.** An issue anyone else opens is never read into the queue,
+    whatever its label, and neither is a comment by anyone but the player. → leafy-finch.
+
+A filed entry opens with one of the queue's four bands, `now`, `next`, `later` or `parked`, and
+**playtest-feedback** files a note from playing `now` unless the player names another band, and
+anything else in a band the filer proposes. While the assistant was recording the answer above,
+the player added:
+
+> "also add to use labels for when a task should be queued, now, later, etc"
+
+21. **The player sets a note's band with a label on the inbox issue**, and the entry filed from it
+    opens with that band. → leafy-finch.
 
 ## Which tests a docs-only PR skips
 
