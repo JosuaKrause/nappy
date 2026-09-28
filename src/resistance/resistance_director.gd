@@ -112,9 +112,10 @@ var _contact: ContactPoint
 ## The mark's own touched `ContactPoint`, once she has read it — kept alive rather than freed the
 ## instant `_begin_step()` activates the perform it unlocks, so `chalk_mark_touched.svg` keeps
 ## showing where she read it for the rest of the attempt (the player, asked whether a read mark
-## should vanish at once or stay: "Stays crossed, until the day ends"). `start_day()`'s own
-## `_clear()` frees it, so it never survives a retry or the next day, and nowhere else ever holds
-## a second one. Null before a mark has been read this attempt.
+## should vanish at once or stay: "Stays crossed, until the day ends"), even when the task it
+## unlocked expires. `start_day()` frees it, so it never survives a retry or the next day, and a
+## day reads one mark at most, so no second one ever stands beside it. Null before a mark has been
+## read this attempt.
 var _read_mark: ContactPoint
 ## The `EventInstance` a perform step's contact rides on. Null for a pickup, the finale, or a
 ## `DOOR`/`PARK_SWING` step, all of which sit on a bare tile instead.
@@ -204,6 +205,11 @@ func set_sight(is_on_screen: Callable) -> void:
 
 func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_clear()
+	# The mark she read, if any, stands crossed through until the day ends (`_read_mark`) — here,
+	# and not in `_clear()`, which a task expiring mid-day also runs.
+	if _read_mark and is_instance_valid(_read_mark):
+		_read_mark.queue_free()
+	_read_mark = null
 	_elapsed = 0.0
 	_day_length = day_length
 	_expired = false
@@ -267,19 +273,13 @@ func _begin_step(step: ResistanceSteps.Step) -> void:
 		_step = null
 		return
 
-	# The step this replaces is never referenced again once this function returns. A pickup's own
-	# `ContactPoint` — the mark she has just read, activating the perform right behind it in this
-	# same call — becomes `_read_mark` instead of being freed: the player, asked whether a read
-	# mark should vanish at once or stay, "Stays crossed, until the day ends" — `chalk_mark_
-	# touched.svg` keeps showing where she read it. Anything else this replaces (a perform's own
-	# invisible contact, from an earlier attempt this `_begin_step()` never reaches twice in one
-	# day) is freed, the same disposal `_clear()` gives one at a day boundary; either way the old
-	# `_read_mark`, if this attempt already had one, goes first, so at most one mark is ever
-	# standing.
+	# The contact this replaces is only ever the mark she has just read, activating the task right
+	# behind it in this same call (`start_day()` clears everything else first). It stays standing
+	# as `_read_mark`, crossed through, rather than being freed: the player, asked whether a read
+	# mark should vanish at once or stay, "Stays crossed, until the day ends". Anything else is
+	# freed.
 	if _contact and is_instance_valid(_contact):
 		if _contact.step != null and _contact.step.is_pickup:
-			if _read_mark and is_instance_valid(_read_mark):
-				_read_mark.queue_free()
 			_read_mark = _contact
 		else:
 			_contact.queue_free()
@@ -1724,11 +1724,6 @@ func _clear() -> void:
 	if _contact and is_instance_valid(_contact):
 		_contact.queue_free()
 	_contact = null
-	# The read mark from this attempt or day, if any: kept alive by `_begin_step()` while the
-	# attempt runs, freed here at the day boundary — a retry or the next day never inherits it.
-	if _read_mark and is_instance_valid(_read_mark):
-		_read_mark.queue_free()
-	_read_mark = null
 	_rider = null
 	_mast_id = ""
 	_lingering_rider = null

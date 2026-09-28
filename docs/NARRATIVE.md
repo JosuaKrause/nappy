@@ -236,7 +236,10 @@ pointer to one — and every other day's line is one or two sentences about what
 city that morning, the same words whichever way the day before it went.
 
 **A finished task is shown by the world and never by text.** A touched mark changes to its own
-touched picture, which is all a mark needs; nothing is written on the HUD, and there is no
+touched picture, which is all a mark needs, and stays where she read it, crossed through, until the
+day ends or is tried again — and nowhere else. *(2026-09-27, asked whether a read mark should
+vanish at once or stay: "Stays crossed, until the day ends".)* Nothing is written on the HUD, and
+there is no
 counter, no objective marker and no log. The note for a stranger answers almost the same way: once
 she has handed it over, the man she reached keeps shouting for a couple of seconds, still charging
 her the whole time, then stops and walks away, on foot, until he is out of sight — the same

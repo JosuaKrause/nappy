@@ -2544,6 +2544,12 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 			t.check(director._task_guard != mark_guard,
 					"the door's own guard, if any, is a fresh instance rather than the mark's own")
 
+		# The door's task expiring (its deadline, or its rider gone) ends the task, not the day:
+		# the read mark stays standing.
+		director._expire("expired for the test")
+		t.check(is_instance_valid(mark_contact) and not mark_contact.is_queued_for_deletion(),
+				"the read mark still stands once the task it unlocked has expired")
+
 		# The day is retried (the same shape a new day takes): the read mark is freed outright,
 		# and the old guard's own EventInstance — freed for real by `EventManager.clear()` in the
 		# real game, which this bare director rig has none of to ask — is at least no longer
