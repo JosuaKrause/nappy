@@ -73,7 +73,7 @@ def parse_dropped(description: str) -> tuple[list[Dropped], list[str]]:
     """The description's `Dropped:` lines, and a failure for each one that does not have the form."""
     drops: list[Dropped] = []
     malformed: list[str] = []
-    for line in description.replace("\r\n", "\n").split("\n"):
+    for line in lib_ci.without_fences(description).split("\n"):
         if not DROPPED_ANY.match(line):
             continue
         match = DROPPED.match(line)

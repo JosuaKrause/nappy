@@ -433,9 +433,58 @@ class CodePrQueueTests(unittest.TestCase):
         self.assertIn("a CI repair", passed)
 
     def test_an_escape_with_no_reason_or_mid_sentence_does_not_count(self) -> None:
-        for description in ("No queue item:", "No queue item:   ", "There is No queue item: here"):
+        for description in (
+            "No queue item:",
+            "No queue item:   ",
+            "There is No queue item: here",
+            "No queue item: <reason>",
+            "No queue item: `<why>`",
+        ):
             with self.subTest(description=description):
                 self.assertEqual(len(ci_code_pr_queue.check([self.CODE], description)[0]), 1)
+
+
+FENCED = "\n".join(
+    [
+        "Explaining the lines, not writing them:",
+        "",
+        "```",
+        "No queue item: a reason shown as an example",
+        "Filed from #12",
+        f'Dropped: {ITEM} — "let\'s drop the capture script, it is not needed"',
+        "```",
+        "",
+        "~~~~markdown",
+        "Filed from #13",
+        "~~~",
+        "Filed from #14 is still inside: a shorter fence does not close a longer one",
+        "~~~~",
+        "",
+    ]
+)
+
+
+class FencedDescriptionTests(unittest.TestCase):
+    def test_without_fences_blanks_each_block_and_keeps_the_line_count(self) -> None:
+        stripped = lib_ci.without_fences(FENCED)
+        self.assertEqual(stripped.count("\n"), FENCED.count("\n"))
+        self.assertIn("Explaining the lines", stripped)
+        for text in ("No queue item", "Filed from", "Dropped:", "```", "~~~"):
+            self.assertNotIn(text, stripped)
+
+    def test_an_unclosed_fence_runs_to_the_end(self) -> None:
+        self.assertEqual(lib_ci.without_fences("a\n```\nFiled from #1\n").strip(), "a")
+
+    def test_no_check_matches_a_line_inside_a_fence(self) -> None:
+        self.assertEqual(ci_transcription.filed_numbers(FENCED), ([], []))
+        self.assertEqual(ci_queue_update.parse_dropped(FENCED), ([], []))
+        self.assertIsNone(ci_code_pr_queue.escape_reason(FENCED))
+        self.assertEqual(len(ci_code_pr_queue.check([modified("src/x.gd")], FENCED)[0]), 1)
+
+    def test_the_same_line_outside_a_fence_still_counts(self) -> None:
+        description = FENCED + "Filed from #15\nNo queue item: a CI repair\n"
+        self.assertEqual(ci_transcription.filed_numbers(description), ([15], []))
+        self.assertEqual(ci_code_pr_queue.escape_reason(description), "a CI repair")
 
 
 if __name__ == "__main__":

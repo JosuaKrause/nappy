@@ -13,8 +13,9 @@ the branch changes anything under `src/` or `tests/`, it fails unless the branch
 
 or the pull request's description carries a line `No queue item: <reason>`, for work with no queue
 item behind it, such as a repair to CI or the tooling. The escape passes the check, and its reason
-is printed for the reviewer, who judges it. The description is read through the API when the job
-runs, so a line added after a red check is seen by re-running the job.
+is printed for the reviewer, who judges it. A line inside a code fence, or one whose reason is only
+the form's placeholder (`<reason>`), is not the escape. The description is read through the API
+when the job runs, so a line added after a red check is seen by re-running the job.
 
 What a script cannot see -- that the file deleted is the item this work finished, that the record
 says what was built -- is the reviewer's still (pr-review, "Does the finished work leave the queue
@@ -38,6 +39,8 @@ TODO = "docs/todo"
 DECISIONS = "docs/decisions"
 ESCAPE = re.compile(lib_ci.LIST_MARKER + r"No queue item:[ \t]*(?P<reason>\S.*?)[ \t]*$", re.MULTILINE)
 ESCAPE_FORM = "No queue item: <reason>"
+# The form's own `<reason>`, or any reason wholly in angle brackets, copied without being filled in.
+PLACEHOLDER = re.compile(r"`?<[^>]*>`?")
 
 EPILOG = """\
 examples:
@@ -47,8 +50,12 @@ examples:
 
 
 def escape_reason(description: str) -> str | None:
-    match = ESCAPE.search(description.replace("\r\n", "\n"))
-    return match.group("reason") if match else None
+    """The first escape line's reason, outside code fences; a placeholder in angle brackets is no reason."""
+    for match in ESCAPE.finditer(lib_ci.without_fences(description)):
+        reason = match.group("reason")
+        if not PLACEHOLDER.fullmatch(reason):
+            return reason
+    return None
 
 
 def check(changes: list[Change], description: str) -> tuple[list[str], str]:

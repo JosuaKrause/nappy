@@ -126,6 +126,38 @@ def pr_description(repo: str, number: int) -> str:
     return body if isinstance(body, str) else ""
 
 
+FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
+
+
+def without_fences(description: str) -> str:
+    """The description with every fenced code block blanked, fence lines included, line breaks kept.
+
+    A description that shows a line's form inside a fence -- a `Filed from #N`, a `Dropped:` or a
+    `No queue item:` quoted as an example -- is explaining the line, not writing it, so no check
+    that reads the description matches inside one. A fence opens with three or more backticks or
+    tildes and closes with at least as many of the same; one left open runs to the end, as
+    GitHub renders it.
+    """
+    lines = description.replace("\r\n", "\n").split("\n")
+    kept: list[str] = []
+    fence = ""
+    for line in lines:
+        match = FENCE.match(line)
+        if not fence:
+            if match:
+                fence = match.group(1)
+                kept.append("")
+            else:
+                kept.append(line)
+            continue
+        # A closing fence is the same character, at least as long, and nothing after it.
+        closes = match is not None and match.group(1)[0] == fence[0] and len(match.group(1)) >= len(fence)
+        if closes and not line.strip().lstrip(fence[0]):
+            fence = ""
+        kept.append("")
+    return "\n".join(kept)
+
+
 def normalize(text: str) -> str:
     """The text as words: blockquote markers dropped from each line's start, every run of whitespace one space.
 

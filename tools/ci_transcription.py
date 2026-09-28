@@ -73,7 +73,7 @@ def filed_numbers(description: str) -> tuple[list[int], list[str]]:
     """Every `Filed from #N` line's N, once each, in order, and a failure for each near miss."""
     numbers: list[int] = []
     malformed: list[str] = []
-    for line in description.replace("\r\n", "\n").split("\n"):
+    for line in lib_ci.without_fences(description).split("\n"):
         match = FILED.match(line)
         if match is None:
             if FILED_ANY.match(line):
