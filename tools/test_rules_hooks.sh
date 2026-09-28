@@ -1261,6 +1261,8 @@ assert_write_guard "wrapped gh issue close as claude-orchestrator -> allow" allo
     "$orch gh issue close 12 --comment 'Filed in #13'"
 assert_write_guard "wrapped gh issue reopen as claude-orchestrator -> allow" allow \
     "$orch gh issue reopen 12"
+assert_write_guard "wrapped gh issue comment as claude-orchestrator -> allow" allow \
+    "$orch gh issue comment 12 --body 'Filed in #13'"
 assert_write_guard "wrapped gh issue edit --add-label as claude-orchestrator -> allow" allow \
     "$orch gh issue edit 12 --add-label 'band: now'"
 assert_write_guard "wrapped gh label create as claude-orchestrator -> allow" allow \
@@ -1274,6 +1276,8 @@ assert_write_guard "wrapped tools/land-prs.sh as claude-orchestrator -> allow" a
 assert_write_guard "bare gh issue create -> deny, the orchestrator's writes are wrapped too" deny \
     'gh issue create --title t --body-file /tmp/note --label inbox'
 assert_write_guard "bare gh issue close -> deny" deny 'gh issue close 12'
+assert_write_guard "bare gh issue comment -> deny, the orchestrator's writes are wrapped too" deny \
+    "gh issue comment 12 --body 'Filed in #13'"
 assert_write_guard "a write after the orchestrator's wrapped command, on its own line -> deny" deny \
     "$orch git fetch"$'\n''git push'
 

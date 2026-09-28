@@ -6,10 +6,9 @@
 # writes and writes on a pull request with no code changes as `claude-orchestrator` (Codex's stay
 # `codex-coder`'s), a review as a reviewer identity (`claude-reviewer`/`codex-reviewer`), and
 # when `tools/agent-identity.py status <role>` says a role is not usable, the session stops and
-# tells the player rather than
-# falling back to a direct call under the player's own account. A rule that is only ever obeyed by
-# remembering it is not a rule -- this is the mechanical half, denying the direct call so the
-# wrapped one is the only one that works.
+# tells the player rather than falling back to a direct call under the player's own account. A
+# rule that is only ever obeyed by remembering it is not a rule -- this is the mechanical half,
+# denying the direct call so the wrapped one is the only one that works.
 #
 # **The bar this holds itself to: a guardrail, not a security boundary.** It stops an agent's
 # ordinary GitHub writes from going out as the player by mistake -- every shape an agent would
