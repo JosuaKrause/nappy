@@ -98,10 +98,13 @@ Every agent prompt contains, explicitly:
   touch. The agent starts cold; everything it needs must be named, not assumed.
 - **The branch name** (`feature/<thing>`), and the committing rules restated: one commit per item,
   messages that explain why, docs move in the same commit as the code.
-- **Which GitHub identity the agent commits, pushes and opens its pull request as** —
-  `claude-coder` for a Claude Code implementation agent, `claude-reviewer` for a Claude Code review
-  agent, `codex-coder`/`codex-reviewer` the same in Codex — since **committing** and **pr-review**
-  make this mandatory and an agent with no role named has nothing to check `status` against. If
+- **Which GitHub identity the agent commits, pushes and opens its pull request as**, chosen by
+  what the pull request will contain, not by which agent writes it (**committing**, "Who a commit
+  and a pull request are from"): in Claude Code, `claude-coder` for a pull request that changes
+  code, `claude-orchestrator` for a docs-only one and for any issue write, `claude-reviewer` for a
+  review agent; in Codex, `codex-coder` for both kinds and `codex-reviewer` for a review —
+  since **committing** and **pr-review** make this mandatory and an agent with no role named has
+  nothing to check `status` against. If
   `status` reports the role not usable, the brief's own instruction is to stop and report back
   rather than falling back to a direct call. The brief names **committing**'s `.venv/bin/python`
   form of the wrapper as the fallback for a worktree whose permission check refuses `uv run`.
@@ -163,8 +166,11 @@ Every agent prompt contains, explicitly:
   filed (**committing** says how), the agent's silent choices recorded as open to overturn, not
   narrated as settled; then the PR goes to a review agent under **pr-review**, which checks that
   move with everything else; then the orchestrator merges only under **committing**'s permission
-  rule and retires the branch with `uv run python tools/agent-identity.py run claude-coder --
-  tools/prune-merged.sh <branch>`.
+  rule and retires the branch with `uv run python tools/agent-identity.py run <role> --
+  tools/prune-merged.sh <branch>`. Each of those writes goes out as the pull request's own
+  identity, not the orchestrating session's: on a pull request that changes code the queue move,
+  the merge and the retirement are `claude-coder`'s, and on a docs-only one they are
+  `claude-orchestrator`'s.
 
 ## Running agents in parallel
 
@@ -191,13 +197,14 @@ merging is what collides — so parallelism is planned at the file level, before
   orchestrator watches: a conflict between two PRs that touch different files passes both PRs'
   own gates and only shows up there. Then retire the branch with `uv run python
   tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>` from the main
-  checkout (see **committing**, which also says why it is spelled exactly so), which removes the
-  worktree and deletes the branch only once GitHub vouches for it. `uv run python
-  tools/agent-identity.py run claude-coder -- tools/land-prs.sh <pr-number>...` is that sequence
-  for several already-authorized, reviewed PRs in one call: merge or auto-merge, wait, then fast-forward
-  `main` and prune, one PR at a time, printing `main`'s own CI run at the end as the check to
-  watch. A PR that an earlier merge left conflicting stops the run, since its resolution needs a
-  review before it lands.
+  checkout, or `run claude-orchestrator --` for a docs-only PR (see **committing**, which also says
+  why it is spelled exactly so), which removes the worktree and deletes the branch only once GitHub
+  vouches for it. `uv run python tools/agent-identity.py run claude-coder -- tools/land-prs.sh
+  <pr-number>...` is that sequence for several already-authorized, reviewed PRs in one call: merge
+  or auto-merge, wait, then fast-forward `main` and prune, one PR at a time, printing `main`'s own
+  CI run at the end as the check to watch. It runs every PR it is given as one role, so docs-only
+  PRs go in a call of their own under `run claude-orchestrator --`. A PR that an earlier merge
+  left conflicting stops the run, since its resolution needs a review before it lands.
 - **The harness's own branches go with the same script.** Each spawn also leaves a
   `worktree-agent-*` branch pointing at the worktree's base. `tools/prune-merged.sh` deletes the
   ones whose worktree is gone, with `git branch -d`, and keeps a live agent's: that worktree has
