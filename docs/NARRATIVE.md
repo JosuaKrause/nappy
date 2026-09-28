@@ -176,7 +176,11 @@ the resistance*, narrowed to a task with exactly one place to be.
   from the mark as the courtyard allows and never within his catch of it: he may wake as she reads
   it, and she lures him out. *(2026-09-27: "robber at inner end of the courtyard is fine. I
   encountered it in game and it worked well for me. you just have to lure the robber out
-  first.")* Every other guarded contact — a door, a mast's foot, a swing, the burnt shell, a roadblock — keeps a robber
+  first.")* That robber is the one thing standing on calm ground she has not used this act, which
+  the day's events otherwise leave alone (`EventScheduler._calm_to_leave_alone`): the courtyard
+  behind a guarded passage mark is no place to settle the baby that day until she has lured him
+  out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). Every other
+  guarded contact — a door, a mast's foot, a swing, the burnt shell, a roadblock — keeps a robber
   somewhere between 66px and 176px of it instead: inside that band touching it is death, always;
   above it he never wakes at all; between them, which side the player approaches from decides
   whether he notices them. Seeded from the run and the day, so the distance or the alley that was

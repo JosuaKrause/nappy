@@ -639,13 +639,21 @@ func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
 			return world
 	return Vector2.INF
 
-## The test city's through-alley tiles — the only ground a mark is placed on or relocated to
-## (`ResistanceDirector._through_alley_tiles()`).
+## The test city's through-alley tiles — see `_through_alley_tiles()`.
 func _through_alleys() -> Array[Vector2i]:
-	var director := ResistanceDirector.new()
-	director.setup(null, _city.map)
-	var tiles := director._through_alley_tiles().duplicate()
-	director.free()
+	return _through_alley_tiles(_city.map)
+
+## Every `ALLEY` tile of `map` that lies in a through-alley (`CityMap.alley_rects`), in
+## `CityMap.tiles_of_type()`'s own order: the marks whose robber stands at the alley's far end,
+## rather than in a courtyard past a passage. The director never needs the split; the sweeps here
+## ask each kind its own question.
+static func _through_alley_tiles(map: CityMap) -> Array[Vector2i]:
+	var tiles: Array[Vector2i] = []
+	for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
+		for rect in map.alley_rects:
+			if rect.has_point(tile):
+				tiles.append(tile)
+				break
 	return tiles
 
 func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
@@ -824,7 +832,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 		director.setup(null, map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("off-screen:%d" % seed_value)
-		var through := director._through_alley_tiles()
+		var through := _through_alley_tiles(map)
 		for i in range(0, through.size(), 2):
 			var her := map.tile_to_world(through[i])
 			director.set_sight(func(p: Vector2) -> bool:
@@ -1142,7 +1150,7 @@ func _test_the_chalk_mark_guard_stands_at_the_alleys_far_end(t) -> void:
 		director.setup(null, map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("guard-far-end:%d" % seed_value)
-		for tile in director._through_alley_tiles():
+		for tile in _through_alley_tiles(map):
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
 			var mark := map.tile_to_world(tile)
@@ -1184,8 +1192,10 @@ func _test_the_chalk_mark_guard_stands_at_the_alleys_far_end(t) -> void:
 ## place the river at the other end of the alley"* (PLAYTEST-142 statement 5; "river" is dictation
 ## for *robber*). Over every through-alley tile of six cities, she walks in from a tile and a half
 ## outside the alley's near end, up to `ContactPoint.REACH` less two pixels short of the mark on its
-## near side — close enough to read it — and back out the same way, past a bare `alley_robbery` at
-## the director's own far-end draw. The same marks and the same walk are asked of the whole-circle
+## near side — close enough to read it — and back out the same way, past a bare `alley_robbery`
+## where `_guard_position()` stands a mark's guard: the call `_maybe_set_a_trap()` and every
+## relocation make, so the walk fails if a mark's guard ever stops going to the far end. The same
+## marks and the same walk are asked of the whole-circle
 ## 66-176px band around the mark, which is how a mark's guard stood without the far-end rule, so
 ## the test says what the rule buys rather than only that some mark can be reached.
 ##
@@ -1208,7 +1218,7 @@ func _test_the_mark_is_reachable_from_its_own_end(t) -> void:
 		band_rng.seed = hash("mark-reachable-band:%d" % seed_value)
 		var far_end_rng := RandomNumberGenerator.new()
 		far_end_rng.seed = hash("mark-reachable-far-end:%d" % seed_value)
-		for tile in director._through_alley_tiles():
+		for tile in _through_alley_tiles(map):
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
 			var mark := map.tile_to_world(tile)
@@ -1219,8 +1229,7 @@ func _test_the_mark_is_reachable_from_its_own_end(t) -> void:
 			var far: Vector2 = ends[1]
 			var band_at := director._draw_guard_position(band_rng, mark, Vector2.INF, min_distance,
 					max_distance)
-			var far_end_at := director._draw_guard_position_near_far_mouth(far_end_rng, mark, far,
-					min_distance, max_distance, [], Vector2.INF, 0.0, false)
+			var far_end_at := director._guard_position(far_end_rng, mark, true, Vector2.INF, false)
 			if band_at == Vector2.INF or far_end_at == Vector2.INF:
 				continue
 			checked += 1
@@ -1266,7 +1275,7 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
 		director.setup(null, map)
-		var through := director._through_alley_tiles()
+		var through := _through_alley_tiles(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("courtyard-inner-end:%d" % seed_value)
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
@@ -3752,10 +3761,10 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 ## second source the director's discs do not read. Two seeds and a tenth of the sidewalks keep the
 ## cost down: `_nearest_alley_within()` is linear in the alley count per call.
 ##
-## **What this does not cover**: a region door counts as a way through, for the director and for
-## the tile walk alike, so a mark reachable only by crossing a district door passes here. Whether
-## that is "not reachable" in the player's sense is open (statement 8: *"the go through a door
-## task is silly when you have to go through a door to even reach the mark"*).
+## **A region door counts as a way through**, for the director and for the tile walk alike, so a
+## mark reachable only by crossing a district door passes here. That is the player's own rule
+## (crisp-moose, statement 2: *"the alley must be next to a path. if there is no path to it it
+## shouldn't appear"*): a door always lets her through after its hold, so it is a path.
 func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 	var seeds: Array[int] = [4242, 2295276695]
 	var checked := 0

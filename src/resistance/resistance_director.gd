@@ -184,9 +184,6 @@ var _reach_blocked: Dictionary
 ## `_reach_grid.flood()`'s own answer for `_reach_blocked`, from the home block — kept so
 ## `reaches()` never has to recompute the dirty-cell set flood() already built.
 var _reach_reached: Dictionary
-## `_through_alley_tiles()`'s own answer, and the map it was built for.
-var _through_alleys: Array[Vector2i] = []
-var _through_alleys_of: CityMap
 
 func setup(city: City, map: CityMap) -> void:
 	# The same self-registration `WorldContext` and `Stroller` use, so anything that needs to ask
@@ -857,20 +854,6 @@ func _courtyard_inner_end(at: Vector2, entrance: Vector2i) -> Vector2:
 					farthest = world
 		return farthest
 	return Vector2.INF
-
-## Every `ALLEY` tile that lies in a through-alley, in `CityMap.tiles_of_type()`'s own order, built
-## once per map: the marks whose robber stands at the alley's far end rather than in a courtyard.
-func _through_alley_tiles() -> Array[Vector2i]:
-	if _through_alleys_of == _map:
-		return _through_alleys
-	_through_alleys_of = _map
-	_through_alleys = []
-	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
-		for rect in _map.alley_rects:
-			if rect.has_point(tile):
-				_through_alleys.append(tile)
-				break
-	return _through_alleys
 
 ## Where a chalk mark's robber stands for the mark at `at` — the far end of a through-alley, or the
 ## inner end of a courtyard past a passage (`_alley_ends()`) — or `Vector2.INF` when `at` is on no
