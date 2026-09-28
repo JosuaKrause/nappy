@@ -10,13 +10,40 @@ the current session** — see "Merging".
 
 ## Who a commit and a pull request are from
 
-**A coding agent commits, pushes and opens its pull request as its own GitHub identity, and only
-that identity — never the player's.** *(2026-09-26, once the four identities existed: "I want to
-make it mandatory for each agent to use their respective identity when interacting with github",
-enforced on writes; asked what an agent does when its identity is unusable, the player chose "Stop
-and tell me" — it never posts as the player instead.)* Claude Code's orchestrator and every
-implementation agent it spawns commit as `claude-coder`; Codex's do the same as `codex-coder`. `uv
-run python tools/agent-identity.py status <role>` (**using-tools**) says whether the role is
+**Every GitHub write goes out as an agent identity, and only that identity — never the player's.**
+*(2026-09-26, once the first four identities existed: "I want to make it mandatory for each agent
+to use their respective identity when interacting with github", enforced on writes; asked what an
+agent does when its identity is unusable, the player chose "Stop and tell me" — it never posts as
+the player instead.)*
+
+**Which identity a write goes out as follows what the write does, not which session makes it.**
+*(2026-09-27: "orchestrator/coder session and orchestrator/coder identity are not the same thing.
+for the purposes of github what matters is what they do. that is independent who actually
+triggered it".)* In Claude Code:
+
+- **`claude-orchestrator`** makes every issue write — capturing a note into the inbox, commenting
+  on one, labelling it, closing a filed batch and reopening it — and every write on a pull request
+  with no code changes: its commits, its push, the pull request itself, its comments, merging
+  `main` into it, its merge once the player has said go, and retiring its branch.
+- **`claude-coder`** makes every write on a pull request that changes code — a queue move or a
+  decision record committed inside it included, merging `main` into it, fixing its CI, its merge
+  and retiring its branch — and cuts a release. The orchestrator identity never writes on such a
+  pull request.
+- **`claude-reviewer`** posts every review and its findings, on either kind of pull request
+  (**pr-review**).
+
+A pull request has no code changes — is docs-only — when every file it changes is Markdown or
+under `docs/`, except `docs/TELEMETRY.md`, `docs/COSTS.md` and `docs/ARCHITECTURE.md`, which the
+game's own checks read. The identity is chosen when the pull request is opened, from what it is
+going to contain. So the orchestrating session writes as `claude-coder` when it merges a code pull
+request, and a spawned agent writes as `claude-orchestrator` when it opens a docs-only one. **It is a convention, not a hard rule**
+*(2026-09-27: "if a PR starts out as doc only and later code becomes part of it then identities
+will mix")*: a pull request that starts docs-only and later gains code keeps the orchestrator's
+earlier writes and takes the coder's from then on, and nothing — no hook, no CI check — compares a
+pull request's authors with what it contains. Codex has no orchestrator identity: its issue writes
+and its docs-only pull requests stay `codex-coder`'s, and its reviews `codex-reviewer`'s.
+
+`uv run python tools/agent-identity.py status <role>` (**using-tools**) says whether the role is
 usable; every command that **writes** to GitHub for that piece of work — a commit, a push, a `gh`
 post — then runs through `uv run python tools/agent-identity.py run <role> -- <command>` instead of
 running it directly, so the commit, the push and the pull request all show as `<role>[bot]` rather
@@ -330,16 +357,23 @@ retired.** It refuses unless the pull request is MERGED and the local tip is its
 removes the branch's worktree (never with `--force`, so git refuses a dirty one), the local branch
 and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
 whose worktree is gone. Run it from the main checkout, through `uv run python
-tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` — its own remote
-delete is a write, so `github-write-guard.sh` denies it bare (Codex runs the same line with
-`codex-coder`). **Use it rather than the bare commands**: Claude Code's auto-mode classifier
-refuses `git worktree remove` and `git branch -D` as destructive however the check came out, and
-`.claude/settings.json` allows exactly that wrapped `claude-coder` line, because the script
-cannot delete anything the check did not clear. The allow rule is a prefix match on the command's
-text, so the line has to be spelled as above: `./tools/…`, a different role, or anything else in
-front of `tools/prune-merged.sh` is not covered and goes to the classifier. There is no
-`codex-coder` rule: Codex does not read this file (its approvals are its own sandbox's), and
-Claude Code never runs as `codex-coder`.
+tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` for a pull request
+that changed code and `uv run python tools/agent-identity.py run claude-orchestrator --
+tools/prune-merged.sh <branch>...` for a docs-only one ("Who a commit and a pull request are
+from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare (Codex runs
+the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
+Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as destructive
+however the check came out, and `.claude/settings.json` allows exactly those two wrapped lines, one
+per role, because the script cannot delete anything the check did not clear. The allow rules are a
+prefix match on the command's text, so the line has to be spelled as above: `./tools/…`, another
+role, or anything else in front of `tools/prune-merged.sh` is not covered and goes to the
+classifier. There is no `codex-coder` rule: Codex does not read this file (its approvals are its
+own sandbox's), and Claude Code never runs as `codex-coder`.
+
+**`tools/land-prs.sh` lands every pull request it is given as the one role it runs under**, since
+it merges and retires each branch through that role. So a batch of docs-only pull requests and a
+batch of code pull requests are two calls, one as `claude-orchestrator` and one as `claude-coder`,
+rather than one mixed call.
 
 **A PR stacked on another is retargeted to `main` before its base branch goes.** The repository
 deletes a merged head branch on GitHub by itself; for a branch deleted by hand (`git push

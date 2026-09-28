@@ -47,7 +47,40 @@ def _b64url_decode(text: str) -> bytes:
 class RoleTableTests(unittest.TestCase):
     def test_every_role_from_the_brief_is_present(self) -> None:
         self.assertEqual(
-            set(agent_identity.ROLES), {"claude-coder", "claude-reviewer", "codex-coder", "codex-reviewer"}
+            set(agent_identity.ROLES),
+            {"claude-coder", "claude-orchestrator", "claude-reviewer", "codex-coder", "codex-reviewer"},
+        )
+
+    def test_the_orchestrator_is_its_own_app(self) -> None:
+        self.assertEqual(agent_identity.ROLES["claude-orchestrator"].app_name, "nappy-claude-orchestrator")
+        app_names = [spec.app_name for spec in agent_identity.ROLES.values()]
+        self.assertEqual(len(app_names), len(set(app_names)))
+
+    def test_the_orchestrator_has_the_coder_set(self) -> None:
+        # Each permission is argued for the orchestrator's own writes (see
+        # _ORCHESTRATOR_PERMISSIONS's comments); the set that argument arrives at is the coder's.
+        # A later divergence is a deliberate edit to both this and the table.
+        self.assertEqual(
+            agent_identity.ROLES["claude-orchestrator"].permissions, agent_identity.ROLES["claude-coder"].permissions
+        )
+
+    def test_the_orchestrator_manifest_carries_its_name_and_permissions(self) -> None:
+        spec = agent_identity.ROLES["claude-orchestrator"]
+        manifest = agent_identity.build_manifest("claude-orchestrator", spec, "JosuaKrause", "nappy", 1)
+        self.assertEqual(manifest["name"], "nappy-claude-orchestrator")
+        self.assertIs(manifest["public"], False)
+        self.assertEqual(manifest["hook_attributes"]["active"], False)
+        self.assertEqual(
+            manifest["default_permissions"],
+            {
+                "contents": "write",
+                "pull_requests": "write",
+                "issues": "write",
+                "workflows": "write",
+                "checks": "read",
+                "actions": "write",
+                "metadata": "read",
+            },
         )
 
     def test_coder_roles_have_contents_and_workflows_write(self) -> None:
@@ -461,6 +494,20 @@ class MissingRoleConfigTests(unittest.TestCase):
                 code = agent_identity.main(["run", "claude-coder", "--repo", "O/R", "--", "echo", "hi"])
             self.assertNotEqual(code, 0)
             self.assertIn("create claude-coder", stderr.getvalue())
+
+    def test_main_run_accepts_the_orchestrator_role(self) -> None:
+        # Reaching "not configured" (exit 1) rather than argparse's own "invalid choice" (exit 2)
+        # is what says the run parser knows the role; tools/lib_agent_role.sh passes
+        # NAPPY_AGENT_ROLE straight to this parser, so this is its acceptance too.
+        with tempfile.TemporaryDirectory() as temp:
+            stderr = io.StringIO()
+            with (
+                mock.patch.object(agent_identity, "config_root", return_value=Path(temp)),
+                redirect_stderr(stderr),
+            ):
+                code = agent_identity.main(["run", "claude-orchestrator", "--repo", "O/R", "--", "echo", "hi"])
+            self.assertEqual(code, 1)
+            self.assertIn("create claude-orchestrator", stderr.getvalue())
 
     def test_main_status_reports_missing_config_for_all_roles_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -121,8 +121,10 @@ thread blocks neither an approval nor a merge, and no ruleset requires thread re
 more of a gentlement's agreement".)*
 
 **The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review
-as `claude-reviewer`, a Codex review as `codex-reviewer` — never the player's own account. `uv run
-python tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer`
+as `claude-reviewer`, a Codex review as `codex-reviewer`, on a docs-only pull request as much as on
+one that changes code (the pull request's own writes are `claude-orchestrator`'s or
+`claude-coder`'s by what it contains, **committing** says which) — never the player's own
+account. `uv run python tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer`
 (**using-tools**) says whether the role is usable; the `gh` command that posts the review then
 runs through `uv run python tools/agent-identity.py run claude-reviewer -- <command>` (or
 `codex-reviewer`) instead of running it directly, so the comments and the review event show as
