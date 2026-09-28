@@ -15,6 +15,7 @@ import importlib.util
 import io
 import json
 import sys
+import tempfile
 import unittest
 from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
@@ -68,6 +69,8 @@ class FakeGh:
                 raise inbox.InboxError(f"no fake answer for {key}")
             return json.dumps(self.reads[key])
         self.writes.append((args, stdin))
+        if "create" in args:
+            return "https://github.com/o/r/issues/77\n"
         return "https://github.com/o/r/issues/1#issuecomment-1\n"
 
 
@@ -241,6 +244,62 @@ class WriteTests(unittest.TestCase):
         self.assertIn("is closed", run(fake, "--role", "claude-orchestrator", "ask", "423", stdin="Why?")[2])
         self.assertIn("is empty", run(fake, "--role", "claude-orchestrator", "ask", "423", stdin=" \n")[2])
         self.assertEqual(fake.writes, [])
+
+    def test_capture_opens_one_tagged_note_with_the_words_verbatim(self) -> None:
+        fake = FakeGh({})
+        words = "the car's shadow reaches above its roof.\nit should sit under the wheels\n"
+        with mock.patch.dict("os.environ", {"NAPPY_AGENT_ROLE": "claude-orchestrator"}, clear=True):
+            code, out, _ = run(fake, "capture", "--band", "next", stdin=words)
+        self.assertEqual(code, 0)
+        self.assertIn("/issues/77", out)
+        self.assertEqual(len(fake.writes), 1)
+        args, stdin = fake.writes[0]
+        self.assertEqual(stdin, words)
+        self.assertEqual(args[: len(self.wrapped("claude-orchestrator"))], self.wrapped("claude-orchestrator"))
+        self.assertEqual(args[6:8], ["issue", "create"])
+        labels = [args[i + 1] for i, arg in enumerate(args) if arg == "--label"]
+        self.assertEqual(labels, ["inbox", "captured", "queue_next"])
+        self.assertEqual(args[args.index("--title") + 1], "the car's shadow reaches above its roof.")
+        self.assertEqual(args[args.index("--body-file") + 1], "-")
+
+    def test_capture_takes_the_role_after_the_subcommand_and_no_band(self) -> None:
+        fake = FakeGh({})
+        with mock.patch.dict("os.environ", {}, clear=True):
+            code, _, _ = run(fake, "capture", "--role", "codex-coder", "--title", "T", stdin="words")
+        self.assertEqual(code, 0)
+        args, _ = fake.writes[0]
+        self.assertEqual(args[3], "codex-coder")
+        self.assertEqual([args[i + 1] for i, arg in enumerate(args) if arg == "--label"], ["inbox", "captured"])
+
+    def test_capture_refuses_no_role_an_empty_text_and_a_band_outside_the_set(self) -> None:
+        fake = FakeGh({})
+        with mock.patch.dict("os.environ", {}, clear=True):
+            self.assertIn("never writes as the player", run(fake, "capture", stdin="words")[2])
+            self.assertIn("is empty", run(fake, "--role", "claude-orchestrator", "capture", stdin="\n")[2])
+            with self.assertRaises(SystemExit):
+                run(fake, "--role", "claude-orchestrator", "capture", "--band", "soon", stdin="words")
+        self.assertEqual(fake.writes, [])
+
+    def test_capture_posts_what_the_words_answered_as_the_first_comment(self) -> None:
+        fake = FakeGh({})
+        with tempfile.TemporaryDirectory() as folder:
+            context = Path(folder) / "context.md"
+            context.write_text("Asked: which band?", encoding="utf-8")
+            code, out, _ = run(
+                fake, "--role", "claude-orchestrator", "capture", "--context-file", str(context), stdin="x"
+            )
+        self.assertEqual(code, 0)
+        self.assertIn("posted the context on #77", out)
+        self.assertEqual(
+            [args[6:9] for args, _ in fake.writes], [["issue", "create", "-R"], ["issue", "comment", "77"]]
+        )
+        self.assertEqual([stdin for _, stdin in fake.writes], ["x", "Asked: which band?"])
+
+    def test_a_long_first_line_is_cut_at_a_word_for_the_title(self) -> None:
+        title = inbox.default_title("> " + "word " * 30)
+        self.assertTrue(title.endswith("…"))
+        self.assertLessEqual(len(title), inbox.TITLE_LENGTH + 1)
+        self.assertFalse(title.startswith(">"))
 
     def batch(self, description: str, playtest: str, **pr: Any) -> FakeGh:
         reads: dict[str, Any] = {

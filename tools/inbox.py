@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The player's inbox on GitHub Issues: read it, ask on a note, and close or reopen a filed batch.
+"""The player's inbox on GitHub Issues: capture a note, read it, ask on it, and close or reopen a filed batch.
 
 GitHub Issues are the player's inbox and nothing else (leafy-finch; bouncy-heron, statements 5, 6
 and 22): a note is an open issue carrying the label `inbox`, the player edits it until it is
@@ -10,6 +10,9 @@ this is its tool, and the one sanctioned way an agent writes an issue (statement
 through a script it's safe ... an agent shouldn't use gh issue directly"), so
 `.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped or not.
 
+    capture                  opens a note holding the player's words verbatim, from --body-file or
+                             standard input, labelled `inbox` and `captured` and, with --band, its
+                             band, in one call (statements 2 and 13)
     list                     every open note, oldest first, with its band; every other issue
                              labelled `inbox` is skipped with a line saying why
     show N                   one note in full: its body as it stands now, then the comments in
@@ -84,6 +87,7 @@ FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
 
 EPILOG = """\
 examples:
+  uv run python tools/inbox.py --role claude-orchestrator capture --band next < /tmp/words.md
   uv run python tools/inbox.py list
   uv run python tools/inbox.py show 423
   uv run python tools/inbox.py --role claude-orchestrator ask 423 --body-file /tmp/question.md
@@ -342,11 +346,50 @@ def cmd_show(github: GitHub, number: int) -> int:
     return 0
 
 
-def read_text(body_file: str | None) -> str:
+def read_text(body_file: str | None, what: str) -> str:
     text = Path(body_file).read_text(encoding="utf-8") if body_file else sys.stdin.read()
     if not text.strip():
-        raise InboxError("the text is empty; nothing was written")
+        raise InboxError(f"{what} is empty; nothing was written")
     return text
+
+
+TITLE_LENGTH = 70
+
+
+def default_title(text: str) -> str:
+    """The first line of the words, cut at a word boundary: the note's title when none is given."""
+    first = next(line.strip() for line in text.splitlines() if line.strip())
+    first = re.sub(r"^[>\s]+", "", first)
+    if len(first) <= TITLE_LENGTH:
+        return first
+    cut = first.rfind(" ", 0, TITLE_LENGTH)
+    return first[: cut if cut > 0 else TITLE_LENGTH] + "…"
+
+
+ISSUE_URL = re.compile(r"/issues/(\d+)\s*$")
+
+
+def cmd_capture(
+    github: GitHub, role: str, text: str, title: str | None, band: str | None, context: str | None = None
+) -> int:
+    """Opens a note with the player's words as its body, tagged so it counts as the player's.
+
+    The body is the words alone, so it can be copied word for word; what they answered, when given,
+    goes on the note as its first comment, the agent's side, which `show` prints before any answer.
+    """
+    labels = [INBOX_LABEL, CAPTURE_LABEL] + ([f"queue_{band}"] if band else [])
+    args = ["issue", "create", "-R", github.repo, "--title", title or default_title(text), "--body-file", "-"]
+    for label in labels:
+        args += ["--label", label]
+    url = github.write(role, args, text).strip()
+    print(url)
+    if context is not None:
+        match = ISSUE_URL.search(url)
+        if match is None:
+            raise InboxError(f"the note is open ({url}), but its number could not be read to post the context")
+        github.write(role, ["issue", "comment", match.group(1), "-R", github.repo, "--body-file", "-"], context)
+        print(f"posted the context on #{match.group(1)}")
+    return 0
 
 
 def cmd_ask(github: GitHub, role: str, number: int, text: str) -> int:
@@ -461,6 +504,16 @@ def default_repo(runner: Runner) -> str:
     return repo
 
 
+def add_role(parser: argparse.ArgumentParser, *, top: bool) -> None:
+    """`--role`, before the subcommand or after it; the subcommand's own leaves the top one's value alone."""
+    parser.add_argument(
+        "--role",
+        default=None if top else argparse.SUPPRESS,
+        choices=sorted(WRITE_ROLES),
+        help="the identity a write goes out as (default $NAPPY_AGENT_ROLE); a write refuses to run without one",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tools/inbox.py",
@@ -469,19 +522,25 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=EPILOG,
     )
     parser.add_argument("--repo", default=None, metavar="OWNER/NAME", help="default $GITHUB_REPOSITORY, or gh's own")
-    parser.add_argument(
-        "--role",
+    add_role(parser, top=True)
+    commands = parser.add_subparsers(dest="command", required=True, metavar="{capture,list,show,ask,close,reopen}")
+    capture = commands.add_parser("capture", help="open a note holding the player's words verbatim")
+    capture.add_argument("--body-file", default=None, help="the player's words (default: standard input)")
+    capture.add_argument("--title", default=None, help="the note's title (default: the words' first line, cut short)")
+    capture.add_argument("--band", default=None, choices=BANDS, help="the band the player named, as its queue_ label")
+    capture.add_argument(
+        "--context-file",
         default=None,
-        choices=sorted(WRITE_ROLES),
-        help="the identity a write goes out as (default $NAPPY_AGENT_ROLE); a write refuses to run without one",
+        help="what the words answered, posted as the note's first comment, the agent's side (default: none)",
     )
-    commands = parser.add_subparsers(dest="command", required=True, metavar="{list,show,ask,close,reopen}")
+    add_role(capture, top=False)
     commands.add_parser("list", help="every open note, and a line for each issue skipped")
     show = commands.add_parser("show", help="one note in full, with its comments in order")
     show.add_argument("number", type=int)
     ask = commands.add_parser("ask", help="post a question on a note")
     ask.add_argument("number", type=int)
     ask.add_argument("--body-file", default=None, help="the question's text (default: standard input)")
+    add_role(ask, top=False)
     for name, text in (
         ("close", "close every note a filing pull request names, right after it is pushed"),
         ("reopen", "reopen them when the filing pull request was closed without merging"),
@@ -489,6 +548,7 @@ def build_parser() -> argparse.ArgumentParser:
         sub = commands.add_parser(name, help=text)
         sub.add_argument("--pr", type=int, required=True, help="the filing pull request")
         sub.add_argument("--dry-run", action="store_true", help="check and print what would change; write nothing")
+        add_role(sub, top=False)
     return parser
 
 
@@ -496,12 +556,17 @@ def main(argv: Sequence[str], runner: Runner = run_command) -> int:
     args = build_parser().parse_args(list(argv))
     try:
         github = GitHub(args.repo or default_repo(runner), runner)
+        if args.command == "capture":
+            writer = write_role(args.role)
+            words = read_text(args.body_file, "the player's words")
+            context = read_text(args.context_file, "the context") if args.context_file else None
+            return cmd_capture(github, writer, words, args.title, args.band, context)
         if args.command == "list":
             return cmd_list(github)
         if args.command == "show":
             return cmd_show(github, args.number)
         if args.command == "ask":
-            return cmd_ask(github, write_role(args.role), args.number, read_text(args.body_file))
+            return cmd_ask(github, write_role(args.role), args.number, read_text(args.body_file, "the question"))
         if args.command == "close":
             role = None if args.dry_run else write_role(args.role)
             return cmd_close(github, role, args.pr, args.dry_run)

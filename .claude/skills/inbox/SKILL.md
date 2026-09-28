@@ -1,6 +1,6 @@
 ---
 name: inbox
-description: The player's inbox on GitHub Issues — where it is found at the start of a session, which issues count as the player's notes, asking the player about a note on its issue, and filing a batch of notes into the queue with one pull request that closes them. Load this at the start of a session, and before reading, asking on or filing a note.
+description: The player's inbox on GitHub Issues — where it is found at the start of a session, which issues count as the player's notes, capturing the player's words into it before anything else, asking the player about a note on its issue, and filing a batch of notes into the queue with one pull request that closes them. Load this at the start of a session, and before capturing, reading, asking on or filing a note.
 ---
 
 # The inbox
@@ -34,7 +34,8 @@ A blank note comes from the issue template `.github/ISSUE_TEMPLATE/inbox-note.md
 
 ## Whose notes count
 
-**Only an issue the player opened, or one the capture script opened for them, is a note**
+**Only an issue the player opened, or one the capture script (`tools/inbox.py capture`) opened
+for them, is a note**
 *(2026-09-27: "for now let's also require that inbox issues are created by me so random people
 opening github issues don't get their comments ingested into the queue")*. The repository is
 public and the template's label goes on any issue opened with it, so the label alone admits
@@ -56,6 +57,32 @@ A label outside that pattern is never taken for a band. The entry filed from a n
 band; a note with no band label is filed as **playtest-feedback** says, `now` for a note from
 playing and otherwise a band the filer proposes and names in its report; a note with two band
 labels is filed under neither and asked about on its issue.
+
+## Capturing the player's words
+
+**When the player says something in a session that should outlive it — a thought for the queue, a
+correction to a task — capture it into the inbox, in one call, before going on with anything
+else**, so the words are safe even if the session is cleared before a filing pull request exists.
+The player's worry was having "to hope that the agent gets to write a comment down before a
+session is cleared", and **which messages to capture is the agent's judgment**: no hook reminds
+it, and the conversation is not recorded as a whole *(2026-09-27: "okay, we can do via capture and
+then it also shows up as issue -- great -- no need for a hook I don't want my entire conversation
+recorded. an agent has better judgement there.")*.
+
+```sh
+uv run python tools/inbox.py --role claude-orchestrator capture --band next <<'NOTE'
+the player's words, exactly as they were said
+NOTE
+```
+
+The body is **the player's words verbatim and nothing else**, so it can be copied word for word
+when it is filed; the title is the agent's (the words' first line when `--title` is not given).
+`--band` goes on only when the player named a band. When the words answer something the agent
+said — a question, an option with a label — `--context-file` posts what they answered as the
+note's first comment, the agent's side, so the filing can record the words with what they
+answered as **playtest-feedback** asks. The script tags the note with the label `captured`, which
+only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`), which is what makes a
+captured note count as the player's.
 
 ## Asking about a note
 
@@ -81,7 +108,8 @@ request carries the whole batch:
 - **List and read every note** with `list` and `show`, and settle what is unclear by asking on the
   issue first.
 - **Copy each note's current text word for word into a playtest file** made with
-  `tools/new-name.sh playtest "<title>"`: the body quoted in `> ` lines, then the player's
+  `tools/new-name.sh playtest "<title>"`: what the words answered first, when a captured note
+  carries it as its first comment, then the body quoted in `> ` lines, then the player's
   comments, each after the question it answers. Wrapping and the `> ` markers are free; every
   word, letter case and punctuation mark is copied as it stands. A playtest file is a primary
   source and is never rewritten afterwards.

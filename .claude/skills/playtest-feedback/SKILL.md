@@ -42,6 +42,15 @@ reader loses the half with the measurement in it.
 player's own words, and every specific they gave — before a line of code is written.** Then it
 becomes a queue entry, and only then does it get implemented.
 
+**The first place the player's words are written is the inbox.** *(2026-09-27: "the important
+thing is that it ends up in a safe queue in issues and I can choose when we want to turn those into
+a doc update PR".)* When the player says something in a session that should outlive it, the agent
+captures it verbatim into the inbox on GitHub Issues, in one call, before going on with anything
+else, so the words are safe even if the session is cleared; which words to capture is the agent's
+judgment. The notes the player writes there directly are the same. A note becomes a playtest file
+and its queue entries when the player asks for its batch to be filed, exactly as this skill says
+below — **inbox** has the capture, the filing pull request and the closing of the notes.
+
 **Words said in conversation are recorded with what they answered.** *(2026-09-27: "you need to
 also include what (b) meant at the time. if you just record my side then important context is
 lost".)* Before each quote the playtest file states the assistant's side as far as the quote
