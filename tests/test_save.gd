@@ -1,4 +1,5 @@
 extends RefCounted
+## Scratch line for a CI demonstration, closed unmerged.
 ## `GameSave`, and the two functions on `GameState` it reads and writes through
 ## (`save_snapshot()`/`restore_snapshot()`) — see docs/MECHANICS.md, "Saving and resuming".
 ##
