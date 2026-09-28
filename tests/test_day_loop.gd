@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_the_masked_pursuer_has_its_own_hard_fail_line(t)
 	_test_a_day_ends_only_once(t)
 	_test_nerves_and_endings(t)
+	_test_a_won_day_gives_a_nerve_back(t)
 	_test_the_city_learns_where_she_settled(t)
 	_test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t)
 	_test_the_day_brief_shows_the_days_own_line(t)
@@ -280,6 +281,45 @@ func _test_nerves_and_endings(t) -> void:
 	GameState.nerves = saved_nerves
 	GameState.resistance_progress = saved_progress
 	GameState.sabotage_done = saved_sabotage
+
+## Player, 2026-09-27: *"one thing to do quickly: a won day recovers a nerve up to the max"* — "that
+## way you can recover from a bad single day without being in a tight spot towards the end of the
+## game". `GameState.regain_a_nerve()` is what `finish_day()` calls for an ordinary won day; the
+## escape's own win reaches the same `finish_day()` call (`main._on_finale_escaped()`) but is
+## excluded, since "the escape doesn't have nerves" (the player) — simulated here by setting
+## `escape_section` the way that call finds it, without building the whole finale.
+func _test_a_won_day_gives_a_nerve_back(t) -> void:
+	var saved_seed := GameState.run_seed
+	var saved_day := GameState.day
+	var saved_nerves := GameState.nerves
+	var saved_section := GameState.escape_section
+
+	GameState.start_run(SEED)
+	GameState.nerves = 3
+	t.check(GameState.finish_day(GameEnums.DayResult.WON), "winning at 3 nerves continues the run")
+	t.check(GameState.nerves == 4, "a won day at 3 nerves goes to 4")
+
+	t.check(GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT), "losing still continues")
+	t.check(GameState.nerves == 3, "a lost day still costs one, even after a gain")
+
+	GameState.nerves = Tuning.STARTING_NERVES
+	t.check(GameState.finish_day(GameEnums.DayResult.WON), "winning at the max continues")
+	t.check(GameState.nerves == Tuning.STARTING_NERVES,
+			"and a won day at the max stays at the max")
+
+	# The escape's own completion reaches `finish_day(WON)` too (`main._on_finale_escaped()`), with
+	# `escape_section` still naming the section she just walked out of — that is what excludes it.
+	GameState.start_run(SEED)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.nerves = 3
+	GameState.escape_section = FinaleController.Section.CITY
+	GameState.finish_day(GameEnums.DayResult.WON)
+	t.check(GameState.nerves == 3, "the escape's own win gives no nerve back")
+
+	GameState.run_seed = saved_seed
+	GameState.day = saved_day
+	GameState.nerves = saved_nerves
+	GameState.escape_section = saved_section
 
 ## The recording half of M24. The scheduler's half is tested in `test_events.gd`; this is the
 ## half that decides *what* it gets told, and it is easy to get subtly wrong in two ways —

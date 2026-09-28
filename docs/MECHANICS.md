@@ -1428,8 +1428,16 @@ she took, to the millisecond, which is the only number that screen carries.
 
 ## Nerves
 
-The run-level health bar. Starts at 5. Every lost day costs one. At 0 the run ends with the
-bad ending. Nerves never regenerate — this is what makes an early bad day matter.
+The run-level health bar. Starts at 5. Every lost day costs one, and a day she **wins** gives one
+back, up to the same five (`GameState.regain_a_nerve()`) — so a bad single day is recoverable rather
+than a tight spot carried all the way to day 14. At 0 the run ends with the bad ending.
+
+**The escape gives none back**, on either of its two sections or on walking out at the end: the
+run's last `finish_day()` call, from `main._on_finale_escaped()`, skips the gain because
+`GameState.escape_section` is still set to the section she just left. Day 14 itself still gives
+one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
+to the escape rather than waiting for `finish_day()`, which by then is deciding the escape's ending
+instead of day 14's.
 
 **Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
 debug header, the day brief, the day summary, the finale brief and the pause screen all read the

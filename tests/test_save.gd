@@ -26,6 +26,7 @@ func run(t) -> void:
 
 	_test_round_trip_field_list_matches_the_property_list(t)
 	_test_round_trip_preserves_every_field(t)
+	_test_a_won_days_regained_nerve_survives_a_round_trip(t)
 	_test_missing_file_is_dropped(t)
 	_test_garbled_text_is_dropped(t)
 	_test_wrong_format_version_is_dropped(t)
@@ -230,6 +231,22 @@ func _test_round_trip_preserves_every_field(t) -> void:
 			"settled_in survives with its Vector2i values and integer day keys intact")
 	t.check(GameState.save_snapshot() == written,
 			"and the whole snapshot taken before the write matches the one read back after it")
+
+## Player, 2026-09-27: *"a won day recovers a nerve up to the max"*. `nerves` was already carried by
+## `_SAVE_FIELDS`, but the count it carries now has to be the one a win just gave back, not the one
+## a save taken before the change would have written — this writes the file only after the gain and
+## wipes the live count before reading it back, so a save that quietly dropped the regained nerve
+## rather than the round trip itself is what would fail this.
+func _test_a_won_days_regained_nerve_survives_a_round_trip(t) -> void:
+	GameState.start_run(240927)
+	GameState.nerves = 3
+	GameState.finish_day(GameEnums.DayResult.WON)
+	t.check(GameState.nerves == 4, "winning regains a nerve before the save is even written")
+
+	t.check(GameSave._write_now(true), "the write reports success")
+	GameState.nerves = 0
+	GameSave._read_now()
+	t.check(GameState.nerves == 4, "and the regained count is what loading the save gives back")
 
 ## The smallest fake `BlockPlan`-shaped dictionary `CityState.apply_cause()` needs to take a
 ## `FIRE` step — a `Dictionary` because `CityState` reads `plan.steps`, not a real `BlockPlan`
