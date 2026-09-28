@@ -909,6 +909,11 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	GameState.day = Tuning.RUN_LENGTH_DAYS
 	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
 	GameState.sabotage_done = true
+	# Below the cap (`Tuning.STARTING_NERVES`, 5) so a missing or doubled
+	# `GameState.regain_a_nerve()` call in the hand-over branch (`main.gd`'s
+	# `_hands_over_to_the_escape()` path) would show up as a wrong count rather than being masked
+	# by the cap `GameState.start_run()` already sets `nerves` to.
+	GameState.nerves = 3
 	main._on_day_finished(GameEnums.DayResult.WON)
 	t.check(GameState.ending == GameEnums.Ending.NONE,
 			"a won day 14 with every task complete does not end the run")
@@ -916,6 +921,8 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 			"it puts the run in the building, which is where the escape starts")
 	t.check(GameState.day == Tuning.RUN_LENGTH_DAYS, "and leaves the calendar alone")
 	t.check(not main._run_over, "so nothing downstream thinks the run is over")
+	t.check(GameState.nerves == 4,
+			"day 14's win still gives a nerve back, and exactly once, through the direct call")
 
 	# The other side of the same day: the legwork done and the last night skipped is still the
 	# neutral ending it has always been, and must not reach the escape.
@@ -923,11 +930,14 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	GameState.day = Tuning.RUN_LENGTH_DAYS
 	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
 	GameState.sabotage_done = false
+	GameState.nerves = 3
 	main._on_day_finished(GameEnums.DayResult.WON)
 	t.check(GameState.ending == GameEnums.Ending.NEUTRAL,
 			"a won day 14 without the last night still ends the run on the neutral ending")
 	t.check(GameState.escape_section == FinaleController.Section.NONE,
 			"and never reaches the escape")
+	t.check(GameState.nerves == 4,
+			"and this path's win gains a nerve too, through the ordinary GameState.finish_day()")
 
 	summary.free()
 	day.free()

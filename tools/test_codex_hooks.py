@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise Codex payloads through the real shared hooks in isolated fixtures."""
 
+import importlib.util
 import json
 import os
 import shutil
@@ -11,6 +12,7 @@ import time
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 SOURCE = Path(__file__).resolve().parent.parent
 
@@ -318,6 +320,43 @@ class CodexHooksTest(unittest.TestCase):
         assert allowed is not None
         self.assertNotIn("permissionDecision", allowed["hookSpecificOutput"])
 
+    def test_git_grep_guard_over_the_bound_is_one_fast_regex(self) -> None:
+        # Past too_long (32 KB), a backslash-newline pair, a lone backslash, a quote mark or $
+        # between the letters of git/grep still reads as the word, so an obscured pair over the
+        # bound denies, through the adapter the same as directly; naming only "git" (no "grep"
+        # anywhere) allows, and so do lines ending in "g" and starting with "it"/"rep", which the
+        # shell never joins.
+        padding = "a" * 40000
+        for command in (
+            f"echo '{padding}'; g\\it status; g\"r\"ep foo",
+            f"echo '{padding}'; g$'i't status; gr$'e'p foo",
+            f"echo '{padding}'; g\\\nit status; gr\\\nep foo",
+        ):
+            with self.subTest(command=command[-30:]):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        text = self.call(tool="Bash", command=f"echo '{padding}'; git status")
+        self.assertIn("committing", text)
+        self.assertIsNone(self.call_raw(command=f"cat <<EOF\n{padding} drawing\nitem, PNG\nreplacement\nEOF"))
+        # Over hard_cap (1 MB) every command denies without being read.
+        output = self.call_raw(command="echo '" + "a" * 1100000 + "'")
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("over 1 MB", output["hookSpecificOutput"]["permissionDecisionReason"])
+        # These two shapes are dense in the characters the full readings drop; past 32 KB the
+        # guard never builds those readings, so timed alone (the adapter also runs
+        # github-write-guard.sh, whose cost is its own) each is decided in well under a second.
+        guard = self.root / ".claude/hooks/git-grep-guard.sh"
+        for command in ("echo " + "a'" * 500000, "echo " + "x\\\n" * 330000):
+            with self.subTest(command=command[:20]):
+                payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+                started = time.monotonic()
+                result = subprocess.run([str(guard)], input=payload, text=True, capture_output=True)
+                self.assertLess(time.monotonic() - started, 1.5)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), "")
+
     def test_github_write_guard_denies_an_unwrapped_git_push(self) -> None:
         output = self.call_raw(command="git push origin main")
         assert output is not None
@@ -507,8 +546,9 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
 
     def test_github_write_guard_over_the_bound_is_one_dumb_fast_search(self) -> None:
-        # Over 64 KB, backslashes, newlines and quotes are skipped wherever they fall, so no mix of
-        # joined and unjoined lines hides a name; over 1 MB nothing is read and every command denies.
+        # Over 64 KB, backslash-newline pairs, backslashes and quotes are skipped wherever they
+        # fall, so no mix of joined and unjoined lines hides a name, while a newline on its own
+        # still separates two words; over 1 MB nothing is read and every command denies.
         padding = "x" * 70000
         for command in (
             f"echo {padding}\necho x\\\\\ngi\\\nt push",
@@ -532,6 +572,149 @@ class CodexHooksTest(unittest.TestCase):
                 self.assertLess(time.monotonic() - started, 1.5)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.strip(), "")
+
+    def test_both_guards_decide_chains_of_swallowing_options_well_inside_the_budget(self) -> None:
+        # The adapter runs git-grep-guard.sh and then github-write-guard.sh on the same command,
+        # under the one 10-second budget Codex gives the hook, so the two costs add up. In a chain
+        # of `git -c git -c ...` every git's run of options reaches the end of the chain, and both
+        # guards read those runs from a table built once, so the whole call stays well inside the
+        # budget: at about 10 KB with a guarded search (which the search guard allows, so the
+        # write guard reads the command too) and an unwrapped push at the end; at the search
+        # guard's 32 KB bound, read in full by both and allowed; at the write guard's 64 KB bound
+        # (past the search guard's, where one regex finds no second word and allows), with and
+        # without a push; and a heredoc naming gh api on every line.
+        unit = "git -c "
+        line = "we call gh api here and there\n"
+        cases = []
+        for size, tail, expected in (
+            (10000, "; git grep -I x; git push origin main", "deny"),
+            (32700, "; git grep -I x", None),
+            (65400, "; git push origin main", "deny"),
+            (65400, "; echo done", None),
+        ):
+            cases.append((unit * ((size - len(tail)) // len(unit)) + tail, expected))
+        cases.append(("cat <<EOF\n" + line * 2170 + "EOF", None))
+        # A quoted script at the search guard's bound, every -C argument quoted with a space: all
+        # four of its readings and the write guard's grouped reading run to the end.
+        cases.append(("bash -c '" + 'git -C "a b" ' * 2512 + "'; git grep -I x", None))
+        for command, expected in cases:
+            with self.subTest(size=len(command), expected=expected):
+                started = time.monotonic()
+                output = self.call_raw(command=command)
+                self.assertLess(time.monotonic() - started, 5.0)
+                # An allowed call prints the shell reminder once per session, then nothing.
+                decision = (output or {}).get("hookSpecificOutput", {}).get("permissionDecision")
+                self.assertEqual(decision, expected)
+
+    def test_a_quoted_option_argument_is_one_word_to_both_guards(self) -> None:
+        # A -C/-c argument with a space in it is one shell word, so the word after it is the
+        # subcommand, at the top level and inside a quoted script alike; a wrapper's own
+        # argument-taking option, and the script after bash -c, leave a pushing script in command
+        # position. The wrapped push still allows.
+        wrap = "uv run python tools/agent-identity.py run codex-coder -- "
+        for command in (
+            'git -C "/x y" push',
+            "git -c 'a=b c' push",
+            'git -C "$(pwd)/my dir" push',
+            "bash -c 'git -C \"/x y\" push'",
+            "bash -c 'git -C \"/x y\" grep x'",
+            "sudo -u root tools/prune-merged.sh x",
+            "bash -c 'tools/prune-merged.sh x'",
+        ):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        for command in (wrap + 'git -C "/x y" push', "gh -R 'a b' pr view 1", "bash -c 'cat tools/prune-merged.sh'"):
+            with self.subTest(command=command):
+                output = self.call_raw(command=command)
+                decision = (output or {}).get("hookSpecificOutput", {}).get("permissionDecision")
+                self.assertIsNone(decision)
+
+    def test_a_guard_past_the_shared_budget_denies_rather_than_lets_through(self) -> None:
+        # Codex lets a call through when the hook outruns its 10 seconds, so the adapter gives the
+        # two guards a shared budget short of that and denies when a guard is still running at its
+        # end, killing it and whatever it started (here a sleep holding the guard's stdout open,
+        # as jq does). The reply comes back inside Codex's timeout, not after the guard.
+        (self.root / ".claude/hooks/github-write-guard.sh").write_text("#!/usr/bin/env bash\nsleep 30\n")
+        started = time.monotonic()
+        output = self.call_raw(command="git status")
+        self.assertLess(time.monotonic() - started, 9.5)
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("github-write-guard.sh did not finish", specific["permissionDecisionReason"])
+
+    def test_a_guard_that_fails_denies_rather_than_crashes_the_adapter(self) -> None:
+        # An adapter that raises exits non-zero, which Codex does not treat as a deny, so every way
+        # a guard can fail -- a non-zero exit, a reply that is not JSON -- denies instead.
+        guard = self.root / ".claude/hooks/github-write-guard.sh"
+        for body, error in (("exit 3\n", "CalledProcessError"), ("echo not-json\n", "JSONDecodeError")):
+            with self.subTest(error=error):
+                guard.write_text("#!/usr/bin/env bash\n" + body)
+                output = self.call_raw(command="git status")
+                assert output is not None
+                specific = output["hookSpecificOutput"]
+                self.assertEqual(specific["permissionDecision"], "deny")
+                self.assertIn(error, specific["permissionDecisionReason"])
+
+    def test_a_kill_that_raises_still_denies(self) -> None:
+        # macOS answers killpg on a group holding only an unreaped zombie with EPERM; the timeout's
+        # deny stands however the kill fails.
+        spec = importlib.util.spec_from_file_location("codex_hooks", self.root / "tools/codex-hooks.py")
+        assert spec is not None and spec.loader is not None
+        adapter = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(adapter)
+        script = self.base / "slow.sh"
+        script.write_text("#!/usr/bin/env bash\nsleep 2\n")
+
+        def refuse(pid: int, sig: int) -> None:
+            raise PermissionError(1, "Operation not permitted")
+
+        with mock.patch.object(adapter.os, "killpg", refuse):
+            output = adapter.run_guard(script, "{}", time.monotonic() + 0.3)
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("did not finish", output["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_commands_after_a_reserved_word_and_empty_arguments_are_read(self) -> None:
+        # A command after `do`, `then`, `{`, `time` or `exec` starts a command of its own, so a
+        # write there is scanned in full; a field after a quoted separator counts even under an
+        # earlier GET; an empty quoted -C argument is still the argument; and an assignment whose
+        # value names a pushing script is not that script.
+        loop = (
+            "gh api -X GET repos/o/r/issues --jq '.[].number' > ids; for n in $(cat ids); do "
+            "gh api repos/o/r/issues/$n/comments --jq '.id | tostring' -f body=ping; done"
+        )
+        for command in (loop, 'git -C "" push', "git -C '' grep x", "time tools/prune-merged.sh x"):
+            with self.subTest(command=command[:40]):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        output = self.call_raw(command='echo $(date); p=tools/prune-merged.sh; sed -n 1,5p "$p"')
+        self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
+
+    def test_a_call_after_sh_c_starts_a_command_and_a_get_field_after_jq_reads(self) -> None:
+        # The script after `sh -c` is a command of its own, so a call there ends a GraphQL read's
+        # scan and is scanned in full; a field right after a quoted `--jq '.a | .b'` is still the
+        # GET call's own.
+        output = self.call_raw(
+            command="gh api graphql -f query='{viewer{login}}' | sh -c \"gh api repos/o/r/issues/1/comments "
+            "--jq '.a | .b' -f body=x\"; echo $(true)"
+        )
+        assert output is not None
+        self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        for command in (
+            "gh api graphql -f query='{viewer{login}}' | /usr/bin/env gh api repos/o/r/issues/1/comments "
+            "--jq '.a | .b' -f body=x; echo $(true)",
+            "gh api repos/o/r/issues/1/comments --jq '.x; sh -c git' -X POST",
+            "/usr/bin/env tools/prune-merged.sh x",
+        ):
+            with self.subTest(command=command[:50]):
+                output = self.call_raw(command=command)
+                assert output is not None
+                self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
+        output = self.call_raw(command="gh api -X GET search/issues --jq '.items[] | .number' -f q='repo:a/b is:open'")
+        self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
 
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
         command = (

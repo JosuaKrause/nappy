@@ -5,3 +5,5 @@ canvases and functional anchors, and keep tintable body/trim separation and auth
 Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
 Save original generation outputs, exact prompts, reference roles and reproducible extraction
 and registration inputs. Inspect detail and animation consistency at gameplay scale.
+
+The two dog families are outside this item ([their record](../../decisions/2026-09-10-M109-2.md)).

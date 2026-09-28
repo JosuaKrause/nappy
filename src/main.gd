@@ -2005,6 +2005,12 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# on the spot, set `ending`, and clear the save the escape's own checkpoints need. The run ends
 	# when she is out of the city (`_on_finale_escaped()`), and only then.
 	if _hands_over_to_the_escape(result):
+		# Day 14 is still an ordinary won day, so it still gives a nerve back — the same gain
+		# `GameState.finish_day()` grants every other won day, called here directly because this
+		# branch is the one day whose win never reaches that function at all (see the comment
+		# above). Before `show_day()` reads `GameState.nerves` a few lines down, so the summary
+		# shows the count after the gain.
+		GameState.regain_a_nerve()
 		GameState.escape_section = FinaleController.Section.BUILDING
 		_save_now(false)
 		_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)

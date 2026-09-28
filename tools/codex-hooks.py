@@ -1,17 +1,83 @@
 #!/usr/bin/env python3
 """Adapt Codex lifecycle/tool payloads to the shared Claude hooks."""
 
+import contextlib
 import hashlib
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any, Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / ".claude/skills"
+
+# Codex gives this hook 10 seconds (.codex/hooks.json) and lets the call through when it runs out,
+# so the two guards a shell command goes through share a budget that ends short of that, leaving
+# the rest for the interpreter's own start and the reply. A guard still running when it ends is
+# killed, and the command is denied: a command the guards could not read in time is exactly the
+# one a timed-out hook would let through unread. Any other way a guard can fail -- a non-zero
+# exit, a reply that is not JSON, an error starting or killing it -- denies the same way, since an
+# adapter that crashes exits non-zero and Codex lets that call through too.
+GUARD_BUDGET_SECONDS = 8.0
+
+
+def guard_deny(reason: str) -> dict[str, Any]:
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }
+
+
+def run_guard(script: Path, payload: str, deadline: float) -> Optional[dict[str, Any]]:
+    """Run one guard hook; its parsed reply, None for an allow, or a deny when it cannot answer.
+
+    The guard runs in a session of its own so that a timeout kills its jq too: jq holds the
+    guard's stdout open, so killing bash alone would leave the read waiting for jq to finish.
+    """
+    try:
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            proc = subprocess.Popen(
+                ["bash", str(script)],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                start_new_session=True,
+            )
+            try:
+                stdout, stderr = proc.communicate(payload, timeout=remaining)
+            except subprocess.TimeoutExpired:
+                # The group may already be gone, or hold only an unreaped zombie, which macOS
+                # answers with EPERM rather than ESRCH; the deny below stands either way.
+                with contextlib.suppress(OSError):
+                    os.killpg(proc.pid, signal.SIGKILL)
+                proc.communicate()
+            else:
+                if proc.returncode != 0:
+                    raise subprocess.CalledProcessError(proc.returncode, proc.args, stdout, stderr)
+                if not stdout.strip():
+                    return None
+                output: dict[str, Any] = json.loads(stdout)
+                return output
+    except Exception as error:
+        return guard_deny(
+            f"{script.name} failed ({type(error).__name__}: {error}), so this command is denied unread "
+            "rather than let through."
+        )
+    return guard_deny(
+        f"{script.name} did not finish inside the shell guards' {GUARD_BUDGET_SECONDS:.0f}-second share "
+        "of Codex's 10-second hook timeout, so this command is denied unread rather than let through. "
+        "Write any long text to a file first and pass the file, then run a short command."
+    )
 
 
 def main() -> None:
@@ -35,6 +101,7 @@ def main() -> None:
             file=sys.stderr,
         )
         raise SystemExit(2)
+    started = time.monotonic()
     event: dict[str, Any] = json.load(sys.stdin)
     kind = event["hook_event_name"]
     # Separate agents, repositories/worktrees and Claude's markers. Never use raw
@@ -95,6 +162,8 @@ def main() -> None:
                 # committing/pr-review mandate as Claude Code's. Checked before the
                 # shell-reminder below, and on a deny nothing else about this call is
                 # printed -- Codex accepts the same permissionDecision JSON Claude Code does.
+                # Both guards share GUARD_BUDGET_SECONDS, counted from this call's start; the
+                # one running when it ends is killed and the command denied (see run_guard).
                 # Codex reports every shell call as `Bash` with `tool_input.command`, a string
                 # (measured with Codex CLI 0.157.1). An argument list (["bash", "-lc", "..."])
                 # is passed on too, and each guard joins it with spaces, so an unexpected shape
@@ -103,8 +172,12 @@ def main() -> None:
                 # Codex hook payload has been seen to carry it.
                 command = args.get("command") or args.get("cmd")
                 if isinstance(command, (str, list)) and command:
+                    payload = json.dumps(
+                        dict(event, session_id=session, tool_name="Bash", tool_input={"command": command})
+                    )
+                    deadline = started + GUARD_BUDGET_SECONDS
                     for guard_script in ("git-grep-guard.sh", "github-write-guard.sh"):
-                        guard = run_hook(guard_script, "Bash", extra_input={"command": command})
+                        guard = run_guard(ROOT / ".claude/hooks" / guard_script, payload, deadline)
                         if guard and guard.get("hookSpecificOutput", {}).get("permissionDecision") == "deny":
                             print(json.dumps(guard))
                             return

@@ -114,7 +114,8 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   the bake reads the files itself** (VISUALS.md, "Where the pictures live").
 - **A new or changed picture is not in the game until the pages are rebaked**, and every tool
   that starts the engine does that for you: `tools/bake-atlases.sh` compares a hash per source
-  and bakes only when one moved. A new picture also needs a line in
+  and bakes when one moved or when a PNG has newly appeared beside an SVG it baked from, which
+  is what installing a transfer for an existing picture is. A new picture also needs a line in
   `assets/atlases/membership.json` naming the group it belongs on, in `members` if both bakes draw
   it or `members_png`/`members_svg` if only one does — a bake reads and hashes its own mode's
   lists alone, so it is baked nowhere and `AtlasLibrary` answers `has_region()` false for it until

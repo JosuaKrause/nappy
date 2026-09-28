@@ -49,6 +49,9 @@ func run(t) -> void:
 	_test_chatting_mother_freezes_gait_when_talking(t)
 	_test_crouched_cat_never_reads_the_running_b_frame(t)
 	_test_dog_walker_and_dog_share_one_phase(t)
+	_test_the_normal_dog_has_three_pictures_in_four_beats(t)
+	_test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t)
+	_test_a_standing_normal_dog_rests(t)
 	_test_victim_gait_starts_on_frame_a_and_later_steps(t)
 	_test_idle_families_alternate_on_time_without_moving(t)
 	_test_idle_phase_offset_differs_by_siting(t)
@@ -163,24 +166,108 @@ func _test_crouched_cat_never_reads_the_running_b_frame(t) -> void:
 	instance.free()
 
 ## "Actor and held thing swap frames together": the dog walker's person and dog read one shared
-## `_gait_phase`, so whichever frame the query answers is the same answer whether asked once for
-## the walker or once for the dog beside him.
+## `_gait_phase`, so the dog is on one of its two steps exactly while the walker is mid-stride and
+## on its rest exactly while he is on his rest frame — asked here through the same two queries
+## `_draw_dog_walker()` reads, over a walk long enough to pass through every beat.
 func _test_dog_walker_and_dog_share_one_phase(t) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
-	for i in 40:
+	var rest: String = EventInstance.dog_picture("side", false, false)
+	var agreed := true
+	for i in 300:
 		instance._process(STEP)
-	var stepping := instance._gait_stepping()
-	var person_frame: String = EventInstance.PERSON_BY_VIEW_B["side"] if stepping \
-			else EventInstance.PERSON_BY_VIEW["side"]
-	var dog_frame: String = EventInstance.DOG_BY_VIEW_B["side"] if stepping \
-			else EventInstance.DOG_BY_VIEW["side"]
-	# Both read off the identical `stepping` value computed once — the same one-lookup shape
-	# `_draw_dog_walker()` itself uses — so there is no way for this pair to disagree.
-	t.check((person_frame == EventInstance.PERSON_BY_VIEW_B["side"]) ==
-			(dog_frame == EventInstance.DOG_BY_VIEW_B["side"]),
-			"the walker and the dog read the same stride phase")
+		var stepping := instance._gait_stepping()
+		var person_frame: String = EventInstance.PERSON_BY_VIEW_B["side"] if stepping \
+				else EventInstance.PERSON_BY_VIEW["side"]
+		var dog_frame := EventInstance.dog_picture("side", stepping, instance._gait_second_half())
+		if (person_frame == EventInstance.PERSON_BY_VIEW_B["side"]) == (dog_frame == rest):
+			agreed = false
+	t.check(agreed, "the walker is mid-stride exactly while the dog is on a step, never on its rest")
+	instance.free()
+
+## The normal dog walks step, rest, opposite step, rest on three pictures per view *(2026-09-27,
+## teal-marmot: "the normal dog should have three frames. we have the resting one now and one leg
+## forward. now we need one frame with the other leg forward")*. The side and diagonals rest on b
+## and take the opposite step on c; front and back rest on their neutral c and take the opposite
+## step on b, because their a and b already reach with opposite leg pairs.
+func _test_the_normal_dog_has_three_pictures_in_four_beats(t) -> void:
+	var expected := {
+		"side": ["events/dog", "events/dog_b", "events/dog_c", "events/dog_b"],
+		"front_diagonal": ["events/dog_front_diagonal", "events/dog_front_diagonal_b",
+				"events/dog_front_diagonal_c", "events/dog_front_diagonal_b"],
+		"back_diagonal": ["events/dog_back_diagonal", "events/dog_back_diagonal_b",
+				"events/dog_back_diagonal_c", "events/dog_back_diagonal_b"],
+		"front": ["events/dog_front", "events/dog_front_c", "events/dog_front_b",
+				"events/dog_front_c"],
+		"back": ["events/dog_back", "events/dog_back_c", "events/dog_back_b", "events/dog_back_c"],
+	}
+	t.check(expected.size() == VIEWS.size(), "every view is asked about")
+	for view in VIEWS:
+		var beats: Array = expected[view]
+		var drawn := [
+			EventInstance.dog_picture(view, true, false),
+			EventInstance.dog_picture(view, false, false),
+			EventInstance.dog_picture(view, true, true),
+			EventInstance.dog_picture(view, false, true),
+		]
+		t.check(drawn == beats, "the %s dog walks %s (got %s)" % [view, beats, drawn])
+		var distinct := {}
+		for picture: String in drawn:
+			distinct[picture] = true
+		t.check(distinct.size() == 3, "the %s dog draws three different pictures" % view)
+
+## A walking dog walker's dog goes through the four beats in order — step, rest, opposite step,
+## rest — and each beat lasts the same ground, a quarter of a turn of `_gait_phase` at
+## `GAIT_RATE`, which is when the walker's own two frames swap as well. The loose dog reads the
+## same queries at its own speed.
+func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
+	var beat := PI / 2.0 / EventInstance.GAIT_RATE
+	var cycle := ["events/dog", "events/dog_b", "events/dog_c", "events/dog_b"]
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(900.0, 0.0)])
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
+	var shown: Array[String] = []
+	var changed_at: Array[float] = []
+	for i in 900:
+		instance._process(STEP)
+		var now := EventInstance.dog_picture("side", instance._gait_stepping(),
+				instance._gait_second_half())
+		if shown.is_empty() or shown[-1] != now:
+			shown.append(now)
+			changed_at.append(instance._path_travelled)
+	t.check(shown.size() >= 9, "the walk passed through two whole cycles (%d beats)" % shown.size())
+	t.check(not shown.is_empty() and shown[0] == cycle[0], "the first step comes first")
+	var in_order := true
+	for k in shown.size():
+		if shown[k] != cycle[k % 4]:
+			in_order = false
+	t.check(in_order, "the beats run step, rest, opposite step, rest (%s)" % [shown])
+	var even := true
+	for k in range(1, changed_at.size() - 1):
+		if absf(changed_at[k + 1] - changed_at[k] - beat) > 1.0:
+			even = false
+	t.check(even, "each beat is %.1fpx of ground" % beat)
+	instance.free()
+
+## Standing still is the rest pose, not a step held mid-air: before a dog walker has covered any
+## ground, and whenever `_advance_gait()` last saw none, whatever half of the stride the phase
+## happens to be sitting in.
+func _test_a_standing_normal_dog_rests(t) -> void:
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
+	for view in VIEWS:
+		t.check(EventInstance.dog_picture(view, instance._gait_stepping(),
+				instance._gait_second_half()) == EventInstance.dog_picture(view, false, false),
+				"a %s dog that has not moved stands in its rest pose" % view)
+	for phase in [PI * 0.25, PI * 1.25]:
+		instance._gait_phase = phase
+		instance._advance_gait(0.0)
+		t.check(not instance._gait_stepping(), "a tick with no ground covered is not a step")
+		t.check(EventInstance.dog_picture("side", instance._gait_stepping(),
+				instance._gait_second_half()) == "events/dog_b",
+				"a dog stopped at phase %.2f stands in its rest pose" % phase)
 	instance.free()
 
 ## The victim's own scripted walk to the van is a straight lerp over `VICTIM_TAKEN_OVER` seconds

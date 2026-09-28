@@ -164,12 +164,28 @@ the resistance*, narrowed to a task with exactly one place to be.
 
 ### Risk
 
-- **Every mark is guarded**, from the day the first one can appear. A robber waits somewhere
-  between 66px and 176px of it — inside that band touching the mark is death, always; above
-  it he never wakes at all; between them, which side the player approaches from decides whether he
-  notices them. Seeded from the run and the day, so the distance that was safe on day 9 of
-  this run is safe on day 9 every time you replay it — the pattern is learnable, which is
-  the difference between risk and a coin flip.
+- **Every mark is guarded**, from the day the first one can appear. Its own robber stands at the
+  other end of the mark's own alley: past his own trigger range of the mark where the alley is
+  long enough for that, and on its far end where it is not. So walking in from the mark's own end,
+  reading it and walking back out never wakes him; walking on past the mark toward him can.
+  *(2026-09-26: "the rubber in the alley with the mark is too close to the mark. It's impossible to
+  get the mark on most days. Let's always place the river at the other end of the alley" —
+  "rubber"/"river" are dictation for *robber* — and, asked whether he may then never wake at all,
+  "stands at the far end even where he then never wakes".)* A mark in the short passage into a
+  courtyard has no other end to the alley, so its robber stands at the courtyard's inner end, as far
+  from the mark as the courtyard allows and never within his catch of it: he may wake as she reads
+  it, and she lures him out. *(2026-09-27: "robber at inner end of the courtyard is fine. I
+  encountered it in game and it worked well for me. you just have to lure the robber out
+  first.")* That robber is the one thing standing on calm ground she has not used this act, which
+  the day's events otherwise leave alone (`EventScheduler._calm_to_leave_alone`): the courtyard
+  behind a guarded passage mark is no place to settle the baby that day until she has lured him
+  out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). Every other
+  guarded contact — a door, a mast's foot, a swing, the burnt shell, a roadblock — keeps a robber
+  somewhere between 66px and 176px of it instead: inside that band touching it is death, always;
+  above it he never wakes at all; between them, which side the player approaches from decides
+  whether he notices them. Seeded from the run and the day, so the distance or the alley that was
+  safe on day 9 of this run is safe on day 9 every time you replay it — the pattern is learnable,
+  which is the difference between risk and a coin flip.
 - **Two tasks send someone after her rather than guarding where she finds them.** The man shouting
   and the van's package are not guarded at the contact. The moment she hands either over, someone
   is sent after her from off screen — usually from above or below her,
@@ -227,7 +243,10 @@ pointer to one — and every other day's line is one or two sentences about what
 city that morning, the same words whichever way the day before it went.
 
 **A finished task is shown by the world and never by text.** A touched mark changes to its own
-touched picture, which is all a mark needs; nothing is written on the HUD, and there is no
+touched picture, which is all a mark needs, and stays where she read it, crossed through, until the
+day ends or is tried again — and nowhere else. *(2026-09-27, asked whether a read mark should
+vanish at once or stay: "Stays crossed, until the day ends".)* Nothing is written on the HUD, and
+there is no
 counter, no objective marker and no log. The note for a stranger answers almost the same way: once
 she has handed it over, the man she reached keeps shouting for a couple of seconds, still charging
 her the whole time, then stops and walks away, on foot, until he is out of sight — the same
@@ -237,9 +256,10 @@ look-alikes she never reached carry on shouting exactly as before.
 A chalk mark the player has not actually noticed — stood near, on screen, long enough that
 walking past it rather than to it was a choice — has never really been placed, so it follows
 the player rather than sitting where the dawn plan first put it: once they are far enough from it
-to have missed it, it moves to the alley they have just come near instead, guard and all, skipping
-an alley an earlier task's mark already used while another is in reach — so a mark the player can
-actually walk up to is what makes the silent first encounter fair rather than a dead end.
+to have missed it, it moves to the alley they have just come near instead, guard and all, never a
+tile the player can currently see so it never appears in front of them, skipping an alley an
+earlier task's mark already used while another is in reach — so a mark the player can actually
+walk up to is what makes the silent first encounter fair rather than a dead end.
 
 ## What the tasks are for — never said in the game
 

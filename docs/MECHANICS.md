@@ -1213,9 +1213,18 @@ enough, that walking past it rather than to it is a choice, not the instant its 
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
 alley tile within that radius of her instead — the alley's own mouth, on the path rather
-than off it — skipping an alley a completed step's mark already stood at as long as some
-other one is still in reach. Its guard moves with it, at the same 66–176px band from
-wherever it lands.
+than off it, and never where any part of the mark's picture, or of the guard standing at that
+alley's other end (or the courtyard's inner end, past a courtyard's passage), would be on her
+screen, so neither is ever planted in front of her —
+skipping an alley a completed step's mark already stood at as long as some other one is still
+in reach. Its guard moves with it, to the other end of that alley from wherever the mark lands
+(the courtyard's inner end, for a courtyard's passage), the same rule as at dawn
+(`docs/NARRATIVE.md`, "Risk"), and never within his own `pursues_within` of her or in view when
+he is placed — so entering a through-alley from the mark's own end, reading it and leaving the
+same way never wakes him. The mark does not move while its guard is awake or any part of him
+is on her screen, since the move retires him and he would vanish in front of her or out of a chase;
+once read, the mark never moves and its guard stays until the day ends. The guard a task stands at
+its own contact, placed the instant she reads its mark, is never placed in view of her either.
 
 Neither the mark nor its guard is ever offered ground she cannot reach that day: a held
 segment, a sealed alley, or the ground behind a region wall's band — including a crossing
@@ -1240,6 +1249,13 @@ day and printing the day's own length back would only repeat it.
 both read through, so the two can never disagree; the ending screen's *"Time played"* line stays
 on `GameState.format_clock()`'s millisecond form, over the whole run rather than one day — see
 "The run clock" below.
+
+**A title, brief or body of more than one sentence breaks onto more than one line only where its
+own width needs it to**, at whichever sentence end splits the text most evenly and never inside a
+sentence — a short one stays on one line, and a single sentence too long for the width still wraps
+inside itself word by word. `SentenceLines.break_for_label()` (`src/ui/sentence_lines.gd`) is the
+one helper this title, the day briefs, the finale's own body, the endings and the pause screen's
+walking instructions are all broken through, rather than a line break typed into each string.
 
 **Everything below that one line is the coming day's, not the day that just ended.** The day
 number, the nerves carried into it and the morning's own line (`_DAY_BRIEF`, below) all read off
@@ -1421,8 +1437,16 @@ she took, to the millisecond, which is the only number that screen carries.
 
 ## Nerves
 
-The run-level health bar. Starts at 5. Every lost day costs one. At 0 the run ends with the
-bad ending. Nerves never regenerate — this is what makes an early bad day matter.
+The run-level health bar. Starts at 5. Every lost day costs one, and a day she **wins** gives one
+back, up to the same five (`GameState.regain_a_nerve()`) — so a bad single day is recoverable rather
+than a tight spot carried all the way to day 14. At 0 the run ends with the bad ending.
+
+**The escape gives none back**, on either of its two sections or on walking out at the end: the
+run's last `finish_day()` call, from `main._on_finale_escaped()`, skips the gain because
+`GameState.escape_section` is still set to the section she just left. Day 14 itself still gives
+one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
+to the escape rather than waiting for `finish_day()`, which by then is deciding the escape's ending
+instead of day 14's.
 
 **Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
 debug header, the day brief, the day summary, the finale brief and the pause screen all read the

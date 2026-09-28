@@ -1,0 +1,38 @@
+nappy rig log  2026-09-27T17:17:58  version v0.20.0-46-gb6bfdbfc
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.9 ms, 262 x 429
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.5 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.3 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.9 ms, 392 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.5 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.8 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.8 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 10.8 ms, 810 x 982
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.3 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.5 ms
+
+day 4  act 2  run seed 4242  city seed 4242  length 210.0s  invincible
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 21.6 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, west along her street
+   0.0  plan     closed: cordoned off h(3,5), fallen tree v(1,8)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burnt_out_car x48, burst_water_main x14, busker x3, cafe_tables x41, car_accident x11, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x15, construction x44, cyclist x4, delivery_van x50, dog_walker x19, homeless_yeller x7, ice_cream_van x4, leaf_blower x13, loose_dog x14, market_stall x34, moving_van x35, pigeon_flock x5, playground x2, police_patrol x10, poster_crew x11, reversing_lorry x6, scaffolding x13, skip x13
+   0.0  start    doorstep (143,159), facing 180°
+   0.0  crowd    walked into somebody at (143,159) | exc 0, in 0.0/s (crowd 25.1, events 0.0), sleep 0
+   0.0  shot     burst started: asked for an animation burst at (144,159) | exc 0, sleep 0 | playing | asked/burst-4085226-001
+   0.0  near     construction (telegraph) at (150,159), 197px, exc 0, in 0.0/s (crowd 3.6, events 0.0), sleep 0
+   0.0  near     charging_dog at (149,159), 147px, exc 0, in 0.0/s (crowd 0.9, events 0.5), sleep 0
+   0.0  chase    charging_dog came for her at (149,159) | exc 0, in 0.0/s (crowd 0.0, events 3.8), sleep 0
+   0.0  frame    fps 2, worst frame 264.1ms, draws 283, objects 2826, primitives 6218, process 1793.74ms, physics 2.32ms
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | charging_dog 147px
+   0.0  near     construction (telegraph) at (150,155), 199px, exc 0, in 0.0/s (crowd 1.8, events 10.7), sleep 0
+   0.0  near     charging_dog at (148,159), 77px, exc 0, in 0.0/s (crowd 4.2, events 11.3), sleep 0
+   0.0  near     charging_dog at (147,159), 39px, exc 0, in 0.0/s (crowd 1.8, events 12.0), sleep 0
+   0.0  near     charging_dog at (147,159), 21px, exc 0, in 0.0/s (crowd 0.0, events 12.0), sleep 1
+   0.0  near     construction (telegraph) at (150,159), 102px, exc 0, in 0.0/s (crowd 0.0, events 12.0), sleep 1
+   0.0  frame    fps 54, worst frame 54.1ms, draws 282, objects 2814, primitives 6155, process 53.60ms, physics 1.35ms
+   0.0  near     construction at (150,159), 54px, exc 0, in 0.0/s (crowd 0.0, events 12.0), sleep 1
+   0.0  frame    fps 58, worst frame 51.9ms, draws 291, objects 2850, primitives 6323, process 51.86ms, physics 1.16ms
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  frame    fps 58, worst frame 59.3ms, draws 287, objects 2822, primitives 6222, process 59.21ms, physics 1.42ms
+   0.0  frame    fps 136, worst frame 17.3ms, draws 287, objects 2824, primitives 6226, process 17.26ms, physics 1.26ms

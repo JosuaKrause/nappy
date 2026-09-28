@@ -535,9 +535,56 @@ func is_detained() -> bool:
 func hide_for_inspection() -> void:
 	visible = false
 
-## The other half, called the frame the hold ends.
+## The other half, called the frame the hold ends, the frame after `teleport_to()` has already put
+## her on the far side — see that function's own doc for why the two are split across a physics
+## and a drawn frame the way they are, and why the order here is "moved, then shown". `visible` is
+## set first, so `_reset_interpolation_if_shown()` below is the reset that actually lands — see
+## its own doc for the mechanism.
 func show_after_inspection() -> void:
 	visible = true
+	_reset_interpolation_if_shown()
+
+## Resets physics interpolation on her own body, but only where the reset can do anything.
+##
+## **Godot silently skips a `reset_physics_interpolation()` call made while `is_visible_in_tree()`
+## is false**, for the node itself or for any ancestor — not the node's own `visible`, which can
+## read `true` while an ancestor's `false` still hides it in the tree. She has sat at the door, not
+## moving, for the whole hold, so the interpolated pair a hidden `Node2D` still carries underneath
+## is her position going in, twice over. `teleport_to()` calls this while a door's release still
+## has her hidden — a documented no-op there — and `show_after_inspection()` calls it again a line
+## after setting `visible = true`, which is the one that actually collapses the pair: without it,
+## the first frame drawn once she reappears still blends from the door toward the release point,
+## briefly reading as *at the door, then teleported* — shorter than the un-hidden slide this whole
+## mechanism exists to prevent, but not gone. `reset_at()` calls this the same way, after its own
+## `visible = true`, for a day boundary that lands mid-hold.
+func _reset_interpolation_if_shown() -> void:
+	if is_visible_in_tree():
+		reset_physics_interpolation()
+
+## `focus_camera_on()`'s own reset, forced through even though she is already hidden by the time
+## it runs.
+##
+## **The `Camera2D` rides under this body, and `is_visible_in_tree()` still walks the real parent
+## chain regardless of `top_level`** — `top_level` decouples the camera's *transform* from hers and
+## nothing else, so `EventInstance._enter_inspection()`'s `hide_for_inspection()` (called one line
+## before `focus_camera_on()`, in a file this fence does not own) makes the camera exactly as
+## hidden-in-tree as she is, whatever the camera's own `visible` says. A plain `_camera.reset_
+## physics_interpolation()` here would be the identical silent no-op `_reset_interpolation_if_
+## shown()` exists to avoid above — except there is no later call that shows the camera again to
+## catch it the way `show_after_inspection()` catches the body's: the world keeps being drawn
+## through her for the whole hold, only her own body goes dark, so the reset has to land on this
+## call or not at all.
+##
+## Toggling `visible` true for the one synchronous call and back is what makes it land: nothing is
+## drawn between one call and the next frame, so the toggle is never itself seen, and
+## `is_visible_in_tree()` is true for exactly as long as the reset needs it to be.
+func _force_reset_camera_interpolation() -> void:
+	if is_visible_in_tree():
+		_camera.reset_physics_interpolation()
+		return
+	visible = true
+	_camera.reset_physics_interpolation()
+	visible = false
 
 ## Where her camera is actually drawing from, in world space.
 ##
@@ -576,8 +623,12 @@ func focus_camera_on(point: Vector2) -> void:
 	_camera.global_position = drawn_from
 	# Stops a one-tick slide from the old place: `top_level` just changed how this position is
 	# computed, and without this the first interpolated frame draws from wherever the camera's
-	# transform sat under the old composition.
-	_camera.reset_physics_interpolation()
+	# transform sat under the old composition. Forced through even though `EventInstance.
+	# _enter_inspection()` — which this file does not own — has already called
+	# `hide_for_inspection()` by the time it calls here: see `_force_reset_camera_interpolation()`'s
+	# own doc for why a plain `_camera.reset_physics_interpolation()` would be exactly the silent
+	# no-op `_reset_interpolation_if_shown()` guards against above, one level down.
+	_force_reset_camera_interpolation()
 	_camera.reset_smoothing()
 	_camera_ease_from = drawn_from
 	_camera_ease_elapsed = 0.0
@@ -629,9 +680,11 @@ var outright_moves := 0
 func teleport_to(where: Vector2) -> void:
 	global_position = where
 	outright_moves += 1
-	# Stops a one-tick slide from the old place: without it, physics interpolation draws her
-	# gliding from the band she was released in rather than simply standing at the door.
-	reset_physics_interpolation()
+	# Stops a one-tick slide from the old place — except while a checkpoint's hold still has her
+	# hidden, where `_reset_interpolation_if_shown()` is a documented no-op and
+	# `show_after_inspection()`'s own call, a line later, is the one that actually lands. See that
+	# function's own doc.
+	_reset_interpolation_if_shown()
 	velocity = Vector2.ZERO
 	_shove = Vector2.ZERO
 
@@ -795,9 +848,6 @@ func _update_camera(delta: float) -> void:
 func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	global_position = where
 	outright_moves += 1
-	# Stops a one-tick slide from the old place: a day boundary (or a finale section's own
-	# restart) has no previous frame worth drawing a glide from.
-	reset_physics_interpolation()
 	velocity = Vector2.ZERO
 	facing = look.normalized()
 	_shove = Vector2.ZERO
@@ -808,6 +858,11 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	# A day boundary can land mid-hold if the run ends inside one; neither a stuck hidden rig nor
 	# a camera still glued to a `top_level` focus should ever survive into the next day.
 	visible = true
+	# Stops a one-tick slide from the old place: a day boundary (or a finale section's own
+	# restart) has no previous frame worth drawing a glide from. After `visible = true` above, not
+	# before it — `_reset_interpolation_if_shown()`'s own doc says why a reset made while still
+	# hidden is silently a no-op, which a day ending mid-checkpoint-hold would otherwise make this.
+	_reset_interpolation_if_shown()
 	_camera_focused = false
 	_camera_easing_back = false
 	if _camera:
