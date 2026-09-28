@@ -4,6 +4,10 @@
 of nowhere while I was walking through an alley and then a robber also appeared out of nowhere and
 instakilled me.")*
 
+**The cause was the relocation**: a mark moved while she walked took the nearest reachable alley
+with no check of her sight, often one she could see, and its robber was drawn against the mark
+alone, so he could land in view or within his reach of her.
+
 **Built (PR #414).** Anything the director places while she is out in the city is tested as a box
 against her screen, not as a point: the mark's 32px picture and the robber's 22 by 44px body. A
 relocated mark lands only where both the mark and its guard's spot are off screen, and a robber is
