@@ -18,7 +18,8 @@ of `transcription-ci.md` fails on a filed note with any other author.
 **A label on a note says which band its work is filed in** (statement 21: "also add to use labels
 for when a task should be queued, now, later, etc"). The queue's four bands — `now`, `next`,
 `later`, `parked`, which `tools/queue.sh` orders the queue by — each have a label the player puts
-on a note, and the entry filed from it opens with that band. A note with no band label is filed
+on a note, named `queue_now`, `queue_next`, `queue_later` and `queue_parked`
+([dotted-quail](../../playtests/2026-09-27-dotted-quail.md), statement 2: the player created them), and the entry filed from it opens with that band. A note with no band label is filed
 as **playtest-feedback** says today: `now` for a note from playing, and for anything else a band
 the filer proposes and names in its report. The capture script takes a band when the player named
 one in what was captured.
@@ -41,13 +42,17 @@ and a later thought is a new note, not an edit to a closed one (option E's "afte
 thought is a new note", which the player accepted with the rest of the list). A filing PR that is abandoned
 reopens its notes.
 
+**Issue #423 ("shadows are misplaced", `queue_next`) is its first real test**
+([dotted-quail](../../playtests/2026-09-27-dotted-quail.md), statement 3: "you can use this to test
+the implementation" · "as a first real test"): the PR that builds this item runs the new script on
+it and files it end to end, the playtest file, the entry and the note's closing.
+
 The skill says where to find the inbox at the start of a session, so **session-cleanup** lists the
 open notes in the restart prompt and `CLAUDE.md`'s "where to pick up" names the inbox beside the
 open PRs and the queue. A row for the script goes into the **using-tools** catalogue in the same
 commit.
 
 **Proposed, not asked for:** the label's name, `inbox`; that the player's comments on a note are
-copied with its body; that a filing PR carries a whole batch rather than one PR per note; the band
-labels' names (`band: now` and so on, so they read apart from any other label); that a note with
+copied with its body; that a filing PR carries a whole batch rather than one PR per note; that a note with
 two band labels is filed under neither and asked about; that an abandoned filing PR reopens its
 notes; that the inbox script posts the question, under the same identity as a capture.
