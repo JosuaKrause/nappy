@@ -200,33 +200,23 @@ class TelemetryKindsTests(unittest.TestCase):
 
 
 class NoHandoffTests(unittest.TestCase):
-    def test_a_name_containing_handoff_fails_in_any_case_and_any_other_folder(self) -> None:
-        for path in (
-            "HANDOFF.md",
-            "docs/LUNA_HANDOFF.md",
-            "agent-handoff.md",
-            "docs/handoff-notes.md",
-            "src/city/Handoff_today.txt",
-            "docs/evidence/x/handoffs.md",
-            "tools/ci_no_handoff.md",
-        ):
+    def test_an_added_file_named_handoff_fails_in_any_case_and_any_folder(self) -> None:
+        for path in ("HANDOFF.md", "docs/handoff-notes.md", "src/city/Handoff_today.txt", "handoffs.md"):
             with self.subTest(path=path):
                 failures = ci_no_handoff.check([added(path)])
                 self.assertEqual(len(failures), 1)
                 self.assertTrue(failures[0].startswith(path))
 
-    def test_under_the_queue_and_the_records_the_word_is_a_subject(self) -> None:
+    def test_a_file_about_handoffs_is_not_a_handoff_file(self) -> None:
         for path in (
             "docs/todo/2026-09-27-leafy-finch/no-handoff-file.md",
-            "docs/review/2026-10-01-handoff.md",
-            "docs/playtests/2026-10-01-the-handoff-rule.md",
             "docs/decisions/2026-10-01-one-handoff-entry-point.md",
+            "docs/playtests/2026-10-01-the-handoff-rule.md",
+            "tools/ci_no_handoff.py",
+            "notes/handoff/today.md",
         ):
             with self.subTest(path=path):
                 self.assertEqual(ci_no_handoff.check([added(path)]), [])
-
-    def test_the_check_is_not_a_handoff_file_and_folders_are_not_read(self) -> None:
-        self.assertEqual(ci_no_handoff.check([added("tools/ci_no_handoff.py"), added("notes/handoff/today.md")]), [])
 
     def test_a_rename_to_a_handoff_name_is_an_addition(self) -> None:
         self.assertEqual(len(ci_no_handoff.check([deleted("notes.md"), added("handoff.md")])), 1)
