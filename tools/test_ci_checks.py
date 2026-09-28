@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ci_classify
+import ci_no_handoff
 import ci_telemetry_kinds
 import lib_ci
 from lib_ci import Change
@@ -183,6 +184,25 @@ class TelemetryKindsTests(unittest.TestCase):
     def test_a_scan_that_finds_nothing_is_a_failure(self) -> None:
         failures = ci_telemetry_kinds.check({}, "")
         self.assertEqual(len(failures), 2)
+
+
+class NoHandoffTests(unittest.TestCase):
+    def test_an_added_handoff_file_fails_in_any_case_and_any_folder(self) -> None:
+        for path in ("HANDOFF.md", "docs/agent-handoff-notes.txt", "notes/Handoffs/today.md"):
+            with self.subTest(path=path):
+                failures = ci_no_handoff.check([added(path)])
+                self.assertEqual(len(failures), 1)
+                self.assertTrue(failures[0].startswith(path))
+
+    def test_a_rename_to_a_handoff_name_is_an_addition(self) -> None:
+        self.assertEqual(len(ci_no_handoff.check([deleted("notes.md"), added("handoff.md")])), 1)
+
+    def test_one_already_on_the_base_is_not_the_pull_requests(self) -> None:
+        changes = [modified("docs/decisions/2026-09-09-handoff-rule.md"), deleted("handoff.md")]
+        self.assertEqual(ci_no_handoff.check(changes), [])
+
+    def test_other_additions_pass(self) -> None:
+        self.assertEqual(ci_no_handoff.check([added("docs/playtests/x.md"), added("hand-off.md")]), [])
 
 
 if __name__ == "__main__":

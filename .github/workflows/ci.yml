@@ -130,10 +130,22 @@ jobs:
 
       # The Python tooling: uv reads .python-version and uv.lock, so the interpreter and every
       # package are the ones the lockfile names rather than whatever the runner image ships.
+      # Installed even after a red step above, so the pull request's own checks below still run
+      # and one push shows every failure at once.
       - name: Install uv
+        if: ${{ !cancelled() }}
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+
+      # The pull request's own checks: what it adds and deletes, and what its description says.
+      # Each diffs from where the branch started (origin/<base>, three dots) and runs even when a
+      # step above went red. One that reads the description reads it through the API when it
+      # runs, since editing a description starts no run: a description fixed after a red check
+      # is re-checked by re-running this job.
+      - name: No file the pull request adds is a handoff file
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        run: uv run python tools/ci_no_handoff.py --base "origin/${GITHUB_BASE_REF}"
 
       # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
       # ship; without it that test skips and the converter is never actually exercised.
