@@ -198,8 +198,10 @@ only", "CI requires both" and "records become optional". The player answered:
     recorded. an agent has better judgement there." → leafy-finch.
 14. **The GitHub write guard lets an issue write through a script, under the agent's own
     identity, and still denies an agent's direct `gh issue`.** → leafy-finch.
-15. **The work is filed as a queue entry by today's workflow, and built once that PR merges.** →
-    leafy-finch.
+15. **The work is filed as a queue entry by today's workflow, and built once that PR merges.**
+    "The old workflow" is filing as this file does — a playtest file and a queue entry on a
+    branch, a PR, its review and the player's go-ahead to merge — rather than through the inbox
+    the entry builds. → leafy-finch.
 
 ## The filing's own record
 
