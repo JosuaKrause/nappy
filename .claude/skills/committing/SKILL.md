@@ -14,7 +14,9 @@ the current session** — see "Merging".
 *(2026-09-26, once the first four identities existed: "I want to make it mandatory for each agent
 to use their respective identity when interacting with github", enforced on writes; asked what an
 agent does when its identity is unusable, the player chose "Stop and tell me" — it never posts as
-the player instead.)*
+the player instead.)* **The one exception is a review made in a Claude Code cloud session**, where
+no identity can work: it posts under the player's account, marked as Claude's and as a comment
+only (**pr-review**).
 
 **Which identity a write goes out as follows what the write does, not which session makes it.**
 *(2026-09-27: "orchestrator/coder session and orchestrator/coder identity are not the same thing.
