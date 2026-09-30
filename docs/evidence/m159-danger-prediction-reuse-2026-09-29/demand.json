@@ -1,0 +1,152 @@
+{
+  "accepted": true,
+  "rejections": [],
+  "frames": 530,
+  "population": {
+    "walkers": {
+      "median": 200.0,
+      "p95": 200,
+      "p99": 200,
+      "max": 200,
+      "mean": 200
+    },
+    "cars": {
+      "median": 34.0,
+      "p95": 34,
+      "p99": 34,
+      "max": 34,
+      "mean": 34
+    },
+    "visible_walkers": {
+      "median": 18.0,
+      "p95": 22,
+      "p99": 25,
+      "max": 26,
+      "mean": 17.630188679245283
+    },
+    "visible_cars": {
+      "median": 7.0,
+      "p95": 8,
+      "p99": 8,
+      "max": 8,
+      "mean": 5.247169811320755
+    },
+    "events": {
+      "median": 52.0,
+      "p95": 55,
+      "p99": 56,
+      "max": 56,
+      "mean": 51.81509433962264
+    },
+    "visible_events": {
+      "median": 4.0,
+      "p95": 5,
+      "p99": 5,
+      "max": 5,
+      "mean": 3.711320754716981
+    }
+  },
+  "player_path_pixels": 551.9970703125,
+  "northward_net_pixels": 551.9970703125,
+  "north_input_held": true,
+  "draws_per_process_frame": {
+    "1": 530
+  },
+  "moving_cars_per_frame": {
+    "median": 30.0,
+    "p95": 31,
+    "p99": 31,
+    "max": 31,
+    "mean": 29.418867924528303
+  },
+  "ticks_per_frame": {
+    "1": 181,
+    "0": 349
+  },
+  "compiler_warnings": 175,
+  "errors": [],
+  "environment": {
+    "adapter": "Apple M2",
+    "columns": [
+      "frame",
+      "physics_frame",
+      "drawn_frame",
+      "stamp_usec",
+      "elapsed_usec",
+      "running",
+      "paused",
+      "player_x",
+      "player_y",
+      "counts",
+      "moved_cars",
+      "observer_usec",
+      "north_input",
+      "player_velocity_x",
+      "player_velocity_y"
+    ],
+    "count_columns": [
+      "walkers",
+      "cars",
+      "visible_walkers",
+      "visible_cars",
+      "events",
+      "visible_events"
+    ],
+    "display": "macOS",
+    "engine": {
+      "build": "official",
+      "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "hex": 263938,
+      "major": 4,
+      "minor": 7,
+      "patch": 2,
+      "status": "stable",
+      "string": "4.7.2-stable (official)",
+      "timestamp": 0
+    },
+    "graph": false,
+    "physics_hz": 30,
+    "processor": "Apple M2",
+    "profiler_max_functions": 16384,
+    "readout": true,
+    "render_on_main_thread": true,
+    "renderer": "gl_compatibility",
+    "telemetry": false,
+    "viewport": [
+      1280.0,
+      720.0
+    ],
+    "warmup_usec": 5000000,
+    "window_usec": 6000000
+  },
+  "baseline": "7c1fbbd97729aec58cd4b5a6efaa8e329f4abcd6",
+  "columns": [
+    "requests",
+    "sampled_nonflock",
+    "identical_previous",
+    "identical_same_frame"
+  ],
+  "counts": {
+    "event": [
+      54849,
+      18172,
+      12199,
+      9086
+    ],
+    "crowd": [
+      141933,
+      59642,
+      11114,
+      9327
+    ]
+  },
+  "instrumented_sha256": {
+    "src/events/event_instance.gd": "8ede92eb0a34144c01163433c1bc3091f8559e7347ef11bab2c300a444c7130f",
+    "src/crowd/crowd_agent.gd": "60768c4b7b6c66a17211d8c0969c4ced7a1e8462a03b43a5a9a0819ff20d0492",
+    "tests/probes/entity_frame_profile_observer.gd": "8ed4c3b4152fb30e93d7fcb2eca5617e973dd5078aefc27f8a46b65868e57c9f"
+  },
+  "sampling_dt_seconds": 0.25,
+  "samples_per_integral": 20,
+  "timing_use": "None: instrumentation measures demand only and skips no sampling."
+}
+

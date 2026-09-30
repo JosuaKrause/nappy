@@ -1089,6 +1089,10 @@ func _current_reach() -> float:
 	var top_speed := Tuning.CAR_SPEED.y if kind == Kind.CAR else Tuning.PEDESTRIAN_SPEED.y
 	return reach * Tuning.field_scale(Tuning.field_eccentricity(top_speed))
 
+## One bounded integral cache per source; effective inputs include externally written state.
+var _expected_landed_key: Array = []
+var _expected_landed_cache := 0.0
+
 ## The gross points this agent is anticipated to land over `Tuning.EXPECTED_IMPACT_HORIZON` if she
 ## and it both carry on exactly as they are, before her own decay is netted against it —
 ## `EventInstance.expected_gross_at()`'s own quantity, read here off `velocity()` instead of
@@ -1106,14 +1110,26 @@ func expected_gross_at(player_position: Vector2) -> float:
 	if vel.is_zero_approx() and player_velocity.is_zero_approx():
 		return 0.0
 	var current_rate := contribution_at(player_position)
+	# Velocity includes turns, yielding, door holds and pockets. Read it and every jolt value
+	# afresh: the crowd can move/startle this body without advancing its own clock.
+	var key := [global_position, player_position, player_velocity, vel, kind,
+		_jolt, _jolt_for, _jolt_intensity, _jolt_inner, _jolt_outer]
+	if key != _expected_landed_key:
+		_expected_landed_cache = _sample_expected_landed(player_position, vel)
+		_expected_landed_key = key
+	var gross := _expected_landed_cache - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	return maxf(gross * player_sensitivity, 0.0)
+
+## The future samples alone are reusable; current contribution, sensitivity and the net's
+## shared decay are still evaluated for each request. Tuning inputs are immutable constants.
+func _sample_expected_landed(player_position: Vector2, vel: Vector2) -> float:
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var landed := 0.0
 	for i in steps:
 		var t := float(i + 1) * dt
 		landed += contribution_at(player_position + player_velocity * t - vel * t) * dt
-	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(gross * player_sensitivity, 0.0)
+	return landed
 
 ## The net points this agent is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
 ## — `expected_gross_at()` less her own decay over the same horizon.

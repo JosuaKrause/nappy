@@ -2751,6 +2751,10 @@ func is_lethal_at(world_position: Vector2) -> bool:
 		return false
 	return global_position.distance_to(world_position) <= def.lethal_reach()
 
+## One bounded integral cache per source, with a by-value key rather than a clock or identity.
+var _expected_landed_key: Array = []
+var _expected_landed_cache := 0.0
+
 ## The gross points this event is anticipated to land over `Tuning.EXPECTED_IMPACT_HORIZON` **if
 ## she and it both carry on exactly as they are**, before her own decay is netted against it —
 ## `expected_impact_at()` is the net; this is the half of it every source projects for itself, and
@@ -2806,6 +2810,31 @@ func expected_gross_at(player_position: Vector2) -> float:
 		return 0.0
 	var current_rate := contribution_at(player_position)
 	var live_intensity := _caret_intensity_over_horizon()
+	var landed: float
+	# Compare the effective sample inputs by value, including mutable definition/shape fields.
+	# Age alone cannot cover a retirement, silence, external movement or changed player state.
+	# Flocks retain their ordinary path: every bird has independently mutable geometry.
+	if _flock.is_empty():
+		var key := [global_position, player_position, player_velocity, velocity,
+			live_intensity, def.intensity, def.inner_radius, def.outer_radius,
+			def.falloff_power, def.core_intensity, def.core_radius, _solid_axis(),
+			def.shape.kind if def.shape else -1,
+			def.shape.half_length if def.shape else 0.0,
+			def.shape.half_extents if def.shape else Vector2.ZERO]
+		if key != _expected_landed_key:
+			_expected_landed_cache = _sample_expected_landed(player_position, velocity, live_intensity)
+			_expected_landed_key = key
+		landed = _expected_landed_cache
+	else:
+		landed = _sample_expected_landed(player_position, velocity, live_intensity)
+	# Present contribution, sensitivity and shared netting remain live on every request.
+	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	return maxf(gross * player_sensitivity, 0.0)
+
+## Only the future integral is reusable. The key above covers every input these samples read;
+## shape radius affects the live reach guard, but field distance reads the spine alone.
+func _sample_expected_landed(player_position: Vector2, velocity: Vector2,
+		live_intensity: float) -> float:
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var landed := 0.0
@@ -2821,8 +2850,7 @@ func expected_gross_at(player_position: Vector2) -> float:
 		var t := float(i + 1) * dt
 		var sample := player_position + player_velocity * t - velocity * t
 		landed += contribution_at(sample, live_intensity, velocity) * dt
-	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(gross * player_sensitivity, 0.0)
+	return landed
 
 ## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
 ## **if she and it both carry on exactly as they are** — the caret's own answer to *"if I keep
