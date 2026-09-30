@@ -2832,7 +2832,8 @@ func expected_gross_at(player_position: Vector2) -> float:
 	return maxf(gross * player_sensitivity, 0.0)
 
 ## Only the future integral is reusable. The key above covers every input these samples read;
-## shape radius affects the live reach guard, but field distance reads the spine alone.
+## shape radius is read by neither the reach guard (`EventDef.field_reach()`) nor field distance,
+## which measures from the spine.
 func _sample_expected_landed(player_position: Vector2, velocity: Vector2,
 		live_intensity: float) -> float:
 	var dt := 0.25
