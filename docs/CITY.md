@@ -2040,8 +2040,9 @@ Top-down camera with a fake vertical extrusion:
   top, which is why a corner needs no dedicated corner tile — it takes two edge overlays
   and the parapet turns.
 - **A roof carries furniture, seeded per building from its block's own starting purpose**
-  (`Building.district`) — vents, HVAC boxes and a straight-and-corner duct run on `INDUSTRIAL`,
-  skylights on `CIVIC`, mostly water tanks with the odd vent on `RESIDENTIAL` and `COMMERCIAL`.
+  (`Building.district`) — vents, installed HVAC and a continuous mounted L duct run on `INDUSTRIAL`,
+  skylights and service bulkheads on `CIVIC`, mostly water tanks with vents and bulkheads on
+  `RESIDENTIAL` and `COMMERCIAL`.
   Every unit sits on an interior cell — never a cell a roof's own edge tiles already draw, which
   is the perimeter row and column and, on a roof extended over a covered front (below), the step
   where an extended column stands beside a shorter one — so nothing overhangs the silhouette, and
@@ -2050,17 +2051,18 @@ Top-down camera with a fake vertical extrusion:
   that column's own top, extension included, so a building whose own roof is too shallow for an
   interior cell carries units once its extension gives it one. A fixed seed gives the same roof
   on every run, and a building providing cover rolls its layout over its larger roof, so it is a
-  different shuffle from the one it would have with nothing to cover. The cells are listed row by
+  different shuffle from the one it would have with nothing to cover. The three-cell duct is one
+  connected object and consumes the same two-cell horizontal arm plus its north-turn cell as its
+  placement footprint. The cells are listed row by
   row before the shuffle (`Building.roof_interior_cells()`), which is what keeps a roof with
   nothing to cover on the layout it has without any extension in the city: the shuffle permutes
-  positions, so any other order moves its units. The vent is the one thing on a roof that moves:
-  it swaps between its two rotor frames on a timer of its own, and nothing else up there is
-  animated. Furniture is painted by retained children of `Building`, above its own roof tiles and
-  inside the layer of buildings under the entities — never the y-sorted layer a street prop or
-  the player draws in — so a unit
-  is never compared against anything on the pavement. Static furniture batches interleave with
-  separate six-pixel rotor layers in the original painter order; each 1.4-second tick changes
-  only those rotor layers, leaving the facade, roof tiles and housing draw lists intact.
+  positions, so any other order moves its units. Every unit is a visual-only `Building.RoofObject`
+  in the city's y-sorted `Entities` layer, anchored at its bottom-center roof foot. Full-height art
+  can therefore rise beyond its footprint and into the walkable row north of a lot while sorting
+  against the player and upright scenery at the same depth. The building lot remains the only
+  collision body. Each 36–56px-wide base is centered in two reserved horizontal roof cells so
+  adjacent installed bases cannot interpenetrate; the furniture density remains unchanged, and
+  the reserved cells are visual placement facts rather than new obstacles.
 - **A front is district and block purpose, read the same way a roof's furniture is.** A
   multi-story building's ground floor never shows a window on a column she can stand in front of:
   it is shops or blank wall — the wall texture and its own plinth — with the entrance, the civic

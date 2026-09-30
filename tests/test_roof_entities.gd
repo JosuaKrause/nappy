@@ -3,6 +3,7 @@ extends RefCounted
 
 func run(t) -> void:
 	_test_roof_objects_use_entities_and_have_no_body(t)
+	_test_reserved_cells_hold_native_base_widths(t)
 	_test_industrial_duct_is_one_three_cell_unit(t)
 	_test_rebuild_releases_external_roof_objects(t)
 
@@ -54,6 +55,25 @@ func _test_industrial_duct_is_one_three_cell_unit(t) -> void:
 		t.check(cells[0] != cells[1] and cells[1] != cells[2] and cells[0] != cells[2],
 			"the duct run footprint uses three distinct cells")
 	t.check(found, "the industrial fixture carries a duct run")
+	building.free()
+	fixture["root"].free()
+
+func _test_reserved_cells_hold_native_base_widths(t) -> void:
+	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL)
+	var building: Building = fixture["building"]
+	var used := {}
+	for entry: Dictionary in building._roof_furniture:
+		var cells: Array = entry["cells"]
+		for cell: Vector2i in cells:
+			t.check(not used.has(cell), "roof equipment reservations never share a cell")
+			used[cell] = true
+		var width := AtlasLibrary.native_size(building._furniture_texture(entry["kind"])).x
+		var horizontal_cells := 2
+		t.check(entry["span"] == horizontal_cells,
+				"a roof object's foot is centered in its two reserved horizontal cells")
+		t.check(width <= horizontal_cells * Building.TILE,
+				"a roof object's %dpx base fits its reserved %dpx horizontal footprint"
+				% [width, horizontal_cells * Building.TILE])
 	building.free()
 	fixture["root"].free()
 

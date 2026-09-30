@@ -114,13 +114,15 @@ Constraints: true transparency; no labels, no numbers, no text, no watermark, no
 Avoid: isometric camera, diagonal roof grid, diagonal yaw, perspective convergence, shrinking tall equipment into square cells, shared ground plane, disconnected ducts, unsupported metal strips, open water tank, whimsical clutter, satellite dishes, people, vegetation.
 ```
 
-## Continuous cardinal duct run
+## Rejected continuous cardinal duct run
 
 `raw/roof-duct-run-cardinal-v1.png` is the built-in image generator's 1536×1024 RGBA result,
 SHA-256 `781a762c5dcf250be3dd1bec296d1adec2cbda8b6e0331a9a435d0d8a513d6da`. It replaces the
 cardinal sheet's still-diagonal elbow with one continuous L-shaped assembly. The assembly occupies
 the same three-cell L footprint as the existing straight-plus-corner placement, so density and
-placement cost stay fixed while every joint becomes visually continuous.
+placement cost stays fixed while every joint becomes visually continuous. The player rejected it
+after noticing that a fixed camera looking from the south should not see inside either its west-
+or north-facing mouth. It is retained as human-rejected generation evidence and is not installed.
 
 ### Exact duct-run prompt
 
@@ -140,3 +142,36 @@ Style/medium: exactly Image 1's polished hand-drawn comic style, crisp dark brow
 Constraints: true transparency; no labels, text, numbers, watermark, checkerboard, or shared ground plane; all joints continuous; support feet contact the roof; no floating parts.
 Avoid: diagonal elbow, isometric projection, perspective convergence, separate pieces, mismatched connector sizes, unsupported duct strip, open gap at the turn, rooftop scene, people, clutter.
 ```
+
+## Corrected continuous cardinal duct run
+
+`raw/roof-duct-run-cardinal-v2.png` is the targeted built-in image-generator edit selected for
+registration, SHA-256 `aef595d6170d395baf2f65bc0a69d0446fb6d6d7b6f7e8dc62afd838d58e6cda`.
+It preserves the approved L footprint, supports and family style while showing opaque exterior
+metal at both away-facing ends rather than impossible dark openings.
+
+### Exact correction prompt
+
+```text
+EDIT TARGET: the supplied continuous L-shaped rooftop duct illustration. Preserve the exact L shape, cardinal screen-axis orientation, proportions, connected elbow, galvanized comic-ink style, orange weathering, clamps, bolts, support legs, roof feet, lighting, scale, and transparent cutout composition. Make only this projection correction: the open ends point west and north, away from this game's fixed camera, so neither opening interior is visible. Remove both visible dark hollow mouths and redraw those end faces as the opaque exterior/back-side metal surfaces that the camera would see from behind an away-facing open end. Do not add closed caps, grilles, extra equipment, or rotate any segment. Keep all existing supports and joints in place. Output a genuinely transparent background with no glow, haze, floor, checkerboard, text, labels, border, or shadow field outside the object.
+```
+
+The edit target was `raw/roof-duct-run-cardinal-v1.png`. No rejected installed artwork was an
+input. Generation used the built-in image generator with transparent background enabled.
+
+## Deterministic registration
+
+Run `uv run python docs/evidence/roof-obstruction-pngs-2026-09-30/register_roofs.py all`. The
+script checks both selected source hashes, removes the generator's low-alpha neutral preview
+fringe, crops fixed non-overlapping source cells, scales each complete silhouette into its stated
+native canvas, and registers every object bottom-center at its roof foot. Its review command lays
+the native files out at nearest-neighbor 4× only for inspection; it does not modify runtime art.
+
+The installed canvases are `water_tank` 40×72, `hvac_large` 48×40, `condenser` 40×40,
+`skylight_long` 56×24, `skylight_pyramid` 44×28, `vent_stack` 40×48, `duct_run` 64×64,
+`industrial_vent` 44×44, `service_bulkhead` 48×52, `exhaust_fan` 40×36 and `pipe_manifold`
+52×40. Every non-empty alpha bound reaches the canvas bottom and leaves both upper corners fully
+transparent; the script fails if either registration fact changes.
+
+The [in-engine context frame](../m109-roof-context-2026-09-30/README.md) places all eleven runtime
+regions on the game's roof, facade, sidewalk and street at native scale.

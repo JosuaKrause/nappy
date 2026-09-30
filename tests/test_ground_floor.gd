@@ -858,8 +858,8 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -> void:
 	var main_layouts := {
 		Vector2i(6, 6): [[Vector2i(5, 2), 8], [Vector2i(2, 2), 8], [Vector2i(2, 1), 0]],
-		Vector2i(34, 6): [[Vector2i(2, 2), 8], [Vector2i(1, 2), 0], [Vector2i(4, 1), 8],
-				[Vector2i(6, 1), 8]],
+		Vector2i(34, 6): [[Vector2i(2, 2), 9], [Vector2i(1, 2), 9], [Vector2i(4, 1), 8],
+				[Vector2i(6, 1), 9]],
 	}
 	var pinned := 0
 	var ordered := 0

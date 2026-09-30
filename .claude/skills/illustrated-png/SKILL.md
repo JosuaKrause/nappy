@@ -3,14 +3,21 @@ name: illustrated-png
 description: Generate, register and install illustrated PNGs for SVG sources under art/illustrated/. Load BEFORE adding or changing a PNG there.
 ---
 
-# SVG-to-PNG workflow
+# Illustrated PNG workflow
 
-**Every PNG asset must have a corresponding SVG asset, and the SVG always comes first.** Author
+**Every PNG asset normally has a corresponding SVG asset, and the SVG comes first.** Author
 and review the SVG before generating its PNG; do not create an SVG after the fact to legitimize
 a PNG-only asset. Keep the SVG as the editable source of subject and functional placement. Record
 the source/derivative pair in the family's evidence manifest, including UI and identity assets.
 The catalogue-wide conversion manifest is open work under M109, convert the SVG catalogue to PNG.
 Raw generator outputs belong with generation evidence, not in the runtime asset catalogue.
+
+The player may authorize a bounded PNG-first family when photographs or a reviewed generated
+concept define the subject more faithfully than an existing SVG. The M109 rooftop equipment,
+fallen-tree and burst-water-main replacement families are such exceptions. Preserve their exact
+raw generated source, prompt, hashes, deterministic registration, native anchors and human review
+verdict in family evidence; list each direct PNG in atlas membership. This authorization does not
+make PNG-first the default for another family.
 
 Read `docs/VISUALS.md`, M109, convert the SVG catalogue to PNG, in its queue folder under `docs/todo/`, and
 [the integration procedure](references/texture-integration.md) before working on this presentation.
@@ -92,8 +99,9 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
 - Preserve SVGs and raw generated outputs for retained derivatives, following rejected-graphics
   for what a draft's disposition keeps or discards. Record extraction commands, tool versions,
   source dimensions and registration measurements for retained derivatives.
-- Runtime PNGs use `art/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
-  `art/<family>/<name>.svg`. Match native canvas dimensions, ground anchors and functional
+- SVG transfers use `art/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
+  `art/<family>/<name>.svg`; an expressly authorized PNG-first family uses its own named folder
+  below `art/illustrated/` and direct atlas membership. Match native canvas dimensions, ground anchors and functional
   placement. Preserve the generated artwork's true alpha and expressive silhouette; do not
   reapply the SVG's primitive alpha mask to a redrawn figure or prop. Opaque ground stays fully
   opaque and functional markings retain their joins. Verify outlines, transparent gaps and
@@ -120,7 +128,7 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   it or `members_png`/`members_svg` if only one does — a bake reads and hashes its own mode's
   lists alone, so it is baked nowhere and `AtlasLibrary` answers `has_region()` false for it until
   that line exists.
-- **A PNG whose size disagrees with its SVG fails the bake by name.** There is no fallback: the
+- **A transfer PNG whose size disagrees with its SVG fails the bake by name.** There is no fallback: the
   game holds no second copy of the picture to fall back to, so a mismatch is a committed mistake
   rather than an unfinished art drop to work around.
 

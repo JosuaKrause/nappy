@@ -20,11 +20,11 @@ extends WorldContext
 ## behind one. Two things that can never be on opposite sides of each other have no business
 ## being sorted against each other.
 ##
-## **The power station's two stacks are the exception, so they are not part of the building.**
-## Each rises 192px from a foot on the hall's roof, well past the lot's north edge and into the
-## street beyond it, where she can stand behind it. So each is a `Building.StationStack` in
-## `Entities`, at its foot (`Building.stack_feet()`), and sorts against her like any other entity:
-## drawn over whatever stands north of its foot and under whatever stands south of it.
+## **Roof equipment and the power station's two stacks are the exceptions.** Their pictures may
+## rise north of their roof footprints and into a street where she can stand behind them. Each is
+## therefore a feet-anchored `Building.RoofObject` or `Building.StationStack` in `Entities`, sorting
+## against her like any other entity: drawn over whatever stands north of its foot and under
+## whatever stands south of it.
 
 ## Wall height per district, in whole tiles. Heights are quantised because the facade is
 ## assembled from 32px tiles now; a float height would mean a stretched tile. Clamped
