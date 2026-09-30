@@ -220,6 +220,12 @@ and its evidence under `docs/evidence/`.
 Rerun instructions create the required revision checkouts and use caller-relative paths, fresh
 scratch directories and a configurable engine executable instead of the author's local paths.
 
+Timed comparisons use clean tracked checkouts: a commit ID alone does not identify dirty
+runtime sources. Record hashes of source files an audit can rewrite, and revalidate source and
+collector identity after setup and before captures. Run source-rewriting demand audits in
+separate disposable checkouts. Historical source-state gaps are disclosed, not filled with
+hashes computed after the capture.
+
 **Full profiler streams, expanded analyzer output, build/test stdout and duplicate generated
 reports stay in scratch space unless the conclusion needs their original detail.** Retain a
 focused original trace or input when it proves a defect, supports attribution that aggregate
