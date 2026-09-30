@@ -146,11 +146,13 @@ Avoid: merged cells, missing cells, duplicated layer content, complete scene in 
 
 ## Registration and reproduction
 
-`render_sources.gd` rasterizes the four tree SVGs and four complete water scenes with Godot's own
-SVG decoder. `render_layer_sources.gd` rasterizes the 20 existing painter-order layer SVGs and
-assembles the two generation-reference grids. The generated sheets contain real alpha; the dark
-fields visible in some viewers are RGB beneath transparent pixels. The installer clears alpha at
-or below 8, makes alpha at or above 248 fully opaque, and preserves the antialiased interval.
+`render_sources.gd` rasterized the four tree SVGs and four complete water scenes with Godot's own
+SVG decoder. `render_layer_sources.gd` rasterized the 20 existing painter-order layer SVGs and
+assembled the two generation-reference grids. Those committed renders are frozen registration
+inputs: `install.py` pins and verifies all 28 files before creating any output. The generated
+sheets contain real alpha; the dark fields visible in some viewers are RGB beneath transparent
+pixels. The rebuild clears alpha at or below 8, makes alpha at or above 248 fully opaque, and
+preserves the antialiased interval.
 
 Tree cells are cropped at the bounds recorded in `TREE_SPECS` and fitted to the source picture's
 complete alpha extent, so the event tree covers 200×50/50×200 and the closure marker covers
@@ -161,14 +163,37 @@ their left and right source positions. Full A/B water scenes are then composed f
 layers at the runtime offsets in `src/events/event_scenery_parts.gd`; stationary layers are byte-for-byte
 the same across phases and only the three water layers select `_b` files.
 
-From the repository root:
+The source-render commands that created the frozen inputs were, from the repository root:
 
 ```sh
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
   --script docs/evidence/obstruction-pngs-2026-09-30/render_sources.gd
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
   --script docs/evidence/obstruction-pngs-2026-09-30/render_layer_sources.gd
-uv run python docs/evidence/obstruction-pngs-2026-09-30/install.py
+```
+
+They write the tracked source-render directory and are only for an intentional registration-input
+refresh, followed by review and updated pins. An ordinary rebuild writes a full repo-relative
+layout to a required new directory and refuses an existing destination, so it cannot overwrite
+the installed art or retained evidence:
+
+```sh
+uv run python docs/evidence/obstruction-pngs-2026-09-30/install.py \
+  /private/tmp/obstruction-png-build
+```
+
+Review or compare that staging tree first. Installing the reviewed result is a separate copy step:
+
+```sh
+cp -R /private/tmp/obstruction-png-build/art/illustrated/svg-transfer/events/. \
+  art/illustrated/svg-transfer/events/
+cp -R /private/tmp/obstruction-png-build/art/illustrated/svg-transfer/closures/. \
+  art/illustrated/svg-transfer/closures/
+cp /private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/manifest.json \
+  /private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/review-native.png \
+  /private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/review-enlarged.png \
+  /private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/water-phases.gif \
+  docs/evidence/obstruction-pngs-2026-09-30/
 ```
 
 `review-native.png` places all four trees and four complete water scenes on a light neutral backing
