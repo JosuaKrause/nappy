@@ -18,3 +18,9 @@ without changing gameplay, retain controlled repeated before/after distributions
 active-play windows, and verify identical behavior. A measured reduction in a named work metric
 must be distinguished from whole-frame improvement and perceived smoothness. The existing noisy
 toggle trials establish neither a causal toggle cost nor a shipping pacing choice.
+
+**The conservative contribution rejection** is `CrowdAgent.contribution_at()` skipping velocity
+and ellipse work outside a bound that includes the current jolt and the maximum forward stretch.
+**The raw traces** come from `--frame-trace`, which supplies bounded raw callback intervals and
+atlas CPU spans; its semantics and limits are in
+[TELEMETRY.md](../../TELEMETRY.md#raw-frame-traces).

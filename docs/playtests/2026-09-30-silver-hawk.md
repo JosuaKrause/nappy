@@ -26,5 +26,4 @@ satisfied. The author replies to the six remaining findings; only a thread's ope
 
 The assistant proposes a new controlled before/after collection using clean checkouts and
 recorded source hashes to close the historical provenance gap; this cannot retroactively prove
-the sources used for the original captures. The earlier instruction to leave #439 unmerged
-remains in force.
+the sources used for the original captures.
