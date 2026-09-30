@@ -203,9 +203,10 @@ func _test_live_net_and_skipped_work(t) -> void:
 		source.player_sensitivity = 0.5
 		t.check(_same_bits(source.expected_gross_at(at), gross * 0.5), "sensitivity stays live")
 		t.check(source.sampling_runs == 1, "total/decay/sensitivity reuse only the integral")
-		source.player_velocity += Vector2(1.0, 0.0)
+		# Below approximate-comparison tolerance, but a distinct representable Vector2 value.
+		source.player_velocity += Vector2(0.00001, 0.0)
 		source.expected_gross_at(at)
-		t.check(source.sampling_runs == 2, "changed trajectory samples without a clock tick")
+		t.check(source.sampling_runs == 2, "even a tiny changed trajectory samples without a tick")
 	event.free()
 	crowd.free()
 
@@ -254,7 +255,7 @@ func _test_halo_and_removal(t) -> void:
 	var sources: Array[EventInstance] = []
 	var player := CharacterBody2D.new()
 	t.add_child(player)
-	player.position = Vector2(-130.0, 0.0)
+	player.position = Vector2(-40.0, 0.0)
 	player.velocity = Vector2(92.0, 0.0)
 	var baby := Baby.new()
 	for cached: bool in [true, false]:
@@ -263,6 +264,7 @@ func _test_halo_and_removal(t) -> void:
 		managers.append(manager)
 		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
 		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
+		source.age = 3.0
 		manager.add_child(source)
 		source.set_process(false)
 		manager._instances.append(source)
@@ -279,9 +281,13 @@ func _test_halo_and_removal(t) -> void:
 				sources[1].player_expected_total_gross), "real halo publishes identical totals")
 		t.check(sources[0]._halo._target_colour == sources[1]._halo._target_colour,
 				"real halo selection/color agrees with baseline source")
+		t.check(_same_bits(sources[0]._halo._target_alpha, sources[1]._halo._target_alpha),
+				"real halo strength agrees with baseline source")
 		t.check(sources[0]._caret_strength() == sources[1]._caret_strength(),
 				"post-halo caret agrees with baseline source")
 		if tick == 0:
+			t.check(sources[0]._halo._target_alpha > 0.0,
+					"real halo comparison selects a source rather than two empty sets")
 			player.velocity = Vector2(43.0, 12.0)
 		if tick == 1:
 			for i in managers.size():
