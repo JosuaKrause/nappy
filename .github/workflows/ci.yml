@@ -98,8 +98,8 @@ jobs:
     steps:
       # `filter: blob:none` is a partial clone: commits and trees come down up front, blob
       # content only for a path the sparse checkout below actually selects. That checkout excludes
-      # docs/evidence/ (about 910 of the tree's 949 MB) and re-includes only the SVGs under it,
-      # since tools/lint.sh's well-formedness check is the only thing this job reads there --
+      # docs/evidence/ and re-includes its SVGs for lint plus the two experiment runners read
+      # by the preflight regression. Full profiler evidence stays excluded --
       # see docs/DECISIONS.md, M201, a CI job does not download the evidence. `fetch-depth: 0`
       # brings origin/<base>, which the pull request's own checks below diff against.
       - uses: actions/checkout@v4
@@ -111,6 +111,8 @@ jobs:
             /*
             !/docs/evidence/
             /docs/evidence/**/*.svg
+            /docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py
+            /docs/evidence/m159-danger-prediction-reuse-2026-09-29/measure-native.py
 
       - name: Lint the docs
         run: ./tools/lint.sh
