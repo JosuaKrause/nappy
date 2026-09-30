@@ -18,18 +18,3 @@ without changing gameplay, retain controlled repeated before/after distributions
 active-play windows, and verify identical behavior. A measured reduction in a named work metric
 must be distinguished from whole-frame improvement and perceived smoothness. The existing noisy
 toggle trials establish neither a causal toggle cost nor a shipping pacing choice.
-
-`CrowdAgent.contribution_at()` skips velocity and ellipse work outside a conservative bound
-that includes the current jolt and the maximum forward stretch. The exact-parity checks and
-repeated before/after measurement are in [DECISIONS.md](../../DECISIONS.md), M159, cheaper crowd
-contribution sweeps; the raw evidence is
-[the contribution measurement record](../../evidence/m159-crowd-rejection-2026-09-19/README.md).
-This establishes a reduction in query cost, while the remaining long-frame cause and phone
-behavior still require the work below. `--frame-trace` supplies bounded raw callback intervals
-and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](../../TELEMETRY.md#raw-frame-traces).
-
-Identical event/crowd prediction inputs reuse only their future samples, with guards, current
-contribution and shared netting evaluated afresh. The
-[prediction-reuse record](../../decisions/2026-09-19-M159-2.md) specifies that boundary, its
-mutation proof and controlled native measurements; native medians do not establish phone
-performance or uniformly better frame tails.
