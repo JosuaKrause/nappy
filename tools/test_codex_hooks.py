@@ -140,6 +140,10 @@ class CodexHooksTest(unittest.TestCase):
         self.assertIn("RULE_CONTENT_cues", text)
         self.assertIn("RULE_CONTENT_godot", text)
 
+    def test_evidence_edit_loads_verify_through_the_adapter(self) -> None:
+        text = self.call(command="*** Update File: docs/evidence/experiment/README.md\n")
+        self.assertEqual(text.count("RULE_CONTENT_verify"), 1)
+
     def test_compaction_reloads_session_and_path_rules(self) -> None:
         self.assertIn("RULE_CONTENT_orchestrating", self.call(kind="SessionStart", source="startup"))
         patch = "*** Update File: src/events/a.gd\n"

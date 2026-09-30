@@ -47,25 +47,45 @@ spawn, a held northward route, a five-second warmup and a six-second active wind
 external deadline applies to each launch, and the runner stops at the first rejected capture.
 
 ```sh
-scratch_output=$(mktemp -d /private/tmp/m159-event-shape-rerun.XXXXXX)
+runner_root=$(git rev-parse --show-toplevel)
+scratch_root=$(mktemp -d)
 
-python3 docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py \
-  --baseline /private/tmp/nappy-event-shape-before-41fd54a1 \
-  --after /Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache \
-  --output "$scratch_output/native"
+# The pull-request ref keeps the two measured changed revisions available after its branch closes.
+git -C "$runner_root" fetch origin refs/pull/438/head
+git -C "$runner_root" worktree add --detach "$scratch_root/baseline" \
+  41fd54a1cf5fee1a722dc7fcfb4cb30e95610b1e
+git -C "$runner_root" worktree add --detach "$scratch_root/after-original" \
+  ea7147fff56eae004bcbe751130e1c35082d3c3b
+git -C "$runner_root" worktree add --detach "$scratch_root/after-reversed" \
+  7e3b019e229de7c77c1fd2bc1cb000f43ffd9ba5
 
-python3 docs/evidence/m159-event-shape-cache-2026-09-29/summarize-native.py \
-  "$scratch_output/native"
+python3 "$runner_root/docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py" \
+  --baseline "$scratch_root/baseline" \
+  --after "$scratch_root/after-original" \
+  --output "$scratch_root/native"
 
-python3 docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py \
-  --baseline /private/tmp/nappy-event-shape-before-41fd54a1 \
-  --after /Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache \
-  --output "$scratch_output/native-reversed" \
+python3 "$runner_root/docs/evidence/m159-event-shape-cache-2026-09-29/summarize-native.py" \
+  "$scratch_root/native"
+
+python3 "$runner_root/docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py" \
+  --baseline "$scratch_root/baseline" \
+  --after "$scratch_root/after-reversed" \
+  --output "$scratch_root/native-reversed" \
   --mode disabled --order after-before
 
-python3 docs/evidence/m159-event-shape-cache-2026-09-29/summarize-native.py \
-  "$scratch_output/native-reversed"
+python3 "$runner_root/docs/evidence/m159-event-shape-cache-2026-09-29/summarize-native.py" \
+  "$scratch_root/native-reversed"
+
+git -C "$runner_root" worktree remove "$scratch_root/baseline"
+git -C "$runner_root" worktree remove "$scratch_root/after-original"
+git -C "$runner_root" worktree remove "$scratch_root/after-reversed"
 ```
+
+The runner is read from the caller's current checkout, separately from the three revisions being
+measured. It resolves one Godot executable from `--godot`, then `GODOT`, then `godot` on `PATH`,
+with the macOS application path as a final fallback, and uses that same executable for checkout
+boot checks and collection. Pass `--godot /path/to/godot` when none of those defaults applies.
+Repeated runs preserve the protocol but produce new timing values rather than the historical ones.
 
 Before is `41fd54a1cf5fee1a722dc7fcfb4cb30e95610b1e`. The original series' after revision is
 `ea7147fff56eae004bcbe751130e1c35082d3c3b`; the reversed series' after revision is
