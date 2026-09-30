@@ -291,8 +291,14 @@ assert_eq "tools/synthesize-sfx.py -> cli + Python + sound-effects" \
     "cli-tools,python-tooling,sound-effects," \
     "$(project_rules_skills sound-recipe-session "" "tools/synthesize-sfx.py")"
 assert_eq "a generated WAV -> sound-effects" \
-    "sound-effects," \
+    "sound-effects,verify," \
     "$(project_rules_skills sound-asset-session "" "docs/evidence/sound-lab/example.wav")"
+assert_eq "docs/evidence/** -> verify" \
+    "verify," \
+    "$(project_rules_skills evidence-session "" "docs/evidence/experiment/README.md")"
+assert_eq "primary captures keep their specific rule alongside verify" \
+    "session-captures,verify," \
+    "$(project_rules_skills capture-session "" "docs/evidence/archive/session-captures/frame.png")"
 
 # src/visuals/ holds loader code, not pictures: it gets the GDScript rules and never the
 # PNG-drawing ones, which govern art/illustrated/ alone.

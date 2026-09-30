@@ -217,6 +217,9 @@ reasons. Preserve the per-run distributions, counts and workload checks that sup
 rather than only a pooled average or the best pair. Put the conclusion in the decision record
 and its evidence under `docs/evidence/`.
 
+Rerun instructions create the required revision checkouts and use caller-relative paths, fresh
+scratch directories and a configurable engine executable instead of the author's local paths.
+
 **Full profiler streams, expanded analyzer output, build/test stdout and duplicate generated
 reports stay in scratch space unless the conclusion needs their original detail.** Retain a
 focused original trace or input when it proves a defect, supports attribution that aggregate

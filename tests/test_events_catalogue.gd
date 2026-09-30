@@ -44,8 +44,9 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 ]
 
 ## Classification is authored solely by `look`, including when that exported property is changed
-## after construction or restored by `Resource.duplicate()`. Geometry and an instance's phase are
-## deliberately unrelated inputs, so changing either leaves the answer alone. `_SPREAD_LOOKS` is
+## after construction or restored by `Resource.duplicate()`. Those look and copy checks establish
+## the classification contract. The geometry, phase and finish checks only guard against a future
+## unrelated cache writer; they do not establish geometry or phase correctness. `_SPREAD_LOOKS` is
 ## the catalogue geometry contract's independent expected set; PROTEST and FIREFIGHT are removed
 ## here because their body axes are handled separately rather than by spread drawing.
 func _test_spread_classification_follows_every_look_and_copy(t) -> void:
