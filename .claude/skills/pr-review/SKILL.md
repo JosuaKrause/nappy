@@ -128,12 +128,32 @@ account. `uv run python tools/agent-identity.py status claude-reviewer` or `... 
 (**using-tools**) says whether the role is usable; the `gh` command that posts the review then
 runs through `uv run python tools/agent-identity.py run claude-reviewer -- <command>` (or
 `codex-reviewer`) instead of running it directly, so the comments and the review event show as
-`claude-reviewer[bot]` or `codex-reviewer[bot]`. **When the role is not usable (not created yet,
-not installed, or a cloud session), the review stops there and is reported to the player instead —
-it is never posted as the player.** *(2026-09-26, asked what an agent does when its identity is
-unusable, the player chose "Stop and tell me".)* The same `PreToolUse` hook that makes committing's
-rule mechanical (`.claude/hooks/github-write-guard.sh`) covers `gh pr review` too, denying it
-unless it is wrapped in `run <role> --`. **An admin action no bot identity can perform** (a
+`claude-reviewer[bot]` or `codex-reviewer[bot]`. **When the role is not usable on the player's
+machine (not created yet, not installed), the review stops there and is reported to the player
+instead — it is never posted as the player there.** *(2026-09-26, asked what an agent does when
+its identity is unusable, the player chose "Stop and tell me".)*
+
+**In a Claude Code cloud session, where no role can work (`tools/agent-identity.py`'s module
+docstring says why), the review posts under the player's own account** through the session's
+GitHub tools (a pending review, its inline comments, then the submit). *(2026-09-30, asked after a
+cloud review was held back: "post under my account if apps don't work here" · asked whether to
+write that into the skill: "you fix it".)* Three things keep it from reading as the player's own
+word:
+
+- **Every comment and the summary end with the Claude Code attribution footer.**
+- **The summary opens by saying it is posted from the player's account because the reviewer app
+  cannot work in a cloud session.**
+- **Its event is COMMENT, whatever the verdict.** An APPROVE from the player's account would be
+  the player's own approval, which `main approvals` accepts. A REQUEST_CHANGES would read as the
+  player's own objection. The verdict is still written at the end of the summary, so it is still a
+  verdict for this skill. The COMMENT event is the reviewer's proposal, open to overturn
+  (`docs/decisions/`, quiet-chipmunk, a cloud session's review posts under the player's account).
+
+The fallback is for a review only; a commit, a push or a pull request keeps **committing**'s rule.
+
+The same `PreToolUse` hook that makes committing's rule mechanical
+(`.claude/hooks/github-write-guard.sh`) covers `gh pr review` too, denying it unless it is wrapped
+in `run <role> --`; the session's GitHub tools are outside what it sees. **An admin action no bot identity can perform** (a
 repository ruleset, a GitHub App's own permissions) **is the player's to do directly, never
 something to wrap and retry.**
 
