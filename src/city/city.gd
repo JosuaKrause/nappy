@@ -619,6 +619,10 @@ func _spawn_buildings() -> void:
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block
 		# boundary stacking the way the eye expects.
+		# Roof pictures stand in the y-sorted entity layer at their feet. Tall roof equipment can
+		# reach into the walkable row north of the lot, so it must sort against street actors just
+		# like the power station stacks do.
+		building.roof_object_parent = _entities
 		_buildings_layer.add_child(building)
 		_buildings.append(building)
 		# The one part of a building drawn among the entities — see the note at the top of this file.

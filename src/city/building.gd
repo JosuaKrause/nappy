@@ -15,8 +15,8 @@ extends StaticBody2D
 ## building draws in front of everything on the pavement beside it wherever the two also overlap in
 ## x. What is true is the stronger thing, and it is why the answer lives in `city.gd` rather than
 ## here: nothing can ever legitimately be *behind* a building's lot, so nothing sorts against one.
-## The one thing a building owns that rises past its lot is the power station's stacks, and they
-## are not drawn here: each is a `StationStack` in the entities' own depth order.
+## Roof equipment and power station stacks can rise past the lot. They are not drawn here: each is
+## a `RoofObject` or `StationStack` in the entities' own depth order.
 ##
 ##      lot top ─▶ ┌──────────┐  roof   y = -depth .. -height
 ##                 ├──────────┤
@@ -201,36 +201,37 @@ const AMBIENT_SHUTTER_SHARE := 0.3
 
 # ------------------------------------------------------------- roof furniture ---
 # One roof unit per interior cell: never on the perimeter row or column, so nothing overhangs
-# the silhouette the parapet and edge tiles already draw. Drawn by this node, above its own roof
-# tiles and inside the Buildings layer, so a roof unit never enters the y-sorted comparison the
-# class doc's own warning is about.
+# the silhouette the parapet and edge tiles already draw. City-owned roof objects are placed in
+# Entities at their feet, because tall art can reach into the walkable row north of its roof.
 
-const VENT_HOUSING := &"props/industrial_vent_housing"
+const VENT_HOUSING := &"illustrated/roof-equipment/industrial_vent"
 const VENT_ROTOR := &"props/industrial_vent_rotor"
 const VENT_ROTOR_B := &"props/industrial_vent_rotor_b"
 ## Registration of both cropped rotor sources in the complete 32px housing canvas.
 const VENT_ROTOR_RECT := Rect2(21, 19, 6, 6)
-const HVAC_A := &"props/roof_hvac_unit"
-const HVAC_B := &"props/roof_hvac_unit_b"
-const DUCT_STRAIGHT := &"props/roof_duct_straight"
-const DUCT_CORNER := &"props/roof_duct_corner"
-const SKYLIGHT_A := &"props/roof_skylight"
-const SKYLIGHT_B := &"props/roof_skylight_b"
-const VENT_STACK := &"props/roof_vent_stack"
-const WATER_TANK := &"props/roof_water_tank"
+const HVAC_A := &"illustrated/roof-equipment/hvac_large"
+const HVAC_B := &"illustrated/roof-equipment/condenser"
+const DUCT_RUN := &"illustrated/roof-equipment/duct_run"
+const SKYLIGHT_A := &"illustrated/roof-equipment/skylight_long"
+const SKYLIGHT_B := &"illustrated/roof-equipment/skylight_pyramid"
+const VENT_STACK := &"illustrated/roof-equipment/vent_stack"
+const WATER_TANK := &"illustrated/roof-equipment/water_tank"
+const SERVICE_BULKHEAD := &"illustrated/roof-equipment/service_bulkhead"
+const EXHAUST_FAN := &"illustrated/roof-equipment/exhaust_fan"
+const PIPE_MANIFOLD := &"illustrated/roof-equipment/pipe_manifold"
 
-## What stands on a roof. `VENT` is the one that animates; everything else is fixed art.
-enum _Furniture { VENT, HVAC_A, HVAC_B, DUCT_STRAIGHT, DUCT_CORNER, SKYLIGHT_A, SKYLIGHT_B,
-	VENT_STACK, WATER_TANK }
+## What stands on a roof. Every unit is visual-only; its collision remains the whole lot body.
+enum _Furniture { VENT, HVAC_A, HVAC_B, DUCT_RUN, SKYLIGHT_A, SKYLIGHT_B, VENT_STACK,
+	WATER_TANK, SERVICE_BULKHEAD, EXHAUST_FAN, PIPE_MANIFOLD }
 
-## Which units a district's roof may roll. `INDUSTRIAL` also gets a duct run — see
-## `_place_duct_run()` — on top of whatever this list places. Repeating `WATER_TANK` three times
-## against one `VENT` is "the odd vent" the milestone asked for: mostly tanks, occasionally a fan.
+## Which units a district's roof may roll. `INDUSTRIAL` also gets one three-cell duct run — see
+## `_place_duct_run()` — on top of whatever this list places.
 const _INDUSTRIAL_KINDS: Array = [_Furniture.HVAC_A, _Furniture.HVAC_B, _Furniture.VENT,
-	_Furniture.VENT_STACK]
-const _CIVIC_KINDS: Array = [_Furniture.SKYLIGHT_A, _Furniture.SKYLIGHT_B]
+    _Furniture.VENT_STACK, _Furniture.EXHAUST_FAN, _Furniture.PIPE_MANIFOLD]
+const _CIVIC_KINDS: Array = [_Furniture.SKYLIGHT_A, _Furniture.SKYLIGHT_B,
+    _Furniture.SERVICE_BULKHEAD]
 const _RESIDENTIAL_KINDS: Array = [_Furniture.WATER_TANK, _Furniture.WATER_TANK,
-	_Furniture.WATER_TANK, _Furniture.VENT]
+	_Furniture.WATER_TANK, _Furniture.VENT, _Furniture.SERVICE_BULKHEAD]
 const _KINDS_BY_DISTRICT := {
 	GameEnums.BlockPurpose.INDUSTRIAL: _INDUSTRIAL_KINDS,
 	GameEnums.BlockPurpose.CIVIC: _CIVIC_KINDS,
@@ -547,7 +548,11 @@ var _vent_frame_b := false
 var _vent_timer := 0.0
 var _roof_layers: Array[SceneryLayer] = []
 var _rotor_layers: Array[SceneryLayer] = []
+var _roof_objects: Array[RoofObject] = []
 var _station_layer: Node2D
+## Parent for roof art that must participate in world y-sorting. City sets this before the building
+## enters the tree; a null parent retains the standalone Building path used by focused fixtures.
+var roof_object_parent: Node2D
 
 ## Acquires the `buildings` atlas group rather than `_ready()`, so a building added and removed
 ## from the tree more than once stays paired with `_exit_tree()` — `_ready()` only ever runs the
@@ -558,6 +563,7 @@ func _enter_tree() -> void:
 
 func _exit_tree() -> void:
 	_clear_roof_layers()
+	_clear_roof_objects()
 	AtlasLibrary.release(&"buildings")
 	request_ready()
 
@@ -1333,21 +1339,20 @@ func roof_interior_cells() -> Array[Vector2i]:
 ## units. Returns how many interior cells it used, which is subtracted from the district's own
 ## furniture budget so a duct run is not extra furniture on top of the density table.
 func _place_duct_run(cols: int, roof_rows: int, used: Dictionary, rng: RandomNumberGenerator) -> int:
-	if cols < 4 or roof_rows < 3:
+	if cols < 4 or roof_rows < 4:
 		return 0
-	var row := rng.randi_range(1, roof_rows - 2)
+	var row := rng.randi_range(1, roof_rows - 3)
 	var start_col := rng.randi_range(1, cols - 3)
 	var straight := Vector2i(start_col, row)
 	var straight_far := Vector2i(start_col + 1, row)
 	used[straight] = true
 	used[straight_far] = true
-	_roof_furniture.append({"cell": straight, "kind": _Furniture.DUCT_STRAIGHT, "span": 2})
+	_roof_furniture.append({"cell": straight, "kind": _Furniture.DUCT_RUN, "span": 2,
+		"cells": [straight, straight_far, Vector2i(start_col + 1, row + 1)]})
 	var consumed := 2
 	var corner := Vector2i(start_col + 1, row + 1)
-	if row + 1 <= roof_rows - 2 and not used.has(corner):
-		used[corner] = true
-		_roof_furniture.append({"cell": corner, "kind": _Furniture.DUCT_CORNER, "span": 1})
-		consumed += 1
+	used[corner] = true
+	consumed += 1
 	return consumed
 
 ## A Fisher-Yates shuffle over `rng` rather than `Array.shuffle()`, which reads the engine's own
@@ -1360,10 +1365,28 @@ static func _shuffle(cells: Array[Vector2i], rng: RandomNumberGenerator) -> void
 		cells[i] = cells[j]
 		cells[j] = tmp
 
-## Static spans and small rotors share the authored furniture order. Child layers inherit the
-## building's pause mode and stay in its Buildings layer, never y-sorted against street actors.
+## Standalone fixtures retain scenery layers. A live City supplies `roof_object_parent`, so each
+## roof unit becomes a feet-anchored entity and y-sorts against street actors.
 func _build_roof_layers() -> void:
 	_clear_roof_layers()
+	if roof_object_parent != null:
+		_clear_roof_objects()
+		for entry in _roof_furniture:
+			var cell: Vector2i = entry["cell"]
+			var span: int = entry["span"]
+			var at := _cell(cell.x, wall_tiles() + cell.y)
+			var anchor := at + Vector2(TILE * span * 0.5, TILE)
+			var object := RoofObject.new()
+			object.name = "RoofObject_%d_%d" % [cell.x, cell.y]
+			object.texture_key = _furniture_texture(entry["kind"])
+			object.position = roof_object_parent.to_local(global_position + anchor)
+			roof_object_parent.add_child(object)
+			_roof_objects.append(object)
+		if power_station:
+			_station_layer = Node2D.new()
+			add_child(_station_layer)
+			_station_layer.draw.connect(_draw_station_layer)
+		return
 	if _roof_furniture.is_empty() and not power_station:
 		return
 	var layer := _new_roof_layer()
@@ -1398,6 +1421,12 @@ func _clear_roof_layers() -> void:
 		_station_layer.free()
 		_station_layer = null
 
+func _clear_roof_objects() -> void:
+	for object in _roof_objects:
+		if is_instance_valid(object):
+			object.free()
+	_roof_objects.clear()
+
 func _new_roof_layer() -> SceneryLayer:
 	var layer := SceneryLayer.new()
 	_roof_layers.append(layer)
@@ -1415,18 +1444,37 @@ func _furniture_texture(kind: int) -> StringName:
 			return HVAC_A
 		_Furniture.HVAC_B:
 			return HVAC_B
-		_Furniture.DUCT_STRAIGHT:
-			return DUCT_STRAIGHT
-		_Furniture.DUCT_CORNER:
-			return DUCT_CORNER
+		_Furniture.DUCT_RUN:
+			return DUCT_RUN
 		_Furniture.SKYLIGHT_A:
 			return SKYLIGHT_A
 		_Furniture.SKYLIGHT_B:
 			return SKYLIGHT_B
 		_Furniture.VENT_STACK:
 			return VENT_STACK
+		_Furniture.SERVICE_BULKHEAD:
+			return SERVICE_BULKHEAD
+		_Furniture.EXHAUST_FAN:
+			return EXHAUST_FAN
+		_Furniture.PIPE_MANIFOLD:
+			return PIPE_MANIFOLD
 		_:
 			return WATER_TANK
+
+## A roof picture standing in the city's y-sorted entity layer. It has no body: the Building's
+## lot collision remains the sole gameplay geometry, while this node gives tall art the correct
+## depth origin at its roof foot.
+class RoofObject extends Node2D:
+	var texture_key: StringName
+
+	func _enter_tree() -> void:
+		AtlasLibrary.acquire(&"buildings")
+
+	func _exit_tree() -> void:
+		AtlasLibrary.release(&"buildings")
+
+	func _draw() -> void:
+		Sprites.draw_standing(self, AtlasLibrary.region(texture_key), Vector2.ZERO)
 
 ## One of the power station's stacks, standing in `City`'s y-sorted `Entities` layer at its foot
 ## (`Building.stack_feet()`) rather than drawn with the building beneath every entity. A stack is
