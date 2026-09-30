@@ -26,6 +26,7 @@ about posting a review, and nobody asked for the rest.
 **Found on the way.** `tools/new-name.sh` drew `teal-marmot` for this record although a playtest
 already had that name. Its uniqueness check piped the folder listing into `grep -q` under `set -o
 pipefail`. `grep -q` exits at its first match, the listing dies of SIGPIPE, and the pipeline's
-status 141 read as "not taken". So the check never reported a clash, and the lint's
-duplicate-name check was the only guard. The check now reads the whole listing (`grep` into
-`/dev/null`).
+status 141 read as "not taken". Whether a used pair was caught depended on where it fell in
+the listing and on timing: a measurement on `main` caught `teal-marmot` in 2 of 10 tries and the
+first name in the listing in none of 5, so the lint's duplicate-name check was the real guard.
+The check now reads the whole listing (`grep` into `/dev/null`).
