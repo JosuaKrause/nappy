@@ -1125,11 +1125,11 @@ func expected_gross_at(player_position: Vector2) -> float:
 func _sample_expected_landed(player_position: Vector2, vel: Vector2) -> float:
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
-	var landed := 0.0
+	var integral := 0.0
 	for i in steps:
 		var t := float(i + 1) * dt
-		landed += contribution_at(player_position + player_velocity * t - vel * t) * dt
-	return landed
+		integral += contribution_at(player_position + player_velocity * t - vel * t) * dt
+	return integral
 
 ## The net points this agent is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
 ## — `expected_gross_at()` less her own decay over the same horizon.

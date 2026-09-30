@@ -12,6 +12,81 @@ import subprocess
 import sys
 
 
+COLLECTOR_FILES = [
+    "entity_frame_profile.gd",
+    "entity_frame_profile.tscn",
+    "entity_frame_profile_observer.gd",
+]
+SOURCE_FILES = ["src/events/event_instance.gd", "src/crowd/crowd_agent.gd"]
+
+
+def _git_output(parser, root, *args):
+    try:
+        return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+    except (OSError, subprocess.CalledProcessError) as error:
+        parser.error(f"cannot inspect project checkout {root}: {error}")
+
+
+def _validate_output(parser, output):
+    if output.exists():
+        parser.error(f"output path already exists: {output}")
+    if not output.parent.is_dir():
+        parser.error(f"output parent is not a directory: {output.parent}")
+
+
+def _snapshot_inputs(parser, roots):
+    required = [
+        "tools/check.sh",
+        *(f"tests/probes/{filename}" for filename in COLLECTOR_FILES),
+        "tests/probes/entity_frame_profile_analyze.py",
+        *SOURCE_FILES,
+    ]
+    for name, root in roots.items():
+        if not root.is_dir():
+            parser.error(f"{name} checkout is not a directory: {root}")
+        missing = [relative for relative in required if not (root / relative).is_file()]
+        if missing:
+            parser.error(f"{name} checkout {root} is missing: {', '.join(missing)}")
+        dirty = _git_output(parser, root, "status", "--porcelain", "--untracked-files=no")
+        if dirty:
+            parser.error(f"{name} checkout has dirty tracked files: {root}")
+
+    collector_hashes = {}
+    for filename in COLLECTOR_FILES:
+        relative = f"tests/probes/{filename}"
+        before = (roots["before"] / relative).read_bytes()
+        after = (roots["after"] / relative).read_bytes()
+        if before != after:
+            parser.error(f"collector differs between checkouts: {relative}")
+        collector_hashes[filename] = hashlib.sha256(after).hexdigest()
+    analyzer_relative = "tests/probes/entity_frame_profile_analyze.py"
+    before_analyzer = (roots["before"] / analyzer_relative).read_bytes()
+    after_analyzer = (roots["after"] / analyzer_relative).read_bytes()
+    if before_analyzer != after_analyzer:
+        parser.error(f"collector differs between checkouts: {analyzer_relative}")
+
+    return {
+        "revisions": {
+            name: _git_output(parser, root, "rev-parse", "HEAD") for name, root in roots.items()
+        },
+        "collectors_sha256": collector_hashes,
+        "analyzer_sha256": hashlib.sha256(after_analyzer).hexdigest(),
+        "source_sha256": {
+            name: {
+                relative: hashlib.sha256((root / relative).read_bytes()).hexdigest()
+                for relative in SOURCE_FILES
+            }
+            for name, root in roots.items()
+        },
+    }
+
+
+def _require_unchanged(parser, expected, roots, moment):
+    current = _snapshot_inputs(parser, roots)
+    if current != expected:
+        parser.error(f"measurement inputs changed {moment}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", required=True, type=Path)
@@ -22,19 +97,22 @@ def main():
     parser.add_argument("--order", choices=["before-after", "after-before", "alternating"],
                         default="alternating")
     args = parser.parse_args()
+    args.baseline = args.baseline.resolve()
+    args.after = args.after.resolve()
+    args.output = args.output.resolve()
+    roots = {"before": args.baseline, "after": args.after}
+    inputs = _snapshot_inputs(parser, roots)
+    _validate_output(parser, args.output)
     requested = args.godot or os.environ.get("GODOT")
     godot = shutil.which(requested) if requested else (
         shutil.which("godot") or shutil.which("/Applications/Godot.app/Contents/MacOS/Godot"))
     if not godot:
         parser.error("Godot executable unavailable; provide --godot or GODOT")
     godot = str(Path(godot).resolve())
-    args.baseline = args.baseline.resolve()
-    args.after = args.after.resolve()
-    args.output = args.output.resolve()
-    for root in [args.baseline, args.after]:
-        if not (root / "tools/check.sh").is_file():
-            parser.error(f"Not a project checkout: {root}")
-    args.output.mkdir(exist_ok=False)
+    try:
+        args.output.mkdir()
+    except OSError as error:
+        parser.error(f"cannot create output directory {args.output}: {error}")
 
     check_commands = {}
     for name, root in [("before", args.baseline), ("after", args.after)]:
@@ -45,17 +123,8 @@ def main():
                            stdout=log, stderr=subprocess.STDOUT,
                            check=True, timeout=180)
 
-    collector_files = ["entity_frame_profile.gd", "entity_frame_profile.tscn",
-                       "entity_frame_profile_observer.gd"]
-    hashes = {}
-    for filename in collector_files:
-        before = (args.baseline / "tests/probes" / filename).read_bytes()
-        after = (args.after / "tests/probes" / filename).read_bytes()
-        assert before == after, filename
-        hashes[filename] = hashlib.sha256(after).hexdigest()
+    _require_unchanged(parser, inputs, roots, "during boot checks")
     analyzer = args.after / "tests/probes/entity_frame_profile_analyze.py"
-    before_analyzer = args.baseline / "tests/probes/entity_frame_profile_analyze.py"
-    assert before_analyzer.read_bytes() == analyzer.read_bytes(), analyzer.name
     spec = importlib.util.spec_from_file_location("analyzer", analyzer)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -72,23 +141,20 @@ def main():
         "command": {"cwd": str(Path.cwd()), "argv": sys.argv},
         "godot": godot,
         "check_commands": check_commands,
-        "collectors_sha256": hashes,
-        "analyzer_sha256": hashlib.sha256(analyzer.read_bytes()).hexdigest(),
+        "collectors_sha256": inputs["collectors_sha256"],
+        "analyzer_sha256": inputs["analyzer_sha256"],
+        "source_sha256": inputs["source_sha256"],
         "warmup_seconds": 5,
         "active_seconds": 6,
         "mode": args.mode,
         "order": args.order,
         "runs": runs,
-        "revisions": {
-            name: subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root,
-                                          text=True).strip()
-            for name, root in [("before", args.baseline), ("after", args.after)]
-        },
+        "revisions": inputs["revisions"],
     }
     (args.output / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
 
-    roots = {"before": args.baseline, "after": args.after}
     for run in runs:
+        _require_unchanged(parser, inputs, roots, "before a capture")
         side = run["side"]
         disabled = run["mode"] == "disabled"
         prefix = args.output / f"{side}-{run['mode']}-{run['pair']}"

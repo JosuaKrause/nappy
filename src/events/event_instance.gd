@@ -2837,7 +2837,7 @@ func _sample_expected_landed(player_position: Vector2, velocity: Vector2,
 		live_intensity: float) -> float:
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
-	var landed := 0.0
+	var integral := 0.0
 	for i in steps:
 		# Projecting the *source* forward by `velocity * t` and querying its field at her own
 		# projected position, `player_position + player_velocity * t`, is the same number as
@@ -2849,8 +2849,8 @@ func _sample_expected_landed(player_position: Vector2, velocity: Vector2,
 		# heading — see `contribution_at()`'s own doc for why the two must agree.
 		var t := float(i + 1) * dt
 		var sample := player_position + player_velocity * t - velocity * t
-		landed += contribution_at(sample, live_intensity, velocity) * dt
-	return landed
+		integral += contribution_at(sample, live_intensity, velocity) * dt
+	return integral
 
 ## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
 ## **if she and it both carry on exactly as they are** — the caret's own answer to *"if I keep

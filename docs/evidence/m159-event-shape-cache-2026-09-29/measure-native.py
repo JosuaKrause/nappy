@@ -12,6 +12,66 @@ import sys
 from pathlib import Path
 
 
+COLLECTOR_FILES = ["entity_frame_profile.gd", "entity_frame_profile.tscn", "entity_frame_profile_observer.gd"]
+
+
+def _git_output(parser, root, *args):
+    try:
+        return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+    except (OSError, subprocess.CalledProcessError) as error:
+        parser.error(f"cannot inspect project checkout {root}: {error}")
+
+
+def _validate_output(parser, output):
+    if output.exists():
+        parser.error(f"output path already exists: {output}")
+    if not output.parent.is_dir():
+        parser.error(f"output parent is not a directory: {output.parent}")
+
+
+def _snapshot_inputs(parser, roots):
+    required = [
+        "tools/check.sh",
+        *(f"tests/probes/{filename}" for filename in COLLECTOR_FILES),
+        "tests/probes/entity_frame_profile_analyze.py",
+    ]
+    for name, root in roots.items():
+        if not root.is_dir():
+            parser.error(f"{name} checkout is not a directory: {root}")
+        missing = [relative for relative in required if not (root / relative).is_file()]
+        if missing:
+            parser.error(f"{name} checkout {root} is missing: {', '.join(missing)}")
+        dirty = _git_output(parser, root, "status", "--porcelain", "--untracked-files=no")
+        if dirty:
+            parser.error(f"{name} checkout has dirty tracked files: {root}")
+
+    hashes = {}
+    for filename in COLLECTOR_FILES:
+        relative = f"tests/probes/{filename}"
+        before = (roots["before"] / relative).read_bytes()
+        after = (roots["after"] / relative).read_bytes()
+        if before != after:
+            parser.error(f"collector differs between checkouts: {relative}")
+        hashes[filename] = hashlib.sha256(after).hexdigest()
+    analyzer_relative = "tests/probes/entity_frame_profile_analyze.py"
+    before_analyzer = (roots["before"] / analyzer_relative).read_bytes()
+    after_analyzer = (roots["after"] / analyzer_relative).read_bytes()
+    if before_analyzer != after_analyzer:
+        parser.error(f"collector differs between checkouts: {analyzer_relative}")
+    return {
+        "revisions": {
+            name: _git_output(parser, root, "rev-parse", "HEAD") for name, root in roots.items()
+        },
+        "collectors_sha256": hashes,
+        "analyzer_sha256": hashlib.sha256(after_analyzer).hexdigest(),
+    }
+
+
+def _require_unchanged(parser, expected, roots, moment):
+    if _snapshot_inputs(parser, roots) != expected:
+        parser.error(f"measurement inputs changed {moment}")
+
+
 def _resolve_godot(parser, requested):
     if requested:
         candidate = requested
@@ -65,8 +125,17 @@ def main():
         help="launch order inside every pair (default: before-after)",
     )
     args = parser.parse_args()
+    args.baseline = args.baseline.resolve()
+    args.after = args.after.resolve()
+    args.output = args.output.resolve()
+    roots = {"before": args.baseline, "after": args.after}
+    inputs = _snapshot_inputs(parser, roots)
+    _validate_output(parser, args.output)
     godot = _resolve_godot(parser, args.godot)
-    args.output.mkdir(exist_ok=False)
+    try:
+        args.output.mkdir()
+    except OSError as error:
+        parser.error(f"cannot create output directory {args.output}: {error}")
 
     check_commands = {}
     check_environment = dict(os.environ, GODOT=godot)
@@ -82,16 +151,8 @@ def main():
                 command, cwd=root, env=check_environment, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180
             )
 
-    collector_files = ["entity_frame_profile.gd", "entity_frame_profile.tscn", "entity_frame_profile_observer.gd"]
-    hashes = {}
-    for filename in collector_files:
-        before = (args.baseline / "tests/probes" / filename).read_bytes()
-        after = (args.after / "tests/probes" / filename).read_bytes()
-        assert before == after, filename
-        hashes[filename] = hashlib.sha256(after).hexdigest()
+    _require_unchanged(parser, inputs, roots, "during boot checks")
     analyzer = args.after / "tests/probes/entity_frame_profile_analyze.py"
-    before_analyzer = args.baseline / "tests/probes/entity_frame_profile_analyze.py"
-    assert before_analyzer.read_bytes() == analyzer.read_bytes(), analyzer.name
     spec = importlib.util.spec_from_file_location("analyzer", analyzer)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -106,23 +167,20 @@ def main():
     provenance = {
         "command": {"cwd": str(Path.cwd()), "argv": sys.argv},
         "check_commands": check_commands,
-        "collectors_sha256": hashes,
-        "analyzer_sha256": hashlib.sha256(analyzer.read_bytes()).hexdigest(),
+        "collectors_sha256": inputs["collectors_sha256"],
+        "analyzer_sha256": inputs["analyzer_sha256"],
         "warmup_seconds": 5,
         "active_seconds": 6,
         "godot": godot,
         "mode": args.mode,
         "order": args.order,
         "runs": runs,
-        "revisions": {
-            name: subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-            for name, root in [("before", args.baseline), ("after", args.after)]
-        },
+        "revisions": inputs["revisions"],
     }
     (args.output / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
 
-    roots = {"before": args.baseline, "after": args.after}
     for run in runs:
+        _require_unchanged(parser, inputs, roots, "before a capture")
         side = run["side"]
         disabled = run["mode"] == "disabled"
         prefix = args.output / f"{side}-{run['mode']}-{run['pair']}"

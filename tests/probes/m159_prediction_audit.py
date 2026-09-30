@@ -21,6 +21,29 @@ CROWD_KEY = """[global_position, player_position, player_velocity, vel, kind,
 \t\t_jolt, _jolt_for, _jolt_intensity, _jolt_inner, _jolt_outer]"""
 
 
+def git_output(parser, root, *args):
+    try:
+        return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+    except (OSError, subprocess.CalledProcessError) as error:
+        parser.error(f"cannot inspect project checkout {root}: {error}")
+
+
+def validate_instrument_checkout(parser, checkout):
+    if not checkout.is_dir():
+        parser.error(f"checkout is not a directory: {checkout}")
+    required = ["src/events/event_instance.gd", "src/crowd/crowd_agent.gd",
+                "tests/probes/entity_frame_profile_observer.gd"]
+    missing = [relative for relative in required if not (checkout / relative).is_file()]
+    if missing:
+        parser.error(f"checkout {checkout} is missing: {', '.join(missing)}")
+    script_root = Path(__file__).resolve().parents[2]
+    checkout_root = Path(git_output(parser, checkout, "rev-parse", "--show-toplevel")).resolve()
+    if checkout_root == script_root:
+        parser.error("refusing to instrument the repository that contains this audit script")
+    if git_output(parser, checkout, "status", "--porcelain", "--untracked-files=no"):
+        parser.error(f"checkout has dirty tracked files: {checkout_root}")
+
+
 def replace_once(path, before, after):
     text = path.read_text()
     assert text.count(before) == 1, (path, before)
@@ -76,11 +99,22 @@ def main():
     parser.add_argument("--summarize", type=Path, help="Capture prefix to compact instead of instrumenting")
     parser.add_argument("--output", type=Path, help="New compact JSON file, with --summarize")
     args = parser.parse_args()
+    args.checkout = args.checkout.resolve()
     if bool(args.summarize) != bool(args.output):
         parser.error("--summarize and --output are required together")
     if not args.summarize:
+        validate_instrument_checkout(parser, args.checkout)
         instrument(args.checkout)
         return
+    args.summarize = args.summarize.resolve()
+    args.output = args.output.resolve()
+    if args.output.exists():
+        parser.error(f"output path already exists: {args.output}")
+    if not args.output.parent.is_dir():
+        parser.error(f"output parent is not a directory: {args.output.parent}")
+    for suffix in ["-scene.json", "-summary.json"]:
+        if not Path(str(args.summarize) + suffix).is_file():
+            parser.error(f"missing capture input: {args.summarize}{suffix}")
     scene = json.loads(Path(str(args.summarize) + "-scene.json").read_text())
     summary = json.loads(Path(str(args.summarize) + "-summary.json").read_text())
     frames = {str(row[0]) for row in scene["rows"] if 5000000 <= row[4] < 11000000}
