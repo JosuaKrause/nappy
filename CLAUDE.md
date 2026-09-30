@@ -86,6 +86,7 @@ is the moment somebody is about to touch the file.
 | `art/illustrated/**` | **illustrated-png** |
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
 | `docs/evidence/archive/session-captures/**` | **session-captures** |
+| `docs/evidence/**` | **verify** |
 | `docs/reference/**`, `docs/style-references/**` | **reference-photos** |
 | any `*.gd` | **godot** |
 | any `*.svg` | **svg-art** |

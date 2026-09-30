@@ -110,6 +110,11 @@ esac
 case "$path" in
 	*/docs/evidence/archive/session-captures/*) wanted+=(session-captures) ;;
 esac
+# Experiment evidence carries its reproducible method, provenance and retention limits here.
+# Primary captures and rejected graphics also keep their more specific rules above.
+case "$path" in
+	*/docs/evidence/*)          wanted+=(verify) ;;
+esac
 # A backstop rather than the main door. Reference material arrives through `tools/reference.sh`,
 # which is a Bash call with no `file_path` for this hook to see, so what this actually catches is
 # somebody editing or hand-copying inside the folder — which is the case the rules most need to

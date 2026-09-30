@@ -863,14 +863,7 @@ static func icon_wheels_for(look: EventDef.Look) -> String:
 ## `_centred_on_the_pavement_band` to answer about, so only a row that actually asks either
 ## question has anything to lose by standing on one.
 static func has_a_spread(def: EventDef) -> bool:
-	match def.look:
-		EventDef.Look.ROADWORKS, EventDef.Look.BURNT_SHELL, EventDef.Look.STALL, \
-				EventDef.Look.ROADBLOCK, EventDef.Look.BARRICADE, EventDef.Look.CAFE, \
-				EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN, \
-				EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE:
-			return true
-		_:
-			return false
+	return def.has_a_spread
 
 ## Which texture a "whole scene" seal picture (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) draws,
 ## given whether the street it stands on rotates the spread onto local Y (`_spread_vertical`).
@@ -3235,7 +3228,7 @@ func _spread_axis() -> Vector2:
 ## on that row), which lies along whichever of the street's axes `_stationary_vehicle_side` already
 ## draws it on. Never asked of a point shape, where an axis means nothing.
 func _solid_axis() -> Vector2:
-	if has_a_spread(def) or def.look == EventDef.Look.PROTEST or def.look == EventDef.Look.FIREFIGHT:
+	if def.has_a_spread or def.look == EventDef.Look.PROTEST or def.look == EventDef.Look.FIREFIGHT:
 		return _spread_axis()
 	return Vector2.RIGHT if _stationary_vehicle_side else Vector2.DOWN
 

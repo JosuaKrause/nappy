@@ -11,9 +11,9 @@ not an established cause of every remaining hitch. See
 their results within the frame. Read every caller before choosing a cache boundary: source
 positions, velocities, age/phase, prediction horizon, player state and simulation updates can
 change within a frame. A shared frame number alone does not prove the answers are interchangeable.
-Reuse only demonstrably equivalent results; invalidate on relevant state changes. Event-shape
-classification has its own [item](cache-event-shape-classification.md), so measure the two changes
-separately.
+Reuse only demonstrably equivalent results; invalidate on relevant state changes. The
+[classification-cache record](../../decisions/2026-09-19-M159.md) measures the separate work of
+deriving event shape from its look; measure prediction reuse independently.
 
 Retain deterministic equivalence checks for threat selection, projection results, warning timing,
 halos and meter contributions, including phase transitions, movement and removal. Do not lower

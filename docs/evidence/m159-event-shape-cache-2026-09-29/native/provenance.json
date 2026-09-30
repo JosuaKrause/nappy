@@ -1,0 +1,102 @@
+{
+  "command": {
+    "cwd": "/Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache",
+    "argv": [
+      "docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py",
+      "--baseline",
+      "/private/tmp/nappy-event-shape-before-41fd54a1",
+      "--after",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache",
+      "--output",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache/docs/evidence/m159-event-shape-cache-2026-09-29/native"
+    ]
+  },
+  "check_commands": {
+    "before": {
+      "cwd": "/private/tmp/nappy-event-shape-before-41fd54a1",
+      "argv": [
+        "./tools/check.sh"
+      ]
+    },
+    "after": {
+      "cwd": "/Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache",
+      "argv": [
+        "./tools/check.sh"
+      ]
+    }
+  },
+  "collectors_sha256": {
+    "entity_frame_profile.gd": "7e63c40f4b737f7ebf819e25df0aa44aaf8ed3b1cd05029f263f93b8878cae7a",
+    "entity_frame_profile.tscn": "4978dacec41b337f162c653b503fd37cf671b0fcf8bd7835ac21049e6b941eab",
+    "entity_frame_profile_observer.gd": "27edf350152f7a8aa0c005ffa6185d04d3605d11eeb15c670ae5969b03cf0a93"
+  },
+  "analyzer_sha256": "e58491bf568848d507940d8f3a9a25216021bb29adee782435fdb81bf0838391",
+  "warmup_seconds": 5,
+  "active_seconds": 6,
+  "runs": [
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 1
+    },
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 2
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 3
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 3
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 1
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 2
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 3
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 3
+    }
+  ],
+  "revisions": {
+    "before": "41fd54a1cf5fee1a722dc7fcfb4cb30e95610b1e",
+    "after": "ea7147fff56eae004bcbe751130e1c35082d3c3b"
+  }
+}
