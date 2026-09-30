@@ -27,3 +27,9 @@ contribution sweeps; the raw evidence is
 This establishes a reduction in query cost, while the remaining long-frame cause and phone
 behavior still require the work below. `--frame-trace` supplies bounded raw callback intervals
 and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](../../TELEMETRY.md#raw-frame-traces).
+
+Identical event/crowd prediction inputs reuse only their future samples, with guards, current
+contribution and shared netting evaluated afresh. The
+[prediction-reuse record](../../decisions/2026-09-19-M159-2.md) specifies that boundary, its
+mutation proof and controlled native measurements; native medians do not establish phone
+performance or uniformly better frame tails.
