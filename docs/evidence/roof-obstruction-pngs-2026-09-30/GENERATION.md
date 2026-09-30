@@ -161,11 +161,28 @@ input. Generation used the built-in image generator with transparent background 
 
 ## Deterministic registration
 
-Run `uv run python docs/evidence/roof-obstruction-pngs-2026-09-30/register_roofs.py all`. The
-script checks both selected source hashes, removes the generator's low-alpha neutral preview
-fringe, crops fixed non-overlapping source cells, scales each complete silhouette into its stated
-native canvas, and registers every object bottom-center at its roof foot. Its review command lays
-the native files out at nearest-neighbor 4× only for inspection; it does not modify runtime art.
+Rebuild into a new, otherwise nonexistent directory, then verify that every rebuilt file is
+byte-for-byte equal to its committed counterpart:
+
+```sh
+test ! -e /private/tmp/nappy-roof-rebuild
+uv run python docs/evidence/roof-obstruction-pngs-2026-09-30/register_roofs.py all /private/tmp/nappy-roof-rebuild
+uv run python docs/evidence/roof-obstruction-pngs-2026-09-30/register_roofs.py verify /private/tmp/nappy-roof-rebuild
+```
+
+The output root contains the eleven assets below their repository-relative
+`art/illustrated/roof-equipment/` path and the review sheet below its repository-relative
+`docs/evidence/roof-obstruction-pngs-2026-09-30/review/` path. The recipe never installs them.
+Before creating the output root, it rejects an existing path and verifies both selected source
+hashes. Repeating the `all` command above exits nonzero with `refusing existing output directory`.
+An isolated-copy check with one byte appended to the copied cardinal-family source exits nonzero
+with its expected and actual SHA-256 values, and the requested output path remains absent.
+
+The recipe removes the generator's low-alpha neutral preview fringe, crops fixed non-overlapping
+source cells, scales each complete silhouette into its stated native canvas, and registers every
+object bottom-center at its roof foot. It lays the native files out at nearest-neighbor 4× for the
+review sheet; it does not modify runtime art. `verify` checks dimensions, alpha registration and
+exact bytes for all eleven PNGs and the review sheet without writing to either tree.
 
 The installed canvases are `water_tank` 40×72, `hvac_large` 48×40, `condenser` 32×40,
 `skylight_long` 56×24, `skylight_pyramid` 32×28, `vent_stack` 40×48, `duct_run` 64×64,
