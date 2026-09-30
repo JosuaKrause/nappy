@@ -2810,7 +2810,7 @@ func expected_gross_at(player_position: Vector2) -> float:
 		return 0.0
 	var current_rate := contribution_at(player_position)
 	var live_intensity := _caret_intensity_over_horizon()
-	var landed: float
+	var future_integral: float
 	# Compare the effective sample inputs by value, including mutable definition/shape fields.
 	# Age alone cannot cover a retirement, silence, external movement or changed player state.
 	# Flocks retain their ordinary path: every bird has independently mutable geometry.
@@ -2824,11 +2824,11 @@ func expected_gross_at(player_position: Vector2) -> float:
 		if key != _expected_landed_key:
 			_expected_landed_cache = _sample_expected_landed(player_position, velocity, live_intensity)
 			_expected_landed_key = key
-		landed = _expected_landed_cache
+		future_integral = _expected_landed_cache
 	else:
-		landed = _sample_expected_landed(player_position, velocity, live_intensity)
+		future_integral = _sample_expected_landed(player_position, velocity, live_intensity)
 	# Present contribution, sensitivity and shared netting remain live on every request.
-	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
+	var gross := future_integral - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
 	return maxf(gross * player_sensitivity, 0.0)
 
 ## Only the future integral is reusable. The key above covers every input these samples read;

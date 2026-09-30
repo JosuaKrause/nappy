@@ -1,0 +1,105 @@
+{
+  "command": {
+    "cwd": "/Users/krause/workspace/nappy-codex/.claude/worktrees/danger-prediction-reuse",
+    "argv": [
+      "docs/evidence/m159-danger-prediction-reuse-2026-09-29/measure-native.py",
+      "--baseline",
+      "/private/tmp/nappy-prediction-audit",
+      "--after",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/danger-prediction-reuse",
+      "--output",
+      "/private/tmp/m159-prediction-native"
+    ]
+  },
+  "godot": "/Applications/Godot.app/Contents/MacOS/Godot",
+  "check_commands": {
+    "before": {
+      "cwd": "/private/tmp/nappy-prediction-audit",
+      "argv": [
+        "./tools/check.sh"
+      ]
+    },
+    "after": {
+      "cwd": "/Users/krause/workspace/nappy-codex/.claude/worktrees/danger-prediction-reuse",
+      "argv": [
+        "./tools/check.sh"
+      ]
+    }
+  },
+  "collectors_sha256": {
+    "entity_frame_profile.gd": "7e63c40f4b737f7ebf819e25df0aa44aaf8ed3b1cd05029f263f93b8878cae7a",
+    "entity_frame_profile.tscn": "4978dacec41b337f162c653b503fd37cf671b0fcf8bd7835ac21049e6b941eab",
+    "entity_frame_profile_observer.gd": "27edf350152f7a8aa0c005ffa6185d04d3605d11eeb15c670ae5969b03cf0a93"
+  },
+  "analyzer_sha256": "e58491bf568848d507940d8f3a9a25216021bb29adee782435fdb81bf0838391",
+  "warmup_seconds": 5,
+  "active_seconds": 6,
+  "mode": "both",
+  "order": "alternating",
+  "runs": [
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 3
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 3
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 3
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 3
+    }
+  ],
+  "revisions": {
+    "before": "dea05ce0bcceecd34f8213e9b25b49d8a48e8b31",
+    "after": "e7306d1d3d79cf743f3a967bd4b37e3e55a70d3c"
+  }
+}

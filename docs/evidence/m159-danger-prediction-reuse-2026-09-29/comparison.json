@@ -1,0 +1,3117 @@
+[
+  {
+    "run": "after-disabled-1",
+    "accepted": true,
+    "rejections": [],
+    "frames": 634,
+    "profiler_enabled": false,
+    "acceptance": {
+      "profile_frames": 0,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 634
+      },
+      "moving_cars_per_frame": {
+        "median": 29,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.089905362776026
+      },
+      "ticks_per_frame": {
+        "0": 454,
+        "1": 180
+      },
+      "unique_function_signatures": 0,
+      "emitted_functions_per_frame": null
+    },
+    "diagnostics": {
+      "compiler_warnings": 176,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.52365930599369
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.290220820189274
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.78706624605678
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.7413249211356465
+      }
+    },
+    "native_ms": null,
+    "callback_interval_ms": {
+      "median": 8.938500000000001,
+      "p95": 12.844,
+      "p99": 14.541,
+      "max": 15.429,
+      "mean": 9.471425867507886
+    },
+    "observer_ms": {
+      "median": 0.074,
+      "p95": 0.087,
+      "p99": 0.1,
+      "max": 0.116,
+      "mean": 0.07596214511041009
+    },
+    "work": {}
+  },
+  {
+    "run": "after-disabled-2",
+    "accepted": true,
+    "rejections": [],
+    "frames": 631,
+    "profiler_enabled": false,
+    "acceptance": {
+      "profile_frames": 0,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 631
+      },
+      "moving_cars_per_frame": {
+        "median": 29,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.076069730586372
+      },
+      "ticks_per_frame": {
+        "0": 451,
+        "1": 180
+      },
+      "unique_function_signatures": 0,
+      "emitted_functions_per_frame": null
+    },
+    "diagnostics": {
+      "compiler_warnings": 176,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.578446909667196
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.2805071315372425
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.776545166402535
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.7448494453248813
+      }
+    },
+    "native_ms": null,
+    "callback_interval_ms": {
+      "median": 8.941,
+      "p95": 13.958,
+      "p99": 14.942,
+      "max": 15.376,
+      "mean": 9.509264659270999
+    },
+    "observer_ms": {
+      "median": 0.074,
+      "p95": 0.089,
+      "p99": 0.099,
+      "max": 0.124,
+      "mean": 0.07623771790808241
+    },
+    "work": {}
+  },
+  {
+    "run": "after-disabled-3",
+    "accepted": true,
+    "rejections": [],
+    "frames": 623,
+    "profiler_enabled": false,
+    "acceptance": {
+      "profile_frames": 0,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 623
+      },
+      "moving_cars_per_frame": {
+        "median": 29,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 28.9983948635634
+      },
+      "ticks_per_frame": {
+        "0": 444,
+        "1": 178,
+        "2": 1
+      },
+      "unique_function_signatures": 0,
+      "emitted_functions_per_frame": null
+    },
+    "diagnostics": {
+      "compiler_warnings": 176,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 25,
+        "mean": 17.359550561797754
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.235955056179775
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.70465489566613
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.749598715890851
+      }
+    },
+    "native_ms": null,
+    "callback_interval_ms": {
+      "median": 9.063,
+      "p95": 13.26,
+      "p99": 15.029,
+      "max": 44.239,
+      "mean": 9.626508828250401
+    },
+    "observer_ms": {
+      "median": 0.075,
+      "p95": 0.089,
+      "p99": 0.097,
+      "max": 0.11,
+      "mean": 0.07681701444622793
+    },
+    "work": {}
+  },
+  {
+    "run": "after-profiled-1",
+    "accepted": true,
+    "rejections": [],
+    "frames": 560,
+    "profiler_enabled": true,
+    "acceptance": {
+      "profile_frames": 1007,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 560
+      },
+      "moving_cars_per_frame": {
+        "median": 29,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.44107142857143
+      },
+      "ticks_per_frame": {
+        "0": 380,
+        "1": 180
+      },
+      "unique_function_signatures": 1635,
+      "emitted_functions_per_frame": {
+        "median": 337,
+        "p95": 465,
+        "p99": 488,
+        "max": 513,
+        "mean": 363.05892857142857
+      }
+    },
+    "diagnostics": {
+      "compiler_warnings": 176,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 552.6897859188313,
+    "northward_net_pixels": 552.08190917969,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 23,
+        "p99": 26,
+        "max": 26,
+        "mean": 17.728571428571428
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.3125
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.801785714285714
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.7303571428571427
+      }
+    },
+    "native_ms": {
+      "frame_main_loop_wall": {
+        "median": 10.2075,
+        "p95": 13.132,
+        "p99": 14.158999999999999,
+        "max": 14.736,
+        "mean": 10.507305357142858
+      },
+      "process_and_render_submit": {
+        "median": 9.9505,
+        "p95": 11.648,
+        "p99": 12.409,
+        "max": 13.149,
+        "mean": 9.998553571428571
+      },
+      "worst_physics_tick_in_frame": {
+        "median": 0,
+        "p95": 1.691,
+        "p99": 1.818,
+        "max": 2.22,
+        "mean": 0.5082375
+      },
+      "script_self_sum": {
+        "median": 4.070500000000001,
+        "p95": 5.561,
+        "p99": 5.922000000000001,
+        "max": 6.119000000000001,
+        "mean": 4.390225
+      }
+    },
+    "callback_interval_ms": {
+      "median": 10.725000000000001,
+      "p95": 12.617,
+      "p99": 13.204,
+      "max": 14.346,
+      "mean": 10.7149625
+    },
+    "observer_ms": {
+      "median": 0.076,
+      "p95": 0.089,
+      "p99": 0.098,
+      "max": 0.116,
+      "mean": 0.07827321428571428
+    },
+    "work": {
+      "EventInstance.expected_gross_at": {
+        "self_ms": {
+          "median": 0.061,
+          "p95": 0.075,
+          "p99": 0.082,
+          "max": 0.088,
+          "mean": 0.06191785714285714
+        },
+        "inclusive_ms": {
+          "median": 0.6880000000000001,
+          "p95": 1.11,
+          "p99": 1.155,
+          "max": 1.181,
+          "mean": 0.7603571428571428
+        },
+        "calls": {
+          "median": 104,
+          "p95": 110,
+          "p99": 112,
+          "max": 113,
+          "mean": 103.47321428571429
+        }
+      },
+      "EventInstance._sample_expected_landed": {
+        "self_ms": {
+          "median": 0.018000000000000002,
+          "p95": 0.038,
+          "p99": 0.048,
+          "max": 0.063,
+          "mean": 0.020975
+        },
+        "inclusive_ms": {
+          "median": 0.348,
+          "p95": 0.757,
+          "p99": 0.7919999999999999,
+          "max": 0.8019999999999999,
+          "mean": 0.4366535714285714
+        },
+        "calls": {
+          "median": 9,
+          "p95": 19,
+          "p99": 20,
+          "max": 20,
+          "mean": 11.101785714285715
+        }
+      },
+      "EventInstance.contribution_at": {
+        "self_ms": {
+          "median": 0.034,
+          "p95": 0.068,
+          "p99": 0.079,
+          "max": 0.08600000000000001,
+          "mean": 0.039908928571428574
+        },
+        "inclusive_ms": {
+          "median": 0.5165,
+          "p95": 1.083,
+          "p99": 1.1260000000000001,
+          "max": 1.175,
+          "mean": 0.6500767857142857
+        },
+        "calls": {
+          "median": 271,
+          "p95": 528,
+          "p99": 550,
+          "max": 550,
+          "mean": 324.88392857142856
+        }
+      },
+      "EventInstance._process": {
+        "self_ms": {
+          "median": 0.033,
+          "p95": 0.044,
+          "p99": 0.049,
+          "max": 0.058,
+          "mean": 0.03353571428571429
+        },
+        "inclusive_ms": {
+          "median": 1.0265,
+          "p95": 1.461,
+          "p99": 1.519,
+          "max": 1.5579999999999998,
+          "mean": 1.0972589285714285
+        },
+        "calls": {
+          "median": 52,
+          "p95": 55,
+          "p99": 56,
+          "max": 56,
+          "mean": 51.801785714285714
+        }
+      },
+      "CrowdAgent.expected_gross_at": {
+        "self_ms": {
+          "median": 0.085,
+          "p95": 0.102,
+          "p99": 0.107,
+          "max": 0.12999999999999998,
+          "mean": 0.08543392857142858
+        },
+        "inclusive_ms": {
+          "median": 1.1835,
+          "p95": 1.446,
+          "p99": 1.509,
+          "max": 1.549,
+          "mean": 1.2109053571428572
+        },
+        "calls": {
+          "median": 268,
+          "p95": 268,
+          "p99": 268,
+          "max": 268,
+          "mean": 267.8232142857143
+        }
+      },
+      "CrowdAgent._sample_expected_landed": {
+        "self_ms": {
+          "median": 0.14100000000000001,
+          "p95": 0.18000000000000002,
+          "p99": 0.199,
+          "max": 0.224,
+          "mean": 0.14226964285714286
+        },
+        "inclusive_ms": {
+          "median": 0.6759999999999999,
+          "p95": 0.93,
+          "p99": 0.982,
+          "max": 1.021,
+          "mean": 0.7088339285714286
+        },
+        "calls": {
+          "median": 91,
+          "p95": 117,
+          "p99": 120,
+          "max": 122,
+          "mean": 90.67857142857143
+        }
+      },
+      "CrowdAgent.contribution_at": {
+        "self_ms": {
+          "median": 0.279,
+          "p95": 0.379,
+          "p99": 0.397,
+          "max": 0.41,
+          "mean": 0.29024642857142857
+        },
+        "inclusive_ms": {
+          "median": 0.4665,
+          "p95": 0.6890000000000001,
+          "p99": 0.723,
+          "max": 0.7649999999999999,
+          "mean": 0.5085285714285714
+        },
+        "calls": {
+          "median": 2171,
+          "p95": 2929,
+          "p99": 2994,
+          "max": 3036,
+          "mean": 2234.9857142857145
+        }
+      },
+      "CrowdAgent._process": {
+        "self_ms": {
+          "median": 0.149,
+          "p95": 0.17200000000000001,
+          "p99": 0.183,
+          "max": 0.193,
+          "mean": 0.14945892857142856
+        },
+        "inclusive_ms": {
+          "median": 2.9795,
+          "p95": 3.342,
+          "p99": 3.569,
+          "max": 3.702,
+          "mean": 3.000973214285714
+        },
+        "calls": {
+          "median": 234,
+          "p95": 234,
+          "p99": 234,
+          "max": 234,
+          "mean": 234
+        }
+      },
+      "ExcitementHalo._process": {
+        "self_ms": {
+          "median": 0.053,
+          "p95": 0.066,
+          "p99": 0.07100000000000001,
+          "max": 0.085,
+          "mean": 0.053517857142857145
+        },
+        "inclusive_ms": {
+          "median": 1.5345,
+          "p95": 1.799,
+          "p99": 1.875,
+          "max": 1.944,
+          "mean": 1.5447964285714286
+        },
+        "calls": {
+          "median": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "mean": 1
+        }
+      }
+    }
+  },
+  {
+    "run": "after-profiled-2",
+    "accepted": true,
+    "rejections": [],
+    "frames": 527,
+    "profiler_enabled": true,
+    "acceptance": {
+      "profile_frames": 946,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 527
+      },
+      "moving_cars_per_frame": {
+        "median": 29,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 28.81214421252372
+      },
+      "ticks_per_frame": {
+        "0": 347,
+        "1": 180
+      },
+      "unique_function_signatures": 1635,
+      "emitted_functions_per_frame": {
+        "median": 327,
+        "p95": 463,
+        "p99": 482,
+        "max": 495,
+        "mean": 363.75901328273244
+      }
+    },
+    "diagnostics": {
+      "compiler_warnings": 176,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.52371916508539
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.212523719165086
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.730550284629985
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.732447817836812
+      }
+    },
+    "native_ms": {
+      "frame_main_loop_wall": {
+        "median": 11.164,
+        "p95": 15.284,
+        "p99": 16.837999999999997,
+        "max": 17.666999999999998,
+        "mean": 11.177273244781784
+      },
+      "process_and_render_submit": {
+        "median": 10.197,
+        "p95": 14.077,
+        "p99": 15.741000000000001,
+        "max": 17.48,
+        "mean": 10.624373814041746
+      },
+      "worst_physics_tick_in_frame": {
+        "median": 0,
+        "p95": 1.745,
+        "p99": 2.1020000000000003,
+        "max": 2.2920000000000003,
+        "mean": 0.5524231499051233
+      },
+      "script_self_sum": {
+        "median": 4.122,
+        "p95": 5.615,
+        "p99": 6.539,
+        "max": 6.8950000000000005,
+        "mean": 4.462552182163188
+      }
+    },
+    "callback_interval_ms": {
+      "median": 11.198,
+      "p95": 15.145,
+      "p99": 18.715,
+      "max": 20.683,
+      "mean": 11.384705882352941
+    },
+    "observer_ms": {
+      "median": 0.075,
+      "p95": 0.092,
+      "p99": 0.1,
+      "max": 0.11,
+      "mean": 0.07759582542694497
+    },
+    "work": {
+      "EventInstance.expected_gross_at": {
+        "self_ms": {
+          "median": 0.061,
+          "p95": 0.078,
+          "p99": 0.08600000000000001,
+          "max": 0.114,
+          "mean": 0.06190891840607211
+        },
+        "inclusive_ms": {
+          "median": 0.7010000000000001,
+          "p95": 1.135,
+          "p99": 1.1969999999999998,
+          "max": 1.3010000000000002,
+          "mean": 0.7731783681214421
+        },
+        "calls": {
+          "median": 104,
+          "p95": 110,
+          "p99": 112,
+          "max": 113,
+          "mean": 103.3225806451613
+        }
+      },
+      "EventInstance._sample_expected_landed": {
+        "self_ms": {
+          "median": 0.018000000000000002,
+          "p95": 0.038,
+          "p99": 0.041,
+          "max": 0.05,
+          "mean": 0.020969639468690703
+        },
+        "inclusive_ms": {
+          "median": 0.354,
+          "p95": 0.775,
+          "p99": 0.8059999999999999,
+          "max": 0.9039999999999999,
+          "mean": 0.44840796963946866
+        },
+        "calls": {
+          "median": 9,
+          "p95": 19,
+          "p99": 20,
+          "max": 20,
+          "mean": 11.248576850094876
+        }
+      },
+      "EventInstance.contribution_at": {
+        "self_ms": {
+          "median": 0.036000000000000004,
+          "p95": 0.06899999999999999,
+          "p99": 0.078,
+          "max": 0.089,
+          "mean": 0.04103225806451613
+        },
+        "inclusive_ms": {
+          "median": 0.527,
+          "p95": 1.108,
+          "p99": 1.184,
+          "max": 1.261,
+          "mean": 0.6675388994307401
+        },
+        "calls": {
+          "median": 271,
+          "p95": 528,
+          "p99": 550,
+          "max": 550,
+          "mean": 328.6337760910816
+        }
+      },
+      "EventInstance._process": {
+        "self_ms": {
+          "median": 0.033,
+          "p95": 0.046,
+          "p99": 0.057,
+          "max": 0.073,
+          "mean": 0.03416698292220114
+        },
+        "inclusive_ms": {
+          "median": 1.0399999999999998,
+          "p95": 1.482,
+          "p99": 1.589,
+          "max": 1.7429999999999999,
+          "mean": 1.109584440227704
+        },
+        "calls": {
+          "median": 52,
+          "p95": 55,
+          "p99": 56,
+          "max": 56,
+          "mean": 51.730550284629985
+        }
+      },
+      "CrowdAgent.expected_gross_at": {
+        "self_ms": {
+          "median": 0.083,
+          "p95": 0.106,
+          "p99": 0.122,
+          "max": 0.133,
+          "mean": 0.08492789373814041
+        },
+        "inclusive_ms": {
+          "median": 1.174,
+          "p95": 1.4829999999999999,
+          "p99": 1.5839999999999999,
+          "max": 1.888,
+          "mean": 1.210740037950664
+        },
+        "calls": {
+          "median": 268,
+          "p95": 268,
+          "p99": 268,
+          "max": 268,
+          "mean": 267.80645161290323
+        }
+      },
+      "CrowdAgent._sample_expected_landed": {
+        "self_ms": {
+          "median": 0.14200000000000002,
+          "p95": 0.186,
+          "p99": 0.19799999999999998,
+          "max": 0.245,
+          "mean": 0.1416394686907021
+        },
+        "inclusive_ms": {
+          "median": 0.6669999999999999,
+          "p95": 0.9510000000000001,
+          "p99": 1.017,
+          "max": 1.231,
+          "mean": 0.7047514231499051
+        },
+        "calls": {
+          "median": 89,
+          "p95": 117,
+          "p99": 120,
+          "max": 124,
+          "mean": 90.1404174573055
+        }
+      },
+      "CrowdAgent.contribution_at": {
+        "self_ms": {
+          "median": 0.277,
+          "p95": 0.386,
+          "p99": 0.448,
+          "max": 0.486,
+          "mean": 0.28861669829222014
+        },
+        "inclusive_ms": {
+          "median": 0.46,
+          "p95": 0.6980000000000001,
+          "p99": 0.7739999999999999,
+          "max": 0.905,
+          "mean": 0.5016394686907021
+        },
+        "calls": {
+          "median": 2128,
+          "p95": 2934,
+          "p99": 2996,
+          "max": 3077,
+          "mean": 2227.8747628083493
+        }
+      },
+      "CrowdAgent._process": {
+        "self_ms": {
+          "median": 0.156,
+          "p95": 0.18000000000000002,
+          "p99": 0.205,
+          "max": 0.229,
+          "mean": 0.15640037950664137
+        },
+        "inclusive_ms": {
+          "median": 2.9949999999999997,
+          "p95": 3.395,
+          "p99": 3.599,
+          "max": 3.813,
+          "mean": 3.0259715370018974
+        },
+        "calls": {
+          "median": 234,
+          "p95": 234,
+          "p99": 234,
+          "max": 234,
+          "mean": 234
+        }
+      },
+      "ExcitementHalo._process": {
+        "self_ms": {
+          "median": 0.056,
+          "p95": 0.068,
+          "p99": 0.07200000000000001,
+          "max": 0.075,
+          "mean": 0.05563757115749526
+        },
+        "inclusive_ms": {
+          "median": 1.557,
+          "p95": 1.8619999999999999,
+          "p99": 2.062,
+          "max": 2.354,
+          "mean": 1.5644592030360531
+        },
+        "calls": {
+          "median": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "mean": 1
+        }
+      }
+    }
+  },
+  {
+    "run": "after-profiled-3",
+    "accepted": true,
+    "rejections": [],
+    "frames": 547,
+    "profiler_enabled": true,
+    "acceptance": {
+      "profile_frames": 976,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 547
+      },
+      "moving_cars_per_frame": {
+        "median": 30,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.592321755027424
+      },
+      "ticks_per_frame": {
+        "0": 367,
+        "1": 180
+      },
+      "unique_function_signatures": 1637,
+      "emitted_functions_per_frame": {
+        "median": 327,
+        "p95": 462,
+        "p99": 482,
+        "max": 492,
+        "mean": 361.61608775137114
+      }
+    },
+    "diagnostics": {
+      "compiler_warnings": 176,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.581352833638025
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.296160877513711
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.83363802559415
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.736745886654479
+      }
+    },
+    "native_ms": {
+      "frame_main_loop_wall": {
+        "median": 9.917,
+        "p95": 14.508000000000001,
+        "p99": 15.394,
+        "max": 16.759,
+        "mean": 10.785784277879342
+      },
+      "process_and_render_submit": {
+        "median": 9.823,
+        "p95": 13.015,
+        "p99": 14.125,
+        "max": 15.252,
+        "mean": 10.270084095063986
+      },
+      "worst_physics_tick_in_frame": {
+        "median": 0,
+        "p95": 1.661,
+        "p99": 1.815,
+        "max": 2.036,
+        "mean": 0.5152449725776965
+      },
+      "script_self_sum": {
+        "median": 4.054,
+        "p95": 5.466,
+        "p99": 5.6579999999999995,
+        "max": 6.275,
+        "mean": 4.3652687385740405
+      }
+    },
+    "callback_interval_ms": {
+      "median": 10.844,
+      "p95": 13.742,
+      "p99": 15.23,
+      "max": 18.374,
+      "mean": 10.971288848263255
+    },
+    "observer_ms": {
+      "median": 0.076,
+      "p95": 0.09,
+      "p99": 0.1,
+      "max": 0.107,
+      "mean": 0.07768921389396709
+    },
+    "work": {
+      "EventInstance.expected_gross_at": {
+        "self_ms": {
+          "median": 0.062,
+          "p95": 0.076,
+          "p99": 0.08399999999999999,
+          "max": 0.096,
+          "mean": 0.06169652650822669
+        },
+        "inclusive_ms": {
+          "median": 0.6930000000000001,
+          "p95": 1.105,
+          "p99": 1.1340000000000001,
+          "max": 1.167,
+          "mean": 0.759926873857404
+        },
+        "calls": {
+          "median": 104,
+          "p95": 110,
+          "p99": 112,
+          "max": 113,
+          "mean": 103.53199268738574
+        }
+      },
+      "EventInstance._sample_expected_landed": {
+        "self_ms": {
+          "median": 0.018000000000000002,
+          "p95": 0.037,
+          "p99": 0.041,
+          "max": 0.046,
+          "mean": 0.02083180987202925
+        },
+        "inclusive_ms": {
+          "median": 0.35,
+          "p95": 0.752,
+          "p99": 0.771,
+          "max": 0.798,
+          "mean": 0.4376599634369287
+        },
+        "calls": {
+          "median": 9,
+          "p95": 19,
+          "p99": 20,
+          "max": 20,
+          "mean": 11.148080438756855
+        }
+      },
+      "EventInstance.contribution_at": {
+        "self_ms": {
+          "median": 0.034999999999999996,
+          "p95": 0.066,
+          "p99": 0.075,
+          "max": 0.088,
+          "mean": 0.040550274223034734
+        },
+        "inclusive_ms": {
+          "median": 0.5199999999999999,
+          "p95": 1.0690000000000002,
+          "p99": 1.0959999999999999,
+          "max": 1.159,
+          "mean": 0.6515301645338208
+        },
+        "calls": {
+          "median": 271,
+          "p95": 528,
+          "p99": 550,
+          "max": 550,
+          "mean": 326.20292504570386
+        }
+      },
+      "EventInstance._process": {
+        "self_ms": {
+          "median": 0.032,
+          "p95": 0.041,
+          "p99": 0.045000000000000005,
+          "max": 0.048,
+          "mean": 0.032608775137111516
+        },
+        "inclusive_ms": {
+          "median": 1.029,
+          "p95": 1.4369999999999998,
+          "p99": 1.474,
+          "max": 1.553,
+          "mean": 1.0925191956124314
+        },
+        "calls": {
+          "median": 52,
+          "p95": 55,
+          "p99": 56,
+          "max": 56,
+          "mean": 51.83363802559415
+        }
+      },
+      "CrowdAgent.expected_gross_at": {
+        "self_ms": {
+          "median": 0.083,
+          "p95": 0.098,
+          "p99": 0.106,
+          "max": 0.121,
+          "mean": 0.0830420475319927
+        },
+        "inclusive_ms": {
+          "median": 1.178,
+          "p95": 1.445,
+          "p99": 1.5070000000000001,
+          "max": 1.567,
+          "mean": 1.2036819012797075
+        },
+        "calls": {
+          "median": 268,
+          "p95": 268,
+          "p99": 268,
+          "max": 268,
+          "mean": 267.80255941499087
+        }
+      },
+      "CrowdAgent._sample_expected_landed": {
+        "self_ms": {
+          "median": 0.13999999999999999,
+          "p95": 0.184,
+          "p99": 0.19799999999999998,
+          "max": 0.206,
+          "mean": 0.14204204753199268
+        },
+        "inclusive_ms": {
+          "median": 0.675,
+          "p95": 0.928,
+          "p99": 0.983,
+          "max": 1.029,
+          "mean": 0.7044661791590494
+        },
+        "calls": {
+          "median": 91,
+          "p95": 118,
+          "p99": 121,
+          "max": 123,
+          "mean": 91.018281535649
+        }
+      },
+      "CrowdAgent.contribution_at": {
+        "self_ms": {
+          "median": 0.279,
+          "p95": 0.38,
+          "p99": 0.399,
+          "max": 0.429,
+          "mean": 0.2886435100548446
+        },
+        "inclusive_ms": {
+          "median": 0.465,
+          "p95": 0.694,
+          "p99": 0.73,
+          "max": 0.758,
+          "mean": 0.504819012797075
+        },
+        "calls": {
+          "median": 2192,
+          "p95": 2952,
+          "p99": 3016,
+          "max": 3054,
+          "mean": 2243.670932358318
+        }
+      },
+      "CrowdAgent._process": {
+        "self_ms": {
+          "median": 0.15,
+          "p95": 0.17200000000000001,
+          "p99": 0.18100000000000002,
+          "max": 0.199,
+          "mean": 0.15113162705667277
+        },
+        "inclusive_ms": {
+          "median": 2.96,
+          "p95": 3.229,
+          "p99": 3.441,
+          "max": 3.57,
+          "mean": 2.9717349177330896
+        },
+        "calls": {
+          "median": 234,
+          "p95": 234,
+          "p99": 234,
+          "max": 234,
+          "mean": 234
+        }
+      },
+      "ExcitementHalo._process": {
+        "self_ms": {
+          "median": 0.055,
+          "p95": 0.068,
+          "p99": 0.077,
+          "max": 0.09000000000000001,
+          "mean": 0.05543692870201097
+        },
+        "inclusive_ms": {
+          "median": 1.537,
+          "p95": 1.802,
+          "p99": 1.866,
+          "max": 1.954,
+          "mean": 1.536491773308958
+        },
+        "calls": {
+          "median": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "mean": 1
+        }
+      }
+    }
+  },
+  {
+    "run": "before-disabled-1",
+    "accepted": true,
+    "rejections": [],
+    "frames": 554,
+    "profiler_enabled": false,
+    "acceptance": {
+      "profile_frames": 0,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 554
+      },
+      "moving_cars_per_frame": {
+        "median": 30,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.640794223826713
+      },
+      "ticks_per_frame": {
+        "0": 374,
+        "1": 180
+      },
+      "unique_function_signatures": 0,
+      "emitted_functions_per_frame": null
+    },
+    "diagnostics": {
+      "compiler_warnings": 175,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 548.93041992187,
+    "northward_net_pixels": 548.93041992187,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.574007220216608
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.287003610108303
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.82310469314079
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.732851985559567
+      }
+    },
+    "native_ms": null,
+    "callback_interval_ms": {
+      "median": 10.504999999999999,
+      "p95": 13.797,
+      "p99": 14.606,
+      "max": 15.632,
+      "mean": 10.818938628158845
+    },
+    "observer_ms": {
+      "median": 0.075,
+      "p95": 0.087,
+      "p99": 0.097,
+      "max": 0.107,
+      "mean": 0.07664620938628158
+    },
+    "work": {}
+  },
+  {
+    "run": "before-disabled-2",
+    "accepted": true,
+    "rejections": [],
+    "frames": 553,
+    "profiler_enabled": false,
+    "acceptance": {
+      "profile_frames": 0,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 553
+      },
+      "moving_cars_per_frame": {
+        "median": 30,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.613019891500905
+      },
+      "ticks_per_frame": {
+        "0": 373,
+        "1": 180
+      },
+      "unique_function_signatures": 0,
+      "emitted_functions_per_frame": null
+    },
+    "diagnostics": {
+      "compiler_warnings": 175,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.537070524412297
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.274864376130199
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.819168173598555
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.7197106690777577
+      }
+    },
+    "native_ms": null,
+    "callback_interval_ms": {
+      "median": 10.473,
+      "p95": 14.051,
+      "p99": 14.939,
+      "max": 15.999,
+      "mean": 10.8484773960217
+    },
+    "observer_ms": {
+      "median": 0.075,
+      "p95": 0.089,
+      "p99": 0.098,
+      "max": 0.125,
+      "mean": 0.07684629294755876
+    },
+    "work": {}
+  },
+  {
+    "run": "before-disabled-3",
+    "accepted": true,
+    "rejections": [],
+    "frames": 556,
+    "profiler_enabled": false,
+    "acceptance": {
+      "profile_frames": 0,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 556
+      },
+      "moving_cars_per_frame": {
+        "median": 30,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.636690647482013
+      },
+      "ticks_per_frame": {
+        "0": 375,
+        "1": 181
+      },
+      "unique_function_signatures": 0,
+      "emitted_functions_per_frame": null
+    },
+    "diagnostics": {
+      "compiler_warnings": 175,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.60431654676259
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.316546762589928
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.84892086330935
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.721223021582734
+      }
+    },
+    "native_ms": null,
+    "callback_interval_ms": {
+      "median": 10.299,
+      "p95": 14.049,
+      "p99": 14.794,
+      "max": 15.7,
+      "mean": 10.803654676258994
+    },
+    "observer_ms": {
+      "median": 0.075,
+      "p95": 0.086,
+      "p99": 0.093,
+      "max": 0.103,
+      "mean": 0.07614748201438849
+    },
+    "work": {}
+  },
+  {
+    "run": "before-profiled-1",
+    "accepted": true,
+    "rejections": [],
+    "frames": 514,
+    "profiler_enabled": true,
+    "acceptance": {
+      "profile_frames": 911,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 514
+      },
+      "moving_cars_per_frame": {
+        "median": 29,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.07782101167315
+      },
+      "ticks_per_frame": {
+        "0": 334,
+        "1": 180
+      },
+      "unique_function_signatures": 1635,
+      "emitted_functions_per_frame": {
+        "median": 328,
+        "p95": 461,
+        "p99": 481,
+        "max": 496,
+        "mean": 363.1887159533074
+      }
+    },
+    "diagnostics": {
+      "compiler_warnings": 175,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 548.93041992187,
+    "northward_net_pixels": 548.93041992187,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.54863813229572
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.237354085603113
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.764591439688715
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.7392996108949417
+      }
+    },
+    "native_ms": {
+      "frame_main_loop_wall": {
+        "median": 11.429,
+        "p95": 13.224,
+        "p99": 14.28,
+        "max": 16.801,
+        "mean": 11.474110894941635
+      },
+      "process_and_render_submit": {
+        "median": 10.8035,
+        "p95": 12.624,
+        "p99": 13.536,
+        "max": 14.916,
+        "mean": 10.920217898832686
+      },
+      "worst_physics_tick_in_frame": {
+        "median": 0,
+        "p95": 1.71,
+        "p99": 1.941,
+        "max": 2.099,
+        "mean": 0.5534163424124514
+      },
+      "script_self_sum": {
+        "median": 4.8195,
+        "p95": 5.989000000000001,
+        "p99": 6.335999999999999,
+        "max": 6.541,
+        "mean": 4.984268482490273
+      }
+    },
+    "callback_interval_ms": {
+      "median": 11.428,
+      "p95": 13.938,
+      "p99": 15.092,
+      "max": 16.901,
+      "mean": 11.671478599221789
+    },
+    "observer_ms": {
+      "median": 0.076,
+      "p95": 0.088,
+      "p99": 0.095,
+      "max": 0.105,
+      "mean": 0.07768677042801556
+    },
+    "work": {
+      "EventInstance.expected_gross_at": {
+        "self_ms": {
+          "median": 0.085,
+          "p95": 0.107,
+          "p99": 0.116,
+          "max": 0.121,
+          "mean": 0.08637937743190661
+        },
+        "inclusive_ms": {
+          "median": 1.5870000000000002,
+          "p95": 1.828,
+          "p99": 1.8719999999999999,
+          "max": 1.914,
+          "mean": 1.5883754863813229
+        },
+        "calls": {
+          "median": 104,
+          "p95": 110,
+          "p99": 112,
+          "max": 113,
+          "mean": 103.39105058365759
+        }
+      },
+      "EventInstance._sample_expected_landed": null,
+      "EventInstance.contribution_at": {
+        "self_ms": {
+          "median": 0.08600000000000001,
+          "p95": 0.10900000000000001,
+          "p99": 0.116,
+          "max": 0.12300000000000001,
+          "mean": 0.08571011673151752
+        },
+        "inclusive_ms": {
+          "median": 1.4649999999999999,
+          "p95": 1.746,
+          "p99": 1.796,
+          "max": 1.891,
+          "mean": 1.4471634241245137
+        },
+        "calls": {
+          "median": 778,
+          "p95": 909,
+          "p99": 950,
+          "max": 950,
+          "mean": 789.2412451361868
+        }
+      },
+      "EventInstance._process": {
+        "self_ms": {
+          "median": 0.033,
+          "p95": 0.043000000000000003,
+          "p99": 0.048,
+          "max": 0.06499999999999999,
+          "mean": 0.03340661478599222
+        },
+        "inclusive_ms": {
+          "median": 1.279,
+          "p95": 1.438,
+          "p99": 1.5,
+          "max": 1.568,
+          "mean": 1.2804027237354085
+        },
+        "calls": {
+          "median": 52,
+          "p95": 55,
+          "p99": 56,
+          "max": 56,
+          "mean": 51.764591439688715
+        }
+      },
+      "CrowdAgent.expected_gross_at": {
+        "self_ms": {
+          "median": 0.22,
+          "p95": 0.256,
+          "p99": 0.266,
+          "max": 0.281,
+          "mean": 0.2221089494163424
+        },
+        "inclusive_ms": {
+          "median": 1.335,
+          "p95": 1.497,
+          "p99": 1.542,
+          "max": 1.5590000000000002,
+          "mean": 1.3492743190661478
+        },
+        "calls": {
+          "median": 268,
+          "p95": 268,
+          "p99": 268,
+          "max": 268,
+          "mean": 267.8112840466926
+        }
+      },
+      "CrowdAgent._sample_expected_landed": null,
+      "CrowdAgent.contribution_at": {
+        "self_ms": {
+          "median": 0.3365,
+          "p95": 0.39599999999999996,
+          "p99": 0.416,
+          "max": 0.44499999999999995,
+          "mean": 0.3396614785992218
+        },
+        "inclusive_ms": {
+          "median": 0.6345000000000001,
+          "p95": 0.74,
+          "p99": 0.772,
+          "max": 0.787,
+          "mean": 0.6374747081712062
+        },
+        "calls": {
+          "median": 2589,
+          "p95": 3051,
+          "p99": 3135,
+          "max": 3156,
+          "mean": 2634.443579766537
+        }
+      },
+      "CrowdAgent._process": {
+        "self_ms": {
+          "median": 0.15,
+          "p95": 0.176,
+          "p99": 0.189,
+          "max": 0.2,
+          "mean": 0.15075291828793774
+        },
+        "inclusive_ms": {
+          "median": 2.97,
+          "p95": 3.286,
+          "p99": 3.505,
+          "max": 3.803,
+          "mean": 2.986661478599222
+        },
+        "calls": {
+          "median": 234,
+          "p95": 234,
+          "p99": 234,
+          "max": 234,
+          "mean": 234
+        }
+      },
+      "ExcitementHalo._process": {
+        "self_ms": {
+          "median": 0.054,
+          "p95": 0.066,
+          "p99": 0.07100000000000001,
+          "max": 0.082,
+          "mean": 0.05394163424124514
+        },
+        "inclusive_ms": {
+          "median": 2.286,
+          "p95": 2.502,
+          "p99": 2.594,
+          "max": 2.646,
+          "mean": 2.277124513618677
+        },
+        "calls": {
+          "median": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "mean": 1
+        }
+      }
+    }
+  },
+  {
+    "run": "before-profiled-2",
+    "accepted": true,
+    "rejections": [],
+    "frames": 493,
+    "profiler_enabled": true,
+    "acceptance": {
+      "profile_frames": 870,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 493
+      },
+      "moving_cars_per_frame": {
+        "median": 29,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.36916835699797
+      },
+      "ticks_per_frame": {
+        "0": 313,
+        "1": 180
+      },
+      "unique_function_signatures": 1634,
+      "emitted_functions_per_frame": {
+        "median": 332,
+        "p95": 463,
+        "p99": 477,
+        "max": 494,
+        "mean": 365.68762677484784
+      }
+    },
+    "diagnostics": {
+      "compiler_warnings": 175,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.56795131845842
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.194726166328601
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.72819472616633
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.740365111561866
+      }
+    },
+    "native_ms": {
+      "frame_main_loop_wall": {
+        "median": 11.488,
+        "p95": 15.479,
+        "p99": 17.022,
+        "max": 17.982000000000003,
+        "mean": 11.994314401622718
+      },
+      "process_and_render_submit": {
+        "median": 11.016,
+        "p95": 14.881,
+        "p99": 16.037,
+        "max": 17.538,
+        "mean": 11.422797160243407
+      },
+      "worst_physics_tick_in_frame": {
+        "median": 0,
+        "p95": 1.676,
+        "p99": 1.818,
+        "max": 2.137,
+        "mean": 0.5710912778904665
+      },
+      "script_self_sum": {
+        "median": 4.8919999999999995,
+        "p95": 5.9239999999999995,
+        "p99": 6.253,
+        "max": 6.881,
+        "mean": 5.038320486815416
+      }
+    },
+    "callback_interval_ms": {
+      "median": 11.845,
+      "p95": 15.172,
+      "p99": 17.573,
+      "max": 19.861,
+      "mean": 12.187215010141989
+    },
+    "observer_ms": {
+      "median": 0.076,
+      "p95": 0.087,
+      "p99": 0.1,
+      "max": 0.106,
+      "mean": 0.07790060851926978
+    },
+    "work": {
+      "EventInstance.expected_gross_at": {
+        "self_ms": {
+          "median": 0.087,
+          "p95": 0.10500000000000001,
+          "p99": 0.115,
+          "max": 0.11900000000000001,
+          "mean": 0.08652332657200812
+        },
+        "inclusive_ms": {
+          "median": 1.609,
+          "p95": 1.846,
+          "p99": 1.883,
+          "max": 1.991,
+          "mean": 1.5989026369168358
+        },
+        "calls": {
+          "median": 104,
+          "p95": 110,
+          "p99": 112,
+          "max": 113,
+          "mean": 103.31643002028397
+        }
+      },
+      "EventInstance._sample_expected_landed": null,
+      "EventInstance.contribution_at": {
+        "self_ms": {
+          "median": 0.09000000000000001,
+          "p95": 0.11299999999999999,
+          "p99": 0.125,
+          "max": 0.132,
+          "mean": 0.0898762677484787
+        },
+        "inclusive_ms": {
+          "median": 1.474,
+          "p95": 1.772,
+          "p99": 1.829,
+          "max": 1.871,
+          "mean": 1.4610385395537526
+        },
+        "calls": {
+          "median": 778,
+          "p95": 909,
+          "p99": 950,
+          "max": 950,
+          "mean": 789.0912778904666
+        }
+      },
+      "EventInstance._process": {
+        "self_ms": {
+          "median": 0.032,
+          "p95": 0.041,
+          "p99": 0.046,
+          "max": 0.053,
+          "mean": 0.03177484787018255
+        },
+        "inclusive_ms": {
+          "median": 1.287,
+          "p95": 1.446,
+          "p99": 1.489,
+          "max": 1.5430000000000001,
+          "mean": 1.285107505070994
+        },
+        "calls": {
+          "median": 52,
+          "p95": 55,
+          "p99": 56,
+          "max": 56,
+          "mean": 51.72819472616633
+        }
+      },
+      "CrowdAgent.expected_gross_at": {
+        "self_ms": {
+          "median": 0.22,
+          "p95": 0.255,
+          "p99": 0.268,
+          "max": 0.279,
+          "mean": 0.22131643002028398
+        },
+        "inclusive_ms": {
+          "median": 1.3470000000000002,
+          "p95": 1.497,
+          "p99": 1.544,
+          "max": 1.6139999999999999,
+          "mean": 1.3597180527383368
+        },
+        "calls": {
+          "median": 268,
+          "p95": 268,
+          "p99": 268,
+          "max": 268,
+          "mean": 267.8073022312373
+        }
+      },
+      "CrowdAgent._sample_expected_landed": null,
+      "CrowdAgent.contribution_at": {
+        "self_ms": {
+          "median": 0.33799999999999997,
+          "p95": 0.40099999999999997,
+          "p99": 0.42000000000000004,
+          "max": 0.449,
+          "mean": 0.33979513184584176
+        },
+        "inclusive_ms": {
+          "median": 0.6489999999999999,
+          "p95": 0.744,
+          "p99": 0.777,
+          "max": 0.8310000000000001,
+          "mean": 0.6489391480730223
+        },
+        "calls": {
+          "median": 2610,
+          "p95": 3072,
+          "p99": 3156,
+          "max": 3177,
+          "mean": 2634.6754563894524
+        }
+      },
+      "CrowdAgent._process": {
+        "self_ms": {
+          "median": 0.15100000000000002,
+          "p95": 0.178,
+          "p99": 0.189,
+          "max": 0.201,
+          "mean": 0.15159026369168357
+        },
+        "inclusive_ms": {
+          "median": 3.005,
+          "p95": 3.335,
+          "p99": 3.588,
+          "max": 3.662,
+          "mean": 3.0226389452332656
+        },
+        "calls": {
+          "median": 234,
+          "p95": 234,
+          "p99": 234,
+          "max": 234,
+          "mean": 234
+        }
+      },
+      "ExcitementHalo._process": {
+        "self_ms": {
+          "median": 0.055,
+          "p95": 0.06899999999999999,
+          "p99": 0.07200000000000001,
+          "max": 0.093,
+          "mean": 0.055772819472616635
+        },
+        "inclusive_ms": {
+          "median": 2.296,
+          "p95": 2.509,
+          "p99": 2.6069999999999998,
+          "max": 2.7520000000000002,
+          "mean": 2.2890141987829615
+        },
+        "calls": {
+          "median": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "mean": 1
+        }
+      }
+    }
+  },
+  {
+    "run": "before-profiled-3",
+    "accepted": true,
+    "rejections": [],
+    "frames": 486,
+    "profiler_enabled": true,
+    "acceptance": {
+      "profile_frames": 868,
+      "missing_profile_frames": [],
+      "physics_alignment_mismatches": [],
+      "north_input_held": true,
+      "draws_per_process_frame": {
+        "1": 486
+      },
+      "moving_cars_per_frame": {
+        "median": 29,
+        "p95": 31,
+        "p99": 31,
+        "max": 31,
+        "mean": 29.438271604938272
+      },
+      "ticks_per_frame": {
+        "0": 306,
+        "1": 180
+      },
+      "unique_function_signatures": 1634,
+      "emitted_functions_per_frame": {
+        "median": 336,
+        "p95": 461,
+        "p99": 483,
+        "max": 499,
+        "mean": 366.059670781893
+      }
+    },
+    "diagnostics": {
+      "compiler_warnings": 175,
+      "runtime_debugger_errors": 0
+    },
+    "environment": {
+      "adapter": "Apple M2",
+      "columns": [
+        "frame",
+        "physics_frame",
+        "drawn_frame",
+        "stamp_usec",
+        "elapsed_usec",
+        "running",
+        "paused",
+        "player_x",
+        "player_y",
+        "counts",
+        "moved_cars",
+        "observer_usec",
+        "north_input",
+        "player_velocity_x",
+        "player_velocity_y"
+      ],
+      "count_columns": [
+        "walkers",
+        "cars",
+        "visible_walkers",
+        "visible_cars",
+        "events",
+        "visible_events"
+      ],
+      "display": "macOS",
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "graph": false,
+      "physics_hz": 30,
+      "processor": "Apple M2",
+      "profiler_max_functions": 16384,
+      "readout": true,
+      "render_on_main_thread": true,
+      "renderer": "gl_compatibility",
+      "telemetry": false,
+      "viewport": [
+        1280,
+        720
+      ],
+      "warmup_usec": 5000000,
+      "window_usec": 6000000
+    },
+    "player_path_pixels": 551.9970703125,
+    "northward_net_pixels": 551.9970703125,
+    "population": {
+      "walkers": {
+        "median": 200,
+        "p95": 200,
+        "p99": 200,
+        "max": 200,
+        "mean": 200
+      },
+      "cars": {
+        "median": 34,
+        "p95": 34,
+        "p99": 34,
+        "max": 34,
+        "mean": 34
+      },
+      "visible_walkers": {
+        "median": 18,
+        "p95": 22,
+        "p99": 25,
+        "max": 26,
+        "mean": 17.493827160493826
+      },
+      "visible_cars": {
+        "median": 7,
+        "p95": 8,
+        "p99": 8,
+        "max": 8,
+        "mean": 5.160493827160494
+      },
+      "events": {
+        "median": 52,
+        "p95": 55,
+        "p99": 56,
+        "max": 56,
+        "mean": 51.705761316872426
+      },
+      "visible_events": {
+        "median": 4,
+        "p95": 5,
+        "p99": 5,
+        "max": 5,
+        "mean": 3.7263374485596708
+      }
+    },
+    "native_ms": {
+      "frame_main_loop_wall": {
+        "median": 11.654,
+        "p95": 15.639,
+        "p99": 16.863,
+        "max": 17.567,
+        "mean": 12.139279835390946
+      },
+      "process_and_render_submit": {
+        "median": 11.092500000000001,
+        "p95": 15.128,
+        "p99": 15.64,
+        "max": 16.502,
+        "mean": 11.555989711934156
+      },
+      "worst_physics_tick_in_frame": {
+        "median": 0,
+        "p95": 1.709,
+        "p99": 1.8439999999999999,
+        "max": 2.006,
+        "mean": 0.5828148148148148
+      },
+      "script_self_sum": {
+        "median": 4.9435,
+        "p95": 6.044,
+        "p99": 6.339,
+        "max": 6.696,
+        "mean": 5.069744855967079
+      }
+    },
+    "callback_interval_ms": {
+      "median": 11.936499999999999,
+      "p95": 15.762,
+      "p99": 17.457,
+      "max": 18.124,
+      "mean": 12.342440329218107
+    },
+    "observer_ms": {
+      "median": 0.075,
+      "p95": 0.087,
+      "p99": 0.095,
+      "max": 0.1,
+      "mean": 0.07646090534979423
+    },
+    "work": {
+      "EventInstance.expected_gross_at": {
+        "self_ms": {
+          "median": 0.091,
+          "p95": 0.111,
+          "p99": 0.131,
+          "max": 0.15100000000000002,
+          "mean": 0.09040946502057613
+        },
+        "inclusive_ms": {
+          "median": 1.605,
+          "p95": 1.851,
+          "p99": 1.944,
+          "max": 2.023,
+          "mean": 1.6014814814814815
+        },
+        "calls": {
+          "median": 104,
+          "p95": 110,
+          "p99": 112,
+          "max": 113,
+          "mean": 103.27572016460906
+        }
+      },
+      "EventInstance._sample_expected_landed": null,
+      "EventInstance.contribution_at": {
+        "self_ms": {
+          "median": 0.089,
+          "p95": 0.115,
+          "p99": 0.133,
+          "max": 0.15,
+          "mean": 0.08942592592592592
+        },
+        "inclusive_ms": {
+          "median": 1.4775,
+          "p95": 1.77,
+          "p99": 1.839,
+          "max": 1.9220000000000002,
+          "mean": 1.4610390946502056
+        },
+        "calls": {
+          "median": 770,
+          "p95": 909,
+          "p99": 950,
+          "max": 950,
+          "mean": 788.5390946502058
+        }
+      },
+      "EventInstance._process": {
+        "self_ms": {
+          "median": 0.032,
+          "p95": 0.041,
+          "p99": 0.045000000000000005,
+          "max": 0.049,
+          "mean": 0.032347736625514406
+        },
+        "inclusive_ms": {
+          "median": 1.287,
+          "p95": 1.452,
+          "p99": 1.51,
+          "max": 1.613,
+          "mean": 1.2871934156378602
+        },
+        "calls": {
+          "median": 52,
+          "p95": 55,
+          "p99": 56,
+          "max": 56,
+          "mean": 51.705761316872426
+        }
+      },
+      "CrowdAgent.expected_gross_at": {
+        "self_ms": {
+          "median": 0.225,
+          "p95": 0.25999999999999995,
+          "p99": 0.272,
+          "max": 0.292,
+          "mean": 0.22593621399176955
+        },
+        "inclusive_ms": {
+          "median": 1.369,
+          "p95": 1.5230000000000001,
+          "p99": 1.549,
+          "max": 1.562,
+          "mean": 1.3823477366255144
+        },
+        "calls": {
+          "median": 268,
+          "p95": 268,
+          "p99": 268,
+          "max": 268,
+          "mean": 267.83539094650206
+        }
+      },
+      "CrowdAgent._sample_expected_landed": null,
+      "CrowdAgent.contribution_at": {
+        "self_ms": {
+          "median": 0.345,
+          "p95": 0.406,
+          "p99": 0.42700000000000005,
+          "max": 0.45399999999999996,
+          "mean": 0.3472942386831276
+        },
+        "inclusive_ms": {
+          "median": 0.66,
+          "p95": 0.758,
+          "p99": 0.782,
+          "max": 0.812,
+          "mean": 0.6621913580246913
+        },
+        "calls": {
+          "median": 2670,
+          "p95": 3114,
+          "p99": 3177,
+          "max": 3198,
+          "mean": 2682.6913580246915
+        }
+      },
+      "CrowdAgent._process": {
+        "self_ms": {
+          "median": 0.15100000000000002,
+          "p95": 0.175,
+          "p99": 0.185,
+          "max": 0.196,
+          "mean": 0.15207407407407408
+        },
+        "inclusive_ms": {
+          "median": 3.0060000000000002,
+          "p95": 3.333,
+          "p99": 3.4979999999999998,
+          "max": 3.8600000000000003,
+          "mean": 3.0299238683127574
+        },
+        "calls": {
+          "median": 234,
+          "p95": 234,
+          "p99": 234,
+          "max": 234,
+          "mean": 234
+        }
+      },
+      "ExcitementHalo._process": {
+        "self_ms": {
+          "median": 0.053,
+          "p95": 0.066,
+          "p99": 0.074,
+          "max": 0.085,
+          "mean": 0.05352263374485597
+        },
+        "inclusive_ms": {
+          "median": 2.3215000000000003,
+          "p95": 2.509,
+          "p99": 2.576,
+          "max": 2.646,
+          "mean": 2.2998004115226336
+        },
+        "calls": {
+          "median": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "mean": 1
+        }
+      }
+    }
+  }
+]
