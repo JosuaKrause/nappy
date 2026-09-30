@@ -1,6 +1,6 @@
 ---
 name: verify
-description: How to verify a change in this project — the verification commands, what each one cannot see, the dev flags that make a screenshot worth taking, and the testing policy. Load this BEFORE committing anything, and BEFORE writing or changing a test.
+description: How to verify a change in this project — the verification commands, experiment evidence retention, what each check cannot see, the dev flags that make a screenshot worth taking, and the testing policy. Load this BEFORE committing anything, writing or changing a test, or collecting experiment evidence.
 ---
 
 # Verification
@@ -206,6 +206,33 @@ calls, or the suite reports leaked instances under a green check count.
 **A rig that steps the parts is not running the whole, and the gap is silent both ways.** When a rig
 drives a subsystem by hand, ask what the engine was doing around it — and if the answer is "keeping
 something bounded", the rig is not slow, it is wrong.
+
+## What an experiment checks in
+
+**Keep experimental evidence compact by default.** Check in the question, conclusion and limits;
+the runnable probe or reused collector/analyzer and exact rerun commands; source revisions,
+collector identity, environment, settings, seed, warmup/window lengths, actual run order and
+acceptance criteria; and compact results for every retained trial, including rejected trials'
+reasons. Preserve the per-run distributions, counts and workload checks that support the claims,
+rather than only a pooled average or the best pair. Put the conclusion in the decision record
+and its evidence under `docs/evidence/`.
+
+**Full profiler streams, expanded analyzer output, build/test stdout and duplicate generated
+reports stay in scratch space unless the conclusion needs their original detail.** Retain a
+focused original trace or input when it proves a defect, supports attribution that aggregate
+results cannot substantiate, or records something the rerun cannot recreate. Keep the smallest
+useful data, compress it where appropriate, and explain why it belongs in the repository. A
+compact result can record historical medians and tails without promising arbitrary reanalysis
+of the original capture. Fresh reruns reproduce the experiment; timing varies between launches.
+
+Before committing, count the evidence files and bytes and report that footprint in the PR.
+Verify compact results against the original output before discarding it, remove redundant
+copies, and ensure every retained claim is supported by the checked-in evidence. Rerun commands
+write into a new scratch directory instead of overwriting the recorded results. Routine test
+verification needs its command and outcome, not a checked-in copy of the entire test run.
+
+Player playtests and gameplay captures remain primary evidence under **playtest-feedback** and
+**session-captures**; their retention rules apply to those records.
 
 ## Dev flags, and why a plain screenshot is useless
 

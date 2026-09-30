@@ -47,22 +47,24 @@ spawn, a held northward route, a five-second warmup and a six-second active wind
 external deadline applies to each launch, and the runner stops at the first rejected capture.
 
 ```sh
+scratch_output=$(mktemp -d /private/tmp/m159-event-shape-rerun.XXXXXX)
+
 python3 docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py \
   --baseline /private/tmp/nappy-event-shape-before-41fd54a1 \
   --after /Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache \
-  --output docs/evidence/m159-event-shape-cache-2026-09-29/native
+  --output "$scratch_output/native"
 
 python3 docs/evidence/m159-event-shape-cache-2026-09-29/summarize-native.py \
-  docs/evidence/m159-event-shape-cache-2026-09-29/native
+  "$scratch_output/native"
 
 python3 docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py \
   --baseline /private/tmp/nappy-event-shape-before-41fd54a1 \
   --after /Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache \
-  --output docs/evidence/m159-event-shape-cache-2026-09-29/native-reversed \
+  --output "$scratch_output/native-reversed" \
   --mode disabled --order after-before
 
 python3 docs/evidence/m159-event-shape-cache-2026-09-29/summarize-native.py \
-  docs/evidence/m159-event-shape-cache-2026-09-29/native-reversed
+  "$scratch_output/native-reversed"
 ```
 
 Before is `41fd54a1cf5fee1a722dc7fcfb4cb30e95610b1e`. The original series' after revision is
@@ -70,8 +72,9 @@ Before is `41fd54a1cf5fee1a722dc7fcfb4cb30e95610b1e`. The original series' after
 `7e3b019e229de7c77c1fd2bc1cb000f43ffd9ba5`, which adds only the original series' evidence and
 runner options. Production source and the collector/analyzer are byte-identical across those two
 after revisions. Each directory's `provenance.json` retains exact commands, collector/analyzer
-SHA-256 values, run order and source identities. The compressed raw scene and profiler data,
-launch logs, complete analyzer summaries and derived `comparison.json` files are retained.
+SHA-256 values, run order and source identities. Each `comparison.json` retains the environment,
+acceptance checks, warning/error counts, movement, population, timing and target-function results
+projected from the original complete analyzer summaries.
 
 All eighteen captures are accepted with no rejection flags, and the profiled captures have no
 missing profiler frames. Each retains 200 walkers, 34 cars, a median 51–52 live events and four
@@ -169,13 +172,27 @@ timer. Exact hit-count parity is checked after every timed pair.
 | 5 | 1,063,207 | 47,373 | 95.54% |
 
 `isolated-probe.log` retains the successful six-check run. An earlier sandboxed invocation is
-retained separately and excluded: both log-file creation and the macOS certificate call failed,
-so the command returned nonzero despite passing its assertions. No active-play capture was
-rejected, and no blind retry occurred in that controlled series.
+excluded: both log-file creation and the macOS certificate call failed, so the command returned
+nonzero despite passing its assertions. No active-play capture was rejected, and no blind retry
+occurred in that controlled series.
 
 This probe deliberately repeats one operation far more densely than an ordinary frame. It
 establishes that cached reads reduce isolated classification CPU work; it does not predict a phone
 frame or add linearly to the active-play difference.
+
+## Retention and reproduction limits
+
+The committed evidence is the compact measurement record: this README, both rerun scripts, the
+successful isolated-probe log, and each series' provenance and comparison JSON. Full compressed
+profiler/scene captures, launch/check logs, expanded per-run summaries and the rejected sandbox log
+are not retained. The compact rows preserve every reported numeric result and the analyzer fields
+needed to check capture acceptance, but exact raw reanalysis of these historical captures is no
+longer available.
+
+The collection runner still writes complete compressed captures, launch/check logs and expanded
+summaries for a repeat experiment. Use a new scratch output directory as in the commands above;
+do not replace the committed comparison directories. Fresh results can vary with the host and run,
+even when the source identities, route and windows match.
 
 ## Verification and limits
 
