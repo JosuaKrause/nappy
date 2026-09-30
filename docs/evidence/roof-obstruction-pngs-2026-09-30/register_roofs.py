@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Register the approved generated roof family at native game scale."""
+"""Rebuild the approved roof family into a fresh output directory."""
 
 from __future__ import annotations
 
@@ -10,12 +10,13 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-
 ROOT = Path(__file__).resolve().parents[3]
 EVIDENCE = Path(__file__).resolve().parent
 RAW = EVIDENCE / "raw"
-OUT = ROOT / "art/illustrated/roof-equipment"
-REVIEW = EVIDENCE / "review"
+INSTALLED = ROOT / "art/illustrated/roof-equipment"
+COMMITTED_REVIEW = EVIDENCE / "review/roof-family-native-4x.png"
+ASSET_RELATIVE = Path("art/illustrated/roof-equipment")
+REVIEW_RELATIVE = Path("docs/evidence/roof-obstruction-pngs-2026-09-30/review/roof-family-native-4x.png")
 
 FAMILY = RAW / "roof-family-cardinal-v2.png"
 DUCT = RAW / "roof-duct-run-cardinal-v2.png"
@@ -81,22 +82,26 @@ def registered(asset: Asset) -> Image.Image:
     return canvas
 
 
-def build() -> None:
+def verify_inputs() -> None:
     for path, expected in EXPECTED.items():
         actual = digest(path)
         if actual != expected:
             raise RuntimeError(f"{path.name}: expected {expected}, got {actual}")
-    OUT.mkdir(parents=True, exist_ok=True)
+
+
+def build(output: Path) -> None:
+    output.mkdir(parents=True)
     for asset in ASSETS:
-        registered(asset).save(OUT / f"{asset.name}.png", optimize=True)
+        registered(asset).save(output / f"{asset.name}.png", optimize=True)
 
 
-def verify() -> None:
+def verify(output_root: Path) -> None:
+    output = output_root / ASSET_RELATIVE
     failures: list[str] = []
     for asset in ASSETS:
-        path = OUT / f"{asset.name}.png"
+        path = output / f"{asset.name}.png"
         if not path.exists():
-            failures.append(f"missing {path.relative_to(ROOT)}")
+            failures.append(f"missing {path.relative_to(output_root)}")
             continue
         image = Image.open(path).convert("RGBA")
         if image.size != asset.canvas:
@@ -110,12 +115,20 @@ def verify() -> None:
         corners = (image.getpixel((0, 0))[3], image.getpixel((image.width - 1, 0))[3])
         if any(corners):
             failures.append(f"{asset.name}: nontransparent upper canvas corner {corners}")
+        committed = INSTALLED / path.name
+        if path.read_bytes() != committed.read_bytes():
+            failures.append(f"{asset.name}: bytes differ from {committed.relative_to(ROOT)}")
+    review = output_root / REVIEW_RELATIVE
+    if not review.exists():
+        failures.append(f"missing {review.relative_to(output_root)}")
+    elif review.read_bytes() != COMMITTED_REVIEW.read_bytes():
+        failures.append(f"review sheet: bytes differ from {COMMITTED_REVIEW.relative_to(ROOT)}")
     if failures:
         raise RuntimeError("\n".join(failures))
 
 
-def review() -> None:
-    REVIEW.mkdir(parents=True, exist_ok=True)
+def review(output: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True)
     scale = 4
     width, height = 896, 760
     sheet = Image.new("RGBA", (width, height), "#c8c4ba")
@@ -128,23 +141,32 @@ def review() -> None:
     for index, asset in enumerate(ASSETS):
         col, row = index % 4, index // 4
         x, y = 20 + col * 220, 20 + row * 240
-        image = Image.open(OUT / f"{asset.name}.png").convert("RGBA")
+        image = Image.open(output / f"{asset.name}.png").convert("RGBA")
         image = image.resize((image.width * scale, image.height * scale), Image.Resampling.NEAREST)
         sheet.alpha_composite(image, (x, y + 180 - image.height))
         draw.text((x, y + 188), asset.name.replace("_", " "), fill="#201d1a")
-    sheet.convert("RGB").save(REVIEW / "roof-family-native-4x.png", optimize=True)
+    sheet.convert("RGB").save(destination, optimize=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("build", "verify", "review", "all"))
+    parser.add_argument("command", choices=("build", "verify", "all"))
+    parser.add_argument("output", type=Path, help="fresh rebuild root, or existing root to verify")
     args = parser.parse_args()
+    output_root = args.output.expanduser().resolve()
+    if args.command in ("build", "all") and output_root.exists():
+        raise SystemExit(f"refusing existing output directory: {output_root}")
+    verify_inputs()
     if args.command in ("build", "all"):
-        build()
+        output = output_root / ASSET_RELATIVE
+        build(output)
+        review(output, output_root / REVIEW_RELATIVE)
+        print(f"rebuilt {len(ASSETS)} roof PNGs and review sheet in {output_root}")
     if args.command in ("verify", "all"):
-        verify()
-    if args.command in ("review", "all"):
-        review()
+        if not output_root.is_dir():
+            raise SystemExit(f"missing output directory: {output_root}")
+        verify(output_root)
+        print("verified rebuilt files byte-for-byte against committed roof outputs")
 
 
 if __name__ == "__main__":
