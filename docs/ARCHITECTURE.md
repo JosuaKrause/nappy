@@ -181,6 +181,7 @@ art/                      the authoring pictures, behind a .gdignore: the engine
   crowd/                  walkers and cars, body plus colour trim
   ui/                     the title's two mode discs, continue, restart, pause
   illustrated/svg-transfer/  native-size PNG replacements, mirroring SVG family paths
+  illustrated/roof-equipment/  authorized direct PNGs, registered by roof-foot anchor
   logo.*, icon_stroller*, social-card.png  the wordmark and the stroller on its own: the README
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them

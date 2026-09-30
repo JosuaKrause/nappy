@@ -1,6 +1,6 @@
 ---
 name: illustrated-png
-description: Generate, register and install illustrated PNGs for SVG sources under art/illustrated/. Load BEFORE adding or changing a PNG there.
+description: Generate, register and install illustrated PNGs under art/illustrated/, including SVG transfers and explicitly authorized direct-PNG families. Load BEFORE adding or changing a PNG there.
 ---
 
 # Illustrated PNG workflow
@@ -23,9 +23,10 @@ Read `docs/VISUALS.md`, M109, convert the SVG catalogue to PNG, in its queue fol
 [the integration procedure](references/texture-integration.md) before working on this presentation.
 **The presentation is chosen by the bake, not by the running game.** The default
 `tools/bake-atlases.sh` takes the registered PNG wherever one exists beside its SVG, and the
-SVG's own raster everywhere else; `tools/bake-atlases.sh --svg` bakes the SVGs alone and is a
-custom local build, never the release. There is no runtime flag for either — a build is whichever
-bake wrote its pages. Both use the same drawing and animation code.
+SVG's own raster everywhere else; `tools/bake-atlases.sh --svg` uses the SVG sources for those
+pairs and is a custom local build, never the release. Approved direct-PNG members remain in both
+modes because they have no SVG counterpart. There is no runtime flag for either — a build is
+whichever bake wrote its pages. Both use the same drawing and animation code.
 
 ## Reference authority
 
@@ -146,15 +147,16 @@ saved output. A temporary script or chat-only command is insufficient provenance
 For opaque ground tiles, extraction, boundary joints and the layered variant/damage/grass
 composition are in [the ground-tile reference](references/ground-tiles.md).
 
-Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,
-camera and gameplay behavior. A missing PNG bakes from its SVG; a mis-sized one fails the bake by
-name. Do not hide an unfinished family with unrelated generated art.
+For a transfer without an approved placement change, resolve textures only. Keep original scale,
+offsets, animation, mirroring, sorting, shadows, camera and gameplay behavior. A missing transfer
+PNG bakes from its SVG; a mis-sized transfer fails the bake by name. A direct PNG has no SVG
+fallback. Do not hide an unfinished family with unrelated generated art.
 
 Run the import/boot check in the exact checkout the player will use, then focused suites
 (`tools/test.sh` always bakes PNG). Read the first resource error; passing assertions
 do not excuse script or import errors. Read `verify` before tests or captures and use at most one
 or two purposeful gameplay captures. Report source registration, appearance and player acceptance
-separately. The player approves SVG-first style transfer as the authoring workflow. M108,
+separately. SVG-first style transfer remains the default outside the authorized exceptions. M108,
 eight-direction entity graphics, and M109, convert the SVG catalogue to PNG, specify the remaining
 catalogue work. Review each family's visual result without treating workflow approval as proof
 that every generated image is correct.

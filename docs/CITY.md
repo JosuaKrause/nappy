@@ -2272,11 +2272,13 @@ Top-down camera with a fake vertical extrusion:
   what is in the way. **The catalogue states the same rule from the other end**: an event that
   stands still is *solid at the width it is drawn*. See `docs/EVENTS.md`, "Solid things are solid".
 
-Art lives in `art/` as hand-editable SVG, which the engine ignores and the atlas bake reads —
+Editable SVG art lives in `art/`, which the engine ignores and the atlas bake reads —
 ground tiles under `art/tiles/`, building
 tiles under `art/buildings/`, the player under `art/rig/`, scenery under
 `art/props/`, event bodies under `art/events/` — with a per-act palette multiplied
 over the whole canvas. `Palette` holds only the colours the code still chooses at runtime;
 a tree's green lives in the file that draws the tree.
-Illustrated PNG counterparts and ground component pairings are documented in
-[VISUALS.md](VISUALS.md); the runtime selects them by default with SVG fallback.
+Illustrated PNG counterparts, authorized direct-PNG families and ground component pairings are
+documented in [VISUALS.md](VISUALS.md). The default bake selects registered transfers with SVG
+fallback when a paired PNG is missing; direct PNGs have their own atlas membership and no SVG
+fallback. The runtime reads the resulting atlas pages.
