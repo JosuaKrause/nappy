@@ -1,0 +1,14 @@
+== atlases ==
+atlases: up to date (png mode), nothing baked
+== import ==
+== boot ==
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[GameState] run started, seed=3561378102
+[Telemetry] /Users/krause/Library/Application Support/Godot/app_userdata/Nappy/telemetry/2026-09-29/rig-220323-seed3561378102-v0.21.1-1-g41fd54a1/run.log
+[Main] 9 atlas pages held from startup in 22 ms
+[Main] city generated in 356 ms (seed 3561378102)
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] day 1 started in 1064 ms (act 1): 357 events (23 live, 25 ahead), 234 crowd, 210s | calm: 2 courtyard, 2 quiet_square, 5 park | closed: accident v(11,9)
+
+OK

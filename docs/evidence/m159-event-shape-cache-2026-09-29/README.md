@@ -41,9 +41,10 @@ and interpolation behavior are unchanged.
 The runner first requires `./tools/check.sh` to pass in both checkouts, then asserts byte-identical
 collector scene, collector scripts and analyzer. It launches one measured process at a time in
 three alternating before/after profiled pairs followed by three alternating profiler-disabled
-pairs. Every launch uses seed 4242, day 1, the arterial spawn, a held northward route, a five-second
-warmup and a six-second active window. A 60-second external deadline applies to each launch, and
-the runner stops at the first rejected capture.
+pairs. A second series reverses the order for three more profiler-disabled pairs, running the
+cached revision before the baseline each time. Every launch uses seed 4242, day 1, the arterial
+spawn, a held northward route, a five-second warmup and a six-second active window. A 60-second
+external deadline applies to each launch, and the runner stops at the first rejected capture.
 
 ```sh
 python3 docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py \
@@ -53,15 +54,28 @@ python3 docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py \
 
 python3 docs/evidence/m159-event-shape-cache-2026-09-29/summarize-native.py \
   docs/evidence/m159-event-shape-cache-2026-09-29/native
+
+python3 docs/evidence/m159-event-shape-cache-2026-09-29/measure-native.py \
+  --baseline /private/tmp/nappy-event-shape-before-41fd54a1 \
+  --after /Users/krause/workspace/nappy-codex/.claude/worktrees/event-shape-cache \
+  --output docs/evidence/m159-event-shape-cache-2026-09-29/native-reversed \
+  --mode disabled --order after-before
+
+python3 docs/evidence/m159-event-shape-cache-2026-09-29/summarize-native.py \
+  docs/evidence/m159-event-shape-cache-2026-09-29/native-reversed
 ```
 
-Before is `41fd54a1cf5fee1a722dc7fcfb4cb30e95610b1e`; after is
-`ea7147fff56eae004bcbe751130e1c35082d3c3b`. `native/provenance.json` retains exact commands,
-collector/analyzer SHA-256 values, run order and source identities. The compressed raw scene and
-profiler data, launch logs, complete analyzer summaries and `native/comparison.json` are retained.
+Before is `41fd54a1cf5fee1a722dc7fcfb4cb30e95610b1e`. The original series' after revision is
+`ea7147fff56eae004bcbe751130e1c35082d3c3b`; the reversed series' after revision is
+`7e3b019e229de7c77c1fd2bc1cb000f43ffd9ba5`, which adds only the original series' evidence and
+runner options. Production source and the collector/analyzer are byte-identical across those two
+after revisions. Each directory's `provenance.json` retains exact commands, collector/analyzer
+SHA-256 values, run order and source identities. The compressed raw scene and profiler data,
+launch logs, complete analyzer summaries and derived `comparison.json` files are retained.
 
-All twelve captures are accepted with no rejection flags or missing profiler frames. Each retains
-200 walkers, 34 cars, a median 51–52 live events and four visible events. The route travels
+All eighteen captures are accepted with no rejection flags, and the profiled captures have no
+missing profiler frames. Each retains 200 walkers, 34 cars, a median 51–52 live events and four
+visible events. The route travels
 548.930–551.997 px north, a range of one 30 Hz walking step. The environment is Apple M2, macOS,
 Godot 4.7.2 stable official `ed1daf0bf`, OpenGL compatibility on Metal, 1280×720, main-thread
 rendering, 30 Hz physics, telemetry off, graph off and readout on.
@@ -107,7 +121,8 @@ also attributed to its caller, but it has a median zero calls in the active wind
 placement runs before this profiled window. The isolated probe below measures the classification
 operations without function profiling.
 
-With the function profiler disabled, only the observer callback interval is available:
+With the function profiler disabled, only the observer callback interval is available. The first
+three pairs run baseline before cached:
 
 | Pair | Version | Frames | Median ms | p95 ms | p99 ms | Maximum ms |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
@@ -118,9 +133,22 @@ With the function profiler disabled, only the observer callback interval is avai
 | 3 | Before | 533 | 11.017 | 13.513 | 15.769 | 17.430 |
 | 3 | After | 567 | 10.209 | 13.350 | 14.306 | 15.668 |
 
-The after median is lower by 0.538, 0.572 and 0.808 ms, or 4.9–7.3%, in the three disabled pairs.
-Tail behavior remains variable, especially pair 2's after maximum. These intervals include the
-observer callback and scheduling noise; they are a distinct metric from native main-loop markers.
+The second three pairs reverse that order and run cached before baseline:
+
+| Pair | Version | Frames | Median ms | p95 ms | p99 ms | Maximum ms |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 4 | After | 561 | 10.436 | 13.289 | 14.499 | 16.619 |
+| 4 | Before | 529 | 11.109 | 13.563 | 15.954 | 16.446 |
+| 5 | After | 562 | 10.457 | 13.184 | 14.295 | 15.116 |
+| 5 | Before | 526 | 11.148 | 14.422 | 15.948 | 16.947 |
+| 6 | After | 559 | 10.282 | 13.921 | 14.995 | 17.367 |
+| 6 | Before | 531 | 11.044 | 13.936 | 16.087 | 17.854 |
+
+The after median is lower in all six disabled pairs: by 0.538, 0.572 and 0.808 ms when baseline
+runs first, then by 0.673, 0.691 and 0.762 ms when cached runs first. Reversing order therefore
+does not reverse the median result in this batch. Tail behavior remains variable, especially the
+original pair 2's after maximum. These intervals include the observer callback and scheduling
+noise; they are a distinct metric from native main-loop markers.
 
 ## Isolated unprofiled classification comparison
 
@@ -151,7 +179,7 @@ frame or add linearly to the active-play difference.
 
 ## Verification and limits
 
-`./tools/check.sh` passes on both measured revisions. Focused `events`, `event_redraw`,
+`./tools/check.sh` passes in both checkouts before each measured series. Focused `events`, `event_redraw`,
 `event_manager`, `halo` and `danger` suites pass with 72,739 checks and zero failures; the narrowed
 `events_catalogue`, danger and probe run passes with 1,292 checks and zero failures.
 The successful isolated probe passes six checks with no engine errors. All are expected partial
