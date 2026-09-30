@@ -9,10 +9,14 @@ generation inputs.
 
 `raw/roof-family-v1.png` is the built-in image generator's 1536×1024 RGBA result, SHA-256
 `f113353b8142041106a2bca70465fa3773e11f7fd6bcf4d19ba6498cad9dfa67`. It is the first retained
-proposal because it answers the two explicit rejection points: its water tower has a closed
+concept because it answers the two explicit rejection points: its water tower has a closed
 conical roof, and its straight and elbow ducts stand on visible roof mounts. It also proposes
 credible roof variety: two HVAC forms, two skylights, a vent group, an exhaust housing, a service
 bulkhead, a mushroom fan and a pipe manifold.
+
+The player accepts these concepts and this drawing style, while asking that their perspective,
+scale and placement be adapted to the game. It is therefore concept evidence rather than runtime
+art.
 
 The generator returned true RGBA. Per-cell alpha bounds and neutral fringe checks belong to the
 registration recipe; the existence of an alpha channel alone is not treated as proof of a clean
@@ -65,3 +69,74 @@ Avoid: whimsical props, antenna clutter, satellite dishes, loose household objec
 Generation used the built-in image generator with transparent background enabled. Reproduction is
 nondeterministic; all extraction, registration and review assembly from the saved raw result is
 deterministic and recorded here with the final installed family.
+
+## Cardinal family source
+
+`raw/roof-family-cardinal-v2.png` is the built-in image generator's 1536×1024 RGBA result,
+SHA-256 `18bf57e7da22c4db095d1490a69010cdfa32519057399cab177f1a0d1995dc2e`. The accepted first
+sheet supplies concept and style only; the approved cardinal gameplay reference supplies the
+projection. The result keeps horizontal roof-grid edges screen-horizontal, keeps vertical
+supports screen-vertical, and leaves tall units at their full height above a bottom-center roof
+anchor. Its diagonal elbow is not a runtime input; the separate continuous L-run below replaces
+that unresolved cell.
+
+### Exact cardinal-family prompt
+
+```text
+Use case: style-transfer
+Asset type: game-ready source sheet for rooftop equipment in an orthographic cardinal 2D game
+Primary request: adapt the accepted rooftop-equipment concepts into the game's screen-facing cardinal projection while preserving their exact comic style, material identity, scale relationships, and installed construction.
+Input images:
+- Image 1 (roof-family-v1.png): accepted CONCEPT AND STYLE AUTHORITY. Preserve these twelve equipment designs, dark expressive ink, restrained cel shading, rust accents, material identity, closed conical water-tower roof, sturdy feet, roof curbs, and visibly supported duct construction. Do not preserve its isometric/diagonal camera.
+- Image 2 (graphics-reference-cardinal.jpeg): PROJECTION AND GAMEPLAY PRESENTATION AUTHORITY. Match this game's orthographic cardinal view: the screen x axis stays perfectly horizontal, the screen y axis stays perfectly vertical, building roof edges remain screen-horizontal and screen-vertical, and standing objects face the south/front of the screen without a diagonal vanishing point. Exclude interface, debug text, people, streets, and scene content.
+- Image 3 (graphics-reference-urban-01.jpeg): approved comic line, warm restrained color, authored contours, and deliberate small shadows only. Exclude interface, text, people, vehicles, and scene composition.
+- Image 4 (rooftop-duct-run-01.jpg): real subject reference for supports, connector collars, roof penetrations, and weight-bearing duct construction.
+- Image 5 (rooftop-hvac-units-01.jpg): real subject reference for curb-mounted HVAC, vent stacks, and ordinary service equipment.
+Scene/backdrop: true transparent background; isolated sprites only; no roof slab and no environmental scene.
+Subject: a clean 4-column by 3-row sheet with exactly twelve separated objects in the same fixed order as Image 1, left to right and top to bottom:
+1) tall closed wooden rooftop water tower with conical roof, hoops, cross-braced feet and a narrow one-cell roof footprint;
+2) large HVAC cabinet on a curb;
+3) compact condenser on visible feet;
+4) long low sloped multi-pane skylight on a curb;
+5) low pyramidal skylight on a curb;
+6) three vent stacks on one flashing plate;
+7) long straight rectangular duct on three short mounts;
+8) matching 90-degree rectangular duct corner on short mounts;
+9) industrial exhaust housing on a curb, with a clean circular opening for a separate fan rotor;
+10) roof service bulkhead with shallow cap and louver;
+11) mushroom exhaust fan on a flashing curb;
+12) compact pipe manifold on brackets.
+Projection: STRICT orthographic cardinal game projection, zero vanishing point, no isometric diagonal. All front/south faces are screen-horizontal rectangles. Vertical supports and tower legs run straight up/down on screen. Straight duct runs exactly left-to-right on screen. The elbow turns from screen-horizontal into screen-vertical and its connector widths/heights match the straight duct. Skylight ridges run screen-horizontal or screen-vertical. Only top surfaces may be visible as shallow top planes; no object is rotated 30–45 degrees around the vertical axis.
+Scale and placement: preserve realistic relative size and full silhouette. Tall equipment may extend well above its roof footprint and must NOT be squeezed into a square tile. The water tower, large HVAC, vent group, exhaust housing, bulkhead, fan, and pipe manifold keep their full height above a narrow bottom-center roof anchor. Low skylights keep a wider footprint and short height. The straight duct spans two roof cells; the corner occupies one. Leave clear transparent gutters around every complete silhouette for deterministic extraction.
+Style/medium: preserve Image 1's polished hand-drawn comic style exactly: crisp dark brown-black outlines, slightly irregular authored contours, restrained cel shading, small rust/grime accents, muted galvanized gray, charcoal, aged cream, desaturated blue-green, and dark timber.
+Lighting/mood: light from upper left; tight contact shadows directly below supports/curbs only.
+Constraints: true transparency; no labels, no numbers, no text, no watermark, no checkerboard; water tower completely closed by a conical roof; every cabinet and skylight visibly seated on curb/feet; ducts connected in construction and never floating; coherent family identity.
+Avoid: isometric camera, diagonal roof grid, diagonal yaw, perspective convergence, shrinking tall equipment into square cells, shared ground plane, disconnected ducts, unsupported metal strips, open water tank, whimsical clutter, satellite dishes, people, vegetation.
+```
+
+## Continuous cardinal duct run
+
+`raw/roof-duct-run-cardinal-v1.png` is the built-in image generator's 1536×1024 RGBA result,
+SHA-256 `781a762c5dcf250be3dd1bec296d1adec2cbda8b6e0331a9a435d0d8a513d6da`. It replaces the
+cardinal sheet's still-diagonal elbow with one continuous L-shaped assembly. The assembly occupies
+the same three-cell L footprint as the existing straight-plus-corner placement, so density and
+placement cost stay fixed while every joint becomes visually continuous.
+
+### Exact duct-run prompt
+
+```text
+Use case: style-transfer
+Asset type: one game-ready rooftop duct-run sprite for an orthographic cardinal 2D game
+Primary request: replace only the unresolved diagonal elbow concept from the accepted cardinal roof family with one physically continuous, screen-axis-aligned L-shaped duct assembly.
+Input images:
+- Image 1 (roof-family-cardinal-v2.png): FAMILY IDENTITY AND MATERIAL AUTHORITY. Match its straight duct's galvanized panels, dark ink outline, rust accents, connector collars, short square support legs, light direction, and comic shading. Do not copy its diagonal/isometric elbow.
+- Image 2 (graphics-reference-cardinal.jpeg): PROJECTION AUTHORITY. Match the game's orthographic screen axes; roof grid horizontal edges stay screen-horizontal and vertical edges stay screen-vertical. Exclude interface, debug text, characters, and scene content.
+- Image 3 (rooftop-duct-run-01.jpg): SUBJECT CONSTRUCTION AUTHORITY for installed rectangular ducts, short supports, continuous joints, and realistic roof contact.
+Scene/backdrop: true transparent background, one isolated complete duct assembly only.
+Subject: one continuous rectangular galvanized duct in an overhead/cardinal L footprint covering exactly three equal roof cells of a 2×2 grid: the entire bottom row (two cells left-to-right) plus the top-right cell. A horizontal two-cell arm runs perfectly screen-horizontal from the left edge to the right-hand turn. At the right-hand cell it turns exactly 90 degrees and continues perfectly screen-vertical upward through the top-right cell. The inner and outer elbow walls are continuous; there are no open or disconnected ends at the turn. Only the far left end and far top end show connector collars/openings. Put short visible support legs under the horizontal arm and under the vertical arm, each ending in a small square roof foot with a tight contact shadow.
+Projection: strict orthographic cardinal, zero vanishing point, no diagonal yaw, no isometric diamond. Horizontal arm edges are screen-horizontal; vertical arm edges are screen-vertical. Show only shallow top and front/south planes needed for material readability, without rotating the assembly around the vertical axis.
+Composition/framing: center the whole L with generous transparent gutter. Preserve the actual L footprint and full mounted height; do not squeeze it into one square. No grid, no roof slab.
+Style/medium: exactly Image 1's polished hand-drawn comic style, crisp dark brown-black outlines, slightly irregular authored contours, restrained cel shading, muted galvanized gray, small rust and grime marks.
+Constraints: true transparency; no labels, text, numbers, watermark, checkerboard, or shared ground plane; all joints continuous; support feet contact the roof; no floating parts.
+Avoid: diagonal elbow, isometric projection, perspective convergence, separate pieces, mismatched connector sizes, unsupported duct strip, open gap at the turn, rooftop scene, people, clutter.
+```
