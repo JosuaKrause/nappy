@@ -7,10 +7,12 @@ Follows M108, eight-direction entity graphics. Use the approved SVG-first workfl
 gameplay references define the comic drawing style; each SVG defines the subject and functional
 placement. PLAYTEST-64 requires transferring the idea, with redrawn forms and expressive ink
 and shadow shapes, rather than copying the primitive drawing and adding surface texture.
-**Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
-a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets
-and author their source SVG before generating a replacement; never backfill an SVG from a PNG
-and call that SVG-first creation.
+**SVG-first is the default authoring requirement.** The player explicitly permits direct PNG
+creation for roof furniture, broken water mains and fallen trees
+([tawny-yak](../../playtests/2026-09-30-tawny-yak.md)); those families need no base SVG.
+Every other PNG asset needs a corresponding SVG authored and reviewed first. Audit unapproved
+PNG-only assets and author their source SVG before generating a replacement; never backfill an
+SVG from a PNG and call that SVG-first creation.
 The approval and request are recorded in PLAYTEST-51 and `DECISIONS.md` under Eight-direction
 style transfer.
 
