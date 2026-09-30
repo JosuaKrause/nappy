@@ -4,23 +4,25 @@
     "argv": [
       "docs/evidence/m159-danger-prediction-reuse-2026-09-29/measure-native.py",
       "--baseline",
-      "/private/tmp/nappy-prediction-audit",
+      "/private/tmp/nappy-prediction-fresh.n7e05q/before",
       "--after",
-      "/Users/krause/workspace/nappy-codex/.claude/worktrees/danger-prediction-reuse",
+      "/private/tmp/nappy-prediction-fresh.n7e05q/after",
       "--output",
-      "/private/tmp/m159-prediction-native"
+      "/private/tmp/nappy-prediction-fresh.n7e05q/comparison",
+      "--godot",
+      "/Applications/Godot.app/Contents/MacOS/Godot"
     ]
   },
   "godot": "/Applications/Godot.app/Contents/MacOS/Godot",
   "check_commands": {
     "before": {
-      "cwd": "/private/tmp/nappy-prediction-audit",
+      "cwd": "/private/tmp/nappy-prediction-fresh.n7e05q/before",
       "argv": [
         "./tools/check.sh"
       ]
     },
     "after": {
-      "cwd": "/Users/krause/workspace/nappy-codex/.claude/worktrees/danger-prediction-reuse",
+      "cwd": "/private/tmp/nappy-prediction-fresh.n7e05q/after",
       "argv": [
         "./tools/check.sh"
       ]
@@ -32,6 +34,16 @@
     "entity_frame_profile_observer.gd": "27edf350152f7a8aa0c005ffa6185d04d3605d11eeb15c670ae5969b03cf0a93"
   },
   "analyzer_sha256": "e58491bf568848d507940d8f3a9a25216021bb29adee782435fdb81bf0838391",
+  "source_sha256": {
+    "before": {
+      "src/events/event_instance.gd": "bbd30e0f17647f94cd87d30f598a4e7d30b95a01f4db9f280f948c55cb3ad7ec",
+      "src/crowd/crowd_agent.gd": "e7561297c6a588075ddcc88e818cdf9aa3e0df23948b3308d3faa2edc6407fbb"
+    },
+    "after": {
+      "src/events/event_instance.gd": "7f62a85868c73b9c6781ec810211a73fcc58be75c0385dd643540d524488c4de",
+      "src/crowd/crowd_agent.gd": "40155dd4716538ac5481945d8c3433d70ee79d15151dbf13a73038c5c47fb448"
+    }
+  },
   "warmup_seconds": 5,
   "active_seconds": 6,
   "mode": "both",
@@ -99,7 +111,7 @@
     }
   ],
   "revisions": {
-    "before": "dea05ce0bcceecd34f8213e9b25b49d8a48e8b31",
-    "after": "e7306d1d3d79cf743f3a967bd4b37e3e55a70d3c"
+    "before": "a53032535c89ef7b583b231454804b23c0241451",
+    "after": "4e6488e0c60ec342c8ade85b90464d5c6ef1913b"
   }
 }
