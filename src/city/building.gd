@@ -235,12 +235,21 @@ const _INDUSTRIAL_KINDS: Array = [_Furniture.HVAC_A, _Furniture.HVAC_B, _Furnitu
 const _CIVIC_KINDS: Array = [_Furniture.SKYLIGHT_A, _Furniture.SKYLIGHT_B,
 	_Furniture.SERVICE_BULKHEAD]
 const _RESIDENTIAL_KINDS: Array = [_Furniture.WATER_TANK, _Furniture.WATER_TANK,
-	_Furniture.WATER_TANK, _Furniture.VENT, _Furniture.SERVICE_BULKHEAD]
+	_Furniture.WATER_TANK, _Furniture.VENT, _Furniture.SERVICE_BULKHEAD,
+	_Furniture.EXHAUST_FAN, _Furniture.PIPE_MANIFOLD]
 const _KINDS_BY_DISTRICT := {
 	GameEnums.BlockPurpose.INDUSTRIAL: _INDUSTRIAL_KINDS,
 	GameEnums.BlockPurpose.CIVIC: _CIVIC_KINDS,
 	GameEnums.BlockPurpose.RESIDENTIAL: _RESIDENTIAL_KINDS,
 	GameEnums.BlockPurpose.COMMERCIAL: _RESIDENTIAL_KINDS,
+}
+## A one-cell fallback per district. Each named PNG is at most 32px wide at its roof foot, so a
+## narrow roof or a shuffled last cell keeps the ordinary-unit count without overlapping a base.
+const _COMPACT_KINDS_BY_DISTRICT := {
+	GameEnums.BlockPurpose.INDUSTRIAL: [_Furniture.HVAC_B, _Furniture.EXHAUST_FAN],
+	GameEnums.BlockPurpose.CIVIC: [_Furniture.SKYLIGHT_B],
+	GameEnums.BlockPurpose.RESIDENTIAL: [_Furniture.EXHAUST_FAN],
+	GameEnums.BlockPurpose.COMMERCIAL: [_Furniture.EXHAUST_FAN],
 }
 
 ## Share of a district's interior cells that carry a unit at all — the count the milestone asked
@@ -1279,6 +1288,7 @@ func _build_roof_furniture() -> void:
 	var roof_rows := roof_tiles()
 	var cols := columns()
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, [])
+	var compact_kinds: Array = _COMPACT_KINDS_BY_DISTRICT.get(district, [])
 	var density: float = _FURNITURE_DENSITY.get(district, 0.0)
 	if kinds.is_empty() or density <= 0.0:
 		return
@@ -1302,22 +1312,30 @@ func _build_roof_furniture() -> void:
 		if used.has(cell):
 			continue
 		var kind: int = kinds[rng.randi() % kinds.size()]
-		# Every approved single unit is 36–56px wide at its roof foot. Reserve the adjoining
-		# 32px cell and center the foot across both; this preserves the full-height art without
-		# letting a base spill out either side of its reserved footprint.
+		var span := _furniture_span(kind)
 		var east := cell + Vector2i.RIGHT
-		if not interior_set.has(east) or used.has(east):
-			continue
+		if span == 2 and (not interior_set.has(east) or used.has(east)):
+			# Falling back changes only which ordinary unit fills this already-counted roll. It
+			# prevents a broad base from silently dropping the unit on a one-column or fragmented row.
+			kind = compact_kinds[rng.randi() % compact_kinds.size()]
+			span = 1
 		used[cell] = true
-		used[east] = true
-		_roof_furniture.append({"cell": cell, "kind": kind, "span": 2,
-			"cells": [cell, east]})
+		var cells: Array[Vector2i] = [cell]
+		if span == 2:
+			used[east] = true
+			cells.append(east)
+		_roof_furniture.append({"cell": cell, "kind": kind, "span": span, "cells": cells})
 		if kind == _Furniture.VENT:
 			_has_vent = true
 		placed += 1
 	# Farthest (highest row) first, so the roof layers paint back to front without
 	# re-sorting on every redraw.
 	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
+
+## Native bases up to one tile stand on one cell. Wider equipment is centered across two reserved
+## cells; height is deliberately unrelated to this footprint and may extend several tiles north.
+func _furniture_span(kind: int) -> int:
+	return 1 if kind in [_Furniture.HVAC_B, _Furniture.SKYLIGHT_B, _Furniture.EXHAUST_FAN] else 2
 
 ## The cells a roof unit may stand on, in the fixed order `_build_roof_furniture()` shuffles:
 ## row by row from row 1, each row west to east over the interior columns, keeping a cell only

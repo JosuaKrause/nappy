@@ -4,6 +4,7 @@ extends RefCounted
 func run(t) -> void:
 	_test_roof_objects_use_entities_and_have_no_body(t)
 	_test_reserved_cells_hold_native_base_widths(t)
+	_test_narrow_and_fragmented_roofs_keep_their_unit_count(t)
 	_test_industrial_duct_is_one_three_cell_unit(t)
 	_test_rebuild_releases_external_roof_objects(t)
 
@@ -38,7 +39,10 @@ func _test_roof_objects_use_entities_and_have_no_body(t) -> void:
 				+ Vector2(Building.TILE * span * 0.5, Building.TILE)
 		t.check(object.position.is_equal_approx(expected), "roof art uses the furniture foot anchor")
 		t.check(object.get_parent() == entities, "roof art is parented under Entities")
-		t.check(object.get_child_count() == 0, "roof art has no collision child")
+		for child in object.get_children():
+			t.check(not child is CollisionObject2D and not child is CollisionShape2D,
+					"roof art has no collision child")
+		t.check(not object.is_processing(), "stationary roof housing has no per-frame callback")
 	building.free()
 	fixture["root"].free()
 
@@ -68,14 +72,50 @@ func _test_reserved_cells_hold_native_base_widths(t) -> void:
 			t.check(not used.has(cell), "roof equipment reservations never share a cell")
 			used[cell] = true
 		var width := AtlasLibrary.native_size(building._furniture_texture(entry["kind"])).x
-		var horizontal_cells := 2
-		t.check(entry["span"] == horizontal_cells,
-				"a roof object's foot is centered in its two reserved horizontal cells")
+		var horizontal_cells: int = entry["span"]
+		t.check(cells.size() >= horizontal_cells,
+				"a roof object's foot is centered in every reserved horizontal cell")
 		t.check(width <= horizontal_cells * Building.TILE,
 				"a roof object's %dpx base fits its reserved %dpx horizontal footprint"
 				% [width, horizontal_cells * Building.TILE])
 	building.free()
 	fixture["root"].free()
+
+func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
+	for district in [GameEnums.BlockPurpose.INDUSTRIAL, GameEnums.BlockPurpose.CIVIC,
+			GameEnums.BlockPurpose.RESIDENTIAL, GameEnums.BlockPurpose.COMMERCIAL]:
+		var fixture := _new_fixture(t, district)
+		var building: Building = fixture["building"]
+		building.footprint = Vector2(3 * Building.TILE, 5 * Building.TILE)
+		var wanted := clampi(roundi(building.roof_interior_cells().size()
+				* Building._FURNITURE_DENSITY[district]), 1, building.roof_interior_cells().size())
+		t.check(building._roof_furniture.size() == wanted,
+				"a three-column roof keeps its %d ordinary-unit roll in district %d"
+				% [wanted, district])
+		for entry: Dictionary in building._roof_furniture:
+			t.check(entry["span"] == 1, "a one-interior-column roof uses a compact one-cell unit")
+		building.free()
+		fixture["root"].free()
+
+	var wider := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL)
+	var building: Building = wider["building"]
+	building.footprint = Vector2(5 * Building.TILE, 7 * Building.TILE)
+	var witnessed_east_fallback := false
+	for variant in 24:
+		building.variant = variant
+		var wanted := clampi(roundi(building.roof_interior_cells().size()
+				* Building._FURNITURE_DENSITY[building.district]), 1,
+				building.roof_interior_cells().size())
+		t.check(building._roof_furniture.size() == wanted,
+				"shuffled wider roof variant %d realizes its full ordinary-unit count" % variant)
+		for entry: Dictionary in building._roof_furniture:
+			if entry["span"] == 1 \
+					and (entry["cell"] as Vector2i).x == building.columns() - 2:
+				witnessed_east_fallback = true
+	t.check(witnessed_east_fallback,
+			"a wide roll at an east edge falls back to a compact unit instead of disappearing")
+	building.free()
+	wider["root"].free()
 
 func _test_rebuild_releases_external_roof_objects(t) -> void:
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL)

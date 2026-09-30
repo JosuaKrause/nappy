@@ -2060,9 +2060,14 @@ Top-down camera with a fake vertical extrusion:
   in the city's y-sorted `Entities` layer, anchored at its bottom-center roof foot. Full-height art
   can therefore rise beyond its footprint and into the walkable row north of a lot while sorting
   against the player and upright scenery at the same depth. The building lot remains the only
-  collision body. Each 36–56px-wide base is centered in two reserved horizontal roof cells so
-  adjacent installed bases cannot interpenetrate; the furniture density remains unchanged, and
-  the reserved cells are visual placement facts rather than new obstacles.
+  collision body. A base wider than 32px is centered in two reserved horizontal roof cells so
+  adjacent installed bases cannot interpenetrate; a compact condenser, pyramidal skylight or
+  exhaust fan fits one cell. When a broad roll has no adjoining cell, its district's compact kind
+  fills the same counted slot, so a narrow or shuffled roof keeps its ordinary-unit count. The
+  furniture density remains unchanged, and reserved cells are visual placement facts rather than
+  new obstacles. The industrial vent's
+  housing remains stationary while a separate retained child alternates only its small rotor at
+  the existing 1.4-second cadence; rebuilding or reentering the tree preserves its current phase.
 - **A front is district and block purpose, read the same way a roof's furniture is.** A
   multi-story building's ground floor never shows a window on a column she can stand in front of:
   it is shops or blank wall — the wall texture and its own plinth — with the entrance, the civic

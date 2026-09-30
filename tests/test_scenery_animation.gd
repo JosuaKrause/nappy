@@ -13,6 +13,10 @@ func _test_roof_rotors(t) -> void:
 	building.height = 64
 	building.district = GameEnums.BlockPurpose.INDUSTRIAL
 	t.add_child(building)
+	for variant in 200:
+		if not building._rotor_layers.is_empty():
+			break
+		building.variant = variant + 1
 	t.check(not building._rotor_layers.is_empty(), "the roof fixture actually has moving vents")
 	var furniture := building._roof_furniture.duplicate(true)
 	var collision: Shape2D = building._collision.shape

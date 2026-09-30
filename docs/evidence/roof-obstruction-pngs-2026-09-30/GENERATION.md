@@ -167,11 +167,15 @@ fringe, crops fixed non-overlapping source cells, scales each complete silhouett
 native canvas, and registers every object bottom-center at its roof foot. Its review command lays
 the native files out at nearest-neighbor 4× only for inspection; it does not modify runtime art.
 
-The installed canvases are `water_tank` 40×72, `hvac_large` 48×40, `condenser` 40×40,
-`skylight_long` 56×24, `skylight_pyramid` 44×28, `vent_stack` 40×48, `duct_run` 64×64,
-`industrial_vent` 44×44, `service_bulkhead` 48×52, `exhaust_fan` 40×36 and `pipe_manifold`
+The installed canvases are `water_tank` 40×72, `hvac_large` 48×40, `condenser` 32×40,
+`skylight_long` 56×24, `skylight_pyramid` 32×28, `vent_stack` 40×48, `duct_run` 64×64,
+`industrial_vent` 44×44, `service_bulkhead` 48×52, `exhaust_fan` 32×36 and `pipe_manifold`
 52×40. Every non-empty alpha bound reaches the canvas bottom and leaves both upper corners fully
 transparent; the script fails if either registration fact changes.
+
+The installed files were registered with Python 3.14.7 and Pillow 12.3.0. Pillow performs the
+LANCZOS downsampling and optimized PNG write; these are the exact versions that produced the
+committed bytes.
 
 The [in-engine context frame](../m109-roof-context-2026-09-30/README.md) places all eleven runtime
 regions on the game's roof, facade, sidewalk and street at native scale.
