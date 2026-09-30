@@ -61,19 +61,24 @@ Across 530 frames the route travels 551.997 px north, with 200 walkers, 34 cars 
 67.13% of eligible event loops and 18.63% of crowd loops. Each loop contains twenty samples.
 These are actual baseline repetitions, not profiler call counts assumed to have equal inputs.
 
-To reproduce the demand audit, create a disposable checkout at
-`7c1fbbd97729aec58cd4b5a6efaa8e329f4abcd6`, then run from this PR checkout:
+To reproduce the demand audit, start from a clone with this PR fetched and set `GODOT` to the
+installed executable. All generated artifacts go to a new scratch directory:
 
 ```sh
-python3 tests/probes/m159_prediction_audit.py /path/to/disposable-baseline
-cd /path/to/disposable-baseline
-./tools/check.sh
-ENTITY_PROFILE_OUTPUT=/private/tmp/new-prediction-demand \
+runner_root=$(git rev-parse --show-toplevel)
+scratch_output=$(mktemp -d)
+git fetch origin refs/pull/439/head
+git worktree add --detach "$scratch_output/baseline" 7c1fbbd97729aec58cd4b5a6efaa8e329f4abcd6
+python3 "$runner_root/tests/probes/m159_prediction_audit.py" "$scratch_output/baseline"
+(cd "$scratch_output/baseline" && ./tools/check.sh)
+ENTITY_PROFILE_OUTPUT="$scratch_output/demand" \
 ENTITY_PROFILE_RENDERED=1 ENTITY_PROFILE_DISABLED=1 \
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
+"$GODOT" --headless --path "$scratch_output/baseline" \
   --script tests/probes/entity_frame_profile.gd
-python3 tests/probes/entity_frame_profile_analyze.py /private/tmp/new-prediction-demand \
-  --profiler-disabled --output /private/tmp/new-prediction-demand-summary.json
+python3 "$runner_root/tests/probes/entity_frame_profile_analyze.py" "$scratch_output/demand" \
+  --profiler-disabled --output "$scratch_output/demand-summary.json"
+python3 "$runner_root/tests/probes/m159_prediction_audit.py" "$scratch_output/baseline" \
+  --summarize "$scratch_output/demand" --output "$scratch_output/demand-compact.json"
 ```
 
 The instrumented scene JSON's `prediction_audit` maps process frame IDs to the four named counts.
@@ -95,6 +100,10 @@ python3 docs/evidence/m159-danger-prediction-reuse-2026-09-29/measure-native.py 
 python3 docs/evidence/m159-danger-prediction-reuse-2026-09-29/summarize-native.py \
   /private/tmp/new-prediction-comparison
 ```
+
+The runner resolves Godot from `--godot`, then `GODOT`, then `godot` on PATH, then an executable
+macOS application default. The same resolved binary runs import/boot and capture. Checkout paths
+are resolved before launching tools, so relative paths work too.
 
 The runner records exact revisions, collector hashes, commands and actual run order, and stops at
 the first rejected capture. Native main-loop wall time and observer callback intervals are separate

@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -16,10 +17,23 @@ def main():
     parser.add_argument("--baseline", required=True, type=Path)
     parser.add_argument("--after", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--godot", help="Godot executable; overrides GODOT and discovery")
     parser.add_argument("--mode", choices=["both", "profiled", "disabled"], default="both")
     parser.add_argument("--order", choices=["before-after", "after-before", "alternating"],
                         default="alternating")
     args = parser.parse_args()
+    requested = args.godot or os.environ.get("GODOT")
+    godot = shutil.which(requested) if requested else (
+        shutil.which("godot") or shutil.which("/Applications/Godot.app/Contents/MacOS/Godot"))
+    if not godot:
+        parser.error("Godot executable unavailable; provide --godot or GODOT")
+    godot = str(Path(godot).resolve())
+    args.baseline = args.baseline.resolve()
+    args.after = args.after.resolve()
+    args.output = args.output.resolve()
+    for root in [args.baseline, args.after]:
+        if not (root / "tools/check.sh").is_file():
+            parser.error(f"Not a project checkout: {root}")
     args.output.mkdir(exist_ok=False)
 
     check_commands = {}
@@ -27,10 +41,10 @@ def main():
         command = ["./tools/check.sh"]
         check_commands[name] = {"cwd": str(root.resolve()), "argv": command}
         with (args.output / f"{name}-check.log").open("w") as log:
-            subprocess.run(command, cwd=root, stdout=log, stderr=subprocess.STDOUT,
+            subprocess.run(command, cwd=root, env=dict(os.environ, GODOT=godot),
+                           stdout=log, stderr=subprocess.STDOUT,
                            check=True, timeout=180)
 
-    godot = "/Applications/Godot.app/Contents/MacOS/Godot"
     collector_files = ["entity_frame_profile.gd", "entity_frame_profile.tscn",
                        "entity_frame_profile_observer.gd"]
     hashes = {}
@@ -56,6 +70,7 @@ def main():
                 runs.append({"side": side, "mode": mode, "pair": pair})
     provenance = {
         "command": {"cwd": str(Path.cwd()), "argv": sys.argv},
+        "godot": godot,
         "check_commands": check_commands,
         "collectors_sha256": hashes,
         "analyzer_sha256": hashlib.sha256(analyzer.read_bytes()).hexdigest(),
@@ -101,4 +116,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -5,7 +5,10 @@ Run the existing entity_frame_profile collector afterward; its scene output carr
 """
 
 import argparse
+import hashlib
+import json
 from pathlib import Path
+import subprocess
 
 
 EVENT_KEY = """[global_position, player_position, player_velocity, velocity,
@@ -70,8 +73,39 @@ func _audit_prediction(key: Array) -> void:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("checkout", type=Path)
+    parser.add_argument("--summarize", type=Path, help="Capture prefix to compact instead of instrumenting")
+    parser.add_argument("--output", type=Path, help="New compact JSON file, with --summarize")
     args = parser.parse_args()
-    instrument(args.checkout)
+    if bool(args.summarize) != bool(args.output):
+        parser.error("--summarize and --output are required together")
+    if not args.summarize:
+        instrument(args.checkout)
+        return
+    scene = json.loads(Path(str(args.summarize) + "-scene.json").read_text())
+    summary = json.loads(Path(str(args.summarize) + "-summary.json").read_text())
+    frames = {str(row[0]) for row in scene["rows"] if 5000000 <= row[4] < 11000000}
+    result = {key: summary[key] for key in [
+        "accepted", "rejections", "frames", "population", "player_path_pixels",
+        "northward_net_pixels", "north_input_held", "draws_per_process_frame",
+        "moving_cars_per_frame", "ticks_per_frame", "compiler_warnings", "errors"]}
+    result["environment"] = {key: value for key, value in summary["environment"].items()
+                             if key != "prediction_audit"}
+    result["baseline"] = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=args.checkout, text=True).strip()
+    result["columns"] = scene["prediction_audit"]["columns"]
+    result["counts"] = {
+        kind: [sum(value[index] for frame, value in scene["prediction_audit"][kind].items()
+                   if frame in frames) for index in range(4)] for kind in ["event", "crowd"]}
+    result["instrumented_sha256"] = {
+        relative: hashlib.sha256((args.checkout / relative).read_bytes()).hexdigest()
+        for relative in ["src/events/event_instance.gd", "src/crowd/crowd_agent.gd",
+                         "tests/probes/entity_frame_profile_observer.gd"]}
+    result["sampling_dt_seconds"] = 0.25
+    result["samples_per_integral"] = 20
+    result["timing_use"] = "None: instrumentation measures demand only and skips no sampling."
+    with args.output.open("x") as output:
+        output.write(json.dumps(result, indent=2) + "\n")
+    assert json.loads(args.output.read_text()) == result
 
 
 if __name__ == "__main__":

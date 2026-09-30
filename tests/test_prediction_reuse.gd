@@ -30,9 +30,20 @@ func run(t) -> void:
 	_test_crowd_mutations(t)
 	_test_live_net_and_skipped_work(t)
 	_test_consumer_order(t)
+	_test_halo_and_removal(t)
 
 func _same_bits(a: float, b: float) -> bool:
 	return var_to_bytes(a) == var_to_bytes(b)
+
+func _copy_definition(original: EventDef) -> EventDef:
+	var copy := original.duplicate(true) as EventDef
+	# RefCounted geometry is not a stored Resource property, so duplicate() omits it.
+	if original.shape:
+		copy.shape = GroundShape.new(original.shape.half_length, original.shape.radius)
+		copy.shape.kind = original.shape.kind
+		copy.shape.half_extents = original.shape.half_extents
+	copy.solid_parts = original.solid_parts
+	return copy
 
 func _event_parity(t, source: CountedEvent, at: Vector2, label: String) -> void:
 	var expected := Reference.event_gross(source, at)
@@ -52,10 +63,13 @@ func _crowd_parity(t, source: CountedCrowd, at: Vector2, label: String) -> void:
 func _test_catalogue_and_mutations(t) -> void:
 	var sampled := 0
 	var positive := 0
+	var flock_queries := 0
 	for definition: EventDef in EventCatalogue.all():
 		var source := CountedEvent.new()
-		source.setup(definition.duplicate(true), Vector2.ZERO,
+		source.setup(_copy_definition(definition), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]))
+		if source.def.flock_size > 0:
+			source._build_the_flock()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id + " before player")
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
 			source.age = phase
@@ -71,6 +85,13 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " source movement")
 		source._heading = Vector2.DOWN
 		_event_parity(t, source, at, definition.id + " source heading")
+		source._noticed_at = source.age
+		_event_parity(t, source, at, definition.id + " noticed")
+		source._lunged = true
+		_event_parity(t, source, at, definition.id + " lunged")
+		source.is_parked = true
+		_event_parity(t, source, at, definition.id + " parked")
+		source.is_parked = false
 		source.player_velocity = Vector2(43.0, 71.0)
 		_event_parity(t, source, at, definition.id + " player velocity")
 		source.player_sensitivity = 0.35
@@ -78,8 +99,12 @@ func _test_catalogue_and_mutations(t) -> void:
 		source.silenced = true
 		_event_parity(t, source, at, definition.id + " silence")
 		source.silenced = false
+		if source.def.detain_seconds > 0.0:
+			source._chat_seconds_left = 1.0
+			_event_parity(t, source, at, definition.id + " chatting")
 		source.baby_awake = false
 		_event_parity(t, source, at, definition.id + " sleep")
+		source._chat_seconds_left = 0.0
 		source.outranked_by_a_stronger_barrier = true
 		_event_parity(t, source, at, definition.id + " outranked")
 		source.outranked_by_a_stronger_barrier = false
@@ -97,7 +122,12 @@ func _test_catalogue_and_mutations(t) -> void:
 		source._spread_vertical = not source._spread_vertical
 		source._stationary_vehicle_side = not source._stationary_vehicle_side
 		_event_parity(t, source, at, definition.id + " body axis")
+		source.def.shape = null
+		_event_parity(t, source, at, definition.id + " no shape")
+		source.def = _copy_definition(definition)
+		_event_parity(t, source, at, definition.id + " definition replacement")
 		if not source._flock.is_empty():
+			flock_queries += 1
 			var runs := source.sampling_runs
 			source._flock[0].at += Vector2(17.0, 4.0)
 			source._flock[0].heading = Vector2.LEFT
@@ -112,6 +142,7 @@ func _test_catalogue_and_mutations(t) -> void:
 		sampled += source.sampling_runs
 		source.free()
 	t.check(sampled > 100 and positive > 20, "catalogue sweep samples live positive projections")
+	t.check(flock_queries > 0, "flock bypass assertions exercise constructed birds")
 
 func _test_crowd_mutations(t) -> void:
 	for kind: int in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
@@ -132,6 +163,20 @@ func _test_crowd_mutations(t) -> void:
 		_crowd_parity(t, source, at, "crowd external displacement")
 		source._vertical = not source._vertical
 		_crowd_parity(t, source, at, "crowd heading")
+		source._yield_left = 0.0
+		source._door_state = CrowdAgent.DoorState.INSPECTION
+		_crowd_parity(t, source, at, "crowd door hold")
+		source._door_state = CrowdAgent.DoorState.WALKING
+		_crowd_parity(t, source, at, "crowd door release")
+		var turn := CarTurn.new()
+		turn.radius = 16.0
+		turn.sweep = PI
+		source._turn = turn
+		source._turn_run_up = 0.0
+		for distance: float in [0.0, 3.0, 9.0, 15.0]:
+			turn.travelled = distance
+			_crowd_parity(t, source, at, "crowd changing turn tangent")
+		source._turn = null
 		source.player_velocity = Vector2(0.0, 92.0)
 		_crowd_parity(t, source, at, "crowd player velocity")
 		source.player_sensitivity = 0.22
@@ -143,7 +188,7 @@ func _test_crowd_mutations(t) -> void:
 
 func _test_live_net_and_skipped_work(t) -> void:
 	var event := CountedEvent.new()
-	event.setup(EventCatalogue.by_id("cafe_tables").duplicate(true), Vector2.ZERO)
+	event.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
 	var crowd := CountedCrowd.new()
 	crowd._speed = 0.0
 	var at := Vector2(-170.0, 0.0)
@@ -170,7 +215,7 @@ func _test_consumer_order(t) -> void:
 	var car := CountedCrowd.new()
 	var reference_car := ReferenceCrowd.new()
 	for source: EventInstance in [cached, reference]:
-		source.setup(EventCatalogue.by_id("cyclist").duplicate(true), Vector2.ZERO,
+		source.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]))
 	for source: CrowdAgent in [car, reference_car]:
 		source.kind = CrowdAgent.Kind.CAR
@@ -202,3 +247,53 @@ func _test_consumer_order(t) -> void:
 		t.check(car.will_be_lethal(at) == reference_car.will_be_lethal(at), "car lethal prediction parity")
 	for source in [cached, reference, car, reference_car]:
 		source.free()
+
+func _test_halo_and_removal(t) -> void:
+	var managers: Array[EventManager] = []
+	var halos: Array[ExcitementHalo] = []
+	var sources: Array[EventInstance] = []
+	var player := CharacterBody2D.new()
+	t.add_child(player)
+	player.position = Vector2(-130.0, 0.0)
+	player.velocity = Vector2(92.0, 0.0)
+	var baby := Baby.new()
+	for cached: bool in [true, false]:
+		var manager := EventManager.new()
+		t.add_child(manager)
+		managers.append(manager)
+		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
+		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
+		manager.add_child(source)
+		source.set_process(false)
+		manager._instances.append(source)
+		source.accumulate_landed(20.0)
+		sources.append(source)
+		var halo := ExcitementHalo.new()
+		t.add_child(halo)
+		halo.setup(manager, null, player, baby)
+		halos.append(halo)
+	for tick in 3:
+		for halo: ExcitementHalo in halos:
+			halo._process(0.1)
+		t.check(_same_bits(sources[0].player_expected_total_gross,
+				sources[1].player_expected_total_gross), "real halo publishes identical totals")
+		t.check(sources[0]._halo._target_colour == sources[1]._halo._target_colour,
+				"real halo selection/color agrees with baseline source")
+		t.check(sources[0]._caret_strength() == sources[1]._caret_strength(),
+				"post-halo caret agrees with baseline source")
+		if tick == 0:
+			player.velocity = Vector2(43.0, 12.0)
+		if tick == 1:
+			for i in managers.size():
+				managers[i].retire(sources[i])
+	# Removal changes the candidate set immediately; no source-global cache outlives it.
+	for manager: EventManager in managers:
+		manager._instances.clear()
+	for halo: ExcitementHalo in halos:
+		halo._process(0.1)
+		t.check(halo._candidates.is_empty(), "removed source absent from real halo pass")
+		halo.free()
+	for manager: EventManager in managers:
+		manager.free()
+	player.free()
+	baby.free()
