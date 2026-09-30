@@ -9,8 +9,10 @@ The SVG set below supplies the editable source graphics, under `art/`, which the
 nothing here is loaded by the game, and every path in this document is an authoring path. What
 the game draws is the baked atlas page a picture is on, under the region name its path gives it —
 `art/tiles/road.svg` is the region `tiles/road`. Registered PNG replacements under
-`art/illustrated/svg-transfer/` are what the default bake takes where one exists; every PNG asset
-needs an SVG first.
+`art/illustrated/svg-transfer/` are what the default bake takes where one exists. SVG-first is
+the default authoring rule; the player permits roof equipment, fallen trees and broken water
+mains to be authored directly as PNGs. Direct PNGs have their own atlas membership and retained
+generation and registration sources.
 
 ## Shared drawing contract
 

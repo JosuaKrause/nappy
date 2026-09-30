@@ -2247,7 +2247,9 @@ Top-down camera with a fake vertical extrusion:
   own lot, so **nothing can ever legitimately stand behind a building** — and two things that can
   never be on opposite sides of each other have no business being sorted against each other.
 
-  **The power station's two stacks are the one exception, so they are not drawn by the building.**
+  **Roof equipment and the power station's two stacks use entity depth order.** Roof equipment
+  stands at its roof foot as `Building.RoofObject`, so tall art can reach beyond its supporting
+  tile and hide entities north of that foot. The stacks follow the same anchoring rule.
   Each is 192px tall from a foot on the hall's roof and rises well past the lot's north edge into
   the street beyond, where she can stand behind it. *(PLAYTEST-143: "the chimneys of the power
   plant render behind the player. they should be in front.")* So each stands in `Entities` at its
