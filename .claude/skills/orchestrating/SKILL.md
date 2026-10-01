@@ -316,7 +316,10 @@ of interruption it was.")*
 3. **Brief pause: nudge each agent with `SendMessage`**: the limit is over, what its worktree
    and branch now hold if that moved, and continue. The cache is warm, so the agent's own
    context is the cheapest brief there is. **This changes no ownership** — the agent named on the
-   brief is still the one working, so append nothing.
+   brief is still the one working, so append nothing. **In Codex, check the live agent status:**
+   `send_message` only queues a message and does not start an idle or interrupted agent's turn.
+   Resume a warm idle or interrupted agent with `followup_task`; use `send_message` for a running
+   agent. A queued reply is not evidence that work resumed.
 4. **Long pause: replace each agent** in its own worktree, as "An agent that died mid-task is
    replaced in its own worktree" says, with a brief updated to what step 1 found, and its
    ownership updated the moment the replacement's id is known. Never resume a cold one.

@@ -1,5 +1,5 @@
 class_name CityEdge
-extends Node2D
+extends ScenerySprite
 ## Where the main road leaves the map: a tunnel at the north end of the spine, a bridge at its
 ## south end, and the east-west spine simply carrying on.
 ##
@@ -86,6 +86,8 @@ func occludes() -> bool:
 	return kind == Kind.TUNNEL
 
 func _draw() -> void:
+	if not scenery_resident:
+		return
 	match kind:
 		Kind.TUNNEL:
 			_blit(TUNNEL, Vector2(-0.5, -1.0))

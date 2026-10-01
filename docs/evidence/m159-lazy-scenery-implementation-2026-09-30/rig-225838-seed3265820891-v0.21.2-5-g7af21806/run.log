@@ -1,0 +1,57 @@
+nappy rig log  2026-09-30T22:58:38  version v0.21.2-5-g7af21806
+   0.0  texture  atlas page 'ui' loaded in the startup: 2.1 ms, 262 x 429
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.3 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 3.1 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 2.1 ms, 392 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.7 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.8 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.8 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 12.0 ms, 810 x 982
+   0.0  texture  atlas page 'father' loaded in the startup: 1.6 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.4 ms
+
+day 12 act 4  run seed 3265820891  city seed 3265820891  length 180.0s  invincible
+   0.0  arc      block (8,3) quiet_square -> requisitioned (scheduled)
+   0.0  arc      block (1,1) park -> requisitioned (scheduled)
+   0.0  arc      block (4,9) park -> requisitioned (scheduled)
+   0.0  arc      block (2,4) quiet_square -> requisitioned (scheduled)
+   0.0  arc      block (2,10) commercial -> boarded_up (scheduled)
+   0.0  arc      block (6,10) commercial -> boarded_up (scheduled)
+   0.0  arc      block (5,1) commercial -> boarded_up (scheduled)
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.3 ms
+   0.0  plan     regions: 37 boundary, 27 wall, 10 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor's window is boarded at column 3, row 3 (the third floor)
+   0.0  contact  step 13 on offer at (81,12)
+   0.0  roll     chalk mark guarded (far end): robber 184px away
+   0.0  plan     closed: collapsed h(3,5), collapsed v(6,6), cordoned off h(8,8), cordoned off v(9,0)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 park
+   0.0  plan     events: abduction x4, alley_mouse x4, alley_robbery x4, barricade x28, burnt_out_car x48, burst_water_main x11, busker x7, cafe_tables x42, car_accident x15, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x10, checkpoint_hut x20, collapsed_frontage x13, construction x43, cyclist x10, delivery_van x42, dog_walker x20, homeless_yeller x9, ice_cream_van x5, leaf_blower x14, loose_dog x15, loudspeaker x6, market_stall x45, moving_van x39, pigeon_flock x5, playground x2, police_patrol x12, poster_crew x7, protest x7, reversing_lorry x7, roadblock x87, scaffolding x13, skip x14
+   0.0  start    doorstep (158,158), facing 180°
+   0.0  near     loudspeaker (telegraph) at (159,159), 45px, exc 0, in 0.0/s (crowd 0.0, events 0.8), sleep 0
+   0.0  near     delivery_van (telegraph) at (150,158), 145px, exc 0, in 0.0/s (crowd 0.0, events 0.5), sleep 0
+   0.0  frame    fps 43, worst frame 270.5ms, draws 207, objects 1471, primitives 3381, process 16.44ms, physics 2.11ms
+   0.0  near     delivery_van (telegraph) at (150,155), 147px, exc 0, in 0.0/s (crowd 0.0, events 0.3), sleep 0
+   0.0  near     delivery_van (telegraph) at (150,158), 77px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.0  crowd    walked into somebody at (152,158) | exc 0, in 0.0/s (crowd 22.2, events 0.0), sleep 0
+   0.0  frame    fps 152, worst frame 17.3ms, draws 260, objects 1612, primitives 3687, process 17.28ms, physics 1.85ms
+   0.0  frame    fps 137, worst frame 16.6ms, draws 259, objects 1589, primitives 3641, process 16.53ms, physics 1.43ms
+   0.0  frame    fps 147, worst frame 16.1ms, draws 259, objects 1589, primitives 3641, process 14.96ms, physics 1.39ms
+   0.0  frame    fps 142, worst frame 15.1ms, draws 255, objects 1583, primitives 3581, process 15.11ms, physics 1.37ms
+   0.0  frame    fps 140, worst frame 15.0ms, draws 263, objects 1596, primitives 3706, process 14.99ms, physics 1.39ms
+   0.0  frame    fps 141, worst frame 11.8ms, draws 265, objects 1599, primitives 3736, process 11.88ms, physics 1.45ms
+   0.0  frame    fps 147, worst frame 13.0ms, draws 260, objects 1626, primitives 3718, process 11.76ms, physics 1.43ms
+   0.0  frame    fps 133, worst frame 15.2ms, draws 263, objects 1597, primitives 3711, process 15.17ms, physics 1.44ms
+   0.0  frame    fps 139, worst frame 13.6ms, draws 269, objects 1608, primitives 3805, process 14.72ms, physics 1.29ms
+   0.0  near     delivery_van at (150,158), 41px, exc 0, in 0.0/s (crowd 3.1, events 0.0), sleep 0
+   0.0  shot     burst started: asked for an animation burst at (151,159) | exc 0, sleep 0 | playing | asked/burst-15322897-001
+   0.0  frame    fps 142, worst frame 55.4ms, draws 270, objects 1645, primitives 3882, process 15.11ms, physics 1.31ms
+   0.0  frame    fps 83, worst frame 56.2ms, draws 262, objects 1609, primitives 3761, process 56.19ms, physics 1.32ms
+   0.0  turn     doubled back 90°
+   0.0  near     loudspeaker at (159,159), 200px, exc 0, in 0.0/s (crowd 3.1, events 2.3), sleep 0
+   0.0  frame    fps 59, worst frame 57.6ms, draws 206, objects 1561, primitives 3519, process 57.61ms, physics 1.43ms
+   0.0  near     loudspeaker at (159,159), 110px, exc 0, in 0.0/s (crowd 0.0, events 15.7), sleep 0
+   0.0  near     loudspeaker at (159,159), 59px, exc 0, in 0.0/s (crowd 2.2, events 17.9), sleep 0
+   0.0  near     loudspeaker at (159,159), 32px, exc 0, in 0.0/s (crowd 0.0, events 17.8), sleep 0
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  frame    fps 49, worst frame 58.4ms, draws 201, objects 1494, primitives 3361, process 58.37ms, physics 1.47ms
+   0.0  frame    fps 113, worst frame 24.9ms, draws 200, objects 1528, primitives 3402, process 54.26ms, physics 1.33ms

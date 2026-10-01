@@ -27,7 +27,7 @@ Some visible graphics are code rather than image files:
 
 | Drawing | Owner and current use |
 |---|---|
-| Ground selection | `src/city/ground_tiles.gd` maps city tile types and their exposed edges to TileSet source IDs; `src/city/city.gd` paints them into the `Ground` `TileMapLayer`. |
+| Ground selection | `src/city/ground_tiles.gd` maps city tile types and their exposed edges to TileSet source IDs; `src/city/scenery_ground.gd` paints nearby cells into freeable `TileMapLayer` children of the `Ground` chunk container. |
 | Building assembly | `src/city/building.gd` repeats wall, roof, edge and window textures into each generated footprint and tints the wall and roof fields. |
 | Danger carets | `Sprites.draw_caret()` supplies the shared filled chevron used above live events and crowd traffic. `src/ui/danger_edge.gd` separately draws screen-edge chevrons, a circular icon backing and an event's own silhouette. |
 | Event composites | `src/events/event_instance.gd` arranges repeated barriers, café furniture, crowds, muzzle flashes, leads, shadows and state-dependent poses around each event's ground point. |
@@ -322,6 +322,12 @@ released alongside `street_kit`) for its separate repeated drawing. The prepared
 a PNG but remains unbound.
 The [generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) links source
 pairings, exact prompts, raw outputs and repeated-tile comparisons.
+
+Map-specific scenery is prepared around the camera and released beyond a wider retention
+boundary. Ground chunks share the loading-time composed sheet; unloading cells does not unload
+shared atlas pages. Water chunks share one pausable city clock. Returning buildings reconstruct
+their fixed seeded artwork and current day, condition, posters and power state, with moving
+roof detail kept separate from stationary surfaces.
 
 The default bake takes the same-size PNG at
 `art/illustrated/svg-transfer/<family>/<name>.png` wherever one exists beside its SVG; a PNG

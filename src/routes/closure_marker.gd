@@ -1,5 +1,5 @@
 class_name ClosureMarker
-extends Node2D
+extends ScenerySprite
 ## One piece of a road closure: a panel of barrier, the sign on it, or the thing lying in
 ## the middle of the street.
 ##
@@ -72,6 +72,8 @@ func _exit_tree() -> void:
 	AtlasLibrary.release(&"street_kit")
 
 func _draw() -> void:
+	if not scenery_resident:
+		return
 	match piece:
 		Piece.CAUSE:
 			_draw_cause()

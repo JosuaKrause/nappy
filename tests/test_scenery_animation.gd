@@ -115,7 +115,16 @@ func _test_water_ownership(t) -> void:
 	var city: City = packed.instantiate()
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
-	var water := city._south_water
+	# Inspect the complete shore explicitly; an ordinary home boot retains none of this water.
+	city.scenery.update(Rect2(Vector2(0, city.map.world_size().y),
+			Vector2(city.map.world_size().x, City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
+	var surfaces: Array[SceneryWater] = []
+	for chunk: TileMapLayer in city._ground.chunks.values():
+		for child in chunk.get_children():
+			if child is SceneryWater:
+				surfaces.append(child)
+	t.check(not surfaces.is_empty(), "the resident shoreline supplies water surfaces")
+	var water := surfaces[0]
 	t.check(not city._ground.tile_set.has_source(GroundTiles.WATER),
 			"the static ground sheet contains no unused water source")
 	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
@@ -127,11 +136,14 @@ func _test_water_ownership(t) -> void:
 			if x < bridge_left or x >= bridge_right:
 				expected[Vector2i(x, y)] = true
 	var actual: Dictionary[Vector2i, bool] = {}
-	for tile in water.cells:
-		actual[tile] = true
-		t.check(city._ground.get_cell_source_id(tile) == -1,
-				"animated water has no duplicate pixel owner in the static TileMap")
-	t.check(actual == expected and actual.size() == water.cells.size(),
+	var count := 0
+	for surface in surfaces:
+		for tile in surface.cells:
+			actual[tile] = true
+			count += 1
+			t.check(city._ground.get_cell_source_id(tile) == -1,
+					"animated water has no duplicate pixel owner in the static TileMap")
+	t.check(actual == expected and actual.size() == count,
 			"water fills the complete south band beyond the bulkhead, excluding the bridge")
 	var cells := water.cells.duplicate()
 	water._process(0.25)
@@ -152,14 +164,18 @@ func _test_water_ownership(t) -> void:
 			> float(water._ripples.get_shader_parameter("elapsed")),
 			"two water surfaces keep independent animation clocks")
 	other.free()
-	city._ground.remove_child(water)
+	var owner := water.get_parent()
+	owner.remove_child(water)
 	t.check(water._texture == null and water.material == null,
 			"detaching water releases its atlas region and shader material")
-	city._ground.add_child(water)
+	owner.add_child(water)
 	t.check(water._texture != null and water.elapsed > 0.0
 			and water._ripples.shader == SceneryWater.RIPPLE_SHADER,
 			"reentry rebinds the region and shared shader without resetting its clock")
 	city._paint_ground()
 	t.check(not is_instance_valid(water), "repaint releases the prior water and material")
-	t.check(city._south_water.cells == cells, "repaint preserves the shoreline and bridge gap")
+	city.scenery.update(Rect2(Vector2(0, city.map.world_size().y),
+			Vector2(city.map.world_size().x, City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
+	for tile: Vector2i in expected:
+		t.check(city._ground.has_water(tile), "repaint preserves the shoreline and bridge gap")
 	city.free()

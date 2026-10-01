@@ -24,3 +24,7 @@ and ellipse work outside a bound that includes the current jolt and the maximum 
 **The raw traces** come from `--frame-trace`, which supplies bounded raw callback intervals and
 atlas CPU spans; its semantics and limits are in
 [TELEMETRY.md](../../TELEMETRY.md#raw-frame-traces).
+
+The [scenery residency record](../../decisions/2026-09-19-M159-4.md) carries loading,
+unloading and reconstruction contracts and their acceptance evidence. The remaining scenery
+audit preserves stationary pixels while separating partial motion.

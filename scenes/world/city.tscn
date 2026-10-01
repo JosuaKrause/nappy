@@ -1,14 +1,16 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/city/city.gd" id="1_city"]
 [ext_resource type="TileSet" path="res://assets/ground_tileset.tres" id="2_ground"]
 [ext_resource type="Script" path="res://src/city/city_decals.gd" id="3_decals"]
 [ext_resource type="Script" path="res://src/city/building_shadows.gd" id="4_building_shadows"]
+[ext_resource type="Script" path="res://src/city/scenery_ground.gd" id="5_scenery_ground"]
 
 [node name="City" type="Node2D"]
 script = ExtResource("1_city")
 
-[node name="Ground" type="TileMapLayer" parent="."]
+[node name="Ground" type="Node2D" parent="."]
+script = ExtResource("5_scenery_ground")
 tile_set = ExtResource("2_ground")
 
 [node name="Decals" type="Node2D" parent="."]

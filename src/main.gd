@@ -900,6 +900,7 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 		if restarted:
 			_plan_the_finale_city()
 		_player.reset_at(_finale_start_position(), Vector2.DOWN)
+		_prepare_city_scenery()
 		_city.events.stream_around(_player.global_position)
 	# The baby starts every attempt asleep with sleepiness full — *"the player holding the sleeping
 	# baby (sleep bar is full)"* — which is also what makes a restart playable at all: the meter
@@ -1776,6 +1777,7 @@ func _start_day() -> void:
 	_city.crowd.set_gates(_city.region_plan().gates)
 	_city.set_act(GameState.current_act())
 	_player.reset_at(start_at)
+	_prepare_city_scenery()
 	_baby.reset()
 	_day.start(DevRig.day_length(GameState.day))
 
@@ -1827,6 +1829,20 @@ func _start_day() -> void:
 func _write_dawn_for_a_resumed_run() -> void:
 	if not _resume.is_empty():
 		_save_now(false)
+
+## Lifecycle relocations prepare the destination before play/brief reveal, including dev spawns
+## and the escape's camera handoff from the interior.
+func _prepare_city_scenery() -> void:
+	if not _city or not _city.scenery or not _player:
+		return
+	var camera: Camera2D = _player.get_node("Camera2D")
+	camera.force_update_scroll()
+	var size := get_viewport_rect().size / camera.zoom
+	var angle := camera.global_rotation
+	var world_size := Vector2(absf(cos(angle)) * size.x + absf(sin(angle)) * size.y,
+			absf(sin(angle)) * size.x + absf(cos(angle)) * size.y)
+	_city.scenery.update(Rect2(camera.get_screen_center_position() - world_size * 0.5,
+			world_size), true)
 
 ## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
 ## now that a day can only be won on calm ground.
