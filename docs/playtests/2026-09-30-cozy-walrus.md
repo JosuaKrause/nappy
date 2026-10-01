@@ -33,3 +33,21 @@ change the engine template.
 During the same investigation the player explicitly authorizes branch work:
 
 > you can commit and push and create prs
+
+## The same PR includes the smaller engine build
+
+After the assistant confirms that Godot can compile unused modules out of a custom export
+template, the player asks:
+
+> what about turning off unused godot modules? does that go into 443 as well?
+
+> that's also only necessary for the build, really
+
+The assistant agrees to include this in the same download-reduction PR, retaining the full
+development editor and making the Web export template smaller through a reproducible build
+profile. The work includes compressed-size measurement and exported-game compatibility checks.
+
+> mark PRs a ready if you're done with them so I can review as well
+
+The assistant marks the completed scenery investigation ready and keeps this expanded loading
+PR draft until its custom engine build is verified.
