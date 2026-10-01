@@ -111,6 +111,30 @@ assert_exit "compare.mjs help" zero node ./tools/web-template/compare.mjs --help
 assert_exit "compare.mjs unknown" nonzero node ./tools/web-template/compare.mjs --not-a-flag
 assert_exit "compare.mjs missing value" nonzero node ./tools/web-template/compare.mjs --export
 
+if [[ "$(node -p 'Number(process.versions.node.split(".")[0])')" -ge 22 ]]; then
+    browser_fixture="$work_dir/browser-startup"
+    mkdir -p "$browser_fixture"
+    printf '#!/bin/sh\nexit 0\n' > "$browser_fixture/not-executable"
+    for browser_case in missing not-executable; do
+        checks=$(( checks + 1 ))
+        TMPDIR="$browser_fixture" node tools/web-template/browser-check.mjs \
+            --export "$browser_fixture" --output "$browser_fixture/$browser_case-result" \
+            --browser "$browser_fixture/$browser_case" > "$browser_fixture/$browser_case.log" 2>&1
+        browser_status=$?
+        browser_result="$browser_fixture/$browser_case-result/result.json"
+        if [[ "$browser_status" -eq 0 ]] || ! grep -q '"success": false' "$browser_result" \
+                || ! grep -Eq 'ENOENT|EACCES' "$browser_result" \
+                || [[ -n "$(find "$browser_fixture" -maxdepth 1 -name 'nappy-web-check-*' -print)" ]]; then
+            echo "FAIL browser startup $browser_case did not report failure and clean its profile" >&2
+            failures=$(( failures + 1 ))
+        else
+            echo "ok   browser startup $browser_case reports failure and cleans its profile"
+        fi
+    done
+else
+    echo "skip browser startup lifecycle checks (requires Node 22; web-template CI runs them)"
+fi
+
 # A cached template must belong to these exact build inputs and its bytes must still match.
 # The fake archive is deliberate: this checks invalidation without compiling an engine.
 template_repo="$work_dir/template-repo"

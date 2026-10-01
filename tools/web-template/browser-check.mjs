@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { access, mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, join, extname, sep } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -25,7 +26,8 @@ assert(Number(process.versions.node.split('.')[0]) >= 22, 'Node 22 or newer requ
 const root = resolve(options.export);
 const output = resolve(options.output);
 await mkdir(output);
-const profile = await mkdtemp(join(tmpdir(), 'nappy-web-check-'));
+let profile;
+let browser;
 const logs = [];
 const errors = [];
 const results = [];
@@ -49,16 +51,8 @@ const server = createServer(async (req, res) => {
     res.end(body);
   } catch { res.writeHead(404); res.end(); }
 });
-await new Promise(r => server.listen(0, '127.0.0.1', r));
-const url = `http://127.0.0.1:${server.address().port}`;
-const browser = spawn(options.browser, [
-  '--headless=new', '--no-sandbox', '--disable-dev-shm-usage', '--enable-unsafe-swiftshader',
-  '--use-angle=swiftshader', '--disable-background-timer-throttling',
-  '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
-  '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', 'about:blank',
-], { stdio: ['ignore', 'ignore', 'pipe'] });
+let url;
 let browserLog = '';
-browser.stderr.on('data', data => { browserLog += data; });
 let socket;
 let sequence = 0;
 const pending = new Map();
@@ -105,13 +99,36 @@ const load = async (name, query, expected) => {
   results.push({ name, expected, boot: logs.slice(start).filter(line => line.includes('[Main]')) });
 };
 let success = false;
+let failure = null;
 try {
+  await access(options.browser, constants.X_OK);
+  profile = await mkdtemp(join(tmpdir(), 'nappy-web-check-'));
+  await new Promise((r, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', r); });
+  url = `http://127.0.0.1:${server.address().port}`;
+  await new Promise((r, reject) => {
+    browser = spawn(options.browser, [
+      '--headless=new', '--no-sandbox', '--disable-dev-shm-usage', '--enable-unsafe-swiftshader',
+      '--use-angle=swiftshader', '--disable-background-timer-throttling',
+      '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
+      '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', 'about:blank',
+    ], { stdio: ['ignore', 'ignore', 'pipe'] });
+    browser.once('error', reject);
+    browser.once('spawn', r);
+    browser.stderr.on('data', data => { browserLog += data; });
+  });
   const port = await until(async () => {
+    assert(browser.exitCode === null && browser.signalCode === null, 'Chrome exited before CDP startup');
     try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; }
   }, 'Chrome CDP port', 20000);
-  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json();
+  const response = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT', signal: AbortSignal.timeout(10000) });
+  assert(response.ok, 'Chrome CDP target request failed');
+  const target = await response.json();
   socket = new WebSocket(target.webSocketDebuggerUrl);
-  await new Promise((r, reject) => { socket.onopen = r; socket.onerror = reject; });
+  await new Promise((r, reject) => {
+    const timer = setTimeout(() => reject(new Error('Chrome CDP socket startup timed out')), 10000);
+    socket.onopen = () => { clearTimeout(timer); r(); };
+    socket.onerror = () => { clearTimeout(timer); reject(new Error('Chrome CDP socket startup failed')); };
+  });
   socket.onmessage = event => {
     const message = JSON.parse(event.data);
     if (message.id) {
@@ -169,14 +186,29 @@ try {
   await load('escape', '?debug=1&seed=4242&escape=1', 'atlas pages held from escape');
   assert.deepEqual(errors, [], 'Engine/browser errors');
   success = true;
+} catch (error) {
+  failure = error.stack || String(error);
+  throw error;
 } finally {
-  await writeFile(join(output, 'result.json'), JSON.stringify({ success, results, errors }, null, 2) + '\n');
-  await writeFile(join(output, 'console.log'), logs.join('\n'));
-  await writeFile(join(output, 'browser.log'), browserLog);
-  socket?.close();
-  browser.kill('SIGKILL');
+  // Stop processes even if the output filesystem refuses an artifact write.
+  try { socket?.close(); } catch {}
+  browser?.kill('SIGKILL');
   for (const waiter of pending.values()) clearTimeout(waiter.timer);
   server.closeAllConnections(); server.close();
-  await pause(300);
-  await rm(profile, { recursive: true, force: true });
+  try {
+    if (profile) {
+      await pause(300);
+      await rm(profile, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+    }
+  } finally {
+    const writes = await Promise.allSettled([
+      writeFile(join(output, 'result.json'), JSON.stringify({ success, results, errors, failure }, null, 2) + '\n'),
+      writeFile(join(output, 'console.log'), logs.join('\n')),
+      writeFile(join(output, 'browser.log'), browserLog),
+    ]);
+    for (const result of writes) if (result.status === 'rejected') {
+      process.stderr.write(`Cannot write browser evidence: ${result.reason}\n`);
+      process.exitCode = 1;
+    }
+  }
 }

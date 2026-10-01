@@ -37,6 +37,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check command-line and browser startup failures
+        run: ./tools/test_cli_help.sh
       - name: Identify build inputs
         id: template
         run: echo "key=$(./tools/build-web-template.sh --key)" >> "$GITHUB_OUTPUT"

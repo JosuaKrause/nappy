@@ -1,5 +1,9 @@
 # Web package test exclusion
 
+This file records the package-filter experiment. The subsequent
+[custom engine comparison](engine-comparison.md) records the smaller Web runtime and passing
+stock/custom browser checks, including saves and a real day transition.
+
 ## Question
 
 How much of the exported web resource package consists of repository tests, and can those files be excluded without breaking the exported game?

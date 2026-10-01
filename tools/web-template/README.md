@@ -62,7 +62,8 @@ playing through all days. Inspect the images for rendering and baked version met
 The `web-template` workflow performs the same custom build/export/browser check without any
 publication permission. It runs for changes to the build inputs, and supports manual dispatch;
 ordinary unrelated PRs do not download the compiler. Deployment remains a version-tag operation
-gated by the tagged commit's required game test check. It uses the same verified template cache.
+gated by the tagged commit's required game test check. It uses the same verified template cache
+and runs the browser check on the exported game before publishing the Pages artifact.
 
 The engine comparison under `docs/evidence/web-package-size-2026-09-30/` records source/toolchain
 provenance, local gzip sizes and browser results. Local gzip bytes are not observed CDN transfer

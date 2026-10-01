@@ -146,6 +146,23 @@ jobs:
       - name: Export the Web build
         run: GODOT="$HOME/godot/godot-bin" RELEASE_TAG="$GITHUB_REF_NAME" ./tools/export-web.sh
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify the exported runtime before publishing
+        run: |
+          node tools/web-template/browser-check.mjs --export build/web \
+            --output "$RUNNER_TEMP/browser-result" --browser /usr/bin/google-chrome
+
+      - name: Keep browser verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-web-browser
+          path: ${{ runner.temp }}/browser-result
+          if-no-files-found: warn
+
       # og:image/twitter:image in export_presets.cfg's html/head_include point at
       # social-card.png beside index.html, and this is what puts it there — art/social-card.png,
       # a copy of the art/logo.png wordmark already flattened onto an opaque background
