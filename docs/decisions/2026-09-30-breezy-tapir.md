@@ -59,6 +59,25 @@ identified during independent review. No save-system or gameplay redesign is inc
 Local validation includes import/boot, the existing pause and telemetry suites, CLI regression
 checks under Node 22, lint, artifact audits, template-receipt checks, evidence arithmetic/hashes
 and both browser controls. Local game testing is partial; the full suite belongs to CI. Compact
-evidence is seven files totaling 88,191 bytes; expanded browser/compiler artifacts stay in scratch
+evidence is seven files totaling 88,520 bytes; expanded browser/compiler artifacts stay in scratch
 and CI artifacts. Both requested implementation items leave the queue together. No release or
 merge is performed by this work.
+
+The player's review adds a future-feature contract: each removed group names the feature that
+needs it again, and the runtime guide explains restoring module lines, matching feature switches
+and dependencies before rebuilding, exporting, validating the actual feature and reporting the
+new compressed size. The Godot and sound-effects skills, profile header, root README and M100
+audio item point to that procedure. These guards address the gap where stock development builds
+can accept a feature that the trimmed release cannot run. WAV support remains available;
+streamed Ogg/Vorbis or MP3 music requires restoring its decoders. Browser HTTPS still uses the
+browser's TLS backend; restoring other networking capabilities follows their actual dependencies.
+
+The review also scopes the first experiment's inconclusive browser result and unchanged-engine
+statement to that experiment, and restricts Pages/OIDC write permissions to the publishing job.
+The compiler/build job has read permissions, while the existing tag/test/browser gates and
+release job's separate permission remain intact. Static workflow/permission checks, links,
+skill validation, unchanged active profile options and lint pass. Measurements remain unchanged.
+The profile's explanatory comment changes the input cache key, so the old measured receipt is
+historical and a fresh build may run. The prior queue CI failure is resolved by explaining the
+branch-local filing and completion in the PR description; the M100 warning also changes its
+existing queue item without closing the still-pending audio work.
