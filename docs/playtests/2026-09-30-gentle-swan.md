@@ -83,3 +83,14 @@ game's daily generated route choices, and will measure those generated choices w
 The game's generated viable routes are the primary coverage baseline for this investigation.
 Deliberate off-path travel is a stress case rather than the expected scenery workload. Coverage
 remains a model of offered routes, not a record of human trajectories.
+
+## Unloading keeps a wider boundary than loading
+
+The assistant reports that actual route coverage supports nearby preparation and that peak
+memory savings depend on how far behind the player scenery remains loaded. The player asks:
+
+> for unloading the radius should be bigger than for loading? that way you don't end up loading/unloading constantly when walking back and forth over the loading edge
+
+The assistant confirms a smaller load boundary and a larger unload boundary. Already-loaded
+scenery stays loaded between them, avoiding repeated recreation near the load boundary. The
+exact gap remains to be measured against camera movement and preparation time.

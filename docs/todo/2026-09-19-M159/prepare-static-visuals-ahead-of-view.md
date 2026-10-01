@@ -28,9 +28,15 @@ measured initial viewport. **Proposed, not asked for:** cover the home-centered 
 plus an off-screen margin. The exact boundary remains a design question; do not prepare the whole
 city or accept visible holes in its place.
 
+The player explicitly requires the unloading radius to exceed the loading radius so walking
+back and forth across the load boundary does not repeatedly create and destroy scenery. Between
+the two boundaries, preserve residency: loaded scenery stays loaded and absent scenery stays
+absent until it enters the load boundary. Choose the distances from measured preparation cost
+and camera movement; their ordering is required, while exact values remain unchosen.
+
 **Proposed, not yet a chosen implementation:** make map-specific ground cells resident in freeable
-chunks, prepare inside the view plus an off-screen margin under a measured work budget, and release
-beyond a larger retention margin. Clearing a single growing TileMapLayer does not demonstrate
+chunks and prepare inside the view plus an off-screen margin under a measured work budget.
+Apply the player's wider unloading boundary to those chunks. Clearing a single growing TileMapLayer does not demonstrate
 memory release. Cross-day composition reuse is not a prerequisite. Keep shared baked pages and
 runtime ground composition at permitted loading moments; cell eviction does not eliminate the
 shared sheet. Preserve Playtest 108's runtime composition choice and M147, every picture loaded
@@ -54,6 +60,8 @@ investigation's illustrative margin is not a shipping value.
 
 Compare startup/day-start latency, complete-frame median/tails/max, memory and preparation work
 on identical actual routes. Include fast approach, leaving/returning across the retention
-boundary, overnight changes outside residency and camera jumps. Use rendered evidence for seams
+boundary, repeated reversals across the load boundary while staying inside the unload boundary,
+overnight changes outside residency and camera jumps. Verify the reversal case causes no repeated
+preparation/eviction. Use rendered evidence for seams
 and pop-in; distinguish native CPU findings from phone/browser/GPU confirmation. Accept only a
 measured benefit without stale/missing scenery or walking hitches.
