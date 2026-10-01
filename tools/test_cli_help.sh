@@ -427,6 +427,73 @@ check_that() {
     fi
 }
 
+# ------------------------------------------------ audit-pck.sh reads the artefact, not the tree ---
+# A minimal format-4 pack keeps this regression independent of Godot and export templates while
+# exercising the same directory and file bytes a real export exposes. The dirty fixture carries
+# each shape the Web export must lose: a compiled test remap under tests/, a probe resource and a
+# global class cache outside tests/ that still points back into that tree. The clean companion is
+# what stops a parser failure or an unconditional rejection from satisfying the case vacuously.
+clean_pack="$work_dir/audit-clean.pck"
+dirty_pack="$work_dir/audit-tests.pck"
+python3 - "$clean_pack" "$dirty_pack" <<'PY'
+import hashlib
+import struct
+import sys
+
+
+def write_pack(path, entries):
+    data = bytearray()
+    records = []
+    for name, contents in entries:
+        offset = len(data)
+        data.extend(contents)
+        encoded = name.encode("utf-8") + b"\0"
+        encoded += b"\0" * (-len(encoded) % 4)
+        records.append((encoded, offset, len(contents), hashlib.md5(contents).digest()))
+
+    base = struct.calcsize("<6I2Q")
+    directory = base + len(data)
+    blob = bytearray(struct.pack("<6I2Q", 0x43504447, 4, 4, 7, 2, 0, base, directory))
+    blob.extend(data)
+    blob.extend(struct.pack("<I", len(records)))
+    for name, offset, size, digest in records:
+        blob.extend(struct.pack("<I", len(name)))
+        blob.extend(name)
+        blob.extend(struct.pack("<QQ", offset, size))
+        blob.extend(digest)
+        blob.extend(struct.pack("<I", 0))
+    with open(path, "wb") as handle:
+        handle.write(blob)
+
+
+production = [
+    ("src/main.gd.remap", b'path="res://src/main.gdc"\n'),
+    (".godot/global_script_class_cache.cfg", b'path="res://src/main.gd"\n'),
+]
+write_pack(sys.argv[1], production)
+write_pack(
+    sys.argv[2],
+    production[:1]
+    + [
+        ("tests/test_export.gd.remap", b'path="res://tests/test_export.gdc"\n'),
+        ("tests/probes/export_probe.tscn", b'[gd_scene format=3]\n'),
+        (
+            ".godot/global_script_class_cache.cfg",
+            b'path="res://src/main.gd"\npath="res://tests/probes/export_probe.gd"\n',
+        ),
+    ],
+)
+PY
+
+out="$(./tools/audit-pck.sh --fatal "$clean_pack" 2>&1)"
+status=$?
+check_that "audit-pck.sh accepts a pack with only production paths and class-cache entries" \
+    '[[ $status -eq 0 && "$out" == *"0 test paths, 0 other files referring to tests"* ]]'
+out="$(./tools/audit-pck.sh --fatal "$dirty_pack" 2>&1)"
+status=$?
+check_that "audit-pck.sh rejects test remaps, probes and a class-cache reference in the pack" \
+    '[[ $status -ne 0 && "$out" == *"2 test paths, 1 other files referring to tests"* && "$out" == *"test path: tests/probes/export_probe.tscn"* && "$out" == *"test reference: .godot/global_script_class_cache.cfg"* ]]'
+
 made="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-27 todo "Stars for nerves" 2>/dev/null)"
 check_that "new-name.sh takes the one pair not already used, in any folder, whatever its date" \
     '[[ "$made" == 2026-09-27-busy-otter ]]'
