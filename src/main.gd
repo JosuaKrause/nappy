@@ -1830,8 +1830,6 @@ func _write_dawn_for_a_resumed_run() -> void:
 	if not _resume.is_empty():
 		_save_now(false)
 
-## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
-## now that a day can only be won on calm ground.
 ## Lifecycle relocations prepare the destination before play/brief reveal, including dev spawns
 ## and the escape's camera handoff from the interior.
 func _prepare_city_scenery() -> void:
@@ -1846,6 +1844,8 @@ func _prepare_city_scenery() -> void:
 	_city.scenery.update(Rect2(camera.get_screen_center_position() - world_size * 0.5,
 			world_size), true)
 
+## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
+## now that a day can only be won on calm ground.
 func _calm_summary() -> String:
 	var counts := {}
 	for block in _city.map.calm_blocks:
