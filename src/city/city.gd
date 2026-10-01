@@ -101,7 +101,7 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
-@onready var _ground: TileMapLayer = $Ground
+@onready var _ground: SceneryGround = $Ground
 @onready var _decals: CityDecals = $Decals
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
@@ -122,7 +122,8 @@ var _day := 1
 ## The scene's TileSet is the immutable source for every daily repaint. Reusing the Ground layer's
 ## current TileSet would feed a prior day's composed grass atlas back into the compositor.
 var _authored_ground_tile_set: TileSet
-var _south_water: SceneryWater
+var scenery: SceneryResidency
+var _ground_corridor: Corridor
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
 ## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
@@ -172,6 +173,11 @@ var _home_door: Sprite2D
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
 	map = city_map
+	scenery = SceneryResidency.new()
+	scenery.city = self
+	add_child(scenery)
+	_decals.streamed = true
+	_building_shadows.streamed = true
 	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
 	# loads synchronously on `acquire()`, so every draw below already has a region to ask for —
 	# see `AtlasLibrary`.
@@ -211,6 +217,7 @@ func build(city_map: CityMap) -> void:
 	_daylight.name = "Daylight"
 	add_child(_daylight)
 	set_daylight(1.0)
+	scenery.update(scenery.camera_view(), true)
 	queue_redraw()
 
 ## Hands the decoration atlas back. `build()`'s `acquire()` is the city's one reference on the
@@ -454,6 +461,7 @@ func _spawn_street_trees() -> void:
 		tree.position = planted_tree.position
 		tree.variant = hash(planted_tree.position)
 		_entities.add_child(tree)
+		scenery.register(tree)
 		_street_trees.append(tree)
 		_street_tree_pits[planted_tree.tile] = tree
 
@@ -533,6 +541,7 @@ func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 		_entities.add_child(exit)
 	else:
 		_buildings_layer.add_child(exit)
+	scenery.register(exit)
 
 ## A signal head on every arm of every junction the spine passes through.
 ##
@@ -582,6 +591,7 @@ func _spawn_buildings() -> void:
 	for rect in map.building_rects:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
+		building.scenery_resident = false
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
@@ -621,6 +631,7 @@ func _spawn_buildings() -> void:
 		# boundary stacking the way the eye expects.
 		_buildings_layer.add_child(building)
 		_buildings.append(building)
+		scenery.register(building)
 		# The one part of a building drawn among the entities — see the note at the top of this file.
 		var feet := building.stack_feet()
 		for i in feet.size():
@@ -628,6 +639,7 @@ func _spawn_buildings() -> void:
 			stack.name = "StationStack%d" % i
 			stack.position = building.position + feet[i]
 			_entities.add_child(stack)
+			scenery.register(stack)
 
 ## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
 ## `rect`'s own front row — one row below its south edge, the row a passer-by would stand on — is
@@ -858,6 +870,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
 	# off, and after `_dress_blocks()`, which is what says a front has burnt.
 	_posters.start_day(day, _tree)
+	scenery.update(scenery.camera_view(), true)
 
 ## The same city, dressed for the escape: everything `start_day()` does except grow a day's
 ## corridor and close streets off it.
@@ -885,6 +898,7 @@ func start_finale(state: CityState, day: int) -> void:
 	_decals.set_placed(Litter.placed(map, day))
 	_dress_blocks(state)
 	_posters.show_only()
+	scenery.update(scenery.camera_view(), true)
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
@@ -946,20 +960,8 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ## Called from `_close_streets`, right after `_tree` is grown and before the region plan or the
 ## closures, so a tree a closure has not yet touched is what the tint answers for.
 func _tint_the_route_kerbs() -> void:
-	var corridor := Corridor.of(_tree)
-	var tile_set := _ground.tile_set
-	for y in map.size.y:
-		for x in map.size.x:
-			var tile := Vector2i(x, y)
-			var source := GroundTiles.source_for(map, tile, _day)
-			if not (source in GroundTiles.ROUTE_KERB_SOURCES):
-				continue
-			if corridor.depth(tile) != 0:
-				continue
-			var twin := GroundTiles.route_twin_of(source)
-			if twin < 0 or not tile_set.has_source(twin):
-				continue
-			_ground.set_cell(tile, twin, _ground.get_cell_atlas_coords(tile))
+	_ground_corridor = Corridor.of(_tree)
+	_ground.repaint()
 
 func closures() -> Array[RoadClosure]:
 	return _closures
@@ -1085,6 +1087,8 @@ func _add_closure_node(node: Node, y_sorted: bool) -> void:
 		_entities.add_child(node)
 	else:
 		add_child(node)
+	if node is ScenerySprite:
+		scenery.register(node)
 
 func _dress_blocks(state: CityState) -> void:
 	for prop in _props:
@@ -1125,7 +1129,7 @@ func close_ground(tiles: Array[Vector2i]) -> void:
 			for dx in range(-1, 2):
 				redraw[tile + Vector2i(dx, dy)] = true
 	for tile: Vector2i in redraw:
-		var source := GroundTiles.source_for(map, tile, _day)
+		var source := scenery_ground_source(tile)
 		if source >= 0:
 			_ground.set_cell(tile, source,
 					GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
@@ -1274,6 +1278,8 @@ static func bollard_positions(map: CityMap) -> Array[Vector2]:
 func _add_prop(prop: Node2D) -> void:
 	_props.append(prop)
 	_entities.add_child(prop)
+	if prop is ScenerySprite:
+		scenery.register(prop)
 
 ## How far the camera may see. The map, plus the band of land painted outside it, less the reach
 ## a glance toward the corner costs.
@@ -1332,16 +1338,27 @@ func add_entity(node: Node) -> void:
 ## can be edited in a drawing program instead of by changing arithmetic, and it is one
 ## place rather than four.
 func _paint_ground() -> void:
-	_ground.tile_set = _composed_ground_tile_set()
-	_ground.clear()
-	for y in map.size.y:
-		for x in map.size.x:
-			var tile := Vector2i(x, y)
-			var source := GroundTiles.source_for(map, tile, _day)
-			if source >= 0:
-				_ground.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
-	_paint_outside_the_map()
+	_ground_corridor = null
+	_ground.configure(self, _composed_ground_tile_set())
+	for key in _ground.keys_in(scenery.camera_view().grow(SceneryResidency.LOAD_MARGIN)):
+		_ground.prepare(key)
+
+## Current source, independent of residency. Border and route paint use this same answer
+## at boot, on approach, after a closure, and when a distant chunk returns.
+func scenery_ground_source(tile: Vector2i) -> int:
+	var depth := OUTSIDE_DEPTH_TILES
+	if tile.x < -depth or tile.y < -depth or tile.x >= map.size.x + depth \
+			or tile.y >= map.size.y + depth:
+		return -1
+	if tile.x < 0 or tile.y < 0 or tile.x >= map.size.x or tile.y >= map.size.y:
+		return _border_source(tile.x, tile.y, depth)
+	var source := GroundTiles.source_for(map, tile, _day)
+	if _ground_corridor and source in GroundTiles.ROUTE_KERB_SOURCES \
+			and _ground_corridor.depth(tile) == 0:
+		var twin := GroundTiles.route_twin_of(source)
+		if twin >= 0 and _ground.tile_set.has_source(twin):
+			return twin
+	return source
 
 ## Starts each repaint from the scene's authored TileSet, so the composition stays stable when a
 ## new day chooses different damage or grass cells — the authored resource names each source's
@@ -1384,26 +1401,7 @@ func _composed_ground_tile_set() -> TileSet:
 ## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
 ## tile for tile. The boundary wall is still what stops her.
 func _paint_outside_the_map() -> void:
-	var depth := OUTSIDE_DEPTH_TILES
-	var water_cells: Array[Vector2i] = []
-	for y in range(-depth, map.size.y + depth):
-		for x in range(-depth, map.size.x + depth):
-			if x >= 0 and x < map.size.x and y >= 0 and y < map.size.y:
-				continue
-			var source := _border_source(x, y, depth)
-			if source == GroundTiles.WATER:
-				water_cells.append(Vector2i(x, y))
-				continue
-			if source >= 0:
-				var tile := Vector2i(x, y)
-				_ground.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
-	if _south_water != null:
-		_south_water.free()
-	_south_water = SceneryWater.new()
-	_south_water.name = "SouthWater"
-	_ground.add_child(_south_water)
-	_south_water.configure(water_cells)
+	_ground.repaint()
 
 ## Which border tile belongs at an outside cell. Each side is written as *what you meet, in order,
 ## walking away from the last kerb*, and how far out of the city a tile is is what indexes it.

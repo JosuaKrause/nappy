@@ -707,6 +707,7 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 				lead if toward.x > size.x * 0.5 else -lead,
 				lead if toward.y > size.y * 0.5 else -lead)
 		var window := Rect2(clamped + glance - half, half * 2.0)
+		city.scenery.update(window, true)
 		var lo := city.map.world_to_tile(window.position)
 		var hi := city.map.world_to_tile(window.end - Vector2.ONE)
 		var unpainted := 0
@@ -714,7 +715,7 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 			for x in range(lo.x, hi.x + 1):
 				var cell := Vector2i(x, y)
 				if city._ground.get_cell_source_id(cell) < 0 \
-						and not city._south_water.cells.has(cell):
+						and not city._ground.has_water(cell):
 					unpainted += 1
 		t.check(unpainted == 0,
 				"corner %s: every cell the window can show is painted (%d unpainted of %d)"

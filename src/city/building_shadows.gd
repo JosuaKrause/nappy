@@ -44,6 +44,9 @@ class Tiles extends RefCounted:
 	var triangles: Array[Vector2i] = []
 
 var _tiles := Tiles.new()
+var streamed := false
+var _by_chunk: Dictionary = {}
+var _resident: Dictionary = {}
 
 ## `DevFlags.skip_shadows()`, read once when this node is built — the same "read once" shape
 ## `main._debug` and `main._readout_requested` are: `BuildingShadows` is computed once by
@@ -57,7 +60,24 @@ var _skip_draw := DevFlags.skip_shadows()
 ## (`CityMap.building_rects`) — and rebuilds the chunks that draw them.
 func set_buildings(rects: Array[Rect2i]) -> void:
 	_tiles = compute(rects)
-	_rebuild_chunks()
+	_by_chunk = split(_tiles)
+	if not streamed:
+		_rebuild_chunks()
+
+func update_view(load_view: Rect2, retained: Rect2) -> void:
+	for key: Vector2i in _resident.keys():
+		if not retained.intersects(_chunk_bounds(key)):
+			(_resident[key] as Node2D).free()
+			_resident.erase(key)
+	for key: Vector2i in _by_chunk:
+		if not _resident.has(key) and load_view.intersects(_chunk_bounds(key)):
+			var chunk := Node2D.new()
+			chunk.draw.connect(_draw_chunk.bind(chunk, _by_chunk[key]))
+			add_child(chunk)
+			_resident[key] = chunk
+
+func _chunk_bounds(key: Vector2i) -> Rect2:
+	return Rect2(Vector2(key) * CHUNK_TILES * TILE, Vector2.ONE * CHUNK_TILES * TILE)
 
 ## The one `CanvasItem` per occupied chunk that the culling works on. Freed and rebuilt whole rather
 ## than updated, since `set_buildings()` is called once per run with a fixed footprint set and the

@@ -11,6 +11,12 @@ extends Node2D
 var _placed: Array[Litter.Placed] = []
 var _street_tree_pits: Array[StreetTrees.Planted] = []
 var _map: CityMap = null
+var streamed := false
+var _resident: Dictionary = {}
+var _view := Rect2()
+var _retained := Rect2()
+var _litter_chunks: Dictionary = {}
+var _pit_chunks: Dictionary = {}
 
 const TREE_PIT := &"props/tree_pit"
 
@@ -25,6 +31,7 @@ const DECORATION_ATLAS := &"decoration"
 
 func set_placed(placed: Array[Litter.Placed]) -> void:
 	_placed = placed
+	_refresh_chunks()
 	queue_redraw()
 
 ## Street-tree beds are flat ground marks, so they belong to this layer rather than to the
@@ -33,13 +40,60 @@ func set_placed(placed: Array[Litter.Placed]) -> void:
 func set_street_tree_pits(placed: Array[StreetTrees.Planted], city_map: CityMap) -> void:
 	_street_tree_pits = placed
 	_map = city_map
+	_refresh_chunks()
 	queue_redraw()
 
 ## Repaint after closures or seals choose an emptied pit for the day.
 func refresh_street_tree_pits() -> void:
+	_refresh_chunks()
 	queue_redraw()
 
+func _refresh_chunks() -> void:
+	_litter_chunks.clear()
+	_pit_chunks.clear()
+	for entry in _placed:
+		var key := SceneryGround.key_for(Vector2i((entry.position / Tuning.TILE_SIZE).floor()))
+		if not _litter_chunks.has(key):
+			_litter_chunks[key] = []
+		_litter_chunks[key].append(entry)
+	for entry in _street_tree_pits:
+		var key := SceneryGround.key_for(entry.tile)
+		if not _pit_chunks.has(key):
+			_pit_chunks[key] = []
+		_pit_chunks[key].append(entry)
+	for layer: SceneryLayer in _resident.values():
+		layer.free()
+	_resident.clear()
+	if streamed and _view.has_area():
+		update_view(_view, _retained)
+
+func update_view(load_view: Rect2, retained: Rect2) -> void:
+	_view = load_view
+	_retained = retained
+	for key: Vector2i in _resident.keys():
+		if not retained.intersects(SceneryGround.bounds(key).grow(Tuning.TILE_SIZE)):
+			(_resident[key] as SceneryLayer).free()
+			_resident.erase(key)
+	var candidates := _litter_chunks.duplicate()
+	candidates.merge(_pit_chunks)
+	for key: Vector2i in candidates:
+		if _resident.has(key) or not load_view.intersects(
+				SceneryGround.bounds(key).grow(Tuning.TILE_SIZE)):
+			continue
+		var layer := SceneryLayer.new()
+		add_child(layer)
+		_resident[key] = layer
+		for entry: Litter.Placed in _litter_chunks.get(key, []):
+			var texture := AtlasLibrary.region(Litter.TEXTURES[entry.texture_index])
+			layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
+		for entry: StreetTrees.Planted in _pit_chunks.get(key, []):
+			if not _map.is_tree_pit_emptied(entry.tile):
+				var texture := AtlasLibrary.region(TREE_PIT)
+				layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
+
 func _draw() -> void:
+	if streamed:
+		return
 	for entry in _placed:
 		var texture := AtlasLibrary.region(Litter.TEXTURES[entry.texture_index])
 		draw_texture(texture, entry.position - texture.get_size() * 0.5)

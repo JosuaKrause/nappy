@@ -508,6 +508,9 @@ var lot := Rect2i()
 var shape: GroundShape
 
 var _collision: CollisionShape2D
+## Identity and frontage facts remain live for collision and poster placement. Only windows,
+## roof descriptions and retained drawing are resident around the camera.
+var scenery_resident := true
 ## One entry per wall cell, row-major from the ground up: true where the light is on.
 var _windows: Array[bool] = []
 ## This building's own upper-floor window style — one of `_WindowStyle`, rolled once with
@@ -590,9 +593,36 @@ func _rebuild() -> void:
 	shape = GroundShape.rect(Vector2(footprint.x * 0.5, depth * 0.5))
 	_collision.shape = shape.collision_shape()
 	_collision.position = Vector2(0.0, -shape.half_extents.y)
-	_build_windows()
 	_build_front()
 	_build_entrance()
+	if scenery_resident:
+		_prepare_scenery()
+
+func set_scenery_resident(resident: bool) -> void:
+	if scenery_resident == resident:
+		return
+	scenery_resident = resident
+	if resident:
+		_prepare_scenery()
+	else:
+		_clear_roof_layers()
+		_windows.clear()
+		_roof_furniture.clear()
+		set_process(false)
+		RenderingServer.canvas_item_clear(get_canvas_item())
+		queue_redraw()
+
+func scenery_bounds() -> Rect2:
+	var extension := 0
+	for rows_above in roof_extension_rows:
+		extension = maxi(extension, rows_above)
+	# Furniture may rise above the extended roof; the bound includes the full tile canvases.
+	return Rect2(global_position - Vector2(footprint.x * 0.5 + TILE,
+			footprint.y + extension * TILE + TILE * 2),
+			footprint + Vector2(TILE * 2, extension * TILE + TILE * 3))
+
+func _prepare_scenery() -> void:
+	_build_windows()
 	_build_roof_furniture()
 	_build_roof_layers()
 	set_process(_has_vent)
@@ -873,6 +903,8 @@ func neighbor_window_row() -> int:
 	return 3
 
 func _draw() -> void:
+	if not scenery_resident:
+		return
 	var cols := columns()
 	var wall_rows := wall_tiles()
 	var roof_rows := roof_tiles()
@@ -1438,7 +1470,7 @@ func _furniture_texture(kind: int) -> StringName:
 ## No walkable ground lies south of a foot within a stack's own width, since the foot is on the
 ## hall's roof, so in practice it is in front of everything its picture reaches. It acquires the
 ## `buildings` atlas group itself, since it lives outside the building that otherwise holds it.
-class StationStack extends Node2D:
+class StationStack extends ScenerySprite:
 	func _enter_tree() -> void:
 		AtlasLibrary.acquire(&"buildings")
 
@@ -1446,4 +1478,6 @@ class StationStack extends Node2D:
 		AtlasLibrary.release(&"buildings")
 
 	func _draw() -> void:
+		if not scenery_resident:
+			return
 		Sprites.draw_standing(self, AtlasLibrary.region(Building.POWER_STATION_STACK), Vector2.ZERO)
