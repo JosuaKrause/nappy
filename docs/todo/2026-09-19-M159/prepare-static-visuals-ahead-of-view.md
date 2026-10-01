@@ -2,7 +2,9 @@
 
 The player asks to prepare scenery shortly before it enters view, initially around home, and to
 unload it at greater distance. They hypothesize that much of the prepared map is never seen and
-question cross-day ground reuse because appearance changes. Their full words are in
+question cross-day ground reuse because appearance changes. They ask:
+"can we do them lazily instead whenever the player gets into x tiles from them (when the image is still off-screen)?"
+Their full words are in
 [sunny-lynx, measure the work in a crowded scene](../../playtests/2026-09-26-sunny-lynx.md) and
 [gentle-swan, investigate lazy scenery preparation and unloading](../../playtests/2026-09-30-gentle-swan.md).
 
@@ -24,11 +26,13 @@ coverage accurately without claiming observed human trajectories.
 
 Boot uses the same nearby-only policy: "the boot paint should only be for the block around home"
 and "lazily create distant ones as the player comes near". A literal home block does not fill the
-measured initial viewport. **Proposed, not asked for:** cover the home-centered initial viewport
-plus an off-screen margin. The exact boundary remains a design question; do not prepare the whole
+measured initial viewport. The player clarifies: "block around the home means plus margin otherwise you might get gaps".
+Cover the home-centered initial viewport plus an off-screen margin. The exact margin remains
+unchosen; do not prepare the whole
 city or accept visible holes in its place.
 
-The player explicitly requires the unloading radius to exceed the loading radius so walking
+The player confirms: "I do like the larger unloading be a requirement." The unloading radius
+must exceed the loading radius so walking
 back and forth across the load boundary does not repeatedly create and destroy scenery. Between
 the two boundaries, preserve residency: loaded scenery stays loaded and absent scenery stays
 absent until it enters the load boundary. Choose the distances from measured preparation cost

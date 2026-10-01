@@ -45,6 +45,12 @@ as two preparation passes. The player specifies how boot belongs in the lazy pol
 The assistant understands boot as the first use of the same nearby-scenery policy and will check
 the actual initial camera view and artwork overhang against the home-block boundary.
 
+In the PR review, the player answers the boundary question directly:
+
+> block around the home means plus margin otherwise you might get gaps
+
+The margin is part of the player's request; its exact size remains unchosen.
+
 ## Download size is the first loading measurement
 
 While the scenery investigation is being prepared, the player specifies where to start the
@@ -94,3 +100,57 @@ memory savings depend on how far behind the player scenery remains loaded. The p
 The assistant confirms a smaller load boundary and a larger unload boundary. Already-loaded
 scenery stays loaded between them, avoiding repeated recreation near the load boundary. The
 exact gap remains to be measured against camera movement and preparation time.
+
+In the PR review, the player explicitly confirms the larger unloading boundary:
+
+> I do like the larger unloading be a requirement.
+
+## Full review of the investigation PR
+
+The player reviews the corrected route coverage and asks for the following changes. The two
+design answers are also quoted in their corresponding sections above; the full review preserves
+the reproduction and optional cleanup requests with their context.
+
+> Review of bd026570 — not ready yet, two changes needed, then good to go.
+>
+> **1. Record my answers in the playtest and the queue.** Please add these, verbatim, to
+> `docs/playtests/2026-09-30-gentle-swan.md` (it is new in this PR, so it can still take them):
+>
+> - Under "Unloading keeps a wider boundary than loading", on the larger unload radius:
+>   > I do like the larger unloading be a requirement.
+>
+>   So "the player explicitly requires" stays as written in the queue entry, the decision
+>   record and the description — it now rests on these words rather than on my earlier question.
+>
+> - Under "Boot prepares the nearby scenery", on what "the block around home" means:
+>   > block around the home means plus margin otherwise you might get gaps
+>
+>   This is my answer, not your proposal. In
+>   `docs/todo/2026-09-19-M159/prepare-static-visuals-ahead-of-view.md`, drop the
+>   "**Proposed, not asked for:**" label on covering the home-centered initial viewport plus an
+>   off-screen margin, and quote my sentence instead. In `docs/decisions/2026-09-19-M159-3.md`,
+>   replace "Covering the home-centered view plus an off-screen margin is the assistant's proposed
+>   interpretation" with my words. The exact margin is still unchosen; that part stays open.
+>
+> **2. Make the rerun commands work after the merge.** The two rerun blocks in
+> `docs/evidence/m159-lazy-scenery-2026-09-30/README.md` and `ROUTES.md` run
+> `git worktree add --detach` on `6aa23ba1` and `25e34fa0`. Both are commits that only exist on
+> this branch, so a fresh clone fails once it is squashed and deleted. Add
+> `git fetch origin refs/pull/444/head` before each `worktree add`, the way the M159
+> danger-prediction evidence does for #439. GitHub keeps that ref after the branch is deleted, and
+> both capture commits sit underneath it.
+>
+> **Optional, fix if you're touching the files anyway:**
+>
+> - The queue entry lost the sunny-lynx quote: "can we do them lazily instead whenever the player
+>   gets into x tiles from them (when the image is still off-screen)?" Put it back alongside the
+>   paraphrase.
+> - "4 visible ground cells inside the home block" undersells it, since the home building covers
+>   most of the block and has no ground cells under it. By area, the block fills about 18% of the
+>   640×360 starting view. One clause saying so is enough.
+> - `measure.py` and `measure_routes.py` default `--godot` to a macOS-only path
+>   (`/Applications/Godot.app/...`). Require `--godot` or `$GODOT` instead.
+> - The TileMapLayer docs link points at Godot 4.6; we're on 4.7.
+>
+> No need to rerun the probes. I checked every number in the tables against `results.json` and
+> `routes.json`, and the measured source matches this head.
