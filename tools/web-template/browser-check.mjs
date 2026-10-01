@@ -150,6 +150,21 @@ try {
   assert.equal(resumedSave.state.run_seed, firstSave.state.run_seed);
   assert.equal(resumedSave.state.nerves, firstSave.state.nerves - 1);
   results.push({ save: { first: firstSave, resumed: resumedSave } });
+  await load('transition-setup', '?debug=1&seed=4242&meters=99.9,0', '[Main] day 1 started');
+  const transitionStart = logs.length;
+  // A nearly settled baby makes the real walk home and summary bounded. The game still
+  // handles movement, sleep, the win and next-day construction through ordinary input.
+  await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 });
+  await pause(1500);
+  await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 });
+  await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 });
+  await pause(2000);
+  await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 });
+  await snapshot('day-summary');
+  await key(' ', 'Space', 32);
+  await until(() => logs.slice(transitionStart).some(line => line.includes('[Main] day 2 started')), 'summary to day 2');
+  await snapshot('day-2');
+  results.push({ name: 'summary-to-day-2', boot: logs.slice(transitionStart).filter(line => line.includes('[Main]')) });
   for (const day of [8, 14]) await load(`day-${day}`, `?debug=1&seed=4242&day=${day}`, `[Main] day ${day} started`);
   await load('escape', '?debug=1&seed=4242&escape=1', 'atlas pages held from escape');
   assert.deepEqual(errors, [], 'Engine/browser errors');

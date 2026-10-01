@@ -107,6 +107,9 @@ assert_exit "build-web-template.sh stray word" nonzero ./tools/build-web-templat
 assert_exit "browser-check.mjs help" zero node ./tools/web-template/browser-check.mjs --help
 assert_exit "browser-check.mjs unknown" nonzero node ./tools/web-template/browser-check.mjs --not-a-flag
 assert_exit "browser-check.mjs missing value" nonzero node ./tools/web-template/browser-check.mjs --export
+assert_exit "compare.mjs help" zero node ./tools/web-template/compare.mjs --help
+assert_exit "compare.mjs unknown" nonzero node ./tools/web-template/compare.mjs --not-a-flag
+assert_exit "compare.mjs missing value" nonzero node ./tools/web-template/compare.mjs --export
 
 # A cached template must belong to these exact build inputs and its bytes must still match.
 # The fake archive is deliberate: this checks invalidation without compiling an engine.

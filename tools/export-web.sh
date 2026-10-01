@@ -7,8 +7,8 @@
 #                                # this way and serves the result
 #
 # Uses the tracked "Web" preset in export_presets.cfg — gl_compatibility, threads off, so the
-# templates Godot resolves are web_nothreads_debug.zip / web_nothreads_release.zip rather than
-# the threaded pair, and GitHub Pages needs no cross-origin-isolation headers to serve the result.
+# debug uses stock web_nothreads_debug.zip and release uses build/web-template/template.zip.
+# GitHub Pages needs no cross-origin-isolation headers to serve the result.
 #
 # RELEASE_TAG=<tag> tools/export-web.sh   # names build/web/<tag>/, default "dev", and is the
 #                                         # version baked into the export
@@ -67,6 +67,11 @@ fi
 
 if [[ "$MODE" == release ]]; then
     "$PROJECT_DIR/tools/build-web-template.sh" --verify || exit 1
+    source "$PROJECT_DIR/tools/web-template/pins.env"
+    if [[ "$("$GODOT" --version)" != "$GODOT_VERSION.stable."* ]]; then
+        echo "FAILED: the custom template requires the matching Godot $GODOT_VERSION editor." >&2
+        exit 1
+    fi
 fi
 
 # What the export says it is. `application/config/version` and `application/config/source_commit`

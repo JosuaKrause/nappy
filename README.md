@@ -199,7 +199,9 @@ See [docs/TELEMETRY.md](docs/TELEMETRY.md), "The page counts visits".
 
 ## Verifying a build
 
-Release Web exports use a custom threadless Godot runtime with unused engine modules removed.
+Release Web exports use a custom Web engine runtime (Godot export template), built without
+threads or unused engine modules. The template archive is a build input; its engine becomes
+the `.wasm` file the browser downloads.
 Run `./tools/build-web-template.sh` once before `./tools/export-web.sh`; the builder downloads
 the pinned source and toolchain, and reuses a verified matching template on later runs.
 `tools/web-template/profile.args` lists the build options; `pins.env` pins their source and

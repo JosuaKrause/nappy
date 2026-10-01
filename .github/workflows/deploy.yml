@@ -108,24 +108,6 @@ jobs:
           mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot-bin
           chmod +x ~/godot/godot-bin
 
-      - name: Cache export templates
-        id: templates-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
-          key: godot-templates-${{ env.GODOT_VERSION }}
-
-      - name: Download export templates
-        if: steps.templates-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/.local/share/godot/export_templates
-          curl -sSL -o /tmp/templates.tpz \
-            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
-          rm -rf /tmp/templates
-          unzip -q /tmp/templates.tpz -d /tmp/templates
-          mv /tmp/templates/templates \
-            "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
-
       - name: Install uv for the pinned template compiler
         uses: astral-sh/setup-uv@v6
 
