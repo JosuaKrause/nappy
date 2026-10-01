@@ -29,10 +29,10 @@ extends Node2D
 
 const TILE := float(Tuning.TILE_SIZE)
 
-## Side length, in tiles, for a shadow chunk. At 16 tiles (512px), the chunk is larger than the
-## visible world at zoom 2; this sets the area prepared and culled as one item, while scenery
-## residency determines how many such items exist nearby. Smaller chunks tighten culling but add
-## renderer items; larger chunks include more off-screen shadow commands.
+## Side length, in tiles, for a shadow chunk. At 16 tiles (512px), this sets the area prepared and
+## culled as one item, while scenery residency determines how many such items exist nearby.
+## Smaller chunks tighten culling but add renderer items; larger chunks include more off-screen
+## shadow commands.
 const CHUNK_TILES := 16
 
 ## One shadow tile set: tiles fully covered, and tiles cut on the diagonal from their north-east
