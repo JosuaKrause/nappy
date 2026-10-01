@@ -47,6 +47,7 @@ From a checkout containing this evidence, use a fresh revision checkout and scra
 
 ```sh
 task_root=$(mktemp -d)
+git fetch origin refs/pull/444/head
 git worktree add --detach "$task_root/source" 6aa23ba14cd69d77915b2b0875b0b69f240e5c0f
 cd "$task_root/source"
 export GODOT=/path/to/Godot
@@ -124,10 +125,12 @@ so these numbers do not count retained rendering-server drawing commands or thei
 The real Main boot confirms a 1280×720 viewport, zoom 2, camera center `(2560,2704)` at the
 doorstep before the player exists. Its world rectangle is `(2240,2524)` through `(2880,2884)`.
 The literal home block is `(2432,2432)` through `(2688,2688)`, only 256×256. Of the visible static
-ground cells, 204–206 are outside that block and four inside. Even a whole literal home block
-cannot fill this viewport. The practical boundary question is whether “the block around home”
-means nearby scenery sufficient to cover this actual view. This report does not silently widen
-that request into the entire city or choose missing scenery as acceptable.
+ground cells, 204–206 are outside that block and four inside. The block overlaps the starting
+view by 256×164px, about 18% of the view's area; only four static ground cells appear there because
+the home building covers most of its block. Even a whole literal home block cannot fill this
+viewport. The player clarifies: “block around the home means plus margin otherwise you might get
+gaps.” Boot therefore covers this actual view plus an off-screen margin; the exact margin remains
+unchosen. This does not widen the request into the entire city or make missing scenery acceptable.
 
 Measured roof extensions/furniture rise up to 96px north of their own lot in these seeds.
 The source's separate power-station stacks rise 192px from their feet. Whole visual bounds,
@@ -166,7 +169,7 @@ the roughly 21 ms composition still exists unless separately changed, which this
 
 Rendering already avoids much off-screen drawing. Ground uses TileMapLayer render quadrants;
 Godot describes these as tiles grouped into a CanvasItem, with a default 16×16-cell quadrant
-([engine documentation](https://docs.godotengine.org/en/4.6/classes/class_tilemaplayer.html#class-tilemaplayer-property-rendering-quadrant-size)).
+([engine documentation](https://docs.godotengine.org/en/4.7/classes/class_tilemaplayer.html#class-tilemaplayer-property-rendering-quadrant-size)).
 BuildingShadows deliberately splits drawing into 16×16 chunks so CanvasItem bounds can cull
 them. Buildings and their separate scenery children retain drawing commands until invalidated.
 This source audit identifies retained preparation beyond rendering culling; it does not measure

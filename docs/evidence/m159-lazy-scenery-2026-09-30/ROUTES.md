@@ -101,6 +101,7 @@ Every retained row is independently decoded and compared against its original sc
 
 ```sh
 task_root=$(mktemp -d)
+git fetch origin refs/pull/444/head
 git worktree add --detach "$task_root/source" 25e34fa02a7b7271748f9a19634a879da545b29e
 cd "$task_root/source"
 export GODOT=/path/to/Godot

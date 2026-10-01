@@ -13,8 +13,15 @@ import subprocess
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path, help="new scratch directory")
-    parser.add_argument("--godot", default=os.environ.get("GODOT", "/Applications/Godot.app/Contents/MacOS/Godot"))
+    parser.add_argument(
+        "--godot",
+        default=os.environ.get("GODOT"),
+        metavar="PATH",
+        help="Godot executable (required unless GODOT is set)",
+    )
     args = parser.parse_args()
+    if not args.godot:
+        parser.error("--godot is required when GODOT is not set")
     repo = Path(__file__).resolve().parents[3]
     subprocess.run(["git", "diff", "--exit-code", "HEAD", "--"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
     paths = [*sorted((repo / "src").rglob("*.gd")), repo / "tests/probes/lazy_scenery_routes.gd", repo / "project.godot", Path(__file__).resolve()]
