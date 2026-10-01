@@ -219,6 +219,10 @@ and its evidence under `docs/evidence/`.
 
 Rerun instructions create the required revision checkouts and use caller-relative paths, fresh
 scratch directories and a configurable engine executable instead of the author's local paths.
+Every named capture revision must also be fetchable from a fresh clone. When it exists only on a
+pull request branch that will be squash-merged and deleted, fetch the durable ref first
+(`git fetch origin refs/pull/<PR>/head`), then check out the full commit ID it makes reachable;
+never assume the reproducer already has the branch's objects locally.
 
 Timed comparisons use clean tracked checkouts: a commit ID alone does not identify dirty
 runtime sources. Record hashes of source files an audit can rewrite, and revalidate source and
