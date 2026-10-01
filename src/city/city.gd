@@ -167,7 +167,24 @@ const SEALED_DOOR_SCAR := "sealed_door"
 ## The street door sprite `_spawn_home()` built, kept so `seal_home_door()` can swap its texture
 ## live, the moment day 10's raid actually arrives, instead of waiting for a day that never
 ## rebuilds it — `build()` runs once for the whole run (see the class doc).
-var _home_door: Sprite2D
+var _home_door: HomeDoor
+
+## The sealed/unsealed fact survives unloading; only the Sprite's texture reference is resident.
+class HomeDoor extends Sprite2D:
+	var scenery_resident := true
+	var picture: StringName:
+		set(value):
+			picture = value
+			texture = AtlasLibrary.region(picture) if scenery_resident else null
+
+	func set_scenery_resident(resident: bool) -> void:
+		if scenery_resident == resident:
+			return
+		scenery_resident = resident
+		texture = AtlasLibrary.region(picture) if resident else null
+
+	func scenery_bounds() -> Rect2:
+		return Rect2(global_position + offset, Vector2(AtlasLibrary.native_size(picture)))
 
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
@@ -217,7 +234,7 @@ func build(city_map: CityMap) -> void:
 	_daylight.name = "Daylight"
 	add_child(_daylight)
 	set_daylight(1.0)
-	scenery.update(scenery.camera_view(), true)
+	scenery.update(_home_scenery_view(), true)
 	queue_redraw()
 
 ## Hands the decoration atlas back. `build()`'s `acquire()` is the city's one reference on the
@@ -354,12 +371,12 @@ func total_excitement_at(world_position: Vector2) -> float:
 ## passes in front of it the way she passes in front of any other wall.
 func _spawn_home() -> void:
 	var stoop := map.tile_rect_to_world(map.home_rect)
-	_home_door = Sprite2D.new()
+	_home_door = HomeDoor.new()
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
 	# the raid — `_door_texture_for_today()` reads `GameState.scars`, already loaded by the time
 	# `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
 	# moment the raid actually arrives.
-	_home_door.texture = AtlasLibrary.region(_door_texture_for_today())
+	_home_door.picture = _door_texture_for_today()
 	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
 	# the notch and the art is offset upward from there. Putting the node at the sprite's
 	# top instead makes y-sort compare the wrong edge, and the player walks in front of a
@@ -375,6 +392,7 @@ func _spawn_home() -> void:
 	var x_range := _door_world_x_range()
 	_home_door.position = Vector2((x_range.x + x_range.y) * 0.5, stoop.position.y)
 	_entities.add_child(_home_door)
+	scenery.register(_home_door)
 
 ## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
 func _door_texture_for_today() -> StringName:
@@ -389,7 +407,7 @@ func _door_texture_for_today() -> StringName:
 ## `_spawn_home()` itself only ever runs once, at boot, for the whole run.
 func _sync_home_door() -> void:
 	if _home_door:
-		_home_door.texture = AtlasLibrary.region(_door_texture_for_today())
+		_home_door.picture = _door_texture_for_today()
 
 ## Swaps her street door to the sealed picture, live, the moment day 10's raid actually arrives
 ## (`ResistanceHappenings._maybe_raid()`, while she is out of sight of it) — the one day
@@ -397,7 +415,7 @@ func _sync_home_door() -> void:
 ## it runs.
 func seal_home_door() -> void:
 	if _home_door:
-		_home_door.texture = AtlasLibrary.region(SEALED_DOOR_TEXTURE)
+		_home_door.picture = SEALED_DOOR_TEXTURE
 
 ## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
 ## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
@@ -584,6 +602,7 @@ func _spawn_signal_heads() -> void:
 				light.signals = signals
 				light.position = at
 				_entities.add_child(light)
+				scenery.register(light)
 
 func _spawn_buildings() -> void:
 	var door_x_range := _door_world_x_range()
@@ -592,6 +611,7 @@ func _spawn_buildings() -> void:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
 		building.scenery_resident = false
+		building.scenery_clock = _ground
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
@@ -851,6 +871,7 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## the block interiors is cheap (the buildings and the lattice are untouched) and it is the
 ## only way a requisitioned park can stop having swings in it.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
+	scenery.view = _home_scenery_view()
 	map.repaint(state)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
@@ -870,7 +891,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
 	# off, and after `_dress_blocks()`, which is what says a front has burnt.
 	_posters.start_day(day, _tree)
-	scenery.update(scenery.camera_view(), true)
+	scenery.update(_home_scenery_view(), true)
 
 ## The same city, dressed for the escape: everything `start_day()` does except grow a day's
 ## corridor and close streets off it.
@@ -891,6 +912,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 ## never calls, and `_paint_ground()` above paints every kerb cell its plain source, so a twin from
 ## yesterday cannot survive the repaint.
 func start_finale(state: CityState, day: int) -> void:
+	scenery.view = _home_scenery_view()
 	map.repaint(state)
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
@@ -898,7 +920,7 @@ func start_finale(state: CityState, day: int) -> void:
 	_decals.set_placed(Litter.placed(map, day))
 	_dress_blocks(state)
 	_posters.show_only()
-	scenery.update(scenery.camera_view(), true)
+	scenery.update(_home_scenery_view(), true)
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
@@ -1340,8 +1362,13 @@ func add_entity(node: Node) -> void:
 func _paint_ground() -> void:
 	_ground_corridor = null
 	_ground.configure(self, _composed_ground_tile_set())
-	for key in _ground.keys_in(scenery.camera_view().grow(SceneryResidency.LOAD_MARGIN)):
+	var initial := scenery.view if scenery.view.has_area() else _home_scenery_view()
+	for key in _ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
 		_ground.prepare(key)
+
+func _home_scenery_view() -> Rect2:
+	return Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+			Tuning.VIEW_HALF_EXTENT * 2)
 
 ## Current source, independent of residency. Border and route paint use this same answer
 ## at boot, on approach, after a closure, and when a distant chunk returns.
@@ -1351,7 +1378,7 @@ func scenery_ground_source(tile: Vector2i) -> int:
 			or tile.y >= map.size.y + depth:
 		return -1
 	if tile.x < 0 or tile.y < 0 or tile.x >= map.size.x or tile.y >= map.size.y:
-		return _border_source(tile.x, tile.y, depth)
+		return _paint_outside_the_map(tile)
 	var source := GroundTiles.source_for(map, tile, _day)
 	if _ground_corridor and source in GroundTiles.ROUTE_KERB_SOURCES \
 			and _ground_corridor.depth(tile) == 0:
@@ -1400,8 +1427,8 @@ func _composed_ground_tile_set() -> TileSet:
 ## and the separate animated water surface,
 ## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
 ## tile for tile. The boundary wall is still what stops her.
-func _paint_outside_the_map() -> void:
-	_ground.repaint()
+func _paint_outside_the_map(tile: Vector2i) -> int:
+	return _border_source(tile.x, tile.y, OUTSIDE_DEPTH_TILES)
 
 ## Which border tile belongs at an outside cell. Each side is written as *what you meet, in order,
 ## walking away from the last kerb*, and how far out of the city a tile is is what indexes it.

@@ -4,14 +4,23 @@ extends Node
 ## guard is synchronous; ordinary offscreen preparation is bounded and nearest-first. A jump
 ## or a changed view prepares the destination before the renderer sees it.
 
+## An eight-cell batch is 256px; at 168px/s it takes 1.52s to cross the load margin.
+## The 96px emergency guard covers a full 92px facing reversal plus a physics step;
+## the remaining 160px normally gives about 0.95s to drain bounded preparation work.
+## The wider retention boundary gives another 1.52s of reversal tolerance. These are visual
+## scheduling distances, not gameplay reach. Native acceptance measures every entered batch.
 const LOAD_MARGIN := 256.0
 const RETAIN_MARGIN := 512.0
 const GUARD_MARGIN := 96.0
+## Soft CPU preparation limit: finish the current atomic batch. Draw-command submission is
+## deferred by Godot and measured separately; relocations and emergency coverage are synchronous.
 const BUDGET_USEC := 2000
 var city: City
 var view := Rect2()
 var _items: Array[Node2D] = []
 var worst_update_usec := 0
+var ordinary_guard_preparations := 0
+var _pending := false
 
 func _ready() -> void:
 	# Camera and rig callbacks finish before residency reads their final transform. This node
@@ -25,7 +34,11 @@ func register(item: Node2D) -> void:
 
 func _process(_delta: float) -> void:
 	if city and city.map and city.is_visible_in_tree():
-		update(camera_view())
+		var next := camera_view()
+		# The guard remains at least 80px ahead between these 16px maintenance steps.
+		if _pending or next.size != view.size \
+				or next.get_center().distance_to(view.get_center()) >= 16.0:
+			update(next)
 
 func camera_view() -> Rect2:
 	var viewport := city.get_viewport()
@@ -57,6 +70,8 @@ func update(next_view: Rect2, immediate := false) -> void:
 			continue
 		var bounds := SceneryGround.bounds(key)
 		if guard.intersects(bounds):
+			if not immediate and not relocated:
+				ordinary_guard_preparations += 1
 			ground.prepare(key)
 		else:
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
@@ -70,15 +85,27 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if not retained.intersects(bounds):
 				item.set_scenery_resident(false)
 		elif guard.intersects(bounds):
+			if not immediate and not relocated:
+				ordinary_guard_preparations += 1
 			item.set_scenery_resident(true)
 		elif load_view.intersects(bounds):
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
 					"prepare": item.set_scenery_resident.bind(true)})
+	var enqueue := func(bounds: Rect2, prepare: Callable) -> void:
+		if guard.intersects(bounds):
+			if not immediate and not relocated:
+				ordinary_guard_preparations += 1
+			prepare.call()
+		else:
+			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
+					"prepare": prepare})
+	city._building_shadows.update_view(load_view, retained, enqueue)
+	city._decals.update_view(load_view, retained, enqueue)
 	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
+	_pending = false
 	for job in pending:
 		if Time.get_ticks_usec() - started >= BUDGET_USEC:
+			_pending = true
 			break
 		(job.prepare as Callable).call()
-	city._building_shadows.update_view(load_view, retained)
-	city._decals.update_view(load_view, retained)
 	worst_update_usec = maxi(worst_update_usec, Time.get_ticks_usec() - started)

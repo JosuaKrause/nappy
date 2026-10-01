@@ -511,6 +511,7 @@ var _collision: CollisionShape2D
 ## Identity and frontage facts remain live for collision and poster placement. Only windows,
 ## roof descriptions and retained drawing are resident around the camera.
 var scenery_resident := true
+var scenery_clock: SceneryGround
 ## One entry per wall cell, row-major from the ground up: true where the light is on.
 var _windows: Array[bool] = []
 ## This building's own upper-floor window style — one of `_WindowStyle`, rolled once with
@@ -597,6 +598,8 @@ func _rebuild() -> void:
 	_build_entrance()
 	if scenery_resident:
 		_prepare_scenery()
+	else:
+		set_process(false)
 
 func set_scenery_resident(resident: bool) -> void:
 	if scenery_resident == resident:
@@ -622,6 +625,9 @@ func scenery_bounds() -> Rect2:
 			footprint + Vector2(TILE * 2, extension * TILE + TILE * 3))
 
 func _prepare_scenery() -> void:
+	if scenery_clock:
+		_vent_timer = fmod(scenery_clock.elapsed, VENT_FRAME_INTERVAL)
+		_vent_frame_b = int(scenery_clock.elapsed / VENT_FRAME_INTERVAL) % 2 == 1
 	_build_windows()
 	_build_roof_furniture()
 	_build_roof_layers()

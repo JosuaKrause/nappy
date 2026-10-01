@@ -323,6 +323,12 @@ a PNG but remains unbound.
 The [generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) links source
 pairings, exact prompts, raw outputs and repeated-tile comparisons.
 
+Map-specific scenery is prepared around the camera and released beyond a wider retention
+boundary. Ground chunks share the loading-time composed sheet; unloading cells does not unload
+shared atlas pages. Water chunks share one pausable city clock. Returning buildings reconstruct
+their fixed seeded artwork and current day, condition, posters and power state, with moving
+roof detail kept separate from stationary surfaces.
+
 The default bake takes the same-size PNG at
 `art/illustrated/svg-transfer/<family>/<name>.png` wherever one exists beside its SVG; a PNG
 whose size disagrees with its source fails the bake by name rather than being quietly swapped

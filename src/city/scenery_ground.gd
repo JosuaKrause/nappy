@@ -11,6 +11,16 @@ var _city: City
 var prepared := 0
 var evicted := 0
 var worst_prepare_usec := 0
+## One pausable city clock keeps adjacent water chunks in phase, including newly entered ones.
+var elapsed := 0.0
+
+func _process(delta: float) -> void:
+	elapsed += delta
+	for layer: TileMapLayer in chunks.values():
+		for child in layer.get_children():
+			if child is SceneryWater:
+				child.elapsed = elapsed
+				child._ripples.set_shader_parameter("elapsed", elapsed)
 
 func configure(city: City, composed: TileSet) -> void:
 	clear()
@@ -59,8 +69,10 @@ func prepare(key: Vector2i) -> void:
 						GroundLayers.atlas_coords_for(source, _city.map.seed_used, tile, tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
+		water.elapsed = elapsed
 		layer.add_child(water)
 		water.configure(water_cells)
+		water.set_process(false)
 	prepared += 1
 	worst_prepare_usec = maxi(worst_prepare_usec, Time.get_ticks_usec() - started)
 

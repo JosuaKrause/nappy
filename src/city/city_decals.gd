@@ -67,7 +67,7 @@ func _refresh_chunks() -> void:
 	if streamed and _view.has_area():
 		update_view(_view, _retained)
 
-func update_view(load_view: Rect2, retained: Rect2) -> void:
+func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> void:
 	_view = load_view
 	_retained = retained
 	for key: Vector2i in _resident.keys():
@@ -80,16 +80,22 @@ func update_view(load_view: Rect2, retained: Rect2) -> void:
 		if _resident.has(key) or not load_view.intersects(
 				SceneryGround.bounds(key).grow(Tuning.TILE_SIZE)):
 			continue
-		var layer := SceneryLayer.new()
-		add_child(layer)
-		_resident[key] = layer
-		for entry: Litter.Placed in _litter_chunks.get(key, []):
-			var texture := AtlasLibrary.region(Litter.TEXTURES[entry.texture_index])
+		if enqueue.is_valid():
+			enqueue.call(SceneryGround.bounds(key).grow(Tuning.TILE_SIZE), _prepare_chunk.bind(key))
+		else:
+			_prepare_chunk(key)
+
+func _prepare_chunk(key: Vector2i) -> void:
+	var layer := SceneryLayer.new()
+	add_child(layer)
+	_resident[key] = layer
+	for entry: Litter.Placed in _litter_chunks.get(key, []):
+		var texture := AtlasLibrary.region(Litter.TEXTURES[entry.texture_index])
+		layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
+	for entry: StreetTrees.Planted in _pit_chunks.get(key, []):
+		if not _map.is_tree_pit_emptied(entry.tile):
+			var texture := AtlasLibrary.region(TREE_PIT)
 			layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
-		for entry: StreetTrees.Planted in _pit_chunks.get(key, []):
-			if not _map.is_tree_pit_emptied(entry.tile):
-				var texture := AtlasLibrary.region(TREE_PIT)
-				layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
 
 func _draw() -> void:
 	if streamed:

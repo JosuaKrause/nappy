@@ -47,6 +47,7 @@ var _tiles := Tiles.new()
 var streamed := false
 var _by_chunk: Dictionary = {}
 var _resident: Dictionary = {}
+var _rects: Array[Rect2i] = []
 
 ## `DevFlags.skip_shadows()`, read once when this node is built — the same "read once" shape
 ## `main._debug` and `main._readout_requested` are: `BuildingShadows` is computed once by
@@ -59,22 +60,49 @@ var _skip_draw := DevFlags.skip_shadows()
 ## Builds the shadow tile sets from `rects` — a city's building footprints, in tile coordinates
 ## (`CityMap.building_rects`) — and rebuilds the chunks that draw them.
 func set_buildings(rects: Array[Rect2i]) -> void:
+	_rects = rects
+	if streamed:
+		return
 	_tiles = compute(rects)
 	_by_chunk = split(_tiles)
 	if not streamed:
 		_rebuild_chunks()
 
-func update_view(load_view: Rect2, retained: Rect2) -> void:
+func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> void:
 	for key: Vector2i in _resident.keys():
 		if not retained.intersects(_chunk_bounds(key)):
 			(_resident[key] as Node2D).free()
 			_resident.erase(key)
-	for key: Vector2i in _by_chunk:
-		if not _resident.has(key) and load_view.intersects(_chunk_bounds(key)):
-			var chunk := Node2D.new()
-			chunk.draw.connect(_draw_chunk.bind(chunk, _by_chunk[key]))
-			add_child(chunk)
-			_resident[key] = chunk
+	var width := CHUNK_TILES * TILE
+	var lo := Vector2i((load_view.position / width).floor())
+	var hi := Vector2i((load_view.end / width).ceil())
+	for y in range(lo.y, hi.y):
+		for x in range(lo.x, hi.x):
+			var key := Vector2i(x, y)
+			if _resident.has(key):
+				continue
+			if enqueue.is_valid():
+				enqueue.call(_chunk_bounds(key), _prepare_chunk.bind(key))
+			else:
+				_prepare_chunk(key)
+
+func _prepare_chunk(key: Vector2i) -> void:
+	var tiles := _tiles_for_chunk(key)
+	var chunk := Node2D.new()
+	chunk.draw.connect(_draw_chunk.bind(chunk, tiles))
+	add_child(chunk)
+	_resident[key] = chunk
+
+func _tiles_for_chunk(key: Vector2i) -> Tiles:
+	var area := Rect2i(key * CHUNK_TILES, Vector2i.ONE * CHUNK_TILES)
+	var nearby: Array[Rect2i] = []
+	for rect in _rects:
+		if rect.intersects(area.grow(1)):
+			nearby.append(rect.intersection(area.grow(1)))
+	var tiles := compute(nearby)
+	tiles.full = tiles.full.filter(func(tile: Vector2i): return area.has_point(tile))
+	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i): return area.has_point(tile))
+	return tiles
 
 func _chunk_bounds(key: Vector2i) -> Rect2:
 	return Rect2(Vector2(key) * CHUNK_TILES * TILE, Vector2.ONE * CHUNK_TILES * TILE)
