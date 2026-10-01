@@ -9,8 +9,10 @@ question cross-day ground reuse because appearance changes. Their full words are
 The [investigation record](../../decisions/2026-09-19-M159-3.md) and
 [measured report](../../evidence/m159-lazy-scenery-2026-09-30/README.md) establish a native headless
 preparation opportunity and its limits. What remains is a bounded prototype and acceptance
-checks. The synthetic routes do not establish typical human coverage, and detached-layer
-allocation is not browser heap, GPU allocation or operating-system reclamation. The player says
+checks. The actual generated-route envelopes establish the expected-workload baseline, with
+individual options and the whole offered network reported separately. They do not measure human
+trajectories, and detached-layer allocation is not browser heap, GPU allocation or
+operating-system reclamation. The player says
 "let's focus on the one thing first": this item stays about nearby scenery and unloading; the
 measured route-planning cost does not open another optimization task.
 
