@@ -3,8 +3,8 @@ extends WorldContext
 ## Turns a CityMap into a scene: ground, buildings, props, boundary, and the answers the
 ## baby needs about the ground it is standing on.
 ##
-## Ground is drawn by this node itself, so it lands behind the y-sorted `Entities` child
-## without needing a z_index fight.
+## The `Ground` child owns the freeable ground chunks and draws them behind the y-sorted `Entities`
+## child without needing a z_index fight.
 ##
 ## **Buildings are a layer of their own, underneath the entities**, or the warning indicators
 ## render below roofs. A `Building`'s origin is the south edge of its
@@ -209,8 +209,8 @@ func build(city_map: CityMap) -> void:
 	_posters.name = "Posters"
 	add_child(_posters)
 	_posters.setup(self, map)
-	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61), so the shadow set is built once
-	# here rather than recomputed per day.
+	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
+	# their geometry from this source as they become resident.
 	_building_shadows.set_buildings(map.building_rects)
 	_spawn_home()
 	_spawn_street_trees()
@@ -1353,7 +1353,7 @@ func add_entity(node: Node) -> void:
 
 # ------------------------------------------------------------------ ground ---
 
-## Paints the ground once from `assets/ground_tileset.tres`.
+## Configures the ground from `assets/ground_tileset.tres` and prepares its initial nearby chunks.
 ##
 ## This used to be ~120 lines of draw_rect and computed dashes. Kerbs, centre lines and
 ## zebra crossings are authored art now, chosen per cell by GroundTiles — which means they
