@@ -65,3 +65,21 @@ scenery alone won't remove that cost." The player quotes that sentence and repli
 
 The assistant keeps the scenery work focused on nearby preparation and unloading. The timing of
 route planning remains measurement context and does not open another optimization task.
+
+## Coverage follows the routes the game offers
+
+The measurement report calls its nearest/farthest calm-area BFS paths "synthetic routes" and
+states that they omit daily closures and are not actual played routes. The player asks:
+
+> synthetic routes -- by that you mean the paths we create? they are the most likely routes a player takes since other routes are blocked off
+
+The assistant clarifies that the measured paths are simplified geometric stand-ins, not the
+game's daily generated route choices, and will measure those generated choices with closures.
+
+> and heavily discouraged
+
+> only a very determined player would go off the path but also likely lose in the process
+
+The game's generated viable routes are the primary coverage baseline for this investigation.
+Deliberate off-path travel is a stress case rather than the expected scenery workload. Coverage
+remains a model of offered routes, not a record of human trajectories.

@@ -14,6 +14,12 @@ allocation is not browser heap, GPU allocation or operating-system reclamation. 
 "let's focus on the one thing first": this item stays about nearby scenery and unloading; the
 measured route-planning cost does not open another optimization task.
 
+For expected coverage use the actual daily generated route choices with closures applied. The
+player explains that alternatives are blocked or heavily discouraged, and a determined player
+going off-path is likely to lose. The simplified nearest/farthest BFS samples are not that
+baseline. Keep deliberate off-path travel as a stress case. Record modeled offered-route
+coverage accurately without claiming observed human trajectories.
+
 Boot uses the same nearby-only policy: "the boot paint should only be for the block around home"
 and "lazily create distant ones as the player comes near". A literal home block does not fill the
 measured initial viewport. **Proposed, not asked for:** cover the home-centered initial viewport
