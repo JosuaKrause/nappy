@@ -1,0 +1,69 @@
+nappy rig log  2026-09-30T22:57:06  version v0.21.2-5-g7af21806
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.3 ms, 262 x 429
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.4 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.7 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.7 ms, 392 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.5 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.7 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.7 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 10.6 ms, 810 x 982
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.3 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.2 ms
+
+day 8  act 3  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 21.0 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, west along her street
+   0.0  contact  step 5 on offer at (153,94)
+   0.0  roll     chalk mark guarded (far end): robber 212px away
+   0.0  plan     closed: accident v(2,4), cordoned off v(4,1), cordoned off v(2,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: abduction x4, alley_mouse x4, alley_robbery x4, burnt_out_car x76, burst_water_main x16, busker x4, cafe_tables x43, car_accident x22, cat_dash x7, charging_dog x3, chatting_mother x2, collapsed_frontage x15, construction x45, cyclist x8, delivery_van x36, dog_walker x23, homeless_yeller x7, ice_cream_van x5, leaf_blower x15, loose_dog x18, loudspeaker x5, market_stall x31, moving_van x30, pigeon_flock x5, playground x2, police_patrol x10, poster_crew x12, reversing_lorry x3, roadblock x6, scaffolding x20, skip x20
+   0.0  start    doorstep (113,80), facing 180°
+   0.0  contact  step 5 moved to (118,79): never seen at (153,94)
+   0.0  roll     chalk mark guarded (far end): robber 217px away
+   0.0  near     abduction (telegraph) at (118,85), 215px, exc 0, in 0.0/s (crowd 4.2, events 1.0), sleep 0
+   0.0  near     delivery_van (telegraph) at (116,82), 115px, exc 0, in 0.0/s (crowd 4.2, events 1.0), sleep 0
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | abduction 234px
+   0.0  frame    fps 21, worst frame 265.3ms, draws 447, objects 1813, primitives 3988, process 9.33ms, physics 0.84ms
+   0.0  path     onto the corridor at (113,75), after 0.0s off it
+   0.0  path     off the corridor at (113,73), after 0.0s on it
+   0.0  cross    stepped into the road at (113,73), at a zebra
+   0.0  frame    fps 143, worst frame 16.2ms, draws 358, objects 1683, primitives 3854, process 15.66ms, physics 1.16ms
+   0.0  path     onto the corridor at (111,72), after 0.0s off it
+   0.0  taken    'abduction' takes a bystander
+   0.0  frame    fps 161, worst frame 15.5ms, draws 307, objects 1687, primitives 4030, process 9.84ms, physics 1.35ms
+   0.0  contact  step 5 moved to (118,78): never seen at (118,79)
+   0.0  roll     chalk mark guarded (far end): robber 178px away
+   0.0  contact  step 5 moved to (96,65): never seen at (118,78)
+   0.0  roll     chalk mark guarded (far end): robber 178px away
+   0.0  frame    fps 169, worst frame 14.1ms, draws 308, objects 1460, primitives 3632, process 11.00ms, physics 1.07ms
+   0.0  frame    fps 171, worst frame 9.8ms, draws 331, objects 1554, primitives 3762, process 9.64ms, physics 1.74ms
+   0.0  path     off the corridor at (103,70), after 0.0s on it
+   0.0  near     burnt_out_car at (103,66), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   0.0  near     burnt_out_car at (101,66), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   0.0  near     burnt_out_car at (100,66), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   0.0  cross    stepped into the road at (101,69), mid-block
+   0.0  frame    fps 173, worst frame 9.2ms, draws 358, objects 1637, primitives 3900, process 9.24ms, physics 1.19ms
+   0.0  near     burnt_out_car at (98,66), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   0.0  contact  walked within 129px of the chalk mark at (96,65)
+   0.0  near     burnt_out_car at (98,66), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   0.0  frame    fps 174, worst frame 9.0ms, draws 346, objects 1631, primitives 3744, process 8.98ms, physics 1.14ms
+   0.0  near     burnt_out_car at (100,66), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   0.0  contact  step 5 seen at (96,65) after 1.0s within 150px
+   0.0  frame    fps 179, worst frame 8.8ms, draws 346, objects 1631, primitives 3744, process 8.80ms, physics 1.30ms
+   0.0  frame    fps 180, worst frame 8.6ms, draws 346, objects 1631, primitives 3744, process 8.63ms, physics 1.10ms
+   0.0  frame    fps 180, worst frame 8.7ms, draws 344, objects 1630, primitives 3718, process 8.36ms, physics 0.93ms
+   0.0  shot     burst started: asked for an animation burst at (98,67) | exc 0, sleep 4 | playing | asked/burst-17434373-001
+   0.0  frame    fps 180, worst frame 57.2ms, draws 344, objects 1630, primitives 3718, process 8.65ms, physics 0.92ms
+   0.0  frame    fps 116, worst frame 55.6ms, draws 448, objects 1824, primitives 4082, process 57.15ms, physics 0.92ms
+   0.0  path     onto the corridor at (98,70), after 0.0s off it
+   0.0  path     off the corridor at (98,72), after 0.0s on it
+   0.0  frame    fps 62, worst frame 58.3ms, draws 259, objects 1643, primitives 3865, process 56.70ms, physics 1.32ms
+   0.0  near     construction at (99,79), 200px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  near     construction at (99,79), 100px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  near     moving_van at (99,80), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  frame    fps 57, worst frame 58.7ms, draws 244, objects 1527, primitives 3567, process 57.96ms, physics 1.01ms
+   0.0  near     construction at (99,79), 51px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  frame    fps 119, worst frame 11.2ms, draws 268, objects 1556, primitives 3532, process 58.67ms, physics 1.00ms
