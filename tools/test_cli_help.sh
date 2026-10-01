@@ -104,6 +104,44 @@ assert_exit "build-web-template.sh unknown" nonzero ./tools/build-web-template.s
 assert_exit "build-web-template.sh missing jobs" nonzero ./tools/build-web-template.sh --jobs
 assert_exit "build-web-template.sh invalid jobs" nonzero ./tools/build-web-template.sh --jobs 0
 assert_exit "build-web-template.sh stray word" nonzero ./tools/build-web-template.sh stray
+assert_exit "browser-check.mjs help" zero node ./tools/web-template/browser-check.mjs --help
+assert_exit "browser-check.mjs unknown" nonzero node ./tools/web-template/browser-check.mjs --not-a-flag
+assert_exit "browser-check.mjs missing value" nonzero node ./tools/web-template/browser-check.mjs --export
+
+# A cached template must belong to these exact build inputs and its bytes must still match.
+# The fake archive is deliberate: this checks invalidation without compiling an engine.
+template_repo="$work_dir/template-repo"
+mkdir -p "$template_repo/tools/web-template"
+cp tools/build-web-template.sh "$template_repo/tools/"
+cp tools/web-template/profile.args tools/web-template/pins.env "$template_repo/tools/web-template/"
+template_key="$("$template_repo/tools/build-web-template.sh" --key)"
+checks=$(( checks + 1 ))
+if [[ -e "$template_repo/build" ]] || "$template_repo/tools/build-web-template.sh" --verify >/dev/null 2>&1; then
+    echo "FAIL template lookup writes or accepts a missing artifact" >&2
+    failures=$(( failures + 1 ))
+fi
+mkdir -p "$template_repo/build/web-template"
+printf 'fixture template\n' > "$template_repo/build/web-template/template.zip"
+template_hash="$(shasum -a 256 "$template_repo/build/web-template/template.zip" | awk '{print $1}')"
+printf '%s %s\n' "$template_key" "$template_hash" > "$template_repo/build/web-template/receipt"
+checks=$(( checks + 1 ))
+if ! "$template_repo/tools/build-web-template.sh" --verify >/dev/null; then
+    echo "FAIL matching template receipt rejected" >&2
+    failures=$(( failures + 1 ))
+fi
+printf 'corruption\n' >> "$template_repo/build/web-template/template.zip"
+checks=$(( checks + 1 ))
+if "$template_repo/tools/build-web-template.sh" --verify >/dev/null 2>&1; then
+    echo "FAIL corrupted template accepted" >&2
+    failures=$(( failures + 1 ))
+fi
+printf 'fixture template\n' > "$template_repo/build/web-template/template.zip"
+printf '\n# changed input\n' >> "$template_repo/tools/web-template/profile.args"
+checks=$(( checks + 1 ))
+if "$template_repo/tools/build-web-template.sh" --verify >/dev/null 2>&1; then
+    echo "FAIL stale profile template accepted" >&2
+    failures=$(( failures + 1 ))
+fi
 assert_exit "serve-web.sh --help"  zero ./tools/serve-web.sh --help
 assert_exit "sound-lab.sh --help"  zero ./tools/sound-lab.sh --help
 assert_exit "sound-lab.sh -h"      zero ./tools/sound-lab.sh -h
