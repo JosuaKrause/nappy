@@ -13,14 +13,12 @@ on:
   push:
     tags: ['v*']
 
-# The two permissions actions/deploy-pages needs; contents: read is the checkout's own default
-# made explicit rather than inherited; checks: read is what `verify` needs to ask the API how
-# the tagged commit's `test` check went.
+# Shared read permissions: contents is the checkout's own default made explicit rather than
+# inherited; checks is what `verify` needs to ask the API how the tagged commit's `test` check
+# went. Pages publication permissions belong only to the job that publishes.
 permissions:
   contents: read
   checks: read
-  pages: write
-  id-token: write
 
 # A deploy that starts before the last one finished would race it for the same Pages slot; queue
 # rather than cancel, since a half-published site is worse than a slightly stale one.
@@ -182,6 +180,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

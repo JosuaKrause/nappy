@@ -206,6 +206,8 @@ Run `./tools/build-web-template.sh` once before `./tools/export-web.sh`; the bui
 the pinned source and toolchain, and reuses a verified matching template on later runs.
 `tools/web-template/profile.args` lists the build options; `pins.env` pins their source and
 toolchain. Generated downloads and binaries stay under the ignored `build/` directory.
+Adding a feature can require restoring a removed release-engine module; follow
+[Turning a module back on](tools/web-template/README.md#turning-a-module-back-on) before exporting.
 The development editor, local checks and `./tools/export-web.sh debug` use the full engine.
 Changing the profile requires rebuilding and verifying the game in a browser.
 

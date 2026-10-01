@@ -45,7 +45,12 @@ The filtered artifact exits successfully after this bounded headless boot:
   --no-save
 ```
 
-The run reaches day 1 and reports no missing resource or class error. This loads the actual exported PCK through the matching native Godot runtime. A headless Chromium attempt downloads the exported HTML, JavaScript, WebAssembly and PCK and reaches Godot's full progress splash, but does not advance to a gameplay frame within the bounded run. Browser boot therefore remains inconclusive.
+The run reaches day 1 and reports no missing resource or class error. This loads the actual exported
+PCK through the matching native Godot runtime. In this initial test-exclusion experiment, a headless
+Chromium attempt downloads the exported HTML, JavaScript, WebAssembly and PCK and reaches Godot's
+full progress splash, but does not advance to a gameplay frame within the bounded run. Browser boot
+for that experiment therefore remains inconclusive. The later custom-engine comparison separately
+passes both stock and custom browser controls.
 
 ## Reproduction
 
@@ -80,4 +85,10 @@ The generated packages are not retained in this evidence directory. The commands
 
 ## Limits
 
-The fixed local gzip comparison makes compression deterministic, but it is not a CDN transfer measurement. No release upload or CDN response is measured here. The result does not claim a browser load-time improvement, and the browser runtime check remains inconclusive. The compatibility evidence is the successful native runtime boot from the exported PCK plus the bounded path and literal-reference audit. The change does not alter engine modules or production game code.
+The fixed local gzip comparison makes compression deterministic, but it is not a CDN transfer
+measurement. No release upload or CDN response is measured here. This initial test-exclusion result
+does not claim a browser load-time improvement, and its bounded browser attempt remains
+inconclusive. Its compatibility evidence is the successful native runtime boot from the exported
+PCK plus the bounded path and literal-reference audit. This experiment changes package filtering
+only; it does not alter engine modules or production game code. The separate custom-engine
+comparison covers the engine-module changes and their passing browser controls.

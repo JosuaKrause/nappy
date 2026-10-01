@@ -1,4 +1,5 @@
 # Godot 4.7.2 SCons options. Keep default text, GUI, image and 2D functionality.
+# A new release feature may require deleting opt-outs; follow README.md#turning-a-module-back-on.
 disable_3d=yes
 disable_navigation_2d=yes
 disable_navigation_3d=yes
