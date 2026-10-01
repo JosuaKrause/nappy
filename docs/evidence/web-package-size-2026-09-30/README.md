@@ -53,6 +53,7 @@ Use separate scratch worktrees so generated imports and exports cannot cross bet
 
 ```sh
 scratch="$(mktemp -d)"
+git fetch origin refs/pull/443/head
 git worktree add --detach "$scratch/baseline" e71f2abd
 git worktree add --detach "$scratch/filtered" 3083308a
 

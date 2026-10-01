@@ -59,6 +59,6 @@ identified during independent review. No save-system or gameplay redesign is inc
 Local validation includes import/boot, the existing pause and telemetry suites, CLI regression
 checks under Node 22, lint, artifact audits, template-receipt checks, evidence arithmetic/hashes
 and both browser controls. Local game testing is partial; the full suite belongs to CI. Compact
-evidence is seven files totaling 88,119 bytes; expanded browser/compiler artifacts stay in scratch
+evidence is seven files totaling 88,191 bytes; expanded browser/compiler artifacts stay in scratch
 and CI artifacts. Both requested implementation items leave the queue together. No release or
 merge is performed by this work.

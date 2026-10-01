@@ -85,6 +85,7 @@ overrides the editor path if needed. From the repository root:
 
 ```sh
 scratch="$(mktemp -d)"
+git fetch origin refs/pull/443/head
 git worktree add --detach "$scratch/source" 48e41ab705617ba5a29bb03c0fffa2f30c59e96a
 cd "$scratch/source"
 ./tools/build-web-template.sh --jobs 4
