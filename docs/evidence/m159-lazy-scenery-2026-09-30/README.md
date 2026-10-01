@@ -7,6 +7,12 @@ static allocation is about 0.10 MB nearby versus 5.90–5.95 MB full. **This is 
 preparation experiment, not a shipping implementation or a measured frame-rate improvement.**
 It excludes engine frame processing, render quadrants, GPU work, water setup and gameplay.
 
+**The primary coverage baseline is the game's generated daily route network.** The
+[generated-route report](ROUTES.md) measures actual Main boots with daily closures/events planned:
+one offered option with a retraced return covers 3.9–29.8% of prepared ground in the sampled
+envelopes, while the union of every offered route plus home covers 35.9–59.8%. The latter is
+not one itinerary. The unrestricted BFS examples below are ancillary and are not this baseline.
+
 The experiment supports making visual ground chunks resident near the camera. It does not
 support evicting shared atlas pages or entire Building nodes. It also exposes an eviction
 constraint: `TileMapLayer.clear()` retains the measured allocation; freeing the detached layer
@@ -94,9 +100,9 @@ sit between those calls. Thus the first paint is real work with a visible purpos
 deletable wholesale. Both stages should use the same nearby-residency policy; the first day's
 correct state still has to be installed before play. Cross-day sheet reuse is not required.
 
-## Prepared versus geometrically covered
+## Ancillary unrestricted-map geometric samples
 
-These are synthetic BFS routes over walkable base-map tiles, with a 640×360 camera rectangle
+These retained initial samples are BFS routes over walkable base-map tiles, with a 640×360 camera rectangle
 centered at each sampled tile center. They omit daily closures, live bodies, danger, camera
 look-ahead/smoothing, roof overhang and time limits. They are **geometric samples, not actual
 played routes or evidence of typical human exploration**. Ground means static used cells,
