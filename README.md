@@ -199,6 +199,14 @@ See [docs/TELEMETRY.md](docs/TELEMETRY.md), "The page counts visits".
 
 ## Verifying a build
 
+Release Web exports use a custom threadless Godot runtime with unused engine modules removed.
+Run `./tools/build-web-template.sh` once before `./tools/export-web.sh`; the builder downloads
+the pinned source and toolchain, and reuses a verified matching template on later runs.
+`tools/web-template/profile.args` lists the build options; `pins.env` pins their source and
+toolchain. Generated downloads and binaries stay under the ignored `build/` directory.
+The development editor, local checks and `./tools/export-web.sh debug` use the full engine.
+Changing the profile requires rebuilding and verifying the game in a browser.
+
 `.godot/` is gitignored, so a fresh clone needs an import pass before `class_name` types
 resolve. `tools/check.sh` does the import and then boots the project headless, failing on
 any script error; `tools/test.sh` is the headless suite, and it is what a commit rests on.

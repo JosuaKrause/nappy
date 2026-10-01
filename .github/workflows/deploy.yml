@@ -78,7 +78,7 @@ jobs:
   build:
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 180
     steps:
       # Same partial clone and sparse checkout as ci.yml's `shards` job: the boot check and the
       # Web export read nothing under docs/evidence/ (docs/ carries a .gdignore, so the import
@@ -125,6 +125,22 @@ jobs:
           unzip -q /tmp/templates.tpz -d /tmp/templates
           mv /tmp/templates/templates \
             "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+
+      - name: Install uv for the pinned template compiler
+        uses: astral-sh/setup-uv@v6
+
+      - name: Identify the custom Web template
+        id: web-template-key
+        run: echo "key=$(./tools/build-web-template.sh --key)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache custom Web template
+        uses: actions/cache@v4
+        with:
+          path: build/web-template
+          key: web-template-${{ steps.web-template-key.outputs.key }}
+
+      - name: Build or verify the custom Web template
+        run: ./tools/build-web-template.sh --jobs 4
 
       # The boot check stays: it is seconds, and its import pass is what leaves the project's
       # resources imported on a fresh runner before the export reads them. The suite does not run

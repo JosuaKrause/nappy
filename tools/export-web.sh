@@ -33,6 +33,7 @@ usage: tools/export-web.sh [--help|-h] [release|debug]
 Headless Web export into build/web/ (gitignored). "release" is the default -- what
 .github/workflows/deploy.yml publishes. "debug" makes OS.is_debug_build() true in the result,
 so ?telemetry=1 answers; tools/serve-web.sh exports this way and serves the result.
+Release requires tools/build-web-template.sh first; debug uses the stock template.
 
   tools/export-web.sh
   tools/export-web.sh debug
@@ -62,6 +63,10 @@ esac
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT (override with GODOT=...)" >&2
     exit 127
+fi
+
+if [[ "$MODE" == release ]]; then
+    "$PROJECT_DIR/tools/build-web-template.sh" --verify || exit 1
 fi
 
 # What the export says it is. `application/config/version` and `application/config/source_commit`

@@ -98,6 +98,12 @@ assert_exit "check.sh -h"          zero ./tools/check.sh -h
 assert_exit "lint.sh --help"       zero ./tools/lint.sh --help
 assert_exit "pycheck.sh --help"    zero ./tools/pycheck.sh --help
 assert_exit "export-web.sh --help" zero ./tools/export-web.sh --help
+assert_exit "build-web-template.sh --help" zero ./tools/build-web-template.sh --help
+assert_exit "build-web-template.sh -h" zero ./tools/build-web-template.sh -h
+assert_exit "build-web-template.sh unknown" nonzero ./tools/build-web-template.sh --not-a-flag
+assert_exit "build-web-template.sh missing jobs" nonzero ./tools/build-web-template.sh --jobs
+assert_exit "build-web-template.sh invalid jobs" nonzero ./tools/build-web-template.sh --jobs 0
+assert_exit "build-web-template.sh stray word" nonzero ./tools/build-web-template.sh stray
 assert_exit "serve-web.sh --help"  zero ./tools/serve-web.sh --help
 assert_exit "sound-lab.sh --help"  zero ./tools/sound-lab.sh --help
 assert_exit "sound-lab.sh -h"      zero ./tools/sound-lab.sh -h
