@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# List an exported pack and report every baked constituent still inside it.
+# List an exported pack and report every test resource or baked constituent still inside it.
 #
 #   tools/audit-pck.sh                       # the newest build/web/*/index.pck
 #   tools/audit-pck.sh path/to/index.pck     # a pack by name
 #   tools/audit-pck.sh --list                # every path in the pack, sorted
-#   tools/audit-pck.sh --fatal               # exit non-zero when a constituent is found
+#   tools/audit-pck.sh --fatal               # exit non-zero when forbidden content is found
 #
 # The contract this serves is the player's: "they should cease existing in the build once they
 # get baked into an atlas" (docs/playtests/PLAYTEST-105.md). A picture that is a member of an
@@ -13,7 +13,11 @@
 # as members here too: a picture only one bake mode draws is still an authoring source, and no
 # pack may carry one whichever mode wrote its page.
 #
-# It asks two questions of a pack. **Is a baked constituent in it** -- a member picture, its
+# It asks three questions of a pack. **Is anything under tests/ in it**, including scripts,
+# scenes, probes and remaps. **Does a file elsewhere in the pack still refer to res://tests/** --
+# especially the global class cache or another plain packed resource the path filter did not
+# remove. The exported-runtime boot checks compatibility that this literal-reference audit cannot.
+# **Is a baked constituent in it** -- a member picture, its
 # .import sidecar or the imported .ctex that sidecar names. And **is a page in it that the pack's
 # own regions.json names no group for** -- a page left behind by a group that was folded into
 # another, which nothing loads and which the engine exports anyway because
@@ -35,13 +39,14 @@ usage() {
     cat <<'EOF'
 usage: tools/audit-pck.sh [--help|-h] [--fatal] [--list] [pack]
 
-Lists an exported .pck and reports what should not be in it: every picture that is a member of
-an atlas group and is still there -- as its own source, its .import sidecar or its imported
-.ctex copy -- and every baked page the pack's own regions.json names no group for.
+Lists an exported .pck and reports what should not be in it: every path under tests/, every
+packed file that still refers to res://tests/, every picture that is a member of an atlas group
+and is still there -- as its own source, its .import sidecar or its imported .ctex copy -- and
+every baked page the pack's own regions.json names no group for.
 Reports only and exits 0 unless --fatal is given.
 
   pack      the .pck to read; defaults to the newest build/web/*/index.pck
-  --fatal   exit non-zero when a constituent or an unnamed page is found
+  --fatal   exit non-zero when tests, a constituent or an unnamed page is found
   --list    also print every path in the pack, sorted
 
   tools/audit-pck.sh
@@ -182,6 +187,17 @@ if want_list:
         print(name)
     print()
 
+# The directory filter is only an instruction to the exporter. The shipped artefact is the
+# proof: direct test paths include compiled scripts and their remaps, while references from a
+# path outside tests/ catch the global class cache and other plain packed resources that still
+# point back into the excluded tree. This does not claim to inspect arbitrary compiled bytecode;
+# the exported-runtime boot is the compatibility check for the package as a whole.
+test_paths = sorted(name for name in inside if name.startswith("tests/"))
+test_references = sorted(
+    name for name, contents in inside.items()
+    if not name.startswith("tests/") and b"res://tests/" in contents
+)
+
 hits = {}
 for name in inside:
     if name in wanted:
@@ -226,14 +242,20 @@ if groups is not None:
 # /tmp printed relative to the project root is seven `..` segments nobody can read.
 shown = os.path.relpath(pack_path, root)
 print("pack: %s" % (pack_path if shown.startswith("..") else shown))
-print("      %d files, %d atlas members, %d of them still in the pack"
-      % (len(inside), len(members), len(hits)))
+print("      %d files, %d test paths, %d other files referring to tests"
+      % (len(inside), len(test_paths), len(test_references)))
+print("      %d atlas members, %d of them still in the pack"
+      % (len(members), len(hits)))
 if groups is None:
     print("      no regions.json in the pack, so no page could be checked against its groups")
 else:
     print("      %d baked pages, %d of them named by no group" % (len(groups), len(unnamed)))
 for name in unnamed:
     print("      orphan page: %s" % name)
+for name in test_paths[:5]:
+    print("      test path: %s" % name)
+for name in test_references[:5]:
+    print("      test reference: %s" % name)
 by_group = {}
 for member, (group, names) in hits.items():
     by_group.setdefault(group, []).append(member)
@@ -246,6 +268,9 @@ if hits and fatal:
     sys.exit("FAILED: %d baked constituents are still in the pack" % len(hits))
 if unnamed and fatal:
     sys.exit("FAILED: %d baked page files in the pack belong to no group" % len(unnamed))
+if (test_paths or test_references) and fatal:
+    sys.exit("FAILED: %d test paths and %d other packed files referring to tests"
+             % (len(test_paths), len(test_references)))
 PY
 status=$?
 exit $status
