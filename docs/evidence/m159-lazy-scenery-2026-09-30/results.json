@@ -1,0 +1,808 @@
+{
+  "revision": "6aa23ba14cd69d77915b2b0875b0b69f240e5c0f",
+  "started_unix": 1790816574.503285,
+  "elapsed_seconds": 14.88342809677124,
+  "command": [
+    "/Applications/Godot.app/Contents/MacOS/Godot",
+    "--headless",
+    "--path",
+    "/Users/krause/workspace/nappy-codex/.claude/worktrees/lazy-scenery-investigation",
+    "res://tests/tests.tscn",
+    "--",
+    "probes/lazy_scenery_measure.gd",
+    "--no-save",
+    "--seed",
+    "4242"
+  ],
+  "hashes": {
+    "src/autoload/event_bus.gd": "06e07dc16efbde438d5202c5c3536735a7d25e88bcf05fa71b7f161d6ea9fc20",
+    "src/autoload/game_save.gd": "13bb223aff277a0fb2d91af7b0c1638e8975c72f94ed29c6060e603b40844d57",
+    "src/autoload/game_state.gd": "fafc97ef0f96806af9a09f323a330c0f715080f2e9a198ca1a648d2a48518a4b",
+    "src/autoload/telemetry.gd": "4ce3261e945d648fc132e82b73f6a3254c8b290a957ec6e108924c609e081753",
+    "src/autoload/tuning.gd": "a4641078afdf8dfff625b00ce5eb8e05e492322f0a2b61addfd5974ff9a126be",
+    "src/autoload/visit_counter.gd": "63bc8c095a37a42dacbaa94177a715ca77360c55c4b2e6d033df1be541e6c6ce",
+    "src/city/blackout.gd": "951dd400b1e80cc5fdad4ef8bf376bf86b0cddae6ba35c8072f88c1cfde46bed",
+    "src/city/block_layout.gd": "4198fdbf9749244db802aa750ef988f4cd369c16daa9185da8f29198ee6dfb96",
+    "src/city/block_plan.gd": "67fce54547ace4942886f19fb694f1675776efa2f9af99fef9b0670ffc8a8f19",
+    "src/city/building.gd": "0315be5c233e4c932872ee859739d882958caabda8cb1bba00d77ac50327f046",
+    "src/city/building_shadows.gd": "2eb94ef81088fa5346390a4f426bd95d7ae56bf96460531c2d36b596ac141677",
+    "src/city/city.gd": "6d82c93fa1c2f6341566061e15eac7ea85aab177cbde321e9f9e2b4fc35405dc",
+    "src/city/city_decals.gd": "58746ec7ec2bb405ec9fe63361d7c2a09e84da96da4f7c2f7edf0b93a97acfa4",
+    "src/city/city_edge.gd": "7943fb72739ff40b937041df375918fd0047823578c615c43223ac02f22d8c10",
+    "src/city/city_generator.gd": "19d60d79bda6e0e83715c5856809bf061ab3d25b3f682f1885f14610eff8b7ae",
+    "src/city/city_map.gd": "bbf45c02ce6e60e255a076f693bf753a5a77b14d58d4a38a3b355e99608ae357",
+    "src/city/city_state.gd": "a3a2b80e12e95d25e00d83289f3b9e5189e37fb8612cd80c770206521674d379",
+    "src/city/garbage_sacks.gd": "81cdd31e7190a107377f0c4cd8cef28895a8593f6aaa24578ce96174c6abfc2d",
+    "src/city/ground_tiles.gd": "45a57a4802517f1bce7c993219efee1e511a41aabfdf6291cc18cade5424cbd0",
+    "src/city/litter.gd": "41bb2d49345e4604bb0a781b455e9ec3481b6c4aba13a3705600e61d40b4acc8",
+    "src/city/marble_bag.gd": "f3af8823b78a1075bcfaca91d5c7d3f3630201267bb7c2ee8d8079368b1532f2",
+    "src/city/poster_art.gd": "143be9d0ea6fd28995c59519b0aff41ebe70f9937d93c0ceb79b61f32836aead",
+    "src/city/poster_state.gd": "0364848959cc3e8fb7338afff0156be0bfca8aefea70fb8005f8ec80ad3baccf",
+    "src/city/poster_walls.gd": "8351bc00b53419487b3ec7a99f580a17bee77657c473bf2323da387f65c70012",
+    "src/city/prop.gd": "a17c66840ef913aac3085eb9684cd6dc73c02550c8fefb655329dd168d447ce6",
+    "src/city/scenery_layer.gd": "68b5d514a0a134b64704cf1a064300ddb9229d3d8a91eaf176aeddfb0f035c82",
+    "src/city/scenery_water.gd": "a00cb5538712717974b67753134937bad92aace2524cf7b5423f18cabead7fc7",
+    "src/city/street_trees.gd": "957985af01e34cada751150a4a6256459d9c9ad2e26c8bd44013c0a122d8c0c7",
+    "src/city/tile.gd": "a7cf1d0d7ab68afc9f8963b2442cf5be690ff96df00a7a29f0c66ba6e55d3241",
+    "src/city/traffic_light.gd": "ab47c7be6678bda11ccf98106dea7637d5b982cefd7dd3365f7590d6a1a3dd4f",
+    "src/city/traffic_signals.gd": "0ee0275f2327689f0eac2e3fbb34512f38cd4160cf38e2d358f4c24c34269e06",
+    "src/crowd/car_turn.gd": "3496a6adea72741a6c988e195824e9af2dcabfcfb5c252e1051dc7483f3a351d",
+    "src/crowd/crowd.gd": "9e86cabd7e1d2093747ce39317992fbee55992cd107398c48f12b8b35fe7631b",
+    "src/crowd/crowd_agent.gd": "40155dd4716538ac5481945d8c3433d70ee79d15151dbf13a73038c5c47fb448",
+    "src/crowd/crowd_field.gd": "8da22be14be311f33c5b181a724516d94c410c142b10a9c95e17779c00623a10",
+    "src/crowd/crowd_lanes.gd": "33c6c35e460625afd1056f9efa4c02d713a566886e0daf556fdb83500093e8b4",
+    "src/crowd/crowd_pockets.gd": "91110640707b1d0ef130e9571264ae5b0e137d2a670e371331ee73cd748fcb2b",
+    "src/crowd/traffic_index.gd": "c94617a7e855c416bdc14ad8101ef842f30b6e66d07e1f2242f3fa5dd3c07e56",
+    "src/crowd/walker_door_hold.gd": "3e593fc44893ed035a6818c8e8b200334bf76104a1dff1057cc140f6226b6d10",
+    "src/day/day_controller.gd": "43fed743c7e6f3e7cf5f4cf70fdd4cf59d8fc2b6d6fc28892e1da0da7ca70bca",
+    "src/dev/auto_screenshot.gd": "b5340e0f14a632956dbb834ca636ba26f0eefb5cb54d16b4d91fd3b880bafe06",
+    "src/dev/debug_layers.gd": "550c9dc6b9ed388f8af9e044ad6caa3b1cd65c0cefb5c4aa8c73bf04f78ecfd9",
+    "src/dev/debug_mode_note.gd": "eea1c6ca8f8652699db4397228e57fcc9fd3c3ac69f6bdc847be6fbb3189cd07",
+    "src/dev/dev_flags.gd": "f2437369163373012b3c7771ab265ea17c320157e626f904a157500b00e2eddb",
+    "src/dev/dev_rig.gd": "ec6497ff503ca1b8957891446f174dcc0d17a6e77b3b251ac0382b5467c197a0",
+    "src/dev/route_lines.gd": "39524bb10f45fc6bb1328d3c16339c4fd5b0e4c6ded49890abf566005292eb4a",
+    "src/dev/route_rig.gd": "65ca9cc1eb530abf1f3bab1dab732fafea6bfda6a813b2901f28f7580582005c",
+    "src/dev/still_watch.gd": "d415e171fda787e5e3247dd63ba7c5c20869e89af31670b68315a5e2b86bda73",
+    "src/dev/trailer_text.gd": "300f29fabab0eafd25afb65840d2f424385762ec20881a0e567705350b00313d",
+    "src/dev/zoom_out_camera.gd": "425b852cd113b2724e4d1bef9024a41e5ac4e728244f1634df9f8da042d0f8e2",
+    "src/events/event_catalogue.gd": "91d655e447ccdab64ff55b0139fa108440df0b8b0fdbfc498025e318e673c2fb",
+    "src/events/event_def.gd": "b4949a21523f5fdb7cd4e61a105bed0d0ff77d55f02c9e673b0a27accfe1ee88",
+    "src/events/event_director.gd": "59c6ec921e0515427edeee85ecccb70b9cee17190faea6febb2a877f0c6f120f",
+    "src/events/event_instance.gd": "3f9d83d2fd27a47c25b38b6ac85a641931b8857924ad64944bbd83be42b6f604",
+    "src/events/event_manager.gd": "49e6fd880178f884eefce0e8943404e9c2c3e719c58f81cb373a5cfd58459415",
+    "src/events/event_scenery.gd": "59dfdcef549a0fd038bc926f2858b458ed25b195cb395264d78fbbdf7e76fe17",
+    "src/events/event_scenery_parts.gd": "e0521b49432e1719e1b12f23cb8e0572fa5ae6e656334bcef6f40fb6d05e0fbd",
+    "src/events/event_scheduler.gd": "e53aab8a237edf3e131ae53d7ff67656c313d08db79dccf6cfa91946b3f4351c",
+    "src/events/mast_sites.gd": "333a2fb8b2c2631a80d6d8612c11908adc7cfed1e2d085d0474aa73f397d3602",
+    "src/events/pending_warning.gd": "2b71d930c5d48a553400ef765a1771ce1d44e83660f300c96646fe433c2d3f17",
+    "src/finale/finale_controller.gd": "31d34c46f3b33710bad7e637f255ffa2795a88b838589ddc81bcb13a0397163c",
+    "src/finale/finale_planner.gd": "d711cd65312bbf2cc03daba712e88448f5d8ef23aa5f617b888ec31eab50bd5b",
+    "src/finale/interior_events.gd": "23c91f546a8529755b6b68c2712187134e5a4e827a20ced029c5e1a403984c88",
+    "src/game_enums.gd": "559e9b3197741008933a677e47f01c11c41709634a43fb0cd59ad9b85479e13e",
+    "src/ground_shape.gd": "f3310ce1197db68902a3dfd00e25b0e45411acffd73b5aeeffc81b55826373eb",
+    "src/interior/interior_map.gd": "06fdb79e62938abbc97ab3f60f883bf2d34728a84c7cb04d7765b6e958a5ca22",
+    "src/interior/interior_map_plan.gd": "bfde83ee030641a5220d5119ed69c4a3785a833febbc6019bbeecf8e6aa6fc0a",
+    "src/interior/interior_scene.gd": "f9578e174bced33c3db5f81d11405c3c3194b755955f147a6a79afd1118fbbe3",
+    "src/interior/interior_tile.gd": "ec29ee9a124020b86bb4126808199299ca3f8ba47a5aed310c98484c49a843d1",
+    "src/interior/interior_tileset.gd": "731865a4e3d4936650a8a07d95668483cfa38c7d1d1b529e6498e47ee132e416",
+    "src/main.gd": "62cf07fa4ae8d19f5a47cac2b64539f961e01b2d190eac800f27f3e6e7ea7605",
+    "src/palette.gd": "d70d9a7d23b32ca14ad366632220970f22ef760201a2a9be173b658358df5edd",
+    "src/player/baby.gd": "c157f4a7c4ecb91a303c9b9d90025694501b9bd27a4c79a42353b3699834c567",
+    "src/player/stroller.gd": "e1992d77a43dbc75ed018db1cd3b9ffcd32345b05c56dbb80f6ac953894301ab",
+    "src/resistance/contact_point.gd": "7859d3989e35af6640a3ddd93155fff5134c8dbfa5bf1aa20b4db8d942e15f42",
+    "src/resistance/happenings.gd": "899048fb203008148633607a72402a9ab1f6197ddc6cd542f8ce7bc11b0945a1",
+    "src/resistance/resistance_director.gd": "ed6d796750479c1c8a3c1f683f5fdcc12563f27bf426f92a6fd2a0f2c51b2529",
+    "src/resistance/resistance_steps.gd": "c196135966e603abefdb5a6f987517fe1ab68c77313a1ac507ef997567688928",
+    "src/routes/closure_marker.gd": "08114c330e23f9d18f5ef3530185e2864259187d48df7249455bc41b6fb6cd3e",
+    "src/routes/closure_planner.gd": "3174399eb620cd275ff137cdee68bca46919fca53edd6eab18d9f22522ca0c55",
+    "src/routes/corridor.gd": "0634fcce8c313f206256a84b0d316195c088166edfbdf42db63f67d295dfc371",
+    "src/routes/park_closure.gd": "bf7dfcb05cd76caa1f7859c7e8c35c6e118a8f9223b0dfeb2ce705b31c1d95f1",
+    "src/routes/park_fence_marker.gd": "2e43f007a67ccdf7df8927f42cf3f0172207b5e29b3d91be890d32c04a44700b",
+    "src/routes/reachability_grid.gd": "4965a7ec3fe2d4155852b9a787a3df3e9debf81d2f836e572e72d8f3fcb5a7d9",
+    "src/routes/region_planner.gd": "b7fb44f2aa09c19cae5366314de58a8f59ca1461a9dcd6177ab29c02a72faf81",
+    "src/routes/road_closure.gd": "daccc0a5a0b35cb968ffe3948cc3a4bc853f14e0110aff35e18fcd9a22246f49",
+    "src/routes/route_tree.gd": "2fcd956ec824ac3d8fc37a8b7c15d651daff5a669cef56f75dd887267a8e654e",
+    "src/routes/seal_planner.gd": "f5d8bdf57b8f2299fa4a3c3692f3c9c85154b3549dbd6a8571776c8913fcd70f",
+    "src/routes/street_network.gd": "9ac8475a3f5ea0488e125875eec2cbe249063c775a66687fe7268f0b4ca92e80",
+    "src/sprites.gd": "0d665a3e0fa3284e6180f84efe0949e09e5337df72883b82c23e1ccd8071b19f",
+    "src/telemetry/frame_cost.gd": "0967c33ae8408f2d84634879f24ab472ac321fc6d24796a2cf2c96be7275e451",
+    "src/telemetry/frame_trace.gd": "32af6b2b35d85ab5edd0a3d935f69898d95aa533dceac7dd4bfdda6c9fe0935e",
+    "src/telemetry/frame_trace_buffer.gd": "2729fdd8ee168fba65934eab0f662e96878641140939ecf45909cd1cc762dac0",
+    "src/telemetry/telemetry_log.gd": "846a2fdbf49c2e93039b7330ae1a6cfcf7decb3a54e05c50bb01b237fdc55118",
+    "src/telemetry/telemetry_map.gd": "dc8d8b6a864e3ac59c34b63c9c8734f3db773904d31d0f54deeb5284c0083c93",
+    "src/telemetry/telemetry_observer.gd": "ab19ac4358ce38c300118fc5df85b70203289efd19c59fe8e5fb3f273ebdb9e0",
+    "src/ui/controls_mode.gd": "bb9343a0d848fa7ced32e9e6d108227c285c321c6dca1eac5e00d1044f4c4baa",
+    "src/ui/danger_edge.gd": "3abd4f303dd269e53add3e10a7728b4d9917a007cc62802779e9474ef88770f2",
+    "src/ui/day_summary.gd": "03c112111ad292e2a2be4828ae1212bfdf7e964b16ade4d4e41973b81619e8e7",
+    "src/ui/entity_halo.gd": "814bb6615c2b5d63df9da719086ee7ae0111dea167aaa7815dd6b306f722f87a",
+    "src/ui/excitement_halo.gd": "4937271968798c7be548c3b133fc18ba7839be086a81ddd20d4722e1b16145e1",
+    "src/ui/frame_graph.gd": "ec1c7dd336c3829633c1c03b812e2ef244dc8bff8b5ac238964ec0cb65cc9830",
+    "src/ui/home_arrow.gd": "cdcb51f145724dd5fefab0131c18a93c00ccf11f9543966a96e30d761995675a",
+    "src/ui/hud.gd": "272712b3d2dc8fd5655c14df6f355d5905b2a9559d0ef54d8f3567ca380fe0ba",
+    "src/ui/meter_bar.gd": "d913d3b221c5a1bcf4ad1fda13536172b5ca7f5c16090a643945c1a379a18fff",
+    "src/ui/mode_button.gd": "0a9eccf6fa7cd251d23a3084b0272e8c5a3899842dddf60f90b2f6837b116dc2",
+    "src/ui/nerve_display.gd": "316da7a1c5f7f98a55b2a1b6aa43822c05d2918555c74d7105833a6b58dcd924",
+    "src/ui/pause_screen.gd": "050f7a9e981e575ee7bd2a2cc5b8a353971a3cf1107b3db7e62f6fd9a767b24e",
+    "src/ui/quit_option.gd": "b19b998efcc98436ae42c35415b83cd4c1a141568faa8e62ca6b1461e90d638c",
+    "src/ui/save_indicator.gd": "089b9843536eb0834e1d79befba56e8546e3103510751396f8c511e9f8d827ea",
+    "src/ui/screen_orientation.gd": "9aaf3774053ae4043d8c1f1292d6cf5153c356496c55fc1d0fad7eb5fe60ba6c",
+    "src/ui/sentence_lines.gd": "27e1d9493666f4b49acf9adbf90102c4bc65924a4f42535a8f4e1c057f1d32b2",
+    "src/ui/title_screen.gd": "c9a371d7dc636da2144f722aae28d8b99f95ae7d01b6dd4746ff521b7e3c218c",
+    "src/ui/touch_controls.gd": "e9753048531c564b2ef059bd72d53a8cbd398074e2e0f7f8ea8e6983b5a42a5c",
+    "src/ui/touch_input.gd": "07e1163fd5600a518db3fda6957096dad7576db4d92358e1aac3dca829124b6a",
+    "src/visuals/atlas_library.gd": "1a700f6592234455bae907bc78249fbf8f605c12f53ae390cbe6642d3db79751",
+    "src/visuals/eight_direction.gd": "330fe60cf69d400d512200b3d326586286f0417ded2ef701f372e2e82a1ee19c",
+    "src/visuals/ground_layers.gd": "2ea623fcb8e721ee4cdd42c177d23fc66817143317a61a47953696fef36d291f",
+    "src/visuals/wheel_bob.gd": "187232481f503e96dfcc4ade98d7dacedd4e8d871ca0d9706fdcb6f8043b3686",
+    "src/world/release_latch.gd": "89f01549e839915e3e97d562e2aea6e4296693617662cf6bb177de1cb59f52a1",
+    "src/world/world_context.gd": "7b3e7bb0169a1abc1bfe8b91335b7266b1bcbbbfca000d54c763826700a33745",
+    "tests/probes/lazy_scenery_city.gd": "ba7417bee114e7e66572333478ccf6b5bbd3405583fa736ec2c91b92954a199d",
+    "tests/probes/lazy_scenery_measure.gd": "9edfafa282e301e10d57d36df1bdbbe38f8def235a9aa365a198ae857b876d97",
+    "project.godot": "ba0040671e7661a39138ca6d62acc771fbe36b7fb34a9117558ef8234d7ae2e3",
+    "docs/evidence/m159-lazy-scenery-2026-09-30/measure.py": "9dd82a25b3e3122af284fc0c67b1ad822bf7a116aa90024a26ede98506a22664"
+  },
+  "rows": [
+    {
+      "kind": "LAZY_META",
+      "value": {
+        "engine": {
+          "build": "official",
+          "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+          "hex": 263938,
+          "major": 4,
+          "minor": 7,
+          "patch": 2,
+          "status": "stable",
+          "string": "4.7.2-stable (official)",
+          "timestamp": 0
+        },
+        "mode": "headless synchronous; no engine frame between stages",
+        "os": "macOS",
+        "processor": "Apple M2"
+      }
+    },
+    {
+      "kind": "LAZY_ATLAS",
+      "value": {
+        "group": "buildings",
+        "rgba8_base_bytes": 764928,
+        "size": "(332, 576)"
+      }
+    },
+    {
+      "kind": "LAZY_ATLAS",
+      "value": {
+        "group": "street_kit",
+        "rgba8_base_bytes": 711872,
+        "size": "(392, 454)"
+      }
+    },
+    {
+      "kind": "LAZY_ATLAS",
+      "value": {
+        "group": "ground",
+        "rgba8_base_bytes": 211904,
+        "size": "(172, 308)"
+      }
+    },
+    {
+      "kind": "LAZY_ATLAS",
+      "value": {
+        "group": "decoration",
+        "rgba8_base_bytes": 112896,
+        "size": "(144, 196)"
+      }
+    },
+    {
+      "kind": "LAZY_ATLAS",
+      "value": {
+        "group": "events",
+        "rgba8_base_bytes": 3181680,
+        "size": "(810, 982)"
+      }
+    },
+    {
+      "kind": "LAZY_ATLAS",
+      "value": {
+        "group": "crowd",
+        "rgba8_base_bytes": 194000,
+        "size": "(194, 250)"
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "buildings": 158,
+        "buildings_ms": 10.914,
+        "composition_ms": 23.159,
+        "generation_ms": 231.46,
+        "nodes": 742,
+        "paint_ms": 101.132,
+        "seed": 4242,
+        "stage": "build",
+        "static_memory_delta": 12309896,
+        "total_ms": 120.399,
+        "trial": 0
+      }
+    },
+    {
+      "kind": "LAZY_BOOT",
+      "value": {
+        "building_nodes": 547,
+        "buildings_visible_by_lot": 5,
+        "ground_prepared": 22866,
+        "home_block_world": "[P: (2432.0, 2432.0), S: (256.0, 256.0)]",
+        "max_roof_north_overhang_px": 96.0,
+        "roof_layers": 230,
+        "seed": 4242,
+        "shadow_chunks": 97,
+        "viewport_world": "[P: (2240.0, 2524.0), S: (640.0, 360.0)]",
+        "visible_ground_inside_home": 4,
+        "visible_ground_outside_home": 206
+      }
+    },
+    {
+      "kind": "LAZY_COVERAGE",
+      "value": {
+        "prepared_buildings": 158,
+        "prepared_ground_cells": 22866,
+        "round_trip_px": 2496,
+        "route": "nearest_calm_return",
+        "seed": 4242,
+        "unique_building_lots": 13,
+        "unique_ground_cells": 787
+      }
+    },
+    {
+      "kind": "LAZY_COVERAGE",
+      "value": {
+        "prepared_buildings": 158,
+        "prepared_ground_cells": 22866,
+        "round_trip_px": 7680,
+        "route": "farthest_bfs_calm_return",
+        "seed": 4242,
+        "unique_building_lots": 33,
+        "unique_ground_cells": 1592
+      }
+    },
+    {
+      "kind": "LAZY_SUBSET",
+      "value": {
+        "cells": 22866,
+        "clear_ms": 0.426,
+        "insert_ms": 82.204,
+        "mode": "full",
+        "seed": 4242,
+        "shared_sheet_rgba8_bytes": 753024,
+        "shared_sheet_size": "(424.0, 444.0)",
+        "static_memory_after_clear_delta": 5897668,
+        "static_memory_after_free_delta": 0,
+        "static_memory_delta": 5897668
+      }
+    },
+    {
+      "kind": "LAZY_SUBSET",
+      "value": {
+        "cells": 404,
+        "clear_ms": 0.008,
+        "insert_ms": 1.596,
+        "mode": "nearby",
+        "seed": 4242,
+        "shared_sheet_rgba8_bytes": 753024,
+        "shared_sheet_size": "(424.0, 444.0)",
+        "static_memory_after_clear_delta": 105828,
+        "static_memory_after_free_delta": 0,
+        "static_memory_delta": 105828
+      }
+    },
+    {
+      "kind": "LAZY_SUBSET",
+      "value": {
+        "cells": 404,
+        "clear_ms": 0.007,
+        "insert_ms": 1.579,
+        "mode": "nearby",
+        "seed": 4242,
+        "shared_sheet_rgba8_bytes": 753024,
+        "shared_sheet_size": "(424.0, 444.0)",
+        "static_memory_after_clear_delta": 105828,
+        "static_memory_after_free_delta": 0,
+        "static_memory_delta": 105828
+      }
+    },
+    {
+      "kind": "LAZY_SUBSET",
+      "value": {
+        "cells": 22866,
+        "clear_ms": 0.506,
+        "insert_ms": 79.812,
+        "mode": "full",
+        "seed": 4242,
+        "shared_sheet_rgba8_bytes": 753024,
+        "shared_sheet_size": "(424.0, 444.0)",
+        "static_memory_after_clear_delta": 5897668,
+        "static_memory_after_free_delta": 0,
+        "static_memory_delta": 5897668
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 309.703,
+        "composition_ms": 20.835,
+        "day": 1,
+        "dressing_ms": 3.107,
+        "nodes_including_pending_free": 920,
+        "paint_ms": 93.487,
+        "props": 181,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 419.709,
+        "trial": 0
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 342.306,
+        "composition_ms": 20.821,
+        "day": 8,
+        "dressing_ms": 36.142,
+        "nodes_including_pending_free": 1490,
+        "paint_ms": 103.295,
+        "props": 529,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 515.632,
+        "trial": 0
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 352.521,
+        "composition_ms": 20.669,
+        "day": 14,
+        "dressing_ms": 38.884,
+        "nodes_including_pending_free": 2446,
+        "paint_ms": 106.828,
+        "props": 1070,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 534.963,
+        "trial": 0
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "buildings": 150,
+        "buildings_ms": 9.503,
+        "composition_ms": 20.768,
+        "generation_ms": 220.728,
+        "nodes": 708,
+        "paint_ms": 94.811,
+        "seed": 3265820891,
+        "stage": "build",
+        "static_memory_delta": 11106560,
+        "total_ms": 110.381,
+        "trial": 0
+      }
+    },
+    {
+      "kind": "LAZY_BOOT",
+      "value": {
+        "building_nodes": 515,
+        "buildings_visible_by_lot": 4,
+        "ground_prepared": 23083,
+        "home_block_world": "[P: (2432.0, 2432.0), S: (256.0, 256.0)]",
+        "max_roof_north_overhang_px": 96.0,
+        "roof_layers": 214,
+        "seed": 3265820891,
+        "shadow_chunks": 95,
+        "viewport_world": "[P: (2240.0, 2524.0), S: (640.0, 360.0)]",
+        "visible_ground_inside_home": 4,
+        "visible_ground_outside_home": 204
+      }
+    },
+    {
+      "kind": "LAZY_COVERAGE",
+      "value": {
+        "prepared_buildings": 150,
+        "prepared_ground_cells": 23083,
+        "round_trip_px": 3392,
+        "route": "nearest_calm_return",
+        "seed": 3265820891,
+        "unique_building_lots": 14,
+        "unique_ground_cells": 849
+      }
+    },
+    {
+      "kind": "LAZY_COVERAGE",
+      "value": {
+        "prepared_buildings": 150,
+        "prepared_ground_cells": 23083,
+        "round_trip_px": 7936,
+        "route": "farthest_bfs_calm_return",
+        "seed": 3265820891,
+        "unique_building_lots": 22,
+        "unique_ground_cells": 1856
+      }
+    },
+    {
+      "kind": "LAZY_SUBSET",
+      "value": {
+        "cells": 23083,
+        "clear_ms": 0.498,
+        "insert_ms": 79.628,
+        "mode": "full",
+        "seed": 3265820891,
+        "shared_sheet_rgba8_bytes": 753024,
+        "shared_sheet_size": "(424.0, 444.0)",
+        "static_memory_after_clear_delta": 5948012,
+        "static_memory_after_free_delta": 0,
+        "static_memory_delta": 5948012
+      }
+    },
+    {
+      "kind": "LAZY_SUBSET",
+      "value": {
+        "cells": 388,
+        "clear_ms": 0.008,
+        "insert_ms": 1.541,
+        "mode": "nearby",
+        "seed": 3265820891,
+        "shared_sheet_rgba8_bytes": 753024,
+        "shared_sheet_size": "(424.0, 444.0)",
+        "static_memory_after_clear_delta": 102116,
+        "static_memory_after_free_delta": 0,
+        "static_memory_delta": 102116
+      }
+    },
+    {
+      "kind": "LAZY_SUBSET",
+      "value": {
+        "cells": 388,
+        "clear_ms": 0.007,
+        "insert_ms": 1.53,
+        "mode": "nearby",
+        "seed": 3265820891,
+        "shared_sheet_rgba8_bytes": 753024,
+        "shared_sheet_size": "(424.0, 444.0)",
+        "static_memory_after_clear_delta": 102116,
+        "static_memory_after_free_delta": 0,
+        "static_memory_delta": 102116
+      }
+    },
+    {
+      "kind": "LAZY_SUBSET",
+      "value": {
+        "cells": 23083,
+        "clear_ms": 0.438,
+        "insert_ms": 79.156,
+        "mode": "full",
+        "seed": 3265820891,
+        "shared_sheet_rgba8_bytes": 753024,
+        "shared_sheet_size": "(424.0, 444.0)",
+        "static_memory_after_clear_delta": 5948012,
+        "static_memory_after_free_delta": 0,
+        "static_memory_delta": 5948012
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 316.566,
+        "composition_ms": 20.611,
+        "day": 1,
+        "dressing_ms": 2.062,
+        "nodes_including_pending_free": 907,
+        "paint_ms": 93.334,
+        "props": 202,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 424.8,
+        "trial": 0
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 340.806,
+        "composition_ms": 20.826,
+        "day": 8,
+        "dressing_ms": 34.771,
+        "nodes_including_pending_free": 1388,
+        "paint_ms": 103.397,
+        "props": 439,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 512.774,
+        "trial": 0
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 332.616,
+        "composition_ms": 20.677,
+        "day": 14,
+        "dressing_ms": 37.013,
+        "nodes_including_pending_free": 2179,
+        "paint_ms": 106.692,
+        "props": 924,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 510.309,
+        "trial": 0
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "buildings": 158,
+        "buildings_ms": 9.804,
+        "composition_ms": 20.802,
+        "generation_ms": 220.782,
+        "nodes": 742,
+        "paint_ms": 94.559,
+        "seed": 4242,
+        "stage": "build",
+        "static_memory_delta": 11222944,
+        "total_ms": 110.667,
+        "trial": 1
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 308.114,
+        "composition_ms": 20.633,
+        "day": 1,
+        "dressing_ms": 2.148,
+        "nodes_including_pending_free": 920,
+        "paint_ms": 93.509,
+        "props": 181,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 416.842,
+        "trial": 1
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 340.791,
+        "composition_ms": 20.699,
+        "day": 8,
+        "dressing_ms": 35.934,
+        "nodes_including_pending_free": 1490,
+        "paint_ms": 103.404,
+        "props": 529,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 513.786,
+        "trial": 1
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 352.641,
+        "composition_ms": 20.635,
+        "day": 14,
+        "dressing_ms": 38.869,
+        "nodes_including_pending_free": 2446,
+        "paint_ms": 107.52,
+        "props": 1070,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 536.3,
+        "trial": 1
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "buildings": 150,
+        "buildings_ms": 9.575,
+        "composition_ms": 20.83,
+        "generation_ms": 222.515,
+        "nodes": 708,
+        "paint_ms": 94.468,
+        "seed": 3265820891,
+        "stage": "build",
+        "static_memory_delta": 11114332,
+        "total_ms": 110.133,
+        "trial": 1
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 317.404,
+        "composition_ms": 20.859,
+        "day": 1,
+        "dressing_ms": 2.062,
+        "nodes_including_pending_free": 907,
+        "paint_ms": 93.545,
+        "props": 202,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 425.93,
+        "trial": 1
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 340.48,
+        "composition_ms": 20.61,
+        "day": 8,
+        "dressing_ms": 34.806,
+        "nodes_including_pending_free": 1388,
+        "paint_ms": 103.4,
+        "props": 439,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 512.314,
+        "trial": 1
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 333.643,
+        "composition_ms": 20.66,
+        "day": 14,
+        "dressing_ms": 37.055,
+        "nodes_including_pending_free": 2179,
+        "paint_ms": 106.672,
+        "props": 924,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 511.256,
+        "trial": 1
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "buildings": 158,
+        "buildings_ms": 9.834,
+        "composition_ms": 20.695,
+        "generation_ms": 220.722,
+        "nodes": 742,
+        "paint_ms": 94.162,
+        "seed": 4242,
+        "stage": "build",
+        "static_memory_delta": 11223732,
+        "total_ms": 110.425,
+        "trial": 2
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 322.281,
+        "composition_ms": 20.571,
+        "day": 1,
+        "dressing_ms": 2.272,
+        "nodes_including_pending_free": 920,
+        "paint_ms": 94.002,
+        "props": 181,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 432.021,
+        "trial": 2
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 343.128,
+        "composition_ms": 20.849,
+        "day": 8,
+        "dressing_ms": 43.573,
+        "nodes_including_pending_free": 1490,
+        "paint_ms": 104.874,
+        "props": 529,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 527.319,
+        "trial": 2
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 350.544,
+        "composition_ms": 20.782,
+        "day": 14,
+        "dressing_ms": 38.669,
+        "nodes_including_pending_free": 2446,
+        "paint_ms": 106.699,
+        "props": 1070,
+        "seed": 4242,
+        "stage": "day",
+        "total_ms": 532.585,
+        "trial": 2
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "buildings": 150,
+        "buildings_ms": 9.613,
+        "composition_ms": 20.647,
+        "generation_ms": 220.97,
+        "nodes": 708,
+        "paint_ms": 93.87,
+        "seed": 3265820891,
+        "stage": "build",
+        "static_memory_delta": 11101248,
+        "total_ms": 109.552,
+        "trial": 2
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 317.364,
+        "composition_ms": 20.618,
+        "day": 1,
+        "dressing_ms": 2.041,
+        "nodes_including_pending_free": 907,
+        "paint_ms": 93.155,
+        "props": 202,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 425.328,
+        "trial": 2
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 340.278,
+        "composition_ms": 20.768,
+        "day": 8,
+        "dressing_ms": 34.715,
+        "nodes_including_pending_free": 1388,
+        "paint_ms": 103.295,
+        "props": 439,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 512.091,
+        "trial": 2
+      }
+    },
+    {
+      "kind": "LAZY_STAGE",
+      "value": {
+        "closures_ms": 331.888,
+        "composition_ms": 20.693,
+        "day": 14,
+        "dressing_ms": 37.044,
+        "nodes_including_pending_free": 2179,
+        "paint_ms": 106.779,
+        "props": 924,
+        "seed": 3265820891,
+        "stage": "day",
+        "total_ms": 509.486,
+        "trial": 2
+      }
+    },
+    {
+      "kind": "LAZY_REAL_BOOT",
+      "value": {
+        "camera_center": "(2560.0, 2704.0)",
+        "doorstep": "(2560.0, 2704.0)",
+        "player_absent": true,
+        "viewport_px": "(1280.0, 720.0)",
+        "world_size": "(640.0, 360.0)",
+        "zoom": "(2.0, 2.0)"
+      }
+    }
+  ]
+}
