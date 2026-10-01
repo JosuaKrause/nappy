@@ -54,3 +54,14 @@ parallel loading investigation:
 
 The assistant will inspect the deployed game package, engine WebAssembly and JavaScript sizes,
 then attribute the package contents, keeping transfer costs separate from scene preparation.
+
+## Keep the scenery investigation focused
+
+The assistant reports a measured opportunity in nearby ground preparation and adds: "A separate
+limit also emerged: route and closure planning dominates the measured day-start time, and lazy
+scenery alone won't remove that cost." The player quotes that sentence and replies:
+
+> let's focus on the one thing first
+
+The assistant keeps the scenery work focused on nearby preparation and unloading. The timing of
+route planning remains measurement context and does not open another optimization task.

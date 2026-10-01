@@ -1,55 +1,51 @@
-**Investigate lazy preparation and unloading of static scenery around the camera.**
+**Prototype nearby scenery preparation and distant visual eviction.**
 
-The player asks: "are all city renders done at the beginning of each day? can we do them lazily
-instead whenever the player gets into x tiles from them (when the image is still off-screen)?"
-They ask for this direction to be queued alongside the danger-prediction hypothesis. See
-[Sunny lynx](../../playtests/2026-09-26-sunny-lynx.md).
+The player asks to prepare scenery shortly before it enters view, initially around home, and to
+unload it at greater distance. They hypothesize that much of the prepared map is never seen and
+question cross-day ground reuse because appearance changes. Their full words are in
+[sunny-lynx, measure the work in a crowded scene](../../playtests/2026-09-26-sunny-lynx.md) and
+[gentle-swan, investigate lazy scenery preparation and unloading](../../playtests/2026-09-30-gentle-swan.md).
 
-Start by measuring the actual preparation stages. `City.build()` creates buildings once for a
-run; daily dressing changes their static state. `GroundLayers.build_tile_set()` composes a shared
-ground sheet at each repaint. Buildings retain drawing commands, rather than a rendered bitmap
-per block. Do not design a scheduler around a per-block image cache that does not exist.
-
-The player prioritizes lazy preparation and unloading in
-[gentle-swan, investigate lazy scenery preparation and unloading](../../playtests/2026-09-30-gentle-swan.md):
-"my hypothesis is that the player rarely sees all tiles that get prepared so it's a lot of wasted
-memory and time. we can even unload scenery if it goes out of view too far". They question reuse
-across days because the scenery changes. Measure that hypothesis; cross-day composition reuse
-is not a prerequisite or the first implementation step.
+The [investigation record](../../decisions/2026-09-19-M159-3.md) and
+[measured report](../../evidence/m159-lazy-scenery-2026-09-30/README.md) establish a native headless
+preparation opportunity and its limits. What remains is a bounded prototype and acceptance
+checks. The synthetic routes do not establish typical human coverage, and detached-layer
+allocation is not browser heap, GPU allocation or operating-system reclamation. The player says
+"let's focus on the one thing first": this item stays about nearby scenery and unloading; the
+measured route-planning cost does not open another optimization task.
 
 Boot uses the same nearby-only policy: "the boot paint should only be for the block around home"
-and "lazily create distant ones as the player comes near". Investigate the home block as the
-initial prepared area. Measure the actual initial viewport and artwork overhang; if a literal
-single block cannot fill it, report that boundary question explicitly rather than silently
-preparing the whole city or accepting missing scenery.
+and "lazily create distant ones as the player comes near". A literal home block does not fill the
+measured initial viewport. **Proposed, not asked for:** cover the home-centered initial viewport
+plus an off-screen margin. The exact boundary remains a design question; do not prepare the whole
+city or accept visible holes in its place.
 
-**Proposed, not yet a chosen implementation:** prepare visual work within the camera view plus an
-off-screen tile margin, under a measured per-frame budget, and release map-specific visual work
-outside a larger retention margin. The separate margins avoid repeated rebuilds at a boundary.
-Choose the margin from viewport size, camera motion,
-maximum approach speed, artwork overhang and preparation cost; a building's ground origin alone
-does not say when its roof becomes visible. Prepare the initial view and handle camera relocation
-without blank scenery, pop-in or a burst of work on first visibility. Record the chosen policy.
+**Proposed, not yet a chosen implementation:** make map-specific ground cells resident in freeable
+chunks, prepare inside the view plus an off-screen margin under a measured work budget, and release
+beyond a larger retention margin. Clearing a single growing TileMapLayer does not demonstrate
+memory release. Cross-day composition reuse is not a prerequisite. Keep shared baked pages and
+runtime ground composition at permitted loading moments; cell eviction does not eliminate the
+shared sheet. Preserve Playtest 108's runtime composition choice and M147, every picture loaded
+before it is needed: no first-visible-frame disk reads or shader compilation.
 
-Keep city data, collisions, routes, event placement and gameplay state ready independently of
-visual preparation. Preserve deterministic artwork and RNG use regardless of approach order.
-Static block visuals stay still; moving parts remain separate overlays. Track invalidation for
-daily condition changes, posters, blackout, repaint and restart rather than reusing stale visuals.
+Keep city data, collision, routes, event placement and off-screen gameplay ready independently.
+Buildings retain their persistent identity and collision; separate visual preparation before
+evicting artwork. Reconstruct stable seeded appearance without changing gameplay RNG order or
+resampling art on approach. Static surfaces stay still, with animation in separate overlays.
+Existing shadow culling is not a new streaming benefit.
 
-Preserve the runtime composition choice from Playtest 108 and the atlas warmup rationale in
-M147, every picture loaded before it is needed. Deferring visual composition is not permission to
-move disk loads or shader compilation into the first visible frame, or to bake every ground
-variant offline. Search those records before selecting a mechanism.
+Reconstruct current visuals for day/condition changes, posters, blackout, closures, emptied tree
+pits, home seals, litter, live ground/block changes and restart. Revisiting an area changed while
+unloaded must not revive stale scenery. Eligibility uses full visual bounds, including roof
+overhang, shadows, trees and station stacks, rather than origins.
 
-Compare day-start latency, warm-play frame median/tails/max, memory and actual visual preparation
-work on identical routes and camera conditions. Include a fast approach, return to a cached area,
-day transition and camera relocation. Accept only a measured benefit without in-play hitches or
-missing/stale scenery; keep native CPU results distinct from phone/browser/GPU confirmation.
+Choose chunk size, work budget and entry/retention margins from measured worst-case preparation,
+viewport size, maximum approach speed and camera look-ahead. Prepare initial view, fast reversals
+and camera relocation without blank scenery, pop-in or first-visible-frame work bursts. The
+investigation's illustrative margin is not a shipping value.
 
-Measure prepared, visible and ever-seen cells/buildings separately for each sampled route; a
-synthetic route is not evidence of what players usually visit. Attribute shared texture bytes,
-map-specific nodes/cells and retained drawing separately. Count or memory proxies must not be
-reported as measured GPU allocation or actual reclaimed bytes. Check what the renderer already
-avoids off-screen before attributing savings to a new scheduler. Examine release/recreation
-costs, a fast reversal through the retention boundary, overnight changes in an unloaded area,
-and camera jumps. Keep atlas residency and gameplay simulation independent of visual eviction.
+Compare startup/day-start latency, complete-frame median/tails/max, memory and preparation work
+on identical actual routes. Include fast approach, leaving/returning across the retention
+boundary, overnight changes outside residency and camera jumps. Use rendered evidence for seams
+and pop-in; distinguish native CPU findings from phone/browser/GPU confirmation. Accept only a
+measured benefit without stale/missing scenery or walking hitches.
