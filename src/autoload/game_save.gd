@@ -28,6 +28,13 @@ extends RefCounted
 ## run; `set_path_override()` is the one seam a test uses to point at a scratch file instead, and
 ## `uses_save()` is the one gate every read and write goes through so a dev flag, a headless boot
 ## or the test runner never touches either.
+##
+## **A write is not a save until the storage behind `user://` has kept it.** *(cozy-pelican,
+## 2026-10-02: "we should show it until it is fully confirmed saved. also, if saving is
+## unavailable it should show up with a strike through".)* Off the web the file closing is that
+## confirmation. On the web the file lives in Emscripten's in-memory filesystem until a flush copies
+## it into the browser's IndexedDB, so `write()` answers `Result.PENDING` and the flush's own
+## callback settles it later — see `_flush()`.
 
 ## Bumped only when the shape `GameState.save_snapshot()` writes changes — never for an ordinary
 ## release. **This is the whole of what makes a save "the running build cannot read": a newer
@@ -36,6 +43,89 @@ extends RefCounted
 const FORMAT_VERSION := 1
 
 const _DEFAULT_PATH := "user://save.json"
+
+## What one save moment came to — what `main._save_now()` hands `SaveIndicator`.
+enum Result {
+	## Nothing was attempted: `uses_save()` refused the run, or the run has already ended. The
+	## symbol draws nothing, since nothing was meant to be kept.
+	REFUSED,
+	## Written, and handed to the browser, which has not yet said whether it kept it. The answer
+	## arrives later, through the `settled` callable `write()` was given.
+	PENDING,
+	## Kept: off the web the file closed; on the web IndexedDB reported the flush done.
+	CONFIRMED,
+	## Meant to be kept and not kept: the file could not be written, the page's storage was
+	## refused at boot, or the flush failed after its one retry or never answered.
+	FAILED,
+}
+
+## How long a web flush may go unanswered before it counts as failed. A flush of a save this size
+## normally answers within a fraction of a second, and its one retry (see `_FLUSH_JS`) reopens
+## the database first, which takes longer on a phone; past this the browser is not going to answer,
+## and the symbol, held fully shown the whole time, would otherwise stay up for the rest of the
+## session. It is longer than the symbol's whole hold and fade (`SaveIndicator.HOLD_SECONDS` plus
+## `FADE_SECONDS`) so a slow but working flush is not mistaken for a failed one. Measured on the
+## game's own clock, which stops while a browser tab is hidden, so a backgrounded page does not
+## time out a flush the browser was never given the chance to run.
+const FLUSH_TIMEOUT_SECONDS := 5.0
+
+## The page-side half of a web flush, defined once on `window` by `_flush()`. **Evaluated in
+## `JavaScriptBridge.eval()`'s default, non-global context on purpose**: that is a direct `eval`
+## inside the engine's own JavaScript module, which is the only scope where Emscripten's `FS` and
+## `IDBFS` are visible at all — they are module-level variables, not properties of `window`. The
+## function it defines closes over that scope, so calling it later from `window` still reaches
+## them.
+##
+## `FS.syncfs(false, …)` pushes the in-memory filesystem into IndexedDB. A failure is retried once
+## after closing and forgetting every connection Emscripten has cached in `IDBFS.dbs`, since it
+## opens one per mount for the page's lifetime and never reopens one the browser has dropped —
+## iOS Safari drops it from a page left in the background, and every later flush then fails until
+## a reload. Only the second failure is reported as one. `answer(token, "")` is success;
+## any other message is the failure's own text.
+const _FLUSH_JS := """
+window.nappySaveFlush = function (token, answer) {
+	if (typeof FS === 'undefined' || typeof IDBFS === 'undefined') {
+		answer(token, 'FS or IDBFS is not reachable');
+		return;
+	}
+	function describe(err) {
+		return String((err && (err.message || err.name)) || err || 'unknown error');
+	}
+	function attempt(retry) {
+		function failed(err) {
+			if (!retry) {
+				answer(token, describe(err));
+				return;
+			}
+			for (var name in IDBFS.dbs) {
+				try { IDBFS.dbs[name].close(); } catch (e) {}
+			}
+			IDBFS.dbs = {};
+			attempt(false);
+		}
+		try {
+			FS.syncfs(false, function (err) {
+				if (err) { failed(err); } else { answer(token, ''); }
+			});
+		} catch (e) {
+			failed(e);
+		}
+	}
+	attempt(true);
+};
+"""
+
+## The two page-side objects a web flush needs, made once and **held for the page's lifetime**: a
+## `JavaScriptObject` made by `create_callback()` stops answering the moment GDScript lets go of
+## it, silently, so a callback held only by a local would never settle a flush.
+static var _window: JavaScriptObject = null
+static var _flush_answer: JavaScriptObject = null
+
+## Every flush still waiting for its answer, by token, with the `settled` callable its `write()`
+## was given. The first of the answer and the timeout to arrive removes the entry; the second
+## finds nothing and does nothing.
+static var _pending_flushes: Dictionary = {}
+static var _next_flush_token := 0
 
 ## Set by a test to redirect every read and write at a scratch file instead of the player's own —
 ## see the **verify** skill's testing policy: an agent's run never lands in a saved game. `""`
@@ -111,13 +201,103 @@ static func clear() -> void:
 	if FileAccess.file_exists(_path()):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(_path()))
 
-## Writes the current `GameState` to disk. Returns whether it actually did, which is also whether
-## the save symbol should flash — see `main._save_now()` — so a dev run, a headless run and a run
-## that has already ended draw nothing for a write that never happened.
-static func write(day_under_way: bool) -> bool:
-	if not uses_save():
-		return false
-	return _write_now(day_under_way)
+## Writes the current `GameState` to disk and answers what the save moment came to, which is also
+## what the save symbol shows — see `main._save_now()`. `Result.REFUSED` for a dev run, a headless
+## run and a run that has already ended, which draw nothing for a write that was never meant to
+## happen; `Result.PENDING` on the web while the browser has not yet answered, in which case
+## `settled` is called later with `Result.CONFIRMED` or `Result.FAILED`, exactly once, and only if
+## its object still exists then. `settled` is never called for any other answer.
+static func write(day_under_way: bool, settled := Callable()) -> Result:
+	if not uses_save() or _run_has_ended():
+		return Result.REFUSED
+	var on_web := OS.has_feature("web")
+	# Read at every save moment rather than once, so the answer is the engine's own at the moment
+	# the save is meant to be kept.
+	var persistent := OS.is_userfs_persistent()
+	var wrote := _write_now(day_under_way)
+	var result := _moment_result(wrote, on_web, persistent)
+	if result == Result.PENDING:
+		_flush(settled)
+	elif result == Result.FAILED:
+		Telemetry.note("save", "the save was not kept (%s)"
+				% ("the file could not be written" if not wrote else "the browser refused storage"))
+	return result
+
+## What a save moment comes to before any browser has answered — the pure half of `write()`, so a
+## test can reach the web's branches from a desktop runner. `wrote` is `_write_now()`'s own answer,
+## `persistent` is `OS.is_userfs_persistent()`: false on a web page whose browser refused IndexedDB
+## at boot, where Godot carries on from memory alone and a flush would report success for a copy
+## no reload will ever find — so a page in that state is a failed save without ever flushing.
+static func _moment_result(wrote: bool, on_web: bool, persistent: bool) -> Result:
+	if not wrote:
+		return Result.FAILED
+	if not on_web:
+		return Result.CONFIRMED
+	if not persistent:
+		return Result.FAILED
+	return Result.PENDING
+
+## Whether the run has an ending, after which nothing is written — see `_write_now()`.
+static func _run_has_ended() -> bool:
+	return GameState.ending != GameEnums.Ending.NONE
+
+## Starts a web flush and settles it through `settled` — see `_FLUSH_JS` for the page's half and
+## `FLUSH_TIMEOUT_SECONDS` for the backstop. Each flush has its own token so the answer and the
+## timeout settle the flush they belong to, whichever arrives first.
+##
+## Godot's web platform also flushes a persistent path on its own once a file open for writing is
+## closed, but only on the *next* main-loop iteration, and it reports a failure to nobody; this
+## one starts at once and is the one whose answer the symbol waits for. **Neither is a guarantee
+## against a tab killed with no JavaScript tick left to run at all** — that gap is why a resumed
+## run's dawn write exists: it lands during the next ordinary session, long before the following
+## quit, so a save that never reached IndexedDB on one close is caught up by the time the game is
+## closed again.
+static func _flush(settled: Callable) -> void:
+	var token := _register_flush(settled)
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree:
+		# Always processing, so a flush started as the summary pauses the tree still times out.
+		tree.create_timer(FLUSH_TIMEOUT_SECONDS, true, false, true).timeout.connect(
+				_settle.bind(token, Result.FAILED, "no answer within %.0fs" % FLUSH_TIMEOUT_SECONDS))
+	if _flush_answer == null:
+		JavaScriptBridge.eval(_FLUSH_JS)
+		_window = JavaScriptBridge.get_interface("window")
+		_flush_answer = JavaScriptBridge.create_callback(_on_flush_answered)
+	if _window == null or _flush_answer == null:
+		_settle(token, Result.FAILED, "the page's JavaScript is not reachable")
+		return
+	_window.call("nappySaveFlush", token, _flush_answer)
+
+## The page's answer to one flush: `[token, message]`, `message` empty on success.
+static func _on_flush_answered(args: Array) -> void:
+	if args.size() < 2:
+		return
+	var message := str(args[1])
+	if message.is_empty():
+		_settle(int(args[0]), Result.CONFIRMED, "")
+	else:
+		_settle(int(args[0]), Result.FAILED, message)
+
+static func _register_flush(settled: Callable) -> int:
+	_next_flush_token += 1
+	_pending_flushes[_next_flush_token] = settled
+	return _next_flush_token
+
+## Settles one pending flush, once: whichever of the page's answer and the timeout arrives second
+## finds the token gone and does nothing, so a flush that answers after timing out stays failed
+## rather than flipping the symbol it already struck through. A `settled` whose object is gone — a
+## held restart reloads `main` while a flush is still out — is skipped.
+static func _settle(token: int, result: Result, reason: String) -> void:
+	if not _pending_flushes.has(token):
+		return
+	var settled: Callable = _pending_flushes[token]
+	_pending_flushes.erase(token)
+	if result == Result.CONFIRMED:
+		Telemetry.note("save", "the browser kept the save")
+	else:
+		Telemetry.note("save", "the browser did not keep the save (%s)" % reason)
+	if settled.is_valid():
+		settled.call(result)
 
 ## The ungated mechanics `write()` calls through, and the seam `tests/test_save.gd` calls directly
 ## so a headless test (where `uses_save()` always answers `false`, see its own doc) can still
@@ -130,8 +310,11 @@ static func write(day_under_way: bool) -> bool:
 ## of the same reasoning `CLAUDE.md`'s "check before accepting, never repair afterwards" asks for
 ## elsewhere in this project — a stray write between the ending firing and the player being shown
 ## it must not resurrect a file that answering the ending question already deleted.
+##
+## Returns whether the file was written and closed; on the web that is not yet a kept save — see
+## `write()`.
 static func _write_now(day_under_way: bool) -> bool:
-	if GameState.ending != GameEnums.Ending.NONE:
+	if _run_has_ended():
 		return false
 	var file := FileAccess.open(_path(), FileAccess.WRITE)
 	if not file:
@@ -140,7 +323,7 @@ static func _write_now(day_under_way: bool) -> bool:
 	var alley_tiles: Array = []
 	for tile: Vector2i in GameState.completed_resistance_alley_tiles:
 		alley_tiles.append({"x": tile.x, "y": tile.y})
-	file.store_string(JSON.stringify({
+	var stored := file.store_string(JSON.stringify({
 		"format_version": FORMAT_VERSION,
 		"build": TitleScreen.build_text(),
 		"day_under_way": day_under_way,
@@ -152,23 +335,9 @@ static func _write_now(day_under_way: bool) -> bool:
 		"state": GameState.save_snapshot(),
 	}))
 	file.close()
-	# Godot's web platform syncs a persistent path's file to the browser's IndexedDB on its own,
-	# once the file that was open for writing is closed — but only on the *next* main-loop
-	# iteration, which a tab that is already tearing down after `NOTIFICATION_WM_CLOSE_REQUEST` may
-	# never reach. `FS.syncfs(false, ...)` is Emscripten's own flush, `false` meaning "push the
-	# in-memory filesystem to IndexedDB" (`true` is the opposite direction, used to populate it at
-	# startup); calling it here starts that write immediately rather than waiting for a loop that
-	# may not come, on every write rather than only the quit path, since a dawn or a day's-end write
-	# is the common case and costs nothing extra to also flush promptly. **Neither this nor the
-	# engine's own autosync is a hard guarantee against a tab killed with no JavaScript tick left to
-	# run at all** — that gap is exactly why the dawn write exists as a second line of defence: it
-	# lands during the next ordinary session's main loop, long before the following quit, so a save
-	# that never reached IndexedDB on one close is still caught up by the time the game is closed
-	# again. Whether this actually flushes on the deployed page is for a person to verify there,
-	# never from this build alone.
-	if OS.has_feature("web"):
-		JavaScriptBridge.eval(
-				"if (typeof FS !== 'undefined' && FS.syncfs) { FS.syncfs(false, function(err) {}); }")
+	if not stored:
+		push_warning("GameSave: could not write %s" % _path())
+		return false
 	var state_word := "day under way" if day_under_way else "between days"
 	Telemetry.note("save", "wrote the save (%s)" % state_word)
 	return true
