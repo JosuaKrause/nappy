@@ -12,8 +12,8 @@ extends Node
 const LOAD_MARGIN := 256.0
 const RETAIN_MARGIN := 512.0
 const GUARD_MARGIN := 96.0
-## Soft CPU preparation limit: finish the current atomic batch. Draw-command submission is
-## deferred by Godot and measured separately; relocations and emergency coverage are synchronous.
+## Soft CPU preparation limit: finish the current job or ground quadrant, including its
+## TileMap renderer preparation. GPU drawing and water redraw are separate; guards are synchronous.
 const BUDGET_USEC := 2000
 var city: City
 var view := Rect2()
@@ -21,6 +21,7 @@ var _items: Array[Node2D] = []
 var worst_update_usec := 0
 var ordinary_guard_preparations := 0
 var _pending := false
+var _ground_step_frame := -1
 
 func _ready() -> void:
 	# Camera and rig callbacks finish before residency reads their final transform. This node
@@ -64,6 +65,11 @@ func update(next_view: Rect2, immediate := false) -> void:
 	for key: Vector2i in ground.chunks.keys():
 		if not retained.intersects(SceneryGround.bounds(key)):
 			ground.release(key)
+	# Keep unfinished allocations through the wider retention ring too. They pause outside
+	# the load boundary, so reversing there resumes the same work without allocation churn.
+	for key: Vector2i in ground.pending.keys():
+		if not retained.intersects(SceneryGround.bounds(key)):
+			ground.cancel(key)
 	var pending: Array[Dictionary] = []
 	for key in ground.keys_in(load_view):
 		if ground.chunks.has(key):
@@ -75,7 +81,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 			ground.prepare(key)
 		else:
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
-					"prepare": ground.prepare.bind(key)})
+					"ground_key": key})
 	for item in _items.duplicate():
 		if not is_instance_valid(item) or item.is_queued_for_deletion():
 			_items.erase(item)
@@ -107,5 +113,16 @@ func update(next_view: Rect2, immediate := false) -> void:
 		if Time.get_ticks_usec() - started >= BUDGET_USEC:
 			_pending = true
 			break
-		(job.prepare as Callable).call()
+		if job.has("ground_key"):
+			# A frame may contain several explicit updates as camera/game state changes. Never
+			# turn those into several off-screen renderer batches in the same frame.
+			var frame := Engine.get_process_frames()
+			if _ground_step_frame == frame:
+				_pending = true
+				continue
+			_ground_step_frame = frame
+			if not ground.prepare_step(job.ground_key):
+				_pending = true
+		else:
+			(job.prepare as Callable).call()
 	worst_update_usec = maxi(worst_update_usec, Time.get_ticks_usec() - started)

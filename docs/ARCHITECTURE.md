@@ -41,7 +41,7 @@ src/
 	city_state.gd         run-scoped: how far along each arc the run has got
 	building.gd           one lot, assembled from 32px facade and roof tiles
 	scenery_layer.gd      retained static furniture or small alternating scenery parts
-	scenery_ground.gd     freeable nearby ground and water chunks sharing the composed TileSet
+	scenery_ground.gd     freeable ground chunks prepared across frames in renderer quadrants
 	scenery_residency.gd  camera view, preparation budget, and wider visual eviction boundary
 	scenery_sprite.gd     persistent placements with independently releasable drawing commands
 	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
@@ -505,7 +505,11 @@ kept strictly out of anything that touches the meters.
   collision and poster-frontage facts; window patterns, roof layers and retained drawing are
   reconstructed from fixed seeds and current state on return. Props and closure markers retain
   placement facts and release renderer commands. Shared atlas pages and ground composition stay
-  at loading moments. The camera's transformed viewport determines coverage, including rotation
+  at loading moments. Off-screen ground advances one renderer quadrant per process frame,
+  explicitly flushing TileMap internals under the shared soft CPU budget; incomplete regions
+  remain separately owned until complete and pause between the load and retention boundaries.
+  State edits and leaving retention cancel them, while the safety guard completes them
+  synchronously. The camera's transformed viewport determines coverage, including rotation
   and overview; lifecycle relocations prepare their destination before play. A city clock keeps
   resident water surfaces in phase and restores returning roof animation phases.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that

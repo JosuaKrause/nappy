@@ -16,6 +16,7 @@ func _test_city(t, seed_value: int) -> void:
 	t.add_child(city)
 	var map := CityGenerator.generate(seed_value)
 	city.build(map)
+	_test_pending(t, city)
 	var home := _view(map.doorstep_world_position())
 	var initial := city._ground.get_used_cells().size()
 	t.check(initial > 0 and initial < map.size.x * map.size.y / 8,
@@ -106,6 +107,95 @@ func _test_city(t, seed_value: int) -> void:
 						"new water chunks share one pausable city phase")
 	t.check(water_count > 1, "the phase check covers multiple water chunks")
 	city.free()
+
+func _test_pending(t, city: City) -> void:
+	var ground := city._ground
+	var key := SceneryGround.key_for(city.map.size - Vector2i(8, 8))
+	if ground.chunks.has(key):
+		ground.release(key)
+	var used := ground.get_used_cells().size()
+	t.check(not ground.prepare_step(key), "one step leaves a ground region unfinished")
+	var layer: TileMapLayer = ground.pending[key].layer
+	var identity := layer.get_instance_id()
+	t.check(not ground.chunks.has(key) and ground.get_used_cells().size() == used,
+			"unfinished ground is excluded from every resident-cell query")
+	t.check(layer.is_visible_in_tree(), "off-screen preparation keeps renderer commands alive")
+	ground.prepare_step(key)
+	t.check(ground.pending[key].layer.get_instance_id() == identity,
+			"resuming preparation keeps one owner for the unfinished region")
+	# Mutate an already-prepared tile, not merely an untouched later quadrant.
+	var changed: Array[Vector2i] = [key * SceneryGround.CHUNK_TILES]
+	city.close_ground(changed)
+	t.check(not ground.pending.has(key) and not is_instance_valid(layer),
+			"live ground changes free incomplete state rather than publishing stale cells")
+	ground.prepare_step(key)
+	ground.prepare(key)
+	t.check(ground.chunks.has(key) and not ground.pending.has(key),
+			"synchronous guard completion promotes the existing pending owner")
+	_check_chunk(t, city, key)
+	ground.release(key)
+	ground.prepare_step(key)
+	layer = ground.pending[key].layer
+	ground.repaint()
+	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
+			"route-tint repaint discards pending jobs with old ground inputs")
+	ground.prepare_step(key)
+	layer = ground.pending[key].layer
+	city.scenery.update(city._home_scenery_view(), true)
+	t.check(not ground.pending.has(key) and not is_instance_valid(layer),
+			"out-of-range movement cancels and frees unfinished regions")
+	# Choose an actual load-ring region and remove it so ordinary maintenance must step it.
+	var view := city._home_scenery_view()
+	for candidate in ground.keys_in(view.grow(SceneryResidency.LOAD_MARGIN)):
+		if view.grow(SceneryResidency.GUARD_MARGIN).intersects(SceneryGround.bounds(candidate)):
+			continue
+		if ground.chunks.has(candidate):
+			ground.release(candidate)
+		key = candidate
+		break
+	city.scenery.update(view)
+	t.check(ground.pending.has(key), "ordinary approach starts a stepped job")
+	if ground.pending.has(key):
+		var progress: int = ground.pending[key].step
+		var pending_id: int = ground.pending[key].layer.get_instance_id()
+		city.scenery.update(view)
+		t.check(ground.pending[key].step == progress,
+				"repeated updates in one process frame cannot drain the ground job")
+		var away := view
+		# Put this candidate between the load and retention boundaries, while preserving size.
+		away.position.x = SceneryGround.bounds(key).end.x + SceneryResidency.LOAD_MARGIN + 1
+		city.scenery.view = away
+		city.scenery.update(away)
+		t.check(ground.pending.has(key) and ground.pending[key].step == progress \
+				and ground.pending[key].layer.get_instance_id() == pending_id,
+				"unfinished regions pause with the same allocation inside the retention ring")
+	city.scenery.update(Rect2(SceneryGround.bounds(key).get_center() - view.size / 2,
+			view.size), true)
+	t.check(ground.pending.is_empty() and ground.chunks.has(key),
+			"camera relocation completes pending destination ground before returning")
+	_check_chunk(t, city, key)
+	ground.release(key)
+	ground.prepare_step(key)
+	layer = ground.pending[key].layer
+	ground.configure(city, ground.tile_set)
+	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
+			"day/reset configuration discards every unfinished allocation")
+	city.scenery.update(city._home_scenery_view(), true)
+
+func _check_chunk(t, city: City, key: Vector2i) -> void:
+	for y in range(key.y * SceneryGround.CHUNK_TILES, (key.y + 1) * SceneryGround.CHUNK_TILES):
+		for x in range(key.x * SceneryGround.CHUNK_TILES, (key.x + 1) * SceneryGround.CHUNK_TILES):
+			var tile := Vector2i(x, y)
+			var source := city.scenery_ground_source(tile)
+			if source == GroundTiles.WATER:
+				t.check(city._ground.has_water(tile), "completed region preserves separate water cells")
+			else:
+				t.check(city._ground.get_cell_source_id(tile) == source,
+						"completed region matches the current independent source lookup")
+				if source >= 0:
+					t.check(city._ground.get_cell_atlas_coords(tile) == GroundLayers.atlas_coords_for(
+							source, city.map.seed_used, tile, city._ground.tile_set),
+							"completed region preserves seeded atlas selection")
 
 func _check_coverage(t, city: City, view: Rect2) -> void:
 	var lo := Vector2i((view.position / Tuning.TILE_SIZE).floor())

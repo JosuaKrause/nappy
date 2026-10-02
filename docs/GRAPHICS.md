@@ -325,7 +325,14 @@ pairings, exact prompts, raw outputs and repeated-tile comparisons.
 
 Map-specific scenery is prepared around the camera and released beyond a wider retention
 boundary. Ground chunks share the loading-time composed sheet; unloading cells does not unload
-shared atlas pages. Water chunks share one pausable city clock. Returning buildings reconstruct
+shared atlas pages. Ordinary approach prepares one four-by-four-cell renderer quadrant per
+process frame, under the scenery queue's soft CPU budget. Each step flushes TileMap internals;
+the in-tree layer stays visible at its off-screen position because hiding it discards renderer
+commands. Pending regions have a separate owner until all quadrants are complete. They pause
+outside the loading boundary and retain their allocation until the wider unloading boundary.
+Live ground edits and repaints discard unfinished state; the safety guard, camera relocation
+and day destination preparation complete it synchronously before it enters view. Water uses
+separate quadrant surfaces sharing one pausable city clock. Returning buildings reconstruct
 their fixed seeded artwork and current day, condition, posters and power state, with moving
 roof detail kept separate from stationary surfaces.
 
