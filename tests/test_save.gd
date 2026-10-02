@@ -60,6 +60,21 @@ func run(t) -> void:
 	_test_title_leads_to_the_day_brief_with_a_charged_nerve(t)
 	_test_title_leads_to_the_ending_on_the_last_nerve(t)
 
+	_test_a_save_moment_answers_by_platform_and_storage(t)
+	_test_a_desktop_write_is_confirmed_at_once(t)
+	_test_a_refused_or_ended_run_is_not_a_failed_save(t)
+	_test_a_flush_settles_once_whichever_answer_comes_first(t)
+	_test_a_flush_whose_listener_is_gone_settles_quietly(t)
+	_test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t)
+	_test_the_hold_and_fade_start_once_the_save_is_confirmed(t)
+	_test_a_second_save_keeps_the_symbol_up_until_both_are_answered(t)
+	_test_a_save_not_kept_is_struck_through_and_fades_the_same_way(t)
+	_test_a_new_save_starts_unstruck(t)
+	_test_a_stray_answer_shows_nothing(t)
+	_test_main_draws_nothing_for_a_refused_run(t)
+	_test_main_shows_a_desktop_save_confirmed_at_once(t)
+	_test_a_save_not_kept_swaps_to_the_struck_picture(t)
+
 	GameSave.clear()
 	GameSave.set_path_override("")
 	GameState.restore_snapshot(baseline)
@@ -960,3 +975,206 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 		GameState.ending = ending
 		_free_gate_main(t, main)
 	)
+
+# ------------------------------------------------------------ confirmation ---
+
+## Records every answer a `settled` callable is given, so a test can count them.
+class _Answers extends RefCounted:
+	var results: Array[int] = []
+
+	func take(result: int) -> void:
+		results.append(result)
+
+## `GameSave._moment_result()`, the pure half of `write()`: every branch of what a save moment comes
+## to before any browser has answered, including the web's, which this desktop runner cannot reach
+## through `write()` itself. A web page whose storage was refused at boot is a failed save without
+## any flush, since a flush there succeeds for a copy no reload finds.
+func _test_a_save_moment_answers_by_platform_and_storage(t) -> void:
+	t.check(GameSave._moment_result(true, false, true) == GameSave.Result.CONFIRMED,
+			"off the web, a closed file is a kept save")
+	t.check(GameSave._moment_result(true, true, true) == GameSave.Result.PENDING,
+			"on the web, a closed file waits for the browser's answer")
+	t.check(GameSave._moment_result(true, true, false) == GameSave.Result.FAILED,
+			"on a web page whose storage was refused, the save is not kept, flush or no flush")
+	t.check(GameSave._moment_result(false, false, true) == GameSave.Result.FAILED,
+			"a file that could not be written is a failed save off the web")
+	t.check(GameSave._moment_result(false, true, true) == GameSave.Result.FAILED,
+			"and on it")
+
+## Off the web, `write()` itself answers `CONFIRMED` and never calls `settled`: the file closing is
+## the confirmation, so a desktop save shows the symbol's hold and fade at once.
+func _test_a_desktop_write_is_confirmed_at_once(t) -> void:
+	_with_forced_save(func() -> void:
+		var answers := _Answers.new()
+		var result: int = GameSave.write(true, answers.take)
+		t.check(result == GameSave.Result.CONFIRMED, "a desktop write is confirmed at once")
+		t.check(GameSave.has_save(), "and the file is there")
+		t.check(answers.results.is_empty(), "with nothing left for a later answer to settle")
+	)
+
+## A run `uses_save()` refuses, and a run that has already ended, answer `REFUSED`, which draws
+## nothing — neither is a save that failed, so neither may show the strike.
+func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
+	var answers := _Answers.new()
+	t.check(GameSave.write(true, answers.take) == GameSave.Result.REFUSED,
+			"the headless runner's refused save is refused, not failed")
+	_with_forced_save(func() -> void:
+		var ending := GameState.ending
+		GameState.ending = GameEnums.Ending.BAD
+		t.check(GameSave.write(true, answers.take) == GameSave.Result.REFUSED,
+				"a run with an ending is refused, not failed")
+		t.check(not GameSave.has_save(), "and writes nothing")
+		GameState.ending = ending
+	)
+	t.check(answers.results.is_empty(), "neither ever answers later")
+
+## The race `GameSave._settle()` exists for: the page's answer and the timeout both settle the same
+## flush, and only the first counts. A flush that answers after timing out stays failed rather than
+## taking back the strike already shown, and a timeout after an answer changes nothing.
+func _test_a_flush_settles_once_whichever_answer_comes_first(t) -> void:
+	var answered := _Answers.new()
+	var token := GameSave._register_flush(answered.take)
+	GameSave._on_flush_answered([float(token), ""])
+	GameSave._settle(token, GameSave.Result.FAILED, "timed out")
+	t.check(answered.results.size() == 1 and answered.results[0] == GameSave.Result.CONFIRMED,
+			"the browser's success settles the flush, and the later timeout does nothing")
+
+	var timed_out := _Answers.new()
+	token = GameSave._register_flush(timed_out.take)
+	GameSave._settle(token, GameSave.Result.FAILED, "timed out")
+	GameSave._on_flush_answered([float(token), ""])
+	t.check(timed_out.results.size() == 1 and timed_out.results[0] == GameSave.Result.FAILED,
+			"a timeout settles the flush as failed, and a late success does not reverse it")
+
+	var failed := _Answers.new()
+	token = GameSave._register_flush(failed.take)
+	GameSave._on_flush_answered([float(token), "Connection to Indexed Database server lost"])
+	t.check(failed.results.size() == 1 and failed.results[0] == GameSave.Result.FAILED,
+			"the page's failure message settles the flush as failed")
+	t.check(GameSave._pending_flushes.is_empty(), "and nothing is left waiting")
+
+## A held restart reloads `main` while a flush may still be out, so the `settled` callable can name
+## an object that no longer exists by the time the browser answers. Settling it does nothing.
+func _test_a_flush_whose_listener_is_gone_settles_quietly(t) -> void:
+	var gone := Node.new()
+	var token := GameSave._register_flush(Callable(gone, &"set_name"))
+	gone.free()
+	GameSave._settle(token, GameSave.Result.CONFIRMED, "")
+	t.check(GameSave._pending_flushes.is_empty(), "the flush is settled without calling anything")
+
+# ----------------------------------------------------------------- the symbol ---
+
+## *"we should show it until it is fully confirmed saved"* — while a save is unanswered the symbol
+## is fully shown and nothing counts down, however long the browser takes.
+func _test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.advance(SaveIndicator.HOLD_SECONDS + SaveIndicator.FADE_SECONDS + 10.0)
+	t.check(showing.alpha() == 1.0, "a pending save stays fully shown past the whole hold and fade")
+	t.check(not showing.struck, "and plain, since nothing has failed yet")
+
+func _test_the_hold_and_fade_start_once_the_save_is_confirmed(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.advance(10.0)
+	showing.settle(true)
+	showing.advance(SaveIndicator.HOLD_SECONDS * 0.9)
+	t.check(showing.alpha() == 1.0, "the hold runs from the confirmation, not from the save")
+	showing.advance(SaveIndicator.HOLD_SECONDS * 0.1 + SaveIndicator.FADE_SECONDS * 0.5)
+	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "then it fades")
+	showing.advance(SaveIndicator.FADE_SECONDS)
+	t.check(showing.alpha() == 0.0 and showing.is_idle(), "and is gone")
+	t.check(not showing.struck, "a kept save is never struck through")
+
+func _test_a_second_save_keeps_the_symbol_up_until_both_are_answered(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.begin()
+	showing.settle(true)
+	showing.advance(SaveIndicator.HOLD_SECONDS + SaveIndicator.FADE_SECONDS + 1.0)
+	t.check(showing.alpha() == 1.0, "one answered save of two leaves the symbol up, untimed")
+	showing.settle(true)
+	showing.advance(SaveIndicator.HOLD_SECONDS * 0.5)
+	t.check(showing.alpha() == 1.0, "the second answer starts the hold")
+	showing.advance(SaveIndicator.HOLD_SECONDS + SaveIndicator.FADE_SECONDS)
+	t.check(showing.alpha() == 0.0, "which fades as before")
+
+## *"if saving is unavailable it should show up with a strike through"* — held and faded the same
+## way as a kept save, and struck if either of two overlapping saves was not kept.
+func _test_a_save_not_kept_is_struck_through_and_fades_the_same_way(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.begin()
+	showing.settle(false)
+	showing.settle(true)
+	t.check(showing.struck, "a save of the pair that was not kept strikes the symbol")
+	showing.advance(SaveIndicator.HOLD_SECONDS * 0.9)
+	t.check(showing.alpha() == 1.0, "held like a kept save")
+	showing.advance(SaveIndicator.HOLD_SECONDS * 0.1 + SaveIndicator.FADE_SECONDS * 0.5)
+	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "and faded like one")
+
+## A save that begins after a failed one is not yet known to have failed, so it shows plain.
+func _test_a_new_save_starts_unstruck(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.settle(false)
+	showing.advance(SaveIndicator.HOLD_SECONDS)
+	showing.begin()
+	t.check(not showing.struck and showing.alpha() == 1.0,
+			"a new save comes up plain and full, even over a struck symbol's fade")
+	showing.settle(true)
+	t.check(not showing.struck, "and stays plain once kept")
+
+func _test_a_stray_answer_shows_nothing(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.settle(false)
+	t.check(showing.is_idle() and showing.alpha() == 0.0,
+			"an answer with no save begun raises nothing")
+	showing.begin()
+	t.check(showing.pending == 1, "and is not counted against the next save")
+
+## The whole path through `main._save_now()`: a run `GameSave.uses_save()` refuses — here the
+## headless runner — leaves the symbol dark rather than struck.
+func _test_main_draws_nothing_for_a_refused_run(t) -> void:
+	var indicator := SaveIndicator.new()
+	t.add_child(indicator)
+	var main: Node2D = _MAIN_SCRIPT.new()
+	main._save_indicator = indicator
+	main._save_now(true)
+	t.check(indicator._showing.is_idle() and not indicator._showing.struck,
+			"a refused save leaves the symbol dark")
+	main.free()
+	indicator.free()
+
+func _test_main_shows_a_desktop_save_confirmed_at_once(t) -> void:
+	_with_forced_save(func() -> void:
+		var indicator := SaveIndicator.new()
+		t.add_child(indicator)
+		var main: Node2D = _MAIN_SCRIPT.new()
+		main._save_indicator = indicator
+		main._save_now(true)
+		t.check(indicator._showing.pending == 0 and indicator._showing.remaining > 0.0,
+				"a desktop save is answered at once, so the hold is already running")
+		t.check(not indicator._showing.struck and not indicator.shows_struck(),
+				"showing the plain picture")
+		main.free()
+		indicator.free()
+	)
+
+## The struck symbol is its own picture on the `ui` atlas (`art/ui/save_unavailable.svg`), swapped
+## in for the plain one rather than drawn over it — so the region has to exist and be a different
+## picture, and a kept save afterwards has to swap back.
+func _test_a_save_not_kept_swaps_to_the_struck_picture(t) -> void:
+	var indicator := SaveIndicator.new()
+	t.add_child(indicator)
+	t.check(indicator._struck_texture != null and indicator._plain_texture != null
+			and indicator._struck_texture != indicator._plain_texture,
+			"the plain and the struck pictures are both on the atlas, and different")
+	indicator.begin()
+	indicator.settle(false)
+	t.check(indicator.shows_struck(), "a save not kept shows the struck picture")
+	indicator.begin()
+	t.check(not indicator.shows_struck(), "the next save comes up on the plain one")
+	indicator.settle(true)
+	t.check(not indicator.shows_struck(), "and stays there once kept")
+	indicator.free()
