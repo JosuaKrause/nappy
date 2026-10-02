@@ -95,3 +95,27 @@ The player chose "Full for min, then fade".
    "holds and fades as it does today".
 6. **A save that was not kept shows the struck symbol fully for at least 10s**, counted from when
    it appears, then the same fade; however fast the failure came back.
+
+## Deleting the save shows the symbol too
+
+Asked when saving happens, the assistant listed the save moments and added that a day that ends
+the run writes nothing, because ending the run (`GameState._end_run()`) has already deleted the
+save file; the held restart deletes it too (`main._restart_run()`). The player answered, quoting
+that sentence:
+
+> "If that day ended the run, it skips the save, because ending the run already deleted the save
+> file. -- show deleting the save file with a save symbol as well. every change in the save state
+> needs to show the symbol"
+
+### What is asked for, as statements
+
+7. **Every change in the save state shows the symbol**: a write, and a deletion of the save file
+   alike, with the same timings as a save (statements 4 to 6) and the same strike when the change
+   was not kept.
+8. **Deleting the save when a run ends shows the symbol**, and so does the held restart that
+   deletes it. A restart with no save left to delete (a run that already ended and deleted it)
+   changes nothing, so it shows nothing.
+
+PLAYTEST-80's "nothing new is drawn for it" is about the control that clears a save (the held
+restart that already existed, rather than a new button) and stays true; this asks for the save
+symbol, not a new control.
