@@ -1603,19 +1603,25 @@ needs to show the symbol")*: a run's end deletes it (`GameState._end_run()`: a d
 run, the charge a reopened save pays when it was the last nerve, and the escape walked out), and
 so does the held restart, and each shows the symbol with the same timings and the same strike. On
 the web a deletion is kept only once IndexedDB has dropped the file, so `GameSave.clear()` runs the
-same copy a write does, with its retry and its timeout. The held restart reloads the scene, and
-the symbol it raised is handed to the scene tree's root so it stays up through the reload and
-settles on the freshly booted title with its minimums running. A restart with no save left to
+same copy a write does, with its retry and its timeout: the engine copies a removal on its own too,
+a frame later, but tells nobody how it went, and the symbol needs an answer to wait for. The held
+restart reloads the scene, and so does the hand-over from a won day 14 to the escape; before either
+reload the symbol, when it is up, is handed to the scene tree's root, so it stays up through the
+reload and settles on the freshly booted title or escape with its minimums running. A restart with no save left to
 delete — the run had already ended and deleted it — changes nothing, so it shows nothing. **`GameSave`
 announces every write and deletion itself, on `EventBus`, and the symbol is the one thing that
 listens**, so the browser's answer to a save still unanswered reaches it even after a scene reload
 has freed the part of the game that saved — an end-of-day save retried while the restart is held,
-the hand-over to the escape — and the symbol fades once every change is answered. A save beginning while the symbol fades or is gone
+day 14's own save at the hand-over to the escape — and the symbol fades once every change is
+answered. Each write and each deletion carries its own id, on its announcement and on its answer,
+so an answer settles the change it belongs to and no other: a change announced before a reload, to
+a symbol that did not live through it, settles nothing on the one that replaced it. A save beginning while the symbol fades or is gone
 brings it back to full and restarts the second; one beginning while it is fully shown does not
 restart it, though the symbol still waits for that save's answer. Off the web the file closing is
 the confirmation. On the web the file is only in the page's memory until the browser copies it into IndexedDB, the one copy
 a reload finds, so `GameSave` starts that copy itself and waits for IndexedDB's own answer; a
-second save while one is still unanswered keeps the symbol up until both are. A copy that fails
+second save while one is still unanswered keeps the symbol fully shown until both are answered,
+whichever of them is still out. A copy that fails
 is tried once more after dropping every database connection the page holds, since a connection
 the browser has dropped (iOS Safari does, from a page left in the background) is otherwise never
 reopened and every later copy fails until a reload. A copy that has not answered after
@@ -1627,12 +1633,15 @@ back does not fail a copy the browser had no chance to answer.
 unavailable it should show up with a strike through")*, fully shown for at least ten seconds
 counted from the moment it became struck, however fast the failure came back, and then faded the
 same way *("if it fails it show for at least 10s")*: a flush that times out after five seconds
-shows the struck picture until fifteen. A failure while another save is pending strikes the
-picture at once, and every failure restarts its ten seconds. **The strike follows the newest
-answer:** when the last pending save of a batch (the saves from one that begins with nothing
-pending to the moment none is pending) is answered, the picture is struck if any save of the batch
-failed and plain if every one was kept, even with an earlier batch's ten seconds unspent; a new
-save still unanswered does not hide a failure already known. A save is not kept when the file
+shows the struck picture until fifteen. **Only the newest save decides the picture**
+*(golden-otter: "if a new save succeeds it doesn't really matter if an old save failed. only the
+latest save action matters")*: the save or deletion started last strikes it when it is not kept,
+at once even while an older one is still out, and clears the strike when it is kept, even with an
+earlier failure's ten seconds unspent, after which the plain symbol owes only its second. An older
+save's answer decides nothing, in whichever order it arrives: an older failure answered after the
+newest was kept strikes nothing, and an older success answered after the newest failed clears
+nothing. Every failure of the newest save restarts its ten seconds, and a new save still
+unanswered does not hide a failure already known. A save is not kept when the file
 could not be written, the copy failed on its retry or never answered, or the browser refused the
 page storage at boot (`OS.is_userfs_persistent()` false, asked at every save), in which case the
 game plays on from memory and nothing survives a reload. A run `GameSave.uses_save()` refuses on

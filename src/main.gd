@@ -219,8 +219,13 @@ var _title: TitleScreen
 ## by `_raise_save_indicator()`: in `_ready()`, ahead of the charge that can end a resumed run, and
 ## in `_ready_escape()` only for a run's own escape — a dev-flagged boot touches the save not at all
 ## (`GameSave.uses_save()` refuses every one of them), so a symbol there could only ever stay dark.
-## It may be the one the held restart's `main` handed to the tree's root, not a child of this node.
+## It may be the one a reloading `main` handed to the tree's root, not a child of this node.
 var _save_indicator: SaveIndicator
+
+## The seam `_reload_the_scene()` calls instead of reloading, set only by a test — see there. An
+## empty `Callable`, the default, reloads normally.
+var _reload_override := Callable()
+
 ## Owns the `--follow` camera and the event id it tracks between frames — the one piece of
 ## `DevRig` (`src/dev/dev_rig.gd`) that has to survive across calls, so it is the one piece kept
 ## on an instance rather than called as a `static`. The `--spawn`/`--overview`/`--meters`/
@@ -1080,8 +1085,7 @@ func _on_escape_title_start(mode: ControlsMode.Mode, _by_key := false) -> void:
 		_title.close()
 		_show_the_finale_brief(_finale.section)
 		return
-	get_tree().paused = false
-	get_tree().call_deferred("reload_current_scene")
+	_reload_the_scene()
 
 ## Both screens' own restart reaches the one thing that means it, and both screens' own way out
 ## reaches the same quit — pulled into its own function, called once `_summary` and `_pause` both
@@ -2069,10 +2073,12 @@ func _on_summary_continued() -> void:
 	# day, resistance and observer down by hand and building a building over them — the same
 	# reasoning `_restart_run()` gives for the same call, and the escape's own boot
 	# (`_ready_escape()`) then reads `GameState.escape_section` off the autoload that survived it.
+	# Day 14's own save, written as its summary appeared, may still be waiting for the browser:
+	# `_reload_the_scene()` carries its symbol over, so the escape's boot adopts it and the answer
+	# settles it there.
 	if GameState.escape_section != FinaleController.Section.NONE:
 		_summary.dismiss()
-		get_tree().paused = false
-		get_tree().call_deferred("reload_current_scene")
+		_reload_the_scene()
 		return
 	if _resume_gate_open:
 		_resume_gate_open = false
@@ -2131,15 +2137,34 @@ func _restart_run() -> void:
 	# log. A web deletion's own answer comes after the log is closed and is not logged.
 	GameSave.clear()
 	Telemetry.end_run()
-	_carry_the_save_symbol_over()
 	# And with it the run's record of being in the escape, which outlives the scene reload below
 	# because it lives on an autoload. Left set, the fresh boot would skip its own `start_run()` and
 	# open the escape again over a run that was just thrown away. A no-op for a restart from an
 	# ordinary day and for a finished run, which `GameState._end_run()` has already cleared.
 	GameState.escape_section = FinaleController.Section.NONE
 	TitleScreen.note_restart_requested()
-	get_tree().paused = false
-	get_tree().call_deferred("reload_current_scene")
+	_reload_the_scene()
+
+## **Every scene reload goes through here**: the held restart (`_restart_run()`), the day-14
+## hand-over to the escape (`_on_summary_continued()`) and the flag's escape played again
+## (`_on_escape_title_start()`). A reload frees this node and the symbol under it, and a change in
+## the save state may still be waiting for the browser — the restart's deletion, or day 14's own
+## save at the hand-over — so the symbol is carried over first (`_carry_the_save_symbol_over()`)
+## and the next boot adopts it. One place, so a reload added later cannot forget the symbol.
+##
+## The tree is unpaused first: `reload_current_scene` builds the new scene into the same tree, and
+## a paused one would open the next screen over a game that could never start. Read through
+## `Engine.get_main_loop()` rather than `get_tree()`, so a test can drive the paths that reach this
+## with a `main` that is not parented, and the reload itself goes to `_reload_override` when a test
+## has set one: a real reload would throw away the test runner's own scene.
+func _reload_the_scene() -> void:
+	_carry_the_save_symbol_over()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.paused = false
+	if _reload_override.is_valid():
+		_reload_override.call()
+		return
+	tree.call_deferred("reload_current_scene")
 
 ## The scene tree's own pause flag, read through `Engine.get_main_loop()` rather than `get_tree()`
 ## so this can be asked whether or not `main` itself is parented. `get_tree()` logs an
@@ -2573,17 +2598,18 @@ func _pause_on_focus_lost() -> void:
 		return
 	_pause.open()
 
-## The reload the held restart makes frees this node and everything under it, the symbol the
-## deletion just raised included, and a web deletion may still be waiting for IndexedDB. Handed to
-## the tree's root, the symbol shows across the reload and settles on the title the reload builds,
-## with its minimums running the whole time — see `SaveIndicator`'s own doc. Only a symbol that is
-## up needs it; an idle one is freed with this node and the next boot builds its own.
+## A reload (`_reload_the_scene()`) frees this node and everything under it, the symbol included,
+## and a change in the save state may still be waiting for IndexedDB: the held restart's deletion,
+## or day 14's own save at the hand-over to the escape. Handed to the tree's root, the symbol shows
+## across the reload and settles on whatever the reload builds, the title or the escape, with its
+## minimums running the whole time — see `SaveIndicator`'s own doc. Only a symbol that is up needs
+## it; an idle one is freed with this node and the next boot builds its own.
 func _carry_the_save_symbol_over() -> void:
 	if _save_indicator and _save_indicator.is_showing():
 		_save_indicator.outlive_the_scene()
 
-## Takes the symbol the held restart's `main` handed to the tree's root, or builds one as this
-## node's own child. Above every screen this boot goes on to build — see `SaveIndicator`'s own doc
+## Takes the symbol the reloading `main` handed to the tree's root, or builds one as this node's own
+## child. Above every screen this boot goes on to build — see `SaveIndicator`'s own doc
 ## for why it is its own layer rather than a node on the pause screen, the day summary or the HUD.
 func _raise_save_indicator() -> void:
 	_save_indicator = SaveIndicator.carried(get_tree())

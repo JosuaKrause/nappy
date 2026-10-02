@@ -43,11 +43,17 @@ extends RefCounted
 ## **Deleting the save is a change in the save state, and answers the same way.** *(cozy-pelican,
 ## 2026-10-02: "show deleting the save file with a save symbol as well. every change in the save
 ## state needs to show the symbol".)* `clear()` answers a `Result` like `write()` does and, on the
-## web, is not kept until IndexedDB has dropped the file too — Godot's own flush runs only after a
-## file open for writing is closed, which a removal never is, so without `clear()`'s own flush a
-## reload could bring back a run that already ended. It tells `EventBus` what it came to
-## (`save_deleted`, and `save_deletion_settled` for a web flush), which is how the symbol shows a
-## deletion made by `GameState._end_run()`, an autoload that cannot reach `main`'s indicator.
+## web, is not kept until IndexedDB has dropped the file too, which only a flush's own answer says
+## — see `_flush()`. It tells `EventBus` what it came to (`save_deleted`, and
+## `save_deletion_settled` for a web flush), which is how the symbol shows a deletion made by
+## `GameState._end_run()`, an autoload that cannot reach `main`'s indicator.
+##
+## **Every write and every deletion is one operation with its own id**, from `_new_operation()`,
+## carried on its announcement and on its later answer alike. *(golden-otter, 2026-10-02: "if a new
+## save succeeds it doesn't really matter if an old save failed. only the latest save action
+## matters".)* The id is what lets the symbol tell which change an answer belongs to: only the
+## change begun last decides what it shows, and an answer to a change a symbol never began — one
+## announced before a scene reload, to a symbol that did not survive it — settles nothing there.
 
 ## Bumped only when the shape `GameState.save_snapshot()` writes changes — never for an ordinary
 ## release. **This is the whole of what makes a save "the running build cannot read": a newer
@@ -66,8 +72,8 @@ enum Result {
 	REFUSED,
 	## Written or deleted, and handed to the browser, which has not yet said whether it kept the
 	## change. The answer arrives later, on `EventBus.save_write_settled` or
-	## `EventBus.save_deletion_settled`, and through the `settled` callable `write()` or `clear()` was
-	## given, if any.
+	## `EventBus.save_deletion_settled` with the same operation id the announcement carried, and
+	## through the `settled` callable `write()` or `clear()` was given, if any.
 	PENDING,
 	## Kept: off the web the file closed or was removed; on the web IndexedDB reported the flush
 	## done.
@@ -151,13 +157,16 @@ window.nappySaveFlush = function (token, answer) {
 static var _window: JavaScriptObject = null
 static var _flush_answer: JavaScriptObject = null
 
-## Every flush still waiting for its answer, by token: `{"settled": Callable, "deleting": bool,
-## "waited": float}`, the callable its `write()` or `clear()` was given, whether the flush carries a
-## deletion, and the seconds of clamped frames it has waited so far. The
-## first of the answer and the timeout to arrive removes the entry; the second finds nothing and
-## does nothing.
+## Every flush still waiting for its answer, by the operation id of the write or deletion it
+## carries, which is also the token the page's answer names: `{"settled": Callable, "deleting":
+## bool, "waited": float}`, the callable its `write()` or `clear()` was given, whether the flush
+## carries a deletion, and the seconds of clamped frames it has waited so far. The first of the
+## answer and the timeout to arrive removes the entry; the second finds nothing and does nothing.
 static var _pending_flushes: Dictionary = {}
-static var _next_flush_token := 0
+## The id `_new_operation()` handed out last. Only ever grows, for the life of the process, so a
+## larger id is always a change begun later — which is how `SaveIndicator` knows the newest — and
+## no id is reused across the scene reloads a held restart and the day-14 hand-over make.
+static var _last_operation := 0
 ## When the last frame ticked the flushes' clocks, in `Time.get_ticks_usec()`. Set when the first
 ## flush begins waiting, so the step it first counts is the time since then.
 static var _last_tick_usec := 0
@@ -245,6 +254,7 @@ static func has_save() -> bool:
 static func clear(settled := Callable()) -> Result:
 	if not uses_save() or not has_save():
 		return Result.REFUSED
+	var operation := _new_operation()
 	var on_web := OS.has_feature("web")
 	var persistent := OS.is_userfs_persistent()
 	var removed := _clear_now()
@@ -253,9 +263,9 @@ static func clear(settled := Callable()) -> Result:
 		Telemetry.note("save", "the deletion was not kept (%s)"
 				% ("the file could not be removed" if not removed else "the browser refused storage"))
 	# Before the flush starts, so a symbol has begun by the time any answer reaches it.
-	EventBus.save_deleted.emit(int(result))
+	EventBus.save_deleted.emit(operation, int(result))
 	if result == Result.PENDING:
-		_flush(settled, true)
+		_flush(operation, settled, true)
 	return result
 
 ## The ungated mechanics `clear()` calls through, and the seam `tests/test_save.gd` calls directly
@@ -284,6 +294,7 @@ static func _clear_now() -> bool:
 static func write(day_under_way: bool, settled := Callable()) -> Result:
 	if not uses_save() or _run_has_ended():
 		return Result.REFUSED
+	var operation := _new_operation()
 	var on_web := OS.has_feature("web")
 	# Read at every save moment rather than once, so the answer is the engine's own at the moment
 	# the save is meant to be kept.
@@ -294,9 +305,9 @@ static func write(day_under_way: bool, settled := Callable()) -> Result:
 		Telemetry.note("save", "the save was not kept (%s)"
 				% ("the file could not be written" if not wrote else "the browser refused storage"))
 	# Before the flush starts, so a symbol has begun by the time any answer reaches it.
-	EventBus.save_written.emit(int(result))
+	EventBus.save_written.emit(operation, int(result))
 	if result == Result.PENDING:
-		_flush(settled)
+		_flush(operation, settled)
 	return result
 
 ## What a save moment comes to before any browser has answered — the pure half of `write()` and of
@@ -315,28 +326,37 @@ static func _moment_result(done: bool, on_web: bool, persistent: bool) -> Result
 		return Result.FAILED
 	return Result.PENDING
 
+## A fresh id for one write or deletion — see the class doc. Called only for a change that is
+## announced, never for a refused one, which announces nothing.
+static func _new_operation() -> int:
+	_last_operation += 1
+	return _last_operation
+
 ## Whether the run has an ending, after which nothing is written — see `_write_now()`.
 static func _run_has_ended() -> bool:
 	return GameState.ending != GameEnums.Ending.NONE
 
-## Starts a web flush and settles it through `settled` — see `_FLUSH_JS` for the page's half and
-## `FLUSH_TIMEOUT_SECONDS` for the backstop. Each flush has its own token so the answer and the
-## timeout settle the flush they belong to, whichever arrives first. `deleting` says the flush
-## carries a removal, which it names as a deletion in the run log. Either kind is settled on
-## `EventBus` too (`save_deletion_settled` or `save_write_settled`), which is what reaches a symbol
-## when the `settled` callable's object is gone.
+## Starts a web flush for `operation` and settles it through `settled` — see `_FLUSH_JS` for the
+## page's half and `FLUSH_TIMEOUT_SECONDS` for the backstop. The operation id is the flush's token,
+## so the answer and the timeout settle the flush they belong to, whichever arrives first.
+## `deleting` says the flush carries a removal, which it names as a deletion in the run log. Either
+## kind is settled on `EventBus` too (`save_deletion_settled` or `save_write_settled`, with the
+## operation id), which is what reaches a symbol when the `settled` callable's object is gone.
 ##
-## Godot's web platform also flushes a persistent path on its own once a file open for writing is
-## closed, but only on the *next* main-loop iteration, and it reports a failure to nobody; this
-## one starts at once and is the one whose answer the symbol waits for. **A removal closes no
-## file**, so for a deletion this is the only flush there is: `FS.syncfs(false, …)` reconciles the
-## stored copy with the in-memory filesystem in both directions, dropping what is gone from it.
+## Godot's web platform also flushes a persistent path on its own, after a file open for writing is
+## closed and after a file is removed alike (the engine's `OS_Web` marks the store for a sync from
+## both notifications, `file_access_close_callback` and `dir_access_remove_callback`), but only on
+## the *next* main-loop iteration, and it reports the outcome to nobody. So a deletion would reach
+## IndexedDB without this flush too; this one starts at once and **is the one whose answer the
+## symbol waits for**, for a write and a deletion alike — without it there would be nothing to say
+## whether the browser kept the change. `FS.syncfs(false, …)` reconciles the stored copy with the
+## in-memory filesystem in both directions, dropping what is gone from it.
 ## **Neither is a guarantee against a tab killed with no JavaScript tick left to run at all** — that
 ## gap is why every write carries the whole run rather than a change to it: the next write lands
 ## during the next ordinary session, long before the following quit, so a save that never reached
 ## IndexedDB on one close is caught up by the time the game is closed again.
-static func _flush(settled: Callable, deleting := false) -> void:
-	var token := _register_flush(settled, deleting)
+static func _flush(operation: int, settled: Callable, deleting := false) -> void:
+	var token := _register_flush(operation, settled, deleting)
 	_start_the_clock()
 	if _flush_answer == null:
 		JavaScriptBridge.eval(_FLUSH_JS)
@@ -393,17 +413,19 @@ static func _on_flush_answered(args: Array) -> void:
 	else:
 		_settle(int(args[0]), Result.FAILED, message)
 
-static func _register_flush(settled: Callable, deleting := false) -> int:
-	_next_flush_token += 1
-	_pending_flushes[_next_flush_token] = {"settled": settled, "deleting": deleting, "waited": 0.0}
-	return _next_flush_token
+## Puts `operation`'s flush in the table of flushes waiting for an answer, and answers its token,
+## which is the operation id itself.
+static func _register_flush(operation: int, settled: Callable, deleting := false) -> int:
+	_pending_flushes[operation] = {"settled": settled, "deleting": deleting, "waited": 0.0}
+	return operation
 
 ## Settles one pending flush, once: whichever of the page's answer and the timeout arrives second
 ## finds the token gone and does nothing, so a flush that answers after timing out stays failed
 ## rather than flipping the symbol it already struck through. A `settled` whose object is gone — a
 ## held restart reloads `main` while a flush is still out — is skipped. **The answer always goes out
-## on `EventBus` first** (`save_deletion_settled` for a deletion, `save_write_settled` for a write),
-## which is what reaches the symbol that outlived the `main` a reload freed.
+## on `EventBus` first** (`save_deletion_settled` for a deletion, `save_write_settled` for a write,
+## each with the operation id), which is what reaches the symbol that outlived the `main` a reload
+## freed.
 static func _settle(token: int, result: Result, reason: String) -> void:
 	if not _pending_flushes.has(token):
 		return
@@ -417,13 +439,13 @@ static func _settle(token: int, result: Result, reason: String) -> void:
 			Telemetry.note("save", "the browser dropped the deleted save")
 		else:
 			Telemetry.note("save", "the browser did not drop the deleted save (%s)" % reason)
-		EventBus.save_deletion_settled.emit(kept)
+		EventBus.save_deletion_settled.emit(token, kept)
 	else:
 		if kept:
 			Telemetry.note("save", "the browser kept the save")
 		else:
 			Telemetry.note("save", "the browser did not keep the save (%s)" % reason)
-		EventBus.save_write_settled.emit(kept)
+		EventBus.save_write_settled.emit(token, kept)
 	if settled.is_valid():
 		settled.call(result)
 

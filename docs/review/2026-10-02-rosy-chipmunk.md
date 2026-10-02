@@ -17,13 +17,17 @@ shows once), open the pause screen and hold the restart: the deletion shows the 
 stays up through the reload onto the title. Dismiss that title and the symbol shows again for the
 save the new run writes, so a second held restart straight after deletes a save and shows the
 symbol again. A restart shows nothing only when the run has already ended and deleted its own save:
-let a day lose the last nerve, see the symbol come up on the ending for that deletion and fade,
-then hold the restart on the ending screen, and no new symbol comes up. Held in the first moment
-of the ending, while that symbol is still up, the same symbol carries over the reload; it is the
-ending's deletion, not the restart's. On the web the symbol must never stay up for good: hold a
+let a day lose the last nerve. The run ends the moment that day does, so the deletion's symbol
+comes up over the losing day's own summary, not over the ending, and on a desktop browser has
+usually faded within about two and a half seconds, before you continue to the ending screen. Hold
+the restart on the ending screen and no new symbol comes up. Held on the losing day's summary
+while that symbol is still up, the same symbol carries over the reload onto the title; it is the
+run's own deletion, not the restart's. On the web the symbol must never stay up for good: hold a
 restart on a day's summary while its end-of-day save is still unanswered (slow the connection, or
 background the page first) and the symbol on the new title still fades once the browser answers,
-or fails after five seconds and shows struck for ten. Reopen a game closed between days and no
+or fails after five seconds and shows struck for ten. The same holds for a won day 14 that hands
+the run to the escape: continue past its summary while its save is still unanswered and the
+symbol stays up into the escape, then fades or shows struck the same way. Reopen a game closed between days and no
 symbol shows over the title, while a game closed mid-day shows it once over the title; pressing
 past the title and the day brief shows it again, for the save the day's start writes. Record is
 `docs/decisions/2026-10-02-rosy-chipmunk.md`.

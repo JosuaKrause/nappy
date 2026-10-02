@@ -81,22 +81,25 @@ func run(t) -> void:
 	_test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t)
 	_test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(t)
 	_test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_saved(t)
-	_test_a_pending_write_is_answered_after_a_reload_freed_the_main_that_saved(t)
+	_test_the_hand_over_to_the_escape_carries_a_pending_save_over(t)
+	_test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t)
+	_test_each_change_carries_its_own_operation_id_to_its_answer(t)
 	_test_the_symbols_listening_ends_with_the_symbol(t)
 	_test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t)
 	_test_a_save_answered_at_once_shows_for_a_second_then_fades(t)
 	_test_a_save_pending_three_seconds_fades_straight_after_its_answer(t)
-	_test_a_second_save_keeps_the_symbol_up_until_both_are_answered(t)
+	_test_any_unanswered_save_keeps_the_symbol_up(t)
 	_test_a_failure_answered_at_once_shows_struck_for_ten_seconds(t)
 	_test_a_failure_answered_after_five_seconds_is_struck_until_fifteen(t)
 	_test_a_save_beginning_mid_fade_restarts_the_second(t)
 	_test_a_save_beginning_while_fully_shown_does_not_restart_the_second(t)
-	_test_a_failure_while_another_save_is_pending_strikes_at_once(t)
+	_test_the_newest_failure_strikes_and_an_older_success_does_not_clear_it(t)
+	_test_an_older_failure_never_strikes(t)
+	_test_only_the_newest_save_decides_in_either_order_of_arrival(t)
 	_test_each_failure_restarts_the_struck_clock(t)
-	_test_a_kept_batch_after_a_failed_one_clears_the_strike(t)
+	_test_a_kept_save_after_a_failed_one_clears_the_strike(t)
 	_test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t)
 	_test_a_struck_symbol_that_faded_away_is_forgotten(t)
-	_test_a_save_not_kept_is_struck_through_whichever_answers_first(t)
 	_test_a_stray_answer_shows_nothing(t)
 	_test_main_draws_nothing_for_a_refused_run(t)
 	_test_main_shows_a_desktop_save_confirmed_at_once(t)
@@ -1107,21 +1110,21 @@ func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
 ## taking back the strike already shown, and a timeout after an answer changes nothing.
 func _test_a_flush_settles_once_whichever_answer_comes_first(t) -> void:
 	var answered := _Answers.new()
-	var token := GameSave._register_flush(answered.take)
+	var token := GameSave._register_flush(GameSave._new_operation(), answered.take)
 	GameSave._on_flush_answered([float(token), ""])
 	GameSave._settle(token, GameSave.Result.FAILED, "timed out")
 	t.check(answered.results.size() == 1 and answered.results[0] == GameSave.Result.CONFIRMED,
 			"the browser's success settles the flush, and the later timeout does nothing")
 
 	var timed_out := _Answers.new()
-	token = GameSave._register_flush(timed_out.take)
+	token = GameSave._register_flush(GameSave._new_operation(), timed_out.take)
 	GameSave._settle(token, GameSave.Result.FAILED, "timed out")
 	GameSave._on_flush_answered([float(token), ""])
 	t.check(timed_out.results.size() == 1 and timed_out.results[0] == GameSave.Result.FAILED,
 			"a timeout settles the flush as failed, and a late success does not reverse it")
 
 	var failed := _Answers.new()
-	token = GameSave._register_flush(failed.take)
+	token = GameSave._register_flush(GameSave._new_operation(), failed.take)
 	GameSave._on_flush_answered([float(token), "Connection to Indexed Database server lost"])
 	t.check(failed.results.size() == 1 and failed.results[0] == GameSave.Result.FAILED,
 			"the page's failure message settles the flush as failed")
@@ -1131,7 +1134,7 @@ func _test_a_flush_settles_once_whichever_answer_comes_first(t) -> void:
 ## an object that no longer exists by the time the browser answers. Settling it does nothing.
 func _test_a_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 	var gone := Node.new()
-	var token := GameSave._register_flush(Callable(gone, &"set_name"))
+	var token := GameSave._register_flush(GameSave._new_operation(), Callable(gone, &"set_name"))
 	gone.free()
 	GameSave._settle(token, GameSave.Result.CONFIRMED, "")
 	t.check(GameSave._pending_flushes.is_empty(), "the flush is settled without calling anything")
@@ -1143,21 +1146,21 @@ func _test_a_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 ## A write's answer never does.
 func _test_a_deletion_flush_settles_through_the_bus_and_a_write_flush_does_not(t) -> void:
 	var heard: Array[bool] = []
-	var listen := func(kept: bool) -> void: heard.append(kept)
+	var listen := func(_operation: int, kept: bool) -> void: heard.append(kept)
 	EventBus.save_deletion_settled.connect(listen)
 
 	var deleted := _Answers.new()
-	var token := GameSave._register_flush(deleted.take, true)
+	var token := GameSave._register_flush(GameSave._new_operation(), deleted.take, true)
 	GameSave._on_flush_answered([float(token), ""])
 	t.check(deleted.results == [GameSave.Result.CONFIRMED] and heard == [true],
 			"a deletion the browser kept settles its caller and the bus, kept")
 
-	token = GameSave._register_flush(deleted.take, true)
+	token = GameSave._register_flush(GameSave._new_operation(), deleted.take, true)
 	GameSave._on_flush_answered([float(token), "Connection to Indexed Database server lost"])
 	t.check(heard == [true, false], "a deletion the browser did not keep settles the bus, not kept")
 
 	var written := _Answers.new()
-	token = GameSave._register_flush(written.take)
+	token = GameSave._register_flush(GameSave._new_operation(), written.take)
 	GameSave._on_flush_answered([float(token), ""])
 	t.check(written.results == [GameSave.Result.CONFIRMED] and heard == [true, false],
 			"a write's answer settles its caller and says nothing on the deletion signal")
@@ -1170,10 +1173,10 @@ func _test_a_deletion_flush_settles_through_the_bus_and_a_write_flush_does_not(t
 ## says it.
 func _test_a_deletion_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 	var heard: Array[bool] = []
-	var listen := func(kept: bool) -> void: heard.append(kept)
+	var listen := func(_operation: int, kept: bool) -> void: heard.append(kept)
 	EventBus.save_deletion_settled.connect(listen)
 	var gone := Node.new()
-	var token := GameSave._register_flush(Callable(gone, &"set_name"), true)
+	var token := GameSave._register_flush(GameSave._new_operation(), Callable(gone, &"set_name"), true)
 	gone.free()
 	GameSave._settle(token, GameSave.Result.CONFIRMED, "")
 	t.check(GameSave._pending_flushes.is_empty() and heard == [true],
@@ -1191,8 +1194,8 @@ func _test_one_huge_frame_does_not_time_a_flush_out(t) -> void:
 	t.check(GameSave._clamped_step(-1.0) == 0.0, "a clock that went backwards counts as nothing")
 	var write_answers := _Answers.new()
 	var delete_answers := _Answers.new()
-	var write_token := GameSave._register_flush(write_answers.take)
-	var delete_token := GameSave._register_flush(delete_answers.take, true)
+	var write_token := GameSave._register_flush(GameSave._new_operation(), write_answers.take)
+	var delete_token := GameSave._register_flush(GameSave._new_operation(), delete_answers.take, true)
 	GameSave._advance(GameSave._clamped_step(3600.0))
 	t.check(GameSave._pending_flushes.has(write_token) and write_answers.results.is_empty(),
 			"a write's flush is still waiting after the huge frame")
@@ -1207,7 +1210,7 @@ func _test_one_huge_frame_does_not_time_a_flush_out(t) -> void:
 ## The timeout still exists: frames actually drawn add up to `FLUSH_TIMEOUT_SECONDS`.
 func _test_a_flush_still_times_out_after_enough_frames(t) -> void:
 	var answers := _Answers.new()
-	var token := GameSave._register_flush(answers.take, true)
+	var token := GameSave._register_flush(GameSave._new_operation(), answers.take, true)
 	var steps := int(GameSave.FLUSH_TIMEOUT_SECONDS / GameSave.MAX_FLUSH_STEP_SECONDS)
 	for i in steps - 1:
 		GameSave._advance(GameSave.MAX_FLUSH_STEP_SECONDS)
@@ -1235,11 +1238,12 @@ func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
 
 		var waiting := SaveIndicator.new()
 		t.add_child(waiting)
-		EventBus.save_deleted.emit(int(GameSave.Result.PENDING))
+		var deletion := GameSave._new_operation()
+		EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
 		t.check(waiting._showing.pending == 1, "a pending deletion begins one change")
 		waiting._showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 20.0)
 		t.check(waiting._showing.alpha() == 1.0, "and holds the symbol fully shown while unanswered")
-		EventBus.save_deletion_settled.emit(true)
+		EventBus.save_deletion_settled.emit(deletion, true)
 		t.check(waiting._showing.pending == 0 and not waiting._showing.struck,
 				"the browser's answer settles it, kept")
 		waiting.free()
@@ -1250,7 +1254,7 @@ func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
 func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 	var immediate := SaveIndicator.new()
 	t.add_child(immediate)
-	EventBus.save_deleted.emit(int(GameSave.Result.FAILED))
+	EventBus.save_deleted.emit(GameSave._new_operation(), int(GameSave.Result.FAILED))
 	t.check(immediate.shows_struck() and immediate._showing.pending == 0,
 			"a deletion that failed at once shows the struck picture")
 	immediate._showing.advance(9.9)
@@ -1259,8 +1263,9 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 
 	var later := SaveIndicator.new()
 	t.add_child(later)
-	EventBus.save_deleted.emit(int(GameSave.Result.PENDING))
-	EventBus.save_deletion_settled.emit(false)
+	var deletion := GameSave._new_operation()
+	EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
+	EventBus.save_deletion_settled.emit(deletion, false)
 	t.check(later.shows_struck() and later._showing.pending == 0,
 			"a deletion the browser did not keep shows the struck picture")
 	later.free()
@@ -1356,7 +1361,8 @@ func _test_the_restarts_symbol_survives_the_scene_reload(t) -> void:
 		main._carry_the_save_symbol_over()
 		t.check(indicator.get_parent() == old_main, "an idle symbol stays where it is")
 
-		EventBus.save_deleted.emit(int(GameSave.Result.PENDING))
+		var deletion := GameSave._new_operation()
+		EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
 		main._carry_the_save_symbol_over()
 		t.check(indicator.get_parent() == home, "a symbol that is up goes to the tree's root")
 		old_main.free()
@@ -1365,7 +1371,7 @@ func _test_the_restarts_symbol_survives_the_scene_reload(t) -> void:
 		t.check(indicator._showing.pending == 1 and indicator.is_showing(),
 				"still showing the pending deletion")
 
-		EventBus.save_deletion_settled.emit(false)
+		EventBus.save_deletion_settled.emit(deletion, false)
 		t.check(indicator.shows_struck() and indicator._showing.pending == 0,
 				"the browser's answer arrives after the reload and settles it, struck")
 		main.free()
@@ -1411,7 +1417,7 @@ func _test_the_held_restart_deletes_the_save_before_the_run_log_closes(t) -> voi
 ## `GameSave` refuses (a headless run, an ended run) announces nothing.
 func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> void:
 	var heard: Array[int] = []
-	var listen := func(result: int) -> void: heard.append(result)
+	var listen := func(_operation: int, result: int) -> void: heard.append(result)
 	EventBus.save_written.connect(listen)
 	t.check(GameSave.write(true) == GameSave.Result.REFUSED and heard.is_empty(),
 			"a headless run's write is refused and announces nothing")
@@ -1422,8 +1428,10 @@ func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> 
 		main._save_indicator = indicator
 		main._save_now(true)
 		t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
+		t.check(indicator._showing.begun == 1,
+				"and the symbol began once for it, not a second time by main")
 		t.check(indicator.is_showing() and indicator._showing.pending == 0,
-				"and the symbol began once for it and was answered, not begun a second time")
+				"and that one change is already answered")
 		main.free()
 		indicator.free()
 		GameState.ending = GameEnums.Ending.BAD
@@ -1438,17 +1446,17 @@ func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> 
 ## to `save_deletion_settled`, so one answer settles one change however many are out.
 func _test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(t) -> void:
 	var heard: Array[bool] = []
-	var listen := func(kept: bool) -> void: heard.append(kept)
+	var listen := func(_operation: int, kept: bool) -> void: heard.append(kept)
 	EventBus.save_write_settled.connect(listen)
 	var answers := _Answers.new()
-	var token := GameSave._register_flush(answers.take)
+	var token := GameSave._register_flush(GameSave._new_operation(), answers.take)
 	GameSave._on_flush_answered([float(token), ""])
 	t.check(heard == [true] and answers.results == [GameSave.Result.CONFIRMED],
 			"a write the browser kept settles the bus, kept, and then its caller")
-	token = GameSave._register_flush(answers.take)
+	token = GameSave._register_flush(GameSave._new_operation(), answers.take)
 	GameSave._on_flush_answered([float(token), "Connection to Indexed Database server lost"])
 	t.check(heard == [true, false], "a write the browser did not keep settles the bus, not kept")
-	token = GameSave._register_flush(answers.take, true)
+	token = GameSave._register_flush(GameSave._new_operation(), answers.take, true)
 	GameSave._on_flush_answered([float(token), ""])
 	t.check(heard == [true, false], "a deletion's answer says nothing on the write signal")
 	t.check(GameSave._pending_flushes.is_empty(), "nothing is left waiting")
@@ -1470,8 +1478,9 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	var main: Node2D = _MAIN_SCRIPT.new()
 	main._save_indicator = indicator
 
-	EventBus.save_written.emit(int(GameSave.Result.PENDING))
-	var token := GameSave._register_flush(Callable(main, &"set_name"))
+	var save := GameSave._new_operation()
+	EventBus.save_written.emit(save, int(GameSave.Result.PENDING))
+	var token := GameSave._register_flush(save, Callable(main, &"set_name"))
 	t.check(indicator._showing.pending == 1, "the web save is out and the symbol waits for it")
 	main._carry_the_save_symbol_over()
 	t.check(indicator.get_parent() == home, "the restart hands the symbol to the tree's root")
@@ -1484,8 +1493,9 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	indicator._showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 0.1)
 	t.check(indicator._showing.is_idle(), "so the symbol fades out instead of staying up for good")
 
-	EventBus.save_written.emit(int(GameSave.Result.PENDING))
-	token = GameSave._register_flush(Callable())
+	save = GameSave._new_operation()
+	EventBus.save_written.emit(save, int(GameSave.Result.PENDING))
+	token = GameSave._register_flush(save, Callable())
 	GameSave._on_flush_answered([float(token), "Connection to Indexed Database server lost"])
 	t.check(indicator.shows_struck() and indicator._showing.pending == 0,
 			"and a save the browser did not keep strikes it the same way")
@@ -1493,33 +1503,111 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	SaveIndicator._home_override = null
 	home.free()
 
-## **The day-14 hand-over's reload to the escape, after an earlier held restart on the same page.**
-## The symbol already sits on the tree's root, a pending save is announced, the reload frees the
-## `main` that saved without handing anything over, and the answer's `settled` callable names the
-## freed `main`. The symbol the next `main` adopts is answered all the same.
-func _test_a_pending_write_is_answered_after_a_reload_freed_the_main_that_saved(t) -> void:
+## **The day-14 hand-over's reload to the escape, through `main._on_summary_continued()` itself.**
+## Day 14's own save (A) is written as its summary appears and may still be waiting for the browser
+## when the player continues. The hand-over must carry the symbol to the tree's root like the held
+## restart does, so it outlives the reload, keeps showing A, and the escape's boot adopts it. There
+## the escape's first save (B) begins, and A's answer, arriving late, must settle A and never B: B's
+## failure afterwards still strikes the symbol. The reload itself goes to `_reload_override`, since a
+## real one would throw away the test runner's own scene.
+func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	var tree: SceneTree = t.get_tree()
 	var home := Node.new()
 	t.add_child(home)
 	SaveIndicator._home_override = home
+	var section := GameState.escape_section
+	GameState.escape_section = FinaleController.Section.BUILDING
+	var old_main_scene := Node.new()
+	t.add_child(old_main_scene)
 	var indicator := SaveIndicator.new()
-	home.add_child(indicator)
-	var old_main: Node2D = _MAIN_SCRIPT.new()
-	old_main._save_indicator = indicator
+	old_main_scene.add_child(indicator)
+	var main: Node2D = _MAIN_SCRIPT.new()
+	main._save_indicator = indicator
+	main._summary = _SUMMARY_SCENE.instantiate()
+	old_main_scene.add_child(main._summary)
+	var reloads: Array[int] = []
+	main._reload_override = func() -> void: reloads.append(1)
 
-	EventBus.save_written.emit(int(GameSave.Result.PENDING))
-	var token := GameSave._register_flush(Callable(old_main, &"set_name"))
-	old_main.free()
-	t.check(SaveIndicator.carried(tree) == indicator and indicator._showing.pending == 1,
-			"the next main adopts a symbol still waiting for the save")
+	var day_fourteen := GameSave._new_operation()
+	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))
+	main._on_summary_continued()
+	t.check(reloads.size() == 1, "continuing past day 14's summary reloads into the escape")
+	t.check(indicator.get_parent() == home,
+			"and hands the symbol showing day 14's pending save to the tree's root first")
+	main.free()
+	old_main_scene.free()
+	t.check(is_instance_valid(indicator) and SaveIndicator.carried(tree) == indicator,
+			"so the reload does not free it, and the escape's boot adopts it")
+	if not is_instance_valid(indicator):
+		GameState.escape_section = section
+		SaveIndicator._home_override = null
+		home.free()
+		return
+	t.check(indicator._showing.pending == 1 and indicator._showing.alpha() == 1.0,
+			"still fully shown for day 14's save")
 
-	GameSave._on_flush_answered([float(token), ""])
-	t.check(indicator._showing.pending == 0, "the answer reaches it though the main that saved is gone")
-	indicator._showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 0.1)
-	t.check(indicator._showing.is_idle(), "and it fades instead of staying up for good")
+	var escape := GameSave._new_operation()
+	EventBus.save_written.emit(escape, int(GameSave.Result.PENDING))
+	EventBus.save_write_settled.emit(day_fourteen, true)
+	t.check(indicator._showing.pending == 1,
+			"day 14's late answer settles day 14's save, not the escape's")
+	EventBus.save_write_settled.emit(escape, false)
+	t.check(indicator.shows_struck() and indicator._showing.pending == 0,
+			"so the escape's failure afterwards still strikes the symbol")
+	indicator._showing.advance(SaveIndicator.MIN_STRUCK_SECONDS - 0.1)
+	t.check(indicator._showing.alpha() == 1.0, "fully, for its ten seconds")
+
 	indicator.free()
+	GameState.escape_section = section
+	t.get_tree().paused = false
 	SaveIndicator._home_override = null
 	home.free()
+
+## A symbol that did not live through a reload never began the changes announced before it, and an
+## answer to one of those settles nothing on it: its own pending change stays pending, and its own
+## failure still strikes.
+func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t) -> void:
+	var indicator := SaveIndicator.new()
+	t.add_child(indicator)
+	var before_it := GameSave._new_operation()
+	var its_own := GameSave._new_operation()
+	EventBus.save_written.emit(its_own, int(GameSave.Result.PENDING))
+	EventBus.save_write_settled.emit(before_it, true)
+	EventBus.save_deletion_settled.emit(before_it, false)
+	t.check(indicator._showing.pending == 1 and not indicator.shows_struck(),
+			"an answer to a change announced before it was built neither settles nor strikes it")
+	EventBus.save_write_settled.emit(its_own, false)
+	t.check(indicator.shows_struck() and indicator._showing.pending == 0,
+			"and its own change's answer still does")
+	indicator.free()
+
+## Every announced change carries its own operation id, larger for every change begun later, and its
+## web answer carries the same id back — the tie between an answer and its change.
+func _test_each_change_carries_its_own_operation_id_to_its_answer(t) -> void:
+	var announced: Array[int] = []
+	var announce := func(operation: int, _result: int) -> void: announced.append(operation)
+	var answered: Array[int] = []
+	var answer := func(operation: int, _kept: bool) -> void: answered.append(operation)
+	EventBus.save_written.connect(announce)
+	EventBus.save_deleted.connect(announce)
+	EventBus.save_write_settled.connect(answer)
+	EventBus.save_deletion_settled.connect(answer)
+	_with_forced_save(func() -> void:
+		GameSave.write(true)
+		GameSave.clear()
+		GameSave.write(false)
+	)
+	t.check(announced.size() == 3 and announced[0] < announced[1] and announced[1] < announced[2],
+			"a write, a deletion and a write announce increasing ids from one sequence")
+	var write_flush := GameSave._register_flush(GameSave._new_operation(), Callable())
+	var delete_flush := GameSave._register_flush(GameSave._new_operation(), Callable(), true)
+	GameSave._on_flush_answered([float(delete_flush), ""])
+	GameSave._on_flush_answered([float(write_flush), "lost"])
+	t.check(answered == [delete_flush, write_flush], "each web answer carries its own change's id")
+	EventBus.save_written.disconnect(announce)
+	EventBus.save_deleted.disconnect(announce)
+	EventBus.save_write_settled.disconnect(answer)
+	EventBus.save_deletion_settled.disconnect(answer)
 
 # ----------------------------------------------------------------- the symbol ---
 
@@ -1527,7 +1615,7 @@ func _test_a_pending_write_is_answered_after_a_reload_freed_the_main_that_saved(
 ## is fully shown and nothing counts down, however long the browser takes.
 func _test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
+	showing.begin(1)
 	showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 10.0)
 	t.check(showing.alpha() == 1.0, "a pending save stays fully shown past every minimum and the fade")
 	t.check(not showing.struck, "and plain, since nothing has failed yet")
@@ -1537,8 +1625,8 @@ func _test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t) -> void:
 func _test_a_save_answered_at_once_shows_for_a_second_then_fades(t) -> void:
 	var showing := SaveIndicator.Showing.new()
 	t.check(showing.is_idle() and showing.alpha() == 0.0, "nothing shows before a save")
-	showing.begin()
-	showing.settle(true)
+	showing.begin(1)
+	showing.settle(1, true)
 	t.check(not showing.is_idle() and showing.alpha() == 1.0,
 			"a save answered in the same call is shown from the start")
 	showing.advance(0.99)
@@ -1554,35 +1642,48 @@ func _test_a_save_answered_at_once_shows_for_a_second_then_fades(t) -> void:
 ## hold later.
 func _test_a_save_pending_three_seconds_fades_straight_after_its_answer(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
+	showing.begin(1)
 	showing.advance(1.0)
 	t.check(showing.alpha() == 1.0, "fully shown when the minimum has run out but the save has not answered")
 	showing.advance(2.0)
 	t.check(showing.alpha() == 1.0, "and fully shown at 3s")
-	showing.settle(true)
+	showing.settle(1, true)
 	t.check(showing.alpha() == 1.0, "the answer itself does not dim it")
 	showing.advance(0.2)
 	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "the fade begins straight away")
 	showing.advance(SaveIndicator.FADE_SECONDS)
 	t.check(showing.is_idle(), "and runs its 1.5s")
 
-func _test_a_second_save_keeps_the_symbol_up_until_both_are_answered(t) -> void:
+## Any change still unanswered keeps the symbol fully shown, an older one as much as the newest, so
+## nothing still being written looks finished — even once the newest has answered and decided the
+## picture.
+func _test_any_unanswered_save_keeps_the_symbol_up(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.begin()
-	showing.settle(true)
+	showing.begin(1)
+	showing.begin(2)
+	showing.settle(2, true)
 	showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 1.0)
-	t.check(showing.alpha() == 1.0, "one answered save of two leaves the symbol up, untimed")
-	showing.settle(true)
+	t.check(showing.alpha() == 1.0 and not showing.struck,
+			"the newest answered and kept, the older still out: up, plain and untimed")
+	showing.settle(1, true)
 	showing.advance(0.2)
-	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "the second answer lets it fade")
+	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "the older answer lets it fade")
+	var newest_out := SaveIndicator.Showing.new()
+	newest_out.begin(1)
+	newest_out.begin(2)
+	newest_out.settle(1, true)
+	newest_out.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 1.0)
+	t.check(newest_out.alpha() == 1.0, "and the newest still out keeps it up the same way")
+	newest_out.settle(2, true)
+	newest_out.advance(0.2)
+	t.check(newest_out.alpha() < 1.0, "until it answers")
 
 ## *"if it fails it show for at least 10s"* — however fast the failure came back, the struck
 ## picture is fully shown for ten seconds from the strike.
 func _test_a_failure_answered_at_once_shows_struck_for_ten_seconds(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.settle(false)
+	showing.begin(1)
+	showing.settle(1, false)
 	t.check(showing.struck, "a save not kept strikes the symbol at once")
 	showing.advance(9.9)
 	t.check(showing.struck and showing.alpha() == 1.0, "struck and fully shown at 9.9s")
@@ -1596,10 +1697,10 @@ func _test_a_failure_answered_at_once_shows_struck_for_ten_seconds(t) -> void:
 ## struck picture itself is up until 15s.
 func _test_a_failure_answered_after_five_seconds_is_struck_until_fifteen(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
+	showing.begin(1)
 	showing.advance(5.0)
 	t.check(not showing.struck and showing.alpha() == 1.0, "plain and full while the flush is out")
-	showing.settle(false)
+	showing.settle(1, false)
 	showing.advance(9.9)
 	t.check(showing.struck and showing.alpha() == 1.0, "struck and fully shown at 14.9s")
 	showing.advance(0.2)
@@ -1609,13 +1710,13 @@ func _test_a_failure_answered_after_five_seconds_is_struck_until_fifteen(t) -> v
 ## beginning while it is already fully shown does not restart that clock.
 func _test_a_save_beginning_mid_fade_restarts_the_second(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.settle(true)
+	showing.begin(1)
+	showing.settle(1, true)
 	showing.advance(1.0 + SaveIndicator.FADE_SECONDS * 0.5)
 	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "fading")
-	showing.begin()
+	showing.begin(2)
 	t.check(showing.alpha() == 1.0, "a new save brings it back to full")
-	showing.settle(true)
+	showing.settle(2, true)
 	showing.advance(0.99)
 	t.check(showing.alpha() == 1.0, "full for a new second from the new save")
 	showing.advance(0.02)
@@ -1623,101 +1724,147 @@ func _test_a_save_beginning_mid_fade_restarts_the_second(t) -> void:
 
 func _test_a_save_beginning_while_fully_shown_does_not_restart_the_second(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.settle(true)
+	showing.begin(1)
+	showing.settle(1, true)
 	showing.advance(0.6)
-	showing.begin()
-	showing.settle(true)
+	showing.begin(2)
+	showing.settle(2, true)
 	showing.advance(0.5)
 	t.check(showing.alpha() < 1.0, "1.1s after the symbol appeared it fades, the second save or not")
 	var waiting := SaveIndicator.Showing.new()
-	waiting.begin()
-	waiting.settle(true)
+	waiting.begin(1)
+	waiting.settle(1, true)
 	waiting.advance(0.6)
-	waiting.begin()
+	waiting.begin(2)
 	waiting.advance(5.0)
 	t.check(waiting.alpha() == 1.0, "though the symbol still waits for the second save's answer")
-	waiting.settle(true)
+	waiting.settle(2, true)
 	waiting.advance(0.2)
 	t.check(waiting.alpha() < 1.0, "and fades once it comes")
 
-## A failure while another save is out strikes the picture at once, with its ten seconds starting
-## then rather than at the last answer.
-func _test_a_failure_while_another_save_is_pending_strikes_at_once(t) -> void:
+## *"an older success answered after a newer failure does not clear the strike"* (golden-otter) —
+## the newest save failing while an older one is out strikes the picture at once, its ten seconds
+## starting then, and the older one's later success leaves the strike where it is.
+func _test_the_newest_failure_strikes_and_an_older_success_does_not_clear_it(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.begin()
+	showing.begin(1)
+	showing.begin(2)
 	showing.advance(4.0)
-	showing.settle(false)
-	t.check(showing.struck and showing.pending == 1, "struck while the other save is unanswered")
+	showing.settle(2, false)
+	t.check(showing.struck and showing.pending == 1, "struck while the older save is unanswered")
 	showing.advance(20.0)
 	t.check(showing.struck and showing.alpha() == 1.0, "and held while that save is pending")
-	showing.settle(true)
-	t.check(showing.struck, "a kept answer after a failure in the same batch leaves it struck")
+	showing.settle(1, true)
+	t.check(showing.struck, "the older save's success, answered later, leaves it struck")
 	showing.advance(0.2)
 	t.check(showing.struck and showing.alpha() < 1.0, "fading, the ten seconds having run from the strike")
 	var timed := SaveIndicator.Showing.new()
-	timed.begin()
-	timed.begin()
-	timed.settle(false)
+	timed.begin(1)
+	timed.begin(2)
+	timed.settle(2, false)
 	timed.advance(4.0)
-	timed.settle(true)
+	timed.settle(1, true)
 	timed.advance(5.9)
 	t.check(timed.struck and timed.alpha() == 1.0, "ten seconds count from the strike, not the last answer")
 	timed.advance(0.2)
 	t.check(timed.alpha() < 1.0, "so it fades 10s after the strike")
 
-## Every failure restarts the ten seconds.
+## *"an older failure answered after a newer success does not strike the symbol"* (golden-otter) —
+## nor does one answered while the newest is still out: an older save's failure decides nothing,
+## and the symbol owes only the plain second.
+func _test_an_older_failure_never_strikes(t) -> void:
+	var after := SaveIndicator.Showing.new()
+	after.begin(1)
+	after.begin(2)
+	after.settle(2, true)
+	after.settle(1, false)
+	t.check(not after.struck and after.pending == 0,
+			"the older failure answered after the newer success leaves the symbol plain")
+	after.advance(SaveIndicator.MIN_SHOWN_SECONDS + 0.1)
+	t.check(after.alpha() < 1.0, "and it fades after its second, not ten")
+	var before := SaveIndicator.Showing.new()
+	before.begin(1)
+	before.begin(2)
+	before.settle(1, false)
+	t.check(not before.struck and before.pending == 1 and before.alpha() == 1.0,
+			"the older failure answered while the newest is out: plain and fully shown")
+	before.settle(2, true)
+	t.check(not before.struck, "and the newest kept leaves it plain")
+	before.advance(SaveIndicator.MIN_SHOWN_SECONDS + 0.1)
+	t.check(before.alpha() < 1.0, "fading after the second")
+
+## Golden-otter statement 1 in all four shapes: whichever of two overlapping saves answers first,
+## the picture is what the save started last came to.
+func _test_only_the_newest_save_decides_in_either_order_of_arrival(t) -> void:
+	for newest_kept: bool in [true, false]:
+		for newest_first: bool in [true, false]:
+			var showing := SaveIndicator.Showing.new()
+			showing.begin(1)
+			showing.begin(2)
+			if newest_first:
+				showing.settle(2, newest_kept)
+				showing.settle(1, not newest_kept)
+			else:
+				showing.settle(1, not newest_kept)
+				showing.settle(2, newest_kept)
+			t.check(showing.struck == (not newest_kept) and showing.pending == 0,
+					"the newest save %s, answered %s: the symbol is %s" % [
+						"kept" if newest_kept else "not kept",
+						"first" if newest_first else "last",
+						"plain" if newest_kept else "struck"])
+
+## Every failure of the newest save restarts the ten seconds.
 func _test_each_failure_restarts_the_struck_clock(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.settle(false)
+	showing.begin(1)
+	showing.settle(1, false)
 	showing.advance(6.0)
-	showing.begin()
-	showing.settle(false)
+	showing.begin(2)
+	showing.settle(2, false)
 	showing.advance(9.9)
 	t.check(showing.struck and showing.alpha() == 1.0, "the newest failure's ten seconds are running")
 	showing.advance(0.2)
 	t.check(showing.alpha() < 1.0, "and end ten seconds after it")
 
-## *The strike follows the newest answer*: a batch that was all kept clears an earlier batch's
+## *The strike follows the newest answer*: a newer save that was kept clears an earlier failure's
 ## strike, even with its ten seconds unspent, and the plain symbol then gets its own second.
-func _test_a_kept_batch_after_a_failed_one_clears_the_strike(t) -> void:
+func _test_a_kept_save_after_a_failed_one_clears_the_strike(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.settle(false)
+	showing.begin(1)
+	showing.settle(1, false)
 	showing.advance(3.0)
-	showing.begin()
-	showing.settle(true)
+	showing.begin(2)
+	showing.settle(2, true)
 	t.check(not showing.struck, "the strike clears though 7s of its ten were left")
 	t.check(showing.alpha() == 1.0, "the symbol is still up for the moment")
 	showing.advance(0.2)
 	t.check(showing.alpha() < 1.0, "the plain symbol's second ran from when the symbol appeared")
 	# Mid-fade, the new save restarts the second, which the plain symbol then owes.
 	var fading := SaveIndicator.Showing.new()
-	fading.begin()
-	fading.settle(false)
+	fading.begin(1)
+	fading.settle(1, false)
 	fading.advance(10.5)
 	t.check(fading.struck and fading.alpha() < 1.0, "the struck picture is fading")
-	fading.begin()
-	fading.settle(true)
+	fading.begin(2)
+	fading.settle(2, true)
 	t.check(not fading.struck and fading.alpha() == 1.0, "a kept save brings it back plain and full")
 	fading.advance(0.99)
 	t.check(fading.alpha() == 1.0, "for its own second")
 	fading.advance(0.02)
 	t.check(fading.alpha() < 1.0, "then fades")
 
-## `begin()` no longer clears the strike: a save still unanswered does not hide a known failure.
+## `begin()` does not clear the strike: a save still unanswered does not hide a known failure, and
+## only its own answer decides.
 func _test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.settle(false)
+	showing.begin(1)
+	showing.settle(1, false)
 	showing.advance(2.0)
-	showing.begin()
+	showing.begin(2)
 	t.check(showing.struck and showing.alpha() == 1.0, "struck and full with the new save unanswered")
 	showing.advance(30.0)
 	t.check(showing.struck and showing.alpha() == 1.0, "and for as long as it stays unanswered")
-	showing.settle(false)
+	showing.settle(2, false)
 	t.check(showing.struck, "a failed answer keeps the strike")
 	showing.advance(9.9)
 	t.check(showing.struck and showing.alpha() == 1.0, "with a fresh ten seconds")
@@ -1725,35 +1872,29 @@ func _test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t) -> void
 ## Once the symbol has faded away the strike is forgotten: the next save comes up plain.
 func _test_a_struck_symbol_that_faded_away_is_forgotten(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.begin()
-	showing.settle(false)
+	showing.begin(1)
+	showing.settle(1, false)
 	showing.advance(10.0 + SaveIndicator.FADE_SECONDS + 0.1)
 	t.check(showing.is_idle() and not showing.struck, "gone")
-	showing.begin()
+	showing.begin(2)
 	t.check(not showing.struck and showing.alpha() == 1.0, "the next save comes up plain and full")
-	showing.settle(true)
+	showing.settle(2, true)
 	t.check(not showing.struck, "and stays plain once kept")
 
-## *"if saving is unavailable it should show up with a strike through"* — struck if either of two
-## overlapping saves was not kept, whichever answered first.
-func _test_a_save_not_kept_is_struck_through_whichever_answers_first(t) -> void:
-	for order: Array in [[false, true], [true, false]]:
-		var showing := SaveIndicator.Showing.new()
-		showing.begin()
-		showing.begin()
-		showing.settle(order[0])
-		showing.settle(order[1])
-		t.check(showing.struck, "a save of the pair that was not kept strikes the symbol")
-		showing.advance(9.9)
-		t.check(showing.alpha() == 1.0, "held ten seconds")
-
+## An answer to a save never begun here, or a second answer to one already settled, is ignored:
+## it raises nothing, is not counted against the next save, and does not move the picture.
 func _test_a_stray_answer_shows_nothing(t) -> void:
 	var showing := SaveIndicator.Showing.new()
-	showing.settle(false)
+	showing.settle(7, false)
 	t.check(showing.is_idle() and showing.alpha() == 0.0,
 			"an answer with no save begun raises nothing")
-	showing.begin()
+	showing.begin(8)
 	t.check(showing.pending == 1, "and is not counted against the next save")
+	showing.settle(7, true)
+	t.check(showing.pending == 1, "nor is a later answer to that same save never begun")
+	showing.settle(8, false)
+	showing.settle(8, true)
+	t.check(showing.struck, "a second answer to a save already answered changes nothing")
 
 ## The whole path through `main._save_now()`: a run `GameSave.uses_save()` refuses — here the
 ## headless runner — leaves the symbol dark rather than struck.
@@ -1792,11 +1933,11 @@ func _test_a_save_not_kept_swaps_to_the_struck_picture(t) -> void:
 	t.check(indicator._struck_texture != null and indicator._plain_texture != null
 			and indicator._struck_texture != indicator._plain_texture,
 			"the plain and the struck pictures are both on the atlas, and different")
-	indicator.begin()
-	indicator.settle(false)
+	indicator.begin(1)
+	indicator.settle(1, false)
 	t.check(indicator.shows_struck(), "a save not kept shows the struck picture")
-	indicator.begin()
+	indicator.begin(2)
 	t.check(indicator.shows_struck(), "a new save still unanswered does not hide the failure")
-	indicator.settle(true)
+	indicator.settle(2, true)
 	t.check(not indicator.shows_struck(), "and a kept answer swaps back to the plain one")
 	indicator.free()

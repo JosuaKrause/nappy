@@ -44,8 +44,10 @@ least a second"*, and a failure always shows its 10s. Statements 4 to 6 are buil
 `SaveIndicator.Showing`:
 - **Every save shows the symbol from the moment it starts**, with no delay threshold.
 - **The symbol is fully shown for at least `MIN_SHOWN_SECONDS` (1s)**, counted from when it
-  appears, and for longer while any save is still pending; then it fades over `FADE_SECONDS`
-  (1.5s). The 1.5s hold after the answer is gone.
+  appears, and for longer while any save is still pending, the newest or an older one, so nothing
+  still being written looks finished; then it fades over `FADE_SECONDS` (1.5s). The 1.5s hold
+  after the answer is gone. Considered with golden-otter below: holding it only while the newest
+  save is unanswered, which would let it fade over an older save the browser had not yet answered.
 - **A save not kept shows `art/ui/save_unavailable.svg`** (the disk struck through, a red core in a
   dark casing, corner to corner) instead of `art/ui/save.svg`, fully for at least
   `MIN_STRUCK_SECONDS` (10s) counted from the moment it became struck, then the same fade. A
@@ -54,14 +56,23 @@ least a second"*, and a failure always shows its 10s. Statements 4 to 6 are buil
 - **A save beginning while the symbol fades or is gone brings it back to full and restarts the
   second**; one beginning while it is fully shown does not restart it, though the symbol still
   waits for that save's answer.
-- **The strike follows the newest answer** (statement 9, the player's decision). Asked whether a
+- **Only the newest save action decides the picture** (statement 9 and
+  [golden-otter](../playtests/2026-10-02-golden-otter.md), the player's decisions). Asked whether a
   kept save after a failed one should clear the strike at once or keep the struck picture for its
-  full 10s, the player chose **"Newest answer wins"** over "Keep the full 10s". A batch is the saves
-  from one that begins with nothing pending until the pending count returns to zero. When it does,
-  the picture is struck if any save of the batch failed, and every failure restarts the 10s; it is
-  plain if every save was kept, even with an earlier batch's 10s unspent, and then owes only the
-  normal second. A failure while other saves are pending strikes the picture at once. `begin()`
-  does not clear the strike, so a new save still unanswered does not hide a failure already known.
+  full 10s, the player chose **"Newest answer wins"** over "Keep the full 10s". The first build read
+  "newest" as a batch: the saves from one that begins with nothing pending until the pending count
+  returns to zero, struck if any save of the batch failed. The Codex reviewer found that an older
+  save failing and a newer one kept, both answered while overlapping, left the symbol struck, and
+  the player, during that review: *"if a new save succeeds it doesn't really matter if an old save
+  failed. only the latest save action matters"* (golden-otter statement 1, which replaces the
+  batch rule). So every write and deletion has an operation id from `GameSave._new_operation()`,
+  increasing for the life of the process, carried on `save_written`/`save_deleted` and again on
+  `save_write_settled`/`save_deletion_settled`. `Showing` keeps the ids it began and not yet
+  answered and the largest id it began. That newest change's answer alone moves the strike: not
+  kept strikes it at once and restarts the 10s, even while older saves are out; kept clears it,
+  even with an earlier failure's 10s unspent, and the plain symbol then owes only its second. An
+  older change's answer, in either order of arrival, only stops it being pending. `begin()` does
+  not clear the strike, so a new save still unanswered does not hide a failure already known.
 - **The strike keeps the traffic lights' red** (statement 11, the player's decision). `art/ui/
   save_unavailable.svg` strikes the disk in `#e04a3f`, the same red as `Palette.SIGNAL_RED`, a
   colour `src/palette.gd` otherwise keeps to the traffic lamps. Asked whether the strike should
@@ -93,18 +104,24 @@ What is built:
   The ungated `_clear_now()` is the seam a test puts a scratch file away with, since `clear()` now
   refuses a headless run, which it did not before: a headless test run that ended a run used to
   delete whatever sat at `user://save.json`.
-- **A web deletion is kept only once IndexedDB has dropped the file.** Godot's web runtime copies
-  `user://` into IndexedDB after a file open for writing is closed (the engine's web platform marks
-  the store dirty from the file-close notification; not confirmed against the pinned source or a
-  browser, since neither a web export template nor a browser was available when this was built); a removal closes no file, so a bare `remove_absolute`
-  could leave the stored copy to bring back a run that already ended on the next load. `clear()`
-  runs the same `FS.syncfs(false, …)` flush with its retry and timeout; `IDBFS`'s populate-false
-  pass drops from the store what is gone from memory. The tab killed before any flush answers
-  remains a gap, as it does for a write.
+- **A web deletion is kept only once IndexedDB has dropped the file, and only `clear()`'s own
+  flush says so.** Godot's web runtime copies `user://` into IndexedDB on its own after a removal
+  as much as after a write: in the pinned 4.7.2 source, `platform/web/os_web.cpp` installs
+  `OS_Web::file_access_close_callback` as `FileAccessUnix::close_notification_func` and
+  `OS_Web::dir_access_remove_callback` as `DirAccessUnix::remove_notification_func`, and each sets
+  `idb_needs_sync` for a path under `/userfs`, which the next `main_loop_iterate()` syncs. That
+  sync reports its outcome to nobody, so the symbol would have nothing to wait for. `clear()` runs
+  the same `FS.syncfs(false, …)` flush a write does, with its retry and timeout, and its answer is
+  what settles the symbol; `IDBFS`'s populate-false pass drops from the store what is gone from
+  memory. The first build's record and `GameSave`'s doc said a removal triggers no sync of the
+  engine's own; a reviewer read the pinned source and found the remove callback, and both now say
+  what the source does. The tab killed before any flush answers remains a gap, as it does for a
+  write.
 - **The route is `EventBus`, announced by `GameSave` itself, for a write as much as a deletion.**
   `GameState._end_run()` is an autoload and cannot reach `main`'s indicator. `clear()` emits
-  `save_deleted(result)`, and `save_deletion_settled(kept)` when a web flush answers, and
-  `write()` emits `save_written(result)` and `save_write_settled(kept)` the same way; `SaveIndicator`
+  `save_deleted(operation, result)`, and `save_deletion_settled(operation, kept)` when a web flush
+  answers, and `write()` emits `save_written(operation, result)` and
+  `save_write_settled(operation, kept)` the same way; `SaveIndicator`
   listens to all four and is the only thing that begins or answers the symbol. Considered: a
   signal carrying the result and a callback (the callback has to exist before the call that makes
   the result, so the caller could not supply it), and making the callers (`_end_run()`,
@@ -127,11 +144,23 @@ What is built:
   the screens exist, so `_raise_save_indicator()` now runs right before the charge; a symbol built
   after it would never have heard the deletion. The finale walked out shows it through the symbol
   `_ready_escape()` already builds for a run's own escape.
-- **The held restart's symbol survives the reload.** `main._carry_the_save_symbol_over()` hands the
+- **The symbol survives every reload a run makes.** `main._carry_the_save_symbol_over()` hands the
   symbol to the scene tree's root (`SaveIndicator.outlive_the_scene()`) when it is up, the next
   `main` takes it with `SaveIndicator.carried()` instead of building a second, and its clocks,
   picture and `EventBus` connections run through the reload, so the browser's answer settles it on
-  the new title with the minimums intact. The reload is not delayed. Because the symbol listens
+  the new title or escape with the minimums intact. The reload is not delayed. Every reload in
+  `main` goes through `main._reload_the_scene()`, which carries the symbol first: the held restart,
+  the day-14 hand-over to the escape, and the flag's escape played again. The first build carried
+  it only on the held restart; the Codex reviewer and the internal reviewer each reproduced what
+  the hand-over then did to day 14's own save still pending at the reload: the symbol was freed
+  with the scene, cutting its second short and never showing its failure, and the escape's new
+  symbol began the escape's first save while day 14's answer, arriving on the global signal,
+  settled it in its place, so the escape save's own failure was ignored. Carrying the symbol fixes
+  the first, and the operation ids the second: an answer to a change a symbol never began is
+  ignored, so an older scene's answer cannot settle the replacement's save. `_reload_the_scene()`
+  hands the reload to `_reload_override` when a test has set one, so `tests/test_save.gd` drives
+  the real `_on_summary_continued()` across the hand-over without throwing away the runner's
+  scene. Because the symbol listens
   itself, no callable bound to the freed `main` is ever called; `_settle()` still skips a `settled`
   whose object is gone. Rejected: static state holding the timeline across the reload (shared
   mutable state every test would have to reset, and nothing draws it between the old indicator's
@@ -168,11 +197,14 @@ the answer was dropped with them.
 
 **Verified.** `tools/check.sh`, `tools/lint.sh`, `tools/test.sh save main orientation atlas held_restart title
 finale telemetry` and
-`tools/ci_telemetry_kinds.py` pass. On a debug web export in headless Chromium,
+`tools/ci_telemetry_kinds.py` pass. The newest-action, operation-id and hand-over tests in
+`tests/test_save.gd` fail with the batch rule, the uncarried hand-over and a second relay of a write
+by `main` put back, respectively. On a debug web export in headless Chromium,
 `tools/web-template/browser-check.mjs` passes, and a probe confirmed the flush function exists and
 succeeds, that a connection failing once is reopened and the save kept, that one failing every time
 reports the failure, that a flush that never answers keeps the plain symbol up and then shows the
-struck one, and that storage refused at boot shows the struck symbol at once. Not verified: the
+struck one, and that storage refused at boot shows the struck symbol at once; that probe ran
+before the operation ids and the hand-over carry were added and was not repeated. Not verified: the
 release web export (it needs the custom runtime built with emsdk), that the custom runtime keeps the
 same unminified names (its build passes no closure-compiler option, but the pinned source's
 default was not read), and anything on a real iPhone.
