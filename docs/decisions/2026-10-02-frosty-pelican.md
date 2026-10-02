@@ -32,6 +32,20 @@ and the agent wraps it. `tools/codex-hooks.py` turns any guard answer but an all
 so Codex never asks and keeps "stop and tell the player"; without that, an `ask` passed through
 the adapter would have read as an allow.
 
+**The player can switch it off.** After it was built the player asked:
+
+> "Make it so it can be easily turned off and refuse again later. So I can turn it on/off without
+> approval hacks"
+
+`NAPPY_ASK_FOR_PLAYER_WRITES=0` in the environment a session starts with turns the asking off, and
+every unwrapped write is denied again, as on a machine with identities; unset, or any other value,
+leaves it on, so the session that built it was not locked out of committing the switch itself. The
+switch is an environment variable rather than a file in the repository because a command an agent
+runs cannot change the environment its hooks are started in, while a file it can write: the
+player sets it in a cloud environment's own variables (its settings, then Edit, picked up by a new
+session) or in the shell that launches Claude Code. The ask's own prompt text names the variable,
+so the player meets the off switch the first time the guard asks.
+
 **Rejected.** (B), the typed grant line: a grant file is something the agent could create itself,
 which the guard could only discourage, and whether a message the player sends while the agent is
 mid-turn reaches a prompt hook is not documented. Pushing through the GitHub connector instead of

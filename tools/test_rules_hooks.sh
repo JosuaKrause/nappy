@@ -954,10 +954,12 @@ assert_guard_timed "1 MB of backslash-newlines, naming neither word -> allow, de
 write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
 mkdir -p "$write_guard_agents"
 write_guard_remote=""
+write_guard_switch=""
 write_guard_decision() {
     local cmd="$1" tool="${2:-Bash}" raw
     raw=$(printf '%s' "$cmd" | jq -Rs --arg t "$tool" '{tool_name:$t, tool_input:{command:.}}' \
-        | env -u CLAUDE_CODE_REMOTE ${write_guard_remote:+CLAUDE_CODE_REMOTE=true} \
+        | env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES \
+            ${write_guard_remote:+CLAUDE_CODE_REMOTE=true} ${write_guard_switch:+NAPPY_ASK_FOR_PLAYER_WRITES=$write_guard_switch} \
             NAPPY_AGENTS_DIR="$write_guard_agents" "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then
         printf 'allow'
@@ -1421,7 +1423,7 @@ assert_write_guard_reason() {
     checks=$((checks + 1))
     local raw
     raw=$(printf '%s' "$2" | jq -Rs '{tool_name:"Bash", tool_input:{command:.}}' \
-        | env -u CLAUDE_CODE_REMOTE NAPPY_AGENTS_DIR="$write_guard_agents" \
+        | env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES NAPPY_AGENTS_DIR="$write_guard_agents" \
             "$root/.claude/hooks/github-write-guard.sh" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')
     case "$raw" in
         *"$3"*) echo "ok   $1" ;;
@@ -1797,6 +1799,16 @@ for write_guard_mode in remote unconfigured; do
     assert_write_guard "$write_guard_mode: an askable write beside a merge -> deny" deny \
         'git commit -m x && gh pr merge 3'
     assert_write_guard "$write_guard_mode: a read stays allowed" allow 'git status'
+    # The player's switch: 0 turns the asking off, and the ordinary writes are denied again.
+    write_guard_switch=0
+    assert_write_guard "$write_guard_mode, switched off: git commit -> deny" deny 'git commit -m "x"'
+    assert_write_guard "$write_guard_mode, switched off: an ordinary git push -> deny" deny \
+        'git push -u origin feature/x'
+    assert_write_guard "$write_guard_mode, switched off: gh pr create -> deny" deny 'gh pr create --title x --body y'
+    assert_write_guard "$write_guard_mode, switched off: a read stays allowed" allow 'git status'
+    write_guard_switch=1
+    assert_write_guard "$write_guard_mode, switched on explicitly: git commit -> ask" ask 'git commit -m "x"'
+    write_guard_switch=""
 done
 write_guard_remote=""
 

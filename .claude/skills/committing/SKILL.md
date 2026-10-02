@@ -57,7 +57,11 @@ session, or a machine with no identity directory — the guard below asks the pl
 ordinary write instead of denying it: a local commit, a plain push, or a pull-request or issue
 write goes to them as a permission prompt for that one command, which only they can approve
 *(2026-10-02: "Let's do A and make the codex version always refuse")*. Anything else the session
-stops on and tells the player about, and Codex stops on every one of them. A
+stops on and tells the player about, and Codex stops on every one of them. **The asking is the
+player's to switch off**: `NAPPY_ASK_FOR_PLAYER_WRITES=0` in the environment a session starts with
+(a cloud environment's own variables, or the launching shell) has every unwrapped write denied
+again, and removing it turns the asking back on *(2026-10-02: "Make it so it can be easily turned
+off and refuse again later")*. A session never sets or clears it for itself. A
 `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
 `git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
 that pushes or posts internally, in command position, unless the same command is wrapped in `run

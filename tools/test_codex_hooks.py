@@ -42,6 +42,7 @@ class CodexHooksTest(unittest.TestCase):
         (self.base / "agents").mkdir()
         self.env = dict(os.environ, TMPDIR=str(self.base / "state"), NAPPY_AGENTS_DIR=str(self.base / "agents"))
         self.env.pop("CLAUDE_CODE_REMOTE", None)
+        self.env.pop("NAPPY_ASK_FOR_PLAYER_WRITES", None)
 
     def make_repo(self, name: str) -> Path:
         root = self.base / name

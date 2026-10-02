@@ -987,11 +987,20 @@ fi
 # releasing already need the player's go-ahead in conversation, and a prompt is too easy to click
 # through for any of them. Codex never asks (`tools/codex-hooks.py` turns an ask into a deny),
 # since Codex has its own approval sandbox and keeps "stop and tell the player".
+#
+# **The player switches it off with `NAPPY_ASK_FOR_PLAYER_WRITES=0`**, and every unwrapped write is
+# denied again, exactly as on a machine with identities. *(2026-10-02: "Make it so it can be easily
+# turned off and refuse again later. So I can turn it on/off without approval hacks".)* Unset, or
+# any other value, leaves it on. It is read from the environment the session was started with --
+# a cloud environment's own variables (its settings, then Edit; a new session picks a change up),
+# or the shell that launched Claude Code -- which is what keeps it the player's: a command an agent
+# runs cannot change the environment this hook is started in.
 askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
 "git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready",
 "gh issue create","gh issue comment","gh issue edit"]'
 decision="deny"
-if [ "$too_long" != "true" ] && [ "$reviewer_push" != "true" ] && [ -n "${result:-}" ] \
+if [ "${NAPPY_ASK_FOR_PLAYER_WRITES:-1}" != "0" ] \
+		&& [ "$too_long" != "true" ] && [ "$reviewer_push" != "true" ] && [ -n "${result:-}" ] \
 		&& { [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] \
 			|| [ ! -d "${NAPPY_AGENTS_DIR:-$HOME/.config/nappy-agents}" ]; } \
 		&& printf '%s' "$result" | jq -e --argjson ok "$askable_reasons" \
@@ -1000,7 +1009,8 @@ then
 	decision="ask"
 	reason="This command ($flagged) would go out under the player's own GitHub account: no agent \
 identity can work here (a Claude Code cloud session, or no identities set up on this machine). \
-Approve it only if you want this one command run as you; the next one is asked about again."
+Approve it only if you want this one command run as you; the next one is asked about again. To have \
+such writes refused instead, set NAPPY_ASK_FOR_PLAYER_WRITES=0 in the environment the session starts with."
 fi
 
 jq -n --arg reason "$reason" --arg decision "$decision" '{
