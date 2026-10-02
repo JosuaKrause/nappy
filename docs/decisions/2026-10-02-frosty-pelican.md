@@ -32,9 +32,11 @@ shows only the command:
 
 - a push that rewrites or deletes on the remote, its own reason `git push --force`: `-f` or a
   short-flag cluster holding `f` or `d`, `--force`, `--force-with-lease`, `--force-if-includes`,
-  `--delete`, `--mirror`, `--prune`, a `+` or `:` refspec, and a git option before `push` naming
-  `mirror` or setting a push refspec that starts with `+` (`git -c remote.origin.mirror=true
-  push`);
+  `--delete`, `--mirror`, `--prune`, a `+` or `:` refspec, a git option before `push` naming
+  `mirror` (`git -c remote.origin.mirror=true push`), and a push refspec set by a git option
+  before `push` that starts with `+` or `:` (`git -c remote.origin.push=:main push origin`
+  deletes `main`). The keys read as push refspecs are `remote.<name>.push` and
+  `branch.<name>.merge`, where a push goes under `push.default=upstream`;
 - a push of a tag or of every branch, its own reason `git push of a tag or every branch`, since
   `.github/workflows/deploy.yml` publishes the site on every pushed `v*` tag: `--tags`,
   `--follow-tags`, `--all`, any refspec holding a `*` (`'refs/*:refs/*'` pushes every tag,
@@ -42,8 +44,37 @@ shows only the command:
   push of one branch), a refspec naming `refs/tags/` or `tags/`, `git push <remote> tag <name>`, a
   ref whose name starts with `v` on either side of a refspec's `:` (`vnext`, `HEAD:v1.2.0`), and a
   git option before `push` naming `followTags` or `refs/tags/` or holding a `*` (`git -c
-  push.followTags=true push`). `git tag` itself stays unguarded, since it changes only the local
-  repository and every way a tag then reaches GitHub is a push the guard reads;
+  push.followTags=true push`), and a push refspec set by a git option before `push` that the same
+  tests read as a tag (`git -c remote.origin.push=HEAD:v1.0.0 push origin`). `git tag` itself
+  stays unguarded, since it changes only the local repository and every way a tag then reaches
+  GitHub is a push the guard reads;
+- a push with a shell expansion among its words, its own reason `git push with a shell
+  expansion`: any word after `push` holding a `$` (`git push origin "$TAG"`, `"$(git describe
+  --tags)"`, `${B}`), a backtick substitution (`` git push origin `echo v1.0.0` ``), and, before
+  `push`, a push refspec setting whose value holds a `$`, one read from the environment
+  (`--config-env`), or a `-c` whose key holds a `$` (`git -c "$CFG" push`). The guard cannot know
+  what such a word becomes, and `"$TAG"` can be a `v*` tag. The remote and an option's own value
+  count too (`git push "$REMOTE" x`, `-o "$X"`): by the time the words are read the quotes are
+  gone, so a quoted `"$X"` cannot be told from an unquoted `$X` that the shell splits into words
+  landing in refspec position;
+- a push the guard cannot read to its end, its own reason `git push that cannot be read`: one
+  whose own quoted or escaped word holds a separator (`git push -o 'a;b' origin v1`, `git push
+  origin 'x;y' v1`, `git push origin \; v1`), since the scan stops at a separator and would leave
+  every word after it unread, and a push refspec setting that goes on past one plain word (`git
+  -c 'remote.origin.push=a b' push`). A separator belongs to the push when the push stands outside
+  quotes, or when it sits deeper in quotes than the push's own words (`bash -c "git push -o 'a;b'
+  origin v1"`). One at the push's own level inside a quoted script is the script's (`bash -c "git
+  push origin x; git status"`), and one in another command is that command's (`git commit -m "a;
+  b" && git push origin x`), so both of those are still asked about;
+- a `git` whose options hold a command substitution written outside quotes, or whose subcommand
+  is itself an expansion, its own reason `git with a shell expansion before its subcommand`
+  (`git -C $(pwd) push origin main`, `git $(echo push) origin v1`), when the name of a
+  commit-making or pushing subcommand appears anywhere after it in the command. The
+  substitution's words end the option run or are taken for the subcommand, so the push behind
+  them was never read at all: unwrapped, this shape was allowed outright, on a machine with
+  identities too, and it is now denied there as well. `gh` the same way (`gh -R $(cat r) pr merge 3`), always.
+  Written inside quotes (`git -C "$(pwd)" push origin x`) the substitution is one argument, and
+  the push is read and asked about as usual;
 - each of those long options in any spelling git acts on, since git takes any unambiguous prefix
   of a long option (`--del`, `--mir`, `--pru`, `--ta`, `--fol`, `--al`), and in the shorter,
   ambiguous ones too (`--fo`, `--d`, `--p`, `--t`, `--a`), where reading a prefix git refuses as
@@ -68,9 +99,21 @@ options that take the next word (`-o`, `--repo`, `--receive-pack`, `--exec`,
 `--recurse-submodules`, spelled in full). The reading only ever errs towards taking an earlier word
 for the remote, which leaves every real refspec read: a prefix of one of those options (`git push
 --rep vendor vnext`) reads as taking no value, so `vendor` is taken for the remote and `vnext` is
-denied, where git would push to a remote named `vnext`. A `push.followTags` or mirror
-setting made earlier by a separate `git config` command is not visible to the guard, so a plain
-push after it is asked about.
+denied, where git would push to a remote named `vnext`. A `push.followTags`, mirror or push
+refspec setting made earlier by a separate `git config` command, or passed through the
+environment (`GIT_CONFIG_COUNT` with `GIT_CONFIG_KEY_0`/`GIT_CONFIG_VALUE_0`,
+`GIT_CONFIG_PARAMETERS`), is not visible to the guard, so a plain push after it is asked about.
+
+The expansion and unreadable rules deny some ordinary pushes, the safe direction: any push whose
+words hold a `$` for any reason (`git push origin "$(git branch --show-current)"`, an output
+redirect to `"$LOG"`, a trailing comment that mentions `$5`), a push inside backticks (it ends at
+the closing backtick), and a quoted separator in a push's own option value (`-o "ci(skip)"`). A
+read is denied too where an unquoted substitution sits in `gh`'s options (`gh -R $(cat r) pr view
+3`), or in `git`'s when a write subcommand's name appears later in the command (`git -C $(pwd)
+status && git push origin x` is denied for the `status`). The rule that tells a push's own quoted
+separator from a quoted script's cannot see a separator escaped with a backslash inside that
+script (`bash -c "git push origin \; v1"`), which sits at the script's own level and is read as
+the script's: an accepted gap, since only a deliberately built command has one.
 
 On a machine with identities set up nothing changes: an unwrapped write is denied and the agent
 wraps it. `tools/codex-hooks.py` turns any decision a guard names into a deny — an ask, and an

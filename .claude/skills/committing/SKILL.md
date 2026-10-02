@@ -61,10 +61,11 @@ ordinary write instead of denying it: a local commit or history step (`git commi
 (`gh pr create`, `comment`, `edit`, `ready`) goes to them as a permission prompt for that one
 command, which only they can approve *(2026-10-02: "Let's do A and make the codex version always
 refuse")*. Every other write is never asked about, only denied — among them a push of a tag, of
-every branch or of a `*` pattern (a pushed `v*` tag publishes the site), a forced, deleting,
-mirroring or pruning push, a pull request's merge, a release and a bare `gh issue` write — since
-a prompt is too easy to click through for any of them, and for the last because the player wants
-an agent's issue writes to go through a script rather than a direct `gh issue` command
+every branch or of a `*` pattern (a pushed `v*` tag publishes the site), a push naming a shell
+expansion (`"$TAG"` can be a `v*` tag) or one the guard cannot read to its end, a forced,
+deleting, mirroring or pruning push, a pull request's merge, a release and a bare `gh issue`
+write — since a prompt is too easy to click through for any of them, and for the last because the
+player wants an agent's issue writes to go through a script rather than a direct `gh issue` command
 *(2026-09-27: "if it goes through a script it's safe we just need to get it working once -- an
 agent shouldn't use gh issue directly")*. **That asking is
 off unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a

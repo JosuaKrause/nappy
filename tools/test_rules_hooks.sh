@@ -95,11 +95,15 @@
 #   - where no identity can work (a cloud session, or no identity directory) and the player's
 #     NAPPY_ASK_FOR_PLAYER_WRITES=1 is set, github-write-guard.sh asks about a commit or local
 #     history step, a branch push (to a remote whose name starts with v too, past an option's own
-#     value or a --) and gh pr create/comment/edit/ready, and still denies a push of a tag, of
-#     every branch or of a * pattern (in a refspec or a git -c before push), a forced, deleting,
-#     mirroring or pruning push in any prefix of its long option or through a git -c, a bare gh
-#     issue write, a merge, a release, a gh api write and a pushing script, while git tag and a
-#     read allow; with the switch unset, 0 or yes, every one of those writes denies
+#     value or a --, a quoted separator that belongs to another command or to the push's own
+#     quoted script) and gh pr create/comment/edit/ready, and still denies a push of a tag, of
+#     every branch or of a * pattern (in a refspec, a git -c before push or a push refspec set by
+#     one), a forced, deleting, mirroring or pruning push in any prefix of its long option or
+#     through a git -c, a push with a $ or a backtick among its words or in a git -c push refspec,
+#     a push whose own quoted word holds a separator, a git or gh whose options hold an unquoted
+#     command substitution, a bare gh issue write, a merge, a release, a gh api write and a
+#     pushing script, while git tag and a read allow; with the switch unset, 0 or yes, every one
+#     of those writes denies
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -1782,6 +1786,27 @@ assert_write_guard "git push --tags wrapped as claude-reviewer -> deny" deny \
     'uv run python tools/agent-identity.py run claude-reviewer -- git push origin --tags'
 assert_write_guard "an abbreviated delete wrapped as claude-coder -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- git push --del origin feature/x'
+# A push whose refspec is a shell expansion is a push like any other to the wrapper, and a reviewer
+# never makes one. A git or gh option whose argument is an unquoted command substitution ends the
+# option run at the substitution, so the subcommand behind it is never reached, and a subcommand
+# that is itself an expansion is not read either: a write subcommand's name after it denies, a read
+# allows, and gh denies either way.
+assert_write_guard "a push of \$(...) wrapped as claude-coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git push origin "$(git branch --show-current)"'
+assert_write_guard "a push of \$(...) wrapped as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git push origin "$(git branch --show-current)"'
+assert_write_guard "git -C \$(pwd) push, unwrapped -> deny" deny 'git -C $(pwd) push origin main'
+assert_write_guard "git -C \`pwd\` commit, unwrapped -> deny" deny 'git -C `pwd` commit -m x'
+assert_write_guard "git -C \$(pwd) status -> allow" allow 'git -C $(pwd) status'
+assert_write_guard "a subcommand that is itself a substitution, before a write's name -> deny" deny \
+    'git $(echo push) origin v1'
+assert_write_guard "a subcommand that is a variable, with no write's name after -> allow" allow \
+    'git $GITFLAGS status'
+assert_write_guard "git -C \$(pwd) push wrapped as claude-coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git -C $(pwd) push origin main'
+assert_write_guard "gh -R \$(cat r) pr merge, unwrapped -> deny" deny 'gh -R $(cat r) pr merge 3'
+assert_write_guard_reason "an unquoted substitution before a subcommand is named in the deny" \
+    'git -C $(pwd) push origin main' "git with a shell expansion before its subcommand"
 
 # Where no identity can work -- a Claude Code cloud session, or no identity directory -- and the
 # player has switched the asking on (NAPPY_ASK_FOR_PLAYER_WRITES=1), an ordinary write is asked
@@ -1794,7 +1819,10 @@ assert_write_guard "an abbreviated delete wrapped as claude-coder -> allow" allo
 # create/comment/edit/ready. The name test reads only refspecs, so a remote whose name starts with
 # v (the first word after push that is neither an option nor an option's value, or the first after
 # a --) and an option's own value (-o vfoo) are not read as tags; a lone word after push is the
-# remote, as git reads it.
+# remote, as git reads it. A git -c before push that sets a branch push refspec, or no refspec at
+# all (a $ in another key's value included), leaves an ordinary push; a quoted substitution as an
+# option's argument is one word; and a quoted separator is not the push's own when it belongs to
+# another command (a commit message) or sits at the push's own level in a quoted script.
 write_guard_asked=(
     'git commit -m "x"'
     'git merge feature/x'
@@ -1825,6 +1853,15 @@ write_guard_asked=(
     'git push --dry-run origin feature/x'
     'git push --no-tags origin feature/x'
     'git push --thin origin feature/x'
+    'git -c remote.origin.push=HEAD:refs/heads/feature/x push origin'
+    'git -c user.name=x push origin feature/x'
+    'git -c "user.email=$E" push origin feature/x'
+    'git -C "$(pwd)" push origin feature/x'
+    'git commit -m "a; b" && git push origin feature/x'
+    'git push origin feature/x && git commit -m "c|d"'
+    'bash -c "git push origin feature/x; git status"'
+    "bash -c 'git push origin feature/x && echo done'"
+    'git push origin feature/x 2>&1 | tail -3'
     'gh pr create --title x --body y'
     'gh pr comment 5 --body hi'
     'gh pr edit 5 --title x'
@@ -1838,8 +1875,12 @@ write_guard_asked=(
 # option, -oo, whose value is the second o, a -- that is -o's value), the word after is read as a
 # refspec; a forced, deleting, mirroring or pruning push, with each long option also spelled as
 # any prefix git accepts, and as the shorter ambiguous ones, or through a git -c naming mirror or a
-# + push refspec; a bare gh issue write (bouncy-heron statement 14: "an agent shouldn't use gh
-# issue directly"); a merge, a release, a gh api write and a pushing tools/ script.
+# + push refspec; a push refspec set by a git -c read like a written one (a v name, a : delete);
+# a push with a shell expansion among its words, the remote or an option's value included, or in a
+# git -c push refspec, its key, or a --config-env one; a push whose own quoted word holds a
+# separator, so the words after it go unread; a git or gh whose options hold an unquoted command
+# substitution; a bare gh issue write (bouncy-heron statement 14: "an agent shouldn't use gh issue
+# directly"); a merge, a release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
     "git push origin 'refs/*:refs/*'"
     "git push origin 'refs/heads/*:refs/heads/*'"
@@ -1917,12 +1958,39 @@ write_guard_never_asked=(
     'git commit -m x && gh pr merge 3'
     'git commit -m x && git push origin v1'
     'git push origin feature/x && gh issue comment 5 --body hi'
+    'git -c remote.origin.push=v1.2.0 push origin'
+    'git -c remote.origin.push=HEAD:v1.0.0 push origin'
+    'git -c remote.origin.push=:feature/x push origin'
+    'git -c remote.origin.push=:main push origin'
+    'git -c Remote.Origin.Push=vnext push origin'
+    'git -c branch.main.merge=v1 push origin'
+    'git -c "remote.origin.push=$R" push origin'
+    'git -c "$CFG" push origin feature/x'
+    'git --config-env=remote.origin.push=R push origin'
+    'git --config-env remote.origin.push=R push origin'
+    "git -c 'remote.origin.push=a b' push origin"
+    'TAG=v1.0.0; git push origin "$TAG"'
+    'git push origin "$(git describe --tags)"'
+    'git push origin `echo v1.0.0`'
+    'git push origin ${TAG}'
+    'git push "$REMOTE" feature/x'
+    'git push -o "$X" origin feature/x'
+    'git push origin HEAD:"$B"'
+    "git push -o 'a;b' origin v1"
+    "git push origin 'x;y' v1"
+    'git push origin \; v1'
+    'git push -o "ci(skip)" origin feature/x'
+    "bash -c \"git push -o 'a;b' origin v1\""
+    'git -C $(pwd) push origin feature/x'
+    'git -c remote.origin.push=`echo v1` push origin'
+    'gh -R $(cat r) pr merge 3'
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
     'git status'
     'git tag v1'
     'git tag -a v1 -m x'
+    'git -C $(pwd) status'
 )
 for write_guard_mode in remote unconfigured; do
     if [ "$write_guard_mode" = remote ]; then

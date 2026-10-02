@@ -56,6 +56,13 @@
 # never where its name is merely a read's argument
 # (`cat`, `sed`, `git log --`/`diff --`/`show`, `rg`)), and, for `release.sh`, only with its own
 # `push` argument, for `land-prs.sh`/`update-pr.sh`, only without their own `--dry-run`.
+# A `git` or `gh` whose own options hold a command substitution written outside quotes (`git -C
+# $(pwd) push`, `gh -R $(cat r) pr merge 3`) cannot be read past it, since the substitution's words
+# end the option run or are taken for the subcommand, and so can a subcommand that is itself an
+# expansion (`git $(echo push) origin v1`): that `git` is a write when a commit-making or
+# pushing subcommand's name (`push`, `commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`,
+# `am`) appears anywhere after it in the command, and that `gh` always is. Written inside quotes
+# (`git -C "$(pwd)" push`) the substitution is one argument and the subcommand is read as usual.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
 # issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
 # search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
@@ -458,7 +465,7 @@ def segment_scan($w; $start; $n; $flags):
       . as $s | .found = (.found or (($flags | index($w[$s.j])) != null)) | .j += 1)
   | {"end": .j, found: .found};
 
-# The same scan as `segment_scan`, over a `git push`'s own words, for the two kinds of push that
+# The same scan as `segment_scan`, over a `git push`'s own words, for the four kinds of push that
 # are never asked about, only denied (see `askable_reasons`):
 #
 # - one that rewrites or deletes what is on the remote rather than adds to it (`forced` below):
@@ -476,7 +483,25 @@ def segment_scan($w; $start; $n; $flags):
 #   rather than asked about; this repository's branches are named `claude/...`, `feature/...` and
 #   `work/...`, and an explicit `refs/heads/` side (`HEAD:refs/heads/v1`) is a branch and stays an
 #   ordinary push. `git tag` itself stays unguarded, like `git branch`: it changes only the local
-#   repository, and every way a tag then reaches GitHub is a push this reads.
+#   repository, and every way a tag then reaches GitHub is a push this reads;
+# - one with a shell expansion among its words (`expansion` below): any word after `push` holding a
+#   `$` (`"$TAG"`, `${B}`, `"$(git describe --tags)"`, whose `$` is a word of its own), or a scan
+#   that ends at a backtick written outside quotes (`` `echo v1` ``). The guard cannot know what
+#   such a word becomes, and `"$TAG"` can be a `v*` tag. An option's own value is no exception
+#   (`-o "$X"`): the quotes are gone by the time the words are read, so a quoted `"$X"` cannot be
+#   told from an unquoted `$X`, which the shell splits into words that land in refspec position
+#   (`X='ci.skip v1'`). A push inside backticks (`` `git push origin x` ``) ends at its closing
+#   backtick and is denied too, the safe direction;
+# - one whose words cannot be read to their end (`unreadable` below): a scan that stops at a
+#   separator inside one of the push's own quoted or escaped words (`-o 'a;b'`, `'x;y'`, `\;`),
+#   where every word after it, a refspec among them, would go unread. The separator is the push's
+#   own when the push stands outside quotes (its `push` word is at level 0), or when it sits deeper
+#   in quotes than the push's own words do (`bash -c "git push -o 'a;b' origin v1"`). A separator at
+#   the push's own level inside a quoted script is that script's own (`bash -c "git push origin x;
+#   git status"`, an ordinary push), and so is every separator outside quotes (`git commit -m "a;
+#   b" && git push origin x`, whose quoted `;` is the commit's). A separator escaped with a
+#   backslash inside a quoted script (`bash -c "git push origin \; v1"`) is at the script's level
+#   and is not told apart from the script's own, an accepted gap.
 #
 # The name tests (`v`, `tags/`, `refs/tags/`) read only the refspecs, never the remote or an
 # option's own value, so `git push vendor HEAD` and `git push -o vfoo origin x` are ordinary pushes.
@@ -487,10 +512,10 @@ def segment_scan($w; $start; $n; $flags):
 # first `o` is its last letter (`-uo ci.skip`); a value after `=` takes no word, and `--signed` and
 # `--force-with-lease` take theirs only after `=`. Reading the remote too late would exempt a real
 # refspec, so the reading only ever errs early: an option not on that list, a prefix of one
-# (`--rep x`) among them, is read as taking no value, a quoted value with a space in it splits into
-# more words, and a shell expansion is one word however many it becomes, and each of those puts the
-# word taken for the remote at or before the real one, so every word after it is still read as a
-# refspec. The other tests (`+`, `:`, `*`, the word `tag`) read every word, the remote included.
+# (`--rep x`) among them, is read as taking no value, and a quoted value with a space in it splits
+# into more words, and each of those puts the word taken for the remote at or before the real one,
+# so every word after it is still read as a refspec. The other tests (`+`, `:`, `*`, the word `tag`,
+# a `$`) read every word, the remote included.
 #
 # Git takes any unambiguous prefix of a long option (`--del` is `--delete`, `--mir` is `--mirror`),
 # so each long option matches from the shortest prefix git acts on, and from the shorter, ambiguous
@@ -500,8 +525,10 @@ def segment_scan($w; $start; $n; $flags):
 # that only looks like one of these reads as one, the safe direction too. Before `push`, a
 # git option naming `followTags` or `refs/tags/`, or holding a `*` (`git -c push.followTags=true
 # push ...`, `git -c 'remote.origin.push=refs/*:refs/*' push origin`), makes the push a tag push as
-# well, and one naming `mirror` or setting a push refspec that starts with `+` (`git -c
-# remote.origin.mirror=true push origin`) makes it a forced one.
+# well, and one naming `mirror` (`git -c remote.origin.mirror=true push origin`) makes it a forced
+# one. A push refspec set that way is read with the refspec tests themselves (`config_push_scan`,
+# below), so `git -c remote.origin.push=HEAD:v1 push origin` is a tag push and `git -c
+# remote.origin.push=:main push origin` a deleting one.
 #
 # An option word (`-` first) is checked against the option lists; any other word, a refspec or a
 # remote, costs one regex, so a long push is no dearer to read than any other command. The regexes
@@ -510,7 +537,7 @@ def segment_scan($w; $start; $n; $flags):
 def long_option_prefix($full; $min):
   (split("=") | .[0]) as $o | ($o | length) >= $min and ($full | startswith($o));
 def tag_config_re: "refs/tags/|[Ff][Oo][Ll][Ll][Oo][Ww][Tt][Aa][Gg][Ss]|\\*";
-def forced_config_re: "[Mm][Ii][Rr][Rr][Oo][Rr]|\\.[Pp][Uu][Ss][Hh]=\\+";
+def forced_config_re: "[Mm][Ii][Rr][Rr][Oo][Rr]";
 def forced_push_option:
   test("^-[A-Za-z]*[fd][A-Za-z]*$") or startswith("--force")
   or long_option_prefix("--force-with-lease"; 4) or long_option_prefix("--force-if-includes"; 4)
@@ -523,14 +550,18 @@ def tag_push_option:
 def push_value_option:
   IN("-o", "--push-option", "--repo", "--receive-pack", "--exec", "--recurse-submodules")
   or test("^-[A-Za-np-z0-9]*o$");
+# The name tests a refspec's own text is read with, wherever the refspec is written.
+def refspec_names_tag: test("refs/tags/|(^|:)\\+?([vV]|tags/)");
 # `value`: this word is the previous option's value; `remote`: the remote has been read; `rest`: a
 # `--` has been read, so every later word is a positional one.
-def push_scan($w; $start; $n):
-  {j: $start, forced: false, tags: false, value: false, remote: false, rest: false}
+def push_scan($w; $t; $start; $n):
+  {j: $start, forced: false, tags: false, expansion: false, value: false, remote: false,
+   rest: false}
   | until(.j >= $n or ($w[.j] | is_sep);
       ($w[.j]) as $x
       | .value as $is_value
       | (($x | startswith("-")) and (.rest | not)) as $is_option
+      | .expansion = (.expansion or ($x | contains("$")))
       | (if $is_option then
            .forced = (.forced or ($x | forced_push_option))
            | .tags = (.tags or ($x | tag_push_option))
@@ -542,25 +573,76 @@ def push_scan($w; $start; $n):
          elif $is_option then
            .value = ($x | push_value_option) | .rest = ($x | IN("--", "--\u0002"))
          elif .remote | not then .remote = true
-         else .tags = (.tags or ($x | test("refs/tags/|(^|:)\\+?([vV]|tags/)")))
+         else .tags = (.tags or ($x | refspec_names_tag))
          end)
       | .j += 1)
-  | {"end": .j, forced, tags};
+  | .j as $end
+  | ($t.w0[$end] // "") as $stop
+  | ($t.lv[$start - 1] // 0) as $own
+  | {"end": $end, forced, tags,
+     expansion: (.expansion or $stop == "`"),
+     unreadable: ($stop == "\u0001" and ($own == 0 or ($t.lv[$end] // 0) > $own))};
+
+# The push refspecs a git option before `push` sets (`git -c remote.origin.push=HEAD:v1 push
+# origin`), read with the same tests as a refspec written after it. The keys are `remote.<name>.push`
+# and `branch.<name>.merge`, the destination a push goes to under `push.default=upstream`. A value
+# holding a `$`, a key whose value comes from the environment (`--config-env`), and a `-c` whose own
+# key holds a `$` (`git -c "$CFG" push`) are expansions; a value that goes on past one plain word
+# (`-c 'remote.origin.push=a b'`, a quoted separator or a comma) cannot be read.
+def refspec_config_key_re: "^(remote\\..+\\.push|branch\\..+\\.merge)(=|$)";
+def config_push_scan($w; $t; $from; $to):
+  reduce range($from; $to) as $k ({forced: false, tags: false, expansion: false, unreadable: false};
+    ($w[$k]) as $x
+    | ($w[$k - 1] // "") as $p
+    | if ($x | startswith("--config-env=")) and ($x | ltrimstr("--config-env=") | test(refspec_config_key_re; "i"))
+      then .expansion = true
+      elif $p == "--config-env" and ($x | test(refspec_config_key_re; "i")) then .expansion = true
+      elif $x | test(refspec_config_key_re; "i") then
+        ($x | sub("^[^=]*=?"; "")) as $v
+        | .expansion = (.expansion or ($v | contains("$")))
+        | .unreadable = (.unreadable or ($k + 1 < $to and ($t.lv[$k + 1] // 0) > ($t.lv[$k] // 0)))
+        | .forced = (.forced or ($v | startswith("+") or startswith(":")))
+        | .tags = (.tags or ($v | contains("*")) or ($v | refspec_names_tag))
+      elif $p == "-c" and ($x | split("=") | .[0] | contains("$")) then .expansion = true
+      else . end);
+
+# Whether the separator at `$p` opens a command substitution written outside quotes (a backtick, or
+# the `(` of `$(`): an option's argument written that way (`git -C $(pwd) push`, `gh -R $(cat r) pr
+# merge 3`) splits into words that end the option run, or are taken for the subcommand, before the
+# real subcommand is reached. `opener_counts` is the number of openers before each index, built once
+# per unsure command (only an unsure command holds one), so whether a run of words holds one is a
+# subtraction rather than a walk from every `git` (`git -c git -c ...` would make that quadratic).
+def opener_at($w0; $p):
+  ($w0[$p] // "") as $s
+  | $s == "`" or ($s == "(" and $p > 0 and ($w0[$p - 1] | endswith("$")));
+def expansion_opener($t; $p): opener_at($t.w0; $p);
+def opener_counts($w0):
+  [0] + [foreach range(0; $w0 | length) as $k (0; . + (if opener_at($w0; $k) then 1 else 0 end))];
+def openers_between($t; $a; $b):
+  $t.oc != null and ($t.oc[$b] - $t.oc[$a]) > 0;
 
 def detect_git($w; $t; $i; $n):
   if ($w[$i] | named("git")) | not then null
   else
     (after_options($t; $i + 1)) as $sub
-    | if ($sub >= $n) or ($w[$sub] | is_sep) then null
+    | if $t.lw > $i
+         and (openers_between($t; $i + 1; [$sub + 1, $n] | min) or (($w[$sub] // "") | contains("$")))
+      then
+        {next: ([$sub, $i + 1] | max), reason: "git with a shell expansion before its subcommand"}
+      elif ($sub >= $n) or ($w[$sub] | is_sep) then null
       else
         ($w[$sub]) as $subcmd
         | if $subcmd == "push" then
-            (push_scan($w; $sub + 1; $n)) as $sc
-            | ($sc.tags or any(range($i + 1; $sub) | $w[.]; test(tag_config_re))) as $tags
-            | ($sc.forced or any(range($i + 1; $sub) | $w[.]; test(forced_config_re))) as $forced
+            (push_scan($w; $t; $sub + 1; $n)) as $sc
+            | (config_push_scan($w; $t; $i + 1; $sub)) as $cf
+            | ($sc.tags or $cf.tags or any(range($i + 1; $sub) | $w[.]; test(tag_config_re))) as $tags
+            | ($sc.forced or $cf.forced or any(range($i + 1; $sub) | $w[.]; test(forced_config_re)))
+              as $forced
             | {next: $sc.end,
                reason: (if $forced then "git push --force"
                         elif $tags then "git push of a tag or every branch"
+                        elif $sc.expansion or $cf.expansion then "git push with a shell expansion"
+                        elif $sc.unreadable or $cf.unreadable then "git push that cannot be read"
                         else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
           elif $subcmd | IN("cherry-pick", "revert", "am") then
@@ -770,14 +852,18 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded):
   if ($w[$i] | named("gh")) | not then null
   else
     (after_options($t; $i + 1)) as $noun_i
-    | if ($noun_i >= $n) or ($w[$noun_i] | is_sep) then null
+    | if ($noun_i < $n) and expansion_opener($t; $noun_i) then
+        {next: $noun_i, reason: "gh with a shell expansion before its noun or verb"}
+      elif ($noun_i >= $n) or ($w[$noun_i] | is_sep) then null
       else
         ($w[$noun_i]) as $noun
         | if read_only_nouns | index($noun) then null
           elif $noun == "api" then detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded)
           else
             (after_options($t; $noun_i + 1)) as $verb_i
-            | if ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
+            | if ($verb_i < $n) and expansion_opener($t; $verb_i) then
+                {next: $verb_i, reason: "gh with a shell expansion before its noun or verb"}
+              elif ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
               else
                 ($w[$verb_i]) as $verb
                 | if $verb | ascii_downcase | IN(generic_reads[]) then null
@@ -879,18 +965,25 @@ def command_words($t; $tp; $i):
   + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)
   + (if $tp == null then []
      else [command_word($tp; $i)] + (if $tp.cw2 == null then [] else [$tp.cw2[$i] // $i] end) end);
-def findings($w; $levels; $unsure):
+def findings($w; $w0; $levels; $unsure):
   # Levels that are all 0 group nothing, and the plain reading would be the same one again.
   (if $levels | any(. > 0) then $levels else null end) as $lv
   | ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
+  # The last word that names a commit-making or pushing git subcommand: a git whose option run
+  # holds a command substitution, or whose subcommand is an expansion, is a write only when one
+  # follows (`detect_git`).
+  | ([range(0; $n)
+      | select($w[.] | IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am"))]
+     | last // -1) as $lw
   # A command with no wrapper word needs no table of wrapper options.
   | (if any($w[]; is_wrapper_word(.)) then $w | wrapper_owners else null end) as $owners
   | (if $lv == null then null else {lv: $lv, ends: word_ends($lv)} end) as $g
   | ($w | options_table($g; null)) as $ao
   | {ao: $ao, cw: ($w | command_table($ao; $g)),
      cw2: (if $owners == null then null else $w | command_table($w | options_table($g; $owners); $g) end),
-     sw: ($w | script_table)} as $t
+     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw,
+     oc: (if $unsure then opener_counts($w0) else null end)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null))
@@ -992,8 +1085,9 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
       | (($marked | contains("\u0003"))
          or ($bare | drop("\\\n") | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
       | ($marked | drop("\u0003") | split_words | leveled_parts) as $parts
-      | ($parts | map(.w) | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
-      | (findings($w; $parts | map(.c); $unsure)) as $result
+      | ($parts | map(.w)) as $w0
+      | ($w0 | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
+      | (findings($w; $w0; $parts | map(.c); $unsure)) as $result
       | if ($result.out | length) == 0 then empty else $result end
     end
 end
@@ -1065,7 +1159,9 @@ fi
 # history step (`git commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`, `am`), an
 # ordinary push of a branch, and `gh pr create|comment|edit|ready`, the pull-request writes a
 # session's own work needs. A forced, deleting, mirroring or pruning push, a push of a tag, of
-# every branch or of a `*` pattern (a `v*` tag publishes the site), a merge, any `gh issue` write,
+# every branch or of a `*` pattern (a `v*` tag publishes the site), a push with a shell expansion
+# among its words (`"$TAG"` can be a `v*` tag) or one the guard cannot read to its end, a `git`
+# whose options hold an unquoted command substitution, a `gh pr merge`, any `gh issue` write,
 # any other `gh` write, any `gh api` write, a pushing `tools/` script, a reviewer's push, a command
 # too long to read and one the guard could not parse stay denied: merging and releasing already need the player's go-ahead
 # in conversation, and a prompt is too easy to click through for any of them -- on the mobile app
