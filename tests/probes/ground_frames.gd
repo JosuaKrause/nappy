@@ -34,23 +34,28 @@ func _run() -> void:
 	_city.scenery.set_process(false)
 	_city.hide()
 	var trials: Array[Dictionary] = []
+	var facing_only := OS.get_environment("GROUND_FRAMES_FACING_ONLY") == "1"
+	var modes: Array[String] = [] if facing_only else ["atomic", "rows", "quadrants"]
 	# Warm each strategy once, then retain every trial in this fixed interleaved order.
-	for mode in ["atomic", "rows", "quadrants"]:
+	for mode in modes:
 		await _comparison(mode, true)
 	for trial in 3:
-		for mode in ["atomic", "rows", "quadrants"]:
+		for mode in modes:
 			var result := await _comparison(mode, false)
 			result.trial = trial
 			trials.append(result)
-	if _rendered:
+	if _rendered and not trials.is_empty():
 		for trial in trials:
 			if trial.pixel_sha256 != trials[0].pixel_sha256:
 				_failures.append("completed pixels differ between preparation strategies")
 	_city.show()
 	var coverage: Array[Dictionary] = []
-	for rate in [15, 30, 60]:
-		for direction: Vector2 in [Vector2.DOWN, Vector2.RIGHT, Vector2.ONE.normalized()]:
-			coverage.append(await _coverage(rate, direction))
+	if facing_only:
+		coverage.append(await _coverage(60, Vector2.RIGHT, true))
+	else:
+		for rate in [15, 30, 60]:
+			for direction: Vector2 in [Vector2.DOWN, Vector2.RIGHT, Vector2.ONE.normalized()]:
+				coverage.append(await _coverage(rate, direction))
 	var result := {"engine": Engine.get_version_info(), "processor": OS.get_processor_name(),
 		"display": DisplayServer.get_name(), "renderer": RenderingServer.get_current_rendering_driver_name(),
 		"viewport_size": str(get_viewport().get_visible_rect().size), "forced_draws": _forced_draws,
@@ -151,7 +156,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	await get_tree().process_frame
 	return result
 
-func _coverage(rate: int, direction: Vector2) -> Dictionary:
+func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Dictionary:
 	var ground := _city._ground
 	var at := _city.map.doorstep_world_position()
 	var initial := at
@@ -183,6 +188,8 @@ func _coverage(rate: int, direction: Vector2) -> Dictionary:
 		await get_tree().process_frame
 		at += direction * (168.0 / rate) * (1 if frame < total_frames / 2 else -1)
 		var view := Rect2(at - extent / 2, extent)
+		if reverse_look_ahead and frame >= total_frames / 2:
+			view.position -= direction * 92
 		var tick := Time.get_ticks_usec()
 		camera.position = view.get_center()
 		camera.force_update_scroll()
@@ -210,6 +217,7 @@ func _coverage(rate: int, direction: Vector2) -> Dictionary:
 		_failures.append("coverage gaps or no real-frame stepped completions")
 	camera.free()
 	return {"modeled_hz": rate, "direction": str(direction),
+		"look_ahead_reversal_px": 92 if reverse_look_ahead else 0,
 		"frames": frames.size(), "missing_regions": misses,
 		"pending_frame_observations": pending_frames, "completed_across_frames": completed_across_frames,
 		"prepared_regions": ground.prepared - started,
