@@ -51,8 +51,13 @@ running it directly, so the commit, the push and the pull request all show as `<
 than as the player talking to themself. A read (`git status`, `gh pr view`, ...) runs unwrapped;
 minting a token for one is wasted work the player never asked for. **When `status` reports the
 role not usable (not created yet, not installed on the repository, or a cloud session — see
-`tools/agent-identity.py`'s own module docstring), the session stops there and tells the player,
-rather than committing, pushing or opening the pull request under the player's own account.** A
+`tools/agent-identity.py`'s own module docstring), the session never runs the write under the
+player's own account on its own say-so.** Where no identity can work at all — a Claude Code cloud
+session, or a machine with no identity directory — the guard below asks the player about an
+ordinary write instead of denying it: a local commit, a plain push, or a pull-request or issue
+write goes to them as a permission prompt for that one command, which only they can approve
+*(2026-10-02: "Let's do A and make the codex version always refuse")*. Anything else the session
+stops on and tells the player about, and Codex stops on every one of them. A
 `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
 `git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
 that pushes or posts internally, in command position, unless the same command is wrapped in `run

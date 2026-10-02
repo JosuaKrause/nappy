@@ -945,12 +945,20 @@ assert_guard_timed "1 MB of backslash-newlines, naming neither word -> allow, de
     "echo ${near_cap_lines}" 2
 
 # ---------------------------------------------------------------- github-write-guard.sh ---------
-# Prints "deny" or "allow" for one synthetic command through github-write-guard.sh, as the tool
-# named by $2 (Bash when omitted). Same shape as guard_decision above, for the other hook.
+# Prints "deny", "ask" or "allow" for one synthetic command through github-write-guard.sh, as the
+# tool named by $2 (Bash when omitted). Same shape as guard_decision above, for the other hook.
+# Every case below runs as a machine with identities set up, so the guard's own deny is what it
+# sees wherever the suite runs; a cloud session or a runner with no identity directory would turn
+# an ordinary write into an ask. `write_guard_remote` and `write_guard_agents` switch that for the
+# ask cases further down.
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+mkdir -p "$write_guard_agents"
+write_guard_remote=""
 write_guard_decision() {
     local cmd="$1" tool="${2:-Bash}" raw
     raw=$(printf '%s' "$cmd" | jq -Rs --arg t "$tool" '{tool_name:$t, tool_input:{command:.}}' \
-        | "$root/.claude/hooks/github-write-guard.sh")
+        | env -u CLAUDE_CODE_REMOTE ${write_guard_remote:+CLAUDE_CODE_REMOTE=true} \
+            NAPPY_AGENTS_DIR="$write_guard_agents" "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then
         printf 'allow'
     else
@@ -1413,7 +1421,8 @@ assert_write_guard_reason() {
     checks=$((checks + 1))
     local raw
     raw=$(printf '%s' "$2" | jq -Rs '{tool_name:"Bash", tool_input:{command:.}}' \
-        | "$root/.claude/hooks/github-write-guard.sh" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')
+        | env -u CLAUDE_CODE_REMOTE NAPPY_AGENTS_DIR="$write_guard_agents" \
+            "$root/.claude/hooks/github-write-guard.sh" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')
     case "$raw" in
         *"$3"*) echo "ok   $1" ;;
         *) fail "$1: the deny reason lacks '$3': $raw" ;;
@@ -1754,6 +1763,42 @@ assert_write_guard "wrapped reply whose body comes from a file, as claude-review
     'uv run python tools/agent-identity.py run claude-reviewer -- gh api repos/o/r/pulls/1/comments/5/replies -F body=@reply.md'
 assert_write_guard "wrapped gh api PUT .../merge as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh api -X PUT repos/o/r/pulls/1/merge'
+
+# Where no identity can work -- a Claude Code cloud session, or no identity directory -- an ordinary
+# write is asked about rather than denied (2026-10-02, "Let's do A"); everything a prompt is too
+# easy to click through for stays denied.
+for write_guard_mode in remote unconfigured; do
+    if [ "$write_guard_mode" = remote ]; then
+        write_guard_remote=true
+    else
+        write_guard_remote=""
+        write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-agents"
+        rm -rf "$write_guard_agents"
+    fi
+    assert_write_guard "$write_guard_mode: git commit -> ask" ask 'git commit -m "x"'
+    assert_write_guard "$write_guard_mode: an ordinary git push -> ask" ask 'git push -u origin feature/x'
+    assert_write_guard "$write_guard_mode: commit and push together -> ask" ask \
+        'git commit -m x && git push origin feature/x'
+    assert_write_guard "$write_guard_mode: gh pr create -> ask" ask 'gh pr create --title x --body y'
+    assert_write_guard "$write_guard_mode: gh issue comment -> ask" ask 'gh issue comment 5 --body hi'
+    assert_write_guard "$write_guard_mode: git push --force -> deny" deny 'git push --force origin feature/x'
+    assert_write_guard "$write_guard_mode: git push -f -> deny" deny 'git push -f origin feature/x'
+    assert_write_guard "$write_guard_mode: git push -uf, a cluster holding f -> deny" deny \
+        'git push -uf origin feature/x'
+    assert_write_guard "$write_guard_mode: git push --force-with-lease -> deny" deny \
+        'git push --force-with-lease origin feature/x'
+    assert_write_guard "$write_guard_mode: git push --delete -> deny" deny 'git push origin --delete feature/x'
+    assert_write_guard "$write_guard_mode: git push :branch (a delete) -> deny" deny 'git push origin :feature/x'
+    assert_write_guard "$write_guard_mode: git push +ref (a force) -> deny" deny 'git push origin +feature/x'
+    assert_write_guard "$write_guard_mode: gh pr merge -> deny" deny 'gh pr merge 391 --squash'
+    assert_write_guard "$write_guard_mode: gh release create -> deny" deny 'gh release create v1.0'
+    assert_write_guard "$write_guard_mode: gh api POST -> deny" deny 'gh api repos/o/r/issues -X POST'
+    assert_write_guard "$write_guard_mode: tools/release.sh push -> deny" deny 'tools/release.sh patch push'
+    assert_write_guard "$write_guard_mode: an askable write beside a merge -> deny" deny \
+        'git commit -m x && gh pr merge 3'
+    assert_write_guard "$write_guard_mode: a read stays allowed" allow 'git status'
+done
+write_guard_remote=""
 
 echo
 echo "$checks checks, $failures failures"

@@ -35,7 +35,13 @@ class CodexHooksTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.base = Path(self.temp.name).resolve()
         self.root = self.make_repo("repo")
-        self.env = dict(os.environ, TMPDIR=str(self.base / "state"))
+        # Pinned to a machine with identities set up, so the write guard's own deny is what every
+        # test below sees wherever the suite runs: a Claude Code cloud session, or a CI runner with
+        # no identity directory, would otherwise turn an ordinary write into an ask (see
+        # test_github_write_guard_ask_reaches_codex_as_a_deny for that path).
+        (self.base / "agents").mkdir()
+        self.env = dict(os.environ, TMPDIR=str(self.base / "state"), NAPPY_AGENTS_DIR=str(self.base / "agents"))
+        self.env.pop("CLAUDE_CODE_REMOTE", None)
 
     def make_repo(self, name: str) -> Path:
         root = self.base / name
@@ -368,6 +374,21 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(specific["hookEventName"], "PreToolUse")
         self.assertEqual(specific["permissionDecision"], "deny")
         self.assertIn("agent-identity.py run", specific["permissionDecisionReason"])
+
+    def test_github_write_guard_ask_reaches_codex_as_a_deny(self) -> None:
+        # Where no identity can work the guard asks Claude Code's player about an ordinary write;
+        # Codex always refuses one instead (2026-10-02: "make the codex version always refuse").
+        for env in (
+            dict(self.env, CLAUDE_CODE_REMOTE="true"),
+            dict(self.env, NAPPY_AGENTS_DIR=str(self.base / "no-such-dir")),
+        ):
+            with self.subTest(remote=env.get("CLAUDE_CODE_REMOTE"), agents=env["NAPPY_AGENTS_DIR"]):
+                self.env = env
+                output = self.call_raw(command="git push origin feature/x")
+                assert output is not None
+                specific = output["hookSpecificOutput"]
+                self.assertEqual(specific["permissionDecision"], "deny")
+                self.assertIn("Codex never runs this as the player", specific["permissionDecisionReason"])
 
     def test_github_write_guard_denies_an_unwrapped_gh_pr_comment(self) -> None:
         output = self.call_raw(command='gh pr comment 391 --body "hi"')

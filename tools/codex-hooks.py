@@ -36,6 +36,16 @@ def guard_deny(reason: str) -> dict[str, Any]:
     }
 
 
+def codex_refusal(guard: dict[str, Any]) -> str:
+    """The deny reason Codex gets for a guard answer that was not a deny: the guard's own reason, and
+    that Codex stops and tells the player rather than running the write as them."""
+    reason = guard.get("hookSpecificOutput", {}).get("permissionDecisionReason", "")
+    return (
+        f"{reason} Codex never runs this as the player: wrap it in 'tools/agent-identity.py run "
+        "<role> -- <command>', or, if no role is usable, stop and tell the player."
+    ).strip()
+
+
 def run_guard(script: Path, payload: str, deadline: float) -> Optional[dict[str, Any]]:
     """Run one guard hook; its parsed reply, None for an allow, or a deny when it cannot answer.
 
@@ -178,8 +188,19 @@ def main() -> None:
                     deadline = started + GUARD_BUDGET_SECONDS
                     for guard_script in ("git-grep-guard.sh", "github-write-guard.sh"):
                         guard = run_guard(ROOT / ".claude/hooks" / guard_script, payload, deadline)
-                        if guard and guard.get("hookSpecificOutput", {}).get("permissionDecision") == "deny":
+                        if guard is None:
+                            continue
+                        decision = guard.get("hookSpecificOutput", {}).get("permissionDecision")
+                        if decision == "deny":
                             print(json.dumps(guard))
+                            return
+                        if decision is not None:
+                            # The write guard asks Claude Code's player about an ordinary write
+                            # where no identity can work; Codex always refuses one instead
+                            # (2026-10-02: "make the codex version always refuse"), since an
+                            # ask this adapter passed on would read as an allow and Codex has
+                            # its own approval sandbox. So anything but an allow is a deny here.
+                            print(json.dumps(guard_deny(codex_refusal(guard))))
                             return
                 # Arbitrary scripts can compute their paths. Preserve selective
                 # loading instead of dumping all skills on a read-only command.

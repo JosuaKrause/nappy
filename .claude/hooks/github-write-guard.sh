@@ -5,10 +5,12 @@
 # changes code goes out as a coder identity (`claude-coder`/`codex-coder`), Claude Code's issue
 # writes and writes on a pull request with no code changes as `claude-orchestrator` (Codex's stay
 # `codex-coder`'s), a review as a reviewer identity (`claude-reviewer`/`codex-reviewer`), and
-# when `tools/agent-identity.py status <role>` says a role is not usable, the session stops and
-# tells the player rather than falling back to a direct call under the player's own account. A
-# rule that is only ever obeyed by remembering it is not a rule -- this is the mechanical half,
-# denying the direct call so the wrapped one is the only one that works.
+# when `tools/agent-identity.py status <role>` says a role is not usable, the session never falls
+# back to a direct call under the player's own account on its own say-so. A rule that is only ever
+# obeyed by remembering it is not a rule -- this is the mechanical half, denying the direct call so
+# the wrapped one is the only one that works. Where no identity can work at all, an ordinary write
+# is asked about instead of denied, so the player approves that one command (see the end of this
+# script).
 #
 # **The bar this holds itself to: a guardrail, not a security boundary.** It stops an agent's
 # ordinary GitHub writes from going out as the player by mistake -- every shape an agent would
@@ -456,6 +458,19 @@ def segment_scan($w; $start; $n; $flags):
       . as $s | .found = (.found or (($flags | index($w[$s.j])) != null)) | .j += 1)
   | {"end": .j, found: .found};
 
+# The same scan as `segment_scan`, matching each word against a regex rather than a list: how a
+# `git push` is told to rewrite or delete what is on the remote rather than add to it -- `-f` or a
+# short-flag cluster holding `f` or `d`, `--force` and `--force-with-lease`/`--force-if-includes`
+# in any spelling, `--delete`, `--mirror`, `--prune`, a `+refspec` or a `:refspec`. A word that
+# only looks like one reads as forced, the safe direction: a forced push is never asked about,
+# only denied (see `askable_reasons`).
+def segment_match($w; $start; $n; $re):
+  {j: $start, found: false}
+  | until(.j >= $n or ($w[.j] | is_sep);
+      . as $s | .found = (.found or ($w[$s.j] | test($re))) | .j += 1)
+  | {"end": .j, found: .found};
+def forced_push_word: "^(-[A-Za-z]*[fd][A-Za-z]*|--force.*|--delete|--mirror|--prune|[+:].*)$";
+
 def detect_git($w; $t; $i; $n):
   if ($w[$i] | named("git")) | not then null
   else
@@ -463,7 +478,9 @@ def detect_git($w; $t; $i; $n):
     | if ($sub >= $n) or ($w[$sub] | is_sep) then null
       else
         ($w[$sub]) as $subcmd
-        | if $subcmd == "push" then {next: ($sub + 1), reason: "git push"}
+        | if $subcmd == "push" then
+            (segment_match($w; $sub + 1; $n; forced_push_word)) as $sc
+            | {next: $sc.end, reason: (if $sc.found then "git push --force" else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
           elif $subcmd | IN("cherry-pick", "revert", "am") then
             (segment_scan($w; $sub + 1; $n; ["--abort", "--quit"])) as $sc
@@ -749,7 +766,7 @@ def detect_wrapper($w; $t; $i; $n):
 # for a name outside its own ROLE_NAMES, which is the actual enforcement for an unknown role, not
 # this check.
 def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
-def is_push_like($reason): ($reason == "git push") or ($reason | startswith("tools/"));
+def is_push_like($reason): ($reason | startswith("git push")) or ($reason | startswith("tools/"));
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type");
 
@@ -956,10 +973,40 @@ unwrapped. $file_hint"
 	fi
 fi
 
-jq -n --arg reason "$reason" '{
+# **Where no identity can work, an ordinary write is asked about rather than denied.** *(2026-10-02,
+# offered "the guard asks you instead of refusing" for a session with no usable identity: "Let's
+# do A and make the codex version always refuse".)* A Claude Code cloud session can never use an
+# identity (`tools/agent-identity.py`'s own docstring says why), and a machine with no identity
+# directory has none set up yet; there the deny above would leave even a local commit impossible.
+# So the same command goes to the player as a permission prompt instead: one command, approved or
+# refused by the player, never remembered, and never something the agent can answer for itself.
+# Only a command whose every write is on `askable_reasons` is asked about -- a local commit or
+# history step, an ordinary push, and the pull-request and issue writes a session's own work needs.
+# A forced or deleting push, a merge, any `gh api` write, a pushing `tools/` script, a reviewer's
+# push, a command too long to read and one the guard could not parse stay denied: merging and
+# releasing already need the player's go-ahead in conversation, and a prompt is too easy to click
+# through for any of them. Codex never asks (`tools/codex-hooks.py` turns an ask into a deny),
+# since Codex has its own approval sandbox and keeps "stop and tell the player".
+askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
+"git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready",
+"gh issue create","gh issue comment","gh issue edit"]'
+decision="deny"
+if [ "$too_long" != "true" ] && [ "$reviewer_push" != "true" ] && [ -n "${result:-}" ] \
+		&& { [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] \
+			|| [ ! -d "${NAPPY_AGENTS_DIR:-$HOME/.config/nappy-agents}" ]; } \
+		&& printf '%s' "$result" | jq -e --argjson ok "$askable_reasons" \
+			'(.out | length) > 0 and all(.out[]; . as $r | $ok | index($r) != null)' >/dev/null 2>&1
+then
+	decision="ask"
+	reason="This command ($flagged) would go out under the player's own GitHub account: no agent \
+identity can work here (a Claude Code cloud session, or no identities set up on this machine). \
+Approve it only if you want this one command run as you; the next one is asked about again."
+fi
+
+jq -n --arg reason "$reason" --arg decision "$decision" '{
   hookSpecificOutput: {
     hookEventName: "PreToolUse",
-    permissionDecision: "deny",
+    permissionDecision: $decision,
     permissionDecisionReason: $reason
   }
 }'
