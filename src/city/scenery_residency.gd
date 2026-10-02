@@ -22,6 +22,8 @@ var worst_update_usec := 0
 var ordinary_guard_preparations := 0
 var _pending := false
 var _ground_step_frame := -1
+## Keep the frame fence outside jobs: cancellation must not allow a second step for that key.
+var _ground_stepped: Dictionary = {}
 
 func _ready() -> void:
 	# Camera and rig callbacks finish before residency reads their final transform. This node
@@ -114,13 +116,16 @@ func update(next_view: Rect2, immediate := false) -> void:
 			_pending = true
 			break
 		if job.has("ground_key"):
-			# A frame may contain several explicit updates as camera/game state changes. Never
-			# turn those into several off-screen renderer batches in the same frame.
+			# Several regions may approach together. Advance each once within the shared budget;
+			# repeating an explicit update or replacing a canceled job cannot drain one region.
 			var frame := Engine.get_process_frames()
-			if _ground_step_frame == frame:
+			if _ground_step_frame != frame:
+				_ground_step_frame = frame
+				_ground_stepped.clear()
+			if _ground_stepped.has(job.ground_key):
 				_pending = true
 				continue
-			_ground_step_frame = frame
+			_ground_stepped[job.ground_key] = true
 			if not ground.prepare_step(job.ground_key):
 				_pending = true
 		else:

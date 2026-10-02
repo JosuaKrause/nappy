@@ -169,9 +169,15 @@ func _test_pending(t, city: City) -> void:
 		t.check(ground.pending.has(key) and ground.pending[key].step == progress \
 				and ground.pending[key].layer.get_instance_id() == pending_id,
 				"unfinished regions pause with the same allocation inside the retention ring")
+		city.scenery.view = view
+		var edit: Array[Vector2i] = [key * SceneryGround.CHUNK_TILES]
+		city.close_ground(edit)
+		city.scenery.update(view)
+		t.check(not ground.pending.has(key) and not ground.chunks.has(key),
+				"canceling a job cannot bypass its region's process-frame step fence")
 	city.scenery.update(Rect2(SceneryGround.bounds(key).get_center() - view.size / 2,
 			view.size), true)
-	t.check(ground.pending.is_empty() and ground.chunks.has(key),
+	t.check(not ground.pending.has(key) and ground.chunks.has(key),
 			"camera relocation completes pending destination ground before returning")
 	_check_chunk(t, city, key)
 	ground.release(key)

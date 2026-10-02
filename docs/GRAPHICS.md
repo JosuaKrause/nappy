@@ -325,8 +325,9 @@ pairings, exact prompts, raw outputs and repeated-tile comparisons.
 
 Map-specific scenery is prepared around the camera and released beyond a wider retention
 boundary. Ground chunks share the loading-time composed sheet; unloading cells does not unload
-shared atlas pages. Ordinary approach prepares one four-by-four-cell renderer quadrant per
-process frame, under the scenery queue's soft CPU budget. Each step flushes TileMap internals;
+shared atlas pages. Ordinary approach prepares at most one four-by-four-cell renderer quadrant
+per region per process frame, under the shared scenery queue's soft CPU budget. Distinct
+approaching regions can advance together within that budget. Each step flushes TileMap internals;
 the in-tree layer stays visible at its off-screen position because hiding it discards renderer
 commands. Pending regions have a separate owner until all quadrants are complete. They pause
 outside the loading boundary and retain their allocation until the wider unloading boundary.

@@ -63,7 +63,7 @@ func prepare(key: Vector2i) -> void:
 	worst_prepare_usec = maxi(worst_prepare_usec, Time.get_ticks_usec() - started)
 
 ## One bounded quadrant, including TileMap renderer command preparation. The residency owner
-## calls this at most once per process frame; prepare() drains it for the safety guard.
+## advances each region once per process frame; prepare() drains it for the safety guard.
 func prepare_step(key: Vector2i) -> bool:
 	if chunks.has(key):
 		return true

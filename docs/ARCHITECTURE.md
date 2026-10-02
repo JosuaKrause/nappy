@@ -505,8 +505,9 @@ kept strictly out of anything that touches the meters.
   collision and poster-frontage facts; window patterns, roof layers and retained drawing are
   reconstructed from fixed seeds and current state on return. Props and closure markers retain
   placement facts and release renderer commands. Shared atlas pages and ground composition stay
-  at loading moments. Off-screen ground advances one renderer quadrant per process frame,
-  explicitly flushing TileMap internals under the shared soft CPU budget; incomplete regions
+  at loading moments. Each off-screen ground region advances at most one renderer quadrant per
+  process frame, with distinct regions sharing the soft CPU budget. Each step explicitly
+  flushes TileMap internals; incomplete regions
   remain separately owned until complete and pause between the load and retention boundaries.
   State edits and leaving retention cancel them, while the safety guard completes them
   synchronously. The camera's transformed viewport determines coverage, including rotation
