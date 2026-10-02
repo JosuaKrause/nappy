@@ -35,6 +35,15 @@ extends RefCounted
 ## confirmation. On the web the file lives in Emscripten's in-memory filesystem until a flush copies
 ## it into the browser's IndexedDB, so `write()` answers `Result.PENDING` and the flush's own
 ## callback settles it later — see `_flush()`.
+##
+## **Deleting the save is a change in the save state, and answers the same way.** *(cozy-pelican,
+## 2026-10-02: "show deleting the save file with a save symbol as well. every change in the save
+## state needs to show the symbol".)* `clear()` answers a `Result` like `write()` does and, on the
+## web, is not kept until IndexedDB has dropped the file too — Godot's own flush runs only after a
+## file open for writing is closed, which a removal never is, so without `clear()`'s own flush a
+## reload could bring back a run that already ended. It tells `EventBus` what it came to
+## (`save_deleted`, and `save_deletion_settled` for a web flush), which is how the symbol shows a
+## deletion made by `GameState._end_run()`, an autoload that cannot reach `main`'s indicator.
 
 ## Bumped only when the shape `GameState.save_snapshot()` writes changes — never for an ordinary
 ## release. **This is the whole of what makes a save "the running build cannot read": a newer
@@ -44,18 +53,22 @@ const FORMAT_VERSION := 1
 
 const _DEFAULT_PATH := "user://save.json"
 
-## What one save moment came to — what `main._save_now()` hands `SaveIndicator`.
+## What one save moment came to — a write (`main._save_now()` hands it to `SaveIndicator`) or a
+## deletion (`EventBus.save_deleted` carries it there).
 enum Result {
-	## Nothing was attempted: `uses_save()` refused the run, or the run has already ended. The
-	## symbol draws nothing, since nothing was meant to be kept.
+	## Nothing was attempted: `uses_save()` refused the run, the run has already ended (a write), or
+	## there is no file to delete (a deletion). The symbol draws nothing, since nothing was meant
+	## to change.
 	REFUSED,
-	## Written, and handed to the browser, which has not yet said whether it kept it. The answer
-	## arrives later, through the `settled` callable `write()` was given.
+	## Written or deleted, and handed to the browser, which has not yet said whether it kept the
+	## change. The answer arrives later, through the `settled` callable `write()` or `clear()` was
+	## given.
 	PENDING,
-	## Kept: off the web the file closed; on the web IndexedDB reported the flush done.
+	## Kept: off the web the file closed or was removed; on the web IndexedDB reported the flush
+	## done.
 	CONFIRMED,
-	## Meant to be kept and not kept: the file could not be written, the page's storage was
-	## refused at boot, or the flush failed after its one retry or never answered.
+	## Meant to be kept and not kept: the file could not be written or removed, the page's storage
+	## was refused at boot, or the flush failed after its one retry or never answered.
 	FAILED,
 }
 
@@ -67,10 +80,19 @@ enum Result {
 ## (`SaveIndicator.MIN_SHOWN_SECONDS`) and longer than its fade, so a slow but working flush is not
 ## mistaken for a failed one; and it is short enough that the struck picture a timeout raises,
 ## fully shown for ten seconds from the strike (`SaveIndicator.MIN_STRUCK_SECONDS`), starts to
-## fade fifteen seconds after the save began. Measured on the game's own clock, which stops while
-## a browser tab is hidden, so a backgrounded page does not time out a flush the browser was never
-## given the chance to run.
+## fade fifteen seconds after the save began. **Counted in frames, each clamped to
+## `MAX_FLUSH_STEP_SECONDS`**, not on the wall clock: a hidden tab runs no frames, and the first one
+## after it comes back reports the whole time it was away, which would time out a flush the browser
+## was never given the chance to run — and strike through a save that IndexedDB then reports kept,
+## since a flush answers only once. A page left in the background and brought back is the very case
+## the retry exists for. A flush the browser really never answers still times out, after this many
+## seconds of frames actually drawn.
 const FLUSH_TIMEOUT_SECONDS := 5.0
+
+## The most one frame adds to a flush's wait — a quarter second, several times a slow frame on a
+## phone and far under `FLUSH_TIMEOUT_SECONDS`, so no single frame, however long since the last
+## one, can by itself time a flush out.
+const MAX_FLUSH_STEP_SECONDS := 0.25
 
 ## The page-side half of a web flush, defined once on `window` by `_flush()`. **Evaluated in
 ## `JavaScriptBridge.eval()`'s default, non-global context on purpose**: that is a direct `eval`
@@ -124,11 +146,16 @@ window.nappySaveFlush = function (token, answer) {
 static var _window: JavaScriptObject = null
 static var _flush_answer: JavaScriptObject = null
 
-## Every flush still waiting for its answer, by token, with the `settled` callable its `write()`
-## was given. The first of the answer and the timeout to arrive removes the entry; the second
-## finds nothing and does nothing.
+## Every flush still waiting for its answer, by token: `{"settled": Callable, "deleting": bool,
+## "waited": float}`, the callable its `write()` or `clear()` was given, whether the flush carries a
+## deletion, and the seconds of clamped frames it has waited so far. The
+## first of the answer and the timeout to arrive removes the entry; the second finds nothing and
+## does nothing.
 static var _pending_flushes: Dictionary = {}
 static var _next_flush_token := 0
+## When the last frame ticked the flushes' clocks, in `Time.get_ticks_usec()`. Set when the first
+## flush begins waiting, so the step it first counts is the time since then.
+static var _last_tick_usec := 0
 
 ## Set by a test to redirect every read and write at a scratch file instead of the player's own —
 ## see the **verify** skill's testing policy: an agent's run never lands in a saved game. `""`
@@ -197,12 +224,48 @@ static func _debug_run_uses_save(args: PackedStringArray, no_save: bool) -> bool
 static func has_save() -> bool:
 	return FileAccess.file_exists(_path())
 
-## Deletes the save, if there is one. The held restart (`main._restart_run()`) and a finished run
-## (`GameState._end_run()`) both call this — a run that is over or has been thrown away leaves
-## nothing to resume, and deleting a file that is not there is a silent no-op rather than an error.
-static func clear() -> void:
-	if FileAccess.file_exists(_path()):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(_path()))
+## Deletes the save, if there is one, and answers what the deletion came to — which is also what
+## the save symbol shows, through `EventBus.save_deleted`. `GameState._end_run()` (a run that is
+## over) and `main._restart_run()` (the held restart) both call this; a run that is over or has been
+## thrown away leaves nothing to resume.
+##
+## `Result.REFUSED` for a dev run or a headless run (`uses_save()`) and when there is no file to
+## delete: a restart after the run already ended and deleted the save changes nothing, so it draws
+## nothing. *(cozy-pelican, 2026-10-02: "A restart with no save left to delete ... changes nothing,
+## so it shows nothing.")* `Result.PENDING` on the web while the browser has not yet said whether
+## IndexedDB dropped the file, in which case `settled` is called later with `Result.CONFIRMED` or
+## `Result.FAILED`, exactly once, and only if its object still exists then — `EventBus`
+## `save_deletion_settled` says the same to anything listening, which is how a symbol outlives the
+## `main` that raised it. `settled` is never called for any other answer.
+static func clear(settled := Callable()) -> Result:
+	if not uses_save() or not has_save():
+		return Result.REFUSED
+	var on_web := OS.has_feature("web")
+	var persistent := OS.is_userfs_persistent()
+	var removed := _clear_now()
+	var result := _moment_result(removed, on_web, persistent)
+	if result == Result.FAILED:
+		Telemetry.note("save", "the deletion was not kept (%s)"
+				% ("the file could not be removed" if not removed else "the browser refused storage"))
+	# Before the flush starts, so a symbol has begun by the time any answer reaches it.
+	EventBus.save_deleted.emit(int(result))
+	if result == Result.PENDING:
+		_flush(settled, true)
+	return result
+
+## The ungated mechanics `clear()` calls through, and the seam `tests/test_save.gd` calls directly
+## (pointed at a scratch path with `set_path_override()`) to put the scratch file away, since
+## `clear()` itself refuses a headless run. Returns whether the file is gone; a file that was not
+## there to begin with is already gone, so that is `true` and writes nothing to the run log.
+static func _clear_now() -> bool:
+	if not has_save():
+		return true
+	var removed := DirAccess.remove_absolute(ProjectSettings.globalize_path(_path())) == OK
+	if not removed:
+		push_warning("GameSave: could not remove %s" % _path())
+		return false
+	Telemetry.note("save", "deleted the save")
+	return true
 
 ## Writes the current `GameState` to disk and answers what the save moment came to, which is also
 ## what the save symbol shows — see `main._save_now()`. `Result.REFUSED` for a dev run, a headless
@@ -226,13 +289,15 @@ static func write(day_under_way: bool, settled := Callable()) -> Result:
 				% ("the file could not be written" if not wrote else "the browser refused storage"))
 	return result
 
-## What a save moment comes to before any browser has answered — the pure half of `write()`, so a
-## test can reach the web's branches from a desktop runner. `wrote` is `_write_now()`'s own answer,
-## `persistent` is `OS.is_userfs_persistent()`: false on a web page whose browser refused IndexedDB
-## at boot, where Godot carries on from memory alone and a flush would report success for a copy
-## no reload will ever find — so a page in that state is a failed save without ever flushing.
-static func _moment_result(wrote: bool, on_web: bool, persistent: bool) -> Result:
-	if not wrote:
+## What a save moment comes to before any browser has answered — the pure half of `write()` and of
+## `clear()`, so a test can reach the web's branches from a desktop runner. `done` is
+## `_write_now()`'s or `_clear_now()`'s own answer, `persistent` is `OS.is_userfs_persistent()`:
+## false on a web page whose browser refused IndexedDB at boot, where Godot carries on from memory
+## alone and a flush would report success for a copy no reload will ever find — so a page in that
+## state is a failed change without ever flushing. For a deletion that is the right answer too: a
+## stored copy this page could not reach is one a later visit can bring back.
+static func _moment_result(done: bool, on_web: bool, persistent: bool) -> Result:
+	if not done:
 		return Result.FAILED
 	if not on_web:
 		return Result.CONFIRMED
@@ -246,30 +311,66 @@ static func _run_has_ended() -> bool:
 
 ## Starts a web flush and settles it through `settled` — see `_FLUSH_JS` for the page's half and
 ## `FLUSH_TIMEOUT_SECONDS` for the backstop. Each flush has its own token so the answer and the
-## timeout settle the flush they belong to, whichever arrives first.
+## timeout settle the flush they belong to, whichever arrives first. `deleting` says the flush
+## carries a removal, which it settles through `EventBus.save_deletion_settled` as well and names
+## as a deletion in the run log.
 ##
 ## Godot's web platform also flushes a persistent path on its own once a file open for writing is
 ## closed, but only on the *next* main-loop iteration, and it reports a failure to nobody; this
-## one starts at once and is the one whose answer the symbol waits for. **Neither is a guarantee
-## against a tab killed with no JavaScript tick left to run at all** — that gap is why a resumed
-## run's dawn write exists: it lands during the next ordinary session, long before the following
-## quit, so a save that never reached IndexedDB on one close is caught up by the time the game is
-## closed again.
-static func _flush(settled: Callable) -> void:
-	var token := _register_flush(settled)
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree:
-		# Always processing, so a flush started as the summary pauses the tree still times out.
-		tree.create_timer(FLUSH_TIMEOUT_SECONDS, true, false, true).timeout.connect(
-				_settle.bind(token, Result.FAILED, "no answer within %.0fs" % FLUSH_TIMEOUT_SECONDS))
+## one starts at once and is the one whose answer the symbol waits for. **A removal closes no
+## file**, so for a deletion this is the only flush there is: `FS.syncfs(false, …)` reconciles the
+## stored copy with the in-memory filesystem in both directions, dropping what is gone from it.
+## **Neither is a guarantee against a tab killed with no JavaScript tick left to run at all** — that
+## gap is why every write carries the whole run rather than a change to it: the next write lands
+## during the next ordinary session, long before the following quit, so a save that never reached
+## IndexedDB on one close is caught up by the time the game is closed again.
+static func _flush(settled: Callable, deleting := false) -> void:
+	var token := _register_flush(settled, deleting)
+	_start_the_clock()
 	if _flush_answer == null:
 		JavaScriptBridge.eval(_FLUSH_JS)
 		_window = JavaScriptBridge.get_interface("window")
 		_flush_answer = JavaScriptBridge.create_callback(_on_flush_answered)
 	if _window == null or _flush_answer == null:
-		_settle(token, Result.FAILED, "the page's JavaScript is not reachable")
+		# Deferred, so the answer never arrives before the caller has been handed `PENDING` and
+		# had the chance to begin whatever waits for it — an answer to nothing begun is dropped.
+		_settle.call_deferred(token, Result.FAILED, "the page's JavaScript is not reachable")
 		return
 	_window.call("nappySaveFlush", token, _flush_answer)
+
+## Starts counting frames for the flushes' timeout, if no flush is already being counted. The
+## `SceneTree`'s `process_frame` fires every frame whether or not the tree is paused, so a flush
+## started as the summary pauses the tree still times out, and it needs no node of its own to
+## survive the held restart's scene reload.
+static func _start_the_clock() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.process_frame.is_connected(_tick):
+		return
+	_last_tick_usec = Time.get_ticks_usec()
+	tree.process_frame.connect(_tick)
+
+static func _tick() -> void:
+	var now := Time.get_ticks_usec()
+	var elapsed := float(now - _last_tick_usec) / 1000000.0
+	_last_tick_usec = now
+	_advance(_clamped_step(elapsed))
+
+## What one frame adds to a flush's wait, however long it was since the last frame.
+static func _clamped_step(elapsed_seconds: float) -> float:
+	return clampf(elapsed_seconds, 0.0, MAX_FLUSH_STEP_SECONDS)
+
+## Adds `step` seconds to every flush's wait and fails the ones past `FLUSH_TIMEOUT_SECONDS`, then
+## stops the clock once nothing waits. The seam `tests/test_save.gd` drives without a browser.
+static func _advance(step: float) -> void:
+	for token: int in _pending_flushes.keys():
+		var entry: Dictionary = _pending_flushes[token]
+		entry["waited"] = float(entry["waited"]) + step
+		if float(entry["waited"]) >= FLUSH_TIMEOUT_SECONDS:
+			_settle(token, Result.FAILED, "no answer within %.0fs" % FLUSH_TIMEOUT_SECONDS)
+	if _pending_flushes.is_empty():
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree and tree.process_frame.is_connected(_tick):
+			tree.process_frame.disconnect(_tick)
 
 ## The page's answer to one flush: `[token, message]`, `message` empty on success.
 static func _on_flush_answered(args: Array) -> void:
@@ -281,21 +382,32 @@ static func _on_flush_answered(args: Array) -> void:
 	else:
 		_settle(int(args[0]), Result.FAILED, message)
 
-static func _register_flush(settled: Callable) -> int:
+static func _register_flush(settled: Callable, deleting := false) -> int:
 	_next_flush_token += 1
-	_pending_flushes[_next_flush_token] = settled
+	_pending_flushes[_next_flush_token] = {"settled": settled, "deleting": deleting, "waited": 0.0}
 	return _next_flush_token
 
 ## Settles one pending flush, once: whichever of the page's answer and the timeout arrives second
 ## finds the token gone and does nothing, so a flush that answers after timing out stays failed
 ## rather than flipping the symbol it already struck through. A `settled` whose object is gone — a
-## held restart reloads `main` while a flush is still out — is skipped.
+## held restart reloads `main` while a flush is still out — is skipped. A deletion's answer also
+## goes out on `EventBus.save_deletion_settled`, which is what reaches a symbol that outlived the
+## `main` the held restart freed.
 static func _settle(token: int, result: Result, reason: String) -> void:
 	if not _pending_flushes.has(token):
 		return
-	var settled: Callable = _pending_flushes[token]
+	var entry: Dictionary = _pending_flushes[token]
+	var settled: Callable = entry["settled"]
+	var deleting: bool = entry["deleting"]
 	_pending_flushes.erase(token)
-	if result == Result.CONFIRMED:
+	var kept := result == Result.CONFIRMED
+	if deleting:
+		if kept:
+			Telemetry.note("save", "the browser dropped the deleted save")
+		else:
+			Telemetry.note("save", "the browser did not drop the deleted save (%s)" % reason)
+		EventBus.save_deletion_settled.emit(kept)
+	elif kept:
 		Telemetry.note("save", "the browser kept the save")
 	else:
 		Telemetry.note("save", "the browser did not keep the save (%s)" % reason)

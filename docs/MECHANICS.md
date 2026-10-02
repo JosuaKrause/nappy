@@ -1511,24 +1511,28 @@ A run carrying any dev flag already falls outside the gate by being one; `--no-s
 flagless `tools/run.sh` session asks for the same thing with.
 
 **Written `day_under_way: false` the instant a resumed run's own retry exists but has not yet been
-handed to the player** — `main._write_dawn_for_a_resumed_run()`, called right after
-`main._start_day()` builds it, before the title, or the title and then the day brief, is ever
-shown — **and written `day_under_way: true` the instant she actually starts playing a day**:
-continuing from the title on a fresh run, from the day brief a resumed one opens on, or from the
-previous day's own end-of-day message straight into the next day, which has no gate at all between
-the two. Because the `false` write above always lands before the day brief a resumed run shows
-itself, whatever the load just charged is already on disk by the time she is looking at that
-screen — so a kill at any instant finds exactly what is on screen, never a free retry of a day
-that was started and never a second charge for one abandoned day. **A fresh run writes nothing at
-boot at all** — merely opening the game to look at the title is not playing it, and there is no
-earlier charge on disk to protect — so the first write a fresh run or a held restart's next run
-ever makes is the `true` one, the instant its own title is actually dismissed; a save never
-appears just from looking at the title screen. The end-of-day message writes the same `false`
-that a resumed run's boot does, at the moment it comes up rather than at a dawn nothing stands
-behind. Nothing else writes: losing focus, a phone sending the game to the background, closing the
-window and quitting all still do what they always have — the game still pauses on focus loss
-(M161), the run log still closes — but none of them changes what a save holds, since a save is the
-run and the day, never the moment inside one (PLAYTEST-82).
+handed to the player, when opening the save charged a nerve** — `main._write_dawn_for_a_resumed_run()`,
+called right after `main._start_day()` builds the retry, before the title, or the title and then
+the day brief, is ever shown — **and written `day_under_way: true` the instant she actually starts
+playing a day**: continuing from the title on a fresh run, from the day brief a resumed one opens
+on, or from the previous day's own end-of-day message straight into the next day, which has no gate
+at all between the two. Opening a save whose day was under way costs a nerve and gives the day
+back, and *"either it saves with one less nerve and a cleared "during active game" flag. or you
+defer saving to the actual day start"* is why that charge is written at once, with no day under
+way: a kill at any instant then finds exactly what is on screen, never a free retry of a day that
+was started and never a second charge for one abandoned day. **A save written between days charges
+nothing when it is opened, so opening it writes nothing**: the file already says `day_under_way:
+false`, which is all a rewrite would record, and the next write is the `true` one when the day is
+started. **A fresh run writes nothing at boot at all** — merely opening the game to look at the
+title is not playing it, and there is no earlier charge on disk to protect — so the first write a
+fresh run or a held restart's next run ever makes is the `true` one, the instant its own title is
+actually dismissed; a save never appears just from looking at the title screen. When the charge
+ends the run the save is deleted and nothing is written. The end-of-day message writes the same
+`false` that a charged opening does, at the moment it comes up rather than at a dawn nothing
+stands behind. Nothing else writes: losing focus, a phone sending the game to the background,
+closing the window and quitting all still do what they always have — the game still pauses on focus
+loss (M161), the run log still closes — but none of them changes what a save holds, since a save is
+the run and the day, never the moment inside one (PLAYTEST-82).
 
 **A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
@@ -1582,16 +1586,27 @@ one. The build that wrote a save is recorded alongside it for a person to read, 
 against; releasing a newer build must not by itself throw an old save away.
 
 **The held restart clears the save.** Both the pause screen and the day summary offer it, and
-starting over is what it has always meant — nothing new is drawn for clearing it.
+starting over is what it has always meant — no new control is drawn for clearing it
+([PLAYTEST-80](playtests/PLAYTEST-80.md) asked for none), but the deletion shows the save symbol
+below like any other change in the save state.
 
-A small symbol appears in a corner at each save, on whatever screen is up — twice in an ordinary
-day: once when it starts, once when the day brief or the end-of-day message comes up for the next
-one. It names no key and is not a danger cue; it is the only thing that ever tells the player a
-save happened at all, since saving itself is otherwise silent. **Every save shows it from the
-moment the save starts, fully shown for at least one second, counted from when it appears, and
-for as long as any save is still unanswered; it then fades over 1.5s, with no hold after the
-answer** *(cozy-pelican: "we should show it until it is fully confirmed saved", and "okay always
-show it. but show it for at least a second")*. A save beginning while the symbol fades or is gone
+A small symbol appears in a corner at each change in the save state, on whatever screen is up —
+twice in an ordinary day: once when it starts, once when the day brief or the end-of-day message
+comes up for the next one. It names no key and is not a danger cue; it is the only thing that ever
+tells the player a save changed at all, since saving itself is otherwise silent. **Every change
+shows it from the moment the change starts, fully shown for at least one second, counted from when
+it appears, and for as long as any change is still unanswered; it then fades over 1.5s, with no
+hold after the answer** *(cozy-pelican: "we should show it until it is fully confirmed saved", and
+"okay always show it. but show it for at least a second")*. **Deleting the save file is a change
+too** *("show deleting the save file with a save symbol as well. every change in the save state
+needs to show the symbol")*: a run's end deletes it (`GameState._end_run()`: a day that ends the
+run, the charge a reopened save pays when it was the last nerve, and the escape walked out), and
+so does the held restart, and each shows the symbol with the same timings and the same strike. On
+the web a deletion is kept only once IndexedDB has dropped the file, so `GameSave.clear()` runs the
+same copy a write does, with its retry and its timeout. The held restart reloads the scene, and
+the symbol it raised is handed to the scene tree's root so it stays up through the reload and
+settles on the freshly booted title with its minimums running. A restart with no save left to
+delete — the run had already ended and deleted it — changes nothing, so it shows nothing. A save beginning while the symbol fades or is gone
 brings it back to full and restarts the second; one beginning while it is fully shown does not
 restart it, though the symbol still waits for that save's answer. Off the web the file closing is
 the confirmation. On the web the file is only in the page's memory until the browser copies it into IndexedDB, the one copy
@@ -1600,7 +1615,9 @@ second save while one is still unanswered keeps the symbol up until both are. A 
 is tried once more after dropping every database connection the page holds, since a connection
 the browser has dropped (iOS Safari does, from a page left in the background) is otherwise never
 reopened and every later copy fails until a reload. A copy that has not answered after
-`GameSave.FLUSH_TIMEOUT_SECONDS` counts as failed, so the symbol cannot stay up for good.
+`GameSave.FLUSH_TIMEOUT_SECONDS` of drawn frames counts as failed, so the symbol cannot stay up for
+good; a frame adds at most a quarter second to that wait, so a tab hidden for an hour and brought
+back does not fail a copy the browser had no chance to answer.
 
 **When a save cannot be kept, the symbol shows with a strike through it** *("if saving is
 unavailable it should show up with a strike through")*, fully shown for at least ten seconds

@@ -5,14 +5,18 @@ extends CanvasLayer
 ## no screen of its own, so this is the only thing that ever tells the player a save happened, or
 ## that it could not be kept.
 ##
-## **Every save shows it, from the moment the save starts.** *(cozy-pelican, 2026-10-02: "okay
-## always show it. but show it for at least a second".)* `begin()` raises it, and it is fully
-## shown for at least `MIN_SHOWN_SECONDS`, counted from when it appears, and for as long as any
-## save is still unanswered — `settle()` answers one, on the web only once the browser has said
-## whether IndexedDB kept the file, see `GameSave.write()` — and then fades over `FADE_SECONDS`.
-## There is no hold after the answer and no delay before the symbol shows.
+## **Every change in the save state shows it, from the moment the change starts.** *(cozy-pelican,
+## 2026-10-02: "okay always show it. but show it for at least a second"; "every change in the save
+## state needs to show the symbol".)* A write raises it through `main._save_now()`; deleting the
+## save file raises it through `EventBus.save_deleted`, heard here, because the deletion a run's
+## end makes comes from `GameState`, an autoload with no way to reach `main`. `begin()` raises it,
+## and it is fully shown for at least `MIN_SHOWN_SECONDS`, counted from when it appears, and for as
+## long as any change is still unanswered — `settle()` answers one, on the web only once the browser
+## has said whether IndexedDB kept it, see `GameSave.write()` and `GameSave.clear()` — and then
+## fades over `FADE_SECONDS`. There is no hold after the answer and no delay before the symbol
+## shows.
 ##
-## **A save that was not kept shows `art/ui/save_unavailable.svg` instead,** the same disk struck
+## **A change that was not kept shows `art/ui/save_unavailable.svg` instead,** the same disk struck
 ## through, fully for at least `MIN_STRUCK_SECONDS` counted from the moment it became struck, however
 ## fast the failure came back, and then the same fade. *(cozy-pelican: "if it fails it show for at
 ## least 10s".)* The strike follows the newest answer: when the last pending save of a batch is
@@ -27,10 +31,20 @@ extends CanvasLayer
 ## summary appears) still has to fade on the clock rather than freeze mid-fade until the tree
 ## resumes.
 ##
-## Built once by `main._ready()` and never freed; `begin()` and `settle()` are the only things
-## anything else calls on it. Not built at all under `--start-escape` — the finale never saves
-## (see `GameSave`'s own doc on `uses_save()`; it is reachable only behind a dev flag today), so
-## there is nothing for it to show there.
+## **It outlives the held restart's scene reload.** The restart deletes the save and frees `main`,
+## and a symbol freed with it would never show the deletion, or show it only until the reload.
+## `outlive_the_scene()` hands it to the scene tree's root, which a reload leaves alone; the
+## `main` that boots next takes it back with `carried()` instead of building a second, so one
+## symbol keeps its clocks and its picture across the reload and settles from the browser's answer
+## on the freshly booted title screen. Its own `EventBus` connections, not a callable bound to
+## `main`, are what carry the answer there, so nothing it is told can name a freed object.
+##
+## Built by `main._ready()` — before a resumed run's own charge can end the run and delete the
+## save — and by `main._ready_escape()` for a run's own escape. The finale is reached in ordinary
+## play (a won day 14 with every task complete hands the run over to it, see
+## `main._hands_over_to_the_escape()`) and each of its section briefs writes the save, so that
+## escape draws the symbol too. Not built under the `--start-escape` dev flag, where
+## `GameSave.uses_save()` refuses every read, write and deletion and there is nothing to show.
 
 ## The least time the symbol is fully shown, counted from when it appears — long enough to be
 ## noticed once — and how long it then takes to fade. `MIN_STRUCK_SECONDS` is the same minimum for
@@ -49,6 +63,9 @@ const FADE_SECONDS := 1.5
 ## multiply into the icon's own hues and turn the blue case back toward green-gray, which is the
 ## bug a shared tint constant would reintroduce.
 const _PEAK_ALPHA := 0.9
+
+## The name every symbol is given, and what `carried()` looks for on the tree's root.
+const _NODE_NAME := "SaveIndicator"
 
 ## Above the title screen's own 95 (`TitleScreen.layer`), so a write mid-boot still shows through
 ## it rather than being hidden the moment the title opens over a fresh day 1.
@@ -170,6 +187,7 @@ var _struck_texture: Texture2D
 var _showing := Showing.new()
 
 func _init() -> void:
+	name = _NODE_NAME
 	layer = _LAYER
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
@@ -180,6 +198,10 @@ func _exit_tree() -> void:
 	AtlasLibrary.release(&"ui")
 
 func _ready() -> void:
+	# For the life of the node, which is the process once `outlive_the_scene()` has run: a signal
+	# disconnects on its own when its object is freed, so a symbol a test frees listens to nothing.
+	EventBus.save_deleted.connect(_on_save_deleted)
+	EventBus.save_deletion_settled.connect(settle)
 	var root := Control.new()
 	root.name = "Root"
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -220,6 +242,44 @@ func begin() -> void:
 func settle(kept: bool) -> void:
 	_showing.settle(kept)
 	_apply()
+
+## `EventBus.save_deleted`: the save file was deleted. `result` is a `GameSave.Result` as `int` —
+## `PENDING` waits for `EventBus.save_deletion_settled`, anything else is the answer already, and
+## is answered at once the way a desktop write is.
+func _on_save_deleted(result: int) -> void:
+	begin()
+	if result != GameSave.Result.PENDING:
+		settle(result == GameSave.Result.CONFIRMED)
+
+## Whether the symbol is up at all — fully shown or fading.
+func is_showing() -> bool:
+	return not _showing.is_idle()
+
+## Hands the symbol to the scene tree's root, so the scene reload the held restart makes does not
+## free it — see the class doc. Does nothing once it is already there, or off the tree.
+func outlive_the_scene() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	var home := _home(tree)
+	if get_parent() != home:
+		reparent(home, false)
+
+## The symbol an earlier `main` handed to the tree's root with `outlive_the_scene()`, or `null`
+## when none did. A `main` boots into it rather than building a second one.
+static func carried(tree: SceneTree) -> SaveIndicator:
+	if tree == null:
+		return null
+	return _home(tree).get_node_or_null(NodePath(_NODE_NAME)) as SaveIndicator
+
+## Where a symbol that outlives its scene lives: the tree's root, which a scene reload leaves alone.
+## `_home_override` is the seam a test points at a plain node instead, since a suite runs while the
+## root is still busy adding the runner and cannot take a child; `null`, the default, answers
+## normally, and a test sets it back when done.
+static var _home_override: Node = null
+
+static func _home(tree: SceneTree) -> Node:
+	return _home_override if _home_override != null else tree.root
 
 func _process(delta: float) -> void:
 	if _showing.is_idle():
