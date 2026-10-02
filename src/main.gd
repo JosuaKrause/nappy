@@ -215,7 +215,7 @@ var _touch_layer: CanvasLayer
 var _summary: CanvasLayer
 var _pause: PauseScreen
 var _title: TitleScreen
-## The small corner symbol a write flashes — see `SaveIndicator`'s own doc. Built once in
+## The small corner symbol a save shows — see `SaveIndicator`'s own doc. Built once in
 ## `_ready()`, and in `_ready_escape()` only for a run's own escape: a dev-flagged boot writes
 ## nothing at all (`GameSave.uses_save()` refuses every one of them), so a symbol there could only
 ## ever stay dark.
@@ -2560,11 +2560,23 @@ func _pause_on_focus_lost() -> void:
 		return
 	_pause.open()
 
-## Every write goes through here so the symbol only ever flashes for one that actually happened —
-## see `GameSave.write()`'s own doc for the runs and moments that draw nothing.
+## Every write goes through here so the symbol shows for exactly the saves that were meant to be
+## kept — see `GameSave.write()`'s own doc for the runs and moments that draw nothing. The symbol
+## comes up as the save starts and is answered at once off the web, or by `_on_save_settled()` once
+## the browser has said whether it kept the save.
 func _save_now(day_under_way: bool) -> void:
-	if GameSave.write(day_under_way) and _save_indicator:
-		_save_indicator.flash()
+	# `int` rather than `GameSave.Result`: a cross-script enum is not the same type as itself.
+	var result: int = GameSave.write(day_under_way, _on_save_settled)
+	if result == GameSave.Result.REFUSED or not _save_indicator:
+		return
+	_save_indicator.begin()
+	if result != GameSave.Result.PENDING:
+		_save_indicator.settle(result == GameSave.Result.CONFIRMED)
+
+## The browser's answer to a save `_save_now()` left pending.
+func _on_save_settled(result: int) -> void:
+	if _save_indicator:
+		_save_indicator.settle(result == GameSave.Result.CONFIRMED)
 
 ## Resolves the two developer capture controls before input dispatch. Key echoes do not make a
 ## second capture: a held shortcut is one request, not a sequence of separate user decisions.
