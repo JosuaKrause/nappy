@@ -7,6 +7,7 @@ var _city: City
 var _failures: Array[String] = []
 var _started := 0
 var _rendered := false
+var _forced_draws := 0
 
 func _ready() -> void:
 	_started = Time.get_ticks_msec()
@@ -49,6 +50,7 @@ func _run() -> void:
 	var coverage := await _coverage()
 	var result := {"engine": Engine.get_version_info(), "processor": OS.get_processor_name(),
 		"display": DisplayServer.get_name(), "renderer": RenderingServer.get_current_rendering_driver_name(),
+		"viewport_size": str(get_viewport().get_visible_rect().size), "forced_draws": _forced_draws,
 		"trials": trials, "coverage": coverage, "failures": _failures,
 		"source_sha256": _hashes(), "elapsed_ms": Time.get_ticks_msec() - _started}
 	var output := FileAccess.open(OS.get_environment("GROUND_FRAMES_OUTPUT"), FileAccess.WRITE)
@@ -151,6 +153,12 @@ func _coverage() -> Dictionary:
 	var at := _city.map.doorstep_world_position()
 	var initial := at
 	var extent := Tuning.VIEW_HALF_EXTENT * 2
+	var camera := Camera2D.new()
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	camera.zoom = get_viewport().get_visible_rect().size / extent
+	add_child(camera)
+	camera.position = at
+	camera.force_update_scroll()
 	_city.scenery.update(Rect2(at - extent / 2, extent), true)
 	ground.worst_step_usec = 0
 	var started := ground.prepared
@@ -170,7 +178,12 @@ func _coverage() -> Dictionary:
 		if frame == 360:
 			view.position.x -= 92
 		var tick := Time.get_ticks_usec()
-		get_viewport().canvas_transform = Transform2D(0, -view.position)
+		camera.position = view.get_center()
+		camera.force_update_scroll()
+		var actual := _city.scenery.camera_view()
+		if not actual.is_equal_approx(view):
+			_failures.append("rendered viewport and checked camera view differ")
+			break
 		if _city.scenery._pending or view.size != _city.scenery.view.size \
 				or view.get_center().distance_to(_city.scenery.view.get_center()) >= 16:
 			_city.scenery.update(view)
@@ -189,6 +202,7 @@ func _coverage() -> Dictionary:
 		frames.append(Time.get_ticks_usec() - tick)
 	if misses or completed_across_frames == 0:
 		_failures.append("coverage gaps or no real-frame stepped completions")
+	camera.free()
 	return {"frames": frames.size(), "missing_regions": misses,
 		"pending_frame_observations": pending_frames, "completed_across_frames": completed_across_frames,
 		"prepared_regions": ground.prepared - started,
@@ -199,11 +213,13 @@ func _coverage() -> Dictionary:
 
 func _draw_frame() -> void:
 	if _rendered:
-		await AutoScreenshot.drawn_frame(get_tree())
+		_forced_draws += int(await AutoScreenshot.drawn_frame(get_tree()))
 	else:
 		await get_tree().process_frame
 
 func _distribution(values: Array[int]) -> Dictionary:
+	if values.is_empty():
+		return {"count": 0}
 	values.sort()
 	var sum := 0
 	for value in values:
