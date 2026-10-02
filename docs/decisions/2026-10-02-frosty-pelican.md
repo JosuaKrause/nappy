@@ -61,6 +61,7 @@ directory) and `tools/pycheck.sh` (with a Codex test that a cloud session's or a
 machine's ask reaches Codex as a deny) pass; `tools/codex-hooks.py` still runs under the host's
 Python 3.11. A Claude Code cloud session shows the prompt: in a cloud session started with
 `NAPPY_ASK_FOR_PLAYER_WRITES=1`, running in auto mode, a plain `git commit` and the `git push` after
-it each brought up a permission prompt the player saw and approved. Whether that prompt carried
-the guard's own text, that the command "would go out under the player's own GitHub account", was
-not read.
+it each brought up a permission prompt the player saw and approved. In the Claude desktop app the
+prompt shows the guard's own text, that the command "would go out under the player's own GitHub
+account"; in the mobile app it shows only the command, so a player approving from a phone sees
+the command and not the reason.
