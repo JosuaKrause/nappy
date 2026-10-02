@@ -1,0 +1,679 @@
+{
+  "coverage": [
+    {
+      "completed_across_frames": 96,
+      "direction": "(0.0, 1.0)",
+      "end_distance_from_start": 0.000244140625,
+      "frames": 450,
+      "guard_catchups": 16,
+      "missing_regions": 0,
+      "modeled_hz": 15,
+      "pending_frame_observations": 273,
+      "prepared_regions": 96,
+      "through_draw_usec": {
+        "count": 450,
+        "max": 5334,
+        "median": 1227,
+        "p95": 3008,
+        "sum": 624708
+      },
+      "update_usec": {
+        "count": 450,
+        "max": 702,
+        "median": 239,
+        "p95": 380,
+        "sum": 100052
+      },
+      "worst_ground_step_usec": 137
+    },
+    {
+      "completed_across_frames": 81,
+      "direction": "(1.0, 0.0)",
+      "end_distance_from_start": 0.0,
+      "frames": 450,
+      "guard_catchups": 0,
+      "missing_regions": 0,
+      "modeled_hz": 15,
+      "pending_frame_observations": 244,
+      "prepared_regions": 81,
+      "through_draw_usec": {
+        "count": 450,
+        "max": 5285,
+        "median": 1369,
+        "p95": 3974,
+        "sum": 716485
+      },
+      "update_usec": {
+        "count": 450,
+        "max": 504,
+        "median": 231,
+        "p95": 330,
+        "sum": 91270
+      },
+      "worst_ground_step_usec": 105
+    },
+    {
+      "completed_across_frames": 71,
+      "direction": "(0.707107, 0.707107)",
+      "end_distance_from_start": 0.0,
+      "frames": 450,
+      "guard_catchups": 31,
+      "missing_regions": 0,
+      "modeled_hz": 15,
+      "pending_frame_observations": 310,
+      "prepared_regions": 95,
+      "through_draw_usec": {
+        "count": 450,
+        "max": 6825,
+        "median": 1405,
+        "p95": 3528,
+        "sum": 732095
+      },
+      "update_usec": {
+        "count": 450,
+        "max": 1131,
+        "median": 229,
+        "p95": 442,
+        "sum": 93694
+      },
+      "worst_ground_step_usec": 125
+    },
+    {
+      "completed_across_frames": 97,
+      "direction": "(0.0, 1.0)",
+      "end_distance_from_start": 0.0,
+      "frames": 900,
+      "guard_catchups": 0,
+      "missing_regions": 0,
+      "modeled_hz": 30,
+      "pending_frame_observations": 294,
+      "prepared_regions": 97,
+      "through_draw_usec": {
+        "count": 900,
+        "max": 5002,
+        "median": 1150,
+        "p95": 2647,
+        "sum": 1165051
+      },
+      "update_usec": {
+        "count": 900,
+        "max": 706,
+        "median": 168,
+        "p95": 279,
+        "sum": 126278
+      },
+      "worst_ground_step_usec": 129
+    },
+    {
+      "completed_across_frames": 82,
+      "direction": "(1.0, 0.0)",
+      "end_distance_from_start": 0.0,
+      "frames": 900,
+      "guard_catchups": 0,
+      "missing_regions": 0,
+      "modeled_hz": 30,
+      "pending_frame_observations": 248,
+      "prepared_regions": 82,
+      "through_draw_usec": {
+        "count": 900,
+        "max": 6170,
+        "median": 1305,
+        "p95": 3670,
+        "sum": 1319255
+      },
+      "update_usec": {
+        "count": 900,
+        "max": 533,
+        "median": 164,
+        "p95": 285,
+        "sum": 116953
+      },
+      "worst_ground_step_usec": 139
+    },
+    {
+      "completed_across_frames": 99,
+      "direction": "(0.707107, 0.707107)",
+      "end_distance_from_start": 0.0,
+      "frames": 900,
+      "guard_catchups": 0,
+      "missing_regions": 0,
+      "modeled_hz": 30,
+      "pending_frame_observations": 699,
+      "prepared_regions": 99,
+      "through_draw_usec": {
+        "count": 900,
+        "max": 5343,
+        "median": 1357,
+        "p95": 3562,
+        "sum": 1394599
+      },
+      "update_usec": {
+        "count": 900,
+        "max": 676,
+        "median": 180,
+        "p95": 293,
+        "sum": 133960
+      },
+      "worst_ground_step_usec": 146
+    },
+    {
+      "completed_across_frames": 99,
+      "direction": "(0.0, 1.0)",
+      "end_distance_from_start": 0.0,
+      "frames": 1800,
+      "guard_catchups": 0,
+      "missing_regions": 0,
+      "modeled_hz": 60,
+      "pending_frame_observations": 298,
+      "prepared_regions": 99,
+      "through_draw_usec": {
+        "count": 1800,
+        "max": 5299,
+        "median": 1082,
+        "p95": 2700,
+        "sum": 2226348
+      },
+      "update_usec": {
+        "count": 1800,
+        "max": 716,
+        "median": 4,
+        "p95": 267,
+        "sum": 144615
+      },
+      "worst_ground_step_usec": 137
+    },
+    {
+      "completed_across_frames": 84,
+      "direction": "(1.0, 0.0)",
+      "end_distance_from_start": 0.000244140625,
+      "frames": 1800,
+      "guard_catchups": 0,
+      "missing_regions": 0,
+      "modeled_hz": 60,
+      "pending_frame_observations": 255,
+      "prepared_regions": 84,
+      "through_draw_usec": {
+        "count": 1800,
+        "max": 6187,
+        "median": 1173,
+        "p95": 3220,
+        "sum": 2513941
+      },
+      "update_usec": {
+        "count": 1800,
+        "max": 529,
+        "median": 4,
+        "p95": 263,
+        "sum": 132769
+      },
+      "worst_ground_step_usec": 127
+    },
+    {
+      "completed_across_frames": 127,
+      "direction": "(0.707107, 0.707107)",
+      "end_distance_from_start": 0.0,
+      "frames": 1800,
+      "guard_catchups": 0,
+      "missing_regions": 0,
+      "modeled_hz": 60,
+      "pending_frame_observations": 464,
+      "prepared_regions": 127,
+      "through_draw_usec": {
+        "count": 1800,
+        "max": 5921,
+        "median": 1278,
+        "p95": 3413,
+        "sum": 2628464
+      },
+      "update_usec": {
+        "count": 1800,
+        "max": 656,
+        "median": 4,
+        "p95": 272,
+        "sum": 171150
+      },
+      "worst_ground_step_usec": 138
+    }
+  ],
+  "display": "macOS",
+  "elapsed_ms": 27375,
+  "engine": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "failures": [],
+  "forced_draws": 0,
+  "processor": "Apple M2",
+  "renderer": "opengl3",
+  "source_sha256": {
+    "src/city/city.gd": "343ee22c32b7db19199dd02fbfee23107ce106a88071d9402470f9ab6d390bab",
+    "src/city/scenery_ground.gd": "5ec8a99bf4e401b9c04a46410c5fc032dfdd9d48b8e9c85226f01db1705e460b",
+    "src/city/scenery_residency.gd": "7a35d5ce40e888b17b0c1d7171a4c9c25c048d707eccce6ad66e84125a61175f",
+    "src/city/scenery_water.gd": "a00cb5538712717974b67753134937bad92aace2524cf7b5423f18cabead7fc7",
+    "tests/probes/ground_frames.gd": "62af6b4e1f6a86fd1dfbe26a4c0f88a2704219b6262f6412b160e2dd17365fc9"
+  },
+  "trials": [
+    {
+      "cells": 408,
+      "mode": "atomic",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 8,
+        "max": 259,
+        "median": 186,
+        "p95": 259,
+        "sum": 1328
+      },
+      "renderer_submit_usec": {
+        "count": 8,
+        "max": 42,
+        "median": 27,
+        "p95": 42,
+        "sum": 172
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 108,
+        "median": 108,
+        "p95": 108,
+        "sum": 2320
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 2269,
+        "median": 741,
+        "p95": 842,
+        "sum": 29744
+      },
+      "step_through_draw_usec": {
+        "count": 8,
+        "max": 818,
+        "median": 791,
+        "p95": 818,
+        "sum": 6076
+      },
+      "tracked_allocation_bytes": 190260,
+      "trial": 0,
+      "water_surfaces": 4
+    },
+    {
+      "cells": 408,
+      "mode": "rows",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 64,
+        "max": 80,
+        "median": 34,
+        "p95": 66,
+        "sum": 2475
+      },
+      "renderer_submit_usec": {
+        "count": 64,
+        "max": 40,
+        "median": 1,
+        "p95": 22,
+        "sum": 472
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 108,
+        "median": 108,
+        "p95": 108,
+        "sum": 2800
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 4758,
+        "median": 731,
+        "p95": 4385,
+        "sum": 40151
+      },
+      "step_through_draw_usec": {
+        "count": 64,
+        "max": 2407,
+        "median": 637,
+        "p95": 726,
+        "sum": 45232
+      },
+      "tracked_allocation_bytes": 408044,
+      "trial": 0,
+      "water_surfaces": 28
+    },
+    {
+      "cells": 408,
+      "mode": "quadrants",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 32,
+        "max": 109,
+        "median": 48,
+        "p95": 104,
+        "sum": 1753
+      },
+      "renderer_submit_usec": {
+        "count": 32,
+        "max": 24,
+        "median": 5,
+        "p95": 23,
+        "sum": 226
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 109,
+        "median": 109,
+        "p95": 109,
+        "sum": 2580
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 4781,
+        "median": 752,
+        "p95": 2188,
+        "sum": 37193
+      },
+      "step_through_draw_usec": {
+        "count": 32,
+        "max": 2261,
+        "median": 665,
+        "p95": 2257,
+        "sum": 24416
+      },
+      "tracked_allocation_bytes": 332692,
+      "trial": 0,
+      "water_surfaces": 16
+    },
+    {
+      "cells": 408,
+      "mode": "atomic",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 8,
+        "max": 261,
+        "median": 191,
+        "p95": 261,
+        "sum": 1342
+      },
+      "renderer_submit_usec": {
+        "count": 8,
+        "max": 42,
+        "median": 28,
+        "p95": 42,
+        "sum": 174
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 108,
+        "median": 108,
+        "p95": 108,
+        "sum": 2320
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 4074,
+        "median": 757,
+        "p95": 933,
+        "sum": 32823
+      },
+      "step_through_draw_usec": {
+        "count": 8,
+        "max": 947,
+        "median": 812,
+        "p95": 947,
+        "sum": 6414
+      },
+      "tracked_allocation_bytes": 194940,
+      "trial": 1,
+      "water_surfaces": 4
+    },
+    {
+      "cells": 408,
+      "mode": "rows",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 64,
+        "max": 71,
+        "median": 31,
+        "p95": 63,
+        "sum": 2273
+      },
+      "renderer_submit_usec": {
+        "count": 64,
+        "max": 25,
+        "median": 1,
+        "p95": 19,
+        "sum": 450
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 108,
+        "median": 108,
+        "p95": 108,
+        "sum": 2800
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 5771,
+        "median": 732,
+        "p95": 881,
+        "sum": 35912
+      },
+      "step_through_draw_usec": {
+        "count": 64,
+        "max": 3147,
+        "median": 650,
+        "p95": 771,
+        "sum": 46748
+      },
+      "tracked_allocation_bytes": 408044,
+      "trial": 1,
+      "water_surfaces": 28
+    },
+    {
+      "cells": 408,
+      "mode": "quadrants",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 32,
+        "max": 111,
+        "median": 47,
+        "p95": 96,
+        "sum": 1706
+      },
+      "renderer_submit_usec": {
+        "count": 32,
+        "max": 24,
+        "median": 5,
+        "p95": 16,
+        "sum": 211
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 109,
+        "median": 109,
+        "p95": 109,
+        "sum": 2580
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 4572,
+        "median": 754,
+        "p95": 3900,
+        "sum": 41516
+      },
+      "step_through_draw_usec": {
+        "count": 32,
+        "max": 805,
+        "median": 673,
+        "p95": 719,
+        "sum": 21380
+      },
+      "tracked_allocation_bytes": 332764,
+      "trial": 1,
+      "water_surfaces": 16
+    },
+    {
+      "cells": 408,
+      "mode": "atomic",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 8,
+        "max": 264,
+        "median": 201,
+        "p95": 264,
+        "sum": 1353
+      },
+      "renderer_submit_usec": {
+        "count": 8,
+        "max": 41,
+        "median": 27,
+        "p95": 41,
+        "sum": 175
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 108,
+        "median": 108,
+        "p95": 108,
+        "sum": 2320
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 2116,
+        "median": 738,
+        "p95": 898,
+        "sum": 31133
+      },
+      "step_through_draw_usec": {
+        "count": 8,
+        "max": 928,
+        "median": 775,
+        "p95": 928,
+        "sum": 6242
+      },
+      "tracked_allocation_bytes": 194940,
+      "trial": 2,
+      "water_surfaces": 4
+    },
+    {
+      "cells": 408,
+      "mode": "rows",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 64,
+        "max": 69,
+        "median": 31,
+        "p95": 61,
+        "sum": 2199
+      },
+      "renderer_submit_usec": {
+        "count": 64,
+        "max": 20,
+        "median": 1,
+        "p95": 17,
+        "sum": 413
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 108,
+        "median": 108,
+        "p95": 108,
+        "sum": 2800
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 4066,
+        "median": 756,
+        "p95": 917,
+        "sum": 34605
+      },
+      "step_through_draw_usec": {
+        "count": 64,
+        "max": 1858,
+        "median": 637,
+        "p95": 698,
+        "sum": 41496
+      },
+      "tracked_allocation_bytes": 408044,
+      "trial": 2,
+      "water_surfaces": 28
+    },
+    {
+      "cells": 408,
+      "mode": "quadrants",
+      "pixel_sha256": [
+        "43ebf98cc1b86b3c64b252b8c22b47e6c1c325b59204b80c79d1d05954b5ebe5",
+        "3e5d999fafa4bbf179e1bd9373520c3a833dda27927827696e759958e6f353c2"
+      ],
+      "prepare_usec": {
+        "count": 32,
+        "max": 109,
+        "median": 47,
+        "p95": 103,
+        "sum": 1738
+      },
+      "renderer_submit_usec": {
+        "count": 32,
+        "max": 25,
+        "median": 6,
+        "p95": 20,
+        "sum": 226
+      },
+      "steady_draw_calls": {
+        "count": 40,
+        "max": 109,
+        "median": 109,
+        "p95": 109,
+        "sum": 2580
+      },
+      "steady_through_draw_usec": {
+        "count": 40,
+        "max": 956,
+        "median": 746,
+        "p95": 901,
+        "sum": 29658
+      },
+      "step_through_draw_usec": {
+        "count": 32,
+        "max": 1847,
+        "median": 648,
+        "p95": 714,
+        "sum": 21915
+      },
+      "tracked_allocation_bytes": 332692,
+      "trial": 2,
+      "water_surfaces": 16
+    }
+  ],
+  "viewport_size": "(1280.0, 720.0)"
+}
