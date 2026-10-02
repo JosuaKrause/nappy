@@ -1766,9 +1766,11 @@ assert_write_guard "wrapped reply whose body comes from a file, as claude-review
 assert_write_guard "wrapped gh api PUT .../merge as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh api -X PUT repos/o/r/pulls/1/merge'
 
-# Where no identity can work -- a Claude Code cloud session, or no identity directory -- an ordinary
-# write is asked about rather than denied (2026-10-02, "Let's do A"); everything a prompt is too
-# easy to click through for stays denied.
+# Where no identity can work -- a Claude Code cloud session, or no identity directory -- and the
+# player has switched the asking on (NAPPY_ASK_FOR_PLAYER_WRITES=1), an ordinary write is asked
+# about rather than denied (2026-10-02, "Let's do A"); everything a prompt is too easy to click
+# through for stays denied. Unset, the switch is off and every write is denied (2026-10-02, "Yes
+# default to refusing").
 for write_guard_mode in remote unconfigured; do
     if [ "$write_guard_mode" = remote ]; then
         write_guard_remote=true
@@ -1777,6 +1779,7 @@ for write_guard_mode in remote unconfigured; do
         write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-agents"
         rm -rf "$write_guard_agents"
     fi
+    write_guard_switch=1
     assert_write_guard "$write_guard_mode: git commit -> ask" ask 'git commit -m "x"'
     assert_write_guard "$write_guard_mode: an ordinary git push -> ask" ask 'git push -u origin feature/x'
     assert_write_guard "$write_guard_mode: commit and push together -> ask" ask \
@@ -1799,15 +1802,16 @@ for write_guard_mode in remote unconfigured; do
     assert_write_guard "$write_guard_mode: an askable write beside a merge -> deny" deny \
         'git commit -m x && gh pr merge 3'
     assert_write_guard "$write_guard_mode: a read stays allowed" allow 'git status'
-    # The player's switch: 0 turns the asking off, and the ordinary writes are denied again.
-    write_guard_switch=0
-    assert_write_guard "$write_guard_mode, switched off: git commit -> deny" deny 'git commit -m "x"'
-    assert_write_guard "$write_guard_mode, switched off: an ordinary git push -> deny" deny \
-        'git push -u origin feature/x'
-    assert_write_guard "$write_guard_mode, switched off: gh pr create -> deny" deny 'gh pr create --title x --body y'
-    assert_write_guard "$write_guard_mode, switched off: a read stays allowed" allow 'git status'
-    write_guard_switch=1
-    assert_write_guard "$write_guard_mode, switched on explicitly: git commit -> ask" ask 'git commit -m "x"'
+    # The player's switch, unset or anything but 1: the asking is off and every write is denied.
+    for write_guard_switch in "" 0 yes; do
+        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': git commit -> deny" deny \
+            'git commit -m "x"'
+        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': an ordinary git push -> deny" deny \
+            'git push -u origin feature/x'
+        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': gh pr create -> deny" deny \
+            'gh pr create --title x --body y'
+        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': a read stays allowed" allow 'git status'
+    done
     write_guard_switch=""
 done
 write_guard_remote=""

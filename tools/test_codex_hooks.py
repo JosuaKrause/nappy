@@ -379,9 +379,10 @@ class CodexHooksTest(unittest.TestCase):
     def test_github_write_guard_ask_reaches_codex_as_a_deny(self) -> None:
         # Where no identity can work the guard asks Claude Code's player about an ordinary write;
         # Codex always refuses one instead (2026-10-02: "make the codex version always refuse").
+        # The player's switch is on in both, or the guard would deny outright rather than ask.
         for env in (
-            dict(self.env, CLAUDE_CODE_REMOTE="true"),
-            dict(self.env, NAPPY_AGENTS_DIR=str(self.base / "no-such-dir")),
+            dict(self.env, CLAUDE_CODE_REMOTE="true", NAPPY_ASK_FOR_PLAYER_WRITES="1"),
+            dict(self.env, NAPPY_AGENTS_DIR=str(self.base / "no-such-dir"), NAPPY_ASK_FOR_PLAYER_WRITES="1"),
         ):
             with self.subTest(remote=env.get("CLAUDE_CODE_REMOTE"), agents=env["NAPPY_AGENTS_DIR"]):
                 self.env = env

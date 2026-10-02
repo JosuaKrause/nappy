@@ -37,10 +37,13 @@ the adapter would have read as an allow.
 > "Make it so it can be easily turned off and refuse again later. So I can turn it on/off without
 > approval hacks"
 
-`NAPPY_ASK_FOR_PLAYER_WRITES=0` in the environment a session starts with turns the asking off, and
-every unwrapped write is denied again, as on a machine with identities; unset, or any other value,
-leaves it on, so the session that built it was not locked out of committing the switch itself. The
-switch is an environment variable rather than a file in the repository because a command an agent
+Asked which way it should default, the player chose:
+
+> "Yes default to refusing"
+
+So the asking is off unless `NAPPY_ASK_FOR_PLAYER_WRITES=1` is in the environment a session
+starts with; unset, or any other value, and every unwrapped write is denied, as on a machine with
+identities. The switch is an environment variable rather than a file in the repository because a command an agent
 runs cannot change the environment its hooks are started in, while a file it can write: the
 player sets it in a cloud environment's own variables (its settings, then Edit, picked up by a new
 session) or in the shell that launches Claude Code. The ask's own prompt text names the variable,

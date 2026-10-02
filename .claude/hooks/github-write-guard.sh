@@ -8,9 +8,9 @@
 # when `tools/agent-identity.py status <role>` says a role is not usable, the session never falls
 # back to a direct call under the player's own account on its own say-so. A rule that is only ever
 # obeyed by remembering it is not a rule -- this is the mechanical half, denying the direct call so
-# the wrapped one is the only one that works. Where no identity can work at all, an ordinary write
-# is asked about instead of denied, so the player approves that one command (see the end of this
-# script).
+# the wrapped one is the only one that works. Where no identity can work at all and the player has
+# switched it on, an ordinary write is asked about instead of denied, so the player approves that
+# one command (see the end of this script).
 #
 # **The bar this holds itself to: a guardrail, not a security boundary.** It stops an agent's
 # ordinary GitHub writes from going out as the player by mistake -- every shape an agent would
@@ -973,7 +973,7 @@ unwrapped. $file_hint"
 	fi
 fi
 
-# **Where no identity can work, an ordinary write is asked about rather than denied.** *(2026-10-02,
+# **Where no identity can work, an ordinary write can be asked about rather than denied.** *(2026-10-02,
 # offered "the guard asks you instead of refusing" for a session with no usable identity: "Let's
 # do A and make the codex version always refuse".)* A Claude Code cloud session can never use an
 # identity (`tools/agent-identity.py`'s own docstring says why), and a machine with no identity
@@ -988,10 +988,11 @@ fi
 # through for any of them. Codex never asks (`tools/codex-hooks.py` turns an ask into a deny),
 # since Codex has its own approval sandbox and keeps "stop and tell the player".
 #
-# **The player switches it off with `NAPPY_ASK_FOR_PLAYER_WRITES=0`**, and every unwrapped write is
-# denied again, exactly as on a machine with identities. *(2026-10-02: "Make it so it can be easily
-# turned off and refuse again later. So I can turn it on/off without approval hacks".)* Unset, or
-# any other value, leaves it on. It is read from the environment the session was started with --
+# **It is off unless the player switches it on with `NAPPY_ASK_FOR_PLAYER_WRITES=1`**; unset, or
+# any other value, and every unwrapped write is denied, exactly as on a machine with identities.
+# *(2026-10-02: "Make it so it can be easily turned off and refuse again later. So I can turn it
+# on/off without approval hacks"; then "Yes default to refusing".)* It is read from the environment
+# the session was started with --
 # a cloud environment's own variables (its settings, then Edit; a new session picks a change up),
 # or the shell that launched Claude Code -- which is what keeps it the player's: a command an agent
 # runs cannot change the environment this hook is started in.
@@ -999,7 +1000,7 @@ askable_reasons='["git commit","git push","git cherry-pick","git revert","git am
 "git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready",
 "gh issue create","gh issue comment","gh issue edit"]'
 decision="deny"
-if [ "${NAPPY_ASK_FOR_PLAYER_WRITES:-1}" != "0" ] \
+if [ "${NAPPY_ASK_FOR_PLAYER_WRITES:-}" = "1" ] \
 		&& [ "$too_long" != "true" ] && [ "$reviewer_push" != "true" ] && [ -n "${result:-}" ] \
 		&& { [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] \
 			|| [ ! -d "${NAPPY_AGENTS_DIR:-$HOME/.config/nappy-agents}" ]; } \
@@ -1010,7 +1011,8 @@ then
 	reason="This command ($flagged) would go out under the player's own GitHub account: no agent \
 identity can work here (a Claude Code cloud session, or no identities set up on this machine). \
 Approve it only if you want this one command run as you; the next one is asked about again. To have \
-such writes refused instead, set NAPPY_ASK_FOR_PLAYER_WRITES=0 in the environment the session starts with."
+such writes refused instead, remove NAPPY_ASK_FOR_PLAYER_WRITES=1 from the environment the session \
+starts with."
 fi
 
 jq -n --arg reason "$reason" --arg decision "$decision" '{
