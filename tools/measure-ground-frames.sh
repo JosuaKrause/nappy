@@ -141,4 +141,12 @@ done
 jq -s --arg collector_revision "$collector_revision" \
     '{collector_revision:$collector_revision, rejected:[], trials:., order:"order.tsv", runtime_manifests:"*.runtime.sha256"}' \
     "${accepted[@]}" > "$output/results.json"
+if ! jq -e '[.trials[].cases[]] | group_by(.name) | all(.[];
+        ([.[].steady_workload.cell_sha256] | unique | length) == 1 and
+        ([.[].steady_pixel_sha256] | unique | length) == 1)' "$output/results.json" >/dev/null; then
+    printf 'comparison\tsteady cell or pixel hashes differ; inspect all retained trials\n' >> "$output/rejected.tsv"
+    jq '.rejected = ["cross-strategy steady cell or pixel mismatch"]' "$output/results.json" > "$output/rejected-results.json"
+    mv "$output/rejected-results.json" "$output/results.json"
+    fail "cross-strategy workload check failed"
+fi
 echo "All nine retained captures passed. Compact results: $output/results.json"
