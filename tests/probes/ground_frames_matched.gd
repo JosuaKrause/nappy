@@ -40,6 +40,13 @@ func _start_frame() -> void:
 		return
 	_begin = Time.get_ticks_usec()
 	_city._ground._process(float(_request.delta))
+	# Roof animation shares the modeled clock too; actual uncapped FPS must not change
+	# frame selection or redraw cadence between strategies. Keep its work inside the span.
+	for item in _city.scenery._items:
+		if item is Building:
+			item.set_process(false)
+			if item.scenery_resident and item._has_vent:
+				item._process(float(_request.delta))
 
 func _process(_delta: float) -> void:
 	if Time.get_ticks_msec() - _started > 120000:
