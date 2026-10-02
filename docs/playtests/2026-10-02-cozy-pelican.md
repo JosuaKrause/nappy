@@ -119,3 +119,41 @@ that sentence:
 PLAYTEST-80's "nothing new is drawn for it" is about the control that clears a save (the held
 restart that already existed, rather than a new button) and stays true; this asks for the save
 symbol, not a new control.
+
+## The strike, the save at opening, and the strike's red
+
+After an adversarial review of the pull request, the assistant asked three questions, each with
+options.
+
+**First:** a save fails and its struck symbol goes up for its 10s; the player taps through the
+summary within about 3s and the next save (the dawn save) is kept. As built, that kept save clears
+the strike at once, so the strike was up only about 3s. Should a later kept save cut the strike
+short? The options were "Keep the full 10s" (the struck picture stays its 10s even over a save
+that worked) and "Newest answer wins" (a kept save clears the strike at once, so the symbol never
+says "not kept" about a kept save). The player chose **"Newest answer wins"**.
+
+**Second:** opening a saved game that was closed between days charges nothing, yet the game
+writes the save at once with identical contents and flashes the symbol. Should a save that changes
+nothing stay quiet? The options were "Skip it when unchanged" (opening a game closed between days
+writes nothing and shows nothing; one closed mid-day still charges the nerve, writes at once and
+shows the symbol) and "Keep the write". The player answered in their own words:
+
+> "either it saves with one less nerve and a cleared "during active game" flag. or you defer
+> saving to the actual day start"
+
+Read as: opening a game whose day was under way charges the nerve and writes at once, with one
+nerve fewer and the day-under-way flag cleared; opening one closed between days writes nothing
+then, and the next write is the day's own start.
+
+**Third:** the strike's red is the traffic lights' red (`Palette.SIGNAL_RED`), which a note in
+`src/palette.gd` keeps to the traffic lamps. Should the strike get a red of its own? The options
+were "Own red" and "Keep signal red". The player chose **"Keep signal red"**.
+
+### What is asked for, as statements
+
+9. **The strike follows the newest answer**: a later save that is kept clears the strike at once,
+   even inside an earlier failure's 10s.
+10. **Opening a saved game writes only when it charged a day**: a game closed mid-day is charged
+    and written at once (one nerve fewer, no day under way); a game closed between days writes
+    nothing until the day starts.
+11. **The strike keeps the traffic lights' red.**
