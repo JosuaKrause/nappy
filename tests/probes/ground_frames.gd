@@ -155,6 +155,9 @@ func _coverage() -> Dictionary:
 	var extent := Tuning.VIEW_HALF_EXTENT * 2
 	var camera := Camera2D.new()
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	# This fixture moves the camera directly in process frames; interpolation would render
+	# an older physics transform rather than the bounds whose coverage it is asserting.
+	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	camera.zoom = get_viewport().get_visible_rect().size / extent
 	add_child(camera)
 	camera.position = at
