@@ -1584,8 +1584,24 @@ against; releasing a newer build must not by itself throw an old save away.
 **The held restart clears the save.** Both the pause screen and the day summary offer it, and
 starting over is what it has always meant — nothing new is drawn for clearing it.
 
-A small symbol appears in a corner for a few seconds after each write and fades out, on whatever
-screen is up — twice in an ordinary day: once when it starts, once when the day brief or the
-end-of-day message comes up for the next one. It names no key and is not a danger cue; it is the
-only thing that ever tells the player a write happened at all, since saving itself is otherwise
-silent.
+A small symbol appears in a corner at each save, on whatever screen is up — twice in an ordinary
+day: once when it starts, once when the day brief or the end-of-day message comes up for the next
+one. It names no key and is not a danger cue; it is the only thing that ever tells the player a
+save happened at all, since saving itself is otherwise silent. **It stays fully shown until the
+save is confirmed, and only then holds for a moment and fades** *(cozy-pelican: "we should show
+it until it is fully confirmed saved")*. Off the web the file closing is the confirmation. On the
+web the file is only in the page's memory until the browser copies it into IndexedDB, the one copy
+a reload finds, so `GameSave` starts that copy itself and waits for IndexedDB's own answer; a
+second save while one is still unanswered keeps the symbol up until both are. A copy that fails
+is tried once more after dropping every database connection the page holds, since a connection
+the browser has dropped (iOS Safari does, from a page left in the background) is otherwise never
+reopened and every later copy fails until a reload. A copy that has not answered after
+`GameSave.FLUSH_TIMEOUT_SECONDS` counts as failed, so the symbol cannot stay up for good.
+
+**When a save cannot be kept, the symbol shows with a strike through it** *("if saving is
+unavailable it should show up with a strike through")*, held and faded the same way: the file
+could not be written, the copy failed on its retry or never answered, or the browser refused the
+page storage at boot (`OS.is_userfs_persistent()` false, asked at every save), in which case the
+game plays on from memory and nothing survives a reload. A run `GameSave.uses_save()` refuses on
+purpose — a dev flag, a headless run, a web page that used a debug parameter — is not a save that
+failed, and draws nothing at all.
