@@ -465,9 +465,11 @@ def segment_scan($w; $start; $n; $flags):
 #   `-f` or a short-flag cluster holding `f` or `d`, `--force`, `--force-with-lease`,
 #   `--force-if-includes`, `--delete`, `--mirror` and `--prune`, a `+refspec` or a `:refspec`;
 # - one that publishes a tag or every branch at once (`tags` below): `--tags`, `--follow-tags`,
-#   `--all` (and `--branches`, should a git accept it as a spelling of `--all`), a refspec naming
-#   `refs/tags/` or `tags/`, `git push <remote> tag <name>`, or a ref whose name starts with `v`
-#   on either side of a refspec's `:` (`vnext`, `HEAD:v1.2.0`). A tag push is how a release
+#   `--all` (and `--branches`, should a git accept it as a spelling of `--all`), any word holding a
+#   `*` (a pattern refspec: `'refs/*:refs/*'` pushes every tag, `'refs/heads/*:refs/heads/*'` is
+#   `--all` spelled out, and pushing a pattern is never an ordinary push of one branch), a refspec
+#   naming `refs/tags/` or `tags/`, `git push <remote> tag <name>`, or a ref whose name starts with
+#   `v` on either side of a refspec's `:` (`vnext`, `HEAD:v1.2.0`). A tag push is how a release
 #   reaches the site: `.github/workflows/deploy.yml` builds and publishes the game on every pushed
 #   `v*` tag, whatever follows the `v`, and a bare name does not say whether it is a tag or a
 #   branch. The cost is a branch whose name starts with `v`, pushed by that bare name, being denied
@@ -476,14 +478,30 @@ def segment_scan($w; $start; $n; $flags):
 #   ordinary push. `git tag` itself stays unguarded, like `git branch`: it changes only the local
 #   repository, and every way a tag then reaches GitHub is a push this reads.
 #
+# The name tests (`v`, `tags/`, `refs/tags/`) read only the refspecs, never the remote or an
+# option's own value, so `git push vendor HEAD` and `git push -o vfoo origin x` are ordinary pushes.
+# The remote is the first word after `push` that is neither an option nor an option's value, or the
+# first word after a `--`, as git's own option parser reads it (options may stand anywhere). The
+# options that take the next word as their value are `-o`/`--push-option`, `--repo`,
+# `--receive-pack`, `--exec` and `--recurse-submodules`, spelled in full, and a short cluster whose
+# first `o` is its last letter (`-uo ci.skip`); a value after `=` takes no word, and `--signed` and
+# `--force-with-lease` take theirs only after `=`. Reading the remote too late would exempt a real
+# refspec, so the reading only ever errs early: an option not on that list, a prefix of one
+# (`--rep x`) among them, is read as taking no value, a quoted value with a space in it splits into
+# more words, and a shell expansion is one word however many it becomes, and each of those puts the
+# word taken for the remote at or before the real one, so every word after it is still read as a
+# refspec. The other tests (`+`, `:`, `*`, the word `tag`) read every word, the remote included.
+#
 # Git takes any unambiguous prefix of a long option (`--del` is `--delete`, `--mir` is `--mirror`),
 # so each long option matches from the shortest prefix git acts on, and from the shorter, ambiguous
 # ones too where they exist (`--fo` for the `--force` family, which `--follow-tags` shares; `--d`,
 # `--p`, `--t`, `--a`), since reading a prefix git refuses as the stricter push is the safe
 # direction. A value after `=` (`--force-with-lease=main:abc`) does not change the option. A word
 # that only looks like one of these reads as one, the safe direction too. Before `push`, a
-# git option naming `followTags` or `refs/tags/` (`git -c push.followTags=true push ...`) makes
-# the push a tag push as well.
+# git option naming `followTags` or `refs/tags/`, or holding a `*` (`git -c push.followTags=true
+# push ...`, `git -c 'remote.origin.push=refs/*:refs/*' push origin`), makes the push a tag push as
+# well, and one naming `mirror` or setting a push refspec that starts with `+` (`git -c
+# remote.origin.mirror=true push origin`) makes it a forced one.
 #
 # An option word (`-` first) is checked against the option lists; any other word, a refspec or a
 # remote, costs one regex, so a long push is no dearer to read than any other command. The regexes
@@ -491,7 +509,8 @@ def segment_scan($w; $start; $n; $flags):
 # per word in jq. Config keys are case-insensitive (`followTags`, `followtags`); a ref is not.
 def long_option_prefix($full; $min):
   (split("=") | .[0]) as $o | ($o | length) >= $min and ($full | startswith($o));
-def tag_config_re: "refs/tags/|[Ff][Oo][Ll][Ll][Oo][Ww][Tt][Aa][Gg][Ss]";
+def tag_config_re: "refs/tags/|[Ff][Oo][Ll][Ll][Oo][Ww][Tt][Aa][Gg][Ss]|\\*";
+def forced_config_re: "[Mm][Ii][Rr][Rr][Oo][Rr]|\\.[Pp][Uu][Ss][Hh]=\\+";
 def forced_push_option:
   test("^-[A-Za-z]*[fd][A-Za-z]*$") or startswith("--force")
   or long_option_prefix("--force-with-lease"; 4) or long_option_prefix("--force-if-includes"; 4)
@@ -501,16 +520,29 @@ def tag_push_option:
   long_option_prefix("--tags"; 3) or long_option_prefix("--follow-tags"; 5)
   or long_option_prefix("--all"; 3) or long_option_prefix("--branches"; 3)
   or test(tag_config_re);
+def push_value_option:
+  IN("-o", "--push-option", "--repo", "--receive-pack", "--exec", "--recurse-submodules")
+  or test("^-[A-Za-np-z0-9]*o$");
+# `value`: this word is the previous option's value; `remote`: the remote has been read; `rest`: a
+# `--` has been read, so every later word is a positional one.
 def push_scan($w; $start; $n):
-  {j: $start, forced: false, tags: false}
+  {j: $start, forced: false, tags: false, value: false, remote: false, rest: false}
   | until(.j >= $n or ($w[.j] | is_sep);
       ($w[.j]) as $x
-      | (if $x | startswith("-") then
+      | .value as $is_value
+      | (($x | startswith("-")) and (.rest | not)) as $is_option
+      | (if $is_option then
            .forced = (.forced or ($x | forced_push_option))
            | .tags = (.tags or ($x | tag_push_option))
          else
            .forced = (.forced or ($x | startswith("+") or startswith(":")))
-           | .tags = (.tags or $x == "tag" or ($x | test("refs/tags/|(^|:)\\+?([vV]|tags/)")))
+           | .tags = (.tags or $x == "tag" or ($x | contains("*")))
+         end)
+      | (if $is_value then .value = false
+         elif $is_option then
+           .value = ($x | push_value_option) | .rest = ($x | IN("--", "--\u0002"))
+         elif .remote | not then .remote = true
+         else .tags = (.tags or ($x | test("refs/tags/|(^|:)\\+?([vV]|tags/)")))
          end)
       | .j += 1)
   | {"end": .j, forced, tags};
@@ -525,8 +557,9 @@ def detect_git($w; $t; $i; $n):
         | if $subcmd == "push" then
             (push_scan($w; $sub + 1; $n)) as $sc
             | ($sc.tags or any(range($i + 1; $sub) | $w[.]; test(tag_config_re))) as $tags
+            | ($sc.forced or any(range($i + 1; $sub) | $w[.]; test(forced_config_re))) as $forced
             | {next: $sc.end,
-               reason: (if $sc.forced then "git push --force"
+               reason: (if $forced then "git push --force"
                         elif $tags then "git push of a tag or every branch"
                         else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
@@ -1031,10 +1064,10 @@ fi
 # Only a command whose every write is on `askable_reasons` is asked about -- a local commit or
 # history step (`git commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`, `am`), an
 # ordinary push of a branch, and `gh pr create|comment|edit|ready`, the pull-request writes a
-# session's own work needs. A forced, deleting or mirroring push, a push of a tag or of every
-# branch (a `v*` tag publishes the site), a merge, any `gh issue` write, any other `gh` write, any
-# `gh api` write, a pushing `tools/` script, a reviewer's push, a command too long to read and one
-# the guard could not parse stay denied: merging and releasing already need the player's go-ahead
+# session's own work needs. A forced, deleting, mirroring or pruning push, a push of a tag, of
+# every branch or of a `*` pattern (a `v*` tag publishes the site), a merge, any `gh issue` write,
+# any other `gh` write, any `gh api` write, a pushing `tools/` script, a reviewer's push, a command
+# too long to read and one the guard could not parse stay denied: merging and releasing already need the player's go-ahead
 # in conversation, and a prompt is too easy to click through for any of them -- on the mobile app
 # it shows only the command, not this reason. A bare `gh issue` write is never asked about because
 # the player wants an agent's issue writes to go through a script rather than a direct command

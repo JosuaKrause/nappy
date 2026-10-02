@@ -10,11 +10,13 @@ the current session** — see "Merging".
 
 ## Who a commit and a pull request are from
 
-**Every GitHub write goes out as an agent identity, and only that identity — never the player's.**
+**Every GitHub write goes out as an agent identity, and only that identity — never as the player
+on an agent's own say-so.** The one exception is a write the player approves themself at the
+guard's prompt, below.
 *(2026-09-26, once the first four identities existed: "I want to make it mandatory for each agent
 to use their respective identity when interacting with github", enforced on writes; asked what an
 agent does when its identity is unusable, the player chose "Stop and tell me" — it never posts as
-the player instead.)*
+the player on its own say-so instead.)*
 
 **Which identity a write goes out as follows what the write does, not which session makes it.**
 *(2026-09-27: "orchestrator/coder session and orchestrator/coder identity are not the same thing.
@@ -54,15 +56,17 @@ role not usable (not created yet, not installed on the repository, or a cloud se
 `tools/agent-identity.py`'s own module docstring), the session never runs the write under the
 player's own account on its own say-so.** Where no identity can work at all — a Claude Code cloud
 session, or a machine with no identity directory — the guard below can ask the player about an
-ordinary write instead of denying it: a local commit, a push of a branch, or a pull-request write
+ordinary write instead of denying it: a local commit or history step (`git commit`, `merge`,
+`rebase`, `pull`, `cherry-pick`, `revert`, `am`), a push of a branch, or a pull-request write
 (`gh pr create`, `comment`, `edit`, `ready`) goes to them as a permission prompt for that one
 command, which only they can approve *(2026-10-02: "Let's do A and make the codex version always
-refuse")*. Every other write is never asked about, only denied — among them a push of a tag or of
-every branch (a pushed `v*` tag publishes the site), a forced or deleting push, a pull request's
-merge, a release and a bare `gh issue` write — since a prompt is too easy to click through for any
-of them, and for the last because the player wants an agent's issue writes to go through a script
-rather than a direct `gh issue` command *(2026-09-27: "if it goes through a script it's safe we
-just need to get it working once -- an agent shouldn't use gh issue directly")*. **That asking is
+refuse")*. Every other write is never asked about, only denied — among them a push of a tag, of
+every branch or of a `*` pattern (a pushed `v*` tag publishes the site), a forced, deleting,
+mirroring or pruning push, a pull request's merge, a release and a bare `gh issue` write — since
+a prompt is too easy to click through for any of them, and for the last because the player wants
+an agent's issue writes to go through a script rather than a direct `gh issue` command
+*(2026-09-27: "if it goes through a script it's safe we just need to get it working once -- an
+agent shouldn't use gh issue directly")*. **That asking is
 off unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a
 session starts with (a cloud environment's own variables, or the launching shell); unset, every
 unwrapped write is denied *(2026-10-02: "Make it so it can be easily turned off and refuse again later";

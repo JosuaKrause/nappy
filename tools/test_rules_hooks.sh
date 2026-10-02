@@ -93,11 +93,13 @@
 #     skipped before the command word, and the script after bash -c is a command of its own; the
 #     wrapped forms and the reads through the same wrappers still allow.
 #   - where no identity can work (a cloud session, or no identity directory) and the player's
-#     NAPPY_ASK_FOR_PLAYER_WRITES=1 is set, github-write-guard.sh asks about a commit, a branch
-#     push and gh pr create/comment/edit/ready, and still denies a push of a tag or of every
-#     branch, a forced, deleting, mirroring or pruning push in any prefix of its long option, a
-#     bare gh issue write, a merge, a release, a gh api write and a pushing script, while git tag
-#     and a read allow; with the switch unset, 0 or yes, every one of those writes denies
+#     NAPPY_ASK_FOR_PLAYER_WRITES=1 is set, github-write-guard.sh asks about a commit or local
+#     history step, a branch push (to a remote whose name starts with v too, past an option's own
+#     value or a --) and gh pr create/comment/edit/ready, and still denies a push of a tag, of
+#     every branch or of a * pattern (in a refspec or a git -c before push), a forced, deleting,
+#     mirroring or pruning push in any prefix of its long option or through a git -c, a bare gh
+#     issue write, a merge, a release, a gh api write and a pushing script, while git tag and a
+#     read allow; with the switch unset, 0 or yes, every one of those writes denies
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -1789,9 +1791,31 @@ assert_write_guard "an abbreviated delete wrapped as claude-coder -> allow" allo
 #
 # Asked about with the switch on: a local commit or history step, a push of a branch (an explicit
 # refs/heads/ destination is a branch even when its name starts with v), and gh pr
-# create/comment/edit/ready.
+# create/comment/edit/ready. The name test reads only refspecs, so a remote whose name starts with
+# v (the first word after push that is neither an option nor an option's value, or the first after
+# a --) and an option's own value (-o vfoo) are not read as tags; a lone word after push is the
+# remote, as git reads it.
 write_guard_asked=(
     'git commit -m "x"'
+    'git merge feature/x'
+    'git rebase main'
+    'git pull origin main'
+    'git cherry-pick abc123'
+    'git revert abc123'
+    'git am fix.patch'
+    'git push vendor HEAD'
+    'git push vendor feature/x'
+    'git push -u vendor feature/x'
+    'git push vendor HEAD:refs/heads/vnext'
+    'git push -o ci.skip vendor HEAD'
+    'git push -o vfoo origin feature/x'
+    'git push --push-option vfoo origin feature/x'
+    'git push -uo ci.skip vendor HEAD'
+    'git push --repo vendor HEAD'
+    'git push --recurse-submodules check vendor HEAD'
+    'git push -- vendor HEAD'
+    'git push git@github.com:o/v.git HEAD'
+    'git push vnext'
     'git push -u origin feature/x'
     'git push origin feature/x'
     'git push origin work/v2-cleanup'
@@ -1808,11 +1832,34 @@ write_guard_asked=(
 )
 # Denied whatever the switch says. A push of a tag or of every branch (a pushed v* tag deploys the
 # site, so any ref whose name starts with v reads as a tag, and a branch named v-something pushed
-# by that bare name is denied too); a forced, deleting, mirroring or pruning push, with each long option also spelled as any
-# prefix git accepts, and as the shorter ambiguous ones; a bare gh issue write (bouncy-heron
-# statement 14: "an agent shouldn't use gh issue directly"); a merge, a release, a gh api write and
-# a pushing tools/ script.
+# by that bare name is denied too, to a remote whose own name starts with v as well); any word of
+# a push holding a * (refs/*:refs/* pushes every tag, refs/heads/*:refs/heads/* is --all), and a
+# git -c before push holding one; where the remote cannot be told for certain (a prefix of a value
+# option, -oo, whose value is the second o, a -- that is -o's value), the word after is read as a
+# refspec; a forced, deleting, mirroring or pruning push, with each long option also spelled as
+# any prefix git accepts, and as the shorter ambiguous ones, or through a git -c naming mirror or a
+# + push refspec; a bare gh issue write (bouncy-heron statement 14: "an agent shouldn't use gh
+# issue directly"); a merge, a release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    "git push origin 'refs/*:refs/*'"
+    "git push origin 'refs/heads/*:refs/heads/*'"
+    "git push origin 'refs/tags/*'"
+    "git push origin 'feature/*'"
+    "git push origin '+refs/*:refs/*'"
+    "git push vendor 'refs/heads/*:refs/heads/*'"
+    "git -c 'remote.origin.push=refs/*:refs/*' push origin"
+    'git -c remote.origin.mirror=true push origin'
+    'git -c remote.origin.push=+refs/heads/x:refs/heads/x push origin'
+    'git push vendor vnext'
+    'git push vendor HEAD:v1'
+    'git push vendor tag v1'
+    'git push -u vendor vnext'
+    'git push -o ci.skip vendor vnext'
+    'git push --repo vendor origin vnext'
+    'git push -- vendor vnext'
+    'git push --rep vendor vnext'
+    'git push -oo vendor vnext'
+    'git push -o -- vendor vnext'
     'git push origin v1'
     'git push origin vnext'
     'git push origin HEAD:vnext'

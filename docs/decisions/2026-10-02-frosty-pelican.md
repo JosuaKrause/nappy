@@ -32,12 +32,16 @@ shows only the command:
 
 - a push that rewrites or deletes on the remote, its own reason `git push --force`: `-f` or a
   short-flag cluster holding `f` or `d`, `--force`, `--force-with-lease`, `--force-if-includes`,
-  `--delete`, `--mirror`, `--prune`, a `+` or `:` refspec;
+  `--delete`, `--mirror`, `--prune`, a `+` or `:` refspec, and a git option before `push` naming
+  `mirror` or setting a push refspec that starts with `+` (`git -c remote.origin.mirror=true
+  push`);
 - a push of a tag or of every branch, its own reason `git push of a tag or every branch`, since
   `.github/workflows/deploy.yml` publishes the site on every pushed `v*` tag: `--tags`,
-  `--follow-tags`, `--all`, a refspec naming `refs/tags/` or `tags/`, `git push <remote> tag
-  <name>`, a ref whose name starts with `v` on either side of a refspec's `:` (`vnext`,
-  `HEAD:v1.2.0`), and a git option before `push` naming `followTags` or `refs/tags/` (`git -c
+  `--follow-tags`, `--all`, any refspec holding a `*` (`'refs/*:refs/*'` pushes every tag,
+  `'refs/heads/*:refs/heads/*'` is `--all` spelled out, and pushing a pattern is never an ordinary
+  push of one branch), a refspec naming `refs/tags/` or `tags/`, `git push <remote> tag <name>`, a
+  ref whose name starts with `v` on either side of a refspec's `:` (`vnext`, `HEAD:v1.2.0`), and a
+  git option before `push` naming `followTags` or `refs/tags/` or holding a `*` (`git -c
   push.followTags=true push`). `git tag` itself stays unguarded, since it changes only the local
   repository and every way a tag then reaches GitHub is a push the guard reads;
 - each of those long options in any spelling git acts on, since git takes any unambiguous prefix
@@ -57,7 +61,14 @@ on any `v*` tag, whatever follows the `v`, and a bare name does not say whether 
 branch. So a branch whose name starts with `v`, pushed by that bare name, is denied rather than
 asked about; that cost is accepted because this repository's branches are named `claude/...`,
 `feature/...` and `work/...`, and a push naming an explicit `refs/heads/` destination
-(`HEAD:refs/heads/v1`) is a branch push and is still asked about. A `push.followTags` or mirror
+(`HEAD:refs/heads/v1`) is a branch push and is still asked about. The name test reads only the
+refspecs, not the remote or an option's own value, so `git push vendor HEAD` is asked about; the
+remote is the first word after `push` that is neither an option nor the value of one of the few
+options that take the next word (`-o`, `--repo`, `--receive-pack`, `--exec`,
+`--recurse-submodules`, spelled in full). The reading only ever errs towards taking an earlier word
+for the remote, which leaves every real refspec read: a prefix of one of those options (`git push
+--rep vendor vnext`) reads as taking no value, so `vendor` is taken for the remote and `vnext` is
+denied, where git would push to a remote named `vnext`. A `push.followTags` or mirror
 setting made earlier by a separate `git config` command is not visible to the guard, so a plain
 push after it is asked about.
 
