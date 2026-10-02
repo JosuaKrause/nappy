@@ -59,5 +59,8 @@ connector takes whole files, so a two-line change to a 160 KB file means retypin
 identities, plus each ask and deny case above under a cloud session and under no identity
 directory) and `tools/pycheck.sh` (with a Codex test that a cloud session's or an unconfigured
 machine's ask reaches Codex as a deny) pass; `tools/codex-hooks.py` still runs under the host's
-Python 3.11. Whether a Claude Code cloud session shows the prompt was checked in the session that
-built it, by committing this change through it.
+Python 3.11. A Claude Code cloud session shows the prompt: in a cloud session started with
+`NAPPY_ASK_FOR_PLAYER_WRITES=1`, running in auto mode, a plain `git commit` and the `git push` after
+it each brought up a permission prompt the player saw and approved. Whether that prompt carried
+the guard's own text, that the command "would go out under the player's own GitHub account", was
+not read.
