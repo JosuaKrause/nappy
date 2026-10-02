@@ -458,18 +458,62 @@ def segment_scan($w; $start; $n; $flags):
       . as $s | .found = (.found or (($flags | index($w[$s.j])) != null)) | .j += 1)
   | {"end": .j, found: .found};
 
-# The same scan as `segment_scan`, matching each word against a regex rather than a list: how a
-# `git push` is told to rewrite or delete what is on the remote rather than add to it -- `-f` or a
-# short-flag cluster holding `f` or `d`, `--force` and `--force-with-lease`/`--force-if-includes`
-# in any spelling, `--delete`, `--mirror`, `--prune`, a `+refspec` or a `:refspec`. A word that
-# only looks like one reads as forced, the safe direction: a forced push is never asked about,
-# only denied (see `askable_reasons`).
-def segment_match($w; $start; $n; $re):
-  {j: $start, found: false}
+# The same scan as `segment_scan`, over a `git push`'s own words, for the two kinds of push that
+# are never asked about, only denied (see `askable_reasons`):
+#
+# - one that rewrites or deletes what is on the remote rather than adds to it (`forced` below):
+#   `-f` or a short-flag cluster holding `f` or `d`, `--force`, `--force-with-lease`,
+#   `--force-if-includes`, `--delete`, `--mirror` and `--prune`, a `+refspec` or a `:refspec`;
+# - one that publishes a tag or every branch at once (`tags` below): `--tags`, `--follow-tags`,
+#   `--all` (and `--branches`, should a git accept it as a spelling of `--all`), a refspec naming
+#   `refs/tags/` or `tags/`, `git push <remote> tag <name>`, or a ref whose name starts with `v`
+#   on either side of a refspec's `:` (`vnext`, `HEAD:v1.2.0`). A tag push is how a release
+#   reaches the site: `.github/workflows/deploy.yml` builds and publishes the game on every pushed
+#   `v*` tag, whatever follows the `v`, and a bare name does not say whether it is a tag or a
+#   branch. The cost is a branch whose name starts with `v`, pushed by that bare name, being denied
+#   rather than asked about; this repository's branches are named `claude/...`, `feature/...` and
+#   `work/...`, and an explicit `refs/heads/` side (`HEAD:refs/heads/v1`) is a branch and stays an
+#   ordinary push. `git tag` itself stays unguarded, like `git branch`: it changes only the local
+#   repository, and every way a tag then reaches GitHub is a push this reads.
+#
+# Git takes any unambiguous prefix of a long option (`--del` is `--delete`, `--mir` is `--mirror`),
+# so each long option matches from the shortest prefix git acts on, and from the shorter, ambiguous
+# ones too where they exist (`--fo` for the `--force` family, which `--follow-tags` shares; `--d`,
+# `--p`, `--t`, `--a`), since reading a prefix git refuses as the stricter push is the safe
+# direction. A value after `=` (`--force-with-lease=main:abc`) does not change the option. A word
+# that only looks like one of these reads as one, the safe direction too. Before `push`, a
+# git option naming `followTags` or `refs/tags/` (`git -c push.followTags=true push ...`) makes
+# the push a tag push as well.
+#
+# An option word (`-` first) is checked against the option lists; any other word, a refspec or a
+# remote, costs one regex, so a long push is no dearer to read than any other command. The regexes
+# spell a letter's two cases out (`[Ff]`) rather than use `(?i)`, which costs several times as much
+# per word in jq. Config keys are case-insensitive (`followTags`, `followtags`); a ref is not.
+def long_option_prefix($full; $min):
+  (split("=") | .[0]) as $o | ($o | length) >= $min and ($full | startswith($o));
+def tag_config_re: "refs/tags/|[Ff][Oo][Ll][Ll][Oo][Ww][Tt][Aa][Gg][Ss]";
+def forced_push_option:
+  test("^-[A-Za-z]*[fd][A-Za-z]*$") or startswith("--force")
+  or long_option_prefix("--force-with-lease"; 4) or long_option_prefix("--force-if-includes"; 4)
+  or long_option_prefix("--delete"; 3) or long_option_prefix("--mirror"; 3)
+  or long_option_prefix("--prune"; 3);
+def tag_push_option:
+  long_option_prefix("--tags"; 3) or long_option_prefix("--follow-tags"; 5)
+  or long_option_prefix("--all"; 3) or long_option_prefix("--branches"; 3)
+  or test(tag_config_re);
+def push_scan($w; $start; $n):
+  {j: $start, forced: false, tags: false}
   | until(.j >= $n or ($w[.j] | is_sep);
-      . as $s | .found = (.found or ($w[$s.j] | test($re))) | .j += 1)
-  | {"end": .j, found: .found};
-def forced_push_word: "^(-[A-Za-z]*[fd][A-Za-z]*|--force.*|--delete|--mirror|--prune|[+:].*)$";
+      ($w[.j]) as $x
+      | (if $x | startswith("-") then
+           .forced = (.forced or ($x | forced_push_option))
+           | .tags = (.tags or ($x | tag_push_option))
+         else
+           .forced = (.forced or ($x | startswith("+") or startswith(":")))
+           | .tags = (.tags or $x == "tag" or ($x | test("refs/tags/|(^|:)\\+?([vV]|tags/)")))
+         end)
+      | .j += 1)
+  | {"end": .j, forced, tags};
 
 def detect_git($w; $t; $i; $n):
   if ($w[$i] | named("git")) | not then null
@@ -479,8 +523,12 @@ def detect_git($w; $t; $i; $n):
       else
         ($w[$sub]) as $subcmd
         | if $subcmd == "push" then
-            (segment_match($w; $sub + 1; $n; forced_push_word)) as $sc
-            | {next: $sc.end, reason: (if $sc.found then "git push --force" else "git push" end)}
+            (push_scan($w; $sub + 1; $n)) as $sc
+            | ($sc.tags or any(range($i + 1; $sub) | $w[.]; test(tag_config_re))) as $tags
+            | {next: $sc.end,
+               reason: (if $sc.forced then "git push --force"
+                        elif $tags then "git push of a tag or every branch"
+                        else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
           elif $subcmd | IN("cherry-pick", "revert", "am") then
             (segment_scan($w; $sub + 1; $n; ["--abort", "--quit"])) as $sc
@@ -981,12 +1029,19 @@ fi
 # So the same command goes to the player as a permission prompt instead: one command, approved or
 # refused by the player, never remembered, and never something the agent can answer for itself.
 # Only a command whose every write is on `askable_reasons` is asked about -- a local commit or
-# history step, an ordinary push, and the pull-request and issue writes a session's own work needs.
-# A forced or deleting push, a merge, any `gh api` write, a pushing `tools/` script, a reviewer's
-# push, a command too long to read and one the guard could not parse stay denied: merging and
-# releasing already need the player's go-ahead in conversation, and a prompt is too easy to click
-# through for any of them. Codex never asks (`tools/codex-hooks.py` turns an ask into a deny),
-# since Codex has its own approval sandbox and keeps "stop and tell the player".
+# history step (`git commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`, `am`), an
+# ordinary push of a branch, and `gh pr create|comment|edit|ready`, the pull-request writes a
+# session's own work needs. A forced, deleting or mirroring push, a push of a tag or of every
+# branch (a `v*` tag publishes the site), a merge, any `gh issue` write, any other `gh` write, any
+# `gh api` write, a pushing `tools/` script, a reviewer's push, a command too long to read and one
+# the guard could not parse stay denied: merging and releasing already need the player's go-ahead
+# in conversation, and a prompt is too easy to click through for any of them -- on the mobile app
+# it shows only the command, not this reason. A bare `gh issue` write is never asked about because
+# the player wants an agent's issue writes to go through a script rather than a direct command
+# *(2026-09-27, bouncy-heron statement 14: "if it goes through a script it's safe we just need to
+# get it working once -- an agent shouldn't use gh issue directly")*; that script is open work
+# under `docs/todo/2026-09-27-leafy-finch/`. Codex never asks (`tools/codex-hooks.py` turns an ask
+# into a deny), since Codex has its own approval sandbox and keeps "stop and tell the player".
 #
 # **It is off unless the player switches it on with `NAPPY_ASK_FOR_PLAYER_WRITES=1`**; unset, or
 # any other value, and every unwrapped write is denied, exactly as on a machine with identities.
@@ -997,8 +1052,7 @@ fi
 # or the shell that launched Claude Code -- which is what keeps it the player's: a command an agent
 # runs cannot change the environment this hook is started in.
 askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
-"git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready",
-"gh issue create","gh issue comment","gh issue edit"]'
+"git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready"]'
 decision="deny"
 if [ "${NAPPY_ASK_FOR_PLAYER_WRITES:-}" = "1" ] \
 		&& [ "$too_long" != "true" ] && [ "$reviewer_push" != "true" ] && [ -n "${result:-}" ] \

@@ -54,12 +54,18 @@ role not usable (not created yet, not installed on the repository, or a cloud se
 `tools/agent-identity.py`'s own module docstring), the session never runs the write under the
 player's own account on its own say-so.** Where no identity can work at all — a Claude Code cloud
 session, or a machine with no identity directory — the guard below can ask the player about an
-ordinary write instead of denying it: a local commit, a plain push, or a pull-request or issue
-write goes to them as a permission prompt for that one command, which only they can approve
-*(2026-10-02: "Let's do A and make the codex version always refuse")*. **That asking is off unless
-the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a session
-starts with (a cloud environment's own variables, or the launching shell); unset, every unwrapped
-write is denied *(2026-10-02: "Make it so it can be easily turned off and refuse again later";
+ordinary write instead of denying it: a local commit, a push of a branch, or a pull-request write
+(`gh pr create`, `comment`, `edit`, `ready`) goes to them as a permission prompt for that one
+command, which only they can approve *(2026-10-02: "Let's do A and make the codex version always
+refuse")*. Every other write is never asked about, only denied — among them a push of a tag or of
+every branch (a pushed `v*` tag publishes the site), a forced or deleting push, a pull request's
+merge, a release and a bare `gh issue` write — since a prompt is too easy to click through for any
+of them, and for the last because the player wants an agent's issue writes to go through a script
+rather than a direct `gh issue` command *(2026-09-27: "if it goes through a script it's safe we
+just need to get it working once -- an agent shouldn't use gh issue directly")*. **That asking is
+off unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a
+session starts with (a cloud environment's own variables, or the launching shell); unset, every
+unwrapped write is denied *(2026-10-02: "Make it so it can be easily turned off and refuse again later";
 "Yes default to refusing")*. A session never sets or clears it for itself. Anything the guard
 denies the session stops on and tells the player about, and Codex stops on every one of them. A
 `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a

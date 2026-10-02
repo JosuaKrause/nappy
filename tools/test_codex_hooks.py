@@ -390,7 +390,30 @@ class CodexHooksTest(unittest.TestCase):
                 assert output is not None
                 specific = output["hookSpecificOutput"]
                 self.assertEqual(specific["permissionDecision"], "deny")
-                self.assertIn("Codex never runs this as the player", specific["permissionDecisionReason"])
+                # A refusal naming what the guard flagged, never the prompt text meant for the player.
+                reason = specific["permissionDecisionReason"]
+                self.assertTrue(reason.startswith("This command writes to GitHub (git push) outside"), reason)
+                self.assertIn("Codex never runs such a write as the player", reason)
+                self.assertIn("stop and tell the player", reason)
+                self.assertNotIn("Approve", reason)
+                self.assertNotIn("NAPPY_ASK_FOR_PLAYER_WRITES", reason)
+
+    def test_an_explicit_allow_from_a_guard_reaches_codex_as_a_deny(self) -> None:
+        # Neither guard ever answers an explicit allow (each allows by printing nothing), so the
+        # adapter reads one the fail-safe way, as a deny; silence still lets the call on.
+        guard = self.root / ".claude/hooks/github-write-guard.sh"
+        guard.write_text(
+            "#!/usr/bin/env bash\n"
+            'echo \'{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}\'\n'
+        )
+        output = self.call_raw(command="git status")
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertTrue(specific["permissionDecisionReason"].startswith("This command writes to GitHub outside"))
+        guard.write_text("#!/usr/bin/env bash\nexit 0\n")
+        output = self.call_raw(command="git status")
+        self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
 
     def test_github_write_guard_denies_an_unwrapped_gh_pr_comment(self) -> None:
         output = self.call_raw(command='gh pr comment 391 --body "hi"')

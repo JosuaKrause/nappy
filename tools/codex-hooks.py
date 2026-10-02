@@ -36,14 +36,24 @@ def guard_deny(reason: str) -> dict[str, Any]:
     }
 
 
+# The write guard's ask names what it flagged in its first sentence, "This command (<writes>) would
+# go out under the player's own GitHub account ...". The rest of that text is addressed to the
+# player approving a prompt, so Codex is given only the flagged writes, inside a refusal of its own.
+ASKED_WRITES = re.compile(r"^This command \((.*)\) would go out under ")
+
+
 def codex_refusal(guard: dict[str, Any]) -> str:
-    """The deny reason Codex gets for a guard answer that was not a deny: the guard's own reason, and
-    that Codex stops and tells the player rather than running the write as them."""
+    """The deny reason Codex gets for a guard answer that was neither a deny nor silence: a refusal
+    naming what the guard flagged, and that Codex wraps the write or stops and tells the player."""
     reason = guard.get("hookSpecificOutput", {}).get("permissionDecisionReason", "")
+    asked = ASKED_WRITES.match(reason) if isinstance(reason, str) else None
+    flagged = f" ({asked.group(1)})" if asked else ""
     return (
-        f"{reason} Codex never runs this as the player: wrap it in 'tools/agent-identity.py run "
-        "<role> -- <command>', or, if no role is usable, stop and tell the player."
-    ).strip()
+        f"This command writes to GitHub{flagged} outside any agent identity, and Codex never runs such "
+        "a write as the player. Run it through 'uv run python tools/agent-identity.py run <role> -- "
+        "<command>' (codex-coder, or codex-reviewer for a review); if 'uv run python "
+        "tools/agent-identity.py status <role>' reports the role not usable, stop and tell the player."
+    )
 
 
 def run_guard(script: Path, payload: str, deadline: float) -> Optional[dict[str, Any]]:
@@ -199,7 +209,10 @@ def main() -> None:
                             # where no identity can work; Codex always refuses one instead
                             # (2026-10-02: "make the codex version always refuse"), since an
                             # ask this adapter passed on would read as an allow and Codex has
-                            # its own approval sandbox. So anything but an allow is a deny here.
+                            # its own approval sandbox. So any decision a guard names is a deny
+                            # here: an ask, and an explicit allow too, which neither guard gives
+                            # (each allows by printing nothing) and which is read the fail-safe
+                            # way. Only silence, or a reply naming no decision, lets the call on.
                             print(json.dumps(guard_deny(codex_refusal(guard))))
                             return
                 # Arbitrary scripts can compute their paths. Preserve selective

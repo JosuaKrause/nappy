@@ -92,6 +92,12 @@
 #     unsure command), a wrapper option's argument (sudo -u, nice -n, timeout -s, xargs -n) is
 #     skipped before the command word, and the script after bash -c is a command of its own; the
 #     wrapped forms and the reads through the same wrappers still allow.
+#   - where no identity can work (a cloud session, or no identity directory) and the player's
+#     NAPPY_ASK_FOR_PLAYER_WRITES=1 is set, github-write-guard.sh asks about a commit, a branch
+#     push and gh pr create/comment/edit/ready, and still denies a push of a tag or of every
+#     branch, a forced, deleting, mirroring or pruning push in any prefix of its long option, a
+#     bare gh issue write, a merge, a release, a gh api write and a pushing script, while git tag
+#     and a read allow; with the switch unset, 0 or yes, every one of those writes denies
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -1765,12 +1771,112 @@ assert_write_guard "wrapped reply whose body comes from a file, as claude-review
     'uv run python tools/agent-identity.py run claude-reviewer -- gh api repos/o/r/pulls/1/comments/5/replies -F body=@reply.md'
 assert_write_guard "wrapped gh api PUT .../merge as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh api -X PUT repos/o/r/pulls/1/merge'
+# A tag push is a push like any other to the wrapper: the coder that cuts a release pushes its tag,
+# and a reviewer never pushes one.
+assert_write_guard "a tag push, unwrapped -> deny" deny 'git push origin v1.2.0'
+assert_write_guard "a tag push wrapped as claude-coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git push origin v1.2.0'
+assert_write_guard "git push --tags wrapped as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git push origin --tags'
+assert_write_guard "an abbreviated delete wrapped as claude-coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git push --del origin feature/x'
 
 # Where no identity can work -- a Claude Code cloud session, or no identity directory -- and the
 # player has switched the asking on (NAPPY_ASK_FOR_PLAYER_WRITES=1), an ordinary write is asked
 # about rather than denied (2026-10-02, "Let's do A"); everything a prompt is too easy to click
 # through for stays denied. Unset, the switch is off and every write is denied (2026-10-02, "Yes
 # default to refusing").
+#
+# Asked about with the switch on: a local commit or history step, a push of a branch (an explicit
+# refs/heads/ destination is a branch even when its name starts with v), and gh pr
+# create/comment/edit/ready.
+write_guard_asked=(
+    'git commit -m "x"'
+    'git push -u origin feature/x'
+    'git push origin feature/x'
+    'git push origin work/v2-cleanup'
+    'git commit -m x && git push origin feature/x'
+    'git push origin HEAD:refs/heads/v1'
+    'git push origin HEAD:refs/heads/vnext'
+    'git push --dry-run origin feature/x'
+    'git push --no-tags origin feature/x'
+    'git push --thin origin feature/x'
+    'gh pr create --title x --body y'
+    'gh pr comment 5 --body hi'
+    'gh pr edit 5 --title x'
+    'gh pr ready 5'
+)
+# Denied whatever the switch says. A push of a tag or of every branch (a pushed v* tag deploys the
+# site, so any ref whose name starts with v reads as a tag, and a branch named v-something pushed
+# by that bare name is denied too); a forced, deleting, mirroring or pruning push, with each long option also spelled as any
+# prefix git accepts, and as the shorter ambiguous ones; a bare gh issue write (bouncy-heron
+# statement 14: "an agent shouldn't use gh issue directly"); a merge, a release, a gh api write and
+# a pushing tools/ script.
+write_guard_never_asked=(
+    'git push origin v1'
+    'git push origin vnext'
+    'git push origin HEAD:vnext'
+    'git push origin version-two'
+    'git push origin +vnext'
+    'git tag v1 && git push origin v1'
+    'git push origin --tags'
+    'git push --follow-tags origin x'
+    'git push --all origin'
+    'git push --branches origin'
+    'git push origin refs/tags/v1'
+    'git push origin HEAD:refs/tags/v1.2.0'
+    'git push origin tag v1'
+    'git push origin tags/v1'
+    'git push origin main:v2'
+    'git push origin +v1'
+    'git -c push.followTags=true push origin x'
+    'git push --ta origin'
+    'git push --t origin'
+    'git push --fol origin x'
+    'git push --al origin'
+    'git push --a origin'
+    'git push --force origin feature/x'
+    'git push -f origin feature/x'
+    'git push -uf origin feature/x'
+    'git push --force-with-lease origin feature/x'
+    'git push --force-with-lease=feature/x:abc origin feature/x'
+    'git push --force-w origin feature/x'
+    'git push --force-if origin feature/x'
+    'git push --forc origin feature/x'
+    'git push --for origin feature/x'
+    'git push --fo origin feature/x'
+    'git push origin --delete feature/x'
+    'git push --del origin feature/x'
+    'git push --dele origin feature/x'
+    'git push --de origin feature/x'
+    'git push --d origin feature/x'
+    'git push --mirror origin'
+    'git push --mir origin'
+    'git push --m origin'
+    'git push --prune origin'
+    'git push --pru origin'
+    'git push --pr origin'
+    'git push --p origin'
+    'git push origin :feature/x'
+    'git push origin +feature/x'
+    'gh issue create --title x --body y'
+    'gh issue comment 5 --body hi'
+    'gh issue edit 5 --title x'
+    'gh issue close 5'
+    'gh pr merge 391 --squash'
+    'gh release create v1.0'
+    'gh api repos/o/r/issues -X POST'
+    'tools/release.sh patch push'
+    'git commit -m x && gh pr merge 3'
+    'git commit -m x && git push origin v1'
+    'git push origin feature/x && gh issue comment 5 --body hi'
+)
+# A read, and `git tag` itself, which changes only the local repository, stay allowed.
+write_guard_allowed=(
+    'git status'
+    'git tag v1'
+    'git tag -a v1 -m x'
+)
 for write_guard_mode in remote unconfigured; do
     if [ "$write_guard_mode" = remote ]; then
         write_guard_remote=true
@@ -1780,37 +1886,25 @@ for write_guard_mode in remote unconfigured; do
         rm -rf "$write_guard_agents"
     fi
     write_guard_switch=1
-    assert_write_guard "$write_guard_mode: git commit -> ask" ask 'git commit -m "x"'
-    assert_write_guard "$write_guard_mode: an ordinary git push -> ask" ask 'git push -u origin feature/x'
-    assert_write_guard "$write_guard_mode: commit and push together -> ask" ask \
-        'git commit -m x && git push origin feature/x'
-    assert_write_guard "$write_guard_mode: gh pr create -> ask" ask 'gh pr create --title x --body y'
-    assert_write_guard "$write_guard_mode: gh issue comment -> ask" ask 'gh issue comment 5 --body hi'
-    assert_write_guard "$write_guard_mode: git push --force -> deny" deny 'git push --force origin feature/x'
-    assert_write_guard "$write_guard_mode: git push -f -> deny" deny 'git push -f origin feature/x'
-    assert_write_guard "$write_guard_mode: git push -uf, a cluster holding f -> deny" deny \
-        'git push -uf origin feature/x'
-    assert_write_guard "$write_guard_mode: git push --force-with-lease -> deny" deny \
-        'git push --force-with-lease origin feature/x'
-    assert_write_guard "$write_guard_mode: git push --delete -> deny" deny 'git push origin --delete feature/x'
-    assert_write_guard "$write_guard_mode: git push :branch (a delete) -> deny" deny 'git push origin :feature/x'
-    assert_write_guard "$write_guard_mode: git push +ref (a force) -> deny" deny 'git push origin +feature/x'
-    assert_write_guard "$write_guard_mode: gh pr merge -> deny" deny 'gh pr merge 391 --squash'
-    assert_write_guard "$write_guard_mode: gh release create -> deny" deny 'gh release create v1.0'
-    assert_write_guard "$write_guard_mode: gh api POST -> deny" deny 'gh api repos/o/r/issues -X POST'
-    assert_write_guard "$write_guard_mode: tools/release.sh push -> deny" deny 'tools/release.sh patch push'
-    assert_write_guard "$write_guard_mode: an askable write beside a merge -> deny" deny \
-        'git commit -m x && gh pr merge 3'
-    assert_write_guard "$write_guard_mode: a read stays allowed" allow 'git status'
+    for write_guard_cmd in "${write_guard_asked[@]}"; do
+        assert_write_guard "$write_guard_mode: $write_guard_cmd -> ask" ask "$write_guard_cmd"
+    done
+    for write_guard_cmd in "${write_guard_never_asked[@]}"; do
+        assert_write_guard "$write_guard_mode: $write_guard_cmd -> deny" deny "$write_guard_cmd"
+    done
+    for write_guard_cmd in "${write_guard_allowed[@]}"; do
+        assert_write_guard "$write_guard_mode: $write_guard_cmd -> allow" allow "$write_guard_cmd"
+    done
     # The player's switch, unset or anything but 1: the asking is off and every write is denied.
     for write_guard_switch in "" 0 yes; do
-        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': git commit -> deny" deny \
-            'git commit -m "x"'
-        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': an ordinary git push -> deny" deny \
-            'git push -u origin feature/x'
-        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': gh pr create -> deny" deny \
-            'gh pr create --title x --body y'
-        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': a read stays allowed" allow 'git status'
+        for write_guard_cmd in "${write_guard_asked[@]}" "${write_guard_never_asked[@]}"; do
+            assert_write_guard "$write_guard_mode, switch '$write_guard_switch': $write_guard_cmd -> deny" deny \
+                "$write_guard_cmd"
+        done
+        for write_guard_cmd in "${write_guard_allowed[@]}"; do
+            assert_write_guard "$write_guard_mode, switch '$write_guard_switch': $write_guard_cmd -> allow" allow \
+                "$write_guard_cmd"
+        done
     done
     write_guard_switch=""
 done
