@@ -35,3 +35,10 @@ this work.
 
 The work is being implemented on this item's branch. Its todo stays until the implementation
 PR records the finished work and removes it in the same diff.
+
+The player also requests a before-and-after measurement and testing the stricter rule of
+one section per frame. Their complete words and the plan they answer are in
+[gentle-moose, compare ground preparation before and after](../../playtests/2026-10-02-gentle-moose.md).
+The experiment compares the atomic nearby-region runtime with both a global one-section
+limit and the proposed per-region limit. The runtime choice remains an implementation
+proposal to assess against those results.
