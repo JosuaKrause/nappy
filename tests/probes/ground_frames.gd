@@ -47,7 +47,10 @@ func _run() -> void:
 			if trial.pixel_sha256 != trials[0].pixel_sha256:
 				_failures.append("completed pixels differ between preparation strategies")
 	_city.show()
-	var coverage := await _coverage()
+	var coverage: Array[Dictionary] = []
+	for rate in [15, 30, 60]:
+		for direction: Vector2 in [Vector2.DOWN, Vector2.RIGHT, Vector2.ONE.normalized()]:
+			coverage.append(await _coverage(rate, direction))
 	var result := {"engine": Engine.get_version_info(), "processor": OS.get_processor_name(),
 		"display": DisplayServer.get_name(), "renderer": RenderingServer.get_current_rendering_driver_name(),
 		"viewport_size": str(get_viewport().get_visible_rect().size), "forced_draws": _forced_draws,
@@ -148,11 +151,12 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	await get_tree().process_frame
 	return result
 
-func _coverage() -> Dictionary:
+func _coverage(rate: int, direction: Vector2) -> Dictionary:
 	var ground := _city._ground
 	var at := _city.map.doorstep_world_position()
 	var initial := at
 	var extent := Tuning.VIEW_HALF_EXTENT * 2
+	ground.clear()
 	var camera := Camera2D.new()
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	# This fixture moves the camera directly in process frames; interpolation would render
@@ -174,12 +178,11 @@ func _coverage() -> Dictionary:
 	var completed_across_frames := 0
 	# Two running-speed legs with a facing reversal. This is a camera stress itinerary, not
 	# a playable/survival route. Engine frames really advance, unlike synchronous test models.
-	for frame in 720:
+	var total_frames := rate * 30
+	for frame in total_frames:
 		await get_tree().process_frame
-		at += Vector2(168.0 / 60.0 if frame < 360 else -168.0 / 60.0, 0)
+		at += direction * (168.0 / rate) * (1 if frame < total_frames / 2 else -1)
 		var view := Rect2(at - extent / 2, extent)
-		if frame == 360:
-			view.position.x -= 92
 		var tick := Time.get_ticks_usec()
 		camera.position = view.get_center()
 		camera.force_update_scroll()
@@ -206,7 +209,8 @@ func _coverage() -> Dictionary:
 	if misses or completed_across_frames == 0:
 		_failures.append("coverage gaps or no real-frame stepped completions")
 	camera.free()
-	return {"frames": frames.size(), "missing_regions": misses,
+	return {"modeled_hz": rate, "direction": str(direction),
+		"frames": frames.size(), "missing_regions": misses,
 		"pending_frame_observations": pending_frames, "completed_across_frames": completed_across_frames,
 		"prepared_regions": ground.prepared - started,
 		"guard_catchups": _city.scenery.ordinary_guard_preparations - catchups,
