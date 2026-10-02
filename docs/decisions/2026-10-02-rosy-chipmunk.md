@@ -27,12 +27,36 @@ module). It runs `FS.syncfs(false, …)`; on a failure it closes and drops every
 `IDBFS.dbs`, the same thing Emscripten's own `IDBFS.quit` does, and flushes once more, and only a
 second failure is a failed save. The answer comes back through a `JavaScriptBridge.create_callback`
 held for the page's lifetime. A flush that never answers counts as failed after
-`FLUSH_TIMEOUT_SECONDS` (5s of game time, longer than the symbol's whole hold and fade, and
-proposed by the filer rather than asked for). `SaveIndicator` stays fully shown with no timer while
-any save is pending, starts its 1.5s hold and 1.5s fade once every one has settled, and shows
-`art/ui/save_unavailable.svg` (the disk struck through, a red core in a dark casing, corner to
-corner) instead of `art/ui/save.svg` when a save in that showing was not kept. The run log gains
-"the browser kept the save" and "the browser did not keep the save (reason)" lines under `save`.
+`FLUSH_TIMEOUT_SECONDS` (5s of game time, several times the symbol's one-second minimum, and
+proposed by the filer rather than asked for). The run log gains "the browser kept the save" and
+"the browser did not keep the save (reason)" lines under `save`.
+
+**How long the symbol shows**, in the player's words ([cozy-pelican, how long the symbol
+shows](../playtests/2026-10-02-cozy-pelican.md)): *"it shouldn't show if the save takes less than
+100ms and it should always show for at least 1s -- if it fails it show for at least 10s"*, then,
+once asked whether a fast save should show nothing, *"okay always show it. but show it for at
+least a second"*, and a failure always shows its 10s. Statements 4 to 6 are built in
+`SaveIndicator.Showing`:
+- **Every save shows the symbol from the moment it starts**, with no delay threshold.
+- **The symbol is fully shown for at least `MIN_SHOWN_SECONDS` (1s)**, counted from when it
+  appears, and for longer while any save is still pending; then it fades over `FADE_SECONDS`
+  (1.5s). The 1.5s hold after the answer is gone.
+- **A save not kept shows `art/ui/save_unavailable.svg`** (the disk struck through, a red core in a
+  dark casing, corner to corner) instead of `art/ui/save.svg`, fully for at least
+  `MIN_STRUCK_SECONDS` (10s) counted from the moment it became struck, then the same fade. A
+  failure answered in the same call as `begin()` is struck for the full 10s, and a web flush that
+  times out after 5s keeps the struck picture up until 15s, since the clock starts at the strike.
+- **A save beginning while the symbol fades or is gone brings it back to full and restarts the
+  second**; one beginning while it is fully shown does not restart it, though the symbol still
+  waits for that save's answer.
+- **The strike follows the newest answer.** A batch is the saves from one that begins with nothing
+  pending until the pending count returns to zero. When it does, the picture is struck if any save
+  of the batch failed, and every failure restarts the 10s; it is plain if every save was kept, even
+  with an earlier batch's 10s unspent, and then owes only the normal second. A failure while other
+  saves are pending strikes the picture at once. `begin()` does not clear the strike, so a new
+  save still unanswered does not hide a failure already known.
+- The clocks advance only through `Showing.advance()`, which `SaveIndicator._process()` calls
+  while the game is paused too.
 
 **Rejected.** A strike drawn in code over the plain picture was the filer's first proposal and was
 built first; the cues skill's "A picture is an asset, never code" (the player's own "Never draw in
@@ -40,8 +64,14 @@ code -- at the very least use svgs") rules it out, so the struck symbol is a sec
 atlas page. A line on the title screen saying the browser keeps no saves was proposed and is not
 built: the player's strike through answers the same need. A symbol that stays struck on screen
 for the whole session was considered and not taken: the struck symbol shows at the save moments
-only, held and faded like the plain one, which keeps the symbol's "noticed without distracting"
-bar.
+only, for its 10s and a fade, which keeps the symbol's "noticed without distracting" bar. **A
+100ms rule** (no symbol for a save answered within 100ms, anywhere or on the web only) came from
+the player's first question and was overturned by their own *"okay always show it. but show it
+for at least a second"*: a desktop save is answered in the frame it begins, so the rule would
+have hidden the symbol on every desktop save. **A minimum that includes the fade**, and **a
+minimum counted from the answer**, were the other two readings of "at least a second" and were not
+taken; the player chose the symbol fully shown for the minimum, then the fade. A 1.5s hold after
+the answer was dropped with them.
 
 **Verified.** `tools/check.sh`, `tools/lint.sh`, `tools/test.sh save orientation atlas main` and
 `tools/ci_telemetry_kinds.py` pass. On a debug web export in headless Chromium,

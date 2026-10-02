@@ -66,10 +66,19 @@ func run(t) -> void:
 	_test_a_flush_settles_once_whichever_answer_comes_first(t)
 	_test_a_flush_whose_listener_is_gone_settles_quietly(t)
 	_test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t)
-	_test_the_hold_and_fade_start_once_the_save_is_confirmed(t)
+	_test_a_save_answered_at_once_shows_for_a_second_then_fades(t)
+	_test_a_save_pending_three_seconds_fades_straight_after_its_answer(t)
 	_test_a_second_save_keeps_the_symbol_up_until_both_are_answered(t)
-	_test_a_save_not_kept_is_struck_through_and_fades_the_same_way(t)
-	_test_a_new_save_starts_unstruck(t)
+	_test_a_failure_answered_at_once_shows_struck_for_ten_seconds(t)
+	_test_a_failure_answered_after_five_seconds_is_struck_until_fifteen(t)
+	_test_a_save_beginning_mid_fade_restarts_the_second(t)
+	_test_a_save_beginning_while_fully_shown_does_not_restart_the_second(t)
+	_test_a_failure_while_another_save_is_pending_strikes_at_once(t)
+	_test_each_failure_restarts_the_struck_clock(t)
+	_test_a_kept_batch_after_a_failed_one_clears_the_strike(t)
+	_test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t)
+	_test_a_struck_symbol_that_faded_away_is_forgotten(t)
+	_test_a_save_not_kept_is_struck_through_whichever_answers_first(t)
 	_test_a_stray_answer_shows_nothing(t)
 	_test_main_draws_nothing_for_a_refused_run(t)
 	_test_main_shows_a_desktop_save_confirmed_at_once(t)
@@ -1002,7 +1011,7 @@ func _test_a_save_moment_answers_by_platform_and_storage(t) -> void:
 			"and on it")
 
 ## Off the web, `write()` itself answers `CONFIRMED` and never calls `settled`: the file closing is
-## the confirmation, so a desktop save shows the symbol's hold and fade at once.
+## the confirmation, so a desktop save shows the symbol at once.
 func _test_a_desktop_write_is_confirmed_at_once(t) -> void:
 	_with_forced_save(func() -> void:
 		var answers := _Answers.new()
@@ -1069,61 +1078,224 @@ func _test_a_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 func _test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin()
-	showing.advance(SaveIndicator.HOLD_SECONDS + SaveIndicator.FADE_SECONDS + 10.0)
-	t.check(showing.alpha() == 1.0, "a pending save stays fully shown past the whole hold and fade")
+	showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 10.0)
+	t.check(showing.alpha() == 1.0, "a pending save stays fully shown past every minimum and the fade")
 	t.check(not showing.struck, "and plain, since nothing has failed yet")
 
-func _test_the_hold_and_fade_start_once_the_save_is_confirmed(t) -> void:
+## *"okay always show it. but show it for at least a second"* — a desktop save is answered in the
+## frame it begins, and the symbol still shows, fully, for a second and then fades.
+func _test_a_save_answered_at_once_shows_for_a_second_then_fades(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	t.check(showing.is_idle() and showing.alpha() == 0.0, "nothing shows before a save")
+	showing.begin()
+	showing.settle(true)
+	t.check(not showing.is_idle() and showing.alpha() == 1.0,
+			"a save answered in the same call is shown from the start")
+	showing.advance(0.99)
+	t.check(showing.alpha() == 1.0, "fully shown at 0.99s")
+	showing.advance(0.11)
+	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0,
+			"fading after the second, with no hold after the answer")
+	showing.advance(1.41)
+	t.check(showing.alpha() == 0.0 and showing.is_idle(), "gone by 2.51s")
+	t.check(not showing.struck, "a kept save is never struck through")
+
+## A pending save keeps the symbol up past the minimum, and the fade begins at the answer, not a
+## hold later.
+func _test_a_save_pending_three_seconds_fades_straight_after_its_answer(t) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin()
-	showing.advance(10.0)
+	showing.advance(1.0)
+	t.check(showing.alpha() == 1.0, "fully shown when the minimum has run out but the save has not answered")
+	showing.advance(2.0)
+	t.check(showing.alpha() == 1.0, "and fully shown at 3s")
 	showing.settle(true)
-	showing.advance(SaveIndicator.HOLD_SECONDS * 0.9)
-	t.check(showing.alpha() == 1.0, "the hold runs from the confirmation, not from the save")
-	showing.advance(SaveIndicator.HOLD_SECONDS * 0.1 + SaveIndicator.FADE_SECONDS * 0.5)
-	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "then it fades")
+	t.check(showing.alpha() == 1.0, "the answer itself does not dim it")
+	showing.advance(0.2)
+	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "the fade begins straight away")
 	showing.advance(SaveIndicator.FADE_SECONDS)
-	t.check(showing.alpha() == 0.0 and showing.is_idle(), "and is gone")
-	t.check(not showing.struck, "a kept save is never struck through")
+	t.check(showing.is_idle(), "and runs its 1.5s")
 
 func _test_a_second_save_keeps_the_symbol_up_until_both_are_answered(t) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin()
 	showing.begin()
 	showing.settle(true)
-	showing.advance(SaveIndicator.HOLD_SECONDS + SaveIndicator.FADE_SECONDS + 1.0)
+	showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 1.0)
 	t.check(showing.alpha() == 1.0, "one answered save of two leaves the symbol up, untimed")
 	showing.settle(true)
-	showing.advance(SaveIndicator.HOLD_SECONDS * 0.5)
-	t.check(showing.alpha() == 1.0, "the second answer starts the hold")
-	showing.advance(SaveIndicator.HOLD_SECONDS + SaveIndicator.FADE_SECONDS)
-	t.check(showing.alpha() == 0.0, "which fades as before")
+	showing.advance(0.2)
+	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "the second answer lets it fade")
 
-## *"if saving is unavailable it should show up with a strike through"* — held and faded the same
-## way as a kept save, and struck if either of two overlapping saves was not kept.
-func _test_a_save_not_kept_is_struck_through_and_fades_the_same_way(t) -> void:
+## *"if it fails it show for at least 10s"* — however fast the failure came back, the struck
+## picture is fully shown for ten seconds from the strike.
+func _test_a_failure_answered_at_once_shows_struck_for_ten_seconds(t) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin()
-	showing.begin()
 	showing.settle(false)
+	t.check(showing.struck, "a save not kept strikes the symbol at once")
+	showing.advance(9.9)
+	t.check(showing.struck and showing.alpha() == 1.0, "struck and fully shown at 9.9s")
+	showing.advance(0.2)
+	t.check(showing.struck and showing.alpha() > 0.0 and showing.alpha() < 1.0,
+			"fading, still struck, after 10s")
+	showing.advance(SaveIndicator.FADE_SECONDS)
+	t.check(showing.is_idle() and not showing.struck, "gone, and the strike with it")
+
+## A web flush that times out answers after 5s: the ten seconds count from the strike, so the
+## struck picture itself is up until 15s.
+func _test_a_failure_answered_after_five_seconds_is_struck_until_fifteen(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.advance(5.0)
+	t.check(not showing.struck and showing.alpha() == 1.0, "plain and full while the flush is out")
+	showing.settle(false)
+	showing.advance(9.9)
+	t.check(showing.struck and showing.alpha() == 1.0, "struck and fully shown at 14.9s")
+	showing.advance(0.2)
+	t.check(showing.struck and showing.alpha() < 1.0, "fading after 15s")
+
+## A save beginning while the symbol fades brings it back to full with the second restarted; one
+## beginning while it is already fully shown does not restart that clock.
+func _test_a_save_beginning_mid_fade_restarts_the_second(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
 	showing.settle(true)
-	t.check(showing.struck, "a save of the pair that was not kept strikes the symbol")
-	showing.advance(SaveIndicator.HOLD_SECONDS * 0.9)
-	t.check(showing.alpha() == 1.0, "held like a kept save")
-	showing.advance(SaveIndicator.HOLD_SECONDS * 0.1 + SaveIndicator.FADE_SECONDS * 0.5)
-	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "and faded like one")
+	showing.advance(1.0 + SaveIndicator.FADE_SECONDS * 0.5)
+	t.check(showing.alpha() > 0.0 and showing.alpha() < 1.0, "fading")
+	showing.begin()
+	t.check(showing.alpha() == 1.0, "a new save brings it back to full")
+	showing.settle(true)
+	showing.advance(0.99)
+	t.check(showing.alpha() == 1.0, "full for a new second from the new save")
+	showing.advance(0.02)
+	t.check(showing.alpha() < 1.0, "and then fading")
 
-## A save that begins after a failed one is not yet known to have failed, so it shows plain.
-func _test_a_new_save_starts_unstruck(t) -> void:
+func _test_a_save_beginning_while_fully_shown_does_not_restart_the_second(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.settle(true)
+	showing.advance(0.6)
+	showing.begin()
+	showing.settle(true)
+	showing.advance(0.5)
+	t.check(showing.alpha() < 1.0, "1.1s after the symbol appeared it fades, the second save or not")
+	var waiting := SaveIndicator.Showing.new()
+	waiting.begin()
+	waiting.settle(true)
+	waiting.advance(0.6)
+	waiting.begin()
+	waiting.advance(5.0)
+	t.check(waiting.alpha() == 1.0, "though the symbol still waits for the second save's answer")
+	waiting.settle(true)
+	waiting.advance(0.2)
+	t.check(waiting.alpha() < 1.0, "and fades once it comes")
+
+## A failure while another save is out strikes the picture at once, with its ten seconds starting
+## then rather than at the last answer.
+func _test_a_failure_while_another_save_is_pending_strikes_at_once(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.begin()
+	showing.advance(4.0)
+	showing.settle(false)
+	t.check(showing.struck and showing.pending == 1, "struck while the other save is unanswered")
+	showing.advance(20.0)
+	t.check(showing.struck and showing.alpha() == 1.0, "and held while that save is pending")
+	showing.settle(true)
+	t.check(showing.struck, "a kept answer after a failure in the same batch leaves it struck")
+	showing.advance(0.2)
+	t.check(showing.struck and showing.alpha() < 1.0, "fading, the ten seconds having run from the strike")
+	var timed := SaveIndicator.Showing.new()
+	timed.begin()
+	timed.begin()
+	timed.settle(false)
+	timed.advance(4.0)
+	timed.settle(true)
+	timed.advance(5.9)
+	t.check(timed.struck and timed.alpha() == 1.0, "ten seconds count from the strike, not the last answer")
+	timed.advance(0.2)
+	t.check(timed.alpha() < 1.0, "so it fades 10s after the strike")
+
+## Every failure restarts the ten seconds.
+func _test_each_failure_restarts_the_struck_clock(t) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin()
 	showing.settle(false)
-	showing.advance(SaveIndicator.HOLD_SECONDS)
+	showing.advance(6.0)
 	showing.begin()
-	t.check(not showing.struck and showing.alpha() == 1.0,
-			"a new save comes up plain and full, even over a struck symbol's fade")
+	showing.settle(false)
+	showing.advance(9.9)
+	t.check(showing.struck and showing.alpha() == 1.0, "the newest failure's ten seconds are running")
+	showing.advance(0.2)
+	t.check(showing.alpha() < 1.0, "and end ten seconds after it")
+
+## *The strike follows the newest answer*: a batch that was all kept clears an earlier batch's
+## strike, even with its ten seconds unspent, and the plain symbol then gets its own second.
+func _test_a_kept_batch_after_a_failed_one_clears_the_strike(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.settle(false)
+	showing.advance(3.0)
+	showing.begin()
+	showing.settle(true)
+	t.check(not showing.struck, "the strike clears though 7s of its ten were left")
+	t.check(showing.alpha() == 1.0, "the symbol is still up for the moment")
+	showing.advance(0.2)
+	t.check(showing.alpha() < 1.0, "the plain symbol's second ran from when the symbol appeared")
+	# Mid-fade, the new save restarts the second, which the plain symbol then owes.
+	var fading := SaveIndicator.Showing.new()
+	fading.begin()
+	fading.settle(false)
+	fading.advance(10.5)
+	t.check(fading.struck and fading.alpha() < 1.0, "the struck picture is fading")
+	fading.begin()
+	fading.settle(true)
+	t.check(not fading.struck and fading.alpha() == 1.0, "a kept save brings it back plain and full")
+	fading.advance(0.99)
+	t.check(fading.alpha() == 1.0, "for its own second")
+	fading.advance(0.02)
+	t.check(fading.alpha() < 1.0, "then fades")
+
+## `begin()` no longer clears the strike: a save still unanswered does not hide a known failure.
+func _test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.settle(false)
+	showing.advance(2.0)
+	showing.begin()
+	t.check(showing.struck and showing.alpha() == 1.0, "struck and full with the new save unanswered")
+	showing.advance(30.0)
+	t.check(showing.struck and showing.alpha() == 1.0, "and for as long as it stays unanswered")
+	showing.settle(false)
+	t.check(showing.struck, "a failed answer keeps the strike")
+	showing.advance(9.9)
+	t.check(showing.struck and showing.alpha() == 1.0, "with a fresh ten seconds")
+
+## Once the symbol has faded away the strike is forgotten: the next save comes up plain.
+func _test_a_struck_symbol_that_faded_away_is_forgotten(t) -> void:
+	var showing := SaveIndicator.Showing.new()
+	showing.begin()
+	showing.settle(false)
+	showing.advance(10.0 + SaveIndicator.FADE_SECONDS + 0.1)
+	t.check(showing.is_idle() and not showing.struck, "gone")
+	showing.begin()
+	t.check(not showing.struck and showing.alpha() == 1.0, "the next save comes up plain and full")
 	showing.settle(true)
 	t.check(not showing.struck, "and stays plain once kept")
+
+## *"if saving is unavailable it should show up with a strike through"* — struck if either of two
+## overlapping saves was not kept, whichever answered first.
+func _test_a_save_not_kept_is_struck_through_whichever_answers_first(t) -> void:
+	for order: Array in [[false, true], [true, false]]:
+		var showing := SaveIndicator.Showing.new()
+		showing.begin()
+		showing.begin()
+		showing.settle(order[0])
+		showing.settle(order[1])
+		t.check(showing.struck, "a save of the pair that was not kept strikes the symbol")
+		showing.advance(9.9)
+		t.check(showing.alpha() == 1.0, "held ten seconds")
 
 func _test_a_stray_answer_shows_nothing(t) -> void:
 	var showing := SaveIndicator.Showing.new()
@@ -1153,8 +1325,8 @@ func _test_main_shows_a_desktop_save_confirmed_at_once(t) -> void:
 		var main: Node2D = _MAIN_SCRIPT.new()
 		main._save_indicator = indicator
 		main._save_now(true)
-		t.check(indicator._showing.pending == 0 and indicator._showing.remaining > 0.0,
-				"a desktop save is answered at once, so the hold is already running")
+		t.check(indicator._showing.pending == 0 and not indicator._showing.is_idle(),
+				"a desktop save is answered at once and the symbol is already showing")
 		t.check(not indicator._showing.struck and not indicator.shows_struck(),
 				"showing the plain picture")
 		main.free()
@@ -1174,7 +1346,7 @@ func _test_a_save_not_kept_swaps_to_the_struck_picture(t) -> void:
 	indicator.settle(false)
 	t.check(indicator.shows_struck(), "a save not kept shows the struck picture")
 	indicator.begin()
-	t.check(not indicator.shows_struck(), "the next save comes up on the plain one")
+	t.check(indicator.shows_struck(), "a new save still unanswered does not hide the failure")
 	indicator.settle(true)
-	t.check(not indicator.shows_struck(), "and stays there once kept")
+	t.check(not indicator.shows_struck(), "and a kept answer swaps back to the plain one")
 	indicator.free()

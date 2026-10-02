@@ -1587,10 +1587,14 @@ starting over is what it has always meant — nothing new is drawn for clearing 
 A small symbol appears in a corner at each save, on whatever screen is up — twice in an ordinary
 day: once when it starts, once when the day brief or the end-of-day message comes up for the next
 one. It names no key and is not a danger cue; it is the only thing that ever tells the player a
-save happened at all, since saving itself is otherwise silent. **It stays fully shown until the
-save is confirmed, and only then holds for a moment and fades** *(cozy-pelican: "we should show
-it until it is fully confirmed saved")*. Off the web the file closing is the confirmation. On the
-web the file is only in the page's memory until the browser copies it into IndexedDB, the one copy
+save happened at all, since saving itself is otherwise silent. **Every save shows it from the
+moment the save starts, fully shown for at least one second, counted from when it appears, and
+for as long as any save is still unanswered; it then fades over 1.5s, with no hold after the
+answer** *(cozy-pelican: "we should show it until it is fully confirmed saved", and "okay always
+show it. but show it for at least a second")*. A save beginning while the symbol fades or is gone
+brings it back to full and restarts the second; one beginning while it is fully shown does not
+restart it, though the symbol still waits for that save's answer. Off the web the file closing is
+the confirmation. On the web the file is only in the page's memory until the browser copies it into IndexedDB, the one copy
 a reload finds, so `GameSave` starts that copy itself and waits for IndexedDB's own answer; a
 second save while one is still unanswered keeps the symbol up until both are. A copy that fails
 is tried once more after dropping every database connection the page holds, since a connection
@@ -1599,7 +1603,15 @@ reopened and every later copy fails until a reload. A copy that has not answered
 `GameSave.FLUSH_TIMEOUT_SECONDS` counts as failed, so the symbol cannot stay up for good.
 
 **When a save cannot be kept, the symbol shows with a strike through it** *("if saving is
-unavailable it should show up with a strike through")*, held and faded the same way: the file
+unavailable it should show up with a strike through")*, fully shown for at least ten seconds
+counted from the moment it became struck, however fast the failure came back, and then faded the
+same way *("if it fails it show for at least 10s")*: a flush that times out after five seconds
+shows the struck picture until fifteen. A failure while another save is pending strikes the
+picture at once, and every failure restarts its ten seconds. **The strike follows the newest
+answer:** when the last pending save of a batch (the saves from one that begins with nothing
+pending to the moment none is pending) is answered, the picture is struck if any save of the batch
+failed and plain if every one was kept, even with an earlier batch's ten seconds unspent; a new
+save still unanswered does not hide a failure already known. A save is not kept when the file
 could not be written, the copy failed on its retry or never answered, or the browser refused the
 page storage at boot (`OS.is_userfs_persistent()` false, asked at every save), in which case the
 game plays on from memory and nothing survives a reload. A run `GameSave.uses_save()` refuses on

@@ -1,17 +1,24 @@
 class_name SaveIndicator
 extends CanvasLayer
-## The small symbol that shows while a save is being kept and for a few seconds after — see
+## The small symbol that shows while a save is being kept and for a moment after — see
 ## docs/MECHANICS.md, "Saving and resuming". Saving itself is silent: there is no save button and
 ## no screen of its own, so this is the only thing that ever tells the player a save happened, or
 ## that it could not be kept.
 ##
-## **It stays fully shown, with no timer running, until the save is confirmed.** *(cozy-pelican,
-## 2026-10-02: "we should show it until it is fully confirmed saved. also, if saving is unavailable
-## it should show up with a strike through".)* `begin()` raises it when a save starts and
-## `settle()` answers it — on the web only once the browser has said whether IndexedDB kept the
-## file, see `GameSave.write()` — and only then do the hold and the fade run. A save that was not
-## kept shows `art/ui/save_unavailable.svg` instead, the same disk struck through, held and faded
-## the same way.
+## **Every save shows it, from the moment the save starts.** *(cozy-pelican, 2026-10-02: "okay
+## always show it. but show it for at least a second".)* `begin()` raises it, and it is fully
+## shown for at least `MIN_SHOWN_SECONDS`, counted from when it appears, and for as long as any
+## save is still unanswered — `settle()` answers one, on the web only once the browser has said
+## whether IndexedDB kept the file, see `GameSave.write()` — and then fades over `FADE_SECONDS`.
+## There is no hold after the answer and no delay before the symbol shows.
+##
+## **A save that was not kept shows `art/ui/save_unavailable.svg` instead,** the same disk struck
+## through, fully for at least `MIN_STRUCK_SECONDS` counted from the moment it became struck, however
+## fast the failure came back, and then the same fade. *(cozy-pelican: "if it fails it show for at
+## least 10s".)* The strike follows the newest answer: when the last pending save of a batch is
+## answered, the picture is struck if any save of that batch failed and plain if every one was kept.
+## A batch is every save from one that begins with nothing pending to the moment the pending count
+## returns to zero.
 ##
 ## Its own `CanvasLayer` above every screen, rather than a node added to the pause screen, the day
 ## summary and the HUD separately — "on whatever screen is up" is exactly the property a
@@ -25,14 +32,15 @@ extends CanvasLayer
 ## (see `GameSave`'s own doc on `uses_save()`; it is reachable only behind a dev flag today), so
 ## there is nothing for it to show there.
 
-## How long the symbol stays fully shown once the save is settled, and how long it then takes to
-## fade — three seconds together, chosen as long enough to be noticed once and gone well before the
-## next glance at the screen. Two constants rather than one "how long" figure because a reviewer
-## asking "does it fade too fast" and one asking "does it stay up too long" are two different
-## questions.
-const HOLD_SECONDS := 1.5
+## The least time the symbol is fully shown, counted from when it appears — long enough to be
+## noticed once — and how long it then takes to fade. `MIN_STRUCK_SECONDS` is the same minimum for
+## a struck symbol, counted from the moment it became struck, so a flush that took 5s to fail still
+## has its struck picture up for the full 10s rather than only what is left of it. Three constants
+## rather than one "how long" figure because "does it fade too fast", "does it stay up too long"
+## and "does a failure stay up long enough" are three different questions.
+const MIN_SHOWN_SECONDS := 1.0
+const MIN_STRUCK_SECONDS := 10.0
 const FADE_SECONDS := 1.5
-const _TOTAL := HOLD_SECONDS + FADE_SECONDS
 
 ## The fade's own peak alpha, once fully shown — the same figure `Palette.CHALK_DONE.a` carried
 ## back when this modulate also tinted the icon green. `art/ui/save.svg` now carries its own
@@ -60,23 +68,41 @@ const _ICON := &"ui/save"
 const _ICON_UNAVAILABLE := &"ui/save_unavailable"
 
 ## The symbol's timeline apart from the node that draws it, so a test can drive every state
-## without a tree, an atlas or a frame.
+## without a tree, an atlas or a frame. Clocks move only through `advance()`.
+##
+## Three phases: hidden; fully shown, which lasts until nothing is pending and both minimums have
+## run out; and fading. A `begin()` while fading or hidden brings the symbol back to full and
+## restarts the `MIN_SHOWN_SECONDS` clock; a `begin()` while it is already fully shown does not,
+## since the symbol has been up since an earlier moment.
 class Showing extends RefCounted:
-	## Saves begun and not yet settled. While any is out the symbol is fully shown and no timer
-	## runs, so a second save during a first keeps it up until both are answered.
+	enum Phase { HIDDEN, FULL, FADING }
+
+	## Saves begun and not yet settled. While any is out the symbol is fully shown, however long
+	## the minimums ran out ago, so a second save during a first keeps it up until both are answered.
 	var pending := 0
-	## Whether a save in this showing was not kept. Cleared when a save begins with nothing else
-	## pending, since that save's own outcome is not known yet.
+	## Whether the picture is the struck one. Set the moment any save is not kept, cleared when the
+	## pending count returns to zero on a batch in which every save was kept, and when the symbol
+	## has faded out. `begin()` never clears it: a new save still unanswered does not hide a failure
+	## already known.
 	var struck := false
-	## Counts down through the hold and then the fade once nothing is pending. Negative means not
-	## counting, which is where a symbol that has never shown starts.
-	var remaining := -1.0
+
+	var _phase := Phase.HIDDEN
+	## Whether a save has failed since the last `begin()` that started with nothing pending.
+	var _batch_failed := false
+	## Seconds left of `MIN_SHOWN_SECONDS`, from when the symbol appeared.
+	var _shown_left := 0.0
+	## Seconds left of `MIN_STRUCK_SECONDS`, from the latest failure. Only counts while `struck`.
+	var _struck_left := 0.0
+	## Seconds left of the fade.
+	var _fade_left := 0.0
 
 	func begin() -> void:
 		if pending == 0:
-			struck = false
+			_batch_failed = false
 		pending += 1
-		remaining = -1.0
+		if _phase != Phase.FULL:
+			_phase = Phase.FULL
+			_shown_left = MIN_SHOWN_SECONDS
 
 	## A settle with nothing pending is ignored rather than counted against a later save.
 	func settle(kept: bool) -> void:
@@ -85,26 +111,58 @@ class Showing extends RefCounted:
 		pending -= 1
 		if not kept:
 			struck = true
-		if pending == 0:
-			remaining = _TOTAL
+			_batch_failed = true
+			_struck_left = MIN_STRUCK_SECONDS
+		if pending == 0 and not _batch_failed:
+			struck = false
+			_struck_left = 0.0
+		_start_fade_if_done()
 
 	func advance(delta: float) -> void:
-		if pending > 0 or remaining < 0.0:
-			return
-		remaining -= delta
-		if remaining <= 0.0:
-			remaining = -1.0
+		match _phase:
+			Phase.FULL:
+				var owed := _owed()
+				if pending > 0 or delta < owed:
+					_shown_left = maxf(_shown_left - delta, 0.0)
+					_struck_left = maxf(_struck_left - delta, 0.0)
+					return
+				# The minimums ran out inside this step: what is left of it already fades.
+				_shown_left = 0.0
+				_struck_left = 0.0
+				_phase = Phase.FADING
+				_fade_left = FADE_SECONDS
+				_fade(delta - owed)
+			Phase.FADING:
+				_fade(delta)
 
 	## How much of the symbol shows, from 0 to 1, before `_PEAK_ALPHA` scales it.
 	func alpha() -> float:
-		if pending > 0 or remaining > FADE_SECONDS:
-			return 1.0
-		if remaining > 0.0:
-			return remaining / FADE_SECONDS
+		match _phase:
+			Phase.FULL:
+				return 1.0
+			Phase.FADING:
+				return _fade_left / FADE_SECONDS
 		return 0.0
 
 	func is_idle() -> bool:
-		return pending == 0 and remaining < 0.0
+		return _phase == Phase.HIDDEN
+
+	## Seconds the symbol still owes of being fully shown, not counting any pending save.
+	func _owed() -> float:
+		return maxf(_shown_left, _struck_left if struck else 0.0)
+
+	func _start_fade_if_done() -> void:
+		if _phase == Phase.FULL and pending == 0 and _owed() <= 0.0:
+			_phase = Phase.FADING
+			_fade_left = FADE_SECONDS
+
+	func _fade(delta: float) -> void:
+		_fade_left -= delta
+		if _fade_left <= 0.0:
+			_phase = Phase.HIDDEN
+			_fade_left = 0.0
+			struck = false
+			_batch_failed = false
 
 var _icon_rect: TextureRect
 var _plain_texture: Texture2D
@@ -150,13 +208,15 @@ func _ready() -> void:
 
 ## Called by `main._save_now()` the moment a save starts — never for a run `GameSave.write()`
 ## refuses (a dev flag, a headless run, or one already ended), so the symbol is drawn on exactly
-## the runs that save at all. Fully shown from here until `settle()`, even mid-fade.
+## the runs that save at all. Fully shown from here until `settle()` and for at least
+## `MIN_SHOWN_SECONDS`, even mid-fade; a symbol already fully shown keeps its own clock.
 func begin() -> void:
 	_showing.begin()
 	_apply()
 
-## Answers one `begin()`: `kept` is whether the save was confirmed. The hold and the fade start
-## once every save begun is answered, struck through if any of them was not kept.
+## Answers one `begin()`: `kept` is whether the save was confirmed. The fade starts once every
+## save begun is answered and the minimums have run out, struck through if a save of the batch was
+## not kept and plain if every one was.
 func settle(kept: bool) -> void:
 	_showing.settle(kept)
 	_apply()

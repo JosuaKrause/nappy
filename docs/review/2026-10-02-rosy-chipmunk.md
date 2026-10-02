@@ -11,5 +11,6 @@ on the very first save says the browser refuses storage, which is Safari's *Bloc
 setting or a Screen Time restriction; a struck symbol only after the app switch says the connection
 was lost and the retry did not recover it. Ask too whether they open the game from a Home Screen
 icon or a Safari tab, since the two keep separate saves. On a desktop browser, the symbol should
-look as it did before: up for about three seconds per save, never struck. Record is
+show for each save, fully for about a second and then fading over a second and a half, never
+struck. Record is
 `docs/decisions/2026-10-02-rosy-chipmunk.md`.

@@ -63,10 +63,13 @@ enum Result {
 ## normally answers within a fraction of a second, and its one retry (see `_FLUSH_JS`) reopens
 ## the database first, which takes longer on a phone; past this the browser is not going to answer,
 ## and the symbol, held fully shown the whole time, would otherwise stay up for the rest of the
-## session. It is longer than the symbol's whole hold and fade (`SaveIndicator.HOLD_SECONDS` plus
-## `FADE_SECONDS`) so a slow but working flush is not mistaken for a failed one. Measured on the
-## game's own clock, which stops while a browser tab is hidden, so a backgrounded page does not
-## time out a flush the browser was never given the chance to run.
+## session. It is several times the symbol's own one-second minimum
+## (`SaveIndicator.MIN_SHOWN_SECONDS`) and longer than its fade, so a slow but working flush is not
+## mistaken for a failed one; and it is short enough that the struck picture a timeout raises,
+## fully shown for ten seconds from the strike (`SaveIndicator.MIN_STRUCK_SECONDS`), starts to
+## fade fifteen seconds after the save began. Measured on the game's own clock, which stops while
+## a browser tab is hidden, so a backgrounded page does not time out a flush the browser was never
+## given the chance to run.
 const FLUSH_TIMEOUT_SECONDS := 5.0
 
 ## The page-side half of a web flush, defined once on `window` by `_flush()`. **Evaluated in
