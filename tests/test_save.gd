@@ -77,6 +77,11 @@ func run(t) -> void:
 	_test_main_builds_the_symbol_before_the_charge_that_can_end_the_run(t)
 	_test_a_restart_with_no_save_left_shows_nothing(t)
 	_test_the_restarts_symbol_survives_the_scene_reload(t)
+	_test_the_held_restart_deletes_the_save_before_the_run_log_closes(t)
+	_test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t)
+	_test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(t)
+	_test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_saved(t)
+	_test_a_pending_write_is_answered_after_a_reload_freed_the_main_that_saved(t)
 	_test_the_symbols_listening_ends_with_the_symbol(t)
 	_test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t)
 	_test_a_save_answered_at_once_shows_for_a_second_then_fades(t)
@@ -1381,6 +1386,140 @@ func _test_the_symbols_listening_ends_with_the_symbol(t) -> void:
 	indicator.free()
 	t.check(EventBus.save_deleted.get_connections().size() == before,
 			"and stops when it is freed")
+	var before_writes := EventBus.save_written.get_connections().size()
+	var writer := SaveIndicator.new()
+	t.add_child(writer)
+	t.check(EventBus.save_written.get_connections().size() == before_writes + 1,
+			"and for writes, which is how a save's answer outlives the main that saved")
+	writer.free()
+	t.check(EventBus.save_written.get_connections().size() == before_writes,
+			"until it is freed")
+
+## `main._restart_run()` deletes the save before `Telemetry.end_run()` closes the run log, so the
+## "deleted the save" line is written into the run being abandoned. Read from the source, since a
+## booted `main` is not something this suite builds.
+func _test_the_held_restart_deletes_the_save_before_the_run_log_closes(t) -> void:
+	var text := FileAccess.get_file_as_string("res://src/main.gd")
+	var start := text.find("func _restart_run() -> void:")
+	var cleared := text.find("\tGameSave.clear()\n", start)
+	var closed := text.find("\tTelemetry.end_run()\n", start)
+	t.check(start != -1 and cleared != -1 and closed != -1 and cleared < closed,
+			"the restart's deletion is logged before the log is closed")
+
+## A write tells `EventBus` what it came to, so the symbol hears it without `main` relaying it, and
+## begins exactly once for one save: `main._save_now()` adds nothing to what the bus carried. A write
+## `GameSave` refuses (a headless run, an ended run) announces nothing.
+func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> void:
+	var heard: Array[int] = []
+	var listen := func(result: int) -> void: heard.append(result)
+	EventBus.save_written.connect(listen)
+	t.check(GameSave.write(true) == GameSave.Result.REFUSED and heard.is_empty(),
+			"a headless run's write is refused and announces nothing")
+	_with_forced_save(func() -> void:
+		var indicator := SaveIndicator.new()
+		t.add_child(indicator)
+		var main: Node2D = _MAIN_SCRIPT.new()
+		main._save_indicator = indicator
+		main._save_now(true)
+		t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
+		t.check(indicator.is_showing() and indicator._showing.pending == 0,
+				"and the symbol began once for it and was answered, not begun a second time")
+		main.free()
+		indicator.free()
+		GameState.ending = GameEnums.Ending.BAD
+		heard.clear()
+		t.check(GameSave.write(true) == GameSave.Result.REFUSED and heard.is_empty(),
+				"a run that has ended refuses the write and announces nothing")
+		GameState.ending = GameEnums.Ending.NONE
+	)
+	EventBus.save_written.disconnect(listen)
+
+## A write's web answer reaches `EventBus.save_write_settled`, and only a write's: a deletion's goes
+## to `save_deletion_settled`, so one answer settles one change however many are out.
+func _test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(t) -> void:
+	var heard: Array[bool] = []
+	var listen := func(kept: bool) -> void: heard.append(kept)
+	EventBus.save_write_settled.connect(listen)
+	var answers := _Answers.new()
+	var token := GameSave._register_flush(answers.take)
+	GameSave._on_flush_answered([float(token), ""])
+	t.check(heard == [true] and answers.results == [GameSave.Result.CONFIRMED],
+			"a write the browser kept settles the bus, kept, and then its caller")
+	token = GameSave._register_flush(answers.take)
+	GameSave._on_flush_answered([float(token), "Connection to Indexed Database server lost"])
+	t.check(heard == [true, false], "a write the browser did not keep settles the bus, not kept")
+	token = GameSave._register_flush(answers.take, true)
+	GameSave._on_flush_answered([float(token), ""])
+	t.check(heard == [true, false], "a deletion's answer says nothing on the write signal")
+	t.check(GameSave._pending_flushes.is_empty(), "nothing is left waiting")
+	EventBus.save_write_settled.disconnect(listen)
+
+## **The held restart on a day's summary while its end-of-day save is still being retried.** The web
+## save is announced pending, the restart hands the symbol to the tree's root and frees `main`, and
+## the browser answers a flush whose `settled` callable names the freed `main`. The symbol must
+## still be answered; before the answer went through the bus it stayed pending, fully shown, for
+## good.
+func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_saved(t) -> void:
+	var home := Node.new()
+	t.add_child(home)
+	SaveIndicator._home_override = home
+	var old_main_scene := Node.new()
+	t.add_child(old_main_scene)
+	var indicator := SaveIndicator.new()
+	old_main_scene.add_child(indicator)
+	var main: Node2D = _MAIN_SCRIPT.new()
+	main._save_indicator = indicator
+
+	EventBus.save_written.emit(int(GameSave.Result.PENDING))
+	var token := GameSave._register_flush(Callable(main, &"set_name"))
+	t.check(indicator._showing.pending == 1, "the web save is out and the symbol waits for it")
+	main._carry_the_save_symbol_over()
+	t.check(indicator.get_parent() == home, "the restart hands the symbol to the tree's root")
+	main.free()
+	old_main_scene.free()
+
+	GameSave._on_flush_answered([float(token), ""])
+	t.check(indicator._showing.pending == 0 and not indicator.shows_struck(),
+			"the answer reaches the symbol with the main that saved gone, and it is kept")
+	indicator._showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 0.1)
+	t.check(indicator._showing.is_idle(), "so the symbol fades out instead of staying up for good")
+
+	EventBus.save_written.emit(int(GameSave.Result.PENDING))
+	token = GameSave._register_flush(Callable())
+	GameSave._on_flush_answered([float(token), "Connection to Indexed Database server lost"])
+	t.check(indicator.shows_struck() and indicator._showing.pending == 0,
+			"and a save the browser did not keep strikes it the same way")
+	indicator.free()
+	SaveIndicator._home_override = null
+	home.free()
+
+## **The day-14 hand-over's reload to the escape, after an earlier held restart on the same page.**
+## The symbol already sits on the tree's root, a pending save is announced, the reload frees the
+## `main` that saved without handing anything over, and the answer's `settled` callable names the
+## freed `main`. The symbol the next `main` adopts is answered all the same.
+func _test_a_pending_write_is_answered_after_a_reload_freed_the_main_that_saved(t) -> void:
+	var tree: SceneTree = t.get_tree()
+	var home := Node.new()
+	t.add_child(home)
+	SaveIndicator._home_override = home
+	var indicator := SaveIndicator.new()
+	home.add_child(indicator)
+	var old_main: Node2D = _MAIN_SCRIPT.new()
+	old_main._save_indicator = indicator
+
+	EventBus.save_written.emit(int(GameSave.Result.PENDING))
+	var token := GameSave._register_flush(Callable(old_main, &"set_name"))
+	old_main.free()
+	t.check(SaveIndicator.carried(tree) == indicator and indicator._showing.pending == 1,
+			"the next main adopts a symbol still waiting for the save")
+
+	GameSave._on_flush_answered([float(token), ""])
+	t.check(indicator._showing.pending == 0, "the answer reaches it though the main that saved is gone")
+	indicator._showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 0.1)
+	t.check(indicator._showing.is_idle(), "and it fades instead of staying up for good")
+	indicator.free()
+	SaveIndicator._home_override = null
+	home.free()
 
 # ----------------------------------------------------------------- the symbol ---
 

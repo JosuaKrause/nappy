@@ -101,14 +101,28 @@ What is built:
   runs the same `FS.syncfs(false, …)` flush with its retry and timeout; `IDBFS`'s populate-false
   pass drops from the store what is gone from memory. The tab killed before any flush answers
   remains a gap, as it does for a write.
-- **The route is `EventBus`, announced by `GameSave` itself.** `GameState._end_run()` is an
-  autoload and cannot reach `main`'s indicator. `clear()` emits `save_deleted(result)`, and
-  `save_deletion_settled(kept)` when a web flush answers, and `SaveIndicator` listens. Considered:
-  a signal carrying the result and a callback (the callback has to exist before the call that
-  makes the result, so the caller could not supply it), and making the callers (`_end_run()`,
+- **The route is `EventBus`, announced by `GameSave` itself, for a write as much as a deletion.**
+  `GameState._end_run()` is an autoload and cannot reach `main`'s indicator. `clear()` emits
+  `save_deleted(result)`, and `save_deletion_settled(kept)` when a web flush answers, and
+  `write()` emits `save_written(result)` and `save_write_settled(kept)` the same way; `SaveIndicator`
+  listens to all four and is the only thing that begins or answers the symbol. Considered: a
+  signal carrying the result and a callback (the callback has to exist before the call that makes
+  the result, so the caller could not supply it), and making the callers (`_end_run()`,
   `_restart_run()`) each announce (a third caller would have to remember to). Announcing inside
   `clear()` leaves both callers unchanged and makes "every deletion shows the symbol" a property
   of the deletion rather than of its callers.
+- **A write's answer is not relayed by `main`.** `main._save_now()` first called `begin()` itself
+  and bound `main._on_save_settled` as the web flush's callback. A reload that frees `main` while a
+  web save is unanswered (a held restart on a day's summary while the end-of-day save is retried;
+  the day-14 hand-over's reload to the escape) dropped that answer, since `_settle()` skips a
+  callable whose object is gone, and the carried or surviving symbol's pending count never
+  returned to zero: fully shown for good, which a reviewer reproduced (pending 1, alpha 1.0 after
+  sixty seconds). The write now takes the deletion's route above, so `main._save_now()` is a bare
+  `GameSave.write()`, and the one place that decides when the symbol begins is the indicator, which
+  begins it exactly once per announced change. `write()`'s and `clear()`'s `settled` callable
+  stays for a caller that wants the answer itself and is no longer how the symbol hears it.
+  Considered: binding the callback to the indicator instead (the symbol would then be told by two
+  routes, a callable for a write and the bus for a deletion, and a second place to keep in step).
 - **The reopening charge shows it too.** `main._ready()` charges a resumed run before the HUD and
   the screens exist, so `_raise_save_indicator()` now runs right before the charge; a symbol built
   after it would never have heard the deletion. The finale walked out shows it through the symbol
@@ -123,6 +137,12 @@ What is built:
   mutable state every test would have to reset, and nothing draws it between the old indicator's
   last frame and the new one's first); an autoload (a `class_name` cannot also be an autoload
   name); delaying the reload for the flush (the player waits on a browser).
+- **The held restart logs its deletion.** `main._restart_run()` calls `GameSave.clear()` before
+  `Telemetry.end_run()`, which closes the run log: the "deleted the save" line, and the "deletion
+  was not kept" line for a deletion that fails at once, land in the run that was abandoned. Nothing
+  in `end_run()` reads the save, and `clear()` reads nothing the log's closing changes. A web
+  deletion's own answer ("the browser dropped the deleted save") arrives after the log is closed and
+  is not logged; `docs/TELEMETRY.md` says so.
 - **Also fixed on the way.** A flush whose page JavaScript is unreachable used to settle before its
   caller had begun the symbol, which dropped the answer and left the symbol up for good; it now
   settles on the next idle frame.
@@ -146,7 +166,8 @@ minimum counted from the answer**, were the other two readings of "at least a se
 taken; the player chose the symbol fully shown for the minimum, then the fade. A 1.5s hold after
 the answer was dropped with them.
 
-**Verified.** `tools/check.sh`, `tools/lint.sh`, `tools/test.sh save orientation atlas main` and
+**Verified.** `tools/check.sh`, `tools/lint.sh`, `tools/test.sh save main orientation atlas held_restart title
+finale telemetry` and
 `tools/ci_telemetry_kinds.py` pass. On a debug web export in headless Chromium,
 `tools/web-template/browser-check.mjs` passes, and a probe confirmed the flush function exists and
 succeeds, that a connection failing once is reopened and the save kept, that one failing every time

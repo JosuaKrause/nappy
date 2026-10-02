@@ -7,10 +7,15 @@ extends CanvasLayer
 ##
 ## **Every change in the save state shows it, from the moment the change starts.** *(cozy-pelican,
 ## 2026-10-02: "okay always show it. but show it for at least a second"; "every change in the save
-## state needs to show the symbol".)* A write raises it through `main._save_now()`; deleting the
-## save file raises it through `EventBus.save_deleted`, heard here, because the deletion a run's
-## end makes comes from `GameState`, an autoload with no way to reach `main`. `begin()` raises it,
-## and it is fully shown for at least `MIN_SHOWN_SECONDS`, counted from when it appears, and for as
+## state needs to show the symbol".)* **`GameSave` announces every change on `EventBus` and this
+## node is the only one that listens**: a write raises it through `EventBus.save_written`, deleting
+## the save file through `EventBus.save_deleted`, and the browser's later answer to either arrives
+## on `EventBus.save_write_settled` or `EventBus.save_deletion_settled`. Nothing is relayed by
+## `main`: the deletion a run's end makes comes from `GameState`, an autoload with no way to reach
+## `main`, and a web save's answer may come after a scene reload has freed the `main` that saved,
+## where a callable bound to it would be dropped and the symbol would stay fully shown for good. So
+## one place decides when the symbol begins and is answered, and a change begins it exactly once.
+## `begin()` raises it, and it is fully shown for at least `MIN_SHOWN_SECONDS`, counted from when it appears, and for as
 ## long as any change is still unanswered — `settle()` answers one, on the web only once the browser
 ## has said whether IndexedDB kept it, see `GameSave.write()` and `GameSave.clear()` — and then
 ## fades over `FADE_SECONDS`. There is no hold after the answer and no delay before the symbol
@@ -37,7 +42,9 @@ extends CanvasLayer
 ## `main` that boots next takes it back with `carried()` instead of building a second, so one
 ## symbol keeps its clocks and its picture across the reload and settles from the browser's answer
 ## on the freshly booted title screen. Its own `EventBus` connections, not a callable bound to
-## `main`, are what carry the answer there, so nothing it is told can name a freed object.
+## `main`, are what carry the answer there, so nothing it is told can name a freed object — a save
+## that was still pending when the scene reloaded, a day's summary retried or the hand-over to the
+## escape included, is answered all the same.
 ##
 ## Built by `main._ready()` — before a resumed run's own charge can end the run and delete the
 ## save — and by `main._ready_escape()` for a run's own escape. The finale is reached in ordinary
@@ -200,7 +207,9 @@ func _exit_tree() -> void:
 func _ready() -> void:
 	# For the life of the node, which is the process once `outlive_the_scene()` has run: a signal
 	# disconnects on its own when its object is freed, so a symbol a test frees listens to nothing.
-	EventBus.save_deleted.connect(_on_save_deleted)
+	EventBus.save_written.connect(_on_save_changed)
+	EventBus.save_write_settled.connect(settle)
+	EventBus.save_deleted.connect(_on_save_changed)
 	EventBus.save_deletion_settled.connect(settle)
 	var root := Control.new()
 	root.name = "Root"
@@ -228,10 +237,10 @@ func _ready() -> void:
 	_icon_rect.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	root.add_child(_icon_rect)
 
-## Called by `main._save_now()` the moment a save starts — never for a run `GameSave.write()`
-## refuses (a dev flag, a headless run, or one already ended), so the symbol is drawn on exactly
-## the runs that save at all. Fully shown from here until `settle()` and for at least
-## `MIN_SHOWN_SECONDS`, even mid-fade; a symbol already fully shown keeps its own clock.
+## Called from `_on_save_changed()` the moment a change starts — never for a run `GameSave`
+## refuses (a dev flag, a headless run, or one already ended, which announce nothing), so the symbol
+## is drawn on exactly the runs that save at all. Fully shown from here until `settle()` and for at
+## least `MIN_SHOWN_SECONDS`, even mid-fade; a symbol already fully shown keeps its own clock.
 func begin() -> void:
 	_showing.begin()
 	_apply()
@@ -243,10 +252,11 @@ func settle(kept: bool) -> void:
 	_showing.settle(kept)
 	_apply()
 
-## `EventBus.save_deleted`: the save file was deleted. `result` is a `GameSave.Result` as `int` —
-## `PENDING` waits for `EventBus.save_deletion_settled`, anything else is the answer already, and
-## is answered at once the way a desktop write is.
-func _on_save_deleted(result: int) -> void:
+## `EventBus.save_written` and `EventBus.save_deleted`: the save was written, or its file was
+## deleted. `result` is a `GameSave.Result` as `int` — `PENDING` waits for `EventBus.
+## save_write_settled` or `EventBus.save_deletion_settled`, anything else is the answer already,
+## and is answered at once the way a desktop write is.
+func _on_save_changed(result: int) -> void:
 	begin()
 	if result != GameSave.Result.PENDING:
 		settle(result == GameSave.Result.CONFIRMED)

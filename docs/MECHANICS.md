@@ -1606,7 +1606,11 @@ the web a deletion is kept only once IndexedDB has dropped the file, so `GameSav
 same copy a write does, with its retry and its timeout. The held restart reloads the scene, and
 the symbol it raised is handed to the scene tree's root so it stays up through the reload and
 settles on the freshly booted title with its minimums running. A restart with no save left to
-delete — the run had already ended and deleted it — changes nothing, so it shows nothing. A save beginning while the symbol fades or is gone
+delete — the run had already ended and deleted it — changes nothing, so it shows nothing. **`GameSave`
+announces every write and deletion itself, on `EventBus`, and the symbol is the one thing that
+listens**, so the browser's answer to a save still unanswered reaches it even after a scene reload
+has freed the part of the game that saved — an end-of-day save retried while the restart is held,
+the hand-over to the escape — and the symbol fades once every change is answered. A save beginning while the symbol fades or is gone
 brings it back to full and restarts the second; one beginning while it is fully shown does not
 restart it, though the symbol still waits for that save's answer. Off the web the file closing is
 the confirmation. On the web the file is only in the page's memory until the browser copies it into IndexedDB, the one copy

@@ -33,6 +33,18 @@ signal day_ended(day: int, result: GameEnums.DayResult)
 ## one early.
 signal run_restarted(day: int)
 signal run_ended(ending: GameEnums.Ending)
+## `GameSave.write()`'s own moment a save was actually written — never a refused write (a dev or
+## headless run, or a run that has already ended), which changes nothing. `result` is a
+## `GameSave.Result` passed as `int`, for the same cross-script-enum reason `save_deleted` below
+## passes its own: `PENDING` on the web while IndexedDB has not yet said whether it kept the save
+## (`save_write_settled` follows), `CONFIRMED` or `FAILED` otherwise. Emitted by `GameSave` itself,
+## which is what lets the save symbol answer a save that outlives the `main` that made it: a
+## callable bound to `main` is dropped once a scene reload frees it, and a symbol never told would
+## stay fully shown for good. Heard by `SaveIndicator`.
+signal save_written(result: int)
+## The browser's answer to a write `save_written` announced as `PENDING`: `kept` is whether
+## IndexedDB kept the save. Emitted once per pending write, and only for those.
+signal save_write_settled(kept: bool)
 ## `GameSave.clear()`'s own moment a save file was actually deleted — never a refused deletion (a
 ## dev or headless run, or no file left to delete), which changes nothing. `result` is a
 ## `GameSave.Result` passed as `int`, the same cross-script-enum reason `controls_chosen` below

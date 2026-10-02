@@ -2122,13 +2122,15 @@ func _restart_run() -> void:
 	# `EventBus.run_ended` and is not a held restart of anything.
 	if GameState.ending == GameEnums.Ending.NONE:
 		EventBus.run_restarted.emit(GameState.day)
-	Telemetry.end_run()
 	# The held restart clears the save — the pause screen's and the day summary's own button both
 	# reach this one function, so no new control is drawn for it. A deletion is a change in the save
 	# state, which the symbol shows (`GameSave.clear()` announces it on `EventBus`); a restart after
 	# `GameState._end_run()` already deleted the save finds none and changes nothing, so it shows
-	# nothing.
+	# nothing. **Before `Telemetry.end_run()`, which closes the run log**: the "deleted the save"
+	# line, and the "deletion was not kept" line when a deletion fails at once, belong to this run's
+	# log. A web deletion's own answer comes after the log is closed and is not logged.
 	GameSave.clear()
+	Telemetry.end_run()
 	_carry_the_save_symbol_over()
 	# And with it the run's record of being in the escape, which outlives the scene reload below
 	# because it lives on an autoload. Left set, the fresh boot would skip its own `start_run()` and
@@ -2590,23 +2592,13 @@ func _raise_save_indicator() -> void:
 	_save_indicator = SaveIndicator.new()
 	add_child(_save_indicator)
 
-## Every write goes through here so the symbol shows for exactly the saves that were meant to be
-## kept — see `GameSave.write()`'s own doc for the runs and moments that draw nothing. The symbol
-## comes up as the save starts and is answered at once off the web, or by `_on_save_settled()` once
-## the browser has said whether it kept the save.
+## Every write goes through here. **It tells the symbol nothing**: `GameSave.write()` announces the
+## save on `EventBus` and the `SaveIndicator` listens, so the symbol shows for exactly the saves that
+## were meant to be kept (see `GameSave.write()`'s own doc for the runs and moments that draw
+## nothing), and the browser's later answer reaches it even when a scene reload has freed this node
+## first — a callback bound here would be dropped and leave the symbol shown for good.
 func _save_now(day_under_way: bool) -> void:
-	# `int` rather than `GameSave.Result`: a cross-script enum is not the same type as itself.
-	var result: int = GameSave.write(day_under_way, _on_save_settled)
-	if result == GameSave.Result.REFUSED or not _save_indicator:
-		return
-	_save_indicator.begin()
-	if result != GameSave.Result.PENDING:
-		_save_indicator.settle(result == GameSave.Result.CONFIRMED)
-
-## The browser's answer to a save `_save_now()` left pending.
-func _on_save_settled(result: int) -> void:
-	if _save_indicator:
-		_save_indicator.settle(result == GameSave.Result.CONFIRMED)
+	GameSave.write(day_under_way)
 
 ## Resolves the two developer capture controls before input dispatch. Key echoes do not make a
 ## second capture: a held shortcut is one request, not a sequence of separate user decisions.
