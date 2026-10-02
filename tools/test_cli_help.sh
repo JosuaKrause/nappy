@@ -95,6 +95,17 @@ assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
 assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
+assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
+assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
+assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag
+assert_exit "measure-ground-frames.sh missing engine" nonzero ./tools/measure-ground-frames.sh --godot
+assert_exit "measure-ground-frames.sh missing output" nonzero ./tools/measure-ground-frames.sh --output
+assert_exit "measure-ground-frames.sh stray" nonzero ./tools/measure-ground-frames.sh stray
+assert_exit "measure-ground-frames.sh validates before mkdir" nonzero ./tools/measure-ground-frames.sh --output "$work_dir/unwanted-measurement" --not-a-flag
+if [[ -e "$work_dir/unwanted-measurement" ]]; then
+    echo "FAIL measure-ground-frames.sh created output on invalid arguments" >&2
+    failures=$((failures + 1))
+fi
 assert_exit "lint.sh --help"       zero ./tools/lint.sh --help
 assert_exit "pycheck.sh --help"    zero ./tools/pycheck.sh --help
 assert_exit "export-web.sh --help" zero ./tools/export-web.sh --help
