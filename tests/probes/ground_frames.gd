@@ -35,7 +35,9 @@ func _run() -> void:
 	_city.hide()
 	var trials: Array[Dictionary] = []
 	var facing_only := OS.get_environment("GROUND_FRAMES_FACING_ONLY") == "1"
-	var modes: Array[String] = [] if facing_only else ["atomic", "rows", "quadrants"]
+	var modes: Array[String] = ["atomic", "rows", "quadrants"]
+	if facing_only:
+		modes.clear()
 	# Warm each strategy once, then retain every trial in this fixed interleaved order.
 	for mode in modes:
 		await _comparison(mode, true)

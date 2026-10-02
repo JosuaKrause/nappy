@@ -1,6 +1,8 @@
 extends RefCounted
 ## Bounded native acceptance on production daily route positions. This advances the camera
 ## model, not physics or rendered frames; the separate walking capture supplies that evidence.
+## Run on the pinned revision in the M159 evidence: this synchronous loop cannot advance the
+## current process-frame-gated scheduler. Current scheduling checks use ground_frames.tscn.
 
 func run(t) -> void:
 	var scene: PackedScene = load("res://scenes/main.tscn")
