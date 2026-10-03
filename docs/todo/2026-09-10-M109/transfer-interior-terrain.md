@@ -6,6 +6,9 @@ The outdoor ground family record is under M109, outdoor tile materials.
 The tree, bollard, ground-bed and roof-equipment record is under M109, trees and rooftop
 equipment as comic drawings. Their source mappings identify the transferred props.
 
-Roof equipment and fallen-tree closures are outside this item
-([their record](../../decisions/2026-09-10-M109-3.md)); the remaining terrain and closure
-families stay in scope.
+Roof equipment is outside this item
+([its record](../../decisions/2026-09-10-M109-3.md)). Fallen-tree closures remain in
+scope: their active SVGs still need an accepted PNG conversion, as the player's
+[roof and obstruction review](../../playtests/2026-10-03-bouncy-squirrel.md) rejects
+the candidate transfers. The [correction record](../../decisions/2026-09-10-M109-4.md)
+keeps that broader catalogue request open.

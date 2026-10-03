@@ -7,5 +7,9 @@ Save original generation outputs, exact prompts, reference roles and reproducibl
 and registration inputs. Inspect detail and animation consistency at gameplay scale.
 
 The two dog families are outside this item ([their record](../../decisions/2026-09-10-M109-2.md)).
-Roof equipment, broken water mains and fallen trees are also outside this item
-([their record](../../decisions/2026-09-10-M109-3.md)).
+Roof equipment is also outside this item
+([its record](../../decisions/2026-09-10-M109-3.md)). Broken water mains and fallen
+trees remain in scope: their active SVGs still need accepted PNG conversions, as
+the player's [roof and obstruction review](../../playtests/2026-10-03-bouncy-squirrel.md)
+rejects the candidate transfers. Preserve all directional and animation layers;
+the [correction record](../../decisions/2026-09-10-M109-4.md) keeps this work open.

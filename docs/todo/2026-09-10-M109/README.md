@@ -22,5 +22,6 @@ must read as the same woman pushing the stroller. Choose the generation method b
 a shared direction/state grid is a suggested strategy. Update the illustrated-PNG skill with
 findings supported by the conversion and review.
 
-[Bouncy-squirrel's roof review](roof-network-review.md) requires connected vent
-networks and removal of rejected obstruction transfers inside the existing roof PR.
+The [roof and obstruction correction record](../../decisions/2026-09-10-M109-4.md)
+documents connected vent networks and the restored obstruction SVGs. The remaining
+conversion items include water mains and fallen trees, which still need accepted PNGs.
