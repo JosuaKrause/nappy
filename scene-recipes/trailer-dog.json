@@ -5,7 +5,8 @@
   "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "start", "facing": "east"},
     "events": [{"name": "dog", "row": "charging_dog", "at": "dog"}]},
   "playback": {"walk": "1.55e1.45W", "duration": 3, "capture_at": 1.85,
-    "observations": [{"tick": 50, "subject": "dog", "condition": "visible"},
+    "observations": [{"tick": 6, "subject": "player", "condition": "moving"},
+      {"tick": 50, "subject": "dog", "condition": "visible"},
       {"tick": 56, "subject": "dog", "condition": "pursuing"},
       {"tick": 56, "subject": "player", "condition": "running"}]}
 }

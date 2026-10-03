@@ -6,7 +6,8 @@
     "background": {"events": false, "crowd": false},
     "events": [{"name": "obstacle", "row": "leaf_blower", "at": "blower", "age": 1.8}]},
   "playback": {"walk": "1.3e2.3w1.35n2.6e", "duration": 7.6, "capture_at": 6.4,
-    "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
+    "observations": [{"tick": 9, "subject": "player", "condition": "moving"},
+      {"tick": 30, "subject": "player", "condition": "moving"},
       {"tick": 60, "subject": "obstacle", "condition": "visible"},
       {"tick": 215, "subject": "player", "condition": "near", "at": [1970, 1812], "distance": 55}]}
 }

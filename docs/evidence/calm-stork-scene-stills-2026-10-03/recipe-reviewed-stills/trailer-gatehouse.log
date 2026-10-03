@@ -1,7 +1,0 @@
-Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
-
-[GameState] run started, seed=11
-[Main] 9 atlas pages held from startup in 20 ms
-[Main] city generated in 43 ms (seed 1917501)
-[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
-[SceneRecipe] manifest {"anchors":{"gate":[3168.0,1552.0],"start":[3168.0,1760.0]},"bounds":[0,0,160,160],"checks":["construction_schema","production_choice_predicates","whole_visible_footprints","full_context_guarantees"],"choices":{"context_seed":1917501.0},"classification":"normal","context_seed":1917501,"engine":"4.7.2-stable (official)","expected_violations":[],"initial_actors":{"player":{"carrying":false,"gait_frame":1,"position":[3168.0,1760.0],"speed":0.0}},"observations":[],"physics_ticks_per_second":30,"playback_complete":false,"recipe":"The father approaches a gatehouse","recipe_sha256":"b3a6ce710bcadeca548a26e37aea875adc270b5e2398c8d8e9399eea64476d1b","scope":"full","seed":11,"setup":{"day":13.0,"parent":"father","player":{"at":"start","facing":"north"},"tutorial_complete":true},"violations":[]}

@@ -3,9 +3,10 @@
 The seven captures under `recipe-reviewed-stills/` use integrated source `8941448c`;
 `recipe-city-active/` uses source `a23858a4`. Both are retained by PR #457's integration branch.
 Godot 4.7.2 stable, macOS Apple M2, Compatibility OpenGL, 1280×720. Their recipe data and
-scripted simulation are the scene slice's implementation; this extraction changes launch
-availability, not those captured setups. Complete original telemetry runs accompany every
-capture, along with headless action manifests, capture manifests and logs.
+scripted simulation at the captured moments match this slice. Additional observations check
+the cut-in ticks, and the chase continues through its full one-second cut. The retained
+headless action manifests and capture manifests identify the setup and measured actors.
+Generic logs, duplicate images and incidental automatic screenshots are omitted.
 
 Reproduce with `tools/scene-recipes.sh --screenshots --output /tmp/authored-scenes`.
 No video is made. `capture_at` chooses each still after the full simulation starts. The

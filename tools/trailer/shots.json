@@ -47,7 +47,7 @@
     {
       "name": "chase",
       "recipe": "scene-recipes/trailer-chase.json",
-      "in": 1.2,
+      "in": 1.4,
       "length": 1,
       "gap": 0.3
     },
