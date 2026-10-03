@@ -547,6 +547,22 @@ check_that() {
     fi
 }
 
+# ------------------------------------------------ wait_or_kill leaves nothing holding the pipe ---
+# The process lives 0.3s, long enough for the watchdog to have forked its `sleep 7`. The call's
+# output is captured, so the command substitution only returns once every holder of the pipe has
+# closed it: a watchdog `sleep` that outlived wait_or_kill would keep it open for the whole 7s.
+wok_started=$SECONDS
+wok_out="$(
+    # shellcheck source=tools/lib_dev_flags.sh
+    source "$root/tools/lib_dev_flags.sh"
+    sleep 0.3 &
+    wait_or_kill "$!" 7
+    echo "returned $? status $WAIT_OR_KILL_STATUS"
+)"
+wok_elapsed=$(( SECONDS - wok_started ))
+check_that "wait_or_kill returns at once for a process that exited, with no watchdog holding the pipe" \
+    '[[ "$wok_out" == "returned 0 status 0" && $wok_elapsed -lt 5 ]]'
+
 # ------------------------------------------------ audit-pck.sh reads the artefact, not the tree ---
 # A minimal format-4 pack keeps this regression independent of Godot and export templates while
 # exercising the same directory and file bytes a real export exposes. The dirty fixture carries

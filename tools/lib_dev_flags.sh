@@ -294,9 +294,23 @@ wait_or_kill() {
     # caught by tools/test_cli_help.sh reporting an instant, spurious kill on a stub that exits in
     # milliseconds.
     marker="$(mktemp -u)"
+    # **The watchdog is a timed `read` on a FIFO, not a `sleep`.** A `sleep` the watchdog forked
+    # outlives a `kill` of the watchdog's subshell and, holding the caller's stdout/stderr, keeps a
+    # capturing reader (a test's `subprocess.run(capture_output=...)`, a terminal pipeline) waiting
+    # for EOF until the whole limit has run out -- minutes, for a process that exited at once.
+    # Killing the subshell and its `sleep` instead is a race against the subshell's own start-up,
+    # which loses a signal that arrives before the subshell is ready for it. A `read -t` on a FIFO
+    # forks nothing: the caller releases the watchdog by writing a line, and the watchdog kills
+    # only when the read timed out. The caller holds the FIFO open read-write (fd 9) until the
+    # watchdog has been reaped, so a line written before the watchdog opened it is not lost, and a
+    # watchdog that already timed out leaves no writer blocked.
+    local fifo
+    fifo="$(mktemp -u)"
+    mkfifo "$fifo"
+    exec 9<>"$fifo"
     (
-        sleep "$limit"
-        if kill -0 "$pid" 2>/dev/null; then
+        # A timed-out `read` returns above 128; a released one returns 0.
+        if ! read -r -t "$limit" <>"$fifo" && kill -0 "$pid" 2>/dev/null; then
             kill -9 "$pid" 2>/dev/null
             : > "$marker"
         fi
@@ -304,10 +318,12 @@ wait_or_kill() {
     local watchdog=$!
     wait "$pid" 2>/dev/null
     WAIT_OR_KILL_STATUS=$?
-    # Stop the watchdog if the process already exited on its own -- otherwise it is still asleep
-    # and would fire pointlessly, or (rarer, a close race) has already fired and this is a no-op.
-    kill "$watchdog" 2>/dev/null
+    # Release the watchdog: the process exited on its own (or this already is the second half of a
+    # race it has won, and the line is simply never read).
+    echo >&9
     wait "$watchdog" 2>/dev/null
+    exec 9>&-
+    rm -f "$fifo"
     if [[ -f "$marker" ]]; then
         rm -f "$marker"
         return 1
