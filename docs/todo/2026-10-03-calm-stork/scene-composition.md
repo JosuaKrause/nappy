@@ -6,9 +6,9 @@ The remaining feedback refers to the numbered images in that source.
 
 In scene 3, make the wrong-turn and backtrack route physically traversable without the
 player staying pressed against restaurant guests, and address the visibly sparse right
-side. The player suggests moving "them" one block right; whether that means the guests
-or the player/action is awaiting clarification. Preserve the asked-for turn/backtrack
-action while that choice is open. Check the visible crowd distribution and actual movement,
+side. [Spry-hawk, restaurant guests move east](../../playtests/2026-10-03-spry-hawk.md)
+confirms moving the restaurant guests one block east while keeping the player's
+wrong-turn action in place. Check the visible crowd distribution and actual movement,
 not merely the city's total population.
 
 Scene 4 cannot reuse scene 3's composition with the player on the opposite sidewalk.
