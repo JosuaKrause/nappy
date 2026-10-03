@@ -22,13 +22,15 @@ show composition, with capture source identified separately from the extracted s
 
 The minimal real-Main runtime provides scripted input, setup, initial/final manifests,
 save isolation and simulation-clock screenshots. It reuses the walking syntax behind
-`--walk`; later scene slices extend the `--press` and `--zoom-out` rig behavior.
+`--walk`; the consolidated runtime also implements a recipe camera `zoom_out` track.
+Recipe launches reject independent `--press` input, and playback has no press field.
 Conflicting independent input/camera flags are rejected. JSON, anchors, explicit
 context seed, named fixture diagnostics, quiet background and synchronous scripted
 scenery preparation are implementation choices open to overturn.
 
-Trailer events/actors and screenshots remain calm-stork's slice. Ordinary controls,
-escape retry and interactive extent checks for every recipe remain velvet-hare's slice.
+Trailer events/actors and screenshots are recorded in
+[calm-stork](2026-10-03-calm-stork.md). Ordinary controls, escape retry and interactive
+extent checks for every recipe are recorded in [velvet-hare](2026-10-03-velvet-hare.md).
 The shared bounded presentation already omits context scenery and map boundaries.
 
 Verification: focused recipe/generator/real-Main launch suites passed 72,908 checks;
