@@ -112,6 +112,8 @@
 #     later separate branch pushes and coder identity wrappers keep their existing behavior
 #   - a backslash-escaped separator given as an input-wrapper option's value (xargs -d \;,
 #     parallel --colsep \|) is that value, not the end of the wrapper's command
+#   - GNU parallel with no command of its own (parallel ::: cmd) runs its arguments as commands,
+#     so a pushing script or git/gh among them is unreadable
 #   - a gh api call under xargs or parallel is a write unless its every flag is written: input
 #     placed only at a replacement token inside a word of the call; a GraphQL call there writes
 #   - common no-value options (parallel --tag, --pipe, -X, -m, --xargs; xargs -o) and value options
@@ -2088,6 +2090,9 @@ write_guard_never_asked=(
     'xargs -E \; git push origin'
     "printf 'push;origin;v1' | xargs -d \\; git"
     "printf 'merge;3' | xargs -d \\; gh pr"
+    'parallel ::: tools/update-pr.sh'
+    'parallel ::: "tools/release.sh patch push"'
+    'parallel -j2 ::: tools/prune-merged.sh'
     'echo "-X PUT" | xargs gh api repos/o/r/pulls/3/merge'
     'echo "--method PUT" | xargs gh api repos/o/r/pulls/3/merge'
     'printf %s\\n -X PUT repos/o/r/pulls/3/merge | xargs gh api'
@@ -2273,6 +2278,9 @@ write_guard_allowed=(
     'env MODE=test /usr/bin/xargs -0 -n 1 timeout 5 git show'
     'xargs -I{} sh -c "git status; git log --oneline {}"'
     "printf 'v1;v2' | xargs -d \\; git status"
+    'parallel cat ::: tools/update-pr.sh'
+    'parallel tools/update-pr.sh --dry-run ::: 1 2'
+    'parallel -j2 ::: "echo a" "echo b"'
     'echo 3 | xargs gh pr view'
     'parallel gh pr view ::: 1 2 3'
     'echo 3 | xargs -I{} gh api repos/o/r/pulls/{}/comments'

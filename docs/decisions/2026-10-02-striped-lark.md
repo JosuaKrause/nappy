@@ -184,3 +184,11 @@ mutation. The denial can merge, so a reviewer wrapper cannot exempt it. Denying 
 under input was the simpler fix and was not taken: it would also deny the replacement-token reads
 an agent writes to walk a list of pull requests. A call that uses only parallel's other
 replacement strings (`{.}`, `{/}`) counts as appending input, a false deny open to correction.
+
+**GNU parallel's command-less form.** With no command of its own, parallel runs each `:::`
+argument, or each line of a `::::` file, as a command, so `parallel ::: tools/update-pr.sh` and
+`parallel ::: "tools/release.sh patch push"` run a pushing script while the guard took `:::` for
+the command word. Such a wrapper's command position is now unreadable, so a pushing script, git
+or gh among its arguments is denied. Reads written that way (`parallel ::: "git status"`) are a
+false deny open to correction; reading each argument as a command of its own was the alternative,
+and it would need every command table to start a command at each argument.

@@ -81,7 +81,9 @@
 # "-X PUT" | xargs gh api repos/o/r/pulls/3/merge` merges, and a written `-X GET` is overridden by a
 # later one. It reads only when input lands at a replacement token inside a word of the call
 # (`xargs -I{} gh api repos/o/r/pulls/{}/comments`); a GraphQL call there always writes. That
-# denial can merge too, so reviewer wrappers cannot exempt it either.
+# denial can merge too, so reviewer wrappers cannot exempt it either. GNU parallel with no command
+# of its own (`parallel ::: tools/update-pr.sh`) runs each argument as a command, so its command
+# position is unreadable too.
 # A backslash-escaped separator outside quotes (`xargs -d \; git push origin`) is an argument the
 # shell hands to the wrapper, so it neither ends the wrapper's command nor leaves an option
 # without its value; inside a quoted script a soft separator still ends the script's own command.
@@ -576,6 +578,10 @@ def input_scan($w; $g; $i):
               | .command = (if $consume and $has_next then word_end($e) else $e end)
             end
         end)
+  # GNU parallel with no command of its own (`parallel ::: tools/update-pr.sh`) runs each `:::`
+  # argument, or each line of a `::::` file, as a command, so no command position is readable.
+  | (if $owner == "parallel" and .command < $n and ($w[.command] | startswith(":::"))
+     then .unreadable = true else . end)
   | del(.done);
 
 # Skip consumed option runs when looking for another input wrapper. An argument literally named
