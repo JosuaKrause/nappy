@@ -74,6 +74,10 @@
 # are denied rather than asked about; the coder identity
 # wrapper's exemption still applies. An unreadable gh noun/verb can merge, so reviewer wrappers
 # cannot exempt it, just as they cannot exempt an unreadable git push.
+# Input-wrapper options share one bounded parser for command position and replacement tokens.
+# Unknown option arity makes git/gh and any named pushing script unreadable, including an apparent
+# read or dry run; rerun such a command through the coder identity wrapper. Consumed option values
+# never supply replacement flags or nested input wrappers. Known reads retain their exemption.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
 # issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
 # search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
@@ -353,13 +357,6 @@ def wrapper_argument_options:
    env: ["-u", "-C", "-P", "--unset", "--chdir"],
    nice: ["-n", "--adjustment"],
    timeout: ["-s", "-k", "--signal", "--kill-after"],
-   xargs: ["-n", "-I", "-J", "-i", "--replace", "-L", "-P", "-R", "-S", "-s", "-d", "-E", "-a",
-           "--max-args", "--max-lines", "--max-procs", "--max-chars", "--delimiter", "--eof",
-           "--arg-file"],
-   parallel: ["-j", "--jobs", "--max-procs", "-P", "-a", "--arg-file", "-I", "-i", "--replace",
-              "-l", "-n", "--max-args", "-N", "--max-replace-args", "-L", "--max-lines", "-S",
-              "--sshlogin", "--sshloginfile", "--slf", "-d", "--delimiter", "--colsep", "--joblog",
-              "--jl", "--delay", "--halt", "--halt-on-error"],
    watch: ["-n", "--interval"],
    bash: ["-o", "-O", "--rcfile", "--init-file"],
    sh: ["-o", "-O"],
@@ -451,7 +448,7 @@ def wrapper_owners:
 # 60 tools/land-prs.sh` and `bash -x tools/prune-merged.sh` all land on the script name, not on the
 # assignment, the option or the duration. A table, like `options_table`, and with levels each
 # of those is skipped as a whole shell word (`FOO="a b"`, `timeout "1 m"`).
-def command_table($ao; $g):
+def command_table($ao; $g; $inputs):
   . as $w
   | length as $n
   | ($g.lv) as $lv
@@ -464,6 +461,7 @@ def command_table($ao; $g):
     [range($n) as $i
      | $w[$i] as $x
      | if ($x | contains("=")) and ($x | is_assignment) then word_end($i)
+       elif $inputs[$i] != null then $inputs[$i].command
        elif is_wrapper_word($x) then
          ($ao[word_end($i)] // $n) as $after
          | (if ($x | last_part) == "timeout" and $after < $n then word_end($after) else $after end)
@@ -473,52 +471,123 @@ def command_table($ao; $g):
   | resolve;
 def command_word($t; $i): $t.cw[$i] // $i;
 
-# The replacement token selected by one input wrapper's options. `-I` belongs to all four
-# spellings; xargs/gxargs also have BSD `-J` and GNU `-i`/`--replace`, while GNU
-# parallel/env_parallel have `-i`/`--replace` and `-l`. Walk only the wrapper's option run, whose
-# end the wrapper command table has already found; the last replacement option wins, as it does
-# at execution time. The general and wrapper-specific command tables retain both readings of an
-# optional alias argument, while this stricter reading treats a following word as its token.
+# Input wrappers have one bounded option grammar for BOTH command position and replacement
+# tracking. Required values are consumed whole, even when they look like another option. Short
+# clusters stop at the first value-taking letter; the remaining characters are its attached value.
+# Unknown options (including unlisted abbreviations) make command position unreadable, never a
+# guess that the following word is the executable. That state denies git/gh and potential pushing
+# script invocations in this wrapper, including apparent reads; coder exemptions still apply.
+# Sources: GNU findutils xargs options; GNU Parallel src/parallel options_hash/GetOptions.
+# This is deliberately not their entire option surface: options that load configuration or
+# change replacement syntax beyond -I/-i/--replace remain unreadable too.
 def is_input_wrapper: last_part | IN("xargs", "gxargs", "parallel", "env_parallel");
-def input_replacement($w; $i; $end):
-  ($w[$i] | last_part | if . == "gxargs" then "xargs" elif . == "env_parallel" then "parallel" else . end) as $owner
-  | {j: ($i + 1), token: null}
-  | until(.j >= $end;
-      ($w[.j]) as $x
-      | if $x == "-I" or ($owner == "xargs" and $x == "-J")
-           or ($owner == "parallel" and $x == "-l") then
-          if .j + 1 < $end then .token = $w[.j + 1] | .j += 2 else .j += 1 end
-        elif $x | test("^-I.+") then .token = ($x | ltrimstr("-I")) | .j += 1
-        elif $owner == "xargs" and ($x | test("^-J.+")) then
-          .token = ($x | ltrimstr("-J")) | .j += 1
-        elif $owner == "parallel" and ($x | test("^-l.+")) then
-          .token = ($x | ltrimstr("-l")) | .j += 1
-        elif $x == "-i" or $x == "--replace" then
-          if .j + 1 < $end then .token = $w[.j + 1] | .j += 2
-          else .token = "{}" | .j += 1 end
-        elif $x | test("^-i.+") then .token = ($x | ltrimstr("-i")) | .j += 1
-        elif $x | startswith("--replace=") then .token = ($x | ltrimstr("--replace=")) | .j += 1
-        else .j += 1 end)
-  | .token;
+def input_option($owner; $flag):
+  if $flag == "-I" or ($owner == "xargs" and $flag == "-J") then
+    {arity: "required", replacement: true}
+  elif $flag | IN("-i", "--replace") then {arity: "optional", replacement: true}
+  elif $flag | IN("-a", "--arg-file", "-n", "--max-args", "-L", "-P", "--max-procs",
+                  "-s", "--max-chars", "-d", "--delimiter", "-E") then {arity: "required"}
+  elif $owner == "xargs" and ($flag | IN("-R", "-S")) then {arity: "required"}
+  elif $owner == "parallel" and ($flag | IN("-j", "--jobs", "-N", "--max-replace-args",
+       "-S", "--sshlogin", "--sshloginfile", "--slf", "--colsep", "--col-sep", "-C",
+       "--joblog", "--jl", "--delay", "--halt", "--halt-on-error", "--timeout", "--retries",
+       "--results", "--result", "--res")) then {arity: "required"}
+  elif $flag | IN("-e", "--eof", "-l", "--max-lines") then {arity: "optional"}
+  elif $flag | IN("-0", "--null", "-r", "--no-run-if-empty", "-t", "--verbose", "-p",
+                  "--interactive", "-x", "--exit", "--help", "--version", "--show-limits")
+    then {arity: "none"}
+  elif $owner == "parallel" and ($flag | IN("-k", "--keep-order", "-u", "--ungroup", "--group",
+       "-v", "-q", "--quote", "--line-buffer", "--linebuffer", "--will-cite", "--plain",
+       "--progress", "--eta", "--bar", "--dry-run", "--dryrun")) then {arity: "none"}
+  else {arity: "unknown"} end;
+
+def input_option_word($owner; $x):
+  if $x | startswith("--") then
+    ($x | split("=")[0]) as $flag
+    | input_option($owner; $flag)
+    | .value = (if $x | contains("=") then $x[($flag | length) + 1:] else null end)
+  else
+    {k: 1, arity: "none", value: null}
+    | until(.k >= ($x | length) or .arity != "none";
+        .k as $k | input_option($owner; "-" + $x[$k:$k + 1])
+        | .k = ($k + 1)
+        | .value = (if .arity != "none" and .k < ($x | length) then $x[.k:] else null end))
+  end;
+
+def input_scan($w; $g; $i):
+  ($w | length) as $n
+  | ($w[$i] | last_part | if . == "gxargs" then "xargs"
+     elif . == "env_parallel" then "parallel" else . end) as $owner
+  # A quoted script starts at level 0, but its following words have level 1.
+  | ([($g.lv[$i] // 0), ($g.lv[$i + 1] // 0)] | max) as $level
+  | def word_end($p):
+      if $g == null or $p >= $n then $p + 1
+      elif $level == 0 then $g.ends[$p].z elif $level == 1 then $g.ends[$p].o else $p + 1 end;
+    {command: ($i + 1), replacements: [], unreadable: false, done: false}
+  | until(.done or .command >= $n or ($w[.command] | is_sep)
+          or ($w[.command] | startswith("-") | not);
+      .command as $p | $w[$p] as $x | word_end($p) as $e
+      | if $x | IN("--", "--\u0002") then .command = $e | .done = true
+        else input_option_word($owner; $x) as $opt
+          | if $opt.arity == "unknown" or ($opt.arity == "none" and $opt.value != null) then
+              .unreadable = true | .done = true
+            else
+              ($e < $n and ($w[$e] | is_sep | not)) as $has_next
+              | ($opt.value == null and ($opt.arity == "required"
+                 or ($opt.arity == "optional" and $owner == "parallel" and $has_next
+                     and ($w[$e] | startswith("-") | not)))) as $consume
+              | (if $opt.value != null then $opt.value
+                 elif $consume and $has_next then $w[$e] else null end) as $value
+              | .unreadable = (.unreadable or ($consume and ($has_next | not))
+                  or ($opt.replacement == true and
+                      (($e > $p + 1) or ($consume and word_end($e) > $e + 1))))
+              | (if $opt.replacement then
+                   .replacements = (if $value != null then [$value]
+                     # GNU xargs optional values attach to the flag. Also retain the following
+                     # non-option as a conservative marker for implementations accepting it
+                     # separately, without consuming or reinterpreting it as an option.
+                     else ["{}"] + (if $owner == "xargs" and $has_next
+                                        and ($w[$e] | startswith("-") | not)
+                                      then [$w[$e]] else [] end) end)
+                 elif $opt.arity == "optional" and $value != null
+                      and ($x | test("^(-l|--max-lines)")) and ($value | test("^[0-9]+$") | not)
+                 then .unreadable = true
+                 else . end)
+              | .command = (if $consume and $has_next then word_end($e) else $e end)
+            end
+        end)
+  | del(.done);
+
+# Skip consumed option runs when looking for another input wrapper. An argument literally named
+# xargs/parallel is data, not a nested invocation; this also bounds the total work to one scan
+# per option word rather than repeatedly rescanning a chain of `xargs -E xargs -E ...`.
+def input_wrappers($w; $g):
+  [foreach range(0; $w | length) as $i ({skip: 0, out: null};
+     .out = null
+     | if $i >= .skip and ($w[$i] | is_input_wrapper) then
+         .out = input_scan($w; $g; $i) | .skip = .out.command
+       else . end;
+     .out)];
 
 # The active input wrappers before each word. Input may supply push refspecs absent from the hook
 # JSON. Keep each wrapper across separators inside a quoted script it runs (`xargs sh -c 'git
 # status; git push origin'`), but end it at its own command's separator. A stack keeps an outer
 # wrapper active when a nested wrapper ends, and retains both replacement tokens while both apply.
 # As with the git detector, mentions count too. One forward pass, never a backward scan from each
-# git; finding each wrapper's command is a table lookup.
-def xargs_context($w; $lv; $unsure; $cw):
+# git; the shared option parse supplies each wrapper and its replacement tokens.
+def xargs_context($w; $lv; $unsure; $inputs):
   [foreach range(0; $w | length) as $i ([];
      if $w[$i] | is_sep then
        if $w[$i] | is_hard_sep then []
        elif $unsure then .
        else ($lv[$i] // 0) as $level | map(select(.level < $level)) end
-     elif $w[$i] | is_input_wrapper then
+     elif $inputs[$i] != null then
        # A script's first word has level 0; its next word carries the script's own level.
        ([($lv[$i] // 0), ($lv[$i + 1] // 0)] | max) as $level
-       | . + [{level: $level, replacement: input_replacement($w; $i; $cw[$i] // $i)}]
+       | . + [($inputs[$i] + {level: $level})]
      else . end;
-     {active: (length > 0), replacements: [.[].replacement | select(. != null and . != "")]})];
+     {active: (length > 0), unreadable: any(.[]; .unreadable),
+      replacements: [.[].replacements[] | select(. != "")]})];
 
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
@@ -709,7 +778,7 @@ def unreadable_input_word($w; $t; $i; $p; $n):
   ($t.xargs[$i] // {active: false, replacements: []}) as $input
   | ($w[$p] // "") as $word
   | $input.active
-    and ($p >= $n or ($word | test("^[a-z][a-z-]*$") | not)
+    and ($input.unreadable or $p >= $n or ($word | test("^[a-z][a-z-]*$") | not)
          or any($input.replacements[]; . as $replacement | $word | contains($replacement)));
 
 def detect_git($w; $t; $i; $n):
@@ -1004,11 +1073,12 @@ def script_is_write($t; $base; $start):
     else true
     end;
 def detect_tool($w; $t; $i; $cmd_pos):
-  if $cmd_pos | not then null
+  if ($cmd_pos or ($t.xargs[$i].unreadable // false)) | not then null
   else
     ($w[$i] | last_part) as $base
     | if (write_tool_names | index($base)) == null then null
-      elif script_is_write($t; $base; $i + 1) then {next: ($i + 1), reason: ("tools/" + $base)}
+      elif ($t.xargs[$i].unreadable // false) or script_is_write($t; $base; $i + 1)
+      then {next: ($i + 1), reason: ("tools/" + $base)}
       else null
       end
   end;
@@ -1084,20 +1154,21 @@ def findings($w; $w0; $levels; $unsure):
   # A command with no wrapper word needs no table of wrapper options.
   | (if any($w[]; is_wrapper_word(.)) then $w | wrapper_owners else null end) as $owners
   | (if $lv == null then null else {lv: $lv, ends: word_ends($lv)} end) as $g
+  | (if any($w[]; is_input_wrapper) then input_wrappers($w0; $g) else null end) as $inputs
   | ($w | options_table($g; null)) as $ao
   | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
-  | (if $wo == null then null else $w | command_table($wo; $g) end) as $cw2
-  | {ao: $ao, cw: ($w | command_table($ao; $g)),
+  | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
+  | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
      cw2: $cw2,
      sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw,
-     xargs: (if any($w[]; is_input_wrapper)
-             then xargs_context($w0; $lv; $unsure; $cw2) else null end),
+     xargs: (if $inputs != null
+             then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
-       | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null))
+       | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))
        | .cw2 = (if $owners == null then null
-                 else $w | command_table($w | options_table(null; $owners); null) end)
+                 else $w | command_table($w | options_table(null; $owners); null; $inputs) end)
      else null end) as $tp
   | ($t | .tp = $tp) as $t
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,

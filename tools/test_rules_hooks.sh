@@ -1178,6 +1178,24 @@ assert_write_guard "reviewer-wrapped lowercase parallel replacement subcommand d
 assert_write_guard "input wrapper replacement invoking the reviewer wrapper denies" deny \
     'xargs -Icmd uv run python tools/agent-identity.py run codex-reviewer -- gh pr cmd 3'
 
+# The shared input option parser keeps role policy after consuming clusters/values and when an
+# unknown option makes command position unreadable. The synthetic commands are only hook JSON.
+for input_option_command in \
+    'xargs -rIstatus git status origin v1' \
+    'xargs -Istatus -E -Iother git status origin v1' \
+    'parallel --timeout 5 tools/update-pr.sh' \
+    'parallel --new-option 5 tools/update-pr.sh' \
+    'parallel --new-option 5 gh pr view'; do
+    assert_write_guard "coder retains exemption: $input_option_command" allow \
+        "uv run python tools/agent-identity.py run codex-coder -- $input_option_command"
+    assert_write_guard "reviewer cannot exempt unreadable publishing: $input_option_command" deny \
+        "uv run python tools/agent-identity.py run codex-reviewer -- $input_option_command"
+done
+assert_write_guard "unknown input options still find an invoked coder identity" allow \
+    'parallel --new-option 5 uv run python tools/agent-identity.py run codex-coder -- tools/update-pr.sh'
+assert_write_guard "unknown input options still refuse an invoked reviewer identity" deny \
+    'parallel --new-option 5 uv run python tools/agent-identity.py run codex-reviewer -- tools/update-pr.sh'
+
 # A write before the wrapper, or on a different command joined only by a separator, is not
 # covered by it: the wrapper's own exemption starts at its literal -- and ends at the next
 # ;/&/|/newline, never earlier or later.
@@ -1728,6 +1746,9 @@ EOF"
 # of 64 KB split into its parts.
 w_chain_quoted_64k="$(printf 'git -C "a b" %.0s' $(seq 1 5027))"
 w_quoted_words_64k="$(printf 'a %.0s' $(seq 1 32650))"
+w_input_options_64k="$(printf -- '-E xargs %.0s' $(seq 1 7200))"
+assert_write_guard_timed "64 KB of xargs-named option values are consumed once -> allow" allow \
+    "xargs ${w_input_options_64k}git status"
 assert_write_guard_timed "64 KB of bash -c 'git -C \"a b\" ...' -> allow" allow \
     "bash -c '${w_chain_quoted_64k}'"
 assert_write_guard_timed "a 64 KB quoted string of short words, then git push -> deny" deny \
@@ -1935,6 +1956,38 @@ write_guard_asked=(
 # substitution; a bare gh issue write (bouncy-heron statement 14: "an agent shouldn't use gh issue
 # directly"); a merge, a release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    'echo push | xargs -rIstatus git status origin v1'
+    'echo merge | xargs -rIview gh pr view 3'
+    'echo push | xargs -rI status git status origin v1'
+    'echo push | gxargs -0rtIstatus git status origin v1'
+    'echo push | xargs -ri status git status origin v1'
+    'echo push | xargs -rtistatus git status origin v1'
+    'echo push | xargs -Istatus -E -Iother git status origin v1'
+    'echo merge | xargs -Iview -E -Iother gh pr view 3'
+    'echo push | xargs -Istatus -d -Iother git status origin v1'
+    'echo push | xargs -Istatus -a -Iother git status origin v1'
+    'echo push | xargs -Istatus -E parallel git status origin v1'
+    'echo push | xargs -Iother -E -Iignored -rIstatus git status origin v1'
+    'xargs -rIstatus sh -c "git status origin v1"'
+    'xargs -rIstatus sh -c "parallel -Iother git status origin v1"'
+    'parallel -Istatus --joblog -Iother git status origin v1'
+    'parallel --timeout 5 tools/update-pr.sh'
+    'parallel --retries 2 tools/update-pr.sh'
+    'parallel --results out tools/update-pr.sh'
+    'env_parallel --results "out dir" --timeout=5 tools/update-pr.sh'
+    'xargs -rI{} env_parallel --retries 2 tools/update-pr.sh'
+    'sh -c "parallel --timeout 5 tools/update-pr.sh"'
+    'parallel -kj2 tools/update-pr.sh'
+    'gxargs -rn1 tools/update-pr.sh'
+    'parallel --new-option 5 tools/update-pr.sh'
+    'parallel --new-option=5 cat tools/update-pr.sh'
+    'parallel --new-option 5 tools/update-pr.sh --dry-run'
+    'parallel --new-option 5 tools/release.sh patch'
+    'xargs -rZstatus git status origin v1'
+    'xargs --rep=status git status origin v1'
+    'parallel --new-option status git status'
+    'parallel --new-option view gh pr view'
+    'xargs --new-option sh -c "git status; tools/update-pr.sh"'
     'echo push | xargs -Icmd git cmd origin v1'
     'echo push | parallel -Icmd git cmd origin v1'
     'echo push | xargs -Istatus git status origin v1'
@@ -2128,6 +2181,22 @@ write_guard_never_asked=(
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
+    'xargs -rIother -E -Istatus git status'
+    'xargs -rIother -E -Iview gh pr view'
+    'xargs -rIother -E xargs git status'
+    'xargs -rIstatus -Iother git status'
+    'xargs -rIother -n1 git status'
+    'xargs -rIother -E -Istatus cat tools/update-pr.sh'
+    'xargs -rn1 cat tools/update-pr.sh'
+    'parallel -kj2 cat tools/update-pr.sh'
+    'parallel --timeout 5 cat tools/update-pr.sh'
+    'parallel --retries 2 cat tools/update-pr.sh'
+    'parallel --results out cat tools/update-pr.sh'
+    'env_parallel --results "out dir" --timeout=5 cat tools/update-pr.sh'
+    'parallel --timeout 5 tools/update-pr.sh --dry-run 3'
+    'parallel -Iother --joblog -Istatus git status'
+    'parallel --new-option 5 echo hello; cat tools/update-pr.sh'
+    'xargs --new-option 5 echo hello; git status'
     'xargs -Icmd git status'
     'parallel -Icmd gh pr view'
     'xargs -Istatus printf status'
