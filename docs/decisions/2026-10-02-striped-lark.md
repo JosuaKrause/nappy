@@ -11,6 +11,13 @@ contract that a publishing push or a push unreadable to its end is refused.
 records the next review and the player's instruction: "let's do parallel the fix is
 reasonably sized". GNU parallel receives the same input-context handling as xargs.
 
+[cozy-alpaca, input-supplied subcommands and wrappers](../playtests/2026-10-03-cozy-alpaca.md)
+records the subsequent review. Input can supply the subcommand too: missing,
+separator or nonplain lowercase git subcommands and gh nouns/verbs now fail closed.
+The same policy covers `gxargs` and `env_parallel`. GNU parallel forwards command
+position through its documented argument-taking options, including `--colsep`; a
+punctuation-only delimiter retains its token position so a later `cat` stays a read.
+
 **Built.** `echo v1 | xargs -I{} git push origin {}` and `xargs git push origin
 < tags.txt` no longer reach an ordinary branch-push prompt. Input can append or
 replace arguments with release refspecs absent from the hook JSON, so an
@@ -34,6 +41,10 @@ separators retain context; a later unrelated push in that script can therefore
 also be denied. The alternative of prompting despite unreadable input was
 rejected because it permits publishing under the player's identity.
 
+An unreadable input-driven gh command is also treated as potentially merging a PR,
+so a reviewer wrapper refuses it; a coder wrapper remains exempt. This conservative
+choice is open to overturn. The alternative would allow input to hide `pr merge`.
+
 **Preserved.** Readable xargs/GNU parallel reads remain allowed; direct opt-in branch pushes
 and pushes after a separate xargs/parallel read still ask where the existing policy allows
 it. Coder identity wrappers remain exempt, including either input wrapper outside or inside the
@@ -52,7 +63,18 @@ zero failures; `tools/test_codex_hooks.py` passes all 57 tests. `tools/check.sh`
 `tools/lint.sh` and whitespace checks pass. No local full game suite or windowed
 capture was needed for a development guard change.
 
+The latest expanded regression suite found 238 failures across 2,771 checks against
+the prior implementation, including all six missing-subcommand examples. After the
+fix and punctuation-read regression, all 2,793 checks pass, as do all 57 adapter tests,
+shell syntax, lint and whitespace. Test payloads were never executed as shell writes.
+Main reconciliation ed3acd0 preserved incoming CI costs and the merged recipe design;
+base 6006fa69, prior head cba913ae, incoming main 746e7b3f. Boot checks passed.
+
 **Limits.** This remains a bounded development guardrail, with the existing
 accepted shell-parser gaps. It is not a shell interpreter or a security boundary.
 The supplied review's obsolete `$[...]` arithmetic observation explicitly asks
 for no change; this item does not change that syntax or gameplay/save code.
+
+The review's Python f-string command, dynamically found executable and stdin-loop
+refspec gaps are filed separately as quiet-tapir, remaining dynamic command writes;
+they are pre-existing gaps outside this correction, not claims of covered syntax.
