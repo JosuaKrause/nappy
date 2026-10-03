@@ -1433,6 +1433,19 @@ assert_write_guard "gh api GET of an issue and its comments -> allow" allow \
 assert_write_guard "gh api -X GET issues with a field -> allow, a read" allow "gh api -X GET repos/o/r/issues -f labels=inbox"
 assert_write_guard "wrapped gh api -X PATCH pulls/N -> allow, a pull request's own write" allow \
     "$orch gh api -X PATCH repos/o/r/pulls/5 -f body=x"
+# gh sends what follows a ? as the query and drops what follows a #, so the comments exception is
+# read on the path alone: a query string or fragment ending in /issues/N/comments does not make
+# an issue write a comment.
+assert_write_guard "wrapped PATCH issues/5?x=/issues/1/comments -> deny, the query is not the path" deny \
+    "$orch gh api -X PATCH 'repos/o/r/issues/5?x=/issues/1/comments' -f state=closed"
+assert_write_guard "wrapped PATCH issues/5#/issues/1/comments -> deny, the fragment is dropped" deny \
+    "$orch gh api -X PATCH 'repos/o/r/issues/5#/issues/1/comments' -f state=closed"
+assert_write_guard "wrapped issue create through issues?/issues/1/comments -> deny" deny \
+    "$orch gh api 'repos/o/r/issues?/issues/1/comments' -f title=x -f body=y"
+assert_write_guard "wrapped DELETE issues/comments/9?/issues/1/comments -> deny" deny \
+    "$orch gh api -X DELETE 'repos/o/r/issues/comments/9?/issues/1/comments'"
+assert_write_guard "wrapped comment POST to issues/429/comments?per_page=1 -> allow, still the comments path" allow \
+    "$orch gh api 'repos/o/r/issues/429/comments?per_page=1' -F body=@c.md"
 # The accepted gaps the guard's header names, pinned so a change to them is a decision: each is
 # allowed wrapped, as main allows every wrapped write.
 assert_write_guard "a wrapped PATCH of an endpoint held in \$E -> allow (accepted gap)" allow \

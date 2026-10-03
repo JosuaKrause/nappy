@@ -803,8 +803,11 @@ def detect_git($w; $t; $i; $n):
 # `repositories/<id>/issues` -- the collection (a new issue), `issues/<n>` (its state, title or
 # body), and everything under them (`issues/<n>/labels`, `/assignees`, `/lock`, `/reactions`,
 # `issues/comments/<id>`, a comment's edit or deletion) -- with one exception, `issues/<n>/comments`
-# (an optional trailing `/` or `?query` included), which a pull request's own conversation comments
-# share, so its path cannot tell a comment on a note from one on a pull request. Whatever stands
+# (an optional trailing `/` included), which a pull request's own conversation comments share, so
+# its path cannot tell a comment on a note from one on a pull request. Every test reads the path
+# alone, before any `?` or `#`: gh sends the rest as the query or drops it, so
+# `issues/5?x=/issues/1/comments` is issue 5, and `issues/429/comments?per_page=1` is still the
+# comments path. Whatever stands
 # between `repos/` and `/issues` counts as the owner and the repository, so a variable
 # (`repos/$R/issues/5`) or a substitution (`"repos/$(gh repo view ...)/issues/5"`, read across the
 # substitution's own words) in their place is an issue endpoint too. As with the merge-type paths,
@@ -820,8 +823,11 @@ def detect_git($w; $t; $i; $n):
 # set or such a file written; one set or written by an earlier, separate command cannot be read
 # (the header's accepted gap).
 def issue_endpoint:
-  test("(?i)(^|/)(repos/.*|repositories/[^/]+)/issues(/|\\?|$)")
-  and (test("(?i)/issues/[^/?]+/comments/?(\\?.*)?$") | not);
+  # gh sends what follows a `?` as the query and drops what follows a `#`, so only the path before
+  # either says where the write goes (`issues/5?x=/issues/1/comments` is issue 5 itself).
+  sub("[?#].*$"; "")
+  | test("(?i)(^|/)(repos/.*|repositories/[^/]+)/issues(/|$)")
+    and (test("(?i)/issues/[^/]+/comments/?$") | not);
 def issue_mutation_re:
   "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert)[A-Za-z]*(Issue|Labelable|Assignable|Lockable)";
 def gh_api_field_flag: IN("-f", "-F", "--raw-field", "--field");
