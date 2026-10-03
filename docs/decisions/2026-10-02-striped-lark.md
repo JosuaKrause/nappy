@@ -105,3 +105,38 @@ for no change; this item does not change that syntax or gameplay/save code.
 The review's Python f-string command, dynamically found executable and stdin-loop
 refspec gaps are filed separately as quiet-tapir, remaining dynamic command writes;
 they are pre-existing gaps outside this correction, not claims of covered syntax.
+
+## Shared option consumption · 2026-10-03
+
+The independent review at 9b57ce74 found that the two option scans still disagreed:
+`xargs -rIstatus` did not mark the read-shaped replacement token, and a consumed
+`-E -Iother` value could be misread as a new replacement option. Parallel options
+`--timeout`, `--retries` and `--results` could also conceal a publishing script's
+command position. Those findings are fixed inside the same PR.
+
+One bounded parser now supplies command position and replacement context. It handles
+clustered short options and consumes known option values exactly once. Unknown flags
+or abbreviations mark the wrapper unreadable, conservatively denying git/gh and
+publishing-script mentions, including apparent reads or dry runs, until the wrapper
+boundary. This deliberate false-denial choice is open to correction; guessing unknown
+arity would retain the write bypass. Known reads, enclosing command boundaries, coder
+exemptions and reviewer refusals retain their existing policy.
+
+GNU Parallel `-l`/`--max-lines` are optional numeric line counts, not replacement
+aliases; the preceding implementation's alias interpretation was wrong. Parallel `-I`
+requires a replacement argument and `-i`/`--replace` accept an optional one. GNU xargs
+optional values are attached-only, while a following non-option remains conservatively
+tracked as a possible replacement marker without being consumed. Parallel consumes a
+following optional value. Malformed or ambiguous attached forms remain unreadable.
+
+The 48 new focused hook-JSON cases expose 31 failures at 9b57ce74 and all pass with
+the shared parser. Shell syntax, lint, whitespace and headless boot pass. The first
+full matrix printed 3,582 successful checks and no failed assertion, but exited in its
+footer after the author edited header comments while Bash was reading the file. A
+frozen-copy rerun establishes the complete matrix exit separately. The adapter run's
+56 other tests pass; its dense-option-chain test had five timing subcase failures while
+the matrix ran concurrently, then passed all six subcases in isolation (10.08 seconds
+for that test). These are recorded as verification conditions, not guard behavior
+failures or a claim that the first whole run exited successfully. The Codex adapter's
+tool names, payloads and decision contract remain unchanged. No publishing payload
+was executed; all examples were JSON inputs to the hooks.
