@@ -14,5 +14,6 @@ passed; the guard's own deny hint already names `gh api -F body=@file`.
 When built, **CLAUDE.md**'s "a skill found wrong is fixed, and the fix is flagged to the player"
 applies.
 
-**Proposed, not asked for:** the fix's wording, the session's; and the band `later`. **Asked:** the
-note has no band label, and the player has been asked which band it gets.
+The band is `later` by the player's word, asked since the note had no band label: "later sure".
+
+**Proposed, not asked for:** the fix's wording, the session's.

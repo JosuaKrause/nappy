@@ -10,7 +10,12 @@ are huts at the crossings." (`src/ui/day_summary.gd`), and the docs that describ
 (`docs/MECHANICS.md`, `docs/CITY.md`) say gatehouse too; `checkpoint_hut` and its
 `EventDef.display_name` stay as names. "gatehouse" is already the trailer's word (PLAYTEST-139).
 
-**And a van line is rewritten.** **Asked:** which line — day 8's brief, "A van took someone from the
-next street before it was light.", or day 7's mark, "A van is waiting on the sidewalk. Don't come
-home light." (`src/resistance/resistance_steps.gd`) — and whether the player has wording or the filer
-proposes it.
+**And both van lines are rewritten**, day 8's brief first (`src/ui/day_summary.gd`): asked which
+line reads wrong, the player answered "the former but the latter needs improvement, too, light is
+ambiguous". Day 8's brief is "A van took someone from the next street before it was light."; day 7's
+mark is "A van is waiting on the sidewalk. Don't come home light." (`src/resistance/resistance_steps.gd`),
+whose "light" can be read as daylight or as carrying nothing.
+
+**Proposed, not asked for:** the new wording, the filer's, offered in the PR for the player to
+change: day 8, "A van took someone from the next street before dawn."; day 7, "A van is waiting on
+the sidewalk. Come home with the parcel."

@@ -12,9 +12,13 @@ anything; the comment above that branch says the mobile app "shows only the comm
 what the player saw. The frosty-pelican record makes the same claim and stays as history; the hook's
 comment is what changes.
 
-**Asked:** whether the note's Fix section is the player's ask or an agent's draft the player posted:
-"Include the command itself in `permissionDecisionReason`, cut to a readable length (about the first
-200 characters, with an ellipsis when cut)", "Correct the comment's claim about what the mobile app
-shows", "Add a test in `tools/test_rules_hooks.sh`", and check the Codex adapter. Until answered they
-are the filer's proposal. PR #429 edits the same comment block; this is built after it, with the
+The player's own description, asked whether the note's body was theirs: "the hook approval that we
+created doesn't properly tell me what the command is that you're trying to execute. it shows me the
+hook's code instead" — so the prompt shows the hook's own code, not only the kind of write; the fix
+finds where that comes from.
+
+**Proposed, not asked for:** the note's Fix section, an agent's draft the player posted — "Include
+the command itself in `permissionDecisionReason`, cut to a readable length (about the first 200
+characters, with an ellipsis when cut)", "Correct the comment's claim about what the mobile app
+shows", "Add a test in `tools/test_rules_hooks.sh`", and check `tools/codex-hooks.py` and its tests. PR #429 edits the same comment block; this is built after it, with the
 other guard work in dappled-owl.

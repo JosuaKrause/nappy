@@ -27,6 +27,11 @@ The assistant explained that the note's body is the session's own write-up, the 
 
 > file it as is
 
+The note has no band label. The assistant asked which band it gets, proposing `later`. The player
+answered:
+
+> later sure
+
 2. **Note #431, "using-tools: gh api reads a file only with -F body=@file", as written above.** → azure-panda.
 
 ## #432 — the van task is unreachable now
@@ -81,6 +86,12 @@ The assistant asked whether "gatehouse" changes only the text and docs and keeps
 
 > keep identifiers but change texts
 
+The assistant asked which van line reads wrong, day 8's brief "A van took someone from the next
+street before it was light." or day 7's mark "A van is waiting on the sidewalk. Don't come home
+light.", and whether the player had wording for it. The player answered:
+
+> the former but the latter needs improvement, too, light is ambiguous
+
 7. **Note #436, "Language", as written above.** → cozy-gecko.
 
 ## #437 — Easter egg
@@ -114,6 +125,11 @@ This note was already filed and built: PR #452 (silky-rabbit, nearby ground regi
 The assistant asked which ground the note means: quiet squares, market squares or parks. The player answered:
 
 > the calm areas with concrete flooring -- I don't know how you call them
+
+The assistant asked whether a statue or fountain blocks her, so routes go round it, or is
+decoration she walks over. The player answered:
+
+> fountain and statue should block at their footing
 
 11. **Note #447, "statues and fountains in parks", as written above.** → speckled-lemur.
 
@@ -161,5 +177,10 @@ The assistant asked which ground the note means: quiet squares, market squares o
 > PR #453 does not touch this part of the script: everything from `askable_reasons=` to the end of the file is identical at its base and head.
 
 The note was opened from the player's account. Whether its Problem, How it showed and Fix sections are the player's own or an agent's draft the player posted is asked; the player's words it quotes are "it was some command -- the hook doesn't tell me what the command itself is".
+
+The assistant asked whether the note's body, with its Problem, How it showed and Fix sections, was
+the player's own or an agent's draft the player posted. The player answered:
+
+> the hook approval that we created doesn't properly tell me what the command is that you're trying to execute. it shows me the hook's code instead
 
 15. **Note #459, "Write guard's approval prompt names the kind of write but not the command", as written above.** → rosy-marmot.

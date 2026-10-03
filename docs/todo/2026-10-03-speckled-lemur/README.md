@@ -9,6 +9,11 @@ priority: later
 quiet square (`QUIET_SQUARE`) is "Paved and empty. Calm without being green." in `docs/CITY.md`'s
 purpose table and "Paved, benched, empty" in `GameEnums`; both sentences change.
 
-**Asked:** whether the statue or fountain is solid, so routes go round it on calm ground (which
-touches the route decision and the city skill's guarantees), or decoration she walks over. The
-filer would make it solid.
+**It blocks her at its footing** (asked whether it is solid or decoration, the player answered
+"fountain and statue should block at their footing"): its base is a solid ground shape and she walks
+round it, while what stands above the base is drawn over her. A solid object on calm ground touches
+the route decision, so it is checked before it is accepted, under the **city** skill's guarantees
+(the square stays crossable, and no route the day needs is closed).
+
+**Proposed, not asked for:** one statue or fountain per quiet square, at its centre; which of the two
+is drawn per square by the city's seed.
