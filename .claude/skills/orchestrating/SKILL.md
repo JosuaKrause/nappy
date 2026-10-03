@@ -186,8 +186,9 @@ job-owned storage rules. Release a finished agent's brief with `cleanup: ready` 
 processes stop and useful artifacts are retained; retirement refuses an unreleased brief.
 
 **One repo takes several agents at once when each works in its own git worktree** (spawn with
-worktree isolation; each gets a full checkout under `.claude/worktrees/` and its own branch, and
-the path-triggered rules hook works there unchanged). What makes it safe is not the worktrees —
+worktree isolation; each gets a checkout under `.claude/worktrees/` and its own branch, with the
+sparse exclusions above unless its task needs those files, and the path-triggered rules hook works
+there unchanged). What makes it safe is not the worktrees —
 merging is what collides — so parallelism is planned at the file level, before spawning:
 
 - **Partition by files, not by topic.** List what each milestone will touch and spawn together
