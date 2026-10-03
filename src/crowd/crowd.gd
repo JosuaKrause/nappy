@@ -202,7 +202,11 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 		# play keeps its local population and pays for no actors beyond the moving field.
 		var area_scale := _map.world_size().x * _map.world_size().y \
 				/ pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) if city_view else 1.0
-		_populate(CrowdAgent.Kind.WALKER, roundi(Tuning.crowd_pedestrians(act) * area_scale * walker_multiplier), rng)
+		var walkers := roundi(Tuning.crowd_pedestrians(act) * area_scale * walker_multiplier)
+		if uniform_walkers:
+			_populate_uniform_walkers(walkers, rng)
+		else:
+			_populate(CrowdAgent.Kind.WALKER, walkers, rng)
 		_populate(CrowdAgent.Kind.CAR, roundi(Tuning.crowd_cars(act) * area_scale), rng)
 	# **The unpack the first frame would do anyway, done before the first frame is drawn.** The
 	# morning places every car without consulting the ones already placed, so some of them start
@@ -346,6 +350,47 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_city.add_entity(agent)
 		_agents.append(agent)
+
+## A recipe's even street population is sampled along actual eligible sidewalk lanes.
+## Random corridor weights alone can leave a whole pictured side street empty by chance.
+## Every candidate uses the same setup_at ground/body rules as an explicitly placed walker;
+## after dawn these are ordinary agents, including their turns, collisions and recycling.
+func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
+	var candidates: Array[CrowdAgent] = []
+	for vertical: bool in [false, true]:
+		var corridors := _field.corridor_range(vertical)
+		var along := _field.along_bounds(vertical)
+		for corridor in range(corridors.x, corridors.y + 1):
+			for lane: int in CrowdLanes.SIDEWALK_OFFSETS:
+				for tile in range(ceili(along.x / Tuning.TILE_SIZE), floori(along.y / Tuning.TILE_SIZE)):
+					if CityMap.corridor_offset(tile) >= 0:
+						continue
+					var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, tile)
+					if not lane in offsets:
+						continue
+					var cross := CrowdLanes.walker_lane_centre(corridor, lane, offsets)
+					var distance := (tile + 0.5) * Tuning.TILE_SIZE
+					var at := Vector2(cross, distance) if vertical else Vector2(distance, cross)
+					var heading := (Vector2.DOWN if vertical else Vector2.RIGHT) * (1 if lane % 2 == 0 else -1)
+					var agent := CrowdAgent.new()
+					agent.traffic = _traffic
+					agent.door_segments = _door_segments
+					agent.home_segments = _home_segments
+					agent.pockets = _pockets
+					var problem := agent.setup_at(CrowdAgent.Kind.WALKER, _map, _field, rng.randi(), at, heading, -1)
+					if problem.is_empty():
+						candidates.append(agent)
+					else:
+						agent.free()
+	var selected := {}
+	for i in mini(count, candidates.size()):
+		var index := floori((i + 0.5) * candidates.size() / mini(count, candidates.size()))
+		selected[index] = true
+		_city.add_entity(candidates[index])
+		_agents.append(candidates[index])
+	for index in candidates.size():
+		if not selected.has(index):
+			candidates[index].free()
 
 # ----------------------------------------------------------------- traffic ---
 # A car that knows about the player and about zebras and about nothing else on the road passes

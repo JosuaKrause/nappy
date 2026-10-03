@@ -49,8 +49,8 @@ Only explicit selections install events. The normal event scheduler and director
 authored scenes, in either free or scripted mode. `background.events: true` is rejected;
 an omitted or false value selects no automatic events. Pedestrians and cars keep their normal
 simulation independently of event selection. Unselected seals and region bodies remain absent.
-`background.uniform_walkers: true` gives pedestrian corridors equal selection weight,
-including on recycle. `background.walker_multiplier` scales only the recipe's pedestrian
+`background.uniform_walkers: true` initially samples evenly along eligible sidewalk lanes
+and gives pedestrian corridors equal selection weight on recycle. `background.walker_multiplier` scales only the recipe's pedestrian
 population from the ordinary act count (1–4, default 1). Cars retain their normal count and
 street weighting. Both require `crowd: true`; an ordinary day restores the default distribution.
 Random crowd cannot accompany pinned crowd actors.
