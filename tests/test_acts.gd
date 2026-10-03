@@ -107,8 +107,11 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 ## **The fire only catches where there is a building to burn, and burns on that building alone.**
 ## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's
 ## `Building`s directly north of it — never the edge of the world, which `CityMap.tile_at()` reads
-## as `BUILDING` — and the flames drawn there (`EventInstance._flames_across()`) stay inside that
-## building's own facade, including at a site on the first or last column of its lot.
+## as `BUILDING` — and the flames drawn there (`EventInstance._flames_across()`) burn along the
+## whole of that building's own facade and stay inside it, including at a site on the first or last
+## column of its lot: every column the city draws a facade on carries a flame, and no column another
+## building's roof covers does. *"the fire should be on the whole building not only the door"*
+## (sandy-egret).
 ##
 ## **Then the dawn after it shows that building burnt** — *"the building is what needs to be burnt,
 ## not an object next to the building"* — through `City.start_day()`, the way a real morning
@@ -131,7 +134,11 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			"seed %d: there are fronts for the fire to catch on (%d)" % [SEED, sites.size()])
 	var nothing_behind: Array[Vector2i] = []
 	var spilled: Array[Vector2i] = []
+	var bare: Array[Vector2i] = []
+	var on_a_roof: Array[Vector2i] = []
 	var at_a_lot_end := 0
+	var wider_than_five := 0
+	var size := float(Tuning.TILE_SIZE)
 	for tile: Vector2i in sites:
 		var behind := _building_at(city, tile + Vector2i.UP)
 		if not behind:
@@ -141,10 +148,28 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			at_a_lot_end += 1
 		var at := city.map.tile_to_world(tile)
 		var facade := city.map.tile_rect_to_world(behind.lot)
-		for flame in EventInstance._flames_across(EventInstance._facade_span_at(city.map, at)):
+		if facade.size.x > 80.0:
+			wider_than_five += 1
+		var flames := EventInstance._flames_across(EventInstance._facade_runs_at(city.map, at))
+		for flame in flames:
 			if at.x + flame.x - flame.y * 0.5 < facade.position.x - 0.01 \
 					or at.x + flame.x + flame.y * 0.5 > facade.end.x + 0.01:
 				spilled.append(tile)
+				break
+		# Each column's middle, against every flame's own width: a column the building draws is
+		# burning, one another building's roof covers (`Building.covered_ground_cols`) is not.
+		for col in behind.lot.size.x:
+			var middle := facade.position.x + (col + 0.5) * size
+			var burning := false
+			for flame in flames:
+				if absf(at.x + flame.x - middle) <= flame.y * 0.5:
+					burning = true
+			var drawn := not behind._is_covered(col)
+			if drawn and not burning:
+				bare.append(tile)
+				break
+			if burning and not drawn:
+				on_a_roof.append(tile)
 				break
 	t.check(nothing_behind.is_empty(),
 			"every front the fire can catch on has a building behind it (%d do not, first %s)"
@@ -154,6 +179,14 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 	t.check(spilled.is_empty(),
 			"the flames stay on the burning building's own facade (%d spill over, first %s)"
 			% [spilled.size(), spilled.slice(0, 3)])
+	t.check(wider_than_five > 0,
+			"and some fronts are wider than five flames could cover (%d)" % wider_than_five)
+	t.check(bare.is_empty(),
+			"the whole facade burns, every column it draws (%d leave one bare, first %s)"
+			% [bare.size(), bare.slice(0, 3)])
+	t.check(on_a_roof.is_empty(),
+			"and never a column another building's roof covers (%d do, first %s)"
+			% [on_a_roof.size(), on_a_roof.slice(0, 3)])
 
 	# **Never the power station's front**: its facade is drawn whole whatever its condition says,
 	# and its transformer yard has no wall for day 8's arrow to end on. Guarded against vacuity by
