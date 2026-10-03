@@ -9,7 +9,7 @@ other way there, and is the detour a fair price?** The parked engine has a field
 **does it want one?** Then turn for home
 without having met it: **is it ahead of her again?** And on the second walk, in another
 direction: **does a fire that is always in front of her still read as an accident?** Win a
-day 3 without going far from home, and look for the burnt building on day 4: it is lit at the
-end of such a day, away from where she finished. The records are found with
+day 3 without going far from home, and look for the burnt building on day 4: its fire is lit at
+the end of such a day, away from where she finished. The records are found with
 `tools/decisions.sh M179` (the fire is on her way) and `tools/decisions.sh merry-koala` (the
 building it caught is the scar).
