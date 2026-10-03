@@ -7,6 +7,9 @@ seeded composition as the storyboard.
 
 [rosy-lark, trailer still feedback](../../playtests/2026-10-03-rosy-lark.md)
 requires the choice, blower, dog and title scenes to bustle with people and events.
+As [dappled-lynx, authored scenes choose existing events](../../playtests/2026-10-03-dappled-lynx.md)
+clarifies, every event is selected deliberately in the recipe; bustle does not authorize
+normal scheduler fill or automatically chosen seals. Use existing game objects only.
 The trucks scene needs activity appropriate to its day, the mother facing down, and
 varied posters on both buildings. [Downy-egret, the numbered scene review](../../playtests/2026-10-03-downy-egret.md)
 clarifies that the father's approach is horizontal and the gate itself is vertical.
