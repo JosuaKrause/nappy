@@ -1678,7 +1678,9 @@ task records one at a front the fire could have caught on and has that building 
 then (`ResistanceDirector._burn_a_front_for_the_task()`), so the building it sends her to is
 burnt. `burning_building` only ever catches on a wall `building.gd` actually
 draws (`EventDef.Pavement.AT_THE_FRONT`, the frontage lane of a north sidewalk, and only where the
-tile behind it is on the map), so there is always a real facade behind the scar to burn.
+tile behind it is on the map), so there is always a real facade behind the scar to burn. Never the
+power station's: its facade is drawn whole whatever its condition says, and its transformer yard
+has no wall at all (`EventScheduler._open_ground_for()` refuses that front to a row that burns).
 
 Causes fire during the day; the city presents the result the **next morning**.
 `CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is

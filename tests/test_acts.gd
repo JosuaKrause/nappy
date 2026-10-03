@@ -155,6 +155,27 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			"the flames stay on the burning building's own facade (%d spill over, first %s)"
 			% [spilled.size(), spilled.slice(0, 3)])
 
+	# **Never the power station's front**: its facade is drawn whole whatever its condition says,
+	# and its transformer yard has no wall for day 8's arrow to end on. Guarded against vacuity by
+	# the station's own fronts, which the same lane offers any row that does not burn.
+	var fire := EventCatalogue.by_id("burning_building")
+	var station := CityMap.blocks_tile_rect(city.map.power_station)
+	t.check(city.map.has_power_station(), "seed %d has a power station" % SEED)
+	var station_fronts := 0
+	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if EventScheduler._wants_this_side(fire, city.map, tile) \
+				and station.has_point(tile + Vector2i.UP):
+			station_fronts += 1
+	t.check(station_fronts > 0,
+			"seed %d: the power station has fronts on the lane (%d)" % [SEED, station_fronts])
+	var on_the_station: Array[Vector2i] = []
+	for tile: Vector2i in sites:
+		if station.has_point(tile + Vector2i.UP):
+			on_the_station.append(tile)
+	t.check(on_the_station.is_empty(),
+			"the fire never catches on the power station (%d fronts do, first %s)"
+			% [on_the_station.size(), on_the_station.slice(0, 3)])
+
 	var site: Vector2i = sites.keys()[sites.size() / 2]
 	var scarred := _building_at(city, site + Vector2i.UP)
 	t.check(scarred != null, "the fire's site has a building behind it")

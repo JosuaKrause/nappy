@@ -844,7 +844,9 @@ static func _fire_truck() -> EventDef:
 ## "the one face of a building the city draws" (`EventDef.Pavement`'s own doc), is a placement
 ## choice for this row rather than the crew-pasting convention it usually serves: nothing else about
 ## it asks for `pastes_a_front`. A proposal, open to overturn if a fire that can also catch on the
-## un-drawn walls turns out to matter more than a burnt shell with a real facade behind it.
+## un-drawn walls turns out to matter more than a burnt shell with a real facade behind it. **Never
+## on the power station's front** (`EventScheduler._burns_its_front()`): its facade does not draw
+## burnt, and its transformer yard has no wall to burn.
 static func _burning_building() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burning_building"
