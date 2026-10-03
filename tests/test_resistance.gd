@@ -2674,9 +2674,10 @@ func _check_the_task_is_at_the_burnt_buildings_door(t, director: ResistanceDirec
 		t.check(tip.x >= lot.position.x and tip.x <= lot.end.x,
 				"and on its own front, which has no entrance door (%s)" % behind.lot)
 
-## The contact at the door completes from the near half of the sidewalk straight in front of it,
-## and not from its far half or past it. Called last, since the touch that completes it hands the
-## task over.
+## The contact at the door completes from the near half of the sidewalk in front of it — the whole
+## tile below the door, out to its bottom corners — and not from its far half or past it. Called
+## last, since the touch that completes it hands the task over; the two corner touches are asked of
+## copies of the contact, with its own position and reach, so they hand nothing over.
 func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDirector) -> void:
 	var contact := director._contact
 	var door := director.contact_position()
@@ -2700,6 +2701,21 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDi
 	contact._physics_process(STEP)
 	t.check(not contact.is_done, "nor one from the far half, %.0fpx from the door"
 			% door.distance_to(far))
+	for side in [-1.0, 1.0]:
+		var corner := foot + Vector2(side * (Tuning.TILE_SIZE * 0.5 - 1.0),
+				sidewalk * 0.5 - 1.0)
+		var copy := ContactPoint.new()
+		copy.ride(contact.step, contact._rider, contact._rider_offset)
+		copy.reach = contact.reach
+		t.add_child(copy)
+		copy.set_physics_process(false)
+		copy._player = player
+		player.global_position = corner
+		copy._physics_process(STEP)
+		t.check(copy.is_done,
+				("a touch from a bottom corner of the tile below the door, %.1fpx from it, " +
+				"completes it") % door.distance_to(corner))
+		copy.free()
 	player.global_position = near
 	contact._physics_process(STEP)
 	t.check(contact.is_done, "a touch from the near half, %.0fpx from the door, completes it"

@@ -389,13 +389,18 @@ func _burn_a_front_for_the_task(shell: EventInstance) -> void:
 	GameState.add_scar(_step.task_event_id, shell.global_position)
 	_city.mark_the_burnt_frontage()
 
-## How far day 8's touch reaches from the burnt building's door: half a tile from the door's point
-## (`City.way_in_behind()`, half a tile up its ground floor) down to the wall's foot, plus half the
-## sidewalk (`Tuning.SIDEWALK_WIDTH`, two tiles) — 48px, so straight in front of the door she
-## completes it from the near half of the sidewalk, its frontage lane, and not from the kerb lane
-## or the street. *(sandy-egret: "or better to the door but the acceptance radius centered at the
-## door should have a large enough radius for half the sidewalk to be covered".)*
-const DOOR_REACH := Tuning.TILE_SIZE * 0.5 + Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
+## How far day 8's touch reaches from the burnt building's door: the whole tile of sidewalk in
+## front of the door, its bottom corners included. *(sandy-egret: "or better to the door but the
+## acceptance radius centered at the door should have a large enough radius for half the sidewalk
+## to be covered".)* The sidewalk is two tiles (`Tuning.SIDEWALK_WIDTH`), so its near half is the
+## one frontage-lane tile below the door; the door's point (`City.way_in_behind()`) is the middle
+## of the ground-floor tile above it, so that tile's far corners are half a tile across and a tile
+## and a half down — √(16² + 48²) ≈ 50.6px. Straight in front of the door that reaches 2.6px
+## past the line between the frontage lane and the kerb lane and no further, so the kerb lane's far
+## side and the street never count. A way in on a column line rather than a column's middle (a
+## storefront pair, a portico on an even-width front) covers the frontage lane a tile either side
+## of the line, less those two tiles' outer far corners.
+const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
 
 ## Day 8's contact: it rides the burnt shell `shell` (so `rider_alive()` keeps answering for it) but
 ## stands on the door of the building behind it (`City.way_in_behind()`) and reaches `DOOR_REACH`

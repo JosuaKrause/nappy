@@ -357,8 +357,8 @@ func _resolve_target(word: String) -> Vector2:
 ## for exactly as long as `mark` itself would have, on a day with a task still to walk to. **A
 ## contact on a wall is walked to from the ground in front of it** (`_reachable_point_near()`):
 ## day 8's stands on the burnt building's door (`ResistanceDirector._ride_to_the_door()`), a
-## building tile no plan can end on, and its `DOOR_REACH` (48px) completes it from the nearest open
-## tile, a tile below the door or diagonally below it.
+## building tile no plan can end on, and its `DOOR_REACH` (about 50.6px) completes it from the
+## nearest open tile, a tile below the door (32px) or diagonally below it (45px).
 func _task_target() -> Vector2:
 	var step := _resistance.current_step()
 	if step == null or step.is_pickup:
