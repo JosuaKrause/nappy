@@ -47,12 +47,6 @@ SHARDS="${TEST_SHARDS:-4}"
 # one process than any single shard carries and are never bounded by a limit sized for a shard's
 # share of the work.
 SHARD_TIMEOUT_S="${TEST_SHARD_TIMEOUT_S:-600}"
-# Whole seconds only: the watchdog in `run_one_process` is a `read -t`, which takes nothing else
-# (bash 3.2 rejects `1.5`, and a rejected read would kill every shard at once).
-if [[ ! "$SHARD_TIMEOUT_S" =~ ^[0-9]+$ ]]; then
-    echo "tools/test.sh: TEST_SHARD_TIMEOUT_S must be whole seconds, got '$SHARD_TIMEOUT_S'" >&2
-    exit 2
-fi
 
 # Where the measured per-suite costs live and what an unmeasured suite is assumed to cost. See
 # tests/suite_costs.txt's own header for what the file is and how it is refreshed.
@@ -89,6 +83,14 @@ EOF
 case "${1:-}" in
     --help|-h) usage; exit 0 ;;
 esac
+
+# Whole seconds only: the watchdog in `run_one_process` is a `read -t`, which takes nothing else
+# (bash 3.2 rejects `1.5`, and a rejected read would kill every shard at once). Checked after
+# `--help`, so the usage prints whatever the environment holds.
+if [[ ! "$SHARD_TIMEOUT_S" =~ ^[0-9]+$ ]]; then
+    echo "tools/test.sh: TEST_SHARD_TIMEOUT_S must be whole seconds, got '$SHARD_TIMEOUT_S'" >&2
+    exit 2
+fi
 
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT (override with GODOT=...)" >&2
