@@ -1468,6 +1468,47 @@ assert_write_guard "cat <<EOF > note.md, prose and a \$HOME naming git push -> a
     "cat <<EOF > note.md
 run git push in \$HOME, never gh issue close
 EOF"
+# bash 3.2 finds a \$(...)'s closing ) by reading the heredoc body inside it as shell text, so a
+# body line EOF) (or EOF ), or any ) the body did not open) ends the substitution there and the
+# lines after it run, while the delimiter-exact reading would take them for body: such a body
+# keeps the whole command as it was, read as before.
+assert_write_guard "a heredoc in \$(...) ended by EOF), hiding a forced push before a second heredoc -> deny" deny \
+    "echo \"\$(cat <<'EOF'
+x
+EOF)\"
+git push --force origin main
+echo \"\$(cat <<'EOF'
+y
+EOF
+)\""
+assert_write_guard "the same with gh issue close between the two -> deny" deny \
+    "echo \"\$(cat <<'EOF'
+x
+EOF)\"
+gh issue close 423
+echo \"\$(cat <<'EOF'
+y
+EOF
+)\""
+assert_write_guard "a heredoc in \$(...) ended by 'EOF )' -> deny" deny \
+    "echo \"\$(cat <<'EOF'
+x
+EOF )\"
+git push --force origin main
+echo \"\$(cat <<'EOF'
+y
+EOF
+)\""
+assert_write_guard "a body line whose ) and quote close the substitution early -> deny" deny \
+    "echo \"\$(cat <<'EOF'
+x ) \" ; git push --force origin main ; echo \"
+EOF
+)\""
+assert_write_guard "a wrapped heredoc commit with balanced parentheses naming git push -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m \"\$(cat <<'EOF'
+run git push (wrapped) after the review (see pr-review)
+EOF
+)\""
 
 # A GraphQL call reads only when its query is written inline and holds no "mutation": a query from
 # a file, a shell variable, a command substitution, the whole body from --input, or no query field

@@ -1060,6 +1060,17 @@ def heredoc_op_regex:
 # What the shell runs inside the body of a heredoc whose delimiter is not quoted: a command
 # substitution, `$(...)` or a backtick, and a `${...}` expansion, whose word can hold one.
 def expands_in_body: test("\\$\\(|`|\\$\\{");
+# Whether a heredoc body inside a `$(...)` may end the substitution before its terminator, in some
+# shell. bash 3.2 (macOS's `/bin/bash`, which `bash -c` and Codex get) finds a `$(`'s closing `)` by
+# reading the text inside it, the heredoc's body included, with quotes, backslashes and comments
+# counted as shell text: a body line `EOF)`, `EOF )` or `x ) " ; git push ; echo "` closes the
+# substitution there, and what follows runs, while zsh reads the same body to its delimiter. So a
+# body with a `)` in it is text only when it holds no quote, backtick, backslash or `#`, which
+# could hide a `(` from that count, and no `)` closes more than the body itself opened.
+def may_close_substitution:
+  contains(")")
+  and (test("['\"`\\\\#]")
+       or any(foreach explode[] as $c (0; if $c == 40 then . + 1 elif $c == 41 then . - 1 else . end); . < 0));
 def heredoc_sep_regex: "\\$\\(|`|;|&|\\||\\(|\\)";
 def balanced_plain: (test("\\\\") | not)
   and ((explode | map(select(. == 39)) | length) % 2 == 0)
@@ -1113,8 +1124,9 @@ def heredoc_check($q; $line; $op):
 # operator line put back, and read as before. A heredoc that is kept (fed to `bash`, `python3`,
 # `ssh`, ...) keeps its body and is read as before, unsure; a line with two operators keeps both
 # and ends all stripping after it. Anything unexpected -- a body with no terminator, a `$(...)`
-# that does not close right after its body -- returns the command unchanged, so the guard reads it
-# exactly as it would have without this.
+# that does not close right after its body, a body inside a `$(...)` that bash 3.2 could close
+# early (`may_close_substitution`) -- returns the command unchanged, so the guard reads it exactly
+# as it would have without this.
 def strip_heredocs:
   . as $orig
   | if (contains("<<") | not) then .
@@ -1127,6 +1139,7 @@ def strip_heredocs:
            | (if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) then .mode = 0 else . end)
          elif .mode == 1 then
            if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) | not then .held += [$line]
+           elif .sub and (.held | join("\n") | may_close_substitution) then .bad = true | .mode = 0
            elif (.quoted | not) and (.held | join("\n") | expands_in_body) then
              # The shell expands this body: keep it, with its operator line, as a kept heredoc's.
              .out = .out[0:-1] + [.op_line] + .held + [$line]
