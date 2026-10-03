@@ -82,6 +82,22 @@ See `docs/MECHANICS.md`, "Saving and resuming".
 
 ## Dev flags
 
+`tools/trailer.sh` records the saved scenes referenced by `tools/trailer/shots.json` through the
+game's frame-locked movie writer, then trims, fades and joins them with game audio. Run
+`tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
+or `--shot choice` to record one scene. Each recipe owns its setup and scripted action;
+the shot list owns the cut timing. Only normal scenes enter the trailer, with their authored
+extent and validation scope preserved in the resolved manifest.
+
+`tools/record.sh --recipe scene-recipes/trailer-choice.json` records a recipe in scripted mode.
+It also records ordinary rigs, such as `tools/record.sh --route calm,home --seed 4242`.
+Videos and temporary frames stay under ignored build output. Recordings retain compact frame
+hashes, manifests and settings beside the video. `tools/trailer.sh --check all` compares two
+renders of each shot, including their simulation observations and audio; `--check-load all`
+compares an ordinary render with one under a CPU load worker. Results remain under
+`build/trailer/checks/`. Matching frames establish repeatability for the recorded recipe,
+revision, assets, engine and settings.
+
 Everything after `--` is passed to the game, gated behind a debug build so none of it does
 anything in an exported release:
 

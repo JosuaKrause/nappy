@@ -40,10 +40,12 @@ SHOTS_FILE="$PROJECT_DIR/tools/trailer/shots.json"
 OUT_DIR="$PROJECT_DIR/build/trailer"
 # shellcheck source=tools/lib_dev_flags.sh
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
+# shellcheck source=tools/lib_movie_evidence.sh
+source "$PROJECT_DIR/tools/lib_movie_evidence.sh"
 
 usage() {
     cat <<EOF
-usage: tools/trailer.sh [--help|-h] [--list | --shot NAME | --check NAME|all]
+usage: tools/trailer.sh [--help|-h] [--list | --validate | --shot NAME | --check NAME|all | --check-load NAME|all]
 
 Renders the trailer from tools/trailer/shots.json: each shot through Godot's movie writer,
 frame-locked, at the game's own resolution with its audio; then fades, joins and encodes them.
@@ -54,7 +56,12 @@ Frames are deleted as soon as each shot is encoded. Output goes to build/trailer
   --check NAME     render the shot twice and compare every frame's hash; exits non-zero on a
                    difference inside the shot's cut
   --check all      the same for every shot in the list
-  --list           print the shot list (name, seed, day, parent, length, caption); render nothing
+  --check-load NAME|all  compare an ordinary render with one under a CPU load worker
+  --validate       headlessly validate every recipe; never open a recording window
+  --list           print the shot list (name, recipe, length, gap); render nothing
+
+Checks retain hashes, manifests and settings in build/trailer/checks/. Simulation observations
+and audio must match too. Equality applies only to the recorded engine, assets and settings.
 
   tools/trailer.sh --shot choice
 
@@ -67,10 +74,10 @@ TARGET=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
-        --list)
-            [[ "$MODE" == "all" ]] || { echo "--list cannot be combined with --$MODE" >&2; usage >&2; exit 1; }
-            MODE="list"; shift ;;
-        --shot|--check)
+        --list|--validate)
+            [[ "$MODE" == "all" ]] || { echo "$1 cannot be combined with --$MODE" >&2; usage >&2; exit 1; }
+            MODE="${1#--}"; shift ;;
+        --shot|--check|--check-load)
             [[ "$MODE" == "all" ]] || { echo "$1 cannot be combined with --$MODE" >&2; usage >&2; exit 1; }
             if [[ $# -lt 2 || "$2" == --* ]]; then
                 echo "$1 is missing its shot name" >&2; echo >&2; usage >&2; exit 1
@@ -98,23 +105,25 @@ fi
 # and the whole cut against the list's own `max_seconds` -- PLAYTEST-139's "30s should be max".
 schema_errors="$(jq -r '
     def num: type == "number";
-    (if (.fps | num) and .fps > 0 then empty else "fps must be a positive number" end),
-    (if (.max_seconds | num) then empty else "max_seconds must be a number" end),
+    (if (.fps | num) and .fps > 0 and .fps == (.fps | floor) then empty
+        else "fps must be a positive integer" end),
+    (if (.max_seconds | num) and .max_seconds > 0 and .max_seconds <= 30 then empty
+        else "max_seconds must be positive and at most 30" end),
     (if (.shots | type) == "array" and (.shots | length) > 0 then empty
         else "shots must be a non-empty array" end),
     ((.shots // [])[] |
         (.name // "?") as $n |
         (if (.name | type) == "string" and (.name | test("^[a-z0-9-]+$")) then empty
             else "a shot name must be lower-case letters, digits and dashes: \($n)" end),
-        (if (.seed | num) and .seed > 0 then empty else "\($n): seed must be a positive number" end),
-        (if (.day // 1 | num) then empty else "\($n): day must be a number" end),
-        (if .parent == "mother" or .parent == "father" then empty
-            else "\($n): parent must be mother or father" end),
+        (if (.recipe | type) == "string" and (.recipe | test("^scene-recipes/[a-z0-9-]+\\.json$"))
+            then empty else "\($n): recipe must name a tracked scene-recipes/*.json file" end),
+        (if (keys - ["name","recipe","length","in","gap","fade_in","fade_out"] | length) == 0
+            then empty else "\($n): unknown shot field (setup and playback belong in the recipe)" end),
         (if (.length | num) and .length > 0 then empty else "\($n): length must be positive" end),
         (if (.in // 0 | num) and (.in // 0) >= 0 then empty else "\($n): in must be >= 0" end),
         (if (.gap // 0 | num) and (.gap // 0) >= 0 then empty else "\($n): gap must be >= 0" end),
-        (if (.flags // [] | type) == "array" and all(.flags // [] | .[]; type == "string")
-            then empty else "\($n): flags must be an array of strings" end)
+        (if all([(.fade_in // 0.25),(.fade_out // 0.25)][]; num and . >= 0) then empty
+            else "\($n): fades must be nonnegative numbers" end)
     ),
     (if ([.shots[]?.name] | length) == ([.shots[]?.name] | unique | length) then empty
         else "two shots share a name" end)
@@ -137,29 +146,17 @@ shot_field() {
         '.shots[] | select(.name == $n) | (.[$f] // $d) | tostring' "$SHOTS_FILE"
 }
 
-# The dev flags a shot forwards to the game, one per line: its seed, day, parent and walk, the
-# `--after` its cut needs, its free-form `flags`, and its caption and title card.
+# The recipe owns scene setup and playback; the shot only selects the capture deadline.
 shot_game_flags() {
-    local name="$1" walk caption title after
-    walk="$(shot_field "$name" walk)"
-    caption="$(shot_field "$name" caption)"
-    title="$(shot_field "$name" title)"
-    after="$(shot_render_seconds "$name")"
     printf '%s\n' --player-view --no-save --no-focus-pause \
-        --seed "$(shot_field "$name" seed)" --day "$(shot_field "$name" day 1)" \
-        --parent "$(shot_field "$name" parent)" --after "$after"
-    [[ -n "$walk" ]] && printf '%s\n' --walk "$walk"
-    jq -r --arg n "$name" '.shots[] | select(.name == $n) | (.flags // [])[]' "$SHOTS_FILE"
-    [[ -n "$caption" ]] && printf '%s\n' --caption "$caption"
-    [[ -n "$title" ]] && printf '%s\n' --title-card "$title"
-    return 0
+        --recipe "$PROJECT_DIR/$(shot_field "$1" recipe)" --recipe-mode scripted \
+        --after "$(shot_render_seconds "$1")"
 }
 
-# How long the game runs for a shot: to the end of its cut and a few frames past it, so the last
-# frame of the cut is always written before the game quits.
+# Record through the cut's end on the recipe's simulation clock.
 shot_render_seconds() {
     awk -v a="$(shot_field "$1" in 0.5)" -v b="$(shot_field "$1" length)" \
-        'BEGIN { printf "%.3f\n", a + b + 0.2 }'
+        'BEGIN { printf "%.3f\n", a + b }'
 }
 
 total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE")"
@@ -177,7 +174,7 @@ for name in "${SHOT_NAMES[@]}"; do
     fi
 done
 
-if [[ "$MODE" == "shot" || "$MODE" == "check" ]] && [[ "$TARGET" != "all" || "$MODE" == "shot" ]]; then
+if [[ "$MODE" == "shot" || "$MODE" == "check" || "$MODE" == "check-load" ]] && [[ "$TARGET" != "all" || "$MODE" == "shot" ]]; then
     found=""
     for name in "${SHOT_NAMES[@]}"; do [[ "$name" == "$TARGET" ]] && found=1; done
     if [[ -z "$found" ]]; then
@@ -187,13 +184,10 @@ if [[ "$MODE" == "shot" || "$MODE" == "check" ]] && [[ "$TARGET" != "all" || "$M
 fi
 
 if [[ "$MODE" == "list" ]]; then
-    printf '%-10s %10s %4s %-7s %6s %5s  %s\n' shot seed day parent length gap caption
+    printf '%-10s %-40s %6s %5s\n' shot recipe length gap
     for name in "${SHOT_NAMES[@]}"; do
-        text="$(shot_field "$name" caption)"
-        [[ -z "$text" ]] && text="$(shot_field "$name" title)"
-        printf '%-10s %10s %4s %-7s %6s %5s  %s\n' "$name" "$(shot_field "$name" seed)" \
-            "$(shot_field "$name" day 1)" "$(shot_field "$name" parent)" \
-            "$(shot_field "$name" length)" "$(shot_field "$name" gap 0)" "$text"
+        printf '%-10s %-40s %6s %5s\n' "$name" "$(shot_field "$name" recipe)" \
+            "$(shot_field "$name" length)" "$(shot_field "$name" gap 0)"
     done
     echo "total ${total_seconds}s of ${MAX_SECONDS}s"
     exit 0
@@ -227,7 +221,9 @@ fi
 # ------------------------------------------------------------------------------ rendering ---
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/nappy-trailer.XXXXXX")"
 FOCUS_WATCHER_PID=""
+LOAD_PID=""
 cleanup() {
+    [[ -z "$LOAD_PID" ]] || kill "$LOAD_PID" 2>/dev/null || true
     rig_focus_watch_stop "$FOCUS_WATCHER_PID"
     rm -rf "$WORK"
 }
@@ -235,12 +231,31 @@ trap cleanup EXIT
 
 TREE_BEFORE="$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)"
 
+# Validate the game's resolved normal classification before opening any movie window.
+targets=("${SHOT_NAMES[@]}")
+[[ -z "$TARGET" || "$TARGET" == all ]] || targets=("$TARGET")
+mkdir -p "$WORK/preflight"
+for name in "${targets[@]}"; do
+    recipe="$(shot_field "$name" recipe)"
+    if [[ ! -f "$PROJECT_DIR/$recipe" ]] || ! git -C "$PROJECT_DIR" ls-files --error-unmatch "$recipe" >/dev/null 2>&1; then
+        echo "trailer.sh: recipe is absent or untracked: $recipe" >&2; exit 1
+    fi
+    movie_recipe_preflight "$PROJECT_DIR/$recipe" "$WORK/preflight/$name.json" true scripted
+done
+if [[ "$MODE" == validate ]]; then
+    mkdir -p "$OUT_DIR/validation"
+    cp "$WORK/preflight/"*.json "$OUT_DIR/validation/"
+    echo "validated ${#targets[@]} normal scene recipes"
+    exit 0
+fi
+
 # Renders shot $1's frames and audio into directory $2 (created empty). Fails loudly if Godot
 # did not quit on its own or did not write the frames the cut needs.
 render_frames() {
     local name="$1" dir="$2" after kill_after flags=()
     rm -rf "$dir"; mkdir -p "$dir"
     while IFS= read -r word; do flags+=("$word"); done < <(shot_game_flags "$name")
+    flags+=(--recipe-manifest "$dir/manifest.json")
     after="$(shot_render_seconds "$name")"
     kill_after="$(rig_kill_after_movie_seconds --after "$after")"
     echo "rendering '$name' (${after}s of game at ${FPS}fps)..." >&2
@@ -268,10 +283,12 @@ render_frames() {
         grep -E -A2 '^(SCRIPT )?ERROR' "$dir/godot.log" | head -20 >&2
         return 1
     fi
+    movie_manifest_check "$dir/manifest.json" true || return 1
+    movie_playback_check "$dir/manifest.json" || return 1
     local need last
     need="$(awk -v a="$(shot_field "$name" in 0.5)" -v b="$(shot_field "$name" length)" \
         -v f="$FPS" 'BEGIN { printf "%d\n", int((a + b) * f + 0.5) }')"
-    last="$(printf '%s/frame%08d.png' "$dir" "$need")"
+    last="$(printf '%s/frame%08d.png' "$dir" "$((need - 1))")"
     if [[ ! -f "$last" ]]; then
         echo "trailer.sh: '$name' wrote too few frames (no $(basename "$last"))" >&2
         return 1
@@ -325,23 +342,44 @@ join_shots() {
         -c:a aac -b:a 192k -movflags +faststart "$OUTPUT"
 }
 
-# Hashes every frame of a render, one "hash  frameNNNNNNNN.png" line each, sorted by frame.
-frame_hashes() {
-    (cd "$1" && shasum -a 1 frame*.png | sort -k2)
-}
-
 check_shot() {
     local name="$1" a="$WORK/check-a" b="$WORK/check-b"
+    local evidence="$OUT_DIR/checks/$name/$MODE"
     render_frames "$name" "$a" || return 1
-    frame_hashes "$a" > "$WORK/hash-a"
+    movie_evidence "$a" "$evidence/a" "$FPS" ordinary || return 1
+    cp "$evidence/a/frames.sha256" "$WORK/hash-a"
     local audio_a=""
     [[ -f "$a/frame.wav" ]] && audio_a="$(shasum -a 1 < "$a/frame.wav")"
     rm -rf "$a"
-    render_frames "$name" "$b" || return 1
-    frame_hashes "$b" > "$WORK/hash-b"
+    if [[ "$MODE" == check-load ]]; then
+        awk 'BEGIN { x=1; while (1) { x=(x+1)%1000003 } }' >/dev/null &
+        LOAD_PID=$!
+    fi
+    if ! render_frames "$name" "$b"; then
+        [[ -z "$LOAD_PID" ]] || kill "$LOAD_PID" 2>/dev/null || true
+        LOAD_PID=""; return 1
+    fi
+    [[ -z "$LOAD_PID" ]] || kill "$LOAD_PID" 2>/dev/null || true
+    LOAD_PID=""
+    movie_evidence "$b" "$evidence/b" "$FPS" "$MODE" || return 1
+    cp "$evidence/b/frames.sha256" "$WORK/hash-b"
     local audio_b=""
     [[ -f "$b/frame.wav" ]] && audio_b="$(shasum -a 1 < "$b/frame.wav")"
     rm -rf "$b"
+    jq -S . "$evidence/a/manifest.json" > "$WORK/manifest-a"
+    jq -S . "$evidence/b/manifest.json" > "$WORK/manifest-b"
+    local simulation_match=true
+    if ! diff -u "$WORK/manifest-a" "$WORK/manifest-b" > "$evidence/manifest.diff"; then
+        simulation_match=false
+        echo "check '$name': resolved setup or simulation observations differ; see $evidence/manifest.diff"
+    fi
+    jq -S 'del(.label)' "$evidence/a/settings.json" > "$WORK/settings-a"
+    jq -S 'del(.label)' "$evidence/b/settings.json" > "$WORK/settings-b"
+    local settings_match=true
+    diff -u "$WORK/settings-a" "$WORK/settings-b" > "$evidence/settings.diff" || settings_match=false
+    if [[ -f "$evidence/a/atlases.sha256" || -f "$evidence/b/atlases.sha256" ]]; then
+        diff -u "$evidence/a/atlases.sha256" "$evidence/b/atlases.sha256" > "$evidence/atlases.diff" || settings_match=false
+    fi
     local start end total differ in_cut first
     start="$(awk -v a="$(shot_field "$name" in 0.5)" -v f="$FPS" 'BEGIN { printf "%d\n", int(a * f + 0.5) }')"
     end="$(awk -v a="$(shot_field "$name" in 0.5)" -v b="$(shot_field "$name" length)" -v f="$FPS" \
@@ -367,7 +405,17 @@ check_shot() {
         echo "check '$name': $n_differ of $total frames differ ($in_cut inside the cut," \
             "frames $start-$((end - 1))); first: $first; $audio_note"
     fi
-    [[ "$in_cut" -eq 0 && "$audio_a" == "$audio_b" ]]
+    local passed=false
+    [[ "$in_cut" -eq 0 && "$audio_a" == "$audio_b" && "$simulation_match" == true && "$settings_match" == true ]] && passed=true
+    jq -n --argjson passed "$passed" --argjson simulation_match "$simulation_match" \
+        --argjson cut_frame_differences "$in_cut" --arg mode "$MODE" \
+        --argjson settings_match "$settings_match" \
+        --argjson load_workers "$([[ "$MODE" == check-load ]] && echo 1 || echo 0)" \
+        --argjson audio_match "$([[ "$audio_a" == "$audio_b" ]] && echo true || echo false)" \
+        '{passed:$passed,mode:$mode,simulation_match:$simulation_match,settings_match:$settings_match,
+          second_render_cpu_load_workers:$load_workers,
+          cut_frame_differences:$cut_frame_differences,audio_match:$audio_match}' > "$evidence/result.json"
+    [[ "$passed" == true ]]
 }
 
 # Fails, naming them, if the working tree's status moved while this ran: nothing this writes may
@@ -384,7 +432,7 @@ assert_tree_untouched() {
 
 status=0
 case "$MODE" in
-    check)
+    check|check-load)
         targets=("$TARGET")
         [[ "$TARGET" == "all" ]] && targets=("${SHOT_NAMES[@]}")
         for name in "${targets[@]}"; do
@@ -394,6 +442,7 @@ case "$MODE" in
     shot)
         OUTPUT="$OUT_DIR/shot-$TARGET.mp4"
         render_frames "$TARGET" "$WORK/frames"
+        movie_evidence "$WORK/frames" "$OUT_DIR/evidence/$TARGET" "$FPS" "$TARGET"
         encode_shot "$TARGET" "$WORK/frames" "$WORK/00.mkv"
         rm -rf "$WORK/frames"
         join_shots "$WORK/00.mkv"
@@ -405,6 +454,7 @@ case "$MODE" in
         i=0
         for name in "${SHOT_NAMES[@]}"; do
             render_frames "$name" "$WORK/frames"
+            movie_evidence "$WORK/frames" "$OUT_DIR/evidence/$name" "$FPS" "$name"
             part="$(printf '%s/%02d.mkv' "$WORK" "$i")"
             encode_shot "$name" "$WORK/frames" "$part"
             rm -rf "$WORK/frames"
