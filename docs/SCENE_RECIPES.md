@@ -6,6 +6,10 @@ the map, resolved world anchors, diagnostics and a construction manifest. The ru
 `setup` and `playback` separately before starting gameplay; construction acceptance alone does
 not certify events, actors or a promised playback moment.
 
+Validity means the explicit checks already performed by city construction pass. The builder
+reuses those checks; it does not prove that some ordinary seed produces an arbitrary complete
+arrangement or invent additional generation-probability requirements.
+
 The checked-in `scene-recipes/power-station-hall.json` and `power-station-yard.json` construct
 an actual dead-end wall adjoining the station. The first lets the hall cover its facade; the
 second keeps the facade beside the fenced yard. Both pass the production placement checks.
@@ -28,6 +32,7 @@ keeps its existing sequence and retry behavior.
 |---|---|
 | `city.main_road` | Exact vertical corridor, with ordinary three-corridor edge clearance. |
 | `city.precincts` | Exactly two `[axis,corridor,start,end]` spans, shore first, then inland; axis 0 is horizontal. Ordinary length, boundary and spine exclusions apply. |
+| `city.lots` | `[{blocks:[x,y,width,height],purpose:"park"}]` reserves exact lots before random filling. Starting purposes are `residential`, `civic`, `commercial`, `industrial`, `park`, `forest`, `quiet_square`, `courtyard`; multi-block footprints use the ordinary calm-zone shapes or square apartment complex. Counts, home clearance, spine/precinct clearance and calm separation remain production constraints. |
 | `city.layouts` | `[{block:[x,y],seed:integer}]` supplies a block builder's own deterministic layout stream; absorbed or replaced pins fail. |
 | `city.dead_ends` | `[{segment:[x,y,axis],end:"a"}]` pins an eligible segment and its wall end; `b` chooses the other end. The ordinary generator fills remaining quota. |
 | `city.power_station` | `{blocks:[x,y,2,1],door_block:[x,y]}` pins the horizontal landmark and its ordinary eligible door. Industrial ranking, reference-tree exclusion, calm reachability and region separation still apply. |
@@ -57,7 +62,7 @@ name. The manifest records the actual points, inputs, validation checks and boun
 `extent: {"scope":"full"}` constructs and presents the complete city and requires its full
 generator guarantees. `{"scope":"bounded","bounds":[x,y,width,height]}` presents only that
 tile rectangle. Bounds cannot cut a building footprint. The explicit full construction
-witness supplies the global dependencies needed to prove station and closure eligibility;
+witness supplies the global dependencies used by the existing station and closure checks;
 the manifest distinguishes this witness from the bounded authored scene. Construction and
 route checks run before the exterior projection is enabled.
 

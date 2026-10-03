@@ -61,12 +61,38 @@ static func validate(data: Dictionary) -> Array[String]:
 	elif extent.has("bounds"):
 		errors.append("extent.bounds: full scope has implicit complete city bounds")
 	var city: Dictionary = data.get("city", {})
-	_keys(city, ["context_seed", "main_road", "precincts", "layouts", "dead_ends", "power_station", "closures"], "city", errors)
+	_keys(city, ["context_seed", "main_road", "precincts", "lots", "layouts", "dead_ends", "power_station", "closures"], "city", errors)
 	if not integer(city.get("context_seed")):
 		errors.append("city.context_seed: explicit construction context is required")
 	if city.has("main_road") and (not integer(city.main_road) or int(city.main_road) < 3
 			or int(city.main_road) > Tuning.CITY_BLOCKS.x - 3):
 		errors.append("city.main_road: spine requires three corridors of clearance")
+	if not city.get("lots", []) is Array:
+		errors.append("city.lots: expected an array")
+	else:
+		var footprints: Array[Rect2i] = []
+		for pin: Variant in city.get("lots", []):
+			if not pin is Dictionary:
+				errors.append("city.lots: expected objects")
+				continue
+			_keys(pin, ["blocks", "purpose"], "city.lots", errors)
+			if not tuple(pin.get("blocks"), 4, true) or pin.get("purpose") not in ["residential", "civic", "commercial", "industrial", "park", "forest", "quiet_square", "courtyard"]:
+				errors.append("city.lots: requires blocks [x,y,w,h] and a starting purpose")
+				continue
+			var footprint := rect(pin.blocks)
+			if not footprint.has_area() or not Rect2i(Vector2i.ZERO, Tuning.CITY_BLOCKS).encloses(footprint):
+				errors.append("city.lots: footprint outside the block lattice")
+			if footprint.size != Vector2i.ONE:
+				if pin.purpose not in ["park", "forest", "quiet_square", "courtyard"]:
+					errors.append("city.lots: built purposes require single blocks")
+				elif pin.purpose == "courtyard" and footprint.size != Vector2i(2, 2):
+					errors.append("city.lots: apartment complexes require a 2 by 2 footprint")
+				elif not Tuning.CALM_ZONE_SHAPES.has(footprint.size):
+					errors.append("city.lots: unsupported calm-zone footprint")
+			for other in footprints:
+				if footprint.intersects(other):
+					errors.append("city.lots: overlapping pins")
+			footprints.append(footprint)
 	if city.has("precincts"):
 		if not city.precincts is Array or city.precincts.size() != 2:
 			errors.append("city.precincts: exactly shore and inland spans are required")
