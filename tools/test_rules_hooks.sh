@@ -104,9 +104,9 @@
 #     command substitution, a bare gh issue write, a merge, a release, a gh api write and a
 #     pushing script, while git tag and a read allow; with the switch unset, 0 or yes, every one
 #     of those writes denies
-#   - xargs input makes an unwrapped push unreadable, including wrapper options and quoted
-#     scripts; xargs reads, later separate branch pushes and coder identity wrappers keep their
-#     existing behavior
+#   - xargs or parallel input makes an unwrapped push unreadable, including wrapper options and
+#     quoted scripts; their reads, later separate branch pushes and coder identity wrappers keep
+#     their existing behavior
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -1149,6 +1149,12 @@ assert_write_guard "xargs invoking the coder wrapper still allows" allow \
     'xargs -I{} uv run python tools/agent-identity.py run codex-coder -- git push origin {}'
 assert_write_guard "reviewer-wrapped xargs push still denies" deny \
     'uv run python tools/agent-identity.py run codex-reviewer -- xargs git push origin < tags.txt'
+assert_write_guard "coder-wrapped parallel push still allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- parallel git push origin < tags.txt'
+assert_write_guard "parallel invoking the coder wrapper still allows" allow \
+    'parallel uv run python tools/agent-identity.py run codex-coder -- git push origin {}'
+assert_write_guard "reviewer-wrapped parallel push still denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- parallel git push origin < tags.txt'
 
 # A write before the wrapper, or on a different command joined only by a separator, is not
 # covered by it: the wrapper's own exemption starts at its literal -- and ends at the next
@@ -1835,6 +1841,7 @@ assert_write_guard_reason "xargs input makes push refspecs unreadable" \
 # option's argument is one word; and a quoted separator is not the push's own when it belongs to
 # another command (a commit message) or sits at the push's own level in a quoted script.
 write_guard_asked=(
+    'parallel git status < paths.txt; git push origin feature/x'
     'xargs git status < paths.txt; git push origin feature/x'
     'echo xargs && git push origin feature/x'
     'sh -c "xargs git status; git push origin feature/x"'
@@ -1902,6 +1909,9 @@ write_guard_asked=(
 # substitution; a bare gh issue write (bouncy-heron statement 14: "an agent shouldn't use gh issue
 # directly"); a merge, a release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    'echo v1 | parallel git push origin'
+    'parallel git push origin {} < t'
+    'ls | parallel -j1 git push origin {}'
     'echo v1 | xargs -I{} git push origin {}'
     'xargs git push origin < tags.txt'
     'xargs -n 1 git push origin < tags.txt'
@@ -2032,6 +2042,7 @@ write_guard_never_asked=(
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
+    'parallel git status'
     'xargs git status < paths.txt'
     'echo main | xargs -I{} git log --oneline {}'
     'env MODE=test /usr/bin/xargs -0 -n 1 timeout 5 git show'
