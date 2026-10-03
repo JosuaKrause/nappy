@@ -2134,7 +2134,8 @@ func _restart_run() -> void:
 	# `GameState._end_run()` already deleted the save finds none and changes nothing, so it shows
 	# nothing. **Before `Telemetry.end_run()`, which closes the run log**: the "deleted the save"
 	# line, and the "deletion was not kept" line when a deletion fails at once, belong to this run's
-	# log. A web deletion's own answer comes after the log is closed and is not logged.
+	# log. A web deletion's later answer is logged only if a log is open when it arrives, so it
+	# may land in the next run's log after the reload.
 	GameSave.clear()
 	Telemetry.end_run()
 	# And with it the run's record of being in the escape, which outlives the scene reload below
@@ -2598,12 +2599,13 @@ func _pause_on_focus_lost() -> void:
 		return
 	_pause.open()
 
-## A reload (`_reload_the_scene()`) frees this node and everything under it, the symbol included,
-## and a change in the save state may still be waiting for IndexedDB: the held restart's deletion,
+## A reload (`_reload_the_scene()`) frees this node and its children, including any symbol still
+## parented here. A save change may still be waiting for IndexedDB: the held restart's deletion,
 ## or day 14's own save at the hand-over to the escape. Handed to the tree's root, the symbol shows
 ## across the reload and settles on whatever the reload builds, the title or the escape, with its
 ## minimums running the whole time — see `SaveIndicator`'s own doc. Only a symbol that is up needs
-## it; an idle one is freed with this node and the next boot builds its own.
+## moving; an idle child is freed with this node. A symbol already at the root stays there, even
+## when idle, and the next boot adopts it again.
 func _carry_the_save_symbol_over() -> void:
 	if _save_indicator and _save_indicator.is_showing():
 		_save_indicator.outlive_the_scene()
