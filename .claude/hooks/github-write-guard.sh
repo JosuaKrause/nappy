@@ -128,8 +128,9 @@
 # (`text_only_at`, `strip_heredocs` and `inert_table`, below): a quoted argument of a command that
 # only prints, searches or stores it (`rg -n "gh issue comment"`, `git commit -m "..."`), and the
 # body of a heredoc with a quoted delimiter such a command reads (`cat > brief.md <<'EOF'`), or
-# with an unquoted one whose body holds no `$(`, backtick or `${`, since the shell runs a
-# command substitution in an unquoted heredoc's body. Each word
+# with an unquoted one whose body holds no `$(`, backtick or `${` and no line ending in a
+# backslash, since the shell runs a command substitution in an unquoted heredoc's body, after
+# joining each backslash-newline in it. Each word
 # still remembers which shell word it came from, and which quoted word inside a quoted script, so
 # an option's argument is skipped whole however it is quoted, escaped or joined by a comma: `git
 # -C "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh patch push` and `bash -c 'git
@@ -169,7 +170,7 @@
 # commands: `run <role> -- bash -c "a; b"` beside a `$(...)` is denied, and so is a `gh api` read
 # with no explicit GET piped into a command that takes `-f`, `-F`, `-X` or `--input` (`| grep -F
 # x`). A heredoc whose body is text a text-only command reads -- its delimiter quoted, or its body
-# free of `$(`, backticks and `${` -- is taken out before any of this (`strip_heredocs`), so its
+# free of `$(`, backticks, `${` and a line ending in a backslash -- is taken out before any of this (`strip_heredocs`), so its
 # `<<` makes nothing unsure; one that is kept -- fed to anything else, `bash`, `python3`, `sed`, or
 # expanded by the shell -- is read as before. So a line of prose in a kept heredoc that starts
 # with a reserved word, `time`, `exec` or `eval` and then a pushing script's path (`if
@@ -1201,9 +1202,12 @@ def heredoc_check($q; $line; $op):
 # shell passes on as it stands, or one whose unquoted delimiter's body holds no `$(`, backtick or
 # `${` -- the shell runs a command substitution in an unquoted heredoc's body before the reading
 # command sees a byte, so `cat <<EOF` around `$(git push)` is a push. Such a body is kept, its
-# operator line put back, and read as before. A heredoc that is kept (fed to `bash`, `python3`,
-# `ssh`, ...) keeps its body and is read as before, unsure; a line with two operators keeps both
-# and ends all stripping after it, and so does a line holding a `<<` the operator pattern cannot
+# operator line put back, and read as before. So does an unquoted body with a line ending in a
+# backslash, which returns the command unchanged: the shell removes each backslash-newline from
+# such a body first, so `$\` then `(` on the next line is a `$(` it runs, and `EO\` then `F` ends
+# the body there. A heredoc that is kept (fed to `bash`, `python3`, `ssh`, ...) keeps its body,
+# is read as before, unsure, and ends all stripping after it, since where its body ends is the
+# shell's to find; a line with two operators keeps both and ends all stripping after it, and so does a line holding a `<<` the operator pattern cannot
 # read (`<<EOF-1`, `$((1<<2))`), an operator line a backslash continues onto the next, and a line
 # a backslash continues from the one before when it holds a `<` (`cat <\` then `<EOF`), since the
 # shell's body then starts or ends where this reading cannot follow. Anything unexpected -- a body with no terminator, a `$(...)`
@@ -1223,6 +1227,9 @@ def strip_heredocs($danger):
          elif .mode == 1 then
            if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) | not then .held += [$line]
            elif .sub and (.held | join("\n") | may_close_substitution) then .bad = true | .mode = 0
+           # An unquoted body's backslash-newlines are removed before the shell reads it, so a line
+           # ending in one may join a `$` to a `(` or end the body at a joined line (`EO\` then `F`).
+           elif (.quoted | not) and any(.held[]; ends_continued) then .bad = true | .mode = 0
            elif (.quoted | not) and (.held | join("\n") | expands_in_body) then
              # The shell expands this body: keep it, with its operator line, as a kept heredoc's.
              .out = .out[0:-1] + [.op_line] + .held + [$line]
@@ -1258,8 +1265,9 @@ def strip_heredocs($danger):
                    | .quoted = ($caps[1] != null or $caps[2] != null or $caps[3] != null)
                    | .held = [] | .op_line = $line | .op_q = ($line | quote_after($q))
                  else
-                   .out += [$line] | .mode = 2 | .sub = false
-                   | .giveup = (.giveup or ($ops | length) > 1)
+                   # A kept heredoc's end is the shell's to find (bash 3.2 ends one inside `$(...)`
+                   # at `EOF)`, an unquoted one at a joined line), so nothing after it is taken out.
+                   .out += [$line] | .mode = 2 | .sub = false | .giveup = true
                    | .q = ($line | quote_after($q))
                  end
              end

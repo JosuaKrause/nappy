@@ -1563,6 +1563,48 @@ EOF"
 assert_write_guard "cat <<-EOF around a tab-indented \$(gh issue close 423) -> deny" deny "cat <<-EOF
 	\$(gh issue close 423)
 	EOF"
+# In an unquoted body the shell removes every backslash-newline first, so \$\ then ( on the next
+# line is a \$( it runs, and EO\ then F is the terminator: a body line ending in a backslash leaves
+# the command as it was. A heredoc kept for another reader ends all stripping after it, since its
+# end is the shell's to find (bash 3.2 ends one inside \$(...) at EOF), or at a joined line).
+assert_write_guard "cat <<EOF around \$\\ and (git push --force) on the next line -> deny" deny 'cat <<EOF
+$\
+(git push --force origin main)
+EOF'
+assert_write_guard "cat > note.md <<EOF around \$\\ and (gh issue close 423) -> deny" deny 'cat > note.md <<EOF
+$\
+(gh issue close 423)
+EOF'
+assert_write_guard "cat <<-EOF around a tab-indented \$\\ and (git push --force) -> deny" deny 'cat <<-EOF
+	$\
+	(git push --force origin main)
+	EOF'
+assert_write_guard "cat <<EOF ended by EO\\ then F, a forced push, then a bare EOF -> deny" deny 'cat <<EOF
+body
+EO\
+F
+git push --force origin main
+EOF'
+assert_write_guard "bash <<EOF with a joined line, then cat <<'Y' -> deny, the kept body's end is unread" deny "bash <<EOF
+x\\
+EOF
+cat <<'Y'
+EOF
+git push --force origin main
+Y"
+assert_write_guard "x=\$(bash <<'EOF' ended by EOF) under bash 3.2, then two heredocs -> deny" deny "x=\$(bash <<'EOF'
+x
+EOF)
+cat <<'A'
+EOF
+cat <<'B'
+A
+git push --force origin main
+B"
+assert_write_guard "cat <<'EOF' around \$\\ and (git push --force) -> allow, a quoted body joins nothing" allow "cat <<'EOF'
+\$\\
+(git push --force origin main)
+EOF"
 assert_write_guard "cat <<'EOF' around \$(gh issue close 423) -> allow, a quoted delimiter expands nothing" allow \
     "cat <<'EOF'
 \$(gh issue close 423)
