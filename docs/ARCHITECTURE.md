@@ -507,7 +507,9 @@ kept strictly out of anything that touches the meters.
 - `SceneryResidency` prepares the view plus an offscreen margin and frees distant ground,
   water, shadow and decal chunks beyond a wider boundary. Buildings keep their identity,
   collision and poster-frontage facts; window patterns, roof layers and retained drawing are
-  reconstructed from fixed seeds and current state on return. Props and closure markers retain
+  reconstructed from fixed seeds and current state on return. A building frees its separately
+  parented roof objects and their rotor children on eviction, then restores their roof-foot
+  placement in the shared entity layer on return. Props and closure markers retain
   placement facts and release renderer commands. Shared atlas pages and ground composition stay
   at loading moments. Each off-screen ground region advances at most one renderer quadrant per
   process frame, with distinct regions sharing the soft CPU budget. Each step explicitly

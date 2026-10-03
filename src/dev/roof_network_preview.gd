@@ -2,10 +2,10 @@ extends Node2D
 ## Reproducible native-scale review of generated networks on manually arranged runtime roofs.
 ##
 ## The building, roof tiles, facade, sidewalk and road all use their runtime atlas bindings. The
-## six building lots are arranged manually; their network and equipment layouts use the same
-## seeded placement as the city. No seed search or gameplay distribution claim is involved.
+## six building lots are arranged manually. Five use ordinary seeded placement; the last has
+## a vertical-only duct fixture to expose support placement. No gameplay distribution is claimed.
 
-const OUTPUT := "res://docs/evidence/roof-networks-2026-10-03/roof-networks.png"
+const OUTPUT := "res://docs/evidence/roof-networks-2026-10-03/roof-networks-supported.png"
 
 var _buildings := Node2D.new()
 var _entities := Node2D.new()
@@ -34,8 +34,10 @@ func _ready() -> void:
 		building.district = GameEnums.BlockPurpose.INDUSTRIAL
 		building.roof_object_parent = _entities
 		_buildings.add_child(building)
+		if index == 5:
+			_vertical_fixture(building)
 	var label := Label.new()
-	label.text = "MANUAL ROOF ARRANGEMENT · GENERATED NETWORKS AND EQUIPMENT · NATIVE 1×"
+	label.text = "MANUAL ROOFS · FIVE GENERATED LAYOUTS + VERTICAL SUPPORT FIXTURE · NATIVE 1×"
 	label.position = Vector2(24, 16)
 	add_child(label)
 
@@ -49,6 +51,15 @@ func _ready() -> void:
 		return
 	print("roof context preview wrote %s" % OUTPUT)
 	get_tree().quit()
+
+func _vertical_fixture(building: Building) -> void:
+	building._roof_furniture.clear()
+	for row in range(1, 4):
+		var cell := Vector2i(2, row)
+		var cells: Array[Vector2i] = [cell]
+		building._roof_furniture.append({"cell": cell, "kind": Building._Furniture.DUCT_RUN,
+			"span": 1, "cells": cells, "links": (4 if row > 1 else 0) | (8 if row < 3 else 0)})
+	building._build_roof_layers()
 
 func _draw() -> void:
 	var sidewalk := AtlasLibrary.region(&"tiles/layers/sidewalk_base")

@@ -1,14 +1,22 @@
 # Fallen-tree and broken-water-main PNG generation
 
+These are rejected candidates, retained for provenance and comparison. The player's
+[roof and obstruction review](../../playtests/2026-10-03-bouncy-squirrel.md) rejects these
+water-main and fallen-tree PNGs as worse than their SVGs. The live game uses the existing SVG
+families, including their separate water animation layers. The 28 candidate PNGs are preserved
+byte-for-byte under `../archive/rejected-graphics/obstruction-pngs-2026-10-03/art/`.
+Reproduction below compares with that archive and does not reinstall rejected art.
+
 The player permits direct PNG creation for these obstructions when it produces a better result
 than treating the SVG as an image-generation target. The existing SVGs remain the authority for
 native canvas size, street-axis choice, obstruction footprint, anchor and water painter order.
-The approved urban and cardinal references supply the comic rendering style. The player accepts
-that style and requires the game's cardinal perspective, scale and placement.
+The approved urban and cardinal references supply the requested comic rendering style; that
+reference authority does not constitute acceptance of these generated obstruction candidates.
 
 The built-in Codex image generator produces the retained raw RGBA sheets. Generation is
 nondeterministic. `manifest.json` records every raw and source SHA-256, output size, source and
-installed alpha bounds, extraction cell and installed-file SHA-256. The generator reports no
+candidate alpha bounds, extraction cell and candidate-file SHA-256. Its historical `installed_*`
+field names refer to the preserved candidate, not the active asset tree. The generator reports no
 separate model/version identifier. Godot 4.7.2 renders the SVG geometry inputs, and Pillow 12.3.0
 performs deterministic extraction, registration, composition and review-sheet assembly.
 
@@ -24,7 +32,7 @@ performs deterministic extraction, registration, composition and review-sheet as
 - `source-renders/water-horizontal-layers-source.png` and
   `source-renders/water-vertical-layers-source.png`: exact painter-order component families. Each is
   five cells wide and two cells high in the order named in the prompts below.
-- `raw/trees-family-v1.png` and `raw/water-family-v1.png`: accepted rendering-style concepts and
+- `raw/trees-family-v1.png` and `raw/water-family-v1.png`: generated style concepts and
   edit targets for the cardinal revisions.
 - `raw/water-family-v2-cardinal.png`: material and identity reference for both production layer
   sheets. The full runtime scenes are composed from the generated layers rather than cut from this
@@ -159,7 +167,7 @@ complete alpha extent, so the event tree covers 200×50/50×200 and the closure 
 98×40/44×122 with the established roots-to-crown street span. Layer cells follow the exact 5×2
 grid order. Each generated component is fitted into its source layer's native alpha extent without
 using the SVG silhouette as an alpha mask. The broadside barriers are registered independently to
-their left and right source positions. Full A/B water scenes are then composed from the installed
+their left and right source positions. Full A/B water scenes are then composed from the candidate
 layers at the runtime offsets in `src/events/event_scenery_parts.gd`; stationary layers are byte-for-byte
 the same across phases and only the three water layers select `_b` files.
 
@@ -175,51 +183,52 @@ The source-render commands that created the frozen inputs were, from the reposit
 They write the tracked source-render directory and are only for an intentional registration-input
 refresh, followed by review and updated pins. An ordinary rebuild writes a full repo-relative
 layout to a required new directory and refuses an existing destination, so it cannot overwrite
-the installed art or retained evidence:
+active art or retained evidence:
 
 ```sh
 uv run python docs/evidence/obstruction-pngs-2026-09-30/install.py \
   /private/tmp/obstruction-png-build
 ```
 
-Review or compare that staging tree first. Installing the reviewed result is a separate copy step:
+Compare the staging tree with the preserved rejected output; do not copy it into active art:
 
 ```sh
-cp -R /private/tmp/obstruction-png-build/art/illustrated/svg-transfer/events/. \
-  art/illustrated/svg-transfer/events/
-cp -R /private/tmp/obstruction-png-build/art/illustrated/svg-transfer/closures/. \
-  art/illustrated/svg-transfer/closures/
-cp /private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/manifest.json \
-  /private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/review-native.png \
-  /private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/review-enlarged.png \
-  /private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/water-phases.gif \
-  docs/evidence/obstruction-pngs-2026-09-30/
+diff -r /private/tmp/obstruction-png-build/art \
+  docs/evidence/archive/rejected-graphics/obstruction-pngs-2026-10-03/art
+for artifact in manifest.json review-native.png review-enlarged.png water-phases.gif; do
+  cmp "/private/tmp/obstruction-png-build/docs/evidence/obstruction-pngs-2026-09-30/$artifact" \
+    "docs/evidence/obstruction-pngs-2026-09-30/$artifact" || exit 1
+done
 ```
 
 `review-native.png` places all four trees and four complete water scenes on a light neutral backing
 at exact native size. `review-enlarged.png` uses nearest-neighbor 4× enlargement. `water-phases.gif`
 alternates the two generated layer compositions every 0.5 seconds; it proves generated animation
-coverage and stationary-layer reuse, not gameplay timing. Visual acceptance remains human review.
+coverage and stationary-layer reuse, not gameplay timing or visual acceptance.
 
 ## In-engine context
 
 `../m109-water-main-context-2026-09-30/in-engine-water-main.gif` is a 36-frame, 2.99-second burst
-of the installed horizontal family on
+of the rejected horizontal candidate on
 its real roadway, between the game's buildings and sidewalks and among its crowd. The burst shows
 the two generated water phases while the generated crater, pipe, asphalt and barriers remain fixed.
 It establishes in-engine perspective, scale, placement and animation coverage. The run uses
 `--invincible`, so it establishes no meter cost or day outcome. The whole run folder, including its
 log, map and `burst.json` timestamps, remains beside the GIF with its original name.
 
+The following capture command now renders the current SVG comparison. It does not recreate the
+retained rejected candidate, whose original capture is the artifact described above. The GIF
+command reads that preserved candidate burst and writes only to scratch.
+
 ```sh
 ./tools/shot.sh /private/tmp/obstruction-water.png 10 --seed 4242 \
   --spawn event:burst_water_main --press snapshot_burst 5 --invincible --no-save
 uv run python docs/evidence/m159-scenery-animation-2026-09-26/burst-gif.py \
   docs/evidence/m109-water-main-context-2026-09-30/rig-043407-seed4242-v0.21.1-2-ga5303253-dirty/asked/burst-11410367-001 \
-  docs/evidence/m109-water-main-context-2026-09-30/in-engine-water-main.gif --width 960
+  /private/tmp/obstruction-candidate-water.gif --width 960
 ```
 
-`../m109-fallen-tree-context-2026-09-30/in-engine-fallen-tree.png` shows the installed broadside
+`../m109-fallen-tree-context-2026-09-30/in-engine-fallen-tree.png` shows the rejected broadside
 event tree spanning a north-south street from the uprooted sidewalk to the crown at the opposite
 edge, among the game's buildings, street trees, park edge, crowd and player. It establishes that
 orientation's in-engine perspective, scale and placement. It does not establish the end-on event
@@ -227,6 +236,8 @@ view or either smaller closure-marker view. The whole run folder remains beside 
 original name. The first documented `--spawn closure:0` target on seed 4229 now selects the day's
 accident closure; the event itself remains at `--spawn event:fallen_tree`, which is the capture
 used here.
+
+This command likewise renders the current SVG comparison, not the retained candidate still:
 
 ```sh
 ./tools/shot.sh /private/tmp/obstruction-tree.png 4 --seed 4229 \

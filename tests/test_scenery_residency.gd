@@ -87,10 +87,6 @@ func _test_city(t, seed_value: int) -> void:
 		city._ground._process(Building.VENT_FRAME_INTERVAL * 1.25)
 		city.scenery.update(target, true)
 		_check_roof_ownership(t, city)
-		var expected_phase := int(city._ground.elapsed / Building.VENT_FRAME_INTERVAL) % 2 == 1
-		for rotor: SceneryLayer in building._rotor_layers:
-			t.check(rotor.frame_b == expected_phase,
-					"reentered fan rotors resume the shared city clock's phase")
 	t.check(building.day == 12 and building.condition == Building.Condition.BOARDED \
 			and not building.powered and building.neighbor_window_col == 2 \
 			and building.posters.has(1), "changes while unloaded survive reconstruction")
@@ -116,7 +112,38 @@ func _test_city(t, seed_value: int) -> void:
 				t.check(child.elapsed == city._ground.elapsed and not child.is_processing(),
 						"new water chunks share one pausable city phase")
 	t.check(water_count > 1, "the phase check covers multiple water chunks")
+	_test_roof_phase(t, city)
 	city.free()
+
+func _test_roof_phase(t, city: City) -> void:
+	var observed := 0
+	for building in city.buildings():
+		if building.district != GameEnums.BlockPurpose.INDUSTRIAL:
+			continue
+		var view := _view(building.scenery_bounds().get_center())
+		city.scenery.update(view, true)
+		if building._rotor_layers.is_empty():
+			continue
+		for cycle in 3:
+			var old_rotors := building._rotor_layers.duplicate()
+			var old_objects := building._roof_objects.duplicate()
+			city.scenery.update(_view(Vector2(-10000, -10000)), true)
+			t.check(not building.scenery_resident, "the actual fan owner crosses the eviction boundary")
+			for rotor in old_rotors:
+				t.check(not is_instance_valid(rotor), "eviction frees the actual moving rotor owner")
+			for object in old_objects:
+				t.check(not is_instance_valid(object), "eviction frees the actual fan housing owner")
+			city._ground._process(Building.VENT_FRAME_INTERVAL * 1.25)
+			city.scenery.update(view, true)
+			t.check(not building._rotor_layers.is_empty(), "returning fan owner reconstructs actual rotors")
+			var expected_phase := int(city._ground.elapsed / Building.VENT_FRAME_INTERVAL) % 2 == 1
+			for rotor: SceneryLayer in building._rotor_layers:
+				observed += 1
+				t.check(rotor.frame_b == expected_phase,
+						"reentered fan rotors resume the shared city clock's phase")
+			_check_roof_ownership(t, city)
+		break
+	t.check(observed > 0, "phase reconstruction checks actual generated city fan rotors")
 
 func _check_roof_ownership(t, city: City) -> void:
 	var owned := {}

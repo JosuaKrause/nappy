@@ -14,6 +14,10 @@ the default authoring rule; the player permits roof equipment, fallen trees and 
 mains to be authored directly as PNGs. Direct PNGs have their own atlas membership and retained
 generation and registration sources.
 
+Fallen trees and broken water mains currently render their SVGs. Their rejected PNG candidates
+and provenance remain in [the obstruction generation record](evidence/obstruction-pngs-2026-09-30/GENERATION.md)
+and rejected archive. They do not count as accepted catalogue conversions.
+
 ## Shared drawing contract
 
 `src/sprites.gd` owns the ground-plane contract used by the player, crowd, events and props:
@@ -306,7 +310,12 @@ named by an `EventInstance` constant that nothing draws.
 
 ## Other unbound SVGs
 
-The exact tracked SVGs outside the live and prepared tables are `art/icon_stroller.svg` and
+`art/props/roof_{water_tank,hvac_unit,hvac_unit_b,skylight,skylight_b,vent_stack,duct_straight,duct_corner}.svg`
+and `art/props/industrial_vent_housing.svg` remain editable source art without runtime bindings.
+Both bake modes use the direct PNG roof family instead. The separate industrial rotor SVGs
+remain live and animate inside that PNG housing.
+
+The other tracked SVGs outside the live and prepared tables are `art/icon_stroller.svg` and
 `art/logo.svg`. Neither is loaded by the game or an export resource. They are editable identity
 art counterparts: the active application icon is root `icon.png`, while the README displays
 `art/logo.png` and the web metadata publishes `art/social-card.png`.

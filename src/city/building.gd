@@ -1543,7 +1543,7 @@ class RoofObject extends Node2D:
 		var north := (duct_links & 8) != 0
 		if north or south:
 			var top := -40.0 if north else -24.0
-			var bottom := -8.0 if south else -16.0
+			var bottom := -8.0
 			draw_texture_rect_region(texture, Rect2(-5, top, 10, bottom - top),
 					Rect2(53, 26, 10, 16))
 		if west or east:
@@ -1551,6 +1551,10 @@ class RoofObject extends Node2D:
 			var right := 16.0 if east else 5.0
 			draw_texture_rect_region(texture, Rect2(left, -20, right - left, 20),
 					Rect2(18, 44, 24, 20))
+		else:
+			# The upright source span carries no foot; keep its original elbow's support
+			# beneath it so a north/south-only network is mounted too.
+			draw_texture_rect_region(texture, Rect2(-6, -9, 12, 9), Rect2(52, 55, 12, 9))
 
 	## Adds the independently redrawn rotor over the stationary generated housing. The building
 	## owns phase and timing, so rebuilding this child never resets the motion.

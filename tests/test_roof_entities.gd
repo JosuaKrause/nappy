@@ -6,6 +6,7 @@ func run(t) -> void:
 	_test_reserved_cells_hold_native_base_widths(t)
 	_test_narrow_and_fragmented_roofs_keep_their_unit_count(t)
 	_test_industrial_networks_fit_and_connect(t)
+	_test_networks_on_narrow_and_shallow_roofs(t)
 	_test_rebuild_releases_external_roof_objects(t)
 
 func _new_fixture(t, district: int) -> Dictionary:
@@ -110,6 +111,36 @@ func _test_reserved_cells_hold_native_base_widths(t) -> void:
 		t.check(width <= horizontal_cells * Building.TILE,
 				"a roof object's %dpx base fits its reserved %dpx horizontal footprint"
 				% [width, horizontal_cells * Building.TILE])
+	building.free()
+	fixture["root"].free()
+
+func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
+	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL)
+	var building: Building = fixture["building"]
+	var vertical := false
+	for size: Vector2 in [Vector2(96, 448), Vector2(128, 128), Vector2(160, 192),
+			Vector2(288, 160), Vector2(192, 320)]:
+		building.footprint = size
+		for variant in 12:
+			building.variant = variant
+			var interior := building.roof_interior_cells()
+			var occupied := {}
+			var network := {}
+			for entry: Dictionary in building._roof_furniture:
+				for cell: Vector2i in entry["cells"]:
+					t.check(interior.has(cell) and not occupied.has(cell),
+							"narrow and shallow roofs never reserve a lip, absent cell or occupied base")
+					occupied[cell] = true
+				if entry.has("links"):
+					network[entry["cell"]] = entry["links"]
+			if size.x == 96 and not network.is_empty():
+				vertical = true
+				for links: int in network.values():
+					t.check((links & 3) == 0, "a one-column network uses only north/south links")
+			if not interior.is_empty():
+				t.check(building._roof_furniture.size() > network.size(),
+						"narrow and shallow roof layouts retain ordinary compact equipment")
+	t.check(vertical, "the narrow fixture exercises a generated purely vertical network")
 	building.free()
 	fixture["root"].free()
 
