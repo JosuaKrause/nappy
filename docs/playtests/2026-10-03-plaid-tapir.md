@@ -31,3 +31,17 @@ player's words. The player answered:
 
 3. **Issue #431 is filed as it stands, its body marked as the agent's write-up and the player's
    words in it "add it as issue".** → leafy-finch.
+
+Three reviews of PR #429 had each found new shapes the guard's "text is not a command" rule read
+as text while main's guard denies them. The assistant set out three ways on: A, keep fixing round
+by round; B, narrow the rule to what can be told for certain — a heredoc with a quoted delimiter
+whose whole command is a `cat` writing a file, a wrapped `git commit -F` reading a quoted-delimiter
+heredoc, and a quoted pattern of a lone `rg` or `grep` — with everything else read as main reads it;
+C, take the rule out of #429 and file it on its own. It recommended B. The player answered:
+
+> "B"
+
+4. **The guard's text rule covers only what can be told for certain**: a heredoc with a quoted
+   delimiter whose whole command is a `cat` writing a file, a wrapped `git commit -F` reading such a
+   heredoc, and a quoted pattern of a lone `rg` or `grep`; anything else is read as before.
+   → leafy-finch.
