@@ -123,8 +123,11 @@ class ClassifyTests(unittest.TestCase):
         )
 
     def test_the_files_under_docs_the_game_reads_run_everything(self) -> None:
-        self.assertIn("docs/.gdignore", ci_classify.GAME_READS)
-        for path in ci_classify.GAME_READS:
+        # Listed here, not read back from GAME_READS: a loop over the tuple loses its case when the path leaves it.
+        paths = ("docs/TELEMETRY.md", "docs/COSTS.md", "docs/ARCHITECTURE.md", "docs/.gdignore")
+        for path in paths:
+            self.assertIn(path, ci_classify.GAME_READS)
+        for path in paths:
             with self.subTest(path=path):
                 self.assertEqual(self.flags("docs/CITY.md", path), (False, False, False))
 
