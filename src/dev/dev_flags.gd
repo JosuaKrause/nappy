@@ -47,6 +47,7 @@ extends RefCounted
 ##   --zoom          1
 ##   --start-escape  0w?
 ##   --blackout      0
+##   --ground-mode   1
 ##   --ending        1
 ##   --controls      1
 ##   --layers        1
@@ -134,8 +135,8 @@ extends RefCounted
 ## build is easier", overturning the 2026-09-06 rule above for that half alone — see docs/DECISIONS.md,
 ## M193, "the live page's ?debug=1 reaches the debug flags".)* `live_debug_requested()` below is
 ## that gate: `day_override()`, `invincible()`, `layers_override()`, `ControlsMode.resolve()`,
-## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()` and
-## `blackout_requested()` each read the command line under `enabled()` as they always have and,
+## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()`,
+## `blackout_requested()` and `ground_mode()` each read the command line under `enabled()` and,
 ## failing that, the page's own query under `live_debug_requested()`.
 ##
 ## A debug build carries every flag on this whole page immediately, with nothing further to
@@ -149,7 +150,8 @@ static func enabled() -> bool:
 ## and gates every other release-safe query flag in turn: `--skip`/`?skip=` (`skip_words()`),
 ## `?seed=`'s own positive integer (`seed_override()`), and, through `live_debug_requested()`
 ## below, the smaller bundle M193 opens on top of those two — `?day=`, `?invincible=1`,
-## `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=` and `?ending=`/`?blackout=1`.
+## `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1` and
+## `?groundmode=`.
 ## `Telemetry`'s own `?telemetry=1` is not part of any of this: it stays behind `enabled()` alone
 ## (docs/TELEMETRY.md, "`--spikes` is off by default"), since a stranger's browser collecting a
 ## trace is a different question from a stranger's browser reading a day number back. See
@@ -171,9 +173,9 @@ static func _readout_from_query(query: String) -> bool:
 ## The gate for the smaller, release-safe bundle M193 opens beside the readout: the flags that
 ## choose where a run starts or how it is drawn (`day_override()`, `invincible()`,
 ## `layers_override()`, `ControlsMode.resolve()`, `start_escape()`, `meters_override()`,
-## `day_length_override()`, `ending_override()`, `blackout_requested()`) — never the input-driving,
-## picture-taking or file-writing half `enabled()` alone still gates (see `enabled()`'s own doc for
-## that list). True on a debug build with or without `?debug=1` in the page, since a debug build
+## `day_length_override()`, `ending_override()`, `blackout_requested()`, `ground_mode()`) — never
+## the input-driving, picture-taking or file-writing half `enabled()` alone still gates (see
+## `enabled()`'s own doc for that list). True on a debug build with or without `?debug=1` in the page, since a debug build
 ## already answers the whole of `enabled()`'s own bundle regardless of any query string; true on a
 ## release page only once `readout_requested()` holds, so a release page nobody asked `?debug=1`
 ## of reads exactly as before. *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site
@@ -198,7 +200,7 @@ static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 ## against `?debug=1` alone, which opens the bundle without yet having used any of it.
 const _LIVE_DEBUG_QUERY_KEYS := [
 	"day", "invincible", "layers", "controls", "escape", "meters", "daylength", "ending",
-	"blackout",
+	"blackout", "groundmode",
 ]
 
 ## Whether the page's query string actually named one of `live_debug_requested()`'s own
@@ -519,6 +521,46 @@ static func _blackout_from_query(query: String) -> bool:
 		if pair.size() == 2 and pair[0] == "blackout" and pair[1] == "1":
 			return true
 	return false
+
+## `--ground-mode 1|2|3` (or the page's own `?groundmode=`, under `live_debug_requested()`) — how
+## a needed nearby ground region is scheduled, as `SceneryGround.Mode` numbers it: `1`, the
+## default, prepares every region needed in a frame whole in that frame; `2` prepares at most one
+## whole region a frame; `3` spreads one region's preparation across frames. *(2026-10-03,
+## docs/playtests/2026-10-03-tawny-stork.md: "let's introduce three options 1) (the default) as
+## many graphics as needed are prepared in one frame 2) at most one graphic is prepared in one
+## frame 3) graphic creation is smeared out like in the PR"; and, of the switch, "yes it should be
+## a flag I can use in mobile under debug".)* It chooses how the ground is drawn, not what is
+## drawn, so it sits in the M193 bundle beside `?layers=`; like every word of that bundle, naming
+## it on a release page keeps the run off the save.
+static func ground_mode() -> int:
+	return _ground_mode_for(_args(), _web_query(), live_debug_requested())
+
+## `ground_mode()`'s own decision, pure in its three inputs so a test can drive the command line,
+## the page and the `?debug=1` gate without a debug build or a web page: the command line wins,
+## the page is read only while the bundle is open, and `1` answers everything else.
+static func _ground_mode_for(args: PackedStringArray, query: String, flags_open: bool) -> int:
+	var index := args.find("--ground-mode")
+	if index != -1 and index + 1 < args.size():
+		return parse_ground_mode(args[index + 1])
+	if not flags_open:
+		return GROUND_MODE_DEFAULT
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "groundmode":
+			return parse_ground_mode(pair[1])
+	return GROUND_MODE_DEFAULT
+
+const GROUND_MODE_DEFAULT := 1
+
+## The bare parsing of a `--ground-mode`/`?groundmode=` value. Anything but `1`, `2` or `3` refuses
+## the whole flag with `push_warning` and answers the default, the reasoning
+## `_validate_skip_words()` gives: a measurement of a mode nobody asked for that said nothing
+## about it would compare the wrong thing.
+static func parse_ground_mode(raw: String) -> int:
+	if raw in ["1", "2", "3"]:
+		return int(raw)
+	push_warning("--ground-mode: '%s' is not 1, 2 or 3, ignoring the flag" % raw)
+	return GROUND_MODE_DEFAULT
 
 ## `--start-escape` (or the page's own `?escape=1`) skips the title and the city and starts
 ## `main` straight in the escape scene's interior — see docs/TODO.md, "M112 — The escape scene,

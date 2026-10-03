@@ -24,6 +24,9 @@ var _pending := false
 var _ground_step_frame := -1
 ## Keep the frame fence outside jobs: cancellation must not allow a second step for that key.
 var _ground_stepped: Dictionary = {}
+## The process frame that last prepared a whole ground region here, guard included: ONE's
+## at-most-one-a-frame fence.
+var _whole_region_frame := -1
 
 func _ready() -> void:
 	# Camera and rig callbacks finish before residency reads their final transform. This node
@@ -82,6 +85,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			ground.prepare(key)
+			_whole_region_frame = Engine.get_process_frames()
 		else:
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
 					"ground_key": key})
@@ -117,12 +121,21 @@ func update(next_view: Rect2, immediate := false) -> void:
 			_pending = true
 			break
 		if job.has("ground_key"):
-			if city.map.recipe_frame_locked:
+			if city.map.recipe_frame_locked or ground.mode == SceneryGround.Mode.ALL:
+				ground.prepare(job.ground_key)
+				continue
+			var frame := Engine.get_process_frames()
+			if ground.mode == SceneryGround.Mode.ONE:
+				# The fence is per process frame, so repeating an explicit update cannot add a
+				# second region; a guard preparation earlier in this frame has spent it too.
+				if _whole_region_frame == frame:
+					_pending = true
+					continue
+				_whole_region_frame = frame
 				ground.prepare(job.ground_key)
 				continue
 			# Several regions may approach together. Advance each once within the shared budget;
 			# repeating an explicit update or replacing a canceled job cannot drain one region.
-			var frame := Engine.get_process_frames()
 			if _ground_step_frame != frame:
 				_ground_step_frame = frame
 				_ground_stepped.clear()

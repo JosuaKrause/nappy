@@ -7,6 +7,14 @@ const CHUNK_TILES := 8
 const CHUNK_PX := CHUNK_TILES * Tuning.TILE_SIZE
 ## Match each step to one renderer quadrant so later steps never rebuild earlier cells.
 const STEP_TILES := 4
+## How SceneryResidency schedules a needed region's preparation; laziness, nearby-only and the
+## load/unload boundaries are the same in all three. ALL prepares every needed region whole in
+## the frame that needs it; ONE prepares at most one whole region a frame, the rest waiting for
+## following frames; STEPPED spreads one region over frames, a renderer quadrant a frame. The
+## values are the `--ground-mode` numbers (docs/playtests/2026-10-03-tawny-stork.md).
+enum Mode { ALL = 1, ONE = 2, STEPPED = 3 }
+## Read once, when the city's ground is created; a test sets it on an empty ground.
+var mode: Mode = DevFlags.ground_mode() as Mode
 @export var tile_set: TileSet
 var chunks: Dictionary = {}
 ## Visible in-tree at their real off-screen coordinates; hidden TileMaps discard render data.
@@ -15,7 +23,8 @@ var pending: Dictionary = {}
 var _city: City
 var prepared := 0
 var evicted := 0
-## Synchronous prepare() completion time; ordinary quadrant steps use worst_step_usec.
+## Whole-region prepare() time: every preparation in ALL and ONE, the guard's alone in STEPPED,
+## whose ordinary quadrant steps use worst_step_usec.
 var worst_prepare_usec := 0
 var worst_step_usec := 0
 ## One pausable city clock keeps adjacent water chunks in phase, including newly entered ones.
@@ -55,16 +64,47 @@ func keys_in(view: Rect2) -> Array[Vector2i]:
 			result.append(Vector2i(x, y))
 	return result
 
+## The whole region in one call. STEPPED drains the quadrant steps, so its layout is the same
+## whichever way a region is reached; ALL and ONE build it as one layer with one renderer
+## quadrant and one water surface, its renderer work deferred to the frame's end.
 func prepare(key: Vector2i) -> void:
 	if chunks.has(key):
 		return
 	var started := Time.get_ticks_usec()
-	while not prepare_step(key):
-		pass
+	if mode == Mode.STEPPED:
+		while not prepare_step(key):
+			pass
+	else:
+		_prepare_whole(key)
 	worst_prepare_usec = maxi(worst_prepare_usec, Time.get_ticks_usec() - started)
 
-## One bounded quadrant, including TileMap renderer command preparation. The residency owner
-## advances each region once per process frame; prepare() drains it for the safety guard.
+func _prepare_whole(key: Vector2i) -> void:
+	var layer := TileMapLayer.new()
+	layer.tile_set = tile_set
+	layer.name = "Chunk%d_%d" % [key.x, key.y]
+	chunks[key] = layer
+	add_child(layer)
+	var water_cells: Array[Vector2i] = []
+	for y in range(key.y * CHUNK_TILES, (key.y + 1) * CHUNK_TILES):
+		for x in range(key.x * CHUNK_TILES, (key.x + 1) * CHUNK_TILES):
+			var tile := Vector2i(x, y)
+			var source := _city.scenery_ground_source(tile)
+			if source == GroundTiles.WATER:
+				water_cells.append(tile)
+			elif source >= 0:
+				layer.set_cell(tile, source,
+						GroundLayers.atlas_coords_for(source, _city.map.seed_used, tile, tile_set))
+	if not water_cells.is_empty():
+		var water := SceneryWater.new()
+		water.elapsed = elapsed
+		layer.add_child(water)
+		water.configure(water_cells)
+		water.set_process(false)
+	prepared += 1
+
+## One bounded quadrant, including TileMap renderer command preparation, for STEPPED alone. The
+## residency owner advances each region once per process frame; prepare() drains it for the
+## safety guard.
 func prepare_step(key: Vector2i) -> bool:
 	if chunks.has(key):
 		return true

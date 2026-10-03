@@ -1,5 +1,7 @@
 extends RefCounted
 ## Residency is presentation only: coverage, hysteresis, reconstruction, stable identity and RNG.
+## The three ground modes schedule the same lazy, nearby preparation; the rest of the suite runs
+## in the default.
 
 const CITY := preload("res://scenes/world/city.tscn")
 
@@ -16,7 +18,11 @@ func _test_city(t, seed_value: int) -> void:
 	t.add_child(city)
 	var map := CityGenerator.generate(seed_value)
 	city.build(map)
+	_test_all_mode(t, city)
+	_test_one_mode(t, city)
+	_use_mode(city, SceneryGround.Mode.STEPPED)
 	_test_pending(t, city)
+	_use_mode(city, DevFlags.GROUND_MODE_DEFAULT as SceneryGround.Mode)
 	var home := _view(map.doorstep_world_position())
 	var initial := city._ground.get_used_cells().size()
 	t.check(initial > 0 and initial < map.size.x * map.size.y / 8,
@@ -161,6 +167,104 @@ func _check_roof_ownership(t, city: City) -> void:
 			count += 1
 			t.check(owned.has(child), "every entity roof object has a live resident building owner")
 	t.check(count > 0 and count == owned.size(), "the ownership check covers actual roof objects")
+
+## Switches an emptied ground to `mode` and prepares the home view again in it.
+func _use_mode(city: City, mode: SceneryGround.Mode) -> void:
+	city._ground.clear()
+	city._ground.mode = mode
+	city.scenery.update(city._home_scenery_view(), true)
+
+## Releases up to `count` regions between the guard and the load boundary of `view`, so the next
+## ordinary update has to prepare them: the residency's own view must already be `view`.
+func _ring_keys(city: City, view: Rect2, count: int) -> Array[Vector2i]:
+	var keys: Array[Vector2i] = []
+	for candidate in city._ground.keys_in(view.grow(SceneryResidency.LOAD_MARGIN)):
+		if view.grow(SceneryResidency.GUARD_MARGIN).intersects(SceneryGround.bounds(candidate)):
+			continue
+		if city._ground.chunks.has(candidate):
+			city._ground.release(candidate)
+		keys.append(candidate)
+		if keys.size() == count:
+			break
+	return keys
+
+## What ALL and ONE build: the region as one layer, so one renderer quadrant and one water surface.
+func _check_whole_layout(t, city: City, key: Vector2i) -> void:
+	var layer: TileMapLayer = city._ground.chunks[key]
+	var surfaces := 0
+	for child in layer.get_children():
+		surfaces += int(child is SceneryWater)
+	t.check(layer.rendering_quadrant_size >= SceneryGround.CHUNK_TILES and surfaces <= 1,
+			"a whole-region mode builds one renderer quadrant and at most one water surface")
+
+func _test_all_mode(t, city: City) -> void:
+	_use_mode(city, SceneryGround.Mode.ALL)
+	var ground := city._ground
+	var view := city._home_scenery_view()
+	var keys := _ring_keys(city, view, 3)
+	t.check(keys.size() == 3, "the mode-1 check has three actual load-ring regions to prepare")
+	var prepared := ground.prepared
+	city.scenery.update(view)
+	var all_whole := true
+	for key in keys:
+		all_whole = all_whole and ground.chunks.has(key)
+	t.check(all_whole and ground.prepared - prepared == keys.size(),
+			"mode 1 prepares every needed region whole in the update that needs it")
+	t.check(ground.pending.is_empty() and not city.scenery._pending,
+			"mode 1 leaves nothing partly built and nothing waiting")
+	for key in keys:
+		_check_chunk(t, city, key)
+		_check_whole_layout(t, city, key)
+
+func _test_one_mode(t, city: City) -> void:
+	_use_mode(city, SceneryGround.Mode.ONE)
+	var ground := city._ground
+	var scenery := city.scenery
+	var view := city._home_scenery_view()
+	var keys := _ring_keys(city, view, 3)
+	t.check(keys.size() == 3, "the mode-2 check has three actual load-ring regions to prepare")
+	# The suite runs inside one process frame; clearing the fence stands in for the next frame.
+	scenery._whole_region_frame = -1
+	var prepared := ground.prepared
+	scenery.update(view)
+	t.check(ground.prepared - prepared == 1 and ground.pending.is_empty() and scenery._pending,
+			"mode 2 prepares one whole region in a frame and the others wait, none half built")
+	scenery.update(view)
+	t.check(ground.prepared - prepared == 1,
+			"repeating an update in the same process frame prepares no second region")
+	for frame in keys.size() - 1:
+		scenery._whole_region_frame = -1
+		scenery.update(view)
+		t.check(ground.prepared - prepared == frame + 2,
+				"each following frame prepares exactly one more waiting region")
+	var all_whole := true
+	for key in keys:
+		all_whole = all_whole and ground.chunks.has(key)
+		_check_chunk(t, city, key)
+		_check_whole_layout(t, city, key)
+	t.check(all_whole and not scenery._pending, "every waiting region is prepared in turn")
+	# A guard preparation spends the frame: the ring region waits rather than making it two.
+	var waiting := _ring_keys(city, view, 1)
+	var close := SceneryGround.key_for(city.map.world_to_tile(view.get_center()))
+	ground.release(close)
+	scenery._whole_region_frame = -1
+	var guards := scenery.ordinary_guard_preparations
+	prepared = ground.prepared
+	scenery.update(view)
+	t.check(ground.chunks.has(close) and scenery.ordinary_guard_preparations == guards + 1,
+			"a region about to come into view is prepared at once by the guard")
+	t.check(ground.prepared - prepared == 1 and not ground.chunks.has(waiting[0]),
+			"a frame that needed the guard prepares no second, ordinary region")
+	scenery._whole_region_frame = -1
+	scenery.update(view)
+	t.check(ground.chunks.has(waiting[0]), "the waiting region follows in the next frame")
+	# A relocation prepares its whole destination before it is seen, in every mode.
+	var away := Rect2(view.position + Vector2(SceneryResidency.LOAD_MARGIN * 3, 0), view.size)
+	scenery.update(away)
+	var covered := true
+	for key in ground.keys_in(away.grow(SceneryResidency.LOAD_MARGIN)):
+		covered = covered and ground.chunks.has(key)
+	t.check(covered, "a relocation in mode 2 prepares the whole destination before returning")
 
 func _test_pending(t, city: City) -> void:
 	var ground := city._ground
