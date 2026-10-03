@@ -345,11 +345,11 @@ def takes_argument:
 # every start runs to the end of the chain, a cost quadratic in its length.
 def resolve: until(. as $p | all(range(length); $p[$p[.]] == $p[.]); . as $p | map($p[.]));
 
-# The options each wrapper word takes with a separate argument, so the word after `sudo -u`,
-# `nice -n`, `timeout -s` or `xargs -n` is skipped as that argument rather than taken for the
+# Non-input wrapper options taking a separate argument, so the word after `sudo -u`,
+# `nice -n` or `timeout -s` is skipped as that argument rather than taken for the
 # command; `bash -c`/`sh -c` is not among them, since the word after `-c` is the script, whose
 # own first word is in command position (`bash -c 'tools/prune-merged.sh x'`), and neither is
-# `env -S`, whose argument is the command line itself.
+# `env -S`, whose argument is the command line itself. Input wrappers use input_option below.
 def wrapper_argument_options:
   {sudo: ["-u", "-g", "-h", "-p", "-C", "-D", "-R", "-r", "-t", "-T", "-U", "--user", "--group",
           "--host", "--prompt", "--close-from", "--chdir", "--chroot", "--role", "--type",
@@ -1132,9 +1132,10 @@ def either(a; b):
   | if $x != null and $x.reason != null then $x
     else (b as $y | if $y != null and $y.reason != null then $y else $x end) end;
 #
-# Command position is where any of up to four tables puts it: past a wrapper, its options read
+# Command position is where any of up to four tables puts it: past a non-input wrapper, its options read
 # as git's and gh's (`cw`) and as the wrapper's own (`cw2`), each grouped by shell word (`$t`)
-# and, when the reading is unsure, also word by word (`$tp`).
+# and, when the reading is unsure, also word by word (`$tp`). Every table takes an input
+# wrapper's command position from the same bounded option parse.
 def command_words($t; $tp; $i):
   [command_word($t; $i)]
   + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)

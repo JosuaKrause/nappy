@@ -109,6 +109,9 @@
 #     a custom replacement token remains unreadable even when it is lowercase or spells a known
 #     read; the wrappers' documented value-taking options do not hide a pushing script; reads,
 #     later separate branch pushes and coder identity wrappers keep their existing behavior
+#   - input-wrapper clusters and values share one parser: flag-shaped values never select a new
+#     replacement token, unknown option arity fails closed, and a long chain of consumed values
+#     named xargs stays bounded; the corresponding known reads and identity controls still pass
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
